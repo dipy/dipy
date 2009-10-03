@@ -2,11 +2,11 @@
 
 import sys
 
-import numpy as np
-
 sys_is_le = sys.byteorder == 'little'
 native_code = sys_is_le and '<' or '>'
 swapped_code = sys_is_le and '>' or '<'
+
+default_compresslevel = 1
 
 endian_codes = (# numpy code, aliases
     ('<', 'little', 'l', 'le', 'L', 'LE'),
@@ -162,3 +162,39 @@ class Recoder(object):
     
 # Endian code aliases
 endian_codes = Recoder(endian_codes)
+
+
+def allopen(fname, *args, **kwargs):
+    ''' Generic file-like object open
+
+    If input ``fname`` already looks like a file, pass through.
+    If ``fname`` ends with recognizable compressed types, use python
+    libraries to open as file-like objects (read or write)
+    Otherwise, use standard ``open``.
+    '''
+    if hasattr(fname, 'write'):
+        return fname
+    if args:
+        mode = args[0]
+    elif 'mode' in kwargs:
+        mode = kwargs['mode']
+    else:
+        mode = 'rb'
+    if fname.endswith('.gz'):
+        if ('w' in mode and
+            len(args) < 2 and
+            not 'compresslevel' in kwargs):
+            kwargs['compresslevel'] = default_compresslevel
+        import gzip
+        opener = gzip.open
+    elif fname.endswith('.bz2'):
+        if ('w' in mode and
+            len(args) < 3 and
+            not 'compresslevel' in kwargs):
+            kwargs['compresslevel'] = default_compresslevel
+        import bz2
+        opener = bz2.BZ2File
+    else:
+        opener = open
+    return opener(fname, *args, **kwargs)
+

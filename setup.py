@@ -10,7 +10,7 @@ setup(name='dipy',
       author='DIPY ython team',
       author_email='matthew.brett@gmail.com',
       url='http://github.com/matthew-brett/dipy',
-      packages=['dipy', 'dipy.io'],
+      packages=['dipy', 'dipy.io', 'dipy.viz'],
       scripts=glob('scripts/*.py')
       )
 
