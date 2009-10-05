@@ -22,8 +22,16 @@ def test_streamline():
     yield assert_array_equal, s.properties, None
     
 
-def test_steam_iter():
+
+def test_stream_iter():
     s = StreamLine(np.zeros((10,3)))
     s_tup = tuple(s)
     yield assert_array_equal, s_tup[0], np.zeros((10,3))
     yield assert_equal, s_tup[1:], (None, None)
+
+
+def test_stream_midpoint():
+    s = StreamLine(np.array([[1,1,1],[2,2,2],[3,3,3],[4,4,4]]))
+    return s.midpoint()
+
+ 
