@@ -2,6 +2,8 @@
 
 import sys
 
+import numpy as np
+
 sys_is_le = sys.byteorder == 'little'
 native_code = sys_is_le and '<' or '>'
 swapped_code = sys_is_le and '>' or '<'
@@ -198,3 +200,30 @@ def allopen(fname, *args, **kwargs):
         opener = open
     return opener(fname, *args, **kwargs)
 
+
+def rec2dict(rec):
+    ''' Convert scalar recarray to dictionary
+
+    Parameters
+    ----------
+    rec : ndarray
+       structured ndarray
+
+    Returns
+    -------
+    dct : dict
+       dict with key, value pairs as for `rec`
+
+    Examples
+    --------
+    >>> r = np.zeros((), dtype = [('x', 'i4'), ('s', 'S10')])
+    >>> d = rec2dict(r)
+    >>> d == {'x': 0, 's': ''}
+    True
+    '''
+    if rec.size > 1:
+        raise ValueError('Can only convert scalar recarray')
+    dct = {}
+    for key in rec.dtype.fields:
+        dct[key] = rec[key].item()
+    return dct

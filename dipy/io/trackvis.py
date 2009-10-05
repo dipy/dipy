@@ -4,7 +4,8 @@ import struct
 
 import numpy as np
 
-from .utils import native_code, swapped_code, endian_codes, allopen
+from .utils import native_code, swapped_code, endian_codes, \
+    allopen, rec2dict
 
 
 # Definition of trackvis header structure.
@@ -147,9 +148,8 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
        If filename, open file as 'wb', otherwise `fileobj` should be an
        open file-like object, with a ``write`` method.
     hdr_mapping : mapping
-       Information for filling header fields.  It can be anything that
-       can be accessed with ``__getitem__``.  Only fields that match the
-       header description will be filled, the others will be ignored
+       Information for filling header fields.  Can be something
+       dict-like (implementing ``items``) or a structured numpy array
     streamlines : sequence
        sequence of streamlines, where a streamline is a sequence of 2
        elements:
@@ -178,12 +178,11 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
             endianness = native_code
     endianness = endian_codes[endianness]
     # fill in a new header from mapping-like
+    if isinstance(hdr_mapping, np.ndarray):
+        hdr_mappping = rec2dict(hdr_mapping)
     hdr = empty_header(endianness)
-    for key in hdr.dtype.names:
-        try:
-            hdr[key] = hdr_mapping[key]
-        except ValueError, KeyError:
-            pass
+    for key, value in hdr_mapping.items():
+        hdr[key] = value
     # put calculated data into header
     hdr['n_count'] = stream_count
     if stream_count:
@@ -261,4 +260,5 @@ def empty_header(endianness=None):
     hdr = np.zeros((), dtype=dt)
     hdr['id_string'] = 'TRACK'
     hdr['version'] = 1
+    hdr['hdr_size'] = 1000
     return hdr
