@@ -7,6 +7,7 @@ import numpy as np
 from .utils import native_code, swapped_code, endian_codes, \
     allopen, rec2dict
 
+from dipy.core.streamlines import StreamLine
 
 # Definition of trackvis header structure.
 # See http://www.trackvis.org/docs/?subsect=fileformat
@@ -63,14 +64,7 @@ def read(fileobj):
     hdr : structured array
        structured array with trackvis header fields
     streamlines : sequence
-       sequence of streamlines, where a streamline is a sequence of 2
-       elements:
-       
-       #. a structured array of points, with fields 'x', 'y', 'z',
-          'scalars'.  'scalars' might be empty.
-       #. an array containing the streamline properties.  The array will
-          be empty if there are no properties
-
+       sequence of :class:`streamLine`
     endianness : {'<', '>'}
        Endianness of read header, '<' is little-endian, '>' is
        big-endian
@@ -95,15 +89,19 @@ def read(fileobj):
         endianness = swapped_code
     n_s = hdr['n_scalars']
     n_p = hdr['n_properties']
-    point_dtype, property_dtype = _pts_props_dtypes(n_s, endianness)
-    pt_size = point_dtype.itemsize
-    ps_size = property_dtype.itemsize * n_p
+    f4dt = np.dtype(endianness + 'f4')
+    pt_cols = 3 + n_s
+    pt_size = f4dt.itemsize * pt_cols
+    ps_size = f4dt.itemsize * n_p
     i_fmt = endianness + 'i'
     streamlines = []
     stream_count = hdr['n_count']
     if stream_count < 0:
         raise HeaderError('Unexpected negative n_count')
     n_streams = 0
+    # For case where there are no scalars or no properties
+    scalars = None
+    ps = None
     while(True):
         n_str = fileobj.read(4)
         if len(n_str) < 4:
@@ -115,18 +113,19 @@ def read(fileobj):
         n_pts = struct.unpack(i_fmt, n_str)[0]
         pts_str = fileobj.read(n_pts * pt_size)
         pts = np.ndarray(
-            shape = (n_pts,),
-            dtype = point_dtype,
+            shape = (n_pts, pt_cols),
+            dtype = f4dt,
             buffer = pts_str)
         if n_p:
             ps_str = fileobj.read(ps_size)
             ps = np.ndarray(
                 shape = (n_p,),
-                dtype = property_dtype,
+                dtype = f4dt,
                 buffer = ps_str)
-        else:
-            ps = np.array([], dtype='f4')
-        streamlines.append((pts, ps))
+        xyz = pts[:,:3]
+        if n_s:
+            scalars = pts[:,3:]
+        streamlines.append(StreamLine(xyz, scalars, ps))
         n_streams += 1
         # deliberately misses case where stream_count is 0
         if n_streams == stream_count:
@@ -151,14 +150,7 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
        Information for filling header fields.  Can be something
        dict-like (implementing ``items``) or a structured numpy array
     streamlines : sequence
-       sequence of streamlines, where a streamline is a sequence of 2
-       elements:
-       
-       #. a structured array of points, with fields 'x', 'y', 'z',
-          'scalars'.  'scalars' might be empty.
-       #. an array containing the streamline properties.  The array will
-          be empty if there are no properties
-
+       sequence of :class:`StreamLine`
     endianness : {None, '<', '>'}, optional
        Endianness of file to be written.  '<' is little-endian, '>' is
        big-endian.  None (the default) is to use the endianness of the

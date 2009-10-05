@@ -33,3 +33,6 @@ def test_empty_header():
         yield assert_equal, hdr['hdr_size'], 1000
     hdr_endian = tv.endian_codes[tv.empty_header().dtype.byteorder]
     yield assert_equal, hdr_endian, tv.native_code
+
+
+    
