@@ -64,7 +64,15 @@ def read(fileobj):
     hdr : structured array
        structured array with trackvis header fields
     streamlines : sequence
-       sequence of :class:`streamLine`
+       sequence of 3 element sequences with elements:
+
+       #. points : ndarray shape (N,3)
+          where N is the number of points
+       #. scalars : None or ndarray shape (N, M)
+          where M is the number of scalars per point
+       #. properties : None or ndarray shape (P,)
+          where P is the number of properties
+          
     endianness : {'<', '>'}
        Endianness of read header, '<' is little-endian, '>' is
        big-endian
@@ -125,7 +133,7 @@ def read(fileobj):
         xyz = pts[:,:3]
         if n_s:
             scalars = pts[:,3:]
-        streamlines.append(StreamLine(xyz, scalars, ps))
+        streamlines.append((xyz, scalars, ps))
         n_streams += 1
         # deliberately misses case where stream_count is 0
         if n_streams == stream_count:
@@ -146,11 +154,19 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
     fileobj : filename or file-like
        If filename, open file as 'wb', otherwise `fileobj` should be an
        open file-like object, with a ``write`` method.
-    hdr_mapping : mapping
+    hdr_mapping : ndarray or mapping
        Information for filling header fields.  Can be something
        dict-like (implementing ``items``) or a structured numpy array
     streamlines : sequence
-       sequence of :class:`StreamLine`
+       sequence of 3 element sequences with elements:
+
+       #. points : ndarray shape (N,3)
+          where N is the number of points
+       #. scalars : None or ndarray shape (N, M)
+          where M is the number of scalars per point
+       #. properties : None or ndarray shape (P,)
+          where P is the number of properties
+
     endianness : {None, '<', '>'}, optional
        Endianness of file to be written.  '<' is little-endian, '>' is
        big-endian.  None (the default) is to use the endianness of the
@@ -171,54 +187,57 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
     endianness = endian_codes[endianness]
     # fill in a new header from mapping-like
     if isinstance(hdr_mapping, np.ndarray):
-        hdr_mappping = rec2dict(hdr_mapping)
+        hdr_mapping = rec2dict(hdr_mapping)
     hdr = empty_header(endianness)
     for key, value in hdr_mapping.items():
         hdr[key] = value
     # put calculated data into header
     hdr['n_count'] = stream_count
     if stream_count:
-        pts0, ps0 = streamlines[0]
+        pts, scalars, props = streamlines[0]
         # calculate number of scalars
-        n_s = pts0['scalars'].size
+        if scalars:
+            n_s = scalars.shape[1]
+        else:
+            n_s = 0
         hdr['n_scalars'] = n_s
         # calculate number of properties
-        n_p = ps0.size
-        hdr['n_properties'] = n_p
+        if props:
+            n_p = props.size
+            hdr['n_properties'] = n_p
+        else:
+            n_p = 0
     # write header
     fileobj = allopen(fileobj, mode='wb')
     fileobj.write(hdr.tostring())
     if not stream_count:
         return
-    point_dtype, property_dtype = _pts_props_dtypes(n_s, endianness)
-    point_dtype_fields = point_dtype.fields
-    property_dtype_fields = property_dtype.fields
+    f4dt = np.dtype(endianness + 'f4')
     i_fmt = endianness + 'i'
-    for pts, props in streamlines:
-        n_pts = pts.size
+    for pts, scalars, props in streamlines:
+        n_pts, n_coords = pts.shape
+        if n_coords != 3:
+            raise ValueError('pts should have 3 columns')
         fileobj.write(struct.pack(i_fmt, n_pts))
         # This call ensures that the data are 32-bit floats, and that
         # the endianness is OK.
-        if pts.dtype.fields != point_dtype_fields:
-            pts = pts.astype(point_dtype)
+        if pts.dtype != f4dt:
+            pts = pts.astype(f4dt)
+        if n_s:
+            if scalars.shape != (n_pts, n_s):
+                raise ValueError('Scalars should be shape (%s, %s)'
+                                 % (n_pts, n_s))
+            if scalars.dtype != f4dt:
+                scalars = scalars.astype(f4dt)
+                pts = np.c_[pts, scalars]
         fileobj.write(pts.tostring())
         if n_p:
-            if props.dtype.fields != property_dtype_fields:
-                props = props.astype(point_dtype)
+            if props.size != n_p:
+                raise ValueError('Properties should be size %s' % n_p)
+            if props.dtype != f4dt:
+                props = props.astype(f4dt)
             fileobj.write(props.tostring())
 
-
-def _pts_props_dtypes(n_scalars, endianness):
-    ''' point, property dtypes given number of scalars, endianness
-    '''
-    point_dtype = np.dtype(
-        [('x','f4'),
-         ('y','f4'),
-         ('z','f4'),
-         ('scalars', 'f4', n_scalars)]).newbyteorder(endianness)
-    property_dtype = np.dtype('f4').newbyteorder(endianness)
-    return point_dtype, property_dtype
-    
 
 def empty_header(endianness=None):
     ''' Empty trackvis header

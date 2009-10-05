@@ -202,7 +202,9 @@ def allopen(fname, *args, **kwargs):
 
 
 def rec2dict(rec):
-    ''' Convert scalar recarray to dictionary
+    ''' Convert recarray to dictionary
+
+    Also converts scalar values to scalars
 
     Parameters
     ----------
@@ -221,9 +223,12 @@ def rec2dict(rec):
     >>> d == {'x': 0, 's': ''}
     True
     '''
-    if rec.size > 1:
-        raise ValueError('Can only convert scalar recarray')
     dct = {}
     for key in rec.dtype.fields:
-        dct[key] = rec[key].item()
+        val = rec[key]
+        try:
+            val = np.asscalar(val)
+        except ValueError:
+            pass
+        dct[key] = val
     return dct

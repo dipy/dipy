@@ -47,5 +47,10 @@ class StreamLine(object):
 
     def __len__(self):
         return self.xyz.shape[0]
+
+    def __iter__(self):
+        yield self.xyz
+        yield self.scalars
+        yield self.properties
     
     
