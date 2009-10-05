@@ -21,6 +21,12 @@ class PointVolume(Volume):
             np.all(self._points == pt, axis=2) for pt in points.T)
         return in_pts
 
+class Bundle(object):
+    '''	Class representing bundles of streamlines 
+    '''
+    def __init__(self):
+	pass	
+
 
 class StreamLine(object):
     ''' Class representing streamline
