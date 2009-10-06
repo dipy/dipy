@@ -25,7 +25,7 @@ class Bundle(object):
     '''	Class representing bundles of streamlines 
     '''
     def __init__(self):
-	pass	
+        pass	
 
 
 class StreamLine(object):
@@ -50,41 +50,50 @@ class StreamLine(object):
         self.x, self.y, self.z = xyz.T
         self.scalars = scalars
         self.properties = properties
-	self.n_pts = n_pts
+        self.n_pts = n_pts
 
     def __len__(self):
         return self.n_pts
 
     def __iter__(self):
-	for i in self.n_pts:
-	        yield self.xyz[i], self.scalars[i], self.properties[i]
+        for i in self.n_pts:
+                yield self.xyz[i], self.scalars[i], self.properties[i]
     
     def length(self,along=False):
-	'''
-	Returns streamline length in mm.
-	'''
-	XYZ=self.xyz[1:]
-	XYZ=(XYZ-self.xyz[:-1])**2
+        '''
+        Returns streamline length in mm.
+        '''
+        XYZ=self.xyz[1:]
+        XYZ=(XYZ-self.xyz[:-1])**2
 
-	if along:
-		return np.cumsum(np.sqrt(XYZ[:,0]+XYZ[:,1]+XYZ[:,2]))
-	else:
-		return np.sum(np.sqrt(XYZ[:,0]+XYZ[:,1]+XYZ[:,2]))
+        if along:
+            return np.cumsum(np.sqrt(XYZ[:,0]+XYZ[:,1]+XYZ[:,2]))
+        else:
+            return np.sum(np.sqrt(XYZ[:,0]+XYZ[:,1]+XYZ[:,2]))
 
     def center(self):
-	'''
-	Returns streamline center of mass.
-	'''
-	return np.mean(self.xyz,axis=0)
+        '''
+        Returns streamline center of mass.
+        '''
+        return np.mean(self.xyz,axis=0)
 
     def midpoint(self):
-	'''
-	Returns middle point of streamline.
-	'''
-	cumlen=self.length(along=True)
-	return cumlen
-	
-
+        '''
+        Returns middle point of streamline.
+        '''
+        cumlen=self.length(along=True)
+        
+        midlen=cumlen[-1]        
+        ind=where(cumlen-midlen>=0)[0]
+                
+        orient=self.xyz[ind]-self.xyz[ind-1]
+        
+        len=cumlen[ind-1]
+        Ds=midlen-len
+        
+        return self.xyz[ind-1]+Ds*orient
+    
+    
 
 
     
