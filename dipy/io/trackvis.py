@@ -61,8 +61,6 @@ def read(fileobj):
 
     Returns
     -------
-    hdr : structured array
-       structured array with trackvis header fields
     streamlines : sequence
        sequence of 3 element sequences with elements:
 
@@ -73,6 +71,8 @@ def read(fileobj):
        #. properties : None or ndarray shape (P,)
           where P is the number of properties
           
+    hdr : structured array
+       structured array with trackvis header fields
     endianness : {'<', '>'}
        Endianness of read header, '<' is little-endian, '>' is
        big-endian
@@ -138,10 +138,10 @@ def read(fileobj):
         # deliberately misses case where stream_count is 0
         if n_streams == stream_count:
             break
-    return hdr, streamlines, endianness
+    return streamlines, hdr, endianness
 
 
-def write(fileobj, hdr_mapping, streamlines, endianness=None):
+def write(fileobj, streamlines,  hdr_mapping=None, endianness=None):
     ''' Write header and `streamlines` to trackvis file `fileobj` 
 
     The parameters from the streamlines override conflicting parameters
@@ -154,9 +154,6 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
     fileobj : filename or file-like
        If filename, open file as 'wb', otherwise `fileobj` should be an
        open file-like object, with a ``write`` method.
-    hdr_mapping : ndarray or mapping
-       Information for filling header fields.  Can be something
-       dict-like (implementing ``items``) or a structured numpy array
     streamlines : sequence
        sequence of 3 element sequences with elements:
 
@@ -167,6 +164,9 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
        #. properties : None or ndarray shape (P,)
           where P is the number of properties
 
+    hdr_mapping : ndarray or mapping
+       Information for filling header fields.  Can be something
+       dict-like (implementing ``items``) or a structured numpy array
     endianness : {None, '<', '>'}, optional
        Endianness of file to be written.  '<' is little-endian, '>' is
        big-endian.  None (the default) is to use the endianness of the
@@ -186,11 +186,20 @@ def write(fileobj, hdr_mapping, streamlines, endianness=None):
             endianness = native_code
     endianness = endian_codes[endianness]
     # fill in a new header from mapping-like
-    if isinstance(hdr_mapping, np.ndarray):
-        hdr_mapping = rec2dict(hdr_mapping)
     hdr = empty_header(endianness)
-    for key, value in hdr_mapping.items():
-        hdr[key] = value
+    if not hdr_mapping is None:
+        if isinstance(hdr_mapping, np.ndarray):
+            hdr_mapping = rec2dict(hdr_mapping)
+        for key, value in hdr_mapping.items():
+            hdr[key] = value
+        # check header values
+        if str(hdr['id_string'])[:5] != 'TRACK':
+            raise HeaderError('Expecting TRACK as first '
+                              '5 characaters of id_string')
+        if hdr['version'] > 1:
+            raise HeaderError('Reader only supports version 1')
+        if hdr['hdr_size'] != 1000:
+            raise HeaderError('hdr_size should be 1000')
     # put calculated data into header
     hdr['n_count'] = stream_count
     if stream_count:
