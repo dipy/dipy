@@ -26,12 +26,20 @@ def test_streamline():
 def test_stream_iter():
     s = StreamLine(np.zeros((10,3)))
     s_tup = tuple(s)
-    yield assert_array_equal, s_tup[0], np.zeros((10,3))
-    yield assert_equal, s_tup[1:], (None, None)
+    #s_tup[0] returns (np.array([0.0, 0.0, 0.0]), None, None)
+    yield assert_equal, s_tup[0][0][0],0.0
+    yield assert_equal, s_tup[0][1], None
+    
 
 
 def test_stream_midpoint():
     s = StreamLine(np.array([[1,1,1],[2,2,2],[3,3,3],[4,4,4]]))
-    return s.midpoint()
+    s2 = StreamLine(np.array([[0,0,0],[1,1,0],[2,1,0],[3,0,0]]))       
+    s3 = StreamLine(np.array([[1,1,1],[2,2,2],[3,3,3]]))
+    
+    yield assert_array_almost_equal, s.midpoint(), np.array([2.5,2.5,2.5])
+    yield assert_array_almost_equal, s2.midpoint(), np.array([1.5,1.0,0.0])
+    yield assert_array_almost_equal, s3.midpoint(), np.array([2,2,2])
+
 
  
