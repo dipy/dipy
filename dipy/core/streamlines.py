@@ -90,16 +90,6 @@ class StreamLine(object):
         '''
         Returns middle point of streamline.
         '''
-        if self.n_pts>=3:
-            cumlen=self.length(along=True)        
-            midlen=cumlen[-1]/2.0                
-            ind=np.where(cumlen-midlen>0)[0][0]                
-            orient=self.xyz[ind+1]-self.xyz[ind]
-            len=cumlen[ind-1]        
-            Ds=midlen-len
-            
-            return self.xyz[ind]+Ds*orient/norm(orient)
-        else:
-            return None
+        return tm.midpoint(self.xyz)
     
    
