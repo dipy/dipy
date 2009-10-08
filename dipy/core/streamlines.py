@@ -84,7 +84,7 @@ class StreamLine(object):
         '''
         Returns streamline center of mass.
         '''
-        return np.mean(self.xyz,axis=0)
+        return tm.center_of_mass(self.xyz)
 
     def midpoint(self):
         '''

@@ -103,3 +103,33 @@ def midpoint(xyz):
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
 
+
+def center_of_mass(xyz):
+    ''' Center of mass of streamline
+
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+
+    Returns
+    -------
+    com : array shape (3,)
+       center of mass of streamline
+
+    Examples
+    --------
+    >>> center_of_mass([])
+    Traceback (most recent call last):
+       ...
+    ValueError: xyz array cannot be empty
+    >>> center_of_mass([[1,1,1]])
+    array([ 1.,  1.,  1.])
+    >>> xyz = np.array([[0,0,0],[1,1,1],[2,2,2]])
+    >>> center_of_mass(xyz)
+    array([ 1.,  1.,  1.])
+    '''
+    xyz = np.asarray(xyz)
+    if xyz.size == 0:
+        raise ValueError('xyz array cannot be empty')
+    return np.mean(xyz,axis=0)
