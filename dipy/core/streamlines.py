@@ -3,7 +3,7 @@
 import numpy as np
 from numpy.linalg import norm
 
-from .track_metrics as tm
+from . import track_metrics as tm
 
 
 class Volume(object):

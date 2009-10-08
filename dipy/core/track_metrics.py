@@ -4,7 +4,7 @@ import numpy as np
 
 
 def length(xyz, along=False):
-    ''' Length of track line
+    ''' Euclidean length of track line
 
     Parameters
     ----------
