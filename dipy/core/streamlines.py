@@ -3,6 +3,8 @@
 import numpy as np
 from numpy.linalg import norm
 
+from .track_metrics as tm
+
 
 class Volume(object):
     def __init__(self, func):
@@ -76,13 +78,7 @@ class StreamLine(object):
         '''
         Returns streamline length in mm.
         '''
-        XYZ=self.xyz[1:]
-        XYZ=(XYZ-self.xyz[:-1])**2
-
-        if along:
-            return np.cumsum(np.sqrt(XYZ[:,0]+XYZ[:,1]+XYZ[:,2]))
-        else:
-            return np.sum(np.sqrt(XYZ[:,0]+XYZ[:,1]+XYZ[:,2]))
+        return tm.length(self.xyz, along)
 
     def center(self):
         '''

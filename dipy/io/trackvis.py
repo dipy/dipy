@@ -164,7 +164,7 @@ def write(fileobj, streamlines,  hdr_mapping=None, endianness=None):
        #. properties : None or ndarray shape (P,)
           where P is the number of properties
 
-    hdr_mapping : ndarray or mapping
+    hdr_mapping : None, ndarray or mapping, optional
        Information for filling header fields.  Can be something
        dict-like (implementing ``items``) or a structured numpy array
     endianness : {None, '<', '>'}, optional
