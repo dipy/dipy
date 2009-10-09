@@ -30,6 +30,7 @@ def ren():
     '''
     return vtk.vtkRenderer()
 
+
 def add(ren,a):
     ''' Add a specific actor
     
@@ -47,8 +48,8 @@ def clear(ren):
     '''
     ren.RemoveAllViewProps()
 
+
 def line(lines,colors=None,opacity=1,linewidth=1):
-    
     ''' Create a line actor     
     
     Parameters
@@ -73,7 +74,6 @@ def line(lines,colors=None,opacity=1,linewidth=1):
     >>> add(r,l)
     >>> show(r)
     '''    
-    
     points= vtk.vtkPoints()
     lines_=vtk.vtkCellArray()
     linescalars=vtk.vtkFloatArray()
