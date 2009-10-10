@@ -133,3 +133,82 @@ def center_of_mass(xyz):
     if xyz.size == 0:
         raise ValueError('xyz array cannot be empty')
     return np.mean(xyz,axis=0)
+
+def magn(xyz):
+    ''' magnitude of vector
+        
+    '''    
+    mag=np.sum(xyz**2,axis=1)*0.5
+    imag=np.where(mag==0)
+    mag[imag]=2.0e-100 
+    
+    return mag
+
+def frenet_serret(xyz):
+    ''' Frenet-Serret Space Curve Invarients
+ 
+    Calculates the 3 vector and 2 scaler invarients of a space curve defined
+    by vectors x,y and z.  If z is omitted then the curve is only a 2D,
+    but the equations are still valid.
+    
+    Similar to
+    http://www.mathworks.com/matlabcentral/fileexchange/7256
+
+    _    r'
+    T = ----  (Tangent)
+        |r'|
+ 
+    _       T'
+    N = ----  (Normal)
+            |T'|
+    _      _   _
+    B = T x N (Binormal)
+
+    k = |T'|  (Curvature)
+ 
+    t = dot(-B',N) (Torsion)
+    
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+    
+    Returns
+    ---------
+    T :
+    N :
+    B :
+    k :
+    t :
+
+    '''
+    
+    dxyz=np.gradient(xyz)[0]    
+    ddxyz=np.gradient(dxyz)[0]
+        
+    #Tangent
+    T=np.divide(dxyz.T,magn(dxyz)).T
+    
+    #Derivative of Tangent
+    dT=np.gradient(T)[0]
+    
+    #Normal
+    N = np.divide(dT,magn(dT))
+    
+    #Binormal
+    B = np.cross(T,N)
+    
+    #Curvature
+    #k = magn(np.cross(dxyz,ddxyz))
+    
+    #Torsion
+    t = np.dot(-B,N,2)
+    
+
+def frechet_distance(xyz1,xyz2):
+    ''' Coming soon
+    http://www.cim.mcgill.ca/~stephane/cs507/Project.html
+    '''
+    pass        
+    
+    
