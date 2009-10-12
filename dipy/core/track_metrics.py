@@ -191,14 +191,15 @@ def frenet_serret(xyz):
 
     Examples
     --------
-    theta = 2*np.pi*np.linspace(0,2,100)
-    x=np.cos(theta)
-    y=np.sin(theta)
-    z=theta/(2*np.pi)
-    xyz=np.vstack((x,y,z)).T
-    T,N,B,k,t=frenet_serret(xyz)
-    >>>
-
+    Create a helix and calculate its tangent,normal, binormal, curvature and torsion
+    
+    >>>theta = 2*np.pi*np.linspace(0,2,100)
+    >>>x=np.cos(theta)
+    >>>y=np.sin(theta)
+    >>>z=theta/(2*np.pi)
+    >>>xyz=np.vstack((x,y,z)).T
+    >>>T,N,B,k,t=frenet_serret(xyz)
+    
     '''
     
     dxyz=np.gradient(xyz)[0]        
@@ -234,14 +235,24 @@ def frechet_distance(xyz1,xyz2):
     '''
     pass        
     
-def test_frenet():
-    theta = 2*np.pi*np.linspace(0,2,100)
-    x=np.cos(theta)
-    y=np.sin(theta)
-    z=theta/(2*np.pi)
-    xyz=np.vstack((x,y,z)).T
-    return xyz
-    #T,N,B,k,t=frenet_serret(xyz)
+def mean_orientation(xyz):
+    pass
+    
+def endings_orientation(xyz):
+    pass
+    
+def curve_subsampling(xyz):
+    pass
+    
+def min_bound_box(xyz):
+    '''
+    Use PCA
+    '''
+    pass    
+
+def curve_2_vox_space(xyz):
+    pass
+
     
 if __name__ == "__main__":
     pass
