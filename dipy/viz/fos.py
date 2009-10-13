@@ -11,7 +11,8 @@ try:
     import numpy as np
 except ImportError:
     raise ImportError('Numpy is not installed.')
-    
+
+import types    
 
 def ren():
     ''' Create a renderer
@@ -32,14 +33,12 @@ def ren():
 
 
 def add(ren,a):
-    ''' Add a specific actor
-    
+    ''' Add a specific actor    
     '''
     ren.AddActor(a)
 
 def rm(ren,a):
-    ''' Remove a specific actor
-    
+    ''' Remove a specific actor    
     '''
     ren.RemoveActor(a)
 
@@ -48,13 +47,18 @@ def clear(ren):
     '''
     ren.RemoveAllViewProps()
 
+def rm_all(ren):
+    ''' Remove all actors from the renderer 
+    '''
+    clear(ren)
+
 
 def line(lines,colors=None,opacity=1,linewidth=1):
     ''' Create a line actor     
     
     Parameters
     ----------
-    ren : list of numpy arrays representing lines a 3d points
+    ren : list of numpy arrays representing lines as 3d points
     colors : one dimensional array or list whith the color of every line. 0<= color <=1
     opacity : 0<=transparency <=1
     linewidth : (r,g,b) and RGB tuple
@@ -74,6 +78,9 @@ def line(lines,colors=None,opacity=1,linewidth=1):
     >>> add(r,l)
     >>> show(r)
     '''    
+    if not isinstance(lines,types.ListType):
+        lines=[lines]    
+        
     points= vtk.vtkPoints()
     lines_=vtk.vtkCellArray()
     linescalars=vtk.vtkFloatArray()
@@ -229,6 +236,7 @@ def show(ren,title='Fos',size=(300,300)):
     iren.SetRenderWindow(window)
     iren.SetInteractorStyle(style)
     iren.Start()
+    
     
 if __name__ == "__main__":
    

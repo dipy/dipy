@@ -1,7 +1,6 @@
 ''' Metrics for tracks, where tracks are arrays of points '''
 
 import math
-
 import numpy as np
 
 
@@ -140,7 +139,7 @@ def magn(xyz,n=1):
     '''    
     mag=np.sum(xyz**2,axis=1)**0.5
     imag=np.where(mag==0)
-    mag[imag]=np.finfo(float).eps #2.2204e-16#2.0e-100 
+    mag[imag]=np.finfo(float).eps
 
     if n>1:
         return np.tile(mag,(n,1)).T
@@ -232,8 +231,14 @@ def frenet_serret(xyz):
 def frechet_distance(xyz1,xyz2):
     ''' Coming soon
     http://www.cim.mcgill.ca/~stephane/cs507/Project.html
+    http://www.cs.uu.nl/groups/AA/multimedia/matching/shame.html
     '''
     pass        
+    
+def mahnaz_distance(xyz1,xyz2):
+    ''' Look Mahnaz's thesis
+    '''
+    pass
     
 def mean_orientation(xyz):
     pass
@@ -242,11 +247,12 @@ def endings_orientation(xyz):
     pass
     
 def curve_subsampling(xyz):
+    ''' Similar with midpoint
+    '''
     pass
     
 def min_bound_box(xyz):
-    '''
-    Use PCA
+    ''' Use PCA
     '''
     pass    
 
