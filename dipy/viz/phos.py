@@ -5,7 +5,7 @@
     Examples:
     -------------
     >>> from dipy.viz import phos
-    >>> phos.trajs=line([100*np.random.rand(1000,3)])
+    >>> phos.trajs=[100*np.random.rand(1000,3)]
     >>> phos.show()
 '''
 try:  
