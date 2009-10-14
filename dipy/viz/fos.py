@@ -155,6 +155,136 @@ def line(lines,colors=None,opacity=1,linewidth=1):
     actor.GetProperty().SetOpacity(opacity)
     
     return actor
+
+def dots(points,color=(1,0,0),opacity=1):
+  '''
+  Adds one or more 3d dots(pixels) returns one actor handling all the points
+  '''
+
+
+  if points.ndim==2:
+    points_no=points.shape[0]
+  else:
+    points_no=1
+    
+  polyVertexPoints = vtk.vtkPoints()
+  polyVertexPoints.SetNumberOfPoints(points_no)
+  aPolyVertex = vtk.vtkPolyVertex()
+  aPolyVertex.GetPointIds().SetNumberOfIds(points_no)
+  
+  cnt=0
+  if points.ndim>1:
+        for point in points:
+            polyVertexPoints.InsertPoint(cnt, point[0], point[1], point[2])
+            aPolyVertex.GetPointIds().SetId(cnt, cnt)
+            cnt+=1
+  else:
+        polyVertexPoints.InsertPoint(cnt, points[0], points[1], points[2])
+        aPolyVertex.GetPointIds().SetId(cnt, cnt)
+        cnt+=1
+    
+
+  aPolyVertexGrid = vtk.vtkUnstructuredGrid()
+  aPolyVertexGrid.Allocate(1, 1)
+  aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(), aPolyVertex.GetPointIds())
+
+  aPolyVertexGrid.SetPoints(polyVertexPoints)
+  aPolyVertexMapper = vtk.vtkDataSetMapper()
+  aPolyVertexMapper.SetInput(aPolyVertexGrid)
+  aPolyVertexActor = vtk.vtkActor()
+  aPolyVertexActor.SetMapper(aPolyVertexMapper)
+
+  aPolyVertexActor.GetProperty().SetColor(color)
+  aPolyVertexActor.GetProperty().SetOpacity(opacity)
+
+  #ren=vtk.vtkRenderer()
+  #ren.AddActor(aPixelActor)
+  #ren.AddActor(aPolyVertexActor)
+  #ap=AppThread(ren=ren)
+
+  #del polyVertexPoints
+  #del aPolyVertex
+  #del aPolyVertexGrid
+  #del aPolyVertexMapper
+
+  return aPolyVertexActor
+
+def sphere(position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
+    
+    sphere = vtk.vtkSphereSource()
+    sphere.SetRadius(radius)
+    sphere.SetLatLongTessellation(tessel)
+   
+    sphere.SetThetaResolution(thetares)
+    sphere.SetPhiResolution(phires)
+    
+    spherem = vtk.vtkPolyDataMapper()
+    spherem.SetInput(sphere.GetOutput())
+    spherea = vtk.vtkActor()
+    spherea.SetMapper(spherem)
+    spherea.SetPosition(position)
+    spherea.GetProperty().SetColor(color)
+    spherea.GetProperty().SetOpacity(opacity)
+        
+    return spherea
+
+def ellipsoid(R=np.array([[2, 0, 0],[0, 1, 0],[0, 0, 1] ]),position=(0,0,0),thetares=20,phires=20,color=(0,0,1),opacity=1,tessel=0):
+
+    '''
+    Stretch a unit sphere to make it an ellipsoid under a 3x3 translation matrix R 
+    
+    R=sp.array([[2, 0, 0],
+                         [0, 1, 0],
+                         [0, 0, 1] ])
+    '''
+    
+    Mat=sp.identity(4)
+    Mat[0:3,0:3]=R
+       
+    '''
+    Mat=sp.array([[2, 0, 0, 0],
+                             [0, 1, 0, 0],
+                             [0, 0, 1, 0],
+                             [0, 0, 0,  1]  ])
+    '''
+    mat=vtk.vtkMatrix4x4()
+    
+    for i in sp.ndindex(4,4):
+        
+        mat.SetElement(i[0],i[1],Mat[i])
+    
+    radius=1
+    sphere = vtk.vtkSphereSource()
+    sphere.SetRadius(radius)
+    sphere.SetLatLongTessellation(tessel)
+   
+    sphere.SetThetaResolution(thetares)
+    sphere.SetPhiResolution(phires)
+    
+    trans=vtk.vtkTransform()
+    
+    trans.Identity()
+    #trans.Scale(0.3,0.9,0.2)
+    trans.SetMatrix(mat)
+    trans.Update()
+    
+    transf=vtk.vtkTransformPolyDataFilter()
+    transf.SetTransform(trans)
+    transf.SetInput(sphere.GetOutput())
+    transf.Update()
+    
+    spherem = vtk.vtkPolyDataMapper()
+    spherem.SetInput(transf.GetOutput())
+    
+    spherea = vtk.vtkActor()
+    spherea.SetMapper(spherem)
+    spherea.SetPosition(position)
+    spherea.GetProperty().SetColor(color)
+    spherea.GetProperty().SetOpacity(opacity)
+    #spherea.GetProperty().SetRepresentationToWireframe()
+    
+    return spherea
+
     
 def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
     
