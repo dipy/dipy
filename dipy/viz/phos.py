@@ -29,6 +29,7 @@ except ImportError:
 import types
 
 trajs=None
+colors=None
     
 def axes():
     
@@ -56,7 +57,6 @@ def line(lines,colors=None,opacity=1,linewidth=1):
         lines=[lines]    
     
     scalar=1.0
-    curPointID=0
 
     if colors!=None:        
         lit=iter(colors)
@@ -74,30 +74,19 @@ def line(lines,colors=None,opacity=1,linewidth=1):
         nit.next()
         
         scalar=lit.next()
-        #print scalar
-        glBegin(GL_LINES)    
+        glBegin(GL_LINE_STRIP)    
         glColor3f(scalar[0],scalar[1],scalar[2])
-        while(inw):
-            
+        while(inw):            
             try:
-                m=mit.next() 
-                n=nit.next()                
-                
-                #glBegin(GL_LINES)    
-                #glColor3f(scalar[0],scalar[1],scalar[2])
-                glVertex3f(m[0], m[1], m[2]) # origin of the line
-                glVertex3f(n[0], n[1], n[2]) # ending point of the line   
-                #glEnd()                                
-                
-                curPointID+=2
+                m=mit.next()                                        
+                glVertex3f(m[0], m[1], m[2]) # point                                                
             except StopIteration:
                 break
 
         glEnd()                                
         
         nol+=1
-        if nol%1000==0:
-            
+        if nol%1000==0:            
             print(nol,'Lines Loaded')
         
     glEndList() 
@@ -199,7 +188,9 @@ class Renderer(Interactor):
     
     def InitGL(self):
 
-        glEnable(GL_CULL_FACE);
+        glEnable(GL_CULL_FACE)
+        glEnable(GL_DEPTH_TEST)
+        glDepthMask(GL_TRUE)
 
         glClearColor( 1, 0.9,0.5, 0 )
         #glViewport( 0, 0,1024, 800 )
@@ -210,19 +201,18 @@ class Renderer(Interactor):
         glMatrixMode(GL_MODELVIEW)   
         glLoadIdentity()
                 
-        self.xw=-14
-        self.yw=-10
-        self.zw=-36
-                
+        self.xw=-91
+        self.yw=-105
+        self.zw=-220
+        #'''
         self.on=False
         glutInit()        
         
     def LoadActors(self):
         axes()
-        #line([100*np.random.rand(1000,3)])
-        if trajs:
-            line(trajs)
-       
+        #line([100*np.random.rand(1000,3)])        
+        line(trajs,colors)
+        
     def OnDraw(self):
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)   
