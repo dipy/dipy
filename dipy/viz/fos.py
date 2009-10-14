@@ -96,8 +96,9 @@ def line(lines,colors=None,opacity=1,linewidth=1):
     n=(1.0,0.0,0.0)
     
     if colors!=None:
-        
+        colors=colors*np.ones(len(lines))
         lit=iter(colors)
+        
     else:
         colors=np.random.rand(len(lines))
         lit=iter(colors)
@@ -109,12 +110,7 @@ def line(lines,colors=None,opacity=1,linewidth=1):
         nit=iter(Line)
         nit.next()
         
-        if colors==None:
-            scalar=colors[0]        
-        else:
-            scalar=lit.next()
-            if scalar==0:
-                inw=False   
+        scalar=lit.next()
         
         while(inw):
             
