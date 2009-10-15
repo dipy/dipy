@@ -52,9 +52,11 @@ def rm_all(ren):
     '''
     clear(ren)
 
+def arrow(arrows,colors=None,opacity=1,linewidth=1):
+    pass
 
 def line(lines,colors=None,opacity=1,linewidth=1):
-    ''' Create a line actor     
+    ''' Create an actor for one or more lines.    
     
     Parameters
     ----------
@@ -161,7 +163,6 @@ def dots(points,color=(1,0,0),opacity=1):
   Adds one or more 3d dots(pixels) returns one actor handling all the points
   '''
 
-
   if points.ndim==2:
     points_no=points.shape[0]
   else:
@@ -197,17 +198,10 @@ def dots(points,color=(1,0,0),opacity=1):
   aPolyVertexActor.GetProperty().SetColor(color)
   aPolyVertexActor.GetProperty().SetOpacity(opacity)
 
-  #ren=vtk.vtkRenderer()
-  #ren.AddActor(aPixelActor)
-  #ren.AddActor(aPolyVertexActor)
-  #ap=AppThread(ren=ren)
-
-  #del polyVertexPoints
-  #del aPolyVertex
-  #del aPolyVertexGrid
-  #del aPolyVertexMapper
-
   return aPolyVertexActor
+
+def point(points,color=(1,0,0),opacity=1):
+    return dots(points,color=(1,0,0),opacity=1)
 
 def sphere(position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
     

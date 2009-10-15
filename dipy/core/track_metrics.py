@@ -175,6 +175,7 @@ def frenet_serret(xyz):
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
     
+    
     Returns
     ---------
     T : array shape (N,3)
@@ -192,14 +193,20 @@ def frenet_serret(xyz):
     --------
     Create a helix and calculate its tangent,normal, binormal, curvature and torsion
     
-    >>>theta = 2*np.pi*np.linspace(0,2,100)
-    >>>x=np.cos(theta)
-    >>>y=np.sin(theta)
-    >>>z=theta/(2*np.pi)
-    >>>xyz=np.vstack((x,y,z)).T
-    >>>T,N,B,k,t=frenet_serret(xyz)
+    >>> from dipy.core import track_metrics as tm
+    >>> import numpy as np
+    >>> theta = 2*np.pi*np.linspace(0,2,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=theta/(2*np.pi)
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> T,N,B,k,t=tm.frenet_serret(xyz)
     
     '''
+    xyz = np.asarray(xyz)
+    n_pts = xyz.shape[0]
+    if n_pts == 0:
+        raise ValueError('xyz array cannot be empty')
     
     dxyz=np.gradient(xyz)[0]        
     
@@ -227,9 +234,55 @@ def frenet_serret(xyz):
     #return T,N,B,k,t,dxyz,ddxyz,dT   
     return T,N,B,k,t
     
+def mean_curvature(xyz):    
+    ''' Calculates the mean curvature of a curve
+    
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a curve
+        
+    Returns
+    ---------
+    m : float 
+        float representing the mean curvature
+    
+    Examples
+    --------
+    Create a straight line and a semi-circle and print their mean curvatures
+    
+    >>> from dipy.core import track_metrics as tm
+    >>> import numpy as np
+    >>> x=np.linspace(0,1,100)
+    >>> y=0*x
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> m=tm.mean_curvature(xyz)
+    >>> print('Mean curvature for straight line',m)
+    >>> 
+    >>> theta=np.pi*np.linspace(0,1,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> m=tm.mean_curvature(xyz)
+    >>> print('Mean curvature for semi-circle',m)        
+    '''
+    xyz = np.asarray(xyz)
+    n_pts = xyz.shape[0]
+    if n_pts == 0:
+        raise ValueError('xyz array cannot be empty')
+    
+    dxyz=np.gradient(xyz)[0]            
+    ddxyz=np.gradient(dxyz)[0]
+    
+    #Curvature
+    k = magn(np.cross(dxyz,ddxyz),1)/(magn(dxyz,1)**3)    
+        
+    return np.mean(k)
 
 def frechet_distance(xyz1,xyz2):
-    ''' Coming soon
+    ''' Frechet distance
     http://www.cim.mcgill.ca/~stephane/cs507/Project.html
     http://www.cs.uu.nl/groups/AA/multimedia/matching/shame.html
     '''
@@ -239,17 +292,137 @@ def mahnaz_distance(xyz1,xyz2):
     ''' Look Mahnaz's thesis
     '''
     pass
+
+def zhang_distance(xyz1,xyz2):
+    '''
+    '''
+    pass
     
 def mean_orientation(xyz):
     pass
     
-def endings_orientation(xyz):
-    pass
+
+def startpoint(xyz):
+    return xyz[0]
+
+def endpoint(xyz):
+    return xyz[-1]
+
+def arbitrarypoint(xyz,distance):
+    ''' Select an arbitrary point along distance on the track (curve)
+
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+    distance : float
+        float representing distance travelled from the xyz[0] point of the curve along the curve.
+
+    Returns
+    -------
+    ap : array shape (3,)
+       arbitrary point of line, such that, if the arbitrary point is not a point in
+       `xyz`, then we take the interpolation between the two nearest
+       `xyz` points.  If `xyz` is empty, return a ValueError
     
-def curve_subsampling(xyz):
-    ''' Similar with midpoint
+    Examples
+    -----------
+    >>> from dipy.core import track_metrics as tm
+    >>> import numpy as np
+    >>> theta=np.pi*np.linspace(0,1,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> ap=tm.arbitrarypoint(xyz,tm.length(xyz)/3)
+    >>> print('The point along the curve that traveled the given distance is ',ap)        
     '''
-    pass
+    
+    xyz = np.asarray(xyz)
+    n_pts = xyz.shape[0]
+    if n_pts == 0:
+        raise ValueError('xyz array cannot be empty')
+    if n_pts == 1:
+        return xyz.copy().squeeze()
+    
+    cumlen = np.zeros(n_pts)
+    cumlen[1:] = length(xyz, along=True)    
+    if cumlen[-1]<distance:
+        raise ValueError('Given distance is bigger than the length of the curve')
+            
+    ind=np.where((cumlen-distance)>0)[0][0]
+    len0=cumlen[ind-1]        
+    len1=cumlen[ind]
+    Ds=distance-len0
+    Lambda = Ds/(len1-len0)
+    return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
+
+def _extrap(xyz,cumlen,distance):
+    ''' Helper function for extrapolate    
+    '''    
+    ind=np.where((cumlen-distance)>0)[0][0]
+    len0=cumlen[ind-1]        
+    len1=cumlen[ind]
+    Ds=distance-len0
+    Lambda = Ds/(len1-len0)
+    return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
+
+def extrapolate(xyz,n_pols=3):
+    ''' Extrapolate a specific number of points along the curve.
+    It works similarly with midpoint and arbitrarypoint
+    
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+    n_pol : int
+        integer representing number of points (poles) we need along the curve.
+
+    Returns
+    -------
+    xyz2 : array shape (M,3)
+        array representing x,z,z of M points that where extrapolated. M should be
+        equal to n_pols
+    
+    Examples
+    -----------
+    >>> from dipy.core import track_metrics as tm
+    >>> import numpy as np
+    >>> # a semi-circle
+    >>> theta=np.pi*np.linspace(0,1,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> xyz2=tm.extrapolate(xyz,3)    
+    >>> # a cosine
+    >>> x=np.pi*np.linspace(0,1,100)
+    >>> y=np.cos(theta)
+    >>> z=0*y
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> xyz2=tm.extrapolate(xyz,3)
+    >>> xyz3=tm.extrapolate(xyz,10)
+    '''
+        
+    xyz = np.asarray(xyz)
+    n_pts = xyz.shape[0]
+    if n_pts == 0:
+        raise ValueError('xyz array cannot be empty')
+    if n_pts == 1:
+        return xyz.copy().squeeze()
+        
+    cumlen = np.zeros(n_pts)
+    cumlen[1:] = length(xyz, along=True)    
+    
+    step=cumlen[-1]/(n_pols-1)
+    if cumlen[-1]<step:
+        raise ValueError('Given numper of points n_pols is incorrect. ')
+    if n_pols<=2:
+        raise ValueError('Given numper of points n_pols needs to be higher than 2. ')
+    
+    xyz2=[_extrap(xyz,cumlen,distance) for distance in np.arange(0,cumlen[-1],step) ]
+        
+    return np.vstack((np.array(xyz2),xyz[-1]))
     
 def min_bound_box(xyz):
     ''' Use PCA
