@@ -73,9 +73,11 @@ def read(fileobj):
           
     hdr : structured array
        structured array with trackvis header fields
-    endianness : {'<', '>'}
-       Endianness of read header, '<' is little-endian, '>' is
-       big-endian
+
+    Notes
+    -----
+    The endianness of the input data can be deduced from the endianness
+    of the returned `hdr` or `streamlines`
     '''
     fileobj = allopen(fileobj, mode='rb')
     hdr_str = fileobj.read(header_dtype.itemsize)
@@ -138,7 +140,7 @@ def read(fileobj):
         # deliberately misses case where stream_count is 0
         if n_streams == stream_count:
             break
-    return streamlines, hdr, endianness
+    return streamlines, hdr
 
 
 def write(fileobj, streamlines,  hdr_mapping=None, endianness=None):
