@@ -5,7 +5,6 @@ from numpy.linalg import norm
 
 from . import track_metrics as tm
 
-
 class Volume(object):
     def __init__(self, func):
         self._func = func
@@ -23,13 +22,6 @@ class PointVolume(Volume):
         in_pts =  np.array(
             np.all(self._points == pt, axis=2) for pt in points.T)
         return in_pts
-
-class Bundle(object):
-    '''	Class representing a bundle of streamlines 
-    '''
-    def __init__(self):
-        pass	
-
 
 class StreamLine(object):
     ''' Class representing streamline

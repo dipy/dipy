@@ -2,6 +2,7 @@
 
 import math
 import numpy as np
+import mdp
 
 
 def length(xyz, along=False):
@@ -424,10 +425,33 @@ def extrapolate(xyz,n_pols=3):
         
     return np.vstack((np.array(xyz2),xyz[-1]))
     
-def min_bound_box(xyz):
-    ''' Use PCA
+def principal_components(xyz):
+    ''' We use PCA to calculate the 3 principal directions for dataset xyz
     '''
-    pass    
+
+    C=np.cov(xyz.T)    
+    va,ve=np.linalg.eig(C)
+          
+    return va,ve
+
+def midpoint2point(xyz,p):
+    ''' Calculate the distance from the midpoint of a curve to an arbitrary point p
+    
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+    p : array shape (3,)
+        array representing an arbitrary point with x,y,z coordinates in space.
+
+    Returns
+    -------
+    d : float
+        a float number representing Euclidean distance         
+    '''
+    mid=midpoint(xyz) 
+    
+    return np.sqrt(np.sum((xyz-mid)**2))
 
 def curve_2_vox_space(xyz):
     pass

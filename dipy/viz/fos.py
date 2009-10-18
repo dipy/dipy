@@ -52,8 +52,42 @@ def rm_all(ren):
     '''
     clear(ren)
 
-def arrow(arrows,colors=None,opacity=1,linewidth=1):
-    pass
+
+def _arrow(pos=(0,0,0),color=(1,0,0),scale=(1,1,1),opacity=1):
+    
+    arrow = vtk.vtkArrowSource()
+    #arrow.SetTipLength(length)
+    
+    arrowm = vtk.vtkPolyDataMapper()
+    arrowm.SetInput(arrow.GetOutput())
+    
+    arrowa= vtk.vtkActor()
+    arrowa.SetMapper(arrowm)
+    
+    arrowa.GetProperty().SetColor(color)
+    arrowa.GetProperty().SetOpacity(opacity)
+    arrowa.SetScale(scale)
+    
+    return arrowa
+    
+def axes(scale=(1,1,1),colorx=(1,0,0),colory=(0,1,0),colorz=(0,0,1),opacity=1):
+    ''' Create an actor with the coordinate system axes where  red = x, green = y, blue =z.
+    '''
+    
+    arrowx=_arrow(color=colorx,scale=scale,opacity=opacity)
+    arrowy=_arrow(color=colory,scale=scale,opacity=opacity)
+    arrowz=_arrow(color=colorz,scale=scale,opacity=opacity)
+    
+    arrowy.RotateZ(90)
+    arrowz.RotateY(-90)
+   
+    #ass=vtk.vtkPropAssembly()
+    ass=vtk.vtkAssembly()
+    ass.AddPart(arrowx)
+    ass.AddPart(arrowy)
+    ass.AddPart(arrowz)
+           
+    return ass
 
 def line(lines,colors=None,opacity=1,linewidth=1):
     ''' Create an actor for one or more lines.    
@@ -160,7 +194,7 @@ def line(lines,colors=None,opacity=1,linewidth=1):
 
 def dots(points,color=(1,0,0),opacity=1):
   '''
-  Adds one or more 3d dots(pixels) returns one actor handling all the points
+  Adds one or more 3d dots(points) returns one actor handling all the points
   '''
 
   if points.ndim==2:
