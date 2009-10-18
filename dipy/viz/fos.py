@@ -664,7 +664,7 @@ def show(ren,title='Fos',size=(300,300)):
     >>> fos.add(r,l)
     >>> fos.show(r)
     '''
-    r.ResetCamera()        
+    ren.ResetCamera()        
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
     window.SetWindowName(title) 

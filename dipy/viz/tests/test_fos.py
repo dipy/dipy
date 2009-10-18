@@ -23,8 +23,7 @@ def test_fos_functions():
     c=fos.line(lines,colors)    
     fos.add(r,c)    
 
-    # Create a volume and return a volumetric actor using volumetric rendering
-        
+    # Create a volume and return a volumetric actor using volumetric rendering        
     vol=100*np.random.rand(100,100,100)
     vol=vol.astype('uint8')    
     r = fos.ren()
