@@ -1,12 +1,7 @@
-'''  Phos is a faster 3d engine than using only wxPython and OpenGL. 
+'''  Phos is a fast 3d engine that is using PyOpenGL and wxPython. 
     At the moment it is working only for line plotting.
     When loaded use Arrow, Home and End keys to navigate.
     
-    Examples:
-    -------------
-    >>> from dipy.viz import phos
-    >>> phos.trajs=[100*np.random.rand(1000,3)]
-    >>> phos.show([100*np.random.rand(1000,3)])
 '''
 import numpy as np    
 
@@ -22,6 +17,16 @@ try:
     import OpenGL.GLU as GLU
 except ImportError:
     ImportError('PyOpenGL is not installed')
+
+def label():
+    
+    '''
+    Get inspired from
+    http://d0t.dbclan.de/snippets/gltext.html
+    download at /home/eg01/Devel/nehe/gltext.py
+    '''
+    pass
+  
 
 
 def axes():
@@ -217,7 +222,7 @@ class Renderer(Interactor):
         GL.glTranslatef(self.xw, self.yw, self.zw)       
                 
         if not self.on:
-            #LoadObjects()           
+            #LoadObjects() 
             self.LoadActors()
             self.on=True
         else:
@@ -301,5 +306,7 @@ def show(trajs=None, colors=None):
 
 if __name__ == "__main__":
 
-    show()
+    trajs=[100*np.random.rand(10,3),100*np.random.rand(20,3)]    
+    colors=[np.random.rand(3,),np.random.rand(3,)]
+    show(trajs)
 

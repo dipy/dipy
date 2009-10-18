@@ -1,5 +1,9 @@
-''' Simple visualization functions using VTK. Fos means light in Greek.
-    
+''' Fos module implements simple visualization functions using VTK. Fos means light in Greek.    
+   
+    The main idea is the following:
+    A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
+    You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
+
 '''
 
 try:
@@ -23,6 +27,8 @@ def ren():
     
     Examples
     ---------
+    >>> from dipy.viz import fos
+    >>> import numpy as np
     >>> r=ren()    
     >>> lines=[np.random.rand(10,3)]        
     >>> c=line(lines)    
@@ -35,11 +41,14 @@ def ren():
 def add(ren,a):
     ''' Add a specific actor    
     '''
-    ren.AddActor(a)
+    if isinstance(a,vtk.vtkVolume):
+        ren.AddVolume(a)
+    else:    
+        ren.AddActor(a)
 
 def rm(ren,a):
     ''' Remove a specific actor    
-    '''
+    '''    
     ren.RemoveActor(a)
 
 def clear(ren):
@@ -52,9 +61,9 @@ def rm_all(ren):
     '''
     clear(ren)
 
-
 def _arrow(pos=(0,0,0),color=(1,0,0),scale=(1,1,1),opacity=1):
-    
+    ''' Internal function for generating arrow actors.    
+    '''
     arrow = vtk.vtkArrowSource()
     #arrow.SetTipLength(length)
     
@@ -80,8 +89,7 @@ def axes(scale=(1,1,1),colorx=(1,0,0),colory=(0,1,0),colorz=(0,0,1),opacity=1):
     
     arrowy.RotateZ(90)
     arrowz.RotateY(-90)
-   
-    #ass=vtk.vtkPropAssembly()
+
     ass=vtk.vtkAssembly()
     ass.AddPart(arrowx)
     ass.AddPart(arrowy)
@@ -89,15 +97,84 @@ def axes(scale=(1,1,1),colorx=(1,0,0),colory=(0,1,0),colorz=(0,0,1),opacity=1):
            
     return ass
 
-def line(lines,colors=None,opacity=1,linewidth=1):
+def _lookup(colors):
+    ''' Internal function
+    Creates a lookup table with given colors.
+    
+    Parameters
+    ------------
+    colors : array, shape (N,3)
+            Colormap where every triplet is encoding red, green and blue e.g. 
+            r1,g1,b1
+            r2,g2,b2
+            ...
+            rN,gN,bN        
+            
+            where
+            0=<r<=1,
+            0=<g<=1,
+            0=<b<=1,
+    
+    Returns
+    ----------
+    vtkLookupTable
+    
+    '''
+        
+    colors=np.asarray(colors,dtype=np.float32)
+    
+    if colors.ndim>2:
+        raise ValueError('Incorrect shape of array in colors')
+    
+    if colors.ndim==1:
+        N=1
+        
+    if colors.ndim==2:
+        
+        N=colors.shape[0]    
+    
+    
+    lut=vtk.vtkLookupTable()
+    lut.SetNumberOfColors(N)
+    lut.Build()
+    
+    if colors.ndim==2:
+        scalar=0
+        for (r,g,b) in colors:
+            
+            lut.SetTableValue(scalar,r,g,b,1.0)
+            scalar+=1
+    if colors.ndim==1:
+        
+        lut.SetTableValue(0,colors[0],colors[1],colors[2],1.0)
+            
+    return lut
+
+def line(lines,colors,opacity=1,linewidth=1):
     ''' Create an actor for one or more lines.    
     
     Parameters
     ----------
-    ren : list of numpy arrays representing lines as 3d points
-    colors : one dimensional array or list whith the color of every line. 0<= color <=1
-    opacity : 0<=transparency <=1
-    linewidth : (r,g,b) and RGB tuple
+    lines :  list of arrays representing lines as 3d points  for example            
+            lines=[np.random.rand(10,3),np.random.rand(20,3)]   
+            represents 2 lines the first with 10 points and the second with 20 points in x,y,z coordinates.
+    colors : array, shape (N,3)
+            Colormap where every triplet is encoding red, green and blue e.g. 
+            r1,g1,b1
+            r2,g2,b2
+            ...
+            rN,gN,bN        
+            
+            where
+            0=<r<=1,
+            0=<g<=1,
+            0=<b<=1
+            
+    opacity : float, default 1
+                    0<=transparency <=1
+    linewidth : float, default is 1
+                    line thickness
+                    
     
     Returns
     ----------
@@ -105,14 +182,13 @@ def line(lines,colors=None,opacity=1,linewidth=1):
     
     Examples
     --------    
-    >>> r=ren()    
+    >>> from dipy.viz import fos
+    >>> r=fos.ren()    
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
-    >>> colors=[0.2,0.8]
-    >>> c=line(lines,colors)    
-    >>> add(r,c)
-    >>> l=label(r)
-    >>> add(r,l)
-    >>> show(r)
+    >>> colors=np.random.rand(2,3)
+    >>> c=fos.line(lines,colors)    
+    >>> fos.add(r,c)
+    >>> fos.show(r)
     '''    
     if not isinstance(lines,types.ListType):
         lines=[lines]    
@@ -121,61 +197,93 @@ def line(lines,colors=None,opacity=1,linewidth=1):
     lines_=vtk.vtkCellArray()
     linescalars=vtk.vtkFloatArray()
    
-    lookuptable=vtk.vtkLookupTable()
-    
-    scalar=1.0
+    #lookuptable=vtk.vtkLookupTable()
+    lookuptable=_lookup(colors)
+
+    scalarmin=0
+    if colors.ndim==2:            
+        scalarmax=colors.shape[0]-1
+    if colors.ndim==1:        
+        scalarmax=0
+   
     curPointID=0
-    scalarmin=0.0
-    scalarmax=1.0
-           
+          
     m=(0.0,0.0,0.0)
     n=(1.0,0.0,0.0)
     
-    if colors!=None:
-        colors=colors*np.ones(len(lines))
-        lit=iter(colors)
-        
-    else:
-        colors=np.random.rand(len(lines))
-        lit=iter(colors)
-    
-    for Line in lines:
-        
-        inw=True
-        mit=iter(Line)
-        nit=iter(Line)
-        nit.next()
-        
-        scalar=lit.next()
-        
-        while(inw):
+    scalar=0
+    #many colors
+    if colors.ndim==2:
+        for Line in lines:
             
-            try:
-                m=mit.next() 
-                n=nit.next()
-                
-                #scalar=sp.rand(1)
-                
-                linescalars.SetNumberOfComponents(1)
-                points.InsertNextPoint(m)
-                linescalars.InsertNextTuple1(scalar)
+            inw=True
+            mit=iter(Line)
+            nit=iter(Line)
+            nit.next()        
             
-                points.InsertNextPoint(n)
-                linescalars.InsertNextTuple1(scalar)
+            while(inw):
                 
-                lines_.InsertNextCell(2)
-                lines_.InsertCellPoint(curPointID)
-                lines_.InsertCellPoint(curPointID+1)
+                try:
+                    m=mit.next() 
+                    n=nit.next()
+                    
+                    #scalar=sp.rand(1)
+                    
+                    linescalars.SetNumberOfComponents(1)
+                    points.InsertNextPoint(m)
+                    linescalars.InsertNextTuple1(scalar)
                 
-                curPointID+=2
-            except StopIteration:
-                break
+                    points.InsertNextPoint(n)
+                    linescalars.InsertNextTuple1(scalar)
+                    
+                    lines_.InsertNextCell(2)
+                    lines_.InsertCellPoint(curPointID)
+                    lines_.InsertCellPoint(curPointID+1)
+                    
+                    curPointID+=2
+                except StopIteration:
+                    break
+             
+            scalar+=1
+    #one color only
+    if colors.ndim==1:
+        for Line in lines:
+            
+            inw=True
+            mit=iter(Line)
+            nit=iter(Line)
+            nit.next()        
+            
+            while(inw):
+                
+                try:
+                    m=mit.next() 
+                    n=nit.next()
+                    
+                    #scalar=sp.rand(1)
+                    
+                    linescalars.SetNumberOfComponents(1)
+                    points.InsertNextPoint(m)
+                    linescalars.InsertNextTuple1(scalar)
+                
+                    points.InsertNextPoint(n)
+                    linescalars.InsertNextTuple1(scalar)
+                    
+                    lines_.InsertNextCell(2)
+                    lines_.InsertCellPoint(curPointID)
+                    lines_.InsertCellPoint(curPointID+1)
+                    
+                    curPointID+=2
+                except StopIteration:
+                    break
+             
+
+
 
     polydata = vtk.vtkPolyData()
     polydata.SetPoints(points)
     polydata.SetLines(lines_)
     polydata.GetPointData().SetScalars(linescalars)
-    
     
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInput(polydata)
@@ -192,9 +300,10 @@ def line(lines,colors=None,opacity=1,linewidth=1):
     
     return actor
 
+
 def dots(points,color=(1,0,0),opacity=1):
   '''
-  Adds one or more 3d dots(points) returns one actor handling all the points
+  Create one or more 3d dots(points) returns one actor handling all the points
   '''
 
   if points.ndim==2:
@@ -235,10 +344,13 @@ def dots(points,color=(1,0,0),opacity=1):
   return aPolyVertexActor
 
 def point(points,color=(1,0,0),opacity=1):
+    ''' Create 3d points and generate only one actor for all points. Same as dots.
+    '''
     return dots(points,color=(1,0,0),opacity=1)
 
 def sphere(position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
-    
+    ''' Create a sphere actor
+    '''
     sphere = vtk.vtkSphereSource()
     sphere.SetRadius(radius)
     sphere.SetLatLongTessellation(tessel)
@@ -258,7 +370,7 @@ def sphere(position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity
 
 def ellipsoid(R=np.array([[2, 0, 0],[0, 1, 0],[0, 0, 1] ]),position=(0,0,0),thetares=20,phires=20,color=(0,0,1),opacity=1,tessel=0):
 
-    '''
+    ''' Create a ellipsoid actor.    
     Stretch a unit sphere to make it an ellipsoid under a 3x3 translation matrix R 
     
     R=sp.array([[2, 0, 0],
@@ -332,15 +444,12 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
     vtkActor object
     
     Examples
-    --------    
-    >>> r=ren()    
-    >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
-    >>> colors=[0.2,0.8]
-    >>> c=line(lines,colors)    
-    >>> add(r,c)
-    >>> l=label(r)
-    >>> add(r,l)
-    >>> show(r)
+    --------  
+    >>> from dipy.viz import fos  
+    >>> r=fos.ren()    
+    >>> l=fos.label(r)
+    >>> fos.add(r,l)
+    >>> fos.show(r)
     '''
     atext=vtk.vtkVectorText()
     atext.SetText(text)
@@ -360,27 +469,202 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
         
     return texta
 
+def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info=1,maptype=1,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
+    ''' Create a volume and return a volumetric actor using volumetric rendering
+    
+    Parameters:
+    ----------------
+    vol : array, shape (N, M, K), dtype uint8
+            an array representing the dataset that we want to visualize using volumetric rendering
+            
+    voxsz : default 1., 1., 1.
+    affine : default None,
+    center_origin : default 1,
+    final_volume_info : default 1,
+    maptype : default 1,        
+    iso : default 0,
+    iso_thr : default 100,
+    opacitymap : default None,
+    colormap : default None
+    
+    Returns:
+    ----------
+    vtk.vtkVolume    
+    
+    Examples:
+    ------------
+    >>> from dipy.viz import fos
+    >>> import numpy as np
+    >>> vol=100*np.random.rand(100,100,100)
+    >>> vol=vol.astype('uint8')
+    >>> print vol.min(), vol.max()
+    >>> r = fos.ren()
+    >>> v = fos.volume(vol)
+    >>> fos.add(r,v)
+    >>> fos.show(r)
+    
+    '''
+        
+    print('Datatype',vol.dtype)
+
+    if opacitymap==None:
+        
+        opacitymap=np.array([[ 0.0, 0.0],
+                          [50.0, 0.1]])
+        
+    if colormap==None:
+        
+    
+        colormap=np.array([[0.0, 0.5, 0.0, 0.0],
+                                        [64.0, 1.0, 0.5, 0.5],
+                                        [128.0, 0.9, 0.2, 0.3],
+                                        [196.0, 0.81, 0.27, 0.1],
+                                        [255.0, 0.5, 0.5, 0.5]])
+
+    
+    im = vtk.vtkImageData()
+    im.SetScalarTypeToUnsignedChar()
+    im.SetDimensions(vol.shape[0],vol.shape[1],vol.shape[2])
+    #im.SetOrigin(0,0,0)
+    #im.SetSpacing(voxsz[2],voxsz[0],voxsz[1])
+    im.AllocateScalars()        
+    
+    for i in range(vol.shape[0]):
+        for j in range(vol.shape[1]):
+            for k in range(vol.shape[2]):
+                
+                im.SetScalarComponentFromFloat(i,j,k,0,vol[i,j,k])
+    
+    if affine != None:
+
+        aff = vtk.vtkMatrix4x4()
+        aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],affine[0,3],affine[1,0],affine[1,1],affine[1,2],affine[1,3],affine[2,0],affine[2,1],affine[2,2],affine[2,3],affine[3,0],affine[3,1],affine[3,2],affine[3,3]))
+        #aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],0,affine[1,0],affine[1,1],affine[1,2],0,affine[2,0],affine[2,1],affine[2,2],0,affine[3,0],affine[3,1],affine[3,2],1))
+        #aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],127.5,affine[1,0],affine[1,1],affine[1,2],-127.5,affine[2,0],affine[2,1],affine[2,2],-127.5,affine[3,0],affine[3,1],affine[3,2],1))
+        
+        reslice = vtk.vtkImageReslice()
+        reslice.SetInput(im)
+        #reslice.SetOutputDimensionality(2)
+        #reslice.SetOutputOrigin(127,-145,147)    
+        
+        reslice.SetResliceAxes(aff)
+        #reslice.SetOutputOrigin(-127,-127,-127)    
+        #reslice.SetOutputExtent(-127,128,-127,128,-127,128)
+        #reslice.SetResliceAxesOrigin(0,0,0)
+        #print 'Get Reslice Axes Origin ', reslice.GetResliceAxesOrigin()
+        #reslice.SetOutputSpacing(1.0,1.0,1.0)
+        
+        reslice.SetInterpolationModeToLinear()    
+        #reslice.UpdateWholeExtent()
+        
+        #print 'reslice GetOutputOrigin', reslice.GetOutputOrigin()
+        #print 'reslice GetOutputExtent',reslice.GetOutputExtent()
+        #print 'reslice GetOutputSpacing',reslice.GetOutputSpacing()
+    
+        changeFilter=vtk.vtkImageChangeInformation() 
+        changeFilter.SetInput(reslice.GetOutput())
+        #changeFilter.SetInput(im)
+        if center_origin:
+            changeFilter.SetOutputOrigin(-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)
+            print 'ChangeFilter ', changeFilter.GetOutputOrigin()
+        
+    opacity = vtk.vtkPiecewiseFunction()
+    for i in range(opacitymap.shape[0]):
+        opacity.AddPoint(opacitymap[i,0],opacitymap[i,1])
+
+    color = vtk.vtkColorTransferFunction()
+    for i in range(colormap.shape[0]):
+        color.AddRGBPoint(colormap[i,0],colormap[i,1],colormap[i,2],colormap[i,3])
+        
+    if(maptype==0): 
+    
+        property = vtk.vtkVolumeProperty()
+        property.SetColor(color)
+        property.SetScalarOpacity(opacity)
+        
+        mapper = vtk.vtkVolumeTextureMapper2D()
+        if affine == None:
+            mapper.SetInput(im)
+        else:
+            #mapper.SetInput(reslice.GetOutput())
+            mapper.SetInput(changeFilter.GetOutput())
+        
+    
+    if (maptype==1):
+
+        property = vtk.vtkVolumeProperty()
+        property.SetColor(color)
+        property.SetScalarOpacity(opacity)
+        property.ShadeOn()
+        property.SetInterpolationTypeToLinear()
+
+        if iso:
+            isofunc=vtk.vtkVolumeRayCastIsosurfaceFunction()
+            isofunc.SetIsoValue(iso_thr)
+        else:
+            compositeFunction = vtk.vtkVolumeRayCastCompositeFunction()
+        
+        mapper = vtk.vtkVolumeRayCastMapper()
+        if iso:
+            mapper.SetVolumeRayCastFunction(isofunc)
+        else:
+            mapper.SetVolumeRayCastFunction(compositeFunction)   
+            #mapper.SetMinimumImageSampleDistance(0.2)
+             
+        if affine == None:
+            mapper.SetInput(im)
+        else:
+            #mapper.SetInput(reslice.GetOutput())    
+            mapper.SetInput(changeFilter.GetOutput())
+            #Return mid position in world space    
+            #im2=reslice.GetOutput()
+            #index=im2.FindPoint(vol.shape[0]/2.0,vol.shape[1]/2.0,vol.shape[2]/2.0)
+            #print 'Image Getpoint ' , im2.GetPoint(index)
+           
+        
+    volum = vtk.vtkVolume()
+    volum.SetMapper(mapper)
+    volum.SetProperty(property)
+
+    if final_volume_info :  
+         
+        print 'Origin',   volum.GetOrigin()
+        print 'Orientation',   volum.GetOrientation()
+        print 'OrientationW',    volum.GetOrientationWXYZ()
+        print 'Position',    volum.GetPosition()
+        print 'Center',    volum.GetCenter()  
+        print 'Get XRange', volum.GetXRange()
+        print 'Get YRange', volum.GetYRange()
+        print 'Get ZRange', volum.GetZRange()  
+        
+    return volum
+
+
 def show(ren,title='Fos',size=(300,300)):
     ''' Show window 
     
     Parameters
     ----------
-    ren : vtkRenderer() object as returned from ren()
-    title : a string for the window title bar
-    size : (width,height) of the window
+    ren : vtkRenderer() object 
+            as returned from function ren()
+    title : string 
+            a string for the window title bar
+    size : (int, int) 
+            (width,height) of the window
     
     Examples
     --------    
-    >>> r=ren()    
+    >>> from dipy.viz import fos
+    >>> r=fos.ren()    
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
     >>> colors=[0.2,0.8]
-    >>> c=line(lines,colors)    
-    >>> add(r,c)
-    >>> l=label(r)
-    >>> add(r,l)
-    >>> show(r)
+    >>> c=fos.line(lines,colors)    
+    >>> fos.add(r,c)
+    >>> l=fos.label(r)
+    >>> fos.add(r,l)
+    >>> fos.show(r)
     '''
-        
+    r.ResetCamera()        
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
     window.SetWindowName(title) 
@@ -393,12 +677,7 @@ def show(ren,title='Fos',size=(300,300)):
     
     
 if __name__ == "__main__":
-   
-    r=ren()    
-    lines=[np.random.rand(10,3),np.random.rand(20,3)]    
-    colors=[0.2,0.8]
-    c=line(lines,colors)    
-    add(r,c)
-    l=label(r)
-    add(r,l)
-    show(r)
+
+    pass
+    
+    
