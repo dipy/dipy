@@ -2,7 +2,6 @@
 
 import math
 import numpy as np
-import mdp
 
 
 def length(xyz, along=False):
