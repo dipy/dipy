@@ -477,39 +477,70 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
     ----------------
     vol : array, shape (N, M, K), dtype uint8
          an array representing the volumetric dataset that we want to visualize using volumetric rendering            
+        
     voxsz : sequence of 3 floats
             default (1., 1., 1.)
-    affine : array, shape (4,4) as given by volumeimages
-            default None,
+            
+    affine : array, shape (4,4), default None
+            as given by volumeimages             
+            
     center_origin : int {0,1}, default 1
              it considers that the center of the volume is the 
             point (-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)
-    final_volume_info : int {0,1}, default 1
-            if 1 it prints some info about the volume
-    maptype : int {0,1}, default 0,        
-            The maptype is a very important parameters which affects the raycasting algorithm in use for the rendering. 
-            The options are:
-            maptype =0 
-                Then VolumeTextureMapper2D is in use
-            maptype =1
-                
             
-    iso : default 0,
-    iso_thr : default 100,
-    opacitymap : default None,
-    colormap : default None
-    
+    final_volume_info : int {0,1}, default 1
+            if 1 it prints out some info about the volume.
+            
+    maptype : int {0,1}, default 0,        
+            The maptype is a very important parameter which affects the raycasting algorithm in use for the rendering. 
+            The options are:
+            If 0 then vtkVolumeTextureMapper2D is used.
+            If 1 then vtkVolumeRayCastFunction is used.
+            
+    iso : int {0,1} default 0,
+            If iso is 1 and maptype is 1 then  we use vtkVolumeRayCastIsosurfaceFunction which generates an isosurface at 
+            the predefined iso_thr value. If iso is 0 and maptype is 1 vtkVolumeRayCastCompositeFunction is used.
+            
+    iso_thr : int, default 100,
+            if iso is 1 then then this threshold in the volume defines the value which will be used to create the isosurface.
+            
+    opacitymap : array, shape (N,2) default None.
+            The opacity map assigns a transparency coefficient to every point in the volume.
+            
+    colormap : array, shape (N,4), default None.
+            The color map assigns a color value to every point in the volume.
+                
     Returns:
     ----------
-    vtk.vtkVolume    
+    vtkVolume    
+    
+    Notes:
+    --------
+    What is the difference between TextureMapper2D and RayCastFunction? 
+    See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
+    What is the difference between RayCastIsosurfaceFunction and RayCastCompositeFunction?
+    See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
     
     Examples:
     ------------
+    First example random points    
+    
     >>> from dipy.viz import fos
     >>> import numpy as np
     >>> vol=100*np.random.rand(100,100,100)
     >>> vol=vol.astype('uint8')
     >>> print vol.min(), vol.max()
+    >>> r = fos.ren()
+    >>> v = fos.volume(vol)
+    >>> fos.add(r,v)
+    >>> fos.show(r)
+    
+    Second example with a more complicated function
+        
+    >>> from dipy.viz import fos
+    >>> import numpy as np
+    >>> x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
+    >>> s = np.sin(x*y*z)/(x*y*z)
     >>> r = fos.ren()
     >>> v = fos.volume(vol)
     >>> fos.add(r,v)
