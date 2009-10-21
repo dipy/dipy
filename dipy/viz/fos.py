@@ -469,19 +469,31 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
         
     return texta
 
-def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info=1,maptype=1,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
-    ''' Create a volume and return a volumetric actor using volumetric rendering
+def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info=1,maptype=0,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
+    ''' Create a volume and return a volumetric actor using volumetric rendering. 
+    This function has many different interesting capabilities. The maptype, opacitymap and colormap are the most crucial parameters here.
     
     Parameters:
     ----------------
     vol : array, shape (N, M, K), dtype uint8
-            an array representing the dataset that we want to visualize using volumetric rendering
+         an array representing the volumetric dataset that we want to visualize using volumetric rendering            
+    voxsz : sequence of 3 floats
+            default (1., 1., 1.)
+    affine : array, shape (4,4) as given by volumeimages
+            default None,
+    center_origin : int {0,1}, default 1
+             it considers that the center of the volume is the 
+            point (-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)
+    final_volume_info : int {0,1}, default 1
+            if 1 it prints some info about the volume
+    maptype : int {0,1}, default 0,        
+            The maptype is a very important parameters which affects the raycasting algorithm in use for the rendering. 
+            The options are:
+            maptype =0 
+                Then VolumeTextureMapper2D is in use
+            maptype =1
+                
             
-    voxsz : default 1., 1., 1.
-    affine : default None,
-    center_origin : default 1,
-    final_volume_info : default 1,
-    maptype : default 1,        
     iso : default 0,
     iso_thr : default 100,
     opacitymap : default None,
@@ -506,21 +518,57 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
     '''
         
     print('Datatype',vol.dtype)
+    vol=vol.astype('uint16')
 
     if opacitymap==None:
         
+        #'''
+        bin,res=np.histogram(vol.ravel())
+        res2=np.interp(res,[vol.min(),vol.max()],[0,1])
+        opacitymap=np.vstack((res,res2)).T
+        opacitymap=opacitymap.astype('float32')
+        #'''
+                
+        #'''
         opacitymap=np.array([[ 0.0, 0.0],
-                          [50.0, 0.1]])
+                          [50.0, 0.9]])
+        #''' 
+        '''       
+        opacitymap=np.array( [[  0.00000000e+00,   0],
+                [  7.22400024e+02  , 0.8],
+                [  9.03000000e+02  , 0.9],
+                [1.80600000e+03  , 1]])
+        '''
+        print opacitymap
         
     if colormap==None:
         
-    
+        #'''
+        bin,res=np.histogram(vol.ravel())
+        res2=np.interp(res,[vol.min(),vol.max()],[0,1])
+        
+        colormap=np.vstack((res,res2,res2,res2)).T
+        colormap=colormap.astype('float32')
+        
+        #'''
+        #'''
         colormap=np.array([[0.0, 0.5, 0.0, 0.0],
                                         [64.0, 1.0, 0.5, 0.5],
                                         [128.0, 0.9, 0.2, 0.3],
                                         [196.0, 0.81, 0.27, 0.1],
                                         [255.0, 0.5, 0.5, 0.5]])
-
+        #'''
+        '''
+        colormap=np.array([[  0.00000000e+00,   0.00000000e+00 ,  0.00000000e+00,   0.00000000e+00],                 
+                 [  7.22400024e+02,   4.00000006e-01 ,  0 , 0],
+                 [  9.03000000e+02,   8.00000000e-01 ,  0 ,  0],
+                 [  1.08359998e+03,   8.00000024e-01 ,  0 ,  0],
+                 [  1.26419995e+03,   9.0000008e-01 ,  0 ,  0],
+                 [  1.44480005e+03,   9.00000012e-01 ,  0 ,  0],
+                 [  1.62540002e+03,   9.99999976e-01 ,  0 ,  0],
+                 [  1.80600000e+03,   1.00000000e+00,   0 ,  0]])
+        '''
+        print colormap                        
     
     im = vtk.vtkImageData()
     im.SetScalarTypeToUnsignedChar()
