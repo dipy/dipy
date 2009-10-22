@@ -18,6 +18,96 @@ except ImportError:
 
 import types    
 
+class Foz(object):
+    ''' An object for fast accessing the fos utilities.
+    '''
+    def __init__(self):
+        
+        self.canvas={}
+        self.cren=0
+        self.canvas[0]=ren()
+        self.canvas[1]=ren()
+        self.canvas[2]=ren()
+        self.canvas[3]=ren()
+        
+        '''
+        Note :
+        ------
+        add actors below their renderers
+        '''
+        
+        
+    def __len__(self):
+        pass
+
+    def __iter__(self):
+        pass            
+
+    def length(self):
+        pass
+
+    def volume(self,vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,trilinear=1,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
+        
+        v=volume(vol,voxsz,affine,center_origin,info,maptype,trilinear,iso,iso_thr,opacitymap,colormap)   
+        add(self.canvas[self.cren],v)
+        show(self.canvas[self.cren])
+        
+        return v
+        
+    def origin(self,scale=(1,1,1),colorx=(1,0,0),colory=(0,1,0),colorz=(0,0,1),opacity=1):
+                
+        ax=axes(scale,colorx,colory,colorz,opacity)
+        add(self.canvas[self.cren],ax)
+        show(self.canvas[self.cren])
+        
+        return ax
+    
+    def line(self,lines,colors,opacity=1,linewidth=1):
+        
+        l=line(lines,colors,opacity=1,linewidth=1)
+        add(self.canvas[self.cren],l)
+        show(self.canvas[self.cren])
+        
+        return l
+    
+    def dots(self,points,color=(1,0,0),opacity=1):
+        
+        d=dots(points,color,opacity)
+        add(self.canvas[self.cren],d)
+        show(self.canvas[self.cren])
+        
+        return d    
+    
+    def label(self,ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
+        
+        la=label(ren=self.cren,text=text,pos=pos,scale=scale,color=color)        
+        show(self.canvas[self.cren])
+        return la
+    
+    def sphere(self,position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
+
+        s=sphere(position,radius,thetares,phires,color,opacity,tessel)
+        add(self.canvas[self.cren],s)
+        show(self.canvas[self.cren])
+        return s
+    
+    def show(self,title='Fos',size=(300,300)):
+        
+        show(self.canvas[self.cren],title='Foz ',size=(300,300))
+        
+    def clear(self,actor=None):
+        if actor == None:
+            clear(self.canvas[self.cren])
+        else:
+            rm(self.canvas[self.cren],actor)
+            
+        
+    @property
+    def new(self):
+        pass
+                
+
+
 def ren():
     ''' Create a renderer
     
