@@ -469,7 +469,7 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
         
     return texta
 
-def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info=1,maptype=0,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
+def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,trilinear=1,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
     ''' Create a volume and return a volumetric actor using volumetric rendering. 
     This function has many different interesting capabilities. The maptype, opacitymap and colormap are the most crucial parameters here.
     
@@ -488,8 +488,11 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
              it considers that the center of the volume is the 
             point (-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)
             
-    final_volume_info : int {0,1}, default 1
-            if 1 it prints out some info about the volume.
+    info : int {0,1}, default 1
+            if 1 it prints out some info about the volume, the method and the dataset.
+            
+    trilinear: int {0,1}, default 1
+            Use trilinear interpolation, default 1, gives smoother rendering. If you want faster interpolation use 0 (Nearest).
             
     maptype : int {0,1}, default 0,        
             The maptype is a very important parameter which affects the raycasting algorithm in use for the rendering. 
@@ -504,11 +507,12 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
     iso_thr : int, default 100,
             if iso is 1 then then this threshold in the volume defines the value which will be used to create the isosurface.
             
-    opacitymap : array, shape (N,2) default None.
+    opacitymap : array, shape (N,2), default None.
             The opacity map assigns a transparency coefficient to every point in the volume.
-            
+            The default value uses the histogram of the volume to calculate the opacitymap.
     colormap : array, shape (N,4), default None.
             The color map assigns a color value to every point in the volume.
+            When None from the histogram it uses a red-blue colormap.
                 
     Returns:
     ----------
@@ -517,9 +521,13 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
     Notes:
     --------
     What is the difference between TextureMapper2D and RayCastFunction? 
-    See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
+    Coming soon... See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
+    
     What is the difference between RayCastIsosurfaceFunction and RayCastCompositeFunction?
-    See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
+    Coming soon... See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
+    
+    What about trilinear interpolation?
+    Coming soon... well when time permits really ... :-)
     
     Examples:
     ------------
@@ -542,64 +550,67 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
     >>> x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
     >>> s = np.sin(x*y*z)/(x*y*z)
     >>> r = fos.ren()
-    >>> v = fos.volume(vol)
+    >>> v = fos.volume(s)
     >>> fos.add(r,v)
     >>> fos.show(r)
     
+    If you find this function too complicated you can always use mayavi. 
+    Please do not forget to use the -wthread switch in ipython if you are running mayavi.
+    
+    >>> from entought.mayavi import mlab       
+    >>> import numpy as np
+    >>> x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
+    >>> s = np.sin(x*y*z)/(x*y*z)
+    >>> mlab.pipeline.volume(mlab.pipeline.scalar_field(s))
+    >>> mlab.show()
+    
+    More mayavi demos are available here:
+    
+    http://code.enthought.com/projects/mayavi/docs/development/html/mayavi/mlab.html
+    
     '''
-        
-    print('Datatype',vol.dtype)
-    vol=vol.astype('uint16')
+    if vol.ndim!=3:    
+        raise ValueError('3d numpy arrays only please')
+    
+    if info :
+        print('Datatype',vol.dtype,'converted to uint8' )
+    
+    vol=np.interp(vol,[vol.min(),vol.max()],[0,255])
+    vol=vol.astype('uint8')
 
     if opacitymap==None:
         
-        #'''
         bin,res=np.histogram(vol.ravel())
         res2=np.interp(res,[vol.min(),vol.max()],[0,1])
         opacitymap=np.vstack((res,res2)).T
         opacitymap=opacitymap.astype('float32')
-        #'''
                 
-        #'''
+        '''
         opacitymap=np.array([[ 0.0, 0.0],
                           [50.0, 0.9]])
-        #''' 
-        '''       
-        opacitymap=np.array( [[  0.00000000e+00,   0],
-                [  7.22400024e+02  , 0.8],
-                [  9.03000000e+02  , 0.9],
-                [1.80600000e+03  , 1]])
-        '''
-        print opacitymap
+        ''' 
+
+        if info:
+            print 'opacitymap', opacitymap
         
     if colormap==None:
-        
-        #'''
+
         bin,res=np.histogram(vol.ravel())
         res2=np.interp(res,[vol.min(),vol.max()],[0,1])
-        
-        colormap=np.vstack((res,res2,res2,res2)).T
+        zer=np.zeros(res2.shape)
+        colormap=np.vstack((res,res2,zer,res2[::-1])).T
         colormap=colormap.astype('float32')
-        
-        #'''
-        #'''
+
+        '''
         colormap=np.array([[0.0, 0.5, 0.0, 0.0],
                                         [64.0, 1.0, 0.5, 0.5],
                                         [128.0, 0.9, 0.2, 0.3],
                                         [196.0, 0.81, 0.27, 0.1],
                                         [255.0, 0.5, 0.5, 0.5]])
-        #'''
         '''
-        colormap=np.array([[  0.00000000e+00,   0.00000000e+00 ,  0.00000000e+00,   0.00000000e+00],                 
-                 [  7.22400024e+02,   4.00000006e-01 ,  0 , 0],
-                 [  9.03000000e+02,   8.00000000e-01 ,  0 ,  0],
-                 [  1.08359998e+03,   8.00000024e-01 ,  0 ,  0],
-                 [  1.26419995e+03,   9.0000008e-01 ,  0 ,  0],
-                 [  1.44480005e+03,   9.00000012e-01 ,  0 ,  0],
-                 [  1.62540002e+03,   9.99999976e-01 ,  0 ,  0],
-                 [  1.80600000e+03,   1.00000000e+00,   0 ,  0]])
-        '''
-        print colormap                        
+
+        if info:
+            print 'colormap', colormap                        
     
     im = vtk.vtkImageData()
     im.SetScalarTypeToUnsignedChar()
@@ -661,6 +672,13 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
         property.SetColor(color)
         property.SetScalarOpacity(opacity)
         
+        if trilinear:
+            property.SetInterpolationTypeToLinear()
+        else:
+            prop.SetInterpolationTypeToNearest()
+            
+        if info:
+            print('mapper VolumeTextureMapper2D')
         mapper = vtk.vtkVolumeTextureMapper2D()
         if affine == None:
             mapper.SetInput(im)
@@ -675,7 +693,10 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
         property.SetColor(color)
         property.SetScalarOpacity(opacity)
         property.ShadeOn()
-        property.SetInterpolationTypeToLinear()
+        if trilinear:
+            property.SetInterpolationTypeToLinear()
+        else:
+            prop.SetInterpolationTypeToNearest()
 
         if iso:
             isofunc=vtk.vtkVolumeRayCastIsosurfaceFunction()
@@ -683,12 +704,20 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
         else:
             compositeFunction = vtk.vtkVolumeRayCastCompositeFunction()
         
+        if info:
+            print('mapper VolumeRayCastMapper')
+            
         mapper = vtk.vtkVolumeRayCastMapper()
         if iso:
             mapper.SetVolumeRayCastFunction(isofunc)
+            if info:
+                print('Isosurface')
         else:
             mapper.SetVolumeRayCastFunction(compositeFunction)   
+            
             #mapper.SetMinimumImageSampleDistance(0.2)
+            if info:
+                print('Composite')
              
         if affine == None:
             mapper.SetInput(im)
@@ -705,7 +734,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
     volum.SetMapper(mapper)
     volum.SetProperty(property)
 
-    if final_volume_info :  
+    if info :  
          
         print 'Origin',   volum.GetOrigin()
         print 'Orientation',   volum.GetOrientation()
@@ -715,6 +744,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,final_volume_info
         print 'Get XRange', volum.GetXRange()
         print 'Get YRange', volum.GetYRange()
         print 'Get ZRange', volum.GetZRange()  
+        print 'Volume data type', vol.dtype
         
     return volum
 
