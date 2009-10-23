@@ -2,7 +2,7 @@
 
 import math
 import numpy as np
-
+from scipy.interpolate import splprep, splev
 
 def length(xyz, along=False):
     ''' Euclidean length of track line
@@ -294,13 +294,111 @@ def mahnaz_distance(xyz1,xyz2):
     pass
 
 def zhang_distance(xyz1,xyz2):
-    '''
+    ''' Look the paper in PBC repository
     '''
     pass
     
 def mean_orientation(xyz):
     pass
     
+def intersect_sphere(xyz,center,radius):
+    ''' If a track intersects with a sphere of a specified center and radius return True otherwise False.
+        Mathematicaly this can be simply described by ||x-c||<=r^2 where ``x`` a point ``c`` the center 
+        of the sphere and ``r`` the radius of the sphere.
+            
+    Parameters:
+    --------------
+        xyz : array, shape (N,3)
+        array representing x,y,z of the N points of the track
+    
+    Returns:
+    ----------
+        boolean : {True,False}    
+    
+    Examples:
+    -----------
+    >>> from dipy.core.track_metrics import intersect_sphere as tis
+    >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
+    >>> sph_cent=np.array([1,1,1])
+    >>> sph_radius = 1
+    >>> tis(line,sph_cent,sph_radius)
+    '''
+            
+    return np.sqrt(np.sum((xyz-center)**2,axis=1)).any()<=radius**2
+
+def spline(xyz,s=3,k=2,nest=-1):
+    
+    ''' Generate B-splines as documented in 
+    http://www.scipy.org/Cookbook/Interpolation
+    
+    The scipy.interpolate packages wraps the netlib FITPACK routines (Dierckx) for calculating
+    smoothing splines for various kinds of data and geometries. Although the data is evenly spaced 
+    in this example, it need not be so to use this routine.
+    
+    Parameters:
+    ---------------
+    xyz : array, shape (N,3)
+        array representing x,y,z of N points in 3d space
+        
+    s :  A smoothing condition.  The amount of smoothness is determined by
+        satisfying the conditions: sum((w * (y - g))**2,axis=0) <= s where
+        g(x) is the smoothed interpolation of (x,y).  The user can use s to
+        control the tradeoff between closeness and smoothness of fit.  Larger
+        satisfying the conditions: sum((w * (y - g))**2,axis=0) <= s where
+        g(x) is the smoothed interpolation of (x,y).  The user can use s to
+        control the tradeoff between closeness and smoothness of fit.  Larger
+        s means more smoothing while smaller values of s indicate less
+        smoothing. Recommended values of s depend on the weights, w.  If the
+        weights represent the inverse of the standard-deviation of y, then a:
+        good s value should be found in the range (m-sqrt(2*m),m+sqrt(2*m))
+        where m is the number of datapoints in x, y, and w.
+        
+    k :  Degree of the spline.  Cubic splines are recommended.  
+        Even values of k should be avoided especially with a small s-value.
+        for the same set of data.
+        If task=-1 find the weighted least square spline for a given set of knots, t.
+                
+    nest -- An over-estimate of the total number of knots of the spline to
+              help in determining the storage space.  By default nest=m/2.
+              Always large enough is nest=m+k+1.        
+    
+    
+    Returns
+    ---------
+    xyzn : array, shape (M,3)
+    
+    Examples
+    ------------
+    >>> import numpy as np
+    >>> # make ascending spiral in 3-space
+    >>> t=np.linspace(0,1.75*2*np.pi,100)
+
+    >>> x = np.sin(t)
+    >>> y = np.cos(t)
+    >>> z = t
+
+    >>> # add noise
+    >>> x+= np.random.normal(scale=0.1, size=x.shape)
+    >>> y+= np.random.normal(scale=0.1, size=y.shape)
+    >>> z+= np.random.normal(scale=0.1, size=z.shape)
+    
+    >>> xyz=np.vstack((x,y,z)).T    
+    >>> xyzn=spline(xyz,3,2,-1)
+    
+    See also
+    ----------
+    From scipy documentation  scipy.interpolate.splprep and scipy.interpolate.splev    
+    
+    '''
+
+    # find the knot points
+    tckp,u = splprep([xyz[:,0],xyz[:,1],xyz[:,2]],s=s,k=k,nest=-1)
+
+    # evaluate spline, including interpolated points
+    xnew,ynew,znew = splev(np.linspace(0,1,400),tckp)
+
+    return np.vstack((xnew,ynew,znew)).T    
+
 
 def startpoint(xyz):
     return xyz[0]
@@ -427,7 +525,6 @@ def extrapolate(xyz,n_pols=3):
 def principal_components(xyz):
     ''' We use PCA to calculate the 3 principal directions for dataset xyz
     '''
-
     C=np.cov(xyz.T)    
     va,ve=np.linalg.eig(C)
           
@@ -448,12 +545,9 @@ def midpoint2point(xyz,p):
     d : float
         a float number representing Euclidean distance         
     '''
-    mid=midpoint(xyz) 
-    
+    mid=midpoint(xyz)     
     return np.sqrt(np.sum((xyz-mid)**2))
 
-def curve_2_vox_space(xyz):
-    pass
 
     
 if __name__ == "__main__":

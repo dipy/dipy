@@ -3,6 +3,15 @@
     The main idea is the following:
     A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
     You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
+    
+    Example:
+    -----------
+    >>> from dipy.viz import fos
+    >>> foz=fos.Foz()
+    >>> foz.sphere()
+    >>> foz.sphere(position=(2,0,0),color=(1,0,0))    
+    >>> foz.clear()
+    >>> foz.show()
 
 '''
 
@@ -29,6 +38,7 @@ class Foz(object):
         self.canvas[1]=ren()
         self.canvas[2]=ren()
         self.canvas[3]=ren()
+        self.on=True
         
         '''
         Note :
@@ -50,7 +60,8 @@ class Foz(object):
         
         v=volume(vol,voxsz,affine,center_origin,info,maptype,trilinear,iso,iso_thr,opacitymap,colormap)   
         add(self.canvas[self.cren],v)
-        show(self.canvas[self.cren])
+        if self.on:
+            show(self.canvas[self.cren])
         
         return v
         
@@ -58,7 +69,8 @@ class Foz(object):
                 
         ax=axes(scale,colorx,colory,colorz,opacity)
         add(self.canvas[self.cren],ax)
-        show(self.canvas[self.cren])
+        if self.on:
+            show(self.canvas[self.cren])
         
         return ax
     
@@ -66,7 +78,8 @@ class Foz(object):
         
         l=line(lines,colors,opacity=1,linewidth=1)
         add(self.canvas[self.cren],l)
-        show(self.canvas[self.cren])
+        if self.on:
+            show(self.canvas[self.cren])
         
         return l
     
@@ -74,26 +87,31 @@ class Foz(object):
         
         d=dots(points,color,opacity)
         add(self.canvas[self.cren],d)
-        show(self.canvas[self.cren])
+        if self.on:
+            show(self.canvas[self.cren])
         
         return d    
     
     def label(self,ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
         
         la=label(ren=self.cren,text=text,pos=pos,scale=scale,color=color)        
-        show(self.canvas[self.cren])
+        if self.on:
+            show(self.canvas[self.cren])
+        
         return la
     
     def sphere(self,position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
 
         s=sphere(position,radius,thetares,phires,color,opacity,tessel)
         add(self.canvas[self.cren],s)
-        show(self.canvas[self.cren])
+        if self.on:
+            show(self.canvas[self.cren])
         return s
     
     def show(self,title='Fos',size=(300,300)):
         
         show(self.canvas[self.cren],title='Foz ',size=(300,300))
+        self.on=False
         
     def clear(self,actor=None):
         if actor == None:
