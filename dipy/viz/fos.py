@@ -4,15 +4,23 @@
     A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
     You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
     
-    Example:
-    -----------
+    fos Example:
+    ----------------
+    >>> from dipy.viz import fos
+    >>> r=fos.ren()    
+    >>> a=fos.axes()        
+    >>> fos.add(r,a)
+    >>> fos.show(r)
+    
+    The future version will be as simple as 
+    Foz Example:
+    ----------------
     >>> from dipy.viz import fos
     >>> foz=fos.Foz()
-    >>> foz.sphere()
-    >>> foz.sphere(position=(2,0,0),color=(1,0,0))    
-    >>> foz.clear()
-    >>> foz.show()
-
+    >>> foz.axes()
+    
+    but Foz is still ongoing and needs more testing...
+    
 '''
 
 try:
@@ -39,6 +47,7 @@ class Foz(object):
         self.canvas[2]=ren()
         self.canvas[3]=ren()
         self.on=True
+        self.clear()
         
         '''
         Note :

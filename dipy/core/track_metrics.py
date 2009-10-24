@@ -303,7 +303,7 @@ def mean_orientation(xyz):
     
 def intersect_sphere(xyz,center,radius):
     ''' If a track intersects with a sphere of a specified center and radius return True otherwise False.
-        Mathematicaly this can be simply described by ||x-c||<=r^2 where ``x`` a point ``c`` the center 
+        Mathematicaly this can be simply described by ||x-c||<=r where ``x`` a point ``c`` the center 
         of the sphere and ``r`` the radius of the sphere.
             
     Parameters:
@@ -324,7 +324,7 @@ def intersect_sphere(xyz,center,radius):
     >>> tis(line,sph_cent,sph_radius)
     '''
             
-    return np.sqrt(np.sum((xyz-center)**2,axis=1)).any()<=radius**2
+    return (np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius).any()==True
 
 def spline(xyz,s=3,k=2,nest=-1):
     
@@ -465,9 +465,9 @@ def _extrap(xyz,cumlen,distance):
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
 
-def extrapolate(xyz,n_pols=3):
-    ''' Extrapolate a specific number of points along the curve.
-    It works similarly with midpoint and arbitrarypoint
+def downsample(xyz,n_pols=3):
+    ''' downsample a specific number of points along the curve.
+    It works in as similar fashion with midpoint and arbitrarypoint.
     
     Parameters
     ----------
@@ -492,14 +492,14 @@ def extrapolate(xyz,n_pols=3):
     >>> y=np.sin(theta)
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> xyz2=tm.extrapolate(xyz,3)    
+    >>> xyz2=tm.downsample(xyz,3)    
     >>> # a cosine
     >>> x=np.pi*np.linspace(0,1,100)
     >>> y=np.cos(theta)
     >>> z=0*y
     >>> xyz=np.vstack((x,y,z)).T
-    >>> xyz2=tm.extrapolate(xyz,3)
-    >>> xyz3=tm.extrapolate(xyz,10)
+    >>> xyz2=tm.downsample(xyz,3)
+    >>> xyz3=tm.downsample(xyz,10)
     '''
         
     xyz = np.asarray(xyz)
