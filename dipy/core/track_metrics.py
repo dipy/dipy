@@ -326,6 +326,32 @@ def intersect_sphere(xyz,center,radius):
             
     return (np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius).any()==True
 
+def intersect_sphere_points(xyz,center,radius):
+    ''' If a track intersects with a sphere of a specified center and radius return the points that are inside the sphere otherwise False.
+        Mathematicaly this can be simply described by ||x-c||<=r where ``x`` a point ``c`` the center 
+        of the sphere and ``r`` the radius of the sphere.
+            
+    Parameters:
+    --------------
+        xyz : array, shape (N,3)
+        array representing x,y,z of the N points of the track
+    
+    Returns:
+    ----------
+        boolean : {True,False}    
+    
+    Examples:
+    -----------
+    >>> from dipy.core import track_metrics as tm
+    >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
+    >>> sph_cent=np.array([1,1,1])
+    >>> sph_radius = 1
+    >>> tm.intersect_sphere_points(line,sph_cent,sph_radius)
+    '''
+            
+    return xyz[(np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius)]
+
+
 def spline(xyz,s=3,k=2,nest=-1):
     
     ''' Generate B-splines as documented in 

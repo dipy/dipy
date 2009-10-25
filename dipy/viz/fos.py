@@ -674,7 +674,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
     If you find this function too complicated you can always use mayavi. 
     Please do not forget to use the -wthread switch in ipython if you are running mayavi.
     
-    >>> from entought.mayavi import mlab       
+    >>> from enthought.mayavi import mlab       
     >>> import numpy as np
     >>> x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
     >>> s = np.sin(x*y*z)/(x*y*z)
