@@ -293,11 +293,39 @@ def mahnaz_distance(xyz1,xyz2):
     '''
     pass
 
-def zhang_distance(xyz1,xyz2):
-    ''' Look the paper in PBC repository
-    '''
-    pass
+def zhang_distances(xyz1,xyz2):
+    ''' Based on the metrics in Zhang paper
+        which in turn are based on those of Corouge et al. 2004
+ 
+    Parameters:
+    -----------
+        xyz1 : array, shape (N1,3)
+        xyz2 : array, shape (N2,3)
+        arrays representing x,y,z of the N1 and N2 points
+        of two track
     
+    Returns:
+    --------
+        A dictionary with three metrics:
+        'average_mean_closest_distance'
+        'minimum_mean_closest_distance'
+        'maximum_mean_closest_distance'
+    '''
+    mcd12,mcd21 = mean_closest_distances(xyz1,xyz2)
+    return {'average_mean_closest_distance': (mcd12+mcd21)/2,
+        'minimum_mean_closest_distance': min(mcd12,mcd21),
+        'maximum_mean_closest_distance': max(mcd12,mcd21)}
+
+def mean_closest_distances(xyz1,xyz2):
+    ''' 
+    '''
+    n1 = xyz1.shape[0]
+    n2 = xyz2.shape[0]
+    d = np.resize(np.tile(xyz1,(n2)),(n1,n2,3)) \
+        - np.transpose(np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2))
+    dm = np.sum(d**2,axis=2)
+    return np.average(np.minimum.reduce(dm,axis=0)), np.average(np.minimum.reduce(dm,axis=1))
+            
 def mean_orientation(xyz):
     pass
     
