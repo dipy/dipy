@@ -324,7 +324,8 @@ def mean_closest_distances(xyz1,xyz2):
     d = np.resize(np.tile(xyz1,(n2)),(n1,n2,3)) \
         - np.transpose(np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2))
     dm = np.sum(d**2,axis=2)
-    return np.average(np.minimum.reduce(dm,axis=0)), np.average(np.minimum.reduce(dm,axis=1))
+    return np.sqrt(np.average(np.minimum.reduce(dm,axis=0))), \
+    np.sqrt(np.average(np.minimum.reduce(dm,axis=1)))
             
 def mean_orientation(xyz):
     pass

@@ -40,4 +40,4 @@ def test_zhang():
     # {'average_mean_closest_distance': 3.9166666666666665,
     # 'maximum_mean_closest_distance': 5.333333333333333,
     # 'minimum_mean_closest_distance': 2.5}
-    yield assert_almost_equal, zd['average_mean_closest_distance'], 3.9166666666666665
+    yield assert_almost_equal, zd['average_mean_closest_distance'], 1.945269953421
