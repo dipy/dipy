@@ -294,40 +294,148 @@ def mahnaz_distance(xyz1,xyz2):
     pass
 
 def zhang_distances(xyz1,xyz2):
-    ''' Based on the metrics in Zhang paper
+    ''' Calculating the distance between tracks xyz1 and xyz2 
+        Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
+        http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
         which in turn are based on those of Corouge et al. 2004
  
     Parameters:
     -----------
         xyz1 : array, shape (N1,3)
         xyz2 : array, shape (N2,3)
-        arrays representing x,y,z of the N1 and N2 points
-        of two track
+        arrays representing x,y,z of the N1 and N2 points  of two tracks
     
     Returns:
     --------
-        A dictionary with three metrics:
-        'average_mean_closest_distance'
-        'minimum_mean_closest_distance'
-        'maximum_mean_closest_distance'
+        ave_mcd: float
+                    average_mean_closest_distance
+        min_mcd: float
+                    minimum_mean_closest_distance
+        max_mcd: float
+                    maximum_mean_closest_distance
     '''
     mcd12,mcd21 = mean_closest_distances(xyz1,xyz2)
-    return {'average_mean_closest_distance': (mcd12+mcd21)/2,
-        'minimum_mean_closest_distance': min(mcd12,mcd21),
-        'maximum_mean_closest_distance': max(mcd12,mcd21)}
+    return (mcd12+mcd21)/2.0, min(mcd12,mcd21), max(mcd12,mcd21)
 
 def mean_closest_distances(xyz1,xyz2):
     ''' 
+        Calculating the average distances between tracks xyz1 and xyz2 
+        Based on the metrics in Zhang, Correia, Laidlaw 2008 
+        http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455        
+        
+        Parameters:
+        -----------
+        xyz1 : array, shape (N1,3)
+        xyz2 : array, shape (N2,3)
+        arrays representing x,y,z of the N1 and N2 points  of two tracks
+        
+        Returns:
+        ----------
+        
     '''
     n1 = xyz1.shape[0]
     n2 = xyz2.shape[0]
+    
     d = np.resize(np.tile(xyz1,(n2)),(n1,n2,3)) \
-        - np.transpose(np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2))
+        - (np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2)).T
+        
     dm = np.sqrt(np.sum(d**2,axis=2))
-    return np.average(np.minimum.reduce(dm,axis=0)), \
-        np.average(np.minimum.reduce(dm,axis=1))            
+    return np.average(np.min(dm,axis=0)), np.average(np.min(dm,axis=1))            
+
+def generate_combinations(items, n):
+    """Combine sets of size n from items
+    
+    Examples:
+    -------------
+    >>> ic=generate_combinations(range(3),2)
+    >>> for i in ic: print i
+    [0, 1]
+    [0, 2]
+    [1, 2]
+    """
+    
+    if n == 0:
+        yield []
+    else:
+        for i in xrange(len(items)):
+            for cc in generate_combinations(items[i+1:], n-1):
+                yield [items[i]] + cc
+            
+def bundle_similarities_zhang(bundle):
+    ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
+    
+    Parameters:
+    ---------------
+    bundle: sequence 
+            of tracks as arrays, shape (N1,3) .. (Nm,3)
+        
+    Returns:
+    ----------
+    S_avg :
+    S_min :
+    S_max :
+    
+    Examples :
+    --------------
+    
+        
+    '''
+    
+    track_pairs = generate_combinations(range(len(bundle)), 2)
+
+    S_avg=np.zeros((len(bundle),len(bundle)))
+    S_min=np.zeros((len(bundle),len(bundle)))
+    S_max=np.zeros((len(bundle),len(bundle)))
+    
+    for p in track_pairs:
+        
+        S_avg[p[0],p[1]],S_min[p[0],p[1]],S_max[p[0],p[1]]=zhang_distances(bundle[p[0]],bundle[p[1]])        
+        
+    return S_avg,S_min,S_max 
+
+def track_bundle_similarity(t,S): 
+    ''' Calculate the similarity between a specific track ``t`` and the rest of the tracks in the bundle 
+    using an upper diagonal similarity matrix S.
+
+    '''    
+    return np.hstack((S[:t,t],np.array([0]),S[t,t+1:]))
+
+def longest_track_bundle(bundle,sort=False):
+    ''' Return the longest track in a bundle or if sort = True the indices of ther sorted tracks in the bundle
+    
+    Parameters :
+    ---------------
+    bundle: sequence 
+            of tracks as arrays, shape (N1,3) ... (Nm,3)
+            
+    Returns :
+    -----------
+    longest :
+    
+        or
+    
+    indices :
+            
+    Examples:
+    -------------
+    
+    '''
+    
+    alllengths=[tm.length(t) for t in bundle]
+    alllengths=np.array(alllengths)        
+    if sort:
+        ilongest=alllengths.argsort()
+        return ilongest
+    else:
+        ilongest=alllengths.argmax()
+        return bundle[ilongest]
+    
+
 def mean_orientation(xyz):
+    ''' Coming soon
+    '''
     pass
+
     
 def intersect_sphere(xyz,center,radius):
     ''' If a track intersects with a sphere of a specified center and radius return True otherwise False.

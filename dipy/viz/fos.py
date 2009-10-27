@@ -485,6 +485,8 @@ def sphere(position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity
         
     return spherea
 
+
+
 def ellipsoid(R=np.array([[2, 0, 0],[0, 1, 0],[0, 0, 1] ]),position=(0,0,0),thetares=20,phires=20,color=(0,0,1),opacity=1,tessel=0):
 
     ''' Create a ellipsoid actor.    
