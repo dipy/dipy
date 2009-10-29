@@ -293,6 +293,33 @@ def mahnaz_distance(xyz1,xyz2):
     '''
     pass
     
+def parallel_distance(segments):
+    '''Based on Lee , Han & Whang SIGMOD07
+    
+    Parameters:
+    -----------
+        segments: array, shape xyz arrays(2,2,3)
+            segments[0][0] is the start of segment 0
+            segments[0][1] is the end of segment 0
+            segments[1][0] is the start of segment 1
+            segments[1][1] is the end of segment 1
+    
+    Returns:
+    --------
+        parallel_distance: float
+    '''
+    START = 0
+    END = 1
+    ss = projected_point_distance(segments[0][START], 
+        segments[1][START], segments[1][END])
+    es = projected_point_distance(segments[0][END], 
+        segments[1][START], segments[1][END])
+    se = projected_point_distance(segments[0][START], 
+        segments[1][END], segments[1][START])
+    ee = projected_point_distance(segments[0][END], 
+        segments[1][END], segments[1][START])
+    return min(ss, es, se, ee)
+
 def perpendicular_distance(segments):
     '''Based on Lee , Han & Whang SIGMOD07
     
@@ -306,20 +333,65 @@ def perpendicular_distance(segments):
     
     Returns:
     --------
-        perp_dist: float
+        perpendicular_distance: float
     '''
     START = 0
     END = 1
-    l1 = perpendicular_point_distance(segments[1][START], segments[1][END], segments[0][START])
-    l2 = perpendicular_point_distance(segments[1][START], segments[1][END], segments[1][END])
-    return (l1**2+l2**2)/(l1+l2)
+    ss = perpendicular_point_distance(segments[0][START], 
+        segments[1][START], segments[1][END])
+    es = perpendicular_point_distance(segments[0][END], 
+        segments[1][START], segments[1][END])
+    se = perpendicular_point_distance(segments[0][START], 
+        segments[1][END], segments[1][START])
+    ee = perpendicular_point_distance(segments[0][END], 
+        segments[1][END], segments[1][START])
+    return min(ss, es, se, ee)
 
-def perpendicular_point_distance(a,b,p):
+def angle_distance(s):
+    '''Based on Lee , Han & Whang SIGMOD07
+    
+    Parameters:
+    -----------
+        segments: array, shape xyz arrays(2,2,3)
+            s[0][0] is the start of segment 0
+            s[0][1] is the end of segment 0
+            s[1][0] is the start of segment 1
+            s[1][1] is the end of segment 1
+    
+    Returns:
+    --------
+        angle_distance: float
+    '''
+    
+    cos_theta = np.inner(s[0][1]-s[0][0], s[1][1]-s[1][0]) / \
+        np.sqrt(np.inner(s[0][1]-s[0][0], s[0][1]-s[0][0]) * \
+        np.inner(s[1][1]-s[1][0], s[1][1]-s[1][0]))
+        
+    sin_theta = 1-cos_theta**2
+
+    L = np.sqrt(np.inner(s[1][1]-s[1][0], s[1][1]-s[1][0]))
+
+# Ian is concerned that this is an asymmetric measure
+
+    return L*sin_theta
+
+def projected_point_distance(p,a,b):
     ''' Calculates the euclidean distance of the projection of p
     onto the line segment a -> b from the start a
     '''
     
-    return np.sqrt(np.inner((b-a),(p-a))**2/np.inner(b-a,b-a))
+    return np.sqrt(np.float(np.inner((b-a),(p-a)))**2/np.float(np.inner(b-a,b-a)))
+   
+def perpendicular_point_distance(p,a,b):
+    ''' Calculates the euclidean distance from p to its projection
+    onto the line segment a -> b from the start a
+    '''
+
+    alpha = np.float(np.inner((b-a),(p-a)))/np.float(np.inner((b-a),(b-a)))
+    q = a+alpha*(b-a)
+    d = p-q
+
+    return np.sqrt(np.inner(d,d))
     
     
 def zhang_distances(xyz1,xyz2,metric='all'):
