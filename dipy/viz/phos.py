@@ -6,6 +6,7 @@
 import numpy as np    
 
 try:  
+
     import wx
     from wx import glcanvas
 except ImportError:

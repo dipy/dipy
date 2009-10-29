@@ -315,6 +315,7 @@ def zhang_distances(xyz1,xyz2):
                     maximum_mean_closest_distance
     '''
     mcd12,mcd21 = mean_closest_distances(xyz1,xyz2)
+
     return (mcd12+mcd21)/2.0, min(mcd12,mcd21), max(mcd12,mcd21)
 
 def mean_closest_distances(xyz1,xyz2):
@@ -337,13 +338,19 @@ def mean_closest_distances(xyz1,xyz2):
     n2 = xyz2.shape[0]
     
     d = np.resize(np.tile(xyz1,(n2)),(n1,n2,3)) \
-        - (np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2)).T
+        - np.transpose(np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2))
         
     dm = np.sqrt(np.sum(d**2,axis=2))
     return np.average(np.min(dm,axis=0)), np.average(np.min(dm,axis=1))            
+   
 
 def generate_combinations(items, n):
     """Combine sets of size n from items
+    Parameters:
+    ---------------
+    
+    Returns:
+    ----------
     
     Examples:
     -------------
@@ -355,8 +362,14 @@ def generate_combinations(items, n):
     """
     
     if n == 0:
-        yield []
+        yield []    
+    elif n == 2:
+        #if n=2 non_recursive
+        for i in xrange(len(items)):
+            for j in xrange(i+1,len(items)):
+                yield [i,j]
     else:
+        #if n>2 uses recursion 
         for i in xrange(len(items)):
             for cc in generate_combinations(items[i+1:], n-1):
                 yield [items[i]] + cc
@@ -371,12 +384,12 @@ def bundle_similarities_zhang(bundle):
         
     Returns:
     ----------
-    S_avg :
-    S_min :
-    S_max :
+    S_avg : 
+    S_min : 
+    S_max : 
     
-    Examples :
-    --------------
+    Examples : 
+    ----------
     
         
     '''
@@ -396,7 +409,6 @@ def bundle_similarities_zhang(bundle):
 def track_bundle_similarity(t,S): 
     ''' Calculate the similarity between a specific track ``t`` and the rest of the tracks in the bundle 
     using an upper diagonal similarity matrix S.
-
     '''    
     return np.hstack((S[:t,t],np.array([0]),S[t,t+1:]))
 
@@ -429,7 +441,15 @@ def longest_track_bundle(bundle,sort=False):
     else:
         ilongest=alllengths.argmax()
         return bundle[ilongest]
-    
+ 
+def most_similar_track(S,sort=False):
+    ''' Return the index of the most similar track given a diagonal similarity matrix  as 
+    returned from function bundle_similarities_zhang(bundle) 
+    '''
+    if sort:
+        return (S+S.T).sum(axis=0).argsort()    
+    else:        
+        return   (S+S.T).sum(axis=0).argmin()
 
 def mean_orientation(xyz):
     ''' Coming soon
@@ -628,8 +648,8 @@ def _extrap(xyz,cumlen,distance):
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
 
 def downsample(xyz,n_pols=3):
-    ''' downsample a specific number of points along the curve.
-    It works in as similar fashion with midpoint and arbitrarypoint.
+    ''' downsample for a specific number of points along the curve using 
+        the length of the curve. It works in as similar fashion as midpoint and arbitrarypoint.
     
     Parameters
     ----------

@@ -867,6 +867,51 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
         
     return volum
 
+def colors(v,colormap='jet'):
+
+    ''' Create colors from a specific colormap and return it 
+    as an array of shape (N,3) where every row gives the corresponding
+    r,g,b value. The colormaps we use are similar with that of pylab.
+    
+    Notes :
+    -------
+    If you want to add more colormaps here is what you could do. Go to
+    this website http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
+    see which colormap you need and then get in pylab using the cm.datad 
+    dictionary.
+
+    e.g. cm.datad['jet']
+
+          {'blue': ((0.0, 0.5, 0.5),
+                    (0.11, 1, 1),
+                    (0.34000000000000002, 1, 1),
+                    (0.65000000000000002, 0, 0),
+                    (1, 0, 0)),
+           'green': ((0.0, 0, 0),
+                    (0.125, 0, 0),
+                    (0.375, 1, 1),
+                    (0.64000000000000001, 1, 1),
+                    (0.91000000000000003, 0, 0),
+                    (1, 0, 0)),
+           'red': ((0.0, 0, 0),
+                   (0.34999999999999998, 0, 0),
+                   (0.66000000000000003, 1, 1),
+                   (0.89000000000000001, 1, 1),
+                   (1, 0.5, 0.5))}
+
+    '''
+    if v.ndim>1:
+        ValueError('This function works only with 1d arrays. Use ravel()')
+
+    v=np.interp(v,[v.min(),v.max()],[0,1])
+    red=np.interp(v,[0,0.35,0.66,0.89,1],[0,0,1,1,0.5])
+    green=np.interp(v,[0,0.125,0.375,0.64,0.91,1],[0,0,1,1,0,0])
+    blue=np.interp(v,[0,0.11,0.34,0.65,1],[0.5,1,1,0,0])
+
+
+    return np.vstack((red,green,blue)).T
+
+    
 
 def show(ren,title='Fos',size=(300,300)):
     ''' Show window 
