@@ -293,7 +293,7 @@ def mahnaz_distance(xyz1,xyz2):
     '''
     pass
 
-def zhang_distances(xyz1,xyz2):
+def zhang_distances(xyz1,xyz2,metric='all'):
     ''' Calculating the distance between tracks xyz1 and xyz2 
         Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
         http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
@@ -307,7 +307,7 @@ def zhang_distances(xyz1,xyz2):
     
     Returns:
     --------
-        ave_mcd: float
+        avg_mcd: float
                     average_mean_closest_distance
         min_mcd: float
                     minimum_mean_closest_distance
@@ -315,8 +315,17 @@ def zhang_distances(xyz1,xyz2):
                     maximum_mean_closest_distance
     '''
     mcd12,mcd21 = mean_closest_distances(xyz1,xyz2)
-
-    return (mcd12+mcd21)/2.0, min(mcd12,mcd21), max(mcd12,mcd21)
+    
+    if metric=='all':
+        return (mcd12+mcd21)/2.0, min(mcd12,mcd21), max(mcd12,mcd21)
+    elif metric=='avg':
+        return (mcd12+mcd21)/2.0
+    elif metric=='min':            
+        return min(mcd12,mcd21)
+    elif metric =='max':
+        return max(mcd12,mcd21)
+    else :
+        ValueError('Wrong argument for metric')
 
 def mean_closest_distances(xyz1,xyz2):
     ''' 
@@ -374,16 +383,18 @@ def generate_combinations(items, n):
             for cc in generate_combinations(items[i+1:], n-1):
                 yield [items[i]] + cc
             
-def bundle_similarities_zhang(bundle):
+def bundle_similarities_zhang(bundle,metric='avg'):
     ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
     
     Parameters:
     ---------------
     bundle: sequence 
             of tracks as arrays, shape (N1,3) .. (Nm,3)
-        
+    metric: string
+            'avg', 'min', 'max'
     Returns:
     ----------
+    Appropriate metric from this list:
     S_avg : 
     S_min : 
     S_max : 
@@ -405,6 +416,51 @@ def bundle_similarities_zhang(bundle):
         S_avg[p[0],p[1]],S_min[p[0],p[1]],S_max[p[0],p[1]]=zhang_distances(bundle[p[0]],bundle[p[1]])        
         
     return S_avg,S_min,S_max 
+
+def bundle_similarities_zhang_fast(bundle,metric='avg'):
+    ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
+    
+    Parameters:
+    ---------------
+    bundle: sequence 
+            of tracks as arrays, shape (N1,3) .. (Nm,3)
+        
+    Returns:
+    ----------
+    nt_metric : index of track with least average metric
+    
+    Examples : 
+    ----------
+    
+        
+    '''
+    
+    track_pairs = generate_combinations(range(len(bundle)), 2)
+
+    s = np.zeros((len(bundle)))
+    
+    '''
+    for p in track_pairs:
+        delta = zhang_distances(bundle[p[0]],bundle[p[1]],metric)
+        s[p[0]] += delta
+        s[p[1]] += delta
+        
+    '''
+    
+    deltas=[(zhang_distances(bundle[p[0]],bundle[p[1]],metric),p[0],p[1]) for p in track_pairs]
+
+    for d in deltas:
+        s[d[1]]+=d[0]
+        s[d[2]]+=d[0]
+    
+    si=np.argmin(s)
+    
+    smin=[zhang_distances(t,bundle[si],metric) for t in bundle]
+    
+    return si, np.array(smin)
+
+
+
 
 def track_bundle_similarity(t,S): 
     ''' Calculate the similarity between a specific track ``t`` and the rest of the tracks in the bundle 
