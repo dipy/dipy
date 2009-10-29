@@ -292,7 +292,36 @@ def mahnaz_distance(xyz1,xyz2):
     ''' Look Mahnaz's thesis
     '''
     pass
+    
+def perpendicular_distance(segments):
+    '''Based on Lee , Han & Whang SIGMOD07
+    
+    Parameters:
+    -----------
+        segments: array, shape xyz arrays(2,2,3)
+            segments[0][0] is the start of segment 0
+            segments[0][1] is the end of segment 0
+            segments[1][0] is the start of segment 1
+            segments[1][1] is the end of segment 1
+    
+    Returns:
+    --------
+        perp_dist: float
+    '''
+    START = 0
+    END = 1
+    l1 = perpendicular_point_distance(segments[1][START], segments[1][END], segments[0][START])
+    l2 = perpendicular_point_distance(segments[1][START], segments[1][END], segments[1][END])
+    return (l1**2+l2**2)/(l1+l2)
 
+def perpendicular_point_distance(a,b,p):
+    ''' Calculates the euclidean distance of the projection of p
+    onto the line segment a -> b from the start a
+    '''
+    
+    return np.sqrt(np.inner((b-a),(p-a))**2/np.inner(b-a,b-a))
+    
+    
 def zhang_distances(xyz1,xyz2,metric='all'):
     ''' Calculating the distance between tracks xyz1 and xyz2 
         Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
