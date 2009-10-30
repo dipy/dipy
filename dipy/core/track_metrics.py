@@ -367,7 +367,7 @@ def angle_distance(s):
         np.sqrt(np.inner(s[0][1]-s[0][0], s[0][1]-s[0][0]) * \
         np.inner(s[1][1]-s[1][0], s[1][1]-s[1][0]))
         
-    sin_theta = 1-cos_theta**2
+    sin_theta = np.sqrt(1-cos_theta**2)
 
     L = np.sqrt(np.inner(s[1][1]-s[1][0], s[1][1]-s[1][0]))
 
