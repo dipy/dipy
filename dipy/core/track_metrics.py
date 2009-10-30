@@ -458,9 +458,13 @@ def generate_combinations(items, n):
     """Combine sets of size n from items
     Parameters:
     ---------------
+    items :
+    
+    n :
     
     Returns:
     ----------
+    
     
     Examples:
     -------------
