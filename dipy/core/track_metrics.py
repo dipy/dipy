@@ -479,7 +479,7 @@ def generate_combinations(items, n):
         yield []    
     elif n == 2:
         #if n=2 non_recursive
-        for i in xrange(len(items)):
+        for i in xrange(len(items)-1):
             for j in xrange(i+1,len(items)):
                 yield [i,j]
     else:

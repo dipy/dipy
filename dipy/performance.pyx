@@ -5,11 +5,81 @@ Counting incidence of tracks in voxels of volume
 '''
 import numpy as np
 cimport numpy as cnp
+from dipy.core import track_metrics as tm
+#from stdlib cimport *
+
 
 cdef extern from "math.h":
     double floor(double x)
+    
+cdef extern from "stdlib.h":
+    ctypedef unsigned long size_t
+    void free(void *ptr)
+    void *malloc(size_t size)
+    void *calloc(size_t nelem, size_t elsize)
 
 
+def zhang(tracks):
+    
+    cdef long lent=len(tracks)
+    cdef long i,j,k
+    cdef int si,m,n,lti,ltj
+    cdef double sumi, sumj, tmp,delta
+    
+    #cdef cnp.ndarray[cnp.float_t, ndim=2] mintrack
+    #lentp=lent*(lent-1)/2 # number of combinations
+    cdef double *mini
+    cdef double *minj
+    
+    cdef cnp.ndarray[cnp.double_t, ndim=1] s
+    
+    s = np.zeros((lent,), dtype=np.double)
+    
+    for i from 0 <= i < lent-1:
+        for j from i+1 <= j < lent:        
+            '''
+            delta=tm.zhang_distances(tracks[i],tracks[k],metric='avg')
+            '''
+            lti=tracks[i].shape[0]
+            ltj=tracks[j].shape[0]
+            
+            mini = <double *>calloc(ltj , sizeof(double))
+            minj = <double *>calloc(lti , sizeof(double))
+            
+            for m from 0<= m < lti:
+                for n from 0<= n < ltj:
+                    
+                    delta=np.sqrt(np.sum((tracks[i][m]-tracks[j][n])**2))
+                    mini[n]=np.min(delta,mini[n])
+                    minj[m]=np.min(delta,minj[m])
+            
+            sumi=0
+            sumj=0
+            
+            for m from 0<= m < lti:
+                sumj+=minj[m]
+            sumj=sumj/lti
+                       
+            for n from 0<= n < ltj:
+                sumi+=mini[n]
+            sumi=sumi/ltj
+
+            free(mini)
+            free(minj)
+            
+            tmp=(sumi+sumj)/2.0
+            
+            s[i]+=tmp
+            s[j]+=tmp
+            
+    si = np.argmin(s)
+    print(si,tracks[0].dtype)
+    #'''
+    #mintrack = tracks[si]
+    for j from 0 <= j < lent:
+        s[j]=tm.zhang_distances(tracks[si],tracks[j],metric='avg')
+    #'''
+    return si,s
 
 def track_counts(tracks, vol_dims, vox_sizes, return_elements=True):
     ''' Counts of points in `tracks` that pass through voxels in volume
