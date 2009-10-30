@@ -43,10 +43,16 @@ def zhang(tracks):
             lti=tracks[i].shape[0]
             ltj=tracks[j].shape[0]
             
-            mini = <double *>calloc(ltj , sizeof(double))
-            minj = <double *>calloc(lti , sizeof(double))
+            mini = <double *>malloc(ltj*sizeof(double))
+            minj = <double *>malloc(lti*sizeof(double))
             
+            for n from 0<= n < ltj:
+                mini[n]=1000000000
+                
             for m from 0<= m < lti:
+                minj[m]=1000000000            
+                
+            for m from 0<= m < lti:                
                 for n from 0<= n < ltj:
                     
                     delta=np.sqrt(np.sum((tracks[i][m]-tracks[j][n])**2))
