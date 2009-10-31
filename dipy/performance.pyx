@@ -3,14 +3,18 @@
 Counting incidence of tracks in voxels of volume
 
 '''
+cimport cython
 import numpy as np
 cimport numpy as cnp
 from dipy.core import track_metrics as tm
 #from stdlib cimport *
 
 
+
+
 cdef extern from "math.h":
     double floor(double x)
+    float sqrt(float x)
     
 cdef extern from "stdlib.h":
     ctypedef unsigned long size_t
@@ -18,19 +22,27 @@ cdef extern from "stdlib.h":
     void *malloc(size_t size)
     void *calloc(size_t nelem, size_t elsize)
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 
-def zhang(tracks):
+def zhang(tracks):    
+    ''' The purpose of this function is to implement a faster version of 
+    bundle_similarities_zhang_fast from dipy.core.track_metrics     
+    '''
     
     cdef long lent=len(tracks)
     cdef long i,j,k
     cdef int si,m,n,lti,ltj
     cdef double sumi, sumj, tmp,delta
     
-    #cdef cnp.ndarray[cnp.float_t, ndim=2] mintrack
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] A
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] B
+    
+    
     #lentp=lent*(lent-1)/2 # number of combinations
     cdef double *mini
     cdef double *minj
-    
+   
     cdef cnp.ndarray[cnp.double_t, ndim=1] s
     
     s = np.zeros((lent,), dtype=np.double)
@@ -42,6 +54,9 @@ def zhang(tracks):
             '''
             lti=tracks[i].shape[0]
             ltj=tracks[j].shape[0]
+            
+            A=tracks[i]
+            B=tracks[j]
             
             mini = <double *>malloc(ltj*sizeof(double))
             minj = <double *>malloc(lti*sizeof(double))
@@ -55,9 +70,18 @@ def zhang(tracks):
             for m from 0<= m < lti:                
                 for n from 0<= n < ltj:
                     
-                    delta=np.sqrt(np.sum((tracks[i][m]-tracks[j][n])**2))
-                    mini[n]=np.min(delta,mini[n])
-                    minj[m]=np.min(delta,minj[m])
+                    #delta=np.sqrt(np.sum((tracks[i][m]-tracks[j][n])**2))
+                    #delta=np.sqrt(np.sum((A[m]-B[n])**2)) 
+                    #mini[n]=np.min(delta,mini[n])
+                    #minj[m]=np.min(delta,minj[m])
+                    
+                    delta=sqrt((A[m,0]-B[n,0])*(A[m,0]-B[n,0])+(A[m,1]-B[n,1])*(A[m,1]-B[n,1])+(A[m,2]-B[n,2])*(A[m,2]-B[n,2]))
+                    
+                    if delta < mini[n]:
+                        mini[n]=delta
+                        
+                    if delta < minj[m]:
+                        minj[m]=delta
             
             sumi=0
             sumj=0
@@ -80,11 +104,10 @@ def zhang(tracks):
             
     si = np.argmin(s)
     print(si,tracks[0].dtype)
-    #'''
-    #mintrack = tracks[si]
+
     for j from 0 <= j < lent:
         s[j]=tm.zhang_distances(tracks[si],tracks[j],metric='avg')
-    #'''
+
     return si,s
 
 def track_counts(tracks, vol_dims, vox_sizes, return_elements=True):
