@@ -10,6 +10,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.core import track_metrics as tm
 
+from dipy import performance as pf
 
 def test_splines():
 
@@ -29,8 +30,23 @@ def test_splines():
     # get the B-splines
     xyzn=tm.spline(xyz,3,2,-1)
     pass
+
+def test_most_similar_zhang():
+
+    xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
+    xyz2 = np.array([[0,1,1],[1,0,1],[2,3,-2]],dtype='float32')
+    xyz3 = np.array([[-1,0,0],[2,0,0],[2,3,0],[3,0,0]],dtype='float32')
     
-def test_zhang():
+    tracks=[xyz1,xyz2,xyz3]
+    
+    si,s=tm.most_similar_track_zhang(tracks,metric='avg')
+    #pf should be much faster and the results equivalent
+    si2,s2=pf.most_similar_track_zhang(tracks,metric='avg')
+    
+    yield assert_almost_equal, si,si2
+    
+    
+def test_zhang_distances():
     xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]])
     xyz2 = np.array([[0,1,1],[1,0,1],[2,3,-2]])
     # dm=array([[ 2,  2, 17], [ 3,  1, 14], [6,  2, 13], [11,  5, 14]])
@@ -40,5 +56,4 @@ def test_zhang():
     # {'average_mean_closest_distance': 3.9166666666666665,
     # 'maximum_mean_closest_distance': 5.333333333333333,
     # 'minimum_mean_closest_distance': 2.5}
-    yield assert_almost_equal, zd['average_mean_closest_distance'], \
-        1.76135602742
+    yield assert_almost_equal, zd[0], 1.76135602742
