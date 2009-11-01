@@ -293,107 +293,83 @@ def mahnaz_distance(xyz1,xyz2):
     '''
     pass
     
-def parallel_distance(segments):
-    '''Based on Lee , Han & Whang SIGMOD07
+def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
+    ''' Based on Lee , Han & Whang SIGMOD07.
+        Calculates 3 etric for the distance between two line segments
+        and returns a w-weighted combination
     
     Parameters:
     -----------
-        segments: array, shape xyz arrays(2,2,3)
-            segments[0][0] is the start of segment 0
-            segments[0][1] is the end of segment 0
-            segments[1][0] is the start of segment 1
-            segments[1][1] is the end of segment 1
+        start0: float array(3,)
+        end0: float array(3,)
+        start1: float array(3,)
+        end1: float array(3,)
     
     Returns:
     --------
-        parallel_distance: float
+    weighted_distance: float
+        w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
     '''
-    START = 0
-    END = 1
-    ss = projected_point_distance(segments[0][START], 
-        segments[1][START], segments[1][END])
-    es = projected_point_distance(segments[0][END], 
-        segments[1][START], segments[1][END])
-    se = projected_point_distance(segments[0][START], 
-        segments[1][END], segments[1][START])
-    ee = projected_point_distance(segments[0][END], 
-        segments[1][END], segments[1][START])
-    return min(ss, es, se, ee)
+    start0=np.asarray(start0,dtype='float64')    
+    end0=np.asarray(end0,dtype='float64')    
+    start1=np.asarray(start1,dtype='float64')    
+    end1=np.asarray(end1,dtype='float64')    
+    
+    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    ps = start0+u1*(end0-start0)
+    pe = start0+u2*(end0-start0)
+    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
+    lperp2 = np.sqrt(np.inner(ps-end1,ps-end1))
+    
+    perpendicular_distance = (lperp1**2+lperp2**2)/(lperp1+lperp2)
+    ## do we need to do something about division by zero????
 
-def perpendicular_distance(segments):
-    '''Based on Lee , Han & Whang SIGMOD07
+    lpar1=np.min(np.inner(start0-ps, start0-ps),np.inner(end0-ps, end0-ps))
+    lpar2=np.min(np.inner(start0-pe, start0-pe),np.inner(end0-pe, end0-pe))
+
+    parallel_distance=np.sqrt(np.min(lpar1, lpar2))
+
+    cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ \
+        (np.inner(end0-start0,end0-start0)*np.inner(end1-start1,end1-start1))
+
+    angle_distance = np.sqrt((1-cos_theta_squared)*np.inner(end1-start1, end1-start1))
+
+    # the apparent asymmetry of this metric does not occur when the two line segments
+    # have the same length
+    return w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
+
+def approximate_trajectory_partitioning(xyz):
+    ''' Implementation of Lee et al approximate trajectory
+        partitioning algorithm
     
     Parameters:
-    -----------
-        segments: array, shape xyz arrays(2,2,3)
-            segments[0][0] is the start of segment 0
-            segments[0][1] is the end of segment 0
-            segments[1][0] is the start of segment 1
-            segments[1][1] is the end of segment 1
+    ------------------
+    xyz: array(N,3) 
     
     Returns:
-    --------
-        perpendicular_distance: float
-    '''
-    START = 0
-    END = 1
-    ss = perpendicular_point_distance(segments[0][START], 
-        segments[1][START], segments[1][END])
-    es = perpendicular_point_distance(segments[0][END], 
-        segments[1][START], segments[1][END])
-    se = perpendicular_point_distance(segments[0][START], 
-        segments[1][END], segments[1][START])
-    ee = perpendicular_point_distance(segments[0][END], 
-        segments[1][END], segments[1][START])
-    return min(ss, es, se, ee)
-
-def angle_distance(s):
-    '''Based on Lee , Han & Whang SIGMOD07
+    ------------
+    characteristic_points: 
     
-    Parameters:
-    -----------
-        segments: array, shape xyz arrays(2,2,3)
-            s[0][0] is the start of segment 0
-            s[0][1] is the end of segment 0
-            s[1][0] is the start of segment 1
-            s[1][1] is the end of segment 1
-    
-    Returns:
-    --------
-        angle_distance: float
     '''
     
-    cos_theta = np.inner(s[0][1]-s[0][0], s[1][1]-s[1][0]) / \
-        np.sqrt(np.inner(s[0][1]-s[0][0], s[0][1]-s[0][0]) * \
-        np.inner(s[1][1]-s[1][0], s[1][1]-s[1][0]))
-        
-    sin_theta = np.sqrt(1-cos_theta**2)
-
-    L = np.sqrt(np.inner(s[1][1]-s[1][0], s[1][1]-s[1][0]))
-
-# Ian is concerned that this is an asymmetric measure
-
-    return L*sin_theta
-
-def projected_point_distance(p,a,b):
-    ''' Calculates the euclidean distance of the projection of p
-    onto the line segment a -> b from the start a
-    '''
+    characteristic_points=[xyz[0]]
+    start_index = 0
+    length = 1
+    while start_index+length <= len(xyz):
+        current_index = start_index+length
+        cost_par = MDL_par(xyz[start_index], xyz[current_index])
+        cost_nopar = MDL_nopar(xyz[start_index], xyz[current_index])
+        if cost_par>cost_nopar: 
+            characteristic_points.append(xyz[current_index-1])
+            start_index = current_index-1
+            length = 1
+        else:
+            length+=1
+    characteristic_points.append(xyz[-1])
+                
     
-    return np.sqrt(np.float(np.inner((b-a),(p-a)))**2/np.float(np.inner(b-a,b-a)))
-   
-def perpendicular_point_distance(p,a,b):
-    ''' Calculates the euclidean distance from p to its projection
-    onto the line segment a -> b from the start a
-    '''
 
-    alpha = np.float(np.inner((b-a),(p-a)))/np.float(np.inner((b-a),(b-a)))
-    q = a+alpha*(b-a)
-    d = p-q
-
-    return np.sqrt(np.inner(d,d))
-    
-    
 def zhang_distances(xyz1,xyz2,metric='all'):
     ''' Calculating the distance between tracks xyz1 and xyz2 
         Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
