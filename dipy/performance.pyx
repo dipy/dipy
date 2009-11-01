@@ -1,15 +1,12 @@
 ''' A type of -*- python -*- file
 
-Counting incidence of tracks in voxels of volume
+Performance functions for dipy
 
 '''
 cimport cython
 import numpy as np
 cimport numpy as cnp
 from dipy.core import track_metrics as tm
-#from stdlib cimport *
-
-
 
 
 cdef extern from "math.h":
