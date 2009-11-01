@@ -154,7 +154,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
     print(si,tracks[0].dtype)
 
     for j from 0 <= j < lent:
-        s[j]=tm.zhang_distances(tracks[si],tracks[j],metric='avg')
+        s[j]=tm.zhang_distances(tracks[si],tracks[j],metric)
 
     return si,s
 
