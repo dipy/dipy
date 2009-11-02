@@ -504,18 +504,27 @@ def approximate_trajectory_partitioning(xyz):
     
     characteristic_points=[xyz[0]]
     start_index = 0
-    length = 1
+    length = 2
     while start_index+length <= len(xyz):
         current_index = start_index+length
-        cost_par = MDL_par(xyz[start_index:current_index+1],xyz[start_index], xyz[current_index])
-        cost_nopar = MDL_nopar(xyz[start_index:current_index+1],xyz[start_index], xyz[current_index])
-        if cost_par>cost_nopar: 
+        print "current_index, start_index, length", (current_index, start_index, length)
+        print "xyz[start_index:current_index+1]", xyz[start_index:current_index+1]
+        print "characteristic_points", characteristic_points
+        cost_par = MDL_par(xyz[start_index:current_index+1])
+        print cost_par
+        cost_nopar = MDL_nopar(xyz[start_index:current_index+1])
+        print cost_nopar
+        if cost_par>cost_nopar:
+            print "cost_par>cost_nopar" 
             characteristic_points.append(xyz[current_index-1])
             start_index = current_index-1
-            length = 1
+            length = 2
         else:
+            print "cost_par<=cost_nopar"
             length+=1
+        raw_input()
     characteristic_points.append(xyz[-1])
+    return characteristic_points
                 
 def MDL_par(xyz):   
     val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
