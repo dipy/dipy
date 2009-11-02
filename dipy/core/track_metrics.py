@@ -309,6 +309,16 @@ def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
     --------
     weighted_distance: float
         w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
+    
+    Examples:
+    --------
+    >>> import dipy.core.track_metrics as tm 
+    >>> tm.lee_distances([0,0,0],[1,0,0],[3,4,5],[5,4,3],[1,0,0])
+    >>> 5.9380966767403436  
+    >>> tm.lee_distances([0,0,0],[1,0,0],[3,4,5],[5,4,3],[0,1,0])
+    >>> 3.0  
+    >>> tm.lee_distances([0,0,0],[1,0,0],[3,4,5],[5,4,3],[0,0,1])
+    >>> 2.0  
     '''
     start0=np.asarray(start0,dtype='float64')    
     end0=np.asarray(end0,dtype='float64')    
@@ -339,9 +349,114 @@ def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
     # have the same length
     return w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
 
+def lee_perpendicular_distance(start0, end0, start1, end1):
+    ''' Based on Lee , Han & Whang SIGMOD07.
+        Calculates perpendicular distance3 metric for the distance between two line segments
+    
+    Parameters:
+    -----------
+        start0: float array(3,)
+        end0: float array(3,)
+        start1: float array(3,)
+        end1: float array(3,)
+    
+    Returns:
+    --------
+        perpendicular_distance: float
+
+    Examples:
+    --------
+    >>> import dipy.core.track_metrics as tm 
+    >>> tm.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    >>> 5.9380966767403436  
+    '''
+    start0=np.asarray(start0,dtype='float64')    
+    end0=np.asarray(end0,dtype='float64')    
+    start1=np.asarray(start1,dtype='float64')    
+    end1=np.asarray(end1,dtype='float64')    
+    
+    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    ps = start0+u1*(end0-start0)
+    pe = start0+u2*(end0-start0)
+    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
+    lperp2 = np.sqrt(np.inner(ps-end1,ps-end1))
+    if lperp1+lperp2 > 0.:
+        return (lperp1**2+lperp2**2)/(lperp1+lperp2)
+    else:
+        return 0.
+
+def lee_parallel_distance(start0, end0, start1, end1):
+    ''' Based on Lee , Han & Whang SIGMOD07.
+        Calculates parallel distance metric for the distance between two line segments
+    
+    Parameters:
+    -----------
+        start0: float array(3,)
+        end0: float array(3,)
+        start1: float array(3,)
+        end1: float array(3,)
+    
+    Returns:
+    --------
+        parallel_distance: float
+
+    Examples:
+    --------
+    >>> import dipy.core.track_metrics as tm 
+    >>> tm.lee_parallel_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    >>> 3.0  
+    '''
+    start0=np.asarray(start0,dtype='float64')    
+    end0=np.asarray(end0,dtype='float64')    
+    start1=np.asarray(start1,dtype='float64')    
+    end1=np.asarray(end1,dtype='float64')    
+    
+    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    ps = start0+u1*(end0-start0)
+    pe = start0+u2*(end0-start0)
+    lpar1=np.min(np.inner(start0-ps, start0-ps),np.inner(end0-ps, end0-ps))
+    lpar2=np.min(np.inner(start0-pe, start0-pe),np.inner(end0-pe, end0-pe))
+
+    return np.sqrt(np.min(lpar1, lpar2))
+
+def lee_angle_distance(start0, end0, start1, end1):
+    ''' Based on Lee , Han & Whang SIGMOD07.
+        Calculates angle distance metric for the distance between two line segments
+    
+    Parameters:
+    -----------
+        start0: float array(3,)
+        end0: float array(3,)
+        start1: float array(3,)
+        end1: float array(3,)
+    
+    Returns:
+    --------
+        angle_distance: float
+
+    Examples:
+    --------
+    >>> import dipy.core.track_metrics as tm 
+    >>> tm.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    >>> 2.0 
+    '''
+    start0=np.asarray(start0,dtype='float64')    
+    end0=np.asarray(end0,dtype='float64')    
+    start1=np.asarray(start1,dtype='float64')    
+    end1=np.asarray(end1,dtype='float64')    
+    
+    cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ \
+        (np.inner(end0-start0,end0-start0)*np.inner(end1-start1,end1-start1))
+
+    return np.sqrt((1-cos_theta_squared)*np.inner(end1-start1, end1-start1))
+    # the apparent asymmetry of this metric does not occur when the two line segments
+    # have the same length
+
 def approximate_trajectory_partitioning(xyz):
-    ''' Implementation of Lee et al approximate trajectory
-        partitioning algorithm
+    ''' Implementation of Lee et al Approximate Trajectory
+        Partitioning Algorithm
     
     Parameters:
     ------------------
@@ -358,8 +473,8 @@ def approximate_trajectory_partitioning(xyz):
     length = 1
     while start_index+length <= len(xyz):
         current_index = start_index+length
-        cost_par = MDL_par(xyz[start_index], xyz[current_index])
-        cost_nopar = MDL_nopar(xyz[start_index], xyz[current_index])
+        cost_par = MDL_par(xyz[start_index:current_index+1],xyz[start_index], xyz[current_index])
+        cost_nopar = MDL_nopar(xyz[start_index:current_index+1],xyz[start_index], xyz[current_index])
         if cost_par>cost_nopar: 
             characteristic_points.append(xyz[current_index-1])
             start_index = current_index-1
@@ -368,8 +483,12 @@ def approximate_trajectory_partitioning(xyz):
             length+=1
     characteristic_points.append(xyz[-1])
                 
+def MDL_par():   
+    pass
     
-
+def MDL_nopar():
+    pass
+    
 def zhang_distances(xyz1,xyz2,metric='all'):
     ''' Calculating the distance between tracks xyz1 and xyz2 
         Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
