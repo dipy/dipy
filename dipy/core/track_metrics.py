@@ -483,11 +483,13 @@ def approximate_trajectory_partitioning(xyz):
             length+=1
     characteristic_points.append(xyz[-1])
                 
-def MDL_par():   
-    pass
+def MDL_par(xyz):   
+    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0])))
+    val+=np.sum(np.log2([]))
+    return val
     
-def MDL_nopar():
-    pass
+def MDL_nopar(xyz):
+    return np.log2(length(xyz))
     
 def zhang_distances(xyz1,xyz2,metric='all'):
     ''' Calculating the distance between tracks xyz1 and xyz2 
