@@ -325,6 +325,17 @@ def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
     start1=np.asarray(start1,dtype='float64')    
     end1=np.asarray(end1,dtype='float64')    
     
+    l_0 = np.inner(end0-start0,end0-start0)
+    l_1 = np.inner(end1-start1,end1-start1)
+
+    if l_1 > l_0:
+        s_tmp = start0
+        e_tmp = end0
+        start0 = start1
+        end0 = end1
+        start1 = s_tmp
+        end1 = e_tmp
+    
     u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
     u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
     ps = start0+u1*(end0-start0)
@@ -345,13 +356,11 @@ def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
 
     angle_distance = np.sqrt((1-cos_theta_squared)*np.inner(end1-start1, end1-start1))
 
-    # the apparent asymmetry of this metric does not occur when the two line segments
-    # have the same length
     return w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
 
 def lee_perpendicular_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
-        Calculates perpendicular distance3 metric for the distance between two line segments
+        Calculates perpendicular distance metric for the distance between two line segments
     
     Parameters:
     -----------
@@ -375,12 +384,29 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     start1=np.asarray(start1,dtype='float64')    
     end1=np.asarray(end1,dtype='float64')    
     
+    l_0 = np.inner(end0-start0,end0-start0)
+    l_1 = np.inner(end1-start1,end1-start1)
+
+    if l_1 > l_0:
+        s_tmp = start0
+        e_tmp = end0
+        start0 = start1
+        end0 = end1
+        start1 = s_tmp
+        end1 = e_tmp
+    
     u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    print u1
     u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    print u2
     ps = start0+u1*(end0-start0)
+    print ps
     pe = start0+u2*(end0-start0)
+    print pe
     lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
+    print lperp1
     lperp2 = np.sqrt(np.inner(ps-end1,ps-end1))
+    print lperp2
     if lperp1+lperp2 > 0.:
         return (lperp1**2+lperp2**2)/(lperp1+lperp2)
     else:
@@ -447,12 +473,20 @@ def lee_angle_distance(start0, end0, start1, end1):
     start1=np.asarray(start1,dtype='float64')    
     end1=np.asarray(end1,dtype='float64')    
     
-    cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ \
-        (np.inner(end0-start0,end0-start0)*np.inner(end1-start1,end1-start1))
+    l_0 = np.inner(end0-start0,end0-start0)
+    l_1 = np.inner(end1-start1,end1-start1)
 
-    return np.sqrt((1-cos_theta_squared)*np.inner(end1-start1, end1-start1))
-    # the apparent asymmetry of this metric does not occur when the two line segments
-    # have the same length
+    if l_1 > l_0:
+        s_tmp = start0
+        e_tmp = end0
+        start0 = start1
+        end0 = end1
+        start1 = s_tmp
+        end1 = e_tmp
+    
+    cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
+
+    return np.sqrt((1-cos_theta_squared)*l_1)
 
 def approximate_trajectory_partitioning(xyz):
     ''' Implementation of Lee et al Approximate Trajectory
@@ -484,12 +518,21 @@ def approximate_trajectory_partitioning(xyz):
     characteristic_points.append(xyz[-1])
                 
 def MDL_par(xyz):   
-    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0])))
-    val+=np.sum(np.log2([]))
+    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
+    # L(H)
+    val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
+    val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
+    # L(D|H) 
     return val
     
 def MDL_nopar(xyz):
-    return np.log2(length(xyz))
+    '''
+    Example:
+    --------
+    >>> xyz = np.array([[0,0,0],[2,2,0],[3,1,0],[4,2,0],[5,0,0]])
+    >>> tm.MDL_nopar(xyz) == np.sum(np.log2([8,2,2,5]))/2
+    '''
+    return np.sum(np.log2((np.diff(xyz, axis=0)**2).sum(axis=1)))/2
     
 def zhang_distances(xyz1,xyz2,metric='all'):
     ''' Calculating the distance between tracks xyz1 and xyz2 
