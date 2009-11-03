@@ -396,17 +396,17 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         end1 = e_tmp
     
     u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-    print u1
+##    print u1
     u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-    print u2
+##    print u2
     ps = start0+u1*(end0-start0)
-    print ps
+##    print ps
     pe = start0+u2*(end0-start0)
-    print pe
+##    print pe
     lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
-    print lperp1
+##    print lperp1
     lperp2 = np.sqrt(np.inner(ps-end1,ps-end1))
-    print lperp2
+##    print lperp2
     if lperp1+lperp2 > 0.:
         return (lperp1**2+lperp2**2)/(lperp1+lperp2)
     else:
@@ -507,22 +507,22 @@ def approximate_trajectory_partitioning(xyz):
     length = 2
     while start_index+length <= len(xyz):
         current_index = start_index+length
-        print "current_index, start_index, length", (current_index, start_index, length)
-        print "xyz[start_index:current_index+1]", xyz[start_index:current_index+1]
-        print "characteristic_points", characteristic_points
+##        print "current_index, start_index, length", (current_index, start_index, length)
+##        print "xyz[start_index:current_index+1]", xyz[start_index:current_index+1]
+##        print "characteristic_points", characteristic_points
         cost_par = MDL_par(xyz[start_index:current_index+1])
-        print cost_par
+##        print cost_par
         cost_nopar = MDL_nopar(xyz[start_index:current_index+1])
-        print cost_nopar
+##        print cost_nopar
         if cost_par>cost_nopar:
-            print "cost_par>cost_nopar" 
+##            print "cost_par>cost_nopar" 
             characteristic_points.append(xyz[current_index-1])
             start_index = current_index-1
             length = 2
         else:
-            print "cost_par<=cost_nopar"
+##            print "cost_par<=cost_nopar"
             length+=1
-        raw_input()
+##        raw_input()
     characteristic_points.append(xyz[-1])
     return characteristic_points
                 
