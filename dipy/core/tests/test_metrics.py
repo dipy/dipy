@@ -57,3 +57,8 @@ def test_zhang_distances():
     # 'maximum_mean_closest_distance': 5.333333333333333,
     # 'minimum_mean_closest_distance': 2.5}
     yield assert_almost_equal, zd[0], 1.76135602742
+
+    xyz1=xyz1.astype('float32')
+    xyz2=xyz2.astype('float32')
+    zd2 = pf.zhang_distances(xyz1,xyz2)
+    yield assert_almost_equal, zd2[0], 1.76135602742

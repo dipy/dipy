@@ -155,3 +155,91 @@ def most_similar_track_zhang(tracks,metric='avg'):
 
     return si,s
 
+def zhang_distances(xyz1,xyz2,metric='all'):
+    
+    ''' Calculating the distance between tracks xyz1 and xyz2 
+        Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
+        http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
+        which in turn are based on those of Corouge et al. 2004
+        
+        This function should return the same results with zhang_distances 
+        from track_metrics but hopefully faster.
+ 
+    Parameters:
+    -----------
+        xyz1 : array, shape (N1,3), dtype float32
+        xyz2 : array, shape (N2,3), dtype float32
+        arrays representing x,y,z of the N1 and N2 points  of two tracks
+    
+    Returns:
+    --------
+        avg_mcd: float
+                    average_mean_closest_distance
+        min_mcd: float
+                    minimum_mean_closest_distance
+        max_mcd: float
+                    maximum_mean_closest_distance
+    '''
+    
+    DEF biggest_double = 1.79769e+308
+
+    cdef int m,n,lti,ltj
+    cdef double sumi, sumj,delta
+    
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] A
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] B
+
+    cdef double *mini
+    cdef double *minj
+    
+    lti=xyz1.shape[0]
+    ltj=xyz2.shape[0]
+    
+    A=xyz1
+    B=xyz2    
+
+    mini = <double *>malloc(ltj*sizeof(double))
+    minj = <double *>malloc(lti*sizeof(double))
+    
+    for n from 0<= n < ltj:
+        mini[n]=biggest_double
+        
+    for m from 0<= m < lti:
+        minj[m]=biggest_double
+        
+    for m from 0<= m < lti:                
+        for n from 0<= n < ltj:
+
+            delta=sqrt((A[m,0]-B[n,0])*(A[m,0]-B[n,0])+(A[m,1]-B[n,1])*(A[m,1]-B[n,1])+(A[m,2]-B[n,2])*(A[m,2]-B[n,2]))
+            
+            if delta < mini[n]:
+                mini[n]=delta
+                
+            if delta < minj[m]:
+                minj[m]=delta
+    
+    sumi=0
+    sumj=0
+    
+    for m from 0<= m < lti:
+        sumj+=minj[m]
+    sumj=sumj/lti
+               
+    for n from 0<= n < ltj:
+        sumi+=mini[n]
+    sumi=sumi/ltj
+
+    free(mini)
+    free(minj)
+        
+    if metric=='all':
+        return (sumi+sumj)/2.0, np.min(sumi,sumj), np.max(sumi,sumj)
+    elif metric=='avg':
+        return (sumi+sumj)/2.0
+    elif metric=='min':            
+        return np.min(sumi,sumj)
+    elif metric =='max':
+        return np.max(sumi,sumj)
+    else :
+        ValueError('Wrong argument for metric')
+        
