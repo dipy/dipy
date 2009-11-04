@@ -233,6 +233,8 @@ def frenet_serret(xyz):
     
     #return T,N,B,k,t,dxyz,ddxyz,dT   
     return T,N,B,k,t
+
+
     
 def mean_curvature(xyz):    
     ''' Calculates the mean curvature of a curve
@@ -507,22 +509,22 @@ def approximate_trajectory_partitioning(xyz):
     length = 2
     while start_index+length <= len(xyz):
         current_index = start_index+length
-##        print "current_index, start_index, length", (current_index, start_index, length)
-##        print "xyz[start_index:current_index+1]", xyz[start_index:current_index+1]
-##        print "characteristic_points", characteristic_points
+        #        print "current_index, start_index, length", (current_index, start_index, length)
+        #        print "xyz[start_index:current_index+1]", xyz[start_index:current_index+1]
+        #        print "characteristic_points", characteristic_points
         cost_par = MDL_par(xyz[start_index:current_index+1])
-##        print cost_par
+        #        print cost_par
         cost_nopar = MDL_nopar(xyz[start_index:current_index+1])
-##        print cost_nopar
+        #        print cost_nopar
         if cost_par>cost_nopar:
-##            print "cost_par>cost_nopar" 
+        #            print "cost_par>cost_nopar" 
             characteristic_points.append(xyz[current_index-1])
             start_index = current_index-1
             length = 2
         else:
-##            print "cost_par<=cost_nopar"
+        #            print "cost_par<=cost_nopar"
             length+=1
-##        raw_input()
+    #        raw_input()
     characteristic_points.append(xyz[-1])
     return characteristic_points
                 
@@ -768,12 +770,18 @@ def intersect_sphere(xyz,center,radius):
             
     Parameters:
     --------------
-        xyz : array, shape (N,3)
-        array representing x,y,z of the N points of the track
+    xyz : array, shape (N,3)
+            representing x,y,z of the N points of the track
+    
+    center : array, shape (3,)
+                center of the sphere
+    
+    radius : float
+                radius of the sphere
     
     Returns:
     ----------
-        boolean : {True,False}    
+    boolean : {True,False}    
     
     Examples:
     -----------
@@ -793,15 +801,22 @@ def intersect_sphere_points(xyz,center,radius):
             
     Parameters:
     --------------
-        xyz : array, shape (N,3)
-        array representing x,y,z of the N points of the track
+    xyz : array, shape (N,3)
+            representing x,y,z of the N points of the track
+    
+    center : array, shape (3,)
+            center of the sphere
+    
+    radius : float
+            radius of the sphere
     
     Returns:
     ----------
-        boolean : {True,False}    
+    xyzn : array, shape(M,3)
+    array representing x,y,z of the M points inside the sphere
     
     Examples:
-    -----------
+    -------------
     >>> from dipy.core import track_metrics as tm
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
@@ -811,6 +826,32 @@ def intersect_sphere_points(xyz,center,radius):
             
     return xyz[(np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius)]
 
+def orientation_in_sphere(xyz,center,radius):
+    ''' Calculate the average orientation of a track segment inside a sphere
+    
+    Parameters:
+    --------------
+    xyz : array, shape (N,3)
+            representing x,y,z of the N points of the track
+    
+    center : array, shape (3,)
+            center of the sphere
+    
+    radius : float
+            radius of the sphere
+    
+    
+    track=np.array([[1,1,1],[2,2,2],[3,3,3]])    
+    sp_center=(2,2,2)
+    sp_radius=0.5
+    '''
+    xyzn=intersect_sphere_points(xyz,center,radius)    
+    #calculate gradient
+    dxyz=np.gradient(xyzn)[0]
+    
+    return np.mean(dxyz,axis=0)
+
+    
 
 def spline(xyz,s=3,k=2,nest=-1):
     
