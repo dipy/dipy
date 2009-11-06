@@ -31,6 +31,26 @@ def test_splines():
     xyzn=tm.spline(xyz,3,2,-1)
     pass
 
+def test_segment_intersection():
+
+    xyz=np.array([[1,1,1],[2,2,2],[2,2,2]])    
+    center=[10,4,10]
+    radius=1
+    
+    yield assert_equal, tm.any_segment_intersect_sphere(xyz,center,radius), False
+    
+    xyz=np.array([[1,1,1],[2,2,2],[3,3,3],[4,4,4]])
+    center=[10,10,10]
+    radius=2
+    
+    yield assert_equal, tm.any_segment_intersect_sphere(xyz,center,radius), False
+
+    xyz=np.array([[1,1,1],[2,2,2],[3,3,3],[4,4,4]])
+    center=[2.1,2,2.2]
+    radius=2
+    
+    yield assert_equal, tm.any_segment_intersect_sphere(xyz,center,radius), True
+
 def test_most_similar_zhang():
 
     xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')

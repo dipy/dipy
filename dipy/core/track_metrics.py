@@ -761,10 +761,78 @@ def most_similar_track(S,sort=False):
     else:        
         return   (S+S.T).sum(axis=0).argmin()
 
+def any_segment_intersect_sphere(xyz,center,radius):
+    ''' If any segment of the track is intersecting with a sphere of specific center and radius return True
+    otherwise False
+    
+    Parameters:
+    --------------
+    xyz : array, shape (N,3)
+            representing x,y,z of the N points of the track
+    
+    center : array, shape (3,)
+                center of the sphere
+    
+    radius : float
+                radius of the sphere
+    
+    Returns:
+    ----------
+    boolean : {True,False}           
 
+    Notes :
+    ---------
+    The method used here is similar with 
+    http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/
+    http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/source.cpp
+    we just applied it for every segment neglecting the intersections where
+    the intersecting points are not inside the segment      
+    
+    '''
+    center=np.array(center)
+    #print center
+    
+    lt=xyz.shape[0]
+    
+    for i in xrange(lt-1):
+
+        #first point
+        x1=xyz[i]
+        #second point
+        x2=xyz[i+1]
+        
+        #do the calculations as given in the Notes        
+        x=x2-x1
+        a=np.inner(x,x)
+        x1c=x1-center
+        b=2*np.inner(x,x1c)
+        c=np.inner(center,center)+np.inner(x1,x1)-2*np.inner(center,x1) - radius**2
+        bb4ac =b*b-4*a*c
+        
+        if abs(a)<np.finfo(float).eps or bb4ac < 0 :#too small segment or no intersection           
+            continue
+        if bb4ac ==0: #one intersection point p
+            mu=-b/2*a
+            p=x1+mu*x                        
+            #check if point are inside the segment            
+            if np.inner(p,p) <= a:
+                return True
+            
+        if bb4ac > 0: #two intersection points p1 and p2            
+            mu=(-b+np.sqrt(bb4ac))/(2*a)
+            p1=x1+mu*x            
+            mu=(-b-np.sqrt(bb4ac))/(2*a)
+            p2=x1+mu*x       
+            #check if points are inside the line segment
+            if np.inner(p1,p1) <= a or np.inner(p2,p2) <= a:
+                return True
+            
+            
+    
+    return False
     
 def intersect_sphere(xyz,center,radius):
-    ''' If a track intersects with a sphere of a specified center and radius return True otherwise False.
+    ''' If any point of the track is inside a sphere of a specified center and radius return True otherwise False.
         Mathematicaly this can be simply described by ||x-c||<=r where ``x`` a point ``c`` the center 
         of the sphere and ``r`` the radius of the sphere.
             
