@@ -800,7 +800,7 @@ def intersect_sphere_points(xyz,center,radius):
         of the sphere and ``r`` the radius of the sphere.
             
     Parameters:
-    --------------
+    ---------------
     xyz : array, shape (N,3)
             representing x,y,z of the N points of the track
     
@@ -838,18 +838,30 @@ def orientation_in_sphere(xyz,center,radius):
             center of the sphere
     
     radius : float
-            radius of the sphere
+            radius of the sphere    
     
+    Returns:
+    ----------
+    orientation : array, shape (3,)
+                    vector representing the average orientation of the track inside sphere 
+        
+    Examples:
+    -------------
+    >>> track=np.array([[1,1,1],[2,2,2],[3,3,3]])    
+    >>> center=(2,2,2)
+    >>> radius=5
+    >>> orientation_in_sphere(track)
+    array([1.,1.,1.])
     
-    track=np.array([[1,1,1],[2,2,2],[3,3,3]])    
-    sp_center=(2,2,2)
-    sp_radius=0.5
     '''
-    xyzn=intersect_sphere_points(xyz,center,radius)    
-    #calculate gradient
-    dxyz=np.gradient(xyzn)[0]
-    
-    return np.mean(dxyz,axis=0)
+    xyzn=intersect_sphere_points(xyz,center,radius)   
+     
+    if xyzn.shape[0] >1:
+        
+        #calculate gradient
+        dxyz=np.gradient(xyzn)[0]
+        #average orientation
+        return np.mean(dxyz,axis=0)
 
     
 
