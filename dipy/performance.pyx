@@ -182,6 +182,24 @@ def zhang_distances(xyz1,xyz2,metric='all'):
                     minimum_mean_closest_distance
         max_mcd: float
                     maximum_mean_closest_distance
+                    
+    Notes:
+    --------
+    
+    Algorithmic description
+    
+    Lets say we have curves A and B
+    
+    for every point in A calculate the minimum distance from every point in B stored in minAB
+    for every point in B calculate the minimum distance from every point in A stored in minBA
+    find average of minAB stored as avg_minAB
+    find average of minBA stored as avg_minBA
+    
+    if metic is 'avg' then return (avg_minAB + avg_minBA)/2.0
+    if metic is 'min' then return min(avg_minAB,avg_minBA)
+    if metic is 'max' then return max(avg_minAB,avg_minBA)
+    
+    
     '''
     
     DEF biggest_double = 1.79769e+308
@@ -246,4 +264,84 @@ def zhang_distances(xyz1,xyz2,metric='all'):
     else :
         ValueError('Wrong argument for metric')
         
+def minimum_closest_distance(xyz1,xyz2):
+    ''' Find the minimum distance between two curves xyz1, xyz2
+    
+    Parameters:
+    -----------
+        xyz1 : array, shape (N1,3), dtype float32
+        xyz2 : array, shape (N2,3), dtype float32
+        arrays representing x,y,z of the N1 and N2 points  of two tracks
+    
+    Returns:
+    -----------
+    
+    Notes:
+    ---------
+    Algorithmic description
+    
+    Lets say we have curves A and B
+    
+    for every point in A calculate the minimum distance from every point in B stored in minAB
+    for every point in B calculate the minimum distance from every point in A stored in minBA
+    find min of minAB stored in min_minAB
+    find min of minBA stored in min_minBA
+    
+    is 'avg' then return (min_minAB + min_minBA)/2.0
+    '''
+    
+    DEF biggest_double = 1.79769e+308
 
+    cdef int m,n,lti,ltj
+    cdef double min_i, min_j,delta
+    
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] A
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] B
+
+    cdef double *mini
+    cdef double *minj
+    
+    lti=xyz1.shape[0]
+    ltj=xyz2.shape[0]
+    
+    A=xyz1
+    B=xyz2    
+
+    mini = <double *>malloc(ltj*sizeof(double))
+    minj = <double *>malloc(lti*sizeof(double))
+    
+    for n from 0<= n < ltj:
+        mini[n]=biggest_double
+        
+    for m from 0<= m < lti:
+        minj[m]=biggest_double
+        
+    for m from 0<= m < lti:                
+        for n from 0<= n < ltj:
+
+            delta=sqrt((A[m,0]-B[n,0])*(A[m,0]-B[n,0])+(A[m,1]-B[n,1])*(A[m,1]-B[n,1])+(A[m,2]-B[n,2])*(A[m,2]-B[n,2]))
+            
+            if delta < mini[n]:
+                mini[n]=delta
+                
+            if delta < minj[m]:
+                minj[m]=delta
+    
+    min_i=biggest_double
+    min_j=biggest_double
+    
+    for m from 0<= m < lti:
+        if min_j > minj[m]:
+            min_j=minj[m]
+    
+               
+    for n from 0<= n < ltj:
+        if min_i > mini[n]:
+            min_i =mini[n]
+
+    free(mini)
+    free(minj)
+        
+    return (min_i+min_j)/2.0
+
+    

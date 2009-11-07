@@ -782,7 +782,7 @@ def any_segment_intersect_sphere(xyz,center,radius):
 
     Notes :
     ---------
-    The method used here is similar with 
+    The ray to sphere intersection method used here is similar with 
     http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/
     http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/source.cpp
     we just applied it for every segment neglecting the intersections where
@@ -814,12 +814,12 @@ def any_segment_intersect_sphere(xyz,center,radius):
         if bb4ac ==0: #one intersection point p
             mu=-b/2*a
             p=x1+mu*x                        
-            #check if point is inside the segment            
+            #check if point is inside the segment 
             #print 'p',p
             if np.inner(p-x1,p-x1) <= a:
                 return True
            
-        if bb4ac > 0: #two intersection points p1 and p2            
+        if bb4ac > 0: #two intersection points p1 and p2
             mu=(-b+np.sqrt(bb4ac))/(2*a)
             p1=x1+mu*x            
             mu=(-b-np.sqrt(bb4ac))/(2*a)
@@ -933,7 +933,8 @@ def orientation_in_sphere(xyz,center,radius):
         #average orientation
         return np.mean(dxyz,axis=0)
 
-    
+    else:
+        return None
 
 def spline(xyz,s=3,k=2,nest=-1):
     

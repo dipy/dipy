@@ -30,6 +30,13 @@ def test_splines():
     # get the B-splines
     xyzn=tm.spline(xyz,3,2,-1)
     pass
+    
+def test_minimum_distance():
+    
+    xyz1=np.array([[1,0,0],[2,0,0]],dtype='float32')
+    xyz2=np.array([[3,0,0],[4,0,0]],dtype='float32')
+    yield assert_equal, pf.minimum_closest_distance(xyz1,xyz2), 1.0
+    
 
 def test_segment_intersection():
 

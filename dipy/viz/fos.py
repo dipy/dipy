@@ -35,6 +35,18 @@ except ImportError:
 
 import types    
 
+'''
+For more color names see
+http://www.colourlovers.com/blog/2007/07/24/32-common-color-names-for-easy-reference/
+'''
+red=np.array([1,0,0])
+green=np.array([0,1,0])
+blue=np.array([0,0,1])
+yellow=np.array([1,1,0])
+cyan=np.array([0,1,1])
+azure=np.array([0,0.49,1])
+golden=np.array([1,0.84,0])
+
 class Foz(object):
     ''' An object for fast accessing the fos utilities.
     '''
