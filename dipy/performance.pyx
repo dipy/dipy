@@ -4,6 +4,7 @@ Performance functions for dipy
 
 '''
 cimport cython
+
 import numpy as np
 cimport numpy as cnp
 from dipy.core import track_metrics as tm
@@ -19,8 +20,9 @@ cdef extern from "stdlib.h":
     void *malloc(size_t size)
     void *calloc(size_t nelem, size_t elsize)
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+
 
 def most_similar_track_zhang(tracks,metric='avg'):    
     ''' The purpose of this function is to implement a much faster version of 
@@ -61,6 +63,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
     si holds the index of the track with min {avg,min,max} average metric
     
     '''
+    
     DEF biggest_double = 1.79769e+308
 
     cdef long lent=len(tracks)

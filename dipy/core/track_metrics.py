@@ -490,33 +490,33 @@ def lee_angle_distance(start0, end0, start1, end1):
 
     return np.sqrt((1-cos_theta_squared)*l_1)
 
-def approximate_trajectory_partitioning(xyz):
+def approximate_trajectory_partitioning(xyz, alpha=1.):
     ''' Implementation of Lee et al Approximate Trajectory
         Partitioning Algorithm
     
     Parameters:
     ------------------
     xyz: array(N,3) 
+        initial trajectory
+    alpha: float
+        smoothing parameter (>1 => smoother, <1 => rougher)
     
     Returns:
     ------------
-    characteristic_points: 
-    
+    characteristic_points: list of M array(3,) points
+        which can be turned into an array with np.asarray() 
     '''
     
     characteristic_points=[xyz[0]]
     start_index = 0
     length = 2
-    while start_index+length <= len(xyz):
+    while start_index+length < len(xyz):
         current_index = start_index+length
-        #        print "current_index, start_index, length", (current_index, start_index, length)
-        #        print "xyz[start_index:current_index+1]", xyz[start_index:current_index+1]
-        #        print "characteristic_points", characteristic_points
-        cost_par = MDL_par(xyz[start_index:current_index+1])
+        cost_par = minimum_description_length_partitoned(xyz[start_index:current_index+1])
         #        print cost_par
-        cost_nopar = MDL_nopar(xyz[start_index:current_index+1])
+        cost_nopar = minimum_description_length_unpartitoned(xyz[start_index:current_index+1])
         #        print cost_nopar
-        if cost_par>cost_nopar:
+        if alpha*cost_par>cost_nopar:
         #            print "cost_par>cost_nopar" 
             characteristic_points.append(xyz[current_index-1])
             start_index = current_index-1
@@ -528,7 +528,7 @@ def approximate_trajectory_partitioning(xyz):
     characteristic_points.append(xyz[-1])
     return characteristic_points
                 
-def MDL_par(xyz):   
+def minimum_description_length_partitoned(xyz):   
     val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
     # L(H)
     val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
@@ -536,12 +536,12 @@ def MDL_par(xyz):
     # L(D|H) 
     return val
     
-def MDL_nopar(xyz):
+def minimum_description_length_unpartitoned(xyz):
     '''
     Example:
     --------
     >>> xyz = np.array([[0,0,0],[2,2,0],[3,1,0],[4,2,0],[5,0,0]])
-    >>> tm.MDL_nopar(xyz) == np.sum(np.log2([8,2,2,5]))/2
+    >>> tm.minimum_description_length_unpartitoned(xyz) == np.sum(np.log2([8,2,2,5]))/2
     '''
     return np.sum(np.log2((np.diff(xyz, axis=0)**2).sum(axis=1)))/2
     
