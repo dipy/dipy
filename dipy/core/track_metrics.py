@@ -526,7 +526,7 @@ def approximate_trajectory_partitioning(xyz, alpha=1.):
             length+=1
     #        raw_input()
     characteristic_points.append(xyz[-1])
-    return characteristic_points
+    return np.array(characteristic_points)
                 
 def minimum_description_length_partitoned(xyz):   
     val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))

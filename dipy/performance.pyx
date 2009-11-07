@@ -20,8 +20,8 @@ cdef extern from "stdlib.h":
     void *malloc(size_t size)
     void *calloc(size_t nelem, size_t elsize)
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
+@cython.boundscheck(False)
+@cython.wraparound(False)
 
 
 def most_similar_track_zhang(tracks,metric='avg'):    
