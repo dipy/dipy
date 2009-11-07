@@ -283,17 +283,28 @@ def mean_curvature(xyz):
         
     return np.mean(k)
 
-def frechet_distance(xyz1,xyz2):
-    ''' Frechet distance
-    http://www.cim.mcgill.ca/~stephane/cs507/Project.html
-    http://www.cs.uu.nl/groups/AA/multimedia/matching/shame.html
+def mean_orientation(xyz):
     '''
-    pass        
+    Calculates the mean curvature of a curve
     
-def mahnaz_distance(xyz1,xyz2):
-    ''' Look Mahnaz's thesis
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a curve
+        
+    Returns
+    ---------
+    m : float 
+        float representing the mean orientation
     '''
-    pass
+    xyz = np.asarray(xyz)
+    n_pts = xyz.shape[0]
+    if n_pts == 0:
+        raise ValueError('xyz array cannot be empty')
+    
+    dxyz=np.gradient(xyz)[0]  
+        
+    return np.mean(dxyz,axis=0)
     
 def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
     ''' Based on Lee , Han & Whang SIGMOD07.

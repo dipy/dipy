@@ -151,10 +151,10 @@ def most_similar_track_zhang(tracks,metric='avg'):
             s[j]+=tmp
             
     si = np.argmin(s)
-    print(si,tracks[0].dtype)
+    #print(si,tracks[0].dtype)
 
     for j from 0 <= j < lent:
-        s[j]=tm.zhang_distances(tracks[si],tracks[j],metric)
+        s[j]=zhang_distances(tracks[si],tracks[j],metric)
 
     return si,s
 
