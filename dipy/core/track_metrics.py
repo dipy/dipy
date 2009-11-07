@@ -808,23 +808,25 @@ def any_segment_intersect_sphere(xyz,center,radius):
         b=2*np.inner(x,x1c)
         c=np.inner(center,center)+np.inner(x1,x1)-2*np.inner(center,x1) - radius**2
         bb4ac =b*b-4*a*c
-        
+        #print 'bb4ac',bb4ac
         if abs(a)<np.finfo(float).eps or bb4ac < 0 :#too small segment or no intersection           
             continue
         if bb4ac ==0: #one intersection point p
             mu=-b/2*a
             p=x1+mu*x                        
-            #check if point are inside the segment            
-            if np.inner(p,p) <= a:
+            #check if point is inside the segment            
+            #print 'p',p
+            if np.inner(p-x1,p-x1) <= a:
                 return True
-            
+           
         if bb4ac > 0: #two intersection points p1 and p2            
             mu=(-b+np.sqrt(bb4ac))/(2*a)
             p1=x1+mu*x            
             mu=(-b-np.sqrt(bb4ac))/(2*a)
             p2=x1+mu*x       
             #check if points are inside the line segment
-            if np.inner(p1,p1) <= a or np.inner(p2,p2) <= a:
+            #print 'p1,p2',p1,p2
+            if np.inner(p1-x1,p1-x1) <= a or np.inner(p2-x1,p2-x1) <= a:
                 return True
             
             
