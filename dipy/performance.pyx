@@ -20,9 +20,84 @@ cdef extern from "stdlib.h":
     void *malloc(size_t size)
     void *calloc(size_t nelem, size_t elsize)
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
 
+def cut_plance(tracks,ref):
+    
+    ''' Extract divergence vectors and points of intersection 
+    between planes normal to the reference fiber and other tracks
+    
+    Parameters:
+    -----------
+    
+    Returns:
+    --------
+        
+    '''
+    
+    cdef long lent=len(tracks)
+    cdef long i,j,k,
+    cdef double alpha,beta
+    
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] P
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] Q 
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] hit
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
+    
+    Hit=[]
+    Divergence=[]
+    
+    hit = np.zeros((3,), dtype=np.float32)
+    diverge = np.zeros((3,), dtype=np.float32)
+    
+    P=ref
+    
+    cdef int Plen=P.shape[0]
+    cdef int Qlen
+    
+    for p from 0 <= p < Plen-2:
+        
+        along = P[p+1]-P[p]        
+        normal=along/sqrt(along[0]*along[0]+along[1]*along[1]along[2]*along[2])
+        
+        for t from 0 <= t < lent:        
+            
+            Q=tracks[t]
+            Qlen=Q.shape[0]
+            
+            for q from 0<= q < Qlen-2:
+                
+                #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
+                if (normal[0]*(Q[q][0]-P[p][0])+normal[1]*(Q[q][1]-P[p][1]) \
+                    +normal[2]*(Q[q][2]-P[p][2])) * \                
+                    (normal[0]*(Q[q+1][0]-P[p][0])+normal[1]*(Q[q+1][1]-P[p][1]) \
+                    +normal[2]*(Q[q+1][2]-P[p][2])) <=0 :
+                
+                    #if np.inner((r-q),normal) != 0:
+                    beta=(normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
+                        +normal[2]*(Q[q+1][2]-Q[q][2]))
+                        
+                    if beta !=0 :
+                    
+                            #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
+                            alpha = (normal[0]*(P[p][0]-Q[q][0])+normal[1]*(P[p][1]-Q[q][1]) \
+                                    +normal[2]*(P[p][2]-Q[q][2]))/ \
+                                    (normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
+                                    +normal[2]*(Q[q+1][2]-Q[q][2]))
+                                    
+                            #hit = q+alpha*(r-q)
+                            hit[0] = Q[q][0]+alpha*(Q[q+1][0]-Q[q][0])
+                            hit[1] = Q[q][1]+alpha*(Q[q+1][1]-Q[q][1])
+                            hit[2] = Q[q][2]+alpha*(Q[q+1][2]-Q[q][2])
+                            
+                            #divergence = (r-q)-np.inner(r-q,normal)*normal
+                            divergence[0] = Q[q+1][0]-Q[q][0] - beta*normal[0]
+                            divergence[1] = Q[q+1][1]-Q[q][1] - beta*normal[1]
+                            divergence[2] = Q[q+1][2]-Q[q][2] - beta*normal[2]
+                    
+
+    
 
 def most_similar_track_zhang(tracks,metric='avg'):    
     ''' The purpose of this function is to implement a much faster version of 
