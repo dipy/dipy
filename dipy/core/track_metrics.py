@@ -283,6 +283,13 @@ def mean_curvature(xyz):
         
     return np.mean(k)
 
+def smart_curvature(xyz):
+    ''' xyz needs to be downsampled in equi-length segments
+    
+    '''
+    
+    pass
+
 def mean_orientation(xyz):
     '''
     Calculates the mean curvature of a curve

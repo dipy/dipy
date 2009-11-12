@@ -46,6 +46,9 @@ yellow=np.array([1,1,0])
 cyan=np.array([0,1,1])
 azure=np.array([0,0.49,1])
 golden=np.array([1,0.84,0])
+white=np.array([1,1,1])
+black=np.array([0,0,0])
+
 
 class Foz(object):
     ''' An object for fast accessing the fos utilities.
