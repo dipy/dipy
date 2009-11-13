@@ -13,6 +13,9 @@ from dipy.core import track_metrics as tm
 cdef extern from "math.h":
     double floor(double x)
     float sqrt(float x)
+    float abs( float num )
+    double abs( double num )
+
     
 cdef extern from "stdlib.h":
     ctypedef unsigned long size_t
@@ -52,7 +55,7 @@ def cut_plane(tracks,ref,thr=20.0):
     
     cdef long lent=len(tracks)
     cdef long i,j,k,
-    cdef double alpha,beta
+    cdef double alpha,beta,lrq,rcd,lhp
     cdef int cnthits=0
     
     cdef cnp.ndarray[cnp.float32_t, ndim=2] P
@@ -64,6 +67,7 @@ def cut_plane(tracks,ref,thr=20.0):
     Div=[]
     
     hit = np.zeros((3,), dtype=np.float32)
+    #hit = np.zeros((3,), dtype=np.float32)
     divergence = np.zeros((3,), dtype=np.float32)
     
     P=ref
@@ -77,8 +81,9 @@ def cut_plane(tracks,ref,thr=20.0):
         along = P[p+1]-P[p]        
         normal=along/sqrt(along[0]*along[0]+along[1]*along[1]+along[2]*along[2])
         
-        hits=np.array([0,0,0],dtype='float32')
-        divs=np.array([0,0,0],dtype='float32')
+        #hits=np.array([0,0,0],dtype='float32')
+        #divs=np.array([0,0,0],dtype='float32')
+        hits=np.array([0,0,0,0],dtype='float32')
         
         #for every track
         for t from 0 <= t < lent:        
@@ -97,8 +102,8 @@ def cut_plane(tracks,ref,thr=20.0):
                     if (normal[0]*(Q[q][0]-P[p][0])+normal[1]*(Q[q][1]-P[p][1]) \
                         +normal[2]*(Q[q][2]-P[p][2])) * (normal[0]*(Q[q+1][0]-P[p][0])+normal[1]*(Q[q+1][1]-P[p][1]) \
                         +normal[2]*(Q[q+1][2]-P[p][2])) <=0 :
-                    
                         #if np.inner((r-q),normal) != 0:
+                    
                         beta=(normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
                             +normal[2]*(Q[q+1][2]-Q[q][2]))                                        
                             
@@ -115,19 +120,31 @@ def cut_plane(tracks,ref,thr=20.0):
                                 hit[1] = Q[q][1]+alpha*(Q[q+1][1]-Q[q][1])
                                 hit[2] = Q[q][2]+alpha*(Q[q+1][2]-Q[q][2])
                                
-                                #divergence = (r-q)-np.inner(r-q,normal)*normal
-                                divergence[0] = Q[q+1][0]-Q[q][0] - beta*normal[0]
-                                divergence[1] = Q[q+1][1]-Q[q][1] - beta*normal[1]
-                                divergence[2] = Q[q+1][2]-Q[q][2] - beta*normal[2]
+                                #divergence =( (r-q)-np.inner(r-q,normal)*normal)/|r-q|
+                                lrq = sqrt((Q[q][0]-Q[q+1][0])*(Q[q][0]-Q[q+1][0])+(Q[q][1]-Q[q+1][1])*(Q[q][1]-Q[q+1][1])+(Q[q][2]-Q[q+1][2])*(Q[q][2]-Q[q+1][2]))
+                                divergence[0] = (Q[q+1][0]-Q[q][0] - beta*normal[0])/lrq
+                                divergence[1] = (Q[q+1][1]-Q[q][1] - beta*normal[1])/lrq
+                                divergence[2] = (Q[q+1][2]-Q[q][2] - beta*normal[2])/lrq
                                 
+                                #radial coefficient of divergence d.(h-p)/|h-p|
+                                lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
+                                
+                                if lhp>0.0 :
+                                    rcd=abs(divergence[0]*(hit[0]-P[p][0])+divergence[1]*(hit[1]-P[p][1])+divergence[2]*(hit[2]-P[p][2]))/lhp
+                                else:
+                                    rcd=0.0
+                                        
                                 #add points
-                                divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )
-                                hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
+                                #divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )                                
+                                #hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
+                                                                
+                                hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2],rcd ])) )
+                                
         
         Hit.append(hits[1:])
-        Div.append(divs[1:])
+        #Div.append(divs[1:])
         
-    return Hit,Div
+    return Hit
             
 def cut_planeV2(tracks,ref):
     

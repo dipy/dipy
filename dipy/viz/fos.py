@@ -475,10 +475,77 @@ def dots(points,color=(1,0,0),opacity=1):
 
   return aPolyVertexActor
 
-def point(points,color=(1,0,0),opacity=1):
+def point(points,colors,opacity=1):
     ''' Create 3d points and generate only one actor for all points. Same as dots.
     '''
-    return dots(points,color=(1,0,0),opacity=1)
+    #return dots(points,color=(1,0,0),opacity=1)
+    
+    if np.array(colors).ndim==1:
+        return dots(points,colors,opacity)
+    
+    points_=vtk.vtkCellArray()
+    pointscalars=vtk.vtkFloatArray()
+   
+    #lookuptable=vtk.vtkLookupTable()
+    lookuptable=_lookup(colors)
+
+    scalarmin=0
+    if colors.ndim==2:            
+        scalarmax=colors.shape[0]-1
+    if colors.ndim==1:        
+        scalarmax=0    
+
+
+    if points.ndim==2:
+        points_no=points.shape[0]
+    else:
+        points_no=1
+
+    polyVertexPoints = vtk.vtkPoints()
+    polyVertexPoints.SetNumberOfPoints(points_no)
+    aPolyVertex = vtk.vtkPolyVertex()
+    aPolyVertex.GetPointIds().SetNumberOfIds(points_no)
+
+    cnt=0
+    
+    if points.ndim>1:
+        for point in points:
+            
+            pointscalars.SetNumberOfComponents(1)                        
+            polyVertexPoints.InsertPoint(cnt, point[0], point[1], point[2])
+            pointscalars.InsertNextTuple1(cnt)
+            aPolyVertex.GetPointIds().SetId(cnt, cnt)
+            cnt+=1
+            
+    else:
+        polyVertexPoints.InsertPoint(cnt, points[0], points[1], points[2])
+        aPolyVertex.GetPointIds().SetId(cnt, cnt)
+        cnt+=1
+        
+
+    aPolyVertexGrid = vtk.vtkUnstructuredGrid()
+    aPolyVertexGrid.Allocate(1, 1)
+    aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(), aPolyVertex.GetPointIds())
+    
+
+    aPolyVertexGrid.SetPoints(polyVertexPoints)
+    aPolyVertexGrid.GetPointData().SetScalars(pointscalars)
+    
+    aPolyVertexMapper = vtk.vtkDataSetMapper()
+    aPolyVertexMapper.SetInput(aPolyVertexGrid)
+    
+    aPolyVertexMapper.SetColorModeToMapScalars()
+    aPolyVertexMapper.SetScalarRange(scalarmin,scalarmax)
+    aPolyVertexMapper.SetScalarModeToUsePointData()
+    
+    aPolyVertexActor = vtk.vtkActor()
+    aPolyVertexActor.SetMapper(aPolyVertexMapper)
+
+    #aPolyVertexActor.GetProperty().SetColor(color)
+    aPolyVertexActor.GetProperty().SetOpacity(opacity)
+
+    return aPolyVertexActor
+    
 
 def sphere(position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
     ''' Create a sphere actor
