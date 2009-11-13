@@ -24,16 +24,29 @@ cdef extern from "stdlib.h":
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 
-def cut_plane(tracks,ref):
+def cut_plane(tracks,ref,thr=20.0):
     
     ''' Extract divergence vectors and points of intersection 
     between planes normal to the reference fiber and other tracks
     
     Parameters:
+    ----------------
+    tracks: sequence 
+        of tracks as arrays, shape (N1,3) .. (Nm,3) , dtype float32 (only float32)
+    
+    ref: array, shape (N,3)
+        reference track
+    
+    thr: float
+        distance threshold
+        
+    Returns:
     -----------
     
-    Returns:
-    --------
+    hits: sequence
+            list of points where the 
+    
+    divs : sequence  
         
     '''
     
@@ -46,8 +59,7 @@ def cut_plane(tracks,ref):
     cdef cnp.ndarray[cnp.float32_t, ndim=2] Q 
     cdef cnp.ndarray[cnp.float32_t, ndim=1] hit
     cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
-    
-    
+        
     Hit=[]
     Div=[]
     
@@ -68,6 +80,118 @@ def cut_plane(tracks,ref):
         hits=np.array([0,0,0],dtype='float32')
         divs=np.array([0,0,0],dtype='float32')
         
+        #for every track
+        for t from 0 <= t < lent:        
+            
+            Q=tracks[t]
+            Qlen=Q.shape[0]          
+            
+            #for every point on the track
+            for q from 0<= q < Qlen-1:
+                
+                #only for close enough points please
+                if sqrt((Q[q][0]-P[p][0])*(Q[q][0]-P[p][0])+(Q[q][1]-P[p][1])*(Q[q][1]-P[p][1])+(Q[q][2]-P[p][2])*(Q[q][2]-P[p][2])) < thr : 
+                
+                
+                    #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
+                    if (normal[0]*(Q[q][0]-P[p][0])+normal[1]*(Q[q][1]-P[p][1]) \
+                        +normal[2]*(Q[q][2]-P[p][2])) * (normal[0]*(Q[q+1][0]-P[p][0])+normal[1]*(Q[q+1][1]-P[p][1]) \
+                        +normal[2]*(Q[q+1][2]-P[p][2])) <=0 :
+                    
+                        #if np.inner((r-q),normal) != 0:
+                        beta=(normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
+                            +normal[2]*(Q[q+1][2]-Q[q][2]))                                        
+                            
+                        if beta !=0 :
+                        
+                                #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
+                                alpha = (normal[0]*(P[p][0]-Q[q][0])+normal[1]*(P[p][1]-Q[q][1]) \
+                                        +normal[2]*(P[p][2]-Q[q][2]))/ \
+                                        (normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
+                                        +normal[2]*(Q[q+1][2]-Q[q][2]))
+                                        
+                                #hit = q+alpha*(r-q)
+                                hit[0] = Q[q][0]+alpha*(Q[q+1][0]-Q[q][0])
+                                hit[1] = Q[q][1]+alpha*(Q[q+1][1]-Q[q][1])
+                                hit[2] = Q[q][2]+alpha*(Q[q+1][2]-Q[q][2])
+                               
+                                #divergence = (r-q)-np.inner(r-q,normal)*normal
+                                divergence[0] = Q[q+1][0]-Q[q][0] - beta*normal[0]
+                                divergence[1] = Q[q+1][1]-Q[q][1] - beta*normal[1]
+                                divergence[2] = Q[q+1][2]-Q[q][2] - beta*normal[2]
+                                
+                                #add points
+                                divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )
+                                hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
+        
+        Hit.append(hits[1:])
+        Div.append(divs[1:])
+        
+    return Hit,Div
+            
+def cut_planeV2(tracks,ref):
+    
+    ''' Extract divergence vectors and points of intersection 
+    between planes normal to the reference fiber and other tracks
+    
+    Version 2
+    Parameters:
+    ----------------
+    tracks: sequence 
+        of tracks as arrays, shape (N1,3) .. (Nm,3) , dtype float32 (only float32)
+    
+    ref: array, shape (N,3)
+        reference track
+        
+    Returns:
+    -----------
+    
+    hits: sequence
+            list of points where each plane intersects a track
+    
+    divs : sequence  
+            projection divergence of tracks on each plane 
+    '''
+    
+    cdef long lent=len(tracks)
+    cdef long i,j,k
+    cdef double alpha,beta
+    cdef int cnthits=0
+    
+    cdef double *hits_divs
+    
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] P
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] Q 
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] hit
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
+    
+    #cdef cnp.ndarray[cnp.double_t, ndim=1]  tmp
+    #tmp=np.ndarray(shape=(10000000),dtype=np.double)
+    
+        
+    Hit=[]
+    Div=[]
+    Hit_Div=[]
+    
+    hit = np.zeros((3,), dtype=np.float32)
+    divergence = np.zeros((3,), dtype=np.float32)
+    
+    P=ref
+    
+    cdef int Plen=P.shape[0]
+    cdef int Qlen
+    
+    #for every point along the reference
+    for p from 0 <= p < Plen-1:
+        
+        along = P[p+1]-P[p]        
+        normal=along/sqrt(along[0]*along[0]+along[1]*along[1]+along[2]*along[2])
+        
+        #hits=np.array([0,0,0],dtype='float32')
+        #divs=np.array([0,0,0],dtype='float32')
+        
+        hits_divs = <double *>malloc(0)
+        cnthits=1
         #for every track
         for t from 0 <= t < lent:        
             
@@ -98,25 +222,44 @@ def cut_plane(tracks,ref):
                             hit[0] = Q[q][0]+alpha*(Q[q+1][0]-Q[q][0])
                             hit[1] = Q[q][1]+alpha*(Q[q+1][1]-Q[q][1])
                             hit[2] = Q[q][2]+alpha*(Q[q+1][2]-Q[q][2])
-                            
+                           
                             #divergence = (r-q)-np.inner(r-q,normal)*normal
                             divergence[0] = Q[q+1][0]-Q[q][0] - beta*normal[0]
                             divergence[1] = Q[q+1][1]-Q[q][1] - beta*normal[1]
                             divergence[2] = Q[q+1][2]-Q[q][2] - beta*normal[2]
                             
                             #add points
-                            divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])))
-                            hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])))
                             
+                            #divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )
+                            #hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
+                            
+                            hits_divs=<double *>realloc(hits_divs,cnthits*6*sizeof(double))
+                            
+                            hits_divs[cnthits*6-1] =divergence[2]
+                            hits_divs[cnthits*6-2] =divergence[1]
+                            hits_divs[cnthits*6-3] =divergence[0]                            
+                            hits_divs[cnthits*6-4] =hit[2]
+                            hits_divs[cnthits*6-5] =hit[1]
+                            hits_divs[cnthits*6-6] =hit[0]
+                                           
+                            cnthits+=1
+                                            
+                                            
+        #tmp.data=hits_divs
         
-        Hit.append(hits[1:])
-        Div.append(divs[1:])
+        #print tmp.shape
         
-    return Hit,Div
-            
-             
+        #hits=tmp[].copy()
+                                            
+        #free(hits_divs)
+        
+        #Hit.append(hits[1:])
+        #Div.append(divs[1:])
+        
+        #Hit_Div.append(tmp)
+        
+    return Hit_Div
 
-    
 
 def most_similar_track_zhang(tracks,metric='avg'):    
     ''' The purpose of this function is to implement a much faster version of 
@@ -133,7 +276,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
     Returns:
     ----------
     si : int
-        index of the most similar track in tracks
+        index of the most similar track in tracks. This can be used as a reference track for a bundle.
     s : array, shape (len(tracks),)
         similarities between tracks[si] and the rest of the tracks in the bundle
     
@@ -245,6 +388,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
             s[j]+=tmp
             
     si = np.argmin(s)
+    
     #print(si,tracks[0].dtype)
 
     for j from 0 <= j < lent:
