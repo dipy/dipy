@@ -100,12 +100,19 @@ class Foz(object):
     
     def line(self,lines,colors,opacity=1,linewidth=1):
         
-        l=line(lines,colors,opacity=1,linewidth=1)
+        l=line(lines,colors,opacity,linewidth)
         add(self.canvas[self.cren],l)
         if self.on:
             show(self.canvas[self.cren])
         
         return l
+    
+    def point(self,points,colors,opacity=1):
+        
+        p=point(points,colors,opacity)
+        add(self.canvas[self.cren],p)
+        if self.on:
+            show(self.canvas[self.cren])
     
     def dots(self,points,color=(1,0,0),opacity=1):
         
@@ -434,49 +441,49 @@ def line(lines,colors,opacity=1,linewidth=1):
 
 
 def dots(points,color=(1,0,0),opacity=1):
-  '''
-  Create one or more 3d dots(points) returns one actor handling all the points
-  '''
+    '''
+    Create one or more 3d dots(points) returns one actor handling all the points
+    '''
 
-  if points.ndim==2:
-    points_no=points.shape[0]
-  else:
-    points_no=1
-    
-  polyVertexPoints = vtk.vtkPoints()
-  polyVertexPoints.SetNumberOfPoints(points_no)
-  aPolyVertex = vtk.vtkPolyVertex()
-  aPolyVertex.GetPointIds().SetNumberOfIds(points_no)
-  
-  cnt=0
-  if points.ndim>1:
+    if points.ndim==2:
+        points_no=points.shape[0]
+    else:
+        points_no=1
+
+    polyVertexPoints = vtk.vtkPoints()
+    polyVertexPoints.SetNumberOfPoints(points_no)
+    aPolyVertex = vtk.vtkPolyVertex()
+    aPolyVertex.GetPointIds().SetNumberOfIds(points_no)
+
+    cnt=0
+    if points.ndim>1:
         for point in points:
             polyVertexPoints.InsertPoint(cnt, point[0], point[1], point[2])
             aPolyVertex.GetPointIds().SetId(cnt, cnt)
             cnt+=1
-  else:
+    else:
         polyVertexPoints.InsertPoint(cnt, points[0], points[1], points[2])
         aPolyVertex.GetPointIds().SetId(cnt, cnt)
         cnt+=1
-    
 
-  aPolyVertexGrid = vtk.vtkUnstructuredGrid()
-  aPolyVertexGrid.Allocate(1, 1)
-  aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(), aPolyVertex.GetPointIds())
 
-  aPolyVertexGrid.SetPoints(polyVertexPoints)
-  aPolyVertexMapper = vtk.vtkDataSetMapper()
-  aPolyVertexMapper.SetInput(aPolyVertexGrid)
-  aPolyVertexActor = vtk.vtkActor()
-  aPolyVertexActor.SetMapper(aPolyVertexMapper)
+    aPolyVertexGrid = vtk.vtkUnstructuredGrid()
+    aPolyVertexGrid.Allocate(1, 1)
+    aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(), aPolyVertex.GetPointIds())
 
-  aPolyVertexActor.GetProperty().SetColor(color)
-  aPolyVertexActor.GetProperty().SetOpacity(opacity)
+    aPolyVertexGrid.SetPoints(polyVertexPoints)
+    aPolyVertexMapper = vtk.vtkDataSetMapper()
+    aPolyVertexMapper.SetInput(aPolyVertexGrid)
+    aPolyVertexActor = vtk.vtkActor()
+    aPolyVertexActor.SetMapper(aPolyVertexMapper)
 
-  return aPolyVertexActor
+    aPolyVertexActor.GetProperty().SetColor(color)
+    aPolyVertexActor.GetProperty().SetOpacity(opacity)
+    return aPolyVertexActor
 
 def point(points,colors,opacity=1):
-    ''' Create 3d points and generate only one actor for all points. Same as dots.
+    ''' Create 3d points and generate only one actor for all points. Similar with dots but here you can 
+    color every point or class of points with a different color.
     '''
     #return dots(points,color=(1,0,0),opacity=1)
     
@@ -949,7 +956,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
         
     return volum
 
-def colors(v,colormap='jet'):
+def colors(v,colormap):
 
     ''' Create colors from a specific colormap and return it 
     as an array of shape (N,3) where every row gives the corresponding
@@ -986,11 +993,36 @@ def colors(v,colormap='jet'):
         ValueError('This function works only with 1d arrays. Use ravel()')
 
     v=np.interp(v,[v.min(),v.max()],[0,1])
-    red=np.interp(v,[0,0.35,0.66,0.89,1],[0,0,1,1,0.5])
-    green=np.interp(v,[0,0.125,0.375,0.64,0.91,1],[0,0,1,1,0,0])
-    blue=np.interp(v,[0,0.11,0.34,0.65,1],[0.5,1,1,0,0])
+    
 
+    if colormap=='jet':
+        print 'jet'
+        
+        red=np.interp(v,[0,0.35,0.66,0.89,1],[0,0,1,1,0.5])
+        green=np.interp(v,[0,0.125,0.375,0.64,0.91,1],[0,0,1,1,0,0])
+        blue=np.interp(v,[0,0.11,0.34,0.65,1],[0.5,1,1,0,0])
+    
+    if colormap=='blues':
+        #cm.datad['Blues']
+        print 'blues'
 
+        red=np.interp(v,[0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0],[0.96862745285,0.870588243008,0.776470601559,0.61960786581,0.419607847929,0.258823543787,0.129411771894,0.0313725508749,0.0313725508749])
+        green=np.interp(v,[0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0],[0.984313726425,0.921568632126,0.858823537827,0.792156875134,0.68235296011,0.572549045086,0.443137258291,0.317647069693,0.188235297799])
+        blue=np.interp(v,[0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0] , [1.0,0.96862745285,0.937254905701,0.882352948189,0.839215695858,0.776470601559,0.709803938866,0.611764729023,0.419607847929])   
+        
+    if colormap=='blue_red':
+        print 'blue_red'
+        #red=np.interp(v,[],[])
+        
+        red=np.interp(v,[0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0],[0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0])        
+        green=np.zeros(red.shape)
+        blue=np.interp(v,[0.0,0.125,0.25,0.375,0.5,0.625,0.75,0.875,1.0],[1.0,0.875,0.75,0.625,0.5,0.375,0.25,0.125,0.0])
+        
+        blue=green
+
+        
+        
+        
     return np.vstack((red,green,blue)).T
 
     
