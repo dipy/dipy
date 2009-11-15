@@ -98,72 +98,72 @@ def cut_plane(tracks,ref,thr=20.0):
                 
                 #print p,t,q 
 
-                if sqrt((Q[q][0]-P[p][0])*(Q[q][0]-P[p][0])+(Q[q][1]-P[p][1])*(Q[q][1]-P[p][1])+(Q[q][2]-P[p][2])*(Q[q][2]-P[p][2])) < thr : 
+                #if sqrt((Q[q][0]-P[p][0])*(Q[q][0]-P[p][0])+(Q[q][1]-P[p][1])*(Q[q][1]-P[p][1])+(Q[q][2]-P[p][2])*(Q[q][2]-P[p][2])) < thr : 
                 
                 
-                    #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
-                    if (normal[0]*(Q[q][0]-P[p][0])+normal[1]*(Q[q][1]-P[p][1]) \
-                        +normal[2]*(Q[q][2]-P[p][2])) * (normal[0]*(Q[q+1][0]-P[p][0])+normal[1]*(Q[q+1][1]-P[p][1]) \
-                        +normal[2]*(Q[q+1][2]-P[p][2])) <=0 :
-                        #if np.inner((r-q),normal) != 0:
-                    
-                        beta=(normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
-                            +normal[2]*(Q[q+1][2]-Q[q][2]))                                        
-                            
-                        if beta !=0 :
+                #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
+                if (normal[0]*(Q[q][0]-P[p][0])+normal[1]*(Q[q][1]-P[p][1]) \
+                    +normal[2]*(Q[q][2]-P[p][2])) * (normal[0]*(Q[q+1][0]-P[p][0])+normal[1]*(Q[q+1][1]-P[p][1]) \
+                    +normal[2]*(Q[q+1][2]-P[p][2])) <=0 :
+                    #if np.inner((r-q),normal) != 0:
+                
+                    beta=(normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
+                        +normal[2]*(Q[q+1][2]-Q[q][2]))                                        
                         
-                                #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
-                                alpha = (normal[0]*(P[p][0]-Q[q][0])+normal[1]*(P[p][1]-Q[q][1]) \
-                                        +normal[2]*(P[p][2]-Q[q][2]))/ \
-                                        (normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
-                                        +normal[2]*(Q[q+1][2]-Q[q][2]))
+                    if beta !=0 :
+                    
+                            #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
+                            alpha = (normal[0]*(P[p][0]-Q[q][0])+normal[1]*(P[p][1]-Q[q][1]) \
+                                    +normal[2]*(P[p][2]-Q[q][2]))/ \
+                                    (normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
+                                    +normal[2]*(Q[q+1][2]-Q[q][2]))
+                                    
+                            if alpha < 1 :
+                                    
+                                #hit = q+alpha*(r-q)
+                                hit[0] = Q[q][0]+alpha*(Q[q+1][0]-Q[q][0])
+                                hit[1] = Q[q][1]+alpha*(Q[q+1][1]-Q[q][1])
+                                hit[2] = Q[q][2]+alpha*(Q[q+1][2]-Q[q][2])
+                                
+                                '''
+                               
+                                #divergence =( (r-q)-np.inner(r-q,normal)*normal)/|r-q|
+                                lrq = sqrt((Q[q][0]-Q[q+1][0])*(Q[q][0]-Q[q+1][0])+(Q[q][1]-Q[q+1][1])*(Q[q][1]-Q[q+1][1])+(Q[q][2]-Q[q+1][2])*(Q[q][2]-Q[q+1][2]))
+                                divergence[0] = (Q[q+1][0]-Q[q][0] - beta*normal[0])/lrq
+                                divergence[1] = (Q[q+1][1]-Q[q][1] - beta*normal[1])/lrq
+                                divergence[2] = (Q[q+1][2]-Q[q][2] - beta*normal[2])/lrq
+                                
+                                #radial coefficient of divergence d.(h-p)/|h-p|
+                                lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
+                                
+                                if lhp>0.0 :
+                                    rcd=abs(divergence[0]*(hit[0]-P[p][0])+divergence[1]*(hit[1]-P[p][1])+divergence[2]*(hit[2]-P[p][2]))/lhp
+                                else:
+                                    rcd=0.0
                                         
-                                if alpha < 1 :
-                                        
-                                    #hit = q+alpha*(r-q)
-                                    hit[0] = Q[q][0]+alpha*(Q[q+1][0]-Q[q][0])
-                                    hit[1] = Q[q][1]+alpha*(Q[q+1][1]-Q[q][1])
-                                    hit[2] = Q[q][2]+alpha*(Q[q+1][2]-Q[q][2])
+                                #add points
+                                #divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )                                
+                                #hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
+                                
+                                #print  hits,  np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')
+                                '''
+                                delta[0]=Q[q+1][0]-Q[q][0]
+                                delta[1]=Q[q+1][1]-Q[q][1]
+                                delta[2]=Q[q+1][2]-Q[q][2]
+                                
+                                ld=sqrt(delta[0]*delta[0]+delta[1]*delta[1]+delta[2]*delta[2])                                    
+                                
+                                lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
+                                
+                                #radial divergence
+                                if lhp>0:                                        
+                                    rcd=(delta[0]*(hit[0]-P[p][0]) + delta[1]*(hit[1]-P[p][1]) + delta[2]*(hit[2]-P[p][2]))/(ld*lhp)
+                                    if rcd < 0:
+                                        rcd=-rcd
+                                else:
+                                    rcd=0
                                     
-                                    '''
-                                   
-                                    #divergence =( (r-q)-np.inner(r-q,normal)*normal)/|r-q|
-                                    lrq = sqrt((Q[q][0]-Q[q+1][0])*(Q[q][0]-Q[q+1][0])+(Q[q][1]-Q[q+1][1])*(Q[q][1]-Q[q+1][1])+(Q[q][2]-Q[q+1][2])*(Q[q][2]-Q[q+1][2]))
-                                    divergence[0] = (Q[q+1][0]-Q[q][0] - beta*normal[0])/lrq
-                                    divergence[1] = (Q[q+1][1]-Q[q][1] - beta*normal[1])/lrq
-                                    divergence[2] = (Q[q+1][2]-Q[q][2] - beta*normal[2])/lrq
-                                    
-                                    #radial coefficient of divergence d.(h-p)/|h-p|
-                                    lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
-                                    
-                                    if lhp>0.0 :
-                                        rcd=abs(divergence[0]*(hit[0]-P[p][0])+divergence[1]*(hit[1]-P[p][1])+divergence[2]*(hit[2]-P[p][2]))/lhp
-                                    else:
-                                        rcd=0.0
-                                            
-                                    #add points
-                                    #divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )                                
-                                    #hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
-                                    
-                                    #print  hits,  np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')
-                                    '''
-                                    delta[0]=Q[q+1][0]-Q[q][0]
-                                    delta[1]=Q[q+1][1]-Q[q][1]
-                                    delta[2]=Q[q+1][2]-Q[q][2]
-                                    
-                                    ld=sqrt(delta[0]*delta[0]+delta[1]*delta[1]+delta[2]*delta[2])                                    
-                                    
-                                    lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
-                                    
-                                    #radial divergence
-                                    if lhp>0:                                        
-                                        rcd=(delta[0]*(hit[0]-P[p][0]) + delta[1]*(hit[1]-P[p][1]) + delta[2]*(hit[2]-P[p][2]))/(ld*lhp)
-                                        if rcd < 0:
-                                            rcd=-rcd
-                                    else:
-                                        rcd=0
-                                        
-                                    hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')) )
+                                hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')) )
                 
                 #else:
                 #go next track
