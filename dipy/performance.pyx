@@ -66,16 +66,17 @@ def cut_plane(tracks,ref):
     
     cdef cnp.ndarray[cnp.float32_t, ndim=2] P
     cdef cnp.ndarray[cnp.float32_t, ndim=2] Q 
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] hit
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] hit    
+    #cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
     cdef cnp.ndarray[cnp.float32_t, ndim=1] delta
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] hits
         
     Hit=[]
     Div=[]
     
     hit = np.zeros((3,), dtype=np.float32)
     #hit = np.zeros((3,), dtype=np.float32)
-    divergence = np.zeros((3,), dtype=np.float32)
+    #divergence = np.zeros((3,), dtype=np.float32)
     delta = np.zeros((3,), dtype=np.float32)
 
     P=ref
@@ -91,7 +92,7 @@ def cut_plane(tracks,ref):
         
         #hits=np.array([0,0,0],dtype='float32')
         #divs=np.array([0,0,0],dtype='float32')
-        hits=np.array([0,0,0,0],dtype='float32')
+        hits=np.array([[0,0,0,0]],dtype='float32')
         
         #for every track
         for t from 0 <= t < lent:        
@@ -178,8 +179,7 @@ def cut_plane(tracks,ref):
         Hit.append(hits[1:])
         #Div.append(divs[1:])
         
-    return Hit
-            
+    return Hit[1:]            
 
 
 
