@@ -56,16 +56,50 @@ def rm_far_tracks(ref,tracks,dist=20):
     
     Returns:
     -----------    
-    tracksfd:
+    tracksr:
     
     '''
     
     tracksd=[tm.downsample(t,3) for t in tracks]
     refd=tm.downsample(ref,3) 
     
-    tracksfd=[t for t in tracksd if np.mean(np.sqrt(np.sum((t-refd)**2,axis=1))) <= dist]
+    indices=[i for (i,t) in enumerate(tracksd) if np.mean(np.sqrt(np.sum((t-refd)**2,axis=1))) <= dist]
     
-    return tracksfd
+    tracksr=[tracks[i] for i in indices]
+    return tracksr, indices
+
+  
+
+def missing_tracks(indices1,indices2):
+    ''' Missing tracks in bundle1 but not bundle2
+    
+    Parameters:
+    ------------------
+    indices1: sequence 
+            of indices of tracks in bundle1
+                
+    indices2: sequence 
+            of indices of tracks in bundle2
+                
+    Returns:
+    -----------
+    indices: sequence of indices
+            of tracks in bundle1 absent from bundle2
+            
+    Example:
+    -------------
+    >>> tracksar,indar=rm_far_tracks(ref,tracksa,dist=20)
+    >>> fornix_ind=G[5]['indices']
+    >>> len(missing_tracks(fornix_ind, indar)) = 5
+    
+    >>> tracksar,indar=rm_far_tracks(ref,tracksa,dist=25)
+    >>> fornix_ind=G[5]['indices']
+    >>> len(missing_tracks(fornix_ind, indar)) = 0
+    
+    '''
+    
+    return list(set(indices1).difference(set(indices2)))    
+    
 
 def detect_corresponding_bundles(bundle,tracks,zipit=1,n=10,d=3):
     ''' Not ready yet

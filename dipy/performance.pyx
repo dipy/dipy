@@ -27,7 +27,7 @@ cdef extern from "stdlib.h":
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 
-def cut_plane(tracks,ref,thr=20.0):
+def cut_plane(tracks,ref):
     
     ''' Extract divergence vectors and points of intersection 
     between planes normal to the reference fiber and other tracks
@@ -40,17 +40,23 @@ def cut_plane(tracks,ref,thr=20.0):
     ref: array, shape (N,3)
         reference track
     
-    thr: float
-        distance threshold
         
     Returns:
     -----------
     
     hits: sequence
-            list of points where the 
+            list of points and rcds (radial coefficient of divergence)``
     
-    divs : sequence  
-        
+    Example:
+    --------------
+    >>> refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
+    >>> bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
+    >>> cut_plane(bundlex,refx)
+        [array([ 0.,  0.,  0.], dtype=float32),
+         array([[ 1.        ,  1.5       ,  0.        ,  0.70710683]], dtype=float32),
+         array([[ 2.        ,  2.5       ,  0.        ,  0.70710677]], dtype=float32)]
+
+    
     '''
     
     cdef long lent=len(tracks)
