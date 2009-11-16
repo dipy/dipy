@@ -91,7 +91,7 @@ def cut_plane(tracks,ref):
         
         #hits=np.array([0,0,0],dtype='float32')
         #divs=np.array([0,0,0],dtype='float32')
-        hits=np.array([[0,0,0,0]],dtype='float32')
+        hits=np.array([[0,0,0,0,0]],dtype='float32')
         
         #for every track
         for t from 0 <= t < lent:        
@@ -169,7 +169,7 @@ def cut_plane(tracks,ref):
                                 else:
                                     rcd=0
                                     
-                                hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')) )
+                                hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2],rcd ,t],dtype='float32')) )
                 
                 #else:
                 #go next track

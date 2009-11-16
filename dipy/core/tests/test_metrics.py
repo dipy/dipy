@@ -89,3 +89,59 @@ def test_zhang_distances():
     xyz2=xyz2.astype('float32')
     zd2 = pf.zhang_distances(xyz1,xyz2)
     yield assert_almost_equal, zd2[0], 1.76135602742
+
+
+def test_approx_traj_part():
+    t=np.linspace(0,1.75*2*np.pi,1000)
+
+    x = np.sin(t)
+    y = np.cos(t)
+    z = t
+    
+    xyz=np.vstack((x,y,z)).T 
+    
+    xyza1 = tm.approximate_trajectory_partitioning(xyz,alpha=1.)
+    xyza2 = tm.approximate_trajectory_partitioning(xyz,alpha=2.)
+    
+    yield assert_equal, len(xyza1), 12
+    yield assert_equal, len(xyza2), 8
+    yield assert_array_almost_equal, xyza1, np.array([[  0.00000000e+00,   1.00000000e+00,   0.00000000e+00],
+       [  8.48214700e-01,   5.29652549e-01,   1.01260544e+00],
+       [  8.98518156e-01,  -4.38936354e-01,   2.02521088e+00],
+       [  1.03590164e-01,  -9.94620067e-01,   3.03781632e+00],
+       [ -7.88784567e-01,  -6.14669754e-01,   4.05042176e+00],
+       [ -9.39153678e-01,   3.43497263e-01,   5.06302720e+00],
+       [ -2.06065711e-01,   9.78538156e-01,   6.07563264e+00],
+       [  7.20867219e-01,   6.93073194e-01,   7.08823808e+00],
+       [  9.69684032e-01,  -2.44362188e-01,   8.10084352e+00],
+       [  3.06324020e-01,  -9.51927306e-01,   9.11344896e+00],
+       [ -6.45193436e-01,  -7.64019260e-01,   1.01260544e+01],
+       [ -1.00000000e+00,  -4.28626380e-16,   1.09955743e+01]])
+    yield assert_array_almost_equal, xyza2, np.array([[  0.00000000e+00,   1.00000000e+00,   0.00000000e+00],
+       [  9.81955739e-01,  -1.89110883e-01,   1.76105294e+00],
+       [ -3.71397034e-01,  -9.28474148e-01,   3.52210588e+00],
+       [ -8.41485297e-01,   5.40280015e-01,   5.28315882e+00],
+       [  6.89665089e-01,   7.24128487e-01,   7.04421176e+00],
+       [  5.80638949e-01,  -8.14161170e-01,   8.80526469e+00],
+       [ -9.09275378e-01,  -4.16195011e-01,   1.05663176e+01],
+       [ -1.00000000e+00,  -4.28626380e-16,   1.09955743e+01]])
+
+
+    
+
+def test_cut_plane():
+    refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
+    bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32'), 
+                    np.array([[0.5,2,0],[1.5,3,0],[2.5,4,0]],dtype='float32'),
+                    np.array([[0.5,1,1],[1.5,2,2],[2.5,3,3]],dtype='float32'),
+                    np.array([[-0.5,2,-1],[-1.5,3,-2],[-2.5,4,-3]],dtype='float32')]
+    hitx=pf.cut_plane(bundlex,refx)
+
+    yield assert_array_almost_equal, hitx[0], np.array([[ 1.        ,  1.5       ,  0.        ,  0.70710683,  0.        ],
+       [ 1.        ,  2.5       ,  0.        ,  0.70710677,  1.        ],
+       [ 1.        ,  1.5       ,  1.5       ,  0.81649661,  2.        ]], dtype='float32')
+
+    yield assert_array_almost_equal, hitx[1], np.array([[ 2.        ,  2.5       ,  0.        ,  0.70710677,  0.        ],
+       [ 2.        ,  3.5       ,  0.        ,  0.70710677,  1.        ],
+       [ 2.        ,  2.5       ,  2.5       ,  0.81649655,  2.        ]], dtype='float32')
+
