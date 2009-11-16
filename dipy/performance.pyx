@@ -52,8 +52,7 @@ def cut_plane(tracks,ref):
     >>> refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     >>> bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
     >>> cut_plane(bundlex,refx)
-        [array([ 0.,  0.,  0.], dtype=float32),
-         array([[ 1.        ,  1.5       ,  0.        ,  0.70710683]], dtype=float32),
+        [array([[ 1.        ,  1.5       ,  0.        ,  0.70710683]], dtype=float32),
          array([[ 2.        ,  2.5       ,  0.        ,  0.70710677]], dtype=float32)]
 
     

@@ -481,7 +481,7 @@ def dots(points,color=(1,0,0),opacity=1):
     aPolyVertexActor.GetProperty().SetOpacity(opacity)
     return aPolyVertexActor
 
-def point(points,colors,opacity=1):
+def point_deprecated(points,colors,opacity=1):
     ''' Create 3d points and generate only one actor for all points. Similar with dots but here you can 
     color every point or class of points with a different color.
     '''
@@ -552,6 +552,54 @@ def point(points,colors,opacity=1):
     aPolyVertexActor.GetProperty().SetOpacity(opacity)
 
     return aPolyVertexActor
+
+def point(points,colors,opacity=1,point_radius=0.001):
+    
+    if np.array(colors).ndim==1:
+        return dots(points,colors,opacity)
+    
+       
+    scalars=vtk.vtkUnsignedCharArray()
+    scalars.SetNumberOfComponents(3)
+    
+    pts=vtk.vtkPoints()
+    cnt_colors=0
+    
+    for p in points:
+        
+        pts.InsertNextPoint(p[0],p[1],p[2])
+        scalars.InsertNextTuple3(round(255*colors[cnt_colors][0]),round(255*colors[cnt_colors][1]),round(255*colors[cnt_colors][2]))
+        #scalars.InsertNextTuple3(255,255,255)
+        cnt_colors+=1
+     
+    '''   
+    src = vtk.vtkDiskSource()
+    src.SetRadialResolution(1)
+    src.SetCircumferentialResolution(10)
+    src.SetInnerRadius(0.0)
+    src.SetOuterRadius(0.001)
+    '''
+    #src = vtk.vtkPointSource()
+    src = vtk.vtkSphereSource()
+    src.SetRadius(point_radius)
+    
+    polyData = vtk.vtkPolyData()
+    polyData.SetPoints(pts)
+    polyData.GetPointData().SetScalars(scalars)
+
+    glyph = vtk.vtkGlyph3D()
+    glyph.SetSourceConnection(src.GetOutputPort())
+    glyph.SetInput(polyData)
+    glyph.SetColorModeToColorByScalar()
+    glyph.SetScaleModeToDataScalingOff() 
+
+    mapper=vtk.vtkPolyDataMapper()
+    mapper.SetInput(glyph.GetOutput())    
+    
+    actor=vtk.vtkActor()
+    actor.SetMapper(mapper)
+            
+    return actor
     
 
 def sphere(position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
