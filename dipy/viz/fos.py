@@ -540,6 +540,8 @@ def point_deprecated(points,colors,opacity=1):
     
     aPolyVertexMapper = vtk.vtkDataSetMapper()
     aPolyVertexMapper.SetInput(aPolyVertexGrid)
+    aPolyVertexMapper.SetLookupTable(lookuptable)
+    
     
     aPolyVertexMapper.SetColorModeToMapScalars()
     aPolyVertexMapper.SetScalarRange(scalarmin,scalarmax)
