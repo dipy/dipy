@@ -584,6 +584,8 @@ def point(points,colors,opacity=1,point_radius=0.001):
     #src = vtk.vtkPointSource()
     src = vtk.vtkSphereSource()
     src.SetRadius(point_radius)
+    src.SetThetaResolution(3)
+    src.SetPhiResolution(3)
     
     polyData = vtk.vtkPolyData()
     polyData.SetPoints(pts)
@@ -848,8 +850,8 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
                           [50.0, 0.9]])
         ''' 
 
-        if info:
-            print 'opacitymap', opacitymap
+    if info:
+        print 'opacitymap', opacitymap
         
     if colormap==None:
 
@@ -867,8 +869,8 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
                                         [255.0, 0.5, 0.5, 0.5]])
         '''
 
-        if info:
-            print 'colormap', colormap                        
+    if info:
+        print 'colormap', colormap                        
     
     im = vtk.vtkImageData()
     im.SetScalarTypeToUnsignedChar()
@@ -1006,6 +1008,80 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
         
     return volum
 
+def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50]):
+    
+    im = vtk.vtkImageData()
+    im.SetScalarTypeToUnsignedChar()
+    im.SetDimensions(vol.shape[0],vol.shape[1],vol.shape[2])
+    #im.SetOrigin(0,0,0)
+    #im.SetSpacing(voxsz[2],voxsz[0],voxsz[1])
+    im.AllocateScalars()        
+    
+    for i in range(vol.shape[0]):
+        for j in range(vol.shape[1]):
+            for k in range(vol.shape[2]):
+                
+                im.SetScalarComponentFromFloat(i,j,k,0,vol[i,j,k])
+    
+    skinExtractor = vtk.vtkContourFilter()
+    #skinExtractor.SetInputConnection(im.GetOutputPort())
+    skinExtractor.SetInput(im)
+    skinExtractor.SetValue(0, levels[0])
+    
+    skinNormals = vtk.vtkPolyDataNormals()
+    skinNormals.SetInputConnection(skinExtractor.GetOutputPort())
+    skinNormals.SetFeatureAngle(60.0)
+    
+    skinMapper = vtk.vtkPolyDataMapper()
+    skinMapper.SetInputConnection(skinNormals.GetOutputPort())
+    skinMapper.ScalarVisibilityOff()
+    
+    skin = vtk.vtkActor()
+    skin.SetMapper(skinMapper)
+    
+    return skin
+
+    
+
+def _cm2colors(colormap='Blues'):
+    '''
+    Colormaps from matplotlib 
+    ['Spectral', 'summer', 'RdBu', 'gist_earth', 'Set1', 'Set2', 'Set3', 'Dark2', 
+    'hot', 'PuOr_r', 'PuBuGn_r', 'RdPu', 'gist_ncar_r', 'gist_yarg_r', 'Dark2_r', 
+    'YlGnBu', 'RdYlBu', 'hot_r', 'gist_rainbow_r', 'gist_stern', 'cool_r', 'cool', 
+    'gray', 'copper_r', 'Greens_r', 'GnBu', 'gist_ncar', 'spring_r', 'gist_rainbow', 
+    'RdYlBu_r', 'gist_heat_r', 'OrRd_r', 'bone', 'gist_stern_r', 'RdYlGn', 'Pastel2_r', 
+    'spring', 'Accent', 'YlOrRd_r', 'Set2_r', 'PuBu', 'RdGy_r', 'spectral', 'flag_r', 'jet_r', 
+    'RdPu_r', 'gist_yarg', 'BuGn', 'Paired_r', 'hsv_r', 'YlOrRd', 'Greens', 'PRGn', 
+    'gist_heat', 'spectral_r', 'Paired', 'hsv', 'Oranges_r', 'prism_r', 'Pastel2', 'Pastel1_r',
+     'Pastel1', 'gray_r', 'PuRd_r', 'Spectral_r', 'BuGn_r', 'YlGnBu_r', 'copper', 
+    'gist_earth_r', 'Set3_r', 'OrRd', 'PuBu_r', 'winter_r', 'jet', 'bone_r', 'BuPu', 
+    'Oranges', 'RdYlGn_r', 'PiYG', 'YlGn', 'binary_r', 'gist_gray_r', 'BuPu_r', 
+    'gist_gray', 'flag', 'RdBu_r', 'BrBG', 'Reds', 'summer_r', 'GnBu_r', 'BrBG_r', 
+    'Reds_r', 'RdGy', 'PuRd', 'Accent_r', 'Blues', 'Greys', 'autumn', 'PRGn_r', 'Greys_r', 
+    'pink', 'binary', 'winter', 'pink_r', 'prism', 'YlOrBr', 'Purples_r', 'PiYG_r', 'YlGn_r', 
+    'Blues_r', 'YlOrBr_r', 'Purples', 'autumn_r', 'Set1_r', 'PuOr', 'PuBuGn']
+    
+    '''
+    try:
+        from pylab import cm
+    except ImportError:
+        ImportError('pylab is not installed')
+    
+    blue=cm.datad[colormap]['blue']
+    blue1=[b[0] for b in blue]
+    blue2=[b[1] for b in blue]
+    
+    red=cm.datad[colormap]['red']
+    red1=[b[0] for b in red]
+    red2=[b[1] for b in red]
+        
+    green=cm.datad[colormap]['green']
+    green1=[b[0] for b in green]
+    green2=[b[1] for b in green]
+            
+    return red1,red2,green1,green2,blue1,blue2
+    
 def colors(v,colormap):
 
     ''' Create colors from a specific colormap and return it 
@@ -1070,7 +1146,15 @@ def colors(v,colormap):
         
         blue=green
 
-        
+    if colormap=='accent':
+        print 'accent'
+        red=np.interp(v,[0.0,  0.14285714285714285,  0.2857142857142857,  0.42857142857142855,  0.5714285714285714,  0.7142857142857143,  0.8571428571428571,1.0],
+            [0.49803921580314636, 0.7450980544090271, 0.99215686321258545, 1.0, 0.21960784494876862, 0.94117647409439087, 0.74901962280273438, 0.40000000596046448])
+        green=np.interp(v,[0.0,  0.14285714285714285,  0.2857142857142857,  0.42857142857142855,  0.5714285714285714,  0.7142857142857143,  0.8571428571428571,  1.0],
+            [0.78823530673980713, 0.68235296010971069, 0.75294119119644165,1.0, 0.42352941632270813, 0.0078431377187371254, 0.35686275362968445, 0.40000000596046448]) 
+        blue=np.interp(v,[0.0, 0.14285714285714285,  0.2857142857142857, 0.42857142857142855, 0.5714285714285714, 0.7142857142857143, 0.8571428571428571,  1.0],
+            [0.49803921580314636,  0.83137255907058716,  0.52549022436141968,  0.60000002384185791,  0.69019609689712524,  0.49803921580314636,  0.090196080505847931,  0.40000000596046448])
+            
         
         
     return np.vstack((red,green,blue)).T

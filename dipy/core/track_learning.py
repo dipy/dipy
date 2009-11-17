@@ -52,11 +52,13 @@ def rm_far_tracks(ref,tracks,dist=20):
     tracks: sequence 
             of tracks as arrays, shape (N1,3) .. (Nm,3)
     
-    dist: 
+    dist: float
+            average distance threshold
     
     Returns:
     -----------    
-    tracksr:
+    tracksr: sequence
+            reduced tracks
     
     '''
     
@@ -99,6 +101,8 @@ def missing_tracks(indices1,indices2):
     '''
     
     return list(set(indices1).difference(set(indices2)))    
+
+
     
 
 def detect_corresponding_bundles(bundle,tracks,zipit=1,n=10,d=3):
