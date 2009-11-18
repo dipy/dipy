@@ -186,38 +186,36 @@ def cut_plane(tracks,ref):
     cdef:
         size_t n_hits
         float alpha,beta,lrq,rcd,lhp,ld
-        cnp.ndarray[cnp.float32_t, ndim=2] ref32 = np.ascontiguousarray(
-            ref, f32_dt)
+        cnp.ndarray[cnp.float32_t, ndim=2] ref32
         cnp.ndarray[cnp.float32_t, ndim=2] track
         object hits
         cnp.ndarray[cnp.float32_t, ndim=1] one_hit
         float *hit_ptr
         cnp.ndarray[cnp.float32_t, ndim=2] hit_arr
         object Hit=[]
-    # convert all the tracks to something we can work with.  Get size of
-    # longest track.  Get track lengths
+    # make reference fiber usable type
+    ref32 = np.ascontiguousarray(ref, f32_dt)
+    # convert all the tracks to something we can work with.  Get track
+    # lengths
     cdef:
         size_t N_tracks=len(tracks)
-        size_t longest_track_N = 0
         cnp.ndarray[cnp.uint64_t, ndim=1] track_lengths
-        size_t t_no, N_track, tp_no
+        size_t t_no, N_track
     cdef object tracks32 = []
     track_lengths = np.empty((N_tracks,), dtype=np.uint64)
     for t_no in range(N_tracks):
         track = np.ascontiguousarray(tracks[t_no], f32_dt)
-        N_track = track.shape[0]
-        if N_track > longest_track_N:
-            longest_track_N = N_track
-        track_lengths[t_no] = N_track
+        track_lengths[t_no] = track.shape[0]
         tracks32.append(track)
-    # for every point along the reference track
+    # set up loop across reference fiber points
     cdef:
         size_t N_ref = ref32.shape[0]
         size_t p_no, q_no
         float *this_ref_p, *next_ref_p, *this_trk_p, *next_trk_p
-        float along[3], normal_p[3]
+        float along[3], normal[3]
         float qMp[3], rMp[3], rMq[3], pMq[3]
         float hit[3], hitMp[3], *delta
+    # for every point along the reference track
     next_ref_p = as_float_ptr(ref32[0])
     for p_no in range(N_ref-1):
         # extract point to point vector into `along`
@@ -225,37 +223,34 @@ def cut_plane(tracks,ref):
         next_ref_p = as_float_ptr(ref32[p_no+1])
         csub_3vecs(next_ref_p, this_ref_p, along)
         # normalize
-        cnormalized_3vec(along, normal_p)
+        cnormalized_3vec(along, normal)
+        # initialize list for storing hits
         hits = []
-        #divs=np.array([0,0,0],dtype='float32')
-        # convert things to arrays
         # for every track
         for t_no in range(N_tracks):
             track=tracks32[t_no]
-            N_track = track.shape[0]
+            N_track = track_lengths[t_no]
             # for every point on the track
             next_trk_p = as_float_ptr(track[0])
             for q_no in range(N_track-1):
                 # p = ref32[p_no]
                 # q = track[q_no]
                 # r = track[q_no+1]
-                # float* versions of above
-                this_trk_p = next_trk_p
-                next_trk_p = as_float_ptr(track[q_no+1])
+                # float* versions of above: p == this_ref_p
+                this_trk_p = next_trk_p # q
+                next_trk_p = as_float_ptr(track[q_no+1]) # r
                 #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
-                csub_3vecs(this_trk_p, this_ref_p, qMp)
-                csub_3vecs(next_trk_p, this_ref_p, rMp)
-                alpha = (cinner_3vecs(normal_p, qMp) *
-                         cinner_3vecs(normal_p, rMp))
-                if alpha <=0:
+                csub_3vecs(this_trk_p, this_ref_p, qMp) # q-p
+                csub_3vecs(next_trk_p, this_ref_p, rMp) # r-p
+                if (cinner_3vecs(normal, qMp) * cinner_3vecs(normal, rMp)) <=0:
                     #if np.inner((r-q),normal) != 0:
                     csub_3vecs(next_trk_p, this_trk_p, rMq)
-                    beta = cinner_3vecs(rMq, normal_p)
+                    beta = cinner_3vecs(rMq, normal)
                     if beta !=0:
                         #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
                         csub_3vecs(this_ref_p, this_trk_p, pMq)
-                        alpha = (cinner_3vecs(pMq, normal_p) /
-                                  cinner_3vecs(rMq, normal_p))
+                        alpha = (cinner_3vecs(pMq, normal) /
+                                  cinner_3vecs(rMq, normal))
                         if alpha < 1:
                             # hit = q+alpha*(r-q)
                             hit[0] = this_trk_p[0]+alpha*rMq[0]
@@ -270,9 +265,9 @@ def cut_plane(tracks,ref):
                             ld = cnorm_3vec(delta)
                             ''' # Summary of stuff in comments
                             # divergence =((r-q)-inner(r-q,normal)*normal)/|r-q|
-                            div[0] = (rMq[0]-beta*normal_p[0]) / ld
-                            div[1] = (rMq[1]-beta*normal_p[1]) / ld
-                            div[2] = (rMq[2]-beta*normal_p[2]) / ld
+                            div[0] = (rMq[0]-beta*normal[0]) / ld
+                            div[1] = (rMq[1]-beta*normal[1]) / ld
+                            div[2] = (rMq[2]-beta*normal[2]) / ld
                             # radial coefficient of divergence d.(h-p)/|h-p|
                             '''
                             # radial divergence
