@@ -17,7 +17,7 @@ else:
     has_cython = True
     
 per_ext, cmdclass = make_cython_ext(
-    'dipy.performance',
+    'dipy.core.performance',
     has_cython,
     include_dirs = [np.get_include()])
 

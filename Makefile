@@ -22,19 +22,22 @@ ext: performance.so
 test:   ext
 	nosetests .
 
-html:  ${PKGDIR}/performance.html
+html:  ${PKGDIR}/core/performance.html
 
-performance.so: ${PKGDIR}/performance.pyx
+performance.so: ${PKGDIR}/core/performance.pyx
 	python setup.py build_ext --inplace
 
 # Phony targets for cleanup and similar uses
 
 .PHONY: clean
-clean:
-	rm -rf *~ ${PKGDIR}/*.so ${PKGDIR}/*.c ${PKGDIR}/*.o \
-		${PKGDIR}/*.html build \
-		*.pyc ${PKGDIR}/*.pyc ${TESTDIR}/*.pyc
 
+clean:
+	- find ${PKGDIR} -name "*.so" -print0 | xargs -0 rm
+	- find ${PKGDIR} -name "*.c" -print0 | xargs -0 rm
+	- find ${PKGDIR} -name "*.o" -print0 | xargs -0 rm
+	- find ${PKGDIR} -name "*.html" -print0 | xargs -0 rm
+	- find ${PKGDIR} -name "*.pyc" -print0 | xargs -0 rm
+	rm -rf build
 
 # Suffix rules
 %.c : %.pyx

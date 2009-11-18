@@ -10,7 +10,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.core import track_metrics as tm
 
-from dipy import performance as pf
+from dipy.core import performance as pf
 
 def test_splines():
 
@@ -130,18 +130,67 @@ def test_approx_traj_part():
     
 
 def test_cut_plane():
-    refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
-    bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32'), 
-                    np.array([[0.5,2,0],[1.5,3,0],[2.5,4,0]],dtype='float32'),
-                    np.array([[0.5,1,1],[1.5,2,2],[2.5,3,3]],dtype='float32'),
-                    np.array([[-0.5,2,-1],[-1.5,3,-2],[-2.5,4,-3]],dtype='float32')]
+    dt = np.dtype(np.float32)
+    refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype=dt)
+    bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype=dt), 
+               np.array([[0.5,2,0],[1.5,3,0],[2.5,4,0]],dtype=dt),
+               np.array([[0.5,1,1],[1.5,2,2],[2.5,3,3]],dtype=dt),
+               np.array([[-0.5,2,-1],[-1.5,3,-2],[-2.5,4,-3]],dtype=dt)]
+    expected_hit0 = [
+        [ 1.        ,  1.5       ,  0.        ,  0.70710683,  0.        ],
+        [ 1.        ,  2.5       ,  0.        ,  0.70710677,  1.        ],
+        [ 1.        ,  1.5       ,  1.5       ,  0.81649661,  2.        ]]
+    expected_hit1 = [
+        [ 2.        ,  2.5       ,  0.        ,  0.70710677,  0.        ],
+        [ 2.        ,  3.5       ,  0.        ,  0.70710677,  1.        ],
+        [ 2.        ,  2.5       ,  2.5       ,  0.81649655,  2.        ]]
     hitx=pf.cut_plane(bundlex,refx)
+    yield assert_array_almost_equal, hitx[0], expected_hit0
+    yield assert_array_almost_equal, hitx[1], expected_hit1
+    # check that algorithm allows types other than float32
+    bundlex[0] = np.asarray(bundlex[0], dtype=np.float64)
+    hitx=pf.cut_plane(bundlex,refx)
+    yield assert_array_almost_equal, hitx[0], expected_hit0
+    yield assert_array_almost_equal, hitx[1], expected_hit1
+    refx = np.asarray(refx, dtype=np.float64)
+    hitx=pf.cut_plane(bundlex,refx)
+    yield assert_array_almost_equal, hitx[0], expected_hit0
+    yield assert_array_almost_equal, hitx[1], expected_hit1
+    # from doctest - these seem to fail.
+    refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
+    bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
+    hitx = pf.cut_plane(bundlex,refx)
+    '''
+    yield assert_array_almost_equal, hitx[0], [
+        [ 1.        ,  1.5       ,  0.        ,  0.70710683]]
+    yield assert_array_almost_equal, hitx[1], [
+        [ 2.        ,  2.5       ,  0.        ,  0.70710677]]
+    '''
 
-    yield assert_array_almost_equal, hitx[0], np.array([[ 1.        ,  1.5       ,  0.        ,  0.70710683,  0.        ],
-       [ 1.        ,  2.5       ,  0.        ,  0.70710677,  1.        ],
-       [ 1.        ,  1.5       ,  1.5       ,  0.81649661,  2.        ]], dtype='float32')
+def test_normalized_3vec():
+    vec = [1, 2, 3]
+    l2n = np.sqrt(np.dot(vec, vec))
+    yield assert_array_almost_equal, l2n, pf.norm_3vec(vec)
+    nvec = pf.normalized_3vec(vec)
+    yield assert_array_almost_equal, np.array(vec) / l2n, nvec
+    vec = np.array([[1, 2, 3]])
+    yield assert_equal, vec.shape, (1, 3)
+    yield assert_equal, pf.normalized_3vec(vec).shape, (3,)
 
-    yield assert_array_almost_equal, hitx[1], np.array([[ 2.        ,  2.5       ,  0.        ,  0.70710677,  0.        ],
-       [ 2.        ,  3.5       ,  0.        ,  0.70710677,  1.        ],
-       [ 2.        ,  2.5       ,  2.5       ,  0.81649655,  2.        ]], dtype='float32')
 
+def test_inner_3vecs():
+    vec1 = [1, 2.3, 3]
+    vec2 = [2, 3, 4.3]
+    yield assert_array_almost_equal, np.inner(vec1, vec2), pf.inner_3vecs(vec1, vec2)
+    vec2 = [2, -3, 4.3]
+    yield assert_array_almost_equal, np.inner(vec1, vec2), pf.inner_3vecs(vec1, vec2)
+
+
+def test_add_sub_3vecs():
+    vec1 = np.array([1, 2.3, 3])
+    vec2 = np.array([2, 3, 4.3])
+    yield assert_array_almost_equal, vec1 - vec2, pf.sub_3vecs(vec1, vec2)
+    yield assert_array_almost_equal, vec1 + vec2, pf.add_3vecs(vec1, vec2)
+    vec2 = [2, -3, 4.3]
+    yield assert_array_almost_equal, vec1 - vec2, pf.sub_3vecs(vec1, vec2)
+    yield assert_array_almost_equal, vec1 + vec2, pf.add_3vecs(vec1, vec2)

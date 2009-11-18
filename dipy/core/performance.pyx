@@ -27,160 +27,282 @@ cdef extern from "stdlib.h":
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 
+
+cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
+    ''' Utility function to convert object to 3D float vector '''
+    return np.squeeze(np.asarray(vec, dtype=np.float32))
+
+
+cdef inline float* as_float_ptr(cnp.ndarray pt):
+    return <float *>pt.data
+
+
+def normalized_3vec(vec):
+    ''' Return normalized 3D vector
+
+    Vector divided by Euclidean (L2) norm
+
+    Parameters
+    ----------
+    vec : array-like shape (3,)
+
+    Returns
+    -------
+    vec_out : array shape (3,)
+    '''
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_in = as_float_3vec(vec)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)
+    cnormalized_3vec(<float *>vec_in.data, <float*>vec_out.data)
+    return vec_out
+
+
+def norm_3vec(vec):
+    ''' Euclidean (L2) norm of length 3 vector
+
+    Parameters
+    ----------
+    vec : array-like shape (3,)
+
+    Returns
+    -------
+    norm : float
+       Euclidean norm
+    '''
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_in = as_float_3vec(vec)
+    return cnorm_3vec(<float *>vec_in.data)
+
+
+cdef inline float cnorm_3vec(float *vec):
+    ''' Calculate Euclidean norm of input vector
+
+    Parameters
+    ----------
+    vec : float *
+       length 3 float vector
+
+    Returns
+    -------
+    norm : float
+       Euclidean norm
+    '''
+    cdef float v0, v1, v2
+    v0 = vec[0]
+    v1 = vec[1]
+    v2 = vec[2]
+    return sqrt(v0 * v0 + v1*v1 + v2*v2)
+
+
+cdef inline void cnormalized_3vec(float *vec_in, float *vec_out):
+    ''' Calculate and fill normalized 3D vector 
+
+    Parameters
+    ----------
+    vec_in : float *
+       Length 3 vector to normalize
+    vec_out : float *
+       Memory into which to write normalized length 3 vector
+
+    Returns
+    -------
+    void
+    '''
+    cdef float norm = cnorm_3vec(vec_in)
+    cdef int i
+    for i in range(3):
+        vec_out[i] = vec_in[i] / norm
+        
+
+def inner_3vecs(vec1, vec2):
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
+    return cinner_3vecs(<float *>fvec1.data, <float*>fvec2.data)
+
+
+cdef inline float cinner_3vecs(float *vec1, float *vec2):
+    cdef int i
+    cdef float ip = 0
+    for i in range(3):
+        ip += vec1[i]*vec2[i]
+    return ip
+
+
+def sub_3vecs(vec1, vec2):
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    csub_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
+    return vec_out
+
+
+cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out):
+    cdef int i
+    for i in range(3):
+        vec_out[i] = vec1[i]-vec2[i]
+
+
+def add_3vecs(vec1, vec2):
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    cadd_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
+    return vec_out
+
+
+cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out):
+    cdef int i
+    for i in range(3):
+        vec_out[i] = vec1[i]+vec2[i]
+
+
+# float 32 dtype for casting
+cdef cnp.dtype f32_dt = np.dtype(np.float32)
+
+
 def cut_plane(tracks,ref):
-    
     ''' Extract divergence vectors and points of intersection 
     between planes normal to the reference fiber and other tracks
     
-    Parameters:
-    ----------------
-    tracks: sequence 
-        of tracks as arrays, shape (N1,3) .. (Nm,3) , dtype float32 (only float32)
-    
+    Parameters
+    ----------
+    tracks: sequence
+        of tracks as arrays, shape (N1,3) .. (Nm,3)
     ref: array, shape (N,3)
         reference track
-    
         
-    Returns:
-    -----------
-    
+    Returns
+    -------
     hits: sequence
-            list of points and rcds (radial coefficient of divergence)``
+       list of points and rcds (radial coefficient of divergence)``
     
-    Example:
-    --------------
+    Examples
+    --------
     >>> refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     >>> bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
     >>> cut_plane(bundlex,refx)
         [array([[ 1.        ,  1.5       ,  0.        ,  0.70710683]], dtype=float32),
          array([[ 2.        ,  2.5       ,  0.        ,  0.70710677]], dtype=float32)]
-
-    
     '''
-    
-    cdef long lent=len(tracks)
-    cdef long i,j,k,
+    cdef size_t n_hits
     cdef float alpha,beta,lrq,rcd,lhp,ld
-    cdef int cnthits=0
-    
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] P
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] Q 
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] hit    
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] ref32 = np.ascontiguousarray(ref, f32_dt)
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] track
+    cdef object hits
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] hit_arr
     #cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] delta
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] hits
-        
-    Hit=[]
-    Div=[]
-    
-    hit = np.zeros((3,), dtype=np.float32)
-    #hit = np.zeros((3,), dtype=np.float32)
-    #divergence = np.zeros((3,), dtype=np.float32)
-    delta = np.zeros((3,), dtype=np.float32)
-
-    P=ref
-    
-    cdef int Plen=P.shape[0]
-    cdef int Qlen
-    
-    #for every point along the reference
-    for p from 0 <= p < Plen-1:
-        
-        along = P[p+1]-P[p]        
-        normal=along/sqrt(along[0]*along[0]+along[1]*along[1]+along[2]*along[2])
-        
-        #hits=np.array([0,0,0],dtype='float32')
+    cdef object Hit=[]
+    cdef object Div=[]
+    # convert all the tracks to something we can work with.  Get size of
+    # longest track.  Get track lengths
+    cdef size_t N_tracks=len(tracks)
+    cdef size_t longest_track_N = 0
+    cdef cnp.ndarray[cnp.uint64_t, ndim=1] track_lengths
+    track_lengths = np.empty((N_tracks,), dtype=np.uint64)
+    cdef size_t t_no
+    cdef size_t N_track
+    cdef size_t tp_no
+    cdef object tracks32 = []
+    for t_no in range(N_tracks):
+        track = np.ascontiguousarray(tracks[t_no], f32_dt)
+        N_track = track.shape[0]
+        if N_track > longest_track_N:
+            longest_track_N = N_track
+        track_lengths[t_no] = N_track
+        tracks32.append(track)
+    # for every point along the reference track
+    cdef size_t N_ref = ref32.shape[0]
+    cdef size_t p_no, q_no
+    cdef float *this_ref_p, *this_trk_p, *next_trk_p
+    cdef float* next_ref_p = as_float_ptr(ref32[0])
+    cdef float along[3]
+    cdef float normal_p[3]
+    cdef float qMp[3], rMp[3], rMq[3], pMq[3], hit[3]
+    cdef float hitMp[3], *delta
+    cdef char *buf_ptr
+    for p_no in range(N_ref-1):
+        # extract point to point vector into `along`
+        this_ref_p = next_ref_p
+        next_ref_p = as_float_ptr(ref32[p_no+1])
+        csub_3vecs(next_ref_p, this_ref_p, along)
+        # normalize
+        cnormalized_3vec(along, normal_p)
+        hits = []
         #divs=np.array([0,0,0],dtype='float32')
-        hits=np.array([[0,0,0,0,0]],dtype='float32')
-        
-        #for every track
-        for t from 0 <= t < lent:        
-            
-            Q=tracks[t]
-            Qlen=Q.shape[0]          
-            
-            #for every point on the track
-            for q from 0<= q < Qlen-1:
-                
-                #print p,t,q 
-
-                #if sqrt((Q[q][0]-P[p][0])*(Q[q][0]-P[p][0])+(Q[q][1]-P[p][1])*(Q[q][1]-P[p][1])+(Q[q][2]-P[p][2])*(Q[q][2]-P[p][2])) < thr : 
-                
-                
+        # convert things to arrays
+        # for every track
+        for t_no in range(N_tracks):
+            track=tracks32[t_no]
+            N_track = track.shape[0]
+            # for every point on the track
+            next_trk_p = as_float_ptr(track[0])
+            for q_no in range(N_track-1):
+                # p = ref32[p_no]
+                # q = track[q_no]
+                # r = track[q_no+1]
+                # float* versions of above
+                this_trk_p = next_trk_p
+                next_trk_p = as_float_ptr(track[q_no+1])
                 #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
-                if (normal[0]*(Q[q][0]-P[p][0])+normal[1]*(Q[q][1]-P[p][1]) \
-                    +normal[2]*(Q[q][2]-P[p][2])) * (normal[0]*(Q[q+1][0]-P[p][0])+normal[1]*(Q[q+1][1]-P[p][1]) \
-                    +normal[2]*(Q[q+1][2]-P[p][2])) <=0 :
+                csub_3vecs(this_trk_p, this_ref_p, qMp)
+                csub_3vecs(next_trk_p, this_ref_p, rMp)
+                if cinner_3vecs(normal_p, qMp) * cinner_3vecs(normal_p, rMp) <=0:
                     #if np.inner((r-q),normal) != 0:
-                
-                    beta=(normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
-                        +normal[2]*(Q[q+1][2]-Q[q][2]))                                        
-                        
-                    if beta !=0 :
-                    
-                            #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
-                            alpha = (normal[0]*(P[p][0]-Q[q][0])+normal[1]*(P[p][1]-Q[q][1]) \
-                                    +normal[2]*(P[p][2]-Q[q][2]))/ \
-                                    (normal[0]*(Q[q+1][0]-Q[q][0])+normal[1]*(Q[q+1][1]-Q[q][1]) \
-                                    +normal[2]*(Q[q+1][2]-Q[q][2]))
-                                    
-                            if alpha < 1 :
-                                    
-                                #hit = q+alpha*(r-q)
-                                hit[0] = Q[q][0]+alpha*(Q[q+1][0]-Q[q][0])
-                                hit[1] = Q[q][1]+alpha*(Q[q+1][1]-Q[q][1])
-                                hit[2] = Q[q][2]+alpha*(Q[q+1][2]-Q[q][2])
-                                
-                                '''
-                               
-                                #divergence =( (r-q)-np.inner(r-q,normal)*normal)/|r-q|
-                                lrq = sqrt((Q[q][0]-Q[q+1][0])*(Q[q][0]-Q[q+1][0])+(Q[q][1]-Q[q+1][1])*(Q[q][1]-Q[q+1][1])+(Q[q][2]-Q[q+1][2])*(Q[q][2]-Q[q+1][2]))
-                                divergence[0] = (Q[q+1][0]-Q[q][0] - beta*normal[0])/lrq
-                                divergence[1] = (Q[q+1][1]-Q[q][1] - beta*normal[1])/lrq
-                                divergence[2] = (Q[q+1][2]-Q[q][2] - beta*normal[2])/lrq
-                                
-                                #radial coefficient of divergence d.(h-p)/|h-p|
-                                lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
-                                
-                                if lhp>0.0 :
-                                    rcd=abs(divergence[0]*(hit[0]-P[p][0])+divergence[1]*(hit[1]-P[p][1])+divergence[2]*(hit[2]-P[p][2]))/lhp
-                                else:
-                                    rcd=0.0
-                                        
-                                #add points
-                                #divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )                                
-                                #hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
-                                
-                                #print  hits,  np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')
-                                '''
-                                delta[0]=Q[q+1][0]-Q[q][0]
-                                delta[1]=Q[q+1][1]-Q[q][1]
-                                delta[2]=Q[q+1][2]-Q[q][2]
-                                
-                                ld=sqrt(delta[0]*delta[0]+delta[1]*delta[1]+delta[2]*delta[2])                                    
-                                
-                                lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
-                                
-                                #radial divergence
-                                if lhp>0:                                        
-                                    rcd=(delta[0]*(hit[0]-P[p][0]) + delta[1]*(hit[1]-P[p][1]) + delta[2]*(hit[2]-P[p][2]))/(ld*lhp)
-                                    if rcd < 0:
-                                        rcd=-rcd
-                                else:
-                                    rcd=0
-                                    
-                                hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2],rcd ,t],dtype='float32')) )
-                
+                    csub_3vecs(next_trk_p, this_trk_p, rMq)
+                    beta = cinner_3vecs(rMq, normal_p)
+                    if beta !=0:
+                        #alpha = np.inner((p-q),normal)/np.inner((r-q),normal)
+                        csub_3vecs(this_ref_p, this_trk_p, pMq)
+                        alpha = (cinner_3vecs(pMq, normal_p) /
+                                  cinner_3vecs(rMq, normal_p))
+                        if alpha < 1:
+                            #hit = q+alpha*(r-q)
+                            hit[0] = this_trk_p[0]+alpha*rMq[0]
+                            hit[1] = this_trk_p[1]+alpha*rMq[1]
+                            hit[2] = this_trk_p[2]+alpha*rMq[2]
+                            '''
+                            #divergence =( (r-q)-np.inner(r-q,normal)*normal)/|r-q|
+                            lrq = sqrt((Q[q][0]-Q[q+1][0])*(Q[q][0]-Q[q+1][0])+(Q[q][1]-Q[q+1][1])*(Q[q][1]-Q[q+1][1])+(Q[q][2]-Q[q+1][2])*(Q[q][2]-Q[q+1][2]))
+                            divergence[0] = (Q[q+1][0]-Q[q][0] - beta*normal[0])/lrq
+                            divergence[1] = (Q[q+1][1]-Q[q][1] - beta*normal[1])/lrq
+                            divergence[2] = (Q[q+1][2]-Q[q][2] - beta*normal[2])/lrq
+
+                            #radial coefficient of divergence d.(h-p)/|h-p|
+                            lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
+
+                            if lhp>0.0 :
+                                rcd=abs(divergence[0]*(hit[0]-P[p][0])+divergence[1]*(hit[1]-P[p][1])+divergence[2]*(hit[2]-P[p][2]))/lhp
+                            else:
+                                rcd=0.0
+
+                            #add points
+                            #divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )                                
+                            #hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
+
+                            #print  hits,  np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')
+                            '''
+                            delta = rMq
+                            ld = cnorm_3vec(delta)
+                            csub_3vecs(hit, this_ref_p, hitMp)
+                            lhp = cnorm_3vec(hitMp)
+                            # radial divergence
+                            # np.inner(delta, (hit-p)) / (ld * lhp)
+                            if lhp > 0:                                   
+                                rcd = cinner_3vecs(delta, hitMp) / (ld*lhp)
+                                if rcd < 0:
+                                    rcd=-rcd
+                            else:
+                                rcd=0
+                            hits.append(np.array([hit[0], hit[1], hit[2],rcd,t_no],dtype=f32_dt))
                 #else:
                 #go next track
-                #    break                
-        
-        Hit.append(hits[1:])
+                #    break
+        # convert hits list to hits array
+        n_hits = len(hits)
+        hit_arr = np.empty((n_hits,5), dtype=f32_dt)
+        for p_no in range(n_hits):
+            hit_arr[p_no] = hits[p_no]
+        Hit.append(hit_arr)
         #Div.append(divs[1:])
-        
     return Hit[1:]            
-
-
 
 
 def most_similar_track_zhang(tracks,metric='avg'):    

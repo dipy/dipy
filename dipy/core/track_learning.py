@@ -2,7 +2,7 @@
 
 import numpy as np
 from . import track_metrics as tm
-import dipy.performance as pf
+import dipy.core.performance as pf
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
     ''' Detect corresponding tracks from 1 to 2
