@@ -13,7 +13,8 @@ from dipy.core import track_metrics as tm
 cdef extern from "math.h":
     double floor(double x)
     float sqrt(float x)
-
+    float fabs(float x)
+    
 #cdef extern from "stdio.h":
 #	void printf ( const char * format, ... )
     
@@ -285,10 +286,8 @@ def cut_plane(tracks,ref):
                             lhp = cnorm_3vec(hitMp)
                             # radial divergence
                             # np.inner(delta, (hit-p)) / (ld * lhp)
-                            if lhp > 0:                                   
-                                rcd = cinner_3vecs(delta, hitMp) / (ld*lhp)
-                                if rcd < 0:
-                                    rcd=-rcd
+                            if lhp > 0:
+                                rcd = fabs(cinner_3vecs(delta, hitMp) / (ld*lhp))
                             else:
                                 rcd=0
                             hits.append(np.array([hit[0], hit[1], hit[2],rcd,t_no],dtype=f32_dt))
