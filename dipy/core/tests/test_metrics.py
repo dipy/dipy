@@ -156,16 +156,7 @@ def test_cut_plane():
     hitx=pf.cut_plane(bundlex,refx)
     yield assert_array_almost_equal, hitx[0], expected_hit0
     yield assert_array_almost_equal, hitx[1], expected_hit1
-    # from doctest - these seem to fail.
-    refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
-    bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
-    hitx = pf.cut_plane(bundlex,refx)
-    '''
-    yield assert_array_almost_equal, hitx[0], [
-        [ 1.        ,  1.5       ,  0.        ,  0.70710683]]
-    yield assert_array_almost_equal, hitx[1], [
-        [ 2.        ,  2.5       ,  0.        ,  0.70710677]]
-    '''
+
 
 def test_normalized_3vec():
     vec = [1, 2, 3]

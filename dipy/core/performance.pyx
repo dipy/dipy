@@ -188,6 +188,8 @@ def cut_plane(tracks,ref):
     cdef cnp.ndarray[cnp.float32_t, ndim=2] ref32 = np.ascontiguousarray(ref, f32_dt)
     cdef cnp.ndarray[cnp.float32_t, ndim=2] track
     cdef object hits
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] one_hit
+    cdef float *hit_ptr
     cdef cnp.ndarray[cnp.float32_t, ndim=2] hit_arr
     #cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
     cdef object Hit=[]
@@ -218,7 +220,6 @@ def cut_plane(tracks,ref):
     cdef float normal_p[3]
     cdef float qMp[3], rMp[3], rMq[3], pMq[3], hit[3]
     cdef float hitMp[3], *delta
-    cdef char *buf_ptr
     for p_no in range(N_ref-1):
         # extract point to point vector into `along`
         this_ref_p = next_ref_p
@@ -245,7 +246,9 @@ def cut_plane(tracks,ref):
                 #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
                 csub_3vecs(this_trk_p, this_ref_p, qMp)
                 csub_3vecs(next_trk_p, this_ref_p, rMp)
-                if cinner_3vecs(normal_p, qMp) * cinner_3vecs(normal_p, rMp) <=0:
+                alpha = (cinner_3vecs(normal_p, qMp) *
+                         cinner_3vecs(normal_p, rMp))
+                if alpha <=0:
                     #if np.inner((r-q),normal) != 0:
                     csub_3vecs(next_trk_p, this_trk_p, rMq)
                     beta = cinner_3vecs(rMq, normal_p)
@@ -255,42 +258,40 @@ def cut_plane(tracks,ref):
                         alpha = (cinner_3vecs(pMq, normal_p) /
                                   cinner_3vecs(rMq, normal_p))
                         if alpha < 1:
-                            #hit = q+alpha*(r-q)
+                            # hit = q+alpha*(r-q)
                             hit[0] = this_trk_p[0]+alpha*rMq[0]
                             hit[1] = this_trk_p[1]+alpha*rMq[1]
                             hit[2] = this_trk_p[2]+alpha*rMq[2]
-                            '''
-                            #divergence =( (r-q)-np.inner(r-q,normal)*normal)/|r-q|
-                            lrq = sqrt((Q[q][0]-Q[q+1][0])*(Q[q][0]-Q[q+1][0])+(Q[q][1]-Q[q+1][1])*(Q[q][1]-Q[q+1][1])+(Q[q][2]-Q[q+1][2])*(Q[q][2]-Q[q+1][2]))
-                            divergence[0] = (Q[q+1][0]-Q[q][0] - beta*normal[0])/lrq
-                            divergence[1] = (Q[q+1][1]-Q[q][1] - beta*normal[1])/lrq
-                            divergence[2] = (Q[q+1][2]-Q[q][2] - beta*normal[2])/lrq
-
-                            #radial coefficient of divergence d.(h-p)/|h-p|
-                            lhp = sqrt((hit[0]-P[p][0])*(hit[0]-P[p][0])+(hit[1]-P[p][1])*(hit[1]-P[p][1])+(hit[2]-P[p][2])*(hit[2]-P[p][2]))
-
-                            if lhp>0.0 :
-                                rcd=abs(divergence[0]*(hit[0]-P[p][0])+divergence[1]*(hit[1]-P[p][1])+divergence[2]*(hit[2]-P[p][2]))/lhp
-                            else:
-                                rcd=0.0
-
-                            #add points
-                            #divs=np.vstack( (divs, np.array([divergence[0], divergence[1], divergence[2] ])) )                                
-                            #hits=np.vstack( (hits, np.array([hit[0], hit[1], hit[2] ])) )
-
-                            #print  hits,  np.array([hit[0], hit[1], hit[2],rcd ],dtype='float32')
-                            '''
-                            delta = rMq
-                            ld = cnorm_3vec(delta)
+                            # h-p
                             csub_3vecs(hit, this_ref_p, hitMp)
+                            # |h-p|
                             lhp = cnorm_3vec(hitMp)
+                            delta = rMq # just renaming
+                            # |r-q| == |delta|
+                            ld = cnorm_3vec(delta)
+                            ''' # Summary of stuff in comments
+                            # divergence =((r-q)-inner(r-q,normal)*normal)/|r-q|
+                            div[0] = (rMq[0]-beta*normal_p[0]) / ld
+                            div[1] = (rMq[1]-beta*normal_p[1]) / ld
+                            div[2] = (rMq[2]-beta*normal_p[2]) / ld
+                            # radial coefficient of divergence d.(h-p)/|h-p|
+                            '''
                             # radial divergence
                             # np.inner(delta, (hit-p)) / (ld * lhp)
                             if lhp > 0:
-                                rcd = fabs(cinner_3vecs(delta, hitMp) / (ld*lhp))
+                                rcd = fabs(cinner_3vecs(delta, hitMp)
+                                           / (ld*lhp))
                             else:
                                 rcd=0
-                            hits.append(np.array([hit[0], hit[1], hit[2],rcd,t_no],dtype=f32_dt))
+                            # hit data into array
+                            one_hit = np.empty((5,), dtype=f32_dt)
+                            hit_ptr = <float *>one_hit.data
+                            hit_ptr[0] = hit[0]
+                            hit_ptr[1] = hit[1]
+                            hit_ptr[2] = hit[2]
+                            hit_ptr[3] = rcd
+                            hit_ptr[4] = t_no
+                            hits.append(one_hit)
                 #else:
                 #go next track
                 #    break
@@ -535,7 +536,7 @@ def zhang_distances(xyz1,xyz2,metric='all'):
     free(minj)
         
     if metric=='all':
-        return (sumi+sumj)/2.0, np.min(sumi,sumj), np.max(sumi,sumj)
+        return (sumi+sumj)/2.0, np.min((sumi,sumj)), np.max((sumi,sumj))
     elif metric=='avg':
         return (sumi+sumj)/2.0
     elif metric=='min':            
