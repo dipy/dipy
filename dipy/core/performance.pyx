@@ -183,27 +183,26 @@ def cut_plane(tracks,ref):
         [array([[ 1.        ,  1.5       ,  0.        ,  0.70710683]], dtype=float32),
          array([[ 2.        ,  2.5       ,  0.        ,  0.70710677]], dtype=float32)]
     '''
-    cdef size_t n_hits
-    cdef float alpha,beta,lrq,rcd,lhp,ld
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] ref32 = np.ascontiguousarray(ref, f32_dt)
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] track
-    cdef object hits
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] one_hit
-    cdef float *hit_ptr
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] hit_arr
-    #cdef cnp.ndarray[cnp.float32_t, ndim=1] divergence
-    cdef object Hit=[]
-    cdef object Div=[]
+    cdef:
+        size_t n_hits
+        float alpha,beta,lrq,rcd,lhp,ld
+        cnp.ndarray[cnp.float32_t, ndim=2] ref32 = np.ascontiguousarray(
+            ref, f32_dt)
+        cnp.ndarray[cnp.float32_t, ndim=2] track
+        object hits
+        cnp.ndarray[cnp.float32_t, ndim=1] one_hit
+        float *hit_ptr
+        cnp.ndarray[cnp.float32_t, ndim=2] hit_arr
+        object Hit=[]
     # convert all the tracks to something we can work with.  Get size of
     # longest track.  Get track lengths
-    cdef size_t N_tracks=len(tracks)
-    cdef size_t longest_track_N = 0
-    cdef cnp.ndarray[cnp.uint64_t, ndim=1] track_lengths
-    track_lengths = np.empty((N_tracks,), dtype=np.uint64)
-    cdef size_t t_no
-    cdef size_t N_track
-    cdef size_t tp_no
+    cdef:
+        size_t N_tracks=len(tracks)
+        size_t longest_track_N = 0
+        cnp.ndarray[cnp.uint64_t, ndim=1] track_lengths
+        size_t t_no, N_track, tp_no
     cdef object tracks32 = []
+    track_lengths = np.empty((N_tracks,), dtype=np.uint64)
     for t_no in range(N_tracks):
         track = np.ascontiguousarray(tracks[t_no], f32_dt)
         N_track = track.shape[0]
@@ -212,14 +211,14 @@ def cut_plane(tracks,ref):
         track_lengths[t_no] = N_track
         tracks32.append(track)
     # for every point along the reference track
-    cdef size_t N_ref = ref32.shape[0]
-    cdef size_t p_no, q_no
-    cdef float *this_ref_p, *this_trk_p, *next_trk_p
-    cdef float* next_ref_p = as_float_ptr(ref32[0])
-    cdef float along[3]
-    cdef float normal_p[3]
-    cdef float qMp[3], rMp[3], rMq[3], pMq[3], hit[3]
-    cdef float hitMp[3], *delta
+    cdef:
+        size_t N_ref = ref32.shape[0]
+        size_t p_no, q_no
+        float *this_ref_p, *next_ref_p, *this_trk_p, *next_trk_p
+        float along[3], normal_p[3]
+        float qMp[3], rMp[3], rMq[3], pMq[3]
+        float hit[3], hitMp[3], *delta
+    next_ref_p = as_float_ptr(ref32[0])
     for p_no in range(N_ref-1):
         # extract point to point vector into `along`
         this_ref_p = next_ref_p
