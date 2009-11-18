@@ -184,7 +184,7 @@ def cut_plane(tracks,ref):
          array([[ 2.        ,  2.5       ,  0.        ,  0.70710677]], dtype=float32)]
     '''
     cdef:
-        size_t n_hits
+        size_t n_hits, hit_no, max_hit_len
         float alpha,beta,lrq,rcd,lhp,ld
         cnp.ndarray[cnp.float32_t, ndim=2] ref32
         cnp.ndarray[cnp.float32_t, ndim=2] track
@@ -215,6 +215,11 @@ def cut_plane(tracks,ref):
         float along[3], normal[3]
         float qMp[3], rMp[3], rMq[3], pMq[3]
         float hit[3], hitMp[3], *delta
+    # List used for storage of hits.  We will fill this with lots of
+    # small numpy arrays, and reuse them over the reference track point
+    # loops.
+    max_hit_len = 0
+    hits = []
     # for every point along the reference track
     next_ref_p = as_float_ptr(ref32[0])
     for p_no in range(N_ref-1):
@@ -224,8 +229,8 @@ def cut_plane(tracks,ref):
         csub_3vecs(next_ref_p, this_ref_p, along)
         # normalize
         cnormalized_3vec(along, normal)
-        # initialize list for storing hits
-        hits = []
+        # initialize index for hits
+        hit_no = 0
         # for every track
         for t_no in range(N_tracks):
             track=tracks32[t_no]
@@ -278,22 +283,25 @@ def cut_plane(tracks,ref):
                             else:
                                 rcd=0
                             # hit data into array
-                            one_hit = np.empty((5,), dtype=f32_dt)
+                            if hit_no >= max_hit_len:
+                                one_hit = np.empty((5,), dtype=f32_dt)
+                                hits.append(one_hit)
+                            else:
+                                one_hit = hits[hit_no]
                             hit_ptr = <float *>one_hit.data
                             hit_ptr[0] = hit[0]
                             hit_ptr[1] = hit[1]
                             hit_ptr[2] = hit[2]
                             hit_ptr[3] = rcd
                             hit_ptr[4] = t_no
-                            hits.append(one_hit)
-                #else:
-                #go next track
-                #    break
+                            hit_no += 1
         # convert hits list to hits array
-        n_hits = len(hits)
+        n_hits = hit_no
+        if n_hits > max_hit_len:
+            max_hit_len = n_hits
         hit_arr = np.empty((n_hits,5), dtype=f32_dt)
-        for p_no in range(n_hits):
-            hit_arr[p_no] = hits[p_no]
+        for hit_no in range(n_hits):
+            hit_arr[hit_no] = hits[hit_no]
         Hit.append(hit_arr)
         #Div.append(divs[1:])
     return Hit[1:]            
