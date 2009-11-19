@@ -991,12 +991,12 @@ def spline(xyz,s=3,k=2,nest=-1):
               Always large enough is nest=m+k+1.        
     
     
-    Returns
-    ---------
+    Returns:
+    -----------
     xyzn : array, shape (M,3)
     
-    Examples
-    ------------
+    Examples:
+    -------------
     >>> import numpy as np
     >>> # make ascending spiral in 3-space
     >>> t=np.linspace(0,1.75*2*np.pi,100)

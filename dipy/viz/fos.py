@@ -49,6 +49,19 @@ golden=np.array([1,0.84,0])
 white=np.array([1,1,1])
 black=np.array([0,0,0])
 
+# Create a text mapper and actor to display the results of picking.
+textMapper = vtk.vtkTextMapper()
+tprop = textMapper.GetTextProperty()
+tprop.SetFontFamilyToArial()
+tprop.SetFontSize(10)
+#tprop.BoldOn()
+#tprop.ShadowOn()
+tprop.SetColor(1, 0, 0)
+textActor = vtk.vtkActor2D()
+textActor.VisibilityOff()
+textActor.SetMapper(textMapper)
+# Create a cell picker.
+picker = vtk.vtkCellPicker()
 
 class Foz(object):
     ''' An object for fast accessing the fos utilities.
@@ -1008,7 +1021,43 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
         
     return volum
 
-def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50]):
+def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50],colors=[np.array([1.0,0.0,0.0])],opacities=[0.5]):
+    ''' Take a volume and draw surface contours for any any number of thresholds (levels) where every contour has its own
+    color and opacity
+    
+    Parameters:
+    ----------------
+    vol : array, shape (N, M, K)
+        an array representing the volumetric dataset for which we will draw some beautiful contours .         
+    
+    voxsz : sequence of 3 floats
+        default (1., 1., 1.)
+        
+    affine : not used here
+    
+    levels : sequence of thresholds for the contours taken from image values
+                needs to be same datatype as vol    
+    colors : array, shape (N,3) with the rgb values in where r,g,b belong to [0,1]
+    
+    opacities : sequence of floats [0,1]
+            
+        
+    Returns:
+    -----------
+    ass: assembly of actors
+            representing the contour surfaces
+            
+    Examples:
+    -------------
+    >>> import numpy as np
+    >>> from dipy.viz import fos
+    >>> A=np.zeros((10,10,10))
+    >>> A[3:-3,3:-3,3:-3]=1
+    >>> r=fos.ren()
+    >>> fos.add(r,fos.contour(A,levels=[1]))
+    >>> fos.show(r)
+    
+    '''
     
     im = vtk.vtkImageData()
     im.SetScalarTypeToUnsignedChar()
@@ -1023,23 +1072,41 @@ def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50]):
                 
                 im.SetScalarComponentFromFloat(i,j,k,0,vol[i,j,k])
     
-    skinExtractor = vtk.vtkContourFilter()
-    #skinExtractor.SetInputConnection(im.GetOutputPort())
-    skinExtractor.SetInput(im)
-    skinExtractor.SetValue(0, levels[0])
+    ass=vtk.vtkAssembly()
+    #ass=[]
     
-    skinNormals = vtk.vtkPolyDataNormals()
-    skinNormals.SetInputConnection(skinExtractor.GetOutputPort())
-    skinNormals.SetFeatureAngle(60.0)
+    for (i,l) in enumerate(levels):
+        
+        #print levels
+        skinExtractor = vtk.vtkContourFilter()        
+        skinExtractor.SetInput(im)
+        skinExtractor.SetValue(0, l)
+        
+        skinNormals = vtk.vtkPolyDataNormals()
+        skinNormals.SetInputConnection(skinExtractor.GetOutputPort())
+        skinNormals.SetFeatureAngle(60.0)
+        
+        skinMapper = vtk.vtkPolyDataMapper()
+        skinMapper.SetInputConnection(skinNormals.GetOutputPort())
+        skinMapper.ScalarVisibilityOff()
+        
+        skin = vtk.vtkActor()
+        
+        skin.SetMapper(skinMapper)
+        skin.GetProperty().SetOpacity(opacities[i])
+        
+        print colors[i]
+        skin.GetProperty().SetColor(colors[i][0],colors[i][1],colors[i][2])
+        #skin.Update()
+        
+        ass.AddPart(skin)    
+        
+        del skin
+        del skinMapper
+        del skinExtractor
+        #ass=ass+[skin]
     
-    skinMapper = vtk.vtkPolyDataMapper()
-    skinMapper.SetInputConnection(skinNormals.GetOutputPort())
-    skinMapper.ScalarVisibilityOff()
-    
-    skin = vtk.vtkActor()
-    skin.SetMapper(skinMapper)
-    
-    return skin
+    return ass
 
     
 
@@ -1159,7 +1226,19 @@ def colors(v,colormap):
         
     return np.vstack((red,green,blue)).T
 
-    
+def annotatePick(object, event):
+    ''' Create a Python function to create the text for the 
+    text mapper used to display the results of picking.
+    '''
+    global picker, textActor, textMapper
+    if picker.GetCellId() < 0:
+        textActor.VisibilityOff()
+    else:
+        selPt = picker.GetSelectionPoint()
+        pickPos = picker.GetPickPosition()
+        textMapper.SetInput("(%.6f, %.6f, %.6f)"%pickPos)
+        textActor.SetPosition(selPt[:2])
+        textActor.VisibilityOn()    
 
 def show(ren,title='Fos',size=(300,300)):
     ''' Show window 
@@ -1185,20 +1264,31 @@ def show(ren,title='Fos',size=(300,300)):
     >>> fos.add(r,l)
     >>> fos.show(r)
     '''
+
+    picker.AddObserver("EndPickEvent", annotatePick)
+    
+    ren.AddActor2D(textActor)
+    
     ren.ResetCamera()        
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
     window.SetWindowName(title) 
     window.SetSize(size)
     style=vtk.vtkInteractorStyleTrackballCamera()        
-    iren = vtk.vtkRenderWindowInteractor()
+    iren = vtk.vtkRenderWindowInteractor()    
     iren.SetRenderWindow(window)
+    iren.SetPicker(picker)
+    
+
+    
     iren.SetInteractorStyle(style)
+    iren.Initialize()
+    picker.Pick(85, 126, 0, ren)    
+    window.Render()
     iren.Start()
     
     
 if __name__ == "__main__":
-
-    pass
     
+    pass
     
