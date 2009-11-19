@@ -58,19 +58,17 @@ def test_segment_intersection():
     
     yield assert_equal, tm.any_segment_intersect_sphere(xyz,center,radius), True
 
-def test_most_similar_zhang():
 
+def test_most_similar_zhang():
     xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     xyz2 = np.array([[0,1,1],[1,0,1],[2,3,-2]],dtype='float32')
     xyz3 = np.array([[-1,0,0],[2,0,0],[2,3,0],[3,0,0]],dtype='float32')
-    
     tracks=[xyz1,xyz2,xyz3]
-    
-    si,s=tm.most_similar_track_zhang(tracks,metric='avg')
-    #pf should be much faster and the results equivalent
-    si2,s2=pf.most_similar_track_zhang(tracks,metric='avg')
-    
-    yield assert_almost_equal, si,si2
+    for metric in ('avg', 'min', 'max'):
+        si,s=tm.most_similar_track_zhang(tracks,metric=metric)
+        #pf should be much faster and the results equivalent
+        si2,s2=pf.most_similar_track_zhang(tracks,metric=metric)
+        yield assert_almost_equal, si,si2
     
     
 def test_zhang_distances():
