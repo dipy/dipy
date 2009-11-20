@@ -564,25 +564,26 @@ def minimum_description_length_unpartitoned(xyz):
     return np.sum(np.log2((np.diff(xyz, axis=0)**2).sum(axis=1)))/2
     
 def zhang_distances(xyz1,xyz2,metric='all'):
-    ''' Calculating the distance between tracks xyz1 and xyz2 
-        Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
-        http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
-        which in turn are based on those of Corouge et al. 2004
- 
-    Parameters:
-    -----------
-        xyz1 : array, shape (N1,3)
-        xyz2 : array, shape (N2,3)
-        arrays representing x,y,z of the N1 and N2 points  of two tracks
+    '''Distance between tracks xyz1 and xyz2 using metrics in Zhang 2008
     
-    Returns:
-    --------
-        avg_mcd: float
-                    average_mean_closest_distance
-        min_mcd: float
-                    minimum_mean_closest_distance
-        max_mcd: float
-                    maximum_mean_closest_distance
+    Based on the metrics in Zhang, Correia, Laidlaw 2008 
+    http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
+    which in turn are based on those of Corouge et al. 2004
+ 
+    Parameters
+    ----------
+    xyz1 : array, shape (N1,3)
+    xyz2 : array, shape (N2,3)
+       arrays representing x,y,z of the N1 and N2 points  of two tracks
+    
+    Returns
+    -------
+    avg_mcd : float
+       average_mean_closest_distance
+    min_mcd : float
+       minimum_mean_closest_distance
+    max_mcd : float
+       maximum_mean_closest_distance
     '''
     mcd12,mcd21 = mean_closest_distances(xyz1,xyz2)
     
@@ -597,29 +598,33 @@ def zhang_distances(xyz1,xyz2,metric='all'):
     else :
         ValueError('Wrong argument for metric')
 
+
 def mean_closest_distances(xyz1,xyz2):
-    '''  Calculating the average distances between tracks xyz1 and xyz2 
-        Based on the metrics in Zhang, Correia, Laidlaw 2008 
-        http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455        
-        
-        Parameters:
-        -----------
-        xyz1 : array, shape (N1,3)
-        xyz2 : array, shape (N2,3)
-        arrays representing x,y,z of the N1 and N2 points  of two tracks
-        
-        Returns:
-        ----------
-        
+    '''Average distances between tracks xyz1 and xyz2
+    
+    Based on the metrics in Zhang, Correia, Laidlaw 2008 
+    http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
+    which in turn are based on those of Corouge et al. 2004
+ 
+    Parameters
+    ----------
+    xyz1 : array, shape (N1,3)
+    xyz2 : array, shape (N2,3)
+       arrays representing x,y,z of the N1 and N2 points  of two tracks
+    
+    Returns
+    -------
+    mcd12 : float
+       Mean closest distance from `xyz1` to `xyz2`
+    mcd12 : float
+       Mean closest distance from `xyz2` to `xyz1`
     '''
     n1 = xyz1.shape[0]
     n2 = xyz2.shape[0]
-    
     d = np.resize(np.tile(xyz1,(n2)),(n1,n2,3)) \
         - np.transpose(np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2))
-        
     dm = np.sqrt(np.sum(d**2,axis=2))
-    return np.average(np.min(dm,axis=0)), np.average(np.min(dm,axis=1))            
+    return np.average(np.min(dm,axis=0)), np.average(np.min(dm,axis=1))
    
 
 def generate_combinations(items, n):
@@ -694,6 +699,7 @@ def bundle_similarities_zhang(bundle,metric='avg'):
         
     return S_avg,S_min,S_max 
 
+
 def most_similar_track_zhang(bundle,metric='avg'):
     ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
     
@@ -712,10 +718,8 @@ def most_similar_track_zhang(bundle,metric='avg'):
     s  : array, shape (len(bundle),)
         similarities of si with all the other tracks
     '''
-    
     track_pairs = generate_combinations(range(len(bundle)), 2)
     s = np.zeros((len(bundle)))    
-    
     '''
     for p in track_pairs:
         delta = zhang_distances(bundle[p[0]],bundle[p[1]],metric)
@@ -723,44 +727,42 @@ def most_similar_track_zhang(bundle,metric='avg'):
         s[p[1]] += delta
         
     '''
-    
-    deltas=[(zhang_distances(bundle[p[0]],bundle[p[1]],metric),p[0],p[1]) for p in track_pairs]
-
+    deltas=[(zhang_distances(bundle[p[0]],bundle[p[1]],metric),p[0],p[1])
+            for p in track_pairs]
     for d in deltas:
         s[d[1]]+=d[0]
         s[d[2]]+=d[0]
-    
     si=np.argmin(s)
-    
     smin=[zhang_distances(t,bundle[si],metric) for t in bundle]
-    
     return si, np.array(smin)
 
 
 def track_bundle_similarity(t,S): 
-    ''' Calculate the similarity between a specific track ``t`` and the rest of the tracks in the bundle 
+    ''' Calculate between track `t` and rest of the tracks in the bundle 
     using an upper diagonal similarity matrix S.
     '''    
     return np.hstack((S[:t,t],np.array([0]),S[t,t+1:]))
 
+
 def longest_track_bundle(bundle,sort=False):
-    ''' Return the longest track in a bundle or if sort = True the indices of ther sorted tracks in the bundle
+    ''' Return longest track or length sorted track indices in `bundle`
+
+    If `sort` == True, return the indices of the sorted tracks in the
+    bundle, otherwise return the longest track. 
     
-    Parameters :
-    ---------------
-    bundle: sequence 
-            of tracks as arrays, shape (N1,3) ... (Nm,3)
-            
-    Returns :
-    -----------
-    longest : array shape (N,3)
-            longest track    
-        or    
-    indices :  array
-            indices of length sorted  tracks
-    
+    Parameters
+    ----------
+    bundle : sequence 
+       of tracks as arrays, shape (N1,3) ... (Nm,3)
+    sort : bool, optional
+       If False (default) return longest track.  If True, return length
+       sorted indices for tracks in bundle
+    Returns
+    -------
+    longest_or_indices : array
+       longest track - shape (N,3) -  (if `sort` is False), or indices
+       of length sorted tracks (if `sort` is True)
     '''
-    
     alllengths=[tm.length(t) for t in bundle]
     alllengths=np.array(alllengths)        
     if sort:
@@ -770,42 +772,43 @@ def longest_track_bundle(bundle,sort=False):
         ilongest=alllengths.argmax()
         return bundle[ilongest]
  
+
 def most_similar_track(S,sort=False):
-    ''' Return the index of the most similar track given a diagonal similarity matrix  as 
-    returned from function bundle_similarities_zhang(bundle) 
+    ''' Return the index of the most similar track given a diagonal
+    similarity matrix as returned from function
+    bundle_similarities_zhang(bundle)
     '''
     if sort:
         return (S+S.T).sum(axis=0).argsort()    
     else:        
         return   (S+S.T).sum(axis=0).argmin()
 
-def any_segment_intersect_sphere(xyz,center,radius):
-    ''' If any segment of the track is intersecting with a sphere of specific center and radius return True
-    otherwise False
-    
-    Parameters:
-    --------------
-    xyz : array, shape (N,3)
-            representing x,y,z of the N points of the track
-    
-    center : array, shape (3,)
-                center of the sphere
-    
-    radius : float
-                radius of the sphere
-    
-    Returns:
-    ----------
-    boolean : {True,False}           
 
-    Notes :
-    ---------
+def any_segment_intersect_sphere(xyz,center,radius):
+    ''' If any segment of the track is intersecting with a sphere of
+    specific center and radius return True otherwise False
+    
+    Parameters
+    ----------
+    xyz : array, shape (N,3)
+       representing x,y,z of the N points of the track
+    center : array, shape (3,)
+       center of the sphere
+    radius : float
+       radius of the sphere
+    
+    Returns
+    -------
+    tf : {True,False}           
+       True if track `xyz` intersects sphere
+       
+    Notes
+    -----
     The ray to sphere intersection method used here is similar with 
     http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/
     http://local.wasp.uwa.edu.au/~pbourke/geometry/sphereline/source.cpp
     we just applied it for every segment neglecting the intersections where
     the intersecting points are not inside the segment      
-    
     '''
     center=np.array(center)
     #print center
@@ -846,157 +849,150 @@ def any_segment_intersect_sphere(xyz,center,radius):
             #print 'p1,p2',p1,p2
             if np.inner(p1-x1,p1-x1) <= a or np.inner(p2-x1,p2-x1) <= a:
                 return True
-            
-            
-    
     return False
     
+
 def intersect_sphere(xyz,center,radius):
-    ''' If any point of the track is inside a sphere of a specified center and radius return True otherwise False.
-        Mathematicaly this can be simply described by ||x-c||<=r where ``x`` a point ``c`` the center 
-        of the sphere and ``r`` the radius of the sphere.
+    ''' If any point of the track is inside a sphere of a specified
+    center and radius return True otherwise False.  Mathematicaly this
+    can be simply described by ||x-c||<=r where ``x`` a point ``c`` the
+    center of the sphere and ``r`` the radius of the sphere.
             
-    Parameters:
-    --------------
-    xyz : array, shape (N,3)
-            representing x,y,z of the N points of the track
-    
-    center : array, shape (3,)
-                center of the sphere
-    
-    radius : float
-                radius of the sphere
-    
-    Returns:
+    Parameters
     ----------
-    boolean : {True,False}    
+    xyz : array, shape (N,3)
+       representing x,y,z of the N points of the track
+    center : array, shape (3,)
+       center of the sphere
+    radius : float
+       radius of the sphere
     
-    Examples:
-    -----------
-    >>> from dipy.core.track_metrics import intersect_sphere as tis
+    Returns
+    -------
+    tf : {True,False}    
+    
+    Examples
+    --------
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
     >>> sph_radius = 1
-    >>> tis(line,sph_cent,sph_radius)
+    >>> intersect_sphere(line,sph_cent,sph_radius)
     '''
-            
     return (np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius).any()==True
 
+
 def intersect_sphere_points(xyz,center,radius):
-    ''' If a track intersects with a sphere of a specified center and radius return the points that are inside the sphere otherwise False.
-        Mathematicaly this can be simply described by ||x-c||<=r where ``x`` a point ``c`` the center 
-        of the sphere and ``r`` the radius of the sphere.
+    ''' If a track intersects with a sphere of a specified center and
+    radius return the points that are inside the sphere otherwise False.
+    Mathematicaly this can be simply described by ||x-c||<=r where ``x``
+    a point ``c`` the center of the sphere and ``r`` the radius of the
+    sphere.
             
-    Parameters:
-    ---------------
-    xyz : array, shape (N,3)
-            representing x,y,z of the N points of the track
-    
-    center : array, shape (3,)
-            center of the sphere
-    
-    radius : float
-            radius of the sphere
-    
-    Returns:
+    Parameters
     ----------
-    xyzn : array, shape(M,3)
-    array representing x,y,z of the M points inside the sphere
+    xyz : array, shape (N,3)
+       representing x,y,z of the N points of the track
+    center : array, shape (3,)
+       center of the sphere
+    radius : float
+       radius of the sphere
     
-    Examples:
-    -------------
-    >>> from dipy.core import track_metrics as tm
+    Returns
+    -------
+    xyzn : array, shape(M,3)
+       array representing x,y,z of the M points inside the sphere
+    
+    Examples
+    --------
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
     >>> sph_radius = 1
-    >>> tm.intersect_sphere_points(line,sph_cent,sph_radius)
+    >>> intersect_sphere_points(line,sph_cent,sph_radius)
     '''
-            
     return xyz[(np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius)]
 
+
 def orientation_in_sphere(xyz,center,radius):
-    ''' Calculate the average orientation of a track segment inside a sphere
+    '''Calculate average orientation of a track segment inside a sphere
     
-    Parameters:
+    Parameters
     --------------
     xyz : array, shape (N,3)
-            representing x,y,z of the N points of the track
-    
+       representing x,y,z of the N points of the track
     center : array, shape (3,)
-            center of the sphere
-    
+       center of the sphere
     radius : float
-            radius of the sphere    
+       radius of the sphere    
     
-    Returns:
-    ----------
+    Returns
+    -------
     orientation : array, shape (3,)
-                    vector representing the average orientation of the track inside sphere 
+       vector representing the average orientation of the track inside
+       sphere
         
-    Examples:
-    -------------
+    Examples
+    --------
     >>> track=np.array([[1,1,1],[2,2,2],[3,3,3]])    
     >>> center=(2,2,2)
     >>> radius=5
     >>> orientation_in_sphere(track)
     array([1.,1.,1.])
-    
     '''
     xyzn=intersect_sphere_points(xyz,center,radius)   
-     
     if xyzn.shape[0] >1:
-        
         #calculate gradient
         dxyz=np.gradient(xyzn)[0]
         #average orientation
         return np.mean(dxyz,axis=0)
-
     else:
         return None
 
+
 def spline(xyz,s=3,k=2,nest=-1):
-    
     ''' Generate B-splines as documented in 
     http://www.scipy.org/Cookbook/Interpolation
     
-    The scipy.interpolate packages wraps the netlib FITPACK routines (Dierckx) for calculating
-    smoothing splines for various kinds of data and geometries. Although the data is evenly spaced 
-    in this example, it need not be so to use this routine.
+    The scipy.interpolate packages wraps the netlib FITPACK routines
+    (Dierckx) for calculating smoothing splines for various kinds of
+    data and geometries. Although the data is evenly spaced in this
+    example, it need not be so to use this routine.
     
     Parameters:
     ---------------
     xyz : array, shape (N,3)
-        array representing x,y,z of N points in 3d space
-        
-    s :  A smoothing condition.  The amount of smoothness is determined by
-        satisfying the conditions: sum((w * (y - g))**2,axis=0) <= s where
-        g(x) is the smoothed interpolation of (x,y).  The user can use s to
-        control the tradeoff between closeness and smoothness of fit.  Larger
-        satisfying the conditions: sum((w * (y - g))**2,axis=0) <= s where
-        g(x) is the smoothed interpolation of (x,y).  The user can use s to
-        control the tradeoff between closeness and smoothness of fit.  Larger
-        s means more smoothing while smaller values of s indicate less
-        smoothing. Recommended values of s depend on the weights, w.  If the
-        weights represent the inverse of the standard-deviation of y, then a:
-        good s value should be found in the range (m-sqrt(2*m),m+sqrt(2*m))
-        where m is the number of datapoints in x, y, and w.
-        
-    k :  Degree of the spline.  Cubic splines are recommended.  
-        Even values of k should be avoided especially with a small s-value.
-        for the same set of data.
-        If task=-1 find the weighted least square spline for a given set of knots, t.
-                
-    nest -- An over-estimate of the total number of knots of the spline to
-              help in determining the storage space.  By default nest=m/2.
-              Always large enough is nest=m+k+1.        
+       array representing x,y,z of N points in 3d space
+    s : float, optional
+       A smoothing condition.  The amount of smoothness is determined by
+       satisfying the conditions: sum((w * (y - g))**2,axis=0) <= s
+       where g(x) is the smoothed interpolation of (x,y).  The user can
+       use s to control the tradeoff between closeness and smoothness of
+       fit.  Larger satisfying the conditions: sum((w * (y -
+       g))**2,axis=0) <= s where g(x) is the smoothed interpolation of
+       (x,y).  The user can use s to control the tradeoff between
+       closeness and smoothness of fit.  Larger s means more smoothing
+       while smaller values of s indicate less smoothing. Recommended
+       values of s depend on the weights, w.  If the weights represent
+       the inverse of the standard-deviation of y, then a: good s value
+       should be found in the range (m-sqrt(2*m),m+sqrt(2*m)) where m is
+       the number of datapoints in x, y, and w.
+    k : int, optional
+       Degree of the spline.  Cubic splines are recommended.  Even
+       values of k should be avoided especially with a small s-value.
+       for the same set of data.  If task=-1 find the weighted least
+       square spline for a given set of knots, t.
+    nest : None or int, optional
+       An over-estimate of the total number of knots of the spline to
+       help in determining the storage space.  None results in value
+       m+2*k. -1 results in m+k+1. Always large enough is nest=m+k+1.
+       Default is -1.  
     
     
-    Returns:
-    -----------
+    Returns
+    -------
     xyzn : array, shape (M,3)
     
-    Examples:
-    -------------
+    Examples
+    --------
     >>> import numpy as np
     >>> # make ascending spiral in 3-space
     >>> t=np.linspace(0,1.75*2*np.pi,100)
@@ -1015,24 +1011,23 @@ def spline(xyz,s=3,k=2,nest=-1):
     
     See also
     ----------
-    From scipy documentation  scipy.interpolate.splprep and scipy.interpolate.splev    
-    
+    From scipy documentation scipy.interpolate.splprep and
+    scipy.interpolate.splev
     '''
-
     # find the knot points
-    tckp,u = splprep([xyz[:,0],xyz[:,1],xyz[:,2]],s=s,k=k,nest=-1)
-
+    tckp,u = splprep([xyz[:,0],xyz[:,1],xyz[:,2]],s=s,k=k,nest=nest)
     # evaluate spline, including interpolated points
     xnew,ynew,znew = splev(np.linspace(0,1,400),tckp)
-
     return np.vstack((xnew,ynew,znew)).T    
 
 
 def startpoint(xyz):
     return xyz[0]
 
+
 def endpoint(xyz):
     return xyz[-1]
+
 
 def arbitrarypoint(xyz,distance):
     ''' Select an arbitrary point along distance on the track (curve)
@@ -1042,46 +1037,45 @@ def arbitrarypoint(xyz,distance):
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
     distance : float
-        float representing distance travelled from the xyz[0] point of the curve along the curve.
+        float representing distance travelled from the xyz[0] point of
+        the curve along the curve.
 
     Returns
     -------
     ap : array shape (3,)
-       arbitrary point of line, such that, if the arbitrary point is not a point in
-       `xyz`, then we take the interpolation between the two nearest
-       `xyz` points.  If `xyz` is empty, return a ValueError
+       arbitrary point of line, such that, if the arbitrary point is not
+       a point in `xyz`, then we take the interpolation between the two
+       nearest `xyz` points.  If `xyz` is empty, return a ValueError
     
     Examples
     -----------
-    >>> from dipy.core import track_metrics as tm
     >>> import numpy as np
     >>> theta=np.pi*np.linspace(0,1,100)
     >>> x=np.cos(theta)
     >>> y=np.sin(theta)
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> ap=tm.arbitrarypoint(xyz,tm.length(xyz)/3)
+    >>> ap=arbitrarypoint(xyz,tm.length(xyz)/3)
     >>> print('The point along the curve that traveled the given distance is ',ap)        
     '''
-    
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
     if n_pts == 0:
         raise ValueError('xyz array cannot be empty')
     if n_pts == 1:
         return xyz.copy().squeeze()
-    
     cumlen = np.zeros(n_pts)
     cumlen[1:] = length(xyz, along=True)    
     if cumlen[-1]<distance:
-        raise ValueError('Given distance is bigger than the length of the curve')
-            
+        raise ValueError('Given distance is bigger than '
+                         'the length of the curve')
     ind=np.where((cumlen-distance)>0)[0][0]
     len0=cumlen[ind-1]        
     len1=cumlen[ind]
     Ds=distance-len0
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
+
 
 def _extrap(xyz,cumlen,distance):
     ''' Helper function for extrapolate    
@@ -1093,26 +1087,28 @@ def _extrap(xyz,cumlen,distance):
     Lambda = Ds/(len1-len0)
     return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
 
+
 def downsample(xyz,n_pols=3):
-    ''' downsample for a specific number of points along the curve using 
-        the length of the curve. It works in as similar fashion as midpoint and arbitrarypoint.
+    ''' downsample for a specific number of points along the curve
+
+    Uses the length of the curve. It works in as similar fashion to
+    midpoint and arbitrarypoint.
     
     Parameters
     ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
     n_pol : int
-        integer representing number of points (poles) we need along the curve.
+       integer representing number of points (poles) we need along the curve.
 
     Returns
     -------
     xyz2 : array shape (M,3)
-        array representing x,z,z of M points that where extrapolated. M should be
-        equal to n_pols
+       array representing x,z,z of M points that where extrapolated. M
+       should be equal to n_pols
     
     Examples
-    -----------
-    >>> from dipy.core import track_metrics as tm
+    --------
     >>> import numpy as np
     >>> # a semi-circle
     >>> theta=np.pi*np.linspace(0,1,100)
@@ -1120,62 +1116,60 @@ def downsample(xyz,n_pols=3):
     >>> y=np.sin(theta)
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> xyz2=tm.downsample(xyz,3)    
+    >>> xyz2=downsample(xyz,3)    
     >>> # a cosine
     >>> x=np.pi*np.linspace(0,1,100)
     >>> y=np.cos(theta)
     >>> z=0*y
     >>> xyz=np.vstack((x,y,z)).T
-    >>> xyz2=tm.downsample(xyz,3)
-    >>> xyz3=tm.downsample(xyz,10)
+    >>> xyz2=downsample(xyz,3)
+    >>> xyz3=downsample(xyz,10)
     '''
-        
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
     if n_pts == 0:
         raise ValueError('xyz array cannot be empty')
     if n_pts == 1:
         return xyz.copy().squeeze()
-        
     cumlen = np.zeros(n_pts)
     cumlen[1:] = length(xyz, along=True)    
-    
     step=cumlen[-1]/(n_pols-1)
     if cumlen[-1]<step:
         raise ValueError('Given numper of points n_pols is incorrect. ')
     if n_pols<=2:
-        raise ValueError('Given numper of points n_pols needs to be higher than 2. ')
-    
-    xyz2=[_extrap(xyz,cumlen,distance) for distance in np.arange(0,cumlen[-1],step) ]
-        
+        raise ValueError('Given numper of points n_pols needs to be'
+                         ' higher than 2. ')
+    xyz2=[_extrap(xyz,cumlen,distance)
+          for distance in np.arange(0,cumlen[-1],step)]
     return np.vstack((np.array(xyz2),xyz[-1]))
-    
+
+
 def principal_components(xyz):
     ''' We use PCA to calculate the 3 principal directions for dataset xyz
     '''
     C=np.cov(xyz.T)    
     va,ve=np.linalg.eig(C)
-          
     return va,ve
 
+
 def midpoint2point(xyz,p):
-    ''' Calculate the distance from the midpoint of a curve to an arbitrary point p
+    ''' Calculate distance from midpoint of a curve to arbitrary point p
     
     Parameters
     ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
     p : array shape (3,)
-        array representing an arbitrary point with x,y,z coordinates in space.
+       array representing an arbitrary point with x,y,z coordinates in
+       space.
 
     Returns
     -------
     d : float
-        a float number representing Euclidean distance         
+       a float number representing Euclidean distance         
     '''
     mid=midpoint(xyz)     
     return np.sqrt(np.sum((xyz-mid)**2))
-
 
     
 if __name__ == "__main__":
