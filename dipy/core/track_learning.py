@@ -43,7 +43,7 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
 
             
 
-def rm_far_tracks(ref,tracks,dist=20):
+def rm_far_tracks(ref,tracks,dist=20,down=False):
     ''' Remove tracks which are far away using as a distance metric the average euclidean distance of the 
     following three points start point, midpoint and end point.
 
@@ -58,6 +58,10 @@ def rm_far_tracks(ref,tracks,dist=20):
     dist: float
             average distance threshold
     
+    down: bool {True, False}
+            if down = True then ref and tracks are already downsampled
+            if down = False then downsample them
+    
     Returns:
     -----------    
     tracksr: sequence
@@ -66,16 +70,23 @@ def rm_far_tracks(ref,tracks,dist=20):
     indices: sequence
             indices of tracks
     '''
+    #if 
+    if down==False:
+        
+        tracksd=[tm.downsample(t,3) for t in tracks]
+        refd=tm.downsample(ref,3) 
+        
+        indices=[i for (i,t) in enumerate(tracksd) if np.mean(np.sqrt(np.sum((t-refd)**2,axis=1))) <= dist]
+        
+        tracksr=[tracks[i] for i in indices]
+        return tracksr, indices
     
-    tracksd=[tm.downsample(t,3) for t in tracks]
-    refd=tm.downsample(ref,3) 
-    
-    indices=[i for (i,t) in enumerate(tracksd) if np.mean(np.sqrt(np.sum((t-refd)**2,axis=1))) <= dist]
-    
-    tracksr=[tracks[i] for i in indices]
-    return tracksr, indices
-
-  
+    if down==True:
+        
+        indices=[i for (i,t) in enumerate(tracks) if np.mean(np.sqrt(np.sum((t-ref)**2,axis=1))) <= dist]
+        tracksr=[tracks[i] for i in indices]
+        return tracksr,indices
+ 
 
 def missing_tracks(indices1,indices2):
     ''' Missing tracks in bundle1 but not bundle2
@@ -107,12 +118,14 @@ def missing_tracks(indices1,indices2):
     
     return list(set(indices1).difference(set(indices2)))    
 
-def generate_representative_tracks(tracks,ball_radius=5,neighb_no=50):
+def filter_out_tracks(tracks,ball_radius=5,neighb_no=50):
     ''' Filter out unnescessary tracks and keep only a few good ones.    
     '''
     trackno=len(tracks)
     #select 1000 random tracks
     random_indices=(trackno*np.random.rand(1000)).astype(int)
+    
+    tracks3points=[tm.downsample(t,3) for t in tracks]
     
     #store representative tracks
     representative=[]       
@@ -126,12 +139,12 @@ def generate_representative_tracks(tracks,ball_radius=5,neighb_no=50):
         print i,t
         
         #rm far tracks
-        tracksr,indices=rm_far_tracks(tracks[t],tracks,dist=20)
+        tracksr,indices=rm_far_tracks(tracks3points[t],tracks3points,dist=25,down=True)
                 
         cnt_neighb=0
         
         #for every possible neighbour track tr
-        for tr in tracksr:                   
+        for tri in indices:                   
             
             cnt_intersected_balls=0
             
@@ -139,15 +152,17 @@ def generate_representative_tracks(tracks,ball_radius=5,neighb_no=50):
             for p in tracks[t]:
                 
                 #if you intersect the sphere surrounding the point of the random track increase a counter
-                if tm.intersect_sphere(tr,p,ball_radius): cnt_intersected_balls+=1
+                if tm.intersect_sphere(tracks[tri],p,ball_radius): cnt_intersected_balls+=1
             
             #if all spheres are covered then accept this track as your neighbour
             if cnt_intersected_balls ==len(tracks[t]): cnt_neighb+=1
         
         #if the number of possible neighbours is above threshold then accept track[t] as a representative fiber
-        if cnt_neighb>=neighb_no: representative.append(t)
+        if cnt_neighb>=neighb_no: 
+            representative.append(t)
+            
     
-    print 'Time:',time.now()-t1
+    print 'Time:',time.clock()-t1
     
     return representative
 

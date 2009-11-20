@@ -33,12 +33,14 @@ try:
 except ImportError:
     raise ImportError('Numpy is not installed.')
 
+
 import types    
 
 '''
 For more color names see
 http://www.colourlovers.com/blog/2007/07/24/32-common-color-names-for-easy-reference/
 '''
+#Some common colors
 red=np.array([1,0,0])
 green=np.array([0,1,0])
 blue=np.array([0,0,1])
@@ -48,6 +50,11 @@ azure=np.array([0,0.49,1])
 golden=np.array([1,0.84,0])
 white=np.array([1,1,1])
 black=np.array([0,0,0])
+
+#a track buffer used only with picking tracks
+track_buffer=[]
+#tempory renderer used only with picking tracks
+tmp_ren=None
 
 # Create a text mapper and actor to display the results of picking.
 textMapper = vtk.vtkTextMapper()
@@ -1226,21 +1233,49 @@ def colors(v,colormap):
         
     return np.vstack((red,green,blue)).T
 
+def _closest_track(p,tracks):
+    ''' Return the index of the closest track from tracks to point p
+    '''
+
+    d=[]
+    #enumt= enumerate(tracks)
+    
+    for (ind,t) in enumerate(tracks):
+        for i in range(len(t[:-1])):
+            
+            d.append((ind, np.sqrt(np.sum(np.cross((p-t[i]),(p-t[i+1]))**2))/np.sqrt(np.sum((t[i+1]-t[i])**2))))
+        
+    #d=[(ind_t[0], np.sqrt(np.sum(np.cross((p-ind_t[1][i]),(p-ind_t[1][i+1]))**2))/np.sqrt(np.sum((ind_t[1][i+1]-ind_t[1][i])**2))) for i in range(len(ind_t[1][:-1])) for ind_t in enumt]
+    
+    d=np.array(d)
+    
+    imin=d[:,1].argmin()
+    
+    return int(d[imin,0])
+
 def annotatePick(object, event):
     ''' Create a Python function to create the text for the 
     text mapper used to display the results of picking.
     '''
-    global picker, textActor, textMapper
+    global picker, textActor, textMapper,track_buffer
+    
     if picker.GetCellId() < 0:
         textActor.VisibilityOff()
     else:
         selPt = picker.GetSelectionPoint()
         pickPos = picker.GetPickPosition()
+        
+        closest=_closest_track(np.array([pickPos[0],pickPos[1],pickPos[2]]),track_buffer)
+        
         textMapper.SetInput("(%.6f, %.6f, %.6f)"%pickPos)
         textActor.SetPosition(selPt[:2])
-        textActor.VisibilityOn()    
+        textActor.VisibilityOn()            
+        
+        label(tmp_ren,text=str(closest),pos=(track_buffer[closest][0][0],track_buffer[closest][0][1],track_buffer[closest][0][2]))
+        
+        tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300)):
+def show(ren,title='Fos',size=(300,300),track_bf=None):
     ''' Show window 
     
     Parameters
@@ -1251,6 +1286,8 @@ def show(ren,title='Fos',size=(300,300)):
             a string for the window title bar
     size : (int, int) 
             (width,height) of the window
+    track_bf : sequence (default None)
+                tracklist 
     
     Examples
     --------    
@@ -1264,6 +1301,13 @@ def show(ren,title='Fos',size=(300,300)):
     >>> fos.add(r,l)
     >>> fos.show(r)
     '''
+    global track_buffer,tmp_ren
+    
+    #if a list of tracks is available for picking show the tracks with red
+    if track_bf!=None:
+        track_buffer=track_bf
+        ren.AddActor(line(track_buffer,red,opacity=1))
+        tmp_ren=ren
 
     picker.AddObserver("EndPickEvent", annotatePick)
     
