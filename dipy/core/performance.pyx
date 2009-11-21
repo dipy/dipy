@@ -359,6 +359,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
         cnp.ndarray[cnp.float32_t, ndim=2] B
         #lentp=lent*(lent-1)/2 # number of combinations
         double *mini, *minj
+        object mini_str, minj_str
         cnp.ndarray[cnp.double_t, ndim=1] s
     if metric=='avg':
         met=0
@@ -369,33 +370,18 @@ def most_similar_track_zhang(tracks,metric='avg'):
     else:
         raise ValueError('Metric should be one of avg, min, max')
     s = np.zeros((lent,), dtype=np.double)
-    # preprocess tracks
-    cdef:
-        object tracks32 = []
-        cnp.ndarray [cnp.float32_t, ndim=2] track
-        cnp.ndarray [cnp.double_t, ndim=1] distances_buffer
-        size_t longest_track_len = 0
-        size_t track_len
-    for i in range(lent):
-        track  = np.ascontiguousarray(tracks[i], dtype=f32_dt)
-        track_len = track.shape[0]
-        if track_len > longest_track_len:
-            longest_track_len = track_len
-        tracks32.append(track)
-    # preallocate buffer array for track calculations
-    distances_buffer = np.zeros((longest_track_len*2,), dtype=np.double)
-    mini = <double *>distances_buffer.data
-    minj = mini + longest_track_len
     for i from 0 <= i < lent-1:
-        for j from i+1 <= j < lent:
-            lti=tracks32[i].shape[0]
-            ltj=tracks32[j].shape[0]
-            A=tracks32[i]
-            B=tracks32[j]
-            for m in range(ltj):
-                mini[m] = biggest_double
-            for n in range(lti):
-                minj[m] = biggest_double
+        for j from i+1 <= j < lent:        
+            lti=tracks[i].shape[0]
+            ltj=tracks[j].shape[0]
+            A=tracks[i]
+            B=tracks[j]
+            mini_str = pyalloc_v(ltj*sizeof(double), <void **>&mini)
+            minj_str = pyalloc_v(lti*sizeof(double), <void **>&minj)
+            for n from 0<= n < ltj:
+                mini[n]=biggest_double
+            for m from 0<= m < lti:
+                minj[m]=biggest_double
             for m from 0<= m < lti:                
                 for n from 0<= n < ltj:
                     delta=sqrt((A[m,0]-B[n,0])*(A[m,0]-B[n,0])+(A[m,1]-B[n,1])*(A[m,1]-B[n,1])+(A[m,2]-B[n,2])*(A[m,2]-B[n,2]))
