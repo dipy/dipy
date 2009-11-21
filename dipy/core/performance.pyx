@@ -350,17 +350,25 @@ def most_similar_track_zhang(tracks,metric='avg'):
     si holds the index of the track with min {avg,min,max} average metric
     '''
     cdef:
-        size_t i,j,k, lent
+        size_t i, j, lent
         int metric_type
-    metric_type = _recode_metric(metric)
+    if metric=='avg':
+        metric_type = 0
+    elif metric == 'min':
+        metric_type = 1
+    elif metric == 'max':
+        metric_type = 2
+    else:
+        raise ValueError('Metric should be one of avg, min, max')
     # preprocess tracks
     cdef:
         size_t longest_track_len = 0, track_len
         cnp.ndarray[object, ndim=1] tracks32
-    tracks32 = _prepare_tracks(tracks)
-    lent = tracks32.shape[0]
-    # find longest track
+    lent = len(tracks)
+    tracks32 = np.zeros((lent,), dtype=object)
+    # process tracks to predictable memory layout, find longest track
     for i in range(lent):
+        tracks32[i] = np.ascontiguousarray(tracks[i], dtype=f32_dt)
         track_len = tracks32[i].shape[0]
         if track_len > longest_track_len:
             longest_track_len = track_len
@@ -395,27 +403,6 @@ def most_similar_track_zhang(tracks,metric='avg'):
     for j from 0 <= j < lent:
         track2others[j] = czhang(t1, tracks32[j], min_buffer, metric_type)
     return si, track2others
-
-
-cpdef inline int _recode_metric(object metric) except -1:
-    if metric=='avg':
-        return 0
-    elif metric == 'min':
-        return 1
-    elif metric == 'max':
-        return 2
-    raise ValueError('Metric should be one of avg, min, max')
-
-
-cdef inline cnp.ndarray _prepare_tracks(object tracks):
-    cdef:
-        cnp.ndarray [object, ndim=1] tracks32
-        size_t lent, i
-    lent = len(tracks)
-    tracks32 = np.zeros((lent,), dtype=object)
-    for i in range(lent):
-        tracks32[i] = np.ascontiguousarray(tracks[i], dtype=f32_dt)
-    return tracks32
 
 
 cdef cnp.float32_t inf = np.inf
