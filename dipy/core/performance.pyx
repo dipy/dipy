@@ -350,145 +350,197 @@ def most_similar_track_zhang(tracks,metric='avg'):
     si holds the index of the track with min {avg,min,max} average metric
     '''
     cdef:
-        size_t lent=len(tracks)
-        size_t i,j,k
-        int met
-        #lentp=lent*(lent-1)/2 # number of combinations
-        cnp.ndarray[cnp.double_t, ndim=1] s
-    if metric=='avg':
-        met=0
-    elif metric == 'min':
-        met=1
-    elif metric == 'max':
-        met=2
-    else:
-        raise ValueError('Metric should be one of avg, min, max')
-    s = np.zeros((lent,), dtype=np.double)
+        size_t i,j,k, lent
+        int metric_type
+    metric_type = _recode_metric(metric)
     # preprocess tracks
     cdef:
-        object tracks32 = []
-        cnp.ndarray [cnp.float32_t, ndim=2] track
-        size_t longest_track_len = 0
-        size_t track_len
+        size_t longest_track_len = 0, track_len
+        cnp.ndarray[object, ndim=1] tracks32
+    tracks32 = _prepare_tracks(tracks)
+    lent = tracks32.shape[0]
+    # find longest track
     for i in range(lent):
-        track  = np.ascontiguousarray(tracks[i], dtype=f32_dt)
-        track_len = track.shape[0]
+        track_len = tracks32[i].shape[0]
         if track_len > longest_track_len:
             longest_track_len = track_len
-        tracks32.append(track)
-    # preallocate buffer array for track calculations
+    # buffer for distances of found track to other tracks
+    cdef:
+        cnp.ndarray[cnp.double_t, ndim=1] track2others
+    track2others = np.zeros((lent,), dtype=np.double)
+    # use this buffer also for working space containing summed distances
+    # of candidate track to all other tracks
+    cdef cnp.double_t *sum_track2others = <cnp.double_t *>track2others.data
+    # preallocate buffer array for track distance calculations
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
-        cnp.float32_t *buf_ptr
+        cnp.float32_t *min_buffer
     distances_buffer = np.zeros((longest_track_len*2,), dtype=np.float32)
-    buf_ptr = <cnp.float32_t *> distances_buffer.data
+    min_buffer = <cnp.float32_t *> distances_buffer.data
     for i from 0 <= i < lent-1:
         for j from i+1 <= j < lent:
-            tmp = czhang(tracks32[i], tracks32[j], buf_ptr, met)
-            s[i]+=tmp
-            s[j]+=tmp
-    cdef double mn = s[0]
+            tmp = czhang(tracks32[i], tracks32[j], min_buffer, metric_type)
+            # get metric
+            sum_track2others[i]+=tmp
+            sum_track2others[j]+=tmp
+    # find track with smallest summed metric with other tracks
+    cdef double mn = sum_track2others[0]
     cdef size_t si = 0
     for m in range(lent):
-        if s[m] < mn:
+        if sum_track2others[m] < mn:
             si = m
-            mn = s[m]
+            mn = sum_track2others[m]
+    # recalculate distance of this track from the others
+    cdef cnp.ndarray [cnp.float32_t, ndim=2] t1 = tracks32[si]
     for j from 0 <= j < lent:
-        s[j] = czhang(tracks32[si], tracks32[j], buf_ptr, met)
-    return si,s
+        track2others[j] = czhang(t1, tracks32[j], min_buffer, metric_type)
+    return si, track2others
+
+
+cpdef inline int _recode_metric(object metric) except -1:
+    if metric=='avg':
+        return 0
+    elif metric == 'min':
+        return 1
+    elif metric == 'max':
+        return 2
+    raise ValueError('Metric should be one of avg, min, max')
+
+
+cdef inline cnp.ndarray _prepare_tracks(object tracks):
+    cdef:
+        cnp.ndarray [object, ndim=1] tracks32
+        size_t lent, i
+    lent = len(tracks)
+    tracks32 = np.zeros((lent,), dtype=object)
+    for i in range(lent):
+        tracks32[i] = np.ascontiguousarray(tracks[i], dtype=f32_dt)
+    return tracks32
 
 
 cdef cnp.float32_t inf = np.inf
 
 
-cdef inline cnp.float32_t czhang(cnp.ndarray track1,
-                                 cnp.ndarray track2,
-                                 cnp.float32_t *working_buffer,
-                                 int met):
+cdef inline cnp.float32_t czhang(cnp.ndarray track1, cnp.ndarray track2,
+                          cnp.float32_t *min_buffer,
+                          int metric_type):
     cdef:
-        cnp.float32_t *mini, *minj, *p1, *p2, d0, d1, d2
-        cnp.float32_t sumi, sumj, tmp, delta2
-        size_t lti, ltj
-        int m, n
-    lti=track1.shape[0]
-    ltj=track2.shape[0]
-    mini = working_buffer
-    minj = working_buffer + ltj
-    for m in range(lti+ltj):
-        mini[m] = inf
+        size_t t1_len, t2_len
+        cnp.float32_t *min_t2t1, *min_t1t2
+        cnp.ndarray [cnp.float32_t, ndim=2] t1 = track1
+        cnp.ndarray [cnp.float32_t, ndim=2] t2 = track2
+    t1_len = track1.shape[0]
+    t2_len = track2.shape[0]
+    min_t2t1 = min_buffer
+    min_t1t2 = min_buffer + t2_len
+    min_distances(t1_len, <cnp.float32_t *>track1.data,
+                  t2_len, <cnp.float32_t *>track2.data,
+                  min_t2t1,
+                  min_t1t2)
+    cdef:
+        size_t t1_pi, t2_pi
+        cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0, dist_val
+    for t1_pi from 0<= t1_pi < t1_len:
+        mean_t1t2+=min_t1t2[t1_pi]
+    mean_t1t2=mean_t1t2/t1_len
+    for t2_pi from 0<= t2_pi < t2_len:
+        mean_t2t1+=min_t2t1[t2_pi]
+    mean_t2t1=mean_t2t1/t2_len
+    if metric_type == 0:                
+        dist_val=(mean_t2t1+mean_t1t2)/2.0
+    elif metric_type == 1:        
+        if mean_t2t1 < mean_t1t2:
+            dist_val=mean_t2t1
+        else:
+            dist_val=mean_t1t2
+    elif metric_type == 2:                
+        if mean_t2t1 > mean_t1t2:
+            dist_val=mean_t2t1
+        else:
+            dist_val=mean_t1t2                    
+    return dist_val
+
+
+cdef inline void min_distances(size_t t1_len,
+                               cnp.float32_t *track1_ptr,
+                               size_t t2_len,
+                               cnp.float32_t *track2_ptr,
+                               cnp.float32_t *min_t2t1,
+                               cnp.float32_t *min_t1t2):
+    cdef:
+        cnp.float32_t *t1_pt, *t2_pt, d0, d1, d2
+        cnp.float32_t delta2
+        int t1_pi, t2_pi
+    for t2_pi in range(t2_len):
+        min_t2t1[t2_pi] = inf
+    for t1_pi in range(t1_len):
+        min_t1t2[t1_pi] = inf
     # pointer to current point in track 1
-    p1 = <cnp.float32_t *>track1.data
-    for m from 0<= m < lti:
+    t1_pt = track1_ptr
+    # calculate min squared distance between each point in the two
+    # lines.  Squared distance to delay doing the sqrt until after this
+    # speed-critical loop
+    for t1_pi from 0<= t1_pi < t1_len:
         # pointer to current point in track 2
-        p2 = <cnp.float32_t *>track2.data
-        for n from 0<= n < ltj:
-            d0 = p1[0] - p2[0]
-            d1 = p1[1] - p2[1]
-            d2 = p1[2] - p2[2]
+        t2_pt = track2_ptr
+        for t2_pi from 0<= t2_pi < t2_len:
+            d0 = t1_pt[0] - t2_pt[0]
+            d1 = t1_pt[1] - t2_pt[1]
+            d2 = t1_pt[2] - t2_pt[2]
             delta2 = d0*d0 + d1*d1 + d2*d2
-            if delta2 < mini[n]:
-                mini[n]=delta2
-            if delta2 < minj[m]:
-                minj[m]=delta2
-            p2 += 3 # to next point in track 2
-        p1 += 3 # to next point in track 1
-    sumi=0
-    sumj=0
-    for m from 0<= m < lti:
-        sumj+=sqrt(minj[m])
-    sumj=sumj/lti
-    for n from 0<= n < ltj:
-        sumi+=sqrt(mini[n])
-    sumi=sumi/ltj
-    if met == 0:                
-        tmp=(sumi+sumj)/2.0
-    elif met ==1:        
-        if sumi < sumj:
-            tmp=sumi
-        else:
-            tmp=sumj
-    elif met ==2:                
-        if sumi > sumj:
-            tmp=sumi
-        else:
-            tmp=sumj                    
-    return tmp
+            if delta2 < min_t2t1[t2_pi]:
+                min_t2t1[t2_pi]=delta2
+            if delta2 < min_t1t2[t1_pi]:
+                min_t1t2[t1_pi]=delta2
+            t2_pt += 3 # to next point in track 2
+        t1_pt += 3 # to next point in track 1
+    # sqrt to get Euclidean distance from squared distance
+    for t1_pi from 0<= t1_pi < t1_len:
+        min_t1t2[t1_pi]=sqrt(min_t1t2[t1_pi])
+    for t2_pi from 0<= t2_pi < t2_len:
+        min_t2t1[t2_pi]=sqrt(min_t2t1[t2_pi])
 
 
 def zhang_distances(xyz1,xyz2,metric='all'):
+    ''' Distance between tracks xyz1 and xyz2 using Zhang metrics
     
-    ''' Calculating the distance between tracks xyz1 and xyz2 
-        Based on the metrics in Zhang,  Correia,   Laidlaw 2008 
-        http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
-        which in turn are based on those of Corouge et al. 2004
+    Based on the metrics in Zhang, Correia, Laidlaw 2008
+    http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
+    which in turn are based on those of Corouge et al. 2004
         
-        This function should return the same results with zhang_distances 
-        from track_metrics but hopefully faster.
+    This function should return the same results with zhang_distances 
+    from track_metrics but hopefully faster.
  
-    Parameters:
-    -----------
-        xyz1 : array, shape (N1,3), dtype float32
-        xyz2 : array, shape (N2,3), dtype float32
-        arrays representing x,y,z of the N1 and N2 points  of two tracks
-    
-    Returns:
-    --------
-        avg_mcd: float
-                    average_mean_closest_distance
-        min_mcd: float
-                    minimum_mean_closest_distance
-        max_mcd: float
-                    maximum_mean_closest_distance
+    Parameters
+    ----------
+    xyz1 : array, shape (N1,3), dtype float32
+    xyz2 : array, shape (N2,3), dtype float32
+       arrays representing x,y,z of the N1 and N2 points of two tracks
+    metrics : {'avg','min','max','all'}
+       Metric to calculate.  {'avg','min','max'} return a scalar. 'all'
+       returns a tuple
+       
+    Returns
+    -------
+    avg_mcd: float
+       average_mean_closest_distance
+    min_mcd: float
+       minimum_mean_closest_distance
+    max_mcd: float
+       maximum_mean_closest_distance
                     
-    Notes:
-    --------
-    
+    Notes
+    -----
     Algorithmic description
     
-    Lets say we have curves A and B
+    Lets say we have curves A and B.
     
-    for every point in A calculate the minimum distance from every point in B stored in minAB
-    for every point in B calculate the minimum distance from every point in A stored in minBA
+    For every point in A calculate the minimum distance from every point
+    in B stored in minAB
+    
+    For every point in B calculate the minimum distance from every point
+    in A stored in minBA
+    
     find average of minAB stored as avg_minAB
     find average of minBA stored as avg_minBA
     
@@ -496,66 +548,44 @@ def zhang_distances(xyz1,xyz2,metric='all'):
     if metric is 'min' then return min(avg_minAB,avg_minBA)
     if metric is 'max' then return max(avg_minAB,avg_minBA)
     '''
-    
-    DEF biggest_double = 1.79769e+308
-
-    cdef int m,n,lti,ltj
-    cdef double sumi, sumj,delta
-    
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] A
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] B
-
-    cdef double *mini
-    cdef double *minj
-    
-    lti=xyz1.shape[0]
-    ltj=xyz2.shape[0]
-    
-    A=xyz1
-    B=xyz2    
-
-    mini = <double *>malloc(ltj*sizeof(double))
-    minj = <double *>malloc(lti*sizeof(double))
-    
-    for n from 0<= n < ltj:
-        mini[n]=biggest_double
-        
-    for m from 0<= m < lti:
-        minj[m]=biggest_double
-        
-    for m from 0<= m < lti:                
-        for n from 0<= n < ltj:
-
-            delta=sqrt((A[m,0]-B[n,0])*(A[m,0]-B[n,0])+(A[m,1]-B[n,1])*(A[m,1]-B[n,1])+(A[m,2]-B[n,2])*(A[m,2]-B[n,2]))
-            
-            if delta < mini[n]:
-                mini[n]=delta
-                
-            if delta < minj[m]:
-                minj[m]=delta
-    
-    sumi=0
-    sumj=0
-    
-    for m from 0<= m < lti:
-        sumj+=minj[m]
-    sumj=sumj/lti
-               
-    for n from 0<= n < ltj:
-        sumi+=mini[n]
-    sumi=sumi/ltj
-
-    free(mini)
-    free(minj)
-        
+    cdef:
+        cnp.ndarray[cnp.float32_t, ndim=2] track1 
+        cnp.ndarray[cnp.float32_t, ndim=2] track2
+        size_t t1_len, t2_len
+    track1 = np.ascontiguousarray(xyz1, dtype=f32_dt)
+    t1_len = track1.shape[0]
+    track2 = np.ascontiguousarray(xyz2, dtype=f32_dt)
+    t2_len = track2.shape[0]
+    # preallocate buffer array for track distance calculations
+    cdef:
+        cnp.float32_t *min_t2t1, *min_t1t2
+        cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
+    distances_buffer = np.zeros((t1_len + t2_len,), dtype=np.float32)
+    min_t2t1 = <cnp.float32_t *> distances_buffer.data
+    min_t1t2 = min_t2t1 + t2_len
+    min_distances(t1_len, <cnp.float32_t *>track1.data,
+                  t2_len, <cnp.float32_t *>track2.data,
+                  min_t2t1,
+                  min_t1t2)
+    cdef:
+        size_t t1_pi, t2_pi
+        cnp.float32_t mean_t2t1 = 0, mean_t1t2 = 0
+    for t1_pi from 0<= t1_pi < t1_len:
+        mean_t1t2+=min_t1t2[t1_pi]
+    mean_t1t2=mean_t1t2/t1_len
+    for t2_pi from 0<= t2_pi < t2_len:
+        mean_t2t1+=min_t2t1[t2_pi]
+    mean_t2t1=mean_t2t1/t2_len
     if metric=='all':
-        return (sumi+sumj)/2.0, np.min((sumi,sumj)), np.max((sumi,sumj))
+        return ((mean_t2t1+mean_t1t2)/2.0,
+                np.min((mean_t2t1,mean_t1t2)),
+                np.max((mean_t2t1,mean_t1t2)))
     elif metric=='avg':
-        return (sumi+sumj)/2.0
+        return (mean_t2t1+mean_t1t2)/2.0
     elif metric=='min':            
-        return np.min((sumi,sumj))
+        return np.min((mean_t2t1,mean_t1t2))
     elif metric =='max':
-        return np.max((sumi,sumj))
+        return np.max((mean_t2t1,mean_t1t2))
     else :
         ValueError('Wrong argument for metric')
 
@@ -585,59 +615,35 @@ def minimum_closest_distance(xyz1,xyz2):
     
     is 'avg' then return (min_minAB + min_minBA)/2.0
     '''
-    
-    DEF biggest_double = 1.79769e+308
-
-    cdef int m,n,lti,ltj
-    cdef double min_i, min_j,delta
-    
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] A
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] B
-
-    cdef double *mini
-    cdef double *minj
-    
-    lti=xyz1.shape[0]
-    ltj=xyz2.shape[0]
-    
-    A=xyz1
-    B=xyz2    
-
-    mini = <double *>malloc(ltj*sizeof(double))
-    minj = <double *>malloc(lti*sizeof(double))
-    
-    for n from 0<= n < ltj:
-        mini[n]=biggest_double
-        
-    for m from 0<= m < lti:
-        minj[m]=biggest_double
-        
-    for m from 0<= m < lti:                
-        for n from 0<= n < ltj:
-
-            delta=sqrt((A[m,0]-B[n,0])*(A[m,0]-B[n,0])+(A[m,1]-B[n,1])*(A[m,1]-B[n,1])+(A[m,2]-B[n,2])*(A[m,2]-B[n,2]))
-            
-            if delta < mini[n]:
-                mini[n]=delta
-                
-            if delta < minj[m]:
-                minj[m]=delta
-    
-    min_i=biggest_double
-    min_j=biggest_double
-    
-    for m from 0<= m < lti:
-        if min_j > minj[m]:
-            min_j=minj[m]
-    
-               
-    for n from 0<= n < ltj:
-        if min_i > mini[n]:
-            min_i =mini[n]
-
-    free(mini)
-    free(minj)
-        
-    return (min_i+min_j)/2.0
+    cdef:
+        cnp.ndarray[cnp.float32_t, ndim=2] track1 
+        cnp.ndarray[cnp.float32_t, ndim=2] track2
+        size_t t1_len, t2_len
+    track1 = np.ascontiguousarray(xyz1, dtype=f32_dt)
+    t1_len = track1.shape[0]
+    track2 = np.ascontiguousarray(xyz2, dtype=f32_dt)
+    t2_len = track2.shape[0]
+    # preallocate buffer array for track distance calculations
+    cdef:
+        cnp.float32_t *min_t2t1, *min_t1t2
+        cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
+    distances_buffer = np.zeros((t1_len + t2_len,), dtype=np.float32)
+    min_t2t1 = <cnp.float32_t *> distances_buffer.data
+    min_t1t2 = min_t2t1 + t2_len
+    min_distances(t1_len, <cnp.float32_t *>track1.data,
+                  t2_len, <cnp.float32_t *>track2.data,
+                  min_t2t1,
+                  min_t1t2)
+    cdef:
+        size_t t1_pi, t2_pi
+        double min_min_t2t1 = inf
+        double min_min_t1t2 = inf
+    for t1_pi in range(t1_len):
+        if min_min_t1t2 > min_t1t2[t1_pi]:
+            min_min_t1t2 = min_t1t2[t1_pi]
+    for t2_pi in range(t2_len):
+        if min_min_t2t1 > min_t2t1[t2_pi]:
+            min_min_t2t1 = min_t2t1[t2_pi]
+    return (min_min_t1t2+min_min_t2t1)/2.0
 
     
