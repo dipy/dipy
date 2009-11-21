@@ -8,8 +8,6 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-from pyalloc cimport pyalloc_v
-
 
 cdef extern from "math.h":
     double floor(double x)
@@ -354,12 +352,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
         size_t lent=len(tracks)
         size_t i,j,k
         int si,m,n,lti,ltj,met
-        double sumi, sumj, tmp, delta
-        cnp.ndarray[cnp.float32_t, ndim=2] A
-        cnp.ndarray[cnp.float32_t, ndim=2] B
         #lentp=lent*(lent-1)/2 # number of combinations
-        double *mini, *minj
-        object mini_str, minj_str
         cnp.ndarray[cnp.double_t, ndim=1] s
     if metric=='avg':
         met=0
@@ -370,25 +363,57 @@ def most_similar_track_zhang(tracks,metric='avg'):
     else:
         raise ValueError('Metric should be one of avg, min, max')
     s = np.zeros((lent,), dtype=np.double)
+    # preprocess tracks
+    cdef:
+        object tracks32 = []
+        cnp.ndarray [cnp.float32_t, ndim=2] track
+        size_t longest_track_len = 0
+        size_t track_len
+    for i in range(lent):
+        track  = np.ascontiguousarray(tracks[i], dtype=f32_dt)
+        track_len = track.shape[0]
+        if track_len > longest_track_len:
+            longest_track_len = track_len
+        tracks32.append(track)
+    # preallocate buffer array for track calculations
+    cdef:
+        cnp.ndarray [cnp.double_t, ndim=1] distances_buffer
+        float inf = np.inf
+        float *mini, *minj
+    distances_buffer = np.zeros((longest_track_len*2,), dtype=np.float)
+    mini = <float *>distances_buffer.data
+    cdef:
+        cnp.ndarray[cnp.float32_t, ndim=2] track1
+        cnp.ndarray[cnp.float32_t, ndim=2] track2
+        cnp.float32_t *p1, *p2, d0, d1, d2
+        cnp.float32_t sumi, sumj, tmp, delta
     for i from 0 <= i < lent-1:
-        for j from i+1 <= j < lent:        
-            lti=tracks[i].shape[0]
-            ltj=tracks[j].shape[0]
-            A=tracks[i]
-            B=tracks[j]
-            mini_str = pyalloc_v(ltj*sizeof(double), <void **>&mini)
-            minj_str = pyalloc_v(lti*sizeof(double), <void **>&minj)
+        track1 = tracks32[i]
+        lti=track1.shape[0]
+        for j from i+1 <= j < lent:
+            track2 = tracks32[j]
+            ltj=track2.shape[0]
+            minj = mini + ltj
             for n from 0<= n < ltj:
-                mini[n]=biggest_double
+                mini[n]=inf
             for m from 0<= m < lti:
-                minj[m]=biggest_double
-            for m from 0<= m < lti:                
+                minj[m]=inf
+            # pointer to current point in track 1
+            p1 = <cnp.float32_t *>track1.data
+            for m from 0<= m < lti:
+                # pointer to current point in track 2
+                p2 = <cnp.float32_t *>track2.data
                 for n from 0<= n < ltj:
-                    delta=sqrt((A[m,0]-B[n,0])*(A[m,0]-B[n,0])+(A[m,1]-B[n,1])*(A[m,1]-B[n,1])+(A[m,2]-B[n,2])*(A[m,2]-B[n,2]))
+                    d0 = p1[0] - p2[0]
+                    d1 = p1[1] - p2[1]
+                    d2 = p1[2] - p2[2]
+                    delta = sqrt(d0*d0 + d1*d1 + d2*d2)
                     if delta < mini[n]:
                         mini[n]=delta
                     if delta < minj[m]:
                         minj[m]=delta
+                    p2 += 3 # to next point in track 2
+                p1 += 3 # to next point in track 1
             sumi=0
             sumj=0
             for m from 0<= m < lti:
