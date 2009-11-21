@@ -4,6 +4,8 @@ import numpy as np
 from . import track_metrics as tm
 import dipy.core.performance as pf
 from scipy import ndimage as nd
+import itertools
+import time
 
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
@@ -253,3 +255,51 @@ def detect_corresponding_bundles(bundle,tracks,zipit=1,n=10,d=3):
     
     '''
     pass
+
+def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
+    ''' [1] Removes hits in hitdata which have divergence above threshold.
+       [2] Removes fibres in hitdata whose fraction of remaining hits is below
+        the required weight.
+
+    Parameters:
+    ----------------
+    ref:  array, shape (N,5)
+       xyzrf hit data from cut_planes
+    
+    divergence_threshold: float
+            if radial coefficient of divergence is above this then drop the hit
+    
+    fibre_weight: float
+            the number of remaing hits on a fibre as a fraction of len(trackdata),
+            which is the maximum number possible
+    
+    Returns:
+    -----------    
+    reduced_hitdata: array, shape (M, 5)
+    light_weight_fibres: list of integer track indices
+    '''
+    # first pass: remove hits with r>divergence_threshold
+    firstpass = [[[x,y,z,r,f] for (x,y,z,r,f) in plane  if r<=divergence_threshold] for plane in hitdata]
+
+    # second pass: find fibres hit weights
+    fibrecounts = {}
+    for l in [[f,r] for (x,y,z,r,f) in itertools.chain(*firstpass)]:
+        f = l[0]
+        try:
+            fibrecounts[f] += 1
+        except:
+            fibrecounts[f] = 1
+    
+    weight_thresh = len(hitdata)*fibre_weight
+    heavy_weight_fibres = [f for f in fibrecounts.keys() if fibrecounts[f]>=weight_thresh]
+
+    # third pass
+
+    reduced_hitdata = [np.array([[x,y,z,r,f] for (x,y,z,r,f) in plane if fibrecounts[f] >= weight_thresh]) for plane in firstpass]
+   
+    return reduced_hitdata, heavy_weight_fibres
+
+
+
+    
+    

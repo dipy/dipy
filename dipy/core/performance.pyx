@@ -23,6 +23,7 @@ cdef extern from "stdlib.h":
     void *malloc(size_t size)
     void *calloc(size_t nelem, size_t elsize)
     void *realloc (void *ptr, size_t size)
+    void *memcpy(void *str1, void *str2, size_t n)
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
@@ -351,7 +352,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
     cdef:
         size_t lent=len(tracks)
         size_t i,j,k
-        int si,m,n,lti,ltj,met
+        int met
         #lentp=lent*(lent-1)/2 # number of combinations
         cnp.ndarray[cnp.double_t, ndim=1] s
     if metric=='avg':
@@ -377,69 +378,81 @@ def most_similar_track_zhang(tracks,metric='avg'):
         tracks32.append(track)
     # preallocate buffer array for track calculations
     cdef:
-        cnp.ndarray [cnp.double_t, ndim=1] distances_buffer
-        float inf = np.inf
-        float *mini, *minj
-    distances_buffer = np.zeros((longest_track_len*2,), dtype=np.float)
-    mini = <float *>distances_buffer.data
-    cdef:
-        cnp.ndarray[cnp.float32_t, ndim=2] track1
-        cnp.ndarray[cnp.float32_t, ndim=2] track2
-        cnp.float32_t *p1, *p2, d0, d1, d2
-        cnp.float32_t sumi, sumj, tmp, delta
+        cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
+        cnp.float32_t *buf_ptr
+    distances_buffer = np.zeros((longest_track_len*2,), dtype=np.float32)
+    buf_ptr = <cnp.float32_t *> distances_buffer.data
     for i from 0 <= i < lent-1:
-        track1 = tracks32[i]
-        lti=track1.shape[0]
         for j from i+1 <= j < lent:
-            track2 = tracks32[j]
-            ltj=track2.shape[0]
-            minj = mini + ltj
-            for n from 0<= n < ltj:
-                mini[n]=inf
-            for m from 0<= m < lti:
-                minj[m]=inf
-            # pointer to current point in track 1
-            p1 = <cnp.float32_t *>track1.data
-            for m from 0<= m < lti:
-                # pointer to current point in track 2
-                p2 = <cnp.float32_t *>track2.data
-                for n from 0<= n < ltj:
-                    d0 = p1[0] - p2[0]
-                    d1 = p1[1] - p2[1]
-                    d2 = p1[2] - p2[2]
-                    delta = sqrt(d0*d0 + d1*d1 + d2*d2)
-                    if delta < mini[n]:
-                        mini[n]=delta
-                    if delta < minj[m]:
-                        minj[m]=delta
-                    p2 += 3 # to next point in track 2
-                p1 += 3 # to next point in track 1
-            sumi=0
-            sumj=0
-            for m from 0<= m < lti:
-                sumj+=minj[m]
-            sumj=sumj/lti
-            for n from 0<= n < ltj:
-                sumi+=mini[n]
-            sumi=sumi/ltj
-            if met ==0:                
-                tmp=(sumi+sumj)/2.0
-            elif met ==1:        
-                if sumi < sumj:
-                    tmp=sumi
-                else:
-                    tmp=sumj
-            elif met ==2:                
-                if sumi > sumj:
-                    tmp=sumi
-                else:
-                    tmp=sumj                    
+            tmp = czhang(tracks32[i], tracks32[j], buf_ptr, met)
             s[i]+=tmp
             s[j]+=tmp
-    si = np.argmin(s)
+    cdef double mn = s[0]
+    cdef size_t si = 0
+    for m in range(lent):
+        if s[m] < mn:
+            si = m
+            mn = s[m]
     for j from 0 <= j < lent:
-        s[j]=zhang_distances(tracks[si],tracks[j],metric)
+        s[j] = czhang(tracks32[si], tracks32[j], buf_ptr, met)
     return si,s
+
+
+cdef cnp.float32_t inf = np.inf
+
+
+cdef inline cnp.float32_t czhang(cnp.ndarray track1,
+                                 cnp.ndarray track2,
+                                 cnp.float32_t *working_buffer,
+                                 int met):
+    cdef:
+        cnp.float32_t *mini, *minj, *p1, *p2, d0, d1, d2
+        cnp.float32_t sumi, sumj, tmp, delta2
+        size_t lti, ltj
+        int m, n
+    lti=track1.shape[0]
+    ltj=track2.shape[0]
+    mini = working_buffer
+    minj = working_buffer + ltj
+    for m in range(lti+ltj):
+        mini[m] = inf
+    # pointer to current point in track 1
+    p1 = <cnp.float32_t *>track1.data
+    for m from 0<= m < lti:
+        # pointer to current point in track 2
+        p2 = <cnp.float32_t *>track2.data
+        for n from 0<= n < ltj:
+            d0 = p1[0] - p2[0]
+            d1 = p1[1] - p2[1]
+            d2 = p1[2] - p2[2]
+            delta2 = d0*d0 + d1*d1 + d2*d2
+            if delta2 < mini[n]:
+                mini[n]=delta2
+            if delta2 < minj[m]:
+                minj[m]=delta2
+            p2 += 3 # to next point in track 2
+        p1 += 3 # to next point in track 1
+    sumi=0
+    sumj=0
+    for m from 0<= m < lti:
+        sumj+=sqrt(minj[m])
+    sumj=sumj/lti
+    for n from 0<= n < ltj:
+        sumi+=sqrt(mini[n])
+    sumi=sumi/ltj
+    if met == 0:                
+        tmp=(sumi+sumj)/2.0
+    elif met ==1:        
+        if sumi < sumj:
+            tmp=sumi
+        else:
+            tmp=sumj
+    elif met ==2:                
+        if sumi > sumj:
+            tmp=sumi
+        else:
+            tmp=sumj                    
+    return tmp
 
 
 def zhang_distances(xyz1,xyz2,metric='all'):
@@ -479,11 +492,9 @@ def zhang_distances(xyz1,xyz2,metric='all'):
     find average of minAB stored as avg_minAB
     find average of minBA stored as avg_minBA
     
-    if metic is 'avg' then return (avg_minAB + avg_minBA)/2.0
-    if metic is 'min' then return min(avg_minAB,avg_minBA)
-    if metic is 'max' then return max(avg_minAB,avg_minBA)
-    
-    
+    if metric is 'avg' then return (avg_minAB + avg_minBA)/2.0
+    if metric is 'min' then return min(avg_minAB,avg_minBA)
+    if metric is 'max' then return max(avg_minAB,avg_minBA)
     '''
     
     DEF biggest_double = 1.79769e+308
