@@ -386,7 +386,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
         cnp.ndarray[cnp.float32_t, ndim=2] track1
         cnp.ndarray[cnp.float32_t, ndim=2] track2
         cnp.float32_t *p1, *p2, d0, d1, d2
-        cnp.float32_t sumi, sumj, tmp, delta
+        cnp.float32_t sumi, sumj, tmp, delta2
     for i from 0 <= i < lent-1:
         track1 = tracks32[i]
         lti=track1.shape[0]
@@ -407,20 +407,20 @@ def most_similar_track_zhang(tracks,metric='avg'):
                     d0 = p1[0] - p2[0]
                     d1 = p1[1] - p2[1]
                     d2 = p1[2] - p2[2]
-                    delta = sqrt(d0*d0 + d1*d1 + d2*d2)
-                    if delta < mini[n]:
-                        mini[n]=delta
-                    if delta < minj[m]:
-                        minj[m]=delta
+                    delta2 = d0*d0 + d1*d1 + d2*d2
+                    if delta2 < mini[n]:
+                        mini[n]=delta2
+                    if delta2 < minj[m]:
+                        minj[m]=delta2
                     p2 += 3 # to next point in track 2
                 p1 += 3 # to next point in track 1
             sumi=0
             sumj=0
             for m from 0<= m < lti:
-                sumj+=minj[m]
+                sumj+=sqrt(minj[m])
             sumj=sumj/lti
             for n from 0<= n < ltj:
-                sumi+=mini[n]
+                sumi+=sqrt(mini[n])
             sumi=sumi/ltj
             if met ==0:                
                 tmp=(sumi+sumj)/2.0
