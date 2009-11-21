@@ -646,4 +646,5 @@ def minimum_closest_distance(xyz1,xyz2):
             min_min_t2t1 = min_t2t1[t2_pi]
     return (min_min_t1t2+min_min_t2t1)/2.0
 
-    
+
+
