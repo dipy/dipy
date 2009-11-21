@@ -193,25 +193,62 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
     
     return representative
 
-def rm_corpus_callosum(tracks,plane=91,width=1.0,use_atlas=1,use_preselected_tracks=0):
-    ''' Remove corpus callosum from dataset    
+def detect_corpus_callosum(tracks,plane=91,width=1.0,use_atlas=1,use_preselected_tracks=0,ball_radius=5):
+    ''' Detect corpus callosum in a mni registered dataset of shape (181,217,181)   
+       
     '''
 
     cc=[]
 
+    #for every track
     for (i,t) in enumerate(tracks):
         
+        #for every index of any point in the track
         for pi in range(len(t)-1):
            
+            #if track segment is cutting the plane (assuming the plane is at the x-axis X=plane)
             if (t[pi][0] <= plane and t[pi+1][0] >= plane) or (t[pi+1][0] <= plane and t[pi][0] >= plane) :
                                 
                 v=t[pi+1]-t[pi]
-                k=plane/v[0]                
-                hit=k*v
+                k=(plane-t[pi][0])/v[0]                
                 
+                hit=k*v+t[pi]
+                
+                #report the index of the track and the point of intersection with the plane
                 cc.append((i,hit))
+    
+    #indices
+    cc_i=[c[0] for c in cc]
+    
+    #hit points
+    cc_p=np.array([c[1] for c in cc])
+    
+    p_neighb=len(cc_p)*[0]
+    
+    cnt=0
+    
+    im=np.zeros((217,181))
+    
+    for p in cc_p:
+                
+        im[int(round(p[1])),int(round(p[2]))]=1
         
-    return cc
+        
+    
+    '''
+    for p1 in cc_p:
+        
+        for p2 in cc_p:    
+            
+            if np.sqrt(np.sum((p2-p1)**2))<=ball_radius:
+                p_neighb[cnt]+=1
+                
+        cnt+=1           
+    '''
+
+    
+    
+    return im
 
 def detect_references_in_atlas(atlas):
     ''' Not ready yet
