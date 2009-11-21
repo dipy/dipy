@@ -70,7 +70,7 @@ def rm_far_tracks(ref,tracks,dist=20,down=False):
     indices: sequence
             indices of tracks
     '''
-    #if 
+
     if down==False:
         
         tracksd=[tm.downsample(t,3) for t in tracks]
@@ -165,6 +165,21 @@ def filter_out_tracks(tracks,ball_radius=5,neighb_no=50):
     print 'Time:',time.clock()-t1
     
     return representative
+
+def rm_corpus_callosum(tracks,plane=90.5,width=1.0):
+    ''' Remove corpus callosum from dataset
+    
+    '''
+
+    plane_region=[]
+    for (i,t) in enumerate(tracks):
+        for p in t:
+            if p[0]<=plane+width and p[0]>=plane-width:
+                plane_region.append((i,p))
+    
+    points=np.array([pl[1] for pl in plane_region])
+    
+    return points
 
 def detect_references_in_atlas(atlas):
     ''' Not ready yet

@@ -1262,18 +1262,20 @@ def annotatePick(object, event):
     if picker.GetCellId() < 0:
         textActor.VisibilityOff()
     else:
-        selPt = picker.GetSelectionPoint()
-        pickPos = picker.GetPickPosition()
-        
-        closest=_closest_track(np.array([pickPos[0],pickPos[1],pickPos[2]]),track_buffer)
-        
-        textMapper.SetInput("(%.6f, %.6f, %.6f)"%pickPos)
-        textActor.SetPosition(selPt[:2])
-        textActor.VisibilityOn()            
-        
-        label(tmp_ren,text=str(closest),pos=(track_buffer[closest][0][0],track_buffer[closest][0][1],track_buffer[closest][0][2]))
-        
-        tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
+        if len(track_buffer)!=0:
+            
+            selPt = picker.GetSelectionPoint()
+            pickPos = picker.GetPickPosition()
+            
+            closest=_closest_track(np.array([pickPos[0],pickPos[1],pickPos[2]]),track_buffer)
+            
+            textMapper.SetInput("(%.6f, %.6f, %.6f)"%pickPos)
+            textActor.SetPosition(selPt[:2])
+            textActor.VisibilityOn()            
+            
+            label(tmp_ren,text=str(closest),pos=(track_buffer[closest][0][0],track_buffer[closest][0][1],track_buffer[closest][0][2]))
+            
+            tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
 def show(ren,title='Fos',size=(300,300),track_bf=None):
     ''' Show window 
