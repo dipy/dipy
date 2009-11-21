@@ -517,11 +517,12 @@ def zhang_distances(xyz1,xyz2,metric='all'):
     elif metric=='avg':
         return (sumi+sumj)/2.0
     elif metric=='min':            
-        return np.min(sumi,sumj)
+        return np.min((sumi,sumj))
     elif metric =='max':
-        return np.max(sumi,sumj)
+        return np.max((sumi,sumj))
     else :
         ValueError('Wrong argument for metric')
+
         
 def minimum_closest_distance(xyz1,xyz2):
     ''' Find the minimum distance between two curves xyz1, xyz2
