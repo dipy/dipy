@@ -343,10 +343,9 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
 
 def emi_atlas():
     ''' Eleftherios-Matthew-Ian Atlas
-    Our atlas this is based on Brain1 Scan1
+    Our atlas is based on Brain1 Scan1
     '''
-    atlas={
-    
+    atlas={    
     0:['None'],
     1:['Arcuate'],
     2:['Cingulum'],
@@ -355,11 +354,9 @@ def emi_atlas():
     5:['Fornix'],
     6:['Inferior Occipitofrontal Fasciculus'],
     7:['Superior Longitudinal Fasciculus'],
-    8:['Uncinate']
+    8:['Uncinate']}
     
-    }
-    
-return atlas
+    return atlas
     
 
 def detect_corresponding_bundles(bundle,tracks,zipit=1,n=10,d=3):

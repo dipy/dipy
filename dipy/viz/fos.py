@@ -50,11 +50,16 @@ azure=np.array([0,0.49,1])
 golden=np.array([1,0.84,0])
 white=np.array([1,1,1])
 black=np.array([0,0,0])
+           	
+aquamarine=np.array([0.498,1.,0.83])
+indigo=np.array([ 0.29411765,  0.,  0.50980392])
+lime=np.array([ 0.74901961,  1.,  0.])
+hot_pink=np.array([ 0.98823529,  0.05882353,  0.75294118])
 
-gray=np.array([0.7,0.7,0.7])
-dark_red=np.array([0.7,0,0])
-dark_green=np.array([0,0.7,0])
-dark_blue=np.array([0,0,0.7])
+gray=np.array([0.5,0.5,0.5])
+dark_red=np.array([0.5,0,0])
+dark_green=np.array([0,0.5,0])
+dark_blue=np.array([0,0,0.5])
 
 
 #a track buffer used only with picking tracks
@@ -1283,7 +1288,7 @@ def annotatePick(object, event):
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300),track_bf=None):
+def show(ren,title='Fos',size=(300,300),track_bf=None,color_bf=None):
     ''' Show window 
     
     Parameters
@@ -1296,6 +1301,8 @@ def show(ren,title='Fos',size=(300,300),track_bf=None):
             (width,height) of the window
     track_bf : sequence (default None)
                 tracklist 
+    color_bf : array, shape (N,3) where N =len(track_bf), default None
+                a color for every track
     
     Examples
     --------    
@@ -1314,7 +1321,11 @@ def show(ren,title='Fos',size=(300,300),track_bf=None):
     #if a list of tracks is available for picking show the tracks with red
     if track_bf!=None:
         track_buffer=track_bf
-        ren.AddActor(line(track_buffer,red,opacity=1))
+        
+        if color_bf==None:
+            ren.AddActor(line(track_buffer,red,opacity=1))
+        else:
+            ren.AddActor(line(track_buffer,color_bf,opacity=1))
         tmp_ren=ren
 
     picker.AddObserver("EndPickEvent", annotatePick)
