@@ -342,12 +342,24 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     return cc_indices,left_indices
 
 def emi_atlas():
-    ''' Our atlas this is based on Brain1 scan1
+    ''' Eleftherios-Matthew-Ian Atlas
+    Our atlas this is based on Brain1 Scan1
     '''
+    atlas={
     
+    0:['None'],
+    1:['Arcuate'],
+    2:['Cingulum'],
+    3:['Corticospinal'],
+    4:['Forceps Major'],
+    5:['Fornix'],
+    6:['Inferior Occipitofrontal Fasciculus'],
+    7:['Superior Longitudinal Fasciculus'],
+    8:['Uncinate']
     
-    pass
+    }
     
+return atlas
     
 
 def detect_corresponding_bundles(bundle,tracks,zipit=1,n=10,d=3):
@@ -418,7 +430,44 @@ def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
    
     return reduced_hitdata, heavy_weight_fibres
 
+def neck_finder(hitdata, ref):
+    '''
+    To identify regions of concentration of fibres related by hitdata to a reference fibre
+    '''
+    
+    #typically len(hitdata) = len(ref)-2 at present, though it should ideally be
+    # len(ref)-1 which is the number of segments in ref
+    # We will assume that hitdata[i] relates to the segment from ref[i] to ref[i+1]
+    
+    #xyz=[]
+    #rcd=[]
+    #fibres=[]
 
+    weighted_mean_rcd = []
+    unweighted_mean_rcd = []
+    weighted_mean_dist = []
+    unweighted_mean_dist = []
+    hitcount = []
+    
+    for (p, plane) in enumerate(hitdata):
+        xyz = plane[:,:3]
+        rcd =plane[:,3]
+        fibres = plane[:,4]
+    
+        hitcount +=[len(plane)]
+    
+        radial_distances=np.sqrt(np.diag(np.inner(xyz-ref[p],xyz-ref[p])))
+
+        unweighted_mean_rcd += [np.average(1-rcd)]
+
+        weighted_mean_rcd += [np.average(1-rcd, weights=np.exp(-radial_distances))]
+    
+        unweighted_mean_dist += [np.average(np.exp(-radial_distances))]
+
+        weighted_mean_dist += [np.average(np.exp(-radial_distances), weights=1-rcd)]
+
+    return np.array(hitcount), np.array(unweighted_mean_rcd), np.array(weighted_mean_rcd), \
+        np.array(unweighted_mean_dist), np.array(weighted_mean_dist)
 
     
     
