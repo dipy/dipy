@@ -51,6 +51,12 @@ golden=np.array([1,0.84,0])
 white=np.array([1,1,1])
 black=np.array([0,0,0])
 
+gray=np.array([0.7,0.7,0.7])
+dark_red=np.array([0.7,0,0])
+dark_green=np.array([0,0.7,0])
+dark_blue=np.array([0,0,0.7])
+
+
 #a track buffer used only with picking tracks
 track_buffer=[]
 #tempory renderer used only with picking tracks
