@@ -254,7 +254,7 @@ def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
     # second pass: find fibres hit weights
     fibrecounts = {}
     for l in [[f,r] for (x,y,z,r,f) in itertools.chain(*firstpass)]:
-        f = l[0]
+        f = l[0].astype('int')
         try:
             fibrecounts[f] += 1
         except:
@@ -265,7 +265,7 @@ def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
 
     # third pass
 
-    reduced_hitdata = [np.array([[x,y,z,r,f] for (x,y,z,r,f) in plane if fibrecounts[f] >= weight_thresh]) for plane in firstpass]
+    reduced_hitdata = [np.array([[x,y,z,r,f] for (x,y,z,r,f) in plane if fibrecounts[f.astype('int')] >= weight_thresh]) for plane in firstpass]
    
     return reduced_hitdata, heavy_weight_fibres
 
