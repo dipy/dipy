@@ -120,17 +120,35 @@ def missing_tracks(indices1,indices2):
     
     return list(set(indices1).difference(set(indices2)))    
 
-def filter_out_tracks(tracks,ball_radius=5,neighb_no=50):
-    ''' Filter out unnescessary tracks and keep only a few good ones.    
+def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
+    ''' Filter out unnescessary tracks and keep only a few good ones.  
+    Aka the balls along a track method.  
+    
+    Parameters:
+    ----------------
+    tracks:
+    rand_selected:
+    ball_radius:
+    neighb_no:
+    
+    Returns:
+    -----------
+    reps:
+    repsi:
+    
     '''
     trackno=len(tracks)
     #select 1000 random tracks
-    random_indices=(trackno*np.random.rand(1000)).astype(int)
+    random_indices=(trackno*np.random.rand(rand_selected)).astype(int)
     
     tracks3points=[tm.downsample(t,3) for t in tracks]
     
     #store representative tracks
     representative=[]       
+    representative_indices=[]       
+    
+    #store indices of already visited tracks i.e. which already have a representative track
+    visited=[]
     
     import time
     t1=time.clock()
@@ -138,50 +156,99 @@ def filter_out_tracks(tracks,ball_radius=5,neighb_no=50):
     # for every index of the possible representative tracks
     for (i,t) in enumerate(random_indices):        
         
-        print i,t
-        
-        #rm far tracks
-        tracksr,indices=rm_far_tracks(tracks3points[t],tracks3points,dist=25,down=True)
+        #if track is not already classified 
+        if i not in visited:
+            
+            print(i,t)
+            
+            #rm far tracks
+            tracksr,indices=rm_far_tracks(tracks3points[t],tracks3points,dist=25,down=True)
+                    
+            cnt_neighb=0            
+            just_visited=[]
+            
+            #for every possible neighbour track tr with index tri
+            for tri in indices:                   
                 
-        cnt_neighb=0
-        
-        #for every possible neighbour track tr
-        for tri in indices:                   
-            
-            cnt_intersected_balls=0
-            
-            #for every point of the possible representative track 
-            for p in tracks[t]:
+                cnt_intersected_balls=0
                 
-                #if you intersect the sphere surrounding the point of the random track increase a counter
-                if tm.intersect_sphere(tracks[tri],p,ball_radius): cnt_intersected_balls+=1
+                #for every point of the possible representative track 
+                for p in tracks[t]:
+                    
+                    #if you intersect the sphere surrounding the point of the random track increase a counter
+                    if tm.intersect_sphere(tracks[tri],p,ball_radius): cnt_intersected_balls+=1
+                
+                #if all spheres are covered then accept this track as your neighbour
+                if cnt_intersected_balls ==len(tracks[t]): 
+                    
+                    cnt_neighb+=1                
+                    just_visited.append(tri)
             
-            #if all spheres are covered then accept this track as your neighbour
-            if cnt_intersected_balls ==len(tracks[t]): cnt_neighb+=1
-        
-        #if the number of possible neighbours is above threshold then accept track[t] as a representative fiber
-        if cnt_neighb>=neighb_no: 
-            representative.append(t)
-            
+            #if the number of possible neighbours is above threshold then accept track[t] as a representative fiber
+            if cnt_neighb>=neighb_no: 
+                representative.append(t)                
+                visited=visited+just_visited
     
     print 'Time:',time.clock()-t1
     
     return representative
 
-def rm_corpus_callosum(tracks,plane=90.5,width=1.0):
-    ''' Remove corpus callosum from dataset
-    
+def detect_corpus_callosum(tracks,plane=91,width=1.0,use_atlas=1,use_preselected_tracks=0,ball_radius=5):
+    ''' Detect corpus callosum in a mni registered dataset of shape (181,217,181)   
+       
     '''
 
-    plane_region=[]
+    cc=[]
+
+    #for every track
     for (i,t) in enumerate(tracks):
-        for p in t:
-            if p[0]<=plane+width and p[0]>=plane-width:
-                plane_region.append((i,p))
+        
+        #for every index of any point in the track
+        for pi in range(len(t)-1):
+           
+            #if track segment is cutting the plane (assuming the plane is at the x-axis X=plane)
+            if (t[pi][0] <= plane and t[pi+1][0] >= plane) or (t[pi+1][0] <= plane and t[pi][0] >= plane) :
+                                
+                v=t[pi+1]-t[pi]
+                k=(plane-t[pi][0])/v[0]                
+                
+                hit=k*v+t[pi]
+                
+                #report the index of the track and the point of intersection with the plane
+                cc.append((i,hit))
     
-    points=np.array([pl[1] for pl in plane_region])
+    #indices
+    cc_i=[c[0] for c in cc]
     
-    return points
+    #hit points
+    cc_p=np.array([c[1] for c in cc])
+    
+    p_neighb=len(cc_p)*[0]
+    
+    cnt=0
+    
+    im=np.zeros((217,181))
+    
+    for p in cc_p:
+                
+        im[int(round(p[1])),int(round(p[2]))]=1
+        
+        
+    
+    '''
+    for p1 in cc_p:
+        
+        for p2 in cc_p:    
+            
+            if np.sqrt(np.sum((p2-p1)**2))<=ball_radius:
+                p_neighb[cnt]+=1
+                
+        cnt+=1           
+    '''
+
+    
+    
+    return im
 
 def detect_references_in_atlas(atlas):
     ''' Not ready yet
