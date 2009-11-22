@@ -336,7 +336,44 @@ def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
    
     return reduced_hitdata, heavy_weight_fibres
 
+def neck_finder(hitdata, ref):
+    '''
+    To identify regions of concentration of fibres related by hitdata to a reference fibre
+    '''
+    
+    #typically len(hitdata) = len(ref)-2 at present, though it should ideally be
+    # len(ref)-1 which is the number of segments in ref
+    # We will assume that hitdata[i] relates to the segment from ref[i] to ref[i+1]
+    
+    #xyz=[]
+    #rcd=[]
+    #fibres=[]
 
+    weighted_mean_rcd = []
+    unweighted_mean_rcd = []
+    weighted_mean_dist = []
+    unweighted_mean_dist = []
+    hitcount = []
+    
+    for (p, plane) in enumerate(hitdata):
+        xyz = plane[:,:3]
+        rcd =plane[:,3]
+        fibres = plane[:,4]
+    
+        hitcount +=[len(plane)]
+    
+        radial_distances=np.sqrt(np.diag(np.inner(xyz-ref[p],xyz-ref[p])))
+
+        unweighted_mean_rcd += [np.average(1-rcd)]
+
+        weighted_mean_rcd += [np.average(1-rcd, weights=np.exp(-radial_distances))]
+    
+        unweighted_mean_dist += [np.average(np.exp(-radial_distances))]
+
+        weighted_mean_dist += [np.average(np.exp(-radial_distances), weights=1-rcd)]
+
+    return np.array(hitcount), np.array(unweighted_mean_rcd), np.array(weighted_mean_rcd), \
+        np.array(unweighted_mean_dist), np.array(weighted_mean_dist)
 
     
     
