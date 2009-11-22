@@ -126,15 +126,20 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
     
     Parameters:
     ----------------
-    tracks:
-    rand_selected:
-    ball_radius:
-    neighb_no:
+    tracks: sequence
+            of tracks
+    rand_selected: int
+            number of initially selected fibers
+    ball_radius: float
+            balls along tracks radii
+    neighb_no: int
+            lowest threshold for the number of tracks included 
     
     Returns:
     -----------
-    reps:
-    repsi:
+    reps: sequence
+            of indices of representative aka skeletal tracks. They should be <= rand_selected
+    
     
     '''
     trackno=len(tracks)
@@ -198,8 +203,16 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     
     Parameters:
     ----------------
+    tracks: sequence 
+            of tracks
     
+    Returns:
+    ----------
+    cc_indices: sequence
+            with the indices of the corpus_callosum tracks
     
+    left_indices: sequence
+            with the indices of the rest of the brain
        
     '''
 
@@ -265,6 +278,7 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     
     #erosion
     img=nd.binary_erosion(im,structure=cross)    
+    
     #and another one erosion
     #img=nd.binary_erosion(img,structure=cross)
     #im2g=nd.grey_erosion(im2,structure=cross)   
