@@ -9,7 +9,7 @@ import numpy as np
 cimport numpy as cnp
 
 
-cdef extern from "math.h":
+cdef extern from "math.h" nogil:
     double floor(double x)
     float sqrt(float x)
     float fabs(float x)
@@ -17,7 +17,7 @@ cdef extern from "math.h":
 #cdef extern from "stdio.h":
 #	void printf ( const char * format, ... )
     
-cdef extern from "stdlib.h":
+cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
     void free(void *ptr)
     void *malloc(size_t size)
@@ -382,46 +382,60 @@ def most_similar_track_zhang(tracks,metric='avg'):
     # preallocate buffer array for track distance calculations
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
-        cnp.float32_t *min_buffer
+        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer, distance
     distances_buffer = np.zeros((longest_track_len*2,), dtype=np.float32)
     min_buffer = <cnp.float32_t *> distances_buffer.data
+    # cycle over tracks
+    cdef:
+        cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
+        size_t t1_len, t2_len
     for i from 0 <= i < lent-1:
+        t1 = tracks32[i]
+        t1_len = t1.shape[0]
+        t1_ptr = <cnp.float32_t *>t1.data
         for j from i+1 <= j < lent:
-            tmp = czhang(tracks32[i], tracks32[j], min_buffer, metric_type)
+            t2 = tracks32[j]
+            t2_len = t2.shape[0]
+            t2_ptr = <cnp.float32_t *>t2.data
+            distance = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
             # get metric
-            sum_track2others[i]+=tmp
-            sum_track2others[j]+=tmp
+            sum_track2others[i]+=distance
+            sum_track2others[j]+=distance
     # find track with smallest summed metric with other tracks
     cdef double mn = sum_track2others[0]
     cdef size_t si = 0
-    for m in range(lent):
-        if sum_track2others[m] < mn:
-            si = m
-            mn = sum_track2others[m]
+    for i in range(lent):
+        if sum_track2others[i] < mn:
+            si = i
+            mn = sum_track2others[i]
     # recalculate distance of this track from the others
-    cdef cnp.ndarray [cnp.float32_t, ndim=2] t1 = tracks32[si]
+    t1 = tracks32[si]
+    t1_len = t1.shape[0]
+    t1_ptr = <cnp.float32_t *>t1.data
     for j from 0 <= j < lent:
-        track2others[j] = czhang(t1, tracks32[j], min_buffer, metric_type)
+        t2 = tracks32[j]
+        t2_len = t2.shape[0]
+        t2_ptr = <cnp.float32_t *>t2.data
+        track2others[j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
     return si, track2others
 
 
 cdef cnp.float32_t inf = np.inf
 
 
-cdef inline cnp.float32_t czhang(cnp.ndarray track1, cnp.ndarray track2,
-                          cnp.float32_t *min_buffer,
-                          int metric_type):
+cdef inline cnp.float32_t czhang(size_t t1_len,
+                                 cnp.float32_t *track1_ptr,
+                                 size_t t2_len,
+                                 cnp.float32_t *track2_ptr,
+                                 cnp.float32_t *min_buffer,
+                                 int metric_type) nogil:
+    ''' Note ``nogil`` - no python calls allowed in this function '''
     cdef:
-        size_t t1_len, t2_len
         cnp.float32_t *min_t2t1, *min_t1t2
-        cnp.ndarray [cnp.float32_t, ndim=2] t1 = track1
-        cnp.ndarray [cnp.float32_t, ndim=2] t2 = track2
-    t1_len = track1.shape[0]
-    t2_len = track2.shape[0]
     min_t2t1 = min_buffer
     min_t1t2 = min_buffer + t2_len
-    min_distances(t1_len, <cnp.float32_t *>track1.data,
-                  t2_len, <cnp.float32_t *>track2.data,
+    min_distances(t1_len, track1_ptr,
+                  t2_len, track2_ptr,
                   min_t2t1,
                   min_t1t2)
     cdef:
@@ -453,14 +467,14 @@ cdef inline void min_distances(size_t t1_len,
                                size_t t2_len,
                                cnp.float32_t *track2_ptr,
                                cnp.float32_t *min_t2t1,
-                               cnp.float32_t *min_t1t2):
+                               cnp.float32_t *min_t1t2) nogil:
     cdef:
         cnp.float32_t *t1_pt, *t2_pt, d0, d1, d2
         cnp.float32_t delta2
         int t1_pi, t2_pi
-    for t2_pi in range(t2_len):
+    for t2_pi from 0<= t2_pi < t2_len:
         min_t2t1[t2_pi] = inf
-    for t1_pi in range(t1_len):
+    for t1_pi from 0<= t1_pi < t1_len:
         min_t1t2[t1_pi] = inf
     # pointer to current point in track 1
     t1_pt = track1_ptr
