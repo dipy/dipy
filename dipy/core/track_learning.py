@@ -380,7 +380,36 @@ def emi_atlas():
     
     8:{'bundle_name':'Uncinate R','apr_ref':[88647],
     'selected_ref':[249267,216811],
-    'init_ref':[88647]}
+    'init_ref':[88647]},
+
+    9:{'bundle_name':'Uncinate L','apr_ref':[],
+    'selected_ref':[],
+    'init_ref':[]},
+    
+    10:{'bundle_name':'Corticospinal L','apr_ref':[],
+    'selected_ref':[],
+    'init_ref':[]},  
+    
+    11:{'bundle_name':'Forceps Minor',
+    'apr_ref':[],
+    'selected_ref':[],
+    'init_ref':[]},
+    
+    12:{'bundle_name':'Arcuate R','apr_ref':[],
+    'selected_ref':[],
+    'init_ref':[]},
+    
+    13:{'bundle_name':'Cingulum R','apr_ref':[],
+    'selected_ref':[],
+    'init_ref':[]}, 
+    
+    14:{'bundle_name':'Inferior Occipitofrontal Fasciculus R','apr_ref':[],
+    'selected_ref':[],
+    'init_ref':[]},        
+    
+    15:{'bundle_name':'Superior Longitudinal Fasciculus R','apr_ref':[],
+    'selected_ref':[],
+    'init_ref':[]}
     
     }
     
@@ -388,28 +417,9 @@ def emi_atlas():
     return atlas
     
 
-def detect_corresponding_bundles(bundle,tracks,zipit=1,n=10,d=3):
+def detect_corresponding_bundles(emi,tracks,zipit=1,n=10,d=3):
     ''' Not ready yet
-    #downsample bundle
-    bundlez=[tm.downsample(t,n) for t in bundle]
-    
-    #find reference track in bundlez
-    ind_ref_bundlez,ref_bundlez=pf.most_similar_track_zhang(bundlez,'avg')
-    
-    #downsample tracks
-    if zipit :
-        tracksz=[tm.downsample(t,n) for t in tracks]
-    else :
-        tracksz=tracks
-        
-    #detect the most similar track in tracks with the bundlez reference track
-    ref_tracksz=[pf.zhang_distances(ref_bundlez,t,'avg') for t in tracksz]
-    
-    #find the tracks that are close to ref_tracksz
-    close_ref_group=[t for t in tracks if pf.minimum_closest_distance(ref_tracksz,t) <= d]
 
-    #connect every track in bundlez with every track in close_ref_group
-    
     '''
     pass
 
