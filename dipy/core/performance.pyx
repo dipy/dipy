@@ -180,8 +180,13 @@ def cut_plane(tracks,ref):
     >>> refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     >>> bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
     >>> cut_plane(bundlex,refx)
-        [array([[ 1.        ,  1.5       ,  0.        ,  0.70710683]], dtype=float32),
-         array([[ 2.        ,  2.5       ,  0.        ,  0.70710677]], dtype=float32)]
+        [array([[ 1.        ,  1.5       ,  0.        ,  0.70710683, 0,]], dtype=float32),
+         array([[ 2.        ,  2.5       ,  0.        ,  0.70710677, 0.]], dtype=float32)]
+        
+        The orthogonality relationship
+        np.inner(hits[p][q][0:3]-ref[p+1],ref[p+2]-ref[r][p+1])
+        will hold throughout for every point q in the hits plane
+        at point (p+1) on the reference track.
     '''
     cdef:
         size_t n_hits, hit_no, max_hit_len
