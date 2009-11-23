@@ -126,15 +126,20 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
     
     Parameters:
     ----------------
-    tracks:
-    rand_selected:
-    ball_radius:
-    neighb_no:
+    tracks: sequence
+            of tracks
+    rand_selected: int
+            number of initially selected fibers
+    ball_radius: float
+            balls along tracks radii
+    neighb_no: int
+            lowest threshold for the number of tracks included 
     
     Returns:
     -----------
-    reps:
-    repsi:
+    reps: sequence
+            of indices of representative aka skeletal tracks. They should be <= rand_selected
+    
     
     '''
     trackno=len(tracks)
@@ -193,8 +198,21 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
     
     return representative
 
-def detect_corpus_callosum(tracks,plane=91,width=1.0,use_atlas=1,use_preselected_tracks=0,ball_radius=5):
+def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atlas=0,use_preselected_tracks=0,ball_radius=5):
     ''' Detect corpus callosum in a mni registered dataset of shape (181,217,181)   
+    
+    Parameters:
+    ----------------
+    tracks: sequence 
+            of tracks
+    
+    Returns:
+    ----------
+    cc_indices: sequence
+            with the indices of the corpus_callosum tracks
+    
+    left_indices: sequence
+            with the indices of the rest of the brain
        
     '''
 
@@ -220,52 +238,125 @@ def detect_corpus_callosum(tracks,plane=91,width=1.0,use_atlas=1,use_preselected
     #indices
     cc_i=[c[0] for c in cc]
     
+    print 'Number of tracks cutting plane Before',len(cc_i)
+    
     #hit points
     cc_p=np.array([c[1] for c in cc])
     
     p_neighb=len(cc_p)*[0]
     
     cnt=0
+    #imaging processing from now on
     
-    im=np.zeros((217,181))
+    im=np.zeros((ysize,zsize))
+    im2=np.zeros((ysize,zsize))
     
+    im_track={}
+    
+    cnt=0
     for p in cc_p:
+        
+        p1=int(round(p[1]))
+        p2=int(round(p[2]))
                 
-        im[int(round(p[1])),int(round(p[2]))]=1
+        im[p1,p2]=1
+        im2[p1,p2]=im2[p1,p2]+1
         
-        
-    
-    '''
-    for p1 in cc_p:
-        
-        for p2 in cc_p:    
+        try:
+            im_track[(p1,p2)]=im_track[(p1,p2)]+[cc_i[cnt]]
+        except:
+            im_track[(p1,p2)]=[cc_i[cnt]]
             
-            if np.sqrt(np.sum((p2-p1)**2))<=ball_radius:
-                p_neighb[cnt]+=1
-                
-        cnt+=1           
+        cnt+=1
+            
+        
+    #create a cross structure
+    cross=np.array([[0,1,0],[1,1,1],[0,1,0]])
+    
+    im=(255*im).astype('uint8')
+    im2=(np.interp(im2,[0,im2.max()],[0,255])).astype('uint8')
+    
+    #erosion
+    img=nd.binary_erosion(im,structure=cross)    
+    
+    #and another one erosion
+    #img=nd.binary_erosion(img,structure=cross)
+    #im2g=nd.grey_erosion(im2,structure=cross)   
+    #im2g2=nd.grey_erosion(im2g,structure=cross)
+    
+    indg2=np.where(im2==im2.max())
+    p1max=indg2[0][0]
+    p2max=indg2[1][0]
+    
+    #label objects    
+    imgl=nd.label(img)
+    no_labels=imgl[1]
+    imgl=imgl[0]
+    
+    #find the biggest objects the second biggest should be the cc the biggest should be the background
     '''
-
+    find_big=np.zeros(no_labels)
     
+    for i in range(no_labels):
+        
+        ind=np.where(imgl==i)
+        find_big[i]=len(ind[0])
+        
+    print find_big
     
-    return im
-
-def detect_references_in_atlas(atlas):
-    ''' Not ready yet
-    Detect curves representing the atlas's labeled regions    
+    find_bigi=np.argsort(find_big)
     '''
+    cc_label=imgl[p1max,p2max]
     
-    atlas=np.zeros((10,10,10))    
-    atlas[2:-2,3:-3,2:-2]=1    
-    A=A.astype('uint8')
+    imgl2=np.zeros((ysize,zsize))
     
-    ind=np.where(atlas==1)
-    points=np.vstack((ind[0],ind[1],ind[2])).T
+    #cc is found and copied to a new image here
+    #imgl2[imgl==int(find_bigi[-2])]=1    
+    imgl2[imgl==int(cc_label)]=1
     
-    #tm.spline(
+    imgl2=imgl2.astype('uint8')
+        
+    #now do another dilation to recover some cc shape from the previous erosion    
+    imgl2d=nd.binary_dilation(imgl2,structure=cross)    
+    #and another one
+    #imgl2d=nd.binary_dilation(imgl2d,structure=cross)    
     
-    pass
+    imgl2d=imgl2d.astype('uint8')
     
+    #get the tracks back
+    cc_indices=[]
+    indcc=np.where(imgl2d>0)
+    for i in range(len(indcc[0])):
+        p1=indcc[0][i]
+        p2=indcc[1][i]
+        cc_indices=cc_indices+im_track[(p1,p2)]
+        
+    print 'After', len(cc_indices)
+        
+    #export also the rest of the brain
+    indices=range(len(tracks))    
+    left=set(indices).difference(set(cc_indices))
+    left_indices=[l for l in left]    
+    
+    #return im,im2,imgl2d,cc_indices,left_indices
+    return cc_indices,left_indices
+
+def emi_atlas():
+    ''' Eleftherios-Matthew-Ian Atlas
+    Our atlas is based on Brain1 Scan1
+    '''
+    atlas={    
+    0:['None'],
+    1:['Arcuate'],
+    2:['Cingulum'],
+    3:['Corticospinal'],
+    4:['Forceps Major'],
+    5:['Fornix'],
+    6:['Inferior Occipitofrontal Fasciculus'],
+    7:['Superior Longitudinal Fasciculus'],
+    8:['Uncinate']}
+    
+    return atlas
     
 
 def detect_corresponding_bundles(bundle,tracks,zipit=1,n=10,d=3):
