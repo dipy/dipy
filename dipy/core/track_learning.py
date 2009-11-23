@@ -342,19 +342,48 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     return cc_indices,left_indices
 
 def emi_atlas():
-    ''' Eleftherios-Matthew-Ian Atlas
-    Our atlas is based on Brain1 Scan1
+    ''' Eleftherios-Matthew-Ian Atlas version 0.9
+    Our atlas is based on Brain1 Scan1 from the PBC competition
     '''
     atlas={    
-    0:['None'],
-    1:['Arcuate'],
-    2:['Cingulum'],
-    3:['Corticospinal'],
-    4:['Forceps Major'],
-    5:['Fornix'],
-    6:['Inferior Occipitofrontal Fasciculus'],
-    7:['Superior Longitudinal Fasciculus'],
-    8:['Uncinate']}
+    
+    0:{'bundle_name':'None','apr_ref':[],'selected_ref':[],'init_ref':[]},
+    
+    1:{'bundle_name':'Arcuate L','apr_ref':[79032],
+    'selected_ref':[13355,203241,8239],
+    'init_ref':[197816]},
+    
+    2:{'bundle_name':'Cingulum L','apr_ref':[115651],
+    'selected_ref':[132955,209255],
+    'init_ref':[15009]},    
+    
+    3:{'bundle_name':'Corticospinal R','apr_ref':[76983],
+    'selected_ref':[249518,234534,174737,225536],
+    'init_ref':[157189]},    
+    
+    4:{'bundle_name':'Forceps Major',
+    'apr_ref':[17556],
+    'selected_ref':[126619,109247],
+    'init_ref':[64423]},            
+    
+    5:{'bundle_name':'Fornix','apr_ref':[206781],
+    'selected_ref':[215713,48512,184169],
+    'init_ref':[118191]},        
+    
+    6:{'bundle_name':'Inferior Occipitofrontal Fasciculus L','apr_ref':[168055],
+    'selected_ref':[147881,126361,32004],
+    'init_ref':[168055]},        
+    
+    7:{'bundle_name':'Superior Longitudinal Fasciculus L','apr_ref':[59215],
+    'selected_ref':[6104,6777,224291,198813],
+    'init_ref':[123041]},        
+    
+    8:{'bundle_name':'Uncinate R','apr_ref':[88647],
+    'selected_ref':[249267,216811],
+    'init_ref':[88647]}
+    
+    }
+    
     
     return atlas
     

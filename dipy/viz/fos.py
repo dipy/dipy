@@ -64,6 +64,8 @@ dark_blue=np.array([0,0,0.5])
 
 #a track buffer used only with picking tracks
 track_buffer=[]
+#indices buffer for the tracks
+ind_buffer=[]
 #tempory renderer used only with picking tracks
 tmp_ren=None
 
@@ -1256,13 +1258,12 @@ def _closest_track(p,tracks):
             
             d.append((ind, np.sqrt(np.sum(np.cross((p-t[i]),(p-t[i+1]))**2))/np.sqrt(np.sum((t[i+1]-t[i])**2))))
         
-    #d=[(ind_t[0], np.sqrt(np.sum(np.cross((p-ind_t[1][i]),(p-ind_t[1][i+1]))**2))/np.sqrt(np.sum((ind_t[1][i+1]-ind_t[1][i])**2))) for i in range(len(ind_t[1][:-1])) for ind_t in enumt]
-    
     d=np.array(d)
     
     imin=d[:,1].argmin()
     
     return int(d[imin,0])
+    
 
 def annotatePick(object, event):
     ''' Create a Python function to create the text for the 
@@ -1284,11 +1285,11 @@ def annotatePick(object, event):
             textActor.SetPosition(selPt[:2])
             textActor.VisibilityOn()            
             
-            label(tmp_ren,text=str(closest),pos=(track_buffer[closest][0][0],track_buffer[closest][0][1],track_buffer[closest][0][2]))
+            label(tmp_ren,text=str(ind_buffer[closest]),pos=(track_buffer[closest][0][0],track_buffer[closest][0][1],track_buffer[closest][0][2]))
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300),track_bf=None,color_bf=None):
+def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None):
     ''' Show window 
     
     Parameters
@@ -1316,11 +1317,12 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,color_bf=None):
     >>> fos.add(r,l)
     >>> fos.show(r)
     '''
-    global track_buffer,tmp_ren
+    global track_buffer,tmp_ren,ind_buffer
     
     #if a list of tracks is available for picking show the tracks with red
     if track_bf!=None:
         track_buffer=track_bf
+        ind_buffer=ind_bf
         
         if color_bf==None:
             ren.AddActor(line(track_buffer,red,opacity=1))
