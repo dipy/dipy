@@ -6,6 +6,7 @@ import dipy.core.performance as pf
 from scipy import ndimage as nd
 import itertools
 import time
+import numpy.linalg as npla
 
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
@@ -505,5 +506,56 @@ def neck_finder(hitdata, ref):
     return np.array(hitcount), np.array(unweighted_mean_rcd), np.array(weighted_mean_rcd), \
         np.array(unweighted_mean_dist), np.array(weighted_mean_dist)
 
+def max_concentration(plane_hits,ref):
+    '''
+    calculates the log detrminant of the concentration matrix for the hits in planehits    
+    '''
+    dispersions = [np.prod(np.sort(npla.eigvals(np.cov(p[:,0:3].T)))[1:2]) for p in plane_hits]
+    index = np.argmin(dispersions)
+    log_max_concentration = -np.log2(dispersions[index])
+    centre = ref[index+1]
+    return index, centre, log_max_concentration
+
+def refconc(brain, ref, divergence_threshold=0.3, fibre_weight=0.7):
+    '''
+    given a reference fibre locates the parallel fibres in brain (tracks)
+    with threshold_hitdata applied to cut_planes output then follows
+    with concentration to locate the locus of a neck
+    '''
     
-    
+    hitdata = pf.cut_plane(brain, ref)
+    reduced_hitdata, heavy_weight_fibres = threshold_hitdata(hitdata, divergence_threshold, fibre_weight)
+    index, centre, log_max_concentration = max_concentration(reduced_hitdata, ref)
+    return heavy_weight_fibres, index, centre
+
+def bundle_from_refs(brain,braind, refs, divergence_threshold=0.3, fibre_weight=0.7,far_thresh=25,zhang_thresh=15):
+    '''
+    '''
+    bundle = set([])
+    centres = []
+    indices = []
+
+    for ref in refs:
+        
+        refd=tm.downsample(ref,3) 
+        
+        brain_rf, ind_fr = rm_far_tracks(refd,braind,dist=far_thresh,down=True)
+        
+        brain_rf=[brain[i] for i in ind_fr]
+        
+        #brain_rf,ind_fr = rm_far_tracks(ref,brain,dist=far_thresh,down=False)        
+        
+        heavy_weight_fibres, index, centre = refconc(brain_rf, ref, divergence_threshold, fibre_weight)
+        
+        heavy_weight_fibres_z = [i for i in heavy_weight_fibres if pf.zhang_distances(ref,brain_rf[i],'avg')<zhang_thresh]
+        
+        hwfind = set([ind_fr[i] for i in heavy_weight_fibres_z])
+        
+        bundle = bundle.union(hwfind)
+        
+        centres.append(centre)
+        
+        indices.append(index)
+
+    return list(bundle), centres, indices
+   
