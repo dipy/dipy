@@ -61,6 +61,9 @@ dark_red=np.array([0.5,0,0])
 dark_green=np.array([0,0.5,0])
 dark_blue=np.array([0,0,0.5])
 
+tan=np.array([ 0.82352941,  0.70588235,  0.54901961])
+chartreuse=np.array([ 0.49803922,  1.        ,  0.        ])
+coral=np.array([ 1.        ,  0.49803922,  0.31372549])
 
 #a track buffer used only with picking tracks
 track_buffer=[]

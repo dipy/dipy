@@ -43,8 +43,72 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
         
     return track2track.astype(int)
 
-
+def detect_corresponding_tracks_extended(indices,tracks1,indices2,tracks2):
+    ''' Detect corresponding tracks from 1 to 2
+    
+    Parameters:
+    ----------------
+    indices: sequence
+            of indices of tracks1 that are to be detected in tracks2
+    
+    tracks1: sequence 
+            of tracks as arrays, shape (N1,3) .. (Nm,3)
+    
+    indices2: sequence
+            of indices of tracks2 in the initial brain            
+                
+    tracks2: sequence 
+            of tracks as arrays, shape (M1,3) .. (Mm,3)
             
+    Returns:
+    -----------
+    track2track: array of int
+            showing the correspondance
+    
+    '''
+    li=len(indices)
+    
+    track2track=np.zeros((li,3))
+    cnt=0
+    for i in indices:        
+        
+        rt=[pf.zhang_distances(tracks1[i],t,'avg') for t in tracks2]
+        rt=np.array(rt)               
+
+        track2track[cnt-1]=np.array([cnt,i,indices2[rt.argmin()]])        
+        cnt+=1
+        
+    return track2track.astype(int)
+
+
+def rm_far_ends(ref,tracks,dist=25,down=False):
+    ''' rm tracks with far endpoints
+    Parameters:
+    ----------------
+    ref:  array, shape (N,3)
+       xyz points of the reference track
+    
+    tracks: sequence 
+            of tracks as arrays, shape (N1,3) .. (Nm,3)
+    
+    dist: float
+            endpoint distance threshold
+        
+    Returns:
+    -----------    
+    tracksr: sequence
+            reduced tracks
+    
+    indices: sequence
+            indices of tracks
+    '''
+    
+    indices=[i for (i,t) in enumerate(tracks) if tm.max_end_distance(t,ref) <= dist]
+    
+    tracksr=[tracks[i] for i in indices]
+    
+    return tracksr,indices
+ 
 
 def rm_far_tracks(ref,tracks,dist=25,down=False):
     ''' Remove tracks which are far away using as a distance metric the average euclidean distance of the 
@@ -343,86 +407,50 @@ def detect_corpus_callosum(tracks,plane=91,ysize=217,zsize=181,width=1.0,use_atl
     return cc_indices,left_indices
 
 def emi_atlas():
-    ''' Eleftherios-Matthew-Ian Atlas version 0.9
-    Our atlas is based on Brain1 Scan1 from the PBC competition
+    ''' Eleftherios-Matthew-Ian Atlas version 0.00001
+    Our atlas is based on Brain1 Scan1 from the PBC competition and the ICBM DTI-81 Atlas where
+    ref are indices of tracks selected or given by distance metrics and value is the corresponding value for the bundle that this track
+    belongs in the ICBM atlas.
     '''
-    atlas={    
-    
-    0:{'bundle_name':'None','apr_ref':[],'selected_ref':[],'init_ref':[]},
-    
-    1:{'bundle_name':'Arcuate L','apr_ref':[79032],
-    'selected_ref':[13355,203241,8239],
-    'init_ref':[197816]},
-    
-    2:{'bundle_name':'Cingulum L','apr_ref':[115651],
-    'selected_ref':[132955,209255],
-    'init_ref':[15009]},    
-    
-    3:{'bundle_name':'Corticospinal R','apr_ref':[76983],
-    'selected_ref':[249518,234534,174737,225536],
-    'init_ref':[157189]},    
-    
-    4:{'bundle_name':'Forceps Major',
-    'apr_ref':[17556],
-    'selected_ref':[126619,109247],
-    'init_ref':[64423]},            
-    
-    5:{'bundle_name':'Fornix','apr_ref':[206781],
-    'selected_ref':[215713,48512,184169],
-    'init_ref':[118191]},        
-    
-    6:{'bundle_name':'Inferior Occipitofrontal Fasciculus L','apr_ref':[168055],
-    'selected_ref':[147881,126361,32004],
-    'init_ref':[168055]},        
-    
-    7:{'bundle_name':'Superior Longitudinal Fasciculus L','apr_ref':[59215],
-    'selected_ref':[6104,6777,224291,198813],
-    'init_ref':[123041]},        
-    
-    8:{'bundle_name':'Uncinate R','apr_ref':[88647],
-    'selected_ref':[249267,216811],
-    'init_ref':[88647]},
+        
+    #Some common colors
+    red=(1,0,0);    green=(0,1,0);    blue=(0,0,1);    yellow=(1,1,0);    cyan=(0,1,1);    azure=(0,0.49,1);    golden=(1,0.84,0);    white=(1,1,1)
+    black=(0,0,0);    aquamarine=(0.498,1.,0.83);    indigo=(0.294,  0.,  0.5098);    lime=( 0.749,  1.,  0.);    hot_pink=( 0.988,  0.0588,  0.7529)
+    gray=(0.5,0.5,0.5);    dark_red=(0.5,0,0);    dark_green=(0,0.5,0);    dark_blue=(0,0,0.5);    tan=( 0.8235,  0.7058,  0.549);    
+    chartreuse=( 0.498, 1. , 0. );    coral=( 1. , 0.498, 0.3137)
 
-    9:{'bundle_name':'Uncinate L','apr_ref':[],
-    'selected_ref':[],
-    'init_ref':[]},
+    combined_atlas={    
     
-    10:{'bundle_name':'Corticospinal L','apr_ref':[],
-    'selected_ref':[],
-    'init_ref':[]},  
-    
-    11:{'bundle_name':'Forceps Minor',
-    'apr_ref':[],
-    'selected_ref':[],
-    'init_ref':[]},
-    
-    12:{'bundle_name':'Arcuate R','apr_ref':[],
-    'selected_ref':[],
-    'init_ref':[]},
-    
-    13:{'bundle_name':'Cingulum R','apr_ref':[],
-    'selected_ref':[],
-    'init_ref':[]}, 
-    
-    14:{'bundle_name':'Inferior Occipitofrontal Fasciculus R','apr_ref':[],
-    'selected_ref':[],
-    'init_ref':[]},        
-    
-    15:{'bundle_name':'Superior Longitudinal Fasciculus R','apr_ref':[],
-    'selected_ref':[],
-    'init_ref':[]}
-    
+    0:{'bundle_name':['None'],'apr_ref':[],'selected_ref':[],'init_ref':[]},    
+    1:{'bundle_name':['Arcuate L'],'apr_ref':[79032],'selected_ref':[13355,203241,8239],'init_ref':[197816],'value':[41],'color':red},    
+    2:{'bundle_name':['Cingulum L'],'apr_ref':[115651],'selected_ref':[132955,209255], 'init_ref':[15009],'value':[35],'color':blue},     
+    3:{'bundle_name':['Corticospinal R','Cerebral peduncle R'],'apr_ref':[76983],    'selected_ref':[249518,234534,174737,225536],    'init_ref':[157189],'value':[9,17],'color':yellow},        
+    4:{'bundle_name':['Forceps Major'],    'apr_ref':[17556],    'selected_ref':[126619,109247],    'init_ref':[64423],'value':[5],'color':green},                
+    5:{'bundle_name':['Fornix'],'apr_ref':[206781],    'selected_ref':[215713,48512,184169],    'init_ref':[118191],'value':[6],'color':indigo},            
+    6:{'bundle_name':['Inferior Occipitofrontal Fasciculus (Sagittal stratum) L','Inferior Occipitofrontal Fasciculus L'],'apr_ref':[168055],    'selected_ref':[147881,126361,32004],    'init_ref':[168055],'value':[31,45],'color':lime},            
+    7:{'bundle_name':['Superior Longitudinal Fasciculus L'],'apr_ref':[59215],    'selected_ref':[6104,6777,224291,198813],    'init_ref':[123041],'value':[41],'color':gray},            
+    8:{'bundle_name':['Uncinate R'],'apr_ref':[88647],    'selected_ref':[249267,216811],    'init_ref':[88647],'value':[48],'color':cyan},
+    9:{'bundle_name':['Cingulum R'],'apr_ref':[],'selected_ref':[109309],'init_ref':[],'value':[36],'color':blue},    
+    10:{'bundle_name':['Corticospinal L','Cerebral peduncle L'],'apr_ref':[],'selected_ref':[144023,235741,69257,219905],'init_ref':[],'value':[8,16],'color':yellow},    
+    11:{'bundle_name':['Forceps Minor'],'apr_ref':[],'selected_ref':[56022],'init_ref':[],'value':[3],'color':green},    
+    12:{'bundle_name':['Corpus Callosum Body'],'apr_ref':[],'selected_ref':[154373,25104,31959],'init_ref':[],'value':[4],'color':dark_red},    
+    13:{'bundle_name':['Inferior Occipitofrontal Fasciculus (Sagittal stratum) R','Inferior Occipitofrontal Fasciculus R'],'apr_ref':[],'selected_ref':[197404],'init_ref':[],'value':[32,46],'color':lime},    
+    14:{'bundle_name':['Superior Longitudinal Fasciculus R'],'apr_ref':[],'selected_ref':[64917,66270],'init_ref':[],'value':[42],'color':gray},    
+    15:{'bundle_name':['Uncinate L'],'apr_ref':[],'selected_ref':[33418,115381,230360],'init_ref':[],'value':[47],'color':cyan},    
+    16:{'bundle_name':['Middle cerebellar peduncle'],'apr_ref':[],'selected_ref':[177742],'init_ref':[],'value':[1],'color':hot_pink},    
+    17:{'bundle_name':['Medial lemniscus R'],'apr_ref':[],'selected_ref':[45579,179716,196524],'init_ref':[],'value':[11],'color':aquamarine},    
+    18:{'bundle_name':['Medial lemniscus L'],'apr_ref':[],'selected_ref':[88291,89525],'init_ref':[],'value':[10],'color':aquamarine},    
+    19:{'bundle_name':['Tapatum R'],'apr_ref':[],'selected_ref':[114248],'init_ref':[],'value':[50],'color':azure},    
+    20:{'bundle_name':['Tapatum L'],'apr_ref':[],'selected_ref':[202092],'init_ref':[],'value':[49],'color':azure}        
+
+    #21:{'name':['Optic Radiation R'],'value':[30],'color':coral},
+    #22:{'name':['Optic Radiation L'],'value':[29],'color':coral}
+
     }
     
     
-    return atlas
+    return combined_atlas
     
-
-def detect_corresponding_bundles(emi,tracks,zipit=1,n=10,d=3):
-    ''' Not ready yet
-
-    '''
-    pass
 
 def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
     ''' [1] Removes hits in hitdata which have divergence above threshold.
@@ -508,7 +536,7 @@ def neck_finder(hitdata, ref):
 
 def max_concentration(plane_hits,ref):
     '''
-    calculates the log detrminant of the concentration matrix for the hits in planehits    
+    calculates the log determinant of the concentration matrix for the hits in planehits    
     '''
     dispersions = [np.prod(np.sort(npla.eigvals(np.cov(p[:,0:3].T)))[1:2]) for p in plane_hits]
     index = np.argmin(dispersions)
@@ -525,37 +553,55 @@ def refconc(brain, ref, divergence_threshold=0.3, fibre_weight=0.7):
     
     hitdata = pf.cut_plane(brain, ref)
     reduced_hitdata, heavy_weight_fibres = threshold_hitdata(hitdata, divergence_threshold, fibre_weight)
-    index, centre, log_max_concentration = max_concentration(reduced_hitdata, ref)
+    #index, centre, log_max_concentration = max_concentration(reduced_hitdata, ref)
+    index=None
+    centre=None
+    log_max_concentration=None
+    
     return heavy_weight_fibres, index, centre
 
-def bundle_from_refs(brain,braind, refs, divergence_threshold=0.3, fibre_weight=0.7,far_thresh=25,zhang_thresh=15):
+def bundle_from_refs(brain,braind, refs, divergence_threshold=0.3, fibre_weight=0.7,far_thresh=25,zhang_thresh=15, end_thresh=10):
     '''
     '''
     bundle = set([])
     centres = []
     indices = []
 
-    for ref in refs:
+    for ref in refs:        
         
-        refd=tm.downsample(ref,3) 
-        
-        brain_rf, ind_fr = rm_far_tracks(refd,braind,dist=far_thresh,down=True)
-        
+        refd=tm.downsample(ref,3)         
+        brain_rf, ind_fr = rm_far_tracks(refd,braind,dist=far_thresh,down=True)        
         brain_rf=[brain[i] for i in ind_fr]
         
-        #brain_rf,ind_fr = rm_far_tracks(ref,brain,dist=far_thresh,down=False)        
+        #brain_rf,ind_fr = rm_far_tracks(ref,brain,dist=far_thresh,down=False)         
         
         heavy_weight_fibres, index, centre = refconc(brain_rf, ref, divergence_threshold, fibre_weight)
         
         heavy_weight_fibres_z = [i for i in heavy_weight_fibres if pf.zhang_distances(ref,brain_rf[i],'avg')<zhang_thresh]
         
+        #heavy_weight_fibres_z_e = [i for i in heavy_weight_fibres_z if tm.max_end_distances(brain_rf[i],ref)>end_thresh]
+        
         hwfind = set([ind_fr[i] for i in heavy_weight_fibres_z])
         
         bundle = bundle.union(hwfind)
-        
-        centres.append(centre)
-        
-        indices.append(index)
 
-    return list(bundle), centres, indices
-   
+    bundle_med = []
+    
+    for i in bundle:
+        
+        minmaxdist = 0.
+
+        for ref in refs:
+
+            minmaxdist=min(minmaxdist,tm.max_end_distances(brain[i],ref))
+
+        if minmaxdist<=end_thresh:
+
+            bundle_med.append(i)
+            
+        #centres.append(centre)
+        
+        #indices.append(index)
+    
+    #return list(bundle), centres, indices
+    return bundle_med

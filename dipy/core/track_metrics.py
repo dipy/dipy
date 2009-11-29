@@ -626,6 +626,28 @@ def mean_closest_distances(xyz1,xyz2):
     dm = np.sqrt(np.sum(d**2,axis=2))
     return np.average(np.min(dm,axis=0)), np.average(np.min(dm,axis=1))
    
+def max_end_distances(xyz1,xyz2):
+    '''Maximum distance of ends of tracks xyz1 from xyz2
+    
+     
+    Parameters
+    ----------
+    xyz1 : array, shape (N1,3)
+    xyz2 : array, shape (N2,3)
+       arrays representing x,y,z of the N1 and N2 points  of two tracks
+    
+    Returns
+    -------
+    maxend : float
+       Max end distance from `xyz1` to `xyz2`
+    
+    '''
+    maxend=0.0
+    
+    for end in [xyz1[0],xyz1[-1]]:
+        maxend = max(maxend,min([np.inner(t-end,t-end) for t in xyz2]))
+    return np.sqrt(maxend)
+
 
 def generate_combinations(items, n):
     """ Combine sets of size n from items
