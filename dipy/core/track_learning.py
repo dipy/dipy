@@ -81,7 +81,7 @@ def detect_corresponding_tracks_extended(indices,tracks1,indices2,tracks2):
     return track2track.astype(int)
 
 
-def rm_far_ends(ref,tracks,dist=25,down=False):
+def rm_far_ends(ref,tracks,dist=25):
     ''' rm tracks with far endpoints
     Parameters:
     ----------------
@@ -450,7 +450,86 @@ def emi_atlas():
     
     
     return combined_atlas
+
+
+
+def track_indices_for_a_value_in_atlas(atlas,value,tes,tracks):
     
+    ind=np.where(atlas==value)
+    indices=set([])
+
+    for i in range(len(ind[0])):
+        try:
+            tmp=tes[(ind[0][i], ind[1][i], ind[2][i])]
+            indices=indices.union(set(tmp))
+        except:
+            pass
+    
+    #bundle=[tracks[i] for i in list(indices)]        
+    #return bundle,list(indices)
+    return list(indices)
+
+
+def relabel_by_atlas_value_and_zhang(atlas_tracks,atlas,tes,tracks,tracksd,zhang_thr):
+    
+    emi=emi_atlas()    
+    
+    brain_relabeled={}
+    
+    for e in range(1,9): #from emi:
+        
+        print emi[e]['bundle_name']
+        indices=emi[e]['init_ref']+emi[e]['selected_ref']+emi[e]['apr_ref']        
+        tmp=detect_corresponding_tracks(indices,atlas_tracks,tracks)
+        corresponding_indices=tmp[:,2]
+                
+        corresponding_indices=list(set(corresponding_indices))
+                
+        value_indices=[]
+        for value in emi[e]['value']:            
+            value_indices+=track_indices_for_a_value_in_atlas(atlas,value,tes,tracks)
+        
+        value_indices=list(set(value_indices))
+        
+        print 'len corr_ind',len(corresponding_indices)
+        
+        #check if value_indices do not have anything in common with corresponding_indices and expand
+        if list(set(value_indices).intersection(set(corresponding_indices)))==[]:            
+            #value_indices=corresponding_indices
+            print 'len corr_ind',len(corresponding_indices)
+            for ci in corresponding_indices:            
+                print 'koukou',ci
+                ref=tracksd[ci]
+                brain_rf, ind_fr = rm_far_tracks(ref,tracksd,dist=10,down=True)
+                value_indices+=ind_fr
+                
+            
+            value_indices=list(set(value_indices))
+            print 'len vi',len(value_indices)
+        
+        value_indices_new=[]
+        #reduce value_indices which are far from every corresponding fiber
+        for vi in value_indices:            
+            dist=[]
+            for ci in corresponding_indices:       
+                dist.append(pf.zhang_distances(tracks[vi],tracks[ci],'avg'))                                    
+                
+            for d in dist:
+                if d <= zhang_thr[e-1]:
+                    value_indices_new.append(vi)
+                
+        value_indices=list(set(value_indices_new))
+        #store value indices
+        brain_relabeled[e]={}
+        brain_relabeled[e]['value_indices']=value_indices
+        brain_relabeled[e]['corresponding_indices']=corresponding_indices        
+        brain_relabeled[e]['color']=emi[e]['color']
+        #brain_relabeled[e]['bundle_name']=emi[e]['bundle_name'][0]
+        
+        
+        
+    return brain_relabeled    
+
 
 def threshold_hitdata(hitdata, divergence_threshold=0.25, fibre_weight=0.8):
     ''' [1] Removes hits in hitdata which have divergence above threshold.
