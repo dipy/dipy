@@ -472,7 +472,7 @@ def track_indices_for_a_value_in_atlas(atlas,value,tes,tracks):
 
 def relabel_by_atlas_value_and_zhang(atlas_tracks,atlas,tes,tracks,tracksd,zhang_thr):
     
-    emi=emi_atlas()    
+    emi=emi_atlas()
     
     brain_relabeled={}
     
@@ -524,7 +524,7 @@ def relabel_by_atlas_value_and_zhang(atlas_tracks,atlas,tes,tracks,tracksd,zhang
         brain_relabeled[e]['value_indices']=value_indices
         brain_relabeled[e]['corresponding_indices']=corresponding_indices        
         brain_relabeled[e]['color']=emi[e]['color']
-        #brain_relabeled[e]['bundle_name']=emi[e]['bundle_name'][0]
+        brain_relabeled[e]['bundle_name']=emi[e]['bundle_name'][0]
         
         
         
