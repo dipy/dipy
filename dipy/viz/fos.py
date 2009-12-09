@@ -1267,8 +1267,38 @@ def _closest_track(p,tracks):
     
     return int(d[imin,0])
     
-def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[20,30,40],opacities=[0.8,0.7,0.3],colors=None,planesx=[20,30],planesy=[30,40],planesz=[20,30],opacitymap=None,colormap=None):
-    '''
+def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[20,30,40],opacities=[0.8,0.7,0.3],colors=None,planesx=[20,30],planesy=[30,40],planesz=[20,30]):
+    ''' Slicer and contour rendering of 3d volumes
+    
+    Parameters:
+    ----------------
+    vol : array, shape (N, M, K), dtype uint8
+         an array representing the volumetric dataset that we want to visualize using volumetric rendering            
+        
+    voxsz : sequence of 3 floats
+            default (1., 1., 1.)
+            
+    affine : array, shape (4,4), default None
+            as given by volumeimages          
+            
+    contours : bool 1 to show contours
+    
+    planes : boolean 1 show planes
+    
+    levels : contour levels
+    
+    opacities : opacity for every contour level
+    
+    colors :
+    
+    planesx : saggital
+    
+    planesy : coronal
+    
+    planesz : saggital
+    
+    
+    
     
     Examples:
     --------------
