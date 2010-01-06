@@ -1289,16 +1289,14 @@ def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[2
     
     opacities : opacity for every contour level
     
-    colors :
+    colors : None or 
     
     planesx : saggital
     
     planesy : coronal
     
-    planesz : saggital
-    
-    
-    
+    planesz : axial
+       
     
     Examples:
     --------------
@@ -1306,6 +1304,13 @@ def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[2
     >>> s = np.sin(x*y*z)/(x*y*z)
     >>> r=fos.ren()
     >>> fos.slicer(r,s)
+    
+    >>> import form
+    >>> vol,voxsz,affine=form.loadvol('/home/eg01/Devel/mricron/templates/ch2better.nii')
+    >>> from dipy.viz import fos
+    >>> fos.slicer(r,vol,contours=0,planes=1,levels=[80,114],planesx=[150],planesy=[150],planesz=[150])
+
+    
     
     '''    
     vol=np.interp(vol,xp=[vol.min(),vol.max()],fp=[0,255])

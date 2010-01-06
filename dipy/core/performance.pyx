@@ -653,4 +653,6 @@ def minimum_closest_distance(xyz1,xyz2):
     return (min_min_t1t2+min_min_t2t1)/2.0
 
 
-
+def approximate_mdl_trajectory(xyz):
+    
+    pass

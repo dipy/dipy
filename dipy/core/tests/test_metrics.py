@@ -90,6 +90,7 @@ def test_zhang_distances():
 
 
 def test_approx_traj_part():
+    
     t=np.linspace(0,1.75*2*np.pi,1000)
 
     x = np.sin(t)
@@ -125,7 +126,9 @@ def test_approx_traj_part():
        [ -1.00000000e+00,  -4.28626380e-16,   1.09955743e+01]])
 
 
+def test_approximate_mdl_traj():
     
+    pass
 
 def test_cut_plane():
     dt = np.dtype(np.float32)
