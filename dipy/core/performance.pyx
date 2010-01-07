@@ -13,6 +13,7 @@ cdef extern from "math.h" nogil:
     double floor(double x)
     float sqrt(float x)
     float fabs(float x)
+    double log2(double x)
     
 #cdef extern from "stdio.h":
 #	void printf ( const char * format, ... )
@@ -154,6 +155,17 @@ cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out):
     for i in range(3):
         vec_out[i] = vec1[i]+vec2[i]
 
+def mul_3vecs(vec1, vec2):
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    cmul_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
+    return vec_out
+
+cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out):
+    cdef int i
+    for i in range(3):
+        vec_out[i] = vec1[i]*vec2[i]
 
 # float 32 dtype for casting
 cdef cnp.dtype f32_dt = np.dtype(np.float32)
@@ -656,3 +668,199 @@ def minimum_closest_distance(xyz1,xyz2):
 def approximate_mdl_trajectory(xyz):
     
     pass
+
+def lee_perpendicular_distance(start0, end0, start1, end1):
+    ''' Based on Lee , Han & Whang SIGMOD07.
+        Calculates perpendicular distance metric for the distance between two line segments
+    
+    Parameters:
+    -----------
+        start0: float array(3,)
+        end0: float array(3,)
+        start1: float array(3,)
+        end1: float array(3,)
+    
+    Returns:
+    --------
+        perpendicular_distance: float
+
+    Examples:
+    --------
+    >>> import dipy.core.track_metrics as tm 
+    >>> tm.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    >>> 5.9380966767403436  
+    '''
+    
+    '''
+    start0=np.asarray(start0,dtype='float64')    
+    end0=np.asarray(end0,dtype='float64')    
+    start1=np.asarray(start1,dtype='float64')    
+    end1=np.asarray(end1,dtype='float64')    
+    
+    l_0 = np.inner(end0-start0,end0-start0)
+    l_1 = np.inner(end1-start1,end1-start1)
+
+    if l_1 > l_0:
+        s_tmp = start0
+        e_tmp = end0
+        start0 = start1
+        end0 = end1
+        start1 = s_tmp
+        end1 = e_tmp
+    
+    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+
+    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+
+    ps = start0+u1*(end0-start0)
+
+    pe = start0+u2*(end0-start0)
+
+    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
+    
+    lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
+
+    if lperp1+lperp2 > 0.:
+        return (lperp1**2+lperp2**2)/(lperp1+lperp2)
+    else:
+        return 0.
+    '''
+    
+    k0=end0-start0
+    k1=end1-start1
+    
+    l0=inner_3vecs(k0,k0)
+    l1=inner_3vecs(k1,k1)
+    
+    if l1 > l0:
+        
+            endtmp=end0
+            starttmp=start0
+            
+            end0=end1
+            start0=start1
+            
+            end1=endtmp
+            start1=starttmp
+            
+            k0=end0-start0
+            k1=end1-start1
+    
+            l0=inner_3vecs(k0,k0)
+            l1=inner_3vecs(k1,k1)
+
+       
+    u1 = inner_3vecs(start1-start0,k0)/l0    
+    u2 = inner_3vecs(end1-start0,k0)/l0
+
+    ps = add_3vecs(start0,u1*k0)
+    pe = add_3vecs(start0, u2*k0)
+    
+    ps1=sub_3vecs(ps,start1)
+    pe1=sub_3vecs(pe,end1)
+    
+    lperp1 = sqrt(inner_3vecs(ps1,ps1))    
+    lperp2 = sqrt(inner_3vecs(pe1,pe1))
+
+    if lperp1+lperp2 > 0.:
+        return (lperp1**2+lperp2**2)/(lperp1+lperp2)
+    else:
+        return 0.        
+            
+    
+
+
+def lee_angle_distance(start0, end0, start1, end1):
+    ''' Based on Lee , Han & Whang SIGMOD07.
+        Calculates angle distance metric for the distance between two line segments
+    
+    Parameters:
+    -----------
+        start0: float array(3,)
+        end0: float array(3,)
+        start1: float array(3,)
+        end1: float array(3,)
+    
+    Returns:
+    --------
+        angle_distance: float
+
+    Examples:
+    --------
+    >>> import dipy.core.track_metrics as tm 
+    >>> tm.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    >>> 2.0 
+    '''
+    start0=np.asarray(start0,dtype='float64')    
+    end0=np.asarray(end0,dtype='float64')    
+    start1=np.asarray(start1,dtype='float64')    
+    end1=np.asarray(end1,dtype='float64')    
+    
+    l_0 = np.inner(end0-start0,end0-start0)
+    l_1 = np.inner(end1-start1,end1-start1)
+
+    if l_1 > l_0:
+        s_tmp = start0
+        e_tmp = end0
+        start0 = start1
+        end0 = end1
+        start1 = s_tmp
+        end1 = e_tmp
+    
+    cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
+
+    return np.sqrt((1-cos_theta_squared)*l_1)
+
+def approximate_trajectory_partitioning(xyz, alpha=1.):
+    ''' Implementation of Lee et al Approximate Trajectory
+        Partitioning Algorithm
+    
+    Parameters:
+    ------------------
+    xyz: array(N,3) 
+        initial trajectory
+    alpha: float
+        smoothing parameter (>1 => smoother, <1 => rougher)
+    
+    Returns:
+    ------------
+    characteristic_points: list of M array(3,) points
+        which can be turned into an array with np.asarray() 
+    '''
+    
+    characteristic_points=[xyz[0]]
+    start_index = 0
+    length = 2
+    while start_index+length < len(xyz):
+        current_index = start_index+length
+        cost_par = minimum_description_length_partitoned(xyz[start_index:current_index+1])
+        cost_nopar = minimum_description_length_unpartitoned(xyz[start_index:current_index+1])
+        if alpha*cost_par>cost_nopar:
+ 
+            characteristic_points.append(xyz[current_index-1])
+            start_index = current_index-1
+            length = 2
+        else:
+            length+=1
+ 
+    characteristic_points.append(xyz[-1])
+    return np.array(characteristic_points)
+                
+def minimum_description_length_partitoned(xyz):   
+    # L(H)
+    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
+ 
+    # L(D|H) 
+    val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
+    val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
+    
+    return val
+    
+def minimum_description_length_unpartitoned(xyz):
+    '''
+    Example:
+    --------
+    >>> xyz = np.array([[0,0,0],[2,2,0],[3,1,0],[4,2,0],[5,0,0]])
+    >>> tm.minimum_description_length_unpartitoned(xyz) == np.sum(np.log2([8,2,2,5]))/2
+    '''
+    return np.sum(np.log2((np.diff(xyz, axis=0)**2).sum(axis=1)))/2
