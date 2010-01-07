@@ -690,84 +690,102 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     >>> tm.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
     >>> 5.9380966767403436  
     '''
+   
+    #start0=np.asarray(start0,dtype='float64')    
+    #end0=np.asarray(end0,dtype='float64')    
+    #start1=np.asarray(start1,dtype='float64')    
+    #end1=np.asarray(end1,dtype='float64')    
     
-    '''
-    start0=np.asarray(start0,dtype='float64')    
-    end0=np.asarray(end0,dtype='float64')    
-    start1=np.asarray(start1,dtype='float64')    
-    end1=np.asarray(end1,dtype='float64')    
-    
-    l_0 = np.inner(end0-start0,end0-start0)
-    l_1 = np.inner(end1-start1,end1-start1)
+    l0 = np.inner(end0-start0,end0-start0)
+    l1 = np.inner(end1-start1,end1-start1)
 
-    if l_1 > l_0:
+    if l1 > l0:
+        
         s_tmp = start0
-        e_tmp = end0
+        e_tmp = end0        
         start0 = start1
         end0 = end1
         start1 = s_tmp
         end1 = e_tmp
+        
+        l0 = np.inner(end0-start0,end0-start0)
+        l1 = np.inner(end1-start1,end1-start1)
+        
+    k0=end0-start0
     
-    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    u1 = np.inner(start1-start0,k0)/l0
+    u2 = np.inner(end1-start0,k0)/l0
 
-    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    ps = start0+u1*k0
+    pe = start0+u2*k0
 
-    ps = start0+u1*(end0-start0)
-
-    pe = start0+u2*(end0-start0)
-
-    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
-    
+    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))    
     lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
 
     if lperp1+lperp2 > 0.:
         return (lperp1**2+lperp2**2)/(lperp1+lperp2)
     else:
         return 0.
-    '''
     
-    k0=end0-start0
-    k1=end1-start1
+cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1, float *end1):
+
+    cdef:
+        double l0,l1,ltmp,u1,u2,lperp1,lperp2   
+        cnp.ndarray[cnp.float32_t, ndim=1] s_tmp = np.zeros((3,), np.float32)  
+        cnp.ndarray[cnp.float32_t, ndim=1] e_tmp = np.zeros((3,), np.float32)  
+        cnp.ndarray[cnp.float32_t, ndim=1] k0 = np.zeros((3,), np.float32)  
+        cnp.ndarray[cnp.float32_t, ndim=1] ps = np.zeros((3,), np.float32)  
+        cnp.ndarray[cnp.float32_t, ndim=1] pe = np.zeros((3,), np.float32)  
+        cnp.ndarray[cnp.float32_t, ndim=1] ps1 = np.zeros((3,), np.float32)  
+        cnp.ndarray[cnp.float32_t, ndim=1] pe1 = np.zeros((3,), np.float32)  
+        cnp.ndarray[cnp.float32_t, ndim=1] tmp = np.zeros((3,), np.float32)  
     
-    l0=inner_3vecs(k0,k0)
-    l1=inner_3vecs(k1,k1)
+    
+    csub_3vecs(end0,start0,tmp)    
+    l0 = cinner_3vecs(tmp,tmp)
+    
+    csub_3vecs(end1,start1,tmp)    
+    l1 = cinner_3vecs(tmp, tmp)
     
     if l1 > l0:
         
-            endtmp=end0
-            starttmp=start0
-            
-            end0=end1
-            start0=start1
-            
-            end1=endtmp
-            start1=starttmp
-            
-            k0=end0-start0
-            k1=end1-start1
+        s_tmp = start0
+        e_tmp = end0        
+        start0 = start1
+        end0 = end1
+        start1 = s_tmp
+        end1 = e_tmp
+        
+        ltmp=l0
+        l0=l1
+        l1=ltmp
+        
+        
+    csub_3vecs(end0,start0,k0)
     
-            l0=inner_3vecs(k0,k0)
-            l1=inner_3vecs(k1,k1)
+    #u1 = np.inner(start1-start0,k0)/l0
+    #u2 = np.inner(end1-start0,k0)/l0
+    csub_3vecs(start1,start0,tmp)
+    u1 = cinner_3vecs(tmp,k0)/l0
+    csub_3vecs(end1,start0,tmp)
+    u2 = cinner_3vecs(tmp,k0)/l0
 
-       
-    u1 = inner_3vecs(start1-start0,k0)/l0    
-    u2 = inner_3vecs(end1-start0,k0)/l0
+    ps = start0+u1*k0
+    pe = start0+u2*k0
 
-    ps = add_3vecs(start0,u1*k0)
-    pe = add_3vecs(start0, u2*k0)
+    #lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))    
+    #lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
+    csub_3vecs(ps,start1,ps1)
+    csub_3vecs(pe,end1,pe1)
     
-    ps1=sub_3vecs(ps,start1)
-    pe1=sub_3vecs(pe,end1)
-    
-    lperp1 = sqrt(inner_3vecs(ps1,ps1))    
-    lperp2 = sqrt(inner_3vecs(pe1,pe1))
+    lperp1 = sqrt(cinner_3vecs(ps1,ps1))
+    lperp2 = sqrt(cinner_3vecs(pe1,pe1))
 
     if lperp1+lperp2 > 0.:
-        return (lperp1**2+lperp2**2)/(lperp1+lperp2)
+        return (lperp1*lperp1+lperp2*lperp2)/(lperp1+lperp2)
     else:
-        return 0.        
-            
-    
+        return 0.
+
 
 
 def lee_angle_distance(start0, end0, start1, end1):
@@ -791,10 +809,10 @@ def lee_angle_distance(start0, end0, start1, end1):
     >>> tm.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
     >>> 2.0 
     '''
-    start0=np.asarray(start0,dtype='float64')    
-    end0=np.asarray(end0,dtype='float64')    
-    start1=np.asarray(start1,dtype='float64')    
-    end1=np.asarray(end1,dtype='float64')    
+    #start0=np.asarray(start0,dtype='float64')    
+    #end0=np.asarray(end0,dtype='float64')    
+    #start1=np.asarray(start1,dtype='float64')    
+    #end1=np.asarray(end1,dtype='float64')    
     
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
@@ -846,13 +864,25 @@ def approximate_trajectory_partitioning(xyz, alpha=1.):
     characteristic_points.append(xyz[-1])
     return np.array(characteristic_points)
                 
-def minimum_description_length_partitoned(xyz):   
+#@cython.boundscheck(False)
+def minimum_description_length_partitoned(xyz):
     # L(H)
-    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
- 
+    cdef double val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
+    cdef:
+        cnp.ndarray[cnp.float32_t, ndim=2] track 
+        size_t t_len
+    track = np.ascontiguousarray(xyz, dtype=f32_dt)
+    t_len=len(track)
+    
     # L(D|H) 
-    val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
-    val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
+    cdef int i    
+    
+    for i in range(1, t_len-1):
+        val += log2(lee_perpendicular_distance(track[i],track[i+1],track[0],track[t_len-1]))
+        val += log2(lee_angle_distance(track[i],track[i+1],track[0],track[t_len-1]))
+        
+    #val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
+    #val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
     
     return val
     

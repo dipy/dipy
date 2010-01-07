@@ -378,6 +378,7 @@ def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
 
     return w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
 
+
 def lee_perpendicular_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
         Calculates perpendicular distance metric for the distance between two line segments
@@ -432,6 +433,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     else:
         return 0.
 
+
 def lee_parallel_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
         Calculates parallel distance metric for the distance between two line segments
@@ -466,6 +468,7 @@ def lee_parallel_distance(start0, end0, start1, end1):
     lpar2=np.min(np.inner(start0-pe, start0-pe),np.inner(end0-pe, end0-pe))
 
     return np.sqrt(np.min(lpar1, lpar2))
+
 
 def lee_angle_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
@@ -508,6 +511,7 @@ def lee_angle_distance(start0, end0, start1, end1):
 
     return np.sqrt((1-cos_theta_squared)*l_1)
 
+
 def approximate_trajectory_partitioning(xyz, alpha=1.):
     ''' Implementation of Lee et al Approximate Trajectory
         Partitioning Algorithm
@@ -545,15 +549,19 @@ def approximate_trajectory_partitioning(xyz, alpha=1.):
     #        raw_input()
     characteristic_points.append(xyz[-1])
     return np.array(characteristic_points)
-                
+
+
 def minimum_description_length_partitoned(xyz):   
-    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
     # L(H)
+    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
+    
+    # L(D|H) 
     val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
     val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
-    # L(D|H) 
-    return val
     
+    return val
+
+
 def minimum_description_length_unpartitoned(xyz):
     '''
     Example:
@@ -1193,10 +1201,27 @@ def midpoint2point(xyz,p):
     mid=midpoint(xyz)     
     return np.sqrt(np.sum((xyz-mid)**2))
 
-    
-if __name__ == "__main__":
-    pass
 
+def test_approximate_trajectory_partitioning():
     
+    t=np.linspace(0,1.75*2*np.pi,1000)
+
+    x = np.sin(t)
+    y = np.cos(t)
+    z = t
+    
+    xyz=np.vstack((x,y,z)).T 
+    
+    xyza1 = approximate_trajectory_partitioning(xyz,alpha=1.)
+    xyza2 = approximate_trajectory_partitioning(xyz,alpha=2.) 
+    
+    
+
+if __name__ == "__main__":
+#    pass
+
+    import cProfile
+    cProfile.run('test_approximate_trajectory_partitioning()', 'fooprof')
+
     
 

@@ -2,12 +2,13 @@
 
 import os
 from os.path import join as pjoin
-
+import numpy as np
 import dipy.io.trackvis as tv
 import dipy.core.performance as pf
 import dipy.core.track_metrics as tm
 
 from numpy.testing import measure
+
 
 
 _data_path = pjoin(os.path.dirname(__file__), 'data')
@@ -31,6 +32,22 @@ def bench_cut_plane():
     print 'optimized time: %f' % opt_time
     print
 
+def bench_mdl_traj():
+    t=np.concatenate(tracks300)
+    
+    print 'MDL traj'
+    print '=' * 10
+    opt_time = measure('pf.minimum_description_length_partitoned(t)')
+    #opt_time = measure('tm.minimum_description_length_partitoned(t)')
+    print 'optimized time: %f' % opt_time
+    print len(t)
+    print
+
+    
+    
+    
+
 if __name__ == '__main__' :
-    bench_zhang()
-    bench_cut_plane()
+    #bench_zhang()
+    #bench_cut_plane()
+    bench_mdl_traj()
