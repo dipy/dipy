@@ -678,14 +678,12 @@ def minimum_closest_distance(xyz1,xyz2):
     return (min_min_t1t2+min_min_t2t1)/2.0
 
 
-def approximate_mdl_trajectory(xyz):
-    
-    pass
-
 def lee_perpendicular_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
         Calculates perpendicular distance metric for the distance between two line segments
-    
+        
+    This function assumes that norm(end0-start0)>norm(end1-start1)
+    i.e. that the first segment will be bigger than the second one.
     Parameters:
     -----------
         start0: float array(3,)
@@ -707,19 +705,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     ------------
     l0 = np.inner(end0-start0,end0-start0)
     l1 = np.inner(end1-start1,end1-start1)
-
-    if l1 > l0:
-        
-        s_tmp = start0
-        e_tmp = end0        
-        start0 = start1
-        end0 = end1
-        start1 = s_tmp
-        end1 = e_tmp
-        
-        l0 = np.inner(end0-start0,end0-start0)
-        l1 = np.inner(end1-start1,end1-start1)
-        
+    
     k0=end0-start0
     
     u1 = np.inner(start1-start0,k0)/l0
@@ -749,31 +735,23 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         
     
 cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1, float *end1):
+    '''
+    This function assumes that
+    norm(end0-start0)>norm(end1-start1)
+    '''
 
     cdef:
         float l0,l1,ltmp,u1,u2,lperp1,lperp2         
         float *s_tmp,*e_tmp,k0[3],ps[3],pe[3],ps1[3],pe1[3],tmp[3]
                
-    csub_3vecs(end0,start0,tmp)    
-    l0 = cinner_3vecs(tmp,tmp)
+    csub_3vecs(end0,start0,k0)    
+    l0 = cinner_3vecs(k0,k0)
     
     csub_3vecs(end1,start1,tmp)    
     l1 = cinner_3vecs(tmp, tmp)
     
-    if l1 > l0:
-        
-        s_tmp = start0
-        e_tmp = end0        
-        start0 = start1
-        end0 = end1
-        start1 = s_tmp
-        end1 = e_tmp
-        
-        ltmp=l0
-        l0=l1
-        l1=ltmp
                 
-    csub_3vecs(end0,start0,k0)
+    #csub_3vecs(end0,start0,k0)
     
     #u1 = np.inner(start1-start0,k0)/l0
     #u2 = np.inner(end1-start0,k0)/l0
@@ -808,6 +786,9 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
 def lee_angle_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
         Calculates angle distance metric for the distance between two line segments
+            
+    This function assumes that norm(end0-start0)>norm(end1-start1)
+    i.e. that the first segment will be bigger than the second one.
     
     Parameters:
     -----------
@@ -831,17 +812,8 @@ def lee_angle_distance(start0, end0, start1, end1):
     
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
-
-    if l_1 > l_0:
-        s_tmp = start0
-        e_tmp = end0
-        start0 = start1
-        end0 = end1
-        start1 = s_tmp
-        end1 = e_tmp
     
     cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
-
     return np.sqrt((1-cos_theta_squared)*l_1)
 
     '''
@@ -856,39 +828,30 @@ def lee_angle_distance(start0, end0, start1, end1):
     return clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data)
 
 cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *end1):
+    '''
+    This function assumes that
+    norm(end0-start0)>norm(end1-start1)
+    '''
 
     cdef:
         float l0,l1,ltmp,cos_theta_squared         
         float *s_tmp,*e_tmp,k0[3],k1[3],tmp[3]
                
-    csub_3vecs(end0,start0,tmp)    
-    l0 = cinner_3vecs(tmp,tmp)
+    csub_3vecs(end0,start0,k0)    
+    l0 = cinner_3vecs(k0,k0)    
+    #print l0
     
-    csub_3vecs(end1,start1,tmp)    
-    l1 = cinner_3vecs(tmp, tmp)
+    csub_3vecs(end1,start1,k1)    
+    l1 = cinner_3vecs(k1, k1)
+    #print l1
     
-    if l1 > l0:
-        
-        s_tmp = start0
-        e_tmp = end0        
-        start0 = start1
-        end0 = end1
-        start1 = s_tmp
-        end1 = e_tmp
-        
-        ltmp=l0
-        l0=l1
-        l1=ltmp
-                
-    csub_3vecs(end0,start0,k0)
-    csub_3vecs(end1,start1,k1)
     ltmp=cinner_3vecs(k0,k1)
     
     cos_theta_squared = (ltmp*ltmp)/ (l0*l1)
-    
+    #print cos_theta_squared
     return sqrt((1-cos_theta_squared)*l1)
 
-def approximate_trajectory_partitioning(xyz, alpha=1.):
+def approximate_mdl_trajectory(xyz, alpha=1.):
     ''' Implementation of Lee et al Approximate Trajectory
         Partitioning Algorithm
     
@@ -912,8 +875,10 @@ def approximate_trajectory_partitioning(xyz, alpha=1.):
         current_index = start_index+length
         cost_par = minimum_description_length_partitoned(xyz[start_index:current_index+1])
         cost_nopar = minimum_description_length_unpartitoned(xyz[start_index:current_index+1])
+        
+        #print cost_par, cost_nopar, start_index,length
         if alpha*cost_par>cost_nopar:
- 
+            
             characteristic_points.append(xyz[current_index-1])
             start_index = current_index-1
             length = 2
@@ -934,25 +899,19 @@ def minimum_description_length_partitoned(xyz):
         size_t t_len
     track = np.ascontiguousarray(xyz, dtype=f32_dt)
     t_len=len(track)
-    
+       
     # L(D|H) 
     cdef int i    
     
-    for i in range(1, t_len-1):
- 
-        #val += log2(lee_perpendicular_distance(track[i],track[i+1],track[0],track[t_len-1]))
+    for i in range(1, t_len-1):       
         
         fvec1 = as_float_3vec(track[i])
         fvec2 = as_float_3vec(track[i+1])
         fvec3 = as_float_3vec(track[0])
-        fvec4 = as_float_3vec(track[t_len-1])
+        fvec4 = as_float_3vec(track[-1])
                 
         val += log2(clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))        
-        val += log2(clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))
-        
-        
-    #val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
-    #val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
+        val += log2(clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))        
     
     return val
     

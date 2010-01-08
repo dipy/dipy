@@ -398,7 +398,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     --------
     >>> import dipy.core.track_metrics as tm 
     >>> tm.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    >>> 5.9380966767403436  
+    >>> 6.658057955239661
     '''
     start0=np.asarray(start0,dtype='float64')    
     end0=np.asarray(end0,dtype='float64')    
@@ -408,6 +408,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
 
+    ''' !
     if l_1 > l_0:
         s_tmp = start0
         e_tmp = end0
@@ -415,13 +416,11 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         end0 = end1
         start1 = s_tmp
         end1 = e_tmp
-    
+    '''
     u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-
-    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
+    u2 = np.inner(end1-start0 ,end0-start0)/np.inner(end0-start0,end0-start0)
 
     ps = start0+u1*(end0-start0)
-
     pe = start0+u2*(end0-start0)
 
     lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
@@ -498,7 +497,11 @@ def lee_angle_distance(start0, end0, start1, end1):
     
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
+        
+    #print l_0
+    #print l_1
 
+    ''' !!!
     if l_1 > l_0:
         s_tmp = start0
         e_tmp = end0
@@ -506,8 +509,13 @@ def lee_angle_distance(start0, end0, start1, end1):
         end0 = end1
         start1 = s_tmp
         end1 = e_tmp
+    '''
+    #print l_0
+    #print l_1
     
     cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
+    
+    #print cos_theta_squared
 
     return np.sqrt((1-cos_theta_squared)*l_1)
 
@@ -538,8 +546,9 @@ def approximate_trajectory_partitioning(xyz, alpha=1.):
         #        print cost_par
         cost_nopar = minimum_description_length_unpartitoned(xyz[start_index:current_index+1])
         #        print cost_nopar
+        #print cost_par, cost_nopar, start_index,length        
         if alpha*cost_par>cost_nopar:
-        #            print "cost_par>cost_nopar" 
+        #            print "cost_par>cost_nopar"
             characteristic_points.append(xyz[current_index-1])
             start_index = current_index-1
             length = 2
