@@ -167,6 +167,19 @@ cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out):
     for i in range(3):
         vec_out[i] = vec1[i]*vec2[i]
 
+def mul_3vec(a, vec):
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec = as_float_3vec(vec)    
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    cmul_3vec(a,<float *>fvec.data, <float *>vec_out.data)
+    return vec_out        
+
+cdef inline void cmul_3vec(float a, float *vec, float *vec_out):
+    cdef int i
+    for i in range(3):
+        vec_out[i] = a*vec[i]
+
+
+
 # float 32 dtype for casting
 cdef cnp.dtype f32_dt = np.dtype(np.float32)
 
@@ -730,17 +743,9 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
 cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1, float *end1):
 
     cdef:
-        double l0,l1,ltmp,u1,u2,lperp1,lperp2   
-        cnp.ndarray[cnp.float32_t, ndim=1] s_tmp = np.zeros((3,), np.float32)  
-        cnp.ndarray[cnp.float32_t, ndim=1] e_tmp = np.zeros((3,), np.float32)  
-        cnp.ndarray[cnp.float32_t, ndim=1] k0 = np.zeros((3,), np.float32)  
-        cnp.ndarray[cnp.float32_t, ndim=1] ps = np.zeros((3,), np.float32)  
-        cnp.ndarray[cnp.float32_t, ndim=1] pe = np.zeros((3,), np.float32)  
-        cnp.ndarray[cnp.float32_t, ndim=1] ps1 = np.zeros((3,), np.float32)  
-        cnp.ndarray[cnp.float32_t, ndim=1] pe1 = np.zeros((3,), np.float32)  
-        cnp.ndarray[cnp.float32_t, ndim=1] tmp = np.zeros((3,), np.float32)  
-    
-    
+        float l0,l1,ltmp,u1,u2,lperp1,lperp2         
+        float *s_tmp,*e_tmp,k0[3],ps[3],pe[3],ps1[3],pe1[3],tmp[3]
+               
     csub_3vecs(end0,start0,tmp)    
     l0 = cinner_3vecs(tmp,tmp)
     
@@ -759,22 +764,26 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
         ltmp=l0
         l0=l1
         l1=ltmp
-        
-        
+                
     csub_3vecs(end0,start0,k0)
     
     #u1 = np.inner(start1-start0,k0)/l0
     #u2 = np.inner(end1-start0,k0)/l0
     csub_3vecs(start1,start0,tmp)
     u1 = cinner_3vecs(tmp,k0)/l0
+    
     csub_3vecs(end1,start0,tmp)
     u2 = cinner_3vecs(tmp,k0)/l0
 
-    ps = start0+u1*k0
-    pe = start0+u2*k0
+    cmul_3vec(u1,k0,tmp)
+    cadd_3vecs(start0,tmp,ps)
+    
+    cmul_3vec(u2,k0,tmp)    
+    cadd_3vecs(start0,tmp,pe)
 
     #lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))    
     #lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
+    
     csub_3vecs(ps,start1,ps1)
     csub_3vecs(pe,end1,pe1)
     
@@ -866,6 +875,7 @@ def approximate_trajectory_partitioning(xyz, alpha=1.):
                 
 #@cython.boundscheck(False)
 def minimum_description_length_partitoned(xyz):
+    
     # L(H)
     cdef double val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
     cdef:
@@ -878,7 +888,11 @@ def minimum_description_length_partitoned(xyz):
     cdef int i    
     
     for i in range(1, t_len-1):
-        val += log2(lee_perpendicular_distance(track[i],track[i+1],track[0],track[t_len-1]))
+ 
+        #val += log2(lee_perpendicular_distance(track[i],track[i+1],track[0],track[t_len-1]))
+    
+        val += log2(clee_perpendicular_distance(track[i],track[i+1],track[0],track[t_len-1]))
+        
         val += log2(lee_angle_distance(track[i],track[i+1],track[0],track[t_len-1]))
         
     #val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
