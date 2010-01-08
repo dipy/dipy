@@ -698,18 +698,13 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         perpendicular_distance: float
 
     Examples:
-    --------
-    >>> import dipy.core.track_metrics as tm 
-    >>> tm.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    ---------
+    >>> import dipy.core.performance as pf
+    >>> pf.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
     >>> 5.9380966767403436  
-    '''
-   
-    #start0=np.asarray(start0,dtype='float64')    
-    #end0=np.asarray(end0,dtype='float64')    
-    #start1=np.asarray(start1,dtype='float64')    
-    #end1=np.asarray(end1,dtype='float64')    
     
-    '''
+    Description:
+    ------------
     l0 = np.inner(end0-start0,end0-start0)
     l1 = np.inner(end1-start1,end1-start1)
 
@@ -740,6 +735,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         return (lperp1**2+lperp2**2)/(lperp1+lperp2)
     else:
         return 0.
+    
     '''
     
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
@@ -750,9 +746,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     fvec4 = as_float_3vec(end1)
     
     return clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data)
-    
         
-    
     
 cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1, float *end1):
 
@@ -831,11 +825,9 @@ def lee_angle_distance(start0, end0, start1, end1):
     >>> import dipy.core.track_metrics as tm 
     >>> tm.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
     >>> 2.0 
-    '''
-    #start0=np.asarray(start0,dtype='float64')    
-    #end0=np.asarray(end0,dtype='float64')    
-    #start1=np.asarray(start1,dtype='float64')    
-    #end1=np.asarray(end1,dtype='float64')    
+    
+    Descritpion:
+    ------------
     
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
@@ -851,6 +843,50 @@ def lee_angle_distance(start0, end0, start1, end1):
     cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
 
     return np.sqrt((1-cos_theta_squared)*l_1)
+
+    '''
+
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
+    
+    fvec1 = as_float_3vec(start0)
+    fvec2 = as_float_3vec(end0)
+    fvec3 = as_float_3vec(start1)
+    fvec4 = as_float_3vec(end1)
+    
+    return clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data)
+
+cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *end1):
+
+    cdef:
+        float l0,l1,ltmp,cos_theta_squared         
+        float *s_tmp,*e_tmp,k0[3],k1[3],tmp[3]
+               
+    csub_3vecs(end0,start0,tmp)    
+    l0 = cinner_3vecs(tmp,tmp)
+    
+    csub_3vecs(end1,start1,tmp)    
+    l1 = cinner_3vecs(tmp, tmp)
+    
+    if l1 > l0:
+        
+        s_tmp = start0
+        e_tmp = end0        
+        start0 = start1
+        end0 = end1
+        start1 = s_tmp
+        end1 = e_tmp
+        
+        ltmp=l0
+        l0=l1
+        l1=ltmp
+                
+    csub_3vecs(end0,start0,k0)
+    csub_3vecs(end1,start1,k1)
+    ltmp=cinner_3vecs(k0,k1)
+    
+    cos_theta_squared = (ltmp*ltmp)/ (l0*l1)
+    
+    return sqrt((1-cos_theta_squared)*l1)
 
 def approximate_trajectory_partitioning(xyz, alpha=1.):
     ''' Implementation of Lee et al Approximate Trajectory
@@ -911,9 +947,9 @@ def minimum_description_length_partitoned(xyz):
         fvec3 = as_float_3vec(track[0])
         fvec4 = as_float_3vec(track[t_len-1])
                 
-        val += log2(clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))
+        val += log2(clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))        
+        val += log2(clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))
         
-        val += log2(lee_angle_distance(track[i],track[i+1],track[0],track[t_len-1]))
         
     #val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
     #val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
