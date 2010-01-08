@@ -709,6 +709,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     #start1=np.asarray(start1,dtype='float64')    
     #end1=np.asarray(end1,dtype='float64')    
     
+    '''
     l0 = np.inner(end0-start0,end0-start0)
     l1 = np.inner(end1-start1,end1-start1)
 
@@ -739,6 +740,19 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         return (lperp1**2+lperp2**2)/(lperp1+lperp2)
     else:
         return 0.
+    '''
+    
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
+    
+    fvec1 = as_float_3vec(start0)
+    fvec2 = as_float_3vec(end0)
+    fvec3 = as_float_3vec(start1)
+    fvec4 = as_float_3vec(end1)
+    
+    return clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data)
+    
+        
+    
     
 cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1, float *end1):
 
