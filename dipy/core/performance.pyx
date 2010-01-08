@@ -880,6 +880,7 @@ def minimum_description_length_partitoned(xyz):
     cdef double val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
     cdef:
         cnp.ndarray[cnp.float32_t, ndim=2] track 
+        cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
         size_t t_len
     track = np.ascontiguousarray(xyz, dtype=f32_dt)
     t_len=len(track)
@@ -890,8 +891,13 @@ def minimum_description_length_partitoned(xyz):
     for i in range(1, t_len-1):
  
         #val += log2(lee_perpendicular_distance(track[i],track[i+1],track[0],track[t_len-1]))
-    
-        val += log2(clee_perpendicular_distance(track[i],track[i+1],track[0],track[t_len-1]))
+        
+        fvec1 = as_float_3vec(track[i])
+        fvec2 = as_float_3vec(track[i+1])
+        fvec3 = as_float_3vec(track[0])
+        fvec4 = as_float_3vec(track[t_len-1])
+                
+        val += log2(clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))
         
         val += log2(lee_angle_distance(track[i],track[i+1],track[0],track[t_len-1]))
         
