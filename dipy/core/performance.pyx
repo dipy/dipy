@@ -3,6 +3,8 @@
 Performance functions for dipy
 
 '''
+# cython: profile=True
+
 cimport cython
 
 import numpy as np
@@ -781,8 +783,6 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
     else:
         return 0.
 
-
-
 def lee_angle_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
         Calculates angle distance metric for the distance between two line segments
@@ -873,8 +873,8 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
     length = 2
     while start_index+length < len(xyz):
         current_index = start_index+length
-        cost_par = minimum_description_length_partitoned(xyz[start_index:current_index+1])
-        cost_nopar = minimum_description_length_unpartitoned(xyz[start_index:current_index+1])
+        cost_par = mdl_partitioned(xyz[start_index:current_index+1])
+        cost_nopar = mdl_unpartitioned(xyz[start_index:current_index+1])
         
         #print cost_par, cost_nopar, start_index,length
         if alpha*cost_par>cost_nopar:
@@ -887,9 +887,84 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
  
     characteristic_points.append(xyz[-1])
     return np.array(characteristic_points)
+
+def approximate_mdl_trajectory_fast(xyz, alpha=1.):
+    ''' Implementation of Lee et al Approximate Trajectory
+        Partitioning Algorithm
+    
+    Parameters:
+    ------------------
+    xyz: array(N,3) 
+        initial trajectory
+    alpha: float
+        smoothing parameter (>1 smoother, <1  rougher)
+    
+    Returns:
+    ------------
+    characteristic_points: list of M array(3,) points
+        which can be turned into an array with np.asarray() 
+    '''
+    cdef :
+        int start_index,length,current_index, i
+        double cost_par,cost_nopar,alphac
+        object characteristic_points
+        size_t t_len
+        cnp.ndarray[cnp.float32_t, ndim=2] track 
+        float tmp[3]
+        cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
+        
+    track = np.ascontiguousarray(xyz, dtype=f32_dt)
+    t_len=len(track)
+
+    
+    alphac=alpha
+    characteristic_points=[xyz[0]]
+    start_index = 0
+    length = 2
+    #print t_len
+    
+    while start_index+length < <int>t_len-1:
+        
+        current_index = start_index+length
+
+        fvec1 = as_float_3vec(track[start_index])
+        fvec2 = as_float_3vec(track[current_index])        
+                
+        # L(H)
+        csub_3vecs(<float *>fvec2.data,<float *>fvec1.data,tmp)
+        cost_par=log2(sqrt(cinner_3vecs(tmp,tmp)))
+        cost_nopar=0
+        #print start_index,current_index
+        
+        # L(D|H)
+        #for i in range(start_index+1,current_index):#+1):
+        for i in range(start_index,current_index+1):
+            
+            #print i
+            fvec3 = as_float_3vec(track[i])
+            fvec4 = as_float_3vec(track[i+1])
+                
+            cost_par += log2(clee_perpendicular_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))        
+            cost_par += log2(clee_angle_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))
+
+            csub_3vecs(<float *>fvec4.data,<float *>fvec3.data,tmp)
+            cost_nopar += log2(cinner_3vecs(tmp,tmp))
+            
+        cost_nopar /= 2
+        
+        #print cost_par, cost_nopar, start_index,length
+        if alphac*cost_par>cost_nopar:                        
+            characteristic_points.append(track[current_index-1])
+            start_index = current_index-1
+            length = 2
+        else:
+            length+=1
+        
+    characteristic_points.append(track[-1])
+    return np.array(characteristic_points)
                 
 #@cython.boundscheck(False)
-def minimum_description_length_partitoned(xyz):
+def mdl_partitioned(xyz):
     
     # L(H)
     cdef double val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
@@ -915,7 +990,7 @@ def minimum_description_length_partitoned(xyz):
     
     return val
     
-def minimum_description_length_unpartitoned(xyz):
+def mdl_unpartitioned(xyz):
     '''
     Example:
     --------
