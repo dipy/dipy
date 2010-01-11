@@ -36,9 +36,8 @@ def bench_mdl_traj():
     
     print 'MDL traj'
     print '=' * 10
-    #opt_time = measure('pf.approximate_mdl_trajectory(t)')
-    #opt_time = measure('pf.approximate_mdl_trajectory_fast(t)')
-    opt_time = measure('tm.approximate_trajectory_partitioning(t)')
+    opt_time = measure('pf.approximate_mdl_trajectory(t)')
+    #opt_time = measure('tm.approximate_trajectory_partitioning(t)')
     #opt_time= measure('tm.minimum_description_length_unpartitoned(t)')
     print 'optimized time: %f' % opt_time
     print

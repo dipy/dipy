@@ -408,7 +408,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
 
-    ''' !
+    #''' !
     if l_1 > l_0:
         s_tmp = start0
         e_tmp = end0
@@ -416,7 +416,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         end0 = end1
         start1 = s_tmp
         end1 = e_tmp
-    '''
+    #'''
     u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
     u2 = np.inner(end1-start0 ,end0-start0)/np.inner(end0-start0,end0-start0)
 
@@ -501,7 +501,7 @@ def lee_angle_distance(start0, end0, start1, end1):
     #print l_0
     #print l_1
 
-    ''' !!!
+    #''' !!!
     if l_1 > l_0:
         s_tmp = start0
         e_tmp = end0
@@ -509,7 +509,7 @@ def lee_angle_distance(start0, end0, start1, end1):
         end0 = end1
         start1 = s_tmp
         end1 = e_tmp
-    '''
+    #'''
     #print l_0
     #print l_1
     
@@ -546,7 +546,7 @@ def approximate_trajectory_partitioning(xyz, alpha=1.):
         #        print cost_par
         cost_nopar = minimum_description_length_unpartitoned(xyz[start_index:current_index+1])
         #        print cost_nopar
-        #print cost_par, cost_nopar, start_index,length        
+        #print cost_par, cost_nopar, start_index,length 
         if alpha*cost_par>cost_nopar:
         #            print "cost_par>cost_nopar"
             characteristic_points.append(xyz[current_index-1])

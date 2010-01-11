@@ -16,6 +16,8 @@ cdef extern from "math.h" nogil:
     float sqrt(float x)
     float fabs(float x)
     double log2(double x)
+    float acos(float x )
+
     
 #cdef extern from "stdio.h":
 #	void printf ( const char * format, ... )
@@ -851,44 +853,46 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
     #print cos_theta_squared
     return sqrt((1-cos_theta_squared)*l1)
 
-def approximate_mdl_trajectory(xyz, alpha=1.):
-    ''' Implementation of Lee et al Approximate Trajectory
-        Partitioning Algorithm
+def approximate_ei_trajectory(xyz,alpha=0.785):
     
-    Parameters:
-    ------------------
-    xyz: array(N,3) 
-        initial trajectory
-    alpha: float
-        smoothing parameter (>1 => smoother, <1 => rougher)
+    cdef :
+        int mid_index
+        cnp.ndarray[cnp.float32_t, ndim=2] track 
+        cnp.ndarray[cnp.float32_t, ndim=1] fvec0,fvec1,fvec2
+        object characteristic_points
+        size_t t_len
+        double angle
+        float vec0[3],vec1[3]
     
-    Returns:
-    ------------
-    characteristic_points: list of M array(3,) points
-        which can be turned into an array with np.asarray() 
-    '''
+    angle=alpha
     
-    characteristic_points=[xyz[0]]
-    start_index = 0
-    length = 2
-    while start_index+length < len(xyz):
-        current_index = start_index+length
-        cost_par = mdl_partitioned(xyz[start_index:current_index+1])
-        cost_nopar = mdl_unpartitioned(xyz[start_index:current_index+1])
+    track = np.ascontiguousarray(xyz, dtype=f32_dt)
+    t_len=len(track)
+    
+    characteristic_points=[track[0]]
+    mid_index = 1
+    
+    while mid_index < t_len-1:
         
-        #print cost_par, cost_nopar, start_index,length
-        if alpha*cost_par>cost_nopar:
+        fvec0 = as_float_3vec(track[mid_index-1])
+        fvec1 = as_float_3vec(track[mid_index])
+        fvec2 = as_float_3vec(track[mid_index+1])
+        
+        csub_3vecs(fvec1,fvec0,vec0)
+        csub_3vecs(fvec2,fvec1,vec1)
+        angle=fabs(acos(cinner_3vecs(vec0,vec1)/(norm_3vec(vec0),norm_3vec(vec1)))        
+        
+        if  angle > alpha:
             
-            characteristic_points.append(xyz[current_index-1])
-            start_index = current_index-1
-            length = 2
-        else:
-            length+=1
- 
-    characteristic_points.append(xyz[-1])
-    return np.array(characteristic_points)
+            characteristic_points.append(track[mid_index])
+            
+        mid_index+=1
+        
+    characteristic_points.append(track[-1])
+    
+            
 
-def approximate_mdl_trajectory_fast(xyz, alpha=1.):
+def approximate_mdl_trajectory(xyz, alpha=1.):
     ''' Implementation of Lee et al Approximate Trajectory
         Partitioning Algorithm
     
@@ -963,38 +967,4 @@ def approximate_mdl_trajectory_fast(xyz, alpha=1.):
     characteristic_points.append(track[-1])
     return np.array(characteristic_points)
                 
-#@cython.boundscheck(False)
-def mdl_partitioned(xyz):
-    
-    # L(H)
-    cdef double val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
-    cdef:
-        cnp.ndarray[cnp.float32_t, ndim=2] track 
-        cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
-        size_t t_len
-    track = np.ascontiguousarray(xyz, dtype=f32_dt)
-    t_len=len(track)
-       
-    # L(D|H) 
-    cdef int i    
-    
-    for i in range(1, t_len-1):       
-        
-        fvec1 = as_float_3vec(track[i])
-        fvec2 = as_float_3vec(track[i+1])
-        fvec3 = as_float_3vec(track[0])
-        fvec4 = as_float_3vec(track[-1])
-                
-        val += log2(clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))        
-        val += log2(clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data))        
-    
-    return val
-    
-def mdl_unpartitioned(xyz):
-    '''
-    Example:
-    --------
-    >>> xyz = np.array([[0,0,0],[2,2,0],[3,1,0],[4,2,0],[5,0,0]])
-    >>> tm.minimum_description_length_unpartitoned(xyz) == np.sum(np.log2([8,2,2,5]))/2
-    '''
-    return np.sum(np.log2((np.diff(xyz, axis=0)**2).sum(axis=1)))/2
+
