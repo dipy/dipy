@@ -853,7 +853,7 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
     #print cos_theta_squared
     return sqrt((1-cos_theta_squared)*l1)
 
-def approximate_ei_trajectory(xyz,alpha=0.785):
+def approximate_ei_trajectory(xyz,alpha=0.392):
     
     cdef :
         int mid_index
@@ -878,9 +878,11 @@ def approximate_ei_trajectory(xyz,alpha=0.785):
         fvec1 = as_float_3vec(track[mid_index])
         fvec2 = as_float_3vec(track[mid_index+1])
         
-        csub_3vecs(fvec1,fvec0,vec0)
-        csub_3vecs(fvec2,fvec1,vec1)
-        angle=fabs(acos(cinner_3vecs(vec0,vec1)/(norm_3vec(vec0),norm_3vec(vec1)))        
+        csub_3vecs(<float *>fvec1.data,<float *>fvec0.data,vec0)
+        csub_3vecs(<float *>fvec2.data,<float *>fvec1.data,vec1)
+        angle=fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
+        
+        print angle
         
         if  angle > alpha:
             
@@ -890,6 +892,7 @@ def approximate_ei_trajectory(xyz,alpha=0.785):
         
     characteristic_points.append(track[-1])
     
+    return np.array(characteristic_points)
             
 
 def approximate_mdl_trajectory(xyz, alpha=1.):
@@ -919,7 +922,6 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
         
     track = np.ascontiguousarray(xyz, dtype=f32_dt)
     t_len=len(track)
-
     
     alphac=alpha
     characteristic_points=[xyz[0]]
