@@ -858,7 +858,7 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
     cdef :
         int mid_index
         cnp.ndarray[cnp.float32_t, ndim=2] track 
-        cnp.ndarray[cnp.float32_t, ndim=1] fvec0,fvec1,fvec2
+        float *fvec0,*fvec1,*fvec2
         object characteristic_points
         size_t t_len
         double angle
@@ -871,22 +871,27 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
     
     characteristic_points=[track[0]]
     mid_index = 1
+    angle=0
     
     while mid_index < t_len-1:
         
-        fvec0 = as_float_3vec(track[mid_index-1])
-        fvec1 = as_float_3vec(track[mid_index])
-        fvec2 = as_float_3vec(track[mid_index+1])
+        #fvec0 = as_float_3vec(track[mid_index-1])
+        #<float *>track[0].data
         
-        csub_3vecs(<float *>fvec1.data,<float *>fvec0.data,vec0)
-        csub_3vecs(<float *>fvec2.data,<float *>fvec1.data,vec1)
-        angle=fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
+        fvec0 = as_float_ptr(track[mid_index-1])
+        fvec1 = as_float_ptr(track[mid_index])
+        fvec2 = as_float_ptr(track[mid_index+1])
         
-        print angle
+        #csub_3vecs(<float *>fvec1.data,<float *>fvec0.data,vec0)
+        csub_3vecs(fvec1,fvec0,vec0)
+        csub_3vecs(fvec2,fvec1,vec1)
+          
+        angle+=fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
         
-        if  angle > alpha:
-            
+        #print angle
+        if  angle > alpha:            
             characteristic_points.append(track[mid_index])
+            angle=0        
             
         mid_index+=1
         

@@ -89,6 +89,19 @@ def test_zhang_distances():
     yield assert_almost_equal, zd2[0], 1.76135602742
 
 
+def test_approx_ei_traj():
+    
+    t=np.linspace(0,1.75*2*np.pi,segs)
+    
+    x =t 
+    y=5*np.sin(5*t)
+    z=np.zeros(x.shape)
+    
+    xyz=np.vstack((x,y,z)).T    
+    
+    xyza=pf.approximate_ei_trajectory(xyz)
+    yield assert_equal, len(xyza), 27
+
 def test_approx_mdl_traj():
     
     t=np.linspace(0,1.75*2*np.pi,100)
