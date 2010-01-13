@@ -16,8 +16,8 @@ cdef extern from "math.h" nogil:
     float sqrt(float x)
     float fabs(float x)
     double log2(double x)
-    float acos(float x )
-
+    float acos(float x )    
+    bint isnan(double x) 
     
 #cdef extern from "stdio.h":
 #	void printf ( const char * format, ... )
@@ -854,7 +854,38 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
     return sqrt((1-cos_theta_squared)*l1)
 
 def approximate_ei_trajectory(xyz,alpha=0.392):
+    ''' Fast and simple Approximate Trajectory
+        Algorithm by Eleftherios and Ian
     
+    Parameters:
+    ------------------
+    xyz: array(N,3) 
+        initial trajectory
+    alpha: float
+        smoothing parameter (<0.392 smoother, <0.392  rougher)
+    
+    Returns:
+    ------------
+    characteristic_points: list of M array(3,) points
+    
+    Examples:
+    -------------
+    >>> #approximating a helix
+    >>> t=np.linspace(0,1.75*2*np.pi,100)
+    >>> x = np.sin(t)
+    >>> y = np.cos(t)
+    >>> z = t        
+    >>> xyz=np.vstack((x,y,z)).T     
+    >>> xyza = pf.approximate_ei_trajectory(xyz)
+    >>> len(xyz)
+    >>> len(xyza)
+    
+    Description :
+    -----------------
+    Assuming that a good approximation for a circle is an octagon then that means that the points of the octagon will have 
+    angle alpha = 2*pi/8 = pi/4 . We calculate the angle between every two neighbour segments of a trajectory and if the angle
+    is higher than pi/4 we choose that point as a characteristic point otherwise      
+    '''
     cdef :
         int mid_index
         cnp.ndarray[cnp.float32_t, ndim=2] track 
@@ -887,22 +918,16 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
         csub_3vecs(fvec2,fvec1,vec1)
           
         
-        tmp=fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
+        tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
         
-        if tmp == float('nan'):
-            angle=0.
+        if isnan(tmp) :
+            angle+=0.
         else:
             angle+=tmp
         
-        print angle
-        #print vec0[0],vec0[1],vec0[2]
-        #print vec1[0],vec1[1],vec1[2]
-        
-        
         if  angle > alpha:            
             characteristic_points.append(track[mid_index])
-            angle=0        
-            
+            angle=0                    
         
         mid_index+=1
         
@@ -925,7 +950,7 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
     Returns:
     ------------
     characteristic_points: list of M array(3,) points
-        which can be turned into an array with np.asarray() 
+        
     '''
     cdef :
         int start_index,length,current_index, i
@@ -986,3 +1011,33 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
     return np.array(characteristic_points)
                 
 
+def intersect_segment_cylinder(sa,sb,p,q,r,t):
+    cdef:
+        float *csa,*csb,*cp,*cq
+        double cr
+        float *t
+        
+                
+    csa = as_float_ptr(sa)
+    csb = as_float_ptr(sb)
+    cp = as_float_ptr(p)
+    cq = as_float_ptr(q)
+    cr=r
+    t=1.
+    
+    cintersect_segment_cylinder(csa,csb,cp, cq, cr, t)
+    
+    
+    return
+    
+cdef int cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
+    ''' Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r    
+    
+    Look p.197 from Real Time Collision Detection C. Ericson
+        
+
+    
+    '''
+    t[0]=2
+    return t
+    
