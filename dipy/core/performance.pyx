@@ -861,7 +861,7 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
         float *fvec0,*fvec1,*fvec2
         object characteristic_points
         size_t t_len
-        double angle
+        double angle,tmp
         float vec0[3],vec1[3]
     
     angle=alpha
@@ -886,13 +886,24 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
         csub_3vecs(fvec1,fvec0,vec0)
         csub_3vecs(fvec2,fvec1,vec1)
           
-        angle+=fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
         
-        #print angle
+        tmp=fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
+        
+        if tmp == float('nan'):
+            angle=0.
+        else:
+            angle+=tmp
+        
+        print angle
+        #print vec0[0],vec0[1],vec0[2]
+        #print vec1[0],vec1[1],vec1[2]
+        
+        
         if  angle > alpha:            
             characteristic_points.append(track[mid_index])
             angle=0        
             
+        
         mid_index+=1
         
     characteristic_points.append(track[-1])
