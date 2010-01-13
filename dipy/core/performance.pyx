@@ -1012,10 +1012,27 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
                 
 
 def intersect_segment_cylinder(sa,sb,p,q,r,t):
+    '''
+    Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r    
+    
+    Look p.197 from Real Time Collision Detection C. Ericson
+    
+    Example:
+    ------------
+    >>> # Define cylinder using a segment defined by 
+    >>> p=np.array([0,0,0])
+    >>> q=np.array([1,0,0])
+    >>> r=0.5
+    >>> # Define segment
+    >>> sa=np.array([0.5,1 ,0])
+    >>> sb=np.array([0.5,-1,0])
+    >>> from dipy.core import performance as pf
+    >>> 
+    '''
     cdef:
         float *csa,*csb,*cp,*cq
-        double cr
-        float *t
+        float cr
+        float ct[1]
         
                 
     csa = as_float_ptr(sa)
@@ -1023,21 +1040,87 @@ def intersect_segment_cylinder(sa,sb,p,q,r,t):
     cp = as_float_ptr(p)
     cq = as_float_ptr(q)
     cr=r
-    t=1.
+    ct[0]=t
     
-    cintersect_segment_cylinder(csa,csb,cp, cq, cr, t)
+    return cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
+       
     
-    
-    return
-    
-cdef int cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
+cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
     ''' Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r    
     
     Look p.197 from Real Time Collision Detection C. Ericson
-        
-
     
+    -1 segment outside p side of the cylinder
+    -2 segment outside q side of the cylinder
+    
+            
     '''
-    t[0]=2
-    return t
+    cdef:
+        float d[3],m[3],n[3]
+        float md,nd,dd, nn, mn, a, k, c,b, discr
+        
+        float epsilon_float=5.96e-08
+    
+    csub_3vecs(p,q,d)
+    csub_3vecs(sa,p,m)
+    csub_3vecs(sb,sa,n)
+    
+    md=cinner_3vecs(m,d)
+    nd=cinner_3vecs(n,d)
+    dd=cinner_3vecs(d,d)
+    
+    if md < 0. and md + nd < 0.:
+        return -1 #outside p side
+    
+    if md > dd and md + nd > dd:
+        return -2 #outside q side
+
+    nn=cinner_3vecs(n,n)
+    mn=cinner_3vecs(m,n)
+    
+    a=dd*nn-nd*nd
+    k=cinner_3vecs(m,m) -r*r
+    c=dd*k-md*md
+    
+    if fabs(a) < epsilon_float:
+        #segment runs parallel to cylinder axis 
+        if c>0.:  return -3 # segment lies outside cylinder
+        
+        if md < 0.: t[0]=-mn/nn # intersect against p endcap
+        
+        elif md > dd : t[0]=(nd-mn)/nn # intersect against q endcap
+        
+        else: t[0]=0. # lies inside cylinder
+        
+        return 1
+    
+    b=dd*mn -nd*md
+    discr=b*b-a*c
+    if discr < 0.: return -4 # no real roots ; no intersection
+    
+    t[0]=(-b-sqrt(discr))/a
+    if t[0]<0. or t[0] > 1.5 :
+        return 0 # intersection lies outside segment
+    
+    if md + t[0]* nd < 0.:
+        #intersection outside cylinder on 'p' side
+        if nd <= 0. : return 1 # segment pointing away from endcap
+        
+        t[0]=-md/nd
+        #keep intersection if Dot(S(t)-p,S(t)-p) <= r^2
+        return k+2*t[0]*(mn+t[0]*nn) <=0.
+    
+    elif md+t[0]*nd > dd :
+        #intersection outside cylinder on 'q' side
+        if nd >= 0.: return 2 # segment pointing away from endcap
+        t[0]= (dd-md)/nd
+        #keep intersection if Dot(S(t)-q,S(t)-q) <= r^2
+        return k+dd-2*md+t[0]*(2*(mn-nd)+t[0]*nn) <= 0.
+    
+    # segment intersects cylinder between the endcaps; t is correct
+    return 1
+    
+    
+    
+ 
     
