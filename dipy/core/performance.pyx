@@ -1020,12 +1020,12 @@ def intersect_segment_cylinder(sa,sb,p,q,r,t):
     Example:
     ------------
     >>> # Define cylinder using a segment defined by 
-    >>> p=np.array([0,0,0])
-    >>> q=np.array([1,0,0])
+    >>> p=np.array([0,0,0],dtype=float32)
+    >>> q=np.array([1,0,0],dtype=float32)
     >>> r=0.5
     >>> # Define segment
-    >>> sa=np.array([0.5,1 ,0])
-    >>> sb=np.array([0.5,-1,0])
+    >>> sa=np.array([0.5,1 ,0],dtype=float32)
+    >>> sb=np.array([0.5,-1,0],dtype=float32)
     >>> from dipy.core import performance as pf
     >>> 
     '''
@@ -1042,8 +1042,10 @@ def intersect_segment_cylinder(sa,sb,p,q,r,t):
     cr=r
     ct[0]=t
     
-    return cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
-       
+    tmp= cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
+    print 't',ct[0]
+    return tmp
+
     
 cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
     ''' Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r    
@@ -1051,10 +1053,7 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
     Look p.197 from Real Time Collision Detection C. Ericson
     
     0 no intersection
-    1 lies inside
-    2 lies outside and intersects at Inf
-    3 intersects 
-    
+    1 intersection   
             
     '''
     cdef:
@@ -1063,7 +1062,7 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
         
         float epsilon_float=5.96e-08
     
-    csub_3vecs(p,q,d)
+    csub_3vecs(q,p,d)
     csub_3vecs(sa,p,m)
     csub_3vecs(sb,sa,n)
     
@@ -1072,11 +1071,9 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
     dd=cinner_3vecs(d,d)
     
     #test if segment fully outside either endcap of cylinder
-    if md < 0. and md + nd < 0.:
-        return 0 #segment outside p side
+    if md < 0. and md + nd < 0.:  return 0 #segment outside p side
     
-    if md > dd and md + nd > dd:
-        return 0 #segment outside q side
+    if md > dd and md + nd > dd:  return 0 #segment outside q side
 
     nn=cinner_3vecs(n,n)
     mn=cinner_3vecs(m,n)
@@ -1087,7 +1084,7 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
 
     if fabs(a) < epsilon_float:
         #segment runs parallel to cylinder axis 
-        if c>0.:  return 0 # segment lies outside cylinder
+        if c>0.:  return 0. # segment lies outside cylinder
         
         if md < 0.: 
             t[0]=-mn/nn # intersect against p endcap
@@ -1099,29 +1096,30 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
         
     b=dd*mn -nd*md
     discr=b*b-a*c
-    if discr < 0.: return 0 # no real roots ; no intersection
+    if discr < 0.: return 0. # no real roots ; no intersection
     
     t[0]=(-b-sqrt(discr))/a
-    if t[0]<0. or t[0] > 1.5 :
-        return 0 # intersection lies outside segment
+    if t[0]<0. or t[0] > 1. : return 0. # intersection lies outside segment
     
     if md + t[0]* nd < 0.:
         #intersection outside cylinder on 'p' side
-        if nd <= 0. : return 0 # segment pointing away from endcap
+        if nd <= 0. : return 0. # segment pointing away from endcap
         
         t[0]=-md/nd
         #keep intersection if Dot(S(t)-p,S(t)-p) <= r^2
-        return k+2*t[0]*(mn+t[0]*nn) <=0.
+        if k+2*t[0]*(mn+t[0]*nn) <=0.:
+            return 1.
     
     elif md+t[0]*nd > dd :
         #intersection outside cylinder on 'q' side
-        if nd >= 0.: return 0 # segment pointing away from endcap
+        if nd >= 0.: return 0. # segment pointing away from endcap
         t[0]= (dd-md)/nd
         #keep intersection if Dot(S(t)-q,S(t)-q) <= r^2
-        return k+dd-2*md+t[0]*(2*(mn-nd)+t[0]*nn) <= 0.
+        if k+dd-2*md+t[0]*(2*(mn-nd)+t[0]*nn) <= 0.:
+            return 1.
     
     # segment intersects cylinder between the endcaps; t is correct
-    return 1
+    return 1.
     
     
     
