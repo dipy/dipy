@@ -1124,21 +1124,128 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
     # segment intersects cylinder between the endcaps; t is correct
     return 1.
     
-'''
-    // Returns the squared distance between point c and segment ab
-float SqDistPointSegment(Point a, Point b, Point c)
-{
-    Vector ab = b  a, ac = c  a, bc = c  b;
-    float e = Dot(ac, ab);
-    // Handle cases where c projects outside ab
-    if (e <= 0.0f) return Dot(ac, ac);
-    float f = Dot(ab, ab);
-    if (e >= f) return Dot(bc, bc);
-    // Handle case where c projects onto ab
-    return Dot(ac, ac)  e * e / f;
-}
 
-'''
+def point_segment_sq_distance(a,b,c):
+    ''' Calculate the squared distance from a point c to a finite line segment ab.
+ 
+    Examples:
+    -------------
+    >>> from dipy.core import performance as pf
+    >>> a=np.array([0,0,0],dtype=float32)
+    >>> b=np.array([1,0,0],dtype=float32)
+    >>> c=np.array([0,1,0],dtype=float32)    
+    >>> pf.point_segment_sq_distance(a,b,c)
+    >>> 1.0
+    >>> c=np.array([0,3,0],dtype=float32)
+    >>> pf.point_segment_sq_distance(a,b,c)
+    >>> 9.0 
+    >>> c=np.array([-1,1,0],dtype=float32)
+    >>> pf.point_segment_sq_distance(a,b,c)
+    >>> 2.0
+    
+
+    '''
+    cdef:
+        float *ca,*cb,*cc
+        float cr
+        float ct[2]
+        
+                
+    ca = as_float_ptr(a)
+    cb = as_float_ptr(b)
+    cc = as_float_ptr(c)
+    
+    return cpoint_segment_sq_dist(ca, cb, cc)
+    
+cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c):
+    ''' Calculate the squared distance from a point c to a line segment ab.
+    
+    '''
+    cdef:
+        float ab[3],ac[3],bc[3]
+        float e,f
+
+    csub_3vecs(b,a,ab)
+    csub_3vecs(c,a,ac)
+    csub_3vecs(c,b,bc)
+    
+    e = cinner_3vecs(ac, ab)
+    #Handle cases where c projects outside ab
+    if e <= 0.:  return cinner_3vecs(ac, ac)
+    f = cinner_3vecs(ab, ab)
+    if e >= f : return cinner_3vecs(bc, bc)
+    #Handle case where c projects onto ab
+    return cinner_3vecs(ac, ac) - e * e / f
+
+
+def segment_inside_cylinder(sa,sb,p,q,r):
+    ''' Check if a line segment is inside cylinder or intersects one or both of the endcaps
+    
+    Parameters:
+    ---------------
+    
+    sa: array, shape (3,), dtype=float32
+        point a of segment
+    sb: array, shape (3,), dtype=float32
+        point b of segment
+    
+    p: array, shape (3,), dtype=float32
+        first point of cylinder axis
+    q: array, shape (3,), dtype=float32
+        second point of cylinder axis
+    r: cylinder's radius
+        
+    
+    Returns:
+    ----------
+    ins: int
+        0: not inside
+        1: inside
+        
+    
+    '''
+    cdef:
+        float *csa,*csb,*cp,*cq
+        float cr
+                
+    csa = as_float_ptr(sa)
+    csb = as_float_ptr(sb)
+    cp = as_float_ptr(p)
+    cq = as_float_ptr(q)
+    cr=r
+  
+    
+    return csegment_inside_cylinder(csa,csb,cp, cq, cr)
+
     
  
+cdef int csegment_inside_cylinder(float *sa,float *sb,float *p,float *q, float r):
+
+    ''' Check if a line segment is inside cylinder or intersects one or both of the endcaps
+    
+    '''
+
+    cdef float rsq=r*r
+    
+    m=cpoint_segment_sq_dist(p,q,sa)
+    n=cpoint_segment_sq_dist(p,q,sb)
+
+    k=cpoint_segment_sq_dist(sa,sb,sa)
+    l=cpoint_segment_sq_dist(sa,sb,sb)
+        
+    if m <= rsq and n<= rsq : 
+        print 'm <= rsq and n<= rsq'
+        return 1     
+    if k <= rsq and l <=rsq : 
+        print 'k <= rsq and l <=rsq'
+        return 1
+    if m <=rsq and l <= rsq : 
+        print 'm <=rsq and l <= rsq'
+        return 1
+    
+    if n<=rsq and k <= rsq: 
+        print 'n<=rsq and k <= rsq'
+        return 1
+    
+    return 0
     
