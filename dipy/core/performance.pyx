@@ -1011,7 +1011,7 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
     return np.array(characteristic_points)
                 
 
-def intersect_segment_cylinder(sa,sb,p,q,r,t):
+def intersect_segment_cylinder(sa,sb,p,q,r):
     '''
     Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r    
     
@@ -1032,7 +1032,7 @@ def intersect_segment_cylinder(sa,sb,p,q,r,t):
     cdef:
         float *csa,*csb,*cp,*cq
         float cr
-        float ct[1]
+        float ct[2]
         
                 
     csa = as_float_ptr(sa)
@@ -1040,11 +1040,13 @@ def intersect_segment_cylinder(sa,sb,p,q,r,t):
     cp = as_float_ptr(p)
     cq = as_float_ptr(q)
     cr=r
-    ct[0]=t
+    ct[0]=-100
+    ct[1]=-100
     
     tmp= cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
-    print 't',ct[0]
-    return tmp
+
+    return tmp,ct[0],ct[1]
+
 
     
 cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
@@ -1099,6 +1101,7 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
     if discr < 0.: return 0. # no real roots ; no intersection
     
     t[0]=(-b-sqrt(discr))/a
+    t[1]=(-b+sqrt(discr))/a
     if t[0]<0. or t[0] > 1. : return 0. # intersection lies outside segment
     
     if md + t[0]* nd < 0.:
@@ -1121,7 +1124,21 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
     # segment intersects cylinder between the endcaps; t is correct
     return 1.
     
-    
+'''
+    // Returns the squared distance between point c and segment ab
+float SqDistPointSegment(Point a, Point b, Point c)
+{
+    Vector ab = b  a, ac = c  a, bc = c  b;
+    float e = Dot(ac, ab);
+    // Handle cases where c projects outside ab
+    if (e <= 0.0f) return Dot(ac, ac);
+    float f = Dot(ab, ab);
+    if (e >= f) return Dot(bc, bc);
+    // Handle case where c projects onto ab
+    return Dot(ac, ac)  e * e / f;
+}
+
+'''
     
  
     
