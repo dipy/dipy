@@ -13,6 +13,33 @@ import dipy.io.track_volumes as tv
 
     
 
+def tracks_to_expected(tracks, vol_dims):
+    # simulate expected behavior of module
+    vol_dims = np.array(vol_dims, dtype=np.int32)
+    counts = np.zeros(vol_dims, dtype=np.int32)
+    elements = {}
+    for t_no, t in enumerate(tracks):
+        u_ps = set()
+        ti = np.round(t).astype(np.int32)
+        for p_no, p in enumerate(ti):
+            if np.any(p < 0):
+                p[p<0] = 0
+            too_high = p >= vol_dims
+            if np.any(too_high):
+                p[too_high] = vol_dims[too_high]-1
+            p = tuple(p)
+            if p in u_ps:
+                continue
+            u_ps.add(p)
+            val = t_no
+            if counts[p]:
+                elements[p].append(val)
+            else:
+                elements[p] = [val]
+            counts[p] +=1
+    return counts, elements
+
+
 def test_track_volumes():
     # simplest case
     vol_dims = (1, 2, 3)

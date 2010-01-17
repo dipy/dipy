@@ -91,6 +91,8 @@ def test_zhang_distances():
 
 def test_approx_ei_traj():
     
+    segs=100
+    
     t=np.linspace(0,1.75*2*np.pi,segs)
     
     x =t 
