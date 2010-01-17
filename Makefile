@@ -17,14 +17,16 @@ help:
 
 all: ext html test
 
-ext: performance.so
+ext: performance.so track_volumes.so
 
 test:   ext
 	nosetests .
 
-html:  ${PKGDIR}/core/performance.html
+html:  ${PKGDIR}/core/performance.html ${PKGDIR}/io/track_volumes.html
 
 performance.so: ${PKGDIR}/core/performance.pyx
+track_volumes.so: ${PKGDIR}/io/track_volumes.pyx
+
 	python setup.py build_ext --inplace
 
 # Phony targets for cleanup and similar uses

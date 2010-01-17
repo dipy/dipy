@@ -21,6 +21,13 @@ per_ext, cmdclass = make_cython_ext(
     has_cython,
     include_dirs = [np.get_include()])
 
+
+tvol_ext, cmdclass = make_cython_ext(
+    'dipy.io.track_volumes',
+    has_cython,
+    include_dirs = [np.get_include()])
+
+
 setup(name='dipy',
       version='0.1a',
       description='Diffusion utilities in Python',
@@ -29,7 +36,7 @@ setup(name='dipy',
       url='http://github.com/matthew-brett/dipy',
       packages=['dipy', 'dipy.io', 'dipy.core','dipy.viz'],
       package_data={'dipy.io': ['tests/data/*', 'tests/*.py']},
-	  ext_modules = [per_ext],
+	  ext_modules = [per_ext,tvol_ext],
       cmdclass    = cmdclass,      
       scripts=glob('scripts/*.py')
       )
