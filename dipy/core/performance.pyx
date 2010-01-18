@@ -1249,3 +1249,36 @@ cdef int csegment_inside_cylinder(float *sa,float *sb,float *p,float *q, float r
     
     return 0
     
+def skeleton_3points(tracks):
+    ''' Calculate a very fast connectivity profile using only three equidistant points along the track
+    
+    '''
+    cdef:
+    
+        int i,j,lent
+        float vec1[3], vec2[3], tmp
+        cnp.ndarray[cnp.float32_t, ndim=2] track1
+        cnp.ndarray[cnp.float32_t, ndim=2] track2
+        
+    lent = len(tracks)
+    
+    vec1[0]=0.
+    vec1[1]=0.5
+    vec1[2]=0.
+    
+    vec2[0]=0.
+    vec2[1]=0.3
+    vec2[2]=0.2
+    
+        
+    for i in range(250000):
+        if i %10000 ==0 :
+            print i
+        for j in range(250000):
+            
+            tmp=j*cinner_3vecs(vec1,vec2)
+            
+            
+    return tmp
+    
+    
