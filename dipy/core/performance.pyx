@@ -1177,108 +1177,42 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c):
     #Handle case where c projects onto ab
     return cinner_3vecs(ac, ac) - e * e / f
 
-
-def segment_inside_cylinder(sa,sb,p,q,r):
-    ''' Check if a line segment is inside cylinder or intersects one or both of the endcaps
     
-    Parameters:
-    ---------------
-    
-    sa: array, shape (3,), dtype=float32
-        point a of segment
-    sb: array, shape (3,), dtype=float32
-        point b of segment
-    
-    p: array, shape (3,), dtype=float32
-        first point of cylinder axis
-    q: array, shape (3,), dtype=float32
-        second point of cylinder axis
-    r: cylinder's radius
-        
-    
-    Returns:
-    ----------
-    ins: int
-        0: not inside
-        1: inside
-        
-    
-    '''
-    cdef:
-        float *csa,*csb,*cp,*cq
-        float cr
-                
-    csa = as_float_ptr(sa)
-    csb = as_float_ptr(sb)
-    cp = as_float_ptr(p)
-    cq = as_float_ptr(q)
-    cr=r
-  
-    
-    return csegment_inside_cylinder(csa,csb,cp, cq, cr)
-
-    
- 
-cdef int csegment_inside_cylinder(float *sa,float *sb,float *p,float *q, float r):
-
-    ''' Check if a line segment is inside cylinder or intersects one or both of the endcaps
-    
-    '''
-
-    cdef float rsq=r*r
-    
-    m=cpoint_segment_sq_dist(p,q,sa)
-    n=cpoint_segment_sq_dist(p,q,sb)
-
-    k=cpoint_segment_sq_dist(sa,sb,sa)
-    l=cpoint_segment_sq_dist(sa,sb,sb)
-        
-    if m <= rsq and n<= rsq : 
-        print 'm <= rsq and n<= rsq'
-        return 1     
-    if k <= rsq and l <=rsq : 
-        print 'k <= rsq and l <=rsq'
-        return 1
-    if m <=rsq and l <= rsq : 
-        print 'm <=rsq and l <= rsq'
-        return 1
-    
-    if n<=rsq and k <= rsq: 
-        print 'n<=rsq and k <= rsq'
-        return 1
-    
-    return 0
-    
-def skeleton_3points(tracks):
+def local_skeleton_3pts(tracks):
     ''' Calculate a very fast connectivity profile using only three equidistant points along the track
     
     '''
     cdef:
     
         int i,j,lent
-        float vec1[3], vec2[3], tmp
-        cnp.ndarray[cnp.float32_t, ndim=2] track1
-        cnp.ndarray[cnp.float32_t, ndim=2] track2
+        float *i_pts0,*i_pts1,*i_pts2, *j_pts0,*j_pts1,*j_pts2
+        cnp.ndarray[cnp.float32_t, ndim=2] T
+        
         
     lent = len(tracks)
     
-    vec1[0]=0.
-    vec1[1]=0.5
-    vec1[2]=0.
+    T=np.concatenate(tracks)
     
-    vec2[0]=0.
-    vec2[1]=0.3
-    vec2[2]=0.2
     
         
     for i in range(250000):
+
         if i %10000 ==0 :
             print i
-        for j in range(250000):
             
-            tmp=j*cinner_3vecs(vec1,vec2)
+        i_pts0=as_float_ptr(3*T[i])
+        i_pts1=as_float_ptr(3*T[i]+1)
+        i_pts2=as_float_ptr(3*T[i]+2)
+                
+        for j in range(250000-i):
+                                    
+            j_pts0=as_float_ptr(3*T[j])
+            j_pts1=as_float_ptr(3*T[j]+1)
+            j_pts2=as_float_ptr(3*T[j]+2)
+        
             
             
-    return tmp
+            
+    return lent
     
     
