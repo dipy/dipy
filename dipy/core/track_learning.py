@@ -9,6 +9,67 @@ import time
 import numpy.linalg as npla
 
 
+def local_skeleton_clustering():
+    '''
+    tracks=np.array([[0,0,0,1,0,0,2,0,0],
+                                [3,0,0,3.5,1,0,4,2,0],
+                                [3.2,0,0,3.7,1,0,4.4,2,0],
+                                [3.4,0,0,3.9,1,0,4.6,2,0],
+                                [0,0.2,0,1,0.2,0,2,0.2,0],
+                                [0,0,0,0,1,0,0,2,0]])
+    '''
+    tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
+                np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
+                np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
+                np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
+                np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+                np.array([[0,0,0],[0,1,0],[0,2,0]])]
+                                
+    from dipy.viz import fos
+    r=fos.ren()
+    for i in range(6):
+        fos.add(r,fos.line(tracks[i].reshape((3,3)),fos.red))
+    fos.show(r)
+
+    #Network C
+    C={0:{'indices':[0],'hidden':tracks[0],'N':1}}
+
+    d_thr=0.3
+            
+    for (it,t) in enumerate(tracks[1:]):
+        
+        lenC=len(C.keys())
+        print 'lenC',lenC
+        alld=np.zeros(lenC)
+        for k in range(lenC):
+        
+            h=C[k]['hidden']/C[k]['N']
+            #d=((t-h)**2).sum()      
+            print 't',t
+            print 'h',h
+            d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
+                  
+            alld[k]=d
+        
+        #print alld
+        
+        m_k=np.min(alld)
+        i_k=np.argmin(alld)
+        
+        print 'm_k',m_k,'i_k',i_k
+        
+        if m_k<d_thr:
+            C[i_k]['hidden']+=t
+            C[i_k]['N']+=1
+            C[i_k]['indices'].append(it)
+        else:
+            C[lenC]={}
+            C[lenC]['hidden']=t
+            C[lenC]['N']=1
+            C[lenC]['indices']=[it]
+        
+                
+    return C    
 
 def local_skeleton(tracks):
     
