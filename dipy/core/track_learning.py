@@ -14,18 +14,22 @@ def local_skeleton(tracks):
     
     d_thr=5.
     #hidden track
-    H=tracks[0]
+    H=[tracks[0]]
     #Class
     C={0:[0]}
     #tmp point
-    ts=np.zeros((1,9),dtype=np.float32)
-
+    ts=np.zeros((9,),dtype=np.float32)
+    #print ts
+    
     it=1
     for t in tracks[1:]:
+        print it
 
-        k=0    
+        k=0          
+        dC=np.zeros(len(H))
         while k < len(H):
             
+            #print t
             #swap
             ts[0:3]=t[6:9]
             ts[3:6]=t[3:6]
@@ -39,13 +43,18 @@ def local_skeleton(tracks):
                 t=ts
                 d=ds
                 
-            if d<d_thr :
-                H[k]=H[k]+t
-                C[k].append(it)
-            else :
-                k+=1
-                H[k]=t
-                C[k]=[it]
+            dC[k]=d
+                        
+            k+=1
+        
+        mdC=np.min(dC[k])
+        if mdC < thr:
+            
+            H[np.argmin(dC)]+=t
+        
+            
+                
+            
         
         it+=1    
 
