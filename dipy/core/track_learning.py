@@ -23,10 +23,11 @@ def local_skeleton(tracks):
     
     it=1
     for t in tracks[1:]:
-        print it
+        
 
         k=0          
         dC=np.zeros(len(H))
+        print it,dC
         while k < len(H):
             
             #print t
@@ -50,9 +51,14 @@ def local_skeleton(tracks):
         mdC=np.min(dC[k])
         if mdC < thr:
             
-            H[np.argmin(dC)]+=t
-        
+            iC=np.argmin(dC)
+            H[iC]+=t
+            C[iC].append(it)
             
+        else:
+            
+            H=[t]
+            C[iC]=[it]
                 
             
         
