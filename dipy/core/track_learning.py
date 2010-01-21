@@ -13,57 +13,54 @@ import numpy.linalg as npla
 def local_skeleton(tracks):
     
     d_thr=5.
-    #hidden track
+    #hidden or hypothetical track
     H=[tracks[0]]
     #Class
-    C={0:[0]}
+    C=[[0]]
     #tmp point
     ts=np.zeros((9,),dtype=np.float32)
     #print ts
     
     it=1
-    for t in tracks[1:]:
-        
+    for t in tracks[1:]:        
 
+        print it
         k=0          
         dC=np.zeros(len(H))
-        print it,dC
         while k < len(H):
             
             #print t
             #swap
-            ts[0:3]=t[6:9]
-            ts[3:6]=t[3:6]
-            ts[6:9]=t[0:3]
+            ts[0:3]=t[6:9];ts[3:6]=t[3:6];ts[6:9]=t[0:3]
             
-            h=H[k]/len(C[k])        
+            h=H[k][0]/len(C[k])        
             d=((t-h)**2).sum()
             ds=((ts-h)**2).sum()
             
             if d > ds :
-                t=ts
-                d=ds
-                
-            dC[k]=d
-                        
+                t=ts; d=ds
+                                
+            dC[k]=d                        
             k+=1
         
-        mdC=np.min(dC[k])
-        if mdC < thr:
-            
-            iC=np.argmin(dC)
-            H[iC]+=t
+        print dC        
+        mdC=np.min(dC)
+        iC=np.argmin(dC)
+                
+        if mdC < d_thr:
+                       
+            H[iC][0]+=t
             C[iC].append(it)
             
         else:
             
-            H=[t]
-            C[iC]=[it]
-                
-            
+            H.append([t])
+            C.append([it])
+                           
         
         it+=1    
 
+    
     return C,H
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
