@@ -9,6 +9,48 @@ import time
 import numpy.linalg as npla
 
 
+
+def local_skeleton(tracks):
+    
+    d_thr=5.
+    #hidden track
+    H=tracks[0]
+    #Class
+    C={0:[0]}
+    #tmp point
+    ts=np.zeros((1,9),dtype=np.float32)
+
+    it=1
+    for t in tracks[1:]:
+
+        k=0    
+        while k < len(H):
+            
+            #swap
+            ts[0:3]=t[6:9]
+            ts[3:6]=t[3:6]
+            ts[6:9]=t[0:3]
+            
+            h=H[k]/len(C[k])        
+            d=((t-h)**2).sum()
+            ds=((ts-h)**2).sum()
+            
+            if d > ds :
+                t=ts
+                d=ds
+                
+            if d<d_thr :
+                H[k]=H[k]+t
+                C[k].append(it)
+            else :
+                k+=1
+                H[k]=t
+                C[k]=[it]
+        
+        it+=1    
+
+    return C,H
+
 def detect_corresponding_tracks(indices,tracks1,tracks2):
     ''' Detect corresponding tracks from 1 to 2
     
