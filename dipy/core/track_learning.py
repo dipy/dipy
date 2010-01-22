@@ -9,120 +9,70 @@ import time
 import numpy.linalg as npla
 
 
-def local_skeleton_clustering():
+def local_skeleton_clustering( d_thr=0.5):
     '''
-    tracks=np.array([[0,0,0,1,0,0,2,0,0],
-                                [3,0,0,3.5,1,0,4,2,0],
-                                [3.2,0,0,3.7,1,0,4.4,2,0],
-                                [3.4,0,0,3.9,1,0,4.6,2,0],
-                                [0,0.2,0,1,0.2,0,2,0.2,0],
-                                [0,0,0,0,1,0,0,2,0]])
+    
     '''
     tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
                 np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
                 np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
                 np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
                 np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+                #np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
                 np.array([[0,0,0],[0,1,0],[0,2,0]])]
-                                
+                                    
     from dipy.viz import fos
     r=fos.ren()
     for i in range(6):
-        fos.add(r,fos.line(tracks[i].reshape((3,3)),fos.red))
+        fos.add(r,fos.line(tracks[i],fos.red))
     fos.show(r)
 
     #Network C
-    C={0:{'indices':[0],'hidden':tracks[0],'N':1}}
-
-    d_thr=0.3
-            
+    C={0:{'indices':[0],'hidden':tracks[0].copy(),'N':1}}
+    ts=np.zeros((3,3),dtype=np.float32)
     for (it,t) in enumerate(tracks[1:]):
         
         lenC=len(C.keys())
-        print 'lenC',lenC
         alld=np.zeros(lenC)
+        
+        tc=t.copy()
+        
         for k in range(lenC):
         
             h=C[k]['hidden']/C[k]['N']
-            #d=((t-h)**2).sum()      
-            print 't',t
-            print 'h',h
-            d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
-                  
-            alld[k]=d
-        
-        #print alld
-        
+            d=np.sum(np.sqrt(np.sum((tc-h)**2,axis=1)))/3.0
+            '''
+            ts[0]=tc[-1];ts[1]=tc[1];ts[-1]=tc[0]
+            ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
+            if ds<d:
+                #print it+1,ts
+                d=ds;tc=ts
+            '''
+        print
         m_k=np.min(alld)
         i_k=np.argmin(alld)
         
-        print 'm_k',m_k,'i_k',i_k
-        
         if m_k<d_thr:
-            C[i_k]['hidden']+=t
+            C[i_k]['hidden']+=tc
             C[i_k]['N']+=1
-            C[i_k]['indices'].append(it)
+            C[i_k]['indices'].append(it+1)
         else:
             C[lenC]={}
-            C[lenC]['hidden']=t
+            C[lenC]['hidden']=tc
             C[lenC]['N']=1
-            C[lenC]['indices']=[it]
-        
+            C[lenC]['indices']=[it+1]
+       
+    fos.clear(r)
+
+    color=[fos.red,fos.green,fos.blue,fos.yellow]
+    for c in C:
+        for i in C[c]['indices']:
+            fos.add(r,fos.line(tracks[i],color[c]))
                 
-    return C    
+    fos.show(r)
 
-def local_skeleton(tracks):
-    
-    d_thr=5.
-    #hidden or hypothetical track
-    H=[tracks[0]]
-    #Class
-    C=[[0]]
-    #tmp point
-    ts=np.zeros((9,),dtype=np.float32)
-    #print ts
-    
-    it=1
-    for t in tracks[1:]:        
+    return C,tracks    
 
-        print it
-        k=0          
-        dC=np.zeros(len(H))
-        while k < len(H):
-            
-            #print t
-            #swap
-            ts[0:3]=t[6:9];ts[3:6]=t[3:6];ts[6:9]=t[0:3]
-            
-            h=H[k][0]/len(C[k])        
-            d=((t-h)**2).sum()
-            ds=((ts-h)**2).sum()
-            
-            if d > ds :
-                t=ts; d=ds
-                                
-            dC[k]=d                        
-            k+=1
-        
-        print dC        
-        mdC=np.min(dC)
-        iC=np.argmin(dC)
-                
-        if mdC < d_thr:
-                       
-            H[iC][0]+=t
-            C[iC].append(it)
-            
-        else:
-            
-            H.append([t])
-            C.append([it])
-                           
-        
-        it+=1    
-
-    
-    return C,H
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
     ''' Detect corresponding tracks from 1 to 2
