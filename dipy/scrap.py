@@ -179,13 +179,23 @@ import dipy.core.track_learning as tl
 from dipy.core import track_metrics as tm
 from dipy.viz import fos
 
-fname='/home/eg309/Data/PBC/pbc2009icdm/fornix.pkl'
-T=pbc.load_pickle(fname)
 
-tracks=[tm.downsample(t,3) for t in T]
+def test():
+    fname='/home/eg309/Data/PBC/pbc2009icdm/fornix.pkl'
+    T=pbc.load_pickle(fname)
 
-C=tl.local_skeleton_clustering(tracks,d_thr=10)
+    tracks=[tm.downsample(t,3) for t in T]
 
+    C=tl.local_skeleton_clustering(tracks,d_thr=10)
+
+
+import pstats, cProfile
+cProfile.run("test()", "Profile.prof")
+
+s = pstats.Stats("Profile.prof")
+s.strip_dirs().sort_stats("time").print_stats()
+
+'''
 r=fos.ren()
 
 for c in C:
@@ -194,14 +204,16 @@ for c in C:
         fos.add(r,fos.line(T[i],color))
 
 fos.show(r)
+'''
 
 #===================================HERE
 
+import pbc
 import dipy.core.track_learning as tl
 from dipy.core import track_metrics as tm
 from dipy.viz import fos
 from dipy.io import trackvis as tv
-
+from dipy.core import performance as pf
 
 fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
@@ -213,12 +225,60 @@ tracks=[tm.downsample(t,3) for t in T]
 
 C=tl.local_skeleton_clustering(tracks,d_thr=10)
 
+pbc.save_pickle('local_skeleton.pkl',C)
+
+'''
 r=fos.ren()
 
 for c in C:
     color=np.random.rand(3)
     for i in C[c]['indices']:
-        fos.add(r,fos.line(T[i],color))
+        fos.add(r,fos.line(pf.approximate_ei_trajectory(T[i]),color))
+
+fos.show(r)
+'''
+r=fos.ren()
+
+for c in C:
+    color=np.random.rand(3)
+    for i in C[c]['indices']:
+        fos.add(r,fos.line(T2[i],color))
+
+fos.show(r)
+
+#========================================
+
+import pbc
+import dipy.core.track_learning as tl
+from dipy.core import track_metrics as tm
+from dipy.viz import fos
+from dipy.io import trackvis as tv
+from dipy.core import performance as pf
+
+fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+
+streams,hdr=tv.read(fname)
+
+T=[i[0] for i in streams]
+
+T=[pf.approximate_ei_trajectory(t) for t in T]
+
+C=pbc.load_pickle('local_skeleton.pkl')
+
+r=fos.ren()
+
+T2=[]
+color2=np.zeros((len(C.keys()),3))
+for c in C:
+    color=np.random.rand(3)
+    for i in C[c]['indices']:
+        #fos.add(r,fos.line(T[i],color))
+        T2.append(T[i])
+        color2[c]=color
+        
+        
+fos.add(r,fos.line(T2,color2))
+        
 
 fos.show(r)
 
