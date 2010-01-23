@@ -255,7 +255,8 @@ from dipy.viz import fos
 from dipy.io import trackvis as tv
 from dipy.core import performance as pf
 
-fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+#fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
 streams,hdr=tv.read(fname)
 
@@ -268,17 +269,17 @@ C=pbc.load_pickle('local_skeleton.pkl')
 r=fos.ren()
 
 T2=[]
-color2=np.zeros((len(C.keys()),3))
+color2=np.zeros((len(T),3))
+j=0
 for c in C:
     color=np.random.rand(3)
     for i in C[c]['indices']:
         #fos.add(r,fos.line(T[i],color))
         T2.append(T[i])
-        color2[c]=color
-        
-        
-fos.add(r,fos.line(T2,color2))
-        
+        color2[j]=color
+        j+=1
+
+fos.add(r,fos.line(T2,color2,opacity=0.01))
 
 fos.show(r)
 
