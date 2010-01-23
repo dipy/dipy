@@ -9,59 +9,83 @@ import time
 import numpy.linalg as npla
 
 
-def local_skeleton_clustering( d_thr=0.5):
+def local_skeleton_clustering(tracks, d_thr=10):
     '''
     
-    '''
+    
+    Example:
+    -----------
+    from dipy.viz import fos
+        
     tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
                 np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
                 np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
                 np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
                 np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
-                #np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
+                np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
                 np.array([[0,0,0],[0,1,0],[0,2,0]])]
                                     
-    from dipy.viz import fos
+    C=local_skeleton_clustering(tracks,d_thr=0.5)    
+    
     r=fos.ren()
-    for i in range(6):
-        fos.add(r,fos.line(tracks[i],fos.red))
-    fos.show(r)
+
+    for c in C:
+        color=np.random.rand(3)
+        for i in C[c]['indices']:
+            fos.add(r,fos.line(T[i],color))
+
+    '''
 
     #Network C
     C={0:{'indices':[0],'hidden':tracks[0].copy(),'N':1}}
     ts=np.zeros((3,3),dtype=np.float32)
+    
     for (it,t) in enumerate(tracks[1:]):
         
+            
         lenC=len(C.keys())
+        
+        if it%1000==0:
+            print it,lenC
+        
         alld=np.zeros(lenC)
+        flip=np.zeros(lenC)
         
-        tc=t.copy()
-        
+
         for k in range(lenC):
         
             h=C[k]['hidden']/C[k]['N']
-            d=np.sum(np.sqrt(np.sum((tc-h)**2,axis=1)))/3.0
-            '''
-            ts[0]=tc[-1];ts[1]=tc[1];ts[-1]=tc[0]
+            d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
+            ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
             ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
-            if ds<d:
-                #print it+1,ts
-                d=ds;tc=ts
-            '''
-        print
+            
+            if ds<d:                
+                d=ds;
+                flip[k]=1
+                
+            alld[k]=d
+
         m_k=np.min(alld)
         i_k=np.argmin(alld)
         
-        if m_k<d_thr:
-            C[i_k]['hidden']+=tc
+        if m_k<d_thr:            
+            
+            if flip[i_k]==1:                
+                ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
+                C[i_k]['hidden']+=ts
+            else:                
+                C[i_k]['hidden']+=t
+                
             C[i_k]['N']+=1
             C[i_k]['indices'].append(it+1)
+            
         else:
             C[lenC]={}
-            C[lenC]['hidden']=tc
+            C[lenC]['hidden']=t.copy()
             C[lenC]['N']=1
             C[lenC]['indices']=[it+1]
-       
+    
+    '''   
     fos.clear(r)
 
     color=[fos.red,fos.green,fos.blue,fos.yellow]
@@ -70,8 +94,9 @@ def local_skeleton_clustering( d_thr=0.5):
             fos.add(r,fos.line(tracks[i],color[c]))
                 
     fos.show(r)
-
-    return C,tracks    
+    '''
+    
+    return C
 
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
