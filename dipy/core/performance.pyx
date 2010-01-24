@@ -1181,6 +1181,8 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c):
 def local_skeleton_3pts(tracks):
     ''' Calculate a very fast connectivity profile using only three equidistant points along the track
     
+
+    
     '''
     cdef:
     
@@ -1188,14 +1190,12 @@ def local_skeleton_3pts(tracks):
         float *i_pts0,*i_pts1,*i_pts2, *j_pts0,*j_pts1,*j_pts2
         cnp.ndarray[cnp.float32_t, ndim=2] T
         
-        
+       
     lent = len(tracks)
     
     T=np.concatenate(tracks)
-    
-    
-        
-    for i in range(250000):
+            
+    for i in range(lent):
 
         if i %10000 ==0 :
             print i
@@ -1214,5 +1214,140 @@ def local_skeleton_3pts(tracks):
             
             
     return lent
+
+
+cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+    ''' Calculate the euclidean distance between two 3pt tracks  
     
     
+    Parameters:
+    ----------------
+    a1,b1,c1: 3 float[3] arrays representing the first track
+    a2,b2,c2: 3 float[3] arrays representing the second track
+    
+    Returns:
+    -----------
+    out: a float[2] array having the euclidean distance and the fliped euclidean distance
+    
+    '''
+    
+    cdef:
+        int i
+        float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
+        
+    
+    for i in range(3):
+        tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
+        tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
+        tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
+        #flip
+        tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
+        tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
+                
+    out[0]=sqrt(tmp1)+sqrt(tmp2)+sqrt(tmp3)
+    out[1]=sqrt(tmp1f)+sqrt(tmp2)+sqrt(tmp3f)
+    
+    
+
+def local_skeleton_clustering(tracks, d_thr=10):
+    '''
+    
+    
+    Example:
+    -----------
+    from dipy.viz import fos
+        
+    tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
+                np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
+                np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
+                np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
+                np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+                np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
+                np.array([[0,0,0],[0,1,0],[0,2,0]])]
+                                    
+    C=local_skeleton_clustering(tracks,d_thr=0.5)    
+    
+    r=fos.ren()
+
+    for c in C:
+        color=np.random.rand(3)
+        for i in C[c]['indices']:
+            fos.add(r,fos.line(T[i],color))
+
+    '''
+    cdef :
+        cnp.ndarray[cnp.float32_t, ndim=2] track
+        int lent,k,it
+        float d[2]
+    
+    lent=len(tracks)
+
+    #Network C
+    C={0:{'indices':[0],'hidden':tracks[0].copy(),'N':1}}
+    ts=np.zeros((3,3),dtype=np.float32)
+    
+    #for (it,t) in enumerate(tracks[1:]):
+    for it in range(1,lent):
+        
+        track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
+            
+        lenC=len(C.keys())
+        
+        if it%1000==0:
+            print it,lenC
+        
+        alld=np.zeros(lenC)
+        flip=np.zeros(lenC)
+        
+
+        for k in range(lenC):
+        
+            h=C[k]['hidden']/C[k]['N']
+            
+            track_direct_flip_3dist(
+                as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
+                as_float_ptr(h[0]), as_float_ptr(h[1]),as_float_ptr(h[2]),d)
+                
+            #d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
+            #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
+            #ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
+            
+            if d[1]<d[0]:                
+                d[0]=d[1];
+                flip[k]=1
+                
+            alld[k]=d[0]
+
+        m_k=np.min(alld)
+        i_k=np.argmin(alld)
+        
+        if m_k<d_thr:            
+            
+            if flip[i_k]==1:                
+                ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
+                C[i_k]['hidden']+=ts
+            else:                
+                C[i_k]['hidden']+=track
+                
+            C[i_k]['N']+=1
+            C[i_k]['indices'].append(it+1)
+            
+        else:
+            C[lenC]={}
+            C[lenC]['hidden']=track.copy()
+            C[lenC]['N']=1
+            C[lenC]['indices']=[it+1]
+    
+    '''   
+    fos.clear(r)
+
+    color=[fos.red,fos.green,fos.blue,fos.yellow]
+    for c in C:
+        for i in C[c]['indices']:
+            fos.add(r,fos.line(tracks[i],color[c]))
+                
+    fos.show(r)
+    '''
+    
+    return C
+

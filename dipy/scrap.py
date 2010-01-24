@@ -181,16 +181,18 @@ from dipy.viz import fos
 
 
 def test():
-    fname='/home/eg309/Data/PBC/pbc2009icdm/fornix.pkl'
-    T=pbc.load_pickle(fname)
 
-    tracks=[tm.downsample(t,3) for t in T]
 
     C=tl.local_skeleton_clustering(tracks,d_thr=10)
 
 
+fname='/home/eg309/Data/PBC/pbc2009icdm/fornix.pkl'
+T=pbc.load_pickle(fname)
+
+tracks=[tm.downsample(t,3) for t in T]
+
 import pstats, cProfile
-cProfile.run("test()", "Profile.prof")
+cProfile.run("test(tracks)", "Profile.prof")
 
 s = pstats.Stats("Profile.prof")
 s.strip_dirs().sort_stats("time").print_stats()
@@ -223,9 +225,9 @@ T=[i[0] for i in streams]
 
 tracks=[tm.downsample(t,3) for t in T]
 
-C=tl.local_skeleton_clustering(tracks,d_thr=10)
+C=tl.local_skeleton_clustering(tracks,d_thr=20)
 
-pbc.save_pickle('local_skeleton.pkl',C)
+pbc.save_pickle('local_skeleton_20.pkl',C)
 
 '''
 r=fos.ren()
@@ -255,8 +257,8 @@ from dipy.viz import fos
 from dipy.io import trackvis as tv
 from dipy.core import performance as pf
 
-#fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
-fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+#fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
 streams,hdr=tv.read(fname)
 
@@ -283,3 +285,34 @@ fos.add(r,fos.line(T2,color2,opacity=0.01))
 
 fos.show(r)
 
+#===========================================
+
+import pbc
+import dipy.core.track_learning as tl
+from dipy.core import track_metrics as tm
+from dipy.viz import fos
+from dipy.core import performance as pf
+import numpy as np
+
+def test(tracks):
+
+
+    C=tl.local_skeleton_clustering(tracks,d_thr=10)
+    #C=pf.local_skeleton_clustering(tracks,d_thr=10)
+    #C={0:{'hidden':np.random.rand(100,3)}}
+    #for i in range(250000):
+    #    C[i]={'hidden':np.random.rand(100,3)}
+        
+
+
+fname='/home/eg309/Data/PBC/pbc2009icdm/fornix.pkl'
+T=pbc.load_pickle(fname)
+
+tracks=[tm.downsample(t,3) for t in T]
+
+import pstats, cProfile
+cProfile.runctx("test(tracks)", globals(),locals(), "Profile.prof")
+#cProfile.runctx("calc_pi.approx_pi()", globals(), locals(), "Profile.prof")
+
+s = pstats.Stats("Profile.prof")
+s.strip_dirs().sort_stats("time").print_stats()
