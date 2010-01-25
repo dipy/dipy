@@ -1282,6 +1282,7 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
     '''
     cdef :
         cnp.ndarray[cnp.float32_t, ndim=2] track
+        cnp.ndarray[cnp.float32_t, ndim=2] h
         int lent,k,it
         float d[2]
     
@@ -1307,9 +1308,10 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
 
         for k in range(lenC):
         
-            h=C[k]['hidden']/C[k]['N']
+            h=np.ascontiguousarray(C[k]['hidden']/C[k]['N'],dtype=f32_dt)
             
-            print track,h
+            print track
+            print h
             track_direct_flip_3dist(
                 as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
                 as_float_ptr(h[0]), as_float_ptr(h[1]),as_float_ptr(h[2]),d)
@@ -1318,10 +1320,10 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
             #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
             #ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
             
-            #print d[0],d[1]
+            print d[0],d[1]
             
             if d[1]<d[0]:                
-                d[0]=d[1];
+                d[0]=d[1]
                 flip[k]=1
                 
             alld[k]=d[0]
