@@ -1244,8 +1244,8 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
         tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
         tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
                 
-    out[0]=sqrt(tmp1)+sqrt(tmp2)+sqrt(tmp3)
-    out[1]=sqrt(tmp1f)+sqrt(tmp2)+sqrt(tmp3f)
+    out[0]=(sqrt(tmp1)+sqrt(tmp2)+sqrt(tmp3))/3.0
+    out[1]=(sqrt(tmp1f)+sqrt(tmp2)+sqrt(tmp3f))/3.0
     
     
 
