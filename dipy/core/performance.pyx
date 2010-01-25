@@ -1241,6 +1241,11 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
         tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
         tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
         #flip
+        #a1,b1,c1
+        #a2,b2,c2
+        #a1 a2
+        #b1 b2
+        #c1 c2
         tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
         tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
                 
@@ -1257,13 +1262,13 @@ def local_skeleton_clustering(tracks, d_thr=10):
     -----------
     from dipy.viz import fos
         
-    tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
-                np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
-                np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
-                np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
-                np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
-                np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
-                np.array([[0,0,0],[0,1,0],[0,2,0]])]
+tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
+            np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
+            np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
+            np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
+            np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+            np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
+            np.array([[0,0,0],[0,1,0],[0,2,0]])]
                                     
     C=local_skeleton_clustering(tracks,d_thr=0.5)    
     
@@ -1272,7 +1277,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     for c in C:
         color=np.random.rand(3)
         for i in C[c]['indices']:
-            fos.add(r,fos.line(T[i],color))
+            fos.add(r,fos.line(tracks[i],color))
 
     '''
     cdef :
@@ -1304,6 +1309,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
         
             h=C[k]['hidden']/C[k]['N']
             
+            print track,h
             track_direct_flip_3dist(
                 as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
                 as_float_ptr(h[0]), as_float_ptr(h[1]),as_float_ptr(h[2]),d)
@@ -1311,6 +1317,8 @@ def local_skeleton_clustering(tracks, d_thr=10):
             #d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
             #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
             #ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
+            
+            #print d[0],d[1]
             
             if d[1]<d[0]:                
                 d[0]=d[1];
