@@ -1310,8 +1310,8 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
         
             h=np.ascontiguousarray(C[k]['hidden']/C[k]['N'],dtype=f32_dt)
             
-            print track
-            print h
+            #print track
+            #print h
             track_direct_flip_3dist(
                 as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
                 as_float_ptr(h[0]), as_float_ptr(h[1]),as_float_ptr(h[2]),d)
@@ -1320,7 +1320,7 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
             #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
             #ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
             
-            print d[0],d[1]
+            #print d[0],d[1]
             
             if d[1]<d[0]:                
                 d[0]=d[1]
@@ -1340,13 +1340,13 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
                 C[i_k]['hidden']+=track
                 
             C[i_k]['N']+=1
-            C[i_k]['indices'].append(it+1)
+            C[i_k]['indices'].append(it)
             
         else:
             C[lenC]={}
             C[lenC]['hidden']=track.copy()
             C[lenC]['N']=1
-            C[lenC]['indices']=[it+1]
+            C[lenC]['indices']=[it]
     
     '''   
     fos.clear(r)

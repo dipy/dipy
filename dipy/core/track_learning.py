@@ -55,7 +55,9 @@ def local_skeleton_clustering(tracks, d_thr=10):
         for k in xrange(lenC):
         
             h=C[k]['hidden']/C[k]['N']
-            print t,h
+            #print it+1
+            #print t
+            #print h
             d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
             ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
             ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
