@@ -1216,7 +1216,7 @@ def local_skeleton_3pts(tracks):
     return lent
 
 
-cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+cdef void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
     ''' Calculate the euclidean distance between two 3pt tracks  
     
     
