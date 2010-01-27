@@ -9,9 +9,22 @@ import time
 import numpy.linalg as npla
 
 
-def local_skeleton_clustering(tracks, d_thr=10):
+def find_closest_clusters(c,C1,C2):
+    ''' Return closest cluster in C2 from cluster C1[c]
+
     '''
+
+    for c in C2:
+        
+        
     
+
+
+    
+
+
+def local_skeleton_clustering(tracks, d_thr=10):
+    ''' deprecated use performance
     
     Example:
     -----------
