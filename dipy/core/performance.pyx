@@ -1216,8 +1216,55 @@ def local_skeleton_3pts(tracks):
     return lent
 
 
-cdef void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
-    ''' Calculate the euclidean distance between two 3pt tracks  
+def track_dist_3pts(tracka,trackb):
+
+    ''' Calculate the euclidean distance between two 3pt tracks
+    both direct and flip distances are calculated but only the smallest is returned
+
+    Parameters:
+    -----------
+    a: array, shape (3,3)
+    a three point track
+    b: array, shape (3,3)
+    a three point track
+
+    Returns:
+    --------
+    dist:float
+
+    Example:
+    -------
+    >>> import numpy as np
+    >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])            
+    >>> b=np.array([[3,0,0],[3.5,1,0],[4,2,0]])
+    >>> track_dist_3pts(a,b)
+    
+
+    '''
+    
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] a,b
+    cdef float d[2]
+
+    a=np.ascontiguousarray(tracka,dtype=f32_dt)
+    b=np.ascontiguousarray(trackb,dtype=f32_dt)
+    
+    track_direct_flip_3dist(as_float_ptr(a[0]),as_float_ptr(a[1]),as_float_ptr(a[2]),
+                            as_float_ptr(b[0]),as_float_ptr(b[1]),as_float_ptr(b[2]),d)
+
+  
+    if d[0]<d[1]:
+        return d[0]
+    else:
+        return d[1]
+
+    
+    
+        
+    
+
+cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+    ''' Calculate the euclidean distance between two 3pt tracks
+    both direct and flip are given as output
     
     
     Parameters:
@@ -1228,6 +1275,7 @@ cdef void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, flo
     Returns:
     -----------
     out: a float[2] array having the euclidean distance and the fliped euclidean distance
+    
     
     '''
     
@@ -1240,12 +1288,6 @@ cdef void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, flo
         tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
         tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
         tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
-        #flip
-        #a1,b1,c1
-        #a2,b2,c2
-        #a1 a2
-        #b1 b2
-        #c1 c2
         tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
         tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
                 
@@ -1260,9 +1302,9 @@ def local_skeleton_clustering(tracks, d_thr=10):
     
     Example:
     -----------
-    from dipy.viz import fos
+    >>> from dipy.viz import fos
         
-tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
             np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
             np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
             np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
@@ -1270,14 +1312,16 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
             np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
             np.array([[0,0,0],[0,1,0],[0,2,0]])]
                                     
-    C=local_skeleton_clustering(tracks,d_thr=0.5)    
+    >>> C=local_skeleton_clustering(tracks,d_thr=0.5)    
     
-    r=fos.ren()
+    >>> r=fos.ren()
 
-    for c in C:
+    >>> for c in C:
         color=np.random.rand(3)
         for i in C[c]['indices']:
             fos.add(r,fos.line(tracks[i],color))
+
+    >>> fos.show(r)
 
     '''
     cdef :

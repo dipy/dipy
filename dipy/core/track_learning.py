@@ -9,22 +9,59 @@ import time
 import numpy.linalg as npla
 
 
-def find_closest_clusters(c,C1,C2):
-    ''' Return closest cluster in C2 from cluster C1[c]
+def near_clusters(c,C1,C2,n=-1):
+    ''' Return 'n' closest clusters in C2 from cluster C1[c] using the hidden track
+
+    Parameters:
+    -----------
+    c: int
+
+    C1: dict, the structure of the dictionary is of the form 
+    
+    C2={0:{'hidden':c},1:{'hidden':d},2:{'hidden':e}} where c,d,e 3x3 numpy arrays
+
+    C2: dict
+
+    n= int, 
+      default is -1 which returns all near clusters sorted from the nearest to the more distant.
+            
+    
+    Example:
+    --------
+
+    >>> import dipy.core.track_learning as tl
+    
+    >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])
+    >>> b=np.array([[0,0,0],[1,0,0,],[2,1,0]])
+
+    >>> c=np.array([[0,0,0],[1,0,0,],[2,0,0]])
+    >>> d=np.array([[0,0,0],[1,0,0,],[3,1,0]])
+    >>> e=np.array([[0,0,0],[1,0,0,],[4,1,0]])
+
+    >>> C1={0:{'hidden':a},1:{'hidden':b}}
+    >>> C2={0:{'hidden':c},1:{'hidden':d},2:{'hidden':e}}
+  
+    >>> tl.near_clusters(0,C1,C2)
 
     '''
 
-    for c in C2:
+    d= [pf.track_dist_3pts(C1[c]['hidden'],C2[c2]['hidden']) for c2 in C2]
         
-        
+    d=np.array(d)
+
+    near=list(d[::-1].argsort())
     
+    return near[:n]
+
+    
+
 
 
     
 
 
 def local_skeleton_clustering(tracks, d_thr=10):
-    ''' deprecated use performance
+    ''' deprecated use same funciton in performance
     
     Example:
     -----------
