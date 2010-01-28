@@ -9,7 +9,7 @@ import time
 import numpy.linalg as npla
 
 
-def near_clusters(c,C1,C2,n=-1):
+def near_clusters(c,C1,C2,n=1):
     ''' Return 'n' closest clusters in C2 from cluster C1[c] using the hidden track
 
     Parameters:
@@ -23,7 +23,7 @@ def near_clusters(c,C1,C2,n=-1):
     C2: dict
 
     n= int, 
-      default is -1 which returns all near clusters sorted from the nearest to the more distant.
+      default is 1.
             
     
     Example:
@@ -31,12 +31,12 @@ def near_clusters(c,C1,C2,n=-1):
 
     >>> import dipy.core.track_learning as tl
     
-    >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])
-    >>> b=np.array([[0,0,0],[1,0,0,],[2,1,0]])
+    >>> a=np.array([[0,0,0],[1,0,0],[2,0,0]])
+    >>> b=np.array([[0,0,0],[1,0,0],[2,1,0]])
 
-    >>> c=np.array([[0,0,0],[1,0,0,],[2,0,0]])
-    >>> d=np.array([[0,0,0],[1,0,0,],[3,1,0]])
-    >>> e=np.array([[0,0,0],[1,0,0,],[4,1,0]])
+    >>> c=np.array([[0,0,0],[1,0,0],[2,0,0]])
+    >>> d=np.array([[0,0,0],[1,0,0],[3,1,0]])
+    >>> e=np.array([[0,0,0],[1,0,0],[4,1,0]])
 
     >>> C1={0:{'hidden':a},1:{'hidden':b}}
     >>> C2={0:{'hidden':c},1:{'hidden':d},2:{'hidden':e}}
@@ -49,8 +49,11 @@ def near_clusters(c,C1,C2,n=-1):
         
     d=np.array(d)
 
-    near=list(d[::-1].argsort())
-    
+    #near=list(d.argsort()[::-1])
+    #print near
+
+    near=d.argsort()
+        
     return near[:n]
 
     
