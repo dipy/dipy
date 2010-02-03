@@ -2,7 +2,7 @@ from dipy.core import track_metrics as tm
 from dipy.viz import fos
 from dipy.io import trackvis as tv
 from dipy.io import pickle as pkl
-from dipy.core import performance as pf
+from dipy.core import track_performance as pf
 import time
 
 

@@ -17,7 +17,7 @@ else:
     has_cython = True
     
 per_ext, cmdclass = make_cython_ext(
-    'dipy.core.performance',
+    'dipy.core.track_performance',
     has_cython,
     include_dirs = [np.get_include()])
 
@@ -31,7 +31,7 @@ tvol_ext, cmdclass = make_cython_ext(
 setup(name='dipy',
       version='0.1a',
       description='Diffusion utilities in Python',
-      author='DIPY python team',
+      author='DIPY team',
       author_email='matthew.brett@gmail.com',
       url='http://github.com/matthew-brett/dipy',
       packages=['dipy', 'dipy.io', 'dipy.core','dipy.viz'],

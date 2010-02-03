@@ -4,7 +4,7 @@ import os
 from os.path import join as pjoin
 import numpy as np
 import dipy.io.trackvis as tv
-import dipy.core.performance as pf
+import dipy.core.track_performance as pf
 import dipy.core.track_metrics as tm
 
 from numpy.testing import measure

@@ -1,4 +1,4 @@
-import dipy.core.performance as pf
+import dipy.core.track_performance as pf
 import dipy.io.pickle as pkl
 import dipy.core.track_metrics as tm
 from dipy.viz import fos

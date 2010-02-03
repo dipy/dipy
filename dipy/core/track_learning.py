@@ -2,7 +2,7 @@
 
 import numpy as np
 from . import track_metrics as tm
-import dipy.core.performance as pf
+import dipy.core.track_performance as pf
 from scipy import ndimage as nd
 import itertools
 import time

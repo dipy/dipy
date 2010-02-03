@@ -1,6 +1,6 @@
 import time,os
 import numpy as np
-import dipy.core.performance as pf
+import dipy.core.track_performance as pf
 import dipy.io.pickle as pkl
 import dipy.core.track_metrics as tm
 import dipy.core.track_learning as tl
@@ -13,6 +13,7 @@ from dipy.viz import fos
 d_thr=20.
 fname_ts='/home/eg01/Data/tmp/pbc_training_set.pkl'
 fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+#cfname='/home/eg01/Data/tmp/C_brain1_scan1_d_thr10.pkl'
 cfname='/home/eg01/Data/tmp/C_brain1_scan1.pkl'
 
 #============================================================
@@ -88,8 +89,10 @@ else:
     pkl.save_pickle(cfname,C)
 
 
+
 #============================================================
 
+#'''
 print 'Finding near_clusters ...'
 
 near=[]
@@ -98,9 +101,6 @@ for cts in CTS:
     near.append(tl.near_clusters(cts,CTS,C,1))
 
 print near
-
-
-
 
 print colormap
 
@@ -112,8 +112,23 @@ for cts in CTS:
         fos.add(r,fos.line(vizT,colormap[cts]))
         #fos.add(r,fos.line(vizT,fos.blue,opacity=0.1))
 
-    fos.show(r)
+    #fos.show(r)
 
 
-#fos.show(r)
+fos.show(r)
+#'''
 
+#============================================================
+'''
+print 'Visualizing centroids'
+
+
+for c in CTS:
+
+    line=CTS[c]['hidden']+np.array([120,0,0])
+
+    fos.add(r,fos.line(line,fos.red))
+
+
+fos.show(r)
+'''

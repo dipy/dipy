@@ -1249,6 +1249,52 @@ def colors(v,colormap):
         
     return np.vstack((red,green,blue)).T
 
+
+def tube(point1=(0,0,0),point2=(1,0,0),color=(1,0,0),opacity=1,radius=0.1,capson=1,specular=1,sides=8):
+
+    ''' Deprecated
+    Wrap a tube around a line connecting point1 with point2 with a specific radius
+    
+    '''
+
+
+    points = vtk.vtkPoints()
+    points.InsertPoint(0,point1[0],point1[1],point1[2])
+    points.InsertPoint(1,point2[0],point2[1],point2[2])
+
+    lines=vtk.vtkCellArray()
+    lines.InsertNextCell(2)
+
+    lines.InsertCellPoint(0)
+    lines.InsertCellPoint(1)
+
+    profileData=vtk.vtkPolyData()
+    profileData.SetPoints(points)
+    profileData.SetLines(lines)
+
+    # Add thickness to the resulting line.
+    profileTubes = vtk.vtkTubeFilter()
+    profileTubes.SetNumberOfSides(sides)
+    profileTubes.SetInput(profileData)
+    profileTubes.SetRadius(radius)
+
+    if capson:
+        profileTubes.SetCapping(1)
+    else:
+        profileTubes.SetCapping(0)
+
+    profileMapper = vtk.vtkPolyDataMapper()
+    profileMapper.SetInputConnection(profileTubes.GetOutputPort())
+
+    profile = vtk.vtkActor()
+    profile.SetMapper(profileMapper)
+    profile.GetProperty().SetDiffuseColor(color)
+    profile.GetProperty().SetSpecular(specular)
+    profile.GetProperty().SetSpecularPower(30)
+    profile.GetProperty().SetOpacity(opacity)
+
+    return profile
+
 def _closest_track(p,tracks):
     ''' Return the index of the closest track from tracks to point p
     '''
@@ -1266,6 +1312,9 @@ def _closest_track(p,tracks):
     imin=d[:,1].argmin()
     
     return int(d[imin,0])
+
+
+
     
 def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[20,30,40],opacities=[0.8,0.7,0.3],colors=None,planesx=[20,30],planesy=[30,40],planesz=[20,30]):
     ''' Slicer and contour rendering of 3d volumes

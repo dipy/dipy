@@ -10,7 +10,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.core import track_metrics as tm
 
-from dipy.core import performance as pf
+from dipy.core import track_performance as pf
 
 def test_splines():
 
