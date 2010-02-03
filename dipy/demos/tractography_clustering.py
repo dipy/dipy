@@ -4,7 +4,7 @@ from dipy.io import trackvis as tv
 from dipy.io import pickle as pkl
 from dipy.core import track_performance as pf
 import time
-
+import numpy as np
 
 
 fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'

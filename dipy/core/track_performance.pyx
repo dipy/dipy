@@ -1293,6 +1293,9 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
                 
     out[0]=(sqrt(tmp1)+sqrt(tmp2)+sqrt(tmp3))/3.0
     out[1]=(sqrt(tmp1f)+sqrt(tmp2)+sqrt(tmp3f))/3.0
+
+    #out[0]=(tmp1+tmp2+tmp3)/3.0
+    #out[1]=(tmp1f+tmp2+tmp3f)/3.0
     
     
 
@@ -1329,6 +1332,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
         cnp.ndarray[cnp.float32_t, ndim=2] h
         int lent,k,it
         float d[2]
+        #float d_sq=d_thr**2
     
     lent=len(tracks)
 
