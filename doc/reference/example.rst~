@@ -1,0 +1,5 @@
+.. currentmodule:: dipy
+
+.. autosummary::
+
+   core

@@ -1296,7 +1296,48 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
 
     #out[0]=(tmp1+tmp2+tmp3)/3.0
     #out[1]=(tmp1f+tmp2+tmp3f)/3.0
+
+
+cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+    ''' Calculate the average squared euclidean distance between two 3pt tracks
+    both direct and flip are given as output
     
+    
+    Parameters:
+    ----------------
+    a1,b1,c1: 3 float[3] arrays representing the first track
+    a2,b2,c2: 3 float[3] arrays representing the second track
+    
+    Returns:
+    -----------
+    out: a float[2] array having the euclidean distance and the fliped euclidean distance
+    
+    
+    '''
+    
+    cdef:
+        int i
+        float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
+        
+    
+    for i in range(3):
+        tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
+        tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
+        tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
+        tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
+        tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
+            
+ 
+    out[0]=(tmp1+tmp2+tmp3)/3.0
+    out[1]=(tmp1f+tmp2+tmp3f)/3.0
+
+
+    
+def arch_split():
+    return 0
+
+
+ 
     
 
 def local_skeleton_clustering(tracks, d_thr=10):
