@@ -1,6 +1,0 @@
-\select@language {english}
-\contentsline {chapter}{\numberline {1}What is DiPy?}{3}{chapter.1}
-\contentsline {chapter}{\numberline {2}Mission statement}{5}{chapter.2}
-\contentsline {chapter}{\numberline {3}dipy reference}{7}{chapter.3}
-\contentsline {section}{\numberline {3.1}DiPy core}{7}{section.3.1}
-\contentsline {chapter}{\numberline {4}Indices and tables}{9}{chapter.4}
