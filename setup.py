@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 ''' Installation script for dipy package '''
 
 from os.path import join as pjoin
