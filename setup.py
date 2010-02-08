@@ -31,20 +31,13 @@ tvol_ext, cmdclass = make_cython_ext(
 
 setup(name='dipy',
       version='0.1a',
-<<<<<<< HEAD:setup.py
       description='Diffusion utilities in Python',
       author='DIPY team',
       author_email='nipy-devel@neuroimaging.scipy.org',
       url='http://github.com/Garyfallidis/dipy',
-=======
-      description='Diffusion MRI utilities in Python',
-      author='DiPy Team',
-      author_email='nipy-devel@neuroimaging.scipy.org',
-      url='http://github.com/garyfallidis/dipy',
->>>>>>> 8c74cc3ca387b7cd754c5f4f207c792496269e80:setup.py
       packages=['dipy', 'dipy.io', 'dipy.core','dipy.viz'],
       package_data={'dipy.io': ['tests/data/*', 'tests/*.py']},
-	  ext_modules = [per_ext,tvol_ext],
+      ext_modules = [per_ext,tvol_ext],
       cmdclass    = cmdclass,      
       scripts=glob('scripts/*.py')
       )
