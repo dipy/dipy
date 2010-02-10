@@ -11,6 +11,9 @@ fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
 #fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
+tree_fname='/home/eg01/Data/tmp/larch_tree.pkl'
+
+
 print 'Loading file...'
 streams,hdr=tv.read(fname)
 
@@ -23,18 +26,24 @@ tracks=[tm.downsample(t,3) for t in T]
 print 'Deleting unnecessary data...'
 del streams,hdr
 
-print 'Hidden Structure Clustering...'
+print 'LARCH - LocAl Rapid Clustering for TractograpHy'
 now=time.clock()
-C=pf.local_skeleton_clustering(tracks,d_thr=20)
-#C=tl.local_skeleton_clustering(tracks,d_thr=20)
+C=pf.larch(tracks)
+#C=pf.local_skeleton_clustering(tracks,d_thr=40)
+
 print 'Done in', time.clock()-now,'s.'
 
 print 'Saving Result...'
-pkl.save_pickle('/home/eg01/Data/tmp/local_skeleton_20.pkl',C)
+pkl.save_pickle(tree_fname,C)
 
 print 'Reducing the number of points...'
 T=[pf.approximate_ei_trajectory(t) for t in T]
 
+
+
+
+
+'''
 print 'Showing initial dataset.'
 r=fos.ren()
 fos.add(r,fos.line(T,fos.white,opacity=0.1))
@@ -50,7 +59,6 @@ for c in C:
 fos.add(r,fos.line(T,colors,opacity=1))
 fos.show(r)
 
-
 print 'Some statistics about the clusters'
 lens=[len(C[c]['indices']) for c in C]
 print 'max ',max(lens), 'min ',min(lens)
@@ -58,6 +66,8 @@ print 'max ',max(lens), 'min ',min(lens)
 print 'singletons ',lens.count(1)
 print 'doubletons ',lens.count(2)
 print 'tripletons ',lens.count(3)
+
+'''
 
 
 

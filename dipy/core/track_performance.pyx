@@ -1298,50 +1298,28 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     #out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
-cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
-    ''' Calculate the average squared euclidean distance between two 3pt tracks
-    both direct and flip are given as output
-    
-    
-    Parameters:
-    ----------------
-    a1,b1,c1: 3 float[3] arrays representing the first track
-    a2,b2,c2: 3 float[3] arrays representing the second track
-    
-    Returns:
-    -----------
-    out: a float[2] array having the euclidean distance and the fliped euclidean distance
-    
-    
-    '''
-    
-    cdef:
-        int i
-        float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
-        
-    
-    for i in range(3):
-        tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
-        tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
-        tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
-        tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
-        tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
-            
- 
-    out[0]=(tmp1+tmp2+tmp3)/3.0
-    out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
-
-    
-def arch_split():
-    return 0
 
 
  
     
 
 def local_skeleton_clustering(tracks, d_thr=10):
-    '''
+    ''' For historical purposes as it was used for the HBM2010 abstract
+    "Fast Dimensionality Reduction for Brain Tractography Clustering" by E.Garyfallidis et.al
+    we keep this function that does a first pass clustering.
+
+    Parameters:
+    -----------
+    tracks: sequence
+        of tracks as arrays, shape (N1,3) .. (Nm,3)
+
+    d_thr: float, average euclidean distance threshold
+
+
+    Returns:
+    --------
+    C: dict
     
     
     Example:
@@ -1450,3 +1428,210 @@ def local_skeleton_clustering(tracks, d_thr=10):
     
     return C
 
+
+cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+    ''' Calculate the average squared euclidean distance between two 3pt tracks
+    both direct and flip are given as output
+    
+    
+    Parameters:
+    -----------
+    a1,b1,c1: 3 float[3] arrays representing the first track
+    a2,b2,c2: 3 float[3] arrays representing the second track
+    
+    Returns:
+    --------
+    out: a float[2] array having the euclidean distance and the fliped euclidean distance
+        
+    '''
+    
+    cdef:
+        int i
+        float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
+        
+    
+    for i in range(3):
+        tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
+        tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
+        tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
+        tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
+        tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
+            
+ 
+    out[0]=(tmp1+tmp2+tmp3)/3.0
+    out[1]=(tmp1f+tmp2+tmp3f)/3.0
+
+
+def larch_init(tracks,sqd_thr=50**2):
+
+    ''' Generate a first pass clustering using 3 points (fist, mid and last) on the tracks only
+
+
+    '''
+
+    cdef :
+        cnp.ndarray[cnp.float32_t, ndim=2] track
+        cnp.ndarray[cnp.float32_t, ndim=2] h
+        int lent,k,it
+        float d[2]        
+    
+    lent=len(tracks)
+
+    C={0:{'indices':[0],'rep':tracks[0].copy(),'N':1}}
+    ts=np.zeros((3,3),dtype=np.float32)
+
+    # if a 3track is far away from all clusters then add a new cluster and assign
+    # this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
+    # 3track of each cluster is the average track of the cluster
+        
+    for it in range(1,lent):
+        
+        track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
+            
+        lenC=len(C.keys())
+        
+        #if it%1000==0:
+        #    print it,lenC
+        
+        alld=np.zeros(lenC)
+        flip=np.zeros(lenC)
+        
+
+        for k in range(lenC):
+        
+            h=np.ascontiguousarray(C[k]['rep']/C[k]['N'],dtype=f32_dt)
+            
+            track_direct_flip_3sq_dist(
+                as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
+                as_float_ptr(h[0]), as_float_ptr(h[1]), as_float_ptr(h[2]),d)
+                
+            if d[1]<d[0]:                
+                d[0]=d[1];flip[k]=1
+                
+            alld[k]=d[0]
+
+        m_k=np.min(alld)
+        i_k=np.argmin(alld)
+        
+        if m_k<sqd_thr:            
+            
+            if flip[i_k]==1:                
+                ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
+                C[i_k]['rep']+=ts
+            else:                
+                C[i_k]['rep']+=track
+                
+            C[i_k]['N']+=1
+            C[i_k]['indices'].append(it)
+            
+        else:
+            C[lenC]={}
+            C[lenC]['rep']=track.copy()
+            C[lenC]['N']=1
+            C[lenC]['indices']=[it]
+
+
+    return C
+
+def larch_split(tracks,indices,sqd_thr):
+
+    ''' split part 
+
+    '''
+
+    cdef :
+        cnp.ndarray[cnp.float32_t, ndim=2] track
+        cnp.ndarray[cnp.float32_t, ndim=2] h
+        int lent,k,it
+        float d[2]        
+    
+    lent=len(tracks)
+
+    C={0:{'indices':[indices[0]],'rep':tracks[indices[0]].copy(),'N':1}}
+    ts=np.zeros((3,3),dtype=np.float32)
+
+    # if a 3track is far away from all clusters then add a new cluster and assign
+    # this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
+    # 3track of each cluster is the average track of the cluster
+        
+    for it in indices:
+        
+        #track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
+        track=tracks[it]
+            
+        lenC=len(C.keys())
+        
+        alld=np.zeros(lenC)
+        flip=np.zeros(lenC)
+        
+
+        for k in range(lenC):
+        
+            h=np.ascontiguousarray(C[k]['rep']/C[k]['N'],dtype=f32_dt)
+            
+            track_direct_flip_3sq_dist(
+                as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
+                as_float_ptr(h[0]), as_float_ptr(h[1]), as_float_ptr(h[2]),d)
+                
+            if d[1]<d[0]:                
+                d[0]=d[1];flip[k]=1
+                
+            alld[k]=d[0]
+
+        m_k=np.min(alld)
+        i_k=np.argmin(alld)
+        
+        if m_k<sqd_thr:            
+            
+            if flip[i_k]==1:                
+                ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
+                C[i_k]['rep']+=ts
+            else:                
+                C[i_k]['rep']+=track
+                
+            C[i_k]['N']+=1
+            C[i_k]['indices'].append(it)
+            
+        else:
+            C[lenC]={}
+            C[lenC]['rep']=track.copy()
+            C[lenC]['N']=1
+            C[lenC]['indices']=[it]
+
+
+    return C
+
+
+
+
+def larch_imerge(C,priors=None):
+
+    return 0
+    
+def larch(tracks,priors=None):
+
+    ''' LocAl Rapid Clustering for tractograpHy
+
+    Parameters:
+    -----------
+    tracks: sequence
+        of tracks as arrays, shape (N1,3) .. (Nm,3)
+
+    Returns:
+    --------
+    C: dict, a tree graph containing the clusters
+
+    '''
+
+    level_thr=[50**2,20**2,10**2,5**2]
+
+    #0 level
+    C=larch_init(tracks,level_thr[0])
+
+    #1st level
+    for k in C:
+
+        C[k]['subtree']=larch_split(tracks,C[k]['indices'],level_thr[1])
+
+    
+    return C
