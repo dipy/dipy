@@ -26,7 +26,7 @@ tracks=[tm.downsample(t,3) for t in T]
 print 'Deleting unnecessary data...'
 del streams,hdr
 
-print 'LARCH - LocAl Rapid Clustering for TractograpHy'
+print 'LARCH - LocAl Rapid Clustering for tractograpHy ...'
 now=time.clock()
 C=pf.larch(tracks)
 #C=pf.local_skeleton_clustering(tracks,d_thr=40)
@@ -36,14 +36,26 @@ print 'Done in', time.clock()-now,'s.'
 print 'Saving Result...'
 pkl.save_pickle(tree_fname,C)
 
-print 'Reducing the number of points...'
-T=[pf.approximate_ei_trajectory(t) for t in T]
+print 'Some statistics... '
 
+l=[]
+m=[]
+for c in C:
+    for d in C[c]['subtree']:        
+        l.append(C[c]['subtree'][d]['N'])
+        for e in C[c]['subtree'][d]['subtree']:            
+            m.append(C[c]['subtree'][d]['subtree'][e]['N'])
+        
 
+print sum(l),len(l)
+print sum(m),len(m)
 
 
 
 '''
+print 'Reducing the number of points...'
+T=[pf.approximate_ei_trajectory(t) for t in T]
+
 print 'Showing initial dataset.'
 r=fos.ren()
 fos.add(r,fos.line(T,fos.white,opacity=0.1))

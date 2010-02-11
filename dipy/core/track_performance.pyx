@@ -1518,7 +1518,7 @@ def larch_init(tracks,sqd_thr=50**2):
             if flip[i_k]==1:                
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
                 C[i_k]['rep']+=ts
-            else:                
+            else:
                 C[i_k]['rep']+=track
                 
             C[i_k]['N']+=1
@@ -1554,7 +1554,7 @@ def larch_split(tracks,indices,sqd_thr):
     # this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
     # 3track of each cluster is the average track of the cluster
         
-    for it in indices:
+    for it in indices[1:]:
         
         #track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
         track=tracks[it]
@@ -1603,7 +1603,6 @@ def larch_split(tracks,indices,sqd_thr):
 
 
 
-
 def larch_imerge(C,priors=None):
 
     return 0
@@ -1623,15 +1622,21 @@ def larch(tracks,priors=None):
 
     '''
 
-    level_thr=[50**2,20**2,10**2,5**2]
-
-    #0 level
-    C=larch_init(tracks,level_thr[0])
+    level_thr=[50**2,20**2,5**2]
 
     #1st level
+    C=larch_init(tracks,level_thr[0])
+
+    #2nd level
     for k in C:
 
         C[k]['subtree']=larch_split(tracks,C[k]['indices'],level_thr[1])
+
+        #3rd level
+        for l in C[k]['subtree']:
+            
+            C[k]['subtree'][l]['subtree']=larch_split(tracks,C[k]['subtree'][l]['indices'],level_thr[2])
+
 
     
     return C
