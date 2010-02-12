@@ -29,26 +29,47 @@ del streams,hdr
 print 'LARCH - LocAl Rapid Clustering for tractograpHy ...'
 now=time.clock()
 C=pf.larch(tracks)
-#C=pf.local_skeleton_clustering(tracks,d_thr=40)
-
 print 'Done in', time.clock()-now,'s.'
 
 print 'Saving Result...'
 pkl.save_pickle(tree_fname,C)
 
-print 'Some statistics... '
 
 l=[]
 m=[]
+
+print 'Reducing the number of points...'
+T=[pf.approximate_ei_trajectory(t) for t in T]
+
+skel=[]
+now=time.clock()
+print 'Generate representative tracks... using Zhang'
+
 for c in C:
+    
     for d in C[c]['subtree']:        
+
+        print c,d
+
         l.append(C[c]['subtree'][d]['N'])
-        for e in C[c]['subtree'][d]['subtree']:            
+        for e in C[c]['subtree'][d]['subtree']:   
+         
             m.append(C[c]['subtree'][d]['subtree'][e]['N'])
-        
+            tracks_tmp=[T[i] for i in C[c]['subtree'][d]['subtree'][e]['indices']]
+            #!!! reference to indices is not correct possibly it would be better to index directly to T
+            skel.append(tracks_tmp[pf.most_similar_track_zhang(tracks_tmp)[0]])
+
+print 'Done in', time.clock()-now,'s.'
 
 print sum(l),len(l)
 print sum(m),len(m)
+
+
+r=fos.ren()
+
+fos.add(r,fos.line(skel,fos.red,opacity=1))
+
+fos.show(r)
 
 
 
