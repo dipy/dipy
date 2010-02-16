@@ -1607,7 +1607,7 @@ def larch_imerge(C,priors=None):
 
     return 0
     
-def larch(tracks,priors=None):
+def larch(tracks,init_levels=[50,20,10.],priors=None):
 
     ''' LocAl Rapid Clustering for tractograpHy
 
@@ -1622,7 +1622,7 @@ def larch(tracks,priors=None):
 
     '''
 
-    level_thr=[50**2,20**2,5**2]
+    level_thr=np.array(init_levels)**2
 
     #1st level
     C=larch_init(tracks,level_thr[0])

@@ -55,14 +55,20 @@ for c in C:
         for e in C[c]['subtree'][d]['subtree']:   
          
             m.append(C[c]['subtree'][d]['subtree'][e]['N'])
+
+            #if m[-1]==1:
             tracks_tmp=[T[i] for i in C[c]['subtree'][d]['subtree'][e]['indices']]
             #!!! reference to indices is not correct possibly it would be better to index directly to T
+            
             skel.append(tracks_tmp[pf.most_similar_track_zhang(tracks_tmp)[0]])
 
 print 'Done in', time.clock()-now,'s.'
 
 print sum(l),len(l)
 print sum(m),len(m)
+
+print len(skel)
+
 
 
 r=fos.ren()
