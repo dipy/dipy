@@ -1462,10 +1462,37 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
     out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
-def larch_init(tracks,sqd_thr=50**2):
+def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
 
-    ''' Generate a first pass clustering using 3 points (fist, mid and last) on the tracks only
+    ''' Generate a first pass clustering using 3 points (first, mid and last) on the tracks only.
 
+
+    Parameters:
+    -----------
+
+    tracks: sequence
+        of tracks as arrays, shape (N1,3) .. (Nm,3)
+
+    indices: sequence 
+        of integer indices of tracks  
+    
+    sqd_trh: float
+        squared euclidean distance threshold
+    
+    Returns:
+    --------
+
+    C: dict, a tree graph containing the clusters
+
+    Examples:
+    ---------
+
+    Notes:
+    ------
+    
+    If a 3 point track (3track) is far away from all clusters then add a new cluster and assign
+    this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
+    3track of each cluster is the average track of the cluster
 
     '''
 
@@ -1477,14 +1504,21 @@ def larch_init(tracks,sqd_thr=50**2):
     
     lent=len(tracks)
 
-    C={0:{'indices':[0],'rep':tracks[0].copy(),'N':1}}
+    if indices==None: 
+        C={0:{'indices':[0],'rep':tracks[0].copy(),'N':1}}
+        itrange=range(1,lent)
+
+    else: 
+        C={0:{'indices':[indices[0]],'rep':tracks[indices[0]].copy(),'N':1}}
+        itrange=indices[1:]
+
     ts=np.zeros((3,3),dtype=np.float32)
 
     # if a 3track is far away from all clusters then add a new cluster and assign
     # this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
     # 3track of each cluster is the average track of the cluster
-        
-    for it in range(1,lent):
+
+    for it in itrange:
         
         track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
             
@@ -1533,44 +1567,62 @@ def larch_init(tracks,sqd_thr=50**2):
 
     return C
 
-def larch_split(tracks,indices,sqd_thr):
 
-    ''' split part 
+def larch_fast_reassign(C,sqd_thr=100):
+
+    ''' Reassing clusterings using 3 points (first, mid and last) just in case some have lost their neighborhood
+    after all these spliting created by larch_fast_split.
+
+
+    Parameters:
+    -----------      
+
+    C: graph with clusters
+        of indices 3tracks (tracks consisting of 3 points only)
+
+    sqd_trh: float
+        squared euclidean distance threshold
+    
+    Returns:
+    --------
+
+    C: dict, a tree graph containing the clusters
 
     '''
 
-    cdef :
-        cnp.ndarray[cnp.float32_t, ndim=2] track
-        cnp.ndarray[cnp.float32_t, ndim=2] h
-        int lent,k,it
-        float d[2]        
-    
-    lent=len(tracks)
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] h
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] h2
+    cdef int lenC
+    cdef int k
+    cdef int c
+    cdef float d[2] 
 
-    C={0:{'indices':[indices[0]],'rep':tracks[indices[0]].copy(),'N':1}}
-    ts=np.zeros((3,3),dtype=np.float32)
+    #tss=np.zeros((3,3),dtype=np.float32)
 
-    # if a 3track is far away from all clusters then add a new cluster and assign
-    # this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
-    # 3track of each cluster is the average track of the cluster
-        
-    for it in indices[1:]:
-        
-        #track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
-        track=tracks[it]
-            
-        lenC=len(C.keys())
-        
-        alld=np.zeros(lenC)
-        flip=np.zeros(lenC)
+    #lenC=len(C)
+
+    '''
+
+    lenC=len(C)
+
+    for c in range(0,lenC):
+
+
+        ch=np.ascontiguousarray(C[c]['rep']/C[c]['N'],dtype=f32_dt)
         
 
-        for k in range(lenC):
-        
-            h=np.ascontiguousarray(C[k]['rep']/C[k]['N'],dtype=f32_dt)
-            
+        krange=range(c+1,lenC)
+        klen=len(krange)
+
+        alld=np.zeros(klen)
+        flip=np.zeros(klen)
+
+        for k in krange:
+
+            h=np.ascontiguousarray(C[k+c]['rep']/C[k+c]['N'],dtype=f32_dt)
+
             track_direct_flip_3sq_dist(
-                as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
+                as_float_ptr(ch[0]),as_float_ptr(ch[1]),as_float_ptr(ch[2]), 
                 as_float_ptr(h[0]), as_float_ptr(h[1]), as_float_ptr(h[2]),d)
                 
             if d[1]<d[0]:                
@@ -1580,36 +1632,77 @@ def larch_split(tracks,indices,sqd_thr):
 
         m_k=np.min(alld)
         i_k=np.argmin(alld)
-        
-        if m_k<sqd_thr:            
-            
+
+        if m_k<sqd_thr:     
+
+            print c
+
             if flip[i_k]==1:                
-                ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
-                C[i_k]['rep']+=ts
-            else:                
-                C[i_k]['rep']+=track
+                ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
+                C[i_k+c]['rep']+=ts
+            else:
+                C[i_k+c]['rep']+=ch
                 
-            C[i_k]['N']+=1
-            C[i_k]['indices'].append(it)
-            
-        else:
-            C[lenC]={}
-            C[lenC]['rep']=track.copy()
-            C[lenC]['N']=1
-            C[lenC]['indices']=[it]
+            C[i_k+c]['N']+=C[c]['N']
+            C[i_k+c]['indices']+=C[c]['indices']
 
+            del C[c]
+    '''
 
-    return C
+    return
 
 
 
-def larch_imerge(C,priors=None):
+def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2]):
+    ''' Preprocessing stage
 
-    return 0
+    Parameters:
+    -----------
+    tracks: sequence
+        of tracks as arrays, shape (N1,3) .. (Nm,3)
+
+    split_thrs: sequence
+        of floats with thresholds.
+
+    Returns:
+    --------
+    C: dict, a tree graph containing the clusters
+
+    '''
     
-def larch(tracks,init_levels=[50,20,10.],priors=None):
+    
+    #1st level spliting
+    C=larch_fast_split(tracks,None,split_thrs[0])
 
-    ''' LocAl Rapid Clustering for tractograpHy
+    C_leafs={}
+
+    cdef int c_id=0 
+
+    #2nd level spliting
+    for k in C:
+
+        C[k]['subtree']=larch_fast_split(tracks,C[k]['indices'],split_thrs[1])
+
+        #3rd level spliting
+        for l in C[k]['subtree']:
+            
+            C[k]['subtree'][l]['subtree']=larch_fast_split(tracks,C[k]['subtree'][l]['indices'],split_thrs[2])
+
+            #copying the leafs in a new graph
+            for m in C[k]['subtree'][l]['subtree']:
+
+                C_leafs[c_id]=C[k]['subtree'][l]['subtree'][m]
+                c_id+=1
+
+    C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
+
+
+    return C_leafs
+
+    
+def larch(tracks):
+
+    ''' Local to globAl Rapid Clustering for tractograpHy
 
     Parameters:
     -----------
@@ -1621,22 +1714,7 @@ def larch(tracks,init_levels=[50,20,10.],priors=None):
     C: dict, a tree graph containing the clusters
 
     '''
-
-    level_thr=np.array(init_levels)**2
-
-    #1st level
-    C=larch_init(tracks,level_thr[0])
-
-    #2nd level
-    for k in C:
-
-        C[k]['subtree']=larch_split(tracks,C[k]['indices'],level_thr[1])
-
-        #3rd level
-        for l in C[k]['subtree']:
-            
-            C[k]['subtree'][l]['subtree']=larch_split(tracks,C[k]['subtree'][l]['indices'],level_thr[2])
-
-
+    C=larch_preproc(tracks)   
+ 
     
     return C

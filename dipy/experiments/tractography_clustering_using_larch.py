@@ -34,7 +34,7 @@ print 'Done in', time.clock()-now,'s.'
 print 'Saving Result...'
 pkl.save_pickle(tree_fname,C)
 
-
+'''
 l=[]
 m=[]
 
@@ -77,7 +77,7 @@ fos.add(r,fos.line(skel,fos.red,opacity=1))
 
 fos.show(r)
 
-
+'''
 
 '''
 print 'Reducing the number of points...'
