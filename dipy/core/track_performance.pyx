@@ -1567,26 +1567,39 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
 
     return C
 
-def larch_reassign(C,sqd_thr=100):
+
+def larch_fast_reassign(C,sqd_thr=100):
+
+    ''' Reassing clusterings using 3 points (first, mid and last) just in case some have lost their neighborhood
+    after all these spliting created by larch_fast_split.
 
 
+    Parameters:
+    -----------      
 
-   
-    #cdef cnp.ndarray[cnp.float32_t, ndim=2] h
-    #cdef cnp.ndarray[cnp.float32_t, ndim=2] ch
-    #cdef int lenC,k,c
-    #cdef float d[2]
+    C: graph with clusters
+        of indices 3tracks (tracks consisting of 3 points only)
 
-    #ts=np.zeros((3,3),dtype=np.float32)
+    sqd_trh: float
+        squared euclidean distance threshold
+    
+    Returns:
+    --------
 
-    #lenC=len(C)
-
+    C: dict, a tree graph containing the clusters
 
     '''
 
-    lenC=len(C)
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] h=np.zeros((3,3),dtype=np.float32)
+    cdef cnp.ndarray[cnp.float32_t, ndim=2] ch=np.zeros((3,3),dtype=np.float32)
+    cdef int lenC,k,c
+    cdef float d[2] 
 
-    for c in range(0,lenC):
+    ts=np.zeros((3,3),dtype=np.float32)
+
+    lenC=len(C)
+    
+    for c in range(0,lenC-1):
 
 
         ch=np.ascontiguousarray(C[c]['rep']/C[c]['N'],dtype=f32_dt)
@@ -1598,9 +1611,12 @@ def larch_reassign(C,sqd_thr=100):
         alld=np.zeros(klen)
         flip=np.zeros(klen)
 
+
         for k in krange:
 
-            h=np.ascontiguousarray(C[k+c]['rep']/C[k+c]['N'],dtype=f32_dt)
+            print c,k
+
+            h=np.ascontiguousarray(C[k]['rep']/C[k]['N'],dtype=f32_dt)
 
             track_direct_flip_3sq_dist(
                 as_float_ptr(ch[0]),as_float_ptr(ch[1]),as_float_ptr(ch[2]), 
@@ -1616,7 +1632,7 @@ def larch_reassign(C,sqd_thr=100):
 
         if m_k<sqd_thr:     
 
-            print c
+            #print c
 
             if flip[i_k]==1:                
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
@@ -1628,23 +1644,11 @@ def larch_reassign(C,sqd_thr=100):
             C[i_k+c]['indices']+=C[c]['indices']
 
             del C[c]
-    '''
-
-
-    return 
-
-'''
-def test_as():
-
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] th1
-    cdef cnp.ndarray[cnp.float32_t, ndim=2] th2
-    cdef int lenC,k,c
-    cdef float d[2]
-
-    ts=np.zeros((3,3),dtype=np.float32)
 
     return
-'''
+
+
+
 
 def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2]):
     ''' Preprocessing stage
@@ -1687,7 +1691,7 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2]):
                 C_leafs[c_id]=C[k]['subtree'][l]['subtree'][m]
                 c_id+=1
 
-    C_leafs=larch_reassign(C_leafs,split_thrs[2])
+    C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
 
 
     return C_leafs
