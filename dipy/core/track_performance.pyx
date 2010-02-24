@@ -1570,9 +1570,7 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
 
 def larch_fast_reassign(C,sqd_thr=100):
 
-    ''' Reassing clusterings using 3 points (first, mid and last) just in case some have lost their neighborhood
-    after all these spliting created by larch_fast_split.
-
+    ''' Reassing tracks to existing clusters by merging clusters that their representative tracks are not very distant i.e. less than sqd_thr. Using tracks consisting of 3 points (first, mid and last). This is necessary after running larch_fast_split after multiple split in different levels (squared thresholds) as some of them have created independent clusters.
 
     Parameters:
     -----------      
@@ -1602,8 +1600,7 @@ def larch_fast_reassign(C,sqd_thr=100):
     for c in range(0,lenC-1):
 
 
-        ch=np.ascontiguousarray(C[c]['rep']/C[c]['N'],dtype=f32_dt)
-        
+        ch=np.ascontiguousarray(C[c]['rep']/C[c]['N'],dtype=f32_dt)        
 
         krange=range(c+1,lenC)
         klen=len(krange)
@@ -1614,8 +1611,6 @@ def larch_fast_reassign(C,sqd_thr=100):
 
         for k in krange:
 
-            print c,k
-
             h=np.ascontiguousarray(C[k]['rep']/C[k]['N'],dtype=f32_dt)
 
             track_direct_flip_3sq_dist(
@@ -1623,16 +1618,16 @@ def larch_fast_reassign(C,sqd_thr=100):
                 as_float_ptr(h[0]), as_float_ptr(h[1]), as_float_ptr(h[2]),d)
                 
             if d[1]<d[0]:                
-                d[0]=d[1];flip[k]=1
                 
-            alld[k]=d[0]
+                d[0]=d[1]
+                flip[k-c-1]=1
+                
+            alld[k-c-1]=d[0]
 
         m_k=np.min(alld)
         i_k=np.argmin(alld)
 
         if m_k<sqd_thr:     
-
-            #print c
 
             if flip[i_k]==1:                
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
@@ -1645,12 +1640,13 @@ def larch_fast_reassign(C,sqd_thr=100):
 
             del C[c]
 
-    return
+    return C
 
 
 
 
-def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2]):
+
+def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
     ''' Preprocessing stage
 
     Parameters:
@@ -1666,7 +1662,7 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2]):
     C: dict, a tree graph containing the clusters
 
     '''
-    
+    if info: print 'Spliting in 3 levels with thresholds',split_thrs
     
     #1st level spliting
     C=larch_fast_split(tracks,None,split_thrs[0])
@@ -1691,13 +1687,19 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2]):
                 C_leafs[c_id]=C[k]['subtree'][l]['subtree'][m]
                 c_id+=1
 
+
+    if info: 
+        print 'Number of clusters after spliting...', len(C_leafs)
+        print 'Starting larch_fast_reassignment ...'
+    
     C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
 
+    if info: print 'Number of clusters after reassignment', len(C_leafs)
 
     return C_leafs
 
     
-def larch(tracks):
+def larch(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
 
     ''' Local to globAl Rapid Clustering for tractograpHy
 
@@ -1711,7 +1713,11 @@ def larch(tracks):
     C: dict, a tree graph containing the clusters
 
     '''
-    C=larch_preproc(tracks)   
- 
-    
+
+    if info: 
+        print('Starting larch_preprocessing...')
+        C=larch_preproc(tracks,split_thrs,info=True)   
+    else:
+        C=larch_preproc(tracks)
+     
     return C
