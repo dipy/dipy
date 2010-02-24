@@ -25,7 +25,8 @@ tracks3=[tm.downsample(t,3) for t in T]
 
 print 'LARCH in process...'
 tim=time.clock()
-C=pf.larch(tracks3,split_thrs=[40**2,15**2,5.**2],info=True)
+#C=pf.larch(tracks3,split_thrs=[40**2,15**2,5.**2],info=True)
+C=pf.larch(tracks3,split_thrs=[50**2,20**2,10.**2],info=True)
 print 'Done in ',time.clock()-tim,'seconds.'
 
 print 'Saving result...'
@@ -40,8 +41,9 @@ T=[pf.approximate_ei_trajectory(t) for t in T]
 skel=[]
 for c in C:
 
-    skel_tracks=[T[i] for i in  C[c]['indices']]
-    skel.append(skel_tracks[pf.most_similar_track_zhang(skel_tracks)[0]])
+    if C[c]['N']> 100:
+        skel_tracks=[T[i] for i in  C[c]['indices']]
+        skel.append(skel_tracks[pf.most_similar_track_zhang(skel_tracks)[0]])
 
 print 'Showing dataset after clustering.'
 r=fos.ren()
