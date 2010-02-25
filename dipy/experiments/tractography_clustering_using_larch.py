@@ -23,6 +23,7 @@ del streams,hdr
 print '3track representation ...'
 tracks3=[tm.downsample(t,3) for t in T]
 
+
 print 'LARCH in process...'
 tim=time.clock()
 #C=pf.larch(tracks3,split_thrs=[40**2,15**2,5.**2],info=True)
