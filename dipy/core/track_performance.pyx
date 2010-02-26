@@ -8,6 +8,7 @@ Performance functions for dipy
 cimport cython
 
 import numpy as np
+import time
 cimport numpy as cnp
 
 
@@ -648,7 +649,7 @@ def minimum_closest_distance(xyz1,xyz2):
     find min of minAB stored in min_minAB
     find min of minBA stored in min_minBA
     
-    is 'avg' then return (min_minAB + min_minBA)/2.0
+    Then return (min_minAB + min_minBA)/2.0
     '''
     cdef:
         cnp.ndarray[cnp.float32_t, ndim=2] track1 
@@ -1429,7 +1430,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     return C
 
 
-cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
     ''' Calculate the average squared euclidean distance between two 3pt tracks
     both direct and flip are given as output
     
@@ -1450,7 +1451,8 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
         float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
         
     
-    for i in range(3):
+    #for i in range(3):
+    for i from 0<=i<3:
         tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
         tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
         tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
@@ -1505,11 +1507,11 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
     lent=len(tracks)
 
     if indices==None: 
-        C={0:{'indices':[0],'rep':tracks[0].copy(),'N':1}}
+        C={0:{'indices':[0],'rep3':tracks[0].copy(),'N':1}}
         itrange=range(1,lent)
 
     else: 
-        C={0:{'indices':[indices[0]],'rep':tracks[indices[0]].copy(),'N':1}}
+        C={0:{'indices':[indices[0]],'rep3':tracks[indices[0]].copy(),'N':1}}
         itrange=indices[1:]
 
     ts=np.zeros((3,3),dtype=np.float32)
@@ -1533,7 +1535,7 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
 
         for k in range(lenC):
         
-            h=np.ascontiguousarray(C[k]['rep']/C[k]['N'],dtype=f32_dt)
+            h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
             
             track_direct_flip_3sq_dist(
                 as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
@@ -1551,16 +1553,16 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
             
             if flip[i_k]==1:                
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
-                C[i_k]['rep']+=ts
+                C[i_k]['rep3']+=ts
             else:
-                C[i_k]['rep']+=track
+                C[i_k]['rep3']+=track
                 
             C[i_k]['N']+=1
             C[i_k]['indices'].append(it)
             
         else:
             C[lenC]={}
-            C[lenC]['rep']=track.copy()
+            C[lenC]['rep3']=track.copy()
             C[lenC]['N']=1
             C[lenC]['indices']=[it]
 
@@ -1600,7 +1602,7 @@ def larch_fast_reassign(C,sqd_thr=100):
     for c in range(0,lenC-1):
 
 
-        ch=np.ascontiguousarray(C[c]['rep']/C[c]['N'],dtype=f32_dt)        
+        ch=np.ascontiguousarray(C[c]['rep3']/C[c]['N'],dtype=f32_dt)        
 
         krange=range(c+1,lenC)
         klen=len(krange)
@@ -1609,9 +1611,9 @@ def larch_fast_reassign(C,sqd_thr=100):
         flip=np.zeros(klen)
 
 
-        for k in krange:
+        for k in range(c+1,lenC):
 
-            h=np.ascontiguousarray(C[k]['rep']/C[k]['N'],dtype=f32_dt)
+            h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
 
             track_direct_flip_3sq_dist(
                 as_float_ptr(ch[0]),as_float_ptr(ch[1]),as_float_ptr(ch[2]), 
@@ -1627,18 +1629,21 @@ def larch_fast_reassign(C,sqd_thr=100):
         m_k=np.min(alld)
         i_k=np.argmin(alld)
 
+
         if m_k<sqd_thr:     
 
             if flip[i_k]==1:                
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
-                C[i_k+c]['rep']+=ts
+                C[i_k+c]['rep3']+=ts
             else:
-                C[i_k+c]['rep']+=ch
+                C[i_k+c]['rep3']+=ch
                 
             C[i_k+c]['N']+=C[c]['N']
+
             C[i_k+c]['indices']+=C[c]['indices']
 
             del C[c]
+
 
     return C
 
@@ -1692,32 +1697,82 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
         print 'Number of clusters after spliting...', len(C_leafs)
         print 'Starting larch_fast_reassignment ...'
     
+    t1=time.clock()
     C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
+
+    print 'Reassignment done in ',time.clock()-t1, 'secs'
+
 
     if info: print 'Number of clusters after reassignment', len(C_leafs)
 
     return C_leafs
 
-    
-def larch(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
 
-    ''' Local to globAl Rapid Clustering for tractograpHy
+def larch_preprocV2(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
+    ''' Preprocessing stage
 
     Parameters:
     -----------
     tracks: sequence
         of tracks as arrays, shape (N1,3) .. (Nm,3)
 
+    split_thrs: sequence
+        of floats with thresholds.
+
     Returns:
     --------
     C: dict, a tree graph containing the clusters
 
     '''
+    if info: print 'Spliting in 3 levels with thresholds',split_thrs
+    
+    #1st level spliting
+    C=larch_fast_split(tracks,None,split_thrs[0])
+
+    C_leafs={}
+
+    cdef int c_id=0 
+
+    #2nd level spliting
+    for k in C:
+
+        C[k]['subtree']=larch_fast_split(tracks,C[k]['indices'],split_thrs[1])
+
+        #3rd level spliting
+        for l in C[k]['subtree']:
+            
+            C[k]['subtree'][l]['subtree']=larch_fast_split(tracks,C[k]['subtree'][l]['indices'],split_thrs[2])
+
+            #copying the leafs in a new graph
+            for m in C[k]['subtree'][l]['subtree']:
+
+                C_leafs[c_id]=C[k]['subtree'][l]['subtree'][m]
+                c_id+=1
+
+
+    #for c in C_leafs:
+
+        
+        
+    
+
+    '''
 
     if info: 
-        print('Starting larch_preprocessing...')
-        C=larch_preproc(tracks,split_thrs,info=True)   
-    else:
-        C=larch_preproc(tracks)
-     
-    return C
+        print 'Number of clusters after spliting...', len(C_leafs)
+        print 'Starting larch_fast_reassignment ...'
+    
+    t1=time.clock()
+    C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
+
+    print 'Reassignment done in ',time.clock()-t1, 'secs'
+
+
+    if info: print 'Number of clusters after reassignment', len(C_leafs)
+
+    return C_leafs
+    '''
+
+    return
+
+    

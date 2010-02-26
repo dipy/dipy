@@ -283,12 +283,6 @@ def mean_curvature(xyz):
         
     return np.mean(k)
 
-def smart_curvature(xyz):
-    ''' xyz needs to be downsampled in equi-length segments
-    
-    '''
-    
-    pass
 
 def mean_orientation(xyz):
     '''
@@ -1174,9 +1168,9 @@ def downsample(xyz,n_pols=3):
     cumlen[1:] = length(xyz, along=True)    
     step=cumlen[-1]/(n_pols-1)
     if cumlen[-1]<step:
-        raise ValueError('Given numper of points n_pols is incorrect. ')
+        raise ValueError('Given number of points n_pols is incorrect. ')
     if n_pols<=2:
-        raise ValueError('Given numper of points n_pols needs to be'
+        raise ValueError('Given number of points n_pols needs to be'
                          ' higher than 2. ')
     xyz2=[_extrap(xyz,cumlen,distance)
           for distance in np.arange(0,cumlen[-1],step)]
