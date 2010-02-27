@@ -9,7 +9,73 @@ import time
 import numpy.linalg as npla
 
 
-def near_clusters(c,C1,C2,n=1):
+
+def larch(tracks,split_thrs=[50.**2,20.**2,10.**2],ret_atracks=False,info=False):
+
+    ''' LocAl Rapid Clusters for tractograpHy
+
+    Parameters:
+    -----------
+    tracks: sequence
+        of tracks as arrays, shape (N1,3) .. (Nm,3)
+
+    split_thrs: sequence of 3 floats with the squared distances
+
+    approx_tracks: boolean, 
+        if True return an approximation of the initial tracks
+    
+    info: boolean, 
+       print some information
+
+    Returns:
+    --------
+    C: dict, a tree graph containing the clusters
+
+    atracks: sequence of approximated tracks the approximation preserves initial
+       shape.
+    
+
+    '''
+    t1=time.clock()    
+    print 'Reducing to 3-point approximate tracks...'
+    tracks3=[tm.downsample(t,3) for t in tracks]
+
+    t2=time.clock()
+    print 'Done in ', t2-t1, 'secs'
+    
+    print 'Reducing to n-point approximate tracks...'
+    atracks=[pf.approximate_ei_trajectory(t) for t in tracks]
+
+    t3=time.clock()
+    print 'Done in ', t3-t2, 'secs'
+        
+    print('Starting larch_preprocessing...')
+    C=pf.larch_preproc(tracks3,split_thrs,info)   
+    
+    t4=time.clock()
+    print 'Done in ', t4-t3, 'secs'
+
+    print('Finding most similar tracks in every cluster ...')
+    for c in C:
+        
+        local_tracks=[atracks[i] for i in C[c]['indices']]        
+        #identify the most similar track in the cluster C[c] and return the index of
+        #the track and the distances of this track with all other tracks
+        msi,distances=pf.most_similar_track_zhang(local_tracks,metric='avg')
+        
+        C[c]['repz']=atracks[C[c]['indices'][msi]]
+        C[c]['repz_dists']=distances
+    
+    print 'Done in ', time.clock()-t4
+    
+    if ret_atracks:
+        return C,atracks
+    else:
+        return C
+    
+
+
+def near_clusters(c,C1,C2,n=1,rep='rep3'):
     ''' Return 'n' closest clusters in C2 from cluster C1[c] using the hidden track
 
     Parameters:
@@ -18,7 +84,7 @@ def near_clusters(c,C1,C2,n=1):
 
     C1: dict, the structure of the dictionary is of the form 
     
-    C2={0:{'hidden':c},1:{'hidden':d},2:{'hidden':e}} where c,d,e 3x3 numpy arrays
+    C2={0:{'rep3':c},1:{'rep3':d},2:{'rep3':e}} where c,d,e 3x3 numpy arrays
 
     C2: dict
 
@@ -38,14 +104,14 @@ def near_clusters(c,C1,C2,n=1):
     >>> d=np.array([[0,0,0],[1,0,0],[3,1,0]])
     >>> e=np.array([[0,0,0],[1,0,0],[4,1,0]])
 
-    >>> C1={0:{'hidden':a},1:{'hidden':b}}
-    >>> C2={0:{'hidden':c},1:{'hidden':d},2:{'hidden':e}}
+    >>> C1={0:{'rep3':a},1:{'rep3':b}}
+    >>> C2={0:{'rep3':c},1:{'rep3':d},2:{'rep3':e}}
   
     >>> tl.near_clusters(0,C1,C2)
 
     '''
 
-    d= [pf.track_dist_3pts(C1[c]['hidden'],C2[c2]['hidden']) for c2 in C2]
+    d= [pf.track_dist_3pts(C1[c]['rep3'],C2[c2]['rep3']) for c2 in C2]
         
     d=np.array(d)
 
@@ -55,106 +121,8 @@ def near_clusters(c,C1,C2,n=1):
     near=d.argsort()
         
     return near[:n]
+   
 
-    
-
-
-
-    
-
-
-def local_skeleton_clustering(tracks, d_thr=10):
-    ''' deprecated use same funciton in performance
-    
-    Example:
-    -----------
-    from dipy.viz import fos
-        
-    tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
-                np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
-                np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
-                np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
-                np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
-                np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
-                np.array([[0,0,0],[0,1,0],[0,2,0]])]
-                                    
-    C=local_skeleton_clustering(tracks,d_thr=0.5)    
-    
-    r=fos.ren()
-
-    for c in C:
-        color=np.random.rand(3)
-        for i in C[c]['indices']:
-            fos.add(r,fos.line(T[i],color))
-
-    '''
-
-    #Network C
-    C={0:{'indices':[0],'hidden':tracks[0].copy(),'N':1}}
-    ts=np.zeros((3,3),dtype=np.float32)
-    
-    for (it,t) in enumerate(tracks[1:]):
-        
-            
-        lenC=len(C.keys())
-        
-        if it%1000==0:
-            print it,lenC
-        
-        alld=np.zeros(lenC)
-        flip=np.zeros(lenC)
-        
-
-        for k in xrange(lenC):
-        
-            h=C[k]['hidden']/C[k]['N']
-            #print it+1
-            #print t
-            #print h
-            d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
-            ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
-            ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
-            
-            #print d,ds
-            
-            if ds<d:                
-                d=ds;
-                flip[k]=1
-                
-            alld[k]=d
-
-        m_k=np.min(alld)
-        i_k=np.argmin(alld)
-        
-        if m_k<d_thr:            
-            
-            if flip[i_k]==1:                
-                ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
-                C[i_k]['hidden']+=ts
-            else:                
-                C[i_k]['hidden']+=t
-                
-            C[i_k]['N']+=1
-            C[i_k]['indices'].append(it+1)
-            
-        else:
-            C[lenC]={}
-            C[lenC]['hidden']=t.copy()
-            C[lenC]['N']=1
-            C[lenC]['indices']=[it+1]
-    
-    '''   
-    fos.clear(r)
-
-    color=[fos.red,fos.green,fos.blue,fos.yellow]
-    for c in C:
-        for i in C[c]['indices']:
-            fos.add(r,fos.line(tracks[i],color[c]))
-                
-    fos.show(r)
-    '''
-    
-    return C
 
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
