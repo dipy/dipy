@@ -1431,7 +1431,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     return C
 
 
-cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
+cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
     ''' Calculate the average squared euclidean distance between two 3pt tracks
     both direct and flip are given as output
     
@@ -1490,6 +1490,24 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
     Examples:
     ---------
 
+    >>> from dipy.viz import fos        
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
+            np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
+            np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
+            np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
+            np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+            np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
+            np.array([[0,0,0],[0,1,0],[0,2,0]])]
+                                    
+    >>> C=larch_fast_split(tracks,None,0.5**2)        
+    >>> r=fos.ren()
+    >>> for c in C:
+        color=np.random.rand(3)
+        for i in C[c]['indices']:
+            fos.add(r,fos.line(tracks[i],color))
+    >>> fos.show(r)
+
+
     Notes:
     ------
     
@@ -1517,22 +1535,14 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
 
     ts=np.zeros((3,3),dtype=np.float32)
 
-    # if a 3track is far away from all clusters then add a new cluster and assign
-    # this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
-    # 3track of each cluster is the average track of the cluster
-
     for it in itrange:
         
         track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
             
         lenC=len(C.keys())
-        
-        #if it%1000==0:
-        #    print it,lenC
-        
+
         alld=np.zeros(lenC)
-        flip=np.zeros(lenC)
-        
+        flip=np.zeros(lenC)        
 
         for k in range(lenC):
         
@@ -1668,12 +1678,12 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
     '''
     t1=time.clock()
 
-    C=larch_fast_split(tracks,None,12.**2)
+    C=larch_fast_split(tracks,None,20.**2)
 
     print 'Splitting done in ',time.clock()-t1, 'secs', 'len', len(C)
 
     t2=time.clock()
-    C=larch_fast_reassign(C,12.**2)
+    C=larch_fast_reassign(C,20.**2)
 
     print 'Reassignment done in ',time.clock()-t2, 'secs', 'len', len(C)
 
