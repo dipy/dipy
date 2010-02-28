@@ -41,7 +41,7 @@ cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
     return np.squeeze(np.asarray(vec, dtype=np.float32))
 
 
-cdef inline float* as_float_ptr(cnp.ndarray pt):
+cdef inline float* asfp(cnp.ndarray pt):
     return <float *>pt.data
 
 
@@ -257,11 +257,11 @@ def cut_plane(tracks,ref):
     max_hit_len = 0
     hits = []
     # for every point along the reference track
-    next_ref_p = as_float_ptr(ref32[0])
+    next_ref_p = asfp(ref32[0])
     for p_no in range(N_ref-1):
         # extract point to point vector into `along`
         this_ref_p = next_ref_p
-        next_ref_p = as_float_ptr(ref32[p_no+1])
+        next_ref_p = asfp(ref32[p_no+1])
         csub_3vecs(next_ref_p, this_ref_p, along)
         # normalize
         cnormalized_3vec(along, normal)
@@ -272,14 +272,14 @@ def cut_plane(tracks,ref):
             track=tracks32[t_no]
             N_track = track_lengths[t_no]
             # for every point on the track
-            next_trk_p = as_float_ptr(track[0])
+            next_trk_p = asfp(track[0])
             for q_no in range(N_track-1):
                 # p = ref32[p_no]
                 # q = track[q_no]
                 # r = track[q_no+1]
                 # float* versions of above: p == this_ref_p
                 this_trk_p = next_trk_p # q
-                next_trk_p = as_float_ptr(track[q_no+1]) # r
+                next_trk_p = asfp(track[q_no+1]) # r
                 #if np.inner(normal,q-p)*np.inner(normal,r-p) <= 0:
                 csub_3vecs(this_trk_p, this_ref_p, qMp) # q-p
                 csub_3vecs(next_trk_p, this_ref_p, rMp) # r-p
@@ -911,9 +911,9 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
         #fvec0 = as_float_3vec(track[mid_index-1])
         #<float *>track[0].data
         
-        fvec0 = as_float_ptr(track[mid_index-1])
-        fvec1 = as_float_ptr(track[mid_index])
-        fvec2 = as_float_ptr(track[mid_index+1])
+        fvec0 = asfp(track[mid_index-1])
+        fvec1 = asfp(track[mid_index])
+        fvec2 = asfp(track[mid_index+1])
         
         #csub_3vecs(<float *>fvec1.data,<float *>fvec0.data,vec0)
         csub_3vecs(fvec1,fvec0,vec0)
@@ -1037,10 +1037,10 @@ def intersect_segment_cylinder(sa,sb,p,q,r):
         float ct[2]
         
                 
-    csa = as_float_ptr(sa)
-    csb = as_float_ptr(sb)
-    cp = as_float_ptr(p)
-    cq = as_float_ptr(q)
+    csa = asfp(sa)
+    csb = asfp(sb)
+    cp = asfp(p)
+    cq = asfp(q)
     cr=r
     ct[0]=-100
     ct[1]=-100
@@ -1153,9 +1153,9 @@ def point_segment_sq_distance(a,b,c):
         float ct[2]
         
                 
-    ca = as_float_ptr(a)
-    cb = as_float_ptr(b)
-    cc = as_float_ptr(c)
+    ca = asfp(a)
+    cb = asfp(b)
+    cc = asfp(c)
     
     return cpoint_segment_sq_dist(ca, cb, cc)
     
@@ -1202,15 +1202,15 @@ def local_skeleton_3pts(tracks):
         if i %10000 ==0 :
             print i
             
-        i_pts0=as_float_ptr(3*T[i])
-        i_pts1=as_float_ptr(3*T[i]+1)
-        i_pts2=as_float_ptr(3*T[i]+2)
+        i_pts0=asfp(3*T[i])
+        i_pts1=asfp(3*T[i]+1)
+        i_pts2=asfp(3*T[i]+2)
                 
         for j in range(250000-i):
                                     
-            j_pts0=as_float_ptr(3*T[j])
-            j_pts1=as_float_ptr(3*T[j]+1)
-            j_pts2=as_float_ptr(3*T[j]+2)
+            j_pts0=asfp(3*T[j])
+            j_pts1=asfp(3*T[j]+1)
+            j_pts2=asfp(3*T[j]+2)
         
             
             
@@ -1250,8 +1250,8 @@ def track_dist_3pts(tracka,trackb):
     a=np.ascontiguousarray(tracka,dtype=f32_dt)
     b=np.ascontiguousarray(trackb,dtype=f32_dt)
     
-    track_direct_flip_3dist(as_float_ptr(a[0]),as_float_ptr(a[1]),as_float_ptr(a[2]),
-                            as_float_ptr(b[0]),as_float_ptr(b[1]),as_float_ptr(b[2]),d)
+    track_direct_flip_3dist(asfp(a[0]),asfp(a[1]),asfp(a[2]),
+                            asfp(b[0]),asfp(b[1]),asfp(b[2]),d)
 
   
     if d[0]<d[1]:
@@ -1382,8 +1382,8 @@ def local_skeleton_clustering(tracks, d_thr=10):
             #print track
             #print h
             track_direct_flip_3dist(
-                as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
-                as_float_ptr(h[0]), as_float_ptr(h[1]),as_float_ptr(h[2]),d)
+                asfp(track[0]),asfp(track[1]),asfp(track[2]), 
+                asfp(h[0]), asfp(h[1]),asfp(h[2]),d)
                 
             #d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
             #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
@@ -1539,8 +1539,8 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
             
             track_direct_flip_3sq_dist(
-                as_float_ptr(track[0]),as_float_ptr(track[1]),as_float_ptr(track[2]), 
-                as_float_ptr(h[0]), as_float_ptr(h[1]), as_float_ptr(h[2]),d)
+                asfp(track[0]),asfp(track[1]),asfp(track[2]), 
+                asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
                 
             if d[1]<d[0]:                
                 d[0]=d[1];flip[k]=1
@@ -1573,7 +1573,7 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
 
 def larch_fast_reassign(C,sqd_thr=100):
 
-    ''' Reassing tracks to existing clusters by merging clusters that their representative tracks are not very distant i.e. less than sqd_thr. Using tracks consisting of 3 points (first, mid and last). This is necessary after running larch_fast_split after multiple split in different levels (squared thresholds) as some of them have created independent clusters.
+    ''' Reassign tracks to existing clusters by merging clusters that their representative tracks are not very distant i.e. less than sqd_thr. Using tracks consisting of 3 points (first, mid and last). This is necessary after running larch_fast_split after multiple split in different levels (squared thresholds) as some of them have created independent clusters.
 
     Parameters:
     -----------      
@@ -1588,6 +1588,7 @@ def larch_fast_reassign(C,sqd_thr=100):
     --------
 
     C: dict, a tree graph containing the clusters
+
 
     '''
 
@@ -1617,8 +1618,8 @@ def larch_fast_reassign(C,sqd_thr=100):
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
 
             track_direct_flip_3sq_dist(
-                as_float_ptr(ch[0]),as_float_ptr(ch[1]),as_float_ptr(ch[2]), 
-                as_float_ptr(h[0]), as_float_ptr(h[1]), as_float_ptr(h[2]),d)
+                asfp(ch[0]),asfp(ch[1]),asfp(ch[2]), 
+                asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
                 
             if d[1]<d[0]:                
                 
@@ -1649,9 +1650,6 @@ def larch_fast_reassign(C,sqd_thr=100):
     return C
 
 
-
-
-
 def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
     ''' Preprocessing stage
 
@@ -1668,10 +1666,28 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
     C: dict, a tree graph containing the clusters
 
     '''
+    t1=time.clock()
+
+    C=larch_fast_split(tracks,None,12.**2)
+
+    print 'Splitting done in ',time.clock()-t1, 'secs', 'len', len(C)
+
+    t2=time.clock()
+    C=larch_fast_reassign(C,12.**2)
+
+    print 'Reassignment done in ',time.clock()-t2, 'secs', 'len', len(C)
+
+
+    return C
+
+    '''
+
     if info: print 'Spliting in 3 levels with thresholds',split_thrs
     
     #1st level spliting
     C=larch_fast_split(tracks,None,split_thrs[0])
+
+    
 
     C_leafs={}
 
@@ -1680,23 +1696,23 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
     #2nd level spliting
     for k in C:
 
-        C[k]['subtree']=larch_fast_split(tracks,C[k]['indices'],split_thrs[1])
+        C[k]['sub']=larch_fast_split(tracks,C[k]['indices'],split_thrs[1])
 
         #3rd level spliting
-        for l in C[k]['subtree']:
+        for l in C[k]['sub']:
             
-            C[k]['subtree'][l]['subtree']=larch_fast_split(tracks,C[k]['subtree'][l]['indices'],split_thrs[2])
+            C[k]['sub'][l]['sub']=larch_fast_split(tracks,C[k]['sub'][l]['indices'],split_thrs[2])
 
             #copying the leafs in a new graph
-            for m in C[k]['subtree'][l]['subtree']:
+            for m in C[k]['sub'][l]['sub']:
 
-                C_leafs[c_id]=C[k]['subtree'][l]['subtree'][m]
+                C_leafs[c_id]=C[k]['sub'][l]['sub'][m]
                 c_id+=1
 
 
     if info: 
-        print 'Number of clusters after spliting...', len(C_leafs)
-        print 'Starting larch_fast_reassignment ...'
+        print 'Number of clusters after spliting ...', len(C_leafs)
+        print 'Starting larch_fast_reassignment  ...'
     
     t1=time.clock()
     C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
@@ -1708,72 +1724,6 @@ def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
 
     return C_leafs
 
-
-def larch_preprocV2(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
-    ''' Preprocessing stage
-
-    Parameters:
-    -----------
-    tracks: sequence
-        of tracks as arrays, shape (N1,3) .. (Nm,3)
-
-    split_thrs: sequence
-        of floats with thresholds.
-
-    Returns:
-    --------
-    C: dict, a tree graph containing the clusters
-
-    '''
-    if info: print 'Spliting in 3 levels with thresholds',split_thrs
-    
-    #1st level spliting
-    C=larch_fast_split(tracks,None,split_thrs[0])
-
-    C_leafs={}
-
-    cdef int c_id=0 
-
-    #2nd level spliting
-    for k in C:
-
-        C[k]['subtree']=larch_fast_split(tracks,C[k]['indices'],split_thrs[1])
-
-        #3rd level spliting
-        for l in C[k]['subtree']:
-            
-            C[k]['subtree'][l]['subtree']=larch_fast_split(tracks,C[k]['subtree'][l]['indices'],split_thrs[2])
-
-            #copying the leafs in a new graph
-            for m in C[k]['subtree'][l]['subtree']:
-
-                C_leafs[c_id]=C[k]['subtree'][l]['subtree'][m]
-                c_id+=1
-
-
-    #for c in C_leafs:
-
-        
-        
-    
-
     '''
 
-    if info: 
-        print 'Number of clusters after spliting...', len(C_leafs)
-        print 'Starting larch_fast_reassignment ...'
-    
-    t1=time.clock()
-    C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
 
-    print 'Reassignment done in ',time.clock()-t1, 'secs'
-
-
-    if info: print 'Number of clusters after reassignment', len(C_leafs)
-
-    return C_leafs
-    '''
-
-    return
-
-    

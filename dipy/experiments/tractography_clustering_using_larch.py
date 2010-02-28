@@ -8,9 +8,9 @@ import time
 import numpy as np
 import os
 
-fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
-C_fname='/home/eg01/Data/tmp/larch_tree.pkl'
-appr_fname='/home/eg01/Data/tmp/larch_tracks.trk'
+fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+C_fname='/tmp/larch_tree.pkl'
+appr_fname='/tmp/larch_tracks.trk'
 
 
 print 'Loading trackvis file...'
@@ -19,7 +19,7 @@ streams,hdr=tv.read(fname)
 print 'Copying tracks...'
 tracks=[i[0] for i in streams]
 
-tracks=tracks[:1000]
+#tracks=tracks[:1000]
 
 #print 'Deleting unnecessary data...'
 del streams#,hdr
