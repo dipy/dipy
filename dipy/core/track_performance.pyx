@@ -1506,6 +1506,8 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
         for i in C[c]['indices']:
             fos.add(r,fos.line(tracks[i],color))
     >>> fos.show(r)
+    
+    
 
 
     Notes:
