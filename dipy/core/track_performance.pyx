@@ -1465,7 +1465,7 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
     out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
-def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
+def larch_fast_split(tracks,indices=None,euclidean=False,sqd_thr=50**2):
 
     ''' Generate a first pass clustering using 3 points (first, mid and last) on the tracks only.
 
@@ -1489,25 +1489,34 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
 
     Examples:
     ---------
-
+    >>> import numpy as np
     >>> from dipy.viz import fos        
-    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
-            np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
-            np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
-            np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
-            np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
-            np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
-            np.array([[0,0,0],[0,1,0],[0,2,0]])]
-                                    
-    >>> C=larch_fast_split(tracks,None,0.5**2)        
+    >>> from dipy.core import track_performance as pf
+    >>> 
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]],dtype=np.float32),            
+    >>>         np.array([[3,0,0],[3.5,1,0],[4,2,0]],dtype=np.float32),
+    >>>         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]],dtype=np.float32),
+    >>>         np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]],dtype=np.float32),
+    >>>         np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]],dtype=np.float32),
+    >>>         np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]],dtype=np.float32),
+    >>>         np.array([[0,0,0],[0,1,0],[0,2,0]],dtype=np.float32),
+    >>>         np.array([[0.2,0,0],[0.2,1,0],[0.2,2,0]],dtype=np.float32),
+    >>>         np.array([[-0.2,0,0],[-0.2,1,0],[-0.2,2,0]],dtype=np.float32)]
+    >>> 
+    >>> 
+    >>> C=pf.larch_fast_split(tracks,None,0.5**2)        
+    >>> 
     >>> r=fos.ren()
-    >>> for c in C:
-        color=np.random.rand(3)
-        for i in C[c]['indices']:
-            fos.add(r,fos.line(tracks[i],color))
+    >>> fos.add(r,fos.line(tracks,fos.red))
     >>> fos.show(r)
-    
-    
+    >>> for c in C:
+    >>>     color=np.random.rand(3)
+    >>>     for i in C[c]['indices']:
+    >>>         fos.add(r,fos.line(tracks[i],color))
+    >>> fos.show(r)
+    >>> for c in C:    
+    >>>     fos.add(r,fos.line(C[c]['rep3']/C[c]['N'],fos.white))
+    >>> fos.show(r)
 
 
     Notes:
@@ -1550,7 +1559,16 @@ def larch_fast_split(tracks,indices=None,sqd_thr=50**2):
         
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
             
-            track_direct_flip_3sq_dist(
+
+            if euclidean:
+
+                track_direct_flip_3dist(
+                asfp(track[0]),asfp(track[1]),asfp(track[2]), 
+                asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
+
+            else:
+
+                track_direct_flip_3sq_dist(
                 asfp(track[0]),asfp(track[1]),asfp(track[2]), 
                 asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
                 
