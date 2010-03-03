@@ -29,19 +29,27 @@ def merge(C,thr):
 
     k=C.keys()
 
+    #print 'k', k
+
     to_be_deleted=np.zeros(len(k))
 
     if len(k)<=1: return C
 
     for i in range(1,len(k)-1):
 
+        c=k[i]
+
         for j in range(i+1,len(k)):
 
-            c=k[i]
+    
             h=k[j]
+
+            #print i,j
             
             t1=C[c]['rep3']/C[c]['N']
             t2=C[h]['rep3']/C[h]['N']
+
+            #print 'yo',tm.zhang_distances(t1,t2,'avg')
 
             if tm.zhang_distances(t1,t2,'avg') < thr:
 
@@ -54,9 +62,14 @@ def merge(C,thr):
 
     for i in np.where(to_be_deleted>0)[0]: del C[k[i]] 
         
-
     return C
 
+
+def most(C):
+
+    for c in C:
+        
+        pass'pf.most_similar_track_zhang()
 
 
 T=pkl.load_pickle(fname)
