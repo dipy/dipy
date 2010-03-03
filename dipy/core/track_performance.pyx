@@ -1465,7 +1465,7 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
     out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
-def larch_fast_split(tracks,indices=None,euclidean=False,sqd_thr=50**2):
+def larch_3split(tracks,indices=None,thr=10.):
 
     ''' Generate a first pass clustering using 3 points (first, mid and last) on the tracks only.
 
@@ -1479,7 +1479,7 @@ def larch_fast_split(tracks,indices=None,euclidean=False,sqd_thr=50**2):
     indices: sequence 
         of integer indices of tracks  
     
-    sqd_trh: float
+    trh: float
         squared euclidean distance threshold
     
     Returns:
@@ -1504,7 +1504,7 @@ def larch_fast_split(tracks,indices=None,euclidean=False,sqd_thr=50**2):
     >>>         np.array([[-0.2,0,0],[-0.2,1,0],[-0.2,2,0]],dtype=np.float32)]
     >>> 
     >>> 
-    >>> C=pf.larch_fast_split(tracks,None,0.5**2)        
+    >>> C=pf.larch_fast_split(tracks,None,0.5)        
     >>> 
     >>> r=fos.ren()
     >>> fos.add(r,fos.line(tracks,fos.red))
@@ -1560,17 +1560,9 @@ def larch_fast_split(tracks,indices=None,euclidean=False,sqd_thr=50**2):
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
             
 
-            if euclidean:
-
-                track_direct_flip_3dist(
-                asfp(track[0]),asfp(track[1]),asfp(track[2]), 
-                asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
-
-            else:
-
-                track_direct_flip_3sq_dist(
-                asfp(track[0]),asfp(track[1]),asfp(track[2]), 
-                asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
+            track_direct_flip_3dist(asfp(track[0]),asfp(track[1]),asfp(track[2]), 
+                                    asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
+            
                 
             if d[1]<d[0]:                
                 d[0]=d[1];flip[k]=1
@@ -1580,7 +1572,7 @@ def larch_fast_split(tracks,indices=None,euclidean=False,sqd_thr=50**2):
         m_k=np.min(alld)
         i_k=np.argmin(alld)
         
-        if m_k<sqd_thr:            
+        if m_k<thr:            
             
             if flip[i_k]==1:                
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
@@ -1601,7 +1593,7 @@ def larch_fast_split(tracks,indices=None,euclidean=False,sqd_thr=50**2):
     return C
 
 
-def larch_fast_reassign(C,sqd_thr=100):
+def larch_3merge(C,thr=10.):
 
     ''' Reassign tracks to existing clusters by merging clusters that their representative tracks are not very distant i.e. less than sqd_thr. Using tracks consisting of 3 points (first, mid and last). This is necessary after running larch_fast_split after multiple split in different levels (squared thresholds) as some of them have created independent clusters.
 
@@ -1630,6 +1622,8 @@ def larch_fast_reassign(C,sqd_thr=100):
     ts=np.zeros((3,3),dtype=np.float32)
 
     lenC=len(C)
+
+    C2=C.copy()
     
     for c in range(0,lenC-1):
 
@@ -1647,7 +1641,7 @@ def larch_fast_reassign(C,sqd_thr=100):
 
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
 
-            track_direct_flip_3sq_dist(
+            track_direct_flip_3dist(
                 asfp(ch[0]),asfp(ch[1]),asfp(ch[2]), 
                 asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
                 
@@ -1662,98 +1656,22 @@ def larch_fast_reassign(C,sqd_thr=100):
         i_k=np.argmin(alld)
 
 
-        if m_k<sqd_thr:     
+        if m_k<thr:     
 
             if flip[i_k]==1:                
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
-                C[i_k+c]['rep3']+=ts
+                C2[i_k+c]['rep3']+=ts
             else:
-                C[i_k+c]['rep3']+=ch
+                C2[i_k+c]['rep3']+=ch
                 
-            C[i_k+c]['N']+=C[c]['N']
+            C2[i_k+c]['N']+=C2[c]['N']
 
-            C[i_k+c]['indices']+=C[c]['indices']
+            C2[i_k+c]['indices']+=C2[c]['indices']
 
-            del C[c]
-
-
-    return C
+            del C2[c]
 
 
-def larch_preproc(tracks,split_thrs=[50**2,20**2,10.**2],info=False):
-    ''' Preprocessing stage
+    return C2
 
-    Parameters:
-    -----------
-    tracks: sequence
-        of tracks as arrays, shape (N1,3) .. (Nm,3)
-
-    split_thrs: sequence
-        of floats with thresholds.
-
-    Returns:
-    --------
-    C: dict, a tree graph containing the clusters
-
-    '''
-    t1=time.clock()
-
-    C=larch_fast_split(tracks,None,20.**2)
-
-    print 'Splitting done in ',time.clock()-t1, 'secs', 'len', len(C)
-
-    t2=time.clock()
-    C=larch_fast_reassign(C,20.**2)
-
-    print 'Reassignment done in ',time.clock()-t2, 'secs', 'len', len(C)
-
-
-    return C
-
-    '''
-
-    if info: print 'Spliting in 3 levels with thresholds',split_thrs
-    
-    #1st level spliting
-    C=larch_fast_split(tracks,None,split_thrs[0])
-
-    
-
-    C_leafs={}
-
-    cdef int c_id=0 
-
-    #2nd level spliting
-    for k in C:
-
-        C[k]['sub']=larch_fast_split(tracks,C[k]['indices'],split_thrs[1])
-
-        #3rd level spliting
-        for l in C[k]['sub']:
-            
-            C[k]['sub'][l]['sub']=larch_fast_split(tracks,C[k]['sub'][l]['indices'],split_thrs[2])
-
-            #copying the leafs in a new graph
-            for m in C[k]['sub'][l]['sub']:
-
-                C_leafs[c_id]=C[k]['sub'][l]['sub'][m]
-                c_id+=1
-
-
-    if info: 
-        print 'Number of clusters after spliting ...', len(C_leafs)
-        print 'Starting larch_fast_reassignment  ...'
-    
-    t1=time.clock()
-    C_leafs=larch_fast_reassign(C_leafs,split_thrs[2])
-
-    print 'Reassignment done in ',time.clock()-t1, 'secs'
-
-
-    if info: print 'Number of clusters after reassignment', len(C_leafs)
-
-    return C_leafs
-
-    '''
 
 

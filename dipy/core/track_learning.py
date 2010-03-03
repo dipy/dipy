@@ -36,6 +36,9 @@ def larch(tracks,split_thrs=[50.**2,20.**2,10.**2],ret_atracks=False,info=False)
     
 
     '''
+
+
+    '''
     t1=time.clock()    
     print 'Reducing to 3-point approximate tracks...'
     tracks3=[tm.downsample(t,3) for t in tracks]
@@ -73,54 +76,10 @@ def larch(tracks,split_thrs=[50.**2,20.**2,10.**2],ret_atracks=False,info=False)
     else:
         return C
     
-
-
-def near_clusters(c,C1,C2,n=1,rep='rep3'):
-    ''' Return 'n' closest clusters in C2 from cluster C1[c] using the hidden track
-
-    Parameters:
-    -----------
-    c: int
-
-    C1: dict, the structure of the dictionary is of the form 
-    
-    C2={0:{'rep3':c},1:{'rep3':d},2:{'rep3':e}} where c,d,e 3x3 numpy arrays
-
-    C2: dict
-
-    n= int, 
-      default is 1.
-            
-    
-    Example:
-    --------
-
-    >>> import dipy.core.track_learning as tl
-    
-    >>> a=np.array([[0,0,0],[1,0,0],[2,0,0]])
-    >>> b=np.array([[0,0,0],[1,0,0],[2,1,0]])
-
-    >>> c=np.array([[0,0,0],[1,0,0],[2,0,0]])
-    >>> d=np.array([[0,0,0],[1,0,0],[3,1,0]])
-    >>> e=np.array([[0,0,0],[1,0,0],[4,1,0]])
-
-    >>> C1={0:{'rep3':a},1:{'rep3':b}}
-    >>> C2={0:{'rep3':c},1:{'rep3':d},2:{'rep3':e}}
-  
-    >>> tl.near_clusters(0,C1,C2)
-
     '''
 
-    d= [pf.track_dist_3pts(C1[c]['rep3'],C2[c2]['rep3']) for c2 in C2]
-        
-    d=np.array(d)
+    return
 
-    #near=list(d.argsort()[::-1])
-    #print near
-
-    near=d.argsort()
-        
-    return near[:n]
    
 
 
