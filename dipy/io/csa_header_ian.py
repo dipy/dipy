@@ -1,10 +1,6 @@
 import dicom
 
-from enthought.mayavi import mlab
-
 from glob import glob
-
-import dipy.io.bmatrix as b
 
 import struct
 
@@ -36,7 +32,7 @@ for tag in range(csadic['no_tags']):
     if nullpos < 0:
         nullpos=64
     name = name[0:nullpos]
-    csadic['tags'][name]={'pointer': ptr, 'n_items': n_items}
+    csadic['tags'][name]={'pointer': ptr, 'n_items': n_items, 'last3': xx}
     ptr+=84
     for item in range(n_items):
         csadic['tags'][name]['pointer'] = ptr
@@ -50,8 +46,6 @@ for tag in range(csadic['no_tags']):
 #    csadic['tags'][name]['end_pointer'] = ptr     
 
 print 'csadic', csadic
-
-#print label, number_of_frames
 
 #B_value, B_vec, G_direction, B_value_B_matrix, no_mosaic=b.loadbinfodcm(filename,spm_converted=1)
 
