@@ -17,15 +17,15 @@ from dipy.testing import parametric
 
 data_path = pjoin(os.path.dirname(__file__), 'data')
 
-CSA2_B0 = pjoin(data_path, 'csa2_b0.bin')
-CSA2_B1000 = pjoin(data_path, 'csa2_b1000.bin')
+CSA2_B0 = open(pjoin(data_path, 'csa2_b0.bin')).read()
+CSA2_B1000 = open(pjoin(data_path, 'csa2_b1000.bin')).read()
 
 
 @parametric
 def test_csa():
-    csa_f = open(CSA2_B0, 'rb')
-    hdr, tags = csa.read(csa_f)
-    yield assert_equal(hdr['type'], 2)
-    yield assert_equal(hdr['n_tags'], 83)
+    csa_info = csa.read(CSA2_B0)
+    yield assert_equal(csa_info['type'], 2)
+    yield assert_equal(csa_info['n_tags'], 83)
+    tags = csa_info['tags']
     yield assert_equal(len(tags), 83)
-    
+    print csa_info
