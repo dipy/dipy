@@ -92,11 +92,10 @@ Start header
 
 #. hdr_id : S4 == 'SV10'
 #. unused1 : uint8, 4
-#. unused2 : uint8, 4
 #. n_tags, uint32, number of tags.  Number of tags should apparently be
   between 1 and 128.   If this is not true we just abort and move to
   ``csa_max_pos``. 
-#. unused, uint32, apparently has value 77
+#. unused2, uint32, apparently has value 77
 
 Each tag
 --------
