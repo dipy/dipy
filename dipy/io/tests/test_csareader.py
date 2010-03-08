@@ -28,4 +28,5 @@ def test_csa():
     yield assert_equal(csa_info['n_tags'], 83)
     tags = csa_info['tags']
     yield assert_equal(len(tags), 83)
-    print csa_info
+    yield assert_equal(tags['NumberOfImagesInMosaic']['value'],
+                       '48')
