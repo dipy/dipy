@@ -174,11 +174,13 @@ def loadbinfodcm(filename,spm_converted=1):
     
     n=struct.unpack('I',csainfo[start:stop])
     n=n[0]
-    #print 'n:',n
+    print 'n:',n
         
     B_value=-1
     B_matrix=[]
     G_direction=[]
+    no_mosaic=-1
+    
         
     #Read B-related Info
     start=16
@@ -197,6 +199,7 @@ def loadbinfodcm(filename,spm_converted=1):
         matstart=0
         valstart=0
         diffgradstart=0
+        mosaicstart=0
         
         if ''.join(name[0:8])=='B_matrix':
             matstart=startstore
@@ -207,6 +210,9 @@ def loadbinfodcm(filename,spm_converted=1):
         if ''.join(name[0:26])== 'DiffusionGradientDirection':
             diffgradstart=startstore
                 
+        if ''.join(name[0:22])== 'NumberOfImagesInMosaic':
+            mosaicstart=startstore
+            
         for j in xrange(nitems):
             
             xx=struct.unpack('4i',csainfo[start:start+4*4])
@@ -228,6 +234,10 @@ def loadbinfodcm(filename,spm_converted=1):
             if diffgradstart > 0 :
                 if len(value)>0 :
                     G_direction.append(float(''.join(value[:-1] )))
+                    
+            if mosaicstart>0:
+                if len(value)>0:
+                    no_mosaic=int(''.join(value[:-1] ))
                         
             stop=start+4*4+length+(4-length%4)%4
             start=stop                 
@@ -251,8 +261,9 @@ def loadbinfodcm(filename,spm_converted=1):
         B_value=0
         G_direction=np.array([0.0,0.0,0.0])
         B_value_B_matrix=0
+        no_mosaic=0
                 
-    return B_value, B_vec, G_direction, B_value_B_matrix
+    return B_value, B_vec, G_direction, B_value_B_matrix, no_mosaic
 
     
 def loadbinfodir(dirname):
