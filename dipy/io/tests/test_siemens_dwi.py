@@ -30,4 +30,3 @@ if os.path.isfile(data_file):
         img = sdwi.read_dwi(data_file)
         data = img.get_data()
         yield assert_equal(data.shape, (128,128,48))
-        nib.save(img, 'test.nii')

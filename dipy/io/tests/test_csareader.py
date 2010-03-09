@@ -30,11 +30,9 @@ def test_csas0():
         tags = csa_info['tags']
         yield assert_equal(len(tags), 83)
         n_o_m = tags['NumberOfImagesInMosaic']
-        yield assert_equal(n_o_m['items'][0].strip(),
-                           '48')
+        yield assert_equal(n_o_m['items'], [48])
     csa_info = csa.read(CSA2_B1000)
     b_matrix = csa_info['tags']['B_matrix']
     yield assert_equal(len(b_matrix['items']), 6)
     b_value = csa_info['tags']['B_value']
-    yield assert_equal(b_value['items'][0].strip(),
-                       '1000')
+    yield assert_equal(b_value['items'], [1000])

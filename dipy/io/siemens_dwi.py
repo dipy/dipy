@@ -28,7 +28,7 @@ def read_dwi(filename):
     hdr_info = csa.read(hdr_str)
     # get Mosaic size
     n_o_m = hdr_info['tags']['NumberOfImagesInMosaic']
-    n_o_m = int(n_o_m['items'][0])
+    n_o_m = n_o_m['items'][0]
     # reshape pixel slice array back from mosaic
     mosaic_size = np.ceil(np.sqrt(n_o_m))
     data = dcm_data.pixel_array
