@@ -20,6 +20,63 @@ class CSAReadError(Exception):
     pass
 
 
+class Unpacker(object):
+    ''' Class to unpack values from string
+
+    Examples
+    --------
+    >>> a = '1234567890'
+    >>> upk = Unpacker(a)
+    >>> upk.unpack('2s')
+    ('12',)
+    >>> upk.unpack('2s')
+    ('34',)
+    >>> upk.ptr
+    4
+    >>> upk.read(3)
+    '567'
+    >>> upk.ptr
+    7
+    '''
+    def __init__(self, buf, ptr=0):
+        ''' Initialize unpacker
+
+        Parameters
+        ----------
+        buf : buffer
+           object implementing buffer protocol (e.g. str)
+        ptr : int, optional
+           offset at which to begin reads from `buf`
+        '''
+        self.buf = buf
+        self.ptr = ptr
+
+    def unpack(self, fmt):
+        ''' Unpack values from contained buffer
+
+        Parameters
+        ----------
+        fmt : str
+           format string as for ``unpack``
+
+        Returns
+        -------
+        values : tuple
+           values as unpacked from ``self.buf`` according to `fmt`
+        '''
+        size = calcsize(fmt)
+        values = unpack_from(fmt, self.buf, self.ptr)
+        self.ptr += size
+        return values
+
+    def read(self, n_bytes):
+        ''' Read, return byte string, updating pointer'''
+        start = self.ptr
+        end = start + n_bytes
+        self.ptr = end
+        return self.buf[start:end]
+        
+
 def read(csa_str):
     ''' Read CSA header from string `csa_str`
 
@@ -38,23 +95,21 @@ def read(csa_str):
     csa_len = len(csa_str)
     csa_dict = {'tags': {}}
     hdr_id = csa_str[:4]
-    ptr = 0
-    if hdr_id != 'SV10': # CSA1
-        hdr_type = 1
-        csa_dict['type'] = 1
-    else:
+    up_str = Unpacker(csa_str)
+    if hdr_id == 'SV10': # CSA2
         hdr_type = 2
-        ptr, _ = _ptr_unpack('4s', csa_str, ptr)
-        ptr, csa_dict['unused0'] = _ptr_unpack('4s', csa_str, ptr)
-    ptr, csa_dict['n_tags'] = _ptr_unpack('<I', csa_str, ptr)
+        _ = up_str.read(4) # SV10 string again
+        csa_dict['unused0'], = up_str.unpack('4s')
+    else: # CSA1
+        hdr_type = 1
     csa_dict['type'] = hdr_type
+    csa_dict['n_tags'], csa_dict['check'] = up_str.unpack('<2I')
     if not 0 < csa_dict['n_tags'] <= 128:
         raise CSAReadError('Number of tags `t` should be '
                            '0 < t <= 128')
-    ptr, csa_dict['check'] = _ptr_unpack('<I', csa_str, ptr)
     for tag_no in range(csa_dict['n_tags']):
-        ptr, name, vm, vr, syngodt, n_items, last3 = \
-            _ptr_unpack('<64si4s3i',csa_str, ptr)
+        name, vm, vr, syngodt, n_items, last3 = \
+            up_str.unpack('<64si4s3i')
         vr = nt_str(vr)
         name = nt_str(name)
         tag = {'n_items': n_items,
@@ -75,7 +130,8 @@ def read(csa_str):
         assert n_items < 100
         items = []
         for item_no in range(n_items):
-            ptr, x0,x1,x2,x3 = _ptr_unpack('<4i', csa_str, ptr)
+            x0,x1,x2,x3 = up_str.unpack('<4i')
+            ptr = up_str.ptr
             if hdr_type == 1:  # CSA1 - odd length calculation
                 item_len = x0 - tag0_n_items
                 if item_len < 0 or (ptr + item_len) > csa_len:
@@ -90,15 +146,14 @@ def read(csa_str):
             if item_no >= n_values:
                 assert item_len == 0
                 continue
-            item = nt_str(csa_str[ptr:ptr+item_len])
+            item = nt_str(up_str.read(item_len))
             if converter:
                 item = converter(item)
             items.append(item)
-            ptr += item_len
             # go to 4 byte boundary
             plus4 = item_len % 4
             if plus4 != 0:
-                ptr += (4-plus4)
+                up_str.ptr += (4-plus4)
         tag['items'] = items
         csa_dict['tags'][name] = tag
     return csa_dict
@@ -120,9 +175,3 @@ def nt_str(s):
     if zero_pos == -1:
         return s
     return s[:zero_pos]
-
-
-def _ptr_unpack(fmt, input_str, ptr):
-    fmt_len = calcsize(fmt)
-    return (ptr + fmt_len,) + unpack_from(
-        fmt, input_str, ptr)
