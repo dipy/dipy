@@ -12,8 +12,15 @@ mosaic.
 Siemens private header
 ======================
 
-This is stored in DICOM private tags.  In the images we are looking at,
-there are several relevant tags::
+See this Siemens `Syngo DICOM conformance`_ statement, and a GDCM_ 
+`Siemens header dump`_.
+
+.. _GDCM: http://sourceforge.net/apps/mediawiki/gdcm
+.. _`Siemens header dump`: http://sourceforge.net/apps/mediawiki/gdcm/index.php?title=Gdcmdump#SIEMENS_CSA_Header
+.. _`Syngo DICOM conformance`: http://www.medical.siemens.com/siemens/en_GLOBAL/rg_marcom_FBAs/files/brochures/DICOM/rs/syngoImaging_DCS_VB30A_External.pdf
+
+The CSA header is stored in DICOM private tags.  In the images we are
+looking at, there are several relevant tags::
 
   (0029, 1008) [CSA Image Header Type]             OB: 'IMAGE NUM 4 '
   (0029, 1009) [CSA Image Header Version]          OB: '20100114'
@@ -92,11 +99,10 @@ Start header
 
 #. hdr_id : S4 == 'SV10'
 #. unused1 : uint8, 4
-#. unused2 : uint8, 4
 #. n_tags, uint32, number of tags.  Number of tags should apparently be
   between 1 and 128.   If this is not true we just abort and move to
   ``csa_max_pos``. 
-#. unused, uint32, apparently has value 77
+#. unused2, uint32, apparently has value 77
 
 Each tag
 --------

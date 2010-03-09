@@ -1,126 +1,55 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+import struct
+
+import numpy as np
+
 try:
     import dicom
 except ImportError:
-    ImportError('Pydicom is not installed.')
-    ImportError('http://code.google.com/p/pydicom/')
-
-try:
-    from numpy import linalg as lg
-    import numpy as np
-except ImportError:
-    ImportError('numpy is not installed.')
-    
-import os
-import string
-import struct
-
-
-def list_files(dpath,filt='*'):
-  ''' List files under directory path e.g. dpath='/tmp' with a specified filter e.g filt='.nii' .
-
-  Parameters:
-  -----------
-
-  dpath: string, 
-       contains the name of the directory path
-  
-  filt: string, 
-       file filter i.e. '.dcm' is equivalent with *.dcm* in bash.
-  
-  Returns:
-  --------
-
-  lfiles: sequence,
-       with the filenames off all files containing with the specified filter ``filt`` in the specified directory ``dpath``. 
-  
-  Examples:
-  ---------
-  Check for *.py* files in current directory
-
-  >>> from dipy.io import bmatrix
-  >>> bmatrix.list_files('.','.py')
-  ['./build_helpers.py', './setup.py', './build_helpers.pyc']
-
-  Check for any file in the current directory
-
-  >>> bmatrix.list_files('.','*')
-  ['./build_helpers.py',
-  './build',
-  './setup.py',
-  './history.bak_sphinx',
-  './.git',
-  './doc',
-  './dipy',
-  './build_helpers.pyc',
-  './Makefile',
-  './.gitignore']
-  
-
-  Notes:
-  ------
-  I am sure that there are better ways to list files in a directory. Any ideas? 
-  The filter can become more restricted. For example the filter can become more restricted so it allows only *.py files and not *.py*.
-
-  '''
-
-  dirList=os.listdir(dpath)
-  lfiles=[]
-
-  if filt=='*':
-    for fname in dirList:
-        lfiles.append(dpath+'/'+fname)
-  
-  else:
-    for fname in dirList:
-        if fname.rfind(filt) > -1:
-            lfiles.append(dpath+'/'+fname)
-
-  return lfiles
+    raise ImportError('Pydicom is not installed : '
+                      'http://code.google.com/p/pydicom/')
 
 
 def loadbinfodcm(filename,spm_converted=1):
+    ''' Load B-value and B-vector information from Dicom Header
+
+    Loads from a DICOM file given by `filename`. This assumes
+    that the scanner is Siemens.  The needed information is under the
+    CSA Image Information Header in the Dicom header. At the moment only
+    version SV10 is supported.
     
-    ''' Load B-value and B-vector information from the Dicom Header of a file. This assumes that the scanner is Siemens.
-    The needed information is under the CSA Image Information Header in the Dicom header. At the moment only version SV10 is supported.
+    This was inspired by the Guy Williams' algorithm in the following
+    matlab script
+    http://imaging.mrc-cbu.cam.ac.uk/svn/utilities/devel/cbu_dti_params.m
     
-    This was inspired by the work of Williams & Brett using the following matlab script http://imaging.mrc-cbu.cam.ac.uk/svn/utilities/devel/cbu_dti_params.m
-    However here we are using pydicom and then read directly from the CSA header.
+    However here we are using pydicom and then read directly from the
+    CSA header.
     
     Parameters:
     -----------
     filename: string,
         Dicom full filename.
 
-    spm_converted: ? flipping ?
-
     Returns:
     --------
-    B_value (stored in the dicom), 
-    B_vec (B_vector calculated from stored B_matrix), 
-    G_direction(gradient direction stored in dicom), 
-    B_value_B_matrix (B value calculated from the stored in dcm B_matrix after using eigenvalue decomposition).
+    B_value : float
+       The B value exactly as stored in the DICOM header
+    B_vec : (3,) ndarray
+       B_vector calculated from stored B_matrix
+    G_direction : (3,) ndarray
+       Gradient direction as stored in DICOM
+    B_value_B_matrix : float
+       B value calculated from the stored in dcm B_matrix after using
+       eigenvalue decomposition - Guy Williams' algorithm
     
-    Example:
-    ---------
-    
-    >>> B_value, B_vec, G_direction, B_value_B_matrix =  loadbinfodcm(fname)
-    
+    Example
+    --------
+    B_value, B_vec, G_direction, B_value_B_matrix =  loadbinfodcm(fname)
     '''
-
-    #filename = '/backup/Data/Eleftherios/CBU090133_METHODS/20090227_145404/Series_003_CBU_DTI_64D_iso_1000/1.3.12.2.1107.5.2.32.35119.2009022715012276195181703.dcm'
-    #filename = '/backup/Data/Eleftherios/CBU090133_METHODS/20090227_145404/Series_003_CBU_DTI_64D_iso_1000/1.3.12.2.1107.5.2.32.35119.2009022715073976305795724.dcm'
-    
-    if os.path.isfile(filename)==False:
-        
-        print('Filename does not exist')
-        
-        return
-        
     data=dicom.read_file(filename)
-
     if spm_converted:
         y_flipper=np.diag([1, -1, 1])
     else:
