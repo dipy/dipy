@@ -458,7 +458,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
 
 cdef cnp.float32_t inf = np.inf
 
-
+@cython.cdivision(True)
 cdef inline cnp.float32_t czhang(size_t t1_len,
                                  cnp.float32_t *track1_ptr,
                                  size_t t2_len,
@@ -497,7 +497,7 @@ cdef inline cnp.float32_t czhang(size_t t1_len,
             dist_val=mean_t1t2                    
     return dist_val
 
-
+@cython.cdivision(True)
 cdef inline void min_distances(size_t t1_len,
                                cnp.float32_t *track1_ptr,
                                size_t t2_len,
