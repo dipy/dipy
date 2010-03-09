@@ -2,6 +2,7 @@
 """
 import os
 from os.path import join as pjoin
+import struct
 
 import numpy as np
 
@@ -36,3 +37,18 @@ def test_csas0():
     yield assert_equal(len(b_matrix['items']), 6)
     b_value = csa_info['tags']['B_value']
     yield assert_equal(b_value['items'], [1000])
+
+
+@parametric
+def test_unpacker():
+    s = '1234\x00\x01'
+    le_int, = struct.unpack('<h', '\x00\x01')
+    be_int, = struct.unpack('>h', '\x00\x01')
+    up_str = csa.Unpacker(s, endian='<')
+    yield assert_equal(up_str.read(4), '1234')
+    up_str.ptr = 0
+    yield assert_equal(up_str.unpack('4s'), ('1234',))
+    yield assert_equal(up_str.unpack('h'), (le_int,))
+    up_str = csa.Unpacker(s, endian='>')
+    yield assert_equal(up_str.unpack('4s'), ('1234',))
+    yield assert_equal(up_str.unpack('h'), (be_int,))

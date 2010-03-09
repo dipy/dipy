@@ -1,10 +1,11 @@
 ''' CSA header reader from SPM spec
 
 '''
-from struct import unpack_from, calcsize
+from struct import Struct
 
 
-_converters = {
+# DICOM VR code to Python type
+_CONVERTERS = {
     'FL': float, # float
     'FD': float, # double
     'DS': float, # decimal string
@@ -21,7 +22,9 @@ class CSAReadError(Exception):
 
 
 class Unpacker(object):
-    ''' Class to unpack values from string
+    ''' Class to unpack values from buffer
+
+    The buffer is usually a string. 
 
     Examples
     --------
@@ -38,7 +41,7 @@ class Unpacker(object):
     >>> upk.ptr
     7
     '''
-    def __init__(self, buf, ptr=0):
+    def __init__(self, buf, ptr=0, endian=None):
         ''' Initialize unpacker
 
         Parameters
@@ -47,9 +50,14 @@ class Unpacker(object):
            object implementing buffer protocol (e.g. str)
         ptr : int, optional
            offset at which to begin reads from `buf`
+        endian : None or str, optional
+           endian code to prepend to format, as for ``unpack`` endian
+           codes. 
         '''
         self.buf = buf
         self.ptr = ptr
+        self.endian = endian
+        self._cache = {}
 
     def unpack(self, fmt):
         ''' Unpack values from contained buffer
@@ -64,9 +72,15 @@ class Unpacker(object):
         values : tuple
            values as unpacked from ``self.buf`` according to `fmt`
         '''
-        size = calcsize(fmt)
-        values = unpack_from(fmt, self.buf, self.ptr)
-        self.ptr += size
+        if not self.endian is None:
+            fmt = self.endian + fmt
+        if not fmt in self._cache:
+            pkst = Struct(fmt)
+            self._cache[fmt] = pkst
+        else:
+            pkst = self._cache[fmt]
+        values = pkst.unpack_from(self.buf, self.ptr)
+        self.ptr += pkst.size
         return values
 
     def read(self, n_bytes):
@@ -95,21 +109,21 @@ def read(csa_str):
     csa_len = len(csa_str)
     csa_dict = {'tags': {}}
     hdr_id = csa_str[:4]
-    up_str = Unpacker(csa_str)
+    up_str = Unpacker(csa_str, endian='<')
     if hdr_id == 'SV10': # CSA2
         hdr_type = 2
-        _ = up_str.read(4) # SV10 string again
-        csa_dict['unused0'], = up_str.unpack('4s')
+        up_str.ptr = 4 # omit the SV10
+        csa_dict['unused0'] = up_str.read(4)
     else: # CSA1
         hdr_type = 1
     csa_dict['type'] = hdr_type
-    csa_dict['n_tags'], csa_dict['check'] = up_str.unpack('<2I')
+    csa_dict['n_tags'], csa_dict['check'] = up_str.unpack('2I')
     if not 0 < csa_dict['n_tags'] <= 128:
         raise CSAReadError('Number of tags `t` should be '
                            '0 < t <= 128')
     for tag_no in range(csa_dict['n_tags']):
         name, vm, vr, syngodt, n_items, last3 = \
-            up_str.unpack('<64si4s3i')
+            up_str.unpack('64si4s3i')
         vr = nt_str(vr)
         name = nt_str(name)
         tag = {'n_items': n_items,
@@ -123,14 +137,14 @@ def read(csa_str):
         else:
             n_values = vm
         # data converter
-        converter = _converters.get(vr)
+        converter = _CONVERTERS.get(vr)
         # CSA1 specific length modifier
         if tag_no == 1:
             tag0_n_items = n_items
         assert n_items < 100
         items = []
         for item_no in range(n_items):
-            x0,x1,x2,x3 = up_str.unpack('<4i')
+            x0,x1,x2,x3 = up_str.unpack('4i')
             ptr = up_str.ptr
             if hdr_type == 1:  # CSA1 - odd length calculation
                 item_len = x0 - tag0_n_items
