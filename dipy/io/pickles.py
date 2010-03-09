@@ -10,10 +10,13 @@ def save_pickle(fname,dix):
 
     Example:
     --------
+    >>> import os
+    >>> from tempfile import mkstemp
+    >>> fd, fname = mkstemp() # make temporary file
     >>> d={0:{'d':1}}
-    >>> save_pickle('d.pkl',d)
-    >>> d2=load_pickle('d.pkl')
-
+    >>> save_pickle(fname, d)
+    >>> d2=load_pickle(fname)
+    >>> os.remove(fname)
     
     '''
     out=open(fname,'wb')
@@ -33,13 +36,8 @@ def load_pickle(fname):
 
     Example:
     --------
-    >>> d={0:{'d':1}}
-    >>> save_pickle('d.pkl',d)
-    >>> d2=load_pickle('d.pkl')
-    
-
+    See ``save_pickle``
     '''
-
     inp=open(fname,'rb')
     dix=cPickle.load(inp)
     inp.close()

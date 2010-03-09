@@ -1,7 +1,7 @@
 import time
 import numpy as np
 import dipy.core.track_performance as pf
-import dipy.io.pickle as pkl
+import dipy.io.pickles as pkl
 import dipy.core.track_metrics as tm
 from dipy.viz import fos
 
