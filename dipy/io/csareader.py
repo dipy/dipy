@@ -162,6 +162,13 @@ def read(csa_str):
                 continue
             item = nt_str(up_str.read(item_len))
             if converter:
+                if vm == 0:
+                    # we may have fewer real items than are given in
+                    # n_items, but we don't know how many - assume that
+                    # we've reached the end when we hit an empty item
+                    if item_len == 0:
+                        n_values = item_no
+                        continue
                 item = converter(item)
             items.append(item)
             # go to 4 byte boundary
