@@ -44,13 +44,14 @@ follows. If we fill out the symmetric B-matrix as:
 then $\mathbf{B}$ is equal to the rank 1 tensor
 $\mathbf{b}\mathbf{b}^T$. One of the ways to recover $\mathbf{b}$ from
 $\mathbf{B}$ is to do a singular value decomposition of $\mathbf{B}:
-\mathbf{B} = \lambda_1v_1v_1^T + \lambda_2v_2v_2^T + \lambda_3v_3v_3^T$,
+\mathbf{B} = \lambda_1\mathbf{v}_1\mathbf{v}_1^T + 
+\lambda_2\mathbf{v}_2\mathbf{v}_2^T + \lambda_3\mathbf{v}_3\mathbf{v}_3^T$,
 where only one of the $\lambda_i$, say $\lambda_1$ is effectively
-non-zero. Then $\mathbf{b} = \pm\sqrt{\lambda_1v_1}$. The choice of sign
+non-zero. Then $\mathbf{b} = \pm\sqrt{\lambda_1}\mathbf{v}_1$. The choice of sign
 is arbitrary (essentially we have a choice between two possible square
 roots of the rank 1 tensor $\mathbf{B}$). Once we have
 $\mathbf{b}_{actual}$ we can calculate $b_{actual} =
 |\mathbf{b}_{actual}|$ and $\mathbf{g}_{actual} = \mathbf{b}_{actual} /
-b_{actual}$. Various sofware packages (e.g. FSL's DFT-DTIFIT) expects to
+b_{actual}$. Various sofware packages (e.g. FSL's DFT-DTIFIT) expect to
 get 3 × N and 1 × N arrays of $\mathbf{g}_{actual}$ and $b_{actual}$
 values as their inputs.
