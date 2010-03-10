@@ -9,7 +9,11 @@ acquisition is made with a planned (requested) b value - say $b_{req} =
 1000$, and with a requested gradient direction $\mathbf{g}_{req} = [g_x,
 g_y, g_z]$ (supposedly a unit vector).
 
-For some purposes we want the b vector $\mathbf{b}_{actual}$ which is
+Note that here we're using $\mathbf{q}$ in the sense of an approximation
+to a vector in q space.  Other people use $\mathbf{b}$ for the same
+concept, but we've chosen $\mathbf{q}$ to make the exposition clearer.
+
+For some purposes we want the q vector $\mathbf{q}_{actual}$ which is
 equal to $b_{actual} . \mathbf{g}_{actual}$. We need to be aware that
 $b_{actual}$ and $\mathbf{g}_{actual}$ may be different from the
 $b_{req}$ and $\mathbf{g}_{req}$!  Though the Stejskal and Tanner
@@ -26,32 +30,32 @@ the diffusion tensor via the equations across the set of acquisitions:
 
 .. math::
 
-   \log(A(b)/A(0)) = -(b_{xx}D_{xx} + 2b_{xy}D_{xy} + 2b_{xz}D_{xz} + \
+   \log(A(\mathbf{q})/A(0)) = -(b_{xx}D_{xx} + 2b_{xy}D_{xy} + 2b_{xz}D_{xz} + \
       b_{yy}D_{yy} + 2b_{yz}D_{yz} + b_{zz}D_{zz}) 
 
 The gradient field typically stays in the one gradient direction, in
-this case the relationship between $\mathbf{b}$ and the $b_{ij}$ is as
+this case the relationship between $\mathbf{q}$ and the $b_{ij}$ is as
 follows. If we fill out the symmetric B-matrix as:
 
 .. math::
 
-   \mathbf{B} = \begin{pmatrix}
+   \mathbf{q} = \begin{pmatrix}
                  b_{xx} & b_{yx} & b_{yz}\\
                  b_{xy} & b_{yy} & b_{xz}\\
                  b_{xz} & b_{yz} & b_{zz}
                  \end{pmatrix}
 
-then $\mathbf{B}$ is equal to the rank 1 tensor
-$\mathbf{b}\mathbf{b}^T$. One of the ways to recover $\mathbf{b}$ from
-$\mathbf{B}$ is to do a singular value decomposition of $\mathbf{B}:
-\mathbf{B} = \lambda_1\mathbf{v}_1\mathbf{v}_1^T + 
+then $\mathbf{q}$ is equal to the rank 1 tensor
+$\mathbf{q}\mathbf{q}^T$. One of the ways to recover $\mathbf{q}$ from
+$\mathbf{q}$ is to do a singular value decomposition of $\mathbf{q}:
+\mathbf{q} = \lambda_1\mathbf{v}_1\mathbf{v}_1^T + 
 \lambda_2\mathbf{v}_2\mathbf{v}_2^T + \lambda_3\mathbf{v}_3\mathbf{v}_3^T$,
 where only one of the $\lambda_i$, say $\lambda_1$ is effectively
-non-zero. Then $\mathbf{b} = \pm\sqrt{\lambda_1}\mathbf{v}_1$. The choice of sign
+non-zero. Then $\mathbf{q} = \pm\sqrt{\lambda_1}\mathbf{v}_1$. The choice of sign
 is arbitrary (essentially we have a choice between two possible square
-roots of the rank 1 tensor $\mathbf{B}$). Once we have
-$\mathbf{b}_{actual}$ we can calculate $b_{actual} =
-|\mathbf{b}_{actual}|$ and $\mathbf{g}_{actual} = \mathbf{b}_{actual} /
+roots of the rank 1 tensor $\mathbf{q}$). Once we have
+$\mathbf{q}_{actual}$ we can calculate $b_{actual} =
+|\mathbf{q}_{actual}|$ and $\mathbf{g}_{actual} = \mathbf{q}_{actual} /
 b_{actual}$. Various sofware packages (e.g. FSL's DFT-DTIFIT) expect to
 get 3 × N and 1 × N arrays of $\mathbf{g}_{actual}$ and $b_{actual}$
 values as their inputs.
