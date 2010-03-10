@@ -6,9 +6,11 @@ _ENDIAN_CODES = '@=<>!'
 
 
 class Unpacker(object):
-    ''' Class to unpack values from buffer
+    ''' Class to unpack values from buffer object
 
-    The buffer is usually a string. 
+    The buffer object is usually a string. Caches compiled :mod:`struct`
+    format strings so that repeated unpacking with the same format
+    string should be faster than using ``struct.unpack`` directly.
 
     Examples
     --------
@@ -36,7 +38,10 @@ class Unpacker(object):
            offset at which to begin reads from `buf`
         endian : None or str, optional
            endian code to prepend to format, as for ``unpack`` endian
-           codes. 
+           codes.  None (the default) corresponds to the default
+           behavior of ``struct`` - assuming system endian unless you
+           specify the byte order specifically in the format string
+           passed to ``unpack``
         '''
         self.buf = buf
         self.ptr = ptr
@@ -45,6 +50,9 @@ class Unpacker(object):
 
     def unpack(self, fmt):
         ''' Unpack values from contained buffer
+
+        Unpacks values from ``self.buf`` and updates ``self.ptr`` to the
+        position after the read data.
 
         Parameters
         ----------
@@ -56,23 +64,50 @@ class Unpacker(object):
         values : tuple
            values as unpacked from ``self.buf`` according to `fmt`
         '''
+        # try and get a struct corresponding to the format string from
+        # the cache
         pkst = self._cache.get(fmt)
         if pkst is None: # struct not in cache
+            # if we've not got a default endian, or the format has an
+            # explicit endianness, then we make a new struct directly
+            # from the format string
             if self.endian is None or fmt[0] in _ENDIAN_CODES:
                 pkst = Struct(fmt)
-            else:
+            else: # we're going to modify the endianness with our
+                # default. 
                 endian_fmt = self.endian + fmt
                 pkst = Struct(endian_fmt)
+                # add an entry in the cache for the modified format
+                # string as well as (below) the unmodified format
+                # string, in case we get a format string with the same
+                # endianness as default, but specified explicitly.
                 self._cache[endian_fmt] = pkst
             self._cache[fmt] = pkst
         values = pkst.unpack_from(self.buf, self.ptr)
         self.ptr += pkst.size
         return values
 
-    def read(self, n_bytes):
-        ''' Read, return byte string, updating pointer'''
+    def read(self, n_bytes=-1):
+        ''' Return byte string of length `n_bytes` at current position
+
+        Returns sub-string from ``self.buf`` and updates ``self.ptr`` to the
+        position after the read data.
+
+        Parameters
+        ----------
+        n_bytes : int, optional
+           number of bytes to read.  Can be -1 (the default) in which
+           case we return all the remaining bytes in ``self.buf``
+
+        Returns
+        -------
+        s : byte string
+        '''
         start = self.ptr
-        end = start + n_bytes
+        if n_bytes == -1:
+            end = len(self.buf)
+        else:
+            end = start + n_bytes
         self.ptr = end
         return self.buf[start:end]
         

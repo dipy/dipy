@@ -47,4 +47,12 @@ def test_unpacker():
     yield assert_equal(up_str.unpack('>h'), (be_int,))
     up_str.ptr = 4
     yield assert_equal(up_str.unpack('@h'), (native_int,))
-    
+    # test -1 for read
+    up_str.ptr = 2
+    yield assert_equal(up_str.read(), '34\x00\x01')
+    # past end
+    yield assert_equal(up_str.read(), '')
+    # with n_bytes
+    up_str.ptr = 2
+    yield assert_equal(up_str.read(2), '34')
+    yield assert_equal(up_str.read(2), '\x00\x01')
