@@ -48,6 +48,12 @@ def loadbinfodcm(filename,spm_converted=1):
     Example
     --------
     B_value, B_vec, G_direction, B_value_B_matrix =  loadbinfodcm(fname)
+
+    Notes
+    -----
+    See ftp://medical.nema.org/medical/dicom/final/cp744_ft2.pdf for the
+    standard definition of DICOM diffusion tags - not in fact used by
+    Siemens.
     '''
     data=dicom.read_file(filename)
     if spm_converted:
