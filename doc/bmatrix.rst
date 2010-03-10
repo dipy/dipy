@@ -5,27 +5,28 @@
 This is a short note to explain the nature of the ``B_matrix`` found in
 the Siemens DICOM header of a diffusion weighted acquistion and its
 relationship with the *b value* and the *gradient vector*.  The
-acquisition is made with a planned (requested)b value - say $b_{req} =
+acquisition is made with a planned (requested) b value - say $b_{req} =
 1000$, and with a requested gradient direction $\mathbf{g}_{req} = [g_x,
 g_y, g_z]$ (supposedly a unit vector).
 
 For some purposes we want the b vector $\mathbf{b}_{actual}$ which is
 equal to $b_{actual} . \mathbf{g}_{actual}$. We need to be aware that
-$b_{actual}$ may be different from the $b_{req}$! Though the Stejskal and
-Tanner formula is available for the classic PGSE sequence, a different
-sequence may be used (e.g. TRSE on Siemens Trio), and anyway the ramps
-up and down on the gradient field will not be rectangular. The Siemens
-scanner software calculates the effective directional diffusion
-weighting of the acquisition on the basis of the temporal profile of the
-applied gradient vector field. These are in the form of the 6
-``B_matrix`` values $[b_{xx}, b_{xy}, b_{xz}, b_{yy}, b_{yz}, b_{zz}]$.
+$b_{actual}$ and $\mathbf{g}_{actual}$ may be different from the
+$b_{req}$ and $\mathbf{g}_{req}$!  Though the Stejskal and Tanner
+formula is available for the classic PGSE sequence, a different sequence
+may be used (e.g. TRSE on Siemens Trio), and anyway the ramps up and
+down on the gradient field will not be rectangular. The Siemens scanner
+software calculates the effective directional diffusion weighting of the
+acquisition on the basis of the temporal profile of the applied gradient
+vector field. These are in the form of the 6 ``B_matrix`` values
+$[b_{xx}, b_{xy}, b_{xz}, b_{yy}, b_{yz}, b_{zz}]$.
 
 In this form they are suitable for use in a least squares estimation of
 the diffusion tensor via the equations across the set of acquisitions:
 
 .. math::
 
-   \log{A(b)/A(0)} = -(b_{xx}D_{xx} + 2b_{xy}D_{xy} + 2b_{xz}D_{xz} + \
+   \log(A(b)/A(0)) = -(b_{xx}D_{xx} + 2b_{xy}D_{xy} + 2b_{xz}D_{xz} + \
       b_{yy}D_{yy} + 2b_{yz}D_{yz} + b_{zz}D_{zz}) 
 
 The gradient field typically stays in the one gradient direction, in
@@ -47,8 +48,9 @@ $\mathbf{B}$ is to do a singular value decomposition of $\mathbf{B}:
 where only one of the $\lambda_i$, say $\lambda_1$ is effectively
 non-zero. Then $\mathbf{b} = \pm\sqrt{\lambda_1v_1}$. The choice of sign
 is arbitrary (essentially we have a choice between two possible square
-roots of the rank 1 tensor $\mathbf{B}$). Once we have $b_{actual}$ we
-can calculate $b_{actual} = |b_{actual}|$ and $\mathbf{g}_{actual} =
-\mathbf{b}_{actual} / b_{actual}$. Various sofware packages (e.g. FSL's
-DFT-DTIFIT) expects to get 3 × N and 1 × N arrays of
-$\mathbf{g}_{actual}$ and $b_{actual}$ values as their inputs.
+roots of the rank 1 tensor $\mathbf{B}$). Once we have
+$\mathbf{b}_{actual}$ we can calculate $b_{actual} =
+|\mathbf{b}_{actual}|$ and $\mathbf{g}_{actual} = \mathbf{b}_{actual} /
+b_{actual}$. Various sofware packages (e.g. FSL's DFT-DTIFIT) expects to
+get 3 × N and 1 × N arrays of $\mathbf{g}_{actual}$ and $b_{actual}$
+values as their inputs.
