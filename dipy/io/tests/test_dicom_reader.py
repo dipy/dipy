@@ -23,12 +23,17 @@ data_file = os.path.expanduser('~/data/20100114_195840/'
                                '1.3.12.2.1107.5.2.32.35119.'
                                '2010011420300822323499745.dcm')
 
+data = dicom.read_file(data_file)
+
 @parametric
 def test_read():
-    data = dicom.read_file(data_file)
     yield assert_true(didr.has_csa(data))
     yield assert_equal(didr.get_csa_header(data,'image')['n_tags'],83)
     yield assert_equal(didr.get_csa_header(data,'image')['n_tags'],83)
     yield assert_raises(ValueError, didr.get_csa_header, data,'xxxx')
-    csa_image_header = didr.get_csa_header(data,'image')
     yield assert_true(didr.is_mosaic(data))
+
+def test_dwi_params():
+    csa_hdr = didr.get_csa_header(data,'image')
+    params = get_dwi_params(csa_hdr)
+    
