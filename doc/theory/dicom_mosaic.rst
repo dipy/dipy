@@ -8,6 +8,7 @@ files.  For example, a 3D image in DICOM is usually stored as a series
 of 2D slices.  Mosaic format stored the 3D image slices as a grid - or
 mosaic.
 
+.. _csa-header:
 
 Siemens private header
 ======================
@@ -15,7 +16,6 @@ Siemens private header
 See this Siemens `Syngo DICOM conformance`_ statement, and a GDCM_ 
 `Siemens header dump`_.
 
-.. _GDCM: http://sourceforge.net/apps/mediawiki/gdcm
 .. _`Siemens header dump`: http://sourceforge.net/apps/mediawiki/gdcm/index.php?title=Gdcmdump#SIEMENS_CSA_Header
 .. _`Syngo DICOM conformance`: http://www.medical.siemens.com/siemens/en_GLOBAL/rg_marcom_FBAs/files/brochures/DICOM/rs/syngoImaging_DCS_VB30A_External.pdf
 
@@ -31,7 +31,7 @@ looking at, there are several relevant tags::
 
 In our case we want to read the 'CSAImageHeaderInfo'.
 
-From the SPM8 code ``spm_dicom_headers.m``
+From the SPM_ (SPM8) code ``spm_dicom_headers.m``
 
 The CSAImageHeaderInfo and the CSA Series Header Info fields are of the
 same format.  The fields can be of two types, CSA1 and CSA2.
@@ -54,8 +54,8 @@ Start header
 ------------
 
 #. n_tags, uint32, number of tags.  Number of tags should apparently be
-  between 1 and 128.   If this is not true we just abort and move to
-  ``csa_max_pos``. 
+   between 1 and 128.  If this is not true we just abort and move to
+   ``csa_max_pos``.
 #. unused, uint32, apparently has value 77
 
 Each tag
@@ -100,8 +100,8 @@ Start header
 #. hdr_id : S4 == 'SV10'
 #. unused1 : uint8, 4
 #. n_tags, uint32, number of tags.  Number of tags should apparently be
-  between 1 and 128.   If this is not true we just abort and move to
-  ``csa_max_pos``. 
+   between 1 and 128.  If this is not true we just abort and move to
+   ``csa_max_pos``.
 #. unused2, uint32, apparently has value 77
 
 Each tag
@@ -133,3 +133,5 @@ filepointer to the next 4 byte boundary, and give up reading.
 
 We set the stream position to the next 4 byte boundary. 
 
+
+.. include:: ../links_names.txt

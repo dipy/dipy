@@ -2,38 +2,48 @@
  Defining the DICOM orientation
 ================================
 
-First we define what DICOM means by x, y and z axes.  From Section
-C.7.6.2.1.1, page 275 of
-http://medical.nema.org/dicom/2004/04_03PU.PDF .  
+.. _dicom-pcs:
 
-   The direction of the axes is defined fully by the patient’s
-   orientation. The x-axis is increasing to the left hand side of the
+DICOM patient coordinate system
+===============================
+
+First we define the standard DICOM patient coordinate system.  This is
+what DICOM means by x, y and z axes.  From section C.7.6.2.1.1 of the
+`DICOM object definitions`_ (2009):
+
+   If Anatomical Orientation Type (0010,2210) is absent or has a value
+   of BIPED, the x-axis is increasing to the left hand side of the
    patient. The y-axis is increasing to the posterior side of the
    patient. The z-axis is increasing toward the head of the patient.
-    
-See : 
 
-* http://medical.nema.org/dicom/2004/04_03PU.PDF
+(we'll ignore the quadupeds for now). 
+
+.. _dicom-orientation:
+
+DICOM voxel to patient coordinate system mapping
+================================================
+
+See: 
+
 * http://www.dclunie.com/medical-image-faq/html/part2.html
 * http://fixunix.com/dicom/50449-image-position-patient-image-orientation-patient.html
 
-Image Orientation (Patient) (0020,0037) (section C.7.6.2). 
+From section C.7.6.2.1.1 of the `DICOM object definitions`_ (2009):
 
-  The direction cosines of the first row and the first column with
-  respect to the patient. See C.7.6.2.1.1 and C.7.6.16.2.3.1 for further
-  explanation.  Required if Frame Type (0008,9007) Value 1 of this frame
-  is ORIGINAL and Volumetric Properties (0008,9206) of this frame is
-  other than DISTORTED. May be present otherwise.
+   The Image Position (0020,0032) specifies the x, y, and z coordinates
+   of the upper left hand corner of the image; it is the center of the
+   first voxel transmitted. Image Orientation (0020,0037) specifies the
+   direction cosines of the first row and the first column with respect
+   to the patient.  These Attributes shall be provide as a pair. Row
+   value for the x, y, and z axes respectively followed by the Column
+   value for the x, y, and z axes respectively.
 
-RCS below is the *reference coordinate system*
+See C.7.6.16.2.3.1 for some further complications for sampled images
+(where Volumetric Properties (0008,9206) has a value of ``SAMPLED``);
+we'll ignore this case also for now.
 
-From: C.7.6.2.1.1
-
-   Image Orientation (0020,0037) specifies the direction cosines of the
-   first row and the first column with respect to the patient. These
-   Attributes shall be provide as a pair. Row value for the x, y, and z
-   axes respectively followed by the Column value for the x, y, and z
-   axes respectively.
+Further down section C.7.6.2.1.1 (RCS below is the *reference coordinate
+system*):
 
    The Image Plane Attributes, in conjunction with the Pixel Spacing
    Attribute, describe the position and orientation of the image slices
@@ -77,3 +87,6 @@ From: C.7.6.2.1.1
    #. $j$ : Row index to the image plane. The first row index is zero.
    #. $\Delta{j}$ - Row pixel resolution of the Pixel Spacing
       (0028,0030) attribute in units of mm.
+
+
+.. include:: ../links_names.txt
