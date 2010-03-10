@@ -7,9 +7,10 @@
 DICOM patient coordinate system
 ===============================
 
-First we define the standard DICOM patient coordinate system.  This is
-what DICOM means by x, y and z axes.  From section C.7.6.2.1.1 of the
-`DICOM object definitions`_ (2009):
+First we define the standard DICOM patient-based coordinate system.
+This is what DICOM means by x, y and z axes in its orientation
+specification.  From section C.7.6.2.1.1 of the `DICOM object
+definitions`_ (2009):
 
    If Anatomical Orientation Type (0010,2210) is absent or has a value
    of BIPED, the x-axis is increasing to the left hand side of the
@@ -43,7 +44,7 @@ See C.7.6.16.2.3.1 for some further complications for sampled images
 we'll ignore this case also for now.
 
 Further down section C.7.6.2.1.1 (RCS below is the *reference coordinate
-system*):
+system* - see `DICOM object definitions`_ section 3.17.1):
 
    The Image Plane Attributes, in conjunction with the Pixel Spacing
    Attribute, describe the position and orientation of the image slices
