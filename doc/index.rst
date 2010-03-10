@@ -13,6 +13,7 @@ Contents:
 
    introduction
    mission
+   theory/index
    reference/index
 
 Indices and tables
