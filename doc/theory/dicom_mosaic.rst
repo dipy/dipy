@@ -133,5 +133,30 @@ filepointer to the next 4 byte boundary, and give up reading.
 
 We set the stream position to the next 4 byte boundary. 
 
+DICOM orientation for mosaic
+============================
+
+See :ref:`dicom-pcs` and :ref:`dicom-orientation`.  To define the voxel
+to millimeter mapping, in terms of the :ref:`dicom-pcs`, we need a 4 x 4
+affine homogenous transform matrix, which can in turn be thought of as
+the 3 x 3 component, $R . S$, and a (3,) translation vector $\mathbf{t}.
+$RS$ can in turn be thought of as the dot product of a (3,3) rotation
+matrix $R$ and a scaling matrix $S$, where ``S = diag(s)`` and
+$\mathbf{s} is a (3,) vector of voxel sizes.  $\mathbf{t} is a (3,)
+translation vector, defining the coordinate in millimeters ofof the
+first voxel in the voxel volume (the voxel given by
+``voxel_array[0,0,0]``).
+
+In the case of the mosaic, we have the first two columns of $R$ from the
+``ImagePositionPatient`` DICOM field.  As we know that the axes are
+orthogonal, then we can generate the third column with the cross product
+of the first two.  We can get the first two values of $\mathbf{s} with
+the ``PixelSpacing`` field, and the last (z scaling) value with the
+``SpacingBetweenSlices``. 
+
+The SPM
+
+
+
 
 .. include:: ../links_names.txt

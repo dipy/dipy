@@ -19,6 +19,12 @@ definitions`_ (2009):
 
 (we'll ignore the quadupeds for now). 
 
+In a way it's funny to call this the 'patient-based' coordinate system,
+because it's better understood by thinking of a doctor looking at the
+patient from the end of the scanner bed, with the doctor's right hand
+held in front of them, thumb to their left, defining a right-handed
+coordinate system.
+
 .. _dicom-orientation:
 
 DICOM voxel to patient coordinate system mapping
