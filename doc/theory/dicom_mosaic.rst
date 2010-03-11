@@ -148,13 +148,20 @@ first voxel in the voxel volume (the voxel given by
 ``voxel_array[0,0,0]``).
 
 In the case of the mosaic, we have the first two columns of $R$ from the
-``ImagePositionPatient`` DICOM field.  As we know that the axes are
-orthogonal, then we can generate the third column with the cross product
-of the first two.  We can get the first two values of $\mathbf{s} with
-the ``PixelSpacing`` field, and the last (z scaling) value with the
-``SpacingBetweenSlices``. 
+``ImagePositionPatient`` DICOM field.  To make a true translation
+matrix, we can generate the last column from the cross product of the
+first two.  However, Siemens defines, in its private header, a
+``SliceNormalVector`` which gives the third column, but possibly with a
+z flip, so that $R$ then is orthogaonal, but not a rotation matrix (it
+has a determinant of <0).
 
-The SPM
+We can get the first two values of $\mathbf{s}$ with the
+``PixelSpacing`` field, and the last (z scaling) value with the
+``SpacingBetweenSlices``.
+
+SPM notes that the $\mathbf{t}$ vector - which should come from the
+``ImagePositionPatient`` field, are not correct for the mosaic format.  
+
 
 
 
