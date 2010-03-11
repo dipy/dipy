@@ -64,7 +64,7 @@ def get_csa_header(dicom_header, csa_type='image'):
 
     Returns
     -------
-    csa_info : None ordict
+    csa_info : None or dict
        Parsed CSA field of `csa_type` or None, if we cannot find the CSA
        information.
     '''
