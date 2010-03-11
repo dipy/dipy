@@ -139,46 +139,79 @@ DICOM orientation for mosaic
 See :ref:`dicom-pcs` and :ref:`dicom-orientation`.  To define the voxel
 to millimeter mapping, in terms of the :ref:`dicom-pcs`, we need a 4 x 4
 affine homogenous transform matrix, which can in turn be thought of as
-the 3 x 3 component, $R . S$, and a (3,) translation vector $\mathbf{t}.
+the (3,3) component, $RS$, and a (3,1) translation vector $\mathbf{t}$.
 $RS$ can in turn be thought of as the dot product of a (3,3) rotation
 matrix $R$ and a scaling matrix $S$, where ``S = diag(s)`` and
-$\mathbf{s} is a (3,) vector of voxel sizes.  $\mathbf{t} is a (3,)
-translation vector, defining the coordinate in millimeters ofof the
+$\mathbf{s}$ is a (3,) vector of voxel sizes.  $\mathbf{t}$ is a (3,1)
+translation vector, defining the coordinate in millimeters of the
 first voxel in the voxel volume (the voxel given by
 ``voxel_array[0,0,0]``).
 
 In the case of the mosaic, we have the first two columns of $R$ from the
-``ImagePositionPatient`` DICOM field.  To make a true translation
+``ImageOrientationPatient`` DICOM field.  To make a full rotation
 matrix, we can generate the last column from the cross product of the
 first two.  However, Siemens defines, in its private header, a
 ``SliceNormalVector`` which gives the third column, but possibly with a
 z flip, so that $R$ then is orthogaonal, but not a rotation matrix (it
-has a determinant of <0).
+has a determinant of < 0).
 
 We can get the first two values of $\mathbf{s}$ with the
 ``PixelSpacing`` field, and the last (z scaling) value with the
 ``SpacingBetweenSlices``.
 
-The SPM_ DICOM conversion code notes that the $\mathbf{t}$ vector -
-which should come from the ``ImagePositionPatient`` field, is not
-correct for the mosaic format.  Comments in the code imply that
-``ImagePositionVector`` has been derived from the (correct) position of
-the center of the first slice (once the mosaic has been unpacked), but
-then adjusted to point to the top left voxel, where the slice size used
-for this adjustment is the size of the mosaic, before it has been
-unpacked.  If the correct position in millimeters of the center of the
-first slice is $[c_x, c_y, c_z]$, the unpacked (real) slice dimensions
-are $[rd_x, rd_y]$ and the mosaic dimensions are $[md_x, md_y]$, then
-the ``ImagePositionPatient`` vector $\mathbf{i}$ is:
+The SPM_ DICOM conversion code notes that, for mosaic DICOM images, the
+$\mathbf{t}$ vector - which should come from the
+``ImagePositionPatient`` field, is not correct for the mosaic format.
+Comments in the code imply that ``ImagePositionPatient`` has been
+derived from the (correct) position of the center of the first slice
+(once the mosaic has been unpacked), but then adjusted to point to the
+top left voxel, where the slice size used for this adjustment is the
+size of the mosaic, before it has been unpacked.  Let's call the correct
+position in millimeters of the center of the first slice $\mathbf{c} =
+[c_x, c_y, c_z]$.  We have the derived $RS$ matrix from the calculations
+above. The unpacked (eventual, real) slice dimensions are $[rd_x, rd_y]$
+and the mosaic dimensions are $[md_x, md_y]$.  The
+``ImagePositionPatient`` vector $\mathbf{i}$ resulted from:
 
 .. math::
 
-   $\mathbf{i} = [c_x, c_y, c_z] - M . [md_x/2 md_y/2 0]
+   \mathbf{i} = \mathbf{c} + RS . 
+      \begin{bmatrix} -(md_x-1) / 2\\
+                      -(md_y-1) / 2\\
+                      0 \end{bmatrix}
 
-where $M$ is the matrix from the :ref:`dicom_orientation`.  
+To correct this we reverse the translation, and add the correct
+translation for the unpacked slice size $[rd_x, rd_y]$, giving the true
+image position $\mathbf{t}$:
 
-(too sleepy to get this right, more tomorrow). 
+.. math::
+
+   \mathbf{t} = \mathbf{i} - 
+                (RS . \begin{bmatrix} -(md_x-1) / 2\\
+                                      -(md_y-1) / 2\\
+                                      0 \end{bmatrix}) +
+                (RS . \begin{bmatrix} -(rd_x-1) / 2\\
+                                      -(rd_y-1) / 2\\
+                                      0 \end{bmatrix})
 
 
+Because of the final zero in the voxel translations, this simplifies to:
+
+.. math::
+
+   \mathbf{t} = \mathbf{i} + 
+                M \begin{bmatrix} (md_x - rd_x) / 2 \\
+                                  (md_y - rd_y) / 2 \end{bmatrix}
+
+where: 
+
+.. math::
+
+   M = \begin{bmatrix} rs_{11} & rs_{12} \\
+                       rs_{21} & rs_{22} \\
+                       rs_{31} & rs_{32} \end{bmatrix}
+
+which is of course the contents of the ``ImagePositionPatient`` field in
+the DICOM header.
 
 .. include:: ../links_names.txt
