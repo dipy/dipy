@@ -1,1 +1,109 @@
-/home/mb312/nipy-repo/trunk-lp/doc/links_names.txt
+.. This (-*- rst -*-) format file contains commonly used link targets
+   and name substitutions.  It may be included in many files,
+   therefore it should only contain link targets and name
+   substitutions.  Try grepping for "^\.\. _" to find plausible
+   candidates for this list.  
+
+.. NOTE: reST targets are
+   __not_case_sensitive__, so only one target definition is needed for
+   nipy, NIPY, Nipy, etc...
+
+.. _nipy: http://neuroimaging.scipy.org
+.. _`Brain Imaging Center`: http://bic.berkeley.edu/
+
+.. Documentation tools
+.. _graphviz: http://www.graphviz.org/
+.. _Sphinx: http://sphinx.pocoo.org/
+.. _`Sphinx reST`: http://sphinx.pocoo.org/rest.html
+.. _reST: http://docutils.sourceforge.net/rst.html
+.. _docutils: http://docutils.sourceforge.net
+
+.. Licenses
+.. _GPL: http://www.gnu.org/licenses/gpl.html
+.. _BSD: http://www.opensource.org/licenses/bsd-license.php
+.. _LGPL: http://www.gnu.org/copyleft/lesser.html
+
+.. Working process
+.. _pynifti: http://niftilib.sourceforge.net/pynifti/
+.. _nifticlibs: http://nifti.nimh.nih.gov
+.. _nifti: http://nifti.nimh.nih.gov
+.. _`nipy launchpad`: https://launchpad.net/nipy
+.. _launchpad: https://launchpad.net/
+.. _`nipy trunk`: https://code.launchpad.net/~nipy-developers/nipy/trunk
+.. _`nipy mailing list`: http://projects.scipy.org/mailman/listinfo/nipy-devel
+.. _`nipy bugs`: https://bugs.launchpad.net/nipy
+
+.. Code support stuff
+.. _pychecker: http://pychecker.sourceforge.net/
+.. _pylint: http://www.logilab.org/project/pylint
+.. _pyflakes: http://divmod.org/trac/wiki/DivmodPyflakes
+.. _virtualenv: http://pypi.python.org/pypi/virtualenv
+.. _git: http://git.or.cz/
+.. _flymake: http://flymake.sourceforge.net/
+.. _rope: http://rope.sourceforge.net/
+.. _pymacs: http://pymacs.progiciels-bpi.ca/pymacs.html
+.. _ropemacs: http://rope.sourceforge.net/ropemacs.html
+.. _ECB: http://ecb.sourceforge.net/
+.. _emacs_python_mode: http://www.emacswiki.org/cgi-bin/wiki/PythonMode
+.. _doctest-mode: http://www.cis.upenn.edu/~edloper/projects/doctestmode/
+.. _bazaar: http://bazaar-vcs.org/
+.. _nose: http://somethingaboutorange.com/mrl/projects/nose
+.. _`python coverage tester`: http://nedbatchelder.com/code/modules/coverage.html
+
+.. Other python projects
+.. _numpy: http://www.scipy.org/NumPy
+.. _scipy: http://www.scipy.org
+.. _ipython: http://ipython.scipy.org
+.. _`ipython manual`: http://ipython.scipy.org/doc/manual/html
+.. _matplotlib: http://matplotlib.sourceforge.net
+.. _pythonxy: http://www.pythonxy.com
+.. _ETS: http://code.enthought.com/projects/tool-suite.php
+.. _`Enthought Tool Suite`: http://code.enthought.com/projects/tool-suite.php
+.. _python: http://www.python.org
+.. _mayavi: http://mayavi.sourceforge.net/
+.. _sympy: http://code.google.com/p/sympy/
+
+.. Python imaging projects
+.. _PyMVPA: http://www.pymvpa.org
+.. _BrainVISA: http://brainvisa.info
+.. _anatomist: http://brainvisa.info
+.. _pydicom: http://code.google.com/p/pydicom/
+
+.. Not so python imaging projects
+.. _matlab: http://www.mathworks.com
+.. _spm: http://www.fil.ion.ucl.ac.uk/spm
+.. _eeglab: http://sccn.ucsd.edu/eeglab
+.. _AFNI: http://afni.nimh.nih.gov/afni
+.. _FSL: http://www.fmrib.ox.ac.uk/fsl
+.. _FreeSurfer: http://surfer.nmr.mgh.harvard.edu
+.. _voxbo: http://www.voxbo.org
+
+.. DICOM
+.. _DICOM: http://medical.nema.org/
+.. _`wikipedia DICOM`: http://en.wikipedia.org/wiki/Digital_Imaging_and_Communications_in_Medicine
+.. _GDCM: http://sourceforge.net/apps/mediawiki/gdcm
+.. _`DICOM specs`: ftp://medical.nema.org/medical/dicom/2009/
+.. _`DICOM object definitions`: ftp://medical.nema.org/medical/dicom/2009/09_03pu2.pdf
+
+.. General software
+.. _gcc: http://gcc.gnu.org
+.. _xcode: http://developer.apple.com/TOOLS/xcode
+.. _mingw: http://www.mingw.org
+.. _cygwin: http://cygwin.com
+.. _macports: http://www.macports.org/
+
+.. Functional imaging labs
+.. _`functional imaging laboratory`: http://www.fil.ion.ucl.ac.uk
+.. _FMRIB: http://www.fmrib.ox.ac.uk
+
+.. Other organizations
+.. _enthought: <http://www.enthought.com>
+.. _kitware: http://www.kitware.com
+
+.. General information links
+.. _`wikipedia FMRI`: http://en.wikipedia.org/wiki/Functional_magnetic_resonance_imaging
+.. _`wikipedia PET`: http://en.wikipedia.org/wiki/Positron_emission_tomography
+
+.. Mathematical methods
+.. _`wikipedia ICA`: http://en.wikipedia.org/wiki/Independent_component_analysis
+.. _`wikipedia PCA`: http://en.wikipedia.org/wiki/Principal_component_analysis
