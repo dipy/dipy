@@ -24,10 +24,10 @@ def mosaic_to_nii(dcm_data):
     img : ``Nifti1Image``
        Nifti image object
     '''
-    if not is_mosaic(dcm_data):
-        raise MosaicError('data does not appear to be mosaic format')
     # read CSA headers
     hdr_info = get_csa_header(dcm_data)
+    if hdr_info is None or not is_mosaic(dcm_data):
+        raise MosaicError('data does not appear to be mosaic format')
     # get Mosaic size
     n_o_m = hdr_info['tags']['NumberOfImagesInMosaic']
     n_o_m = n_o_m['items'][0]
