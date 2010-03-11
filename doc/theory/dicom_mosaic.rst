@@ -159,10 +159,23 @@ We can get the first two values of $\mathbf{s}$ with the
 ``PixelSpacing`` field, and the last (z scaling) value with the
 ``SpacingBetweenSlices``.
 
-SPM notes that the $\mathbf{t}$ vector - which should come from the
-``ImagePositionPatient`` field, are not correct for the mosaic format.  
+The SPM_ DICOM conversion code notes that the $\mathbf{t}$ vector -
+which should come from the ``ImagePositionPatient`` field, is not
+correct for the mosaic format.  Comments in the code imply that
+``ImagePositionVector`` has been derived from the (correct) position of
+the center of the first slice (once the mosaic has been unpacked), but
+then adjusted to point to the top left voxel, where the slice size used
+for this adjustment is the size of the mosaic, before it has been
+unpacked.  If the correct position in millimeters of the center of the
+first slice is $[c_x, c_y, c_z]$, the unpacked (real) slice dimensions
+are $[rd_x, rd_y]$ and the mosaic dimensions are $[md_x, md_y]$, then
+the ``ImagePositionPatient`` vector $\mathbf{i}$ is:
 
+.. math::
 
+   $\mathbf{i} = [c_x, c_y, c_z] - [md_x/2 * md_y/2 0]
+
+(too sleepy to get this right, more tomorrow). 
 
 
 
