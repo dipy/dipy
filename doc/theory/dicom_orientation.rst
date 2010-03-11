@@ -21,9 +21,11 @@ definitions`_ (2009):
 
 In a way it's funny to call this the 'patient-based' coordinate system,
 because it's better understood by thinking of a doctor looking at the
-patient from the end of the scanner bed, with the doctor's right hand
-held in front of them, thumb to their left, defining a right-handed
-coordinate system.
+patient from the foot of the scanner bed.  Imagine the doctor's right
+hand held in front of her like spider-man about to shoot a web, with her
+palm towards the patient, defining a right-handed coordinate system.
+Her thumb points to her right (the patient's left), her index finger
+points down, and the middle finger points at the patient.
 
 .. _dicom-orientation:
 

@@ -173,7 +173,9 @@ the ``ImagePositionPatient`` vector $\mathbf{i}$ is:
 
 .. math::
 
-   $\mathbf{i} = [c_x, c_y, c_z] - [md_x/2 * md_y/2 0]
+   $\mathbf{i} = [c_x, c_y, c_z] - M . [md_x/2 md_y/2 0]
+
+where $M$ is the matrix from the :ref:`dicom_orientation`.  
 
 (too sleepy to get this right, more tomorrow). 
 
