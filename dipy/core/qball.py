@@ -1,11 +1,125 @@
-""" Q-ball imaging
-Spherical Harmonics
-http://www.sjbrown.co.uk/?article=sharmonics
+""" Q-ball Reconstruction
+
+We are implementing the reconstruction from the paper
+
+@article{descoteaux2007regularized,
+  title={{Regularized, fast, and robust analytical Q-ball imaging}},
+  author={Descoteaux, M. and Angelino, E. and Fitzgibbons, S. and Deriche, R.},
+  journal={Magnetic Resonance in Medicine},
+  volume={58},
+  number={3},
+  pages={497--510},
+  year={2007},
+  publisher={New York: Academic Press,[c1984-}
+}
+
+We also took ideas from the code found in diffusion-mri toolbox by Jiang found in the link below
+http://code.google.com/p/diffusion-mri/
+
 """
+
+import math
+import numpy as np
+import scipy as sp
+
+
+def cart2sph(x,y,z):
+    r = math.sqrt(x**2+y**2+z**2)
+    elev = math.atan2(z,math.sqrt(x**2+y**2))
+    az = math.atan2(y,x)
+    return az, elev, r
+
+
+def sph2cart(angle):
+    # angle  - [theta,phi] colatitude and longitude
+    theta,phi = angle
+    z = math.cos(theta)
+    x = math.sin(theta)*math.cos(phi)
+    y = math.sin(theta)*math.sin(phi)
+    return x,y,z
+
+def test_qball_odf():
+
+    g_fname='/home/eg309/Devel/diffusion-mri-read-only/data/81vectors.txt'
+
+    g=np.loadtxt(g_fname)
+
+    
+    v=400*np.ones(g.shape[0])
+
+    l=8
+    
+    r=0.06
+
+    C=qball_odf(v,g,l,r)
+
+    return C
+
+
+
+def qball_odf(v,g,l,r):
+
+    ''' Calculate the coefficients of the orientation distribution function (ODF) using Q-ball reconstruction as described in Descoteaux et. al. MRM 2007
+
+    Parameters:
+    -----------
+    v: signal at a voxel
+    
+    g: gradient encoding direction
+    l: order of spherical harmonics basis R=(1/2)(l+1)(l+2)
+    r: regularization parameter
+    
+    '''
+
+    #number of directions
+    N=len(v)
+
+    #number of spherical harmonics coefficients that we will approximate
+    
+    R=(1/2)*(l+1)*(l+2)
+
+    B=np.zeros((N,R))
+    
+    #gradient directions (bvecs) in spherical coordinates
+    #r = math.sqrt(x**2+y**2+z**2)
+    #elev = math.atan2(z,math.sqrt(x**2+y**2))
+    #az = math.atan2(y,x)
+
+    gradial =np.sqrt(np.sum(g**2,axis=1))
+    gelev =np.arctan2(g[:,2],np.sqrt(np.sum(g[:,:2]**2,axis=1)))
+    gazimuth = np.arctan2(g[:,1],g[:,0])
+    gs=np.c_[gelev,gazimuth,gradial]
+
+    #gelev from 0 to pi
+    #gazimuth from 0 to 2pi
+    
+    from scipy.special import sph_harm as Ylm
+
+    kms=[]
+    for k in range(0,l+1,2):
+        for m in range(-k,k+1):
+            kms.append((k,m))
+
+
+    #Ylm(l,m,theta,phi)
+
+    
+
+    return kms
+
+
+
 
 
 import numpy
 import math
+
+
+
+
+
+
+
 
 factorial = lambda n:reduce(lambda a,b:a*(b+1),range(n),1)
 
@@ -126,24 +240,6 @@ def P(l,m,theta):
 
 
 
-
-def cart2sph(x,y,z):
-    r = math.sqrt(x**2+y**2+z**2)
-    elev = math.atan2(z,math.sqrt(x**2+y**2))
-    az = math.atan2(y,x)
-    return az, elev, r
-
-
-def sph2cart(angle):
-    # angle  - [theta,phi] colatitude and longitude
-    cos = math.cos
-    sin = math.sin
-    theta,phi = angle
-    z = cos(theta)
-    x = sin(theta)*cos(phi)
-    y = sin(theta)*sin(phi)
-    return x,y,z
-
 def construct_SH_basis(pts, degree):
     sph_coord = numpy.array([cart2sph(x,y,z) for x,y,z in pts])
     B  = [spherical_harmonics.evaluate_SH((math.pi/2 - elev,az),degree,2)[0] for az,elev,r in sph_coord]
@@ -151,3 +247,17 @@ def construct_SH_basis(pts, degree):
     # PI/2 - elev is to convert elevation [-PI/2, PI/2] to polar angle [0, PI]
     B = numpy.array(B).squeeze()
     return B
+
+
+def QBI_coeff(coeff, degree):
+    
+    for l in range(2,degree+1,2):
+        oddl = numpy.arange(3,l,2).prod()
+        evenl = numpy.arange(2,l+1,2).prod()
+        center =(l + 2)*(l + 1)/2 - l - 1
+        ll = oddl*1.0/evenl
+        if (l/2)%2:
+            ll = -ll
+        for m in range(-l,l+1):
+            coeff[center+m] *= ll
+    return coeff
