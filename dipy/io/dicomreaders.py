@@ -149,6 +149,9 @@ def get_vox_to_dpcs(dcm_data):
     iop = np.array(dcm_data.ImageOrientationPatient)
     iop = iop.reshape(2,3).T
     snv = csar.get_slice_normal(hdr)
+    fill_vector = np.cross(iop[:,0], iop[:,1])
+    assert (np.allclose(fill_vector, snv) or
+            np.allclose(fill_vector, -snv)
     R = np.c_[iop, snv]
     s = dcm_data.PixelSpacing + [dcm_data.SpacingBetweenSlices]
     aff = np.eye(4)
