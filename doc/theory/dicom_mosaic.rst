@@ -152,7 +152,7 @@ In the case of the mosaic, we have the first two columns of $R$ from the
 matrix, we can generate the last column from the cross product of the
 first two.  However, Siemens defines, in its private header, a
 ``SliceNormalVector`` which gives the third column, but possibly with a
-z flip, so that $R$ then is orthogaonal, but not a rotation matrix (it
+z flip, so that $R$ then is orthogonal, but not a rotation matrix (it
 has a determinant of < 0).
 
 We can get the first two values of $\mathbf{s}$ with the
@@ -211,7 +211,5 @@ where:
                        rs_{21} & rs_{22} \\
                        rs_{31} & rs_{32} \end{bmatrix}
 
-which is of course the contents of the ``ImagePositionPatient`` field in
-the DICOM header.
 
 .. include:: ../links_names.txt

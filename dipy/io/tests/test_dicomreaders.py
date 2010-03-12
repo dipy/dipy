@@ -48,6 +48,7 @@ def test_read_dwi():
     yield assert_equal(arr.shape, (128,128,48))
     yield assert_array_almost_equal(img.get_affine(), expected_affine)
 
+
 @parametric
 def test_read():
     yield assert_true(didr.has_csa(data))
