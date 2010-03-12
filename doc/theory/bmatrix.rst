@@ -4,13 +4,13 @@
 
 This is a short note to explain the nature of the ``B_matrix`` found in
 the :ref:`csa-header` of a diffusion weighted acquistion and its
-relationship with the *b value* and the *gradient vector*.  The
+relationship with the *$b$ value* and the *gradient vector*.  The
 acquisition is made with a planned (requested) b value - say $b_{req} =
 1000$, and with a requested gradient direction $\mathbf{g}_{req} = [g_x,
 g_y, g_z]$ (supposedly a unit vector).
 
 Note that here we're using $\mathbf{q}$ in the sense of an approximation
-to a vector in q space.  Other people use $\mathbf{b}$ for the same
+to a vector in $q$ space.  Other people use $\mathbf{b}$ for the same
 concept, but we've chosen $\mathbf{q}$ to make the exposition clearer.
 
 For some purposes we want the q vector $\mathbf{q}_{actual}$ which is
@@ -36,7 +36,7 @@ the diffusion tensor via the equations across the set of acquisitions:
 The gradient field typically stays in the one gradient direction, in
 this case the relationship between $\mathbf{q}$ and the $b_{ij}$ is as
 follows. If we fill out the symmetric B-matrix as:
-
+ 
 .. math::
 
    \mathbf{B} = \begin{pmatrix}
@@ -46,15 +46,17 @@ follows. If we fill out the symmetric B-matrix as:
                  \end{pmatrix}
 
 then $\mathbf{B}$ is equal to the rank 1 tensor
-$\mathbf{q}\mathbf{q}^T$. One of the ways to recover $\mathbf{q}$ from
+$b\mathbf{g}\mathbf{g}^T$. One of the ways to recover $b$ and $\mathbf{g}$, 
+and hence $\mathbf{q}$, from
 $\mathbf{B}$ is to do a singular value decomposition of $\mathbf{B}:
 \mathbf{B} = \lambda_1\mathbf{v}_1\mathbf{v}_1^T +
 \lambda_2\mathbf{v}_2\mathbf{v}_2^T +
 \lambda_3\mathbf{v}_3\mathbf{v}_3^T$, where only one of the $\lambda_i$,
-say $\lambda_1$, is effectively non-zero. Then $\mathbf{q} =
-\pm\sqrt{\lambda_1}\mathbf{v}_1$. The choice of sign is arbitrary
+say $\lambda_1$, is effectively non-zero. Then $b = \lambda_1$, $\mathbf{g} =
+\pm\mathbf{v}_1,$ and $\mathbf{q} =
+\pm\lambda_1\mathbf{v}_1.$ The choice of sign is arbitrary
 (essentially we have a choice between two possible square roots of the
-rank 1 tensor $\mathbf{q}$). Once we have $\mathbf{q}_{actual}$ we can
+rank 1 tensor $\mathbf{B}$). Once we have $\mathbf{q}_{actual}$ we can
 calculate $b_{actual} = |\mathbf{q}_{actual}|$ and $\mathbf{g}_{actual}
 = \mathbf{q}_{actual} / b_{actual}$. Various sofware packages
 (e.g. FSL's DFT-DTIFIT) expect to get 3 × N and 1 × N arrays of
