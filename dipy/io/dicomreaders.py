@@ -1,10 +1,12 @@
 import numpy as np
+import numpy.linalg as npl
 
 import dicom
 
 import nibabel as nib
 
 from . import csareader as csar
+from .dwiparams import B2q
 
 
 class CSAError(Exception):
@@ -125,19 +127,23 @@ def is_mosaic(dicom_header):
 def get_b_matrix(dicom_header):
     ''' Get voxel B matrix from Siemens DICOM '''
     hdr = get_csa_header(dicom_header)
-    if hdr_info is None:
+    if hdr is None:
         raise CSAError('data does not appear to be Siemens format')
+    B = csar.get_b_matrix(hdr)
+    if B is None:
+        return None
     iop = np.array(dicom_header.ImageOrientationPatient)
     iop = iop.reshape(2,3).T
-    snv = csar.get_slice_normal(hdr_info)
+    snv = csar.get_slice_normal(hdr)
     R = np.c_[iop, snv] # vox to dpcs
     Rdash = npl.inv(R) # dpcs to vox
-    B = csar.get_b_matrix(hdr_info)
     return np.dot(Rdash, B)
 
 
 def get_q_vector(dicom_header):
     B = get_b_matrix(dicom_header)
+    if B is None:
+        return None
     return B2q(B)
 
 

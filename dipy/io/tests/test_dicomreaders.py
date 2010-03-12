@@ -11,6 +11,7 @@ import numpy as np
 import dicom
 
 import dipy.io.dicomreaders as didr
+from dipy.io.vectors import vector_norm
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -25,11 +26,19 @@ data_file = pjoin(data_path, 'siemens_dwi_1000.dcm.gz')
 
 data = dicom.read_file(gzip.open(data_file))
 
+# this affine from our converted image was shown to match our image
+# spatially with an image from SPM DICOM conversion. We checked the
+# matching with SPM check reg.
 expected_affine = np.array(
     [[ -1.796875, 0, 0, 115],
      [0, -1.79684984, -0.01570896, 135.028779],
      [0, -0.00940843750, 2.99995887, -78.710481],
      [0, 0, 0, 1]])
+
+# from Guys and Matthew's SPM code, with Y flip reversed
+expected_params = [992.05050247, (0.99997450,
+                                  0.00507649,
+                                  -0.005023611)]
 
 
 @parametric
@@ -37,6 +46,7 @@ def test_read_dwi():
     img = didr.mosaic_to_nii(data)
     arr = img.get_data()
     yield assert_equal(arr.shape, (128,128,48))
+    yield assert_array_almost_equal(img.get_affine(), expected_affine)
 
 @parametric
 def test_read():
@@ -48,7 +58,11 @@ def test_read():
 
 
 @parametric
-def test_affine():
-    aff = didr.get_vox_to_dpcs(data)
-    aff = np.dot(didr.DPCS_TO_TAL, aff)
-    yield assert_array_almost_equal(aff, expected_affine)
+def test_dwi_params():
+    b_matrix = didr.get_b_matrix(data)
+    q = didr.get_q_vector(data)
+    b = vector_norm(q)
+    g = q / b
+    yield assert_array_almost_equal(b, expected_params[0])
+    yield assert_array_almost_equal(g, expected_params[1])
+    
