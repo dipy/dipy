@@ -42,7 +42,6 @@ def test_read():
     yield assert_true(didr.is_mosaic(data))
 
 
-def test_dwi_params():
-    csa_hdr = didr.get_csa_header(data,'image')
-    #params = get_dwi_params(csa_hdr)
+def test_affine():
+    aff = didr.get_vox_to_dpcs(data)
     
