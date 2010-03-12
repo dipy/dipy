@@ -1,6 +1,7 @@
 ''' CSA header reader from SPM spec
 
 '''
+import numpy as np
 
 from .structreader import Unpacker
 
@@ -108,6 +109,52 @@ def read(csa_str):
         tag['items'] = items
         csa_dict['tags'][name] = tag
     return csa_dict
+
+
+def get_scalar(csa_dict, tag_name):
+    items = csa_dict['tags'][tag_name]['items']
+    if len(items) == 0:
+        return None
+    return items[0]
+
+
+def get_vector(csa_dict, tag_name, n):
+    items = csa_dict['tags'][tag_name]['items']
+    if len(items) == 0:
+        return None
+    if len(items) != n:
+        raise ValueError('Expecting %d vector' % n)
+    return np.array(items)
+
+
+def get_n_mosaic(csa_dict):
+    return get_scalar(csa_dict, 'NumberOfImagesInMosaic')
+
+
+def get_acq_mat_txt(csa_dict):
+    return get_scalar(csa_dict, 'AcquisitionMatrixText')
+
+
+def get_slice_normal(csa_dict):
+    return get_vector(csa_dict, 'SliceNormalVector', 3)
+
+
+def get_b_matrix(csa_dict):
+    vals =  get_vector(csa_dict, 'B_matrix', 6)
+    if vals is None:
+        return
+    # the 6 vector is the upper triangle of the symmetric B matrix
+    inds = np.array([0, 1, 2, 1, 3, 4, 2, 4, 5])
+    B = np.array(vals)[inds]
+    return B.reshape(3,3)
+
+
+def get_b_value(csa_dict):
+    return get_scalar(csa_dict, 'B_value')
+
+
+def get_g_vector(csa_dict):
+    return get_vector(csa_dict, 'DiffusionGradientDirection', 3)
 
 
 def nt_str(s):

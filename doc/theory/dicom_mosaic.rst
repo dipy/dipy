@@ -175,7 +175,7 @@ and the mosaic dimensions are $[md_x, md_y]$.  The
 
 .. math::
 
-   \mathbf{i} = \mathbf{c} + RS . 
+   \mathbf{i} = \mathbf{c} + RS 
       \begin{bmatrix} -(md_x-1) / 2\\
                       -(md_y-1) / 2\\
                       0 \end{bmatrix}
@@ -187,10 +187,10 @@ image position $\mathbf{t}$:
 .. math::
 
    \mathbf{t} = \mathbf{i} - 
-                (RS . \begin{bmatrix} -(md_x-1) / 2\\
+                (RS \begin{bmatrix} -(md_x-1) / 2\\
                                       -(md_y-1) / 2\\
                                       0 \end{bmatrix}) +
-                (RS . \begin{bmatrix} -(rd_x-1) / 2\\
+                (RS \begin{bmatrix} -(rd_x-1) / 2\\
                                       -(rd_y-1) / 2\\
                                       0 \end{bmatrix})
 

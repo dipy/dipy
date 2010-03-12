@@ -107,11 +107,10 @@ def is_mosaic(dicom_header):
     hdr = get_csa_header(dicom_header)
     if hdr is None:
         return False
-    tags = hdr['tags']
-    if len(tags['AcquisitionMatrixText']['items']) == 0:
+    if csar.get_acq_mat_txt(hdr) is None:
         return False
-    items = tags['NumberOfImagesInMosaic']['items']
-    return len(items) != 0 and items[0] != 0
+    n_o_m = csar.get_n_mosaic(hdr)
+    return not (n_o_m is None) and n_o_m != 0
 
 
 def get_vox_to_dicom(dicom_header):
