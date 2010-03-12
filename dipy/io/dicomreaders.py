@@ -149,9 +149,12 @@ def get_vox_to_dpcs(dcm_data):
     iop = np.array(dcm_data.ImageOrientationPatient)
     iop = iop.reshape(2,3).T
     snv = csar.get_slice_normal(hdr)
+    # check that the slice normal vector is in fact close to the
+    # orthogonal complement of the other direction cosines, or its
+    # reverse.
     fill_vector = np.cross(iop[:,0], iop[:,1])
-    assert (np.allclose(fill_vector, snv) or
-            np.allclose(fill_vector, -snv)
+    assert (np.allclose(fill_vector, snv, atol=1e6) or
+            np.allclose(fill_vector, -snv, atol=1e6))
     R = np.c_[iop, snv]
     s = dcm_data.PixelSpacing + [dcm_data.SpacingBetweenSlices]
     aff = np.eye(4)
@@ -162,7 +165,8 @@ def get_vox_to_dpcs(dcm_data):
     mosaic_size = np.ceil(np.sqrt(n_o_m))
     rd_xy = md_xy / mosaic_size
     vox_trans_fixes = (md_xy - rd_xy)/ 2
-    t = i + np.dot(iop, vox_trans_fixes[:,None]).ravel()
+    M = iop * dcm_data.PixelSpacing
+    t = i + np.dot(M, vox_trans_fixes[:,None]).ravel()
     aff[:3,3] = t
     return aff
 
