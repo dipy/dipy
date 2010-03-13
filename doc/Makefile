@@ -4,7 +4,7 @@
 # download".  To use, set your sourceforge username with 'export
 # SF_USER=garyfallidis' or similar, then 'make upload-website'
 SF_USER ?= matthewbrett
-WWW_SF=$(SF_USER),nipy@web.sourceforge.net:htdocs/dipy
+WWW_SF=$(SF_USER),nipy@web.sourceforge.net:htdocs/dipy/
 FRS_SF=$(SF_USER)@frs.sourceforge.net:uploads
 RSYNC_SF=rsync -rzhvp --delete --chmod=Dg+s,g+rw
 
@@ -106,11 +106,11 @@ pdf-stamp: latex
 
 
 upload-website: web-pdf-stamp
-web-pdf-stamp: pdf upload-htmldoc
-	$(RSYNC_SF) _build/latex/* $(WWW_SF)/dipy/
+web-pdf-stamp: pdf html
+	$(RSYNC_SF) _build/latex/* _build/html/* $(WWW_SF)
 	touch $@
 
 upload-htmldoc: web-html-stamp
 web-html-stamp: html
-	$(RSYNC_SF) _build/html/* $(WWW_SF)/dipy/
+	$(RSYNC_SF) _build/html/* $(WWW_SF)
 	touch $@
