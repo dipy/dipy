@@ -23,7 +23,7 @@ import numpy as np
 import numpy.linalg as npl
 
 
-def B2q(B):
+def B2q(B, tol=None):
     ''' Estimate q vector from input B matrix `B`
 
     We assume the input `B` is symmetric positive definite.  If not,
@@ -37,6 +37,12 @@ def B2q(B):
     ----------
     B : (3,3) array-like
        B matrix - symmetric. We do not check the symmetry.
+    tol : None or float
+       absolute tolerance below which to consider eigenvalues of the B
+       matrix to be small enough not to worry about them being negative,
+       in check for positive semi-definite-ness.  None (default) results
+       in a fairly tight numerical threshold propartional the maximum
+       eigenvalue
        
     Returns
     -------
@@ -45,7 +51,8 @@ def B2q(B):
     '''
     B = np.asarray(B)
     w, v = npl.eigh(B)
-    tol = np.abs(w.max() * np.finfo(w.dtype).eps)
+    if tol is None:
+        tol = np.abs(w.max() * np.finfo(w.dtype).eps)
     non_trivial = np.abs(w) > tol
     if np.any(w[non_trivial] < 0):
         raise ValueError('B not positive semi-definite')

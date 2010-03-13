@@ -30,3 +30,5 @@ def test_b2q():
     yield assert_array_almost_equal(-q, B2q(B))
     B = np.eye(3) * -1
     yield assert_raises(ValueError, B2q, B)
+    # no error if we up the tolerance
+    q = B2q(B, tol=1)

@@ -23,9 +23,10 @@ from dipy.testing import parametric
 
 data_path = pjoin(os.path.dirname(__file__), 'data')
 
+data_file = pjoin(data_path, 'siemens_dwi_0.dcm.gz')
+data_0 = dicom.read_file(gzip.open(data_file))
 data_file = pjoin(data_path, 'siemens_dwi_1000.dcm.gz')
-
-data = dicom.read_file(gzip.open(data_file))
+data_1000 = dicom.read_file(gzip.open(data_file))
 
 # this affine from our converted image was shown to match our image
 # spatially with an image from SPM DICOM conversion. We checked the
@@ -44,7 +45,7 @@ expected_params = [992.05050247, (0.99997450,
 
 @parametric
 def test_read_dwi():
-    img = didr.mosaic_to_nii(data)
+    img = didr.mosaic_to_nii(data_1000)
     arr = img.get_data()
     yield assert_equal(arr.shape, (128,128,48))
     yield assert_array_almost_equal(img.get_affine(), expected_affine)
@@ -52,28 +53,24 @@ def test_read_dwi():
 
 @parametric
 def test_read():
-    yield assert_true(didr.has_csa(data))
-    yield assert_equal(didr.get_csa_header(data,'image')['n_tags'],83)
-    yield assert_equal(didr.get_csa_header(data,'series')['n_tags'],65)
-    yield assert_raises(ValueError, didr.get_csa_header, data,'xxxx')
-    yield assert_true(didr.is_mosaic(data))
+    yield assert_true(didr.has_csa(data_1000))
+    yield assert_equal(didr.get_csa_header(data_1000,'image')['n_tags'],83)
+    yield assert_equal(didr.get_csa_header(data_1000,'series')['n_tags'],65)
+    yield assert_raises(ValueError, didr.get_csa_header, data_1000,'xxxx')
+    yield assert_true(didr.is_mosaic(data_1000))
 
 
 @parametric
 def test_dwi_params():
-    b_matrix = didr.get_b_matrix(data)
-    q = didr.get_q_vector(data)
+    b_matrix = didr.get_b_matrix(data_1000)
+    q = didr.get_q_vector(data_1000)
     b = vector_norm(q)
     g = q / b
     yield assert_array_almost_equal(b, expected_params[0])
     yield assert_array_almost_equal(g, expected_params[1])
-    
-@parametric
-def test_get_dwi_paradigm():
-    datadir="/home/ian/data/20100114_195840/Series_012_CBU_DTI_64D_1A/"
-    dcm_dir=glob(datadir+"*.dcm")
-    big_b = []
-    for dcm_file in dcm_dir:
-        data_file = dicom.read_file(dcm_file)
-        big_b = [big_b, vector_norm(didr.get_q_vector(data_file))]
-    print big_b
+    # regression test against probably correct value
+    yield assert_array_almost_equal(
+        vector_norm(didr.get_q_vector(data_1000)), 992.050502443)
+    # B0 -> 0
+    yield assert_array_almost_equal(
+        vector_norm(didr.get_q_vector(data_0)), 0)

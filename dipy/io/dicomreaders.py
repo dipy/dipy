@@ -163,10 +163,10 @@ def get_b_matrix(dcm_data):
     # the space of the DICOM patient coordinate space.
     B = csar.get_b_matrix(hdr)
     if B is None: # may be not diffusion or B0 image
-        bval = csar.get_b_value(hdr)
-        if bval is None:
+        bval_requested = csar.get_b_value(hdr)
+        if bval_requested is None:
             return None
-        if bval != 0:
+        if bval_requested != 0:
             raise CSAError('No B matrix and b value != 0')
         return np.zeros((3,3))
     # We need the rotations from the DICOM header and the Siemens header
@@ -174,11 +174,14 @@ def get_b_matrix(dcm_data):
     iop = np.array(dcm_data.ImageOrientationPatient)
     iop = iop.reshape(2,3).T
     snv = csar.get_slice_normal(hdr)
-    # rotation from voxels to DICOM PCS. Because this is an orthogonal
-    # matrix, its inverse is its transpose
-    R = np.c_[iop, snv]
+    # rotation from voxels to DICOM PCS, inverted to give the rotation
+    # from DPCS to voxels.  Because this is an orthogonals matrix, its
+    # inverse is its transpose
+    R = np.c_[iop, snv].T
     assert _fairly_close(np.eye(3), np.dot(R, R.T))
-    return np.dot(R.T, B)
+    # because B results from V dot V.T, the rotation B is given by R dot
+    # V dot V.T dot R.T == R dot B dot R.T
+    return np.dot(R, np.dot(B, R.T))
 
 
 def get_q_vector(dcm_data):
@@ -198,7 +201,13 @@ def get_q_vector(dcm_data):
     B = get_b_matrix(dcm_data)
     if B is None:
         return None
-    return B2q(B)
+    hdr = get_csa_header(dcm_data)
+    bval_requested = csar.get_b_value(hdr)
+    assert bval_requested is not None
+    # The Siemens B matrix seems to occasionally be rather far from
+    # positive semi-definite, so we relax the testing threshold
+    # considerably here.
+    return B2q(B, tol=bval_requested * 0.001)
 
 
 def get_vox_to_dpcs(dcm_data):
