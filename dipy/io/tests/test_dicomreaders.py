@@ -5,6 +5,7 @@
 import os
 from os.path import join as pjoin
 import gzip
+from glob import glob
 
 import numpy as np
 
@@ -67,3 +68,12 @@ def test_dwi_params():
     yield assert_array_almost_equal(b, expected_params[0])
     yield assert_array_almost_equal(g, expected_params[1])
     
+@parametric
+def test_get_dwi_paradigm():
+    datadir="/home/ian/data/20100114_195840/Series_012_CBU_DTI_64D_1A/"
+    dcm_dir=glob(datadir+"*.dcm")
+    big_b = []
+    for dcm_file in dcm_dir:
+        data_file = dicom.read_file(dcm_file)
+        big_b = [big_b, vector_norm(didr.get_q_vector(data_file))]
+    print big_b
