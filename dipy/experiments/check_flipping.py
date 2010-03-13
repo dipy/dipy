@@ -18,7 +18,7 @@ tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
                                     
 tracks=[t.astype(np.float32) for t in tracks]
 
-C=pf.larch_3split(tracks,None,0.5)        
+C=pf.larch_3split(tracks,None,0.5)
 
 r=fos.ren()
 fos.add(r,fos.line(tracks,fos.red))
@@ -27,12 +27,15 @@ fos.add(r,fos.line(tracks,fos.red))
 for c in C:
     color=np.random.rand(3)
     for i in C[c]['indices']:
-        fos.add(r,fos.line(tracks[i]+np.array([7.,0.,0.]),color))
-#fos.show(r)
+        fos.add(r,fos.line(tracks[i]+np.array([8.,0.,0.]),color))
+        fos.add(r,fos.line(tracks[i]+np.array([16.,0.,0.]),color))
 
-for c in C:    
-    fos.add(r,fos.line(C[c]['rep3']/C[c]['N']+np.array([7.,0.,0.]),fos.white))
-#fos.show(r)
+    fos.add(r,fos.line(C[c]['rep3']/C[c]['N']+np.array([16.,0.,0.]),fos.white))
+        
+    
+fos.show(r)
+
+'''
 
 print len(C)
 
@@ -49,6 +52,8 @@ for c in C:
 for c in C:    
     fos.add(r,fos.line(C[c]['rep3']/C[c]['N']+np.array([14.,0.,0.]),fos.white))
 fos.show(r)
+'''
+
 
 
 
