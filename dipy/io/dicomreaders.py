@@ -20,6 +20,7 @@ DPCS_TO_TAL = np.diag([-1, -1, 1, 1])
 
 
 def _fairly_close(A, B):
+    ''' Utility routine for allclose asserts '''
     return np.allclose(A, B, atol=1e-6)
 
 
@@ -60,6 +61,19 @@ def mosaic_to_nii(dcm_data):
 
 
 def has_csa(dcm_data):
+    ''' Return True if `dcm_data` DICOM object has CSA header
+
+    Parameters
+    ----------
+    dcm_data : dicom.Dataset
+       DICOM dataset object as read from DICOM file
+
+    Returns
+    -------
+    tf : bool
+       True if `dcm_data` DIOM header contains Siemens CSA header, False
+       otherwise
+    '''
     return get_csa_header(dcm_data) is not None
 
 
@@ -133,7 +147,7 @@ def get_b_matrix(dcm_data):
     Parameters
     ----------
     dcm_data : ``dicom.Dataset``
-       Read DICOM header
+       DICOM header
 
     Returns
     -------
@@ -145,11 +159,16 @@ def get_b_matrix(dcm_data):
     hdr = get_csa_header(dcm_data)
     if hdr is None:
         raise CSAError('data does not appear to be Siemens format')
-    # read B matrix as recorded in CSA header.  This matrix is in DICOM
-    # patient coordinate space. 
+    # read B matrix as recorded in CSA header.  This matrix refers to
+    # the space of the DICOM patient coordinate space.
     B = csar.get_b_matrix(hdr)
-    if B is None:
-        return None
+    if B is None: # may be not diffusion or B0 image
+        bval = csar.get_b_value(hdr)
+        if bval is None:
+            return None
+        if bval != 0:
+            raise CSAError('No B matrix and b value != 0')
+        return np.zeros((3,3))
     # We need the rotations from the DICOM header and the Siemens header
     # in order to convert the B matrix to voxel space
     iop = np.array(dcm_data.ImageOrientationPatient)
@@ -224,7 +243,7 @@ def get_vox_to_dpcs(dcm_data):
     rd_xy = md_xy / mosaic_size
     # apply algorithm for undoing mosaic translation error - see
     # ``dicom_mosaic`` doc for details
-    vox_trans_fixes = (md_xy - rd_xy)/ 2
+    vox_trans_fixes = (md_xy - rd_xy) / 2
     M = iop * dcm_data.PixelSpacing
     t = i + np.dot(M, vox_trans_fixes[:,None]).ravel()
     aff[:3,3] = t
