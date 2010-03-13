@@ -53,7 +53,7 @@ def test_read_dwi():
 def test_read():
     yield assert_true(didr.has_csa(data))
     yield assert_equal(didr.get_csa_header(data,'image')['n_tags'],83)
-    yield assert_equal(didr.get_csa_header(data,'image')['n_tags'],83)
+    yield assert_equal(didr.get_csa_header(data,'series')['n_tags'],65)
     yield assert_raises(ValueError, didr.get_csa_header, data,'xxxx')
     yield assert_true(didr.is_mosaic(data))
 
