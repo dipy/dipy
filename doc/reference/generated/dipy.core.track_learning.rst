@@ -18,13 +18,11 @@ Functions
 
 .. autofunction:: emi_atlas
 
-.. autofunction:: local_skeleton_clustering
+.. autofunction:: larch
 
 .. autofunction:: max_concentration
 
 .. autofunction:: missing_tracks
-
-.. autofunction:: near_clusters
 
 .. autofunction:: neck_finder
 

@@ -13,5 +13,6 @@ in dipy.
 .. toctree::
 
    core
+   io
 
 

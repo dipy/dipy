@@ -4,12 +4,10 @@
 # download".  To use, set your sourceforge username with 'export
 # SF_USER=garyfallidis' or similar, then 'make upload-website'
 SF_USER ?= matthewbrett
-WWW_SF=$(SF_USER),nipy@web.sourceforge.net:htdocs
-FRS_SF=matthewbrett@frs.sourceforge.net:uploads
+WWW_SF=$(SF_USER),nipy@web.sourceforge.net:htdocs/dipy
+FRS_SF=$(SF_USER)@frs.sourceforge.net:uploads
+RSYNC_SF=rsync -rzhvp --delete --chmod=Dg+s,g+rw
 
-WWW_DIR = _build/website
-HTML_DIR = _build/html
-LATEX_DIR = _build/latex
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -107,22 +105,12 @@ pdf-stamp: latex
 	touch $@
 
 
-$(WWW_DIR):
-	if [ ! -d $(WWW_DIR) ]; then mkdir -p $(WWW_DIR); fi
-
-
-website: website-stamp
-website-stamp: $(WWW_DIR) html pdf
-	cp -r $(HTML_DIR)/* $(WWW_DIR)
-	cp $(LATEX_DIR)/*.pdf $(WWW_DIR)
+upload-website: web-pdf-stamp
+web-pdf-stamp: pdf upload-htmldoc
+	$(RSYNC_SF) _build/latex/* $(WWW_SF)/dipy/
 	touch $@
 
-
-upload-website: website
-	rsync -rzhvp --delete --chmod=Dg+s,g+rw $(WWW_DIR)/* \
-		$(WWW_SF)/dipy/
-
-
-upload-htmldoc: htmldoc
-	rsync -rzhvp --delete --chmod=Dg+s,g+rw $(HTML_DIR)/* \
-		$(WWW_SF)/dipy/
+upload-htmldoc: web-html-stamp
+web-html-stamp: html
+	$(RSYNC_SF) _build/html/* $(WWW_SF)/dipy/
+	touch $@

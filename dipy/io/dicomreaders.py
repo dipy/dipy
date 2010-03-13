@@ -119,7 +119,7 @@ def is_mosaic(dcm_data):
 
     Parameters
     ----------
-    dcm_data : ``dicom.Dataset`
+    dcm_data : ``dicom.Dataset``
        DICOM dataset object as read from DICOM file
 
     Returns
@@ -215,7 +215,7 @@ def get_vox_to_dpcs(dcm_data):
 
     Parameters
     ----------
-    dcm_data : ``dicom.Dataset`
+    dcm_data : ``dicom.Dataset``
        DICOM dataset object as read from DICOM file etc.  It should be
        in Siemens mosaic format
 

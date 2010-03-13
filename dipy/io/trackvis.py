@@ -7,8 +7,6 @@ import numpy as np
 from .utils import native_code, swapped_code, endian_codes, \
     allopen, rec2dict
 
-from dipy.core.streamlines import StreamLine
-
 # Definition of trackvis header structure.
 # See http://www.trackvis.org/docs/?subsect=fileformat
 # See http://docs.scipy.org/doc/numpy/reference/arrays.dtypes.html

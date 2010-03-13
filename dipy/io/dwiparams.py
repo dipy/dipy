@@ -7,16 +7,16 @@
 
 Thus:
 
-   b = |q|
+   b = norm(q)
 
-   g = q / |q|
+   g = q  / norm(q)
 
-(|q| is the Euclidean norm of ``q``)
+(``norm(q)`` is the Euclidean norm of ``q``)
 
 The B matrix ``B`` is a symmetric positive semi-definite matrix.  If
 ``q_est`` is the closest q vector equivalent to the B matrix, then:
 
-   B ~ (q_est . q_est.T) / |q_est|
+   B ~ (q_est . q_est.T) / norm(q_est)
 
 '''
 import numpy as np
