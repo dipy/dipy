@@ -3,7 +3,7 @@
 * ``q`` is a vector in Q space
 * ``b`` is a b value
 * ``g`` is the unit vector along the direction of q (the gradient
-  direction) 
+  direction)
 
 Thus:
 
@@ -27,7 +27,7 @@ def B2q(B, tol=None):
     ''' Estimate q vector from input B matrix `B`
 
     We assume the input `B` is symmetric positive definite.  If not,
-    then you will get the result as for the lower triagular part of `B`.
+    then you will get the result as for the lower triangular part of `B`.
 
     Because the solution is a square root, the sign of the returned
     vector is arbitrary.  We set the vector to have a positive x
@@ -41,9 +41,9 @@ def B2q(B, tol=None):
        absolute tolerance below which to consider eigenvalues of the B
        matrix to be small enough not to worry about them being negative,
        in check for positive semi-definite-ness.  None (default) results
-       in a fairly tight numerical threshold propartional the maximum
+       in a fairly tight numerical threshold proportional the maximum
        eigenvalue
-       
+
     Returns
     -------
     q : (3,) vector
@@ -60,7 +60,7 @@ def B2q(B, tol=None):
     max_ind = inds[-1]
     vector = v[:,max_ind]
     # because the factor is a sqrt, the sign of the vector is arbitrary.
-    # We arbitrarily set it to have a positve x value.
+    # We arbitrarily set it to have a positive x value.
     if vector[0] < 0:
         vector *= -1
     return vector * w[max_ind]
