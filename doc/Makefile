@@ -1,5 +1,15 @@
 # Makefile for Sphinx documentation
 #
+# "https://sourceforge.net/apps/trac/sourceforge/wiki/Release files for
+# download".  To use, set your sourceforge username with 'export
+# SF_USER=garyfallidis' or similar, then 'make upload-website'
+SF_USER ?= matthewbrett
+WWW_SF=$(SF_USER),nipy@web.sourceforge.net:htdocs
+FRS_SF=matthewbrett@frs.sourceforge.net:uploads
+
+WWW_DIR = _build/website
+HTML_DIR = _build/html
+LATEX_DIR = _build/latex
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -28,6 +38,7 @@ help:
 
 clean:
 	-rm -rf _build/*
+	-rm *-stamp
 
 gendoc:
 	sphinx-autogen -o reference/generated reference/*.rst
@@ -90,6 +101,28 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in _build/doctest/output.txt."
 
-pdf: latex
+pdf: pdf-stamp
+pdf-stamp: latex
 	cd _build/latex && make all-pdf
+	touch $@
 
+
+$(WWW_DIR):
+	if [ ! -d $(WWW_DIR) ]; then mkdir -p $(WWW_DIR); fi
+
+
+website: website-stamp
+website-stamp: $(WWW_DIR) html pdf
+	cp -r $(HTML_DIR)/* $(WWW_DIR)
+	cp $(LATEX_DIR)/*.pdf $(WWW_DIR)
+	touch $@
+
+
+upload-website: website
+	rsync -rzhvp --delete --chmod=Dg+s,g+rw $(WWW_DIR)/* \
+		$(WWW_SF)/dipy/
+
+
+upload-htmldoc: htmldoc
+	rsync -rzhvp --delete --chmod=Dg+s,g+rw $(HTML_DIR)/* \
+		$(WWW_SF)/dipy/
