@@ -796,7 +796,7 @@ def longest_track_bundle(bundle,sort=False):
        longest track - shape (N,3) -  (if `sort` is False), or indices
        of length sorted tracks (if `sort` is True)
     '''
-    alllengths=[tm.length(t) for t in bundle]
+    alllengths=[length(t) for t in bundle]
     alllengths=np.array(alllengths)        
     if sort:
         ilongest=alllengths.argsort()

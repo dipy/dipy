@@ -178,7 +178,7 @@ def rm_far_ends(ref,tracks,dist=25):
             indices of tracks
     '''
     
-    indices=[i for (i,t) in enumerate(tracks) if tm.max_end_distance(t,ref) <= dist]
+    indices=[i for (i,t) in enumerate(tracks) if tm.max_end_distances(t,ref) <= dist]
     
     tracksr=[tracks[i] for i in indices]
     
