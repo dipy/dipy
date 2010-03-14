@@ -16,7 +16,7 @@ except ImportError:
     has_cython = False
 else:
     has_cython = True
-    
+
 per_ext, cmdclass = make_cython_ext(
     'dipy.core.track_performance',
     has_cython,
@@ -38,7 +38,7 @@ setup(name='dipy',
       packages=['dipy', 'dipy.io', 'dipy.core','dipy.viz'],
       package_data={'dipy.io': ['tests/data/*', 'tests/*.py']},
       ext_modules = [per_ext,tvol_ext],
-      cmdclass    = cmdclass,      
+      cmdclass    = cmdclass,
       scripts=glob('scripts/*.py')
       )
 

@@ -1,3 +1,5 @@
+.. _dicom-mosaic:
+
 =======================
  Siemens mosaic format
 =======================

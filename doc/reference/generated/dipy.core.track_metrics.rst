@@ -70,8 +70,6 @@ Functions
 
 .. autofunction:: principal_components
 
-.. autofunction:: smart_curvature
-
 .. autofunction:: splev
 
 .. autofunction:: spline

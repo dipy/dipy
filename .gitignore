@@ -3,3 +3,4 @@
 build
 *~
 doc/_build
+doc/*-stamp

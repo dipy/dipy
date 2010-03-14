@@ -13,6 +13,7 @@ Contents:
 
    introduction
    mission
+   develop
    theory/index
    reference/index
 

@@ -137,15 +137,22 @@ class Recoder(object):
         By default, the column is the first column.
 
 	Returns same values as ``set(obj.field1.values())`` and,
-        with the default initializing``fields`` argument of
+        with the default initializing ``fields`` argument of
         fields=('code',), this will return the same as
         ``set(obj.code.values())``
 
         Parameters
         ----------
         name : {None, string}
-            Where default of none gives result for first column
+            Where default of None gives result for first column
 
+        Returns
+        -------
+        val_set : set
+           set of all values for `name`
+
+        Examples
+        --------
         >>> codes = ((1, 'one'), (2, 'two'), (1, 'repeat value'))
         >>> vs = Recoder(codes).value_set()
         >>> vs == set([1, 2]) # Sets are not ordered, hence this test

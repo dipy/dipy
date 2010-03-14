@@ -1,5 +1,13 @@
 # Makefile for Sphinx documentation
 #
+# "https://sourceforge.net/apps/trac/sourceforge/wiki/Release files for
+# download".  To use, set your sourceforge username with 'export
+# SF_USER=garyfallidis' or similar, then 'make upload-website'
+SF_USER ?= matthewbrett
+WWW_SF=$(SF_USER),nipy@web.sourceforge.net:htdocs/dipy/
+FRS_SF=$(SF_USER)@frs.sourceforge.net:uploads
+RSYNC_SF=rsync -rzhvp --delete --chmod=Dg+s,g+rw
+
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -28,6 +36,7 @@ help:
 
 clean:
 	-rm -rf _build/*
+	-rm *-stamp
 
 gendoc:
 	sphinx-autogen -o reference/generated reference/*.rst
@@ -90,6 +99,18 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in _build/doctest/output.txt."
 
-pdf: latex
+pdf: pdf-stamp
+pdf-stamp: latex
 	cd _build/latex && make all-pdf
+	touch $@
 
+
+upload-website: web-pdf-stamp
+web-pdf-stamp: pdf html
+	$(RSYNC_SF) _build/latex/* _build/html/* $(WWW_SF)
+	touch $@
+
+upload-htmldoc: web-html-stamp
+web-html-stamp: html
+	$(RSYNC_SF) _build/html/* $(WWW_SF)
+	touch $@
