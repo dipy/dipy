@@ -52,10 +52,11 @@ def B2q(B, tol=None):
     B = np.asarray(B)
     B = nearest_positive_semi_definite(B)
     w, v = npl.eigh(B)
-##    tol = np.abs(w.max() * np.finfo(w.dtype).eps)
-##    non_trivial = np.abs(w) > tol
-##    if np.any(w[non_trivial] < 0):
-##        raise ValueError('B not positive semi-definite')
+    #if tol is None:
+    #    tol = np.abs(w.max() * np.finfo(w.dtype).eps)
+    #non_trivial = np.abs(w) > tol
+    #if np.any(w[non_trivial] < 0):
+    #    raise ValueError('B not positive semi-definite')
     inds = np.argsort(w)[::-1]
     max_ind = inds[0]
     vector = v[:,max_ind]
@@ -64,6 +65,7 @@ def B2q(B, tol=None):
     if vector[0] < 0:
         vector *= -1
     return vector * w[max_ind]
+
 
 def nearest_positive_semi_definite(B):
     '''
@@ -84,38 +86,33 @@ def nearest_positive_semi_definite(B):
     npds : (3,3) array
        Estimated nearest positive semi-definite array to matrix `B`.
     '''
-
     vals,vecs = npl.eigh(B)
     inds = np.argsort(vals)[::-1]
     invs = np.argsort(inds)
     # indexes eigenvalues in descending order
     vals = vals[inds]
-    vecs = vecs[inds,:][:,inds]
     cardneg = np.sum(vals < 0)
-    lam1a=vals[0]
-    lam2a=vals[1]
-    lam3a=vals[2]
-    lam1b=lam1a+0.25*lam3a
-    lam2b=lam2a+0.25*lam3a
     if cardneg == 0:
         return B
-    elif cardneg == 1:
-        if lam1b >= 0 and lam2b >= 0:
-            b111=lam1b
-        elif lam2b < 0:
-            b111=np.max([0,lam1a+(lam2a+lam3a)/3.])
-        else:
-            b111=0
-        if lam1b >= 0 and lam2b >= 0:
-            b221=lam2b
-        elif lam1b < 0:
-            b221=np.max([0,lam2a+(lam1a+lam3a)/3.])
-        else:
-            b221=0
-        preb = np.dot(vecs,np.dot(np.diag((np.array([b111,b221,0]))),vecs.T))
-    elif cardneg == 2:
-        b112=np.max([0,lam1a+(lam2a+lam3a)/3.]) 
-        preb = np.dot(vecs,np.dot(np.diag(np.array([b112,0,0])),vecs.T))
-    elif cardneg == 3:
+    if cardneg == 3:
         return np.zeros((3,3))
-    return preb[:,invs][invs,:]
+    lam1a, lam2a, lam3a = vals
+    scalers = np.zeros((3,))
+    if cardneg == 2:
+        b112 = np.max([0,lam1a+(lam2a+lam3a)/3.])
+        scalers[0] = b112
+    elif cardneg == 1:
+        lam1b=lam1a+0.25*lam3a
+        lam2b=lam2a+0.25*lam3a
+        if lam1b >= 0 and lam2b >= 0:
+            scalers = np.array([lam1b, lam2b, 0])
+        else: # one of the lam1b, lam2b is < 0
+            if lam2b < 0:
+                b111=np.max([0,lam1a+(lam2a+lam3a)/3.])
+                scalers[0] = b111
+            if lam1b < 0:
+                b221=np.max([0,lam2a+(lam1a+lam3a)/3.])
+                scalers[1] = b221
+    # resort the scalers to match the original vecs
+    scalers = scalers[np.argsort(inds)]
+    return np.dot(vecs, np.dot(np.diag(scalers), vecs.T))

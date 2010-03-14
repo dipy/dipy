@@ -32,6 +32,7 @@ def test_b2q():
     B = np.eye(3) * -1
     yield assert_array_almost_equal(np.array([0.,0.,0.]), B2q(B))
 
+
 @parametric    
 def test_nearest_positive_semi_definite():
     B = np.diag(np.array([1,2,3]))
