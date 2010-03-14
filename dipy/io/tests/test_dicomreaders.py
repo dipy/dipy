@@ -75,5 +75,5 @@ def test_get_dwi_paradigm():
     big_b = []
     for dcm_file in dcm_dir:
         data_file = dicom.read_file(dcm_file)
-        big_b = [big_b, vector_norm(didr.get_q_vector(data_file))]
-    print big_b
+        big_b.append(vector_norm(didr.get_q_vector(data_file)))
+    print big_b 

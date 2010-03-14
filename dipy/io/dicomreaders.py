@@ -178,7 +178,7 @@ def get_b_matrix(dcm_data):
     # matrix, its inverse is its transpose
     R = np.c_[iop, snv]
     assert _fairly_close(np.eye(3), np.dot(R, R.T))
-    return np.dot(R.T, B)
+    return np.dot(R.T, np.dot(B,R))
 
 
 def get_q_vector(dcm_data):
