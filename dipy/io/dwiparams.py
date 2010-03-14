@@ -52,22 +52,12 @@ def B2q(B, tol=None):
     B = np.asarray(B)
     B = nearest_positive_semi_definite(B)
     w, v = npl.eigh(B)
-<<<<<<< HEAD:dipy/io/dwiparams.py
 ##    tol = np.abs(w.max() * np.finfo(w.dtype).eps)
 ##    non_trivial = np.abs(w) > tol
 ##    if np.any(w[non_trivial] < 0):
 ##        raise ValueError('B not positive semi-definite')
     inds = np.argsort(w)[::-1]
     max_ind = inds[0]
-=======
-    if tol is None:
-        tol = np.abs(w.max() * np.finfo(w.dtype).eps)
-    non_trivial = np.abs(w) > tol
-    if np.any(w[non_trivial] < 0):
-        raise ValueError('B not positive semi-definite')
-    inds = np.argsort(w)
-    max_ind = inds[-1]
->>>>>>> 15ea3d0e0eb3c115e69165161a69057773b6fb24:dipy/io/dwiparams.py
     vector = v[:,max_ind]
     # because the factor is a sqrt, the sign of the vector is arbitrary.
     # We arbitrarily set it to have a positive x value.
