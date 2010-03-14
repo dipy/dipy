@@ -5,7 +5,7 @@ import dicom
 import nibabel as nib
 
 from . import csareader as csar
-from .dwiparams import B2q
+from .dwiparams import B2q, nearest_positive_semi_definite
 
 
 class CSAError(Exception):
@@ -201,13 +201,8 @@ def get_q_vector(dcm_data):
     B = get_b_matrix(dcm_data)
     if B is None:
         return None
-    hdr = get_csa_header(dcm_data)
-    bval_requested = csar.get_b_value(hdr)
-    assert bval_requested is not None
-    # The Siemens B matrix seems to occasionally be rather far from
-    # positive semi-definite, so we relax the testing threshold
-    # considerably here.
-    return B2q(B, tol=bval_requested * 0.001)
+    B = nearest_positive_semi_definite(B)
+    return B2q(B)
 
 
 def get_vox_to_dpcs(dcm_data):

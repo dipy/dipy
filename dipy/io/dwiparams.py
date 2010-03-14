@@ -50,13 +50,12 @@ def B2q(B, tol=None):
        Estimated q vector from B matrix `B`
     '''
     B = np.asarray(B)
-    B = nearest_positive_semi_definite(B)
     w, v = npl.eigh(B)
-    #if tol is None:
-    #    tol = np.abs(w.max() * np.finfo(w.dtype).eps)
-    #non_trivial = np.abs(w) > tol
-    #if np.any(w[non_trivial] < 0):
-    #    raise ValueError('B not positive semi-definite')
+    if tol is None:
+        tol = np.abs(w.max() * np.finfo(w.dtype).eps)
+    non_trivial = np.abs(w) > tol
+    if np.any(w[non_trivial] < 0):
+        raise ValueError('B not positive semi-definite')
     inds = np.argsort(w)[::-1]
     max_ind = inds[0]
     vector = v[:,max_ind]
@@ -105,7 +104,7 @@ def nearest_positive_semi_definite(B):
         lam1b=lam1a+0.25*lam3a
         lam2b=lam2a+0.25*lam3a
         if lam1b >= 0 and lam2b >= 0:
-            scalers = np.array([lam1b, lam2b, 0])
+            scalers[:2] = lam1b, lam2b
         else: # one of the lam1b, lam2b is < 0
             if lam2b < 0:
                 b111=np.max([0,lam1a+(lam2a+lam3a)/3.])
