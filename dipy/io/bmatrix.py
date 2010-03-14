@@ -5,6 +5,7 @@ import os
 import struct
 
 import numpy as np
+import numpy.linalg as npl
 
 try:
     import dicom
@@ -74,7 +75,7 @@ def loadbinfodcm(filename,spm_converted=1):
     
     orient=np.column_stack((v1.transpose(),v2.transpose(),v3.transpose()))      
 
-    if lg.det(orient<0):
+    if npl.det(orient<0):
         #print('Det orient < 0')
         print 'Negative determinant.'
         orient[:,2]=-orient[:,2]
@@ -84,7 +85,7 @@ def loadbinfodcm(filename,spm_converted=1):
     vox_to_dicom = np.dot(orient, y_flipper)
     
     #print 'vox_to_dicom',vox_to_dicom
-    mat = lg.inv(vox_to_dicom)
+    mat = npl.inv(vox_to_dicom)
     
     #print 'mat',mat    
     #print vox_to_dicom*vox_to_dicom
@@ -180,7 +181,7 @@ def loadbinfodcm(filename,spm_converted=1):
     if B_value >0: 
         
         B_mat=np.array([[B_matrix[0],B_matrix[1],B_matrix[2]], [B_matrix[1],B_matrix[3],B_matrix[4]], [B_matrix[2],B_matrix[4],B_matrix[5]]])
-        [vals, vecs]=lg.eigh(B_mat)       
+        [vals, vecs]=npl.eigh(B_mat)       
        
         dbvec = vecs[:,2]
         
@@ -223,7 +224,9 @@ def loadbinfodir(dirname):
         pass
     else:
         print 'No Directory found'
-    
+
+    # XXX list_files was removed in 0691d142dc33e0b1c2cfe6f4e5e915a780b428e2
+	#     I guess in favor of glob?
     lfiles=list_files(dirname,filt='.dcm')
     lfiles.sort()
     binfo=[]

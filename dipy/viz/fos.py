@@ -35,6 +35,7 @@ except ImportError:
 
 
 import types    
+import scipy as sp
 
 '''
 For more color names see
@@ -971,7 +972,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
         if trilinear:
             property.SetInterpolationTypeToLinear()
         else:
-            prop.SetInterpolationTypeToNearest()
+            property.SetInterpolationTypeToNearest()
             
         if info:
             print('mapper VolumeTextureMapper2D')
@@ -992,7 +993,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
         if trilinear:
             property.SetInterpolationTypeToLinear()
         else:
-            prop.SetInterpolationTypeToNearest()
+            property.SetInterpolationTypeToNearest()
 
         if iso:
             isofunc=vtk.vtkVolumeRayCastIsosurfaceFunction()
