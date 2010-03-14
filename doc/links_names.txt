@@ -37,7 +37,6 @@
 .. _pep8: http://www.python.org/dev/peps/pep-0008/
 .. _`numpy coding style`: http://scipy.org/scipy/numpy/wiki/CodingStyleGuidelines
 
-
 .. Code support stuff
 .. _pychecker: http://pychecker.sourceforge.net/
 .. _pylint: http://www.logilab.org/project/pylint
@@ -85,8 +84,9 @@
 .. _FreeSurfer: http://surfer.nmr.mgh.harvard.edu
 .. _voxbo: http://www.voxbo.org
 .. _mricron: http://www.cabiatl.com/mricro/mricron
+.. _slicer: http://www.slicer.org/
 
-.. DICOM
+.. File formats
 .. _DICOM: http://medical.nema.org/
 .. _`wikipedia DICOM`: http://en.wikipedia.org/wiki/Digital_Imaging_and_Communications_in_Medicine
 .. _GDCM: http://sourceforge.net/apps/mediawiki/gdcm
@@ -94,6 +94,8 @@
 .. _`DICOM object definitions`: ftp://medical.nema.org/medical/dicom/2009/09_03pu2.pdf
 .. _dcm2nii: http://www.cabiatl.com/mricro/mricron/dcm2nii.html
 .. _`mricron install`: http://www.cabiatl.com/mricro/mricron/install.html
+.. _dicom2nrrd: http://www.slicer.org/slicerWiki/index.php/Modules:DicomToNRRD-3.4
+.. _Nrrd: http://teem.sourceforge.net/nrrd/format.html
 
 .. General software
 .. _gcc: http://gcc.gnu.org
@@ -101,6 +103,9 @@
 .. _mingw: http://www.mingw.org
 .. _cygwin: http://cygwin.com
 .. _macports: http://www.macports.org/
+.. _VTK: http://www.vtk.org/
+.. _ITK: http://www.itk.org/
+.. _swig: http://www.swig.org
 
 .. Functional imaging labs
 .. _`functional imaging laboratory`: http://www.fil.ion.ucl.ac.uk
