@@ -169,6 +169,9 @@ def get_b_matrix(dcm_data):
         if bval_requested != 0:
             raise CSAError('No B matrix and b value != 0')
         return np.zeros((3,3))
+    # fix presumed rounding errors in the B matrix by making it positive
+    # semi-definite. 
+    B = nearest_positive_semi_definite(B)
     # We need the rotations from the DICOM header and the Siemens header
     # in order to convert the B matrix to voxel space
     iop = np.array(dcm_data.ImageOrientationPatient)
@@ -201,7 +204,6 @@ def get_q_vector(dcm_data):
     B = get_b_matrix(dcm_data)
     if B is None:
         return None
-    B = nearest_positive_semi_definite(B)
     return B2q(B)
 
 
