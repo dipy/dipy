@@ -137,7 +137,7 @@ class Recoder(object):
         By default, the column is the first column.
 
 	Returns same values as ``set(obj.field1.values())`` and,
-        with the default initializing``fields`` argument of
+        with the default initializing ``fields`` argument of
         fields=('code',), this will return the same as
         ``set(obj.code.values())``
 
@@ -145,6 +145,11 @@ class Recoder(object):
         ----------
         name : {None, string}
             Where default of None gives result for first column
+
+        Returns
+        -------
+        val_set : set
+           set of all values for `name`
 
         Examples
         --------

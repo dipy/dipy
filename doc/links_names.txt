@@ -10,6 +10,7 @@
 
 .. _nipy: http://neuroimaging.scipy.org
 .. _`Brain Imaging Center`: http://bic.berkeley.edu/
+.. _dipy: http://nipy.sourceforge.net/dipy
 
 .. Documentation tools
 .. _graphviz: http://www.graphviz.org/
@@ -32,6 +33,9 @@
 .. _`nipy trunk`: https://code.launchpad.net/~nipy-developers/nipy/trunk
 .. _`nipy mailing list`: http://projects.scipy.org/mailman/listinfo/nipy-devel
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
+.. _pep8: http://www.python.org/dev/peps/pep-0008/
+.. _`numpy coding style`: http://scipy.org/scipy/numpy/wiki/CodingStyleGuidelines
+
 
 .. Code support stuff
 .. _pychecker: http://pychecker.sourceforge.net/
@@ -39,6 +43,7 @@
 .. _pyflakes: http://divmod.org/trac/wiki/DivmodPyflakes
 .. _virtualenv: http://pypi.python.org/pypi/virtualenv
 .. _git: http://git.or.cz/
+.. _github: http://github.com
 .. _flymake: http://flymake.sourceforge.net/
 .. _rope: http://rope.sourceforge.net/
 .. _pymacs: http://pymacs.progiciels-bpi.ca/pymacs.html
