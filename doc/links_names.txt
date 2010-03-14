@@ -78,11 +78,13 @@
 .. Not so python imaging projects
 .. _matlab: http://www.mathworks.com
 .. _spm: http://www.fil.ion.ucl.ac.uk/spm
+.. _spm8: http://www.fil.ion.ucl.ac.uk/spm/software/spm8
 .. _eeglab: http://sccn.ucsd.edu/eeglab
 .. _AFNI: http://afni.nimh.nih.gov/afni
 .. _FSL: http://www.fmrib.ox.ac.uk/fsl
 .. _FreeSurfer: http://surfer.nmr.mgh.harvard.edu
 .. _voxbo: http://www.voxbo.org
+.. _mricron: http://www.cabiatl.com/mricro/mricron
 
 .. DICOM
 .. _DICOM: http://medical.nema.org/
@@ -90,6 +92,8 @@
 .. _GDCM: http://sourceforge.net/apps/mediawiki/gdcm
 .. _`DICOM specs`: ftp://medical.nema.org/medical/dicom/2009/
 .. _`DICOM object definitions`: ftp://medical.nema.org/medical/dicom/2009/09_03pu2.pdf
+.. _dcm2nii: http://www.cabiatl.com/mricro/mricron/dcm2nii.html
+.. _`mricron install`: http://www.cabiatl.com/mricro/mricron/install.html
 
 .. General software
 .. _gcc: http://gcc.gnu.org
