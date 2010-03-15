@@ -85,10 +85,10 @@ def nearest_positive_semi_definite(B):
     npds : (3,3) array
        Estimated nearest positive semi-definite array to matrix `B`.
     '''
-    vals,vecs = npl.eigh(B)
+    B = np.asarray(B)
+    vals, vecs = npl.eigh(B)
+    # indices of eigenvalues in descending order
     inds = np.argsort(vals)[::-1]
-    invs = np.argsort(inds)
-    # indexes eigenvalues in descending order
     vals = vals[inds]
     cardneg = np.sum(vals < 0)
     if cardneg == 0:
