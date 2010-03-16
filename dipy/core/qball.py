@@ -1,4 +1,4 @@
-from enthought.mayavi import mlab
+#from enthought.mayavi import mlab
 import numpy as np
 from scipy.special import sph_harm
 
