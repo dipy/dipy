@@ -21,7 +21,7 @@ emailing the `nipy mailing list`_ to let us know where your changes are.
 
 Please follow the `numpy coding style`_ - and of course - PEP8_ .  Test
 everything!  We are using nose_ ; see the existing code for example
-tests.
+tests.  If you can please use our :ref:`commit-codes`. 
 
 And - welcome...
 
