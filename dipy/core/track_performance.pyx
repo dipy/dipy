@@ -864,7 +864,10 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
     xyz: array(N,3) 
         initial trajectory
     alpha: float
-        smoothing parameter (<0.392 smoother, <0.392  rougher)
+        smoothing parameter (<0.392 smoother, >0.392  rougher)
+        if the trajectory was a smooth circle then with alpha =0.393
+    ~=pi/8. the circle would be approximated with an decahexagon if
+    alpha = 0.7853 ~=pi/4. with an octagon.
     
     Returns:
     ------------
