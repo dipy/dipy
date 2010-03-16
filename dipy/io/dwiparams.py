@@ -71,9 +71,10 @@ def nearest_positive_semi_definite(B):
     Implements least squares positive semi-definite constrained tensor 
     estimation 
     
-    Reference: Niethammer M, San Jose Estepar R, Bouix S, Shenton M, Westin CF. 
-    On diffusion tensor estimation. Conf Proc IEEE Eng Med Biol Soc. 
-    2006;1:2622-5. PubMed PMID: 17946125; PubMed Central PMCID: PMC2791793.
+    Reference: Niethammer M, San Jose Estepar R, Bouix S, Shenton M,
+    Westin CF.  On diffusion tensor estimation. Conf Proc IEEE Eng Med
+    Biol Soc.  2006;1:2622-5. PubMed PMID: 17946125; PubMed Central
+    PMCID: PMC2791793.
  
     Parameters
     ----------
@@ -84,6 +85,14 @@ def nearest_positive_semi_definite(B):
     -------
     npds : (3,3) array
        Estimated nearest positive semi-definite array to matrix `B`.
+
+    Examples
+    --------
+    >>> B = np.diag([1, 1, -1])
+    >>> nearest_positive_semi_definite(B)
+    array([[ 0.75,  0.  ,  0.  ],
+           [ 0.  ,  0.75,  0.  ],
+           [ 0.  ,  0.  ,  0.  ]])
     '''
     B = np.asarray(B)
     vals, vecs = npl.eigh(B)

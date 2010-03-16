@@ -1,4 +1,4 @@
-from enthought.mayavi import mlab
+#from enthought.mayavi import mlab
 import numpy as np
 from scipy.special import sph_harm
 
@@ -219,27 +219,4 @@ class odf():
 
     def test(self):
         print self.sh_order
-
-
-
-filename='/Users/bagrata/HARDI/E1322S8I1.nii.gz'
-grad_table_filename='/Users/bagrata/HARDI/E1322S8I1.bvec'
-from nipy import load_image, save_image
-
-grad_table, b_values = read_bvec_file(grad_table_filename)
-img = load_image(filename)
-print 'input dimensions: '
-print img.ndim
-print 'image size: '
-print img.shape
-print 'image affine: '
-print img.affine
-print 'images has pixels with size: '
-print np.dot(img.affine, np.eye(img.ndim+1)).diagonal()[0:3]
-data = np.asarray(img)
-
-theta, phi = np.mgrid[0:2*np.pi:64*1j, 0:np.pi:32*1j]
-odf_i=odf(data[188:192,188:192,22:24,:],4,grad_table,b_values)
-odf_i.disp_odf()
-#odf_i.evaluate_at(theta, phi)
 
