@@ -39,9 +39,9 @@ entries
    b_{ij} = \gamma^2 G^2 g_i g_j R, 
 
 where $\gamma$ is the gyromagnetic radius (units
-$\mathrm{radians}.\mathrm{seconds}^{-1}.T^{-1}$). The units of the
-B-matrix are $\mathrm{radians}^2 . \mathrm{seconds} .
-\mathrm{mm}^{-2}.$
+$\mathrm{radians}.\mathrm{seconds}^{-1}.T^{-1}$) and $i$ and $j$ are
+axis direcrtions from $x,y,z$ . The units of the B-matrix are
+$\mathrm{radians}^2 . \mathrm{seconds} .  \mathrm{mm}^{-2}.$
 
 .. math::
 
@@ -120,7 +120,7 @@ $b_{actual}$ values (``bvals``) as their inputs.
 Callaghan, Eccles and Xia (1988) showed that the signal from the
 narrow pulse PGSE paradigm measured the Fourier transform of the
 diffusion displacement propagator. Propagation space is measured in
-displacment per unit time $(\mathrm{mm}.\mathrm{seconds}^{-1})$. They
+displacement per unit time $(\mathrm{mm}.\mathrm{seconds}^{-1})$. They
 named the reciprocal space ``q-space`` with units of
 $\mathrm{seconds}.\mathrm{mm}^{-1}$. 
 
@@ -139,6 +139,6 @@ analysis (Fourier transform of the diffusion signal decay).
 There remains a bit of mystery as to how $\mathbf{q}$ (as a vector in
 $q$-space) is specified for other paradigms. We think that (a) it only
 matters up to a scale factor, and (b) we can loosely identify
-$\mathbf{q}$ with $b.\mathbf{g}$, where $\mathbf{g}$ is the unit
+$\mathbf{q}$ with $b\mathbf{g}$, where $\mathbf{g}$ is the unit
 vector in the gradient direction.
 
