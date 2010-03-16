@@ -5,6 +5,7 @@ Performance functions for dipy
 
 '''
 # cython: profile=True
+# cython: embedsignature=True
 
 cimport cython
 
