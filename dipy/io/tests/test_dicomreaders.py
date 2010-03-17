@@ -70,12 +70,9 @@ def test_dwi_params():
 
 
 @parametric
-def test_get_dwi_paradigm():
+def test_read_dwis():
     data_dir = os.path.expanduser(
         "~/data/20100114_195840/Series_012_CBU_DTI_64D_1A")
-    dcm_dir=glob(data_dir+"/*.dcm")
-    big_b = []
-    for dcm_file in dcm_dir:
-        data_file = dicom.read_file(dcm_file)
-        big_b.append(vector_norm(didr.get_q_vector(data_file)))
-    print big_b 
+    data, aff, bs, gs = didr.read_mosaic_dwi_dir(data_dir)
+    print data.shape
+    print gs
