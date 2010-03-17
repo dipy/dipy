@@ -49,7 +49,7 @@ def test_nearest_positive_semi_definite():
     B = np.diag(np.array([-1,-2,3]))
     Bpsd = np.array([[0.,0.,0.],[0.,0.,0.],[0.,0.,2.]])
     yield assert_array_almost_equal(Bpsd, nearest_positive_semi_definite(B))
-    B = np.diag(np.array([-1.e-10,0,1000]))
+    B = np.diag(np.array([-1.e-11,0,1000]))
     Bpsd = np.array([[0.,0.,0.],[0.,0.,0.],[0.,0.,1000.]])
     yield assert_array_almost_equal(Bpsd, nearest_positive_semi_definite(B))
     B = np.diag(np.array([-1,-2,-3]))

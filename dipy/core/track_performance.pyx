@@ -631,17 +631,17 @@ def zhang_distances(xyz1,xyz2,metric='all'):
 def minimum_closest_distance(xyz1,xyz2):
     ''' Find the minimum distance between two curves xyz1, xyz2
     
-    Parameters:
+    Parameters
     -----------
-        xyz1 : array, shape (N1,3), dtype float32
-        xyz2 : array, shape (N2,3), dtype float32
+    xyz1 : array, shape (N1,3), dtype float32
+    xyz2 : array, shape (N2,3), dtype float32
         arrays representing x,y,z of the N1 and N2 points  of two tracks
     
-    Returns:
+    Returns
     -----------
     
-    Notes:
-    ---------
+    Notes
+    -----
     Algorithmic description
     
     Lets say we have curves A and B
@@ -691,25 +691,25 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
         
     This function assumes that norm(end0-start0)>norm(end1-start1)
     i.e. that the first segment will be bigger than the second one.
-    Parameters:
+    Parameters
     -----------
         start0: float array(3,)
         end0: float array(3,)
         start1: float array(3,)
         end1: float array(3,)
     
-    Returns:
+    Returns
     --------
         perpendicular_distance: float
 
-    Examples:
+    Examples
     ---------
     >>> import dipy.core.performance as pf
     >>> pf.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
     >>> 5.9380966767403436  
     
-    Description:
-    ------------
+    Notes
+    -----
     l0 = np.inner(end0-start0,end0-start0)
     l1 = np.inner(end1-start1,end1-start1)
     
@@ -795,25 +795,25 @@ def lee_angle_distance(start0, end0, start1, end1):
     This function assumes that norm(end0-start0)>norm(end1-start1)
     i.e. that the first segment will be bigger than the second one.
     
-    Parameters:
+    Parameters
     -----------
         start0: float array(3,)
         end0: float array(3,)
         start1: float array(3,)
         end1: float array(3,)
     
-    Returns:
+    Returns
     --------
         angle_distance: float
 
-    Examples:
+    Examples
     --------
     >>> import dipy.core.track_metrics as tm 
     >>> tm.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
     >>> 2.0 
     
-    Descritpion:
-    ------------
+    Notes
+    -----
     
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
@@ -856,26 +856,27 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
     #print cos_theta_squared
     return sqrt((1-cos_theta_squared)*l1)
 
+
 def approximate_ei_trajectory(xyz,alpha=0.392):
     ''' Fast and simple Approximate Trajectory
         Algorithm by Eleftherios and Ian
     
-    Parameters:
+    Parameters
     ------------------
     xyz: array(N,3) 
         initial trajectory
     alpha: float
-        smoothing parameter (<0.392 smoother, >0.392  rougher)
-        if the trajectory was a smooth circle then with alpha =0.393
-    ~=pi/8. the circle would be approximated with an decahexagon if
-    alpha = 0.7853 ~=pi/4. with an octagon.
+        smoothing parameter (<0.392 smoother, >0.392 rougher) if the
+        trajectory was a smooth circle then with alpha =0.393
+        ~=pi/8. the circle would be approximated with an decahexagon if
+        alpha = 0.7853 ~=pi/4. with an octagon.
     
-    Returns:
-    ------------
+    Returns
+    -------
     characteristic_points: list of M array(3,) points
     
-    Examples:
-    -------------
+    Examples
+    --------
     >>> #approximating a helix
     >>> t=np.linspace(0,1.75*2*np.pi,100)
     >>> x = np.sin(t)
@@ -886,11 +887,13 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
     >>> len(xyz)
     >>> len(xyza)
     
-    Description :
-    -----------------
-    Assuming that a good approximation for a circle is an octagon then that means that the points of the octagon will have 
-    angle alpha = 2*pi/8 = pi/4 . We calculate the angle between every two neighbour segments of a trajectory and if the angle
-    is higher than pi/4 we choose that point as a characteristic point otherwise      
+    Notes
+    -----
+    Assuming that a good approximation for a circle is an octagon then
+    that means that the points of the octagon will have angle alpha =
+    2*pi/8 = pi/4 . We calculate the angle between every two neighbour
+    segments of a trajectory and if the angle is higher than pi/4 we
+    choose that point as a characteristic point otherwise
     '''
     cdef :
         int mid_index
@@ -946,14 +949,14 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
     ''' Implementation of Lee et al Approximate Trajectory
         Partitioning Algorithm
     
-    Parameters:
+    Parameters
     ------------------
     xyz: array(N,3) 
         initial trajectory
     alpha: float
         smoothing parameter (>1 smoother, <1  rougher)
     
-    Returns:
+    Returns
     ------------
     characteristic_points: list of M array(3,) points
         
@@ -1023,8 +1026,8 @@ def intersect_segment_cylinder(sa,sb,p,q,r):
     
     Look p.197 from Real Time Collision Detection C. Ericson
     
-    Example:
-    ------------
+    Examples
+    --------
     >>> # Define cylinder using a segment defined by 
     >>> p=np.array([0,0,0],dtype=float32)
     >>> q=np.array([1,0,0],dtype=float32)
@@ -1134,8 +1137,8 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
 def point_segment_sq_distance(a,b,c):
     ''' Calculate the squared distance from a point c to a finite line segment ab.
  
-    Examples:
-    -------------
+    Examples
+    --------
     >>> from dipy.core import performance as pf
     >>> a=np.array([0,0,0],dtype=float32)
     >>> b=np.array([1,0,0],dtype=float32)
@@ -1227,19 +1230,19 @@ def track_dist_3pts(tracka,trackb):
     ''' Calculate the euclidean distance between two 3pt tracks
     both direct and flip distances are calculated but only the smallest is returned
 
-    Parameters:
+    Parameters
     -----------
     a: array, shape (3,3)
     a three point track
     b: array, shape (3,3)
     a three point track
 
-    Returns:
+    Returns
     --------
     dist:float
 
-    Example:
-    -------
+    Examples
+    --------
     >>> import numpy as np
     >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])            
     >>> b=np.array([[3,0,0],[3.5,1,0],[4,2,0]])
@@ -1273,12 +1276,12 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     both direct and flip are given as output
     
     
-    Parameters:
+    Parameters
     ----------------
     a1,b1,c1: 3 float[3] arrays representing the first track
     a2,b2,c2: 3 float[3] arrays representing the second track
     
-    Returns:
+    Returns
     -----------
     out: a float[2] array having the euclidean distance and the fliped euclidean distance
     
@@ -1315,7 +1318,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     "Fast Dimensionality Reduction for Brain Tractography Clustering" by E.Garyfallidis et.al
     we keep this function that does a first pass clustering.
 
-    Parameters:
+    Parameters
     -----------
     tracks: sequence
         of tracks as arrays, shape (N1,3) .. (Nm,3)
@@ -1323,13 +1326,13 @@ def local_skeleton_clustering(tracks, d_thr=10):
     d_thr: float, average euclidean distance threshold
 
 
-    Returns:
+    Returns
     --------
     C: dict
     
     
-    Example:
-    -----------
+    Examples
+    --------
     >>> from dipy.viz import fos
         
     >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
@@ -1440,12 +1443,12 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
     both direct and flip are given as output
     
     
-    Parameters:
+    Parameters
     -----------
     a1,b1,c1: 3 float[3] arrays representing the first track
     a2,b2,c2: 3 float[3] arrays representing the second track
     
-    Returns:
+    Returns
     --------
     out: a float[2] array having the euclidean distance and the fliped euclidean distance
         
@@ -1474,8 +1477,8 @@ def larch_3split(tracks,indices=None,thr=10.):
     ''' Generate a first pass clustering using 3 points (first, mid and last) on the tracks only.
 
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
 
     tracks: sequence
         of tracks as arrays, shape (N1,3) .. (Nm,3)
@@ -1486,13 +1489,13 @@ def larch_3split(tracks,indices=None,thr=10.):
     trh: float
         squared euclidean distance threshold
     
-    Returns:
-    --------
+    Returns
+    -------
 
     C: dict, a tree graph containing the clusters
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> import numpy as np
     >>> from dipy.viz import fos        
     >>> from dipy.core import track_performance as pf
@@ -1523,9 +1526,8 @@ def larch_3split(tracks,indices=None,thr=10.):
     >>> fos.show(r)
 
 
-    Notes:
-    ------
-    
+    Notes
+    -----
     If a 3 point track (3track) is far away from all clusters then add a new cluster and assign
     this 3track as the rep(resentative) track for the new cluster. Otherwise the rep
     3track of each cluster is the average track of the cluster
@@ -1598,24 +1600,19 @@ def larch_3split(tracks,indices=None,thr=10.):
 
 
 def larch_3merge(C,thr=10.):
-
     ''' Reassign tracks to existing clusters by merging clusters that their representative tracks are not very distant i.e. less than sqd_thr. Using tracks consisting of 3 points (first, mid and last). This is necessary after running larch_fast_split after multiple split in different levels (squared thresholds) as some of them have created independent clusters.
 
-    Parameters:
+    Parameters
     -----------      
-
-    C: graph with clusters
+    C : graph with clusters
         of indices 3tracks (tracks consisting of 3 points only)
-
     sqd_trh: float
         squared euclidean distance threshold
     
-    Returns:
+    Returns
     --------
-
-    C: dict, a tree graph containing the clusters
-
-
+    C : dict
+       a tree graph containing the clusters
     '''
 
     cdef cnp.ndarray[cnp.float32_t, ndim=2] h=np.zeros((3,3),dtype=np.float32)
