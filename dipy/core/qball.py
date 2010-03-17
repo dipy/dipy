@@ -3,6 +3,8 @@ import numpy as np
 from scipy.special import sph_harm
 
 def real_sph_harm(m, n, theta, phi):
+    m = np.atleast_1d(m)
+    n = np.atleast_1d(n)
     sh = sph_harm(m, n, theta, phi)
     m_ge0,junk,junk,junk = np.broadcast_arrays(m >= 0, n, theta, phi)
     m_lt0 = np.logical_not(m_ge0)

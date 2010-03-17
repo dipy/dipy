@@ -18,6 +18,5 @@ from dipy.testing import parametric
 def test_real_sph_harm():
     real_sh = qball.real_sph_harm(0, 0, 0, 0)
     yield assert_true(True)
-    yield assert_false(True)
 
 
