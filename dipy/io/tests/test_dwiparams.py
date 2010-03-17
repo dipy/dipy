@@ -20,15 +20,16 @@ from dipy.testing import parametric
 def test_b2q():
     # conversion of b matrix to q
     q = np.array([1,2,3])
-    B = np.outer(q, q) / vector_norm(q)
-    yield assert_array_almost_equal(q, B2q(B))
+    s = vector_norm(q)
+    B = np.outer(q, q)
+    yield assert_array_almost_equal(q*s, B2q(B))
     q = np.array([1,2,3])
     # check that the sign of the vector as positive x convention
-    B = np.outer(-q, -q) / vector_norm(q)
-    yield assert_array_almost_equal(q, B2q(B))
+    B = np.outer(-q, -q)
+    yield assert_array_almost_equal(q*s, B2q(B))
     q = np.array([-1, 2, 3])
-    B = np.outer(q, q) / vector_norm(q)
-    yield assert_array_almost_equal(-q, B2q(B))
+    B = np.outer(q, q)
+    yield assert_array_almost_equal(-q*s, B2q(B))
     B = np.eye(3) * -1
     yield assert_raises(ValueError, B2q, B)
     # no error if we up the tolerance
