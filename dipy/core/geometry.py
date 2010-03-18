@@ -13,15 +13,19 @@ def sphere2cart(theta, phi, r=1.0):
     inclination (polar) angle, and `phi` is the azimuth angle.
 
     Imagine a sphere with center (0,0,0).  Orient it with the z axis
-    running south->north, the y axis running east-west and the x axis
-    from anterior to posterior.  `theta` (the inclination angle) is the
-    angle to rotate from the z-axis around the x-axis.
+    running south->north, the y axis running west-east and the x axis
+    from posterior to anterior.  `theta` (the inclination angle) is the
+    angle to rotate from the z-axis (the zenith) around the y-axis,
+    towards the x axis.  Thus the rotation is counter-clockwise from the
+    point of view of positive y.  `phi` (azimuth) gives the angle of
+    rotation around the z-axis towards the y axis.  The rotation is
+    counter-clockwise from the point of view of positive z.
 
-    We have deliberately named this function ``sphere2cart`` rather than
-    ``sph2cart`` to distinguish it from the Matlab function of that
-    name, because the Matlab function uses an odd convention for the
-    angles that we did not want to replicate.
-    
+    Equivalently, given a point P on the sphere, with coordinates x, y,
+    z, `theta` is the angle between P and the z-axis, and `phi` is
+    the angle between the projection of P onto the XY plane, and the X
+    axis.
+
     Parameters
     ----------
     theta : array-like
@@ -49,14 +53,21 @@ def sphere2cart(theta, phi, r=1.0):
 
     for excellent discussion of the many different conventions
     possible.  Here we use the physics conventions, used in the
-    wikipedia page.
+    wikipedia page, except we pass `r` last, to allow it to have a
+    default argument.
 
     Derivations of the formulae are simple. Consider a vector x, y, z of
     length r (norm of x, y, z).  The inclination angle (theta) can be
     found from: cos(theta) == z / r -> z == r * cos(theta).  This gives
-    the hypotenuse of the projection onto the XY plane - say P, where P
-    == r*sin(theta). Now x / P == cos(phi) -> x == r * sin(theta) *
-    cos(phi) and so on.
+    the hypotenuse of the projection onto the XY plane, which we will
+    call Q. Q == r*sin(theta). Now x / Q == cos(phi) -> x == r *
+    sin(theta) * cos(phi) and so on.
+
+    We have deliberately named this function ``sphere2cart`` rather than
+    ``sph2cart`` to distinguish it from the Matlab function of that
+    name, because the Matlab function uses an unusual convention for the
+    angles that we did not want to replicate.  The Matlab function is
+    trivial to implement with the formulae given in the Matlab help.
     '''
     sin_theta = np.sin(theta)
     x = r * np.cos(phi) * sin_theta
@@ -71,22 +82,24 @@ def cart2sphere(x, y, z):
     See doc for ``sphere2cart`` for angle conventions and derivation
     of the formulae.
 
+    0 >= `theta` >= pi and 0 >= `phi` >= 2*pi
+
     Parameters
     ----------
-    x : scalar or (N,) array-like
+    x : array-like
        x coordinate in Cartesion space
-    y : scalar or (N,) array-like
+    y : array-like
        y coordinate in Cartesian space
-    z : scalar or (N,) array-like
+    z : array-like
        z coordinate
 
     Returns
     -------
-    theta : (N,) array
+    theta : array
        inclination (polar) angle
-    phi : (N,) array
+    phi : array
        azimuth angle
-    r : (N,) array
+    r : array
        radius
     '''
     r = np.sqrt(x*x + y*y + z*z)
