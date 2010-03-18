@@ -5,7 +5,8 @@
 import numpy as np
 
 from dipy.core.geometry import (sphere2cart, cart2sphere,
-                             nearest_pos_semi_def)
+                                sphere12cart, cart2sphere1,
+                                nearest_pos_semi_def)
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -21,12 +22,22 @@ def test_sphere_cart():
     rs, thetas, phis = cart2sphere(*(sphere_points.T))
     xyz = sphere2cart(rs, thetas, phis)
     yield assert_array_almost_equal(xyz, sphere_points.T)
+    # test radius estimation
+    big_sph_pts = sphere_points * 10.4
+    rs, thetas, phis = cart2sphere(*big_sph_pts.T)
+    yield assert_array_almost_equal(rs, 10.4)
+    xyz = sphere2cart(rs, thetas, phis)
+    yield assert_array_almost_equal(xyz, big_sph_pts.T, 6)
     # test a scalar point
     pt = sphere_points[3]
     r, theta, phi = cart2sphere(*pt)
     xyz = sphere2cart(r, theta, phi)
     yield assert_array_almost_equal(xyz, pt)
-
+    # test unit array versions
+    thetas, phis = cart2sphere1(*(sphere_points.T))
+    xyz = sphere12cart(thetas, phis)
+    yield assert_array_almost_equal(xyz, sphere_points.T)
+    
 
 @parametric    
 def test_nearest_pos_semi_def():
