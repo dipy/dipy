@@ -16,7 +16,7 @@ Here is a good illustration we made from the scripts kindly provided by
 
 .. _`Jorge Stolfi`: http://commons.wikimedia.org/wiki/User:Jorge_Stolfi
 
-.. image:: spherical_coordinates.svg
+.. image:: spherical_coordinates.png
 
 
 .. include:: ../links_names.txt
