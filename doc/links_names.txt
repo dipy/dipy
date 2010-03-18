@@ -122,3 +122,18 @@
 .. Mathematical methods
 .. _`wikipedia ICA`: http://en.wikipedia.org/wiki/Independent_component_analysis
 .. _`wikipedia PCA`: http://en.wikipedia.org/wiki/Principal_component_analysis
+
+.. Mathematical ideas
+.. _`wikipedia spherical coordinate system`: http://en.wikipedia.org/wiki/Spherical_coordinate_system
+.. _`mathworld spherical coordinate system`: http://mathworld.wolfram.com/SphericalCoordinates.html
+.. _`wikipedia affine`: http://en.wikipedia.org/wiki/Affine_transformation
+.. _`wikipedia linear transform`: http://en.wikipedia.org/wiki/Linear_transformation
+.. _`wikipedia rotation matrix`: http://en.wikipedia.org/wiki/Rotation_matrix
+.. _`wikipedia homogenous coordinates`: http://en.wikipedia.org/wiki/Homogeneous_coordinates
+.. _`wikipedia axis angle`: http://en.wikipedia.org/wiki/Axis_angle
+.. _`wikipedia Euler angles`: http://en.wikipedia.org/wiki/Euler_angles
+.. _`Mathworld Euler angles`: http://mathworld.wolfram.com/EulerAngles.html
+.. _`wikipedia quaternion`: http://en.wikipedia.org/wiki/Quaternion
+.. _`wikipedia shear matrix`: http://en.wikipedia.org/wiki/Shear_matrix
+.. _`wikipedia reflection`: http://en.wikipedia.org/wiki/Reflection_(mathematics)
+

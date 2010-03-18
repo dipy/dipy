@@ -7,4 +7,5 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   spherical
    dicom

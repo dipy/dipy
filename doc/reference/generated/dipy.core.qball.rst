@@ -8,11 +8,24 @@
 Functions
 ----------
 
-.. autofunction:: qball_odf
+.. autofunction:: read_bvec_file
 
-.. autofunction:: test_qball_odf
+.. autofunction:: real_sph_harm
+
+.. autofunction:: sph_harm_ind_list
 
 
+
+
+Classes
+--------
+
+.. autoclass:: odf
+   :show-inheritance:
+   :members:
+   :inherited-members:
+   :undoc-members:
+   
 
 
 

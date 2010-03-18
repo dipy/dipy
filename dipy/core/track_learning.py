@@ -10,31 +10,29 @@ import numpy.linalg as npla
 
 
 
-def larch(tracks,split_thrs=[50.**2,20.**2,10.**2],ret_atracks=False,info=False):
-
+def larch(tracks,
+          split_thrs=[50.**2,20.**2,10.**2],
+          ret_atracks=False,
+          info=False):
     ''' LocAl Rapid Clusters for tractograpHy
 
-    Parameters:
-    -----------
-    tracks: sequence
-        of tracks as arrays, shape (N1,3) .. (Nm,3)
-
-    split_thrs: sequence of 3 floats with the squared distances
-
-    approx_tracks: boolean, 
-        if True return an approximation of the initial tracks
-    
-    info: boolean, 
+    Parameters
+    ----------
+    tracks : sequence
+       of tracks as arrays, shape (N1,3) .. (Nm,3)
+    split_thrs : sequence
+       of 3 floats with the squared distances
+    approx_tracks: bool 
+       if True return an approximation of the initial tracks
+    info: bool 
        print some information
 
-    Returns:
+    Returns
     --------
-    C: dict, a tree graph containing the clusters
-
-    atracks: sequence of approximated tracks the approximation preserves initial
-       shape.
-    
-
+    C : dict
+       a tree graph containing the clusters
+    atracks : sequence
+       of approximated tracks the approximation preserves initial shape.
     '''
 
 
@@ -80,29 +78,23 @@ def larch(tracks,split_thrs=[50.**2,20.**2,10.**2],ret_atracks=False,info=False)
 
     return
 
-   
-
-
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
     ''' Detect corresponding tracks from 1 to 2
     
-    Parameters:
-    ----------------
-    indices: sequence
-            of indices of tracks1 that are to be detected in tracks2
-    
-    tracks1: sequence 
-            of tracks as arrays, shape (N1,3) .. (Nm,3)
-                
-    tracks2: sequence 
-            of tracks as arrays, shape (M1,3) .. (Mm,3)
+    Parameters
+    ----------
+    indices : sequence
+       of indices of tracks1 that are to be detected in tracks2
+    tracks1 : sequence 
+       of tracks as arrays, shape (N1,3) .. (Nm,3)
+    tracks2 : sequence 
+       of tracks as arrays, shape (M1,3) .. (Mm,3)
             
-    Returns:
-    -----------
-    track2track: array of int
-            showing the correspondance
-    
+    Returns
+    -------
+    track2track : array
+       of int showing the correspondance
     '''
     li=len(indices)
     
@@ -158,26 +150,23 @@ def detect_corresponding_tracks_extended(indices,tracks1,indices2,tracks2):
 
 def rm_far_ends(ref,tracks,dist=25):
     ''' rm tracks with far endpoints
-    Parameters:
-    ----------------
-    ref:  array, shape (N,3)
+    
+    Parameters
+    ----------
+    ref : array, shape (N,3)
        xyz points of the reference track
-    
-    tracks: sequence 
-            of tracks as arrays, shape (N1,3) .. (Nm,3)
-    
-    dist: float
-            endpoint distance threshold
+    tracks : sequence 
+       of tracks as arrays, shape (N1,3) .. (Nm,3)
+    dist : float
+       endpoint distance threshold
         
-    Returns:
-    -----------    
-    tracksr: sequence
-            reduced tracks
-    
-    indices: sequence
-            indices of tracks
+    Returns
+    -------
+    tracksr : sequence
+       reduced tracks
+    indices : sequence
+       indices of tracks
     '''
-    
     indices=[i for (i,t) in enumerate(tracks) if tm.max_end_distances(t,ref) <= dist]
     
     tracksr=[tracks[i] for i in indices]
@@ -189,27 +178,23 @@ def rm_far_tracks(ref,tracks,dist=25,down=False):
     ''' Remove tracks which are far away using as a distance metric the average euclidean distance of the 
     following three points start point, midpoint and end point.
 
-    Parameters:
-    ----------------
-    ref:  array, shape (N,3)
+    Parameters
+    ----------
+    ref : array, shape (N,3)
        xyz points of the reference track
-    
-    tracks: sequence 
-            of tracks as arrays, shape (N1,3) .. (Nm,3)
-    
-    dist: float
-            average distance threshold
-    
+    tracks : sequence 
+       of tracks as arrays, shape (N1,3) .. (Nm,3)
+    dist : float
+       average distance threshold
     down: bool {True, False}
-            if down = True then ref and tracks are already downsampled
-            if down = False then downsample them
+       if down = True then ref and tracks are already downsampled
+       if down = False then downsample them
     
-    Returns:
-    -----------    
-    tracksr: sequence
+    Returns
+    -------
+    tracksr : sequence
             reduced tracks
-    
-    indices: sequence
+    indices : sequence
             indices of tracks
     '''
 
