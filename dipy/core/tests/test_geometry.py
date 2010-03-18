@@ -18,13 +18,13 @@ from dipy.testing import parametric, sphere_points
 @parametric
 def test_sphere_cart():
     # test arrays of points
-    thetas, phis, rs = cart2sphere(*(sphere_points.T))
-    xyz = sphere2cart(thetas, phis, rs)
+    rs, thetas, phis = cart2sphere(*(sphere_points.T))
+    xyz = sphere2cart(rs, thetas, phis)
     yield assert_array_almost_equal(xyz, sphere_points.T)
     # test a scalar point
     pt = sphere_points[3]
-    theta, phi, r = cart2sphere(*pt)
-    xyz = sphere2cart(theta, phi, 1)
+    r, theta, phi = cart2sphere(*pt)
+    xyz = sphere2cart(r, theta, phi)
     yield assert_array_almost_equal(xyz, pt)
 
 

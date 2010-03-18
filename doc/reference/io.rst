@@ -14,5 +14,3 @@
    pickles
    structreader
    trackvis
-   utils
-   vectors   

@@ -8,6 +8,7 @@
 .. autosummary::
    :toctree:
 
+   geometry
    track_metrics
    track_learning
    track_performance

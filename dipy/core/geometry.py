@@ -6,7 +6,7 @@ import numpy as np
 import numpy.linalg as npl
 
 
-def sphere2cart(theta, phi, r=1.0):
+def sphere2cart(r, theta, phi):
     ''' Spherical to Cartesian coordinates
 
     This is the standard physics convention where `theta` is the
@@ -28,12 +28,12 @@ def sphere2cart(theta, phi, r=1.0):
 
     Parameters
     ----------
+    r : array-like
+       radius
     theta : array-like
        inclination or polar angle
     phi : array-like
        azimuth angle
-    r : array-like
-       radius
 
     Returns
     -------
@@ -53,8 +53,7 @@ def sphere2cart(theta, phi, r=1.0):
 
     for excellent discussion of the many different conventions
     possible.  Here we use the physics conventions, used in the
-    wikipedia page, except we pass `r` last, to allow it to have a
-    default argument.
+    wikipedia page.
 
     Derivations of the formulae are simple. Consider a vector x, y, z of
     length r (norm of x, y, z).  The inclination angle (theta) can be
@@ -95,17 +94,17 @@ def cart2sphere(x, y, z):
 
     Returns
     -------
+    r : array
+       radius
     theta : array
        inclination (polar) angle
     phi : array
        azimuth angle
-    r : array
-       radius
     '''
     r = np.sqrt(x*x + y*y + z*z)
     theta = np.arccos(z/r)
     phi = np.arctan2(y, x)
-    return theta, phi, r
+    return r, theta, phi
 
 
 def normalized_vector(vec):
