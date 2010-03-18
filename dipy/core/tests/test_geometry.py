@@ -5,7 +5,6 @@
 import numpy as np
 
 from dipy.core.geometry import (sphere2cart, cart2sphere,
-                                sphere12cart, cart2sphere1,
                                 nearest_pos_semi_def)
 
 from nose.tools import assert_true, assert_false, \
@@ -33,10 +32,6 @@ def test_sphere_cart():
     r, theta, phi = cart2sphere(*pt)
     xyz = sphere2cart(r, theta, phi)
     yield assert_array_almost_equal(xyz, pt)
-    # test unit array versions
-    thetas, phis = cart2sphere1(*(sphere_points.T))
-    xyz = sphere12cart(thetas, phis)
-    yield assert_array_almost_equal(xyz, sphere_points.T)
     
 
 @parametric    

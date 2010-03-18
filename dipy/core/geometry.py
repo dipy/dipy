@@ -107,66 +107,6 @@ def cart2sphere(x, y, z):
     return r, theta, phi
 
 
-def sphere12cart(theta, phi):
-    ''' Unit spherical to Cartesian coordinates
-
-    This is the standard physics convention where `theta` is the
-    inclination (polar) angle, and `phi` is the azimuth angle.
-
-    This function assumes a unit sphere; see ``sphere2cart`` for the
-    more general case. 
-
-    Parameters
-    ----------
-    theta : array-like
-       inclination or polar angle
-    phi : array-like
-       azimuth angle
-
-    Returns
-    -------
-    x : array
-       x coordinate(s) in Cartesion space
-    y : array
-       y coordinate(s) in Cartesian space
-    z : array
-       z coordinate
-    '''
-    sin_theta = np.sin(theta)
-    x = np.cos(phi) * sin_theta
-    y = np.sin(phi) * sin_theta
-    z = np.cos(theta)
-    return x, y, z
-
-
-def cart2sphere1(x, y, z):
-    ''' Spherical angles from unit sphere Cartesian 3D coordinates
-
-    This function assumes that the points defined by `x`, `y` and `z`
-    lie on the unit sphere.   See ``cart2sphere`` for the more general
-    function. 
-
-    Parameters
-    ----------
-    x : array-like
-       x coordinate in Cartesion space
-    y : array-like
-       y coordinate in Cartesian space
-    z : array-like
-       z coordinate
-
-    Returns
-    -------
-    theta : array
-       inclination (polar) angle
-    phi : array
-       azimuth angle
-    '''
-    theta = np.arccos(z)
-    phi = np.arctan2(y, x)
-    return theta, phi
-
-
 def normalized_vector(vec):
     ''' Return vector divided by Euclidean (L2) norm
 
