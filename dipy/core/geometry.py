@@ -1,6 +1,9 @@
 ''' Utility functions for algebra etc '''
 
+import math
+
 import numpy as np
+import numpy.linalg as npl
 
 
 def sphere2cart(theta, phi, r=1.0):
@@ -92,101 +95,115 @@ def cart2sphere(x, y, z):
     return theta, phi, r
 
 
-def matlab_sph2cart(azimuth, zenith, r=1.0):
-    ''' Cartesian 3D coordinates for angles `azimuth` and `zenith`
+def normalized_vector(vec):
+    ''' Return vector divided by Euclidean (L2) norm
 
-    Using rather unusual Matlab convention of the zenith angle taken as
-    rotation from the y axis towards the z axis.
-
-    As usual, we define the sphere as having a center at Cartesian
-    coordinates 0,0,0.  Imagining the sphere as a globe viewed from the
-    front, x, y and z axes are oriented posterior->anterior, east->west
-    and south->north.  The `azimuth` angle is counter-clockwise rotation
-    around the z axis (viewed from anterior, positive x), towards
-    positive y.  Imagine we rotate the y axis to Y' with the azimuth
-    rotation.  Then the zenith rotation (in this convention) is
-    clock-wise (from positive Y') rotation around Y' towards positive z.
-
-    The azimuth angle is therefore the angle between the x axis and the
-    projection of the vector onto the x-y plane.
-    
-    Parameters
-    ----------
-    azimuth : (N,) array-like
-       azimuth angle
-    zenith : (N,) array-like
-       zenith angle
-    r : float or (N, array-like), optional
-       radius.  Default is 1.0
-
-    Returns
-    -------
-    x : array
-       x coordinate(s) in Cartesion space
-    y : array
-       y coordinate(s) in Cartesian space
-    z : array
-       z coordinate
-
-    Notes
-    -----
-    There are different conventions for the order in which the azimuth
-    angles and the zenith angles are specified, and the greek letters
-    corresponding to `azimuth` and `zenith`; see:
-    
-    See: http://mathworld.wolfram.com/SphericalCoordinates.html
-
-    It's unpleasant, but the zenith angle can also be from the z axis,
-    or from the Y' axis.  The latter appears to be rare, but it's the
-    convention used in Matlab.
-    
-    Here we follow the conventions of Matlab.
-
-    Derivations of the formulae are simple. Consider a vector x, y, z of
-    length r (norm of x, y, z).  The zenith angle (in this convention)
-    can be found from sin(zenith) = z / r -> z = r * sin(zenith).  This
-    gives the hypotenuse of the projection onto the XY plane - say P =
-    r*cos(zenith). Now x / P = cos(azimuth) -> x = r * cos(zenith) *
-    cos(azimuth).
-    '''
-    cos_zen = np.cos(zenith)
-    x = r * np.cos(azimuth) * cos_zen
-    y = r * np.sin(azimuth) * cos_zen
-    z = r * np.sin(zenith)
-    return x, y, z
-
-
-def matlab_cart2sph(x, y, z):
-    ''' Return angles for Cartesian 3D coordinates `x`, `y`, and `z`
-
-    See doc for ``matlab_sph2cart`` for angle conventions and derivation
-    of the formulae.
+    See :term:`unit vector` and :term:`Euclidean norm`
 
     Parameters
     ----------
-    x : scalar or (N,) array-like
-       x coordinate in Cartesion space
-    y : scalar or (N,) array-like
-       y coordinate in Cartesian space
-    z : scalar or (N,) array-like
-       z coordinate
+    vec : array-like shape (3,)
 
     Returns
     -------
-    azimuth : (N,) array
-       azimuth angle
-    zenith : (N,) array
-       zenith angle
-    r : (N,) array
-       radius
+    nvec : array shape (3,)
+       vector divided by L2 norm
 
-    Notes
-    -----
-    in this convention), when `zenith` is pi/2 or 3*pi/4,
-    then we are on the z axis, and `azimuth` is undefined; we
-    arbitrarily set it to 0.
+    Examples
+    --------
+    >>> vec = [1, 2, 3]
+    >>> l2n = np.sqrt(np.dot(vec, vec))
+    >>> nvec = normalized_vector(vec)
+    >>> np.allclose(np.array(vec) / l2n, nvec)
+    True
+    >>> vec = np.array([[1, 2, 3]])
+    >>> vec.shape
+    (1, 3)
+    >>> normalized_vector(vec).shape
+    (3,)
     '''
-    r = np.sqrt(x*x + y*y + z*z)
-    zenith = np.arcsin(z/r)
-    azimuth = np.arctan2(y, x)
-    return azimuth, zenith, r
+    vec = np.asarray(vec).squeeze()
+    return vec / math.sqrt((vec**2).sum())
+
+
+def vector_norm(vec):
+    ''' Return vector Euclidaan (L2) norm
+
+    See :term:`unit vector` and :term:`Euclidean norm`
+
+    Parameters
+    ----------
+    vec : array-like shape (3,)
+
+    Returns
+    -------
+    norm : scalar
+
+    Examples
+    --------
+    >>> vec = [1, 2, 3]
+    >>> l2n = np.sqrt(np.dot(vec, vec))
+    >>> nvec = vector_norm(vec)
+    >>> np.allclose(nvec, np.sqrt(np.dot(vec, vec)))
+    True
+    '''
+    vec = np.asarray(vec)
+    return math.sqrt((vec**2).sum())
+    
+
+def nearest_pos_semi_def(B):
+    ''' Least squares positive semi-definite tensor estimation
+    
+    Reference: Niethammer M, San Jose Estepar R, Bouix S, Shenton M,
+    Westin CF.  On diffusion tensor estimation. Conf Proc IEEE Eng Med
+    Biol Soc.  2006;1:2622-5. PubMed PMID: 17946125; PubMed Central
+    PMCID: PMC2791793.
+ 
+    Parameters
+    ----------
+    B : (3,3) array-like
+       B matrix - symmetric. We do not check the symmetry.
+       
+    Returns
+    -------
+    npds : (3,3) array
+       Estimated nearest positive semi-definite array to matrix `B`.
+
+    Examples
+    --------
+    >>> B = np.diag([1, 1, -1])
+    >>> nearest_pos_semi_def(B)
+    array([[ 0.75,  0.  ,  0.  ],
+           [ 0.  ,  0.75,  0.  ],
+           [ 0.  ,  0.  ,  0.  ]])
+    '''
+    B = np.asarray(B)
+    vals, vecs = npl.eigh(B)
+    # indices of eigenvalues in descending order
+    inds = np.argsort(vals)[::-1]
+    vals = vals[inds]
+    cardneg = np.sum(vals < 0)
+    if cardneg == 0:
+        return B
+    if cardneg == 3:
+        return np.zeros((3,3))
+    lam1a, lam2a, lam3a = vals
+    scalers = np.zeros((3,))
+    if cardneg == 2:
+        b112 = np.max([0,lam1a+(lam2a+lam3a)/3.])
+        scalers[0] = b112
+    elif cardneg == 1:
+        lam1b=lam1a+0.25*lam3a
+        lam2b=lam2a+0.25*lam3a
+        if lam1b >= 0 and lam2b >= 0:
+            scalers[:2] = lam1b, lam2b
+        else: # one of the lam1b, lam2b is < 0
+            if lam2b < 0:
+                b111=np.max([0,lam1a+(lam2a+lam3a)/3.])
+                scalers[0] = b111
+            if lam1b < 0:
+                b221=np.max([0,lam2a+(lam1a+lam3a)/3.])
+                scalers[1] = b221
+    # resort the scalers to match the original vecs
+    scalers = scalers[np.argsort(inds)]
+    return np.dot(vecs, np.dot(np.diag(scalers), vecs.T))

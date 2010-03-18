@@ -12,7 +12,7 @@ import numpy as np
 import dicom
 
 import dipy.io.dicomreaders as didr
-from dipy.io.vectors import vector_norm
+from dipy.core.geometry import vector_norm
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises

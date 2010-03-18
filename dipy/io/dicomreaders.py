@@ -8,8 +8,8 @@ import dicom
 import nibabel as nib
 
 from . import csareader as csar
-from .dwiparams import B2q, nearest_positive_semi_definite
-from .vectors import vector_norm
+from .dwiparams import B2q
+from ..core.geometry import vector_norm, nearest_pos_semi_def
 
 
 class CSAError(Exception):
@@ -219,7 +219,7 @@ def get_b_matrix(dcm_data):
         return np.zeros((3,3))
     # fix presumed rounding errors in the B matrix by making it positive
     # semi-definite. 
-    B = nearest_positive_semi_definite(B)
+    B = nearest_pos_semi_def(B)
     # We need the rotations from the DICOM header and the Siemens header
     # in order to convert the B matrix to voxel space
     iop = np.array(dcm_data.ImageOrientationPatient)
