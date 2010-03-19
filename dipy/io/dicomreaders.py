@@ -94,7 +94,7 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
     gradients = []
     arrays = []
     if len(filenames) == 0:
-        raise IOError('Found no files with "%s"' % globber)
+        raise IOError('Found no files with "%s"' % full_globber)
     for fname in filenames:
         dcm_data = dicom.read_file(fname)
         img = mosaic_to_nii(dcm_data)

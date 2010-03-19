@@ -4,11 +4,13 @@ from StringIO import StringIO
 
 import numpy as np
 
+import dipy.io.trackvis as tv
+
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-import dipy.io.trackvis as tv
+from dipy.testing import parametric
 
 
 def test_write():
@@ -74,14 +76,45 @@ def test_round_trip():
     yield assert_true, streamlist_equal(streams, streams2)
         
 
+@parametric
 def test_empty_header():
     for endian in '<>':
         hdr = tv.empty_header(endian)
-        yield assert_equal, hdr['id_string'], 'TRACK'
-        yield assert_equal, hdr['version'], 1
-        yield assert_equal, hdr['hdr_size'], 1000
+        yield assert_equal(hdr['id_string'], 'TRACK')
+        yield assert_equal(hdr['version'], 1)
+        yield assert_equal(hdr['hdr_size'], 1000)
+        yield assert_array_equal(
+            hdr['image_orientation_patient'],
+            [0,0,0,0,0,0])
     hdr_endian = tv.endian_codes[tv.empty_header().dtype.byteorder]
-    yield assert_equal, hdr_endian, tv.native_code
+    yield assert_equal(hdr_endian, tv.native_code)
 
 
+@parametric
+def test_get_affine():
+    hdr = tv.empty_header()
+    # default header gives useless affine
+    yield assert_array_equal(tv.get_affine(hdr),
+                             np.diag([0,0,0,1]))
+    hdr['voxel_size'] = 1
+    yield assert_array_equal(tv.get_affine(hdr),
+                             np.diag([0,0,0,1]))
+    # RAS direction cosines
+    hdr['image_orientation_patient'] = [-1,0,0,0,-1,0]
+    yield assert_array_equal(tv.get_affine(hdr),
+                             np.eye(4))
+    yield assert_array_equal(tv.get_affine(hdr, 'DICOM'),
+                             np.diag([-1,-1,1,1]))
+    # DICOM direction cosines
+    hdr['image_orientation_patient'] = [1,0,0,0,1,0]
+    yield assert_array_equal(tv.get_affine(hdr, 'RAS'), # default
+                             np.diag([-1,-1,1,1]))
+    yield assert_array_equal(tv.get_affine(hdr, 'DPCS'),
+                             np.eye(4))
+    # translations
+    hdr['origin'] = [1,2,3]
+    exp_aff = np.eye(4)
+    exp_aff[:3,3] = [1,2,3]
+    yield assert_array_equal(tv.get_affine(hdr, 'DPCS'),
+                             exp_aff)
     

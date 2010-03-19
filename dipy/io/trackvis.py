@@ -39,6 +39,10 @@ header_dtd = [
 header_dtype = np.dtype(header_dtd)
 
 
+# affine to go from DICOM LPS to MNI RAS space
+DPCS_TO_TAL = np.diag([-1, -1, 1, 1])
+
+
 class HeaderError(Exception):
     pass
 
@@ -273,6 +277,14 @@ def empty_header(endianness=None):
     >>> hdr = empty_header(swapped_code)
     >>> endian_codes[hdr['version'].dtype.byteorder] == swapped_code
     True
+
+    Notes
+    -----
+    The trackviz header can store enough information to give an affine
+    mapping between voxel and world space.  Often this information is
+    missing.  We make no attempt to fill it with sensible defaults on
+    the basis that, if the information is missing, it is better to be
+    explicit.
     '''
     dt = header_dtype
     if endianness:
@@ -282,3 +294,36 @@ def empty_header(endianness=None):
     hdr['version'] = 1
     hdr['hdr_size'] = 1000
     return hdr
+
+
+def get_affine(trk_hdr, output_cs='RAS'):
+    ''' Return voxel to mm affine from trackvis header
+
+    Parameters
+    ----------
+    trk_hdr : mapping
+       Mapping with trackvis header keys
+    output_cs : str, optional
+       Output coordinate space in which to return affine.  'RAS' means
+       MNI / Nifti convention of x: Left -> Right, y: Posterior ->
+       Anterior, z: Inferior -> Superior.  'DPCS' or 'LPS' or 'DICOM'
+       corresponds to x: R->L, y: A->P, z: I->S.
+
+    Returns
+    -------
+    aff : (4,4) array
+       affine giving mapping from voxel coordinates (on the right) to
+       millimeter coordinates in the chosen coordinate space
+       convention. 
+    '''
+    aff = np.eye(4)
+    iop = trk_hdr['image_orientation_patient'].reshape(2,3).T
+    R = np.c_[iop, np.cross(*iop.T)]
+    vox = trk_hdr['voxel_size']
+    aff[:3,:3] = R * vox
+    aff[:3,3] = trk_hdr['origin']
+    if output_cs == 'RAS':
+        aff = np.dot(DPCS_TO_TAL, aff)
+    elif not output_cs in ('DPCS', 'LPS', 'DICOM'):
+        raise ValueError('I do not know CS "%s"' % output_cs)
+    return aff
