@@ -313,8 +313,9 @@ def get_affine(trk_hdr):
     Returns
     -------
     aff : (4,4) array
-       affine giving mapping from voxel coordinates (on the right) to
-       millimeter coordinates in the RAS coordinate system
+       affine giving mapping from voxel coordinates (affine applied on
+       the left to points on the right) to millimeter coordinates in the
+       RAS coordinate system
     '''
     aff = np.eye(4)
     iop = trk_hdr['image_orientation_patient'].reshape(2,3).T
@@ -335,8 +336,7 @@ def set_affine(trk_hdr, affine):
     Parameters
     ----------
     trk_hdr : mapping
-       Mapping with trackvis header keys ``image_orientation_patient``,
-       ``voxel_size`` and ``origin``
+       Mapping implementing __setitem__
     affine : (4,4) array-like
        Affine voxel to mm transformation
 
@@ -361,6 +361,8 @@ def set_affine(trk_hdr, affine):
     # Discard shears because we cannot store them. 
     P, S, Qs = npl.svd(RS)
     R = np.dot(P, Qs)
+    # it's a rotation matrix 
+    assert np.allclose(np.dot(R, R.T), np.eye(3))
     # set into header
     trk_hdr['origin'] = trans
     trk_hdr['voxel_size'] = zooms
