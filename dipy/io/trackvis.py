@@ -300,7 +300,7 @@ def empty_header(endianness=None):
 def get_affine(trk_hdr):
     ''' Return voxel to mm affine from trackvis header
 
-    Affine is voxel mapping from voxel space to Nifti output coordinate
+    Affine is mapping from voxel space to Nifti output coordinate
     system convention; x: Left -> Right, y: Posterior -> Anterior, z:
     Inferior -> Superior.
     
@@ -328,7 +328,7 @@ def get_affine(trk_hdr):
 def set_affine(trk_hdr, affine):
     ''' Set affine inside trackviz header from `affine`
 
-    Affine is voxel mapping from voxel space to Nifti output coordinate
+    Affine is mapping from voxel space to Nifti output coordinate
     system convention; x: Left -> Right, y: Posterior -> Anterior, z:
     Inferior -> Superior.
     
@@ -344,11 +344,16 @@ def set_affine(trk_hdr, affine):
     -------
     None
     '''
+    # RAS to DPCS output
     affine = np.dot(DPCS_TO_TAL, affine)
     trans = affine[:3, 3]
+    # Get zooms
     RZS = affine[:3, :3]
     zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
     RS = RZS / zooms
+    # adjust zooms to make RS correspond (below) to a true rotation
+    # matrix.  We need to set the sign of one of the zooms to deal with
+    # this. 
     if npl.det(RS) < 0:
         zooms[0] *= -1
         RS[:,0] *= -1
