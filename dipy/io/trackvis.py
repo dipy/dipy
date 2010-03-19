@@ -3,6 +3,7 @@
 import struct
 
 import numpy as np
+import numpy.linalg as npl
 
 from .utils import native_code, swapped_code, endian_codes, \
     allopen, rec2dict
@@ -296,25 +297,24 @@ def empty_header(endianness=None):
     return hdr
 
 
-def get_affine(trk_hdr, output_cs='RAS'):
+def get_affine(trk_hdr):
     ''' Return voxel to mm affine from trackvis header
 
+    Affine is voxel mapping from voxel space to Nifti output coordinate
+    system convention; x: Left -> Right, y: Posterior -> Anterior, z:
+    Inferior -> Superior.
+    
     Parameters
     ----------
     trk_hdr : mapping
-       Mapping with trackvis header keys
-    output_cs : str, optional
-       Output coordinate space in which to return affine.  'RAS' means
-       MNI / Nifti convention of x: Left -> Right, y: Posterior ->
-       Anterior, z: Inferior -> Superior.  'DPCS' or 'LPS' or 'DICOM'
-       corresponds to x: R->L, y: A->P, z: I->S.
+       Mapping with trackvis header keys ``image_orientation_patient``,
+       ``voxel_size`` and ``origin``
 
     Returns
     -------
     aff : (4,4) array
        affine giving mapping from voxel coordinates (on the right) to
-       millimeter coordinates in the chosen coordinate space
-       convention. 
+       millimeter coordinates in the RAS coordinate system
     '''
     aff = np.eye(4)
     iop = trk_hdr['image_orientation_patient'].reshape(2,3).T
@@ -322,8 +322,41 @@ def get_affine(trk_hdr, output_cs='RAS'):
     vox = trk_hdr['voxel_size']
     aff[:3,:3] = R * vox
     aff[:3,3] = trk_hdr['origin']
-    if output_cs == 'RAS':
-        aff = np.dot(DPCS_TO_TAL, aff)
-    elif not output_cs in ('DPCS', 'LPS', 'DICOM'):
-        raise ValueError('I do not know CS "%s"' % output_cs)
-    return aff
+    return np.dot(DPCS_TO_TAL, aff)
+
+
+def set_affine(trk_hdr, affine):
+    ''' Set affine inside trackviz header from `affine`
+
+    Affine is voxel mapping from voxel space to Nifti output coordinate
+    system convention; x: Left -> Right, y: Posterior -> Anterior, z:
+    Inferior -> Superior.
+    
+    Parameters
+    ----------
+    trk_hdr : mapping
+       Mapping with trackvis header keys ``image_orientation_patient``,
+       ``voxel_size`` and ``origin``
+    affine : (4,4) array-like
+       Affine voxel to mm transformation
+
+    Returns
+    -------
+    None
+    '''
+    affine = np.dot(DPCS_TO_TAL, affine)
+    trans = affine[:3, 3]
+    RZS = affine[:3, :3]
+    zooms = np.sqrt(np.sum(RZS * RZS, axis=0))
+    RS = RZS / zooms
+    if npl.det(RS) < 0:
+        zooms[0] *= -1
+        RS[:,0] *= -1
+    # retrieve rotation matrix from RS with polar decomposition.
+    # Discard shears because we cannot store them. 
+    P, S, Qs = npl.svd(RS)
+    R = np.dot(P, Qs)
+    # set into header
+    trk_hdr['origin'] = trans
+    trk_hdr['voxel_size'] = zooms
+    trk_hdr['image_orientation_patient'] = R[:,0:2].T.ravel()
