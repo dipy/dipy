@@ -16,7 +16,15 @@ Here is a good illustration we made from the scripts kindly provided by
 
 .. _`Jorge Stolfi`: http://commons.wikimedia.org/wiki/User:Jorge_Stolfi
 
+The physics convention
+======================
+
 .. image:: spherical_coordinates.png
+
+
+The mathematics convention
+==========================
+
 
 
 .. include:: ../links_names.txt

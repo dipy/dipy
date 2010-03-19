@@ -88,10 +88,13 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
     unit_gradients : (N, 3) array
        gradient directions of unit length for each acquisition
     '''
-    filenames = sorted(glob.glob(pjoin(dicom_path, globber)))
+    full_globber = pjoin(dicom_path, globber)
+    filenames = sorted(glob.glob(full_globber))
     b_values = []
     gradients = []
     arrays = []
+    if len(filenames) == 0:
+        raise IOError('Found no files with "%s"' % globber)
     for fname in filenames:
         dcm_data = dicom.read_file(fname)
         img = mosaic_to_nii(dcm_data)

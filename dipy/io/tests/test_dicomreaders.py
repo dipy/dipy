@@ -74,5 +74,8 @@ def test_read_dwis():
     data_dir = os.path.expanduser(
         "~/data/20100114_195840/Series_012_CBU_DTI_64D_1A")
     data, aff, bs, gs = didr.read_mosaic_dwi_dir(data_dir)
-    print data.shape
-    print gs
+    yield assert_equal(data.ndim, 4)
+    yield assert_equal(aff.shape, (4,4))
+    yield assert_equal(bs.shape, (65,))
+    yield assert_equal(gs.shape, (65,3))
+    yield assert_raises(IOError, didr.read_mosaic_dwi_dir, 'improbable')
