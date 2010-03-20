@@ -61,6 +61,8 @@ The radius is $r$, the inclination angle is $\theta$ and the azimuth angle is $\
 Here is a good illustration we made from the scripts kindly provided by
 `Jorge Stolfi`_ on wikipedia.
 
+.. _`Jorge Stolfi`: http://commons.wikimedia.org/wiki/User:Jorge_Stolfi
+
 .. image:: spherical_coordinates.png
 
 The formulae relating Cartesian coordinates $(x, y, z)$ to $r, \theta, \phi$ are:
