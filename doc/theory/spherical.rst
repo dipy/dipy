@@ -31,12 +31,12 @@ z axis
    then the z axis runs from north to south.  This is the zenith direction of the sphere. 
 
 Reference plane
-   The plane containing the origin and orthongaonal to the z axis
+   The plane containing the origin and orthogonal to the z axis
    (zenith direction)
 
 y axis
    Horizontal axis of the sphere, orthogonal to the z axis, on the
-   reference plane.  Eest to east
+   reference plane.  East to east
    for a globe.
 
 x axis
