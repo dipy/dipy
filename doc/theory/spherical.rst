@@ -36,7 +36,7 @@ Reference plane
 
 y axis
    Horizontal axis of the sphere, orthogonal to the z axis, on the
-   reference plane.  East to east
+   reference plane.  West to east
    for a globe.
 
 x axis
