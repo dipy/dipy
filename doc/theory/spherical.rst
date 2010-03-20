@@ -45,7 +45,7 @@ x axis
    from behind the globe through the origin towards us, the viewer.
 
 Inclination angle
-   This can also be called the
+   The angle between OP and the z axis. This can also be called the
    polar angle.
 
 Azimuth angle
