@@ -73,15 +73,15 @@ The formulae relating Cartesian coordinates $(x, y, z)$ to $r, \theta, \phi$ are
 
     \theta=\arccos\frac{z}{\sqrt{x^2+y^2+z^2}} 
 
-    \varphi = \operatorname{atan2}(y,x) 
+    \phi = \operatorname{atan2}(y,x) 
 
 and from $(r, \theta, \phi)$ to $(x, y, z)$:
 
 .. math::
 
-    x=r \, \sin\theta \, \cos\varphi
+    x=r \, \sin\theta \, \cos\phi
 
-    y=r \, \sin\theta \, \sin\varphi
+    y=r \, \sin\theta \, \sin\phi
 
     z=r \, \cos\theta
 
