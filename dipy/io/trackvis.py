@@ -242,17 +242,17 @@ def _endian_from_streamlines(streamlines):
     return endian_codes[endian]
 
 
-def _mapping_is_hdr(mapping):
+def _mapping_is_endian_hdr(mapping, endianness):
     if not isinstance(mapping, np.ndarray):
         return False
-    return mapping.dtype == header_dtype
+    return mapping.dtype == header_dtype.newbyteorder(endianness)
             
 
-def _hdr_from_mapping(hdr=None, mapping=None, endianness=None):
+def _hdr_from_mapping(hdr=None, mapping=None, endianness=native_code):
     ''' Fill `hdr` from mapping `mapping`, with given endianness '''
     if hdr is None:
         # passed a valid header as mapping?  Copy and return
-        if _mapping_is_hdr(mapping):
+        if _mapping_is_endian_hdr(mapping, endianness):
             return hdr.copy()
         # otherwise make a new empty header
         hdr = empty_header(endianness)
