@@ -94,41 +94,41 @@ def test_empty_header():
 def test_get_affine():
     hdr = tv.empty_header()
     # default header gives useless affine
-    yield assert_array_equal(tv.get_affine(hdr),
+    yield assert_array_equal(tv.aff_from_hdr(hdr),
                              np.diag([0,0,0,1]))
     hdr['voxel_size'] = 1
-    yield assert_array_equal(tv.get_affine(hdr),
+    yield assert_array_equal(tv.aff_from_hdr(hdr),
                              np.diag([0,0,0,1]))
     # DICOM direction cosines
     hdr['image_orientation_patient'] = [1,0,0,0,1,0]
-    yield assert_array_equal(tv.get_affine(hdr),
+    yield assert_array_equal(tv.aff_from_hdr(hdr),
                              np.diag([-1,-1,1,1]))
     # RAS direction cosines
     hdr['image_orientation_patient'] = [-1,0,0,0,-1,0]
-    yield assert_array_equal(tv.get_affine(hdr),
+    yield assert_array_equal(tv.aff_from_hdr(hdr),
                              np.eye(4))
     # translations
     hdr['origin'] = [1,2,3]
     exp_aff = np.eye(4)
     exp_aff[:3,3] = [-1,-2,3]
-    yield assert_array_equal(tv.get_affine(hdr),
+    yield assert_array_equal(tv.aff_from_hdr(hdr),
                              exp_aff)
     # mappings work too
     d = {'voxel_size': np.array([1,2,3]),
          'image_orientation_patient': np.array([1,0,0,0,1,0]),
          'origin': np.array([10,11,12])}
-    aff = tv.get_affine(d)
+    aff = tv.aff_from_hdr(d)
 
 
 @parametric
-def test_set_affine():
+def test_aff_to_hdr():
     hdr = {}
     affine = np.diag([1,2,3,1])
     affine[:3,3] = [10,11,12]
-    tv.set_affine(hdr, affine)
-    yield assert_array_almost_equal(tv.get_affine(hdr), affine)
+    tv.aff_to_hdr(affine, hdr)
+    yield assert_array_almost_equal(tv.aff_from_hdr(hdr), affine)
     # put flip into affine
     aff2 = affine.copy()
     aff2[:,2] *=-1
-    tv.set_affine(hdr, aff2)
-    yield assert_array_almost_equal(tv.get_affine(hdr), aff2)
+    tv.aff_to_hdr(aff2, hdr)
+    yield assert_array_almost_equal(tv.aff_from_hdr(hdr), aff2)
