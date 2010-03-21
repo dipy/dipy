@@ -411,7 +411,9 @@ class TrackvisFile(object):
                          else None)
 
     def get_affine(self):
+        # use method becase set may involve removing shears from affine
         return aff_from_hdr(self.header)
 
     def set_affine(self, affine):
+        # use method becase set may involve removing shears from affine
         return aff_to_hdr(affine, self.header)
