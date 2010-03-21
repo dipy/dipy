@@ -242,24 +242,19 @@ def _endian_from_streamlines(streamlines):
     return endian_codes[endian]
 
 
-def _mapping_is_endian_hdr(mapping, endianness):
-    if not isinstance(mapping, np.ndarray):
-        return False
-    return mapping.dtype == header_dtype.newbyteorder(endianness)
-            
-
 def _hdr_from_mapping(hdr=None, mapping=None, endianness=native_code):
     ''' Fill `hdr` from mapping `mapping`, with given endianness '''
     if hdr is None:
-        # passed a valid header as mapping?  Copy and return
-        if _mapping_is_endian_hdr(mapping, endianness):
-            return hdr.copy()
+        # passed a valid mapping as header?  Copy and return
+        if (isinstance(mapping, np.ndarray) and
+            mapping.dtype == header_dtype.newbyteorder(endianness)):
+            return mapping.copy()
         # otherwise make a new empty header
         hdr = empty_header(endianness)
     if mapping is None:
         return hdr
     if isinstance(mapping, np.ndarray):
-        mapping = rec2dict(hdr_mapping)
+        mapping = rec2dict(mapping)
     for key, value in mapping.items():
         hdr[key] = value
     # check header values
@@ -320,7 +315,7 @@ def empty_header(endianness=None):
 def aff_from_hdr(trk_hdr):
     ''' Return voxel to mm affine from trackvis header
 
-    Affine is mapping from voxel space to Nifti output coordinate
+    Affine is mapping from voxel space to Nifti (RAS) output coordinate
     system convention; x: Left -> Right, y: Posterior -> Anterior, z:
     Inferior -> Superior.
     
@@ -391,25 +386,32 @@ def aff_to_hdr(affine, trk_hdr):
 
 class TrackvisFile(object):
     ''' Convenience class to encapsulate trackviz file information '''
-    def __init__(self, streamlines, mapping=None, endianness=None):
+    def __init__(self,
+                 streamlines,
+                 mapping=None,
+                 endianness=None,
+                 filename=None):
         self.streamlines = streamlines
         if endianness is None:
             endianness = _endian_from_streamlines(streamlines)
         self.header = _hdr_from_mapping(None, mapping, endianness)
         self.endianness = endianness
+        self.filename = filename
 
     @classmethod
     def from_file(klass, file_like):
         streamlines, header = read(file_like)
-        return klass(streamlines, header)
+        filename = (file_like if isinstance(file_like, basestring)
+                    else None)
+        return klass(streamlines, header, None, filename)
 
     def to_file(self, file_like):
         write(file_like, self.streamlines, self.header, self.endianness)
+        self.filename = (file_like if isinstance(file_like, basestring)
+                         else None)
 
-    def _get_affine(self):
+    def get_affine(self):
         return aff_from_hdr(self.header)
 
-    def _set_affine(self, affine):
+    def set_affine(self, affine):
         return aff_to_hdr(affine, self.header)
-
-    affine = property(_get_affine, _set_affine, None, 'Get/set affine')

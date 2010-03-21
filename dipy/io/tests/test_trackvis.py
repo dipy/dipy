@@ -132,3 +132,38 @@ def test_aff_to_hdr():
     aff2[:,2] *=-1
     tv.aff_to_hdr(aff2, hdr)
     yield assert_array_almost_equal(tv.aff_from_hdr(hdr), aff2)
+
+
+@parametric
+def test_tv_class():
+    tvf = tv.TrackvisFile([])
+    yield assert_equal(tvf.streamlines, [])
+    yield assert_true(isinstance(tvf.header, np.ndarray))
+    yield assert_equal(tvf.endianness, tv.native_code)
+    yield assert_equal(tvf.filename, None)
+    out_f = StringIO()
+    tvf.to_file(out_f)
+    yield assert_equal(out_f.getvalue(), tv.empty_header().tostring())
+    out_f.truncate(0)
+    # Write something not-default
+    tvf = tv.TrackvisFile([], {'id_string':'TRACKb'})
+    tvf.to_file(out_f)
+    # read it back
+    out_f.seek(0)
+    tvf_back = tv.TrackvisFile.from_file(out_f)
+    yield assert_equal(tvf_back.header['id_string'], 'TRACKb')
+    # check that we check input values
+    out_f.truncate(0)
+    yield assert_raises(tv.HeaderError,
+                        tv.TrackvisFile,
+                        [],{'id_string':'not OK'})
+    yield assert_raises(tv.HeaderError,
+                        tv.TrackvisFile,
+                        [],{'version': 2})
+    yield assert_raises(tv.HeaderError,
+                        tv.TrackvisFile,
+                        [],{'hdr_size':0})
+    affine = np.diag([1,2,3,1])
+    affine[:3,3] = [10,11,12]
+    tvf.set_affine(affine)
+    yield assert_true(np.all(tvf.get_affine() == affine))
