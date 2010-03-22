@@ -132,7 +132,7 @@ class Foz(object):
         add(self.canvas[self.cren],ax)
         if self.on:
             show(self.canvas[self.cren])
-        
+       
         return ax
     
     def line(self,lines,colors,opacity=1,linewidth=1):
