@@ -53,7 +53,7 @@ class DataError(Exception):
 
 
 def read(fileobj):
-    ''' Read trackvis file, return header, streamlines, endianness
+    ''' Read trackvis file, return header, streamlines
 
     Parameters
     ----------
@@ -73,7 +73,6 @@ def read(fileobj):
           where M is the number of scalars per point
        #. properties : None or ndarray shape (P,)
           where P is the number of properties
-          
     hdr : structured array
        structured array with trackvis header fields
 
@@ -89,7 +88,7 @@ def read(fileobj):
                      buffer=hdr_str)
     if str(hdr['id_string'])[:5] != 'TRACK':
         raise HeaderError('Expecting TRACK as first '
-                          '5 characaters of id_string')
+                          '5 characters of id_string')
     if hdr['version'] > 1:
         raise HeaderError('Reader only supports version 1')
     if hdr['hdr_size'] == 1000:
@@ -183,29 +182,12 @@ def write(fileobj, streamlines,  hdr_mapping=None, endianness=None):
     
     '''
     # First work out guessed endianness from input data
-    stream_count = len(streamlines)
     if endianness is None:
-        if stream_count:
-            endianness = streamlines[0][0].dtype.byteorder
-        else:
-            endianness = native_code
-    endianness = endian_codes[endianness]
+        endianness = _endian_from_streamlines(streamlines)
     # fill in a new header from mapping-like
-    hdr = empty_header(endianness)
-    if not hdr_mapping is None:
-        if isinstance(hdr_mapping, np.ndarray):
-            hdr_mapping = rec2dict(hdr_mapping)
-        for key, value in hdr_mapping.items():
-            hdr[key] = value
-        # check header values
-        if str(hdr['id_string'])[:5] != 'TRACK':
-            raise HeaderError('Expecting TRACK as first '
-                              '5 characaters of id_string')
-        if hdr['version'] > 1:
-            raise HeaderError('Reader only supports version 1')
-        if hdr['hdr_size'] != 1000:
-            raise HeaderError('hdr_size should be 1000')
+    hdr = _hdr_from_mapping(None, hdr_mapping, endianness)
     # put calculated data into header
+    stream_count = len(streamlines)
     hdr['n_count'] = stream_count
     if stream_count:
         pts, scalars, props = streamlines[0]
@@ -253,6 +235,39 @@ def write(fileobj, streamlines,  hdr_mapping=None, endianness=None):
             fileobj.write(props.tostring())
 
 
+def _endian_from_streamlines(streamlines):
+    if len(streamlines) == 0:
+        return native_code
+    endian = streamlines[0][0].dtype.byteorder
+    return endian_codes[endian]
+
+
+def _hdr_from_mapping(hdr=None, mapping=None, endianness=native_code):
+    ''' Fill `hdr` from mapping `mapping`, with given endianness '''
+    if hdr is None:
+        # passed a valid mapping as header?  Copy and return
+        if (isinstance(mapping, np.ndarray) and
+            mapping.dtype == header_dtype.newbyteorder(endianness)):
+            return mapping.copy()
+        # otherwise make a new empty header
+        hdr = empty_header(endianness)
+    if mapping is None:
+        return hdr
+    if isinstance(mapping, np.ndarray):
+        mapping = rec2dict(mapping)
+    for key, value in mapping.items():
+        hdr[key] = value
+    # check header values
+    if str(hdr['id_string'])[:5] != 'TRACK':
+        raise HeaderError('Expecting TRACK as first '
+                          '5 characaters of id_string')
+    if hdr['version'] > 1:
+        raise HeaderError('Reader only supports version 1')
+    if hdr['hdr_size'] != 1000:
+        raise HeaderError('hdr_size should be 1000')
+    return hdr
+
+
 def empty_header(endianness=None):
     ''' Empty trackvis header
     
@@ -297,10 +312,10 @@ def empty_header(endianness=None):
     return hdr
 
 
-def get_affine(trk_hdr):
+def aff_from_hdr(trk_hdr):
     ''' Return voxel to mm affine from trackvis header
 
-    Affine is mapping from voxel space to Nifti output coordinate
+    Affine is mapping from voxel space to Nifti (RAS) output coordinate
     system convention; x: Left -> Right, y: Posterior -> Anterior, z:
     Inferior -> Superior.
     
@@ -326,19 +341,19 @@ def get_affine(trk_hdr):
     return np.dot(DPCS_TO_TAL, aff)
 
 
-def set_affine(trk_hdr, affine):
-    ''' Set affine inside trackviz header from `affine`
+def aff_to_hdr(affine, trk_hdr):
+    ''' Set affine `affine` into trackvix header `trk_hdr`
 
-    Affine is mapping from voxel space to Nifti output coordinate
+    Affine is mapping from voxel space to Nifti RAS) output coordinate
     system convention; x: Left -> Right, y: Posterior -> Anterior, z:
     Inferior -> Superior.
     
     Parameters
     ----------
-    trk_hdr : mapping
-       Mapping implementing __setitem__
     affine : (4,4) array-like
        Affine voxel to mm transformation
+    trk_hdr : mapping
+       Mapping implementing __setitem__
 
     Returns
     -------
@@ -353,17 +368,52 @@ def set_affine(trk_hdr, affine):
     RS = RZS / zooms
     # adjust zooms to make RS correspond (below) to a true rotation
     # matrix.  We need to set the sign of one of the zooms to deal with
-    # this. 
+    # this.
     if npl.det(RS) < 0:
         zooms[0] *= -1
         RS[:,0] *= -1
     # retrieve rotation matrix from RS with polar decomposition.
-    # Discard shears because we cannot store them. 
+    # Discard shears because we cannot store them.
     P, S, Qs = npl.svd(RS)
     R = np.dot(P, Qs)
-    # it's a rotation matrix 
+    # it's a rotation matrix
     assert np.allclose(np.dot(R, R.T), np.eye(3))
     # set into header
     trk_hdr['origin'] = trans
     trk_hdr['voxel_size'] = zooms
     trk_hdr['image_orientation_patient'] = R[:,0:2].T.ravel()
+
+
+class TrackvisFile(object):
+    ''' Convenience class to encapsulate trackviz file information '''
+    def __init__(self,
+                 streamlines,
+                 mapping=None,
+                 endianness=None,
+                 filename=None):
+        self.streamlines = streamlines
+        if endianness is None:
+            endianness = _endian_from_streamlines(streamlines)
+        self.header = _hdr_from_mapping(None, mapping, endianness)
+        self.endianness = endianness
+        self.filename = filename
+
+    @classmethod
+    def from_file(klass, file_like):
+        streamlines, header = read(file_like)
+        filename = (file_like if isinstance(file_like, basestring)
+                    else None)
+        return klass(streamlines, header, None, filename)
+
+    def to_file(self, file_like):
+        write(file_like, self.streamlines, self.header, self.endianness)
+        self.filename = (file_like if isinstance(file_like, basestring)
+                         else None)
+
+    def get_affine(self):
+        # use method becase set may involve removing shears from affine
+        return aff_from_hdr(self.header)
+
+    def set_affine(self, affine):
+        # use method becase set may involve removing shears from affine
+        return aff_to_hdr(affine, self.header)
