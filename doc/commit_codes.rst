@@ -1,6 +1,6 @@
 .. _commit-codes:
 
-Commits message codes
+Commit message codes
 ---------------------
 
 Please prefix all commit summaries with one (or more) of the following labels.

@@ -4,6 +4,8 @@ from os.path import dirname, abspath, join as pjoin
 # set path to example data
 data_path = abspath(pjoin(dirname(__file__), '..', 'tests', 'data'))
 
+from .spherepoints import sphere_points
+
 # Allow failed import of nose if not now running tests
 try:
     import nose.tools as nt

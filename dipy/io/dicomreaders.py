@@ -1,3 +1,6 @@
+from os.path import join as pjoin
+import glob
+
 import numpy as np
 
 import dicom
@@ -5,7 +8,8 @@ import dicom
 import nibabel as nib
 
 from . import csareader as csar
-from .dwiparams import B2q, nearest_positive_semi_definite
+from .dwiparams import B2q
+from ..core.geometry import vector_norm, nearest_pos_semi_def
 
 
 class CSAError(Exception):
@@ -60,6 +64,53 @@ def mosaic_to_nii(dcm_data):
     return nib.Nifti1Image(v3.T, aff)
 
 
+def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
+    ''' Read all Siemens DICOMs in directory, return arrays, params
+
+    Parameters
+    ----------
+    dicom_path : str
+       path containing mosaic DICOM images
+    globber : str, optional
+       glob to apply within `dicom_path` to select DICOM files.  Default
+       is ``*.dcm``
+       
+    Returns
+    -------
+    data : 4D array
+       data array with last dimension being acquisition. If there were N
+       acquisitions, each of shape (X, Y, Z), `data` will be shape (X,
+       Y, Z, N)
+    affine : (4,4) array
+       affine relating 3D voxel space in data to RAS world space
+    b_values : (N,) array
+       b values for each acquisition
+    unit_gradients : (N, 3) array
+       gradient directions of unit length for each acquisition
+    '''
+    full_globber = pjoin(dicom_path, globber)
+    filenames = sorted(glob.glob(full_globber))
+    b_values = []
+    gradients = []
+    arrays = []
+    if len(filenames) == 0:
+        raise IOError('Found no files with "%s"' % full_globber)
+    for fname in filenames:
+        dcm_data = dicom.read_file(fname)
+        img = mosaic_to_nii(dcm_data)
+        arrays.append(img.get_data()[...,None])
+        q = get_q_vector(dcm_data)
+        b = vector_norm(q)
+        g = q / b
+        b_values.append(b)
+        gradients.append(g)
+    affine = img.get_affine()
+    return (np.concatenate(arrays, -1),
+            affine,
+            np.array(b_values),
+            np.array(gradients))
+
+    
 def has_csa(dcm_data):
     ''' Return True if `dcm_data` DICOM object has CSA header
 
@@ -171,7 +222,7 @@ def get_b_matrix(dcm_data):
         return np.zeros((3,3))
     # fix presumed rounding errors in the B matrix by making it positive
     # semi-definite. 
-    B = nearest_positive_semi_definite(B)
+    B = nearest_pos_semi_def(B)
     # We need the rotations from the DICOM header and the Siemens header
     # in order to convert the B matrix to voxel space
     iop = np.array(dcm_data.ImageOrientationPatient)

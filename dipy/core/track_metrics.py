@@ -149,9 +149,9 @@ def magn(xyz,n=1):
 def frenet_serret(xyz):
     ''' Frenet-Serret Space Curve Invarients
  
-    Calculates the 3 vector and 2 scaler invarients of a space curve defined
-    by vectors x,y and z.  If z is omitted then the curve is only a 2D,
-    but the equations are still valid.
+    Calculates the 3 vector and 2 scaler invarients of a space curve
+    defined by vectors x,y and z.  If z is omitted then the curve is
+    only a 2D, but the equations are still valid.
     
     Similar to
     http://www.mathworks.com/matlabcentral/fileexchange/11169
@@ -177,7 +177,7 @@ def frenet_serret(xyz):
     
     
     Returns
-    ---------
+    -------
     T : array shape (N,3)
         array representing the tangent of the curve xyz
     N : array shape (N,3)
@@ -191,7 +191,9 @@ def frenet_serret(xyz):
 
     Examples
     --------
-    Create a helix and calculate its tangent,normal, binormal, curvature and torsion
+    
+    Create a helix and calculate its tangent,normal, binormal, curvature
+    and torsion
     
     >>> from dipy.core import track_metrics as tm
     >>> import numpy as np
@@ -201,7 +203,6 @@ def frenet_serret(xyz):
     >>> z=theta/(2*np.pi)
     >>> xyz=np.vstack((x,y,z)).T
     >>> T,N,B,k,t=tm.frenet_serret(xyz)
-    
     '''
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
