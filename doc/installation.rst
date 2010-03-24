@@ -4,11 +4,14 @@
  Installing dipy
 ======================
 
-dipy_ is in active development at the moment and we are doing our best to create a release at the soonest possible. However, if you still want to play with it here is what you need to do. 
+dipy_ is in active development at the moment and we are doing our best
+to create a release at the soonest possible. However, if you still want
+to play with it here is what you need to do.
 
 The primary development repository is `dipy github`_ 
 
-We will describe for now the installation for Debian or Ubuntu assuming that the installation for Macosx and Windows is straightforward.  
+We will describe for now the installation for Debian or Ubuntu assuming
+that the installation for Macosx and Windows is straightforward.
 
 .. _using-on-cmdline:
 
