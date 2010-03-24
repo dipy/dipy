@@ -8,44 +8,67 @@ dipy_ is in active development at the moment and we are doing our best to create
 
 The primary development repository is `dipy github`_ 
 
-We will describe here the installation for Debian & Ubuntu.  
+We will describe for now the installation for Debian or Ubuntu assuming that the installation for Macosx and Windows is straightforward.  
 
-Install git using ::
+.. _using-on-cmdline:
 
-	$sudo apt-get install git
+Install git using::
+
+        sudo apt-get install git
 
 then try::
  
-	$git clone git://github.com/Garyfallidis/dipy.git
-       	$cd dipy/
-	$sudo python setup.py install
+        git clone git://github.com/Garyfallidis/dipy.git
+        cd dipy/
+        sudo python setup.py install
 
-in case you want to just build it locally try::
+For a local build try::
 
-   	$python setup.py build_ext --inplace
+        python setup.py build_ext --inplace
 
+but and add you dipy_ directory in your PYTHONPATH.
 
-For visualisation
+dipy_ requires the following packages::
 
-remove all mayavi or traits installations if you have any then try
+       sudo apt-get install python-numpy python-scipy ipython cython python-dev
+       sudo easy_install -U sphinx
+       
+It also requires nibabel for reading medical images::
 
-mkdir ets
-cd ets
-svn co https://svn.enthought.com/svn/enthought/ETSProjectTools/trunk ETSProjectTools
+        git clone git://github.com/hanke/nibabel.git
+        cd nibabel
+        python setup.py build_ext --inplace
 
-cd ETSProjectTools/
-sudo python setup.py install
-ets -h
-cd ..
-ets co ETS
-sudo apt-get install swig python-qt4 python-qt4-dev libxtst-dev
-cd ETS_3.3.1/
-ets bdist -r
-sudo easy_install -f dist -H dist ets
+and then add nibabel directory to your PYTHONPATH. We usually add the PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every time. This should look like::
+    export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
 
-if easy_install is not installed then try _setuptools.
+After changing the ~/.bashrc try::
 
-For any problems/suggestions please let us know by sending an e-mail at nipy-devel@neuroimaging.scipy.org
+      source ~/.bash
 
+so that you can have immediate access to dipy_ without needing to restart your terminal.       
+
+For visualisation remove all older mayavi or traits installations then install the latest Enthought Suite::
+
+    mkdir ets
+    cd ets
+    svn co https://svn.enthought.com/svn/enthought/ETSProjectTools/trunk ETSProjectTools
+    cd ETSProjectTools/
+    sudo python setup.py install
+    ets -h
+    cd ..
+    ets co ETS
+    sudo apt-get install swig python-qt4 python-qt4-dev libxtst-dev
+    cd ETS_3.3.1/
+    ets bdist -r
+    sudo easy_install -f dist -H dist ets
+
+In case easy_install is not installed then please install _setuptools.
+
+After doing the above execute ipython in the terminal and try::
+
+    >>>import dipy
+
+Does it work? For any problems/suggestions please let us know by sending an e-mail to nipy-devel@neuroimaging.scipy.org
 
 .. include:: links_names.txt

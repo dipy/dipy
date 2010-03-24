@@ -14,6 +14,7 @@ Contents:
    introduction
    mission
    develop
+   installation
    theory/index
    reference/index
 
