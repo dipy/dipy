@@ -3,13 +3,43 @@ import numpy as np
 from scipy.special import sph_harm
 
 def real_sph_harm(m, n, theta, phi):
-    sh = sph_harm(m, n, theta, phi)
-    m_ge0,junk,junk,junk = np.broadcast_arrays(m >= 0, n, theta, phi)
-    m_lt0 = np.logical_not(m_ge0)
+    """
+    Compute real spherical harmonics, where the real harmonic $Y^m_n$ is defined
+    to be:
+        Real($Y^m_n$) * sqrt(2) if m > 0
+        $Y^m_n$                 if m == 0
+        Imag($Y^m_n$) * sqrt(2) if m < 0
+    
+    This is a ufunc and may take scalar or array arguments like any other ufunc.
+    The inputs will be broadcasted against each other.
+    
+    :Parameters:
+      - `m` : int |m| <= n
+        The order of the harmonic.
+      - `n` : int >= 0
+        The degree of the harmonic.
+      - `theta` : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+      - `phi` : float [0, pi]
+        The polar (colatitudinal) coordinate.
+    
+    :Returns:
+      - `y_mn` : real float
+        The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
 
+    :See also:
+        scipy.special.sph_harm
+    """
+    m = np.atleast_1d(m)
+    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
+
+    sh = sph_harm(m, n, theta, phi)
     real_sh = np.zeros(sh.shape, 'double')
-    real_sh[m_ge0] = sh[m_ge0].real
-    real_sh[m_lt0] = sh[m_lt0].imag
+    real_sh[m_eq0] = sh[m_eq0].real
+    real_sh[m_gt0] = sh[m_gt0].real * np.sqrt(2)
+    real_sh[m_lt0] = sh[m_lt0].imag * np.sqrt(2)
     return real_sh
 
 def sph_harm_ind_list(sh_order):
@@ -32,66 +62,7 @@ def sph_harm_ind_list(sh_order):
     m_list = m_list[..., np.newaxis]
     return (m_list, n_list)
 
-
-def read_bvec_file(filename):
-    import os
-    import csv
-    
-    base, ext = os.path.splitext(filename)
-    if ext == '':
-        bvec = base+'.bvec'
-        bvec = base+'.bvec'
-    elif ext == '.bvec':
-        bvec_file=filename
-        bval_file=base+'.bval'
-    elif ext == '.bval':
-        bvec = base+'.bvec'
-        bval = filename
-    else:
-        raise ValueError('filename must have .bvec or .bval extension')
-
-    bvec = open(bvec_file)
-    bvec_reader = csv.reader(bvec, delimiter=' ')
-    grad_table = []
-    for ii in bvec_reader:
-        grad_table.append(ii)
-    bvec.close()
-
-    bval = open(bval_file)
-    bval_reader = csv.reader(bval, delimiter=' ')
-    b_values = []
-    for ii in bval_reader:
-        b_values.append(ii)
-    bval.close()
-    
-    try:
-        if len(grad_table) == 3:
-            grad_table = np.array(grad_table)
-            grad_table = grad_table[0:3, (grad_table != '').any(0)]
-            grad_table = grad_table.astype('double')
-        else:
-            raise ValueError('bvec file should have three rows')
-    except ValueError:
-        raise IOError('the file, '+bvec_file+', does not seem to have a valid gradient table')
-
-    try:
-        if len(b_values) == 1:
-            b_values = np.array(b_values)
-            b_values = b_values[b_values != '']
-            b_values = b_values.astype('double')
-        else:
-            raise ValueError('bval file should have one row')
-    except ValueError:
-        raise IOError('the file, '+bval_file+', does not seem to have a valid b values')
-
-    if grad_table.shape[1] != b_values.shape[0]:
-        raise IOError('the gradient file and b value file should have the same number of columns')
-
-    grad_table[:,b_values > 0] = grad_table[:,b_values > 0]/np.sqrt((grad_table[:,b_values > 0]**2).sum(0))
-    return (grad_table, b_values)
-
-
-class odf():
+class ODF():
     
     def __init__(self,data, sh_order, grad_table, b_values, keep_resid=False):
         from scipy.special import lpn
@@ -104,17 +75,17 @@ class odf():
 
         theta = np.arctan2(grad_table[1, dwi], grad_table[0, dwi])
         phi = np.arccos(grad_table[2, dwi])
-        
 
         m_list, n_list = sph_harm_ind_list(self.sh_order)
         comp_mat = real_sph_harm(m_list, n_list, theta, phi)
 
-        self.fit_matrix = np.dot(comp_mat.T, np.linalg.inv(np.dot(comp_mat, comp_mat.T)))
+        #self.fit_matrix = np.dot(comp_mat.T, np.linalg.inv(np.dot(comp_mat, comp_mat.T)))
+        self.fit_matrix = np.linalg.pinv(comp_mat)
         legendre0, junk = lpn(self.sh_order, 0)
         funk_radon = legendre0[n_list]
         self.fit_matrix *= funk_radon.T
 
-        self.dim = data.shape[:-1]
+        self.shape = data.shape[:-1]
         self.b0 = data[..., np.logical_not(dwi)]
         self.coef = np.dot(data[..., dwi], self.fit_matrix)
 
@@ -139,30 +110,4 @@ class odf():
             permute = np.random.permutation(self.n_grad)
         values = np.dot(self.coef + np.dot(self.resid[..., permute], self.fit_matrix), comp_mat)
         return values
-
-
-    def fit_matrix_d(self):
-        from scipy.special import lpn
-
-        m_list, n_list = sph_harm_ind_list(self.sh_order)
-        comp_mat = real_sph_harm(m_list, n_list, self.theta.flat[:], self.phi.flat[:])
-        fit_mat = np.dot(comp_mat.T, np.linalg.inv(np.dot(comp_mat, comp_mat.T)))
-        legendre0, junk = lpn(self.sh_order, 0)
-        fit_mat *= legendre0[n_list.T]
-
-        return fit_mat
-
-    def res_mat(self):
-        m_list, n_list = sph_harm_ind_list(self.sh_order)
-        comp_mat = real_sph_harm(m_list, n_list, self.theta.flat[:], self.phi.flat[:])
-        res_mat = np.linalg.inv(np.dot(comp_mat, comp_mat.T))
-        res_mat = np.dot(comp_mat.T, res_mat)
-        res_mat = np.dot(res_mat, comp_mat)
-        res_mat = np.eye(self.n_grad) - res_mat
-        return res_mat
-
-
-
-    def test(self):
-        print self.sh_order
 
