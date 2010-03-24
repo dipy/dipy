@@ -147,6 +147,7 @@ def get_csa_header(dcm_data, csa_type='image'):
        Parsed CSA field of `csa_type` or None, if we cannot find the CSA
        information.
     '''
+    csa_type = csa_type.lower()
     if csa_type == 'image':
         element_no = 0x1010
         label = 'Image'

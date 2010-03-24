@@ -26,8 +26,7 @@ import numpy.linalg as npl
 def B2q(B, tol=None):
     ''' Estimate q vector from input B matrix `B`
 
-    We assume the input `B` is symmetric positive definite.  If not,
-    then you will get the result as for the lower triangular part of `B`.
+    We assume the input `B` is symmetric positive definite. 
 
     Because the solution is a square root, the sign of the returned
     vector is arbitrary.  We set the vector to have a positive x
@@ -50,7 +49,7 @@ def B2q(B, tol=None):
        Estimated q vector from B matrix `B`
     '''
     B = np.asarray(B)
-    w, v = npl.eigh(B)
+    w, v = npl.eig(B)
     if tol is None:
         tol = np.abs(w.max() * np.finfo(w.dtype).eps)
     non_trivial = np.abs(w) > tol
