@@ -33,13 +33,41 @@ def test_sltensor():
     slt=ten.sltensor(b,g)
     yield assert_equal(slt.A.shape[0],len(b)-1)
 
-    print data.shape
     slt.fit(data)
-    print slt.coeff
+    print 'data coeff',slt.coeff
+    print 'tensors',slt.tensors
+    print 'fa',slt.fa
+    print 'adc',slt.adc
 
+    data2=100*np.ones((3,3,3,len(b)))
+
+    slt.fit(data2)
+    print 'data2 coeff',slt.coeff
+    print 'tensors',slt.tensors
+    print 'fa',slt.fa
+    print 'adc',slt.adc
+
+    yield assert_array_equal(slt.fa,np.zeros((3,3,3)))
+
+    data2[:,:,:,0]=250
+    
+    slt.fit(data2)
+    print 'data2 coeff bigger S0',slt.coeff
+    print 'tensors',slt.tensors
+    print 'fa',slt.fa
+    print 'adc',slt.adc
+
+    data2[:,:,:,0]=50
+    
+    slt.fit(data2)
+    print 'data2 coeff smaller S0',slt.coeff
     print 'tensors',slt.tensors
     print 'fa',slt.fa
     print 'adc',slt.adc
     
 
+    
+    
+
+    
 
