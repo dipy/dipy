@@ -10,12 +10,12 @@ to play with it here is what you need to do.
 
 The primary development repository is `dipy github`_ 
 
-We will describe for now the installation for Debian or Ubuntu assuming
-that the installation for Macosx and Windows is straightforward.
+We will describe for now that the installation for Ubuntu 9.10 assuming
+that the installation for other Linux, Macosx and Windows distributions is straightforward. We know that it is not ;-) Don't panic a release is coming soon.
 
 .. _using-on-cmdline:
 
-Install git using::
+First, install git using::
 
         sudo apt-get install git
 
@@ -29,7 +29,7 @@ For a local build try::
 
         python setup.py build_ext --inplace
 
-but and add you dipy_ directory in your PYTHONPATH.
+but then add you dipy_ directory in your PYTHONPATH.
 
 dipy_ requires the following packages::
 
@@ -51,7 +51,7 @@ After changing the ~/.bashrc try::
 
 so that you can have immediate access to dipy_ without needing to restart your terminal.       
 
-For visualisation remove all older mayavi or traits installations then install the latest Enthought Suite::
+For visualisation *remove all* older mayavi or traits installations and then install the latest Enthought Suite::
 
     mkdir ets
     cd ets
@@ -73,5 +73,6 @@ After doing the above execute ipython in the terminal and try::
     >>>import dipy
 
 Does it work? For any problems/suggestions please let us know by sending an e-mail to nipy-devel@neuroimaging.scipy.org
+
 
 .. include:: links_names.txt
