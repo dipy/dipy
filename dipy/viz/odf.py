@@ -1,8 +1,8 @@
 import numpy as np
 from enthought.mayavi import mlab
+import Image
 
 def disp_odf(sph_map, theta_res=64, phi_res=32, colormap='RGB', colors=256):
-    import Image
 
     pi = np.pi
     sin = np.sin
@@ -13,9 +13,9 @@ def disp_odf(sph_map, theta_res=64, phi_res=32, colormap='RGB', colors=256):
     y = sin(phi)*sin(theta)
     z = cos(phi)
     
-    nvox = np.prod(sph_map.dim)
+    nvox = np.prod(sph_map.shape)
 
-    x_cen, y_cen, z_cen = _3grid(sph_map.dim)
+    x_cen, y_cen, z_cen = _3grid(sph_map.shape)
     
     odf_values = sph_map.evaluate_at(theta, phi)
     max_value = odf_values.max()
@@ -46,25 +46,26 @@ def disp_odf(sph_map, theta_res=64, phi_res=32, colormap='RGB', colors=256):
                            scalars=odf_ii,
                            colormap=colormap)
 
-def _3grid(dim):
+def _3grid(shape):
 
-    if len(dim) > 3:
+    if len(shape) > 3:
         raise ValueError('cannot display 4d image')
-    elif len(dim) < 3:
+    elif len(shape) < 3:
         d = [1, 1, 1]
-        d[0:len(dim)] = dim
+        d[0:len(shape)] = shape
     else:
-        d = dim
+        d = shape
     
     return np.mgrid[0:d[0], 0:d[1], 0:d[2]]
 
 if __name__ == '__main__':
     import dipy.core.qball as qball
+    from dipy.io.bvectxt import read_bvec_file
     filename='/Users/bagrata/HARDI/E1322S8I1.nii.gz'
     grad_table_filename='/Users/bagrata/HARDI/E1322S8I1.bvec'
     from nipy import load_image, save_image
 
-    grad_table, b_values = qball.read_bvec_file(grad_table_filename)
+    grad_table, b_values = read_bvec_file(grad_table_filename)
     img = load_image(filename)
     print 'input dimensions: '
     print img.ndim
@@ -77,6 +78,6 @@ if __name__ == '__main__':
     data = np.asarray(img)
 
     theta, phi = np.mgrid[0:2*np.pi:64*1j, 0:np.pi:32*1j]
-    odf_i = qball.odf(data[188:192,188:192,22:24,:],4,grad_table,b_values)
-    disp_odf(odf_i)
+    odf_i = qball.ODF(data[188:192,188:192,22:24,:],4,grad_table,b_values)
+    disp_odf(odf_i[0:1,0:2,0:2])
 

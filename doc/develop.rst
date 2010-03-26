@@ -9,7 +9,7 @@ dipy_ is in development mode at the moment.
 Please do join in the fun.
 
 The lead developer is Eleftherios Garyfallidis, with support from Ian
-Nimmo-Smith and Matthew Brett - and (your name here).
+Nimmo-Smith, Matthew Brett and Bago Amirbekian- and (your name here).
 
 The primary develpment repository is `dipy github`_ 
 
