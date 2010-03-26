@@ -1,10 +1,10 @@
 import math
 import numpy as np
 from numpy.linalg import lstsq as lsq
-from numpy.linalg import eigh
+from numpy.linalg import eig
 
 class sltensor():
-    ''' Calculate a single tensor for every voxel with linear least squares fitting
+    ''' Calculate a single tensor for every voxel with linear least squares fitting.
 
 
     bvals and bvecs must be provided as well.  FA calculated from Mori
@@ -74,13 +74,38 @@ class sltensor():
 
     def fit(self,data,mask=None):
 
+        ''' Fit the single tensor with linear least squares for every
+        voxel in the volume data.
+        
+        Parameters:
+        -----------
+        data: 4d array, shape (X,Y,Z,D) with the signal values where
+        X,Y,Z the dimensions of the volume and D is the dimension of
+        vector holding the signal values for that voxels combined from
+        all directions. We assume here that the first element of the
+        vector will hold the value for the signal without diffusion gradients.
+
+        Returns:
+        --------
+        coeff: 4d array, shape (X,Y,Z,6) with the coefficients of the model fit in every voxel.
+
+        '''
+
+        
         
         self.data_shape=data.shape
+
+
+        if data.ndim==4:
         
-        data=data.reshape(data.shape[0]*data.shape[1]*data.shape[2],data.shape[3])
+            data=data.reshape(data.shape[0]*data.shape[1]*data.shape[2],data.shape[3])
 
                     
         self.coeff=np.array([self.voxel_fit(d) for d in data])
+
+        self.tensor=None
+        self.FA=None
+        self.ADC=None
 
         return self.coeff
                         
@@ -103,7 +128,7 @@ class sltensor():
 
             c00,c11,c22,c01,c02,c12=c 
             C=np.array([[c00, c01, c02],[c01,c11,c12],[c02,c12,c22]])                            
-            evals,evecs=eigh(C)          
+            evals,evecs=eig(C)          
         
             return evals,evecs
 
@@ -135,16 +160,36 @@ class sltensor():
 
     @property
     def fa(self):
+        ''' Calculate fractional anisotropy for every voxel in the volume
+    
+
+        '''
+
 
         if self.tensor!=None:
 
             if self.FA == None:
 
-                self.FA=np.array([self.voxel_fa(t[0]) for t in self.tensor]).reshape(self.data_shape[:3])        
+                if len(self.data_shape)==4:
+
+                    self.FA=np.array([self.voxel_fa(t[0]) for t in self.tensor]).reshape(self.data_shape[:3])
+                else:
+
+                    self.FA=np.array([self.voxel_fa(t[0]) for t in self.tensor])
+                    
+                return self.FA
+
+            else:
 
                 return self.FA
 
+        else:
 
+            self.tensors
+            self.fa
+            
+
+            
     def voxel_adc(self,evals):
 
         return sum(evals)/3.
@@ -156,11 +201,20 @@ class sltensor():
 
             if self.ADC == None:
 
-                self.ADC=np.array([self.voxel_adc(t[0]) for t in self.tensor]).reshape(self.data_shape[:3])        
+                if len(self.data_shape)==4:
 
+                    self.ADC=np.array([self.voxel_adc(t[0]) for t in self.tensor]).reshape(self.data_shape[:3])        
+                else:
+
+                    self.ADC=np.array([self.voxel_adc(t[0]) for t in self.tensor])
+                    
                 return self.ADC
         
-        pass
+        else:
+
+            self.tensors
+            self.adc
+            
 
     
 

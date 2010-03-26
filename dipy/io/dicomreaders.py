@@ -147,6 +147,7 @@ def get_csa_header(dcm_data, csa_type='image'):
        Parsed CSA field of `csa_type` or None, if we cannot find the CSA
        information.
     '''
+    csa_type = csa_type.lower()
     if csa_type == 'image':
         element_no = 0x1010
         label = 'Image'
@@ -220,9 +221,6 @@ def get_b_matrix(dcm_data):
         if bval_requested != 0:
             raise CSAError('No B matrix and b value != 0')
         return np.zeros((3,3))
-    # fix presumed rounding errors in the B matrix by making it positive
-    # semi-definite. 
-    B = nearest_pos_semi_def(B)
     # We need the rotations from the DICOM header and the Siemens header
     # in order to convert the B matrix to voxel space
     iop = np.array(dcm_data.ImageOrientationPatient)
@@ -235,7 +233,10 @@ def get_b_matrix(dcm_data):
     assert _fairly_close(np.eye(3), np.dot(R, R.T))
     # because B results from V dot V.T, the rotation B is given by R dot
     # V dot V.T dot R.T == R dot B dot R.T
-    return np.dot(R, np.dot(B, R.T))
+    B_vox = np.dot(R, np.dot(B, R.T))
+    # fix presumed rounding errors in the B matrix by making it positive
+    # semi-definite. 
+    return nearest_pos_semi_def(B_vox)
 
 
 def get_q_vector(dcm_data):
