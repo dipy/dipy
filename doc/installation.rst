@@ -11,7 +11,7 @@ to play with it here is what you need to do.
 The primary development repository is `dipy github`_ 
 
 We will describe for now the installation for Debian or Ubuntu assuming
-that the installation for Macosx and Windows is straightforward.
+the installation for Macosx and Windows is straightforward.
 
 .. _using-on-cmdline:
 
