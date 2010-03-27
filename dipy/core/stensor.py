@@ -3,7 +3,7 @@ import numpy as np
 from numpy.linalg import lstsq as lsq
 from numpy.linalg import eig
 
-class SLTensor():
+class STensorL():
     r'''
 
     Calculate a single tensor for every voxel with linear least squares
@@ -24,7 +24,7 @@ class SLTensor():
     which we assume that is a $3x3$ symmetric matrix. 
 
     .. math::
-    
+
         D = \left(\begin{array}{ccc}
              d_{00} & d_{01} & d_{02}\\
              d_{01} & d_{11} & d_{12}\\
