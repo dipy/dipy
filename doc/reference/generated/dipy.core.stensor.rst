@@ -18,7 +18,7 @@ Functions
 Classes
 --------
 
-.. autoclass:: sltensor
+.. autoclass:: STensorL
    :show-inheritance:
    :members:
    :inherited-members:
