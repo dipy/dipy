@@ -4,24 +4,36 @@ from numpy.linalg import lstsq as lsq
 from numpy.linalg import eig
 
 class sltensor():
-    ''' Calculate a single tensor for every voxel with linear least squares fitting.
+    r'''
 
+    Calculate a single tensor for every voxel with linear least squares
+    fitting.
 
-    bvals and bvecs must be provided as well.  FA calculated from Mori
-    et.al, Neuron 2006 . See also David Tuch PhD thesis p. 64 and Mahnaz Maddah thesis p. 44 for the tensor derivation.
-    
-    What this algorithm does? Solves a system of equations for every voxel j
-    
-    g0^2*d00 + g1^2*d11+g2^2*d22+ 2*g1*g0*d01+ 2*g0*g2*d02+2*g1*g2*d12 = - ln(S_ij/S0_j)/b_i
-    
-    where b_i the current b-value and g_i=[g0,g1,g2] the current gradient direction. dxx are the values of 
-    the symmetric matrix D. dxx are also the unknown variables.
-    
-    D=[[d00 ,d01,d02],[d01,d11,d12],[d02,d12,d22]]
+    bvals and bvecs must be provided as well. FA calculated from Mori
+    et.al, Neuron 2006. See also David Tuch PhD thesis p. 64 and Mahnaz
+    Maddah thesis p. 44 for the tensor derivation. 
 
-    Examples:
-    ---------
-   
+    What this algorithm does? 
+
+    Solves an overdetermined linear system of equations for every voxel $j$. 
+
+    $g_{0}^{2}d_{00}+g_{1}^{2}d_{11}+g_{2}^{2}d_{22}+2g_{1}g_{0}d_{01}+2g_{0}g_{2}d_{02}+2g_{1}g_{2}d_{12}=-ln(S_{ij}/S0_{j})/b_{i}$
+    
+    where $b_{i}$ the current b-value and $g_{i}=[g_{0},g_{1},g_{2}]^{T}$
+    the unit gradient direction. $d_{xx}$ are the values of the tensor
+    which we assume that is a symmetric matrix. 
+
+    .. math::
+
+        D = \left( \begin{array}{ccc}
+             d_{00} & d_{01} & d_{02}\\
+             d_{01} & d_{11} & d_{12}\\
+             d_{02} & d_{12} & d_{22} \end{array} \right)
+                
+    where $b_{i}$ the current b-value and the current unit gradient direction.
+    $dxx$ are the values of the symmetric matrix $D.$ $dxx$ are also
+    the unknown variables - coefficients that we try to estimate by the
+    fitting. 
          
     '''
 
@@ -57,8 +69,8 @@ class sltensor():
         '''
         
         s0=d[0]; s=d[1:]        
-        #d=np.log(s)-np.log(s0)
-        d=np.log(s/float(s0))
+        
+        d=-self.b*np.log(s/float(s0))
         #check for division by zero or inf
         inds=np.isfinite(d)
         A=self.A[inds]
