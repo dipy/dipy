@@ -21,7 +21,7 @@ class STensorL():
     
     where $b_{i}$ the current b-value and $g_{i}=[g_{0},g_{1},g_{2}]^{T}$
     the unit gradient direction. $d_{xx}$ are the values of the tensor
-    which we assume that is a $3x3$ symmetric matrix. 
+    which we assume that is a symmetric matrix. 
 
     .. math::
 
@@ -59,19 +59,19 @@ class STensorL():
         self.FA=None
         self.ADC=None
         self.data_shape=None
+        self.mask=None
+        
         
         
 
     def voxel_fit(self,d):
-        ''' fit the model for a single voxel with signal values d
+        ''' Fit the model for a single voxel with signal values d
 
         '''
         
         s0=d[0]; s=d[1:]        
         
-        print self.b.shape
-        print np.log(s/float(s0)).shape
-
+        
         d=-(1/self.b)*np.log(s/float(s0))
         #check for division by zero or inf
         inds=np.isfinite(d)
@@ -83,6 +83,14 @@ class STensorL():
             x=np.zeros(6)
     
         return x
+
+
+    def apply_mask(self,i,d):
+
+        if self.mask[i]==1:
+            return self.voxel_fit(d)
+        else:
+            return np.zeros(6)
 
         
 
@@ -103,19 +111,25 @@ class STensorL():
         --------
         coeff: 4d array, shape (X,Y,Z,6) with the coefficients of the model fit in every voxel.
 
-        '''
-
-        
+        '''        
         
         self.data_shape=data.shape
 
-
         if data.ndim==4:
-        
+            
+            if mask==None:
+
+                mask=data[:,:,:,0]
+                self.mask=np.where(mask>20,1,0)
+                self.mask=self.mask.ravel()
+   
             data=data.reshape(data.shape[0]*data.shape[1]*data.shape[2],data.shape[3])
 
-                    
-        self.coeff=np.array([self.voxel_fit(d) for d in data])
+            self.coeff=np.array([self.apply_mask(i,d) for (i,d) in enumerate(data)])
+
+        else:
+
+            self.coeff=np.array([self.voxel_fit(d) for d in data])
 
         self.tensor=None
         self.FA=None
@@ -176,7 +190,6 @@ class STensorL():
     def fa(self):
         ''' Calculate fractional anisotropy for every voxel in the volume
     
-
         '''
 
 
@@ -200,7 +213,8 @@ class STensorL():
         else:
 
             self.tensors
-            self.fa
+            
+            return self.fa
             
 
             
@@ -227,7 +241,7 @@ class STensorL():
         else:
 
             self.tensors
-            self.adc
+            return self.adc
             
 
     
