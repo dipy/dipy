@@ -74,8 +74,12 @@ class ODF():
     ndim = property(_getndim, doc="Number of dimensions in ODF array")
 
     def __getitem__(self, index):
+        if type(index) != type(()):
+            index = (index,)
         if len(index) > self.ndim:
             raise IndexError('invalid index')
+        if Ellipsis in index:
+            index = index + (slice(None),)
         new_odf = copy(self)
         new_odf._coef = self._coef[index]
         if not new_odf._resid is None:
