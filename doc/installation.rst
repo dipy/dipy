@@ -35,6 +35,7 @@ dipy_ requires the following packages::
 
        sudo apt-get install python-numpy python-scipy ipython cython python-dev
        sudo easy_install -U sphinx
+       sudo easy_install -U pydicom
        
 It also requires nibabel for reading medical images::
 

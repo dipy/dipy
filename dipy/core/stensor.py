@@ -3,25 +3,37 @@ import numpy as np
 from numpy.linalg import lstsq as lsq
 from numpy.linalg import eig
 
-class sltensor():
-    ''' Calculate a single tensor for every voxel with linear least squares fitting.
+class STensorL():
+    r'''
 
+    Calculate a single tensor for every voxel with linear least squares
+    fitting.
 
-    bvals and bvecs must be provided as well.  FA calculated from Mori
-    et.al, Neuron 2006 . See also David Tuch PhD thesis p. 64 and Mahnaz Maddah thesis p. 44 for the tensor derivation.
-    
-    What this algorithm does? Solves a system of equations for every voxel j
-    
-    g0^2*d00 + g1^2*d11+g2^2*d22+ 2*g1*g0*d01+ 2*g0*g2*d02+2*g1*g2*d12 = - ln(S_ij/S0_j)/b_i
-    
-    where b_i the current b-value and g_i=[g0,g1,g2] the current gradient direction. dxx are the values of 
-    the symmetric matrix D. dxx are also the unknown variables.
-    
-    D=[[d00 ,d01,d02],[d01,d11,d12],[d02,d12,d22]]
+    bvals and bvecs must be provided as well. FA calculated from Mori
+    et.al, Neuron 2006. See also David Tuch PhD thesis p. 64 and Mahnaz
+    Maddah thesis p. 44 for the tensor derivation. 
 
-    Examples:
-    ---------
-   
+    What this algorithm does? 
+
+    Solves an overdetermined linear system of equations for every voxel $j$. 
+
+    $g_{0}^{2}d_{00}+g_{1}^{2}d_{11}+g_{2}^{2}d_{22}+2g_{1}g_{0}d_{01}+2g_{0}g_{2}d_{02}+2g_{1}g_{2}d_{12}=-ln(S_{ij}/S0_{j})/b_{i}$
+    
+    where $b_{i}$ the current b-value and $g_{i}=[g_{0},g_{1},g_{2}]^{T}$
+    the unit gradient direction. $d_{xx}$ are the values of the tensor
+    which we assume that is a symmetric matrix. 
+
+    .. math::
+
+        D = \left(\begin{array}{ccc}
+             d_{00} & d_{01} & d_{02}\\
+             d_{01} & d_{11} & d_{12}\\
+             d_{02} & d_{12} & d_{22}\end{array}\right)
+                
+    where $b_{i}$ the current b-value and the current unit gradient direction.
+    $dxx$ are the values of the symmetric matrix $D.$ $dxx$ are also
+    the unknown variables - coefficients that we try to estimate by the
+    fitting. 
          
     '''
 
@@ -32,7 +44,6 @@ class sltensor():
         if not b[0]==0.: ValueError('first b-value needs to be the b=0')
 
         A=[]
-
         
         for i in range(1,len(b)):
 
@@ -40,25 +51,28 @@ class sltensor():
             A.append(np.array([[g0*g0,g1*g1,g2*g2,2*g0*g1,2*g0*g2,2*g1*g2]]))
 
         self.A=np.concatenate(A)
-        self.b=b
-        self.g=g
+        self.b=np.asfarray(b[1:])
+        self.g=np.asarray(g[1:])
 
         self.coeff=None
         self.tensor=None
         self.FA=None
         self.ADC=None
         self.data_shape=None
+        self.mask=None
+        
         
         
 
     def voxel_fit(self,d):
-        ''' fit the model for a single voxel with signal values d
+        ''' Fit the model for a single voxel with signal values d
 
         '''
         
         s0=d[0]; s=d[1:]        
-        #d=np.log(s)-np.log(s0)
-        d=np.log(s/float(s0))
+        
+        
+        d=-(1/self.b)*np.log(s/float(s0))
         #check for division by zero or inf
         inds=np.isfinite(d)
         A=self.A[inds]
@@ -69,6 +83,14 @@ class sltensor():
             x=np.zeros(6)
     
         return x
+
+
+    def apply_mask(self,i,d):
+
+        if self.mask[i]==1:
+            return self.voxel_fit(d)
+        else:
+            return np.zeros(6)
 
         
 
@@ -89,19 +111,25 @@ class sltensor():
         --------
         coeff: 4d array, shape (X,Y,Z,6) with the coefficients of the model fit in every voxel.
 
-        '''
-
-        
+        '''        
         
         self.data_shape=data.shape
 
-
         if data.ndim==4:
-        
+            
+            if mask==None:
+
+                mask=data[:,:,:,0]
+                self.mask=np.where(mask>20,1,0)
+                self.mask=self.mask.ravel()
+   
             data=data.reshape(data.shape[0]*data.shape[1]*data.shape[2],data.shape[3])
 
-                    
-        self.coeff=np.array([self.voxel_fit(d) for d in data])
+            self.coeff=np.array([self.apply_mask(i,d) for (i,d) in enumerate(data)])
+
+        else:
+
+            self.coeff=np.array([self.voxel_fit(d) for d in data])
 
         self.tensor=None
         self.FA=None
@@ -162,7 +190,6 @@ class sltensor():
     def fa(self):
         ''' Calculate fractional anisotropy for every voxel in the volume
     
-
         '''
 
 
@@ -186,7 +213,8 @@ class sltensor():
         else:
 
             self.tensors
-            self.fa
+            
+            return self.fa
             
 
             
@@ -213,7 +241,7 @@ class sltensor():
         else:
 
             self.tensors
-            self.adc
+            return self.adc
             
 
     

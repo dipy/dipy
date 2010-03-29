@@ -30,7 +30,7 @@ def test_sltensor():
     data=np.array(dix['data']).T    
 
     yield assert_equal(b[0],0.)
-    slt=ten.sltensor(b,g)
+    slt=ten.STensorL(b,g)
     yield assert_equal(slt.A.shape[0],len(b)-1)
 
     slt.fit(data)

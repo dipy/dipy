@@ -4,7 +4,7 @@
 
 This is a short note to explain the nature of the ``B_matrix`` found in
 the :ref:`csa-header` of a diffusion weighted acquistion and its
-relationship with the *$b$ value* and the *gradient vector*.  The
+relationship with the  $b$ *value* and the *gradient vector*.  The
 acquisition is made with a planned (requested) b value - say $b_{req} =
 1000$, and with a requested gradient direction $\mathbf{g}_{req} = [g_x,
 g_y, g_z]$ (supposedly a unit vector).
