@@ -60,4 +60,9 @@ def test_real_sph_harm():
     yield assert_array_almost_equal(rsh(-4,4,pi/8.,pi/6.),
            (3./16.)*sqrt(35./(2.*pi))*
            sin(0-4.*pi/8.)*sin(pi/6.)**4.*sqrt(2))
+    aa = np.ones((3,1,1,1))
+    bb = np.ones((1,4,1,1))
+    cc = np.ones((1,1,5,1))
+    dd = np.ones((1,1,1,6))
+    yield assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 

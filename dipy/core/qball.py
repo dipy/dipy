@@ -5,14 +5,14 @@ from copy import copy
 
 def real_sph_harm(m, n, theta, phi):
     """
-    Compute real spherical harmonics, where the real harmonic $Y^m_n$ is defined
-    to be:
+    Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
+    defined to be:
         Real($Y^m_n$) * sqrt(2) if m > 0
         $Y^m_n$                 if m == 0
         Imag($Y^m_n$) * sqrt(2) if m < 0
     
-    This is a ufunc and may take scalar or array arguments like any other ufunc.
-    The inputs will be broadcasted against each other.
+    This may take scalar or array arguments. The inputs will be broadcasted
+    against each other.
     
     :Parameters:
       - `m` : int |m| <= n
@@ -32,6 +32,7 @@ def real_sph_harm(m, n, theta, phi):
         scipy.special.sph_harm
     """
     m = np.atleast_1d(m)
+    # find where m is =,< or > 0 and broadcasts to the size of the output
     m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
     m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
     m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
@@ -44,21 +45,42 @@ def real_sph_harm(m, n, theta, phi):
     return real_sh
 
 def sph_harm_ind_list(sh_order):
-    
-    ncoef = (sh_order + 2)*(sh_order + 1)/2
+    """
+    Returns the degree (n) and order (m) of all the symmetric spherical
+    harmonics of degree less then or equal it sh_order. The results, m_list
+    and n_list are kx1 arrays, where k depends on sh_order. They can be
+    passed to real_sph_harm.
 
+    Parameters
+    ----------
+    sh_order : int
+        even int > 0, max degree to return
+
+    Returns
+    -------
+    m_list : array
+        orders of even spherical harmonics
+    n_list : array
+        degrees of even spherical hormonics
+
+    See also
+    --------
+    real_sph_harm
+    """
     if sh_order % 2 != 0:
         raise ValueError('sh_order must be an even integer >= 0')
     
     n_range = np.arange(0, np.int(sh_order+1), 2)
     n_list = np.repeat(n_range, n_range*2+1)
 
+    ncoef = (sh_order + 2)*(sh_order + 1)/2
     offset = 0
-    m_list = np.zeros(ncoef, 'int')
+    m_list = np.empty(ncoef, 'int')
     for ii in n_range:
         m_list[offset:offset+2*ii+1] = np.arange(-ii, ii+1)
         offset = offset + 2*ii + 1
 
+    # makes the arrays ncoef by 1, allows for easy broadcasting later in code
     n_list = n_list[..., np.newaxis]
     m_list = m_list[..., np.newaxis]
     return (m_list, n_list)
@@ -78,11 +100,13 @@ class ODF():
             index = (index,)
         if len(index) > self.ndim:
             raise IndexError('invalid index')
-        if Ellipsis in index:
-            index = index + (slice(None),)
+        for ii in index[:]:
+            if ii is Ellipsis:
+                index = index + (slice(None),)
+                break
         new_odf = copy(self)
         new_odf._coef = self._coef[index]
-        if not new_odf._resid is None:
+        if new_odf._resid is not None:
             new_odf._resid = self._resid[index]
         return new_odf
     
@@ -98,10 +122,10 @@ class ODF():
 
         m_list, n_list = sph_harm_ind_list(self.sh_order)
         if m_list.size > self.ngrad:
-            raise ValueError('sh_order seems too high, there are only '+str(self.ngrad)+' diffusion weighted images in data')
+            raise ValueError('sh_order seems too high, there are only '+
+            str(self.ngrad)+' diffusion weighted images in data')
         comp_mat = real_sph_harm(m_list, n_list, theta, phi)
 
-        #self.fit_matrix = np.dot(comp_mat.T, np.linalg.inv(np.dot(comp_mat, comp_mat.T)))
         self.fit_matrix = np.linalg.pinv(comp_mat)
         legendre0, junk = lpn(self.sh_order, 0)
         funk_radon = legendre0[n_list]
@@ -119,16 +143,19 @@ class ODF():
     def evaluate_at(self, theta_e, phi_e):
         
         m_list, n_list = sph_harm_ind_list(self.sh_order)
-        comp_mat = real_sph_harm(m_list, n_list, theta_e.flat[:], phi_e.flat[:])
+        comp_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
+                                 phi_e.flat[:])
         values = np.dot(self._coef, comp_mat)
         values.shape = self.shape + np.broadcast(theta_e,phi_e).shape
         return values
 
     def evaluate_boot(self, theta_e, phi_e, permute=None):
         m_list, n_list = sph_harm_ind_list(self.sh_order)
-        comp_mat = real_sph_harm(m_list, n_list, theta_e.flat[:], phi_e.flat[:])
+        comp_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
+                                 phi_e.flat[:])
         if permute == None:
             permute = np.random.permutation(self.ngrad)
-        values = np.dot(self._coef + np.dot(self._resid[..., permute], self.fit_matrix), comp_mat)
+        values = np.dot(self._coef + np.dot(self._resid[..., permute],
+                        self.fit_matrix), comp_mat)
         return values
-    
+
