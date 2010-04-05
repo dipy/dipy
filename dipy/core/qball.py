@@ -1,7 +1,7 @@
 #from enthought.mayavi import mlab
 import numpy as np
 from scipy.special import sph_harm, lpn
-from copy import copy
+from copy import copy, deepcopy
 
 def real_sph_harm(m, n, theta, phi):
     """
@@ -85,7 +85,56 @@ def sph_harm_ind_list(sh_order):
     m_list = m_list[..., np.newaxis]
     return (m_list, n_list)
 
-class ODF():
+class ModelParams(object):
+    
+    def __init__(self, mask, data):
+        mask = mask.astype('bool')
+        self._imask = np.zeros(mask.shape, 'int32')
+        indexes =  mask[mask].cumsum()
+        self._imask[mask] = indexes
+        self._imask -= 1
+
+        if data.shape[0] == indexes[-1]:
+            self._data = data
+        else:
+            raise ValueError('the number of data elements does not match mask')
+    
+    @property
+    def mask(self):
+        return self._imask >= 0
+
+    @property
+    def dtype(self):
+        return self._data.dtype
+    
+    def _get_shape(self):
+        return self._imask.shape
+
+    def _set_shape(self, value):
+        self._imask.shape = value
+
+    shape = property(_get_shape, _set_shape, "Tuple of array dimensions")
+
+    def copy(self):
+        data = self._data[self._imask[self.mask]]
+        return ModelParams(self.mask, data)
+
+    def __getitem__(self, index):
+        new_mp = copy(self)
+        new_mp._imask = self._imask[index]
+        return new_mp
+    
+    def __setitem__(self, index, values):
+        imask = self._imask[index]
+        self._data[imask[imask >= 0]] = values
+
+    def __array__(self, dtype=None):
+        if dtype == self.dtype:
+            return self._data[self._imask[self.mask]]
+        else:
+            return self._data[self._imask[self.mask]].astype(dtype)
+
+class ODF(object):
 
     def _getshape(self):
         return self._coef.shape[:-1]
