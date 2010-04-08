@@ -120,7 +120,8 @@ class STensorL():
             if mask==None:
 
                 mask=data[:,:,:,0]
-                self.mask=np.where(mask>20,1,0)
+                self.mask=np.where(mask>20,1,0)# !!! crap hardcoded bit needs to
+# be removed :-) enjoy yourself removing this . GO GO TEAM!!!
                 self.mask=self.mask.ravel()
    
             data=data.reshape(data.shape[0]*data.shape[1]*data.shape[2],data.shape[3])
