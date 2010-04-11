@@ -12,4 +12,5 @@ Contents:
    dicom_info
    dicom_orientation
    bmatrix
+   spm_dicom
    dicom_mosaic
