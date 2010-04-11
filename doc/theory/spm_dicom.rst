@@ -54,7 +54,7 @@ tag read for Philips Integra
 The ``read_dicom`` subfunction reads a tag, then has a loop during which
 the tag is processed (by setting values into the return structure).  At
 the end of the loop, it reads the next tag.  The loop breaks when the
-current tag is empty, or is (group=FFFE, element=E000).  
+current tag is empty, or is (group=FFFE, element=E00D).  
 
 After it has broken out of the loop, if the last tag was (FFFE, E00D),
 and the tag length was not 0, then SPM sets the file pointer back by 4
@@ -82,7 +82,7 @@ There's a check for not-even tag length.  If not even:
 
 #. 4294967295 appears to be OK - and decoded as Inf for tag length. 
 #. 13 appears to mean 10 and is reset to be 10
-#. Any other odd number is not valid
+#. Any other odd number is not valid and gives a tag length of 0
 
 ``spm_dicom_convert.m``
 =======================
