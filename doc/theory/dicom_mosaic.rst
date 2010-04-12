@@ -213,5 +213,15 @@ where:
                        rs_{21} & rs_{22} \\
                        rs_{31} & rs_{32} \end{bmatrix}
 
+Data scaling
+============
+
+It's not quite clear to me whether the standard DICOM 'RescaleSlope' and
+'RescaleIntercept' are applied to the data or not.  A comment above the
+scaling says that the data are no longer scaled by the maximum amount,
+and that this will get around some unspecified problems.
+
+The SPM file array is initialized with the scaling, but the scaling then
+seems to be discarded.  See around line 203 in ``spm_dicom_convert``.  
 
 .. include:: ../links_names.txt
