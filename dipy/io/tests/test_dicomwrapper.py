@@ -27,7 +27,7 @@ import numpy as np
 
 import dicom
 
-from dipy.io.dicomwrappers import DicomWrapper, WrapperError
+from dipy.io.dicomwrappers import Wrapper, WrapperError
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -41,24 +41,20 @@ data_path = pjoin(dirname(__file__), 'data')
 data_file = pjoin(data_path, 'siemens_dwi_1000.dcm.gz')
 data = dicom.read_file(gzip.open(data_file))
 
+
 @parametric
 def test_wrappers():
     # make test object
-    dw = DicomWrapper()
-    yield assert_equal(dw['InstanceNumber'], None)
-    yield assert_equal(dw['AcquisitionNumber'], None)
+    dw = Wrapper()
+    yield assert_equal(dw.get('InstanceNumber'), None)
+    yield assert_equal(dw.get('AcquisitionNumber'), None)
     yield assert_raises(KeyError, dw.__getitem__, 'not an item')
     yield assert_false(dw.is_mosaic)
-    yield assert_raises(AttributeError, dw.get_data)
-    yield assert_raises(Exception, dw.get_affine)
-    dw = DicomWrapper(data)
-    yield assert_equal(dw['InstanceNumber'], 2)
-    yield assert_equal(dw['AcquisitionNumber'], 2)
-    yield assert_raises(KeyError, dw.__getitem__, 'not an item')
-    yield assert_true(dw.is_mosaic)
-    dw = DicomWrapper.from_file(gzip.open(data_file))
-    yield assert_equal(dw['InstanceNumber'], 2)
-    yield assert_equal(dw['AcquisitionNumber'], 2)
+    yield assert_raises(KeyError, dw.get_data)
+    yield assert_raises(WrapperError, getattr, dw, 'affine')
+    dw = Wrapper(data)
+    yield assert_equal(dw.get('InstanceNumber'), 2)
+    yield assert_equal(dw.get('AcquisitionNumber'), 2)
     yield assert_raises(KeyError, dw.__getitem__, 'not an item')
     yield assert_true(dw.is_mosaic)
     
