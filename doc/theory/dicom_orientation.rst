@@ -222,7 +222,7 @@ unit change in the z voxel coordinate.  So, the 'ImagePositionPatient'
 of any slice, can be thought of as the addition of the position of the
 first voxel in some slice (here $IPP^0$) to $N_z$ times the third colum
 of $A$; obviously $N_z$ can be negative or positive. This leads to
-various ways of recovering something that is proportional to $N_z$ with
+various ways of recovering something that is proportional to $N_z$ plus
 a constant.  SPM takes the dot product of $IPP_j$ with the unit vector
 component of third column of $A_j$ - in the descriptions here, this is
 the vector $CP$.  This gives:
