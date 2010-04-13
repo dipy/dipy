@@ -95,7 +95,7 @@ File categorization
 -------------------
 
 SPM makes a special case of Siemens 'spectroscopy images'.  These are
-images that have 'SOPCLassUID' == '1.3.12.2.1107.5.9.1' and the private
+images that have 'SOPClassUID' == '1.3.12.2.1107.5.9.1' and the private
 tag of (29, 1210); for these it pulls out the affine, and writes a
 volume of ones corresponding to the acquisition planes. 
 
@@ -291,7 +291,7 @@ get the (0, 0, 0)-based transform we want, we need to pre-apply the
 
    A = R L^{-1} \left(\begin{smallmatrix}1 & 0 & 0 & 1\\0 & 1 & 0 & 1\\0 & 0 & 1 & 1\\0 & 0 & 0 & 1\end{smallmatrix}\right)
 
-This formula with the defintions above result in the single and multi
+This formula with the definitions above result in the single and multi
 slice formulae in :ref:`dicom-affine-formulae`.
 
 See :download:`derivations/spm_dicom_orient.py` for the derivations and
