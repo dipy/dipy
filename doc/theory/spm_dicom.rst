@@ -42,10 +42,10 @@ When opening the DICOM file, SPM (subfunction ``readdicomfile``)
    #. If the (``group``, ``element``) pair exist in
       ``spm_dicom_dict.mat``, then set file pointer to 0 and continue
       read with ``read_dicom`` subfunction..
-   #. If ``group`` == 8 and ``element`` == 0, this is apparently a 'GE
-      Twin+excite' for which JA notes there is no documentation; set
-      file pointer ot 0 and continue read with ``read_dicom``
-      subfunction.
+   #. If ``group`` == 8 and ``element`` == 0, this is apparently the
+      signature for a 'GE Twin+excite' for which JA notes there is no
+      documentation; set file pointer to 0 and continue read with
+      ``read_dicom`` subfunction.
    #. Otherwise - crash out with error saying that this is not DICOM file.
 
 tag read for Philips Integra
@@ -201,11 +201,11 @@ slices with identical z coordinates.  We'll call the list of headers
 that the routine is still working on - ``work_list``.
 
 #. If there is no 'InstanceNumber' field for the first header in
- ``work_list``, bail out.
+   ``work_list``, bail out.
 #. Print a message about the 'AcquisitionNumber' not changing from
    volume to volume.  This may be a relic from previous code, because
    this version of SPM does not use the 'AcquisitionNumber' field except
-   for making filnemames.
+   for making filenames.
 #. Calculate the z coordinate as for :ref:`second pass`, for each DICOM header.
 #. Sort the headers by 'InstanceNumber' 
 #. If any headers have the same 'InstanceNumber', then discard all but
@@ -240,19 +240,102 @@ Writing DICOM volumes
 ---------------------
 
 This means - writing DICOM volumes from standard (slice by slice) DICOM
-datasets rather than :ref:``dicom-mosaic``.
+datasets rather than :ref:`dicom-mosaic`.
 
 Making the affine
 ~~~~~~~~~~~~~~~~~
 
-This is a little more complicated than I thought. 
+We need the (4,4) affine $A$ going from voxel (array) coordinates in the
+DICOM pixel data, to mm coordinates in the :ref:`dicom-pcs`.
 
-We need the (4,4) affine ``aff`` going from image coordinates to mm
-coordinates in the DICOM patient coordinate system.
+This section tries to explain how SPM achieves this, but I don't
+completely understand their method.  In another section below this one,
+I've added what I believe to be a simpler explanation.
 
-SPM achieves this in a somewhat complicated way.
+Let ``DOP`` be the DICOM orientation patient field, reorganized to the
+(3,2) matrix it represents (see :ref:`dicom-orientation`).  Let $IPP^0$
+be the 3 element vector of the 'ImagePositionPatient' field of the first
+header in the list of headers for this volume.  Let $IPP^N$ be the
+'ImagePositionPatient' vector for the last header in the list for this
+volume, if there is more than one header in the volume.  Let ``XS`` and
+``YS`` be the two values in the 'PixelSpacing' field.  Let ``ZS`` be the
+value for the 'SliceThickness' field, if present, otherwise ``ZS == 1``.
+Let vector ``CP = [cp1, cp2, cp3]`` be the result of taking the cross
+product of the two columns of ``DOP``.  Then define the following
+matrices:
 
+.. math::
 
+   R = \left(\begin{smallmatrix}1 & A & 1 & 0\\1 & B & 0 & 1\\1 & C & 0 & 0\\1 & D & 0 & 0\end{smallmatrix}\right)
+   
+   L = \left(\begin{smallmatrix}IPP^{0}_{{1}} & E & DOP_{{11}} XS & DOP_{{12}} YS\\IPP^{0}_{{2}} & F & DOP_{{21}} XS & DOP_{{22}} YS\\IPP^{0}_{{3}} & G & DOP_{{31}} XS & DOP_{{32}} YS\\1 & H & 0 & 0\end{smallmatrix}\right)
+
+For a volume with more than one slice (header), then $A, B, C, D$ are
+respectively $1, 1, NZ, 1$ and $E, F, G$ are the values from $IPP^N$,
+and $H == 1$.
+
+For a volume with only one slice (header) $A, B, C, D$ are $0, 0, 1,
+0$, $E, F, G, H$ are $CP_1 ZS, CP_2 ZS, CP_3 ZS, 0$.
+
+The full transform appears to be $A_{spm} = R L^{-1}$.
+
+Now, SPM, don't forget, is working in terms of Matlab array indexing,
+which starts at (1,1,1) for a three dimensional array, whereas DICOM
+expects a (0,0,0) start (see :ref:`dicom-orientation`).  In this
+particular part of the SPM DICOM code, somewhat confusingly, the (0,0,0)
+to (1,1,1) indexing is dealt with in the $A$ transform, rather than the
+``analyze_to_dicom`` transformation used by SPM in other places. So, the
+transform $A_{spm}$ goes from (1,1,1) based voxel indices to mm.  To
+get the (0, 0, 0)-based transform we want, we need to pre-apply the
+(1,1,1) voxel transform to 0-based voxel indices:
+
+.. math::
+
+   A = R L^{-1} \left(\begin{smallmatrix}1 & 0 & 0 & 1\\0 & 1 & 0 & 1\\0 & 0 & 1 & 1\\0 & 0 & 0 & 1\end{smallmatrix}\right)
+
+This gives:
+
+.. math::
+
+   A_{multi} = \left(\begin{smallmatrix}DOP_{{11}} XS & DOP_{{12}} YS & \frac{IPP^{0}_{{1}} - IPP^{N}_{{1}}}{1 - NZ} & IPP^{0}_{{1}}\\DOP_{{21}} XS & DOP_{{22}} YS & \frac{IPP^{0}_{{2}} - IPP^{N}_{{2}}}{1 - NZ} & IPP^{0}_{{2}}\\DOP_{{31}} XS & DOP_{{32}} YS & \frac{IPP^{0}_{{3}} - IPP^{N}_{{3}}}{1 - NZ} & IPP^{0}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
+   
+   A_{single} = \left(\begin{smallmatrix}DOP_{{11}} XS & DOP_{{12}} YS & CP_{{1}} ZS & IPP^{0}_{{1}}\\DOP_{{21}} XS & DOP_{{22}} YS & CP_{{2}} ZS & IPP^{0}_{{2}}\\DOP_{{31}} XS & DOP_{{32}} YS & CP_{{3}} ZS & IPP^{0}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
+
+Another way of thinking about how to get the affine
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In fact, these transforms are rather obvious from the DICOM definition.
+
+The first, second and fourth columns in $A$ are given directly by the
+formula in :ref:`dicom-orientation` - from the
+'ImageOrientationPatient', 'PixelSpacing' and 'ImagePositionPatient'
+field of the first (or only) slice.
+
+Our job then is to fill the first three rows of the third column of $A$.
+Let's call this the vector $AZ$ with values  $AZ_1, AZ_2, AZ_3$.
+
+For the single slice case we just fill $AZ$ with $CP \cdot ZS$ - on the
+basis that the Z dimension should be right-handed orthogonal to the X
+and Y directions.
+
+For the multi-slice case, we can fill in $AZ$ by using the information
+from $IPP^N$, because $IPP^N$ is the translation needed to take the
+first voxel in the last ($z=NZ-1$) slice to mm space.  So:
+
+.. math:: 
+
+   \left(\begin{smallmatrix}IPP^N\\1\end{smallmatrix}\right) = A \left(\begin{smallmatrix}0\\0\\-1 + NZ\\1\end{smallmatrix}\right)
+
+From this it follows that:
+
+.. math::
+
+   \begin{Bmatrix}AZ_{{1}} : \frac{IPP^{0}_{{1}} - IPP^{N}_{{1}}}{1 - NZ}, & AZ_{{2}} : \frac{IPP^{0}_{{2}} - IPP^{N}_{{2}}}{1 - NZ}, & AZ_{{3}} : \frac{IPP^{0}_{{3}} - IPP^{N}_{{3}}}{1 - NZ}\end{Bmatrix}
+
+This is what SPM gets for $AZ$ - see $A_{multi}$ above. 
+
+See the file ``spm_dicom_orient.py`` in ``doc/theory/derivations`` for
+the derivations and some explanations.
 
 Writing the image
 ~~~~~~~~~~~~~~~~~

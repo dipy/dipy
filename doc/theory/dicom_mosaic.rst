@@ -216,12 +216,18 @@ where:
 Data scaling
 ============
 
-It's not quite clear to me whether the standard DICOM 'RescaleSlope' and
-'RescaleIntercept' are applied to the data or not.  A comment above the
-scaling says that the data are no longer scaled by the maximum amount,
-and that this will get around some unspecified problems.
+SPM gets the DICOM scaling, offset for the image ('RescaleSlope',
+'RescaleIntercept').  It writes these scalings into the nifti_ header.
+Then it writes the raw image data (unscaled) to disk.  Obviously these
+will have the corrent scalings applied when the nifti image is read again.
 
-The SPM file array is initialized with the scaling, but the scaling then
-seems to be discarded.  See around line 203 in ``spm_dicom_convert``.  
+A comment in the code here says that the data are not scaled by the
+maximum amount.  I assume by this they mean that the DICOM scaling may
+not be the maximum scaling, whereas the standard SPM image write is,
+hence the difference, because they are using the DICOM scaling rather
+then their own.  The comment continues by saying that the scaling as
+applied (the DICOM - not maximum - scaling) can lead to rounding errors
+but that it will get around some unspecified problems.
+
 
 .. include:: ../links_names.txt
