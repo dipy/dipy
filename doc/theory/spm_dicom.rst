@@ -125,6 +125,8 @@ rest are standard DICOM.
 For converting mosaic format, see :ref:`dicom-mosaic`.  The rest of this
 page refers to standard (slice by slice) DICOMs.
 
+.. _spm-volume-sorting:
+
 Sorting files into volumes
 --------------------------
 
@@ -161,6 +163,8 @@ Then, for each currently identified volume:
 #. If the current header matches the current volume, insert it there,
    otherwise make a new volume for this header
 
+.. _spm-second-pass:
+
 Second pass
 ~~~~~~~~~~~
 
@@ -174,6 +178,7 @@ For each volume:
    'ImageOrientationPatient' - call this ``z_dir_cos``
 #. For each header in this volume, get the z coordinate by taking the
    dot product of the 'ImagePositionPatient' vector and ``z_dir_cos``
+   (see :ref:`dicom-z-from-slice`).
 #. Sort the headers according to this estimated z coordinate. 
 #. If this volume is more than one slice, and there are any slices with
    the same z coordinate (as defined above), run the
@@ -195,7 +200,7 @@ Possible volume resort
 ~~~~~~~~~~~~~~~~~~~~~~
 
 This step happens if there were volumes with slices having the same z
-coordinate in the :ref:`second pass` step above.  The resort is on the
+coordinate in the :ref:`spm-second-pass` step above.  The resort is on the
 set of DICOM headers that were in the volume, for which there were
 slices with identical z coordinates.  We'll call the list of headers
 that the routine is still working on - ``work_list``.
@@ -206,7 +211,8 @@ that the routine is still working on - ``work_list``.
    volume to volume.  This may be a relic from previous code, because
    this version of SPM does not use the 'AcquisitionNumber' field except
    for making filenames.
-#. Calculate the z coordinate as for :ref:`second pass`, for each DICOM header.
+#. Calculate the z coordinate as for :ref:`spm-second-pass`, for each
+   DICOM header.
 #. Sort the headers by 'InstanceNumber' 
 #. If any headers have the same 'InstanceNumber', then discard all but
    the first header with the same number.  At this point the remaining
@@ -249,20 +255,12 @@ We need the (4,4) affine $A$ going from voxel (array) coordinates in the
 DICOM pixel data, to mm coordinates in the :ref:`dicom-pcs`.
 
 This section tries to explain how SPM achieves this, but I don't
-completely understand their method.  In another section below this one,
-I've added what I believe to be a simpler explanation.
+completely understand their method.  See :ref:`dicoms-and-affines` for
+what I believe to be a simpler explanation.
 
-Let ``DOP`` be the DICOM orientation patient field, reorganized to the
-(3,2) matrix it represents (see :ref:`dicom-orientation`).  Let $IPP^0$
-be the 3 element vector of the 'ImagePositionPatient' field of the first
-header in the list of headers for this volume.  Let $IPP^N$ be the
-'ImagePositionPatient' vector for the last header in the list for this
-volume, if there is more than one header in the volume.  Let ``XS`` and
-``YS`` be the two values in the 'PixelSpacing' field.  Let ``ZS`` be the
-value for the 'SliceThickness' field, if present, otherwise ``ZS == 1``.
-Let vector ``CP = [cp1, cp2, cp3]`` be the result of taking the cross
-product of the two columns of ``DOP``.  Then define the following
-matrices:
+First define the matrices and vectors as in :ref:`dicom-affine-defs`. 
+
+Then define the following matrices:
 
 .. math::
 
@@ -293,52 +291,14 @@ get the (0, 0, 0)-based transform we want, we need to pre-apply the
 
    A = R L^{-1} \left(\begin{smallmatrix}1 & 0 & 0 & 1\\0 & 1 & 0 & 1\\0 & 0 & 1 & 1\\0 & 0 & 0 & 1\end{smallmatrix}\right)
 
-This gives:
+This formula with the defintions above result in the single and multi
+slice formulae in :ref:`dicom-affine-formulae`.
 
-.. math::
+See :download:`derivations/spm_dicom_orient.py` for the derivations and
+some explanations.
 
-   A_{multi} = \left(\begin{smallmatrix}DOP_{{11}} XS & DOP_{{12}} YS & \frac{IPP^{0}_{{1}} - IPP^{N}_{{1}}}{1 - NZ} & IPP^{0}_{{1}}\\DOP_{{21}} XS & DOP_{{22}} YS & \frac{IPP^{0}_{{2}} - IPP^{N}_{{2}}}{1 - NZ} & IPP^{0}_{{2}}\\DOP_{{31}} XS & DOP_{{32}} YS & \frac{IPP^{0}_{{3}} - IPP^{N}_{{3}}}{1 - NZ} & IPP^{0}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
-   
-   A_{single} = \left(\begin{smallmatrix}DOP_{{11}} XS & DOP_{{12}} YS & CP_{{1}} ZS & IPP^{0}_{{1}}\\DOP_{{21}} XS & DOP_{{22}} YS & CP_{{2}} ZS & IPP^{0}_{{2}}\\DOP_{{31}} XS & DOP_{{32}} YS & CP_{{3}} ZS & IPP^{0}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
-
-Another way of thinking about how to get the affine
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-In fact, these transforms are rather obvious from the DICOM definition.
-
-The first, second and fourth columns in $A$ are given directly by the
-formula in :ref:`dicom-orientation` - from the
-'ImageOrientationPatient', 'PixelSpacing' and 'ImagePositionPatient'
-field of the first (or only) slice.
-
-Our job then is to fill the first three rows of the third column of $A$.
-Let's call this the vector $AZ$ with values  $AZ_1, AZ_2, AZ_3$.
-
-For the single slice case we just fill $AZ$ with $CP \cdot ZS$ - on the
-basis that the Z dimension should be right-handed orthogonal to the X
-and Y directions.
-
-For the multi-slice case, we can fill in $AZ$ by using the information
-from $IPP^N$, because $IPP^N$ is the translation needed to take the
-first voxel in the last ($z=NZ-1$) slice to mm space.  So:
-
-.. math:: 
-
-   \left(\begin{smallmatrix}IPP^N\\1\end{smallmatrix}\right) = A \left(\begin{smallmatrix}0\\0\\-1 + NZ\\1\end{smallmatrix}\right)
-
-From this it follows that:
-
-.. math::
-
-   \begin{Bmatrix}AZ_{{1}} : \frac{IPP^{0}_{{1}} - IPP^{N}_{{1}}}{1 - NZ}, & AZ_{{2}} : \frac{IPP^{0}_{{2}} - IPP^{N}_{{2}}}{1 - NZ}, & AZ_{{3}} : \frac{IPP^{0}_{{3}} - IPP^{N}_{{3}}}{1 - NZ}\end{Bmatrix}
-
-This is what SPM gets for $AZ$ - see $A_{multi}$ above. 
-
-See the file ``spm_dicom_orient.py`` in ``doc/theory/derivations`` for
-the derivations and some explanations.
-
-Writing the image
-~~~~~~~~~~~~~~~~~
+Writing the voxel data
+~~~~~~~~~~~~~~~~~~~~~~
 
 Just apply scaling and offset from 'RescaleSlope' and 'RescaleIntercept'
 for each slice and write volume.

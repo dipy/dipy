@@ -31,6 +31,8 @@ slice_thickness = Symbol('ZS')
 R3 = orient_pat * np.diag(pixel_spacing)
 R = zeros((4,2))
 R[:3,:] = R3
+
+# The following is specific to the SPM algorithm. 
 x1 = ones((4,1))
 y1 = ones((4,1))
 y1[:3,:] = pos_pat_0
@@ -67,7 +69,10 @@ y2_ms = ones((4,1))
 y2_ms[:3,:] = pos_pat_N
 A_ms = full_matrix(x2_ms, y2_ms)
 
-# Here's what I was expecting
+# End of SPM algorithm
+
+# Here's what I was expecting from first principles of the DICOM
+# transform
 
 # single slice case
 single_aff = eye(4)
@@ -101,11 +106,29 @@ A_ss_0based.simplify()
 assert single_aff == A_ss_0based
 assert multi_aff_solved == A_ms_0based
 
-print 'My single slice case'
+print 'Single slice case'
 print single_aff
 
-print 'My multi slice case'
+print 'Multi slice case'
 print multi_aff_solved
+
+# Now, trying to work out Z from slice affines
+A_i = single_aff
+nz_trans = eye(4)
+NZT = Symbol('N_z')
+nz_trans[2,3] = NZT
+A_j = A_i * nz_trans
+IPP_i = A_i[:3,3]
+IPP_j = A_j[:3,3]
+
+spm_z = IPP_j.T * orient_cross
+spm_z.simplify()
+
+div_sum = 0
+for i in range(3):
+    div_sum += IPP_j[i] / orient_cross[i]
+div_sum = sympy.simplify(div_sum / 3)
+
 
 def my_latex(expr):
     S = sympy.latex(expr)
@@ -125,4 +148,11 @@ print
 print r'   \left(\begin{smallmatrix}IPP^N\\1\end{smallmatrix}\right) = A ' + my_latex(trans_z_N)
 print
 print '   ' + my_latex(solved)
-
+print
+print '   A_j = A_{single} ' + my_latex(nz_trans)
+print
+print '   IPP_j = ' + my_latex(IPP_j)
+print
+print '   IPP_j^T CP = ' + my_latex(spm_z)
+print
+print '   ' + my_latex(div_sum)
