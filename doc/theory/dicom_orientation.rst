@@ -190,8 +190,8 @@ to sort a set of slices into anatomical order.  For this we want to use
 the orientation information to tell us where the slices are in space,
 and therefore, what order they should have.
 
-To do this sorting, we need something that is proportional, at least, to
-the $z$ voxel coordinate for the slice. 
+To do this sorting, we need something that is proportional, plus a
+constant, to the $z$ voxel coordinate for the slice.
 
 Consider the case where we have a set of slices, of unknown order, from
 the same volume.
@@ -223,9 +223,9 @@ of any slice, can be thought of as the addition of the position of the
 first voxel in some slice (here $IPP^0$) to $N_z$ times the third colum
 of $A$; obviously $N_z$ can be negative or positive. This leads to
 various ways of recovering something that is proportional to $N_z$ with
-a constant.  SPM takes the dot product of $IPP_j$ with the unit
-vectorcomponent of third column of $A_j$ - in the descriptions here,
-this is the vector $CP$.  This gives:
+a constant.  SPM takes the dot product of $IPP_j$ with the unit vector
+component of third column of $A_j$ - in the descriptions here, this is
+the vector $CP$.  This gives:
 
 .. math::
 
