@@ -2,7 +2,8 @@
 from os.path import dirname, abspath, join as pjoin
 
 # set path to example data
-data_path = abspath(pjoin(dirname(__file__), '..', 'tests', 'data'))
+IO_DATA_PATH = abspath(pjoin(dirname(__file__),
+                             '..', 'io', 'tests', 'data'))
 
 from .spherepoints import sphere_points
 

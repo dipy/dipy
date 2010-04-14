@@ -7,22 +7,30 @@ import struct
 
 import numpy as np
 
-import dipy.io.csareader as csa
-import dipy.io.dwiparams as dwp
+from .. import csareader as csa
+from .. import dwiparams as dwp
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.testing import parametric
+from ...testing import parametric, IO_DATA_PATH
+
+from .test_dicomwrappers import DATA
+
+CSA2_B0 = open(pjoin(IO_DATA_PATH, 'csa2_b0.bin')).read()
+CSA2_B1000 = open(pjoin(IO_DATA_PATH, 'csa2_b1000.bin')).read()
 
 
-data_path = pjoin(os.path.dirname(__file__), 'data')
-
-CSA2_B0 = open(pjoin(data_path, 'csa2_b0.bin')).read()
-CSA2_B1000 = open(pjoin(data_path, 'csa2_b1000.bin')).read()
-
+@parametric
+def test_csa_header_read():
+    hdr = csa.get_csa_header(DATA, 'image')
+    yield assert_equal(hdr['n_tags'],83)
+    yield assert_equal(csa.get_csa_header(DATA,'series')['n_tags'],65)
+    yield assert_raises(ValueError, csa.get_csa_header, DATA,'xxxx')
+    yield assert_true(csa.is_mosaic(hdr))
+    
 
 @parametric
 def test_csas0():

@@ -280,26 +280,27 @@ class Wrapper(object):
            True if `other` might be in the same volume as `self`, False
            otherwise. 
         '''
-        # compare signature dictionaries.  There are comparison rules
-        # for both our own and the other dictionary, we prefer our own
-        # when we have them.   If a key is not present in either
-        # dictionary, we assume the value is None. 
+        # compare signature dictionaries.  The dictionaries each contain
+        # comparison rules, we prefer our own when we have them.  If a
+        # key is not present in either dictionary, assume the value is
+        # None.
         my_sig = self.vol_match_signature
-        my_keys = set(my_sig)
         your_sig = other.vol_match_signature
+        my_keys = set(my_sig)
         your_keys = set(your_sig)
-        for key in my_keys:
+        # we have values in both signatures
+        for key in my_keys.union(your_keys):
             v1, func = my_sig[key]
-            if key in your_keys:
-                v2, _ = your_sig[key]
-            else:
-                v2 = None
+            v2, _ = your_sig[key]
             if not func(v1, v2):
                 return False
-        for key in your_keys.difference(my_keys):
-            v1, func = your_sig[key]
-            if not func(v1, None):
-                return False
+        # values present in one or the other but not both
+        for keys, sig in ((my_keys - your_keys, my_sig),
+                          (your_keys - my_keys, your_sig)):
+            for key in keys:
+                v1, func = sig[key]
+                if not func(v1, None):
+                    return False
         return True
 
     def _scale_data(self, data):
