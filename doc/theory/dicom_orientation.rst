@@ -219,13 +219,14 @@ and 'ImagePositionPatient' for $j$ is:
 
 Remember that the third column of $A$ gives the vector resulting from a
 unit change in the z voxel coordinate.  So, the 'ImagePositionPatient'
-of any slice, can be thought of as the addition of the position of the
-first voxel in some slice (here $IPP^0$) to $N_z$ times the third colum
-of $A$; obviously $N_z$ can be negative or positive. This leads to
-various ways of recovering something that is proportional to $N_z$ plus
-a constant.  SPM takes the dot product of $IPP_j$ with the unit vector
-component of third column of $A_j$ - in the descriptions here, this is
-the vector $CP$.  This gives:
+of any slice, can be thought of the addition of two vectors $IPP =
+\mathbf{a} + \mathbf{b}$, where $\mathbf{a}$ is the position of the
+first voxel in some slice (here $IPP^0$) and $\mathbf{b}$ is $N_z$ times
+the third colum of $A$.  Obviously $N_z$ can be negative or
+positive. This leads to various ways of recovering something that is
+proportional to $N_z$ plus a constant.  SPM takes the dot product of
+$IPP_j$ with the unit vector component of third column of $A_j$ - in the
+descriptions here, this is the vector $CP$:
 
 .. math::
 
@@ -243,7 +244,7 @@ We could also sum $IPP_j$ and divide by the sum of $CP$:
    \frac{IPP^{0}_{{1}} + IPP^{0}_{{2}} + IPP^{0}_{{3}} + CP_{{1}} N_{z} ZS + CP_{{2}} N_{z} ZS + CP_{{3}} N_{z} ZS}{CP_{{1}} + CP_{{2}} + CP_{{3}}}
 
 This is also equal to the voxel size ($ZS$) multiplied by $N_z$, plus a
-constant.
+constant, but is unstable when the sum of $CP$ is close to zero. 
 
 Again, see :download:`derivations/spm_dicom_orient.py` for the derivations.
 
