@@ -54,7 +54,7 @@ def test_make_wrapper():
         yield assert_raises(KeyError, dw.__getitem__, 'not an item')
         yield assert_true(dw.is_mosaic)
         yield assert_array_almost_equal(
-            np.dot(didr.DPCS_TO_TAL, dw.affine),
+            np.dot(didr.DPCS_TO_TAL, dw.get_affine()),
             expected_affine)
 
 
@@ -62,20 +62,23 @@ def test_make_wrapper():
 def test_wrappers():
     # test direct wrapper calls
     # first with empty data
-    klasses = (didw.Wrapper,
-               didw.SiemensWrapper,
-               didw.MosaicWrapper)
-    for klass in klasses:
-        dw = klass()
+    for maker, kwargs in ((didw.Wrapper,{}),
+                          (didw.SiemensWrapper, {}),
+                          (didw.MosaicWrapper, {'n_mosaic':10})):
+        dw = maker(**kwargs)
         yield assert_equal(dw.get('InstanceNumber'), None)
         yield assert_equal(dw.get('AcquisitionNumber'), None)
         yield assert_raises(KeyError, dw.__getitem__, 'not an item')
         yield assert_raises(didw.WrapperError, dw.get_data)
-        yield assert_raises(didw.WrapperError, getattr, dw, 'affine')
+        yield assert_raises(didw.WrapperError, dw.get_affine)
     for klass in (didw.Wrapper, didw.SiemensWrapper):
         dw = klass()
         yield assert_false(dw.is_mosaic)
-    for maker in klasses + (didw.make_wrapper,):
+    for maker in (didw.make_wrapper,
+                  didw.Wrapper,
+                  didw.SiemensWrapper,
+                  didw.MosaicWrapper
+                  ):
         dw = maker(data)
         yield assert_equal(dw.get('InstanceNumber'), 2)
         yield assert_equal(dw.get('AcquisitionNumber'), 2)

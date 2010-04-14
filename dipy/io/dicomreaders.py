@@ -34,7 +34,7 @@ def mosaic_to_nii(dcm_data):
     if not dcm_w.is_mosaic:
         raise MosaicError('data does not appear to be in mosaic format')
     data = dcm_w.get_data()
-    aff = np.dot(DPCS_TO_TAL, dcm_w.affine)
+    aff = np.dot(DPCS_TO_TAL, dcm_w.get_affine())
     return nib.Nifti1Image(data.T, aff)
 
 
@@ -78,7 +78,7 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
         g = q / b
         b_values.append(b)
         gradients.append(g)
-    affine = np.dot(DPCS_TO_TAL, dcm_w.affine)
+    affine = np.dot(DPCS_TO_TAL, dcm_w.get_affine())
     return (np.concatenate(arrays, -1),
             affine,
             np.array(b_values),

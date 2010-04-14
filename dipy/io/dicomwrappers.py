@@ -5,7 +5,11 @@ formats.
 
 They also allow dictionary-like access to named fiields.
 
-
+For calculated attributes, we return None where needed data is missing.
+It seemed strange to raise an error during attribute processing, other
+than an AttributeError - breaking the 'properties manifesto'.   So, any
+procesing that needs to raise an error, should be in a method, rather
+than in a property, or property-like thing. 
 '''
 
 import numpy as np
@@ -40,9 +44,30 @@ def make_wrapper(dcm_data):
 class Wrapper(object):
     ''' Class to wrap general DICOM files
 
+    Methods:
+
+    * get_affine()
+    * get_data()
+    * get_pixel_array()
+    * __getitem__ : return attributes from `dcm_data` 
+    * get() - as usual given __getitem__ above
+
     Attributes (or rather, things that at least look like attributes):
-    
+
+    * dcm_data : object
+    * image_shape : tuple
+    * image_orient_patient : (3,2) array
+    * slice_normal : (3,) array
+    * rotation_matrix : (3,3) array
+    * voxel_sizes : tuple length 3
+    * image_position : sequence length 3
+    * slice_indicator : float
     '''
+    is_mosaic = False
+    b_matrix = None
+    q_vector = None
+    ice_dims = None
+    
     def __init__(self, dcm_data=None):
         ''' Initialize wrapper
 
@@ -59,12 +84,11 @@ class Wrapper(object):
 
     @one_time
     def image_shape(self):
-        return (self.get('Rows'), self.get('Columns'))
-
-    @one_time
-    def is_mosaic(self):
-        return False
-
+        shape = (self.get('Rows'), self.get('Columns'))
+        if None in shape:
+            return None
+        return shape
+    
     @one_time
     def image_orient_patient(self):
         iop = self.get('ImageOrientationPatient')
@@ -84,8 +108,7 @@ class Wrapper(object):
         iop = self.image_orient_patient
         s_norm = self.slice_normal
         if None in (iop, s_norm):
-            raise WrapperError('Not enough information '
-                               'for rotation matrix')
+            return None
         R = np.eye(3)
         R[:,:2] = iop
         R[:,2] = s_norm
@@ -103,28 +126,49 @@ class Wrapper(object):
         zs =  self.get('SpacingBetweenSlices')
         if zs is None:
             zs = 1
-        return pix_space + [zs]
+        return tuple(pix_space + [zs])
 
     @one_time
-    def pixel_array(self):
-        try:
-            return self['pixel_array']
-        except KeyError:
-            raise WrapperError('Image does not appear to have data')
-    
-    @one_time
     def image_position(self):
+        ''' Return position of first voxel in data block
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        img_pos : (3,) array
+           position in mm of voxel (0,0) in image array
+        '''
         return self.get('ImagePositionPatient')
 
     @one_time
     def slice_indicator(self):
-        ''' See doc/theory/dicom_orientation for description '''
-        if self.image_position is None or self.rotation_matrix is None:
+        ''' A number that is higher for higher slices in Z
+
+        Comparing this number between two adjacent slices should give a
+        difference equal to the voxel size in Z. 
+        
+        See doc/theory/dicom_orientation for description
+        '''
+        ipp = self.image_position
+        s_norm = self.slice_normal
+        if None in (ipp, s_norm):
             return None
-        return np.mean(self.image_position / self.rotation_matrix[:,2])
+        return np.mean(ipp / s_norm)
                 
-    @one_time
-    def affine(self):
+    def __getitem__(self, key):
+        ''' Return values from DICOM object'''
+        try:
+            return getattr(self.dcm_data, key)
+        except AttributeError:
+            raise KeyError('%s not defined in dcm_data' % key)
+
+    def get(self, key, default=None):
+        return getattr(self.dcm_data, key, default)
+
+    def get_affine(self):
         ''' Return mapping between voxel and DICOM coordinate system
         
         Parameters
@@ -147,25 +191,23 @@ class Wrapper(object):
         aff[:3,3] = ipp
         return aff
 
-    @one_time
-    def b_matrix(self):
-        return None
-
-    def q_vector(self):
-        return None
-
-    def __getitem__(self, key):
-        ''' Return values from DICOM object'''
+    def get_pixel_array(self):
+        ''' Return unscaled pixel array from DICOM '''
         try:
-            return getattr(self.dcm_data, key)
-        except AttributeError:
-            raise KeyError('%s not defined in dcm_data' % key)
-
-    def get(self, key, default=None):
-        return getattr(self.dcm_data, key, default)
-
+            return self['pixel_array']
+        except KeyError:
+            raise WrapperError('Cannot find data in DICOM')
+    
     def get_data(self):
-        return self._scale_data(self.pixel_array)
+        ''' Get scaled image data from DICOMs
+
+        Returns
+        -------
+        data : array
+           array with data as scaled from any scaling in the DICOM
+           fields. 
+        '''
+        return self._scale_data(self.get_pixel_array())
 
     def _scale_data(self, data):
         scale = self.get('RescaleSlope', 1)
@@ -184,6 +226,22 @@ class Wrapper(object):
 class SiemensWrapper(Wrapper):
     ''' Wrapper for Siemens format DICOMs '''
     def __init__(self, dcm_data=None, csa_header=None):
+        ''' Initialize Siemens wrapper
+
+        The Siemens-specific information is in the `csa_header`, either
+        passed in here, or read from the input `dcm_data`. 
+
+        Parameters
+        ----------
+        dcm_data : None or object, optional
+           object should allow attribute access.  If `csa_header` is
+           None, it should also be possible to extract a CSA header from
+           `dcm_data`. Usually this will be a ``dicom.dataset.Dataset``
+           object resulting from reading a DICOM file.  If None, we just
+           make an empty dict.
+        csa_header : None or mapping, optional
+           mapping giving values for Siemens CSA image sub-header.  
+        '''
         if dcm_data is None:
             dcm_data = {}
         self.dcm_data = dcm_data
@@ -260,36 +318,65 @@ class SiemensWrapper(Wrapper):
 
 
 class MosaicWrapper(SiemensWrapper):
+    ''' Class for Siemens Mosaic format data '''
+    is_mosaic = True
+    
+    def __init__(self, dcm_data=None, csa_header=None, n_mosaic=None):
+        ''' Initialize Siemens Mosaic wrapper
 
-    @one_time
-    def n_mosaic(self):
-        if self.csa_header is None:
-            raise WrapperError('No CSA information in data '
-                               'is this really Siemans Mosiac?')
-        return csar.get_n_mosaic(self.csa_header)
+        The Siemens-specific information is in the `csa_header`, either
+        passed in here, or read from the input `dcm_data`. 
 
-    @one_time
-    def mosaic_size(self):
-        n_o_m = self.n_mosaic
-        return np.ceil(np.sqrt(n_o_m))
-
+        Parameters
+        ----------
+        dcm_data : None or object, optional
+           object should allow attribute access.  If `csa_header` is
+           None, it should also be possible for to extract a CSA header
+           from `dcm_data`. Usually this will be a
+           ``dicom.dataset.Dataset`` object resulting from reading a
+           DICOM file.  If None, we just make an empty dict.
+        csa_header : None or mapping, optional
+           mapping giving values for Siemens CSA image sub-header.
+        n_mosaic : None or int, optional
+           number of images in mosaic.  If None, we try to get this
+           number fron `csa_header`.  If this fails, we raise an error
+        '''
+        if dcm_data is None:
+            dcm_data = {}
+        self.dcm_data = dcm_data
+        if csa_header is None:
+            csa_header = csar.get_csa_header(dcm_data)
+        self.csa_header = csa_header
+        if n_mosaic is None:
+            try:
+                n_mosaic = csar.get_n_mosaic(csa_header)
+            except KeyError:
+                n_mosaic = None
+            if n_mosaic is None or n_mosaic == 0:
+                raise WrapperError('No valid mosaic number in CSA '
+                                   'header; is this really '
+                                   'Siemans mosiac data?')
+        self.n_mosaic = n_mosaic
+        self.mosaic_size = np.ceil(np.sqrt(n_mosaic))
+        
     @one_time
     def image_shape(self):
         # reshape pixel slice array back from mosaic
         rows = self.get('Rows')
         cols = self.get('Columns')
+        if None in (rows, cols):
+            return None
         mosaic_size = self.mosaic_size
         return (rows / mosaic_size,
                 cols / mosaic_size,
                 self.n_mosaic)
                 
     @one_time
-    def is_mosaic(self):
-        return True
-
-    @one_time
     def image_position(self):
         ''' Return position of first voxel in data block
+
+        Adjusts Siemans mosaic position vector for bug in mosaic format
+        position.  See ``dicom_mosaic`` in doc/theory for details. 
 
         Parameters
         ----------
@@ -300,23 +387,26 @@ class MosaicWrapper(SiemensWrapper):
         img_pos : (3,) array
            position in mm of voxel (0,0,0) in Mosaic array
         '''
-        image_position = self.get('ImagePositionPatient')
-        if image_position is None:
+        ipp = self.get('ImagePositionPatient')
+        o_rows, o_cols = (self.get('Rows'), self.get('Columns'))
+        iop = self.image_orient_patient
+        vox = self.voxel_sizes
+        if None in (ipp, o_rows, o_cols, iop, vox):
             return None
         # size of mosaic array before rearranging to 3D
-        md_xy = np.array([self.get('Rows'), self.get('Columns')])
+        md_xy = np.array([o_rows, o_cols])
         # size of slice X, Y in array after reshaping to 3D
         rd_xy = md_xy / self.mosaic_size
         # apply algorithm for undoing mosaic translation error - see
-        # ``dicom_mosaic`` doc for details
+        # ``dicom_mosaic`` doc
         vox_trans_fixes = (md_xy - rd_xy) / 2
-        M = self.rotation_matrix[:,:2] * self.voxel_sizes[:2]
-        return image_position + np.dot(M, vox_trans_fixes[:,None]).ravel()
+        M = iop * vox[:2]
+        return ipp + np.dot(M, vox_trans_fixes[:,None]).ravel()
     
     def get_data(self):
         ''' Get scaled image data from DICOMs
 
-        Resorts 
+        Resorts data block from mosaic to 3D
 
         Returns
         -------
@@ -324,9 +414,12 @@ class MosaicWrapper(SiemensWrapper):
            array with data as scaled from any scaling in the DICOM
            fields. 
         '''
-        n_rows, n_cols, n_mosaic = self.image_shape
+        shape = self.image_shape
+        if shape is None:
+            raise WrapperError('No valid information for image shape')
+        n_rows, n_cols, n_mosaic = shape
         mosaic_size = self.mosaic_size
-        data = self.pixel_array
+        data = self.get_pixel_array()
         v4=data.reshape(mosaic_size,n_rows,
                         mosaic_size,n_cols)
         v4p=np.rollaxis(v4,2,1)
