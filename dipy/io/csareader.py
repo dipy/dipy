@@ -155,14 +155,20 @@ def read(csa_str):
 
 
 def get_scalar(csa_dict, tag_name):
-    items = csa_dict['tags'][tag_name]['items']
+    try:
+        items = csa_dict['tags'][tag_name]['items']
+    except KeyError:
+        return None
     if len(items) == 0:
         return None
     return items[0]
 
 
 def get_vector(csa_dict, tag_name, n):
-    items = csa_dict['tags'][tag_name]['items']
+    try:
+        items = csa_dict['tags'][tag_name]['items']
+    except KeyError:
+        return None
     if len(items) == 0:
         return None
     if len(items) != n:
@@ -220,6 +226,13 @@ def get_b_value(csa_dict):
 
 def get_g_vector(csa_dict):
     return get_vector(csa_dict, 'DiffusionGradientDirection', 3)
+
+
+def get_ice_dims(csa_dict):
+    dims = get_scalar(csa_dict, 'ICE_Dims')
+    if dims is None:
+        return None
+    return dims.split('_')
 
 
 def nt_str(s):

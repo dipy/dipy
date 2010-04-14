@@ -72,3 +72,17 @@ def test_csa_params():
     yield assert_equal(g_vector.shape, (3,))
     yield assert_true(
         np.allclose(1, np.sqrt((g_vector * g_vector).sum())))
+
+
+@parametric
+def test_ice_dims():
+    ex_dims0 = ['X', '1', '1', '1', '1', '1', '1',
+                '48', '1', '1', '1', '1', '201']
+    ex_dims1 = ['X', '1', '1', '1', '2', '1', '1',
+               '48', '1', '1', '1', '1', '201']
+    for csa_str, ex_dims in ((CSA2_B0, ex_dims0),
+                             (CSA2_B1000, ex_dims1)):
+        csa_info = csa.read(csa_str)
+        yield assert_equal(csa.get_ice_dims(csa_info),
+                           ex_dims)
+    yield assert_equal(csa.get_ice_dims({}), None)

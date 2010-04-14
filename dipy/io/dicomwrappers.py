@@ -156,7 +156,7 @@ class Wrapper(object):
         s_norm = self.slice_normal
         if None in (ipp, s_norm):
             return None
-        return np.mean(ipp / s_norm)
+        return np.inner(ipp, s_norm)
                 
     def __getitem__(self, key):
         ''' Return values from DICOM object'''
@@ -209,6 +209,51 @@ class Wrapper(object):
         '''
         return self._scale_data(self.get_pixel_array())
 
+    def maybe_same_volume_as(self, other):
+        ''' First pass at clustering into volumes check
+
+        Parameters
+        ----------
+        other : object
+           wrapper object
+
+        Returns
+        -------
+        tf : bool
+           True if `other` might be in the same volume as `self`, False
+           otherwise. 
+        '''
+        def _get_matchers(hdr):
+            return (
+                hdr.get('SeriesNumber'),
+                hdr.image_shape,
+                hdr.get('ImageType'),
+                hdr.get('SequenceName'),
+                hdr.get('SeriesInstanceID'),
+                hdr.get('EchoNumbers'))
+        if not _get_matchers(self) == _get_matchers(other):
+            return False
+        iop1, iop2 = self.image_orient_patient, other.image_orient_patient
+        if not none_matcher(iop1, iop1,
+                            lambda x, y: np.allclose(iop1, iop2)):
+            return False
+        ice1, ice2 = self.ice_dims, other.ice_dims
+        def _ice_matcher(ice1, ice2):
+            inds = np.array([1,1,1,1,1,1,0,0,1])
+            ice1 = np.array(ice1)
+            ice2 = np.array(ice2)
+            return np.all(ice1[inds] == ice2[inds])
+        if not none_matcher(ice1, ice2, _ice_matcher):
+            return False
+        # instance numbers should _not_ match
+        in1, in2 = self.get('InstanceNumber'), other.get('InstanceNumber')
+        if none_matcher(in1, in2):
+            return False
+        # nor should z slice indicators
+        if self.slice_indicator == other.slice_indicator:
+            return False
+        return True
+
     def _scale_data(self, data):
         scale = self.get('RescaleSlope', 1)
         offset = self.get('RescaleIntercept', 0)
@@ -247,14 +292,15 @@ class SiemensWrapper(Wrapper):
         self.dcm_data = dcm_data
         if csa_header is None:
             csa_header = csar.get_csa_header(dcm_data)
+            if csa_header is None:
+                csa_header = {}
         self.csa_header = csa_header
 
     @one_time
     def slice_normal(self):
-        if not self.csa_header is None:
-            slice_normal = csar.get_slice_normal(self.csa_header)
-            if not slice_normal is None:
-                return slice_normal
+        slice_normal = csar.get_slice_normal(self.csa_header)
+        if not slice_normal is None:
+            return slice_normal
         iop = self.image_orient_patient
         if iop is None:
             return None
@@ -262,7 +308,7 @@ class SiemensWrapper(Wrapper):
 
     @one_time
     def b_matrix(self):
-        ''' Get DWI B matrix from Siemens DICOM referring to voxel space
+        ''' Get DWI B matrix referring to voxel space
 
         Parameters
         ----------
@@ -316,6 +362,11 @@ class SiemensWrapper(Wrapper):
             return None
         return B2q(B)
 
+    @one_time
+    def ice_dims(self):
+        ''' ICE dims from CSA header '''
+        return csar.get_ice_dims(self.csa_header)
+
 
 class MosaicWrapper(SiemensWrapper):
     ''' Class for Siemens Mosaic format data '''
@@ -341,15 +392,10 @@ class MosaicWrapper(SiemensWrapper):
            number of images in mosaic.  If None, we try to get this
            number fron `csa_header`.  If this fails, we raise an error
         '''
-        if dcm_data is None:
-            dcm_data = {}
-        self.dcm_data = dcm_data
-        if csa_header is None:
-            csa_header = csar.get_csa_header(dcm_data)
-        self.csa_header = csa_header
+        SiemensWrapper.__init__(self, dcm_data, csa_header)
         if n_mosaic is None:
             try:
-                n_mosaic = csar.get_n_mosaic(csa_header)
+                n_mosaic = csar.get_n_mosaic(self.csa_header)
             except KeyError:
                 n_mosaic = None
             if n_mosaic is None or n_mosaic == 0:
@@ -427,3 +473,11 @@ class MosaicWrapper(SiemensWrapper):
         # delete any padding slices
         v3 = v3[:n_mosaic]
         return self._scale_data(v3)
+
+
+def none_matcher(val1, val2, match_func=lambda x, y: x == y):
+    if (val1, val2) == (None, None):
+        return True
+    if None in (val1, val2):
+        return False
+    return match_func(val1, val2)
