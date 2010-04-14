@@ -7,6 +7,7 @@ import numpy as np
 from .. import dicomreaders as didr
 
 from .test_dicomwrappers import (EXPECTED_AFFINE,
+                                 EXPECTED_PARAMS,
                                  DATA)
 
 from nose.tools import assert_true, assert_false, \
@@ -29,7 +30,10 @@ def test_read_dwi():
 def test_read_dwis():
     data, aff, bs, gs = didr.read_mosaic_dwi_dir(IO_DATA_PATH, '*.dcm.gz')
     yield assert_equal(data.ndim, 4)
-    yield assert_equal(aff.shape, (4,4))
-    yield assert_equal(bs.shape, (2,))
-    yield assert_equal(gs.shape, (2,3))
+    yield assert_array_almost_equal(aff, EXPECTED_AFFINE)
+    yield assert_array_almost_equal(bs, (0, EXPECTED_PARAMS[0]))
+    yield assert_array_almost_equal(gs,
+                                    (np.zeros((3,)) + np.nan,
+                                     EXPECTED_PARAMS[1]))
     yield assert_raises(IOError, didr.read_mosaic_dwi_dir, 'improbable')
+    
