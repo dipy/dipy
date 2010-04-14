@@ -5,13 +5,15 @@
 import os
 from os.path import join as pjoin
 import gzip
-from glob import glob
 
 import numpy as np
 
 import dicom
 
 import dipy.io.dicomreaders as didr
+import dipy.io.dicomwrappers as didw
+import dipy.io.csareader as csar
+
 from dipy.core.geometry import vector_norm
 
 from nose.tools import assert_true, assert_false, \
@@ -43,6 +45,46 @@ expected_params = [992.05050247, (0.99997450,
 
 
 @parametric
+def test_make_wrapper():
+    # test wrapper from data, wrapper from file
+    for dw in (didw.make_wrapper(data),
+               didw.wrapper_from_file(data_file)):
+        yield assert_equal(dw.get('InstanceNumber'), 2)
+        yield assert_equal(dw.get('AcquisitionNumber'), 2)
+        yield assert_raises(KeyError, dw.__getitem__, 'not an item')
+        yield assert_true(dw.is_mosaic)
+        yield assert_array_almost_equal(
+            np.dot(didr.DPCS_TO_TAL, dw.affine),
+            expected_affine)
+
+
+@parametric
+def test_wrappers():
+    # test direct wrapper calls
+    # first with empty data
+    klasses = (didw.Wrapper,
+               didw.SiemensWrapper,
+               didw.MosaicWrapper)
+    for klass in klasses:
+        dw = klass()
+        yield assert_equal(dw.get('InstanceNumber'), None)
+        yield assert_equal(dw.get('AcquisitionNumber'), None)
+        yield assert_raises(KeyError, dw.__getitem__, 'not an item')
+        yield assert_raises(didw.WrapperError, dw.get_data)
+        yield assert_raises(didw.WrapperError, getattr, dw, 'affine')
+    for klass in (didw.Wrapper, didw.SiemensWrapper):
+        dw = klass()
+        yield assert_false(dw.is_mosaic)
+    for maker in klasses + (didw.make_wrapper,):
+        dw = maker(data)
+        yield assert_equal(dw.get('InstanceNumber'), 2)
+        yield assert_equal(dw.get('AcquisitionNumber'), 2)
+        yield assert_raises(KeyError, dw.__getitem__, 'not an item')
+    for maker in (didw.MosaicWrapper, didw.make_wrapper):
+        yield assert_true(dw.is_mosaic)
+
+
+@parametric
 def test_read_dwi():
     img = didr.mosaic_to_nii(data)
     arr = img.get_data()
@@ -51,18 +93,20 @@ def test_read_dwi():
 
 
 @parametric
-def test_read():
-    yield assert_true(didr.has_csa(data))
-    yield assert_equal(didr.get_csa_header(data,'image')['n_tags'],83)
-    yield assert_equal(didr.get_csa_header(data,'series')['n_tags'],65)
-    yield assert_raises(ValueError, didr.get_csa_header, data,'xxxx')
-    yield assert_true(didr.is_mosaic(data))
-
+def test_csa_header_read():
+    hdr = csar.get_csa_header(data, 'image')
+    yield assert_equal(hdr['n_tags'],83)
+    yield assert_equal(csar.get_csa_header(data,'series')['n_tags'],65)
+    yield assert_raises(ValueError, csar.get_csa_header, data,'xxxx')
+    yield assert_true(csar.is_mosaic(hdr))
+    
 
 @parametric
 def test_dwi_params():
-    b_matrix = didr.get_b_matrix(data)
-    q = didr.get_q_vector(data)
+    dw = didw.make_wrapper(data)
+    b_matrix = dw.b_matrix
+    yield assert_equal(b_matrix.shape, (3,3))
+    q = dw.q_vector
     b = vector_norm(q)
     g = q / b
     yield assert_array_almost_equal(b, expected_params[0])
@@ -71,11 +115,9 @@ def test_dwi_params():
 
 @parametric
 def test_read_dwis():
-    data_dir = os.path.expanduser(
-        "~/data/20100114_195840/Series_012_CBU_DTI_64D_1A")
-    data, aff, bs, gs = didr.read_mosaic_dwi_dir(data_dir)
+    data, aff, bs, gs = didr.read_mosaic_dwi_dir(data_path, '*.dcm.gz')
     yield assert_equal(data.ndim, 4)
     yield assert_equal(aff.shape, (4,4))
-    yield assert_equal(bs.shape, (65,))
-    yield assert_equal(gs.shape, (65,3))
+    yield assert_equal(bs.shape, (2,))
+    yield assert_equal(gs.shape, (2,3))
     yield assert_raises(IOError, didr.read_mosaic_dwi_dir, 'improbable')
