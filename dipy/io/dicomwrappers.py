@@ -94,7 +94,6 @@ class Wrapper(object):
     is_mosaic = False
     b_matrix = None
     q_vector = None
-    ice_dims = None
     
     def __init__(self, dcm_data=None):
         ''' Initialize wrapper
@@ -104,7 +103,7 @@ class Wrapper(object):
         dcm_data : None or object, optional
            object should allow attribute access.  Usually this will be
            a ``dicom.dataset.Dataset`` object resulting from reading a
-           DICOM file.   If None, we just make an empty dict. 
+           DICOM file.   If None, just make an empty dict. 
         '''
         if dcm_data is None:
             dcm_data = {}
@@ -191,21 +190,31 @@ class Wrapper(object):
 
     @one_time
     def vol_match_signature(self):
-        ''' Signature for matching slices into volumes '''
-        signature = [
-            self.get('SeriesNumber'),
-            self.image_shape,
-            self.get('ImageType'),
-            self.get('SequenceName'),
-            self.get('SeriesInstanceID'),
-            self.get('EchoNumbers'),
-            ]
-        ice = self.ice_dims
-        if not ice is None:
-            ice = ice[:6] + ice[8]
-        signature.append(ice)
-        return tuple(signature)
-                
+        ''' Signature for matching slices into volumes
+
+        We use `signature` in ``self.maybe_same_vol(other)``.  
+
+        Returns
+        -------
+        signature : dict
+           with values of 2-element sequences, where first element is
+           value, and second element is function to compare this value
+           with another.  This allows us to pass things like arrays,
+           that might need to be ``allclose`` instead of equal
+        '''
+        # dictionary with value, comparison func tuple
+        eq = lambda x, y: x == y
+        for key in ('SeriesNumber',
+                    'ImageType',
+                    'SequenceName',
+                    'SeriesInstanceID',
+                    'EchoNumbers'):
+            signature[key] = (self.get(key), eq)
+        signature['image_shape'] = (self.image_shape, eq)
+        signature['iop'] = (self.image_orient_patient, none_or_close)
+        signature['vox'] = (self.voxel_sizes, none_or_close)
+        return signature
+    
     def __getitem__(self, key):
         ''' Return values from DICOM object'''
         try:
@@ -227,7 +236,7 @@ class Wrapper(object):
         -------
         aff : (4,4) affine
            Affine giving transformation between voxels in data array and
-           the DICOM patient coordinate system.
+           mm in the DICOM patient coordinate system.
         '''
         orient = self.rotation_matrix
         vox = self.voxel_sizes
@@ -271,13 +280,27 @@ class Wrapper(object):
            True if `other` might be in the same volume as `self`, False
            otherwise. 
         '''
-        if not self.vol_match_signature == other.vol_match_signature:
-            return False
-        iop1, iop2 = self.image_orient_patient, other.image_orient_patient
-        if not none_or_close(iop1, iop2):
-            return False
-        vox1, vox2 = self.voxel_sizes, other.voxel_sizes
-        return none_or_close(vox1, vox2)
+        # compare signature dictionaries.  There are comparison rules
+        # for both our own and the other dictionary, we prefer our own
+        # when we have them.   If a key is not present in either
+        # dictionary, we assume the value is None. 
+        my_sig = self.vol_match_signature
+        my_keys = set(my_sig)
+        your_sig = other.vol_match_signature
+        your_keys = set(your_sig)
+        for key in my_keys:
+            v1, func = my_sig[key]
+            if key in your_keys:
+                v2, _ = your_sig[key]
+            else:
+                v2 = None
+            if not func(v1, v2):
+                return False
+        for key in your_keys.difference(my_keys):
+            v1, func = your_sig[key]
+            if not func(v1, None):
+                return False
+        return True
 
     def _scale_data(self, data):
         scale = self.get('RescaleSlope', 1)
@@ -342,6 +365,16 @@ class SiemensWrapper(Wrapper):
         return np.cross(*iop.T[:])
 
     @one_time
+    def vol_match_signature(self):
+        ''' Add ICE dims from CSA header to signature '''
+        signature = super(SiemensWrapper, self).vol_match_signature
+        ice = csar.get_ice_dims(self.csa_header)
+        if not ice is None:
+            ice = ice[:6] + ice[8:9]
+        signature['ICE_Dims'] = (ice, lambda x, y: x == y)
+        return signature
+    
+    @one_time
     def b_matrix(self):
         ''' Get DWI B matrix referring to voxel space
 
@@ -397,11 +430,6 @@ class SiemensWrapper(Wrapper):
             return None
         return B2q(B)
 
-    @one_time
-    def ice_dims(self):
-        ''' ICE dims from CSA header '''
-        return csar.get_ice_dims(self.csa_header)
-
 
 class MosaicWrapper(SiemensWrapper):
     ''' Class for Siemens mosaic format data
@@ -446,7 +474,7 @@ class MosaicWrapper(SiemensWrapper):
             try:
                 n_mosaic = csar.get_n_mosaic(self.csa_header)
             except KeyError:
-                n_mosaic = None
+                pass
             if n_mosaic is None or n_mosaic == 0:
                 raise WrapperError('No valid mosaic number in CSA '
                                    'header; is this really '
@@ -462,8 +490,8 @@ class MosaicWrapper(SiemensWrapper):
         if None in (rows, cols):
             return None
         mosaic_size = self.mosaic_size
-        return (rows / mosaic_size,
-                cols / mosaic_size,
+        return (int(rows / mosaic_size),
+                int(cols / mosaic_size),
                 self.n_mosaic)
                 
     @one_time
@@ -541,7 +569,7 @@ def none_or_close(val1, val2, rtol=1e-5, atol=1e-6):
     tf : bool
        True iff (both `val1` and `val2` are None) or (`val1` and `val2`
        are close arrays, as detected by ``np.allclose`` with parameters
-       `rtol` and `atal`.
+       `rtol` and `atal`).
 
     Examples
     --------
