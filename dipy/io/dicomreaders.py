@@ -6,6 +6,7 @@ import numpy as np
 from ..core.geometry import vector_norm
 
 from . import csareader as csar
+from .dicomwrappers import (wrapper_from_data, wrapper_from_file)
 
 
 class MosaicError(csar.CSAError):
@@ -28,9 +29,8 @@ def mosaic_to_nii(dcm_data):
     img : ``Nifti1Image``
        Nifti image object
     '''
-    from .dicomwrappers import make_wrapper
     import nibabel as nib
-    dcm_w = make_wrapper(dcm_data)
+    dcm_w = wrapper_from_data(dcm_data)
     if not dcm_w.is_mosaic:
         raise MosaicError('data does not appear to be in mosaic format')
     data = dcm_w.get_data()
@@ -62,7 +62,6 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
     unit_gradients : (N, 3) array
        gradient directions of unit length for each acquisition
     '''
-    from .dicomwrappers import wrapper_from_file
     full_globber = pjoin(dicom_path, globber)
     filenames = sorted(glob.glob(full_globber))
     b_values = []

@@ -26,13 +26,39 @@ class WrapperError(Exception):
 
 
 def wrapper_from_file(file_like):
+    ''' Create DICOM wrapper from `file_like` object
+
+    Parameters
+    ----------
+    file_like : object
+       filename string or file-like object, pointing to a valid DICOM
+       file readable by ``pydicom``
+
+    Returns
+    -------
+    dcm_w : ``dicomwrappers.Wrapper`` or subclass
+       DICOM wrapper corresponding to DICOM data type
+    '''
     import dicom
     fobj = allopen(file_like)
     dcm_data = dicom.read_file(fobj)
-    return make_wrapper(dcm_data)
+    return wrapper_from_data(dcm_data)
 
 
-def make_wrapper(dcm_data):
+def wrapper_from_data(dcm_data):
+    ''' Create DICOM wrapper from DICOM data object
+
+    Parameters
+    ----------
+    dcm_data : ``dicom.dataset.Dataset`` instance or similar
+       Object allowing attribute access, with DICOM attributes.
+       Probably a dataset as read by ``pydicom``.
+       
+    Returns
+    -------
+    dcm_w : ``dicomwrappers.Wrapper`` or subclass
+       DICOM wrapper corresponding to DICOM data type
+    '''
     csa = csar.get_csa_header(dcm_data)
     if csa is None:
         return Wrapper(dcm_data)
@@ -49,10 +75,11 @@ class Wrapper(object):
     * get_affine()
     * get_data()
     * get_pixel_array()
+    * mabye_same_vol(other)
     * __getitem__ : return attributes from `dcm_data` 
-    * get() - as usual given __getitem__ above
+    * get(key[, default]) - as usual given __getitem__ above
 
-    Attributes (or rather, things that at least look like attributes):
+    Attributes and things that look like attributes:
 
     * dcm_data : object
     * image_shape : tuple
@@ -62,6 +89,7 @@ class Wrapper(object):
     * voxel_sizes : tuple length 3
     * image_position : sequence length 3
     * slice_indicator : float
+    * vol_match_signature : tuple
     '''
     is_mosaic = False
     b_matrix = None
@@ -141,7 +169,10 @@ class Wrapper(object):
         img_pos : (3,) array
            position in mm of voxel (0,0) in image array
         '''
-        return self.get('ImagePositionPatient')
+        ipp = self.get('ImagePositionPatient')
+        if ipp is None:
+            return None
+        return np.array(ipp)
 
     @one_time
     def slice_indicator(self):
@@ -157,6 +188,23 @@ class Wrapper(object):
         if None in (ipp, s_norm):
             return None
         return np.inner(ipp, s_norm)
+
+    @one_time
+    def vol_match_signature(self):
+        ''' Signature for matching slices into volumes '''
+        signature = [
+            self.get('SeriesNumber'),
+            self.image_shape,
+            self.get('ImageType'),
+            self.get('SequenceName'),
+            self.get('SeriesInstanceID'),
+            self.get('EchoNumbers'),
+            ]
+        ice = self.ice_dims
+        if not ice is None:
+            ice = ice[:6] + ice[8]
+        signature.append(ice)
+        return tuple(signature)
                 
     def __getitem__(self, key):
         ''' Return values from DICOM object'''
@@ -209,7 +257,7 @@ class Wrapper(object):
         '''
         return self._scale_data(self.get_pixel_array())
 
-    def maybe_same_volume_as(self, other):
+    def maybe_same_vol(self, other):
         ''' First pass at clustering into volumes check
 
         Parameters
@@ -223,36 +271,13 @@ class Wrapper(object):
            True if `other` might be in the same volume as `self`, False
            otherwise. 
         '''
-        def _get_matchers(hdr):
-            return (
-                hdr.get('SeriesNumber'),
-                hdr.image_shape,
-                hdr.get('ImageType'),
-                hdr.get('SequenceName'),
-                hdr.get('SeriesInstanceID'),
-                hdr.get('EchoNumbers'))
-        if not _get_matchers(self) == _get_matchers(other):
+        if not self.vol_match_signature == other.vol_match_signature:
             return False
         iop1, iop2 = self.image_orient_patient, other.image_orient_patient
-        if not none_matcher(iop1, iop1,
-                            lambda x, y: np.allclose(iop1, iop2)):
+        if not none_or_close(iop1, iop2):
             return False
-        ice1, ice2 = self.ice_dims, other.ice_dims
-        def _ice_matcher(ice1, ice2):
-            inds = np.array([1,1,1,1,1,1,0,0,1])
-            ice1 = np.array(ice1)
-            ice2 = np.array(ice2)
-            return np.all(ice1[inds] == ice2[inds])
-        if not none_matcher(ice1, ice2, _ice_matcher):
-            return False
-        # instance numbers should _not_ match
-        in1, in2 = self.get('InstanceNumber'), other.get('InstanceNumber')
-        if none_matcher(in1, in2):
-            return False
-        # nor should z slice indicators
-        if self.slice_indicator == other.slice_indicator:
-            return False
-        return True
+        vox1, vox2 = self.voxel_sizes, other.voxel_sizes
+        return none_or_close(vox1, vox2)
 
     def _scale_data(self, data):
         scale = self.get('RescaleSlope', 1)
@@ -269,7 +294,15 @@ class Wrapper(object):
 
 
 class SiemensWrapper(Wrapper):
-    ''' Wrapper for Siemens format DICOMs '''
+    ''' Wrapper for Siemens format DICOMs
+
+    Adds attributes:
+
+    * csa_header : mapping
+    * b_matrix : (3,3) array
+    * q_vector : (3,) array
+    * ice_dims : list
+    '''
     def __init__(self, dcm_data=None, csa_header=None):
         ''' Initialize Siemens wrapper
 
@@ -285,7 +318,9 @@ class SiemensWrapper(Wrapper):
            object resulting from reading a DICOM file.  If None, we just
            make an empty dict.
         csa_header : None or mapping, optional
-           mapping giving values for Siemens CSA image sub-header.  
+           mapping giving values for Siemens CSA image sub-header.  If
+           None, we try and read the CSA information from `dcm_data`.
+           If this fails, we fall back to an empty dict.
         '''
         if dcm_data is None:
             dcm_data = {}
@@ -300,7 +335,7 @@ class SiemensWrapper(Wrapper):
     def slice_normal(self):
         slice_normal = csar.get_slice_normal(self.csa_header)
         if not slice_normal is None:
-            return slice_normal
+            return np.array(slice_normal)
         iop = self.image_orient_patient
         if iop is None:
             return None
@@ -369,7 +404,21 @@ class SiemensWrapper(Wrapper):
 
 
 class MosaicWrapper(SiemensWrapper):
-    ''' Class for Siemens Mosaic format data '''
+    ''' Class for Siemens mosaic format data
+
+    Mosaic format is a way of storing a 3D image in a 2D slice - and
+    it's as simple as you'd image it would be - just storing the slices
+    in a mosaic similar to a light-box print.
+
+    We need to allow for this when getting the data and (because of an
+    idiosyncracy in the way Siemens stores the images) calculating the
+    position of the first voxel.
+
+    Adds attributes:
+
+    * n_mosaic : int
+    * mosaic_size : float
+    '''
     is_mosaic = True
     
     def __init__(self, dcm_data=None, csa_header=None, n_mosaic=None):
@@ -385,12 +434,12 @@ class MosaicWrapper(SiemensWrapper):
            None, it should also be possible for to extract a CSA header
            from `dcm_data`. Usually this will be a
            ``dicom.dataset.Dataset`` object resulting from reading a
-           DICOM file.  If None, we just make an empty dict.
+           DICOM file.  If None, just make an empty dict.
         csa_header : None or mapping, optional
            mapping giving values for Siemens CSA image sub-header.
         n_mosaic : None or int, optional
-           number of images in mosaic.  If None, we try to get this
-           number fron `csa_header`.  If this fails, we raise an error
+           number of images in mosaic.  If None, try to get this number
+           fron `csa_header`.  If this fails, raise an error
         '''
         SiemensWrapper.__init__(self, dcm_data, csa_header)
         if n_mosaic is None:
@@ -475,9 +524,40 @@ class MosaicWrapper(SiemensWrapper):
         return self._scale_data(v3)
 
 
-def none_matcher(val1, val2, match_func=lambda x, y: x == y):
+def none_or_close(val1, val2, rtol=1e-5, atol=1e-6):
+    ''' Match if `val1` and `val2` are both None, or are close
+
+    Parameters
+    ----------
+    val1 : None or array-like
+    val2 : None or array-like
+    rtol : float, optional
+       Relative tolerance; see ``np.allclose``
+    atol : float, optional
+       Absolute tolerance; see ``np.allclose``
+       
+    Returns
+    -------
+    tf : bool
+       True iff (both `val1` and `val2` are None) or (`val1` and `val2`
+       are close arrays, as detected by ``np.allclose`` with parameters
+       `rtol` and `atal`.
+
+    Examples
+    --------
+    >>> none_or_close(None, None)
+    True
+    >>> none_or_close(1, None)
+    False
+    >>> none_or_close(None, 1)
+    False
+    >>> none_or_close([1,2], [1,2])
+    True
+    >>> none_or_close([0,1], [0,2])
+    False
+    '''
     if (val1, val2) == (None, None):
         return True
     if None in (val1, val2):
         return False
-    return match_func(val1, val2)
+    return np.allclose(val1, val2, rtol, atol)

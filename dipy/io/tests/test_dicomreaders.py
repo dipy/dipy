@@ -45,9 +45,9 @@ expected_params = [992.05050247, (0.99997450,
 
 
 @parametric
-def test_make_wrapper():
+def test_wrapper_from_data():
     # test wrapper from data, wrapper from file
-    for dw in (didw.make_wrapper(data),
+    for dw in (didw.wrapper_from_data(data),
                didw.wrapper_from_file(data_file)):
         yield assert_equal(dw.get('InstanceNumber'), 2)
         yield assert_equal(dw.get('AcquisitionNumber'), 2)
@@ -74,7 +74,7 @@ def test_wrappers():
     for klass in (didw.Wrapper, didw.SiemensWrapper):
         dw = klass()
         yield assert_false(dw.is_mosaic)
-    for maker in (didw.make_wrapper,
+    for maker in (didw.wrapper_from_data,
                   didw.Wrapper,
                   didw.SiemensWrapper,
                   didw.MosaicWrapper
@@ -83,7 +83,7 @@ def test_wrappers():
         yield assert_equal(dw.get('InstanceNumber'), 2)
         yield assert_equal(dw.get('AcquisitionNumber'), 2)
         yield assert_raises(KeyError, dw.__getitem__, 'not an item')
-    for maker in (didw.MosaicWrapper, didw.make_wrapper):
+    for maker in (didw.MosaicWrapper, didw.wrapper_from_data):
         yield assert_true(dw.is_mosaic)
 
 
@@ -106,7 +106,7 @@ def test_csa_header_read():
 
 @parametric
 def test_dwi_params():
-    dw = didw.make_wrapper(data)
+    dw = didw.wrapper_from_data(data)
     b_matrix = dw.b_matrix
     yield assert_equal(b_matrix.shape, (3,3))
     q = dw.q_vector
