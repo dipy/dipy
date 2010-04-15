@@ -34,10 +34,14 @@ def mosaic_to_nii(dcm_data):
         raise DicomReadError('data does not appear to be in mosaic format')
     data = dcm_w.get_data()
     aff = np.dot(DPCS_TO_TAL, dcm_w.get_affine())
-    return nib.Nifti1Image(data.T, aff)
+    return nib.Nifti1Image(data, aff)
 
 
 def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
+    return read_mosaic_dir(dicom_path, globber, check_is_dwi=True)
+
+
+def read_mosaic_dir(dicom_path, globber='*.dcm', check_is_dwi=False):
     ''' Read all Siemens DICOMs in directory, return arrays, params
 
     Parameters
@@ -47,6 +51,9 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
     globber : str, optional
        glob to apply within `dicom_path` to select DICOM files.  Default
        is ``*.dcm``
+    check_is_dwi : bool, optional
+       If True, raises an error if we don't find DWI information in the
+       DICOM headers. 
        
     Returns
     -------
@@ -57,9 +64,11 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
     affine : (4,4) array
        affine relating 3D voxel space in data to RAS world space
     b_values : (N,) array
-       b values for each acquisition
+       b values for each acquisition.  nan if we did not find diffusion
+       information for these images. 
     unit_gradients : (N, 3) array
-       gradient directions of unit length for each acquisition
+       gradient directions of unit length for each acquisition.  (nan,
+       nan, nan) if we did not find diffusion information.
     '''
     full_globber = pjoin(dicom_path, globber)
     filenames = sorted(glob.glob(full_globber))
@@ -72,8 +81,19 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
         dcm_w = wrapper_from_file(fname)
         arrays.append(dcm_w.get_data()[...,None])
         q = dcm_w.q_vector
-        b = vector_norm(q)
-        g = q / b
+        if q is None:  # probably not diffusion
+            if check_is_dwi:
+                raise DicomReadError('Could not find diffusion '
+                                     'information reading file "%s"; '
+                                     ' is it possible this is not '
+                                     'a _raw_ diffusion directory? '
+                                     'Could it be a processed dataset '
+                                     'like ADC etc?' % fname)
+            b = np.nan
+            g = np.ones((3,)) + np.nan
+        else:
+            b = vector_norm(q)
+            g = q / b
         b_values.append(b)
         gradients.append(g)
     affine = np.dot(DPCS_TO_TAL, dcm_w.get_affine())

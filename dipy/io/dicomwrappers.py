@@ -563,7 +563,7 @@ class MosaicWrapper(SiemensWrapper):
         v3=v4p.reshape(mosaic_size*mosaic_size,n_rows,n_cols)
         # delete any padding slices
         v3 = v3[:n_mosaic]
-        return self._scale_data(v3)
+        return self._scale_data(v3).T
 
 
 def none_or_close(val1, val2, rtol=1e-5, atol=1e-6):
