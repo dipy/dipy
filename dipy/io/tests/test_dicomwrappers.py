@@ -20,8 +20,8 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from ...testing import parametric, IO_DATA_PATH
 
 DATA_FILE = pjoin(IO_DATA_PATH, 'siemens_dwi_1000.dcm.gz')
-
 DATA = dicom.read_file(gzip.open(DATA_FILE))
+DATA_FILE_B0 = pjoin(IO_DATA_PATH, 'siemens_dwi_0.dcm.gz')
 
 # this affine from our converted image was shown to match our image
 # spatially with an image from SPM DICOM conversion. We checked the
@@ -93,3 +93,42 @@ def test_dwi_params():
     yield assert_array_almost_equal(g, EXPECTED_PARAMS[1])
 
 
+@parametric
+def test_vol_matching():
+    # make the Siemens wrapper, check it compares True against itself
+    dw_siemens = didw.wrapper_from_data(DATA)
+    yield assert_true(dw_siemens.is_mosaic)
+    yield assert_true(dw_siemens.is_csa)
+    yield assert_true(dw_siemens.maybe_same_vol(dw_siemens))
+    # make plain wrapper, compare against itself
+    dw_plain = didw.Wrapper(DATA)
+    yield assert_false(dw_plain.is_mosaic)
+    yield assert_false(dw_plain.is_csa)
+    yield assert_true(dw_plain.maybe_same_vol(dw_plain))
+    # specific vs plain wrapper compares False, because the Siemens
+    # wrapper has more non-empty information
+    yield assert_false(dw_plain.maybe_same_vol(dw_siemens))
+    # and this should be symmetric
+    yield assert_false(dw_siemens.maybe_same_vol(dw_plain))
+    # we can even make an empty wrapper.  This compares True against
+    # itself but False against the others
+    dw_empty = didw.Wrapper()
+    yield assert_true(dw_empty.maybe_same_vol(dw_empty))
+    yield assert_false(dw_empty.maybe_same_vol(dw_plain))
+    yield assert_false(dw_plain.maybe_same_vol(dw_empty))
+    # Just to check the interface, make a pretend signature-providing
+    # object.
+    class C(object):
+        vol_match_signature = {}
+    yield assert_true(dw_empty.maybe_same_vol(C()))
+
+
+@parametric
+def test_slice_indicator():
+    dw_0 = didw.wrapper_from_file(DATA_FILE_B0)
+    dw_1000 = didw.wrapper_from_data(DATA)
+    z = dw_0.slice_indicator
+    yield assert_false(z is None)
+    yield assert_equal(z, dw_1000.slice_indicator)
+    dw_empty = didw.Wrapper()
+    yield assert_true(dw_empty.slice_indicator is None)

@@ -5,11 +5,10 @@ import numpy as np
 
 from ..core.geometry import vector_norm
 
-from . import csareader as csar
 from .dicomwrappers import (wrapper_from_data, wrapper_from_file)
 
 
-class MosaicError(csar.CSAError):
+class DicomReadError(Exception):
     pass
 
 
@@ -32,7 +31,7 @@ def mosaic_to_nii(dcm_data):
     import nibabel as nib
     dcm_w = wrapper_from_data(dcm_data)
     if not dcm_w.is_mosaic:
-        raise MosaicError('data does not appear to be in mosaic format')
+        raise DicomReadError('data does not appear to be in mosaic format')
     data = dcm_w.get_data()
     aff = np.dot(DPCS_TO_TAL, dcm_w.get_affine())
     return nib.Nifti1Image(data.T, aff)
@@ -83,4 +82,93 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
             np.array(b_values),
             np.array(gradients))
 
-    
+
+def slices_to_volumes(wrappers):
+    ''' Sort sequence of slice wrappers into volumes
+
+    This follows the SPM model fairly closely
+
+    Parameters
+    ----------
+    wrappers : sequence
+       sequence of ``Wrapper`` objects for sorting into volumes
+
+    Returns
+    -------
+    vol_seqs : sequence
+       sequence of sequences of wrapper objects, where each sequence is
+       wrapper objects comprising a volume, sorted into slice order
+    '''
+    # first pass
+    volume_lists = [wrappers[0:1]]
+    for dw in wrappers[1:]:
+        for vol_list in volume_lists:
+            if dw.maybe_same_vol(vol_list[0]):
+                vol_list.append(dw)
+                break
+        else: # no match in current volume lists
+            volume_lists.append([dw])
+    print 'We have %d volumes after first pass' % len(volume_lists)
+    # second pass
+    out_vol_lists = []
+    for vol_list in volume_lists:
+        if len(vol_list) > 1:
+            vol_list.sort(_slice_sorter)
+            zs = [s.slice_indicator for s in vol_list]
+            if len(set(zs)) < len(zs): # not unique zs
+                # third pass
+                out_vol_lists += _third_pass(vol_list)
+                continue
+        out_vol_lists.append(vol_list)
+    print 'We have %d volumes after second pass' % len(out_vol_lists)
+    # final pass check
+    for vol_list in out_vol_lists:
+        zs = [s.slice_indicator for s in vol_list]
+        diffs = np.diff(zs)
+        if not np.allclose(diffs, np.mean(diffs)):
+            raise DicomReadError('Largeish slice gaps - missing DICOMs?')
+    return out_vol_lists
+
+
+def _slice_sorter(s1, s2):
+    return cmp(s1.slice_indicator, s2.slice_indicator)
+
+
+def _instance_sorter(s1, s2):
+    return cmp(s1.instance_number, s2.instance_number)
+
+
+def _third_pass(wrappers):
+    ''' What we do when there are not unique zs in a slice set '''
+    inos = [s.instance_number for s in wrappers]
+    msg_fmt = ('Plausibly matching slices, but where some have '
+               'the same apparent slice location, and %s; '
+               '- slices are probably unsortable')
+    if None in inos:
+        raise DicomReadError(msg_fmt % 'some or all slices with '
+                             'missing InstanceNumber')
+    if len(set(inos)) < len(inos):
+        raise DicomReadError(msg_fmt % 'some or all slices with '
+                             'the sane InstanceNumber')
+    # sort by instance number
+    wrappers.sort(_instance_sorter)
+    # start loop, in which we start a new volume, each time we see a z
+    # we've seen already in the current volume
+    dw = wrappers[0]
+    these_zs = [dw.slice_indicator]
+    vol_list = [dw]
+    out_vol_lists = [vol_list]
+    for dw in wrappers[1:]:
+        z = dw.slice_indicator
+        if not z in these_zs:
+            # same volume
+            vol_list.append(dw)
+            these_zs.append(z)
+            continue
+        # new volumne
+        vol_list.sort(_slice_sorter)
+        vol_list = [dw]
+        these_zs = [z]
+        out_vol_lists.append(vol_list)
+    vol_list.sort(_slice_sorter)
+    return out_vol_lists

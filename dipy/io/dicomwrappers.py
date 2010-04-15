@@ -12,6 +12,8 @@ procesing that needs to raise an error, should be in a method, rather
 than in a property, or property-like thing. 
 '''
 
+import operator
+
 import numpy as np
 
 from . import csareader as csar
@@ -91,6 +93,7 @@ class Wrapper(object):
     * slice_indicator : float
     * vol_match_signature : tuple
     '''
+    is_csa = False
     is_mosaic = False
     b_matrix = None
     q_vector = None
@@ -189,6 +192,11 @@ class Wrapper(object):
         return np.inner(ipp, s_norm)
 
     @one_time
+    def instance_number(self):
+        ''' Just becase we use this a lot for sorting '''
+        return self.get('InstanceNumber')
+
+    @one_time
     def vol_match_signature(self):
         ''' Signature for matching slices into volumes
 
@@ -203,7 +211,8 @@ class Wrapper(object):
            that might need to be ``allclose`` instead of equal
         '''
         # dictionary with value, comparison func tuple
-        eq = lambda x, y: x == y
+        signature = {}
+        eq = operator.eq
         for key in ('SeriesNumber',
                     'ImageType',
                     'SequenceName',
@@ -272,7 +281,8 @@ class Wrapper(object):
         Parameters
         ----------
         other : object
-           wrapper object
+           object with ``vol_match_signature`` attribute that is a
+           mapping.  Usually it's a ``Wrapper`` or sub-class instance.
 
         Returns
         -------
@@ -289,7 +299,7 @@ class Wrapper(object):
         my_keys = set(my_sig)
         your_keys = set(your_sig)
         # we have values in both signatures
-        for key in my_keys.union(your_keys):
+        for key in my_keys.intersection(your_keys):
             v1, func = my_sig[key]
             v2, _ = your_sig[key]
             if not func(v1, v2):
@@ -325,8 +335,9 @@ class SiemensWrapper(Wrapper):
     * csa_header : mapping
     * b_matrix : (3,3) array
     * q_vector : (3,) array
-    * ice_dims : list
     '''
+    is_csa = True
+
     def __init__(self, dcm_data=None, csa_header=None):
         ''' Initialize Siemens wrapper
 
