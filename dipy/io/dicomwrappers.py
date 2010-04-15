@@ -77,7 +77,7 @@ class Wrapper(object):
     * get_affine()
     * get_data()
     * get_pixel_array()
-    * mabye_same_vol(other)
+    * is_same_series(other)
     * __getitem__ : return attributes from `dcm_data` 
     * get(key[, default]) - as usual given __getitem__ above
 
@@ -91,7 +91,7 @@ class Wrapper(object):
     * voxel_sizes : tuple length 3
     * image_position : sequence length 3
     * slice_indicator : float
-    * vol_match_signature : tuple
+    * series_signature : tuple
     '''
     is_csa = False
     is_mosaic = False
@@ -199,10 +199,10 @@ class Wrapper(object):
         return self.get('InstanceNumber')
 
     @one_time
-    def vol_match_signature(self):
-        ''' Signature for matching slices into volumes
+    def series_signature(self):
+        ''' Signature for matching slices into series
 
-        We use `signature` in ``self.maybe_same_vol(other)``.  
+        We use `signature` in ``self.is_same_series(other)``.  
 
         Returns
         -------
@@ -215,10 +215,10 @@ class Wrapper(object):
         # dictionary with value, comparison func tuple
         signature = {}
         eq = operator.eq
-        for key in ('SeriesNumber',
+        for key in ('SeriesInstanceUID',
+                    'SeriesNumber',
                     'ImageType',
                     'SequenceName',
-                    'SeriesInstanceUID',
                     'EchoNumbers'):
             signature[key] = (self.get(key), eq)
         signature['image_shape'] = (self.image_shape, eq)
@@ -277,27 +277,27 @@ class Wrapper(object):
         '''
         return self._scale_data(self.get_pixel_array())
 
-    def maybe_same_vol(self, other):
-        ''' First pass at clustering into volumes check
+    def is_same_series(self, other):
+        ''' Return True if `other` appears to be in same series
 
         Parameters
         ----------
         other : object
-           object with ``vol_match_signature`` attribute that is a
+           object with ``series_signature`` attribute that is a
            mapping.  Usually it's a ``Wrapper`` or sub-class instance.
 
         Returns
         -------
         tf : bool
-           True if `other` might be in the same volume as `self`, False
+           True if `other` might be in the same series as `self`, False
            otherwise. 
         '''
         # compare signature dictionaries.  The dictionaries each contain
         # comparison rules, we prefer our own when we have them.  If a
         # key is not present in either dictionary, assume the value is
         # None.
-        my_sig = self.vol_match_signature
-        your_sig = other.vol_match_signature
+        my_sig = self.series_signature
+        your_sig = other.series_signature
         my_keys = set(my_sig)
         your_keys = set(your_sig)
         # we have values in both signatures
@@ -379,9 +379,9 @@ class SiemensWrapper(Wrapper):
         return np.cross(*iop.T[:])
 
     @one_time
-    def vol_match_signature(self):
+    def series_signature(self):
         ''' Add ICE dims from CSA header to signature '''
-        signature = super(SiemensWrapper, self).vol_match_signature
+        signature = super(SiemensWrapper, self).series_signature
         ice = csar.get_ice_dims(self.csa_header)
         if not ice is None:
             ice = ice[:6] + ice[8:9]

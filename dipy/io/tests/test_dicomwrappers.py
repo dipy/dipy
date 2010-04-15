@@ -99,28 +99,28 @@ def test_vol_matching():
     dw_siemens = didw.wrapper_from_data(DATA)
     yield assert_true(dw_siemens.is_mosaic)
     yield assert_true(dw_siemens.is_csa)
-    yield assert_true(dw_siemens.maybe_same_vol(dw_siemens))
+    yield assert_true(dw_siemens.is_same_series(dw_siemens))
     # make plain wrapper, compare against itself
     dw_plain = didw.Wrapper(DATA)
     yield assert_false(dw_plain.is_mosaic)
     yield assert_false(dw_plain.is_csa)
-    yield assert_true(dw_plain.maybe_same_vol(dw_plain))
+    yield assert_true(dw_plain.is_same_series(dw_plain))
     # specific vs plain wrapper compares False, because the Siemens
     # wrapper has more non-empty information
-    yield assert_false(dw_plain.maybe_same_vol(dw_siemens))
+    yield assert_false(dw_plain.is_same_series(dw_siemens))
     # and this should be symmetric
-    yield assert_false(dw_siemens.maybe_same_vol(dw_plain))
+    yield assert_false(dw_siemens.is_same_series(dw_plain))
     # we can even make an empty wrapper.  This compares True against
     # itself but False against the others
     dw_empty = didw.Wrapper()
-    yield assert_true(dw_empty.maybe_same_vol(dw_empty))
-    yield assert_false(dw_empty.maybe_same_vol(dw_plain))
-    yield assert_false(dw_plain.maybe_same_vol(dw_empty))
+    yield assert_true(dw_empty.is_same_series(dw_empty))
+    yield assert_false(dw_empty.is_same_series(dw_plain))
+    yield assert_false(dw_plain.is_same_series(dw_empty))
     # Just to check the interface, make a pretend signature-providing
     # object.
     class C(object):
-        vol_match_signature = {}
-    yield assert_true(dw_empty.maybe_same_vol(C()))
+        series_signature = {}
+    yield assert_true(dw_empty.is_same_series(C()))
 
 
 @parametric
