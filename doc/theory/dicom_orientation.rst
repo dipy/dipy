@@ -193,6 +193,13 @@ and therefore, what order they should have.
 To do this sorting, we need something that is proportional, plus a
 constant, to the $z$ voxel coordinate for the slice.
 
+If we are lucky, our DICOM might have the 'SliceLocation' field
+(0020,1041).  'SliceLocation' seems to be proportianal to z axis
+location, at least for some GE and Philips DICOMs I was looking at.
+But, there is a more reliable way (that doesn't depend on this field),
+and uses only the very standard 'ImageOrientationPatient' and
+'ImagePositionPatient' fields.
+
 Consider the case where we have a set of slices, of unknown order, from
 the same volume.
 
@@ -236,15 +243,6 @@ The unknown $IPP^0$ terms pool into a constant, and the operation has
 the neat feature that, because the $CP_N^2$ terms, by definition, sum to
 1, the whole can be expressed as $\lambda + ZS N_z$ - i.e. it is equal to
 the voxel size ($ZS$) multiplied by $N_z$, plus a constant.
-
-We could also sum $IPP_j$ and divide by the sum of $CP$:
-
-.. math::
-
-   \frac{IPP^{0}_{{1}} + IPP^{0}_{{2}} + IPP^{0}_{{3}} + CP_{{1}} N_{z} ZS + CP_{{2}} N_{z} ZS + CP_{{3}} N_{z} ZS}{CP_{{1}} + CP_{{2}} + CP_{{3}}}
-
-This is also equal to the voxel size ($ZS$) multiplied by $N_z$, plus a
-constant, but is unstable when the sum of $CP$ is close to zero. 
 
 Again, see :download:`derivations/spm_dicom_orient.py` for the derivations.
 

@@ -93,7 +93,7 @@
 .. _`wikipedia DICOM`: http://en.wikipedia.org/wiki/Digital_Imaging_and_Communications_in_Medicine
 .. _GDCM: http://sourceforge.net/apps/mediawiki/gdcm
 .. _`DICOM specs`: ftp://medical.nema.org/medical/dicom/2009/
-.. _`DICOM object definitions`: ftp://medical.nema.org/medical/dicom/2009/09_03pu2.pdf
+.. _`DICOM object definitions`: ftp://medical.nema.org/medical/dicom/2009/09_03pu3.pdf
 .. _dcm2nii: http://www.cabiatl.com/mricro/mricron/dcm2nii.html
 .. _`mricron install`: http://www.cabiatl.com/mricro/mricron/install.html
 .. _dicom2nrrd: http://www.slicer.org/slicerWiki/index.php/Modules:DicomToNRRD-3.4

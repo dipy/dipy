@@ -83,8 +83,8 @@ def read_mosaic_dwi_dir(dicom_path, globber='*.dcm'):
             np.array(gradients))
 
 
-def slices_to_volumes(wrappers):
-    ''' Sort sequence of slice wrappers into volumes
+def slices_to_series(wrappers):
+    ''' Sort sequence of slice wrappers into series
 
     This follows the SPM model fairly closely
 
@@ -95,20 +95,20 @@ def slices_to_volumes(wrappers):
 
     Returns
     -------
-    vol_seqs : sequence
+    series : sequence
        sequence of sequences of wrapper objects, where each sequence is
-       wrapper objects comprising a volume, sorted into slice order
+       wrapper objects comprising a series, sorted into slice order
     '''
     # first pass
     volume_lists = [wrappers[0:1]]
     for dw in wrappers[1:]:
         for vol_list in volume_lists:
-            if dw.maybe_same_vol(vol_list[0]):
+            if dw.is_same_series(vol_list[0]):
                 vol_list.append(dw)
                 break
         else: # no match in current volume lists
             volume_lists.append([dw])
-    print 'We have %d volumes after first pass' % len(volume_lists)
+    print 'We appear to have %d Series' % len(volume_lists)
     # second pass
     out_vol_lists = []
     for vol_list in volume_lists:
