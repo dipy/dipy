@@ -47,6 +47,11 @@ def boys2rgb(v):
     Examples:
     --------
 
+    >>> from dipy.viz import colormaps
+    >>> v=np.array([[1,0,0],[0,1,0],[0,0,1]])
+
+    
+
 
     '''
 
