@@ -153,9 +153,11 @@ class Wrapper(object):
         pix_space = self.get('PixelSpacing')
         if pix_space is None:
             return None
-        zs =  self.get('SpacingBetweenSlices')
+        zs = self.get('SpacingBetweenSlices')
         if zs is None:
-            zs = 1
+            zs = self.get('SliceThickness')
+            if zs is None:
+                zs = 1
         return tuple(pix_space + [zs])
 
     @one_time
@@ -216,7 +218,7 @@ class Wrapper(object):
         for key in ('SeriesNumber',
                     'ImageType',
                     'SequenceName',
-                    'SeriesInstanceID',
+                    'SeriesInstanceUID',
                     'EchoNumbers'):
             signature[key] = (self.get(key), eq)
         signature['image_shape'] = (self.image_shape, eq)
