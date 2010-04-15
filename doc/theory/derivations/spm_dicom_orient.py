@@ -121,15 +121,15 @@ A_j = A_i * nz_trans
 IPP_i = A_i[:3,3]
 IPP_j = A_j[:3,3]
 
+# SPM does it with the inner product of the vectors
 spm_z = IPP_j.T * orient_cross
 spm_z.simplify()
 
-div_sum = 0
-for i in range(3):
-    div_sum += IPP_j[i] / orient_cross[i]
-div_sum = sympy.simplify(div_sum / 3)
+# We can also do it with a sum and division
+ipp_sum_div = sum(IPP_j) / sum(orient_cross)
+ipp_sum_div = sympy.simplify(ipp_sum_div)
 
-
+# Dump out the formulae here to latex for the RST docs
 def my_latex(expr):
     S = sympy.latex(expr)
     return S[1:-1]
@@ -155,4 +155,4 @@ print '   IPP_j = ' + my_latex(IPP_j)
 print
 print '   IPP_j^T CP = ' + my_latex(spm_z)
 print
-print '   ' + my_latex(div_sum)
+print '   ' + my_latex(ipp_sum_div)

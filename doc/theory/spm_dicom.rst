@@ -153,9 +153,10 @@ Then, for each currently identified volume:
    #. SeriesNumber
    #. Rows
    #. Columns
-   #. ImageOrientationPatient (to tolerance of squared difference 1e-4)
+   #. ImageOrientationPatient (to tolerance of sum squared difference 1e-4)
+   #. PixelSpacing (to tolerance of sum squared difference 1e-4)
    #. ICE dims as defined above
-   #. ImageType (iff imagetype exists in both)
+   #. ImageType (iff imagetype exists in both)zv
    #. SequenceName (iff sequencename exists in both)
    #. SeriesInstanceUID (iff exists in both)
    #. EchoNumbers (iff exists in both)

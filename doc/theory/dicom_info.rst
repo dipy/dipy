@@ -29,7 +29,9 @@ Here is a selected list of other tools and relevant resources:
   implemented in the ``spm_dicom_convert.m`` and ``spm_dicom_headers.m``
   scripts.  The conversions don't try to get the diffusion parameters.
   The code is particularly useful because it has been well-tested and is
-  written in Matlab_ - and so is relatively easy to read.  GPL_ license. 
+  written in Matlab_ - and so is relatively easy to read.  GPL_ license.
+  We've described some of the algorithms that SPM uses for DICOM
+  conversion in :ref:`spm-dicom`.
 * DICOM2Nrrd_: a command line converter to convert DICOM images to Nrrd_
   format.  You can call the command from within the Slicer_ GUI.  It
   does have algorithms for getting diffusion information from the DICOM

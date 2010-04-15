@@ -204,7 +204,7 @@ Now let's say we have another slice $j$ from the same volume.  It will
 have the same affine, except that the 'ImagePositionPatient' field will
 change to reflect the different position of this slice in space. Let us
 say that there a translation of $N_z$ voxels (slices) between $i$ and
-$j$.  If the formula for slice $i$ - $A_i = A_{single}$ then the formula for
+$j$.  If $A_i$ ($A$ for slice $i$) is $A_{single}$ then $A_j$ for
 $j$ is given by:
 
 .. math::
@@ -219,13 +219,14 @@ and 'ImagePositionPatient' for $j$ is:
 
 Remember that the third column of $A$ gives the vector resulting from a
 unit change in the z voxel coordinate.  So, the 'ImagePositionPatient'
-of any slice, can be thought of as the addition of the position of the
-first voxel in some slice (here $IPP^0$) to $N_z$ times the third colum
-of $A$; obviously $N_z$ can be negative or positive. This leads to
-various ways of recovering something that is proportional to $N_z$ plus
-a constant.  SPM takes the dot product of $IPP_j$ with the unit vector
-component of third column of $A_j$ - in the descriptions here, this is
-the vector $CP$.  This gives:
+of any slice, can be thought of the addition of two vectors $IPP =
+\mathbf{a} + \mathbf{b}$, where $\mathbf{a}$ is the position of the
+first voxel in some slice (here $IPP^0$) and $\mathbf{b}$ is $N_z$ times
+the third colum of $A$.  Obviously $N_z$ can be negative or
+positive. This leads to various ways of recovering something that is
+proportional to $N_z$ plus a constant.  SPM takes the dot product of
+$IPP_j$ with the unit vector component of third column of $A_j$ - in the
+descriptions here, this is the vector $CP$:
 
 .. math::
 
@@ -233,17 +234,17 @@ the vector $CP$.  This gives:
 
 The unknown $IPP^0$ terms pool into a constant, and the operation has
 the neat feature that, because the $CP_N^2$ terms, by definition, sum to
-1, the whole can be expresed as $\lambda + ZS N_z$ - i.e. it is equal to
-the voxel size * $N_z$ plus a constant.
+1, the whole can be expressed as $\lambda + ZS N_z$ - i.e. it is equal to
+the voxel size ($ZS$) multiplied by $N_z$, plus a constant.
 
-Obviously we could also do an element-wise divide of $IPP_j$ by $CP$,
-and take the mean of the result, giving:
+We could also sum $IPP_j$ and divide by the sum of $CP$:
 
 .. math::
 
-   \frac{CP_{{1}} CP_{{2}} IPP^{0}_{{3}} + CP_{{1}} CP_{{3}} IPP^{0}_{{2}} + CP_{{2}} CP_{{3}} IPP^{0}_{{1}} + 3 CP_{{1}} CP_{{2}} CP_{{3}} N_{z} ZS}{3 CP_{{1}} CP_{{2}} CP_{{3}}}
+   \frac{IPP^{0}_{{1}} + IPP^{0}_{{2}} + IPP^{0}_{{3}} + CP_{{1}} N_{z} ZS + CP_{{2}} N_{z} ZS + CP_{{3}} N_{z} ZS}{CP_{{1}} + CP_{{2}} + CP_{{3}}}
 
-This is also equal to the voxel size * $N_z$ plus a constant. 
+This is also equal to the voxel size ($ZS$) multiplied by $N_z$, plus a
+constant, but is unstable when the sum of $CP$ is close to zero. 
 
 Again, see :download:`derivations/spm_dicom_orient.py` for the derivations.
 

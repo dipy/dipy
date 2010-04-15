@@ -18,8 +18,51 @@ _CONVERTERS = {
     }
 
 
-class CSAReadError(Exception):
+class CSAError(Exception):
     pass
+
+
+class CSAReadError(CSAError):
+    pass
+
+
+def get_csa_header(dcm_data, csa_type='image'):
+    ''' Get CSA header information from DICOM header
+
+    Return None if the header does not contain CSA information of the
+    specified `csa_type`
+
+    Parameters
+    ----------
+    dcm_data : dicom.Dataset
+       DICOM dataset.  Needs only implement the tag fetch with
+       ``dcm_data[group, element]`` syntax
+    csa_type : {'image', 'series'}, optional
+       Type of CSA field to read; default is 'image'
+
+    Returns
+    -------
+    csa_info : None or dict
+       Parsed CSA field of `csa_type` or None, if we cannot find the CSA
+       information.
+    '''
+    csa_type = csa_type.lower()
+    if csa_type == 'image':
+        element_no = 0x1010
+        label = 'Image'
+    elif csa_type == 'series':
+        element_no = 0x1020
+        label = 'Series'
+    else:
+        raise ValueError('Invalid CSA header type "%s"'
+                         % csa_type)
+    try:
+        tag = dcm_data[0x29, element_no]
+    except KeyError:
+        return None
+    if tag.name != '[CSA %s Header Info]' % label:
+        return None
+    return read(tag.value)
 
 
 def read(csa_str):
@@ -112,19 +155,47 @@ def read(csa_str):
 
 
 def get_scalar(csa_dict, tag_name):
-    items = csa_dict['tags'][tag_name]['items']
+    try:
+        items = csa_dict['tags'][tag_name]['items']
+    except KeyError:
+        return None
     if len(items) == 0:
         return None
     return items[0]
 
 
 def get_vector(csa_dict, tag_name, n):
-    items = csa_dict['tags'][tag_name]['items']
+    try:
+        items = csa_dict['tags'][tag_name]['items']
+    except KeyError:
+        return None
     if len(items) == 0:
         return None
     if len(items) != n:
         raise ValueError('Expecting %d vector' % n)
     return np.array(items)
+
+
+def is_mosaic(csa_dict):
+    ''' Return True if the data is of Mosaic type
+
+    Parameters
+    ----------
+    csa_dict : dict
+       dict containing read CSA data
+
+    Returns
+    -------
+    tf : bool
+       True if the `dcm_data` appears to be of Siemens mosaic type,
+       False otherwise
+    '''
+    if csa_dict is None:
+        return False
+    if get_acq_mat_txt(csa_dict) is None:
+        return False
+    n_o_m = get_n_mosaic(csa_dict)
+    return not (n_o_m is None) and n_o_m != 0
 
 
 def get_n_mosaic(csa_dict):
@@ -155,6 +226,13 @@ def get_b_value(csa_dict):
 
 def get_g_vector(csa_dict):
     return get_vector(csa_dict, 'DiffusionGradientDirection', 3)
+
+
+def get_ice_dims(csa_dict):
+    dims = get_scalar(csa_dict, 'ICE_Dims')
+    if dims is None:
+        return None
+    return dims.split('_')
 
 
 def nt_str(s):
