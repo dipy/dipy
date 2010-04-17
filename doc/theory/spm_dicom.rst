@@ -1,8 +1,8 @@
 .. _spm-dicom:
 
-===============
- SPM and DICOM
-===============
+======================
+ SPM DICOM conversion
+======================
 
 These are some notes on the algorithms that SPM_ uses to convert from
 DICOM_ to nifti_.  There are other notes in :ref:`dicom-mosaic`. 
@@ -259,7 +259,9 @@ This section tries to explain how SPM achieves this, but I don't
 completely understand their method.  See :ref:`dicoms-and-affines` for
 what I believe to be a simpler explanation.
 
-First define the matrices and vectors as in :ref:`dicom-affine-defs`. 
+First define the constants, matrices and vectors as in :ref:`dicom-affine-defs`. 
+
+$N$ is the number of slices in the volume.
 
 Then define the following matrices:
 
@@ -267,14 +269,15 @@ Then define the following matrices:
 
    R = \left(\begin{smallmatrix}1 & A & 1 & 0\\1 & B & 0 & 1\\1 & C & 0 & 0\\1 & D & 0 & 0\end{smallmatrix}\right)
    
-   L = \left(\begin{smallmatrix}IPP^{0}_{{1}} & E & DOP_{{11}} XS & DOP_{{12}} YS\\IPP^{0}_{{2}} & F & DOP_{{21}} XS & DOP_{{22}} YS\\IPP^{0}_{{3}} & G & DOP_{{31}} XS & DOP_{{32}} YS\\1 & H & 0 & 0\end{smallmatrix}\right)
+   L = \left(\begin{smallmatrix}T^{1}_{{1}} & E & O_{{11}} \Delta_{cols} & O_{{12}} \Delta_{rows}\\T^{1}_{{2}} & F & O_{{21}} \Delta_{cols} & O_{{22}} \Delta_{rows}\\T^{1}_{{3}} & G & O_{{31}} \Delta_{cols} & O_{{32}} \Delta_{rows}\\1 & H & 0 & 0\end{smallmatrix}\right)
 
 For a volume with more than one slice (header), then $A, B, C, D$ are
-respectively $1, 1, NZ, 1$ and $E, F, G$ are the values from $IPP^N$,
+respectively $1, 1, N, 1$ and $E, F, G$ are the values from $T^N$,
 and $H == 1$.
 
-For a volume with only one slice (header) $A, B, C, D$ are $0, 0, 1,
-0$, $E, F, G, H$ are $CP_1 ZS, CP_2 ZS, CP_3 ZS, 0$.
+For a volume with only one slice (header) $A, B, C, D$ are $0, 0, 1, 0$,
+$E, F, G, H$ are $c_1 \Delta_{slices}, c_2 \Delta_{slices}, c_3
+\Delta_{slices}, 0$.
 
 The full transform appears to be $A_{spm} = R L^{-1}$.
 
@@ -286,7 +289,7 @@ to (1,1,1) indexing is dealt with in the $A$ transform, rather than the
 ``analyze_to_dicom`` transformation used by SPM in other places. So, the
 transform $A_{spm}$ goes from (1,1,1) based voxel indices to mm.  To
 get the (0, 0, 0)-based transform we want, we need to pre-apply the
-(1,1,1) voxel transform to 0-based voxel indices:
+transform to take 0-based voxel indices to 1-based voxel indices:
 
 .. math::
 

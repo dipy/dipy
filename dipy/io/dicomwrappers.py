@@ -114,7 +114,12 @@ class Wrapper(object):
 
     @one_time
     def image_shape(self):
-        shape = (self.get('Rows'), self.get('Columns'))
+        ''' The array shape as it will be returned by ``get_data()``
+
+        Note that we transpose the array from the stanard DICOM
+        understaning, to match the affine.
+        '''
+        shape = (self.get('Columns'), self.get('Rows'))
         if None in shape:
             return None
         return shape
@@ -150,6 +155,12 @@ class Wrapper(object):
 
     @one_time
     def voxel_sizes(self):
+        ''' voxel sizes for array as returned by ``get_data()``
+
+        Note that the first returned value refers to what DICOM would
+        call the 'Column' spacing, and the second to 'Row' spacing.
+        This is to match the returned data. 
+        '''
         pix_space = self.get('PixelSpacing')
         if pix_space is None:
             return None
@@ -158,7 +169,7 @@ class Wrapper(object):
             zs = self.get('SliceThickness')
             if zs is None:
                 zs = 1
-        return tuple(pix_space + [zs])
+        return tuple(pix_space[::-1] + [zs])
 
     @one_time
     def image_position(self):
@@ -269,13 +280,18 @@ class Wrapper(object):
     def get_data(self):
         ''' Get scaled image data from DICOMs
 
+        Note that this array will be transposed compared to DICOM's
+        understanding of rows and columns, thus, what DICOM calls
+        'rows', will be columns, and vice versa.   This is to match the
+        affine matrix. 
+
         Returns
         -------
         data : array
            array with data as scaled from any scaling in the DICOM
            fields. 
         '''
-        return self._scale_data(self.get_pixel_array())
+        return self._scale_data(self.get_pixel_array()).T
 
     def is_same_series(self, other):
         ''' Return True if `other` appears to be in same series
@@ -504,8 +520,11 @@ class MosaicWrapper(SiemensWrapper):
         if None in (rows, cols):
             return None
         mosaic_size = self.mosaic_size
-        return (int(rows / mosaic_size),
-                int(cols / mosaic_size),
+        # the columns and rows are transposed to match the way we're
+        # returning the data, which in turn matches the way we're
+        # returning the affine
+        return (int(cols / mosaic_size),
+                int(rows / mosaic_size),
                 self.n_mosaic)
                 
     @one_time

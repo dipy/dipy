@@ -1,9 +1,10 @@
-''' Attempts to unpack the SPM orientation machinery
+''' Symbolic versions of the DICOM orientation mathemeatics.
 
-These are symbolic versions of the code in ``spm_dicom_convert``,
+Notes on the SPM orientation machinery.
+
+There are symbolic versions of the code in ``spm_dicom_convert``,
 ``write_volume`` subfunction, around line 509 in the version I have
-(SPM8, late 2009 vintage). 
-
+(SPM8, late 2009 vintage).
 '''
 
 import numpy as np
@@ -11,6 +12,7 @@ import numpy as np
 import sympy
 from sympy import Matrix, Symbol, symbols, zeros, ones, eye
 
+# The code below is general (independent of SPMs code)
 def numbered_matrix(nrows, ncols, symbol_prefix):
     return Matrix(nrows, ncols, lambda i, j: Symbol(
             symbol_prefix + '_{%d%d}' % (i+1, j+1)))
@@ -19,7 +21,15 @@ def numbered_vector(nrows, symbol_prefix):
     return Matrix(nrows, 1, lambda i, j: Symbol(
             symbol_prefix + '_{%d}' % (i+1)))
 
+# premultiplication matrix to go from 0 based to 1 based indexing
+one_based = eye(4)
+one_based[:3,3] = (1,1,1)
+# premult for swapping row and column indices
+row_col_swap = eye(4)
+row_col_swap[:,0] = eye(4)[:,1] 
+row_col_swap[:,1] = eye(4)[:,0] 
 
+# various worming matrices
 orient_pat = numbered_matrix(3, 2, 'DOP')
 orient_cross = numbered_vector(3, 'CP')
 pos_pat_0 = numbered_vector(3, 'IPP^0')
@@ -47,7 +57,7 @@ inv_lhs[:,0] = y1
 inv_lhs[:,1] = symbols('EFGH')
 inv_lhs[:,2:] = R
 
-def full_matrix(x2, y2):
+def spm_full_matrix(x2, y2):
     rhs = to_inv[:,:]
     rhs[:,1] = x2
     lhs = inv_lhs[:,:]
@@ -61,18 +71,18 @@ orient[:,2] = orient_cross
 x2_ss = Matrix((0,0,1,0))
 y2_ss = zeros((4,1))
 y2_ss[:3,:] = orient * Matrix((0,0,slice_thickness))
-A_ss = full_matrix(x2_ss, y2_ss)
+A_ss = spm_full_matrix(x2_ss, y2_ss)
 
 # many slice case
 x2_ms = Matrix((1,1,NZ,1))
 y2_ms = ones((4,1))
 y2_ms[:3,:] = pos_pat_N
-A_ms = full_matrix(x2_ms, y2_ms)
+A_ms = spm_full_matrix(x2_ms, y2_ms)
 
 # End of SPM algorithm
 
-# Here's what I was expecting from first principles of the DICOM
-# transform
+# Rather simpler derivation from DICOM affine formulae - see
+# dicom_orientation.rst
 
 # single slice case
 single_aff = eye(4)
@@ -96,21 +106,13 @@ solved =  sympy.solve(eqns, tuple(missing_r_col))
 multi_aff_solved = multi_aff[:,:]
 multi_aff_solved[:3,2] = solved.values()
 
-# Check that I got what I was expecting, from SPM
-one_based = eye(4)
-one_based[:3,3] = (1,1,1)
+# Check that SPM gave us the same result
 A_ms_0based = A_ms * one_based
 A_ms_0based.simplify()
 A_ss_0based = A_ss * one_based
 A_ss_0based.simplify()
 assert single_aff == A_ss_0based
 assert multi_aff_solved == A_ms_0based
-
-print 'Single slice case'
-print single_aff
-
-print 'Multi slice case'
-print multi_aff_solved
 
 # Now, trying to work out Z from slice affines
 A_i = single_aff
@@ -125,7 +127,8 @@ IPP_j = A_j[:3,3]
 spm_z = IPP_j.T * orient_cross
 spm_z.simplify()
 
-# We can also do it with a sum and division
+# We can also do it with a sum and division, but then we'd get undefined
+# behavior when orient_cross sums to zero.
 ipp_sum_div = sum(IPP_j) / sum(orient_cross)
 ipp_sum_div = sympy.simplify(ipp_sum_div)
 
@@ -154,5 +157,3 @@ print
 print '   IPP_j = ' + my_latex(IPP_j)
 print
 print '   IPP_j^T CP = ' + my_latex(spm_z)
-print
-print '   ' + my_latex(ipp_sum_div)

@@ -13,5 +13,6 @@ Contents:
    dicom_orientation
    dicom_fields
    bmatrix
-   spm_dicom
    dicom_mosaic
+   siemens_csa
+   spm_dicom
