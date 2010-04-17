@@ -23,7 +23,7 @@ with something like::
 DICOM orientation for mosaic
 ============================
 
-See :ref:`dicom-pcs` and :ref:`dicom-orientation`.  To define the voxel
+See :ref:`dicom-pcs` and :ref:`dicom-orientation`. To define the voxel
 to millimeter mapping, in terms of the :ref:`dicom-pcs`, we need a 4 x 4
 affine homogenous transform matrix, which can in turn be thought of as
 the (3,3) component, $RS$, and a (3,1) translation vector $\mathbf{t}$.
@@ -56,29 +56,34 @@ left voxel, where the slice size used for this adjustment is the size of
 the mosaic, before it has been unpacked.  Let's call the correct
 position in millimeters of the center of the first slice $\mathbf{c} =
 [c_x, c_y, c_z]$.  We have the derived $RS$ matrix from the calculations
-above. The unpacked (eventual, real) slice dimensions are $[rd_x, rd_y]$
-and the mosaic dimensions are $[md_x, md_y]$.  The
+above. The unpacked (eventual, real) slice dimensions are $(rd_{rows},
+rd_{cols})$ and the mosaic dimensions are $(md_{rows}, md_{cols})$.  The
 ``ImagePositionPatient`` vector $\mathbf{i}$ resulted from:
 
 .. math::
 
    \mathbf{i} = \mathbf{c} + RS 
-      \begin{bmatrix} -(md_x-1) / 2\\
-                      -(md_y-1) / 2\\
+      \begin{bmatrix} -(md_{cols}-1) / 2\\
+                      -(md_{rows}-1) / 2\\
                       0 \end{bmatrix}
 
-To correct this we reverse the translation, and add the correct
-translation for the unpacked slice size $[rd_x, rd_y]$, giving the true
-image position $\mathbf{t}$:
+Note that $md_{cols}$ is the first value, $md_{rows}$ is the second, in
+the vector.  This follows from the :ref:`ij-transpose` in the standard
+DICOM formula.  The transpose means that the first input coordinate is
+the column index, and the second is the row index.
+
+To correct the faulty translation, we reverse it, and add the correct
+translation for the unpacked slice size $(rd_{rows}, rd_{cols})$, giving
+the true image position $\mathbf{t}$:
 
 .. math::
 
    \mathbf{t} = \mathbf{i} - 
-                (RS \begin{bmatrix} -(md_x-1) / 2\\
-                                      -(md_y-1) / 2\\
+                (RS \begin{bmatrix} -(md_{cols}-1) / 2\\
+                                      -(md_{rows}-1) / 2\\
                                       0 \end{bmatrix}) +
-                (RS \begin{bmatrix} -(rd_x-1) / 2\\
-                                      -(rd_y-1) / 2\\
+                (RS \begin{bmatrix} -(rd_{cols}-1) / 2\\
+                                      -(rd_{rows}-1) / 2\\
                                       0 \end{bmatrix})
 
 
@@ -87,14 +92,14 @@ Because of the final zero in the voxel translations, this simplifies to:
 .. math::
 
    \mathbf{t} = \mathbf{i} + 
-                M \begin{bmatrix} (md_x - rd_x) / 2 \\
-                                  (md_y - rd_y) / 2 \end{bmatrix}
+                Q \begin{bmatrix} (md_{cols} - rd_{cols}) / 2 \\
+                                  (md_{rows} - rd_{rows}) / 2 \end{bmatrix}
 
 where: 
 
 .. math::
 
-   M = \begin{bmatrix} rs_{11} & rs_{12} \\
+   Q = \begin{bmatrix} rs_{11} & rs_{12} \\
                        rs_{21} & rs_{22} \\
                        rs_{31} & rs_{32} \end{bmatrix}
 

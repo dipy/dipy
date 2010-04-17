@@ -151,7 +151,7 @@ system* - see `DICOM object definitions`_ section 3.17.1):
 
 We stop to ask ourselves, what does DICOM mean by voxel (i, j)?
 
-Isnt that obvious?  Oh dear, no it isn't.  See the
+Isn't that obvious?  Oh dear, no it isn't.  See the
 :ref:`dicom-orientation` formula above.  In particular, you'll see:
 
 * $i$ : Column index to the image plane. The first column is index zero.
@@ -194,10 +194,11 @@ By voxel coordinates, we mean *transposed coordinates* - see
 :ref:`ij-transpose` above.
 
 In the single slice case, the voxel coordinates are just the indices
-into the pixel array, with the third (z) coordinate always being 0.  In
-the multi-slice case, we have arranged the slices in ascending or
-descending order in Z.  The z coordinate refers to slice in this case,
-with 0 being the first slice, and N-1 being the last slice.
+into the pixel array, with the third (slice) coordinate always being 0.
+In the multi-slice case, we have arranged the slices in ascending or
+descending order, where slice numbers range from 0 to $N-1$ - where $N$
+is the number of slices - and the slice coordinate is a number on this
+scale.
 
 We know, from the formula above, that the first, second and fourth
 columns in $A$ are given directly by the formula in
@@ -234,7 +235,7 @@ right-handed orthogonal to the X and Y directions.
 
 For the multi-slice case, we can fill in $\mathbf{s}$ by using the information
 from $T^N$, because $T^N$ is the translation needed to take the
-first voxel in the last ($z=N-1$) slice to mm space.  So:
+first voxel in the last (slice index = $N-1$) slice to mm space.  So:
 
 .. math:: 
 
@@ -273,11 +274,12 @@ the orientation information to tell us where the slices are in space,
 and therefore, what order they should have.
 
 To do this sorting, we need something that is proportional, plus a
-constant, to the $z$ voxel coordinate for the slice.
+constant, to the voxel coordinate for the slice (the value for the slice
+index).
 
 Our DICOM might have the 'SliceLocation' field (0020,1041).
-'SliceLocation' seems to be proportianal to z axis location, at least
-for some GE and Philips DICOMs I was looking at.  But, there is a more
+'SliceLocation' seems to be proportianal to slice location, at least for
+some GE and Philips DICOMs I was looking at.  But, there is a more
 reliable way (that doesn't depend on this field), and uses only the very
 standard 'ImageOrientationPatient' and 'ImagePositionPatient' fields.
 
@@ -291,9 +293,9 @@ affine for this slice from the calculations above, for a single slice
 Now let's say we have another slice $j$ from the same volume.  It will
 have the same affine, except that the 'ImagePositionPatient' field will
 change to reflect the different position of this slice in space. Let us
-say that there a translation of $d$ voxels (slices) between $i$ and
-$j$.  If $A_i$ ($A$ for slice $i$) is $A_{single}$ then $A_j$ for
-$j$ is given by:
+say that there a translation of $d$ slices between $i$ and $j$.  If
+$A_i$ ($A$ for slice $i$) is $A_{single}$ then $A_j$ for $j$ is given
+by:
 
 .. math::
 
@@ -306,25 +308,26 @@ and 'ImagePositionPatient' for $j$ is:
    T^j = \left(\begin{smallmatrix}T^{1}_{{1}} + c_{{1}} d \Delta_{slices}\\T^{1}_{{2}} + c_{{2}} d \Delta_{slices}\\T^{1}_{{3}} + c_{{3}} d \Delta_{slices}\end{smallmatrix}\right)
 
 Remember that the third column of $A$ gives the vector resulting from a
-unit change in the z voxel coordinate.  So, the 'ImagePositionPatient'
-of slice - say slice $j$ - can be thought of the addition of two vectors
-$T^j = \mathbf{a} + \mathbf{b}$, where $\mathbf{a}$ is the position of
-the first voxel in some slice (here slice 1, therefore $T^1$) and
-$\mathbf{b}$ is $d$ times the third colum of $A$.  Obviously $d$ can
-be negative or positive. This leads to various ways of recovering
-something that is proportional to $d$ plus a constant.  SPM takes the
-inner product of $T^j$ with the unit vector component of third column of
-$A_j$ - in the descriptions here, this is the vector $\mathbf{c}$:
+unit change in the slice voxel coordinate.  So, the
+'ImagePositionPatient' of slice - say slice $j$ - can be thought of the
+addition of two vectors $T^j = \mathbf{a} + \mathbf{b}$, where
+$\mathbf{a}$ is the position of the first voxel in some slice (here
+slice 1, therefore $\mathbf{a} = T^1$) and $\mathbf{b}$ is $d$ times the
+third colum of $A$.  Obviously $d$ can be negative or positive. This
+leads to various ways of recovering something that is proportional to
+$d$ plus a constant.  SPM takes the inner product of $T^j$ with the unit
+vector component of third column of $A_j$ - in the descriptions here,
+this is the vector $\mathbf{c}$:
 
 .. math::
 
    T^j \cdot \mathbf{c} = \left(\begin{smallmatrix}c_{{1}} T^{1}_{{1}} + c_{{2}} T^{1}_{{2}} + c_{{3}} T^{1}_{{3}} + d \Delta_{slices} c_{{1}}^{2} + d \Delta_{slices} c_{{2}}^{2} + d \Delta_{slices} c_{{3}}^{2}\end{smallmatrix}\right)
 
 The unknown $T^1$ terms pool into a constant, and the operation has the
-neat feature that, because the $c_N^2$ terms, by definition,
-sum to 1, the whole can be expressed as $\lambda + \Delta_{slices} d$ -
-i.e. it is equal to the voxel size ($\Delta_{slices}$) multiplied by
-$d$, plus a constant.
+neat feature that, because the $c_N^2$ terms, by definition, sum to 1,
+the whole can be expressed as $\lambda + \Delta_{slices} d$ - i.e. it is
+equal to the slice voxel size ($\Delta_{slices}$) multiplied by $d$,
+plus a constant.
 
 Again, see :download:`derivations/spm_dicom_orient.py` for the derivations.
 
