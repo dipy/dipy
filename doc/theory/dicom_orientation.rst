@@ -144,6 +144,8 @@ system* - see `DICOM object definitions`_ section 3.17.1):
    #. $\Delta{j}$ - Row pixel resolution of the Pixel Spacing
       (0028,0030) attribute in units of mm.
 
+.. _ij-transpose:
+
 (i, j), columns, rows in DICOM
 ==============================
 
@@ -169,7 +171,9 @@ given $M$ above:
 
    M_{pixar} = M \left(\begin{smallmatrix}0 & 1 & 0 & 0\\1 & 0 & 0 & 0\\0 & 0 & 1 & 0\\0 & 0 & 0 & 1\end{smallmatrix}\right)
 
-The affines below do not take this premultiplication into account.
+The affines below do not take this premultiplication into account - that
+is, they assume that you have either already applied it, or that you
+have transposed ``pixel_array``.
 
 .. _dicoms-and-affines:
 
@@ -184,18 +188,22 @@ In the *multi slice* case, we can assume that the
 'ImageOrientationPatient' field is the same for all the slices.
 
 We want to get the affine transformation matrix $A$ that maps from voxel
-coordinates in the DICOM file(s), to mm in the :ref:`dicom-pcs`.  In the
-single slice case, the voxel coordinates are just the indices into the
-pixel array, with the third (z) coordinate always being 0.  In the
-multi-slice case, we have arranged the slices in ascending or descending
-order in Z.  The z coordinate refers to slice in this case, with 0 being
-the first slice, and N-1 being the last slice.
+coordinates in the DICOM file(s), to mm in the :ref:`dicom-pcs`.  
+
+By voxel coordinates, we mean *transposed coordinates* - see
+:ref:`ij-transpose` above.
+
+In the single slice case, the voxel coordinates are just the indices
+into the pixel array, with the third (z) coordinate always being 0.  In
+the multi-slice case, we have arranged the slices in ascending or
+descending order in Z.  The z coordinate refers to slice in this case,
+with 0 being the first slice, and N-1 being the last slice.
 
 We know, from the formula above, that the first, second and fourth
 columns in $A$ are given directly by the formula in
 :ref:`dicom-orientation` - from the 'ImageOrientationPatient',
-(reversed) 'PixelSpacing' and 'ImagePositionPatient' field of the first (or only)
-slice.
+(reversed) 'PixelSpacing' and 'ImagePositionPatient' field of the first
+(or only) slice.
 
 Our job then is to fill the first three rows of the third column of $A$.
 Let's call this the vector $\mathbf{s}$ with values  $s_1, s_2, s_3$.
@@ -321,3 +329,4 @@ $d$, plus a constant.
 Again, see :download:`derivations/spm_dicom_orient.py` for the derivations.
 
 .. include:: ../links_names.txt
+

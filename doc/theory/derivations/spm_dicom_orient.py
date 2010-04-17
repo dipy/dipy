@@ -30,13 +30,13 @@ row_col_swap[:,0] = eye(4)[:,1]
 row_col_swap[:,1] = eye(4)[:,0] 
 
 # various worming matrices
-orient_pat = numbered_matrix(3, 2, 'DOP')
-orient_cross = numbered_vector(3, 'CP')
-pos_pat_0 = numbered_vector(3, 'IPP^0')
-pos_pat_N = numbered_vector(3, 'IPP^N')
-pixel_spacing = symbols(('XS', 'YS'))
-NZ = Symbol('NZ')
-slice_thickness = Symbol('ZS')
+orient_pat = numbered_matrix(3, 2, 'O')
+orient_cross = numbered_vector(3, 'c')
+pos_pat_0 = numbered_vector(3, 'T^1')
+pos_pat_N = numbered_vector(3, 'T^N')
+pixel_spacing = symbols(('\Delta_{cols}', '\Delta_{rows}'))
+NZ = Symbol('N')
+slice_thickness = Symbol('\Delta_{slices}')
 
 R3 = orient_pat * np.diag(pixel_spacing)
 R = zeros((4,2))
@@ -92,11 +92,11 @@ single_aff[:3,:3] = rot_scale
 single_aff[:3,3] = pos_pat_0
 
 # For multi-slice case, we have the start and the end slice position
-# patient.  This should give us the third column of the affine, because,
+# patient.  This gives us the third column of the affine, because,
 # ``pat_pos_N = aff * [[0,0,ZN-1,1]].T
 multi_aff = eye(4)
 multi_aff[:3,:2] = R3
-missing_r_col = numbered_vector(3, 'AZ')
+missing_r_col = numbered_vector(3, 's')
 trans_z_N = Matrix((0,0, NZ-1, 1))
 multi_aff[:3, 2] = missing_r_col
 multi_aff[:3, 3] = pos_pat_0
@@ -104,7 +104,7 @@ est_pos_pat_N = multi_aff * trans_z_N
 eqns = tuple(est_pos_pat_N[:3,0] - pos_pat_N)
 solved =  sympy.solve(eqns, tuple(missing_r_col))
 multi_aff_solved = multi_aff[:,:]
-multi_aff_solved[:3,2] = solved.values()
+multi_aff_solved[:3,2] = multi_aff_solved[:3,2].subs(solved)
 
 # Check that SPM gave us the same result
 A_ms_0based = A_ms * one_based
@@ -117,7 +117,7 @@ assert multi_aff_solved == A_ms_0based
 # Now, trying to work out Z from slice affines
 A_i = single_aff
 nz_trans = eye(4)
-NZT = Symbol('N_z')
+NZT = Symbol('d')
 nz_trans[2,3] = NZT
 A_j = A_i * nz_trans
 IPP_i = A_i[:3,3]
@@ -148,12 +148,12 @@ print '   A_{multi} = ' + my_latex(multi_aff_solved)
 print '   '
 print '   A_{single} = ' + my_latex(single_aff)
 print
-print r'   \left(\begin{smallmatrix}IPP^N\\1\end{smallmatrix}\right) = A ' + my_latex(trans_z_N)
+print r'   \left(\begin{smallmatrix}T^N\\1\end{smallmatrix}\right) = A ' + my_latex(trans_z_N)
 print
 print '   ' + my_latex(solved)
 print
 print '   A_j = A_{single} ' + my_latex(nz_trans)
 print
-print '   IPP_j = ' + my_latex(IPP_j)
+print '   T^j = ' + my_latex(IPP_j)
 print
-print '   IPP_j^T CP = ' + my_latex(spm_z)
+print '   T^j \cdot \mathbf{c} = ' + my_latex(spm_z)
