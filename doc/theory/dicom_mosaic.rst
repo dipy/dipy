@@ -23,15 +23,17 @@ with something like::
 DICOM orientation for mosaic
 ============================
 
-See :ref:`dicom-pcs` and :ref:`dicom-orientation`. To define the voxel
-to millimeter mapping, in terms of the :ref:`dicom-pcs`, we need a 4 x 4
-affine homogenous transform matrix, which can in turn be thought of as
-the (3,3) component, $RS$, and a (3,1) translation vector $\mathbf{t}$.
-$RS$ can in turn be thought of as the dot product of a (3,3) rotation
-matrix $R$ and a scaling matrix $S$, where ``S = diag(s)`` and
-$\mathbf{s}$ is a (3,) vector of voxel sizes.  $\mathbf{t}$ is a (3,1)
-translation vector, defining the coordinate in millimeters of the
-first voxel in the voxel volume (the voxel given by
+See :ref:`dicom-pcs` and :ref:`dicom-orientation`.  We want a 4 x 4
+affine $A$ that will take us from (transposed) voxel coordinates in the
+DICOM image to mm in the :ref:`dicom-pcs`.  See :ref:`ij-transpose` for
+what we mean by transposed voxel coordinates.
+
+We can think of the affine $A$ as the (3,3) component, $RS$, and a (3,1)
+translation vector $\mathbf{t}$.  $RS$ can in turn be thought of as the
+dot product of a (3,3) rotation matrix $R$ and a scaling matrix $S$,
+where ``S = diag(s)`` and $\mathbf{s}$ is a (3,) vector of voxel sizes.
+$\mathbf{t}$ is a (3,1) translation vector, defining the coordinate in
+millimeters of the first voxel in the voxel volume (the voxel given by
 ``voxel_array[0,0,0]``).
 
 In the case of the mosaic, we have the first two columns of $R$ from the
@@ -39,26 +41,28 @@ In the case of the mosaic, we have the first two columns of $R$ from the
 matrix, we can generate the last column from the cross product of the
 first two.  However, Siemens defines, in its private :ref:`csa-header`,
 a ``SliceNormalVector`` which gives the third column, but possibly with
-a z flip, so that $R$ then is orthogonal, but not a rotation matrix (it
-has a determinant of < 0).
+a z flip, so that $R$ is orthogonal, but not a rotation matrix (it has a
+determinant of < 0).
 
-We can get the first two values of $\mathbf{s}$ with the
-``PixelSpacing`` field, and the last (z scaling) value with the
-``SpacingBetweenSlices``.
+The first two values of $\mathbf{s}$ ($s_1, s_2$) are given by the second
+and first values in the ``PixelSpacing`` field, respectively.  Why this
+order? - see :ref:`ij-transpose`.  We get $s_3$ (the slice scaling
+value) from ``SpacingBetweenSlices``.
 
-The :ref:`spm-dicom` code has a comment saying that mosaic DICOM images
-have an incorrect ``ImagePositionPatient`` field (the
-``ImagePositionPatient`` field gives the $\mathbf{t}$ vector.  The
-comments imply that Siemens has derived ``ImagePositionPatient`` from
-the (correct) position of the center of the first slice (once the mosaic
-has been unpacked), but then adjusted the vector to point to the top
-left voxel, where the slice size used for this adjustment is the size of
-the mosaic, before it has been unpacked.  Let's call the correct
+The :ref:`spm-dicom` code has a comment saying that mosaic DICOM imagqes
+have an incorrect ``ImagePositionPatient`` field. The
+``ImagePositionPatient`` field usually gives the $\mathbf{t}$ vector.
+The comments imply that Siemens has derived ``ImagePositionPatient``
+from the (correct) position of the center of the first slice (once the
+mosaic has been unpacked), but has then adjusted the vector to point to
+the top left voxel, where the slice size used for this adjustment is the
+size of the mosaic, before it has been unpacked.  Let's call the correct
 position in millimeters of the center of the first slice $\mathbf{c} =
 [c_x, c_y, c_z]$.  We have the derived $RS$ matrix from the calculations
-above. The unpacked (eventual, real) slice dimensions are $(rd_{rows},
-rd_{cols})$ and the mosaic dimensions are $(md_{rows}, md_{cols})$.  The
-``ImagePositionPatient`` vector $\mathbf{i}$ resulted from:
+in :ref:`dicom-orientation`. The unpacked (eventual, real) slice
+dimensions are $(rd_{rows}, rd_{cols})$ and the mosaic dimensions are
+$(md_{rows}, md_{cols})$.  The ``ImagePositionPatient`` vector
+$\mathbf{i}$ resulted from:
 
 .. math::
 
@@ -67,10 +71,10 @@ rd_{cols})$ and the mosaic dimensions are $(md_{rows}, md_{cols})$.  The
                       -(md_{rows}-1) / 2\\
                       0 \end{bmatrix}
 
-Note that $md_{cols}$ is the first value, $md_{rows}$ is the second, in
-the vector.  This follows from the :ref:`ij-transpose` in the standard
-DICOM formula.  The transpose means that the first input coordinate is
-the column index, and the second is the row index.
+Note that the vector has $md_{cols}$ is the first value, $md_{rows}$ is
+the second.  This follows from the :ref:`ij-transpose`.  The transpose
+means that the first input coordinate is the column index, and the
+second is the row index.
 
 To correct the faulty translation, we reverse it, and add the correct
 translation for the unpacked slice size $(rd_{rows}, rd_{cols})$, giving
@@ -80,12 +84,11 @@ the true image position $\mathbf{t}$:
 
    \mathbf{t} = \mathbf{i} - 
                 (RS \begin{bmatrix} -(md_{cols}-1) / 2\\
-                                      -(md_{rows}-1) / 2\\
-                                      0 \end{bmatrix}) +
+                                    -(md_{rows}-1) / 2\\
+                                     0 \end{bmatrix}) +
                 (RS \begin{bmatrix} -(rd_{cols}-1) / 2\\
-                                      -(rd_{rows}-1) / 2\\
-                                      0 \end{bmatrix})
-
+                                    -(rd_{rows}-1) / 2\\
+                                     0 \end{bmatrix})
 
 Because of the final zero in the voxel translations, this simplifies to:
 
