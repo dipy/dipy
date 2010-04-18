@@ -25,16 +25,18 @@ DATA_FILE_B0 = pjoin(IO_DATA_PATH, 'siemens_dwi_0.dcm.gz')
 
 # this affine from our converted image was shown to match our image
 # spatially with an image from SPM DICOM conversion. We checked the
-# matching with SPM check reg.
+# matching with SPM check reg.  We have flipped the first and second
+# rows to allow for rows, cols tranpose. 
 EXPECTED_AFFINE = np.array(
     [[ -1.796875, 0, 0, 115],
      [0, -1.79684984, -0.01570896, 135.028779],
      [0, -0.00940843750, 2.99995887, -78.710481],
-     [0, 0, 0, 1]])
+     [0, 0, 0, 1]])[:,[1,0,2,3]]
 
-# from Guys and Matthew's SPM code, with Y flip reversed
-EXPECTED_PARAMS = [992.05050247, (0.99997450,
-                                  0.00507649,
+# from Guys and Matthew's SPM code, undoing SPM's Y flip, and swapping
+# first two values in vector, to account for data rows, cols difference.
+EXPECTED_PARAMS = [992.05050247, (0.00507649,
+                                  0.99997450,
                                   -0.005023611)]
 
 

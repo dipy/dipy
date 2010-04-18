@@ -27,7 +27,7 @@ class WrapperError(Exception):
     pass
 
 
-def wrapper_from_file(file_like):
+def wrapper_from_file(file_like, *args, **kwargs):
     ''' Create DICOM wrapper from `file_like` object
 
     Parameters
@@ -35,7 +35,11 @@ def wrapper_from_file(file_like):
     file_like : object
        filename string or file-like object, pointing to a valid DICOM
        file readable by ``pydicom``
-
+    *args : positional
+    **kwargs : keyword
+        args to ``dicom.read_file`` command.  ``force=True`` might be a
+        likely keyword argument.
+        
     Returns
     -------
     dcm_w : ``dicomwrappers.Wrapper`` or subclass
@@ -43,7 +47,7 @@ def wrapper_from_file(file_like):
     '''
     import dicom
     fobj = allopen(file_like)
-    dcm_data = dicom.read_file(fobj)
+    dcm_data = dicom.read_file(fobj, *args, **kwargs)
     return wrapper_from_data(dcm_data)
 
 
@@ -115,11 +119,8 @@ class Wrapper(object):
     @one_time
     def image_shape(self):
         ''' The array shape as it will be returned by ``get_data()``
-
-        Note that we transpose the array from the stanard DICOM
-        understaning, to match the affine.
         '''
-        shape = (self.get('Columns'), self.get('Rows'))
+        shape = (self.get('Rows'), self.get('Columns'))
         if None in shape:
             return None
         return shape
@@ -140,12 +141,22 @@ class Wrapper(object):
 
     @one_time
     def rotation_matrix(self):
+        ''' Return rotation matrix between array indices and mm
+        
+        Note that we swap the two columns of the 'ImageOrientPatient'
+        when we create the rotation matrix.  This is takes into account
+        the slightly odd ij transpose construction of the DICOM
+        orientation fields - see doc/theory/dicom_orientaiton.rst.
+        '''
         iop = self.image_orient_patient
         s_norm = self.slice_normal
         if None in (iop, s_norm):
             return None
         R = np.eye(3)
-        R[:,:2] = iop
+        # fliplr accounts for the fact that the first column in ``iop``
+        # refers to changes in column index, and the second to changes
+        # in row index.  See doc/theory/dicom_orientation.rst
+        R[:,:2] = np.fliplr(iop)
         R[:,2] = s_norm
         # check this is in fact a rotation matrix
         assert np.allclose(np.eye(3),
@@ -156,11 +167,10 @@ class Wrapper(object):
     @one_time
     def voxel_sizes(self):
         ''' voxel sizes for array as returned by ``get_data()``
-
-        Note that the first returned value refers to what DICOM would
-        call the 'Column' spacing, and the second to 'Row' spacing.
-        This is to match the returned data. 
         '''
+        # pix space gives (row_spacing, column_spacing).  That is, the
+        # mm you move when moving from one row to the next, and the mm
+        # you move when moving from one column to the next
         pix_space = self.get('PixelSpacing')
         if pix_space is None:
             return None
@@ -169,7 +179,7 @@ class Wrapper(object):
             zs = self.get('SliceThickness')
             if zs is None:
                 zs = 1
-        return tuple(pix_space[::-1] + [zs])
+        return tuple(pix_space + [zs])
 
     @one_time
     def image_position(self):
@@ -249,7 +259,7 @@ class Wrapper(object):
 
     def get_affine(self):
         ''' Return mapping between voxel and DICOM coordinate system
-        
+
         Parameters
         ----------
         None
@@ -260,7 +270,13 @@ class Wrapper(object):
            Affine giving transformation between voxels in data array and
            mm in the DICOM patient coordinate system.
         '''
+        # rotation matrix already accounts for the ij transpose in the
+        # DICOM image orientation patient transform.  So. column 0 is
+        # direction cosine for changes in row index, column 1 is
+        # direction cosine for changes in column index
         orient = self.rotation_matrix
+        # therefore, these voxel sizes are in the right order (row,
+        # column, slice)
         vox = self.voxel_sizes
         ipp = self.image_position
         if None in (orient, vox, ipp):
@@ -280,10 +296,8 @@ class Wrapper(object):
     def get_data(self):
         ''' Get scaled image data from DICOMs
 
-        Note that this array will be transposed compared to DICOM's
-        understanding of rows and columns, thus, what DICOM calls
-        'rows', will be columns, and vice versa.   This is to match the
-        affine matrix. 
+        We return the data as DICOM understands it, first dimension is
+        rows, second dimension is columns
 
         Returns
         -------
@@ -291,7 +305,7 @@ class Wrapper(object):
            array with data as scaled from any scaling in the DICOM
            fields. 
         '''
-        return self._scale_data(self.get_pixel_array()).T
+        return self._scale_data(self.get_pixel_array())
 
     def is_same_series(self, other):
         ''' Return True if `other` appears to be in same series
@@ -520,11 +534,8 @@ class MosaicWrapper(SiemensWrapper):
         if None in (rows, cols):
             return None
         mosaic_size = self.mosaic_size
-        # the columns and rows are transposed to match the way we're
-        # returning the data, which in turn matches the way we're
-        # returning the affine
-        return (int(cols / mosaic_size),
-                int(rows / mosaic_size),
+        return (int(rows / mosaic_size),
+                int(cols / mosaic_size),
                 self.n_mosaic)
                 
     @one_time
@@ -544,20 +555,24 @@ class MosaicWrapper(SiemensWrapper):
            position in mm of voxel (0,0,0) in Mosaic array
         '''
         ipp = self.get('ImagePositionPatient')
-        o_rows, o_cols = (self.get('Rows'), self.get('Columns'))
+        # mosaic image size
+        md_rows, md_cols = (self.get('Rows'), self.get('Columns'))
         iop = self.image_orient_patient
-        vox = self.voxel_sizes
-        if None in (ipp, o_rows, o_cols, iop, vox):
+        pix_spacing = self.get('PixelSpacing')
+        if None in (ipp, md_rows, md_cols, iop, pix_spacing):
             return None
-        # size of mosaic array before rearranging to 3D
-        md_xy = np.array([o_rows, o_cols])
-        # size of slice X, Y in array after reshaping to 3D
-        rd_xy = md_xy / self.mosaic_size
+        # size of mosaic array before rearranging to 3D.  Note cols /
+        # rows order - see doc referenced above for explanation.
+        md_cr = np.array([md_cols, md_rows])
+        # size of slice array after reshaping to 3D
+        rd_cr = md_cr / self.mosaic_size
         # apply algorithm for undoing mosaic translation error - see
         # ``dicom_mosaic`` doc
-        vox_trans_fixes = (md_xy - rd_xy) / 2
-        M = iop * vox[:2]
-        return ipp + np.dot(M, vox_trans_fixes[:,None]).ravel()
+        vox_trans_fixes = (md_cr - rd_cr) / 2
+        # again, see doc for why cols, rows are in this order
+        row_spacing, col_spacing = pix_spacing
+        Q = iop * [col_spacing, row_spacing]
+        return ipp + np.dot(Q, vox_trans_fixes[:,None]).ravel()
     
     def get_data(self):
         ''' Get scaled image data from DICOMs
@@ -578,11 +593,13 @@ class MosaicWrapper(SiemensWrapper):
         data = self.get_pixel_array()
         v4=data.reshape(mosaic_size,n_rows,
                         mosaic_size,n_cols)
-        v4p=np.rollaxis(v4,2,1)
-        v3=v4p.reshape(mosaic_size*mosaic_size,n_rows,n_cols)
+        # move the mosaic dims to the end
+        v4=v4.transpose((1,3,0,2))
+        # pool mosaic-generated dims
+        v3=v4.reshape((n_rows, n_cols, mosaic_size*mosaic_size))
         # delete any padding slices
-        v3 = v3[:n_mosaic]
-        return self._scale_data(v3).T
+        v3 = v3[...,:n_mosaic]
+        return self._scale_data(v3)
 
 
 def none_or_close(val1, val2, rtol=1e-5, atol=1e-6):
