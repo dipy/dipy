@@ -171,14 +171,84 @@ given $M$ above:
 
    M_{pixar} = M \left(\begin{smallmatrix}0 & 1 & 0 & 0\\1 & 0 & 0 & 0\\0 & 0 & 1 & 0\\0 & 0 & 0 & 1\end{smallmatrix}\right)
 
-The affines below do not take this premultiplication into account - that
-is, they assume that you have either already applied it, or that you
-have transposed ``pixel_array``.
+.. _dicom-affines-reloaded:
 
-.. _dicoms-and-affines:
+DICOM affines again
+===================
 
-Getting the affine transformation from DICOM files and file lists
-=================================================================
+The :ref:`ij-transpose` is rather confusing, so we're going to rephrase
+the affine mapping; we'll use $r$ for the row index (instead of $j$
+above), and $c$ for the column index (instead of $i$).
+
+Next we define a flipped version of 'ImageOrientationPatient', $F$, that
+has flipped columns. Thus if the vector of 6 values in
+'ImageOrientationPatient' are $(i_1 .. i_6)$, then:
+
+.. math::
+
+   F =  \begin{bmatrix} i_4 & i_1 \\
+                        i_5 & i_2 \\
+                        i_6 & i_3 \end{bmatrix}
+
+Now the first column of F contains what the DICOM docs call the 'column
+(Y) direction cosine', and second column contains the 'row (X) direction
+cosine'.  We prefer to think of these as (respectively) the row index
+direction cosine and the column index direction cosine.
+
+Now we can rephrase the DICOM affine mapping with:
+
+.. _dicom-slice-affine:
+
+DICOM affine formula
+====================
+
+.. math::
+
+   \begin{bmatrix} P_x\\
+                   P_y\\
+                   P_z\\
+                   1 \end{bmatrix} = 
+   \begin{bmatrix} F_{11}\Delta{r} & F_{12}\Delta{c} & 0 & S_x \\ 
+                   F_{21}\Delta{r} & F_{22}\Delta{c} & 0 & S_y \\
+                   F_{31}\Delta{r} & F_{32}\Delta{c} & 0 & S_z \\
+                   0   & 0   & 0 & 1 \end{bmatrix}
+   \begin{bmatrix} r\\
+                   c\\
+                   0\\
+                   1 \end{bmatrix} 
+   = A 
+   \begin{bmatrix} r\\
+                   c\\
+                   0\\
+                   1 \end{bmatrix} 
+
+Where:
+
+* $P_{xyz}$ : The coordinates of the voxel (c, r) in the frame's image
+  plane in units of mm.
+* $S_{xyz}$ : The three values of the Image Position (Patient)
+  (0020,0032) attributes. It is the location in mm from the origin of
+  the RCS.
+* $F_{:,1}$ : The values from the column (Y) direction cosine of the
+  Image Orientation (Patient) (0020,0037) attribute - see above.
+* $F_{:,2}$ : The values from the row (X) direction cosine of the Image
+  Orientation (Patient) (0020,0037) attribute - see above.
+* $r$ : Row index to the image plane. The first row index is zero.
+* $\Delta{r}$ - Row pixel resolution of the Pixel Spacing (0028,0030)
+  attribute in units of mm.
+* $c$ : Column index to the image plane. The first column is index zero.
+* $\Delta{c}$: Column pixel resolution of the Pixel Spacing (0028,0030)
+  attribute in units of mm.
+
+For later convenience we also define values useful for 3D volumes:
+
+* $s$ : slice index to the slice plane. The first slice index is zero.
+* $\Delta{s}$ - spacing in mm between slices. 
+
+.. _dicom-3d-affines:
+
+Getting a 3D affine from a DICOM slice or list of slices
+========================================================
 
 Let us say, we have a single DICOM file, or a list of DICOM files that
 we believe to be a set of slices from the same volume.  We'll call the
@@ -190,50 +260,48 @@ In the *multi slice* case, we can assume that the
 We want to get the affine transformation matrix $A$ that maps from voxel
 coordinates in the DICOM file(s), to mm in the :ref:`dicom-pcs`.  
 
-By voxel coordinates, we mean *transposed coordinates* - see
-:ref:`ij-transpose` above.
+By voxel coordinates, we mean coordinates of form $(r, c, s)$ - the row,
+column and slice indices - as for the :ref:`dicom-slice-affine`.
 
 In the single slice case, the voxel coordinates are just the indices
 into the pixel array, with the third (slice) coordinate always being 0.
+
 In the multi-slice case, we have arranged the slices in ascending or
 descending order, where slice numbers range from 0 to $N-1$ - where $N$
 is the number of slices - and the slice coordinate is a number on this
 scale.
 
-We know, from the formula above, that the first, second and fourth
-columns in $A$ are given directly by the formula in
-:ref:`dicom-orientation` - from the 'ImageOrientationPatient',
-(reversed) 'PixelSpacing' and 'ImagePositionPatient' field of the first
-(or only) slice.
+We know, from :ref:`dicom-slice-affine`, that the first, second and
+fourth columns in $A$ are given directly by the (flipped)
+'ImageOrientationPatient', 'PixelSpacing' and 'ImagePositionPatient'
+field of the first (or only) slice.
 
 Our job then is to fill the first three rows of the third column of $A$.
-Let's call this the vector $\mathbf{s}$ with values  $s_1, s_2, s_3$.
+Let's call this the vector $\mathbf{k}$ with values  $k_1, k_2, k_3$.
 
 .. _dicom-affine-defs:
 
 DICOM affine Definitions
 ------------------------
 
-Let $O$ be the DICOM orientation patient field, reorganized to the (3,2)
-matrix it represents (see :ref:`dicom-orientation`).  Let $T^1$ be the 3
-element vector of the 'ImagePositionPatient' field of the first header
-in the list of headers for this volume.  Let $T^N$ be the
-'ImagePositionPatient' vector for the last header in the list for this
-volume, if there is more than one header in the volume.  Let
-$\Delta_{cols}$ and $\Delta_{rows}$ be the two values in the
-'PixelSpacing' field.  Let $\Delta_{slices}$ be the value for the
-'SliceThickness' field, if present, otherwise $\Delta_{slices} = 1$.  Let
-vector $\mathbf{c} = (c_1, c_2, c_3)$ be the result of taking the cross
-product of the two columns of $O$.
+See also the definitions in :ref:`dicom-slice-affine`.   In addition
+
+* $T^1$ is the 3 element vector of the 'ImagePositionPatient' field of
+  the first header in the list of headers for this volume.
+* $T^N$ is the 'ImagePositionPatient' vector for the last header in the
+  list for this volume, if there is more than one header in the volume.
+* vector $\mathbf{n} = (n_1, n_2, n_3)$ is the result of taking the
+  cross product of the two columns of $F$ from
+  :ref:`dicom-slice-affine`.
 
 Derivations
 -----------
 
-For the single slice case we just fill $\mathbf{s}$ with $\mathbf{c} \cdot
-\Delta_{slices}$ - on the basis that the Z dimension should be
+For the single slice case we just fill $\mathbf{k}$ with $\mathbf{n} \cdot
+\Delta{s}$ - on the basis that the Z dimension should be
 right-handed orthogonal to the X and Y directions.
 
-For the multi-slice case, we can fill in $\mathbf{s}$ by using the information
+For the multi-slice case, we can fill in $\mathbf{k}$ by using the information
 from $T^N$, because $T^N$ is the translation needed to take the
 first voxel in the last (slice index = $N-1$) slice to mm space.  So:
 
@@ -245,20 +313,20 @@ From this it follows that:
 
 .. math::
 
-   \begin{Bmatrix}s_{{1}} : \frac{T^{1}_{{1}} - T^{N}_{{1}}}{1 - N}, & s_{{2}} : \frac{T^{1}_{{2}} - T^{N}_{{2}}}{1 - N}, & s_{{3}} : \frac{T^{1}_{{3}} - T^{N}_{{3}}}{1 - N}\end{Bmatrix}
+   \begin{Bmatrix}k_{{1}} : \frac{T^{1}_{{1}} - T^{N}_{{1}}}{1 - N}, & k_{{2}} : \frac{T^{1}_{{2}} - T^{N}_{{2}}}{1 - N}, & k_{{3}} : \frac{T^{1}_{{3}} - T^{N}_{{3}}}{1 - N}\end{Bmatrix}
 
 and therefore:
 
-.. _dicom-affine-formulae:
+.. _dicom-3d-affine-formulae:
 
-DICOM affine formulae
----------------------
+3D ffine formulae
+-----------------
 
 .. math::
 
-   A_{multi} = \left(\begin{smallmatrix}O_{{11}} \Delta_{cols} & O_{{12}} \Delta_{rows} & \frac{T^{1}_{{1}} - T^{N}_{{1}}}{1 - N} & T^{1}_{{1}}\\O_{{21}} \Delta_{cols} & O_{{22}} \Delta_{rows} & \frac{T^{1}_{{2}} - T^{N}_{{2}}}{1 - N} & T^{1}_{{2}}\\O_{{31}} \Delta_{cols} & O_{{32}} \Delta_{rows} & \frac{T^{1}_{{3}} - T^{N}_{{3}}}{1 - N} & T^{1}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
+   A_{multi} = \left(\begin{smallmatrix}F_{{11}} \Delta{r} & F_{{12}} \Delta{c} & \frac{T^{1}_{{1}} - T^{N}_{{1}}}{1 - N} & T^{1}_{{1}}\\F_{{21}} \Delta{r} & F_{{22}} \Delta{c} & \frac{T^{1}_{{2}} - T^{N}_{{2}}}{1 - N} & T^{1}_{{2}}\\F_{{31}} \Delta{r} & F_{{32}} \Delta{c} & \frac{T^{1}_{{3}} - T^{N}_{{3}}}{1 - N} & T^{1}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
    
-   A_{single} = \left(\begin{smallmatrix}O_{{11}} \Delta_{cols} & O_{{12}} \Delta_{rows} & c_{{1}} \Delta_{slices} & T^{1}_{{1}}\\O_{{21}} \Delta_{cols} & O_{{22}} \Delta_{rows} & c_{{2}} \Delta_{slices} & T^{1}_{{2}}\\O_{{31}} \Delta_{cols} & O_{{32}} \Delta_{rows} & c_{{3}} \Delta_{slices} & T^{1}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
+   A_{single} = \left(\begin{smallmatrix}F_{{11}} \Delta{r} & F_{{12}} \Delta{c} & \Delta{s} n_{{1}} & T^{1}_{{1}}\\F_{{21}} \Delta{r} & F_{{22}} \Delta{c} & \Delta{s} n_{{2}} & T^{1}_{{2}}\\F_{{31}} \Delta{r} & F_{{32}} \Delta{c} & \Delta{s} n_{{3}} & T^{1}_{{3}}\\0 & 0 & 0 & 1\end{smallmatrix}\right)
 
 See :download:`derivations/spm_dicom_orient.py` for the derivations and
 some explanations.
@@ -305,7 +373,7 @@ and 'ImagePositionPatient' for $j$ is:
 
 .. math::
 
-   T^j = \left(\begin{smallmatrix}T^{1}_{{1}} + c_{{1}} d \Delta_{slices}\\T^{1}_{{2}} + c_{{2}} d \Delta_{slices}\\T^{1}_{{3}} + c_{{3}} d \Delta_{slices}\end{smallmatrix}\right)
+   T^j = \left(\begin{smallmatrix}T^{1}_{{1}} + \Delta{s} d n_{{1}}\\T^{1}_{{2}} + \Delta{s} d n_{{2}}\\T^{1}_{{3}} + \Delta{s} d n_{{3}}\end{smallmatrix}\right)
 
 Remember that the third column of $A$ gives the vector resulting from a
 unit change in the slice voxel coordinate.  So, the
@@ -315,18 +383,24 @@ $\mathbf{a}$ is the position of the first voxel in some slice (here
 slice 1, therefore $\mathbf{a} = T^1$) and $\mathbf{b}$ is $d$ times the
 third colum of $A$.  Obviously $d$ can be negative or positive. This
 leads to various ways of recovering something that is proportional to
-$d$ plus a constant.  SPM takes the inner product of $T^j$ with the unit
-vector component of third column of $A_j$ - in the descriptions here,
-this is the vector $\mathbf{c}$:
+$d$ plus a constant.  The algorithm suggested in this `ITK post on
+ordering slices`_ - and the one used by SPM - is to take the inner
+product of $T^j$ with the unit vector component of third column of
+$A_j$ - in the descriptions here, this is the vector $\mathbf{n}$:
+
+.. _ITK post on ordering slices: http://www.itk.org/pipermail/insight-users/2003-September/004762.html
 
 .. math::
 
-   T^j \cdot \mathbf{c} = \left(\begin{smallmatrix}c_{{1}} T^{1}_{{1}} + c_{{2}} T^{1}_{{2}} + c_{{3}} T^{1}_{{3}} + d \Delta_{slices} c_{{1}}^{2} + d \Delta_{slices} c_{{2}}^{2} + d \Delta_{slices} c_{{3}}^{2}\end{smallmatrix}\right)
+   T^j \cdot \mathbf{c} = \left(\begin{smallmatrix}T^{1}_{{1}} n_{{1}} + T^{1}_{{2}} n_{{2}} + T^{1}_{{3}} n_{{3}} + \Delta{s} d n_{{1}}^{2} + \Delta{s} d n_{{2}}^{2} + \Delta{s} d n_{{3}}^{2}\end{smallmatrix}\right)
+
+This is the distance of 'ImagePositionPatient' along the slice direction
+cosine.
 
 The unknown $T^1$ terms pool into a constant, and the operation has the
-neat feature that, because the $c_N^2$ terms, by definition, sum to 1,
-the whole can be expressed as $\lambda + \Delta_{slices} d$ - i.e. it is
-equal to the slice voxel size ($\Delta_{slices}$) multiplied by $d$,
+neat feature that, because the $n_{123}^2$ terms, by definition, sum to 1,
+the whole can be expressed as $\lambda + \Delta{s} d$ - i.e. it is
+equal to the slice voxel size ($\Delta{s}$) multiplied by $d$,
 plus a constant.
 
 Again, see :download:`derivations/spm_dicom_orient.py` for the derivations.

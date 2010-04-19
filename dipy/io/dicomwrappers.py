@@ -127,6 +127,7 @@ class Wrapper(object):
     
     @one_time
     def image_orient_patient(self):
+        ''' Note that this is _not_ LR flipped '''
         iop = self.get('ImageOrientationPatient')
         if iop is None:
             return None
@@ -153,9 +154,10 @@ class Wrapper(object):
         if None in (iop, s_norm):
             return None
         R = np.eye(3)
-        # fliplr accounts for the fact that the first column in ``iop``
-        # refers to changes in column index, and the second to changes
-        # in row index.  See doc/theory/dicom_orientation.rst
+        # np.fliplr(iop) gives matrix F in
+        # doc/theory/dicom_orientation.rst The fliplr accounts for the
+        # fact that the first column in ``iop`` refers to changes in
+        # column index, and the second to changes in row index.
         R[:,:2] = np.fliplr(iop)
         R[:,2] = s_norm
         # check this is in fact a rotation matrix
@@ -528,6 +530,7 @@ class MosaicWrapper(SiemensWrapper):
         
     @one_time
     def image_shape(self):
+        ''' Return image shape as returned by ``get_data()`` '''
         # reshape pixel slice array back from mosaic
         rows = self.get('Rows')
         cols = self.get('Columns')
@@ -561,17 +564,16 @@ class MosaicWrapper(SiemensWrapper):
         pix_spacing = self.get('PixelSpacing')
         if None in (ipp, md_rows, md_cols, iop, pix_spacing):
             return None
-        # size of mosaic array before rearranging to 3D.  Note cols /
-        # rows order - see doc referenced above for explanation.
-        md_cr = np.array([md_cols, md_rows])
+        # size of mosaic array before rearranging to 3D. 
+        md_rc = np.array([md_rows, md_cols])
         # size of slice array after reshaping to 3D
-        rd_cr = md_cr / self.mosaic_size
+        rd_rc = md_rc / self.mosaic_size
         # apply algorithm for undoing mosaic translation error - see
         # ``dicom_mosaic`` doc
-        vox_trans_fixes = (md_cr - rd_cr) / 2
-        # again, see doc for why cols, rows are in this order
-        row_spacing, col_spacing = pix_spacing
-        Q = iop * [col_spacing, row_spacing]
+        vox_trans_fixes = (md_rc - rd_rc) / 2
+        # flip IOP field to refer to rows then columns index change -
+        # see dicom_orientation doc
+        Q = np.fliplr(iop) * pix_spacing
         return ipp + np.dot(Q, vox_trans_fixes[:,None]).ravel()
     
     def get_data(self):

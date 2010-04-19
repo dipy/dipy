@@ -23,10 +23,11 @@ DATA_FILE = pjoin(IO_DATA_PATH, 'siemens_dwi_1000.dcm.gz')
 DATA = dicom.read_file(gzip.open(DATA_FILE))
 DATA_FILE_B0 = pjoin(IO_DATA_PATH, 'siemens_dwi_0.dcm.gz')
 
-# this affine from our converted image was shown to match our image
+# This affine from our converted image was shown to match our image
 # spatially with an image from SPM DICOM conversion. We checked the
 # matching with SPM check reg.  We have flipped the first and second
-# rows to allow for rows, cols tranpose. 
+# rows to allow for rows, cols tranpose in current return compared to
+# original case.
 EXPECTED_AFFINE = np.array(
     [[ -1.796875, 0, 0, 115],
      [0, -1.79684984, -0.01570896, 135.028779],

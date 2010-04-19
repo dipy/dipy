@@ -256,10 +256,11 @@ We need the (4,4) affine $A$ going from voxel (array) coordinates in the
 DICOM pixel data, to mm coordinates in the :ref:`dicom-pcs`.
 
 This section tries to explain how SPM achieves this, but I don't
-completely understand their method.  See :ref:`dicoms-and-affines` for
+completely understand their method.  See :ref:`dicom-3d-affines` for
 what I believe to be a simpler explanation.
 
-First define the constants, matrices and vectors as in :ref:`dicom-affine-defs`. 
+First define the constants, matrices and vectors as in
+:ref:`dicom-affine-defs`.
 
 $N$ is the number of slices in the volume.
 
@@ -267,23 +268,21 @@ Then define the following matrices:
 
 .. math::
 
-   R = \left(\begin{smallmatrix}1 & A & 1 & 0\\1 & B & 0 & 1\\1 & C & 0 & 0\\1 & D & 0 & 0\end{smallmatrix}\right)
+   R = \left(\begin{smallmatrix}1 & a & 1 & 0\\1 & b & 0 & 1\\1 & c & 0 & 0\\1 & d & 0 & 0\end{smallmatrix}\right)
    
-   L = \left(\begin{smallmatrix}T^{1}_{{1}} & E & O_{{11}} \Delta_{cols} & O_{{12}} \Delta_{rows}\\T^{1}_{{2}} & F & O_{{21}} \Delta_{cols} & O_{{22}} \Delta_{rows}\\T^{1}_{{3}} & G & O_{{31}} \Delta_{cols} & O_{{32}} \Delta_{rows}\\1 & H & 0 & 0\end{smallmatrix}\right)
+   L = \left(\begin{smallmatrix}T^{1}_{{1}} & e & F_{{11}} \Delta{r} & F_{{12}} \Delta{c}\\T^{1}_{{2}} & f & F_{{21}} \Delta{r} & F_{{22}} \Delta{c}\\T^{1}_{{3}} & g & F_{{31}} \Delta{r} & F_{{32}} \Delta{c}\\1 & h & 0 & 0\end{smallmatrix}\right)
 
-For a volume with more than one slice (header), then $A, B, C, D$ are
-respectively $1, 1, N, 1$ and $E, F, G$ are the values from $T^N$,
-and $H == 1$.
+For a volume with more than one slice (header), then $a=1; b=1, c=N, d=1$. $e, f, g$ are the values from $T^N$,
+and $h == 1$.
 
-For a volume with only one slice (header) $A, B, C, D$ are $0, 0, 1, 0$,
-$E, F, G, H$ are $c_1 \Delta_{slices}, c_2 \Delta_{slices}, c_3
-\Delta_{slices}, 0$.
+For a volume with only one slice (header) $a=0, b=0, c=1, d=0$ and $e,
+f, g, h$ are $n_1 \Delta{s}, n_2 \Delta{s}, n_3 \Delta{s}, 0$.
 
 The full transform appears to be $A_{spm} = R L^{-1}$.
 
 Now, SPM, don't forget, is working in terms of Matlab array indexing,
 which starts at (1,1,1) for a three dimensional array, whereas DICOM
-expects a (0,0,0) start (see :ref:`dicom-orientation`).  In this
+expects a (0,0,0) start (see :ref:`dicom-slice-affine`).  In this
 particular part of the SPM DICOM code, somewhat confusingly, the (0,0,0)
 to (1,1,1) indexing is dealt with in the $A$ transform, rather than the
 ``analyze_to_dicom`` transformation used by SPM in other places. So, the
@@ -296,7 +295,7 @@ transform to take 0-based voxel indices to 1-based voxel indices:
    A = R L^{-1} \left(\begin{smallmatrix}1 & 0 & 0 & 1\\0 & 1 & 0 & 1\\0 & 0 & 1 & 1\\0 & 0 & 0 & 1\end{smallmatrix}\right)
 
 This formula with the definitions above result in the single and multi
-slice formulae in :ref:`dicom-affine-formulae`.
+slice formulae in :ref:`dicom-3d-affine-formulae`.
 
 See :download:`derivations/spm_dicom_orient.py` for the derivations and
 some explanations.
