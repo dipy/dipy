@@ -116,6 +116,7 @@
 .. Other organizations
 .. _enthought: <http://www.enthought.com>
 .. _kitware: http://www.kitware.com
+.. _nitrc: http://www.nitrc.org
 
 .. General information links
 .. _`wikipedia FMRI`: http://en.wikipedia.org/wiki/Functional_magnetic_resonance_imaging

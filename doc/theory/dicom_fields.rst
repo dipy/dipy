@@ -57,4 +57,18 @@ Section C.8.3.1 MR Image Module
 * Temporal Resolution (0020,0110) - Time delta between Images in a
   dynamic or functional set of images
 
+Multi-frame images
+==================
+
+An image for which the pixel data is a continuous stream of sequential frames.
+
+Section C.7.6.6: Multi-Frame Module
+
+* Number of Frames (0028,0008) - Number of frames in a Multi-frame
+  Image.
+* Frame Increment Pointer (0028,0009) - Contains the Data Element Tag of
+  the attribute that is used as the frame increment in Multi-frame pixel
+  data.
+
+
 .. include:: ../links_names.txt
