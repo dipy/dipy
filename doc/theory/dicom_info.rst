@@ -38,5 +38,15 @@ Here is a selected list of other tools and relevant resources:
   headers, and has been tested with Philips, GE and Siemens data. It's
   not clear whether it yet supports the :ref:`dicom-mosaic`.  BSD_ style
   license.
+* The famous Philips cookbook: http://www.archive.org/details/DicomCookbook
+* http://dicom.online.fr/fr/dicomlinks.htm
 
+===============
+ Sample images
+===============
+
+* http://www.barre.nom.fr/medical/samples/
+* http://pubimage.hcuge.ch:8080/
+* Via links from the dcm2nii_ page.
+ 
 .. include:: ../links_names.txt

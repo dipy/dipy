@@ -319,7 +319,7 @@ and therefore:
 
 .. _dicom-3d-affine-formulae:
 
-3D ffine formulae
+3D affine formulae
 -----------------
 
 .. math::
