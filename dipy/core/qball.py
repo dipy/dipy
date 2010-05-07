@@ -88,16 +88,14 @@ def sph_harm_ind_list(sh_order):
 class ModelParams(object):
     
     def __init__(self, mask, data):
-        mask = mask.astype('bool')
-        self._imask = np.zeros(mask.shape, 'int32')
-        indexes =  mask[mask].cumsum()
-        self._imask[mask] = indexes
-        self._imask -= 1
 
-        if data.shape[0] == indexes[-1]:
-            self._data = data
-        else:
-            raise ValueError('the number of data elements does not match mask')
+        mask = mask.astype('bool')
+        if data.shape[0] != mask.sum():
+            raise ValueError('the number of data elements does not match mask')       
+        self._data = data
+        self._imask = np.empty(mask.shape, 'int32')
+        self._imask[:] = -1
+        self._imask[mask] = np.arange(data.shape[0])
     
     @property
     def mask(self):
