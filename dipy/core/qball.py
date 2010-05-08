@@ -93,6 +93,7 @@ class ModelParams(object):
         if data.shape[0] != mask.sum():
             raise ValueError('the number of data elements does not match mask')       
         self._data = data
+        self.base = None
         self._imask = np.empty(mask.shape, 'int32')
         self._imask[:] = -1
         self._imask[mask] = np.arange(data.shape[0])
@@ -118,19 +119,35 @@ class ModelParams(object):
         return ModelParams(self.mask, data)
 
     def __getitem__(self, index):
-        new_mp = copy(self)
-        new_mp._imask = self._imask[index]
-        return new_mp
+        imask = self._imask[index]
+        if isinstance(imask, int):
+            if imask >= 0:
+                return self._data[imask]
+            else:
+                return np.zeros(self._data.shape[1:])
+        else:
+            new_mp = copy(self)
+            new_mp._imask = self._imask[index]
+            self.base = self
+            return new_mp
     
     def __setitem__(self, index, values):
         imask = self._imask[index]
         self._data[imask[imask >= 0]] = values
 
     def __array__(self, dtype=None):
-        if dtype == self.dtype:
-            return self._data[self._imask[self.mask]]
+
+        #to save time only index _data when base is not None
+        if self.base is None:
+            data = self._data
         else:
-            return self._data[self._imask[self.mask]].astype(dtype)
+            data = self._data[self._imask[self.mask]]
+
+        #only makes a copy of data when dtype does not match
+        if dtype == self.dtype:
+            return data
+        else:
+            return data.astype(dtype)
 
 class ODF(object):
 
