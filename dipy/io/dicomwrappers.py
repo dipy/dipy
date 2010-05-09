@@ -474,14 +474,16 @@ class SiemensWrapper(Wrapper):
         B = self.b_matrix
         if B is None:
             return None
-        return B2q(B)
+        # We've enforced more or less positive semi definite with the
+        # b_matrix routine
+        return B2q(B, tol=1e-8)
 
 
 class MosaicWrapper(SiemensWrapper):
     ''' Class for Siemens mosaic format data
 
     Mosaic format is a way of storing a 3D image in a 2D slice - and
-    it's as simple as you'd image it would be - just storing the slices
+    it's as simple as you'd imagine it would be - just storing the slices
     in a mosaic similar to a light-box print.
 
     We need to allow for this when getting the data and (because of an
