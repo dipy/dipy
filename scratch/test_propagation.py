@@ -373,7 +373,7 @@ step_sz=0.5
 
 ang_thr = 60.
 
-seed = seed - 1
+#seed = seed - 1
 
 track=propagation(seed,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)
 
