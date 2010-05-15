@@ -73,7 +73,7 @@ After doing the above execute ipython in the terminal and try::
 
     >>>import dipy
 
-Does it work? For any problems/suggestions please let us know by sending an e-mail to nipy-devel@neuroimaging.scipy.org
+Does it work? For any problems/suggestions please let us know by sending an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting with [dipy].
 
 
 .. include:: links_names.txt
