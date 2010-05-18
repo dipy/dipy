@@ -13,18 +13,19 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.testing import parametric
 
 
+@parametric
 def test_write():
     streams = []
     out_f = StringIO()
     tv.write(out_f, [], {})
-    yield assert_equal, out_f.getvalue(), tv.empty_header().tostring()
+    yield assert_equal(out_f.getvalue(), tv.empty_header().tostring())
     out_f.truncate(0)
     # Write something not-default
     tv.write(out_f, [], {'id_string':'TRACKb'})
     # read it back
     out_f.seek(0)
     streams, hdr = tv.read(out_f)
-    yield assert_equal, hdr['id_string'], 'TRACKb'
+    yield assert_equal(hdr['id_string'], 'TRACKb')
     # check that we can pass none for the header
     out_f.truncate(0)
     tv.write(out_f, [])
@@ -32,12 +33,12 @@ def test_write():
     tv.write(out_f, [], None)
     # check that we check input values
     out_f.truncate(0)
-    yield (assert_raises, tv.HeaderError,
+    yield assert_raises(tv.HeaderError,
            tv.write, out_f, [],{'id_string':'not OK'})
-    yield (assert_raises, tv.HeaderError,
-           tv.write, out_f, [],{'version':2})
-    yield (assert_raises, tv.HeaderError,
-           tv.write, out_f, [],{'hdr_size':0})
+    yield assert_raises(tv.HeaderError,
+           tv.write, out_f, [],{'version': 3})
+    yield assert_raises(tv.HeaderError,
+           tv.write, out_f, [],{'hdr_size': 0})
 
 
 def streams_equal(stream1, stream2):
@@ -79,13 +80,16 @@ def test_round_trip():
 @parametric
 def test_empty_header():
     for endian in '<>':
-        hdr = tv.empty_header(endian)
-        yield assert_equal(hdr['id_string'], 'TRACK')
-        yield assert_equal(hdr['version'], 1)
-        yield assert_equal(hdr['hdr_size'], 1000)
-        yield assert_array_equal(
-            hdr['image_orientation_patient'],
-            [0,0,0,0,0,0])
+        for version in (1, 2):
+            hdr = tv.empty_header(endian, version)
+            yield assert_equal(hdr['id_string'], 'TRACK')
+            yield assert_equal(hdr['version'], version)
+            yield assert_equal(hdr['hdr_size'], 1000)
+            yield assert_array_equal(
+                hdr['image_orientation_patient'],
+                [0,0,0,0,0,0])
+    hdr = tv.empty_header(version=2)
+    yield assert_array_equal(hdr['vox_to_ras'], np.zeros((4,4)))
     hdr_endian = tv.endian_codes[tv.empty_header().dtype.byteorder]
     yield assert_equal(hdr_endian, tv.native_code)
 
@@ -113,8 +117,15 @@ def test_get_affine():
     exp_aff[:3,3] = [-1,-2,3]
     yield assert_array_equal(tv.aff_from_hdr(hdr),
                              exp_aff)
+    # now use the easier vox_to_ras field
+    hdr = tv.empty_header()
+    aff = np.eye(4)
+    aff[:3,:] = np.arange(12).reshape(3,4)
+    hdr['vox_to_ras'] = aff
+    yield assert_array_equal(tv.aff_from_hdr(hdr), aff)
     # mappings work too
-    d = {'voxel_size': np.array([1,2,3]),
+    d = {'version': 1,
+         'voxel_size': np.array([1,2,3]),
          'image_orientation_patient': np.array([1,0,0,0,1,0]),
          'origin': np.array([10,11,12])}
     aff = tv.aff_from_hdr(d)
@@ -122,16 +133,19 @@ def test_get_affine():
 
 @parametric
 def test_aff_to_hdr():
-    hdr = {}
-    affine = np.diag([1,2,3,1])
-    affine[:3,3] = [10,11,12]
-    tv.aff_to_hdr(affine, hdr)
-    yield assert_array_almost_equal(tv.aff_from_hdr(hdr), affine)
-    # put flip into affine
-    aff2 = affine.copy()
-    aff2[:,2] *=-1
-    tv.aff_to_hdr(aff2, hdr)
-    yield assert_array_almost_equal(tv.aff_from_hdr(hdr), aff2)
+    for version in (1, 2):
+        hdr = {'version': version}
+        affine = np.diag([1,2,3,1])
+        affine[:3,3] = [10,11,12]
+        tv.aff_to_hdr(affine, hdr)
+        yield assert_array_almost_equal(tv.aff_from_hdr(hdr), affine)
+        # put flip into affine
+        aff2 = affine.copy()
+        aff2[:,2] *=-1
+        tv.aff_to_hdr(aff2, hdr)
+        yield assert_array_almost_equal(tv.aff_from_hdr(hdr), aff2)
+        if version == 2:
+            yield assert_array_almost_equal(hdr['vox_to_ras'], aff2)
 
 
 @parametric
@@ -159,7 +173,7 @@ def test_tv_class():
                         [],{'id_string':'not OK'})
     yield assert_raises(tv.HeaderError,
                         tv.TrackvisFile,
-                        [],{'version': 2})
+                        [],{'version': 3})
     yield assert_raises(tv.HeaderError,
                         tv.TrackvisFile,
                         [],{'hdr_size':0})
