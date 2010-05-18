@@ -45,40 +45,21 @@ VERSION
 #import modules
 import time
 import sys, os, traceback, optparse
+import numpy as np
+import scipy as sp
 
+#HBCAN utilities
+sys.path.append('/home/cnguyen/scripts/HBCAN/utils')
+from multi_dot import multi_dot as multi_dot
+from io import get_coord_4D_to_3D
 
-def main (args):
-    #global options, args
-    #This is to control external call of module from command line
-
-    tensor(args[0],args[1],args[2])    
-
-### TO DO CHANGE THIS TO APPROPRIATE NAME
-#This is what is used for import
-def tensor (data,gtab,bval,scalars=0,thresh=25,img=[],out_root='noroot'):
-
-    #Import modules here
-    import time
-    import numpy as np
-    import scipy as sp
-    
-    #for io of writing and reading nifti images
-    from nipy import load_image, save_image
-    from nipy.core.api import fromarray #data --> image
-    
-    #HBCAN utilities
-    sys.path.append('/home/cnguyen/scripts/HBCAN/utils')
-    from multi_dot import multi_dot as multi_dot
-    from io import get_coord_4D_to_3D
-
+def WLS_fit (data,gtab,bval,scalars=0,mask=[],thresh=25,img=[],out_root='noroot'):    
     #Make sure all input is correct
     try:
-
         start_time = time.time()
         print 'out_root: ' + out_root
         print 'thresh: ' + str(thresh)
         print ''
-
         if data == []:
             raise ValueError('You need to send an image matrix, grad table, and b value vector)')
 
@@ -128,7 +109,8 @@ def tensor (data,gtab,bval,scalars=0,thresh=25,img=[],out_root='noroot'):
     # ORIG IDL CODE: log_s_ols = B ## invert( transpose(B) ## B ,/double) ## transpose(B) ## log_s
     # log_s_ols = np.dot(B, np.dot(np.linalg.inv(np.dot(B_t,B)), np.dot(B_t,log_s)))
     #  [g by 7] [7 by 7 ] [7 by g] [ g by x*y*z ] = [g by x*y*z]
-    log_s_ols = multi_dot((B, np.linalg.inv(np.dot(B_t,B)), B_t, log_s)) 
+    log_s_ols = np.dot(B  ,np.dot(  np.linalg.inv(np.dot(B_t,B)), np.dot( B_t, log_s ) ) )
+    #log_s_ols = multi_dot((B, np.linalg.inv(np.dot(B_t,B)), B_t, log_s)) 
    
     ##inv_B_t_W_B = np.zeros((fit_dim[0],7,7))
     ##for i in range(np.size(log_s,axis=1):
@@ -151,7 +133,7 @@ def tensor (data,gtab,bval,scalars=0,thresh=25,img=[],out_root='noroot'):
     print 'Calculating voxelwise diagonal weighting matrix and tensor fit ... '
     print
     time_diff = list((0,0))
-    for i in range(np.size(log_s,axis=1)):
+    for i in log_s[mask>0] #range(np.size(log_s,axis=1)):
         #check every 5 slices (pretty robust time left...prob make into separate module if have time)
         if np.mod(i,dims[0]*dims[1]*5) == 0:
             slice = i/dims[0]/dims[1]+1.
@@ -164,6 +146,7 @@ def tensor (data,gtab,bval,scalars=0,thresh=25,img=[],out_root='noroot'):
 
         if data[i,0] < thresh:
             continue
+
         #if not finite move on
         if not(np.unique(np.isfinite(log_s[:,i]))[0]) :
             continue
@@ -191,49 +174,14 @@ def tensor (data,gtab,bval,scalars=0,thresh=25,img=[],out_root='noroot'):
     data = np.reshape(data,dims)
     tensor_data = np.reshape(tensor_data,(dims[0],dims[1],dims[2],6))
     
+    #Reshape the scalar map array
+    scalar_maps = np.reshape(scalar_maps,(dims[0],dims[1],dims[2],8))
+
     #If requesting to save scalars ...
     if scalars == 1:
-        #Reshape the scalar map array
-        scalar_maps = np.reshape(scalar_maps,(dims[0],dims[1],dims[2],8))
-
-        #For writing out with save_image with appropriate affine matrix
-        coordmap = []
-    
-        if img != []:
-            coordmap = get_coord_4D_to_3D(img.affine)
-            header = img.header.copy()
-
-        ###Save scalar maps if requested
-        print ''
-        print 'Saving t2di map ... '+out_root+'_t2di.nii.gz'
-        
-        #fyi the dtype flag for save image does not appear to work right now...
-        t2di_img = fromarray(data[:,:,:,0],'ijk','xyz',coordmap=coordmap)
-        if img != []: 
-            t2di_img.header = header
-        save_image(t2di_img,out_root+'_t2di.nii.gz',dtype=np.int16)
-
-        
-        scalar_fnames = ('ev1','ev2','ev3','adc','fa','ev1p','ev1f','ev1s')
-        for i in range(np.size(scalar_maps,axis=3)):
-            #need to send in 4 x 4 affine matrix for 3D image not 5 x 5 from original 4D image
-            print 'Saving '+ scalar_fnames[i] + ' map ... '+out_root+'_'+scalar_fnames[i]+'.nii.gz'
-            scalar_img = fromarray(np.int16(scalar_maps[:,:,:,i]),'ijk' ,'xyz',coordmap=coordmap)
-            if img != []:
-                scalar_img.header = header
-            save_image(scalar_img,out_root+'_'+scalar_fnames[i]+'.nii.gz',dtype=np.int16)
-
-    print ''
-    print 'Saving D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz] map ... '+out_root+'_self_diffusion.nii.gz'
-    #Saving 4D matrix holding diffusion coefficients
-    if img != [] :
-        coordmap = img.coordmap
-        header = img.header.copy()
-    tensor_img = fromarray(tensor_data,'ijkl','xyzt',coordmap=coordmap)
-    tensor_img.header = header
-    save_image(tensor_img,out_root+'_self_diffusion.nii.gz',dtype=np.int16)
-
-    print
+	save_scalar_maps(scalar_maps)
+   
+    #Report how long it took to make the fit  
     min = (time.time() - start_time) / 60.0
     sec = (min - np.fix(min)) * 60.0
     print 'TOTAL TIME: ' + str(np.fix(min)) + ' MIN ' + str(np.round(sec)) + ' SEC'
@@ -242,8 +190,6 @@ def tensor (data,gtab,bval,scalars=0,thresh=25,img=[],out_root='noroot'):
 
 
 def calc_dti_scalars(D):
-    import numpy as np
-
     tensor = np.zeros((3,3))
     tensor[0,0] = D[0]  #Dxx
     tensor[1,1] = D[1]  #Dyy
@@ -267,7 +213,7 @@ def calc_dti_scalars(D):
     ev3 = eigenvals[2]
     #eigenvecs = np.transpose(eigenvecs)
     
-	#calculate scalars
+    #calculate scalars
     adc = (ev1+ev2+ev3)/3
     ss_ev = ev1**2+ev2**2+ev3**2
     fa = 0
@@ -285,8 +231,6 @@ def calc_dti_scalars(D):
     return(dti_parameters)
 
 def design_matrix(gtab,bval):
-    import numpy as np
-
     #from CTN legacy IDL we start with [7 by g] ... sorry :(
     B = np.zeros((7,np.size(bval)))
     G = gtab
@@ -310,34 +254,48 @@ def design_matrix(gtab,bval):
     return (np.transpose(-B))
 
 
+def save_scalar_maps(scalar_maps):
+    #for io of writing and reading nifti images
+    from nipy import load_image, save_image
+    from nipy.core.api import fromarray #data --> image
+    
+    #For writing out with save_image with appropriate affine matrix
+    coordmap = []
+    
+    if img != []:
+        coordmap = get_coord_4D_to_3D(img.affine)
+        header = img.header.copy()
 
-#ARGUMENT HANDLING ETC ...
-if __name__ == '__main__':
-    try:
-        start_time = time.time()
-        parser = optparse.OptionParser(formatter=optparse.TitledHelpFormatter(), 
-                                        usage=globals()['__doc__'], version='1.0')
-        parser.add_option ('-v', '--verbose', action='store_true', default=False,
-                                        help='verbose output')
-
-        (options, args) = parser.parse_args()
-        if len(args) < 1:
-            parser.error ('missing argument')
-        if options.verbose: print time.asctime()
+    ###Save scalar maps if requested
+    print ''
+    print 'Saving t2di map ... '+out_root+'_t2di.nii.gz'
         
-        main(args)
+    #fyi the dtype flag for save image does not appear to work right now...
+    t2di_img = fromarray(data[:,:,:,0],'ijk','xyz',coordmap=coordmap)
+    if img != []: 
+        t2di_img.header = header
+    save_image(t2di_img,out_root+'_t2di.nii.gz',dtype=np.int16)
 
-        if options.verbose: print time.asctime()
-        if options.verbose: print 'TOTAL TIME IN MINUTES:',
-        if options.verbose: print (time.time() - start_time) / 60.0
-        sys.exit(0)
-    except KeyboardInterrupt, e: # Ctrl-C
-        raise e
-    except SystemExit, e: # sys.exit()
-        raise e
-    except Exception, e:
-        print 'ERROR, UNEXPECTED EXCEPTION'
-        print str(e)
-        traceback.print_exc()
-        os._exit(1)
-                                                            
+        
+    scalar_fnames = ('ev1','ev2','ev3','adc','fa','ev1p','ev1f','ev1s')
+    for i in range(np.size(scalar_maps,axis=3)):
+        #need to send in 4 x 4 affine matrix for 3D image not 5 x 5 from original 4D image
+        print 'Saving '+ scalar_fnames[i] + ' map ... '+out_root+'_'+scalar_fnames[i]+'.nii.gz'
+        scalar_img = fromarray(np.int16(scalar_maps[:,:,:,i]),'ijk' ,'xyz',coordmap=coordmap)
+        if img != []:
+            scalar_img.header = header
+        save_image(scalar_img,out_root+'_'+scalar_fnames[i]+'.nii.gz',dtype=np.int16)
+
+    print ''
+    print 'Saving D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz] map ... '+out_root+'_self_diffusion.nii.gz'
+    #Saving 4D matrix holding diffusion coefficients
+    if img != [] :
+        coordmap = img.coordmap
+        header = img.header.copy()
+    tensor_img = fromarray(tensor_data,'ijkl','xyzt',coordmap=coordmap)
+    tensor_img.header = header
+    save_image(tensor_img,out_root+'_self_diffusion.nii.gz',dtype=np.int16)
+
+    print
+
+    return
