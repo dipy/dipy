@@ -67,15 +67,6 @@ def WLS_fit (data,gtab,bval,scalars=0,mask=None,thresh=25,img=[],out_root='noroo
 
 	"""
 
-	#Make sure all input is correct
-    try:
-        start_time = time.time()
-        if np.size(gtab)/3 != np.size(bval):
-            raise ValueError('Gradient table (g,3) must be consistent with given b value vector (g,1)')
-    except:
-        raise IOError('You need to send an image matrix, grad table, and b value vector')
-
-        
     ####main part of code
     #fit_data = np.zeros(np.shape(data))
     dims = data.shape
