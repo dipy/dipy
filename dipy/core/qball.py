@@ -85,70 +85,6 @@ def sph_harm_ind_list(sh_order):
     m_list = m_list[..., np.newaxis]
     return (m_list, n_list)
 
-class ModelParams(object):
-    
-    def __init__(self, mask, data):
-
-        mask = mask.astype('bool')
-        if data.shape[0] != mask.sum():
-            raise ValueError('the number of data elements does not match mask')       
-        self._data = data
-        self.base = None
-        self._imask = np.empty(mask.shape, 'int32')
-        self._imask[:] = -1
-        self._imask[mask] = np.arange(data.shape[0])
-    
-    @property
-    def mask(self):
-        return self._imask >= 0
-
-    @property
-    def dtype(self):
-        return self._data.dtype
-    
-    def _get_shape(self):
-        return self._imask.shape
-
-    def _set_shape(self, value):
-        self._imask.shape = value
-
-    shape = property(_get_shape, _set_shape, "Tuple of array dimensions")
-
-    def copy(self):
-        data = self._data[self._imask[self.mask]]
-        return ModelParams(self.mask, data)
-
-    def __getitem__(self, index):
-        imask = self._imask[index]
-        if isinstance(imask, int):
-            if imask >= 0:
-                return self._data[imask]
-            else:
-                return np.zeros(self._data.shape[1:])
-        else:
-            new_mp = copy(self)
-            new_mp._imask = self._imask[index]
-            self.base = self
-            return new_mp
-    
-    def __setitem__(self, index, values):
-        imask = self._imask[index]
-        self._data[imask[imask >= 0]] = values
-
-    def __array__(self, dtype=None):
-
-        #to save time only index _data when base is not None
-        if self.base is None:
-            data = self._data
-        else:
-            data = self._data[self._imask[self.mask]]
-
-        #only makes a copy of data when dtype does not match
-        if dtype == self.dtype:
-            return data
-        else:
-            return data.astype(dtype)
-
 class ODF(object):
 
     def _getshape(self):
@@ -160,11 +96,11 @@ class ODF(object):
     ndim = property(_getndim, doc="Number of dimensions in ODF array")
 
     def __getitem__(self, index):
-        if type(index) != type(()):
+        if type(index) is not tuple:
             index = (index,)
         if len(index) > self.ndim:
             raise IndexError('invalid index')
-        for ii in index[:]:
+        for ii in index:
             if ii is Ellipsis:
                 index = index + (slice(None),)
                 break
@@ -174,7 +110,8 @@ class ODF(object):
             new_odf._resid = self._resid[index]
         return new_odf
     
-    def __init__(self, data, sh_order, grad_table, b_values, keep_resid=False):
+    def __init__(self, data, sh_order, grad_table, b_values, smoothness=0,
+                 keep_resid=False):
         if (sh_order % 2 != 0 or sh_order < 0 ):
             raise ValueError('sh_order must be an even integer >= 0')
         self.sh_order = sh_order
@@ -187,10 +124,14 @@ class ODF(object):
         m_list, n_list = sph_harm_ind_list(self.sh_order)
         if m_list.size > self.ngrad:
             raise ValueError('sh_order seems too high, there are only '+
-            str(self.ngrad)+' diffusion weighted images in data')
-        comp_mat = real_sph_harm(m_list, n_list, theta, phi)
-
-        self.fit_matrix = np.linalg.pinv(comp_mat)
+                str(self.ngrad)+' diffusion weighted images in data')
+        design_mat = real_sph_harm(m_list, n_list, theta, phi)
+        
+        if smoothness == 0:
+            self.fit_matrix = np.linalg.pinv(design_mat)
+        else:
+            L = np.diag(n_list*(n_list+1))*sqrt(smoothness)
+            self.fit_matrix = np.linalg.pinv(np.c_[design_mat, L])[:,:self.ngrad]
         legendre0, junk = lpn(self.sh_order, 0)
         funk_radon = legendre0[n_list]
         self.fit_matrix *= funk_radon.T
@@ -199,7 +140,7 @@ class ODF(object):
         self._coef = np.dot(data[..., dwi], self.fit_matrix)
 
         if keep_resid:
-            unfit = comp_mat / funk_radon
+            unfit = design_mat / funk_radon
             self._resid = data[..., dwi] - np.dot(self._coef, unfit)
         else:
             self._resid = None
@@ -207,19 +148,19 @@ class ODF(object):
     def evaluate_at(self, theta_e, phi_e):
         
         m_list, n_list = sph_harm_ind_list(self.sh_order)
-        comp_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
+        design_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
                                  phi_e.flat[:])
-        values = np.dot(self._coef, comp_mat)
+        values = np.dot(self._coef, design_mat)
         values.shape = self.shape + np.broadcast(theta_e,phi_e).shape
         return values
 
     def evaluate_boot(self, theta_e, phi_e, permute=None):
         m_list, n_list = sph_harm_ind_list(self.sh_order)
-        comp_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
+        design_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
                                  phi_e.flat[:])
-        if permute == None:
+        if permute is None:
             permute = np.random.permutation(self.ngrad)
         values = np.dot(self._coef + np.dot(self._resid[..., permute],
-                        self.fit_matrix), comp_mat)
+                        self.fit_matrix), design_mat)
         return values
 
