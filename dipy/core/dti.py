@@ -51,11 +51,11 @@ class tensor(object):
     def __getitem__(self,index):
         pass
     
-    def __init__(self, data, grad_table, b_values, mask=None,thresh=5,verbose=None):
-        fit_data, scalars = WLS_fit(data,grad_table,b_values,scalars=1,verbose=verbose,mask=mask,thresh=thresh)
-        self.evals = scalars[:,:,:,0:3]
-        self.evecs = scalars[:,:,:,3:12]
-        self.prime_evec = scalars[:,:,:,3:6]
+    def __init__(self, data, grad_table, b_values, mask=None,thresh=5,verbose=False):
+        eig_decomp, design_mat = WLS_fit(data,grad_table,b_values,verbose=verbose,mask=mask,thresh=thresh)
+        self.evals = eig_decomp[:,:,:,0:3]
+        self.evecs = eig_decomp[:,:,:,3:12]
+        self.prime_evec = eig_decomp[:,:,:,3:6]
         self.adc = self.calc_adc()
         self.fa = self.calc_fa()
     
@@ -81,7 +81,7 @@ class tensor(object):
         return fa 
 
 
-def WLS_fit (data,gtab,bval,scalars=None,mask=None,thresh=None,verbose=None,out_root='noroot'):    
+def WLS_fit (data,gtab,bval,mask=None,thresh=None,verbose=False):    
     """
     Computes weighted least squares (WLS) fit to calculate self-diffusion tensor. 
     (Basser et al., 1994a)
@@ -94,8 +94,12 @@ def WLS_fit (data,gtab,bval,scalars=None,mask=None,thresh=None,verbose=None,out_
         Diffusion gradient table found in DICOM header as a numpy ndarray.
     bval : ndarray (g,1)
         Diffusion weighting factor b for each vector in gtab.
-    scalars : integer (0,1)
-        Flag that returns integers.
+    mask : ndarray (X,Y,Z)
+        Mask that excludes fit in voxels where mask == 0
+    thresh : integer (0,np.max(data))
+        Simple threshold to exclude fit in voxels where b0 < thresh
+    verbose : boolean
+        Boolean to indicate verbose output such as timing.
 
 
     """
@@ -119,7 +123,6 @@ def WLS_fit (data,gtab,bval,scalars=None,mask=None,thresh=None,verbose=None,out_
     # set precision to 3 significant figures...to save memory
     # instead of later calculating it with log_s_ols
     log_s = np.int16(np.log(data) * 1000)
-    del data #freeing up memory
 
     ###Construct design matrix
     #For DTI this is the so called B matrix
@@ -128,22 +131,20 @@ def WLS_fit (data,gtab,bval,scalars=None,mask=None,thresh=None,verbose=None,out_
 	
     ###Weighted Least Squares (WLS) to solve "linear" regression
     # Y hat OLS from Chris' paper
-    #  ( [g by 7] [7 by g ] [ g by x*y*z ] ).T = [x*y*z by g]
-    log_s_ols = np.int16(np.dot(np.dot(B, np.linalg.pinv(B)), log_s.T)).T
+    #  ( [x*y*z by g] [g by 7] [7 by g ] ) = [x*y*z by g]
+    log_s_ols = np.int16( np.dot(log_s, np.dot(B, np.linalg.pinv(B))) )
     #del log_s #freeing up memory
 
     #Setting these arrays later to allow the previous step to have all memory
-    fit_data = np.zeros(fit_dim,dtype='int16') #original data is int16
-    
-    if scalars == 1:
-        scalar_maps = np.zeros((fit_dim[0],12),dtype='float32')#'int16')
+    #fit_data = np.zeros(fit_dim,dtype='int16') #original data is int16
+    eig_decomp = np.zeros((fit_dim[0],12),dtype='float32')#'int16')
 
     time_diff = list((0,0))
     time_iter = time.time()
     # This step is because we cannot vectorize diagonal vector and tensor fit
     for i in range(np.size(log_s_ols,axis=0)):
         #Check every 1 slices
-        if verbose == 1 and i % (dims[0]*dims[1]*1) == 0:
+        if verbose and i % (dims[0]*dims[1]*1) == 0:
             slice = i/dims[0]/dims[1]+1.
             time_diff.append(time.time()-time_iter)
             min = np.mean(time_diff[2:len(time_diff)])/60.0/5*(dims[2]-slice)
@@ -159,49 +160,45 @@ def WLS_fit (data,gtab,bval,scalars=None,mask=None,thresh=None,verbose=None,out_
         if thresh != None and np.exp(log_s[i,0]/1000.) < thresh:
             continue
 
-        #if not finite move on
-        #if not(np.unique(np.isfinite(log_s[:,i]))[0]) :
-        #    continue
-
         #Split up weighting vector into little w to perform pinv
         w = np.exp(log_s_ols[i,:]/1000.)[:,np.newaxis]
     
         #pointwise broadcasting to avoid diagonal matrix multiply!
         D = np.dot(np.linalg.pinv(B*w), w.ravel()*log_s[i,:]/1000.) #np.log(data[:,i]))
-        fit_data[i,:] = np.int16(np.exp(np.dot(B,D))) 
+        #fit_data[i,:] = np.int16(np.exp(np.dot(B,D))) 
         
-        ###Calculate scalar maps
-        if scalars == 1:
-            scalar_maps[i,:] = calc_dti_scalars(D[0:6],scale=1)
+        ###Obtain eigenvalues and eigenvectors
+        eig_decomp[i,:] = decompose_tensor(D[0:6],scale=1)
 
     #clear variables not needed to save memory
     del log_s_ols
+    del log_s
 
-    #Fit the data with estimate of D
-    #fit_data = np.round(np.dot(B,D)) 
-    
-    # Reshape the output images
-    #fit_data.shape = dims
-    #data.shape = dims
-    fit_data = fit_data.reshape(dims)
-    #data = data.reshape(dims)
-
-    #If requesting to save scalars ...
-    if scalars == 1:
-        #Reshape the scalar map array
-        scalar_maps = scalar_maps.reshape((dims[0],dims[1],dims[2],12))
-        #save_scalar_maps(scalar_maps)
+    # Reshape the output
+    eig_decomp = eig_decomp.reshape((dims[0],dims[1],dims[2],12))
    
     #Report how long it took to make the fit  
-    if verbose == 1:
+    if verbose:
         min = (time.time() - start_time) / 60.0
         sec = (min - np.fix(min)) * 60.0
         print 'TOTAL TIME: ' + str(np.fix(min)) + ' MIN ' + str(np.round(sec)) + ' SEC'
 
-    return(fit_data, scalar_maps)
+    return(eig_decomp, B)
 
 
-def calc_dti_scalars(D,scale=1):
+def decompose_tensor(D,scale=1):
+    """
+    Computes tensor eigen decomposition to calculate eigenvalues and eigenvectors of self-diffusion tensor. Assumes D has units on order of ~ 10^-4 mm^2/s
+    (Basser et al., 1994a)
+
+    Parameters
+    ----------
+    D : ndarray (X,Y,Z,g)
+        The six unique diffusitivities (Dxx, Dyy,Dzz,Dxy,Dxz,Dyz)
+    scale : integer range(1,N)
+        Simple scaling parameter since diffusitivities are small.
+
+    """
     tensor = np.zeros((3,3))
     tensor[0,0] = D[0]  #Dxx
     tensor[1,1] = D[1]  #Dyy
@@ -229,32 +226,47 @@ def calc_dti_scalars(D,scale=1):
     # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
     # eigenvecs: each vector is columnar
 	
-    dti_parameters = np.concatenate((eigenvals,eigenvecs.T.flat[:]))*scale
-    #dti_parameters.dtype = 'float32' 
-    return(dti_parameters)
+    eig_params = np.concatenate((eigenvals,eigenvecs.T.flat[:]))*scale
+    
+    return(eig_params)
+
 
 def design_matrix(gtab,bval,dtype='float32'):
-    #from CTN legacy IDL we start with [7 by g] ... sorry :(
-    B = np.zeros((7,np.size(bval)),dtype=dtype)
+    """
+    Constructs design matrix for DTI weighted least squares or least squares fitting. 
+    (Basser et al., 1994a)
+
+    Parameters
+    ----------
+    gtab : ndarray (3,g)
+        Diffusion gradient table found in DICOM header as a numpy ndarray.
+    bval : ndarray (g,1)
+        Diffusion weighting factor b for each vector in gtab.
+    dtype : string
+        Parameter to control the dtype of returned designed matrix
+
+    """
+    
+    B = np.zeros((bval.size,7),dtype=dtype)
     G = gtab
     
-    if np.size(gtab,axis=1) < np.size(bval) :
+    if gtab.shape[1] != bval.shape[0] :
         print 'Gradient table size is not consistent with bval vector... could be b/c of b0 images'
         print 'Will try to set nonzero bval index with gradient table to construct B matrix'
         
         G = np.zeros((3,np.size(bval)))
         G[:,np.where(bval > 0)]=gtab
     
-    B[0,:] = G[0,:]*G[0,:]*1.*bval   #Bxx
-    B[1,:] = G[1,:]*G[1,:]*1.*bval   #Byy
-    B[2,:] = G[2,:]*G[2,:]*1.*bval   #Bzz
-    B[3,:] = G[0,:]*G[1,:]*2.*bval   #Bxy
-    B[4,:] = G[0,:]*G[2,:]*2.*bval   #Bxz
-    B[5,:] = G[1,:]*G[2,:]*2.*bval   #Byz
-    B[6,:] = np.ones(np.size(bval),dtype=dtype)
+    B[:,0] = G[0,:]*G[0,:]*1.*bval   #Bxx
+    B[:,1] = G[1,:]*G[1,:]*1.*bval   #Byy
+    B[:,2] = G[2,:]*G[2,:]*1.*bval   #Bzz
+    B[:,3] = G[0,:]*G[1,:]*2.*bval   #Bxy
+    B[:,4] = G[0,:]*G[2,:]*2.*bval   #Bxz
+    B[:,5] = G[1,:]*G[2,:]*2.*bval   #Byz
+    B[:,6] = np.ones(np.size(bval),dtype=dtype)
     
     #Need to return [g by 7]
-    return -B.T
+    return -B
 
 
 def save_scalar_maps(scalar_maps, img=None, coordmap=None):
