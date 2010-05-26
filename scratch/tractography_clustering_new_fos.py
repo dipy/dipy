@@ -18,6 +18,8 @@ streams,hdr=tv.read(fname)
 print 'Copying tracks...'
 T=[i[0] for i in streams]
 
+T=T[:1000]
+
 print 'Representing tracks using only 3 pts...'
 tracks=[tm.downsample(t,3) for t in T]
 
@@ -43,25 +45,31 @@ data=T
 colors =[np.tile(np.array([1,1,1,1],'f'),(len(t),1)) for t in T]
 
 t=Tracks(data,colors)  
-       
-
-
 
 print 'Showing dataset after clustering.'
 
+colors2 = []
 
-fos.clear(r)
-colors=np.zeros((len(T),3))
 for c in C:
-    color=np.random.rand(1,3)
+
+    color=np.random.rand(3)
+
+    #print color
+    
+    r,g,b = color
+    
     for i in C[c]['indices']:
-        colors[i]=color
-fos.add(r,fos.line(T,colors,opacity=1))
-fos.show(r)
+
+        #print i
+
+        colors2.append(np.tile(np.array([r,g,b,1],'f'),(len(data[i]),1)))
+        
+        
+t2=Tracks(data,colors2)   
 
 
-
-slot={0:{'actor':t,'slot':(0, 800000)}}
+slot={0:{'actor':t,'slot':(0, 10000)},
+      1:{'actor':t2,'slot':(10000, 100000)}}
 
 Scene(Plot(slot)).run()
 
