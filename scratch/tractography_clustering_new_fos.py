@@ -10,7 +10,9 @@ from fos.core.actors import Actor
 from fos.core.plots  import Plot
 from fos.core.tracks import Tracks
 
-fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+#fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+
+fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
 print 'Loading file...'
 streams,hdr=tv.read(fname)
