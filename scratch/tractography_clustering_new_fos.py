@@ -10,9 +10,11 @@ from fos.core.actors import Actor
 from fos.core.plots  import Plot
 from fos.core.tracks import Tracks
 
-#fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
-fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+#fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+
+opacity=1
 
 print 'Loading file...'
 streams,hdr=tv.read(fname)
@@ -44,30 +46,30 @@ print 'Showing initial dataset.'
 
 data=T
 
-colors =[np.tile(np.array([1,1,1,1],'f'),(len(t),1)) for t in T]
+colors =[np.tile(np.array([1,1,1,opacity],'f'),(len(t),1)) for t in T]
 
-t=Tracks(data,colors)  
+t=Tracks(data,colors,line_width=1.)  
 
 print 'Showing dataset after clustering.'
 
-colors2 = []
+colors2 = len(data)*[None]
 
 for c in C:
 
     color=np.random.rand(3)
 
-    #print color
-    
     r,g,b = color
-    
+
     for i in C[c]['indices']:
-
-        #print i
-
-        colors2.append(np.tile(np.array([r,g,b,1],'f'),(len(data[i]),1)))
         
+        colors2[i]=np.tile(np.array([r,g,b,opacity],'f'),(len(data[i]),1))
+
+
+#print sum([len(c) for c in colors2])
+
+#print(len(colors2))
         
-t2=Tracks(data,colors2)   
+t2=Tracks(data,colors2,line_width=1.)   
 
 
 slot={0:{'actor':t,'slot':(0, 10000)},
