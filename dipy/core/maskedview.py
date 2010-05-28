@@ -56,6 +56,7 @@ class MaskedView(object):
 
     @property
     def dtype(self):
+        #the data type of a masked view is the same as the _data array
         return self._data.dtype
 
     @property
@@ -63,12 +64,17 @@ class MaskedView(object):
         return self._data.shape[1:]
 
     def filled(self):
+        """
+        Returns an ndarray copy of itself. Where mask is zero, fill_value is used 
+        (NaN by defult).
+        """
         out_arr = np.empty(self.shape + self.shape_contents, self.dtype)
         out_arr.fill(self.fill_value)
         out_arr[self.mask] = self.__array__()
         return out_arr
 
     def _get_shape(self):
+        #the shape of the MaskedView is the same as the mask used to create it
         return self._imask.shape
 
     def _set_shape(self, value):
@@ -77,13 +83,25 @@ class MaskedView(object):
     shape = property(_get_shape, _set_shape, "Tuple of array dimensions")
 
     def get_size(self):
+        """
+        Returns the number of non-empty values in MaskedView, ie where
+        mask > 0.
+        """
+
         return self.mask.sum()
 
     def copy(self):
+        """
+        Returns a copy of the MaskedView. Copies the underlying data array.
+        """
         data = self._data[self._imask[self.mask]]
         return ModelParams(self.mask, data, self.fill_value)
 
     def __getitem__(self, index):
+        """
+        Indexes the MaskedView without copying the underlying data.
+        """
+
         imask = self._imask[index]
         if isinstance(imask, int):
             if imask >= 0:
