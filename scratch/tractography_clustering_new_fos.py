@@ -14,7 +14,7 @@ fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_tra
 
 #fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
-opacity=1
+opacity=0.5
 
 print 'Loading file...'
 streams,hdr=tv.read(fname)
@@ -22,7 +22,7 @@ streams,hdr=tv.read(fname)
 print 'Copying tracks...'
 T=[i[0] for i in streams]
 
-T=T[:1000]
+T=T[:len(T)/3]
 
 print 'Representing tracks using only 3 pts...'
 tracks=[tm.downsample(t,3) for t in T]
@@ -44,11 +44,15 @@ print 'Showing initial dataset.'
 #fos.add(r,fos.line(T,fos.white,opacity=0.1))
 #fos.show(r)
 
+
+
 data=T
 
 colors =[np.tile(np.array([1,1,1,opacity],'f'),(len(t),1)) for t in T]
 
 t=Tracks(data,colors,line_width=1.)  
+
+t.position=(-50,0,0)
 
 print 'Showing dataset after clustering.'
 
@@ -69,13 +73,14 @@ for c in C:
 
 #print(len(colors2))
         
-t2=Tracks(data,colors2,line_width=1.)   
+t2=Tracks(data,colors2,line_width=1.)
 
+t2.position=(50,0,0)
 
-slot={0:{'actor':t,'slot':(0, 10000)},
-      1:{'actor':t2,'slot':(10000, 100000)}}
+slot={0:{'actor':t,'slot':(0, 800000)},
+      1:{'actor':t2,'slot':(0, 800000)}}
 
-Scene(Plot(slot)).run()
+#Scene(Plot(slot)).run()
 
 
 print 'Some statistics about the clusters'
@@ -85,4 +90,9 @@ print 'singletons ',lens.count(1)
 print 'doubletons ',lens.count(2)
 print 'tripletons ',lens.count(3)
 
+''' Next Level
 
+12: cluster0=[T[t] for t in C[0]['indices']]
+13: pf.most_similar_track_zhang(cluster0)
+
+'''
