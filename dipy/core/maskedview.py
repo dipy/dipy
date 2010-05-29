@@ -1,5 +1,5 @@
 import numpy as np
-from copy import copy, deepcopy
+from copy import copy
 
 class MaskedView(object):
     """
@@ -95,7 +95,7 @@ class MaskedView(object):
         Returns a copy of the MaskedView. Copies the underlying data array.
         """
         data = self._data[self._imask[self.mask]]
-        return ModelParams(self.mask, data, self.fill_value)
+        return MaskedView(self.mask, data, self.fill_value)
 
     def __getitem__(self, index):
         """
@@ -121,9 +121,8 @@ class MaskedView(object):
             if imask >= 0:
                 self._data[imask] = values
             else:
-                self._imask[index]=len(self._data)
+                self._imask[index] = len(self._data)
                 self._data = np.r_[self._data, values[np.newaxis]]
-                self.size =+ 1
         else:
             self._data[imask[imask >= 0]] = values
 
