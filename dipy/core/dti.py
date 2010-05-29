@@ -185,7 +185,39 @@ def WLS_fit (data,gtab,bval,mask=None,thresh=None,verbose=False):
 
     return(eig_decomp, B)
 
+def use_WLS(data, gtab, bval, mask, thresh):
+    #64 bit design matrix makes for faster pinv
+    B = design_matrix(gtab,bval,'float64')
+    mask = mask & data[...,0] > thresh
 
+    eigen_decomp = WLS_wipa(B, data[mask])
+
+    return eigen_decomp, B
+
+def WLS_wipa(design_matrix, data):
+    """
+    this wls function maskes requires that data contain vectors of data along
+    the last dimenssion, the data can be passed in as an image array, image
+    array flattened to an ndarray or as a MaskedView. It makes no copies of data
+    """
+
+    data_flat=data.reshape((-1, data.shape[-1]))
+    U,S,V = np.linalg.svd(design_matrix, False)
+    #math: SI = B*inv(B.T*B)*B.T
+    SI = np.dot(U, U.T)
+
+    eigen_decomp = np.empty((len(data_flat), 12))
+
+    #wi=np.exp(w[0])
+    for ii, sig in enumerate(data):
+        log_s = np.log(sig)
+        w=np.exp(np.dot(SI, log_s))
+        D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
+        eigen_decomp[ii] = decompose_tensor(D)
+    
+    eigen_decomp.shape = data.shape[:-1]+(-1,)
+    return eigen_decomp
+    
 def decompose_tensor(D,scale=1):
     """
     Computes tensor eigen decomposition to calculate eigenvalues and eigenvectors of self-diffusion tensor. Assumes D has units on order of ~ 10^-4 mm^2/s
@@ -199,34 +231,30 @@ def decompose_tensor(D,scale=1):
         Simple scaling parameter since diffusitivities are small.
 
     """
-    tensor = np.zeros((3,3))
+
+    tensor = np.empty((3,3),dtype=D.dtype)
     tensor[0,0] = D[0]  #Dxx
     tensor[1,1] = D[1]  #Dyy
     tensor[2,2] = D[2]  #Dzz
-    tensor[1,0] = D[3]  #Dxy
-    tensor[2,0] = D[4]  #Dxz
-    tensor[2,1] = D[5]  #Dyz
-    tensor[0,1] = tensor[1,0] #Dyx
-    tensor[0,2] = tensor[2,0] #Dzx
-    tensor[1,2] = tensor[2,1] #Dzy
+    tensor[1,0] = tensor[0,1] = D[3]  #Dxy
+    tensor[2,0] = tensor[0,2] = D[4]  #Dxz
+    tensor[2,1] = tensor[1,2] = D[5]  #Dyz
 
     #outputs multiplicity as well so need to unique
     eigenvals, eigenvecs = np.linalg.eig(tensor)
 
-    if np.size(eigenvals) != 3:
-        raise ValueError('not 3 eigenvalues : ' + str(eigenvals))
-
     #need to sort the eigenvalues and associated eigenvectors
-    eigenvecs = eigenvecs[:,eigenvals.argsort()[::-1]]
-    eigenvals.sort() #very fast
-    eigenvals = eigenvals[::-1]
+    order = eigenvals.argsort()[::-1]
+    eigenvecs = eigenvecs[:,order]
+    eigenvals = eigenvals[order]
 
     #Forcing negative eigenvalues to 0
-    eigenvals[eigenvals <0] = 0
+    eigenvals = np.maximum(eigenvals, 0)
     # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
     # eigenvecs: each vector is columnar
 	
-    eig_params = np.concatenate((eigenvals,eigenvecs.T.flat[:]))*scale
+    eig_params = np.concatenate((eigenvals,eigenvecs.T.ravel()))
+    eig_params *= scale
     
     return(eig_params)
 
