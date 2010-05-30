@@ -67,28 +67,20 @@ class tensor(object):
     def __init__(self, data, grad_table, b_values, mask=None,thresh=5,verbose=False):
         if mask == None:
             mask = data[:,:,:,0]
-            mask[mask<thresh] = 0
+            mask = mask > thresh
             
         dims = data.shape
-        if mask != None and dims[0:3] != mask.shape:
-            raise ValueError('Data image and mask MUST have same 3D volume shape!')
+        if mask != None:
+            if dims[0:3] != mask.shape:
+                raise ValueError('Data image and mask MUST have same 3D volume shape!')
+            mask = mask > 0
        
-        mask4d = mask[:,:,:,np.newaxis]
-        for i in range(dims[3]-1):
-            mask4d = np.concatenate((mask4d,mask[:,:,:,np.newaxis]),axis=3)
-
-        #no support from maskedview to handle 3D mask for 4D data
-        #   therefore input mask must be 4D
-        #no maskedview.reshape
-        #   need to reshape the 4d mask
-        #also data needs to be masked first
-        #   mask needs to be broadcasted to 4D to match and then mask data
-        data = MaskedView(mask4d.reshape((np.prod(dims[0:3]),dims[3])),data[mask4d>0]) #mask[:,:,:,np.newaxis]>0]) 
+        data = MaskedView(mask,data[mask],fill_value=0) #data[mask].shape == data.flat[:].shape
 
         eig_decomp, design_mat = WLS_fit(data,grad_table,b_values,verbose=verbose)
         
-        mask = mask.reshape(dims)
-        eig_decomp = MaskedView(mask,eig_decomp)
+        mask.shape = dims[0:3]
+        #eig_decomp = MaskedView(mask,eig_decomp)
         self.evals = eig_decomp[:,:,:,0:3]
         self.evecs = eig_decomp[:,:,:,3:12]
         self.prime_evec = eig_decomp[:,:,:,3:6]
@@ -127,8 +119,8 @@ def WLS_fit (data,gtab,bval,verbose=False):
 
     Parameters
     ----------
-    data : ndarray (X,Y,Z,g) OR Maskedview (X*Y*Z,g) [preferred]
-        The image data as a numpy ndarray.
+    data : ndarray (X,Y,Z,g) OR Maskedview (X,Y,Z)
+        The image data will be masked if ndarray is given with threshold = 25.
     gtab : ndarray (3,g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.
     bval : ndarray (g,1)
@@ -138,36 +130,37 @@ def WLS_fit (data,gtab,bval,verbose=False):
 
     Returns
     -------
-    eig_decomp : ndarray (X,Y,Z,12) OR Maskedview (X*Y*Z,g)
+    eig_decomp : ndarray (X,Y,Z,12)
         Eigenvalues and eigenvectors from eigen decomposition of the tensor
     design_mat : ndarray (g,7)
         DTI design matrix to reconstruct fitted data if desired
 
     """
+    #timer for verbose
     start_time = time.time()
-    ####main part of code
+    
+    #hold original shape
     dims = data.shape
         
-    if len(dims) == 4:
-        fit_dim = (dims[0]*dims[1]*dims[2],dims[3])
-        # Y matrix from Chris' paper
-        data = data.reshape(fit_dim) #direct reshape for some reason does not work
-    elif len(dims) == 2:
-        fit_dim = dims
+    ### Prepare data for analysis    
+    if isinstance(data,np.ndarray):#len(dims) == 4:
+        #Create conservative mask; also makes sure log behaves
+        mask = data[:,:,:,0] > 25
+
+        #turn data into maskedview
+        data = MaskedView(mask,data[mask],fill_value=0)
+    elif not isinstance(data,MaskedView):
+        raise ValueError('input must be of type ndarray or MaskedView')
+    
+    #reshape data to be (X*Y*Z,1)
+    data.shape = (-1,1)
 
     ###Create log of signal and reshape it to be x:y:z by grad
-    if isinstance(data,np.ndarray):
-        data[data <= 0] = 1 # enforcing positive values to allow for natural log
-        ###Create log of signal and reshape it to be x:y:z by grad
-        # need to set this seperately to enforce int16 precision
-        # set precision to 3 significant figures...to save memory
-        # instead of later calculating it with log_s_ols
-        log_s = np.int16(np.log(data) * 1000)
-        scale=1/1000.
-    else:
-        log_s = np.log(data)
-        scale=1
-
+    data_flat = data.filled()[data.mask]
+    data_flat[data_flat<1] = 1 #be sure log behaves well
+    data = MaskedView(data.mask, data_flat)
+    log_s = np.log(data) #type(log_s) == MaskedView
+    
     ###Construct design matrix
     #For DTI this is the so called B matrix
     # X matrix from Chris' paper
@@ -176,56 +169,51 @@ def WLS_fit (data,gtab,bval,verbose=False):
     ###Weighted Least Squares (WLS) to solve "linear" regression
     # Y hat OLS from Chris' paper
     #  ( [x*y*z by g] [g by 7] [7 by g ] ) = [x*y*z by g]
-    log_s_ols = np.dot(log_s, np.dot(B, np.linalg.pinv(B)))
+    log_s_ols = np.dot(log_s, np.dot(B, np.linalg.pinv(B))) #type(log_s_ols) = ndarray
     del log_s #freeing up memory
-    
-    #handling if ndarray is sent
-    if isinstance(data,np.ndarray):
-        log_s_ols = np.int16(log_s_ols)
 
     #Setting these arrays later to allow the previous step to have all memory
-    #fit_data = np.zeros(fit_dim,dtype='int16') #original data is int16
-    eig_decomp = np.zeros((fit_dim[0],12),dtype='float32')#'int16')
-
+    eig_decomp = np.zeros((log_s_ols.shape[0],12),dtype='float32')#'int16')
+    
     time_diff = list((0,0))
     time_iter = time.time()
     # This step is because we cannot vectorize diagonal vector and tensor fit
-    for i in range(log_s_ols.shape[0]): #range(np.size(log_s_ols,axis=0)):
-        #Check every 1 slices
-        if verbose and i % (dims[0]*dims[1]*1) == 0:
-            slice = i/dims[0]/dims[1]+1.
-            time_diff.append(time.time()-time_iter)
-            min = np.mean(time_diff[2:len(time_diff)])/60.0/5*(dims[2]-slice)
-            sec = np.round((min - np.fix(min)) * 60.0/5)
-            min = np.fix(min)
-            percent = 100.*slice/dims[2]
-            print str(np.round(percent)) + '% ... time left: ' + str(min) + ' MIN ' \
-                                + str(sec) + ' SEC ... memory: ' + memory()/1024. + 'MB'
-            time_iter=time.time()
- 
+    for ii,data_ii in enumerate(data): 
         #Split up weighting vector into little w to perform pinv
-        w = np.exp(log_s_ols[i,:]*scale)[:,np.newaxis]
-    
+        w = np.exp(log_s_ols[ii,:])[:,np.newaxis]
+
         #pointwise broadcasting to avoid diagonal matrix multiply!
-        D = np.dot(np.linalg.pinv(B*w), w.ravel()*np.log(data[:,i])*scale) #log_s[i,:]
+        D = np.dot(np.linalg.pinv(B*w), w.ravel()*np.log(data_ii)) #log_s[i,:]
         
         ###Obtain eigenvalues and eigenvectors
-        eig_decomp[i,:] = decompose_tensor(D[0:6],scale=1)
+        eig_decomp[ii,:] = decompose_tensor(D[0:6])
+        
+        #Check every check_percent%
+        ch_percent=0.05
+        if verbose and ii % np.round(ch_percent*log_s_ols.shape[0]) == 0:
+            percent = 100.*ii/log_s_ols.shape[0]
+            time_diff.append(time.time()-time_iter)
+            min = np.mean(time_diff[2:len(time_diff)])/60.0/ch_percent
+            sec = np.round((min - np.fix(min)) * 60.0)
+            min = np.fix(min)
+            print str(np.round(percent)) + '% ... time left: ' + str(min) + ' MIN ' \
+                + str(sec) + ' SEC ... memory: ' + str(np.round(memory()/1024.)) + 'MB'
+            time_iter=time.time()
 
     #clear variables not needed to save memory
     del log_s_ols
 
     # Reshape the output
-    if len(dims) == 4:
-        eig_decomp = eig_decomp.reshape((dims[0],dims[1],dims[2],12))
-   
+    data.shape = dims
+    eig_decomp = MaskedView(data.mask,eig_decomp,fill_value=0)
+    
     #Report how long it took to make the fit  
     if verbose:
         min = (time.time() - start_time) / 60.0
         sec = (min - np.fix(min)) * 60.0
         print 'TOTAL TIME: ' + str(np.fix(min)) + ' MIN ' + str(np.round(sec)) + ' SEC'
 
-    return(eig_decomp, B)
+    return(eig_decomp.filled(), B)
 
 
 def decompose_tensor(D,scale=1):
