@@ -10,7 +10,10 @@ from fos.core.actors import Actor
 from fos.core.plots  import Plot
 from fos.core.tracks import Tracks
 
-fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+#fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+
+fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain2/brain2_scan1_fiber_track_mni.trk'
+
 
 #fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
@@ -22,7 +25,7 @@ streams,hdr=tv.read(fname)
 print 'Copying tracks...'
 T=[i[0] for i in streams]
 
-T=T[:len(T)/3]
+T=T[:len(T)/5]
 
 print 'Representing tracks using only 3 pts...'
 tracks=[tm.downsample(t,3) for t in T]
@@ -52,36 +55,71 @@ colors =[np.tile(np.array([1,1,1,opacity],'f'),(len(t),1)) for t in T]
 
 t=Tracks(data,colors,line_width=1.)  
 
-t.position=(-50,0,0)
+t.position=(-100,0,0)
 
 print 'Showing dataset after clustering.'
 
+print 'Calculating skeletal track for every bundle.'
+
+skeletals=[]
+
 colors2 = len(data)*[None]
+
+colors_sk = []#len(C.keys())*[None]
 
 for c in C:
 
-    color=np.random.rand(3)
-
+    color=np.random.rand(3)   
+    
     r,g,b = color
+
+    bundle=[]
 
     for i in C[c]['indices']:
         
         colors2[i]=np.tile(np.array([r,g,b,opacity],'f'),(len(data[i]),1))
-
-
-#print sum([len(c) for c in colors2])
-
-#print(len(colors2))
         
+        bundle.append(data[i])
+
+    
+    bi=pf.most_similar_track_zhang(bundle)[0]
+
+    C[c]['skeletal']=bundle[bi]
+
+    #colors_sk[c]=
+
+    if len(C[c]['indices'])>100 and tm.length(bundle[bi])>30.:
+        
+        colors_sk.append( np.tile(np.array([r,g,b,opacity],'f'),(len(bundle[bi]),1)) )
+
+        skeletals.append(bundle[bi])
+
+        
+
+print 'len_data', len(data)
+
+print 'len_skeletals', len(skeletals)
+
+print 'len_colors2', len(colors2)
+
+print 'len_colors_sk', len(colors_sk)
+
+    
 t2=Tracks(data,colors2,line_width=1.)
 
-t2.position=(50,0,0)
+t2.position=(0,0,0)
 
-slot={0:{'actor':t,'slot':(0, 800000)},
-      1:{'actor':t2,'slot':(0, 800000)}}
 
-#Scene(Plot(slot)).run()
+sk=Tracks(skeletals,colors_sk,line_width=3.)
 
+sk.position=(0,0,0)
+
+        
+slot={#0:{'actor':t,'slot':(0, 800000)},
+      #1:{'actor':t2,'slot':(0, 800000)},
+      2:{'actor':sk,'slot':(0, 800000)}}
+
+Scene(Plot(slot)).run()
 
 print 'Some statistics about the clusters'
 lens=[len(C[c]['indices']) for c in C]
