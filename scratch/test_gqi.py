@@ -2,7 +2,9 @@ from scipy.io import loadmat
 import numpy as np
 #?loadmat
 
-phantom=loadmat('/home/eg309/Desktop/phantom_test_data.mat',struct_as_record=True)
+#phantom=loadmat('/home/eg309/Desktop/phantom_test_data.mat',struct_as_record=True)
+phantom=loadmat('/home/ian/Data/Frank_Eleftherios/phantom_test_data.mat',struct_as_record=True)
+
 all=phantom['all']
 b_table=phantom['b_table']
 odf_vertices=phantom['odf_vertices']
@@ -17,13 +19,15 @@ scaling=np.sqrt(b_table[0]*0.01506) # 0.01506 = 6*D where D is the free
 # water diffusion coefficient 
 # l_values sqrt(6 D tau) D free water
 # diffusio coefficiet and tau included in the b-value
+# sqrt(6Db(q))
 
 tmp=np.tile(scaling,(3,1))
 
-b_vector=b_table[1:4,:]*tmp
+b_vector=b_table[1:4,:]*tmp # sqrt(6Db(q)).(q/|q|)
 
 Lambda = 1.2 # smoothing parameter - diffusion sampling length
 
+#np.dot(b_vector.T, odf_vertices) is  before.u where before is sqrt(6Db(q)).(q/|q|)
 q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices) * Lambda/np.pi) # implements equation no. 9 from Yeh et.al.
 
 
@@ -66,7 +70,7 @@ def peak_finding(odf,odf_faces,odf_vertices):
 
     peak=peak[0:len(peak)/2]
 
-    #find local maxima and give fiber orientation (inds) and magnitute
+    #find local maxima and give fiber orientation (inds) and magnitude
     #peaks in a descending order
 
     inds=np.where(peak>0)[0]
@@ -118,9 +122,9 @@ for (i,s) in enumerate(S):
 
     peaks,inds=peak_finding(odf,odf_faces,odf_vertices)
 
-    fwd=max(np.max(odf),fwd)
+    fwd=max(np.max(odf),fwd) #finding the maximum value for the whole brain
 
-    peaks = peaks - np.min(odf)
+    peaks = peaks - np.min(odf) # removes the isotropic part
 
     l=min(len(peaks),5)
 
