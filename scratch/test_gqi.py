@@ -16,7 +16,7 @@ odf_faces=phantom['odf_faces']
 scaling=np.sqrt(b_table[0]*0.01506) # 0.01506 = 6*D where D is the free
 # water diffusion coefficient 
 # l_values sqrt(6 D tau) D free water
-# diffusio coefficiet and tau included in the b-value
+# diffusion coefficiet and tau included in the b-value
 
 tmp=np.tile(scaling,(3,1))
 
