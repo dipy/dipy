@@ -1,27 +1,15 @@
-.. dipy documentation master file, created by
-   sphinx-quickstart on Thu Feb  4 14:32:37 2010.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
+====
+DiPy
+====
 
-Welcome to dipy's documentation!
-================================
+DiPy is a project for diffusion imaging analyis in Python.
 
-Contents:
+Please see our :ref:`documentation` for more detail. 
 
+.. We need the following toctree directive to include the documentation
+.. in the document heirarchy - see http://sphinx.pocoo.org/concepts.html
 .. toctree::
-   :maxdepth: 2
+   :hidden:
 
-   introduction
-   mission
-   develop
-   installation
-   theory/index
-   reference/index
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   documentation
 
