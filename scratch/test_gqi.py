@@ -2,8 +2,8 @@ from scipy.io import loadmat
 import numpy as np
 #?loadmat
 
-#phantom=loadmat('/home/eg309/Desktop/phantom_test_data.mat',struct_as_record=True)
-phantom=loadmat('/home/ian/Data/Frank_Eleftherios/phantom_test_data.mat',struct_as_record=True)
+phantom=loadmat('/home/eg01/Desktop/phantom_test_data.mat',struct_as_record=True)
+#phantom=loadmat('/home/ian/Data/Frank_Eleftherios/phantom_test_data.mat',struct_as_record=True)
 
 all=phantom['all']
 b_table=phantom['b_table']
@@ -18,7 +18,7 @@ odf_faces=phantom['odf_faces']
 scaling=np.sqrt(b_table[0]*0.01506) # 0.01506 = 6*D where D is the free
 # water diffusion coefficient 
 # l_values sqrt(6 D tau) D free water
-# diffusio coefficiet and tau included in the b-value
+# diffusion coefficient and tau included in the b-value
 # sqrt(6Db(q))
 
 tmp=np.tile(scaling,(3,1))
@@ -138,7 +138,6 @@ QA/=fwd
 #If you just want to generate a volume then is enough to use the first QA[0]
 
 
-#Generate streamlines
 
 
 
