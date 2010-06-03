@@ -1,8 +1,4 @@
-====
-DiPy
-====
-
-DiPy is a project for diffusion imaging analyis in Python.
+Dipy is a project for diffusion magnetic resonance imaging analysis in Python.
 
 Please see our :ref:`documentation` for more detail. 
 
