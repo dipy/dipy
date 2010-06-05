@@ -1,6 +1,6 @@
 .. _documentation:
 
-Dipy documentation!
+Dipy documentation
 ===================
 
 Contents:
@@ -10,8 +10,8 @@ Contents:
 
    introduction
    mission
-   develop
    installation
+   devel/index
    theory/index
    reference/index
 

@@ -13,7 +13,6 @@
 .. _dipy: http://nipy.org/dipy
 .. _`dipy github`: http://github.com/Garyfallidis/dipy
 .. _nibabel: http://nipy.sourceforge.net/nibabel
-.. _dipy: http://nipy.sourceforge.net/dipy
 .. _nipy development guidelines: http://nipy.sourceforge.net/devel
 
 .. Documentation tools
@@ -70,6 +69,7 @@
 .. _python: http://www.python.org
 .. _mayavi: http://mayavi.sourceforge.net/
 .. _sympy: http://code.google.com/p/sympy/
+.. _setuptools: http://pypi.python.org/pypi/setuptools
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org
