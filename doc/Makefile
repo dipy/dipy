@@ -41,6 +41,9 @@ clean:
 gendoc:
 	sphinx-autogen -o reference/generated reference/*.rst
 
+gitwash-update:
+	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
+
 html:
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo

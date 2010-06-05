@@ -8,12 +8,13 @@
    __not_case_sensitive__, so only one target definition is needed for
    nipy, NIPY, Nipy, etc...
 
-.. _nipy: http://neuroimaging.scipy.org
+.. _nipy: http://nipy.org
 .. _`Brain Imaging Center`: http://bic.berkeley.edu/
-.. _dipy: http://nipy.sourceforge.net/dipy
+.. _dipy: http://nipy.org/dipy
 .. _`dipy github`: http://github.com/Garyfallidis/dipy
 .. _nibabel: http://nipy.sourceforge.net/nibabel
 .. _dipy: http://nipy.sourceforge.net/dipy
+.. _nipy development guidelines: http://nipy.sourceforge.net/devel
 
 .. Documentation tools
 .. _graphviz: http://www.graphviz.org/

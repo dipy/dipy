@@ -5,13 +5,15 @@
 ======================
 
 dipy_ is in active development at the moment and we are doing our best
-to create a release at the soonest possible. However, if you still want
-to play with it here is what you need to do.
+to create a release as soon as we can. However, if you still want to
+play with it here is what you need to do.
 
 The primary development repository is `dipy github`_ 
 
 We will describe for now that the installation for Ubuntu 9.10 assuming
-that the installation for other Linux, Macosx and Windows distributions is straightforward. We know that it is not ;-) Don't panic a release is coming soon.
+that the installation for other Linux, Macosx and Windows distributions
+is straightforward. We know that it is not ;-) Don't panic a release is
+coming soon.
 
 .. _using-on-cmdline:
 
@@ -29,7 +31,7 @@ For a local build try::
 
         python setup.py build_ext --inplace
 
-but then add you dipy_ directory in your PYTHONPATH.
+but then add your dipy_ directory in your PYTHONPATH.
 
 dipy_ requires the following packages::
 
@@ -43,16 +45,21 @@ It also requires nibabel for reading medical images::
         cd nibabel
         python setup.py build_ext --inplace
 
-and then add nibabel directory to your PYTHONPATH. We usually add the PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every time. This should look like::
+and then add nibabel directory to your PYTHONPATH. We usually add the
+PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every
+time. This should look like::
+
     export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
 
 After changing the ~/.bashrc try::
 
-      source ~/.bash
+      source ~/.bashrc
 
-so that you can have immediate access to dipy_ without needing to restart your terminal.       
+so that you can have immediate access to dipy_ without needing to
+restart your terminal.
 
-For visualisation *remove all* older mayavi or traits installations and then install the latest Enthought Suite::
+For visualisation *remove all* older mayavi or traits installations and
+then install the latest Enthought Suite::
 
     mkdir ets
     cd ets
@@ -67,13 +74,16 @@ For visualisation *remove all* older mayavi or traits installations and then ins
     ets bdist -r
     sudo easy_install -f dist -H dist ets
 
-In case easy_install is not installed then please install _setuptools.
+In case ``easy_install`` is not installed then please install
+setuptools_.
 
 After doing the above execute ipython in the terminal and try::
 
-    >>>import dipy
+    >>> import dipy
 
-Does it work? For any problems/suggestions please let us know by sending an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting with [dipy].
+Does it work? For any problems/suggestions please let us know by sending
+an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
+with ``[dipy]``.
 
 
 .. include:: links_names.txt
