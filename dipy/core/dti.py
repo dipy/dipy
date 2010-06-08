@@ -22,22 +22,22 @@ class tensor(object):
 
     Parameters
     ----------
-    data : ndarray (X,Y,Z,g)
+    data : ndarray (V,g)
         The image data as a numpy ndarray.
     gtab : ndarray (3,g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.
     bval : ndarray (g,1)
         Diffusion weighting factor b for each vector in gtab.
-    mask : ndarray (X,Y,Z)
+    mask : ndarray (V,1)
         Mask that excludes fit in voxels where mask == 0
     thresh : integer (0,np.max(data))
         Simple threshold to exclude fit in voxels where b0 < thresh
 
     Key Methods
     -----------
-    evals : ndarray (X,Y,Z,EV1,EV2,EV3)Z
+    evals : ndarray (V,EV1,EV2,EV3)
         Returns cached eigenvalues of self diffusion tensor [1]_ for given index.
-    evecs : ndarray (X,Y,Z,EV1x,EV1y,EV1z,EV2x,EV2y,EV2z,EV3x,EV3y,EV3z)
+    evecs : ndarray (V,EV1x,EV1y,EV1z,EV2x,EV2y,EV2z,EV3x,EV3y,EV3z)
         Returns cached associated eigenvector of self diffusion tensor [1]_ for given 
         index.
     FA : ndarray
@@ -77,12 +77,12 @@ class tensor(object):
        
         #data = MaskedView(mask,data[mask],fill_value=0) #data[mask].shape == data.flat[:].shape
 
-        eig_decomp, design_mat = WLS_fit(data,grad_table,b_values,mask=mask,thresh=thresh)
+        eigvals,eigvecs, design_mat = WLS_fit(data,grad_table,b_values,mask=mask,
+                                              thresh=thresh)
         
         mask.shape = dims[0:3]
-        #eig_decomp = MaskedView(mask,eig_decomp)
-        self.evals = eig_decomp[:,:,:,0:3]
-        self.evecs = eig_decomp[:,:,:,3:12]
+        self.evals = eigvals
+        self.evecs = eigvecs
         self.prime_evec = eig_decomp[:,:,:,3:6]
         
         #this is for convenience (does not add much memory)
@@ -147,15 +147,27 @@ def WLS_fit(data, gtab, bval, mask=None, thresh=0):
     B = design_matrix(gtab,bval,'float64')
 
     #to avoid altering given data and mask
-    eigen_decomp = WLS_wipa(B,data[(mask > 0) & (data[...,0] > thresh)])
+    eigen_decomp = WLS(B,data[(mask > 0) & (data[...,0] > thresh)])
 
     return eigen_decomp[:,0:3],eigen_decomp[:,3:12], B
 
-def WLS_wipa(design_matrix, data):
+def WLS(design_matrix, data):
     """
-    this wls function maskes requires that data contain vectors of data along
-    the last dimenssion, the data can be passed in as an image array, image
-    array flattened to an ndarray or as a MaskedView. It makes no copies of data
+    This WLS function performs a weighted least squares fit in the context of
+    a linear regression model.
+    
+    Parameters
+    ----------
+    design_matrix : ndarray (g,g)
+        Design matrix holding the covariants used to solve for the regression coefficients.
+    data : ndarray or MaskedView (X,Y,Z,...,g)
+        Data or response variables holding the data. Note that the last dimension should 
+        contain the data. It makes no copies of data.
+
+    Returns
+    -------
+    eigen_decomp :
+
     """
 
     data_flat=data.reshape((-1, data.shape[-1]))
@@ -257,9 +269,9 @@ def design_matrix(gtab,bval,dtype='float32'):
     return -B
 
 
-########################################################################################################
+#######################################################################################
 #The following are/will be DEPRECATED
-########################################################################################################
+#######################################################################################
 
 
 def __WLS_fit (data,gtab,bval,verbose=False):    
