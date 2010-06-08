@@ -10,7 +10,6 @@ import scipy as sp
 
 #dipy modules
 from dipy.core.maskedview import MaskedView
-from dipy.core.memory import memory
 
 class tensor(object):
     """
@@ -126,7 +125,7 @@ def WLS_fit(data, gtab, bval, mask=None, thresh=0):
         Diffusion gradient table found in DICOM header as a numpy ndarray.
     bval : ndarray (g,1)
         Diffusion weighting factor b for each vector in gtab.
-    mask : ndarray (0<V,g)
+    mask : ndarray (0<V,)
         Mask of data that WLS_fit will NOT perform on. If mask is not boolean,
         then WLS_fit will operate where mask > 0
     thresh : single value within range of data
