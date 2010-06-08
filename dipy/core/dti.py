@@ -242,6 +242,12 @@ def design_matrix(gtab,bval,dtype='float32'):
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
+	Return
+	------
+	design_matrix : ndarray (g,7)
+		Design matrix or B matrix assuming Gaussian distributed tensor model.
+		Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
+
     """
     
     B = np.zeros((bval.size,7),dtype=dtype)
