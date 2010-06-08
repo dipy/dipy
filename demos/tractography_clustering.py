@@ -7,14 +7,16 @@ import time
 import numpy as np
 
 
-#fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
-fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
+#fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 
 print 'Loading file...'
 streams,hdr=tv.read(fname)
 
 print 'Copying tracks...'
 T=[i[0] for i in streams]
+
+T=T[:1000]
 
 print 'Representing tracks using only 3 pts...'
 tracks=[tm.downsample(t,3) for t in T]

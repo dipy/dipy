@@ -17,15 +17,16 @@ help:
 
 all: ext html test
 
-ext: track_performance.so track_volumes.so
+ext: track_performance.so track_volumes.so reconstruction_performance.so
 
 test:   ext
 	nosetests .
 
-html:  ${PKGDIR}/core/track_performance.html ${PKGDIR}/io/track_volumes.html
+html:  ${PKGDIR}/core/track_performance.html ${PKGDIR}/io/track_volumes.html ${PKGDIR}/io/reconstrunction_performance.html
 
 track_performance.so: ${PKGDIR}/core/track_performance.pyx
 track_volumes.so: ${PKGDIR}/io/track_volumes.pyx
+reconstruction_performance.so: ${PKGDIR}/core/reconstruction_performance.pyx
 
 	python setup.py build_ext --inplace
 
