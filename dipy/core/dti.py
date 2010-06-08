@@ -10,7 +10,6 @@ import scipy as sp
 
 #dipy modules
 from dipy.core.maskedview import MaskedView
-from dipy.core.memory import memory
 
 class tensor(object):
     """
@@ -22,22 +21,22 @@ class tensor(object):
 
     Parameters
     ----------
-    data : ndarray (X,Y,Z,g)
+    data : ndarray (V,g)
         The image data as a numpy ndarray.
     gtab : ndarray (3,g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.
     bval : ndarray (g,1)
         Diffusion weighting factor b for each vector in gtab.
-    mask : ndarray (X,Y,Z)
+    mask : ndarray (V,1)
         Mask that excludes fit in voxels where mask == 0
     thresh : integer (0,np.max(data))
         Simple threshold to exclude fit in voxels where b0 < thresh
 
     Key Methods
     -----------
-    evals : ndarray (X,Y,Z,EV1,EV2,EV3)Z
+    evals : ndarray (V,EV1,EV2,EV3)
         Returns cached eigenvalues of self diffusion tensor [1]_ for given index.
-    evecs : ndarray (X,Y,Z,EV1x,EV1y,EV1z,EV2x,EV2y,EV2z,EV3x,EV3y,EV3z)
+    evecs : ndarray (V,EV1x,EV1y,EV1z,EV2x,EV2y,EV2z,EV3x,EV3y,EV3z)
         Returns cached associated eigenvector of self diffusion tensor [1]_ for given 
         index.
     FA : ndarray
@@ -75,14 +74,14 @@ class tensor(object):
                 raise ValueError('Data image and mask MUST have same 3D volume shape!')
             mask = mask > 0
        
-        data = MaskedView(mask,data[mask],fill_value=0) #data[mask].shape == data.flat[:].shape
+        #data = MaskedView(mask,data[mask],fill_value=0) #data[mask].shape == data.flat[:].shape
 
-        eig_decomp, design_mat = WLS_fit(data,grad_table,b_values,verbose=verbose)
+        eigvals,eigvecs, design_mat = WLS_fit(data,grad_table,b_values,mask=mask,
+                                              thresh=thresh)
         
         mask.shape = dims[0:3]
-        #eig_decomp = MaskedView(mask,eig_decomp)
-        self.evals = eig_decomp[:,:,:,0:3]
-        self.evecs = eig_decomp[:,:,:,3:12]
+        self.evals = eigvals
+        self.evecs = eigvecs
         self.prime_evec = eig_decomp[:,:,:,3:6]
         
         #this is for convenience (does not add much memory)
@@ -111,11 +110,176 @@ class tensor(object):
         fa[ss_ev == 0] = 0
         return fa 
 
-
-def WLS_fit (data,gtab,bval,verbose=False):    
+def WLS_fit(data, gtab, bval, mask=None, thresh=0):
     """
     Computes weighted least squares (WLS) fit to calculate self-diffusion tensor. 
     (Basser et al., 1994a)
+
+    Parameters
+    ----------
+    data : ndarray (V,g)
+        The image data needs at least 2 dimensions where the first dimension
+        holds the set of voxels that WLS_fit will perform on and second 
+        dimension holds the diffusion weighted signals.
+    gtab : ndarray (3,g)
+        Diffusion gradient table found in DICOM header as a numpy ndarray.
+    bval : ndarray (g,1)
+        Diffusion weighting factor b for each vector in gtab.
+    mask : ndarray (0<V,)
+        Mask of data that WLS_fit will NOT perform on. If mask is not boolean,
+        then WLS_fit will operate where mask > 0
+    thresh : single value within range of data
+        Simple threshold to exclude voxels from WLS_fit. Default value for 
+        threshold is 0.
+
+    Returns
+    -------
+    eigvals : ndarray (V,3)
+        Eigenvalues from eigen decomposition of the tensor.
+    eigvecs : ndarray (V,9)
+        Associated eigenvectors from eigen decomposition of the tensor.
+    design_mat : ndarray (g,7)
+        DTI design matrix to reconstruct fitted data if desired
+    """
+
+    #64 bit design matrix makes for faster pinv
+    B = design_matrix(gtab,bval,'float64')
+
+    #to avoid altering given data and mask
+    eigen_decomp = WLS(B,data[(mask > 0) & (data[...,0] > thresh)])
+
+    return eigen_decomp[:,0:3],eigen_decomp[:,3:12], B
+
+def WLS(design_matrix, data):
+    """
+    This WLS function performs a weighted least squares fit in the context of
+    a linear regression model.
+    
+    Parameters
+    ----------
+    design_matrix : ndarray (g,g)
+        Design matrix holding the covariants used to solve for the regression coefficients.
+    data : ndarray or MaskedView (X,Y,Z,...,g)
+        Data or response variables holding the data. Note that the last dimension should 
+        contain the data. It makes no copies of data.
+
+    Returns
+    -------
+    eigen_decomp :
+
+    """
+
+    data_flat=data.reshape((-1, data.shape[-1]))
+    U,S,V = np.linalg.svd(design_matrix, False)
+    #math: SI = B*inv(B.T*B)*B.T
+    SI = np.dot(U, U.T)
+
+    eigen_decomp = np.empty((len(data_flat), 12))
+
+    #wi=np.exp(w[0])
+    for ii, sig in enumerate(data):
+        log_s = np.log(sig)
+        w=np.exp(np.dot(SI, log_s))
+        D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
+        eigen_decomp[ii] = decompose_tensor(D)
+    
+    eigen_decomp.shape = data.shape[:-1]+(-1,)
+    return eigen_decomp
+    
+def decompose_tensor(D,scale=1):
+    """
+    Computes tensor eigen decomposition to calculate eigenvalues and eigenvectors of 
+    self-diffusion tensor. Assumes D has units on order of ~ 10^-4 mm^2/s
+    (Basser et al., 1994a)
+
+    Parameters
+    ----------
+    D : ndarray (X,Y,Z,g)
+        The six unique diffusitivities (Dxx, Dyy,Dzz,Dxy,Dxz,Dyz)
+    scale : integer range(1,N)
+        Simple scaling parameter since diffusitivities are small.
+
+    """
+
+    tensor = np.empty((3,3),dtype=D.dtype)
+    tensor[0,0] = D[0]  #Dxx
+    tensor[1,1] = D[1]  #Dyy
+    tensor[2,2] = D[2]  #Dzz
+    tensor[1,0] = tensor[0,1] = D[3]  #Dxy
+    tensor[2,0] = tensor[0,2] = D[4]  #Dxz
+    tensor[2,1] = tensor[1,2] = D[5]  #Dyz
+
+    #outputs multiplicity as well so need to unique
+    eigenvals, eigenvecs = np.linalg.eig(tensor)
+
+    #need to sort the eigenvalues and associated eigenvectors
+    order = eigenvals.argsort()[::-1]
+    eigenvecs = eigenvecs[:,order]
+    eigenvals = eigenvals[order]
+
+    #Forcing negative eigenvalues to 0
+    eigenvals = np.maximum(eigenvals, 0)
+    # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
+    # eigenvecs: each vector is columnar
+	
+    eig_params = np.concatenate((eigenvals,eigenvecs.T.ravel()))
+    eig_params *= scale
+    
+    return(eig_params)
+
+
+def design_matrix(gtab,bval,dtype='float32'):
+    """
+    Constructs design matrix for DTI weighted least squares or least squares fitting. 
+    (Basser et al., 1994a)
+
+    Parameters
+    ----------
+    gtab : ndarray (3,g)
+        Diffusion gradient table found in DICOM header as a numpy ndarray.
+    bval : ndarray (g,1)
+        Diffusion weighting factor b for each vector in gtab.
+    dtype : string
+        Parameter to control the dtype of returned designed matrix
+
+    """
+    
+    B = np.zeros((bval.size,7),dtype=dtype)
+    G = gtab
+    
+    if gtab.shape[1] != bval.shape[0] :
+        print 'Gradient table size is not consistent with bval vector... could be b/c \
+               of b0 images'
+        print 'Will try to set nonzero bval index with gradient table to construct \
+               B matrix'
+        
+        G = np.zeros((3,np.size(bval)))
+        G[:,np.where(bval > 0)]=gtab
+    
+    B[:,0] = G[0,:]*G[0,:]*1.*bval   #Bxx
+    B[:,1] = G[1,:]*G[1,:]*1.*bval   #Byy
+    B[:,2] = G[2,:]*G[2,:]*1.*bval   #Bzz
+    B[:,3] = G[0,:]*G[1,:]*2.*bval   #Bxy
+    B[:,4] = G[0,:]*G[2,:]*2.*bval   #Bxz
+    B[:,5] = G[1,:]*G[2,:]*2.*bval   #Byz
+    B[:,6] = np.ones(np.size(bval),dtype=dtype)
+    
+    #Need to return [g by 7]
+    return -B
+
+
+#######################################################################################
+#The following are/will be DEPRECATED
+#######################################################################################
+
+
+def __WLS_fit (data,gtab,bval,verbose=False):    
+    """
+    Computes weighted least squares (WLS) fit to calculate self-diffusion tensor. 
+    (Basser et al., 1994a)
+
+    NB: This function is the deprecated version of WLS_fit ... it works fine but
+    is not as robust as WLS_fit.
 
     Parameters
     ----------
@@ -156,9 +320,7 @@ def WLS_fit (data,gtab,bval,verbose=False):
     data.shape = (-1,1)
 
     ###Create log of signal and reshape it to be x:y:z by grad
-    data_flat = data.filled()[data.mask]
-    data_flat[data_flat<1] = 1 #be sure log behaves well
-    data = MaskedView(data.mask, data_flat)
+    data = np.maximum(data,1)
     log_s = np.log(data) #type(log_s) == MaskedView
     
     ###Construct design matrix
@@ -215,94 +377,11 @@ def WLS_fit (data,gtab,bval,verbose=False):
 
     return(eig_decomp.filled(), B)
 
-
-def decompose_tensor(D,scale=1):
+def __save_scalar_maps(scalar_maps, img=None, coordmap=None):
     """
-    Computes tensor eigen decomposition to calculate eigenvalues and eigenvectors of 
-    self-diffusion tensor. Assumes D has units on order of ~ 10^-4 mm^2/s
-    (Basser et al., 1994a)
-
-    Parameters
-    ----------
-    D : ndarray (X,Y,Z,g)
-        The six unique diffusitivities (Dxx, Dyy,Dzz,Dxy,Dxz,Dyz)
-    scale : integer range(1,N)
-        Simple scaling parameter since diffusitivities are small.
-
+    Deprecated version of writing scalar maps out to disk. Do not use.
     """
-    tensor = np.zeros((3,3))
-    tensor[0,0] = D[0]  #Dxx
-    tensor[1,1] = D[1]  #Dyy
-    tensor[2,2] = D[2]  #Dzz
-    tensor[1,0] = D[3]  #Dxy
-    tensor[2,0] = D[4]  #Dxz
-    tensor[2,1] = D[5]  #Dyz
-    tensor[0,1] = tensor[1,0] #Dyx
-    tensor[0,2] = tensor[2,0] #Dzx
-    tensor[1,2] = tensor[2,1] #Dzy
 
-    #outputs multiplicity as well so need to unique
-    eigenvals, eigenvecs = np.linalg.eig(tensor)
-
-    if np.size(eigenvals) != 3:
-        raise ValueError('not 3 eigenvalues : ' + str(eigenvals))
-
-    #need to sort the eigenvalues and associated eigenvectors
-    eigenvecs = eigenvecs[:,eigenvals.argsort()[::-1]]
-    eigenvals.sort() #very fast
-    eigenvals = eigenvals[::-1]
-
-    #Forcing negative eigenvalues to 0
-    eigenvals[eigenvals <0] = 0
-    # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
-    # eigenvecs: each vector is columnar
-	
-    eig_params = np.concatenate((eigenvals,eigenvecs.T.flat[:]))*scale
-    
-    return(eig_params)
-
-
-def design_matrix(gtab,bval,dtype='float32'):
-    """
-    Constructs design matrix for DTI weighted least squares or least squares fitting. 
-    (Basser et al., 1994a)
-
-    Parameters
-    ----------
-    gtab : ndarray (3,g)
-        Diffusion gradient table found in DICOM header as a numpy ndarray.
-    bval : ndarray (g,1)
-        Diffusion weighting factor b for each vector in gtab.
-    dtype : string
-        Parameter to control the dtype of returned designed matrix
-
-    """
-    
-    B = np.zeros((bval.size,7),dtype=dtype)
-    G = gtab
-    
-    if gtab.shape[1] != bval.shape[0] :
-        print 'Gradient table size is not consistent with bval vector... could be b/c \
-               of b0 images'
-        print 'Will try to set nonzero bval index with gradient table to construct \
-               B matrix'
-        
-        G = np.zeros((3,np.size(bval)))
-        G[:,np.where(bval > 0)]=gtab
-    
-    B[:,0] = G[0,:]*G[0,:]*1.*bval   #Bxx
-    B[:,1] = G[1,:]*G[1,:]*1.*bval   #Byy
-    B[:,2] = G[2,:]*G[2,:]*1.*bval   #Bzz
-    B[:,3] = G[0,:]*G[1,:]*2.*bval   #Bxy
-    B[:,4] = G[0,:]*G[2,:]*2.*bval   #Bxz
-    B[:,5] = G[1,:]*G[2,:]*2.*bval   #Byz
-    B[:,6] = np.ones(np.size(bval),dtype=dtype)
-    
-    #Need to return [g by 7]
-    return -B
-
-
-def save_scalar_maps(scalar_maps, img=None, coordmap=None):
     #for io of writing and reading nifti images
     from nipy import load_image, save_image
     from nipy.core.api import fromarray #data --> image
