@@ -110,7 +110,7 @@ class tensor(object):
         fa[ss_ev == 0] = 0
         return fa 
 
-def WLS_fit(data, gtab, bval, mask=None, thresh=0):
+def WLS_fit(data, gtab, bval, mask=True, thresh=0):
     """
     Computes weighted least squares (WLS) fit to calculate self-diffusion tensor. 
     (Basser et al., 1994a)
@@ -143,12 +143,12 @@ def WLS_fit(data, gtab, bval, mask=None, thresh=0):
     """
 
     #64 bit design matrix makes for faster pinv
-    B = design_matrix(gtab,bval,'float64')
+    B = design_matrix(gtab, bval)
 
     #to avoid altering given data and mask
-    eigen_decomp = WLS(B,data[(mask > 0) & (data[...,0] > thresh)])
+    eigen_decomp = WLS(B, data[mask & (data[...,0] > thresh)])
 
-    return eigen_decomp[:,0:3],eigen_decomp[:,3:12], B
+    return eigen_decomp[:,0:3], eigen_decomp[:,3:12], B
 
 def WLS(design_matrix, data):
     """
@@ -169,7 +169,7 @@ def WLS(design_matrix, data):
 
     """
 
-    data_flat=data.reshape((-1, data.shape[-1]))
+    data_flat = data.reshape((-1, data.shape[-1]))
     U,S,V = np.linalg.svd(design_matrix, False)
     #math: SI = B*inv(B.T*B)*B.T
     SI = np.dot(U, U.T)
@@ -228,16 +228,16 @@ def decompose_tensor(D,scale=1):
     return(eig_params)
 
 
-def design_matrix(gtab,bval,dtype='float32'):
+def design_matrix(gtab, bval, dtype=None):
     """
     Constructs design matrix for DTI weighted least squares or least squares fitting. 
     (Basser et al., 1994a)
 
     Parameters
     ----------
-    gtab : ndarray (3,g)
+    gtab : ndarray with shape (3, g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.
-    bval : ndarray (g,1)
+    bval : ndarray with shape (g,)
         Diffusion weighting factor b for each vector in gtab.
     dtype : string
         Parameter to control the dtype of returned designed matrix
@@ -250,25 +250,19 @@ def design_matrix(gtab,bval,dtype='float32'):
 
     """
     
-    B = np.zeros((bval.size,7),dtype=dtype)
+    B = np.zeros((bval.size,7), dtype=dtype)
     G = gtab
-    
-    if gtab.shape[1] != bval.shape[0] :
-        print 'Gradient table size is not consistent with bval vector... could be b/c \
-               of b0 images'
-        print 'Will try to set nonzero bval index with gradient table to construct \
-               B matrix'
-        
-        G = np.zeros((3,np.size(bval)))
-        G[:,np.where(bval > 0)]=gtab
-    
+    if gtab.shape[1] != bval.shape[0]:
+        raise ValueError('The number of b values and gradient directions must'+
+                         ' be the same')
+
     B[:,0] = G[0,:]*G[0,:]*1.*bval   #Bxx
     B[:,1] = G[1,:]*G[1,:]*1.*bval   #Byy
     B[:,2] = G[2,:]*G[2,:]*1.*bval   #Bzz
     B[:,3] = G[0,:]*G[1,:]*2.*bval   #Bxy
     B[:,4] = G[0,:]*G[2,:]*2.*bval   #Bxz
     B[:,5] = G[1,:]*G[2,:]*2.*bval   #Byz
-    B[:,6] = np.ones(np.size(bval),dtype=dtype)
+    B[:,6] = np.ones(np.size(bval))
     
     #Need to return [g by 7]
     return -B
