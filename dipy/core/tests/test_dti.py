@@ -48,6 +48,35 @@ def test_WLS_fit():
     as the data.
 
     """
+    
+    ##Test Voxel (avoid having to depend on loading NifTI via nibabel)
+    
+    #Recall D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s 
+    D = np.array([1.,1.,1.,1.,0.,0.,np.log(1000)*10.**4])*10.**-4
+    
+    #Design Matrix
+    gtab, bval = read_bvec_file('data/55dir_grad.bvec')
+    X = dti.design_matrix(gtab,bval)
+    
+    #Weights of WLS
+    #math: inv(W) = 1./W ...b/c W is diagonal vector
+    w = np.exp(np.dot(X,D))**2
+    W = np.diag(w)
+    W_inv = np.diag(1./w)
+    
+    #Signals
+    #recall: D = inv([X.T][W][X])[X.T][W][Y]
+    #   ===> Y = inv(W)inv(X.T)[X.T][W][X][D]
+    Y = np.dot(np.dot(np.dot(W_inv, np.dot(np.dot(np.linalg.pinv(X.T),X.T)
+                                                  ,W)),X),D)
+
+    fit_data = np.dot(np.linalg.pinv(np.dot(np.linalg.pinv(X*w),w.ravel())[:,np.newaxis]),X)
+    
+
+    fit_data = np.exp(np.dot(X,D))
+
+
+    ####example from test_qball.py
 
     # Tests derived from tables in
     # http://en.wikipedia.org/wiki/Table_of_spherical_harmonics
