@@ -135,16 +135,16 @@ class tensor(object):
         #this is for convenience (does not add much memory)
         #self.adc = self.calc_adc()
         #self.fa = self.calc_fa()
-        self.prime_evec = self.evecs[...,0,:]
+        #self.prime_evec = self.evecs[...,0,:]
         #self.D = self.calc_D()
     
     def D(self):
-        D = np.empty((self.evals.shape[0],6))
+        D = np.empty((self.evals.shape[0],3,3))
         for ii,eval in enumerate(self.evals): 
             L = np.diag(eval)
             Q = self.evecs[ii,:,:]
-            d = np.dot(np.dot(Q,L),Q.T)
-            D[ii] = np.concatenate((d[0,:],d[1,1:3],np.array([d[2,2]])),axis=0)
+            D[ii,:,:] = np.dot(np.dot(Q,L),Q.T)
+            #D[ii] = np.concatenate((d[0,:],d[1,1:3],np.array([d[2,2]])),axis=0)
         return D
 
     def ADC(self):
