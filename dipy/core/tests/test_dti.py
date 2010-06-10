@@ -42,8 +42,8 @@ def test_tensor_scalar_attributes():
     tensor.evecs = evecs
     
     ### TESTS ###
-    yield assert_equal(np.abs(np.dot(evecs[:, 2], tensor.evecs[:, 2].T)), 1),
-        "Calculation of third eigenvector is not right"
+    yield assert_equal(np.abs(np.dot(evecs[:, 2], tensor.evecs[:, 2].T)), 1,
+        "Calculation of third eigenvector is not right")
     yield assert_array_almost_equal(D, tensor.D(), "Recovery of self diffusion
         tensor from eigenvalues and eigenvectors is not adequate")
     yield assert_array_almost_equal(ADC, tensor.ADC(), "Calculation of ADC of 
@@ -72,32 +72,25 @@ def test_WLS_fit():
 
     """
     
-    ##Test Voxel (avoid having to depend on loading NifTI via nibabel)
-    
-    #Recall D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s 
-    D = np.array([1.,1.,1.,1.,0.,0.,np.log(1000)*10.**4])*10.**-4
+    ### Defining Test Voxel (avoid nibabel dependency) ###
+
+    #Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s 
+    D = np.array([1., 1., 1., 1., 0., 0., np.log(1000) * 10.**4]) * 10.**-4
     
     #Design Matrix
     gtab, bval = read_bvec_file('data/55dir_grad.bvec')
-    X = dti.design_matrix(gtab,bval)
-    
-    #Weights of WLS
-    #math: inv(W) = 1./W ...b/c W is diagonal vector
-    w = np.exp(np.dot(X,D))**2
-    W = np.diag(w)
-    W_inv = np.diag(1./w)
+    X = dti.design_matrix(gtab, bval)
     
     #Signals
-    #recall: D = inv([X.T][W][X])[X.T][W][Y]
-    #   ===> Y = inv(W)inv(X.T)[X.T][W][X][D]
-    Y = np.dot(np.dot(np.dot(W_inv, np.dot(np.dot(np.linalg.pinv(X.T),X.T)
-                                                  ,W)),X),D)
+    Y = np.exp(np.dot(X,D))
 
-    fit_data = np.dot(np.linalg.pinv(np.dot(np.linalg.pinv(X*w),w.ravel())[:,np.newaxis]),X)
+    ### Testing WLS Fit on Single Voxel ###
     
-
-    fit_data = np.exp(np.dot(X,D))
-
+    #Estimate tensor from test signals
+    tensor_est = dti.tensor(Y, gtab, bval)
+    
+    yield assert_array_almost_equal(tensor_est, D, "Calculation of tensor from
+            sample data Y does not compare to analytical solution")
 
     ####example from test_qball.py
 

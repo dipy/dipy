@@ -48,9 +48,6 @@ class tensor(object):
 
     Methods
     -------
-    D : ndarray (V,3,3)
-        Calculates the self diffusion tensor from eigenvalues and associated
-        eigenvectors.
     ADC : ndarray (V,1)
         Calculates the apparent diffusion coefficient [2]_. 
     FA : ndarray (V,1)
@@ -62,9 +59,9 @@ class tensor(object):
     Examples
     --------
     NEED TO WORK ON THIS SECTION
-    >>> data = np.
-    >>> single_voxel_tensor = dti.tensor(data, gtab, bvals)
-    >>> single_voxel_tensor.
+    >>> voxel
+    >>> tensor = dti.tensor(voxel, gtab, bvals)
+    >>> tensor.
 
     See Also
     --------
@@ -93,12 +90,19 @@ class tensor(object):
         Journal of Magnetic Resonance 111, 209-219.
     
     """
+    ### Shape Property ###
     def _getshape(self):
-        pass
+        return self._D().shape[:-2]
+    
+    shape = property(_getshape, doc="Shape of tensor array")
 
+    ### Ndim Property ###
     def _getndim(self):
-        pass
+        return self._D().ndim - 2
+    
+    ndim = property(_getndim, doc="Number of dimensions in tensor array")
 
+    ### Getitem Property ###    
     def __getitem__(self,index):
         if type(index) is not tuple:
             index = (index,)
@@ -111,13 +115,9 @@ class tensor(object):
         new_tensor = copy(self)
         new_tensor.evals = self.evals[index]
         new_tensor.evecs = self.evecs[index]
-        
-        #Perhaps later we can implement residuals
-        #if new_tensor._resid is not None:
-        #    new_tensor._resid = self._resid[index]
         return new_tensor
     
-    #Place holder definition in case we want to handle evals
+    ### Eigenvalues Property ###
     def _getevals(self):
         return self._evals
     
@@ -127,8 +127,10 @@ class tensor(object):
     evals = property(_getevals, _setevals, 
                                 doc="Eigenvalues of self diffusion tensor")
 
+    ### Eigenvectors Property ###
     def _getevecs(self):
         evs = np.empty((self.evals.shape[0], 3, 3))
+        #Calculate 3rd eigenvector from cached eigenvectors
         for ii,p_s_evecs in enumerate(self._evecs): 
             evs[ii,0:2] = p_s_evecs
             evs[ii,2] = np.cross(p_s_evecs[0,:], p_s_evecs[1,:]) #time 26.9 us
@@ -136,7 +138,7 @@ class tensor(object):
 
     def _setevecs(self,evs):
         self._evecs = evs[...,0:2,:]
-
+    
     evecs = property(_getevecs, _setevecs, 
                                 doc="Eigenvectors of self diffusion tensor")
 
@@ -153,26 +155,16 @@ class tensor(object):
         #Define total mask from thresh and mask
         tot_mask = (mask > 0) & (data[...,0] > thresh)
 
-        #Define initial cache
-        #V = np.prod(dims) / dims[-1]
-        #self.evals = np.zeros((V, 3))
-        #self.evecs = np.zeros((V, 2, 3))
-        
         #Perform WLS fit on masked data
         self.evals, self.evecs = WLS_fit_tensor(B, data[tot_mask])
 
-        #I want to make evals and evecs a property such that
-        #cached values (V_mask,-1) and returned values unmasked (X,Y,Z,-1)
-        #self.evals.shape = (dims[0:3])+(-1,)
-        #self.evecs.shape = (dims[0:3])+(-1,)
 
-    def D(self):
+    def _D(self):
         D = np.empty((self.evals.shape[0],3,3))
         for ii,eval in enumerate(self.evals): 
             L = np.diag(eval)
             Q = self.evecs[ii,:,:]
             D[ii,:,:] = np.dot(np.dot(Q,L),Q.T) #timeit = 11.5us
-            #D[ii] = np.concatenate((d[0,:],d[1,1:3],np.array([d[2,2]])),axis=0)
         return D
 
     def ADC(self):
