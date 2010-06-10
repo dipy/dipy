@@ -30,35 +30,55 @@ class tensor(object):
         Diffusion gradient table found in DICOM header as a numpy ndarray.
     bval : ndarray (g,1)
         Diffusion weighting factor b for each vector in gtab.
-    mask : ndarray (0<V,)
+    mask : ndarray (0<V,), optional
         Mask of data that WLS_fit will NOT perform on. If mask is not boolean,
         then WLS_fit will operate where mask > 0
-    thresh : single value within range of data
+    thresh : data.dtype (0<=data.max()), optional
         Simple threshold to exclude voxels from WLS_fit. Default value for 
         threshold is 0.
 
-    Key Methods
-    -----------
-    evals : ndarray (V,EV1,EV2,EV3)
-        Returns cached eigenvalues of self diffusion tensor [1]_ for given 
-        index.
-    evecs : ndarray (V,EV1x,EV1y,EV1z,EV2x,EV2y,EV2z,EV3x,EV3y,EV3z)
-        Returns cached associated eigenvector of self diffusion tensor [1]_ 
-        for given index.
-    FA : ndarray
-        Calculates fractional anisotropy [2]_ for given index.
-    ADC : ndarray
-        Calculates apparent diffusion coefficient or mean diffusitivity [2]_ 
-        for given index.
+    Attributes
+    ----------
+    evals : ndarray (V,3) 
+        Cached eigenvalues of self diffusion tensor for given index. 
+        (eval1,eval2,eval3)
+    evecs : ndarray (V,3,3)
+        Cached associated eigenvectors of self diffusion tensor for given 
+        index. (evec1,evec2,evec3)
+
+    Methods
+    -------
+    D : ndarray (V,3,3)
+        Calculates the self diffusion tensor from eigenvalues and associated
+        eigenvectors.
+    ADC : ndarray (V,1)
+        Calculates the apparent diffusion coefficient [2]_. 
+    FA : ndarray (V,1)
+        Calculates fractional anisotropy [2]_.
+    MD : ndarray (V,1)
+        Calculates the mean diffusitivity [2]_. 
+        Note: [units ADC] ~ [units b value]*10**-1
+    
+    Notes
+    -----
+    Due to the fact that diffusion MRI entails large volumes (e.g. [256,256,
+    50,64]), memory can be an issue. Therefore, only the following parameters 
+    of the self diffusion tensor are cached for each voxel:
+
+        -All three eigenvalues
+        -Primary and secondary eigenvectors
+
+    From these cached parameters, one can presumably construct any desired
+    parameter.
 
     References
     ----------
-    ..    [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
+    ..  [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
         the effective self-diffusion tensor from the NMR spin echo. J Magn 
         Reson B 103, 247-254.
-    ..    [2] Basser, P., Pierpaoli, C., 1996. Microstructural and 
-        physiological features of tissues elucidated by quantitative-
-        diffusion-tensor MRI. Journal of Magnetic Resonance 111, 209-219.
+    ..  [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
+        features of tissues elucidated by quantitative diffusion-tensor MRI. 
+        Journal of Magnetic Resonance 111, 209-219.
     
     """
     def _getshape(self):
@@ -68,7 +88,22 @@ class tensor(object):
         pass
 
     def __getitem__(self,index):
-        pass
+        if type(index) is not tuple:
+            index = (index,)
+        if len(index) > self.ndim:
+            raise IndexError('invalid index')
+        for ii in index:
+            if ii is Ellipsis:
+                index = index + (slice(None),)
+                break
+        new_tensor = copy(self)
+        new_tensor.evals = self.evals[index]
+        new_tensor.evecs = self.evecs[index]
+        
+        #Perhaps later we can implement residuals
+        #if new_tensor._resid is not None:
+        #    new_tensor._resid = self._resid[index]
+        return new_tensor
     
     def __init__(self, data, grad_table, b_values, mask = True, thresh = 0,
                  verbose = False):
@@ -87,51 +122,99 @@ class tensor(object):
         #Define initial cache
         #V = np.prod(dims) / dims[-1]
         #self.evals = np.zeros((V, 3))
-        #self.evecs = np.zeros((V, 9))
+        #self.evecs = np.zeros((V, 2, 3))
         
         #Perform WLS fit on masked data
         self.evals, self.evecs = WLS_fit_tensor(B, data[tot_mask])
         
-        self.evals.shape = (dims[0:3])+(-1,)
-        self.evecs.shape = (dims[0:3])+(-1,)
-
         #I want to make evals and evecs a property such that
         #cached values (V_mask,-1) and returned values unmasked (X,Y,Z,-1)
-
-        self.prime_evec = self.evecs[...,0:3]
+        #self.evals.shape = (dims[0:3])+(-1,)
+        #self.evecs.shape = (dims[0:3])+(-1,)
         
         #this is for convenience (does not add much memory)
-        self.adc = self.calc_adc()
-        self.fa = self.calc_fa()
+        #self.adc = self.calc_adc()
+        #self.fa = self.calc_fa()
+        self.prime_evec = self.evecs[...,0,:]
         #self.D = self.calc_D()
     
-    def calc_D(self):
-        #recall: self.evals.shape = self.evecs.shape = (V_mask,-1)
+    def D(self):
+        D = np.empty((self.evals.shape[0],6))
         for ii,eval in enumerate(self.evals): 
             L = np.diag(eval)
-            Q = self.evecs[ii]
-            Q.shape = (3,3)
-            D[ii] = np.dot(np.dot(Q,L),Q.T)
+            Q = self.evecs[ii,:,:]
+            d = np.dot(np.dot(Q,L),Q.T)
+            D[ii] = np.concatenate((d[0,:],d[1,1:3],np.array([d[2,2]])),axis=0)
         return D
-        pass
 
-    def calc_adc(self):
-        #adc = (ev1+ev2+ev3)/3
-        return (self.evals[:,:,:,0] + self.evals[:,:,:,1] + 
-                self.evals[:,:,:,2]) / 3
+    def ADC(self):
+        """
+        Apparent diffusion coefficient (ADC) calculated from diagonal elements
+        of calculated self diffusion tensor. 
+        
+        Returns
+        -------
+        ADC : ndarray (V,1)
+            Calculated ADC.
 
-    def calc_fa(self):
+        Notes
+        -----
+        ADC is calculated with the following equation:
+
+        .. math:: ADC = \frac{D_xx+D_yy+D_zz}{3}
+
+        Need to generate the self diffusion tensor
+        """
+
+    def FA(self):
+        """
+        Fractional anisotropy (FA) calculated from cached eigenvalues. 
+        
+        Returns
+        -------
+        FA : ndarray (V,1)
+            Calculated FA. Note: range is 0 <= FA <= 1.
+
+        Notes
+        -----
+        FA is calculated with the following equation:
+
+        .. math::
+
+        FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
+                    \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
+                    \lambda_2^2+\lambda_3^2} }
+        """
         adc = self.calc_adc()
-        ev1 = self.evals[:,:,:,0]
-        ev2 = self.evals[:,:,:,1]
-        ev3 = self.evals[:,:,:,2]
+        ev1 = self.evals[:,0]
+        ev2 = self.evals[:,1]
+        ev3 = self.evals[:,2]
         ss_ev = ev1**2+ev2**2+ev3**2
         
-        fa = np.zeros(ev1.shape,dtype='float32') #'int16')
+        fa = np.zeros(ev1.shape)#,dtype='float32') #'int16')
         fa = np.sqrt(1.5 * ((ev1 - adc)**2 + (ev2 - adc)**2 + (ev3 - adc)**2)
                       / ss_ev)
         fa[ss_ev == 0] = 0
         return fa 
+
+    def MD(self):
+        """
+        Mean diffusitivity (MD) calculated from cached eigenvalues. 
+        
+        Returns
+        -------
+        MD : ndarray (V,1)
+            Calculated MD.
+
+        Notes
+        -----
+        MD is calculated with the following equation:
+
+        .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
+        """
+        #adc = (ev1+ev2+ev3)/3
+        return (self.evals[:,0] + self.evals[:,1] + 
+                self.evals[:,2]) / 3
 
 
 def WLS_fit_tensor(design_matrix, data):
@@ -152,7 +235,7 @@ def WLS_fit_tensor(design_matrix, data):
     -------
     eigvals : ndarray (V,3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (V,9)
+    eigvecs : ndarray (V,3,3)
         Associated eigenvectors from eigen decomposition of the tensor.
 
     """
@@ -163,17 +246,17 @@ def WLS_fit_tensor(design_matrix, data):
     SI = np.dot(U, U.T)
 
     eigenvals = np.empty((len(data_flat), 3))
-    eigenvecs = np.empty((len(data_flat), 9))
+    eigenvecs = np.empty((len(data_flat), 3, 3))
 
     #wi=np.exp(w[0])
     for ii, sig in enumerate(data):
         log_s = np.log(sig)
         w=np.exp(np.dot(SI, log_s))
         D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
-        eigenvals[ii],eigenvecs[ii] = decompose_tensor(D)
+        eigenvals[ii], eigenvecs[ii,:,:] = decompose_tensor(D)
     
-    eigenvals.shape = data.shape[:-1]+(-1,)
-    eigenvecs.shape = data.shape[:-1]+(-1,)
+    eigenvals.shape = data.shape[:-1]+(3,)
+    eigenvecs.shape = data.shape[:-1]+(3,3)
     return eigenvals, eigenvecs
     
 def decompose_tensor(D):
@@ -193,7 +276,7 @@ def decompose_tensor(D):
     eigvals : ndarray (3,)
         Eigenvalues from eigen decomposition of the tensor. Negative
         eigenvalues are forced to zero.
-    eigvecs : ndarray (9,)
+    eigvecs : ndarray (3,3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
         eigvals[j])
@@ -214,7 +297,7 @@ def decompose_tensor(D):
 
     #need to sort the eigenvalues and associated eigenvectors
     order = eigenvals.argsort()[::-1]
-    eigenvecs = eigenvecs[:,order].T.flat[:]
+    eigenvecs = eigenvecs[:,order]
     eigenvals = eigenvals[order]
 
     #Forcing negative eigenvalues to 0
