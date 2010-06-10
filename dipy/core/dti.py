@@ -59,6 +59,18 @@ class tensor(object):
         Calculates the mean diffusitivity [2]_. 
         Note: [units ADC] ~ [units b value]*10**-1
     
+    Examples
+    --------
+    NEED TO WORK ON THIS SECTION
+    >>> data = np.
+    >>> single_voxel_tensor = dti.tensor(data, gtab, bvals)
+    >>> single_voxel_tensor.
+
+    See Also
+    --------
+    dipy.io.bvectxt.read_bvec_file, WLS_tensor, design_matrix, 
+    dipy.core.qball.ODF
+    
     Notes
     -----
     Due to the fact that diffusion MRI entails large volumes (e.g. [256,256,
@@ -105,11 +117,33 @@ class tensor(object):
         #    new_tensor._resid = self._resid[index]
         return new_tensor
     
+    #Place holder definition in case we want to handle evals
+    def _getevals(self):
+        return self._evals
+    
+    def _setevals(self,evals):
+        self._evals = evals
+
+    evals = property(_getevals, _setevals, 
+                                doc="Eigenvalues of self diffusion tensor")
+
+    def _getevecs(self):
+        evs = np.empty((self.evals.shape[0], 3, 3))
+        for ii,p_s_evecs in enumerate(self._evecs): 
+            evs[ii,0:2] = p_s_evecs
+            evs[ii,2] = np.cross(p_s_evecs[0,:], p_s_evecs[1,:]) #time 26.9 us
+        return evs
+
+    def _setevecs(self,evs):
+        self._evecs = evs[...,0:2,:]
+
+    evecs = property(_getevecs, _setevecs, 
+                                doc="Eigenvectors of self diffusion tensor")
+
     def __init__(self, data, grad_table, b_values, mask = True, thresh = 0,
                  verbose = False):
         
         dims = data.shape
-       
         #data[mask].shape == data.flat[:].shape
         #data = MaskedView(mask,data[mask],fill_value=0) 
         
@@ -126,24 +160,18 @@ class tensor(object):
         
         #Perform WLS fit on masked data
         self.evals, self.evecs = WLS_fit_tensor(B, data[tot_mask])
-        
+
         #I want to make evals and evecs a property such that
         #cached values (V_mask,-1) and returned values unmasked (X,Y,Z,-1)
         #self.evals.shape = (dims[0:3])+(-1,)
         #self.evecs.shape = (dims[0:3])+(-1,)
-        
-        #this is for convenience (does not add much memory)
-        #self.adc = self.calc_adc()
-        #self.fa = self.calc_fa()
-        #self.prime_evec = self.evecs[...,0,:]
-        #self.D = self.calc_D()
-    
+
     def D(self):
         D = np.empty((self.evals.shape[0],3,3))
         for ii,eval in enumerate(self.evals): 
             L = np.diag(eval)
             Q = self.evecs[ii,:,:]
-            D[ii,:,:] = np.dot(np.dot(Q,L),Q.T)
+            D[ii,:,:] = np.dot(np.dot(Q,L),Q.T) #timeit = 11.5us
             #D[ii] = np.concatenate((d[0,:],d[1,1:3],np.array([d[2,2]])),axis=0)
         return D
 
@@ -238,6 +266,9 @@ def WLS_fit_tensor(design_matrix, data):
     eigvecs : ndarray (V,3,3)
         Associated eigenvectors from eigen decomposition of the tensor.
 
+    See Also
+    --------
+    decompose_tensor
     """
 
     data_flat = data.reshape((-1, data.shape[-1]))
@@ -281,7 +312,9 @@ def decompose_tensor(D):
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
         eigvals[j])
 
-
+    See Also
+    --------
+    numpy.linalg.eig
     """
 
     tensor = np.empty((3,3),dtype=D.dtype)

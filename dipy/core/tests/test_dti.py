@@ -23,20 +23,43 @@ def test_tensor_scalar_attributes():
     calculating properly.
 
     """
-    evals = np.array([2,1,0])
-    b = 1/np.sqrt(2)
-    #columns are eigenvectors like in np.linalg.eig
-    #e.g. evecs[:,j] is associated to eigval[j]
-    evecs = np.array([  [b,-b,0], \
-                        [b, b,0], \
-                        [0, 0,1] ]) 
+    ### DEFINING ANALYTICAL VALUES ###
+    evals = np.array([2, 1, 0])
+    a = 1 / np.sqrt(2)
+    #evec[:,j] is pair with eval[j]
+    evecs = np.array([[a, -a, 0], [a, a, 0], [0, 0, 1]]) 
+    D = np.array([[1, 1, 0], [1, 1, 0], [0, 0, 1])
+    FA = np.sqrt(1./2*(1+4+1)/(1+4+0)) # 0.7745966692414834
+    MD = 1
+    ADC = 1
 
-    yield assert_equal(m_list.shape, n_list.shape)
-    yield assert_equal(m_list.ndim, 2)
-    yield assert_equal(m_list.shape, (45,1))
-    yield assert_true(np.all(np.abs(m_list) <= n_list))
-    yield assert_array_equal(n_list % 2, 0)
-    yield assert_raises(ValueError, qball.sph_harm_ind_list, 1)
+    ### CALCULATE ESTIMATE VALUES ###
+    dummy_data = np.zeros((10,))
+    dummy_gtab = np.zeros((3,10))
+    dummy_bval = dummy_data
+    tensor = dti.tensor(dummy_data,dummy_gtab,dummy_bval)
+    tensor.evals = evals
+    tensor.evecs = evecs
+    
+    ### TESTS ###
+    yield assert_equal(np.abs(np.dot(evecs[:, 2], tensor.evecs[:, 2].T)), 1),
+        "Calculation of third eigenvector is not right"
+    yield assert_array_almost_equal(D, tensor.D(), "Recovery of self diffusion
+        tensor from eigenvalues and eigenvectors is not adequate")
+    yield assert_array_almost_equal(ADC, tensor.ADC(), "Calculation of ADC of 
+        self diffusion tensor is not adequate")
+    yield assert_array_almost_equal(FA, tensor.FA(), "Calculation of FA of 
+        self diffusion tensor is not adequate")
+    yield assert_array_almost_equal(MD, tensor.MD(), "Calculation of MD of 
+        self diffusion tensor is not adequate")
+
+    
+    #yield assert_equal(m_list.shape, n_list.shape)
+    #yield assert_equal(m_list.ndim, 2)
+    #yield assert_equal(m_list.shape, (45,1))
+    #yield assert_true(np.all(np.abs(m_list) <= n_list))
+    #yield assert_array_equal(n_list % 2, 0)
+    #yield assert_raises(ValueError, qball.sph_harm_ind_list, 1)
 
 @parametric
 def test_WLS_fit():
