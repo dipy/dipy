@@ -34,9 +34,9 @@ def test_tensor_scalar_attributes():
     ADC = 1
 
     ### CALCULATE ESTIMATE VALUES ###
-    dummy_data = np.zeros((10,))
+    dummy_data = np.zeros((1,10)) #single voxel
     dummy_gtab = np.zeros((3,10))
-    dummy_bval = dummy_data
+    dummy_bval = np.zeros((10,))
     tensor = dti.tensor(dummy_data,dummy_gtab,dummy_bval)
     tensor.evals = evals
     tensor.evecs = evecs
@@ -44,7 +44,7 @@ def test_tensor_scalar_attributes():
     ### TESTS ###
     yield assert_equal(np.abs(np.dot(evecs[:, 2], tensor.evecs[:, 2].T)), 1,
         "Calculation of third eigenvector is not right")
-    yield assert_array_almost_equal(D, tensor.D(), "Recovery of self diffusion
+    yield assert_array_almost_equal(D, tensor[0,:,:], "Recovery of self diffusion
         tensor from eigenvalues and eigenvectors is not adequate")
     yield assert_array_almost_equal(ADC, tensor.ADC(), "Calculation of ADC of 
         self diffusion tensor is not adequate")

@@ -7,6 +7,7 @@ import time
 import sys, os, traceback, optparse
 import numpy as np
 import scipy as sp
+from copy import copy, deepcopy
 
 #dipy modules
 from dipy.core.maskedview import MaskedView
@@ -56,13 +57,6 @@ class tensor(object):
         Calculates the mean diffusitivity [2]_. 
         Note: [units ADC] ~ [units b value]*10**-1
     
-    Examples
-    --------
-    NEED TO WORK ON THIS SECTION
-    >>> voxel
-    >>> tensor = dti.tensor(voxel, gtab, bvals)
-    >>> tensor.
-
     See Also
     --------
     dipy.io.bvectxt.read_bvec_file, WLS_tensor, design_matrix, 
@@ -89,6 +83,31 @@ class tensor(object):
         features of tissues elucidated by quantitative diffusion-tensor MRI. 
         Journal of Magnetic Resonance 111, 209-219.
     
+    Examples
+    --------
+    >>> voxel
+    >>> tensor = dti.tensor(voxel, gtab, bvals)
+
+    To get the tensor as ndarray
+    
+    >>> tensor[:].shape 
+    (1, 3, 3)
+
+    To get the tensor for a particular voxel
+    
+    >>> tensor[x,y,z].shape
+    (3, 3)
+
+    To get an element of the tensor for a particular voxel
+    
+    >>> tensor[x,y,z][0,0]
+    array([0.0001])
+    
+    To get an element of the tensor for all the voxels
+
+    >>> tensor[:][:,0,0].shape
+    (1,)
+    
     """
     ### Shape Property ###
     def _getshape(self):
@@ -103,7 +122,7 @@ class tensor(object):
     ndim = property(_getndim, doc="Number of dimensions in tensor array")
 
     ### Getitem Property ###    
-    def __getitem__(self,index):
+    def __getitem__(self, index):
         if type(index) is not tuple:
             index = (index,)
         if len(index) > self.ndim:
@@ -115,29 +134,38 @@ class tensor(object):
         new_tensor = copy(self)
         new_tensor.evals = self.evals[index]
         new_tensor.evecs = self.evecs[index]
-        return new_tensor
+        return new_tensor._D()
     
     ### Eigenvalues Property ###
-    def _getevals(self):
-        return self._evals
+    def _getevals(self, index = Ellipsis):
+        evals = self._evals[index, :]
+        if evals.ndim == 1: # for single voxel case
+            evals = evals[np.newaxis, :]
+        return evals
     
     def _setevals(self,evals):
+        evals.shape
         self._evals = evals
 
     evals = property(_getevals, _setevals, 
                                 doc="Eigenvalues of self diffusion tensor")
 
     ### Eigenvectors Property ###
-    def _getevecs(self):
+    def _getevecs(self, index = Ellipsis):
         evs = np.empty((self.evals.shape[0], 3, 3))
+        evecs = self._evecs[index, :, :]
+        if evecs.ndim == 2: # for single voxel case
+            evecs = evecs[np.newaxis,...]
+        
         #Calculate 3rd eigenvector from cached eigenvectors
-        for ii,p_s_evecs in enumerate(self._evecs): 
-            evs[ii,0:2] = p_s_evecs
-            evs[ii,2] = np.cross(p_s_evecs[0,:], p_s_evecs[1,:]) #time 26.9 us
+        for ii, p_s_evecs in enumerate(evecs): 
+            evs[ii, 0:2] = p_s_evecs
+            evs[ii, 2] = np.cross(p_s_evecs[0, :], p_s_evecs[1, :]) 
+                #time 26.9 us
         return evs
 
     def _setevecs(self,evs):
-        self._evecs = evs[...,0:2,:]
+        self._evecs = evs[...,0:2,:] # only cache first two vectors
     
     evecs = property(_getevecs, _setevecs, 
                                 doc="Eigenvectors of self diffusion tensor")
@@ -185,6 +213,10 @@ class tensor(object):
 
         Need to generate the self diffusion tensor
         """
+        Dxx = self[:][:, 0, 0]
+        Dyy = self[:][:, 1, 1]
+        Dzz = self[:][:, 2, 2]
+        return (Dxx + Dyy + Dzz) / 3.
 
     def FA(self):
         """
@@ -205,7 +237,7 @@ class tensor(object):
                     \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
                     \lambda_2^2+\lambda_3^2} }
         """
-        adc = self.calc_adc()
+        adc = self.ADC()
         ev1 = self.evals[:,0]
         ev2 = self.evals[:,1]
         ev3 = self.evals[:,2]
