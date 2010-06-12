@@ -92,26 +92,22 @@ class tensor(object):
     
     Examples
     --------
-    >>> voxels_cube3
+    >>> data = np.ones((5, 6, 7, 56)) * 100.
+    >>> data[..., 0] *= 10
     >>> x = 1
     >>> y = 1
     >>> z = 1
-    >>> tensor = dti.tensor(voxels_cube3, gtab, bvals)
+    >>> tensor = dti.tensor(data, gtab, bvals)
 
     To get the tensor for a particular voxel
     
-    >>> tensor[x,y,z].D.shape
+    >>> tensor[x, y, z].D.shape
     (3, 3)
 
-    To get an element of the tensor for a particular voxel
-    
-    >>> tensor[x,y,z].D[0,0]
-    array([0.0001])
-    
-    To get an element of the tensor for all the voxels in slice 2
+    To get the tensors of all the voxels in a slice
 
-    >>> tensor[:,:,2].D[..., 0, 0].shape
-    (1,)
+    >>> tensor[:, :, 2].D.shape
+    (5, 6, 3, 3)
     
     """
     ### Shape Property ###
@@ -143,8 +139,8 @@ class tensor(object):
         return new_tensor
     
     ### Eigenvalues Property ###
-    def _getevals(self, index = Ellipsis):
-        evals = self._evals[index, :]
+    def _getevals(self):
+        evals = self._evals
         return evals
     
     def _setevals(self,evals):
@@ -154,8 +150,8 @@ class tensor(object):
                                 doc = "Eigenvalues of self diffusion tensor")
 
     ### Eigenvectors Property ###
-    def _getevecs(self, index = Ellipsis):
-        evecs_flat = self._evecs[index, :, :].reshape((-1, 2, 3))
+    def _getevecs(self):
+        evecs_flat = self._evecs.reshape((-1, 2, 3))
         evs = np.empty((evecs_flat.shape[0],)+(3, 3))
         
         if evecs_flat.ndim == 2: # for single voxel case
@@ -197,12 +193,11 @@ class tensor(object):
     def _getD(self):
         evals_flat = self.evals.reshape((-1, 3))
         evecs_flat = self.evecs.reshape((-1, 3, 3))
-        
         D_flat = np.empty(evecs_flat.shape)
         for ii, eval in enumerate(evals_flat): 
             L = np.diag(eval)
-            Q = evecs_flat[ii, :, :]
-            D_flat[ii, :, :] = np.dot(np.dot(Q, L), Q.T) #timeit = 11.5us
+            Q = evecs_flat[ii, ...]
+            D_flat[ii, ...] = np.dot(np.dot(Q, L), Q.T) #timeit = 11.5us
         return D_flat.reshape(self.evecs.shape)
     
     D = property(_getD, doc = "Self diffusion tensor")
@@ -249,15 +244,17 @@ class tensor(object):
                     \lambda_2^2+\lambda_3^2} }
         """
         adc = self.ADC()
-        ev1 = self.evals[:, 0]
-        ev2 = self.evals[:, 1]
-        ev3 = self.evals[:, 2]
+        ev1 = self.evals[..., 0]
+        ev2 = self.evals[..., 1]
+        ev3 = self.evals[..., 2]
         ss_ev = ev1**2 + ev2**2 + ev3**2
         
         fa = np.zeros(ev1.shape)#,dtype='float32') #'int16')
         fa = np.sqrt(1.5 * ((ev1 - adc)**2 + (ev2 - adc)**2 + (ev3 - adc)**2)
                       / ss_ev)
-        fa[ss_ev == 0] = 0
+        #force bounds
+        fa = np.minimum(fa, 1)
+        fa = np.maximum(fa, 0)
         return fa 
 
     def MD(self):
@@ -276,8 +273,8 @@ class tensor(object):
         .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
         #adc = (ev1+ev2+ev3)/3
-        return (self.evals[:, 0] + self.evals[:, 1] + 
-                self.evals[:, 2]) / 3
+        return (self.evals[..., 0] + self.evals[..., 1] + 
+                self.evals[..., 2]) / 3
 
 
 def WLS_fit_tensor(design_matrix, data):
