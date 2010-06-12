@@ -40,12 +40,19 @@ class tensor(object):
 
     Attributes
     ----------
+    D : ndarray (V,3,3)
+        Self diffusion tensor calculated from cached eigenvalues and 
+        eigenvectors.
+    B : ndarray (g,7)
+        Design matrix or B matrix constructed from given gradient table and
+        b-value vector.
     evals : ndarray (V,3) 
         Cached eigenvalues of self diffusion tensor for given index. 
         (eval1,eval2,eval3)
     evecs : ndarray (V,3,3)
         Cached associated eigenvectors of self diffusion tensor for given 
         index. (evec1,evec2,evec3)
+
 
     Methods
     -------
@@ -85,41 +92,39 @@ class tensor(object):
     
     Examples
     --------
-    >>> voxel
-    >>> tensor = dti.tensor(voxel, gtab, bvals)
-
-    To get the tensor as ndarray
-    
-    >>> tensor[:].shape 
-    (1, 3, 3)
+    >>> voxels_cube3
+    >>> x = 1
+    >>> y = 1
+    >>> z = 1
+    >>> tensor = dti.tensor(voxels_cube3, gtab, bvals)
 
     To get the tensor for a particular voxel
     
-    >>> tensor[x,y,z].shape
+    >>> tensor[x,y,z].D.shape
     (3, 3)
 
     To get an element of the tensor for a particular voxel
     
-    >>> tensor[x,y,z][0,0]
+    >>> tensor[x,y,z].D[0,0]
     array([0.0001])
     
-    To get an element of the tensor for all the voxels
+    To get an element of the tensor for all the voxels in slice 2
 
-    >>> tensor[:][:,0,0].shape
+    >>> tensor[:,:,2].D[..., 0, 0].shape
     (1,)
     
     """
     ### Shape Property ###
     def _getshape(self):
-        return self._D().shape[:-2]
+        return self.D.shape[:-2]
     
-    shape = property(_getshape, doc="Shape of tensor array")
+    shape = property(_getshape, doc = "Shape of tensor array")
 
     ### Ndim Property ###
     def _getndim(self):
-        return self._D().ndim - 2
+        return self.D.ndim - 2
     
-    ndim = property(_getndim, doc="Number of dimensions in tensor array")
+    ndim = property(_getndim, doc = "Number of dimensions in tensor array")
 
     ### Getitem Property ###    
     def __getitem__(self, index):
@@ -131,69 +136,76 @@ class tensor(object):
             if ii is Ellipsis:
                 index = index + (slice(None),)
                 break
+        
         new_tensor = copy(self)
         new_tensor.evals = self.evals[index]
         new_tensor.evecs = self.evecs[index]
-        return new_tensor._D()
+        return new_tensor
     
     ### Eigenvalues Property ###
     def _getevals(self, index = Ellipsis):
         evals = self._evals[index, :]
-        if evals.ndim == 1: # for single voxel case
-            evals = evals[np.newaxis, :]
         return evals
     
     def _setevals(self,evals):
-        evals.shape
         self._evals = evals
 
     evals = property(_getevals, _setevals, 
-                                doc="Eigenvalues of self diffusion tensor")
+                                doc = "Eigenvalues of self diffusion tensor")
 
     ### Eigenvectors Property ###
     def _getevecs(self, index = Ellipsis):
-        evs = np.empty((self.evals.shape[0], 3, 3))
-        evecs = self._evecs[index, :, :]
-        if evecs.ndim == 2: # for single voxel case
-            evecs = evecs[np.newaxis,...]
+        evecs_flat = self._evecs[index, :, :].reshape((-1, 2, 3))
+        evs = np.empty((evecs_flat.shape[0],)+(3, 3))
+        
+        if evecs_flat.ndim == 2: # for single voxel case
+            evecs_flat = evecs_flat[np.newaxis, ...]
+            evs = evs[np.newaxis, ...]
         
         #Calculate 3rd eigenvector from cached eigenvectors
-        for ii, p_s_evecs in enumerate(evecs): 
+        for ii, p_s_evecs in enumerate(evecs_flat): 
             evs[ii, 0:2] = p_s_evecs
             evs[ii, 2] = np.cross(p_s_evecs[0, :], p_s_evecs[1, :]) 
                 #time 26.9 us
-        return evs
+        return evs.reshape(self._evecs.shape[:-2]+(3, 3))
 
     def _setevecs(self,evs):
         self._evecs = evs[...,0:2,:] # only cache first two vectors
     
     evecs = property(_getevecs, _setevecs, 
-                                doc="Eigenvectors of self diffusion tensor")
+                                doc = "Eigenvectors of self diffusion tensor")
 
     def __init__(self, data, grad_table, b_values, mask = True, thresh = 0,
-                 verbose = False):
-        
+                 verbose = False):    
         dims = data.shape
-        #data[mask].shape == data.flat[:].shape
-        #data = MaskedView(mask,data[mask],fill_value=0) 
         
         #64 bit design matrix makes for faster pinv
         B = design_matrix(grad_table, b_values)
+        self.B = B
 
+        self._evecs = np.zeros(data.shape[:-1] + (2, 3))
+        self._evals = np.zeros(data.shape[:-1] + (3,))
+        
         #Define total mask from thresh and mask
         tot_mask = (mask > 0) & (data[...,0] > thresh)
-
+        
         #Perform WLS fit on masked data
-        self.evals, self.evecs = WLS_fit_tensor(B, data[tot_mask])
+        self.evals[tot_mask], self.evecs[tot_mask] = WLS_fit_tensor(B, 
+                                                        data[tot_mask])
 
-
-    def _D(self):
-        D = np.empty((self.evals.shape[0],3,3))
-        for ii,eval in enumerate(self.evals): 
+    ### Self Diffusion Tensor Property ###
+    def _getD(self):
+        evals_flat = self.evals.reshape((-1, 3))
+        evecs_flat = self.evecs.reshape((-1, 3, 3))
+        
+        D_flat = np.empty(evecs_flat.shape)
+        for ii, eval in enumerate(evals_flat): 
             L = np.diag(eval)
-            Q = self.evecs[ii,:,:]
-            D[ii,:,:] = np.dot(np.dot(Q,L),Q.T) #timeit = 11.5us
-        return D
+            Q = evecs_flat[ii, :, :]
+            D_flat[ii, :, :] = np.dot(np.dot(Q, L), Q.T) #timeit = 11.5us
+        return D_flat.reshape(self.evecs.shape)
+    
+    D = property(_getD, doc = "Self diffusion tensor")
 
     def ADC(self):
         """
@@ -211,11 +223,10 @@ class tensor(object):
 
         .. math:: ADC = \frac{D_xx+D_yy+D_zz}{3}
 
-        Need to generate the self diffusion tensor
         """
-        Dxx = self[:][:, 0, 0]
-        Dyy = self[:][:, 1, 1]
-        Dzz = self[:][:, 2, 2]
+        Dxx = self.D[..., 0, 0]
+        Dyy = self.D[..., 1, 1]
+        Dzz = self.D[..., 2, 2]
         return (Dxx + Dyy + Dzz) / 3.
 
     def FA(self):
@@ -238,10 +249,10 @@ class tensor(object):
                     \lambda_2^2+\lambda_3^2} }
         """
         adc = self.ADC()
-        ev1 = self.evals[:,0]
-        ev2 = self.evals[:,1]
-        ev3 = self.evals[:,2]
-        ss_ev = ev1**2+ev2**2+ev3**2
+        ev1 = self.evals[:, 0]
+        ev2 = self.evals[:, 1]
+        ev3 = self.evals[:, 2]
+        ss_ev = ev1**2 + ev2**2 + ev3**2
         
         fa = np.zeros(ev1.shape)#,dtype='float32') #'int16')
         fa = np.sqrt(1.5 * ((ev1 - adc)**2 + (ev2 - adc)**2 + (ev3 - adc)**2)
@@ -265,14 +276,14 @@ class tensor(object):
         .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
         #adc = (ev1+ev2+ev3)/3
-        return (self.evals[:,0] + self.evals[:,1] + 
-                self.evals[:,2]) / 3
+        return (self.evals[:, 0] + self.evals[:, 1] + 
+                self.evals[:, 2]) / 3
 
 
 def WLS_fit_tensor(design_matrix, data):
     """
     Computes weighted least squares (WLS) fit to calculate self-diffusion 
-    tensor using a linear regression model. (Basser et al., 1994a)
+    tensor using a linear regression model [1]_.
     
     Parameters
     ----------
@@ -293,20 +304,52 @@ def WLS_fit_tensor(design_matrix, data):
     See Also
     --------
     decompose_tensor
+
+    Notes
+    -----
+    In Chung, et al. 2006, the regression of the WLS fit needed an unbiased
+    preliminary estimate of the weights and therefore the ordinary least 
+    squares (OLS) estimates were used. A "two pass" method was implemented:
+    
+        (1) calculate OLS estimates of the data
+        (2) apply the OLS estimates as weights to the WLS fit of the data 
+    
+    This ensured heteroscadasticity could be properly modeled for various 
+    types of bootstrap resampling (namely residual bootstrap).
+    
+    .. math::
+
+    y = \mathrm{data} \\
+    X = \mathrm{design matrix} \\
+    \hat{\beta}_WLS = \mathrm{desired regression coefficients (e.g. tensor)}\\
+    \\
+    \hat{\beta}_WLS = (X^T W X)^-1 X^T W y \\
+    \\
+    W = \mathrm{diag}((X \hat{\beta}_OLS)^2),
+    \mathrm{where} \hat{\beta}_OLS = (X^T X)^-1 X^T y
+
+    References
+    ----------
+    ..  [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+        approaches for estimation of uncertainties of DTI parameters.
+        NeuroImage 33, 531-541.
     """
 
     data_flat = data.reshape((-1, data.shape[-1]))
-    U,S,V = np.linalg.svd(design_matrix, False)
-    #math: SI = B*inv(B.T*B)*B.T
-    SI = np.dot(U, U.T)
-
     eigenvals = np.empty((len(data_flat), 3))
     eigenvecs = np.empty((len(data_flat), 3, 3))
+    
+    #obtain OLS fitting matrix
+    U,S,V = np.linalg.svd(design_matrix, False)
+    #math: beta_ols = inv(X.T*X)*X.T*y
+    #math: ols_fit = X*beta_ols*inv(y)
+    ols_fit = np.dot(U, U.T)
 
-    #wi=np.exp(w[0])
     for ii, sig in enumerate(data):
         log_s = np.log(sig)
-        w=np.exp(np.dot(SI, log_s))
+        #math: y_ols = ols_fit*y
+        log_s_ols = np.dot(ols_fit, log_s)
+        w=np.exp(log_s_ols)
         D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
         eigenvals[ii], eigenvecs[ii,:,:] = decompose_tensor(D)
     
@@ -342,19 +385,19 @@ def decompose_tensor(D):
     """
 
     tensor = np.empty((3,3),dtype=D.dtype)
-    tensor[0,0] = D[0]  #Dxx
-    tensor[1,1] = D[1]  #Dyy
-    tensor[2,2] = D[2]  #Dzz
-    tensor[1,0] = tensor[0,1] = D[3]  #Dxy
-    tensor[2,0] = tensor[0,2] = D[4]  #Dxz
-    tensor[2,1] = tensor[1,2] = D[5]  #Dyz
+    tensor[0, 0] = D[0]  #Dxx
+    tensor[1, 1] = D[1]  #Dyy
+    tensor[2, 2] = D[2]  #Dzz
+    tensor[1, 0] = tensor[0, 1] = D[3]  #Dxy
+    tensor[2, 0] = tensor[0, 2] = D[4]  #Dxz
+    tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
 
     #outputs multiplicity as well so need to unique
     eigenvals, eigenvecs = np.linalg.eig(tensor)
 
     #need to sort the eigenvalues and associated eigenvectors
     order = eigenvals.argsort()[::-1]
-    eigenvecs = eigenvecs[:,order]
+    eigenvecs = eigenvecs[:, order]
     eigenvals = eigenvals[order]
 
     #Forcing negative eigenvalues to 0
@@ -372,7 +415,7 @@ def design_matrix(gtab, bval, dtype=None):
 
     Parameters
     ----------
-    gtab : ndarray with shape (3, g)
+    gtab : ndarray with shape (3,g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.
     bval : ndarray with shape (g,)
         Diffusion weighting factor b for each vector in gtab.
@@ -386,28 +429,24 @@ def design_matrix(gtab, bval, dtype=None):
 		Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
 
     """
-    
-    B = np.zeros((bval.size,7), dtype=dtype)
     G = gtab
+    B = np.zeros((bval.size, 7), dtype = G.dtype)
     if gtab.shape[1] != bval.shape[0]:
-        raise ValueError('The number of b values and gradient directions must'+
-                         ' be the same')
-
-    B[:,0] = G[0,:]*G[0,:]*1.*bval   #Bxx
-    B[:,1] = G[1,:]*G[1,:]*1.*bval   #Byy
-    B[:,2] = G[2,:]*G[2,:]*1.*bval   #Bzz
-    B[:,3] = G[0,:]*G[1,:]*2.*bval   #Bxy
-    B[:,4] = G[0,:]*G[2,:]*2.*bval   #Bxz
-    B[:,5] = G[1,:]*G[2,:]*2.*bval   #Byz
-    B[:,6] = np.ones(np.size(bval))
-    
-    #Need to return [g by 7]
+        raise ValueError('The number of b values and gradient directions must'
+                          +' be the same')
+    B[:, 0] = G[0, :] * G[0, :] * 1. * bval   #Bxx
+    B[:, 1] = G[1, :] * G[1, :] * 1. * bval   #Byy
+    B[:, 2] = G[2, :] * G[2, :] * 1. * bval   #Bzz
+    B[:, 3] = G[0, :] * G[1, :] * 2. * bval   #Bxy
+    B[:, 4] = G[0, :] * G[2, :] * 2. * bval   #Bxz
+    B[:, 5] = G[1, :] * G[2, :] * 2. * bval   #Byz
+    B[:, 6] = np.ones(bval.size)
     return -B
 
 
-#######################################################################################
+##############################################################################
 #The following are/will be DEPRECATED
-#######################################################################################
+##############################################################################
 
 
 def __WLS_fit (data,gtab,bval,verbose=False):    
