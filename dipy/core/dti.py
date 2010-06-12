@@ -174,6 +174,7 @@ def WLS(design_matrix, data):
     #math: SI = B*inv(B.T*B)*B.T
     SI = np.dot(U, U.T)
 
+    
     eigen_decomp = np.empty((len(data_flat), 12))
 
     #wi=np.exp(w[0])
@@ -182,9 +183,29 @@ def WLS(design_matrix, data):
         w=np.exp(np.dot(SI, log_s))
         D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
         eigen_decomp[ii] = decompose_tensor(D)
-    
+
+    '''
+
+    #change here using list comprehensions
+    eigen_decomp = [WLS_iter(SI,design_matrix,ii,sig) for ii,sig in enumerate(data)]
+    eigen_decom = np.array(eigen_decomp)
+
+    '''
+
+        
     eigen_decomp.shape = data.shape[:-1]+(-1,)
     return eigen_decomp
+
+def WLS_iter(SI,design_matrix,ii,sig):
+    ''' a small function to help speeding up the code for WLS
+
+    '''
+
+    log_s = np.log(sig)
+    w=np.exp(np.dot(SI, log_s))
+    D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
+    return decompose_tensor(D)
+    
     
 def decompose_tensor(D,scale=1):
     """
