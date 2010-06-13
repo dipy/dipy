@@ -12,7 +12,7 @@ from copy import copy, deepcopy
 #dipy modules
 from dipy.core.maskedview import MaskedView
 
-class tensor(object):
+class Tensor(object):
     """
     Tensor object that when initialized calculates single self diffusion 
     tensor[1]_ in each voxel using selected fitting algorithm 
@@ -160,8 +160,8 @@ class tensor(object):
         
         #Calculate 3rd eigenvector from cached eigenvectors
         for ii, p_s_evecs in enumerate(evecs_flat): 
-            evs[ii, 0:2] = p_s_evecs
-            evs[ii, 2] = np.cross(p_s_evecs[0, :], p_s_evecs[1, :]) 
+            evs[ii, 0:2, :] = p_s_evecs
+            evs[ii, 2, :] = np.cross(p_s_evecs[0, :], p_s_evecs[1, :]) 
                 #time 26.9 us
         return evs.reshape(self._evecs.shape[:-2]+(3, 3))
 
@@ -186,8 +186,9 @@ class tensor(object):
         tot_mask = (mask > 0) & (data[...,0] > thresh)
         
         #Perform WLS fit on masked data
-        self.evals[tot_mask], self.evecs[tot_mask] = WLS_fit_tensor(B, 
-                                                        data[tot_mask])
+        self._evals[tot_mask], evecs = wls_fit_tensor(B, data[tot_mask])
+        #wls fit returns all 3 eigenvecs...but we want to only store first two
+        self._evecs[tot_mask] = evecs[tot_mask,0:2,:]
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
@@ -277,7 +278,7 @@ class tensor(object):
                 self.evals[..., 2]) / 3
 
 
-def WLS_fit_tensor(design_matrix, data):
+def wls_fit_tensor(design_matrix, data):
     """
     Computes weighted least squares (WLS) fit to calculate self-diffusion 
     tensor using a linear regression model [1]_.
@@ -342,7 +343,7 @@ def WLS_fit_tensor(design_matrix, data):
     #math: ols_fit = X*beta_ols*inv(y)
     ols_fit = np.dot(U, U.T)
 
-    for ii, sig in enumerate(data):
+    for ii, sig in enumerate(data_flat):
         log_s = np.log(sig)
         #math: y_ols = ols_fit*y
         log_s_ols = np.dot(ols_fit, log_s)
