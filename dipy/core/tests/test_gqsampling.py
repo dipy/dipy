@@ -53,6 +53,9 @@ def test_gqi():
 
     Lambda = 1.2 # smoothing parameter - diffusion sampling length
 
+
+    print 'yo',(b_vector.T).shape
+    
     q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
     #implements equation no. 9 from Yeh et.al.
 
@@ -69,8 +72,12 @@ def test_gqi():
 
     fwd = 0
 
+
+    
     #Calculate Quantitative Anisotropy and find the peaks and the indices
     #for every voxel
+
+    #test = np.zeros(len(S),)
 
     for (i,s) in enumerate(S):
 
@@ -80,11 +87,11 @@ def test_gqi():
         #peak = odf.copy()
 
         peaks,inds=rp.peak_finding(odf,odf_faces)
-
         
-        #peaks,inds=peak_finding(odf,odf_faces)
+        #peaks2,inds2=peak_finding(odf,odf_faces)
 
-
+        #test[i]= np.sum(peaks2-peaks)
+                
         fwd=max(np.max(odf),fwd)
 
         peaks = peaks - np.min(odf)
@@ -108,9 +115,24 @@ def test_gqi():
     
     IN=IN.reshape(x,y,z,5)
 
-    print time.clock() - before,' secs.'
+    #print np.sum(test)
     
-    return QA
+    print time.clock() - before,' secs.'
+
+    print b_table.shape
+
+    print scaling.shape
+
+    import dipy.core.generalized_q_sampling as gq
+
+    testb=b_table[1:4,:].T
+
+    print testb.shape
+
+    #g=gq.GeneralizedQSampling(S,b_table[0],b_table[1:4,:].T)
+
+        
+    #return g.QA-QA
 
 
 def Q2odf(s,q2odf_params):
