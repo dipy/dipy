@@ -179,16 +179,17 @@ class Tensor(object):
         B = design_matrix(grad_table, b_values)
         self.B = B
 
-        self._evecs = np.zeros(data.shape[:-1] + (2, 3))
+        self._evecs = np.zeros(data.shape[:-1] + (3, 3))
         self._evals = np.zeros(data.shape[:-1] + (3,))
         
         #Define total mask from thresh and mask
         tot_mask = (mask > 0) & (data[...,0] > thresh)
         
         #Perform WLS fit on masked data
-        self._evals[tot_mask], evecs = wls_fit_tensor(B, data[tot_mask])
+        self._evals[tot_mask], self._evecs[tot_mask] = wls_fit_tensor(B, 
+                                                              data[tot_mask])
         #wls fit returns all 3 eigenvecs...but we want to only store first two
-        self._evecs[tot_mask] = evecs[tot_mask,0:2,:]
+        self._evecs = self._evecs[..., 0:2, :]
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
@@ -294,9 +295,9 @@ def wls_fit_tensor(design_matrix, data):
 
     Returns
     -------
-    eigvals : ndarray (V,3)
+    eigvals : ndarray (X,Y,Z,...,3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (V,3,3)
+    eigvecs : ndarray (X,Y,Z,...,3,3)
         Associated eigenvectors from eigen decomposition of the tensor.
 
     See Also
