@@ -5,17 +5,11 @@ from nose.tools import assert_true, assert_false, \
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-#from dipy.testing import parametric
 import time
 
 import dipy.core.reconstruction_performance as rp
 
 
-#?loadmat
-
-#phantom=loadmat('/home/eg309/Desktop/phantom_test_data.mat',struct_as_record=True)
-
-#@parametric
 def test_gqi():
 
     from scipy.io import loadmat
@@ -42,6 +36,7 @@ def test_gqi():
     #Yeh et.al, IEEE TMI, 2010
     #calculate the odf using GQI
 
+
     scaling=np.sqrt(b_table[0]*0.01506) # 0.01506 = 6*D where D is the free
     #water diffusion coefficient 
     #l_values sqrt(6 D tau) D free water
@@ -49,18 +44,19 @@ def test_gqi():
 
     tmp=np.tile(scaling,(3,1))
 
+    print 'tmp.shape',tmp.shape
+
     b_vector=b_table[1:4,:]*tmp
 
     Lambda = 1.2 # smoothing parameter - diffusion sampling length
 
 
-    print 'yo',(b_vector.T).shape
     
     q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
     #implements equation no. 9 from Yeh et.al.
 
 
-    S=all
+    S=all.copy()
 
     x,y,z,g=S.shape
 
@@ -103,13 +99,8 @@ def test_gqi():
         IN[i][:l] = inds[:l]
 
         
-
-        
     
     QA/=fwd
-
-
-   
 
     QA=QA.reshape(x,y,z,5)
     
@@ -119,20 +110,17 @@ def test_gqi():
     
     print time.clock() - before,' secs.'
 
-    print b_table.shape
-
-    print scaling.shape
-
     import dipy.core.generalized_q_sampling as gq
 
-    testb=b_table[1:4,:].T
+    #now test with class
+    
+    g=gq.GeneralizedQSampling(all,b_table[0],b_table[1:4,:].T)
 
-    print testb.shape
-
-    #g=gq.GeneralizedQSampling(S,b_table[0],b_table[1:4,:].T)
-
+    print time.clock() - before,' secs.'
         
-    #return g.QA-QA
+    #yield assert_equal( (g.QA-QA).max(), 0.0)
+
+    return (g.QA-QA).max()
 
 
 def Q2odf(s,q2odf_params):
