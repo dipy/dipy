@@ -23,44 +23,44 @@ class Tensor(object):
 
     Parameters
     ----------
-    data : ndarray (V,g)
+    data : ndarray (V, g)
         The image data needs at least 2 dimensions where the first dimension
         holds the set of voxels that WLS_fit will perform on and second 
         dimension holds the diffusion weighted signals.
-    gtab : ndarray (3,g)
+    gtab : ndarray (3, g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.
-    bval : ndarray (g,1)
+    bval : ndarray (g, 1)
         Diffusion weighting factor b for each vector in gtab.
-    mask : ndarray (0<V,), optional
+    mask : ndarray (0 <= V, 1), optional
         Mask of data that WLS_fit will NOT perform on. If mask is not boolean,
-        then WLS_fit will operate where mask > 0
-    thresh : data.dtype (0<=data.max()), optional
+        then WLS_fit will operate where mask > 0. Note: mask.ndim <= data.ndim
+    thresh : data.dtype (0 <= data[..., 0].max()), optional
         Simple threshold to exclude voxels from WLS_fit. Default value for 
         threshold is 0.
 
     Attributes
     ----------
-    D : ndarray (V,3,3)
+    D : ndarray (V, 3, 3)
         Self diffusion tensor calculated from cached eigenvalues and 
         eigenvectors.
-    B : ndarray (g,7)
+    B : ndarray (g, 7)
         Design matrix or B matrix constructed from given gradient table and
         b-value vector.
-    evals : ndarray (V,3) 
+    evals : ndarray (V, 3) 
         Cached eigenvalues of self diffusion tensor for given index. 
-        (eval1,eval2,eval3)
-    evecs : ndarray (V,3,3)
+        (eval1, eval2, eval3)
+    evecs : ndarray (V, 3, 3)
         Cached associated eigenvectors of self diffusion tensor for given 
-        index. (evec1,evec2,evec3)
+        index. Note: evals[..., j] is associated with evecs[..., 0, :]
 
 
     Methods
     -------
-    ADC : ndarray (V,1)
+    ADC : ndarray (V, 1)
         Calculates the apparent diffusion coefficient [2]_. 
-    FA : ndarray (V,1)
+    FA : ndarray (V, 1)
         Calculates fractional anisotropy [2]_.
-    MD : ndarray (V,1)
+    MD : ndarray (V, 1)
         Calculates the mean diffusitivity [2]_. 
         Note: [units ADC] ~ [units b value]*10**-1
     
@@ -211,7 +211,7 @@ class Tensor(object):
         
         Returns
         -------
-        ADC : ndarray (V,1)
+        ADC : ndarray (V, 1)
             Calculated ADC.
 
         Notes
@@ -232,7 +232,7 @@ class Tensor(object):
         
         Returns
         -------
-        FA : ndarray (V,1)
+        FA : ndarray (V, 1)
             Calculated FA. Note: range is 0 <= FA <= 1.
 
         Notes
@@ -265,7 +265,7 @@ class Tensor(object):
         
         Returns
         -------
-        MD : ndarray (V,1)
+        MD : ndarray (V, 1)
             Calculated MD.
 
         Notes
@@ -286,18 +286,18 @@ def wls_fit_tensor(design_matrix, data):
     
     Parameters
     ----------
-    design_matrix : ndarray (g,g)
+    design_matrix : ndarray (g, g)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : ndarray or MaskedView (X,Y,Z,...,g)
+    data : ndarray or MaskedView (X, Y, Z, ..., g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
 
     Returns
     -------
-    eigvals : ndarray (X,Y,Z,...,3)
+    eigvals : ndarray (X, Y, Z, ..., 3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (X,Y,Z,...,3,3)
+    eigvecs : ndarray (X, Y, Z, ..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
 
     See Also
