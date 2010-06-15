@@ -50,7 +50,8 @@ cdef cnp.dtype f32_dt = np.dtype(np.float32)
 
 #cdef inline int
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def peak_finding(odf,odf_faces):
 
     ''' Given a function on a sphere return the peak values and their
@@ -128,11 +129,11 @@ def peak_finding(odf,odf_faces):
     for i in range(lenfaces):
 
 
-        find0 = cfaces[i][0]
+        find0 = cfaces[i,0]
 
-        find1 = cfaces[i][1]
+        find1 = cfaces[i,1]
 
-        find2 = cfaces[i][2]        
+        find2 = cfaces[i,2]        
         
         odf0=codf[find0]
 
