@@ -53,26 +53,23 @@ cdef cnp.dtype f32_dt = np.dtype(np.float32)
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def peak_finding(odf,odf_faces):
+    ''' Given a function on a sphere return the peaks' values and
+    indices. Peaks are given in a descending order.    
 
-    ''' Given a function on a sphere return the peak values and their
-    indices
-
-
-    Parameters:
+    Parameters
     -----------
 
-    odf: array, shape(N,) , values on the sphere
+    odf: array, shape(N,) , function values on the sphere, where N is the number
+    vertices on the sphere
 
     odf_faces: array, uint16, shape (M,3), faces of the triangulation on
-    the sphere
+    the sphere, where M is the number of faces on the sphere
 
-    Returns:
+    Returns
     --------
-
-    peaks: array, peak values, shape (L,) where L can vary
+    peaks: array, peak values, shape (L,) where L can vary and is
     
     inds : array, indices of the peak values on the odf array, shape (L,)
-
     
     Notes:
     ------
@@ -89,100 +86,60 @@ def peak_finding(odf,odf_faces):
     Examples:
     ---------
 
-    Are comming soon ..
+    Coming soon ..
 
     See Also:
     ---------
-    ...
-
-    Todo:
-    -----
-    Function can be optimized further, the indexing in the for loop
-    takes most of the processing time
-    
+    ...   
 
     '''
 
     
-    cdef cnp.ndarray[cnp.uint16_t, ndim=2] cfaces = np.ascontiguousarray(odf_faces)
-
-    cdef cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
-
-    cdef cnp.ndarray[cnp.float64_t, ndim=1] cpeak = np.ascontiguousarray(odf.copy())
-    
-    
-    #print cfaces[0]
-
-    cdef int i=0
-
-    cdef int test=0
-
-    cdef int lenfaces = len(cfaces)
-
-    #cdef int lenpeak = len(odf)/2
-
-    cdef double odf0,odf1,odf2
-
-    cdef int find0,find1,find2
+    cdef:
+        cnp.ndarray[cnp.uint16_t, ndim=2] cfaces = np.ascontiguousarray(odf_faces)
+        cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
+        cnp.ndarray[cnp.float64_t, ndim=1] cpeak = np.ascontiguousarray(odf.copy())
+        int i=0
+        int test=0
+        int lenfaces = len(cfaces)
+        double odf0,odf1,odf2
+        int find0,find1,find2
 
     
     for i in range(lenfaces):
 
-
         find0 = cfaces[i,0]
-
         find1 = cfaces[i,1]
-
         find2 = cfaces[i,2]        
         
         odf0=codf[find0]
-
         odf1=codf[find1]
-
         odf2=codf[find2]       
 
-
         if odf0 >= odf1 and odf0 >= odf2:
-
             cpeak[find1] = 0
-
             cpeak[find2] = 0
-
             continue
-
 
         if odf1 >= odf0 and odf1 >= odf2:
-
             cpeak[find0] = 0
-
             cpeak[find2] = 0
-
             continue
-            
 
         if odf2 >= odf0 and odf2 >= odf1:
-
             cpeak[find0] = 0
-
             cpeak[find1] = 0
-
             continue
 
-
-
     peak=np.array(cpeak)
-
     peak=peak[0:len(peak)/2]
 
-    #find local maxima and give fiber orientation (inds) and magnitute
+    #find local maxima and give fiber orientation (inds) and magnitude
     #peaks in a descending order
 
     inds=np.where(peak>0)[0]
-
     pinds=np.argsort(peak[inds])
-    
     peaks=peak[inds[pinds]][::-1]
-
 
     return peaks, inds[pinds][::-1]
 
