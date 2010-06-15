@@ -27,6 +27,8 @@ T=[i[0] for i in streams]
 
 T=T[:len(T)/5]
 
+#T=T[:1000]
+
 print 'Representing tracks using only 3 pts...'
 tracks=[tm.downsample(t,3) for t in T]
 
@@ -85,8 +87,7 @@ for c in C:
     bi=pf.most_similar_track_zhang(bundle)[0]
 
     C[c]['skeletal']=bundle[bi]
-
-    #colors_sk[c]=
+    
 
     if len(C[c]['indices'])>100 and tm.length(bundle[bi])>30.:
         
@@ -107,7 +108,7 @@ print 'len_colors_sk', len(colors_sk)
     
 t2=Tracks(data,colors2,line_width=1.)
 
-t2.position=(0,0,0)
+t2.position=(100,0,0)
 
 
 sk=Tracks(skeletals,colors_sk,line_width=3.)
@@ -115,8 +116,8 @@ sk=Tracks(skeletals,colors_sk,line_width=3.)
 sk.position=(0,0,0)
 
         
-slot={#0:{'actor':t,'slot':(0, 800000)},
-      #1:{'actor':t2,'slot':(0, 800000)},
+slot={0:{'actor':t,'slot':(0, 800000)},
+      1:{'actor':t2,'slot':(0, 800000)},
       2:{'actor':sk,'slot':(0, 800000)}}
 
 Scene(Plot(slot)).run()

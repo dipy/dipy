@@ -1,7 +1,9 @@
 from scipy.io import loadmat
 import numpy as np
 
-dsi_steam_b4000=loadmat('/home/eg309/Desktop/20100511_M030Y_CBU100624_steam.src.gz.odf6.gqi1.3.fib',struct_as_record=True)
+#dsi_steam_b4000=loadmat('/home/eg309/Desktop/20100511_M030Y_CBU100624_steam.src.gz.odf6.gqi1.3.fib',struct_as_record=True)
+
+dsi_steam_b4000=loadmat('/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_M030Y_CBU100624_steam.src.gz.odf6.gqi1.3.fib',struct_as_record=True)
 
 x,y,z=dsi_steam_b4000['dimension'][0]
 
