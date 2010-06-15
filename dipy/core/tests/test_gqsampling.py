@@ -120,7 +120,7 @@ def test_gqi():
         
     #yield assert_equal( (g.QA-QA).max(), 0.0)
 
-    return (g.QA-QA).max()
+    yield assert_equal((g.QA-QA).max(), 0.)
 
 
 def Q2odf(s,q2odf_params):

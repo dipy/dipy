@@ -112,7 +112,7 @@ def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.):
 
     ''' Give the nearest direction to a point
 
-    Parameters:
+    Parameters
     -----------
     
     dx: array, shape(3,), as float,

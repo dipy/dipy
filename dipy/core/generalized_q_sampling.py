@@ -1,5 +1,6 @@
 import numpy as np
 import dipy.core.reconstruction_performance as rp
+import dipy
 
 class GeneralizedQSampling():
 
@@ -27,7 +28,7 @@ class GeneralizedQSampling():
 
         '''
 
-        eds=np.load('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz')
+        eds=np.load(dipy.__path__[0] + '/core/matrices/evenly_distributed_sphere_362.npz')
 
         odf_vertices=eds['vertices']
 
@@ -43,9 +44,13 @@ class GeneralizedQSampling():
 
         print 'tmp.shape',tmp.shape
 
+        #the b vectors might have nan values where they correspond to b
+        #value equals with 0
+        gradients[np.isnan(gradients)]= 0.
+        
         gradsT = gradients.T
         
-        b_vector=gradsT*tmp
+        b_vector=gradsT*tmp # element-wise also known as the Hadamard product
 
         print 'b_vector.shape', b_vector.shape
 
@@ -53,11 +58,11 @@ class GeneralizedQSampling():
 
         print 'odf_vertices.dtype', odf_vertices.dtype
         
-        #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
+        #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)              
 
         q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
 
-        q2odf_params[np.isnan(q2odf_params)]= 1.
+        #q2odf_params[np.isnan(q2odf_params)]= 1.
         
         S=data
 
@@ -73,9 +78,6 @@ class GeneralizedQSampling():
 
         self.q2odf_params=q2odf_params
 
-        #return
-
-
         #Calculate Quantitative Anisotropy and find the peaks and the indices
         #for every voxel
         
@@ -83,15 +85,7 @@ class GeneralizedQSampling():
 
             #Q to ODF
 
-            #print 'q2odf.shape', q2odf_params.shape
-
-            #print 'q2odf.dtype', q2odf_params.dtype
-
             odf=np.dot(s,q2odf_params)
-
-            #print 'odf.shape', odf.shape
-
-            #print 'odf.dtype', odf.dtype
 
             peaks,inds=rp.peak_finding(odf,odf_faces)
 

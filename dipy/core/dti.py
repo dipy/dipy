@@ -23,44 +23,44 @@ class Tensor(object):
 
     Parameters
     ----------
-    data : ndarray (V,g)
+    data : ndarray (V, g)
         The image data needs at least 2 dimensions where the first dimension
         holds the set of voxels that WLS_fit will perform on and second 
         dimension holds the diffusion weighted signals.
-    gtab : ndarray (3,g)
+    gtab : ndarray (3, g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.
-    bval : ndarray (g,1)
+    bval : ndarray (g, 1)
         Diffusion weighting factor b for each vector in gtab.
-    mask : ndarray (0<V,), optional
+    mask : ndarray (0 <= V, 1), optional
         Mask of data that WLS_fit will NOT perform on. If mask is not boolean,
-        then WLS_fit will operate where mask > 0
-    thresh : data.dtype (0<=data.max()), optional
+        then WLS_fit will operate where mask > 0. Note: mask.ndim <= data.ndim
+    thresh : data.dtype (0 <= data[..., 0].max()), optional
         Simple threshold to exclude voxels from WLS_fit. Default value for 
         threshold is 0.
 
     Attributes
     ----------
-    D : ndarray (V,3,3)
+    D : ndarray (V, 3, 3)
         Self diffusion tensor calculated from cached eigenvalues and 
         eigenvectors.
-    B : ndarray (g,7)
+    B : ndarray (g, 7)
         Design matrix or B matrix constructed from given gradient table and
         b-value vector.
-    evals : ndarray (V,3) 
+    evals : ndarray (V, 3) 
         Cached eigenvalues of self diffusion tensor for given index. 
-        (eval1,eval2,eval3)
-    evecs : ndarray (V,3,3)
+        (eval1, eval2, eval3)
+    evecs : ndarray (V, 3, 3)
         Cached associated eigenvectors of self diffusion tensor for given 
-        index. (evec1,evec2,evec3)
+        index. Note: evals[..., j] is associated with evecs[..., :, 0]
 
 
     Methods
     -------
-    ADC : ndarray (V,1)
+    ADC : ndarray (V, 1)
         Calculates the apparent diffusion coefficient [2]_. 
-    FA : ndarray (V,1)
+    FA : ndarray (V, 1)
         Calculates fractional anisotropy [2]_.
-    MD : ndarray (V,1)
+    MD : ndarray (V, 1)
         Calculates the mean diffusitivity [2]_. 
         Note: [units ADC] ~ [units b value]*10**-1
     
@@ -112,13 +112,13 @@ class Tensor(object):
     """
     ### Shape Property ###
     def _getshape(self):
-        return self.D.shape[:-2]
+        return self._evals.shape[:-1]
     
     shape = property(_getshape, doc = "Shape of tensor array")
 
     ### Ndim Property ###
     def _getndim(self):
-        return self.D.ndim - 2
+        return self._evals.ndim - 1
     
     ndim = property(_getndim, doc = "Number of dimensions in tensor array")
 
@@ -151,7 +151,7 @@ class Tensor(object):
 
     ### Eigenvectors Property ###
     def _getevecs(self):
-        evecs_flat = self._evecs.reshape((-1, 2, 3))
+        evecs_flat = self._evecs.reshape((-1, 3, 2))
         evs = np.empty((evecs_flat.shape[0],)+(3, 3))
         
         if evecs_flat.ndim == 2: # for single voxel case
@@ -160,13 +160,13 @@ class Tensor(object):
         
         #Calculate 3rd eigenvector from cached eigenvectors
         for ii, p_s_evecs in enumerate(evecs_flat): 
-            evs[ii, 0:2, :] = p_s_evecs
-            evs[ii, 2, :] = np.cross(p_s_evecs[0, :], p_s_evecs[1, :]) 
+            evs[ii, :, 0:2] = p_s_evecs
+            evs[ii, :, 2] = np.cross(p_s_evecs[:, 0], p_s_evecs[:, 1]) 
                 #time 26.9 us
         return evs.reshape(self._evecs.shape[:-2]+(3, 3))
 
     def _setevecs(self,evs):
-        self._evecs = evs[...,0:2,:] # only cache first two vectors
+        self._evecs = evs[...,0:2] # only cache first two vectors
     
     evecs = property(_getevecs, _setevecs, 
                                 doc = "Eigenvectors of self diffusion tensor")
@@ -189,7 +189,7 @@ class Tensor(object):
         self._evals[tot_mask], self._evecs[tot_mask] = wls_fit_tensor(B, 
                                                               data[tot_mask])
         #wls fit returns all 3 eigenvecs...but we want to only store first two
-        self._evecs = self._evecs[..., 0:2, :]
+        self._evecs = self._evecs[..., 0:2]
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
@@ -211,7 +211,7 @@ class Tensor(object):
         
         Returns
         -------
-        ADC : ndarray (V,1)
+        ADC : ndarray (V, 1)
             Calculated ADC.
 
         Notes
@@ -232,7 +232,7 @@ class Tensor(object):
         
         Returns
         -------
-        FA : ndarray (V,1)
+        FA : ndarray (V, 1)
             Calculated FA. Note: range is 0 <= FA <= 1.
 
         Notes
@@ -265,7 +265,7 @@ class Tensor(object):
         
         Returns
         -------
-        MD : ndarray (V,1)
+        MD : ndarray (V, 1)
             Calculated MD.
 
         Notes
@@ -286,19 +286,22 @@ def wls_fit_tensor(design_matrix, data):
     
     Parameters
     ----------
-    design_matrix : ndarray (g,g)
+    design_matrix : ndarray (g, g)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : ndarray or MaskedView (X,Y,Z,...,g)
+    data : ndarray or MaskedView (X, Y, Z, ..., g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
 
     Returns
     -------
-    eigvals : ndarray (X,Y,Z,...,3)
+    eigvals : ndarray (X, Y, Z, ..., 3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (X,Y,Z,...,3,3)
+    eigvecs : ndarray (X, Y, Z, ..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
+        eigvals[j])
+
 
     See Also
     --------
@@ -369,10 +372,11 @@ def decompose_tensor(D):
 
     Parameters
     ----------
-    D : ndarray (7,)
-        Array holding the six unique diffusitivities and log(S_o) 
-        (Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_o)). Assumes D has units 
-        on order of ~ 10^-4 mm^2/s
+    D : ndarray (7,) or (3,3)
+        If (7, ) shape, array holding the six unique diffusitivities 
+        and log(S_o) (Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_o)).If (3, 3) shape,
+        array is holding the actual tensor. Assumes D has units on order of 
+        ~ 10^-4 mm^2/s
 
     Results
     -------
@@ -390,12 +394,16 @@ def decompose_tensor(D):
     """
 
     tensor = np.empty((3,3),dtype=D.dtype)
-    tensor[0, 0] = D[0]  #Dxx
-    tensor[1, 1] = D[1]  #Dyy
-    tensor[2, 2] = D[2]  #Dzz
-    tensor[1, 0] = tensor[0, 1] = D[3]  #Dxy
-    tensor[2, 0] = tensor[0, 2] = D[4]  #Dxz
-    tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
+   
+    if D.flat[:].shape[0] == 7 : 
+        tensor[0, 0] = D[0]  #Dxx
+        tensor[1, 1] = D[1]  #Dyy
+        tensor[2, 2] = D[2]  #Dzz
+        tensor[1, 0] = tensor[0, 1] = D[3]  #Dxy
+        tensor[2, 0] = tensor[0, 2] = D[4]  #Dxz
+        tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
+    else :
+        tensor = D
 
     #outputs multiplicity as well so need to unique
     eigenvals, eigenvecs = np.linalg.eig(tensor)
