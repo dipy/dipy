@@ -3,39 +3,69 @@
 import numpy as np
 
 
-def hemisphere_neighbors(vertices, faces, dist_thresh=None):
-    """ Hemisphere vertex indices and adjacencies from sphere
+def hemisphere_vertices(vertices,
+                        hemisphere='z',
+                        equator_thresh=None,
+                        dist_thresh=None):
+    """ Hemisphere vertex indices from sphere points `vertices` 
 
-    Selects the vertices from a sphere that lie in one hemisphere, and
-    return these and the indices of points surrounding each vertex.
-    These provide inputs to routines to find local maximae 
+    Selects the vertices from a sphere that lie in one hemisphere.
+    If there are pairs symmetric points on the equator, we return only
+    one of each pair.
 
     Parameters
     ----------
     vertices : (N,3) array-like
        (x, y, z) Point coordinates of N vertices
-    faces : (F, 3) array-like
-       One row per face.  Each row gives (a, b, c), where a, b, and c
-       are indices into `vertices`, so defining the vertices connected
-       by the face.
+    hemisphere : str, optional
+       Which hemisphere to select.  Values of '-x', '-y', '-z' select,
+       respectively negative x, y, and z hemispheres; 'x', 'y', 'z'
+       select the positive x, y, and z hemispheres.  Default is 'z'
+    equator_thresh : None or float, optional
+       Threshold (+-0) to identify points as being on the equator of the
+       sphere.   If None, generate a default based on the data type
     dist_thresh : None or float, optional
-       For a vertex ``v``, if there is a vertex ``v_dash`` in
-       `vertices`, such that the Euclidean distance between ``v * -1``
-       and ``v_dash`` is <= `dist_thresh`, then ``v`` is in the opposite
-       hemisphere to ``v_dash``, and only one of (``v``, ``v_dash``)
-       will appear in the output vertex indices `inds`. None results in
-       threshold based on the input data type of ``vertices``
+       For a vertex ``v`` on the equator, if there is a vertex
+       ``v_dash`` in `vertices`, such that the Euclidean distance
+       between ``v * -1`` and ``v_dash`` is <= `dist_thresh`, then ``v``
+       is taken to be in the opposite hemisphere to ``v_dash``, and only
+       one of (``v``, ``v_dash``) will appear in the output vertex
+       indices `inds`. None results in threshold based on the input data
+       type of ``vertices``
     
     Returns
     -------
     inds : (P,) array
        Indices into `vertices` giving points in hemisphere
-    adj_inds : (P, 6) array
-       For each index ``i`` in `inds`, the vertex indices of the 6
-       points surrounding ``i``
+
+    Notes
+    -----
+    We expect the sphere to be symmetric, and so there may well be
+    points on the sphere equator that are both on the same diameter
+    line.  The routine returns the first of the two points in the
+    original order of `vertices`.
     """
     vertices = np.asarray(vertices)
-    faces = np.asarray(faces)
+
+
+def vertinds_to_neighbors(vertex_inds, faces):
+    """ Return indices of neightbors of vertices given `faces`
+
+    Parameters
+    ----------
+    vertex_inds : (N,) array-like
+       indices of vertices
+    faces : (F, 3) array-like
+       Faces given by indices of vertices for each of ``F`` faces
+
+    Returns
+    -------
+    neighbors : (N, B)
+       For each ``N`` vertex indicated by `vertex_inds`, the vertex
+       indices that are neighbors according to the graph given by
+       `faces`.  For icosohedral meshes, ``B`` will be 6.
+    """
+    pass
 
 
 def mesh_maximae(vals, vertex_inds, adj_inds):
