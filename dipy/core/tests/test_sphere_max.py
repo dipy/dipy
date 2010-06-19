@@ -5,7 +5,7 @@ from os.path import join as pjoin, dirname
 import numpy as np
 
 from dipy.core.meshes import (
-    hemisphere_vertices,
+    hemisphere_vertinds,
     vertinds_to_neighbors,
     mesh_maximae)
 from dipy.core.reconstruction_performance import peak_finding
@@ -42,18 +42,23 @@ SPHERE_DATA = np.load(pjoin(DATA_PATH,
 
 
 @parametric
-def test_hemisphere_vertices():
-    vert_inds = hemisphere_vertices(VERTICES)
-    yield assert_equal(vert_inds.shape, (3,))
-    verts = VERTICES[vert_inds]
-    # there are no symmetrical points remanining in vertices
-    for vert in verts:
-        yield assert_false(np.any(np.all(
-                vert * -1 == verts)))
+def test_hemisphere_vertinds():
+    yield assert_raises(ValueError, hemisphere_vertinds,
+                        VERTICES, 'k')
+    yield assert_raises(ValueError, hemisphere_vertinds,
+                        VERTICES, '%z')
+    for hem in ('x', 'y', 'z', '-x', '-y', '-z'):
+        vert_inds = hemisphere_vertinds(VERTICES, hem)
+        yield assert_equal(vert_inds.shape, (3,))
+        verts = VERTICES[vert_inds]
+        # there are no symmetrical points remanining in vertices
+        for vert in verts:
+            yield assert_false(np.any(np.all(
+                    vert * -1 == verts)))
     # Test the sphere mesh data
     vertices = sphere_data['vertices']
     n_vertices = vertices.shape[0]
-    vert_inds = hemisphere_vertices(vertices)
+    vert_inds = hemisphere_vertinds(vertices)
     yield assert_equal(n_vertices / 2.0,
                        vert_inds.items)
 
@@ -80,7 +85,7 @@ def test_vertinds_neighbors():
 @parametric
 def test_maximae():
     # test ability to find maximae on sphere
-    vert_inds = hemisphere_vertices(VERTICES)
+    vert_inds = hemisphere_vertinds(VERTICES)
     adj_inds = vertinds_to_neighbors(vert_inds, FACES)
     # all equal, no maximae
     vert_vals = np.zeros((N_VERTICES,))
@@ -104,7 +109,13 @@ def test_maximae():
                             vert_inds,
                             adj_inds)
         yield assert_equal(inds.items, 0)
-
+    # use whole mesh, with two maximae
+    vert_inds = np.arange(6)
+    adj_inds = vertinds_to_neighbors(vert_inds, FACES)
+    vert_vals = [1, 0, 0, 0, 0, 2]
+    inds = mesh_maximae(vert_vals, vert_inds, adj_inds)
+    yield assert_array_equal(inds, [0, 5])
+        
 
 @parametric
 def test_performance():
@@ -112,7 +123,7 @@ def test_performance():
     vertices = sphere_data['vertices']
     faces = sphere_data['faces']
     n_vertices = vertices.shape[0]
-    vert_inds = hemisphere_vertices(vertices)
+    vert_inds = hemisphere_vertinds(vertices)
     neighbors = vertinds_to_neighbors(vert_inds, faces)
     np.random.seed(42)
     vert_vals = np.random.uniform(size=(n_vertices,))

@@ -2,8 +2,11 @@
 
 import numpy as np
 
+FLOAT64_EPS = np.finfo(np.float64).eps
+FLOAT_TYPES = np.sctypes['float']
 
-def hemisphere_vertices(vertices,
+
+def hemisphere_vertinds(vertices,
                         hemisphere='z',
                         equator_thresh=None,
                         dist_thresh=None):
@@ -46,8 +49,34 @@ def hemisphere_vertices(vertices,
     original order of `vertices`.
     """
     vertices = np.asarray(vertices)
+    assert vertices.shape[1] == 3
+    if len(hemisphere) == 2:
+        sign, hemisphere = hemisphere
+        if sign not in '+-':
+            raise ValueError('Hemisphere sign must be + or -')
+    else:
+        sign = '+'
+    try:
+        coord = 'xyz'.index(hemisphere)
+    except ValueError:
+        raise ValueError('Hemisphere must be (+-) x, y or z')
+    if equator_thresh is None or dist_thresh is None:
+        if not vertices.dtype.type in FLOAT_TYPES:
+            EPS = FLOAT64_EPS
+        else:
+            EPS = np.finfo(vertices.dtype.type).eps
+        if equator_thresh is None:
+            equator_thresh = EPS * 10
+        if dist_thresh is None:
+            equator_thresh = EPS * 20
+    if sign == '+':
+        inds = vertices[:,coord] > -equator_thresh
+    else:
+        inds = vertices[:,coord] < equator_thresh
+    # find equator points
+    return np.nonzero(inds)[0]
 
-
+    
 def vertinds_to_neighbors(vertex_inds, faces):
     """ Return indices of neightbors of vertices given `faces`
 
