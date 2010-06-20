@@ -1,6 +1,7 @@
 import numpy as np
 import dipy.core.reconstruction_performance as rp
-import dipy
+import os
+from os.path import join as opj
 
 class GeneralizedQSampling():
 
@@ -28,8 +29,10 @@ class GeneralizedQSampling():
 
         '''
 
-        eds=np.load(dipy.__path__[0] + '/core/matrices/evenly_distributed_sphere_362.npz')
+        #eds=np.load(dipy.__path__[0] + '/core/matrices/evenly_distributed_sphere_362.npz')
 
+        eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))
+        
         odf_vertices=eds['vertices']
 
         odf_faces=eds['faces']

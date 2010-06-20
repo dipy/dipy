@@ -1,16 +1,17 @@
+import os
 import numpy as np
-
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
-
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-
 import time
-
 import dipy.core.reconstruction_performance as rp
-
+from os.path import join as opj
+import nibabel as ni
+import dipy.core.generalized_q_sampling as gq
 
 def test_gqi():
+
+    '''
 
     from scipy.io import loadmat
     
@@ -22,10 +23,27 @@ def test_gqi():
     #odf_vertices=phantom['odf_vertices']
     #odf_faces=phantom['odf_faces']
 
-    #np.savez('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz',vertices=odf_vertices.T,faces=odf_faces.T)
+    '''
+   
 
-    eds=np.load('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz')
+    bvals=np.load(opj(os.path.dirname(__file__), 'data','small_64D.bvals.npy'))
+    gradients=np.load(opj(os.path.dirname(__file__), 'data','small_64D.gradients.npy'))
+    
+    img =ni.load(os.path.join(os.path.dirname(__file__), 'data','small_64D.nii'))
 
+    data=img.get_data()    
+
+    print bvals.shape
+    print gradients.shape
+    print data.shape
+
+    gqs = gq.GeneralizedQSampling(data,bvals,gradients)    
+        
+    #eds=np.load(opj(os.path.dirname(__file__),'..','matrices','evenly_distributed_sphere_362.npz'))
+
+
+    '''
+    
     odf_vertices=eds['vertices']
     odf_faces=eds['faces']
 
@@ -50,7 +68,6 @@ def test_gqi():
 
     Lambda = 1.2 # smoothing parameter - diffusion sampling length
 
-
     
     q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
     #implements equation no. 9 from Yeh et.al.
@@ -67,7 +84,6 @@ def test_gqi():
     IN = np.zeros((x*y*z,5))
 
     fwd = 0
-
 
     
     #Calculate Quantitative Anisotropy and find the peaks and the indices
@@ -121,6 +137,8 @@ def test_gqi():
     #yield assert_equal( (g.QA-QA).max(), 0.0)
 
     yield assert_equal((g.QA-QA).max(), 0.)
+
+    '''
 
 
 def Q2odf(s,q2odf_params):

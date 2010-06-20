@@ -53,17 +53,19 @@ cdef cnp.dtype f32_dt = np.dtype(np.float32)
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def peak_finding(odf,odf_faces):
-    ''' Given a function on a sphere return the peaks' values and
+    ''' Given a function on a symmetric on a sphere return the peaks' values and
     indices. Peaks are given in a descending order.    
 
     Parameters
     -----------
 
     odf: array, shape(N,) , function values on the sphere, where N is the number
-    vertices on the sphere
+    vertices on the sphere, odf[:,len(odf)/2] = odf[len(odf)/2:]
 
     odf_faces: array, uint16, shape (M,3), faces of the triangulation on
-    the sphere, where M is the number of faces on the sphere
+    the sphere, where M is the number of faces on the sphere, we
+    recommend using the precalculated odf_faces found at 
+    dipy/core/matrices/evenly*.npz to use them try numpy.load()['faces']
 
     Returns
     --------
@@ -76,22 +78,18 @@ def peak_finding(odf,odf_faces):
 
     In a summary this function does the following
 
+    First it creates a copy of odf 
+
     Where the smallest odf values in the vertices of a face  put
-    zeros on them. By doing that for the vertices  of all faces at the
+    zeros on the copy. By doing that for the vertices  of all faces at the
     end you only have the peak points with nonzero values.
 
     For precalculated odf_faces look under
     dipy/core/matrices/evenly*.npz to use them try numpy.load()['faces']
+
+    A better version where more general functions on the spheres can be
+    processed is under development.
     
-    Examples:
-    ---------
-
-    Coming soon ..
-
-    See Also:
-    ---------
-    ...   
-
     '''
 
     
