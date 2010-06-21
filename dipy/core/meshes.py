@@ -6,15 +6,15 @@ FLOAT64_EPS = np.finfo(np.float64).eps
 FLOAT_TYPES = np.sctypes['float']
 
 
-def hemisphere_vertinds(vertices,
-                        hemisphere='z',
-                        equator_thresh=None,
-                        dist_thresh=None):
-    """ Hemisphere vertex indices from sphere points `vertices` 
+def sym_hemisphere(vertices,
+                   hemisphere='z',
+                   equator_thresh=None,
+                   dist_thresh=None):
+    """ Symmetric hemisphere indices from sphere `vertices` 
 
     Selects the vertices from a sphere that lie in one hemisphere.
-    If there are pairs symmetric points on the equator, we return only
-    one of each pair.
+    If there are pairs of symmetric points on the equator, we return only
+    the first occurring of each pair.
 
     Parameters
     ----------
@@ -68,36 +68,101 @@ def hemisphere_vertinds(vertices,
         if equator_thresh is None:
             equator_thresh = EPS * 10
         if dist_thresh is None:
-            equator_thresh = EPS * 20
+            dist_thresh = EPS * 20
+    # column with coordinates for selecting the hemisphere
+    sel_col = vertices[:,coord]
     if sign == '+':
-        inds = vertices[:,coord] > -equator_thresh
+        inds = sel_col > -equator_thresh
     else:
-        inds = vertices[:,coord] < equator_thresh
+        inds = sel_col < equator_thresh
     # find equator points
+    eq_inds, = np.where(
+        (sel_col < equator_thresh) & (sel_col > -equator_thresh))
+    # eliminate later points that are symmetric on equator
+    untested_inds = list(eq_inds)
+    out_inds = []
+    for ind in eq_inds:
+        untested_inds.remove(ind)
+        test_vert = vertices[ind,:] * -1
+        test_dists = np.sum(
+            (vertices[untested_inds,:] - test_vert)**2, axis=1)
+        sym_inds, = np.where(test_dists < dist_thresh)
+        for si in sym_inds:
+            out_ind = untested_inds[si]
+            untested_inds.remove(out_ind)
+            out_inds.append(out_ind)
+        if len(untested_inds) == 0:
+            break
+    inds[out_inds] = False
     return np.nonzero(inds)[0]
 
-    
+
 def vertinds_to_neighbors(vertex_inds, faces):
-    """ Return indices of neightbors of vertices given `faces`
+    """ Return indices of neighbors of vertices given `faces`
 
     Parameters
     ----------
-    vertex_inds : (N,) array-like
-       indices of vertices
+    vertex_inds : sequence
+       length N.  Indices of vertices
     faces : (F, 3) array-like
        Faces given by indices of vertices for each of ``F`` faces
 
     Returns
     -------
-    neighbors : (N, B)
+    adj : list
        For each ``N`` vertex indicated by `vertex_inds`, the vertex
        indices that are neighbors according to the graph given by
-       `faces`.  For icosohedral meshes, ``B`` will be 6.
+       `faces`.  
     """
-    pass
+    full_adj = neighbors(faces)
+    adj = []
+    for i, n in enumerate(full_adj):
+        if i in vertex_inds:
+            adj.append(n)
+    return adj
 
 
-def mesh_maximae(vals, vertex_inds, adj_inds):
+def neighbors(faces):
+    """ Return indices of neighbors for each vertex within `faces`
+
+    Parameters
+    ----------
+    faces : (F, 3) array-like
+       Faces given by indices of vertices for each of ``F`` faces
+
+    Returns
+    -------
+    adj : list
+       For each vertex found within `faces`, the vertex
+       indices that are neighbors according to the graph given by
+       `faces`.  We expand the list with empty lists in between
+       non-empty neighbors.  
+    """
+    faces = np.asarray(faces)
+    adj = {}
+    for face in faces:
+        a, b, c = face
+        if a in adj:
+            adj[a] += [b, c]
+        else:
+            adj[a] = [b, c]
+        if b in adj:
+            adj[b] += [a, c]
+        else:
+            adj[b] = [a, c]
+        if c in adj:
+            adj[c] += [a, b]
+        else:
+            adj[c] = [a, b]
+    N = max(adj.keys())+1
+    out = [[] for i in range(N)]
+    for i in range(N):
+        if i in adj:
+            out[i] = sorted(list(set(adj[i])))
+    return out
+
+
+def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maximae from `vals` given adjacent points
 
     Parameters
@@ -108,20 +173,31 @@ def mesh_maximae(vals, vertex_inds, adj_inds):
     vertex_inds : None or (V,) array-like
        indices into `vals` giving vertices that may be local maximae.
        If None, then equivalent to ``np.arange(N)``
-    adj_inds (V, 6) array-like
+    adj_inds : sequence
        For every vertex in ``vertex_inds``, the indices (into `vals`) of
-       the 6 neighboring points
+       the neighboring points
 
     Returns
     -------
     inds : (M,) array
        Indices into `vals` giving local maximae of vals, given topology
-       from `adj_inds`, and restrictions from `vertex_inds`. 
+       from `adj_inds`, and restrictions from `vertex_inds`.  Inds are
+       returned sorted by value at that index - i.e. smallest value (at
+       index) first.
     """
     vals = np.asarray(vals)
     if vertex_inds is None:
         vertex_inds = np.arange(vals.shape[0])
     else:
         vertex_inds = np.asarray(vertex_inds)
-    adj_inds = np.asarray(adj_inds)
-    
+    maxes = []
+    for i, adj in enumerate(adj_inds):
+        vert_ind = vertex_inds[i]
+        val = vals[vert_ind]
+        if np.all(val > vals[adj]):
+            maxes.append((val, vert_ind))
+    if len(maxes) == 0:
+        return np.array([])
+    maxes.sort(cmp=lambda x, y: cmp(x[0], y[0]))
+    vals, inds = zip(*maxes)
+    return np.array(inds)

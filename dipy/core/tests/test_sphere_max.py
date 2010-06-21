@@ -5,9 +5,10 @@ from os.path import join as pjoin, dirname
 import numpy as np
 
 from dipy.core.meshes import (
-    hemisphere_vertinds,
+    sym_hemisphere,
+    neighbors,
     vertinds_to_neighbors,
-    mesh_maximae)
+    argmax_from_adj)
 from dipy.core.reconstruction_performance import peak_finding
 
 from nose.tools import assert_true, assert_false, \
@@ -42,13 +43,13 @@ SPHERE_DATA = np.load(pjoin(DATA_PATH,
 
 
 @parametric
-def test_hemisphere_vertinds():
-    yield assert_raises(ValueError, hemisphere_vertinds,
+def test_sym_hemisphere():
+    yield assert_raises(ValueError, sym_hemisphere,
                         VERTICES, 'k')
-    yield assert_raises(ValueError, hemisphere_vertinds,
+    yield assert_raises(ValueError, sym_hemisphere,
                         VERTICES, '%z')
     for hem in ('x', 'y', 'z', '-x', '-y', '-z'):
-        vert_inds = hemisphere_vertinds(VERTICES, hem)
+        vert_inds = sym_hemisphere(VERTICES, hem)
         yield assert_equal(vert_inds.shape, (3,))
         verts = VERTICES[vert_inds]
         # there are no symmetrical points remanining in vertices
@@ -56,48 +57,72 @@ def test_hemisphere_vertinds():
             yield assert_false(np.any(np.all(
                     vert * -1 == verts)))
     # Test the sphere mesh data
-    vertices = sphere_data['vertices']
+    vertices = SPHERE_DATA['vertices']
     n_vertices = vertices.shape[0]
-    vert_inds = hemisphere_vertinds(vertices)
-    yield assert_equal(n_vertices / 2.0,
-                       vert_inds.items)
+    vert_inds = sym_hemisphere(vertices)
+    yield assert_array_equal(vert_inds,
+                             np.arange(n_vertices / 2))
 
 
 @parametric
 def test_vertinds_neighbors():
-    neighbors = vertinds_to_neighbors(np.arange(6),
+    adj = neighbors(FACES)
+    yield assert_equal(adj,
+                       [[1, 2, 3, 4],
+                        [0, 2, 4, 5],
+                        [0, 1, 3, 5],
+                        [0, 2, 4, 5],
+                        [0, 1, 3, 5],
+                        [1, 2, 3, 4]])
+    adj = vertinds_to_neighbors(np.arange(6),
+                                FACES)
+    yield assert_equal(adj,
+                       [[1, 2, 3, 4],
+                        [0, 2, 4, 5],
+                        [0, 1, 3, 5],
+                        [0, 2, 4, 5],
+                        [0, 1, 3, 5],
+                        [1, 2, 3, 4]])
+    # subset of inds gives subset of faces
+    adj = vertinds_to_neighbors(np.arange(3),
                                       FACES)
-    yield assert_array_equal(neighbors,
-                             [[1, 2, 3, 4]
-                              [0, 2, 4, 5],
-                              [0, 1, 3, 5],
-                              [0, 2, 4, 5],
-                              [0, 1, 3, 5],
-                              [1, 2, 3, 4]])
+    yield assert_equal(adj,
+                       [[1, 2, 3, 4],
+                        [0, 2, 4, 5],
+                        [0, 1, 3, 5]])
+    # can be any subset
+    adj = vertinds_to_neighbors(np.arange(3,6),
+                                      FACES)
+    yield assert_equal(adj,
+                       [[0, 2, 4, 5],
+                        [0, 1, 3, 5],
+                        [1, 2, 3, 4]])
     # just test right size for the real mesh
-    vertices = sphere_data['vertices']
+    vertices = SPHERE_DATA['vertices']
+    faces = SPHERE_DATA['faces']
     n_vertices = vertices.shape[0]
-    neighbors = vertinds_to_neighbors(np.arange(n_vertices))
-    yield assert_equal(neighbors.shape,
-                       (n_vertices, 6))
-    
+    adj = vertinds_to_neighbors(np.arange(n_vertices),
+                                      faces)
+    yield assert_equal(len(adj), n_vertices)
+    yield assert_equal(len(adj[1]), 6)
+
 
 @parametric
-def test_maximae():
-    # test ability to find maximae on sphere
-    vert_inds = hemisphere_vertinds(VERTICES)
+def test_neighbor_max():
+    # test ability to find maximae on sphere using neighbors
+    vert_inds = sym_hemisphere(VERTICES)
     adj_inds = vertinds_to_neighbors(vert_inds, FACES)
     # all equal, no maximae
     vert_vals = np.zeros((N_VERTICES,))
-    inds = mesh_maximae(vert_vals,
+    inds = argmax_from_adj(vert_vals,
                         vert_inds,
                         adj_inds)
-    yield assert_equal(inds.items, 0)
+    yield assert_equal(inds.size, 0)
     # just ome max
     for max_pos in range(3):
         vert_vals = np.zeros((N_VERTICES,))
         vert_vals[max_pos] = 1
-        inds = mesh_maximae(vert_vals,
+        inds = argmax_from_adj(vert_vals,
                             vert_inds,
                             adj_inds)
         yield assert_array_equal(inds, [max_pos])
@@ -105,29 +130,29 @@ def test_maximae():
     for max_pos in range(3,6):
         vert_vals = np.zeros((N_VERTICES,))
         vert_vals[max_pos] = 1
-        inds = mesh_maximae(vert_vals,
+        inds = argmax_from_adj(vert_vals,
                             vert_inds,
                             adj_inds)
-        yield assert_equal(inds.items, 0)
+        yield assert_equal(inds.size, 0)
     # use whole mesh, with two maximae
     vert_inds = np.arange(6)
     adj_inds = vertinds_to_neighbors(vert_inds, FACES)
     vert_vals = [1, 0, 0, 0, 0, 2]
-    inds = mesh_maximae(vert_vals, vert_inds, adj_inds)
+    inds = argmax_from_adj(vert_vals, vert_inds, adj_inds)
     yield assert_array_equal(inds, [0, 5])
-        
+
 
 @parametric
 def test_performance():
     # test this implementation against Frank Yeh implementation
-    vertices = sphere_data['vertices']
-    faces = sphere_data['faces']
+    vertices = SPHERE_DATA['vertices']
+    faces = SPHERE_DATA['faces']
     n_vertices = vertices.shape[0]
-    vert_inds = hemisphere_vertinds(vertices)
-    neighbors = vertinds_to_neighbors(vert_inds, faces)
+    vert_inds = sym_hemisphere(vertices)
+    adj = vertinds_to_neighbors(vert_inds, faces)
     np.random.seed(42)
     vert_vals = np.random.uniform(size=(n_vertices,))
-    maxinds = mesh_maximae(vert_vals, vert_inds, neighbors)
+    maxinds = argmax_from_adj(vert_vals, vert_inds, adj)
     maxes, pfmaxinds = peak_finding(vert_vals, faces)
-    yield assert_array_equal(maxinds, pfmaxinds)
+    yield assert_array_equal(maxinds, pfmaxinds[::-1])
     
