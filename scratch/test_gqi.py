@@ -2,8 +2,8 @@ from scipy.io import loadmat
 import numpy as np
 #?loadmat
 
-phantom=loadmat('/home/eg01/Desktop/phantom_test_data.mat',struct_as_record=True)
-#phantom=loadmat('/home/ian/Data/Frank_Eleftherios/phantom_test_data.mat',struct_as_record=True)
+#phantom=loadmat('/home/eg01/Desktop/phantom_test_data.mat',struct_as_record=True)
+phantom=loadmat('/home/ian/Data/Frank_Eleftherios/phantom_test_data.mat',struct_as_record=True)
 
 all=phantom['all']
 b_table=phantom['b_table']
@@ -30,6 +30,14 @@ Lambda = 1.2 # smoothing parameter - diffusion sampling length
 #np.dot(b_vector.T, odf_vertices) is  before.u where before is sqrt(6Db(q)).(q/|q|)
 q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices) * Lambda/np.pi) # implements equation no. 9 from Yeh et.al.
 
+
+def probe_mesh(vertices):
+
+    print 'vertices.shape = ', vertices.shape
+
+    signs = zip(vertices[2,:]>0,vertices[1,:]>0,vertices[0,:]>0)
+
+    print signs
 
 def Q2odf(s,q2odf_params):
 
@@ -85,8 +93,6 @@ def peak_finding(odf,odf_faces,odf_vertices):
 
 
 
-'''
-
 #s = all[14,14,1]
 
 s = all[0,0,0]
@@ -101,6 +107,7 @@ peaks,inds=peak_finding(odf,odf_faces,odf_vertices)
 
 
 
+'''
 S=all
 
 x,y,z,g=S.shape
@@ -137,6 +144,8 @@ QA/=fwd
 
 #If you just want to generate a volume then is enough to use the first QA[0]
 
+
+#probe_mesh(odf_vertices)
 
 
 
