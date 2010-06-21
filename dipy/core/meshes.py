@@ -162,6 +162,29 @@ def neighbors(faces):
     return out
 
 
+def vertinds_faces(vertex_inds, faces):
+    """ Return indices of neighbors of vertices given `faces`
+
+    Parameters
+    ----------
+    vertex_inds : sequence
+       length N.  Indices of vertices
+    faces : (F, 3) array-like
+       Faces given by indices of vertices for each of ``F`` faces
+
+    Returns
+    -------
+    less_faces : (P, 3) array
+       Only retaining rows in `faces` which contain any of `vertex_inds`
+    """
+    in_inds = []
+    vertex_inds = set(vertex_inds)
+    for ind, face in enumerate(faces):
+        if vertex_inds.intersection(face):
+            in_inds.append(ind)
+    return faces[in_inds]
+
+    
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maximae from `vals` given adjacent points
 

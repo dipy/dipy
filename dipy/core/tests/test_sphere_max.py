@@ -8,6 +8,7 @@ from dipy.core.meshes import (
     sym_hemisphere,
     neighbors,
     vertinds_to_neighbors,
+    vertinds_faces,
     argmax_from_adj)
 from dipy.core.reconstruction_performance import peak_finding
 
@@ -105,6 +106,17 @@ def test_vertinds_neighbors():
                                       faces)
     yield assert_equal(len(adj), n_vertices)
     yield assert_equal(len(adj[1]), 6)
+
+
+@parametric
+def test_vertinds_faces():
+    # routines to strip out faces
+    f2 = vertinds_faces(range(6), FACES)
+    yield assert_array_equal(f2, FACES)
+    f2 = vertinds_faces([0, 5], FACES)
+    yield assert_array_equal(f2, FACES)
+    f2 = vertinds_faces([0], FACES)
+    yield assert_array_equal(f2, FACES[:4])
 
 
 @parametric
