@@ -55,13 +55,13 @@ cdef cnp.dtype f32_dt = np.dtype(np.float32)
 def peak_finding(odf, odf_faces):
     ''' Hemisphere local maximae from sphere values and faces
 
-    Return local maximum values and indices. Peaks are given in a
-    descending order.
+    Return local maximum values and indices. Local maximae (peaks) are
+    given in descending order.
 
     The sphere mesh, as defined by the vertex coordinates ``vertices``
     and the face indices ``odf_faces``, has to conform to the check in
     ``dipy.core.meshes.peak_finding_compatible``.  If it does not, then
-    the results from this routine will be unpredictable.
+    the results from peak finding routine will be unpredictable.
 
     Parameters
     ----------
@@ -86,7 +86,7 @@ def peak_finding(odf, odf_faces):
     In summary this function does the following:
 
     Where the smallest odf values in the vertices of a face put
-    zeros on them. By doing that for the vertices  of all faces at the
+    zeros on them. By doing that for the vertices of all faces at the
     end you only have the peak points with nonzero values.
 
     For precalculated odf_faces look under
@@ -148,22 +148,56 @@ def peak_finding(odf, odf_faces):
     return peaks, inds[pinds][::-1]
 
 
+def cmp_first(x, y):
+    return cmp(x[0], y[0])
 
 
-        
-            
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def argmax_from_adj(vals, vertex_inds, adj_inds):
+    """ Indices of local maximae from `vals` given adjacent points
 
+    Parameters
+    ----------
+    vals : (N,) array, dtype np.float64
+       values at all vertices referred to in either of `vertex_inds` or
+       `adj_inds`'
+    vertex_inds : (V,) array, dtype np.unit32
+       indices into `vals` giving vertices that may be local maximae.
+    adj_inds : (V,) array, dtype np.object
+       For every vertex in ``vertex_inds``, the indices (into `vals`) of
+       the neighboring points
 
-            
-
-        
-
-        
-
-    
-
-    
-
-    
-
-        
+    Returns
+    -------
+    inds : (M,) array
+       Indices into `vals` giving local maximae of vals, given topology
+       from `adj_inds`, and restrictions from `vertex_inds`.  Inds are
+       returned sorted by value at that index - i.e. smallest value (at
+       index) first.
+    """
+    cdef:
+        cnp.ndarray[cnp.float64_t, ndim=1] cvals = vals
+        cnp.ndarray[cnp.uint32_t, ndim=1] cvertinds = vertex_inds
+        cnp.ndarray[object, ndim=1] cadj_inds = adj_inds
+        cnp.ndarray[cnp.uint32_t, ndim=1] cadj
+        int i, j, V, is_max, vert_ind
+        float val
+    maxes = []
+    V = cvertinds.shape[0]
+    for i in range(V):
+        cadj = cadj_inds[i]
+        vert_ind = cvertinds[i]
+        val = cvals[vert_ind]
+        is_max = 1
+        for j in range(cadj.shape[0]):
+            if val <= cvals[cadj[j]]:
+                is_max = 0
+                break
+        if is_max:
+            maxes.append((val, vert_ind))
+    if len(maxes) == 0:
+        return np.array([])
+    maxes.sort(cmp_first)
+    vals, inds = zip(*maxes)
+    return np.array(inds)
