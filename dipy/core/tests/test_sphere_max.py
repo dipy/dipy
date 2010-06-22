@@ -9,7 +9,8 @@ from dipy.core.meshes import (
     neighbors,
     vertinds_to_neighbors,
     vertinds_faces,
-    argmax_from_adj)
+    argmax_from_adj,
+    peak_finding_compatible)
 from dipy.core.reconstruction_performance import peak_finding
 
 from nose.tools import assert_true, assert_false, \
@@ -167,4 +168,14 @@ def test_performance():
     maxinds = argmax_from_adj(vert_vals, vert_inds, adj)
     maxes, pfmaxinds = peak_finding(vert_vals, faces)
     yield assert_array_equal(maxinds, pfmaxinds[::-1])
+
+
+@parametric
+def test_sym_check():
+    yield assert_true(peak_finding_compatible(VERTICES))
+    vertices = SPHERE_DATA['vertices']
+    faces = SPHERE_DATA['faces']
+    yield assert_true(peak_finding_compatible(vertices))
+    yield assert_false(peak_finding_compatible(vertices[::-1]))
+                       
     

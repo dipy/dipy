@@ -52,59 +52,63 @@ cdef cnp.dtype f32_dt = np.dtype(np.float32)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def peak_finding(odf,odf_faces):
-    ''' Given a function on a sphere return the peaks' values and
-    indices. Peaks are given in a descending order.    
+def peak_finding(odf, odf_faces):
+    ''' Hemisphere local maximae from sphere values and faces
+
+    Return local maximum values and indices. Peaks are given in a
+    descending order.
+
+    The sphere mesh, as defined by the vertex coordinates ``vertices``
+    and the face indices ``odf_faces``, has to conform to the check in
+    ``dipy.core.meshes.peak_finding_compatible``.  If it does not, then
+    the results from this routine will be unpredictable.
 
     Parameters
-    -----------
-
-    odf: array, shape(N,) , function values on the sphere, where N is the number
-    vertices on the sphere
-
-    odf_faces: array, uint16, shape (M,3), faces of the triangulation on
-    the sphere, where M is the number of faces on the sphere
+    ----------
+    odf : (N,) array
+       function values on the sphere, where N is the number of vertices
+       on the sphere
+    odf_faces : (M,3) array
+       faces of the triangulation on the sphere, where M is the number
+       of faces on the sphere
 
     Returns
-    --------
-    peaks: array, peak values, shape (L,) where L can vary and is
+    -------
+    peaks : (L,) array, dtype np.float64
+       peak values, shape (L,) where L can vary and is the number of
+       local moximae (peaks).  Values are sorted, largest first
+    inds : (L,) array, dtype np.uint16
+       indices of the peak values on the `odf` array corresponding to
+       the maximae in `peaks`
     
-    inds : array, indices of the peak values on the odf array, shape (L,)
-    
-    Notes:
-    ------
+    Notes
+    -----
+    In summary this function does the following:
 
-    In a summary this function does the following
-
-    Where the smallest odf values in the vertices of a face  put
+    Where the smallest odf values in the vertices of a face put
     zeros on them. By doing that for the vertices  of all faces at the
     end you only have the peak points with nonzero values.
 
     For precalculated odf_faces look under
     dipy/core/matrices/evenly*.npz to use them try numpy.load()['faces']
     
-    Examples:
-    ---------
-
+    Examples
+    --------
     Coming soon ..
 
-    See Also:
-    ---------
-    ...   
-
+    See also
+    --------
+    dipy.core.meshes
     '''
-
-    
     cdef:
         cnp.ndarray[cnp.uint16_t, ndim=2] cfaces = np.ascontiguousarray(odf_faces)
         cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
-        cnp.ndarray[cnp.float64_t, ndim=1] cpeak = np.ascontiguousarray(odf.copy())
+        cnp.ndarray[cnp.float64_t, ndim=1] cpeak = odf.copy()
         int i=0
         int test=0
         int lenfaces = len(cfaces)
         double odf0,odf1,odf2
         int find0,find1,find2
-
     
     for i in range(lenfaces):
 
@@ -132,7 +136,7 @@ def peak_finding(odf,odf_faces):
             continue
 
     peak=np.array(cpeak)
-    peak=peak[0:len(peak)/2]
+    peak=peak[0:len(peak)//2]
 
     #find local maxima and give fiber orientation (inds) and magnitude
     #peaks in a descending order

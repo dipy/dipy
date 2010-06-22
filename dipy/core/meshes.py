@@ -32,9 +32,9 @@ def sym_hemisphere(vertices,
        ``v_dash`` in `vertices`, such that the Euclidean distance
        between ``v * -1`` and ``v_dash`` is <= `dist_thresh`, then ``v``
        is taken to be in the opposite hemisphere to ``v_dash``, and only
-       one of (``v``, ``v_dash``) will appear in the output vertex
-       indices `inds`. None results in threshold based on the input data
-       type of ``vertices``
+       ``v``, not ``v_dash``, will appear in the output vertex indices
+       `inds`. None results in a threshold based on the input data type
+       of ``vertices``
     
     Returns
     -------
@@ -163,7 +163,7 @@ def neighbors(faces):
 
 
 def vertinds_faces(vertex_inds, faces):
-    """ Return indices of neighbors of vertices given `faces`
+    """ Return faces containing any of `vertex_inds`
 
     Parameters
     ----------
@@ -184,7 +184,7 @@ def vertinds_faces(vertex_inds, faces):
             in_inds.append(ind)
     return faces[in_inds]
 
-    
+
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maximae from `vals` given adjacent points
 
@@ -224,3 +224,40 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     maxes.sort(cmp=lambda x, y: cmp(x[0], y[0]))
     vals, inds = zip(*maxes)
     return np.array(inds)
+
+
+def peak_finding_compatible(vertices,
+                            hemisphere='z',
+                            equator_thresh=None,
+                            dist_thresh=None):
+    """ Check that a sphere mesh is compatible with ``peak_finding``
+
+    Parameters
+    ----------
+    vertices : (N,3) array-like
+       (x, y, z) Point coordinates of N vertices
+    hemisphere : str, optional
+       Which hemisphere to select.  Values of '-x', '-y', '-z' select,
+       respectively negative x, y, and z hemispheres; 'x', 'y', 'z'
+       select the positive x, y, and z hemispheres.  Default is 'z'
+    equator_thresh : None or float, optional
+       Threshold (+-0) to identify points as being on the equator of the
+       sphere.   If None, generate a default based on the data type
+    dist_thresh : None or float, optional
+       For a vertex ``v`` on the equator, if there is a vertex
+       ``v_dash`` in `vertices`, such that the Euclidean distance
+       between ``v * -1`` and ``v_dash`` is <= `dist_thresh`, then ``v``
+       is taken to be in the opposite hemisphere to ``v_dash``, and only
+       ``v``, not ``v_dash``, will appear in the output vertex indices
+       `inds`. None results in a threshold based on the input data type
+       of ``vertices``
+    
+    Returns
+    -------
+    compatible : bool
+       True if the sphere mesh is compatible with ``peak_finding``
+    """
+    inds = sym_hemisphere(vertices, hemisphere,
+                          equator_thresh, dist_thresh)
+    N = vertices.shape[0] // 2
+    return np.all(inds == np.arange(N))
