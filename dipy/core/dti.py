@@ -245,15 +245,11 @@ class Tensor(object):
                     \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
                     \lambda_2^2+\lambda_3^2} }
         """
-        adc = self.ADC()
         ev1 = self.evals[..., 0]
         ev2 = self.evals[..., 1]
         ev3 = self.evals[..., 2]
-        ss_ev = ev1**2 + ev2**2 + ev3**2
-        
-        fa = np.zeros(ev1.shape)#,dtype='float32') #'int16')
-        fa = np.sqrt(1.5 * ((ev1 - adc)**2 + (ev2 - adc)**2 + (ev3 - adc)**2)
-                      / ss_ev)
+        fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
+                      / ev1**2 + ev2**2 + ev3**2)
         #force bounds
         fa = np.minimum(fa, 1)
         fa = np.maximum(fa, 0)

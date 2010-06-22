@@ -1,126 +1,102 @@
+import os
 import numpy as np
-
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
-
+from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-
 import time
-
 import dipy.core.reconstruction_performance as rp
+from os.path import join as opj
+import nibabel as ni
+import dipy.core.generalized_q_sampling as gq
+from dipy.testing import parametric
 
 
+#@parametric
 def test_gqi():
 
-    from scipy.io import loadmat
+    #read bvals,gradients and data
+    bvals=np.load(opj(os.path.dirname(__file__), \
+                          'data','small_64D.bvals.npy'))
+    gradients=np.load(opj(os.path.dirname(__file__), \
+                              'data','small_64D.gradients.npy'))    
+    img =ni.load(os.path.join(os.path.dirname(__file__),\
+                                  'data','small_64D.nii'))
+    data=img.get_data()    
+
+    print(bvals.shape)
+    print(gradients.shape)
+    print(data.shape)
+
+
+    t1=time.clock()
     
-    phantom=loadmat('/home/eg01/Desktop/phantom_test_data.mat',struct_as_record=True)
+    gqs = gq.GeneralizedQSampling(data,bvals,gradients)
 
-    all=phantom['all']
-    b_table=phantom['b_table']
+    t2=time.clock()
+    print('GQS in %d' %(t2-t1))
+        
+    eds=np.load(opj(os.path.dirname(__file__),\
+                        '..','matrices',\
+                        'evenly_distributed_sphere_362.npz'))
+
     
-    #odf_vertices=phantom['odf_vertices']
-    #odf_faces=phantom['odf_faces']
-
-    #np.savez('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz',vertices=odf_vertices.T,faces=odf_faces.T)
-
-    eds=np.load('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz')
-
     odf_vertices=eds['vertices']
     odf_faces=eds['faces']
-
-    before=time.clock()
-
-    #s = all[14,14,1]
 
     #Yeh et.al, IEEE TMI, 2010
     #calculate the odf using GQI
 
-
-    scaling=np.sqrt(b_table[0]*0.01506) # 0.01506 = 6*D where D is the free
+    scaling=np.sqrt(bvals*0.01506) # 0.01506 = 6*D where D is the free
     #water diffusion coefficient 
     #l_values sqrt(6 D tau) D free water
     #diffusion coefficiet and tau included in the b-value
 
     tmp=np.tile(scaling,(3,1))
-
-    print 'tmp.shape',tmp.shape
-
-    b_vector=b_table[1:4,:]*tmp
-
+    b_vector=gradients.T*tmp
     Lambda = 1.2 # smoothing parameter - diffusion sampling length
-
-
     
     q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
     #implements equation no. 9 from Yeh et.al.
 
-
-    S=all.copy()
+    S=data.copy()
 
     x,y,z,g=S.shape
-
     S=S.reshape(x*y*z,g)
-
     QA = np.zeros((x*y*z,5))
-
     IN = np.zeros((x*y*z,5))
 
     fwd = 0
-
-
     
     #Calculate Quantitative Anisotropy and find the peaks and the indices
     #for every voxel
 
-    #test = np.zeros(len(S),)
-
     for (i,s) in enumerate(S):
 
         odf = Q2odf(s,q2odf_params)
-
-        #print odf.shape
-        #peak = odf.copy()
-
         peaks,inds=rp.peak_finding(odf,odf_faces)
-        
-        #peaks2,inds2=peak_finding(odf,odf_faces)
-
-        #test[i]= np.sum(peaks2-peaks)
-                
         fwd=max(np.max(odf),fwd)
-
         peaks = peaks - np.min(odf)
-
         l=min(len(peaks),5)
-
         QA[i][:l] = peaks[:l]
-
         IN[i][:l] = inds[:l]
-
         
-    
+   
     QA/=fwd
-
-    QA=QA.reshape(x,y,z,5)
-    
+    QA=QA.reshape(x,y,z,5)    
     IN=IN.reshape(x,y,z,5)
-
-    #print np.sum(test)
     
-    print time.clock() - before,' secs.'
+    print('Old %d secs' %(time.clock() - t2))
+    #yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than our QA')
 
-    import dipy.core.generalized_q_sampling as gq
+    #yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
+       
+    #yield assert_equal((gqs.QA-QA).max(), 0.)
 
-    #now test with class
-    
-    g=gq.GeneralizedQSampling(all,b_table[0],b_table[1:4,:].T)
+    import dipy.core.track_propagation as tp
 
-    print time.clock() - before,' secs.'
-        
-    #yield assert_equal( (g.QA-QA).max(), 0.0)
+    tp.FACT_Delta(QA,IN)
 
-    yield assert_equal((g.QA-QA).max(), 0.)
+    return tp.FACT_Delta(QA,IN,seeds_no=10000).tracks
+
 
 
 def Q2odf(s,q2odf_params):
@@ -176,6 +152,10 @@ def peak_finding(odf,odf_faces):
 
 
 
+if __name__ == "__main__":
+
+    T=test_gqi()
+    
 
 
 
