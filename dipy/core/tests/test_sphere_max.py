@@ -11,7 +11,10 @@ from dipy.core.meshes import (
     vertinds_faces,
     argmax_from_adj,
     seq_to_objarr,
-    peak_finding_compatible)
+    peak_finding_compatible,
+    edges,
+    vertex_adjacencies)
+
 import dipy.core.reconstruction_performance as dcr
 
 from nose.tools import assert_true, assert_false, \
@@ -39,6 +42,7 @@ FACES = np.array([
         [5, 3, 4],
         [5, 4, 1]])
 N_VERTICES = VERTICES.shape[0]
+VERTEX_INDS = np.array([0,1,2,3,4,5])
 
 DATA_PATH = pjoin(dirname(__file__), '..', 'matrices')
 SPHERE_DATA = np.load(pjoin(DATA_PATH,
@@ -184,4 +188,17 @@ def test_sym_check():
     yield assert_true(peak_finding_compatible(vertices))
     yield assert_false(peak_finding_compatible(vertices[::-1]))
                        
-    
+@parametric
+def test_adjacencies():
+    faces = FACES
+    vertex_inds = VERTEX_INDS
+    edgearray = edges(vertex_inds, faces)
+    yield assert_array_equal(edgearray.shape,(24,2))
+    yield assert_array_equal(edgearray,
+                             [[3, 0], [5, 4], [2, 1], [5, 1],
+                              [2, 5], [0, 3], [4, 0], [1, 2],
+                              [1, 5], [0, 4], [5, 3], [4, 1],
+                              [3, 2], [4, 5], [1, 4], [2, 3],
+                              [1, 0], [3, 5], [0, 1], [5, 2],
+                              [2, 0] ,[4, 3], [3, 4], [0, 2]])
+    yield assert_array_equal(vertex_adjacencies(vertex_inds, faces).shape,(6,6))
