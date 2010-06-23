@@ -1,6 +1,7 @@
 ''' Mesh analysis '''
 
 import numpy as np
+from scipy import sparse 
 
 FLOAT64_EPS = np.finfo(np.float64).eps
 FLOAT_TYPES = np.sctypes['float']
@@ -184,7 +185,50 @@ def vertinds_faces(vertex_inds, faces):
             in_inds.append(ind)
     return faces[in_inds]
 
+def edges(vertex_inds, faces):
+    """ Return array of starts and ends of edges from list of faces
+        taking regard of direction.
 
+    Parameters
+    ----------
+    vertex_inds : sequence
+       length N.  Indices of vertices
+    faces : (F, 3) array-like
+       Faces given by indices of vertices for each of ``F`` faces
+
+    Returns
+    -------
+    edgearray : (E2, 2) array
+       where E2 = 2*``E``, twice the number of edges. If e= (a,b) is an
+       edge then [a,b] and [b,a] are included in edgearray.
+    """
+
+    edgedic = {}
+    for face in faces:
+        edgedic[(face[0],face[1])]=1
+        edgedic[(face[0],face[2])]=1
+        edgedic[(face[1],face[0])]=1
+        edgedic[(face[1],face[2])]=1
+        edgedic[(face[2],face[0])]=1
+        edgedic[(face[2],face[1])]=1
+    
+    start, end = zip(*edgedic)
+
+    edgearray = np.column_stack(zip(*edgedic))
+
+    return edgearray
+ 
+def vertex_adjacencies(vertex_inds, faces):
+    """ Return matrix which shows the adjacent vertices
+        of each vertex"""
+    edgearray = edges(vertex_inds, faces)
+    V = len(vertex_inds)
+    a = sparse.coo_matrix((np.ones(edgearray.shape[0]),
+                          (edgearray[:,0],edgearray[:,1])),
+                          shape=(V,V))
+    return a
+
+    
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maximae from `vals` given adjacent points
 
