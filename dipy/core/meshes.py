@@ -158,7 +158,7 @@ def neighbors(faces):
     out = [[] for i in range(N)]
     for i in range(N):
         if i in adj:
-            out[i] = np.sort(np.unique(adj[i])).astype(np.uint32)
+            out[i] = np.sort(np.unique(adj[i]))
     return out
 
 
@@ -226,14 +226,6 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     return np.array(inds)
 
 
-def seq_to_objarr(seq):
-    """ Convert sequence to object array """
-    N = len(seq)
-    out = np.zeros((N,), dtype=object)
-    out[:] = seq[:]
-    return out
-
-
 def peak_finding_compatible(vertices,
                             hemisphere='z',
                             equator_thresh=None,
@@ -269,3 +261,5 @@ def peak_finding_compatible(vertices,
                           equator_thresh, dist_thresh)
     N = vertices.shape[0] // 2
     return np.all(inds == np.arange(N))
+
+

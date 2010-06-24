@@ -4,27 +4,28 @@ Performance functions for dipy
 
 
 '''
-# cython: profile=True
+# NOcython: profile=True
 # cython: embedsignature=True
+
+import time
 
 cimport cython
 
 import numpy as np
-import time
 cimport numpy as cnp
 
+from dipy.core.reconstruction_utils import (proc_reco_args,
+                                            adj_to_countarrs)
 
 cdef extern from "math.h" nogil:
     double floor(double x)
     float sqrt(float x)
     float fabs(float x)
     double log2(double x)
-    float acos(float x )    
-    bint isnan(double x) 
+    float acos(float x )   
+    bint isnan(double x)
     
-#cdef extern from "stdio.h":
-#	void printf ( const char * format, ... )
-    
+
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
     void free(void *ptr)
@@ -33,22 +34,6 @@ cdef extern from "stdlib.h" nogil:
     void *realloc (void *ptr, size_t size)
     void *memcpy(void *str1, void *str2, size_t n)
 
-#@cython.boundscheck(False)
-#@cython.wraparound(False)
-
-cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
-    ''' Utility function to convert object to 3D float vector '''
-    return np.squeeze(np.asarray(vec, dtype=np.float32))
-
-
-cdef inline float* asfp(cnp.ndarray pt):
-    return <float *>pt.data
-
-# float 32 dtype for casting
-cdef cnp.dtype f32_dt = np.dtype(np.float32)
-
-
-#cdef inline int
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -152,8 +137,6 @@ def cmp_first(x, y):
     return cmp(x[0], y[0])
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maximae from `vals` given adjacent points
 
@@ -162,9 +145,9 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     vals : (N,) array, dtype np.float64
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
-    vertex_inds : (V,) array, dtype np.unit32
+    vertex_inds : (V,) array
        indices into `vals` giving vertices that may be local maximae.
-    adj_inds : (V,) array, dtype np.object
+    adj_inds : sequence
        For every vertex in ``vertex_inds``, the indices (into `vals`) of
        the neighboring points
 
@@ -176,28 +159,90 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
        returned sorted by value at that index - i.e. smallest value (at
        index) first.
     """
+    cvals, cvertinds = proc_reco_args(vals, vertex_inds)
+    cadj_counts, cadj_inds = adj_to_countarrs(adj_inds)
+    return argmax_from_countarrs(cvals, cvertinds, cadj_counts, cadj_inds)
+
+
+# prefetch argsort for small speedup
+cdef object argsort = np.argsort
+
+
+cpdef cnp.ndarray argmax_from_countarrs(cnp.ndarray vals,
+                                        cnp.ndarray vertinds,
+                                        cnp.ndarray adj_counts,
+                                        cnp.ndarray adj_inds):
+    """ Indices of local maximae from `vals` from count, array neighbors
+
+    Parameters
+    ----------
+    vals : (N,) array, dtype float
+       values at all vertices referred to in either of `vertex_inds` or
+       `adj_inds`'
+    vertinds : (V,) array, dtype uint32
+       indices into `vals` giving vertices that may be local maximae.
+    adj_counts : (V,) array, dtype uint32
+       For every vertex ``i`` in ``vertex_inds``, the number of
+       neighbors for vertex ``i``
+    adj_inds : (P,) array, dtype uint32
+       Indices for neighbors for each point.  ``P=sum(adj_counts)`` 
+
+    Returns
+    -------
+    inds : (M,) array
+       Indices into `vals` giving local maximae of vals, given topology
+       from `adj_counts` and `adj_inds`, and restrictions from
+       `vertex_inds`.  Inds are returned sorted by value at that index -
+       i.e. smallest value (at index) first.
+    """
     cdef:
         cnp.ndarray[cnp.float64_t, ndim=1] cvals = vals
-        cnp.ndarray[cnp.uint32_t, ndim=1] cvertinds = vertex_inds
-        cnp.ndarray[object, ndim=1] cadj_inds = adj_inds
-        cnp.ndarray[cnp.uint32_t, ndim=1] cadj
-        int i, j, V, is_max, vert_ind
-        float val
-    maxes = []
-    V = cvertinds.shape[0]
+        cnp.ndarray[cnp.uint32_t, ndim=1] cvertinds = vertinds
+        cnp.ndarray[cnp.uint32_t, ndim=1] cadj_counts = adj_counts
+        cnp.ndarray[cnp.uint32_t, ndim=1] cadj_inds = adj_inds
+        # temporary arrays for storing maxes
+        cnp.ndarray[cnp.float64_t, ndim=1] maxes = vals.copy()
+        cnp.ndarray[cnp.uint32_t, ndim=1] maxinds = vertinds.copy()
+        cnp.npy_intp i, j, V, C, n_maxes=0, adj_size, adj_pos=0
+        int is_max
+        cnp.float64_t *vals_ptr
+        double val, mx
+        cnp.uint32_t vert_ind, *vertinds_ptr, *counts_ptr, *adj_ptr, ind
+        cnp.uint32_t vals_size, vert_size
+    vals_size = cvals.shape[0]
+    vals_ptr = <cnp.float64_t *>cvals.data
+    vertinds_ptr = <cnp.uint32_t *>cvertinds.data
+    adj_ptr = <cnp.uint32_t *>cadj_inds.data
+    counts_ptr = <cnp.uint32_t *>cadj_counts.data
+    V = cadj_counts.shape[0]
+    adj_size = cadj_inds.shape[0]
+    if cvertinds.shape[0] < V:
+        raise ValueError('Too few indices for adj arrays')
     for i in range(V):
-        cadj = cadj_inds[i]
-        vert_ind = cvertinds[i]
-        val = cvals[vert_ind]
+        vert_ind = vertinds_ptr[i]
+        if vert_ind >= vals_size:
+            raise IndexError('Overshoot on vals')
+        val = vals_ptr[vert_ind]
+        C = counts_ptr[i]
+        # check for overshoot
+        adj_pos += C
+        if adj_pos > adj_size:
+            raise IndexError('Overshoot on adj_inds array')
         is_max = 1
-        for j in range(cadj.shape[0]):
-            if val <= cvals[cadj[j]]:
+        for j in range(C):
+            ind = adj_ptr[j]
+            if ind >= vals_size:
+                raise IndexError('Overshoot on vals')
+            if val <= vals_ptr[ind]:
                 is_max = 0
                 break
         if is_max:
-            maxes.append((val, vert_ind))
-    if len(maxes) == 0:
+            maxinds[n_maxes] = vert_ind
+            maxes[n_maxes] = val
+            n_maxes +=1
+        adj_ptr += C
+    if n_maxes == 0:
         return np.array([])
-    maxes.sort(cmp_first)
-    vals, inds = zip(*maxes)
-    return np.array(inds)
+    maxinds = maxinds[argsort(maxes[:n_maxes])]
+    # release memory from maxinds by copy of smaller array
+    return maxinds.copy()
