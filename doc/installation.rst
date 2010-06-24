@@ -10,18 +10,22 @@ play with it here is what you need to do.
 
 The primary development repository is `dipy github`_ 
 
-We will describe for now that the installation for Ubuntu 9.10 assuming
-that the installation for other Linux, Macosx and Windows distributions
-is straightforward. We know that it is not ;-) Don't panic a release is
-coming soon.
+We will describe for now that the installation for Ubuntu 9.10 or 10.04 
+assuming that the installation for other Linux, Macosx and Windows 
+distributions is straightforward. We know that it is not ;-) Don't panic 
+a release is coming soon.
 
 .. _using-on-cmdline:
 
-First, install git using::
+
+In case ``easy_install`` is not installed then please install
+setuptools_.
+
+Install git using::
 
         sudo apt-get install git
 
-then try::
+Go to a folder that you want to have dipy installed and try ::
  
         git clone git://github.com/Garyfallidis/dipy.git
         cd dipy/
@@ -31,16 +35,17 @@ For a local build try::
 
         python setup.py build_ext --inplace
 
-but then add your dipy_ directory in your PYTHONPATH.
+and add your dipy_ directory in your PYTHONPATH.
 
 dipy_ requires the following packages::
 
-       sudo apt-get install python-numpy python-scipy ipython cython python-dev
+       sudo apt-get install python-numpy python-scipy ipython cython python-dev python-vtk
        sudo easy_install -U sphinx
        sudo easy_install -U pydicom
        
 It also requires nibabel for reading medical images::
 
+        cd ..
         git clone git://github.com/hanke/nibabel.git
         cd nibabel
         python setup.py build_ext --inplace
@@ -49,7 +54,7 @@ and then add nibabel directory to your PYTHONPATH. We usually add the
 PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every
 time. This should look like::
 
-    export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
+         export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
 
 After changing the ~/.bashrc try::
 
@@ -58,32 +63,35 @@ After changing the ~/.bashrc try::
 so that you can have immediate access to dipy_ without needing to
 restart your terminal.
 
-For visualisation *remove all* older mayavi or traits installations and
-then install the latest Enthought Suite::
+Finally, download and install nipy::
 
-    mkdir ets
-    cd ets
-    svn co https://svn.enthought.com/svn/enthought/ETSProjectTools/trunk ETSProjectTools
-    cd ETSProjectTools/
-    sudo python setup.py install
-    ets -h
-    cd ..
-    ets co ETS
-    sudo apt-get install swig python-qt4 python-qt4-dev libxtst-dev
-    cd ETS_3.3.1/
-    ets bdist -r
-    sudo easy_install -f dist -H dist ets
+         cd ..
+         git clone git://github.com/nipy/nipy.git
+         cd nipy
+         python setup.py build_ext --inplace          
+         mkdir ~/.nipy
+         mkdir ~/.nipy/nipy
+         cd ~/.nipy/nipy
+         wget http://nipy.sourceforge.net/data-packages/nipy-templates-0.2.tar.gz
+         tar -xzvf nipy-templates-0.2.tar.gz
+         mv nipy-templates-0.2/templats .
+         wget http://nipy.sourceforge.net/data-packages/nipy-data-0.2.tar.gz
+         tar -xzvf nipy-data-0.2.tar.gz
+         mv nipy-data-0.2/data .                 
 
-In case ``easy_install`` is not installed then please install
-setuptools_.
 
 After doing the above execute ipython in the terminal and try::
 
     >>> import dipy
 
-Does it work? For any problems/suggestions please let us know by sending
+You can also try to run the *.py files in the demos directory.
+
+Do they work? For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
 with ``[dipy]``.
+
+
+
 
 
 .. include:: links_names.txt
