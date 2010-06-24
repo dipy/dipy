@@ -4,7 +4,7 @@ Performance functions for dipy
 
 
 '''
-# NOcython: profile=True
+# cython: profile=True
 # cython: embedsignature=True
 
 import time
@@ -14,8 +14,6 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-from dipy.core.reconstruction_utils import (proc_reco_args,
-                                            adj_to_countarrs)
 
 cdef extern from "math.h" nogil:
     double floor(double x)
@@ -162,6 +160,41 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     cvals, cvertinds = proc_reco_args(vals, vertex_inds)
     cadj_counts, cadj_inds = adj_to_countarrs(adj_inds)
     return argmax_from_countarrs(cvals, cvertinds, cadj_counts, cadj_inds)
+
+
+def proc_reco_args(vals, vertinds):
+    vals = np.ascontiguousarray(vals.astype(np.float))
+    vertinds = np.ascontiguousarray(vertinds.astype(np.uint32))
+    return vals, vertinds
+
+
+def adj_to_countarrs(adj_inds):
+    """ Convert adjacency sequence to counts and flattened indices
+
+    We use this to provide expected input to ``argmax_from_countarrs``
+
+    Parameters
+    ----------
+    adj_indices : sequence
+       length V sequence of sequences, where sequence ``i`` contains the
+       neighbors of a particular vertex.
+
+    Returns
+    -------
+    counts : (V,) array
+       Number of neighbors for each vertex
+    adj_inds : (n,) array
+       flat array containing `adj_indices` unrolled as a vector
+    """
+    counts = []
+    all_inds = []
+    for verts in adj_inds:
+        v = list(verts)
+        all_inds += v
+        counts.append(len(v))
+    adj_inds = np.array(all_inds, dtype=np.uint32)
+    counts = np.array(counts, dtype=np.uint32)
+    return counts, adj_inds
 
 
 # prefetch argsort for small speedup
