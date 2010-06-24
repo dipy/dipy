@@ -131,10 +131,6 @@ def peak_finding(odf, odf_faces):
     return peaks, inds[pinds][::-1]
 
 
-def cmp_first(x, y):
-    return cmp(x[0], y[0])
-
-
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maximae from `vals` given adjacent points
 
