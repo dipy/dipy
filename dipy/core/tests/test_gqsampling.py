@@ -10,7 +10,7 @@ import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
 
 
-#@parametric
+@parametric
 def test_gqiodf():
 
     #read bvals,gradients and data
@@ -22,9 +22,9 @@ def test_gqiodf():
                                   'data','small_64D.nii'))
     data=img.get_data()    
 
-    print(bvals.shape)
-    print(gradients.shape)
-    print(data.shape)
+    #print(bvals.shape)
+    #print(gradients.shape)
+    #print(data.shape)
 
 
     t1=time.clock()
@@ -32,7 +32,7 @@ def test_gqiodf():
     gqs = gq.GeneralizedQSampling(data,bvals,gradients)
 
     t2=time.clock()
-    print('GQS in %d' %(t2-t1))
+    #print('GQS in %d' %(t2-t1))
         
     eds=np.load(opj(os.path.dirname(__file__),\
                         '..','matrices',\
@@ -69,9 +69,32 @@ def test_gqiodf():
     #Calculate Quantitative Anisotropy and find the peaks and the indices
     #for every voxel
 
-    summary['eds'] = eds
+    summary = {}
+
+    summary['vertices'] = odf_vertices
+    v = odf_vertices.shape[0]
+    summary['faces'] = odf_faces
+    f = odf_faces.shape[0]
+
+    '''
+    If e = number_of_edges
+    the Euler formula says f-e+v = 2 for a mesh on a sphere
+    Here, assuming we have a healthy triangulation
+    every face is a triangle, all 3 of whose edges should belong to
+    exactly two faces = so 2*e = 3*f
+    to avoid division we test whether 2*f - 3*f + 2*v == 4
+    or equivalently 2*v - f == 4
+    '''
+
+    yield assert_equal(2*v-f, 4,'Euler test fails')
     
     for (i,s) in enumerate(S):
+
+        #print 'Volume %d' % i
+
+        istr = str(i)
+
+        summary[istr] = {}
 
         odf = Q2odf(s,q2odf_params)
         peaks,inds=rp.peak_finding(odf,odf_faces)
@@ -81,15 +104,15 @@ def test_gqiodf():
         QA[i][:l] = peaks[:l]
         IN[i][:l] = inds[:l]
 
-        summary[i].odf = of
-        summary[i].peaks = peaks
-        summary[i].inds = inds
+        summary[istr]['odf'] = odf
+        summary[istr]['peaks'] = peaks
+        summary[istr]['inds'] = inds
    
     QA/=fwd
     QA=QA.reshape(x,y,z,5)    
     IN=IN.reshape(x,y,z,5)
     
-    print('Old %d secs' %(time.clock() - t2))
+    #print('Old %d secs' %(time.clock() - t2))
     #yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than our QA')
 
     #yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
@@ -102,7 +125,26 @@ def test_gqiodf():
 
     #return tp.FACT_Delta(QA,IN,seeds_no=10000).tracks
 
-    return summary
+    peaks_1 = [i for i in range(1000) if len(summary[str(i)]['inds'])==1]
+    peaks_2 = [i for i in range(1000) if len(summary[str(i)]['inds'])==2]
+    peaks_3 = [i for i in range(1000) if len(summary[str(i)]['inds'])==3]
+
+    # correct numbers of voxels with respectively 1,2,3 ODF/QA peaks
+    yield assert_array_equal((len(peaks_1),len(peaks_2),len(peaks_3)), (790,196,14),
+                             'error in numbers of QA/ODF peaks')
+
+    # correct indices of odf directions for voxels 0,10,44
+    # with respectively 1,2,3 ODF/QA peaks
+    yield assert_array_equal(summary[str(0)]['inds'],[116],
+                             'wrong peak indices for voxel 0')
+    yield assert_array_equal(summary[str(10)]['inds'],[105, 78],
+                             'wrong peak indices for voxel 10')
+    yield assert_array_equal(summary[str(44)]['inds'],[95, 84, 108],
+                             'wrong peak indices for voxel 44')
+
+
+    
+    #return summary
 
 #@parametric
 def test_gqi():
@@ -165,6 +207,8 @@ def test_gqi():
 
     for (i,s) in enumerate(S):
 
+        print 'Volume %d' % i
+        
         odf = Q2odf(s,q2odf_params)
         peaks,inds=rp.peak_finding(odf,odf_faces)
         fwd=max(np.max(odf),fwd)
@@ -247,7 +291,7 @@ def peak_finding(odf,odf_faces):
 
 if __name__ == "__main__":
 
-    T=test_gqi()
+    T=test_gqiodf()
     
 
 
