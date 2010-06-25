@@ -13,6 +13,8 @@ dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu
 t1=time.clock()
 data,affine,bvals,gradients=dcm.read_mosaic_dir(dname)
 
+'''
+
 t2=time.clock()
 print ('load data in %d secs' %(t2-t1))
 
@@ -40,3 +42,4 @@ r=fos.ren()
 fos.add(r,fos.line(T,fos.red))
 fos.show(r)
 
+'''

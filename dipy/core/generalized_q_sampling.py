@@ -8,8 +8,17 @@ class GeneralizedQSampling():
 
     def __init__(self,data,bvals,gradients,Lambda=1.2):
 
-        ''' Implements equation [9] from Generalized Q-Sampling as
-        described in Yeh et.al, IEEE TMI, 2010 .
+        ''' Generates a model-free description for every voxel that can
+        be used from simple to very complicated configurations like
+        quintuple crossings if your datasets support them.
+
+        You can use this class for every kind of DWI image but it will
+        perform better when you have a balanced sampling scheme.
+
+        Implements equation [9] from Generalized Q-Sampling as
+        described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
+        Generalized Q-Sampling Imaging. IEEE TMI, 2010.
+        
 
         Parameters
         -----------
@@ -25,9 +34,18 @@ class GeneralizedQSampling():
         ---------------
         QA : array, shape(X,Y,Z,5), quantitative anisotropy               
 
-        IN : array, shape(X,Y,Z,5), indices of QA
+        IN : array, shape(X,Y,Z,5), indices of QA, qa unit directions
 
         fwd : float, normalization parameter
+
+        Notes
+        -----
+        In order to reconstruct the spin distribution function  a nice symmetric evenly distributed sphere is provided using 362 points. This is usually
+        sufficient for every dataset. 
+
+        See also
+        --------
+        FACT_Delta, Tensor
 
         '''
         
@@ -50,7 +68,12 @@ class GeneralizedQSampling():
         #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)              
 
         q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+        
         #q2odf_params[np.isnan(q2odf_params)]= 1.
+
+        #define total mask 
+        #tot_mask = (mask > 0) & (data[...,0] > thresh)
+        
         S=data
         x,y,z,g=S.shape
         S=S.reshape(x*y*z,g)

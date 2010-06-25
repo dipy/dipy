@@ -16,6 +16,8 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.testing import parametric
 
+import os
+
 @parametric
 def test_tensor_scalar_attributes():
     """
@@ -28,7 +30,7 @@ def test_tensor_scalar_attributes():
     a = 1 / np.sqrt(2)
     #evec[:,j] is pair with eval[j]
     evecs = np.array([[a, -a, 0], [a, a, 0], [0, 0, 1]]) 
-    D = np.array([[1, 1, 0], [1, 1, 0], [0, 0, 1])
+    D = np.array([[1, 1, 0], [1, 1, 0], [0, 0, 1]])
     FA = np.sqrt(1./2*(1+4+1)/(1+4+0)) # 0.7745966692414834
     MD = 1
     ADC = 1
@@ -37,21 +39,16 @@ def test_tensor_scalar_attributes():
     dummy_data = np.zeros((1,10)) #single voxel
     dummy_gtab = np.zeros((3,10))
     dummy_bval = np.zeros((10,))
-    tensor = dti.tensor(dummy_data,dummy_gtab,dummy_bval)
+    tensor = dti.Tensor(dummy_data,dummy_gtab,dummy_bval)
     tensor.evals = evals
     tensor.evecs = evecs
     
     ### TESTS ###
-    yield assert_equal(np.abs(np.dot(evecs[:, 2], tensor.evecs[:, 2].T)), 1,
-        "Calculation of third eigenvector is not right")
-    yield assert_array_almost_equal(D, tensor[0,:,:], "Recovery of self diffusion
-        tensor from eigenvalues and eigenvectors is not adequate")
-    yield assert_array_almost_equal(ADC, tensor.ADC(), "Calculation of ADC of 
-        self diffusion tensor is not adequate")
-    yield assert_array_almost_equal(FA, tensor.FA(), "Calculation of FA of 
-        self diffusion tensor is not adequate")
-    yield assert_array_almost_equal(MD, tensor.MD(), "Calculation of MD of 
-        self diffusion tensor is not adequate")
+    yield assert_equal(np.abs(np.dot(evecs[:, 2], tensor.evecs[:, 2].T)), 1, "Calculation of third eigenvector is not right")
+    yield assert_array_almost_equal(D, tensor[0,:,:], "Recovery of self diffusion tensor from eigenvalues and eigenvectors is not adequate")
+    yield assert_array_almost_equal(ADC, tensor.ADC(), "Calculation of ADC of self diffusion tensor is not adequate")
+    yield assert_array_almost_equal(FA, tensor.FA(), "Calculation of FA of self diffusion tensor is not adequate")
+    yield assert_array_almost_equal(MD, tensor.MD(), "Calculation of MD of self diffusion tensor is not adequate")
 
     
     #yield assert_equal(m_list.shape, n_list.shape)
@@ -76,9 +73,9 @@ def test_WLS_fit():
 
     #Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s 
     D = np.array([1., 1., 1., 1., 0., 0., np.log(1000) * 10.**4]) * 10.**-4
-    
+
     #Design Matrix
-    gtab, bval = read_bvec_file('data/55dir_grad.bvec')
+    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),'data','55dir_grad.bvec'))
     X = dti.design_matrix(gtab, bval)
     
     #Signals
@@ -87,10 +84,9 @@ def test_WLS_fit():
     ### Testing WLS Fit on Single Voxel ###
     
     #Estimate tensor from test signals
-    tensor_est = dti.tensor(Y, gtab, bval)
+    tensor_est = dti.Tensor(Y, gtab, bval)
     
-    yield assert_array_almost_equal(tensor_est, D, "Calculation of tensor from
-            sample data Y does not compare to analytical solution")
+    yield assert_array_almost_equal(tensor_est, D, "Calculation of tensor from sample data Y does not compare to analytical solution")
 
     ####example from test_qball.py
 
