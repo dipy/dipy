@@ -10,7 +10,7 @@ play with it here is what you need to do.
 
 The primary development repository is `dipy github`_ 
 
-We will describe for now that the installation for Ubuntu 9.10 or 10.04 
+We are describing here the installation for Ubuntu 9.10 or 10.04 
 assuming that the installation for other Linux, Macosx and Windows 
 distributions is straightforward. We know that it is not ;-) Don't panic 
 a release is coming soon.
@@ -19,7 +19,8 @@ a release is coming soon.
 
 
 In case ``easy_install`` is not installed then please install
-setuptools_.
+setuptools_ ::
+            sudo apt-get install python-setuptools
 
 Install git using::
 
@@ -54,7 +55,7 @@ and then add nibabel directory to your PYTHONPATH. We usually add the
 PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every
 time. This should look like::
 
-         export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
+         export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel:/home/user_dir/Devel/nipy
 
 After changing the ~/.bashrc try::
 
@@ -84,7 +85,7 @@ After doing the above execute ipython in the terminal and try::
 
     >>> import dipy
 
-You can also try to run the *.py files in the demos directory.
+You can also try to run the python files in the demos directory.
 
 Do they work? For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
