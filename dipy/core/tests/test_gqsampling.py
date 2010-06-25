@@ -10,6 +10,142 @@ import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
 
 
+@parametric
+def test_gqiodf():
+
+    #read bvals,gradients and data
+    bvals=np.load(opj(os.path.dirname(__file__), \
+                          'data','small_64D.bvals.npy'))
+    gradients=np.load(opj(os.path.dirname(__file__), \
+                              'data','small_64D.gradients.npy'))    
+    img =ni.load(os.path.join(os.path.dirname(__file__),\
+                                  'data','small_64D.nii'))
+    data=img.get_data()    
+
+    #print(bvals.shape)
+    #print(gradients.shape)
+    #print(data.shape)
+
+
+    t1=time.clock()
+    
+    gqs = gq.GeneralizedQSampling(data,bvals,gradients)
+
+    t2=time.clock()
+    #print('GQS in %d' %(t2-t1))
+        
+    eds=np.load(opj(os.path.dirname(__file__),\
+                        '..','matrices',\
+                        'evenly_distributed_sphere_362.npz'))
+
+    
+    odf_vertices=eds['vertices']
+    odf_faces=eds['faces']
+
+    #Yeh et.al, IEEE TMI, 2010
+    #calculate the odf using GQI
+
+    scaling=np.sqrt(bvals*0.01506) # 0.01506 = 6*D where D is the free
+    #water diffusion coefficient 
+    #l_values sqrt(6 D tau) D free water
+    #diffusion coefficiet and tau included in the b-value
+
+    tmp=np.tile(scaling,(3,1))
+    b_vector=gradients.T*tmp
+    Lambda = 1.2 # smoothing parameter - diffusion sampling length
+    
+    q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
+    #implements equation no. 9 from Yeh et.al.
+
+    S=data.copy()
+
+    x,y,z,g=S.shape
+    S=S.reshape(x*y*z,g)
+    QA = np.zeros((x*y*z,5))
+    IN = np.zeros((x*y*z,5))
+
+    fwd = 0
+    
+    #Calculate Quantitative Anisotropy and find the peaks and the indices
+    #for every voxel
+
+    summary = {}
+
+    summary['vertices'] = odf_vertices
+    v = odf_vertices.shape[0]
+    summary['faces'] = odf_faces
+    f = odf_faces.shape[0]
+
+    '''
+    If e = number_of_edges
+    the Euler formula says f-e+v = 2 for a mesh on a sphere
+    Here, assuming we have a healthy triangulation
+    every face is a triangle, all 3 of whose edges should belong to
+    exactly two faces = so 2*e = 3*f
+    to avoid division we test whether 2*f - 3*f + 2*v == 4
+    or equivalently 2*v - f == 4
+    '''
+
+    yield assert_equal(2*v-f, 4,'Euler test fails')
+    
+    for (i,s) in enumerate(S):
+
+        #print 'Volume %d' % i
+
+        istr = str(i)
+
+        summary[istr] = {}
+
+        odf = Q2odf(s,q2odf_params)
+        peaks,inds=rp.peak_finding(odf,odf_faces)
+        fwd=max(np.max(odf),fwd)
+        peaks = peaks - np.min(odf)
+        l=min(len(peaks),5)
+        QA[i][:l] = peaks[:l]
+        IN[i][:l] = inds[:l]
+
+        summary[istr]['odf'] = odf
+        summary[istr]['peaks'] = peaks
+        summary[istr]['inds'] = inds
+   
+    QA/=fwd
+    QA=QA.reshape(x,y,z,5)    
+    IN=IN.reshape(x,y,z,5)
+    
+    #print('Old %d secs' %(time.clock() - t2))
+    #yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than our QA')
+
+    #yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
+       
+    #yield assert_equal((gqs.QA-QA).max(), 0.)
+
+    #import dipy.core.track_propagation as tp
+
+    #tp.FACT_Delta(QA,IN)
+
+    #return tp.FACT_Delta(QA,IN,seeds_no=10000).tracks
+
+    peaks_1 = [i for i in range(1000) if len(summary[str(i)]['inds'])==1]
+    peaks_2 = [i for i in range(1000) if len(summary[str(i)]['inds'])==2]
+    peaks_3 = [i for i in range(1000) if len(summary[str(i)]['inds'])==3]
+
+    # correct numbers of voxels with respectively 1,2,3 ODF/QA peaks
+    yield assert_array_equal((len(peaks_1),len(peaks_2),len(peaks_3)), (790,196,14),
+                             'error in numbers of QA/ODF peaks')
+
+    # correct indices of odf directions for voxels 0,10,44
+    # with respectively 1,2,3 ODF/QA peaks
+    yield assert_array_equal(summary[str(0)]['inds'],[116],
+                             'wrong peak indices for voxel 0')
+    yield assert_array_equal(summary[str(10)]['inds'],[105, 78],
+                             'wrong peak indices for voxel 10')
+    yield assert_array_equal(summary[str(44)]['inds'],[95, 84, 108],
+                             'wrong peak indices for voxel 44')
+
+
+    
+    #return summary
+
 #@parametric
 def test_gqi():
 
@@ -71,6 +207,8 @@ def test_gqi():
 
     for (i,s) in enumerate(S):
 
+        print 'Volume %d' % i
+        
         odf = Q2odf(s,q2odf_params)
         peaks,inds=rp.peak_finding(odf,odf_faces)
         fwd=max(np.max(odf),fwd)
@@ -78,8 +216,7 @@ def test_gqi():
         l=min(len(peaks),5)
         QA[i][:l] = peaks[:l]
         IN[i][:l] = inds[:l]
-        
-   
+
     QA/=fwd
     QA=QA.reshape(x,y,z,5)    
     IN=IN.reshape(x,y,z,5)
@@ -154,7 +291,7 @@ def peak_finding(odf,odf_faces):
 
 if __name__ == "__main__":
 
-    T=test_gqi()
+    T=test_gqiodf()
     
 
 
