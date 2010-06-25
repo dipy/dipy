@@ -207,8 +207,6 @@ def test_gqi():
 
     for (i,s) in enumerate(S):
 
-        print 'Volume %d' % i
-        
         odf = Q2odf(s,q2odf_params)
         peaks,inds=rp.peak_finding(odf,odf_faces)
         fwd=max(np.max(odf),fwd)
@@ -222,17 +220,17 @@ def test_gqi():
     IN=IN.reshape(x,y,z,5)
     
     print('Old %d secs' %(time.clock() - t2))
-    #yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than our QA')
-
-    #yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
+    
+    yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than dipy QA')
+    yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
        
     #yield assert_equal((gqs.QA-QA).max(), 0.)
 
-    import dipy.core.track_propagation as tp
+    #import dipy.core.track_propagation as tp
 
-    tp.FACT_Delta(QA,IN)
+    #tp.FACT_Delta(QA,IN)
 
-    return tp.FACT_Delta(QA,IN,seeds_no=10000).tracks
+    #return tp.FACT_Delta(QA,IN,seeds_no=10000).tracks
 
 
 
