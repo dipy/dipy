@@ -142,9 +142,11 @@ def test_gqiodf():
     yield assert_array_equal(summary[str(44)]['inds'],[95, 84, 108],
                              'wrong peak indices for voxel 44')
 
-
+    yield assert_equal(np.argmax(summary['0']['odf']), 116)
+    yield assert_equal(np.argmax(summary['10']['odf']), 105)
+    yield assert_equal(np.argmax(summary['44']['odf']), 95)
     
-    #return summary
+    #eturn summary
 
 #@parametric
 def test_gqi():
