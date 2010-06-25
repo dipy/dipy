@@ -13,7 +13,7 @@ try:
     from nipy.neurospin import register as volume_register
     from nipy.neurospin import transform as volume_transform
 except ImportError:
-    raise ImportError('nipy registration is not available')
+    print('nipy registration is not available')
     
 try:
     from nibabel import load,save   
