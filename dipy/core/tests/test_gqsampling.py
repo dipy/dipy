@@ -8,7 +8,7 @@ from os.path import join as opj
 import nibabel as ni
 import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
-
+import dipy.core.track_propagation as tp
 
 @parametric
 def test_gqiodf():
@@ -148,8 +148,8 @@ def test_gqiodf():
     
     #eturn summary
 
-#@parametric
-def test_gqi():
+@parametric
+def test_gqi_small():
 
     #read bvals,gradients and data
     bvals=np.load(opj(os.path.dirname(__file__), \
@@ -224,15 +224,9 @@ def test_gqi():
     print('Old %d secs' %(time.clock() - t2))
     
     yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than dipy QA')
-    yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
-       
-    #yield assert_equal((gqs.QA-QA).max(), 0.)
+    yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')  
 
-    #import dipy.core.track_propagation as tp
-
-    #tp.FACT_Delta(QA,IN)
-
-    #return tp.FACT_Delta(QA,IN,seeds_no=10000).tracks
+    yield assert_equal(len(tp.FACT_Delta(QA,IN,seeds_no=100).tracks),100,'FACT_Delta is not generating the right number of tracks for this dataset')
 
 
 

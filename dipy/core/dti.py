@@ -695,3 +695,36 @@ def __save_scalar_maps(scalar_maps, img=None, coordmap=None):
     print
 
     return
+
+def prepare_for_fact(evals,evecs,odf_vertices=None):
+
+    ''' Useful function for creating tracts using FACT method from tensors
+    '''
+
+    max_evals=evals[...,0]
+    max_evecs=evecs[...,:,0]
+
+    if odf_vertices==None:
+        
+        eds=np.load(os.path.join(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))        
+        odf_vertices=eds['vertices']
+
+    x,y,z=max_evals.shape
+    mec=max_evecs.reshape(x*y*z,3)
+    IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
+    IN=IN.reshape(x,y,z)
+
+    return max_evals, IN
+
+        
+
+        
+
+    
+
+
+    
+
+    
+
+    
