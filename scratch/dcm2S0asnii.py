@@ -4,9 +4,9 @@ import numpy as np
 import dipy.core.generalized_q_sampling as gq
 
 
-#dname='/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
+dname='/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
 
-dname ='/home/eg309/Data/Eleftherios/Series_003_CBU_DTI_64D_iso_1000'
+#dname ='/home/eg309/Data/Eleftherios/Series_003_CBU_DTI_64D_iso_1000'
 
 S0name='/tmp/S0.nii'
 
@@ -34,7 +34,7 @@ print data.shape
 
 
 
-#'''
+'''
 
 #save the structural volume
 
@@ -45,6 +45,7 @@ print data.shape
 #save the small roi volume
 
 #small= data[35:55,55:75,20:30,:]
+
 
 small= data[54:64,54:64,30:40,:]
 
@@ -60,4 +61,4 @@ np.save(smallname_grad,gradients)
 
 np.save(smallname_bvals,bvals)
 
-#'''
+'''

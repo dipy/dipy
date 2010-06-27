@@ -37,18 +37,18 @@ class FACT_Delta():
         Parameters
         ----------
 
-        qa: array, shape(x,y,z,Np), orientation magnitude of the peak,
+        qa: array, shape(x,y,z,Np), magnitude of the peak (QA) or
+        shape(x,y,z) a scalar volume like FA.
 
-        ind: array, shape(x,y,z,Np), index of orientation of the peak
-        found at odf_vertices.
+        ind: array, shape(x,y,z,Np), indices of orientations of the QA
+        peaks found at odf_vertices used in QA or, shape(x,y,z), ind
 
         seeds_no: number of random seeds
 
         odf_vertices: sphere points which define a discrete
         representation of orientations for the peaks, the same for all voxels
 
-        qa_thr: float, if < qa_thr then the tracking stops
-
+        qa_thr: float, threshold for QA(typical 0.023)  or FA(typical 0.2) 
         step_sz: float, propagation step
 
         ang_thr: float, if turning angle is smaller than this threshold
@@ -60,6 +60,11 @@ class FACT_Delta():
         tracks: sequence of arrays
 
         '''
+
+        if len(qa.shape)==3:
+
+            qa.shape=qa.shape+(1,)
+            ind.shape=ind.shape+(1,)
 
         self.Np=qa.shape[-1]
 
