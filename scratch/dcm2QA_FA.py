@@ -30,7 +30,7 @@ T=tp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=10000).tracks
 t4=time.clock()
 print ('Create %d QA tracks in %d secs' %(len(T),t4-t3))
 
-'''
+#'''
 #calculate single tensor
 ten=dt.Tensor(data,gradients.T,bvals,thresh=50)
 t5=time.clock()
@@ -52,7 +52,7 @@ r=fos.ren()
 fos.add(r,fos.line(T,fos.red))
 fos.add(r,fos.line(T2,fos.green))
 fos.show(r)
-'''
+#'''
 
 
 
