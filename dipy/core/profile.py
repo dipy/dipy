@@ -27,14 +27,20 @@ class Profiler():
     stats: function, stats.print_stats(10) will prin the 10 slower functions
     
 
+    Examples
+    --------
+    p.Profiler('dipy.core.track_metrics.length',
+    dipy.core.track_metrics.length,np.random.rand(1000000,3))
+
+    
     '''
 
-    def __init__(self,caller,args=None,rows=10):
+    def __init__(self,caller,call=None,*args):
+
+        rows=10
 
         ext=os.path.splitext(caller)[1].lower()        
-        print('ext',ext)
-
-        
+        print('ext',ext)        
         
         if ext == '.py': #python file
             print('python file')
@@ -47,37 +53,43 @@ class Profiler():
 
         elif ext == '.pyx': #cython file
 
-            print('cython file - not yet ready')
+            print('cython file - profiling not yet implemented')
 
         else :
 
-            pass
-        
-            '''
+            print('function call')
 
-            c=caller.split('.')
-            module=caller.split('.'+c[-1])
-            #function=c[-1].split('(')
-            #function=function.split(')')
+            #caller = 'dipy.core.track_metrics.length'
 
-            print 'c',c
-            print 'c-1',c[-1]
-            print 'module',module[0]            
-            print 'test',
+            function=caller.split('.')[-1]
+            module=caller.split('.'+function)[0]
 
-            m=__import__(module[0])
+            self.function=function
+            self.module=module
+            self.args=args
 
-                       
+            self.call=call
 
-            print('cython or python function')
-            cProfile.runctx(cc,globals(),locals(),\
+            cProfile.runctx('self.profile_function()',globals(),locals(),\
                                 'profile.prof')
             s = pstats.Stats('profile.prof')
             stats=s.strip_dirs().sort_stats('time')
             stats.print_stats(rows)
-            self.stats
 
-            '''
+
+
+    def profile_function(self):    
+           
+
+        self.call(*self.args)
+        
+
+        
+
+
+            
+
+            
 
 
             
