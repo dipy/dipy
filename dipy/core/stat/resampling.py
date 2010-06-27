@@ -1,6 +1,4 @@
-!/usr/bin/python
-# Created by Christopher Nguyen
-# 5/17/2010
+#!/usr/bin/python
 
 #import modules
 import time
