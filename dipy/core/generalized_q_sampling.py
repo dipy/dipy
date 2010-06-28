@@ -89,16 +89,18 @@ class GeneralizedQSampling():
         for (i,s) in enumerate(S):
 
             #Q to ODF
-            odf=np.dot(s,q2odf_params)
-            peaks,inds=rp.peak_finding(odf,odf_faces)
+            odf=np.dot(s,q2odf_params)            
+            peaks,inds=rp.peak_finding(odf,odf_faces)            
             fwd=max(np.max(odf),fwd)
+            #remove the isotropic part
             peaks = peaks - np.min(odf)
             l=min(len(peaks),5)
             QA[i][:l] = peaks[:l]
             IN[i][:l] = inds[:l]
-    
+
+        #normalize
         QA/=fwd
-        #print 'fwd',fwd
+
         self.QA=QA.reshape(x,y,z,5)    
         self.IN=IN.reshape(x,y,z,5)
         self.fwd = fwd

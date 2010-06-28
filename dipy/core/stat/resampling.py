@@ -1,6 +1,4 @@
-!/usr/bin/python
-# Created by Christopher Nguyen
-# 5/17/2010
+#!/usr/bin/python
 
 #import modules
 import time
@@ -89,7 +87,7 @@ def jackknife(pdf, statistic = np.std, M = np.round(0.10 * len(pdf))):
 
     See Also
     --------
-    numpy.std, numpy.mean
+    numpy.std, numpy.mean, numpy.random.random
 
     Notes
     -----
@@ -107,7 +105,19 @@ def jackknife(pdf, statistic = np.std, M = np.round(0.10 * len(pdf))):
     ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
         look at the jackknife. Ann. Stat. 7, 1-26.
     """ 
-    pass
+    N = len(pdf)
+    pdf_mask = np.ones((N,),dtype='int16')
+    jk_pdf = np.empty((M,))
+    
+    for ii in M:
+        #choose a unique random sample to remove
+        while pdf_mask[rand_index] == 0 :
+            rand_index = np.round(np.random.random(1) * N)
+        #set mask to zero for chosen random index
+        pdf_mask[rand_index] = 0
+        jk_pdf[ii] = statistic(pdf[pdf_mask > 0]) 
+    
+    return jk_pdf, np.mean(pdf) - np.mean(jk_pdf), np.std(jk_pdf)
 
 def residual_bootstrap(data):
     pass
