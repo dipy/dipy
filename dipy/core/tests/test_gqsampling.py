@@ -155,13 +155,27 @@ def test_gqiodf():
 
     vertices = summary['vertices']
 
-    width = 0.05
+    width = 0.05#0.3 #0.05
     
     print 'pole_1 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_1)) < width])
     print 'pole_2 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_2)) < width])
     print 'pole_3 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < width])
 
     print [len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]) for pv, pole in enumerate(vertices)]
+
+    '''
+
+    pole=np.array([0,0,1])
+
+    from dipy.viz import fos
+    r=fos.ren()
+    fos.add(r,fos.point(pole,fos.green))
+    for i,ev in enumerate(vertices):        
+        if np.abs(np.dot(ev,pole))<width:
+            fos.add(r,fos.point(ev,fos.red))
+    fos.show(r)
+
+    '''
     
     #return summary
 
