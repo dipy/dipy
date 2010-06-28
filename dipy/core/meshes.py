@@ -232,6 +232,9 @@ def vertex_adjacencies(vertex_inds, faces):
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maximae from `vals` given adjacent points
 
+    See ``reconstruction_performance`` for optimized versions of this
+    routine. 
+    
     Parameters
     ----------
     vals : (N,) array-like
