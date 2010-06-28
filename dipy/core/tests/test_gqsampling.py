@@ -155,11 +155,15 @@ def test_gqiodf():
 
     vertices = summary['vertices']
 
-    print [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_1)) < 0.05]
-    print [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_2)) < 0.05]
-    print [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < 0.05]
+    width = 0.05
     
-    #eturn summary
+    print 'pole_1 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_1)) < width])
+    print 'pole_2 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_2)) < width])
+    print 'pole_3 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < width])
+
+    print [len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]) for pv, pole in enumerate(vertices)]
+    
+    #return summary
 
 @parametric
 def test_gqi_small():
