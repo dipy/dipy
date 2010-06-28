@@ -13,78 +13,77 @@ class Profiler():
     If you are profiling cython code you need to add    
     # cython: profile=True on the top of your .pyx file
     
-    and for the functions that you do not want to profile you can use this decorator
+    and for the functions that you do not want to profile you can use
+    this decorator in your cython files
 
     @cython.profile(False)
 
     Parameters
     ----------
-    caller: string, file or function call
-    rows: int, number of functions to be shown with pstats
+    caller: file or function call
+    args: function arguments
 
     Attributes
     ----------
     stats: function, stats.print_stats(10) will prin the 10 slower functions
     
-
     Examples
     --------
-    p.Profiler('dipy.core.track_metrics.length',
-    dipy.core.track_metrics.length,np.random.rand(1000000,3))
-
-    
+    >>> import dipy.core.profile as p
+    >>> import dipy.core.track_metrics as tm
+    >>> p.Profiler(tm.length,np.random.rand(1000000,3))
+    >>> fname='test.py'
+    >>> p.Profiler(fname)    
     '''
 
-    def __init__(self,caller,call=None,*args):
+    def __init__(self,call=None,*args):
 
-        rows=10
+        try:
+            
+            ext=os.path.splitext(call)[1].lower()        
+            #print('ext',ext)               
+            if ext == '.py' or ext == '.pyx': #python/cython file
+                print('profiling python/cython file ...')
+                subprocess.call(['python','-m','cProfile', \
+                                 '-o','profile.prof',call])
+                s = pstats.Stats('profile.prof')            
+                stats=s.strip_dirs().sort_stats('time')
+                self.stats=stats
+            
+        except:
 
-        ext=os.path.splitext(caller)[1].lower()        
-        print('ext',ext)        
-        
-        if ext == '.py': #python file
-            print('python file')
-            subprocess.call(['python','-m','cProfile', \
-                                 '-o','profile.prof',fname])
-            s = pstats.Stats('profile.prof')            
-            stats=s.strip_dirs().sort_stats('time')
-            stats.print_stats(rows)
-            self.stats=stats
-
-        elif ext == '.pyx': #cython file
-
-            print('cython file - profiling not yet implemented')
-
-        else :
-
-            print('function call')
-
-            #caller = 'dipy.core.track_metrics.length'
-
-            function=caller.split('.')[-1]
-            module=caller.split('.'+function)[0]
-
-            self.function=function
-            self.module=module
+            print('profiling function call ...')   
             self.args=args
-
             self.call=call
 
-            cProfile.runctx('self.profile_function()',globals(),locals(),\
+            cProfile.runctx('self._profile_function()',globals(),locals(),\
                                 'profile.prof')
             s = pstats.Stats('profile.prof')
             stats=s.strip_dirs().sort_stats('time')
-            stats.print_stats(rows)
+            self.stats=stats
 
 
-
-    def profile_function(self):    
-           
-
+    def _profile_function(self):
         self.call(*self.args)
         
 
+    def print_stats(self,N=10):
+        ''' Print stats for profiling
+
+        You can use it in all different ways developed in pstats
+        for example
+        print_stats(10) will give you the 10 slower calls
+        or
+        print_stats('function_name')
+        will give you the stats for all the calls with name 'function_name'
+                
+        Parameters
+        ----------
+        N: stats.print_stats argument
+
+        '''
         
+        self.stats.print_stats(N)
 
 
             
