@@ -7,8 +7,6 @@ Performance functions for dipy
 # cython: profile=True
 # cython: embedsignature=True
 
-import time
-
 cimport cython
 
 import numpy as np
@@ -24,13 +22,8 @@ cdef extern from "math.h" nogil:
     bint isnan(double x)
     
 
-cdef extern from "stdlib.h" nogil:
-    ctypedef unsigned long size_t
-    void free(void *ptr)
-    void *malloc(size_t size)
-    void *calloc(size_t nelem, size_t elsize)
-    void *realloc (void *ptr, size_t size)
-    void *memcpy(void *str1, void *str2, size_t n)
+# initialize numpy runtime
+cnp.import_array()
 
 
 @cython.boundscheck(False)
@@ -197,10 +190,10 @@ def adj_to_countarrs(adj_inds):
 cdef object argsort = np.argsort
 
 
-cpdef cnp.ndarray argmax_from_countarrs(cnp.ndarray vals,
-                                        cnp.ndarray vertinds,
-                                        cnp.ndarray adj_counts,
-                                        cnp.ndarray adj_inds):
+def argmax_from_countarrs(cnp.ndarray vals,
+                          cnp.ndarray vertinds,
+                          cnp.ndarray adj_counts,
+                          cnp.ndarray adj_inds):
     """ Indices of local maximae from `vals` from count, array neighbors
 
     Parameters
@@ -235,9 +228,14 @@ cpdef cnp.ndarray argmax_from_countarrs(cnp.ndarray vals,
         cnp.npy_intp i, j, V, C, n_maxes=0, adj_size, adj_pos=0
         int is_max
         cnp.float64_t *vals_ptr
-        double val, mx
+        double val
         cnp.uint32_t vert_ind, *vertinds_ptr, *counts_ptr, *adj_ptr, ind
         cnp.uint32_t vals_size, vert_size
+    if not (cnp.PyArray_ISCONTIGUOUS(cvals) and
+            cnp.PyArray_ISCONTIGUOUS(cvertinds) and
+            cnp.PyArray_ISCONTIGUOUS(cadj_counts) and
+            cnp.PyArray_ISCONTIGUOUS(cadj_inds)):
+        raise ValueError('Need contiguous arrays as input')
     vals_size = cvals.shape[0]
     vals_ptr = <cnp.float64_t *>cvals.data
     vertinds_ptr = <cnp.uint32_t *>cvertinds.data
@@ -272,6 +270,5 @@ cpdef cnp.ndarray argmax_from_countarrs(cnp.ndarray vals,
         adj_ptr += C
     if n_maxes == 0:
         return np.array([])
-    maxinds = maxinds[argsort(maxes[:n_maxes])]
-    # release memory from maxinds by copy of smaller array
-    return maxinds.copy()
+    # fancy indexing always produces a copy
+    return maxinds[argsort(maxes[:n_maxes])]
