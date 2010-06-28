@@ -145,6 +145,19 @@ def test_gqiodf():
     yield assert_equal(np.argmax(summary['0']['odf']), 116)
     yield assert_equal(np.argmax(summary['10']['odf']), 105)
     yield assert_equal(np.argmax(summary['44']['odf']), 95)
+
+    pole_1 = summary['vertices'][116]
+    print 'pole_1', pole_1
+    pole_2 = summary['vertices'][105]
+    print 'pole_2', pole_2
+    pole_3 = summary['vertices'][95]
+    print 'pole_3', pole_3
+
+    vertices = summary['vertices']
+
+    print [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_1)) < 0.05]
+    print [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_2)) < 0.05]
+    print [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < 0.05]
     
     #eturn summary
 
