@@ -56,11 +56,11 @@ class Tensor(object):
 
     Methods
     -------
-    ADC : ndarray (V, 1)
+    adc : ndarray (V, 1)
         Calculates the apparent diffusion coefficient [2]_. 
-    FA : ndarray (V, 1)
+    fa : ndarray (V, 1)
         Calculates fractional anisotropy [2]_.
-    MD : ndarray (V, 1)
+    md : ndarray (V, 1)
         Calculates the mean diffusitivity [2]_. 
         Note: [units ADC] ~ [units b value]*10**-1
     
@@ -134,8 +134,8 @@ class Tensor(object):
                 break
         
         new_tensor = copy(self)
-        new_tensor.evals = self.evals[index]
-        new_tensor.evecs = self.evecs[index]
+        new_tensor._evals = self._evals[index]
+        new_tensor._evecs = self._evecs[index]
         return new_tensor
     
     ### Eigenvalues Property ###
@@ -204,14 +204,14 @@ class Tensor(object):
     
     D = property(_getD, doc = "Self diffusion tensor")
 
-    def ADC(self):
+    def adc(self):
         """
         Apparent diffusion coefficient (ADC) calculated from diagonal elements
         of calculated self diffusion tensor. 
         
         Returns
         -------
-        ADC : ndarray (V, 1)
+        adc : ndarray (V, 1)
             Calculated ADC.
 
         Notes
@@ -226,13 +226,13 @@ class Tensor(object):
         Dzz = self.D[..., 2, 2]
         return (Dxx + Dyy + Dzz) / 3.
 
-    def FA(self):
+    def fa(self):
         """
         Fractional anisotropy (FA) calculated from cached eigenvalues. 
         
         Returns
         -------
-        FA : ndarray (V, 1)
+        fa : ndarray (V, 1)
             Calculated FA. Note: range is 0 <= FA <= 1.
 
         Notes
@@ -248,20 +248,22 @@ class Tensor(object):
         ev1 = self.evals[..., 0]
         ev2 = self.evals[..., 1]
         ev3 = self.evals[..., 2]
+
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / ev1**2 + ev2**2 + ev3**2)
         #force bounds
         fa = np.minimum(fa, 1)
         fa = np.maximum(fa, 0)
+        fa[(ev1 + ev2 + ev3) == 0] = 0
         return fa 
 
-    def MD(self):
+    def md(self):
         """
         Mean diffusitivity (MD) calculated from cached eigenvalues. 
         
         Returns
         -------
-        MD : ndarray (V, 1)
+        md : ndarray (V, 1)
             Calculated MD.
 
         Notes
@@ -334,21 +336,22 @@ def wls_fit_tensor(design_matrix, data):
     """
 
     data_flat = data.reshape((-1, data.shape[-1]))
-    eigenvals = np.empty((len(data_flat), 3))
-    eigenvecs = np.empty((len(data_flat), 3, 3))
+    evals = np.empty((len(data_flat), 3))
+    evecs = np.empty((len(data_flat), 3, 3))
     
     #obtain OLS fitting matrix
-    U,S,V = np.linalg.svd(design_matrix, False)
+    #U,S,V = np.linalg.svd(design_matrix, False)
     #math: beta_ols = inv(X.T*X)*X.T*y
     #math: ols_fit = X*beta_ols*inv(y)
-    ols_fit = np.dot(U, U.T)
-
+    #ols_fit = np.dot(U, U.T)
+    ols_fit = _ols_fit_matrix(design_matrix)
+    
     for ii, sig in enumerate(data_flat):
-        eigenvals[ii], eigenvecs[ii,:,:] = _wls_iter(ols_fit, design_matrix, 
-                                                                  ii, sig)    
-    eigenvals.shape = data.shape[:-1]+(3,)
-    eigenvecs.shape = data.shape[:-1]+(3,3)
-    return eigenvals, eigenvecs
+        evals[ii], evecs[ii,:,:] = _wls_iter(ols_fit, design_matrix, 
+                                                                ii, sig)    
+    evals.shape = data.shape[:-1]+(3,)
+    evecs.shape = data.shape[:-1]+(3,3)
+    return evals, evecs
     
 
 def _wls_iter(SI,design_matrix,ii,sig):
@@ -356,11 +359,94 @@ def _wls_iter(SI,design_matrix,ii,sig):
     Function used by wls_fit_tensor for later optimization.
     '''
 
-    log_s = np.log(sig)
+    log_s = np.log(np.maximum(sig,1)) #avoid zero signals
     w=np.exp(np.dot(SI, log_s))
     D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
     return decompose_tensor(D)
+
+def ols_fit_tensor(design_matrix, data):
+    """
+    Computes ordinary least squares (OLS) fit to calculate self-diffusion 
+    tensor using a linear regression model [1]_.
     
+    Parameters
+    ----------
+    design_matrix : ndarray (g, g)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients.
+    data : ndarray or MaskedView (X, Y, Z, ..., g)
+        Data or response variables holding the data. Note that the last 
+        dimension should contain the data. It makes no copies of data.
+
+    Returns
+    -------
+    eigvals : ndarray (X, Y, Z, ..., 3)
+        Eigenvalues from eigen decomposition of the tensor.
+    eigvecs : ndarray (X, Y, Z, ..., 3, 3)
+        Associated eigenvectors from eigen decomposition of the tensor.
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
+        eigvals[j])
+
+
+    See Also
+    --------
+    WLS_fit_tensor, decompose_tensor
+
+    Notes
+    -----
+    This function is offered mainly as a quick comparison to WLS.
+
+    .. math::
+    y = \mathrm{data} \\
+    X = \mathrm{design matrix} \\
+    
+    \hat{\beta}_OLS = (X^T X)^-1 X^T y
+
+    References
+    ----------
+    ..  [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+        approaches for estimation of uncertainties of DTI parameters.
+        NeuroImage 33, 531-541.
+    """
+
+    data_flat = data.reshape((-1, data.shape[-1]))
+    evals = np.empty((len(data_flat), 3))
+    evecs = np.empty((len(data_flat), 3, 3))
+    
+    #obtain OLS fitting matrix
+    #U,S,V = np.linalg.svd(design_matrix, False)
+    #math: beta_ols = inv(X.T*X)*X.T*y
+    #math: ols_fit = X*beta_ols*inv(y)
+    #ols_fit =  np.dot(U, U.T)
+    
+    Ds = np.dot(data_flat,np.linalg.pinv(design_matrix.T))
+
+    for ii, sig in enumerate(data_flat):
+        evals[ii, :], evecs[ii, :, :] = decompose_tensor(Ds[ii, :])
+
+    evals.shape = data.shape[:-1]+(3,)
+    evecs.shape = data.shape[:-1]+(3,3)
+    return evals, evecs
+
+def _ols_fit_matrix(design_matrix):
+    """
+    Helper function to calculate the ordinary least squares (OLS)
+    fit as a matrix multiplication. Mainly used to calculate WLS weights. Can
+    be used to calculate regression coefficients in OLS but not recommended.
+
+    See Also:
+    ---------
+    wls_fit_tensor, ols_fit_tensor
+
+    Example:
+    --------
+    ols_fit = _ols_fit_matrix(design_mat) 
+    ols_data = np.dot(ols_fit, data)
+    """
+
+    U,S,V = np.linalg.svd(design_matrix, False)
+    return np.dot(U, U.T)
+
 def decompose_tensor(D):
     """
     Computes tensor eigen decomposition to calculate eigenvalues and 
@@ -609,3 +695,35 @@ def __save_scalar_maps(scalar_maps, img=None, coordmap=None):
     print
 
     return
+
+def quantize_evecs(evecs,odf_vertices=None):
+
+    ''' Useful function for creating tracts using FACT method from tensors
+    '''
+    
+    max_evecs=evecs[...,:,0]
+
+    if odf_vertices==None:
+        
+        eds=np.load(os.path.join(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))        
+        odf_vertices=eds['vertices']
+
+    x,y,z=max_evecs.shape[:3]
+    mec=max_evecs.reshape(x*y*z,3)
+    IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
+    IN=IN.reshape(x,y,z)
+
+    return IN
+
+        
+
+        
+
+    
+
+
+    
+
+    
+
+    

@@ -112,7 +112,7 @@ def peak_finding(odf, odf_faces):
             continue
 
     peak=np.array(cpeak)
-    peak=peak[0:len(peak)//2]
+    peak=peak[0:len(peak)/2]
 
     #find local maxima and give fiber orientation (inds) and magnitude
     #peaks in a descending order
