@@ -81,22 +81,21 @@ def test_cart_distance():
 def test_sphere_distance():
     # make a circle, go around...
     radius = 3.2
-    half_angles = np.linspace(0, np.pi, 1000)
-    x = np.sin(half_angles) * radius
-    y = np.cos(half_angles) * radius
-    # dists around circle
-    dists = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-    n_dists = dists.size
-    cdists = np.zeros((n_dists*2+1,))
-    csums = np.cumsum(dists)
-    # half way round
-    cdists[1:n_dists+1] = csums
-    # back to the beginning
-    cdists[n_dists+1:] = csums[::-1]
-    full_angles = np.r_[half_angles, np.linspace(np.pi, np.pi*2, 999, endpoint=False)]
-    full_x = np.sin(full_angles) * radius
-    full_y = np.cos(full_angles) * radius
-    sph_d = sphere_distance([0,radius], np.c_[full_x, full_y], radius)
+    n = 5000
+    n2 = n / 2
+    # pi at point n2 in array
+    angles = np.linspace(0, np.pi*2, n, endpoint=False)
+    x = np.sin(angles) * radius
+    y = np.cos(angles) * radius
+    # dists around half circle, including pi
+    half_x = x[:n2+1]
+    half_y = y[:n2+1]
+    half_dists = np.sqrt(np.diff(half_x)**2 + np.diff(half_y)**2)
+    # approximate distances from 0 to pi (not including 0)
+    csums = np.cumsum(half_dists)
+    # concatenated with distances from pi to 0 again
+    cdists = np.r_[0, csums, csums[-2::-1]]
     # check approximation close to calculated
+    sph_d = sphere_distance([0,radius], np.c_[x, y], radius)
     yield assert_array_almost_equal(cdists, sph_d, decimal=5)
     
