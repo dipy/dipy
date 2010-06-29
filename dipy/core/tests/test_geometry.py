@@ -81,13 +81,22 @@ def test_cart_distance():
 def test_sphere_distance():
     # make a circle, go around...
     radius = 3.2
-    angles = np.linspace(0, np.pi, 1000)
-    x = np.sin(angles) * radius
-    y = np.cos(angles) * radius
+    half_angles = np.linspace(0, np.pi, 1000)
+    x = np.sin(half_angles) * radius
+    y = np.cos(half_angles) * radius
     # dists around circle
     dists = np.sqrt(np.diff(x)**2 + np.diff(y)**2)
-    cdists = np.zeros((dists.size+1,))
-    cdists[1:] = np.cumsum(dists)
-    sph_d = sphere_distance([0,radius], np.c_[x, y], radius)
+    n_dists = dists.size
+    cdists = np.zeros((n_dists*2+1,))
+    csums = np.cumsum(dists)
+    # half way round
+    cdists[1:n_dists+1] = csums
+    # back to the beginning
+    cdists[n_dists+1:] = csums[::-1]
+    full_angles = np.r_[half_angles, np.linspace(np.pi, np.pi*2, 999, endpoint=False)]
+    full_x = np.sin(full_angles) * radius
+    full_y = np.cos(full_angles) * radius
+    sph_d = sphere_distance([0,radius], np.c_[full_x, full_y], radius)
+    # check approximation close to calculated
     yield assert_array_almost_equal(cdists, sph_d, decimal=5)
     

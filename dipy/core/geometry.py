@@ -256,6 +256,8 @@ def sphere_distance(pts1, pts2, radius=1.0):
     4.7124
     '''
     euclid_d = cart_distance(pts1, pts2)
+    # half the Euclidean distance forms the O of a right-angle triangle
+    # where H=radius and theta is half the angle formed by the points
     angle = np.arcsin(euclid_d / 2.0 / radius) * 2
     return angle * radius
 

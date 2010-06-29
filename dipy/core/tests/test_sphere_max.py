@@ -159,11 +159,14 @@ def test_neighbor_max():
         vert_vals = np.array([1.0, 0, 0, 0, 0, 2])
         inds = func(vert_vals, w_vert_inds, w_adj_inds)
         yield assert_array_equal(inds, [0, 5])
-        # check too few vals raises sensible error.  In fact, the C
-        # version crashes with this test, I don't know why
-        #yield assert_raises(IndexError,
-        #                    func,
-        #                    vert_vals[:3], w_vert_inds, w_adj_inds)
+        # check too few vals raises sensible error.  For the Cython
+        # version of the routine, the test below causes odd errors and
+        # segfaults with numpy SVN vintage June 2010 (sometime after
+        # 1.4.0 release) - see
+        # http://groups.google.com/group/cython-users/browse_thread/thread/624c696293b7fe44?pli=1
+        # yield assert_raises(IndexError, func, vert_vals[:3],
+        # w_vert_inds, w_adj_inds)
+
 
 @parametric
 def test_performance():
