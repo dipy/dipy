@@ -79,61 +79,26 @@ def test_WLS_fit():
 
     #Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s 
     D = np.array([1., 1., 1., 1., 0., 0., np.log(1000) * 10.**4]) * 10.**-4
-
+    evals = np.array([2., 1., 0.]) * 10.**-4
+    tensor = np.empty((3,3))
+    tensor[0, 0] = D[0]
+    tensor[1, 1] = D[1]
+    tensor[2, 2] = D[2]
+    tensor[0, 1] = tensor[1, 0] = D[3]
+    tensor[0, 2] = tensor[2, 0] = D[4]
+    tensor[1, 2] = tensor[2, 1] = D[5]
     #Design Matrix
-    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),'data','55dir_grad.bvec'))
+    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),
+                    'data','55dir_grad.bvec'))
     X = dti.design_matrix(gtab, bval)
-    
     #Signals
     Y = np.exp(np.dot(X,D))
-
-    ### Testing WLS Fit on Single Voxel ###
+    Y.shape = (-1,) + Y.shape
     
+    ### Testing WLS Fit on Single Voxel ###
     #Estimate tensor from test signals
     tensor_est = dti.Tensor(Y, gtab, bval)
-    
-    yield assert_array_almost_equal(tensor_est, D, "Calculation of tensor from sample data Y does not compare to analytical solution")
-
-    ####example from test_qball.py
-
-    # Tests derived from tables in
-    # http://en.wikipedia.org/wiki/Table_of_spherical_harmonics
-    # where real spherical harmonic $Y^m_n$ is defined to be:
-    #    Real($Y^m_n$) * sqrt(2) if m > 0
-    #    $Y^m_n$                 if m == 0
-    #    Imag($Y^m_n$) * sqrt(2) if m < 0
- 
-    rsh = qball.real_sph_harm
-    pi = np.pi
-    exp = np.exp
-    sqrt = np.sqrt
-    sin = np.sin
-    cos = np.cos
-    yield assert_array_almost_equal(rsh(0,0,0,0),
-           0.5/sqrt(pi))
-    yield assert_array_almost_equal(rsh(2,2,pi/3,pi/5),
-           0.25*sqrt(15./(2.*pi))*
-           (sin(pi/5.))**2.*cos(0+2.*pi/3)*sqrt(2))
-    yield assert_array_almost_equal(rsh(-2,2,pi/3,pi/5),
-           0.25*sqrt(15./(2.*pi))*
-           (sin(pi/5.))**2.*sin(0-2.*pi/3)*sqrt(2))
-    yield assert_array_almost_equal(rsh(2,2,pi,pi/2),
-           0.25*sqrt(15/(2.*pi))*
-           cos(2.*pi)*sin(pi/2.)**2.*sqrt(2))
-    yield assert_array_almost_equal(rsh(-2,4,pi/4.,pi/3.),
-           (3./8.)*sqrt(5./(2.*pi))*
-           sin(0-2.*pi/4.)*
-           sin(pi/3.)**2.*
-           (7.*cos(pi/3.)**2.-1)*sqrt(2))
-    yield assert_array_almost_equal(rsh(4,4,pi/8.,pi/6.),
-           (3./16.)*sqrt(35./(2.*pi))*
-           cos(0+4.*pi/8.)*sin(pi/6.)**4.*sqrt(2))
-    yield assert_array_almost_equal(rsh(-4,4,pi/8.,pi/6.),
-           (3./16.)*sqrt(35./(2.*pi))*
-           sin(0-4.*pi/8.)*sin(pi/6.)**4.*sqrt(2))
-    aa = np.ones((3,1,1,1))
-    bb = np.ones((1,4,1,1))
-    cc = np.ones((1,1,5,1))
-    dd = np.ones((1,1,1,6))
-    yield assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
+    yield assert_array_almost_equal(tensor_est[0].evals, evals)
+    yield assert_array_almost_equal(tensor_est[0].D, tensor,err_msg= 
+            "Calculation of tensor from Y does not compare to analytical solution")
 

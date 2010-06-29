@@ -371,9 +371,9 @@ def _wls_iter(SI,design_matrix,ii,sig):
     ''' 
     Function used by wls_fit_tensor for later optimization.
     '''
-
-    log_s = np.log(np.maximum(sig,1)) #avoid zero signals
-    w=np.exp(np.dot(SI, log_s))
+    sig[sig == 0] = 1 #throw out zero signals
+    log_s = np.log(sig)
+    w = np.exp(np.dot(SI, log_s))
     D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
     return decompose_tensor(D)
 
