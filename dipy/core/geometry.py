@@ -219,3 +219,83 @@ def nearest_pos_semi_def(B):
     # resort the scalers to match the original vecs
     scalers = scalers[np.argsort(inds)]
     return np.dot(vecs, np.dot(np.diag(scalers), vecs.T))
+
+
+def sphere_distance(pts1, pts2, radius=1.0):
+    ''' Distance across sphere surface between `pts1` and `pts2`
+
+    We assume the points are actually on the spherical surface. 
+
+    Parameters
+    ----------
+    pts1 : (N,R) or (R,) array-like
+       where N is the number of points and P is the number of
+       coordinates defining a point (``R==3`` for 3D)
+    pts2 : (N,R) or (R,) array-like
+       where N is the number of points and P is the number of
+       coordinates defining a point (``R==3`` for 3D).  It should be
+       possible to broadcast `pts1` against `pts2`
+    radius : float, optional
+       Radius of sphere.   Default is 1.0
+
+    Returns
+    -------
+    d : (N,) or (0,) array
+       Distances between corresponding points in `pts1` and `pts2`
+       across the spherical surface
+
+    See also
+    --------
+    cart_distance : cartesian distance between points
+
+    Examples
+    --------
+    >>> print '%.4f' % sphere_distance([0,1],[1,0])
+    1.5708
+    >>> print '%.4f' % sphere_distance([0,3],[3,0], radius=3.0)
+    4.7124
+    '''
+    euclid_d = cart_distance(pts1, pts2)
+    angle = np.arcsin(euclid_d / 2.0 / radius) * 2
+    return angle * radius
+
+
+def cart_distance(pts1, pts2):
+    ''' Cartesian distance between `pts1` and `pts2`
+
+    If either of `pts1` or 'pts2` is 2D, then we take the first
+    dimension to index points, and the second indexes coordinate.  More
+    generally, we take the last dimension to be the coordinate
+    dimension. 
+    
+    Parameters
+    ----------
+    pts1 : (N,R) or (R,) array-like
+       where N is the number of points and P is the number of
+       coordinates defining a point (``R==3`` for 3D)
+    pts2 : (N,R) or (R,) array-like
+       where N is the number of points and P is the number of
+       coordinates defining a point (``R==3`` for 3D).  It should be
+       possible to broadcast `pts1` against `pts2`
+
+    Returns
+    -------
+    d : (N,) or (0,) array
+       Cartesian distances between corresponding points in `pts1` and
+       `pts2`
+
+    See also
+    --------
+    cart_distance : cartesian distance between points
+
+    Examples
+    --------
+    >>> cart_distance([0,0,0], [0,0,3])
+    3.0
+    '''
+    pts1 = np.asarray(pts1)
+    pts2 = np.asarray(pts2)
+    sqs = (pts1 - pts2)**2
+    # roll coordinate axis to front and sum
+    sqs = np.rollaxis(sqs, -1)
+    return np.sqrt(np.sum(sqs, axis=0))
