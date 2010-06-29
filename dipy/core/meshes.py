@@ -230,7 +230,7 @@ def vertex_adjacencies(vertex_inds, faces):
 
     
 def argmax_from_adj(vals, vertex_inds, adj_inds):
-    """ Indices of local maximae from `vals` given adjacent points
+    """ Indices of local maxima from `vals` given adjacent points
 
     See ``reconstruction_performance`` for optimized versions of this
     routine. 
@@ -241,7 +241,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
     vertex_inds : None or (V,) array-like
-       indices into `vals` giving vertices that may be local maximae.
+       indices into `vals` giving vertices that may be local maxima.
        If None, then equivalent to ``np.arange(N)``
     adj_inds : sequence
        For every vertex in ``vertex_inds``, the indices (into `vals`) of
@@ -250,7 +250,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     Returns
     -------
     inds : (M,) array
-       Indices into `vals` giving local maximae of vals, given topology
+       Indices into `vals` giving local maxima of vals, given topology
        from `adj_inds`, and restrictions from `vertex_inds`.  Inds are
        returned sorted by value at that index - i.e. smallest value (at
        index) first.

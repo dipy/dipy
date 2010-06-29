@@ -26,8 +26,8 @@ adj = msh.vertinds_to_neighbors(sym_vertinds, faces32)
 counts, adj_inds = rp.adj_to_countarrs(adj)
 
 
-def bench_maximae():
-    print 'ODF maximae'
+def bench_maxima():
+    print 'ODF maxima'
     print '=' * 10
     opt_time = measure('rp.peak_finding(odf, faces16)', 1000)
     print 'optimized time: %f' % opt_time
@@ -35,5 +35,5 @@ def bench_maximae():
 
 
 if __name__ == '__main__' :
-    bench_maximae()
+    bench_maxima()
     

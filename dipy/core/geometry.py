@@ -286,7 +286,7 @@ def cart_distance(pts1, pts2):
 
     See also
     --------
-    cart_distance : cartesian distance between points
+    sphere_distance : distance between points on sphere surface
 
     Examples
     --------
