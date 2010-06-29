@@ -229,10 +229,10 @@ def sphere_distance(pts1, pts2, radius=1.0):
     Parameters
     ----------
     pts1 : (N,R) or (R,) array-like
-       where N is the number of points and P is the number of
+       where N is the number of points and R is the number of
        coordinates defining a point (``R==3`` for 3D)
     pts2 : (N,R) or (R,) array-like
-       where N is the number of points and P is the number of
+       where N is the number of points and R is the number of
        coordinates defining a point (``R==3`` for 3D).  It should be
        possible to broadcast `pts1` against `pts2`
     radius : float, optional
@@ -271,10 +271,10 @@ def cart_distance(pts1, pts2):
     Parameters
     ----------
     pts1 : (N,R) or (R,) array-like
-       where N is the number of points and P is the number of
+       where N is the number of points and R is the number of
        coordinates defining a point (``R==3`` for 3D)
     pts2 : (N,R) or (R,) array-like
-       where N is the number of points and P is the number of
+       where N is the number of points and R is the number of
        coordinates defining a point (``R==3`` for 3D).  It should be
        possible to broadcast `pts1` against `pts2`
 
