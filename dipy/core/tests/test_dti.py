@@ -10,7 +10,7 @@ import nibabel as nib
 from dipy.io.bvectxt import read_bvec_file
 
 from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
+     assert_equal, assert_almost_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
@@ -26,29 +26,35 @@ def test_tensor_scalar_attributes():
 
     """
     ### DEFINING ANALYTICAL VALUES ###
-    evals = np.array([2, 1, 0])
-    a = 1 / np.sqrt(2)
+    evals = np.array([2., 1., 0.])
+    a = 1. / np.sqrt(2)
     #evec[:,j] is pair with eval[j]
-    evecs = np.array([[a, -a, 0], [a, a, 0], [0, 0, 1]]) 
-    D = np.array([[1, 1, 0], [1, 1, 0], [0, 0, 1]])
+    evecs = np.array([[a, 0, -a], [a, 0, a], [0, 1., 0]]) 
+    D = np.array([[1., 1., 0], [1., 1., 0], [0, 0, 1.]])
     FA = np.sqrt(1./2*(1+4+1)/(1+4+0)) # 0.7745966692414834
-    MD = 1
-    ADC = 1
+    MD = 1.
+    ADC = 1.
 
     ### CALCULATE ESTIMATE VALUES ###
     dummy_data = np.zeros((1,10)) #single voxel
     dummy_gtab = np.zeros((3,10))
     dummy_bval = np.zeros((10,))
     tensor = dti.Tensor(dummy_data,dummy_gtab,dummy_bval)
-    tensor.evals = evals
-    tensor.evecs = evecs
+    tensor.evals = evals.reshape((-1,)+evals.shape)
+    tensor.evecs = evecs.reshape((-1,)+evecs.shape)
     
     ### TESTS ###
-    yield assert_equal(np.abs(np.dot(evecs[:, 2], tensor.evecs[:, 2].T)), 1, "Calculation of third eigenvector is not right")
-    yield assert_array_almost_equal(D, tensor[0,:,:], "Recovery of self diffusion tensor from eigenvalues and eigenvectors is not adequate")
-    yield assert_array_almost_equal(ADC, tensor.ADC(), "Calculation of ADC of self diffusion tensor is not adequate")
-    yield assert_array_almost_equal(FA, tensor.FA(), "Calculation of FA of self diffusion tensor is not adequate")
-    yield assert_array_almost_equal(MD, tensor.MD(), "Calculation of MD of self diffusion tensor is not adequate")
+    yield assert_almost_equal(np.abs(np.dot(evecs[:, 2], 
+                tensor[0].evecs[:, 2].T)), 1., 
+                msg = "Calculation of third eigenvector is not right")
+    yield assert_array_almost_equal(D, tensor[0].D, err_msg = 
+                "Recovery of self diffusion tensor from eig not adaquate")
+    yield assert_almost_equal(ADC, tensor[0].adc(), msg = 
+                "Calculation of ADC of self diffusion tensor is not adequate")
+    yield assert_almost_equal(FA, tensor[0].fa(), msg = 
+                "Calculation of FA of self diffusion tensor is not adequate")
+    yield assert_almost_equal(MD, tensor[0].md(), msg = 
+                "Calculation of MD of self diffusion tensor is not adequate")
 
     
     #yield assert_equal(m_list.shape, n_list.shape)

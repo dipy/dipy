@@ -144,6 +144,8 @@ class Tensor(object):
         return evals
     
     def _setevals(self,evals):
+        if self._evals.shape != evals.shape[:-1] + (3,) :
+            raise ValueError('Setting evals requires a (V, 3) shape')
         self._evals = evals
 
     evals = property(_getevals, _setevals, 
@@ -166,6 +168,10 @@ class Tensor(object):
         return evs.reshape(self._evecs.shape[:-2]+(3, 3))
 
     def _setevecs(self,evs):
+        if self._evecs.shape != evs.shape[:-1] + (3,) and \
+           self._evecs.shape != evs.shape[:-1] + (2,) :
+            raise ValueError('Setting evecs requires a (V, 3, 3) or (V, 3, 2)\
+                              shape')
         self._evecs = evs[...,0:2] # only cache first two vectors
     
     evecs = property(_getevecs, _setevecs, 
@@ -250,11 +256,18 @@ class Tensor(object):
         ev3 = self.evals[..., 2]
 
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / ev1**2 + ev2**2 + ev3**2)
+                      / (ev1**2 + ev2**2 + ev3**2))
         #force bounds
         fa = np.minimum(fa, 1)
         fa = np.maximum(fa, 0)
-        fa[(ev1 + ev2 + ev3) == 0] = 0
+        #fancy array indexing to avoid erroneous FA
+        #but need to check if fa is a ndarray
+        if fa.ndim == 0:
+            if ev1 + ev2 + ev3 == 0:
+                fa = 0
+        else:
+            fa[(ev1 + ev2 + ev3) == 0] = 0
+
         return fa 
 
     def md(self):
