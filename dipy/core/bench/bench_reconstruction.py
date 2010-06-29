@@ -22,7 +22,8 @@ less_faces32 = msh.vertinds_faces(np.arange(n_vertices//2),
 np.random.seed(42)
 odf = np.random.uniform(size=(n_vertices,))
 sym_vertinds = msh.sym_hemisphere(vertices).astype(np.uint32)
-adj = msh.seq_to_objarr(msh.vertinds_to_neighbors(sym_vertinds, faces32))
+adj = msh.vertinds_to_neighbors(sym_vertinds, faces32)
+counts, adj_inds = rp.adj_to_countarrs(adj)
 
 
 def bench_maximae():
