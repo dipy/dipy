@@ -147,22 +147,38 @@ def test_gqiodf():
     yield assert_equal(np.argmax(summary['44']['odf']), 95)
 
     pole_1 = summary['vertices'][116]
-    print 'pole_1', pole_1
+    #print 'pole_1', pole_1
     pole_2 = summary['vertices'][105]
-    print 'pole_2', pole_2
+    #print 'pole_2', pole_2
     pole_3 = summary['vertices'][95]
-    print 'pole_3', pole_3
+    #print 'pole_3', pole_3
 
     vertices = summary['vertices']
 
-    width = 0.05#0.3 #0.05
+    width = 0.02#0.3 #0.05
     
+    '''
     print 'pole_1 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_1)) < width])
     print 'pole_2 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_2)) < width])
     print 'pole_3 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < width])
+    '''
+    
+    #print 'pole_1 equator contains:', len(equatorial_vertices(vertices,pole_1,width))
+    #print 'pole_2 equator contains:', len(equatorial_vertices(vertices,pole_2,width))
+    #print 'pole_3 equator contains:', len(equatorial_vertices(vertices,pole_3,width))
 
-    print [len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]) for pv, pole in enumerate(vertices)]
+    equatorial_counts = [len(equatorial_vertices(vertices, pole, width)) for pole in vertices]
 
+    unique_counts = list(set(equatorial_counts))
+
+    tokens = [len([i for i,c in enumerate(equatorial_counts) if c == uc]) for uc in unique_counts] 
+
+    print '(number, frequency):', zip(unique_counts,tokens)
+
+    print triple_odf_maxima(vertices,summary['0']['odf'],width)
+    #print triple_odf_maxima(vertices,summary['10']['odf'],width)
+    #print triple_odf_maxima(vertices,summary['44']['odf'],width)
+    
     '''
 
     pole=np.array([0,0,1])
@@ -176,9 +192,106 @@ def test_gqiodf():
     fos.show(r)
 
     '''
+
+    triple = triple_odf_maxima(vertices, summary['0']['odf'], width)
+    
+    indmax1, odfmax1 = triple[0]
+    indmax2, odfmax2 = triple[1]
+    indmax3, odfmax3 = triple[2]
+
+    
+    '''
+    from dipy.viz import fos
+    r=fos.ren()
+    for v in vertices:
+        fos.add(r,fos.point(v,fos.cyan))
+    fos.add(r,fos.sphere(vertices[indmax1],radius=0.1,color=fos.red))
+    #fos.add(r,fos.line(np.array([0,0,0]),vertices[indmax1]))
+    fos.add(r,fos.sphere(vertices[indmax2],radius=0.05,color=fos.green))
+    fos.add(r,fos.sphere(vertices[indmax3],radius=0.025,color=fos.blue))
+    fos.add(r,fos.sphere([0,0,0],radius=0.01,color=fos.white))
+    fos.show(r)
+    '''
+    
+    mat = np.vstack([vertices[indmax1],vertices[indmax2],vertices[indmax3]])
+
+    print np.dot(mat,np.transpose(mat))
+    # this is to assess how othogonal the triple is/are
     
     #return summary
 
+def equatorial_vertices(vertices, pole, width):
+    '''
+    finds the 'vertices' in the equatorial band conjugate
+    to 'pole' with inner product with 'pole' less than
+    'width' radians (np.arcsin(width)*180/np.pi degrees)
+    '''
+    
+    return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]
+
+def equatorial_maximum(vertices, odf, pole, width):
+
+    eqvert = equatorial_vertices(vertices, pole, width)
+
+    '''
+    need to test for whether eqvert is empty or not
+    '''
+    if len(eqvert) == 0:
+
+        print 'empty equatorial band at pole', pole, 'with width', width
+
+        return Null, Null
+
+    eqvals = [odf[i] for i in eqvert]
+
+    eqargmax = np.argmax(eqvals)
+
+    eqvertmax = eqvert[eqargmax]
+
+    eqvalmax = eqvals[eqargmax]
+
+    return eqvertmax, eqvalmax
+
+def patch_vertices(vertices,pole, width):
+    '''
+    find 'vertices' within the cone of 'width' around 'pole'
+    '''
+    
+    return [i for i,v in enumerate(vertices) if np.dot(v,pole) > 1- width]
+
+
+def patch_maximum(vertices, odf, pole, width):
+
+    eqvert = patch_vertices(vertices, pole, width)
+
+    '''
+    need to test for whether eqvert is empty or not
+    '''
+    if len(eqvert) == 0:
+
+        print 'empty cone around pole', pole, 'with width', width
+
+        return Null, Null
+
+    eqvals = [odf[i] for i in eqvert]
+
+    eqargmax = np.argmax(eqvals)
+
+    eqvertmax = eqvert[eqargmax]
+
+    eqvalmax = eqvals[eqargmax]
+
+    return eqvertmax, eqvalmax
+
+def triple_odf_maxima(vertices, odf, width):
+
+    indmax1 = np.argmax([odf[i] for i,v in enumerate(vertices)])
+    odfmax1 = odf[indmax1]
+    indmax2, odfmax2 = equatorial_maximum(vertices, odf, vertices[indmax1], width)
+    cross12 = np.cross(vertices[indmax1],vertices[indmax2])
+    indmax3, odfmax3 = patch_maximum(vertices, odf, cross12, width)
+    return [(indmax1, odfmax1),(indmax2, odfmax2),(indmax3, odfmax3)]
+    
 @parametric
 def test_gqi_small():
 
