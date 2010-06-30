@@ -7,7 +7,8 @@ import numpy as np
 from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 nearest_pos_semi_def,
                                 sphere_distance,
-                                cart_distance
+                                cart_distance,
+                                vector_cosine,
                                 )
 
 from nose.tools import assert_true, assert_false, \
@@ -96,6 +97,39 @@ def test_sphere_distance():
     # concatenated with distances from pi to 0 again
     cdists = np.r_[0, csums, csums[-2::-1]]
     # check approximation close to calculated
-    sph_d = sphere_distance([0,radius], np.c_[x, y], radius)
+    sph_d = sphere_distance([0,radius], np.c_[x, y])
     yield assert_array_almost_equal(cdists, sph_d, decimal=5)
+    # Now check with passed radius
+    sph_d = sphere_distance([0,radius], np.c_[x, y], radius=radius)
+    yield assert_array_almost_equal(cdists, sph_d, decimal=5)
+    # Check points not on surface raises error when asked for
+    yield assert_raises(ValueError, sphere_distance, [1, 0],
+                        [0, 2])
+    # Not when not asked for
+    sph_d = sphere_distance([1, 0], [0,2], None, False)
+    # Error when radii don't match passed radius
+    yield assert_raises(ValueError, sphere_distance, [1, 0],
+                        [0, 1], 2.0)
     
+    
+@parametric
+def test_vector_cosine():
+    a = [0, 1]
+    b = [1, 0]
+    yield assert_array_almost_equal(vector_cosine(a, b), 0)
+    yield assert_array_almost_equal(vector_cosine([1,0], [-1,0]),
+                                    -1)
+    yield assert_array_almost_equal(vector_cosine([1,0], [1,1]),
+                                    1 / np.sqrt(2))
+    yield assert_array_almost_equal(vector_cosine([2,0], [-4,0]),
+                                    -1)
+    pts1 = [2, 1, 0]
+    pts2 = [-2, -1, 0]
+    yield assert_array_almost_equal(
+        vector_cosine(pts1, pts2), -1)
+    pts2 = [[-2, -1, 0],
+            [2, 1, 0]]
+    yield assert_array_almost_equal(
+        vector_cosine(pts1, pts2), [-1, 1])
+    
+

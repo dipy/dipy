@@ -221,8 +221,8 @@ def nearest_pos_semi_def(B):
     return np.dot(vecs, np.dot(np.diag(scalers), vecs.T))
 
 
-def sphere_distance(pts1, pts2, radius=1.0):
-    ''' Distance across sphere surface between `pts1` and `pts2`
+def sphere_distance(pts1, pts2, radius=None, check_radius=True):
+    """ Distance across sphere surface between `pts1` and `pts2`
 
     We assume the points are actually on the spherical surface. 
 
@@ -235,9 +235,12 @@ def sphere_distance(pts1, pts2, radius=1.0):
        where N is the number of points and R is the number of
        coordinates defining a point (``R==3`` for 3D).  It should be
        possible to broadcast `pts1` against `pts2`
-    radius : float, optional
-       Radius of sphere.   Default is 1.0
-
+    radius : None or float, optional
+       Radius of sphere.  Default is to work out radius from points
+    check_radius : bool, optional
+       Whether to check whether the points are on the sphere surface.
+       Default is True. 
+       
     Returns
     -------
     d : (N,) or (0,) array
@@ -247,19 +250,30 @@ def sphere_distance(pts1, pts2, radius=1.0):
     See also
     --------
     cart_distance : cartesian distance between points
-
+    vector_cosine : cosine of angle between vectors
+    
     Examples
     --------
     >>> print '%.4f' % sphere_distance([0,1],[1,0])
     1.5708
-    >>> print '%.4f' % sphere_distance([0,3],[3,0], radius=3.0)
+    >>> print '%.4f' % sphere_distance([0,3],[3,0])
     4.7124
-    '''
-    euclid_d = cart_distance(pts1, pts2)
-    # half the Euclidean distance forms the O of a right-angle triangle
-    # where H=radius and theta is half the angle formed by the points
-    angle = np.arcsin(euclid_d / 2.0 / radius) * 2
-    return angle * radius
+    """
+    # Get angle with vector cosine
+    pts1 = np.asarray(pts1)
+    pts2 = np.asarray(pts2)
+    lens1 = np.sqrt(np.sum(pts1**2, axis=-1))
+    lens2 = np.sqrt(np.sum(pts2**2, axis=-1))
+    dots = np.inner(pts1, pts2)
+    lens = lens1 * lens2
+    angle_cos = np.arccos(dots / lens)
+    if radius is None:
+        radius = (np.mean(lens1) + np.mean(lens2)) / 2.0
+    if check_radius:
+        if not (np.allclose(radius, lens1) and
+                np.allclose(radius, lens2)):
+            raise ValueError('Radii do not match sphere surface')
+    return angle_cos * radius
 
 
 def cart_distance(pts1, pts2):
@@ -295,9 +309,37 @@ def cart_distance(pts1, pts2):
     >>> cart_distance([0,0,0], [0,0,3])
     3.0
     '''
-    pts1 = np.asarray(pts1)
-    pts2 = np.asarray(pts2)
-    sqs = (pts1 - pts2)**2
-    # roll coordinate axis to front and sum
-    sqs = np.rollaxis(sqs, -1)
-    return np.sqrt(np.sum(sqs, axis=0))
+    sqs = np.subtract(pts1, pts2)**2
+    return np.sqrt(np.sum(sqs, axis=-1))
+
+
+def vector_cosine(vecs1, vecs2):
+    """ Cosine of angle between two (sets of) vectors
+
+    The cosine of the angle between two vectors ``v1`` and ``v2`` is
+    given by the inner product of ``v1`` and ``v2`` divided by the
+    product of the vector lengths::
+
+       v_cos = np.inner(v1, v2) / (np.sqrt(np.sum(v1**2)) *
+                                   np.sqrt(np.sum(v2**2)))
+
+    Parameters
+    ----------
+    vecs1 : (N, R) or (R,) array-like
+       N vectors (as rows) or single vector.  Vectors have R elements.
+    vecs1 : (N, R) or (R,) array-like
+       N vectors (as rows) or single vector.  Vectors have R elements.
+       It should be possible to broadcast `vecs1` against `vecs2`
+    
+    Returns
+    -------
+    vcos : (N,) or (0,) array
+       Vector cosines.  To get the angles you will need ``np.arccos``
+    """
+    vecs1 = np.asarray(vecs1)
+    vecs2 = np.asarray(vecs2)
+    lens1 = np.sqrt(np.sum(vecs1**2, axis=-1))
+    lens2 = np.sqrt(np.sum(vecs2**2, axis=-1))
+    dots = np.inner(vecs1, vecs2)
+    lens = lens1 * lens2
+    return dots / lens
