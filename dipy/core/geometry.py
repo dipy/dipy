@@ -224,8 +224,6 @@ def nearest_pos_semi_def(B):
 def sphere_distance(pts1, pts2, radius=None, check_radius=True):
     """ Distance across sphere surface between `pts1` and `pts2`
 
-    We assume the points are actually on the spherical surface. 
-
     Parameters
     ----------
     pts1 : (N,R) or (R,) array-like
@@ -238,8 +236,9 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
     radius : None or float, optional
        Radius of sphere.  Default is to work out radius from points
     check_radius : bool, optional
-       Whether to check whether the points are on the sphere surface.
-       Default is True. 
+       If True, check if the points are on the sphere surface - i.e
+       check if the vector lengths in `pts1` and `pts2` are close to
+       `radius`.  Default is True.
        
     Returns
     -------
@@ -264,15 +263,15 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
     pts2 = np.asarray(pts2)
     lens1 = np.sqrt(np.sum(pts1**2, axis=-1))
     lens2 = np.sqrt(np.sum(pts2**2, axis=-1))
-    dots = np.inner(pts1, pts2)
-    lens = lens1 * lens2
-    angle_cos = np.arccos(dots / lens)
     if radius is None:
         radius = (np.mean(lens1) + np.mean(lens2)) / 2.0
     if check_radius:
         if not (np.allclose(radius, lens1) and
                 np.allclose(radius, lens2)):
             raise ValueError('Radii do not match sphere surface')
+    dots = np.inner(pts1, pts2)
+    lens = lens1 * lens2
+    angle_cos = np.arccos(dots / lens)
     return angle_cos * radius
 
 
