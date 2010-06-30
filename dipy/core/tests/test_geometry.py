@@ -105,7 +105,7 @@ def test_sphere_distance():
     # Check points not on surface raises error when asked for
     yield assert_raises(ValueError, sphere_distance, [1, 0],
                         [0, 2])
-    # Not when not asked for
+    # Not when check is disabled
     sph_d = sphere_distance([1, 0], [0,2], None, False)
     # Error when radii don't match passed radius
     yield assert_raises(ValueError, sphere_distance, [1, 0],
@@ -131,5 +131,18 @@ def test_vector_cosine():
             [2, 1, 0]]
     yield assert_array_almost_equal(
         vector_cosine(pts1, pts2), [-1, 1])
+    # test relationship with correlation
+    # not the same if non-zero vector mean
+    a = np.random.uniform(size=(100,))
+    b = np.random.uniform(size=(100,))
+    cc = np.corrcoef(a, b)[0,1]
+    vcos = vector_cosine(a, b)
+    yield assert_false(np.allclose(cc, vcos))
+    # is the same if zero vector mean
+    a_dm = a - np.mean(a)
+    b_dm = b - np.mean(b)
+    vcos = vector_cosine(a_dm, b_dm)
+    yield assert_array_almost_equal(cc, vcos)
     
+
 

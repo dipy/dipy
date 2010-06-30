@@ -334,6 +334,11 @@ def vector_cosine(vecs1, vecs2):
     -------
     vcos : (N,) or (0,) array
        Vector cosines.  To get the angles you will need ``np.arccos``
+
+    Notes
+    -----
+    The vector cosine will be the same as the correlation only if all
+    the input vectors have zero mean.
     """
     vecs1 = np.asarray(vecs1)
     vecs2 = np.asarray(vecs2)
