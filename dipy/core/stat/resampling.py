@@ -60,7 +60,7 @@ def bootstrap(pdf, statistic = np.std, num_boot = 1000, percentile_ci = 0.95):
     """
     pass
 
-def jackknife(pdf, statistic = np.std, M = np.round(0.10 * len(pdf))):
+def jackknife(pdf, statistic = np.std, M = None): 
     """
     Jackknife resampling _[1] to quickly estimate the bias and standard 
     error of a desired statistic in a probability distribution function (pdf).
@@ -81,7 +81,7 @@ def jackknife(pdf, statistic = np.std, M = np.round(0.10 * len(pdf))):
     jk_pdf : ndarray (M, 1)
         Jackknife probabilisty distribution function of the statistic.
     bias : float
-        Bias of the mean of the statistic.
+        Bias of the jackknife pdf of the statistic.
     se : float
         Standard error of the statistic.
 
@@ -99,25 +99,36 @@ def jackknife(pdf, statistic = np.std, M = np.round(0.10 * len(pdf))):
     In the context of this implementation, the sample size should be at least 
     larger than the asymptotic convergence of the statistic (ACstat); 
     preferably, larger than ACstat + np.greater(ACbias, ACvar)
+
+    The clear benefit of using jackknife is its ability to estimate the bias
+    of the statistic. The most powerful application of this is estimating the
+    bias of a bootstrap-estimated standard error. In fact, one could
+    "bootstrap the bootstrap" (nested bootstrap) of the estimated standard 
+    error, but the inaccuracy of the bootstrap to characterize the true mean
+    would incur a poor estimate of the bias (recall: bias = mean[sample_est] -
+    mean[true population])
     
     References
     ----------
     ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
         look at the jackknife. Ann. Stat. 7, 1-26.
-    """ 
+    """     
     N = len(pdf)
     pdf_mask = np.ones((N,),dtype='int16')
+    if M == None:
+        M = np.round(0.10 * len(pdf))
     jk_pdf = np.empty((M,))
     
-    for ii in M:
+    for ii in range(0, M):
+        rand_index = np.round(np.random.random() * (N -1))
         #choose a unique random sample to remove
         while pdf_mask[rand_index] == 0 :
-            rand_index = np.round(np.random.random(1) * N)
+            rand_index = np.round(np.random.random() * (N - 1))
         #set mask to zero for chosen random index
         pdf_mask[rand_index] = 0
         jk_pdf[ii] = statistic(pdf[pdf_mask > 0]) 
     
-    return jk_pdf, np.mean(pdf) - np.mean(jk_pdf), np.std(jk_pdf)
+    return jk_pdf, np.mean(jk_pdf) - statistic(pdf), np.std(jk_pdf)
 
 def residual_bootstrap(data):
     pass
