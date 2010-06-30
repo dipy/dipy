@@ -234,7 +234,8 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
        coordinates defining a point (``R==3`` for 3D).  It should be
        possible to broadcast `pts1` against `pts2`
     radius : None or float, optional
-       Radius of sphere.  Default is to work out radius from points
+       Radius of sphere.  Default is to work out radius from mean of the
+       length of each point vector
     check_radius : bool, optional
        If True, check if the points are on the sphere surface - i.e
        check if the vector lengths in `pts1` and `pts2` are close to
@@ -258,7 +259,6 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
     >>> print '%.4f' % sphere_distance([0,3],[3,0])
     4.7124
     """
-    # Get angle with vector cosine
     pts1 = np.asarray(pts1)
     pts2 = np.asarray(pts2)
     lens1 = np.sqrt(np.sum(pts1**2, axis=-1))
@@ -269,6 +269,7 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
         if not (np.allclose(radius, lens1) and
                 np.allclose(radius, lens2)):
             raise ValueError('Radii do not match sphere surface')
+    # Get angle with vector cosine
     dots = np.inner(pts1, pts2)
     lens = lens1 * lens2
     angle_cos = np.arccos(dots / lens)
