@@ -9,6 +9,8 @@ import nibabel as ni
 import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
 import dipy.core.track_propagation as tp
+import dipy.core.dti as dt
+
 
 @parametric
 def test_gqiodf():
@@ -30,6 +32,25 @@ def test_gqiodf():
     t1=time.clock()
     
     gqs = gq.GeneralizedQSampling(data,bvals,gradients)
+    ten = dt.Tensor(data,gradients.T,bvals,thresh=50)
+
+    
+    fa=ten.fa()
+
+    x,y,z,a,b=ten.evecs.shape
+    evecs=ten.evecs
+    xyz=x*y*z
+    evecs = evecs.reshape(xyz,3,3)
+    #vs = np.sign(evecs[:,2,:])
+    #print vs.shape
+    #print np.hstack((vs,vs,vs)).reshape(1000,3,3).shape
+    #evecs = np.hstack((vs,vs,vs)).reshape(1000,3,3)
+    #print evecs.shape
+    evals=ten.evals
+    evals = evals.reshape(xyz,3)
+    #print evals.shape
+
+    
 
     t2=time.clock()
     #print('GQS in %d' %(t2-t1))
@@ -107,6 +128,8 @@ def test_gqiodf():
         summary[istr]['odf'] = odf
         summary[istr]['peaks'] = peaks
         summary[istr]['inds'] = inds
+        summary[istr]['evecs'] = evecs[i,:,:]
+        summary[istr]['evals'] = evals[i,:]
    
     QA/=fwd
     QA=QA.reshape(x,y,z,5)    
@@ -178,7 +201,7 @@ def test_gqiodf():
     print triple_odf_maxima(vertices,summary['0']['odf'],width)
     #print triple_odf_maxima(vertices,summary['10']['odf'],width)
     #print triple_odf_maxima(vertices,summary['44']['odf'],width)
-    
+    print summary['0']['evals']
     '''
 
     pole=np.array([0,0,1])
@@ -197,28 +220,36 @@ def test_gqiodf():
     
     indmax1, odfmax1 = triple[0]
     indmax2, odfmax2 = triple[1]
-    indmax3, odfmax3 = triple[2]
-
+    indmax3, odfmax3 = triple[2] 
     
-    '''
     from dipy.viz import fos
     r=fos.ren()
     for v in vertices:
         fos.add(r,fos.point(v,fos.cyan))
-    fos.add(r,fos.sphere(vertices[indmax1],radius=0.1,color=fos.red))
+    fos.add(r,fos.sphere(upper_hemi_map(vertices[indmax1]),radius=0.1,color=fos.red))
     #fos.add(r,fos.line(np.array([0,0,0]),vertices[indmax1]))
-    fos.add(r,fos.sphere(vertices[indmax2],radius=0.05,color=fos.green))
-    fos.add(r,fos.sphere(vertices[indmax3],radius=0.025,color=fos.blue))
+    fos.add(r,fos.sphere(upper_hemi_map(vertices[indmax2]),radius=0.05,color=fos.green))
+    fos.add(r,fos.sphere(upper_hemi_map(vertices[indmax3]),radius=0.025,color=fos.blue))
+    fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,0]),radius=0.1,color=fos.red,opacity=0.7))
+    fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,1]),radius=0.05,color=fos.green,opacity=0.7))
+    fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,2]),radius=0.025,color=fos.blue,opacity=0.7))
     fos.add(r,fos.sphere([0,0,0],radius=0.01,color=fos.white))
     fos.show(r)
-    '''
+    
     
     mat = np.vstack([vertices[indmax1],vertices[indmax2],vertices[indmax3]])
 
     print np.dot(mat,np.transpose(mat))
     # this is to assess how othogonal the triple is/are
+    print np.dot(summary['0']['evecs'],np.transpose(mat))
     
     #return summary
+
+def upper_hemi_map(v):
+    '''
+    maps a 3-vector into the z-upper hemisphere
+    '''
+    return np.sign(v[2])*v
 
 def equatorial_vertices(vertices, pole, width):
     '''

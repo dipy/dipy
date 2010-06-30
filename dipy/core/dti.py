@@ -51,7 +51,7 @@ class Tensor(object):
         (eval1, eval2, eval3)
     evecs : ndarray (V, 3, 3)
         Cached associated eigenvectors of self diffusion tensor for given 
-        index. Note: evals[..., j] is associated with evecs[..., :, 0]
+        index. Note: evals[..., j] is associated with evecs[..., :, j]
 
 
     Methods
