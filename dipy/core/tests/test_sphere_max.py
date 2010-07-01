@@ -1,4 +1,4 @@
-""" Testing sphere maximae finding and associated routines
+""" Testing sphere maxima finding and associated routines
 """
 
 from os.path import join as pjoin, dirname
@@ -126,12 +126,12 @@ def test_vertinds_faces():
 
 @parametric
 def test_neighbor_max():
-    # test ability to find maximae on sphere using neighbors
+    # test ability to find maxima on sphere using neighbors
     vert_inds = sym_hemisphere(VERTICES)
     adj_inds = vertinds_to_neighbors(vert_inds, FACES)
     # test slow and fast routine
     for func in (argmax_from_adj, dcr.argmax_from_adj):
-        # all equal, no maximae
+        # all equal, no maxima
         vert_vals = np.zeros((N_VERTICES,))
         inds = func(vert_vals,
                     vert_inds,
@@ -145,7 +145,7 @@ def test_neighbor_max():
                         vert_inds,
                         adj_inds)
             yield assert_array_equal(inds, [max_pos])
-        # maximae outside hemisphere don't appear
+        # maxima outside hemisphere don't appear
         for max_pos in range(3,6):
             vert_vals = np.zeros((N_VERTICES,))
             vert_vals[max_pos] = 1
@@ -153,17 +153,20 @@ def test_neighbor_max():
                         vert_inds,
                         adj_inds)
             yield assert_equal(inds.size, 0)
-        # use whole mesh, with two maximae
+        # use whole mesh, with two maxima
         w_vert_inds = np.arange(6)
         w_adj_inds = vertinds_to_neighbors(w_vert_inds, FACES)
         vert_vals = np.array([1.0, 0, 0, 0, 0, 2])
         inds = func(vert_vals, w_vert_inds, w_adj_inds)
         yield assert_array_equal(inds, [0, 5])
-        # check too few vals raises sensible error.  In fact, the C
-        # version crashes with this test, I don't know why
-        #yield assert_raises(IndexError,
-        #                    func,
-        #                    vert_vals[:3], w_vert_inds, w_adj_inds)
+        # check too few vals raises sensible error.  For the Cython
+        # version of the routine, the test below causes odd errors and
+        # segfaults with numpy SVN vintage June 2010 (sometime after
+        # 1.4.0 release) - see
+        # http://groups.google.com/group/cython-users/browse_thread/thread/624c696293b7fe44?pli=1
+        # yield assert_raises(IndexError, func, vert_vals[:3],
+        # w_vert_inds, w_adj_inds)
+
 
 @parametric
 def test_performance():
