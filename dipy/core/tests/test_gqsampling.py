@@ -10,6 +10,7 @@ import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
 import dipy.core.track_propagation as tp
 import dipy.core.dti as dt
+import dipy.core.meshes as meshes
 
 
 @parametric
@@ -158,11 +159,11 @@ def test_gqiodf():
 
     # correct indices of odf directions for voxels 0,10,44
     # with respectively 1,2,3 ODF/QA peaks
-    yield assert_array_equal(summary[str(0)]['inds'],[116],
+    yield assert_array_equal(summary['0']['inds'],[116],
                              'wrong peak indices for voxel 0')
-    yield assert_array_equal(summary[str(10)]['inds'],[105, 78],
+    yield assert_array_equal(summary['10']['inds'],[105, 78],
                              'wrong peak indices for voxel 10')
-    yield assert_array_equal(summary[str(44)]['inds'],[95, 84, 108],
+    yield assert_array_equal(summary['44']['inds'],[95, 84, 108],
                              'wrong peak indices for voxel 44')
 
     yield assert_equal(np.argmax(summary['0']['odf']), 116)
@@ -186,22 +187,14 @@ def test_gqiodf():
     print 'pole_3 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < width])
     '''
     
-    #print 'pole_1 equator contains:', len(equatorial_vertices(vertices,pole_1,width))
-    #print 'pole_2 equator contains:', len(equatorial_vertices(vertices,pole_2,width))
-    #print 'pole_3 equator contains:', len(equatorial_vertices(vertices,pole_3,width))
+    #print 'pole_1 equator contains:', len(meshes.equatorial_vertices(vertices,pole_1,width))
+    #print 'pole_2 equator contains:', len(meshes.equatorial_vertices(vertices,pole_2,width))
+    #print 'pole_3 equator contains:', len(meshes'equatorial_vertices(vertices,pole_3,width))
 
-    equatorial_counts = [len(equatorial_vertices(vertices, pole, width)) for pole in vertices]
-
-    unique_counts = list(set(equatorial_counts))
-
-    tokens = [len([i for i,c in enumerate(equatorial_counts) if c == uc]) for uc in unique_counts] 
-
-    print '(number, frequency):', zip(unique_counts,tokens)
-
-    print triple_odf_maxima(vertices,summary['0']['odf'],width)
+    #print triple_odf_maxima(vertices,summary['0']['odf'],width)
     #print triple_odf_maxima(vertices,summary['10']['odf'],width)
     #print triple_odf_maxima(vertices,summary['44']['odf'],width)
-    print summary['0']['evals']
+    #print summary['0']['evals']
     '''
 
     pole=np.array([0,0,1])
@@ -216,7 +209,7 @@ def test_gqiodf():
 
     '''
 
-    triple = triple_odf_maxima(vertices, summary['0']['odf'], width)
+    triple = triple_odf_maxima(vertices, summary['10']['odf'], width)
     
     indmax1, odfmax1 = triple[0]
     indmax2, odfmax2 = triple[1]
@@ -251,18 +244,9 @@ def upper_hemi_map(v):
     '''
     return np.sign(v[2])*v
 
-def equatorial_vertices(vertices, pole, width):
-    '''
-    finds the 'vertices' in the equatorial band conjugate
-    to 'pole' with inner product with 'pole' less than
-    'width' radians (np.arcsin(width)*180/np.pi degrees)
-    '''
-    
-    return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]
-
 def equatorial_maximum(vertices, odf, pole, width):
 
-    eqvert = equatorial_vertices(vertices, pole, width)
+    eqvert = meshes.equatorial_vertices(vertices, pole, width)
 
     '''
     need to test for whether eqvert is empty or not

@@ -309,4 +309,45 @@ def peak_finding_compatible(vertices,
     N = vertices.shape[0] // 2
     return np.all(inds == np.arange(N))
 
+def euler_characteristic_check(vertices, faces):
+    '''
+    If e = number_of_edges the Euler formula says f-e+v = 2 for a mesh
+    on a sphere. Here, assuming we have a healthy triangulation every
+    face is a triangle, all 3 of whose edges should belong to exactly
+    two faces. So 2*e = 3*f. To avoid integer division and consequential
+    integer rounding we test whether 2*f - 3*f + 2*v == 4 or
+    equivalently whether2*v - f == 4
+    '''
+    v = vertices.shape[0]
+    f = faces.shape[0]
+    if 2*v-f==4:
+        return True
+    else:
+        return False
+
+def equatorial_vertices(vertices, pole, width):
+    '''
+    finds the 'vertices' in the equatorial band conjugate
+    to 'pole' with inner product with 'pole' less than
+    'width' radians (np.arcsin(width)*180/np.pi degrees)
+    '''
+    return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]
+
+
+def equatorial_statistics(vertices, width=0.02):
+    '''
+    function to evaluate a spherical triangulation by looking at
+    variability of numbers of vertices in 'vertices' in equatorial bands
+    of width 'width' orthogonal to each point in 'vertices'
+    ''' 
+    equatorial_counts = [len(equatorial_vertices(vertices, pole, width)) for pole in vertices]
+
+    unique_counts = list(set(equatorial_counts))
+
+    tokens = [len([i for i,c in enumerate(equatorial_counts) if c == uc]) for uc in unique_counts] 
+
+    print '(number, frequency):', zip(unique_counts,tokens)
+
+
+
 
