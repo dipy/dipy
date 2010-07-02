@@ -33,7 +33,7 @@ def test_gqiodf():
     t1=time.clock()
     
     gqs = gq.GeneralizedQSampling(data,bvals,gradients)
-    ten = dt.Tensor(data,gradients.T,bvals,thresh=50)
+    ten = dt.Tensor(data,bvals,gradients,thresh=50)
 
     
     fa=ten.fa()
