@@ -64,57 +64,41 @@ print 'Showing dataset after clustering.'
 print 'Calculating skeletal track for every bundle.'
 
 skeletals=[]
-
 colors2 = len(data)*[None]
-
 colors_sk = []#len(C.keys())*[None]
 
 for c in C:
 
-    color=np.random.rand(3)   
-    
+    color=np.random.rand(3)    
     r,g,b = color
-
     bundle=[]
 
     for i in C[c]['indices']:
         
-        colors2[i]=np.tile(np.array([r,g,b,opacity],'f'),(len(data[i]),1))
-        
+        colors2[i]=np.tile(np.array([r,g,b,opacity],'f'),(len(data[i]),1))    
         bundle.append(data[i])
 
     
     bi=pf.most_similar_track_zhang(bundle)[0]
-
     C[c]['skeletal']=bundle[bi]
     
 
-    if len(C[c]['indices'])>100 and tm.length(bundle[bi])>30.:
-        
+    if len(C[c]['indices'])>100 and tm.length(bundle[bi])>30.:        
         colors_sk.append( np.tile(np.array([r,g,b,opacity],'f'),(len(bundle[bi]),1)) )
-
         skeletals.append(bundle[bi])
 
         
 
 print 'len_data', len(data)
-
 print 'len_skeletals', len(skeletals)
-
 print 'len_colors2', len(colors2)
-
 print 'len_colors_sk', len(colors_sk)
-
     
 t2=Tracks(data,colors2,line_width=1.)
-
 t2.position=(100,0,0)
 
-
 sk=Tracks(skeletals,colors_sk,line_width=3.)
-
 sk.position=(0,0,0)
-
         
 slot={0:{'actor':t,'slot':(0, 800000)},
       1:{'actor':t2,'slot':(0, 800000)},

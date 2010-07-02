@@ -29,9 +29,9 @@ cnp.import_array()
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def peak_finding(odf, odf_faces):
-    ''' Hemisphere local maximae from sphere values and faces
+    ''' Hemisphere local maxima from sphere values and faces
 
-    Return local maximum values and indices. Local maximae (peaks) are
+    Return local maximum values and indices. Local maxima (peaks) are
     given in descending order.
 
     The sphere mesh, as defined by the vertex coordinates ``vertices``
@@ -55,7 +55,7 @@ def peak_finding(odf, odf_faces):
        local moximae (peaks).  Values are sorted, largest first
     inds : (L,) array, dtype np.uint16
        indices of the peak values on the `odf` array corresponding to
-       the maximae in `peaks`
+       the maxima in `peaks`
     
     Notes
     -----
@@ -125,7 +125,7 @@ def peak_finding(odf, odf_faces):
 
 
 def argmax_from_adj(vals, vertex_inds, adj_inds):
-    """ Indices of local maximae from `vals` given adjacent points
+    """ Indices of local maxima from `vals` given adjacent points
 
     Parameters
     ----------
@@ -133,7 +133,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
     vertex_inds : (V,) array
-       indices into `vals` giving vertices that may be local maximae.
+       indices into `vals` giving vertices that may be local maxima.
     adj_inds : sequence
        For every vertex in ``vertex_inds``, the indices (into `vals`) of
        the neighboring points
@@ -141,7 +141,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     Returns
     -------
     inds : (M,) array
-       Indices into `vals` giving local maximae of vals, given topology
+       Indices into `vals` giving local maxima of vals, given topology
        from `adj_inds`, and restrictions from `vertex_inds`.  Inds are
        returned sorted by value at that index - i.e. smallest value (at
        index) first.
@@ -194,7 +194,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
                           cnp.ndarray vertinds,
                           cnp.ndarray adj_counts,
                           cnp.ndarray adj_inds):
-    """ Indices of local maximae from `vals` from count, array neighbors
+    """ Indices of local maxima from `vals` from count, array neighbors
 
     Parameters
     ----------
@@ -202,7 +202,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
     vertinds : (V,) array, dtype uint32
-       indices into `vals` giving vertices that may be local maximae.
+       indices into `vals` giving vertices that may be local maxima.
     adj_counts : (V,) array, dtype uint32
        For every vertex ``i`` in ``vertex_inds``, the number of
        neighbors for vertex ``i``
@@ -212,7 +212,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
     Returns
     -------
     inds : (M,) array
-       Indices into `vals` giving local maximae of vals, given topology
+       Indices into `vals` giving local maxima of vals, given topology
        from `adj_counts` and `adj_inds`, and restrictions from
        `vertex_inds`.  Inds are returned sorted by value at that index -
        i.e. smallest value (at index) first.

@@ -33,7 +33,14 @@ class Profiler():
     >>> import dipy.core.track_metrics as tm
     >>> p.Profiler(tm.length,np.random.rand(1000000,3))
     >>> fname='test.py'
-    >>> p.Profiler(fname)    
+    >>> p.Profiler(fname)
+
+    References
+    ----------
+    http://docs.cython.org/src/tutorial/profiling_tutorial.html
+    http://docs.python.org/library/profile.html
+    http://packages.python.org/line_profiler/
+    
     '''
 
     def __init__(self,call=None,*args):
@@ -41,7 +48,7 @@ class Profiler():
         try:
             
             ext=os.path.splitext(call)[1].lower()        
-            #print('ext',ext)               
+            print('ext',ext)               
             if ext == '.py' or ext == '.pyx': #python/cython file
                 print('profiling python/cython file ...')
                 subprocess.call(['python','-m','cProfile', \

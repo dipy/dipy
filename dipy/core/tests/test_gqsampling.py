@@ -9,6 +9,9 @@ import nibabel as ni
 import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
 import dipy.core.track_propagation as tp
+import dipy.core.dti as dt
+import dipy.core.meshes as meshes
+
 
 @parametric
 def test_gqiodf():
@@ -30,6 +33,25 @@ def test_gqiodf():
     t1=time.clock()
     
     gqs = gq.GeneralizedQSampling(data,bvals,gradients)
+    ten = dt.Tensor(data,gradients.T,bvals,thresh=50)
+
+    
+    fa=ten.fa()
+
+    x,y,z,a,b=ten.evecs.shape
+    evecs=ten.evecs
+    xyz=x*y*z
+    evecs = evecs.reshape(xyz,3,3)
+    #vs = np.sign(evecs[:,2,:])
+    #print vs.shape
+    #print np.hstack((vs,vs,vs)).reshape(1000,3,3).shape
+    #evecs = np.hstack((vs,vs,vs)).reshape(1000,3,3)
+    #print evecs.shape
+    evals=ten.evals
+    evals = evals.reshape(xyz,3)
+    #print evals.shape
+
+    
 
     t2=time.clock()
     #print('GQS in %d' %(t2-t1))
@@ -107,6 +129,8 @@ def test_gqiodf():
         summary[istr]['odf'] = odf
         summary[istr]['peaks'] = peaks
         summary[istr]['inds'] = inds
+        summary[istr]['evecs'] = evecs[i,:,:]
+        summary[istr]['evals'] = evals[i,:]
    
     QA/=fwd
     QA=QA.reshape(x,y,z,5)    
@@ -135,11 +159,11 @@ def test_gqiodf():
 
     # correct indices of odf directions for voxels 0,10,44
     # with respectively 1,2,3 ODF/QA peaks
-    yield assert_array_equal(summary[str(0)]['inds'],[116],
+    yield assert_array_equal(summary['0']['inds'],[116],
                              'wrong peak indices for voxel 0')
-    yield assert_array_equal(summary[str(10)]['inds'],[105, 78],
+    yield assert_array_equal(summary['10']['inds'],[105, 78],
                              'wrong peak indices for voxel 10')
-    yield assert_array_equal(summary[str(44)]['inds'],[95, 84, 108],
+    yield assert_array_equal(summary['44']['inds'],[95, 84, 108],
                              'wrong peak indices for voxel 44')
 
     yield assert_equal(np.argmax(summary['0']['odf']), 116)
@@ -147,22 +171,30 @@ def test_gqiodf():
     yield assert_equal(np.argmax(summary['44']['odf']), 95)
 
     pole_1 = summary['vertices'][116]
-    print 'pole_1', pole_1
+    #print 'pole_1', pole_1
     pole_2 = summary['vertices'][105]
-    print 'pole_2', pole_2
+    #print 'pole_2', pole_2
     pole_3 = summary['vertices'][95]
-    print 'pole_3', pole_3
+    #print 'pole_3', pole_3
 
     vertices = summary['vertices']
 
-    width = 0.05#0.3 #0.05
+    width = 0.02#0.3 #0.05
     
+    '''
     print 'pole_1 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_1)) < width])
     print 'pole_2 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_2)) < width])
     print 'pole_3 equator contains:', len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole_3)) < width])
+    '''
+    
+    #print 'pole_1 equator contains:', len(meshes.equatorial_vertices(vertices,pole_1,width))
+    #print 'pole_2 equator contains:', len(meshes.equatorial_vertices(vertices,pole_2,width))
+    #print 'pole_3 equator contains:', len(meshes'equatorial_vertices(vertices,pole_3,width))
 
-    print [len([i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]) for pv, pole in enumerate(vertices)]
-
+    #print triple_odf_maxima(vertices,summary['0']['odf'],width)
+    #print triple_odf_maxima(vertices,summary['10']['odf'],width)
+    #print triple_odf_maxima(vertices,summary['44']['odf'],width)
+    #print summary['0']['evals']
     '''
 
     pole=np.array([0,0,1])
@@ -176,9 +208,105 @@ def test_gqiodf():
     fos.show(r)
 
     '''
+
+    triple = triple_odf_maxima(vertices, summary['10']['odf'], width)
+    
+    indmax1, odfmax1 = triple[0]
+    indmax2, odfmax2 = triple[1]
+    indmax3, odfmax3 = triple[2] 
+    
+    from dipy.viz import fos
+    r=fos.ren()
+    for v in vertices:
+        fos.add(r,fos.point(v,fos.cyan))
+    fos.add(r,fos.sphere(upper_hemi_map(vertices[indmax1]),radius=0.1,color=fos.red))
+    #fos.add(r,fos.line(np.array([0,0,0]),vertices[indmax1]))
+    fos.add(r,fos.sphere(upper_hemi_map(vertices[indmax2]),radius=0.05,color=fos.green))
+    fos.add(r,fos.sphere(upper_hemi_map(vertices[indmax3]),radius=0.025,color=fos.blue))
+    fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,0]),radius=0.1,color=fos.red,opacity=0.7))
+    fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,1]),radius=0.05,color=fos.green,opacity=0.7))
+    fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,2]),radius=0.025,color=fos.blue,opacity=0.7))
+    fos.add(r,fos.sphere([0,0,0],radius=0.01,color=fos.white))
+    fos.show(r)
+    
+    
+    mat = np.vstack([vertices[indmax1],vertices[indmax2],vertices[indmax3]])
+
+    print np.dot(mat,np.transpose(mat))
+    # this is to assess how othogonal the triple is/are
+    print np.dot(summary['0']['evecs'],np.transpose(mat))
     
     #return summary
 
+def upper_hemi_map(v):
+    '''
+    maps a 3-vector into the z-upper hemisphere
+    '''
+    return np.sign(v[2])*v
+
+def equatorial_maximum(vertices, odf, pole, width):
+
+    eqvert = meshes.equatorial_vertices(vertices, pole, width)
+
+    '''
+    need to test for whether eqvert is empty or not
+    '''
+    if len(eqvert) == 0:
+
+        print 'empty equatorial band at pole', pole, 'with width', width
+
+        return Null, Null
+
+    eqvals = [odf[i] for i in eqvert]
+
+    eqargmax = np.argmax(eqvals)
+
+    eqvertmax = eqvert[eqargmax]
+
+    eqvalmax = eqvals[eqargmax]
+
+    return eqvertmax, eqvalmax
+
+def patch_vertices(vertices,pole, width):
+    '''
+    find 'vertices' within the cone of 'width' around 'pole'
+    '''
+    
+    return [i for i,v in enumerate(vertices) if np.dot(v,pole) > 1- width]
+
+
+def patch_maximum(vertices, odf, pole, width):
+
+    eqvert = patch_vertices(vertices, pole, width)
+
+    '''
+    need to test for whether eqvert is empty or not
+    '''
+    if len(eqvert) == 0:
+
+        print 'empty cone around pole', pole, 'with width', width
+
+        return Null, Null
+
+    eqvals = [odf[i] for i in eqvert]
+
+    eqargmax = np.argmax(eqvals)
+
+    eqvertmax = eqvert[eqargmax]
+
+    eqvalmax = eqvals[eqargmax]
+
+    return eqvertmax, eqvalmax
+
+def triple_odf_maxima(vertices, odf, width):
+
+    indmax1 = np.argmax([odf[i] for i,v in enumerate(vertices)])
+    odfmax1 = odf[indmax1]
+    indmax2, odfmax2 = equatorial_maximum(vertices, odf, vertices[indmax1], width)
+    cross12 = np.cross(vertices[indmax1],vertices[indmax2])
+    indmax3, odfmax3 = patch_maximum(vertices, odf, cross12, width)
+    return [(indmax1, odfmax1),(indmax2, odfmax2),(indmax3, odfmax3)]
+    
 @parametric
 def test_gqi_small():
 

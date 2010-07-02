@@ -37,9 +37,9 @@ def test_tensor_scalar_attributes():
 
     ### CALCULATE ESTIMATE VALUES ###
     dummy_data = np.zeros((1,10)) #single voxel
-    dummy_gtab = np.zeros((3,10))
+    dummy_gtab = np.zeros((10,3))
     dummy_bval = np.zeros((10,))
-    tensor = dti.Tensor(dummy_data,dummy_gtab,dummy_bval)
+    tensor = dti.Tensor(dummy_data,dummy_bval,dummy_gtab)
     tensor.evals = evals.reshape((-1,)+evals.shape)
     tensor.evecs = evecs.reshape((-1,)+evecs.shape)
     
@@ -47,14 +47,10 @@ def test_tensor_scalar_attributes():
     yield assert_almost_equal(np.abs(np.dot(evecs[:, 2], 
                 tensor[0].evecs[:, 2].T)), 1., 
                 msg = "Calculation of third eigenvector is not right")
-    yield assert_array_almost_equal(D, tensor[0].D, err_msg = 
-                "Recovery of self diffusion tensor from eig not adaquate")
-    yield assert_almost_equal(ADC, tensor[0].adc(), msg = 
-                "Calculation of ADC of self diffusion tensor is not adequate")
-    yield assert_almost_equal(FA, tensor[0].fa(), msg = 
-                "Calculation of FA of self diffusion tensor is not adequate")
-    yield assert_almost_equal(MD, tensor[0].md(), msg = 
-                "Calculation of MD of self diffusion tensor is not adequate")
+    yield assert_array_almost_equal(D, tensor[0].D, err_msg = "Recovery of self diffusion tensor from eig not adaquate")
+    yield assert_almost_equal(ADC, tensor[0].adc(), msg = "Calculation of ADC of self diffusion tensor is not adequate")
+    yield assert_almost_equal(FA, tensor[0].fa(), msg = "Calculation of FA of self diffusion tensor is not adequate")
+    yield assert_almost_equal(MD, tensor[0].md(), msg = "Calculation of MD of self diffusion tensor is not adequate")
 
     
     #yield assert_equal(m_list.shape, n_list.shape)
@@ -97,8 +93,7 @@ def test_WLS_fit():
     
     ### Testing WLS Fit on Single Voxel ###
     #Estimate tensor from test signals
-    tensor_est = dti.Tensor(Y, gtab, bval)
+    tensor_est = dti.Tensor(Y,bval,gtab.T)
     yield assert_array_almost_equal(tensor_est[0].evals, evals)
-    yield assert_array_almost_equal(tensor_est[0].D, tensor,err_msg= 
-            "Calculation of tensor from Y does not compare to analytical solution")
+    yield assert_array_almost_equal(tensor_est[0].D, tensor,err_msg= "Calculation of tensor from Y does not compare to analytical solution")
 

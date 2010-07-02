@@ -35,7 +35,7 @@ if not os.path.isfile(C_fname):
     print 'Done in total of ',time.clock()-tim,'seconds.'
 
     print 'Saving result...'
-    pkl.save_pickle(C_fname,C)    
+    pkl.save_pickle(C_fname,C)
     
     streams=[(i,None,None)for i in atracks]
     tv.write(appr_fname,streams,hdr)
@@ -47,7 +47,6 @@ else:
 
 skel=[]
 for c in C:
-
     skel.append(C[c]['repz'])
     
 print 'Showing dataset after clustering...'
