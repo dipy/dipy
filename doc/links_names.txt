@@ -141,3 +141,5 @@
 .. _`wikipedia shear matrix`: http://en.wikipedia.org/wiki/Shear_matrix
 .. _`wikipedia reflection`: http://en.wikipedia.org/wiki/Reflection_(mathematics)
 .. _`wikipedia direction cosine`: http://en.wikipedia.org/wiki/Direction_cosine
+
+

@@ -4,7 +4,11 @@ If you are using the Local Skeleton Clustering (LSC) method please cite:
 
 **Fast Dimensionality Reduction for Brain Tractography Clustering**, E. Garyfallidis, M. Brett, I. Nimmo-Smith, HBM 2010.
 
-For non-clustering related projects please cite:
+If you are using Generalized Q-sampling please cite:
+
+**Generalized Q-Sampling Imaging**, Frank Yeh, IEEE TMI 2010.
+
+For other projects please cite:
 
 **Identification of corresponding tracks in diffusion MRI tractographies**, E. Garyfallidis et.al. ISMRM 2010.
 
@@ -21,7 +25,7 @@ The core development team consists of the following individuals:
 - Christopher Nguyen, University of California, Los Angeles
 - And your name here ...
 
-**Join in the fun!**
+**Join in the fun** and enjoy the `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we made for the Summer Exhibition in London for the celebration of the 350 years of the Royal Society.
  
 .. image:: _static/simplified_tractography.png
 
