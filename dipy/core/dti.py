@@ -27,10 +27,13 @@ class Tensor(object):
         The image data needs at least 2 dimensions where the first dimension
         holds the set of voxels that WLS_fit will perform on and second 
         dimension holds the diffusion weighted signals.
-    gtab : ndarray (3, g)
-        Diffusion gradient table found in DICOM header as a numpy ndarray.
+
     bval : ndarray (g, 1)
         Diffusion weighting factor b for each vector in gtab.
+
+    gtab : ndarray (g, 3)
+        Diffusion gradient table found in DICOM header as a numpy ndarray.
+        
     mask : ndarray (0 <= V, 1), optional
         Mask of data that WLS_fit will NOT perform on. If mask is not boolean,
         then WLS_fit will operate where mask > 0. Note: mask.ndim <= data.ndim
@@ -177,12 +180,12 @@ class Tensor(object):
     evecs = property(_getevecs, _setevecs, 
                                 doc = "Eigenvectors of self diffusion tensor")
 
-    def __init__(self, data, grad_table, b_values, mask = True, thresh = 0,
+    def __init__(self, data, b_values,grad_table, mask = True, thresh = 0,
                  verbose = False):    
         dims = data.shape
         
         #64 bit design matrix makes for faster pinv
-        B = design_matrix(grad_table, b_values)
+        B = design_matrix(grad_table.T, b_values)
         self.B = B
 
         self._evecs = np.zeros(data.shape[:-1] + (3, 3))
@@ -210,6 +213,10 @@ class Tensor(object):
     
     D = property(_getD, doc = "Self diffusion tensor")
 
+    @property
+    def ADC(self):
+        return self.adc()
+    
     def adc(self):
         """
         Apparent diffusion coefficient (ADC) calculated from diagonal elements
@@ -231,6 +238,10 @@ class Tensor(object):
         Dyy = self.D[..., 1, 1]
         Dzz = self.D[..., 2, 2]
         return (Dxx + Dyy + Dzz) / 3.
+
+    @property
+    def FA(self):
+        return self.fa()
 
     def fa(self):
         """
@@ -270,6 +281,11 @@ class Tensor(object):
 
         return fa 
 
+
+    @property
+    def MD(self):
+        return self.md()
+    
     def md(self):
         """
         Mean diffusitivity (MD) calculated from cached eigenvalues. 
@@ -289,6 +305,10 @@ class Tensor(object):
         return (self.evals[..., 0] + self.evals[..., 1] + 
                 self.evals[..., 2]) / 3
 
+
+    @property
+    def IN(self):        
+        return quantize_evecs(self.evecs,odf_vertices=None)
 
 def wls_fit_tensor(design_matrix, data):
     """
@@ -552,6 +572,29 @@ def design_matrix(gtab, bval, dtype=None):
     return -B
 
 
+
+
+def quantize_evecs(evecs,odf_vertices=None):
+
+    ''' Find the closest orientation of an evenly distributed sphere
+    '''
+    
+    max_evecs=evecs[...,:,0]
+
+    if odf_vertices==None:
+        
+        eds=np.load(os.path.join(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))        
+        odf_vertices=eds['vertices']
+
+    x,y,z=max_evecs.shape[:3]
+    mec=max_evecs.reshape(x*y*z,3)
+    IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
+    IN=IN.reshape(x,y,z)
+
+    return IN
+
+
+
 ##############################################################################
 #The following are/will be DEPRECATED
 ##############################################################################
@@ -709,24 +752,7 @@ def __save_scalar_maps(scalar_maps, img=None, coordmap=None):
 
     return
 
-def quantize_evecs(evecs,odf_vertices=None):
 
-    ''' Useful function for creating tracts using FACT method from tensors
-    '''
-    
-    max_evecs=evecs[...,:,0]
-
-    if odf_vertices==None:
-        
-        eds=np.load(os.path.join(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))        
-        odf_vertices=eds['vertices']
-
-    x,y,z=max_evecs.shape[:3]
-    mec=max_evecs.reshape(x*y*z,3)
-    IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
-    IN=IN.reshape(x,y,z)
-
-    return IN
 
         
 

@@ -8,6 +8,7 @@ import dipy.io.track_volumes as track_volumes
 
 from dipy.core.generalized_q_sampling import GeneralizedQSampling
 from dipy.core.dti import Tensor
+from dipy.core.track_propagation import FACT_Delta
 
 try:
     from nipy.neurospin import register as volume_register

@@ -30,17 +30,13 @@ T=tp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=10000).tracks
 t4=time.clock()
 print ('Create %d QA tracks in %d secs' %(len(T),t4-t3))
 
-#'''
+
 #calculate single tensor
-ten=dt.Tensor(data,gradients.T,bvals,thresh=50)
+ten=dt.Tensor(data,bvals,gradients,thresh=50)
 t5=time.clock()
 print('Create FA in %d secs' %(t5-t4))
      
-
-IN2=dt.quantize_evecs(ten.evecs)
-FA=ten.fa()
-
-T2=tp.FACT_Delta(FA,IN2,seeds_no=10000,qa_thr=0.2).tracks
+T2=tp.FACT_Delta(ten.FA,ten.IN,seeds_no=10000,qa_thr=0.2).tracks
 t6=time.clock()
 print ('Create %d FA tracks in %d secs' %(len(T2),t6-t5))
 
@@ -52,7 +48,7 @@ r=fos.ren()
 fos.add(r,fos.line(T,fos.red))
 fos.add(r,fos.line(T2,fos.green))
 fos.show(r)
-#'''
+
 
 
 
