@@ -66,6 +66,7 @@ restart your terminal.
 
 Finally, download and install nipy::
 
+         sudo easy_install -U sympy
          cd ..
          git clone git://github.com/nipy/nipy.git
          cd nipy
@@ -75,7 +76,7 @@ Finally, download and install nipy::
          cd ~/.nipy/nipy
          wget http://nipy.sourceforge.net/data-packages/nipy-templates-0.2.tar.gz
          tar -xzvf nipy-templates-0.2.tar.gz
-         mv nipy-templates-0.2/templats .
+         mv nipy-templates-0.2/templates .
          wget http://nipy.sourceforge.net/data-packages/nipy-data-0.2.tar.gz
          tar -xzvf nipy-data-0.2.tar.gz
          mv nipy-data-0.2/data .                 
@@ -85,7 +86,7 @@ After doing the above execute ipython in the terminal and try::
 
     >>> import dipy
 
-You can also try to run the python files in the demos directory.
+You can also try to run the python files in the examples directory.
 
 Do they work? For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
