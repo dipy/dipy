@@ -120,7 +120,7 @@ def jackknife(pdf, statistic = np.std, M = None):
     jk_pdf = np.empty((M,))
     
     for ii in range(0, M):
-        rand_index = np.round(np.random.random() * (N -1))
+        rand_index = np.round(np.random.random() * (N - 1))
         #choose a unique random sample to remove
         while pdf_mask[rand_index] == 0 :
             rand_index = np.round(np.random.random() * (N - 1))
