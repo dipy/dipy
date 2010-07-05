@@ -41,7 +41,7 @@ class GeneralizedQSampling():
         Notes
         -----
         In order to reconstruct the spin distribution function  a nice symmetric evenly distributed sphere is provided using 362 points. This is usually
-        sufficient for every dataset. 
+        sufficient for most of the datasets. 
 
         See also
         --------
@@ -75,11 +75,24 @@ class GeneralizedQSampling():
         #tot_mask = (mask > 0) & (data[...,0] > thresh)
         
         S=data
-        x,y,z,g=S.shape
-        S=S.reshape(x*y*z,g)
-        QA = np.zeros((x*y*z,5))
-        IN = np.zeros((x*y*z,5))
-        fwd = 0
+
+        datashape=S.shape #initial shape
+
+        if len(datashape)==4:
+
+            x,y,z,g=S.shape        
+            S=S.reshape(x*y*z,g)
+            QA = np.zeros((x*y*z,5))
+            IN = np.zeros((x*y*z,5))
+
+        if len(datashape)==2:
+
+            x,g=S.shape
+            QA = np.zeros((x,5))
+            IN = np.zeros((x,5))      
+            
+
+        normal_param = 0
 
         self.q2odf_params=q2odf_params
 
@@ -91,7 +104,7 @@ class GeneralizedQSampling():
             #Q to ODF
             odf=np.dot(s,q2odf_params)            
             peaks,inds=rp.peak_finding(odf,odf_faces)            
-            fwd=max(np.max(odf),fwd)
+            normal_param=max(np.max(odf),normal_param)
             #remove the isotropic part
             peaks = peaks - np.min(odf)
             l=min(len(peaks),5)
@@ -99,8 +112,20 @@ class GeneralizedQSampling():
             IN[i][:l] = inds[:l]
 
         #normalize
-        QA/=fwd
+        QA/=normal_param
 
-        self.QA=QA.reshape(x,y,z,5)    
-        self.IN=IN.reshape(x,y,z,5)
-        self.fwd = fwd
+        print('shape %d,%d,%d' % (x,y,z))
+        print('datashape',datashape)
+
+        if len(datashape) == 4:
+
+            self.QA=QA.reshape(x,y,z,5)    
+            self.IN=IN.reshape(x,y,z,5)
+
+        if len(datashape) == 2:
+
+            self.QA=QA
+            self.IN=IN
+            
+        self.normal_param = normal_param
+        

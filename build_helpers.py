@@ -7,7 +7,7 @@ from distutils.extension import Extension
 
 
 def make_cython_ext(modulename,
-                    has_cython,
+                    has_cython=True,
                     include_dirs=None,
                     extra_c_sources=None):
     ''' Create Cython extension builder from module names
@@ -25,8 +25,8 @@ def make_cython_ext(modulename,
     modulename : string
        module name, relative to setup.py path, with python dot
        separators, e.g mypkg.mysubpkg.mymodule
-    has_cython : bool
-       True if we have cython, False otherwise
+    has_cython : bool, optional
+       True if we have cython, False otherwise, default True
     include_dirs : None or sequence
        include directories
     extra_c_sources : None or sequence

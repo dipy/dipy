@@ -306,7 +306,17 @@ class Tensor(object):
 
 
     @property
-    def IN(self):        
+    def IN(self):
+        ''' Quantizes eigenvectors with maximum eigenvalues  on an
+        evenly distributed sphere so that the can be used for tractography.
+
+        Returns
+        -------
+        IN: array, shape(x,y,z) integer indices for the points of the
+        evenly distributed sphere representing tensor  eigenvectors of
+        maximum eigenvalue
+    
+        '''
         return quantize_evecs(self.evecs,odf_vertices=None)
 
 def wls_fit_tensor(design_matrix, data):
