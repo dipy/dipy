@@ -29,6 +29,7 @@ except pyglet.window.NoSuchConfigException:
 @window.event
 def on_resize(width, height):
     # Override the default on_resize handler to create a 3D projection
+    print('%d width, %d height' % (width,height))
     glViewport(0, 0, width, height)
     glMatrixMode(GL_PROJECTION)
     glLoadIdentity()
@@ -40,12 +41,12 @@ def on_resize(width, height):
 def update(dt):
     global rx, ry, rz
 
-    rx += dt * 1
-    ry += dt * 80
-    rz += dt * 30
-    rx %= 360
-    ry %= 360
-    rz %= 360
+    rx += dt * 30
+    #ry += dt * 80
+    #rz += dt * 30
+    #rx %= 360
+    #ry %= 360
+    #rz %= 360
     
     pass
     
@@ -66,8 +67,8 @@ def setup():
     # One-time GL setup
     glClearColor(1, 1, 1, 1)
     glColor3f(1, 0, 0)
-    glEnable(GL_DEPTH_TEST)
-    glEnable(GL_CULL_FACE)
+    #glEnable(GL_DEPTH_TEST)
+    #glEnable(GL_CULL_FACE)
 
     # Uncomment this line for a wireframe view
     #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
@@ -77,7 +78,10 @@ def setup():
     # include it.
     glEnable(GL_LIGHTING)
     glEnable(GL_LIGHT0)
-    glEnable(GL_LIGHT1)
+    #glEnable(GL_LIGHT1)
+
+    glEnable(GL_NORMALIZE)
+    glLineWidth(3.)
 
     # Define a simple function to create ctypes arrays of floats:
     def vec(*args):
@@ -86,12 +90,15 @@ def setup():
     glLightfv(GL_LIGHT0, GL_POSITION, vec(.5, .5, 1, 0))
     glLightfv(GL_LIGHT0, GL_SPECULAR, vec(.5, .5, 1, 1))
     glLightfv(GL_LIGHT0, GL_DIFFUSE, vec(1, 1, 1, 1))
+
+    '''
     glLightfv(GL_LIGHT1, GL_POSITION, vec(1, 0, .5, 0))
     glLightfv(GL_LIGHT1, GL_DIFFUSE, vec(.5, .5, .5, 1))
     glLightfv(GL_LIGHT1, GL_SPECULAR, vec(1, 1, 1, 1))
+    '''
 
-    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, vec(0.5, 0, 0.3, 1))
-    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, vec(1, 1, 1, 1))
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, vec(0.5, 0, 0.3, 0.5))
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, vec(1, 1, 1, 0.5))
     glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, 50)
 
 class Surface(object):
@@ -123,13 +130,22 @@ class Surface(object):
             
 
         #1/0
-        
+
+        '''
         self.vertex_list = batch.add_indexed(len(vertices),\
                                                  GL_TRIANGLES,\
                                                  group,\
                                                  inds,\
                                                  ('v3d/static',verx),\
                                                  ('n3d/static',norms))
+        '''
+        self.vertex_list = batch.add_indexed(len(vertices),\
+                                                 GL_TRIANGLES,\
+                                                 group,\
+                                                 inds,\
+                                                 ('v3d/static',verx))
+
+        
 
     def delete(self):
         self.vertex_list.delete()
@@ -201,9 +217,9 @@ eds=np.load('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_
 vertices=eds['vertices']
 faces=eds['faces']
 
-surf = Surface(vertices,faces, batch=batch)
+#surf = Surface(vertices,faces, batch=batch)
 rx = ry = rz = 0
-#torus = Torus(1, 0.3, 50, 30, batch=batch)
+torus = Torus(1, 0.3, 50, 30, batch=batch)
 
 print('Application Starting Now...')
 pyglet.app.run()
