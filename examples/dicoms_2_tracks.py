@@ -7,8 +7,11 @@ import dipy.core.track_propagation as tp
 from dipy.viz import fos
 
 dname ='/home/eg01/Data_Backup/Data/Eleftherios/CBU090134_METHODS/20090227_154122/Series_003_CBU_DTI_64D_iso_1000'
-
 #dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
+
+#
+#The datasets need to have isotropic voxel size.
+#
 
 t1=time.clock()
 data,affine,bvals,gradients=dcm.read_mosaic_dir(dname)
@@ -21,6 +24,9 @@ print('data shape is ',data.shape)
 
 #calculate QA
 gqs=gq.GeneralizedQSampling(data,bvals,gradients)
+
+print('gqs.QA.shape ',gqs.QA.shape)
+
 
 t3=time.clock()
 print ('Generate QA in %d secs' %(t3-t2))

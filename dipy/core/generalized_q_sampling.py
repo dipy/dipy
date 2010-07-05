@@ -76,17 +76,20 @@ class GeneralizedQSampling():
         
         S=data
 
-        if len(S.shape)==4:
+        datashape=S.shape #initial shape
+
+        if len(datashape)==4:
 
             x,y,z,g=S.shape        
             S=S.reshape(x*y*z,g)
             QA = np.zeros((x*y*z,5))
             IN = np.zeros((x*y*z,5))
 
-        if len(S.shape)==2:
+        if len(datashape)==2:
 
-            QA = np.zeros(S.shape)
-            IN = np.zeros(S.shape)      
+            x,g=S.shape
+            QA = np.zeros((x,5))
+            IN = np.zeros((x,5))      
             
 
         normal_param = 0
@@ -111,9 +114,18 @@ class GeneralizedQSampling():
         #normalize
         QA/=normal_param
 
-        if len(S.shape) == 4:
+        print('shape %d,%d,%d' % (x,y,z))
+        print('datashape',datashape)
+
+        if len(datashape) == 4:
 
             self.QA=QA.reshape(x,y,z,5)    
             self.IN=IN.reshape(x,y,z,5)
+
+        if len(datashape) == 2:
+
+            self.QA=QA
+            self.IN=IN
             
         self.normal_param = normal_param
+        
