@@ -10,7 +10,7 @@ from dipy.core.meshes import (
     vertinds_to_neighbors,
     vertinds_faces,
     argmax_from_adj,
-    peak_finding_compatible
+    peak_finding_compatible,
     edges,
     vertex_adjacencies)
 

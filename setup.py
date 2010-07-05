@@ -5,31 +5,31 @@ from os.path import join as pjoin
 from glob import glob
 from distutils.core import setup
 from distutils.extension import Extension
+from distutils.version import LooseVersion
+
 import numpy as np
 
 from build_helpers import make_cython_ext
 
-# we use cython to compile the module if we have it
+# we use cython to compile the modules
 try:
-    import Cython
+    from Cython.Compiler.Version import version
 except ImportError:
-    has_cython = False
-else:
-    has_cython = True
+    raise RuntimeError('You need cython to build dipy')
+if LooseVersion(version) < LooseVersion('0.12.1'):
+    raise RuntimeError('Need cython >= 0.12.1 to build dipy')
+
 
 per_ext, cmdclass = make_cython_ext(
     'dipy.core.track_performance',
-    has_cython,
     include_dirs = [np.get_include()])
 
 tvol_ext, cmdclass = make_cython_ext(
     'dipy.io.track_volumes',
-    has_cython,
     include_dirs = [np.get_include()])
 
 rec_ext, cmdclass = make_cython_ext(
     'dipy.core.reconstruction_performance',
-    has_cython,
     include_dirs = [np.get_include()])
 
 
