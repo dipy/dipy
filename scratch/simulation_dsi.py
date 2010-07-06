@@ -7,13 +7,15 @@ from pyglet.gl import *
 try:
     # Try and create a window with multisampling (antialiasing)
     config = Config(sample_buffers=1, samples=4, 
-                    depth_size=24, double_buffer=True)
+                    depth_size=24, double_buffer=True,vsync=False)
     window = pyglet.window.Window(resizable=True, config=config)
 except pyglet.window.NoSuchConfigException:
     # Fall back to no multisampling for old hardware
     window = pyglet.window.Window(resizable=True)
 
 
+#fps_display = pyglet.clock.ClockDisplay()
+    
 @window.event
 def on_resize(width, height):
     # Override the default on_resize handler to create a 3D projection
@@ -29,7 +31,7 @@ def on_resize(width, height):
 def update(dt):
     global rx, ry, rz
 
-    rx += dt * 30
+    #rx += dt * 5
     #ry += dt * 80
     #rz += dt * 30
     #rx %= 360
@@ -37,14 +39,34 @@ def update(dt):
     #rz %= 360
    
     pass
-    
-pyglet.clock.schedule(update)
+
+pyglet.clock.schedule(update) 
+#pyglet.clock.schedule_interval(update,1/100.)
 
 @window.event
 def on_draw():
 
+    global surf
+
+    for i in range(0,900,3):
+
+        if np.random.rand()>0.5:
+
+            surf.vertex_list.vertices[i]+=0.001*np.random.rand()
+            surf.vertex_list.vertices[i+1]+=0.001*np.random.rand()
+            surf.vertex_list.vertices[i+2]+=0.001*np.random.rand()
+            
+        else:
+            
+            surf.vertex_list.vertices[i]-=0.001*np.random.rand()
+            surf.vertex_list.vertices[i+1]-=0.001*np.random.rand()
+            surf.vertex_list.vertices[i+2]-=0.001*np.random.rand()
+
+    
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
     glLoadIdentity()
+
+    #fps_display.draw()
 
     #glScalef(3,1,1)
     glTranslatef(0, 0, -4)
@@ -54,15 +76,24 @@ def on_draw():
 
     batch.draw()
 
+    #pyglet.image.get_buffer_manager().get_color_buffer().save('/tmp/test.png')
+
+    print pyglet.clock.get_fps()
+
+    #window.clear()
+
+    #fps_display.draw()
+
 def setup():
     # One-time GL setup
     glClearColor(1, 1, 1, 1)
+    #glClearColor(0,0,0,0)
     glColor3f(1, 0, 0)
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_CULL_FACE)
 
     # Uncomment this line for a wireframe view
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+    #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
     glLineWidth(3.)
 
     # Simple light setup.  On Windows GL_LIGHT0 is enabled by default,
@@ -121,33 +152,27 @@ class Surface(object):
         self.vertex_list.delete()
                                              
 
-#'''
-fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_1fibre'
+
+#fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_1fibre'
+fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_isotropic'
+
 sim_data=np.loadtxt(fname)
 #bvalsf='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/bvals101D_float.txt'
 dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
 
 real_data,affine,bvals,gradients=dp.load_dcm_dir(dname)
 
+sim_data=sim_data[:100]
+
 gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
 #'''
 
+evals=tn.evals[0]
+evecs=tn.evecs[0]
 
-
-
-
-
-
-
-
-
-        
 setup()
 batch = pyglet.graphics.Batch()
-
-#sphere=np.load('/home/eg01/Desktop/200.npy')
-#sphere=np.concatenate([sphere,-sphere])
 
 eds=np.load('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz')
 
