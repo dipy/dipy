@@ -114,9 +114,7 @@ class GeneralizedQSampling():
         #normalize
         QA/=normal_param
 
-        print('shape %d,%d,%d' % (x,y,z))
-        print('datashape',datashape)
-
+       
         if len(datashape) == 4:
 
             self.QA=QA.reshape(x,y,z,5)    
