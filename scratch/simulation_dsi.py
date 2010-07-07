@@ -90,10 +90,10 @@ def setup():
     #glClearColor(0,0,0,0)
     glColor3f(1, 0, 0)
     glEnable(GL_DEPTH_TEST)
-    glEnable(GL_CULL_FACE)
+    #glEnable(GL_CULL_FACE)
 
     # Uncomment this line for a wireframe view
-    #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
     glLineWidth(3.)
 
     # Simple light setup.  On Windows GL_LIGHT0 is enabled by default,
@@ -153,16 +153,21 @@ class Surface(object):
                                              
 
 
-#fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_1fibre'
-fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_isotropic'
-
+fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_1fibre'
+#fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_isotropic'
+marta_table_fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/Dir_and_bvals_DSI_marta.txt'
 sim_data=np.loadtxt(fname)
 #bvalsf='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/bvals101D_float.txt'
 dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
 
-real_data,affine,bvals,gradients=dp.load_dcm_dir(dname)
+#real_data,affine,bvals,gradients=dp.load_dcm_dir(dname)
 
-sim_data=sim_data[:100]
+b_vals_dirs=np.loadtxt(marta_table_fname)
+
+bvals=b_vals_dirs[:,0]*1000
+gradients=b_vals_dirs[:,1:]
+
+sim_data=sim_data
 
 gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
@@ -185,7 +190,7 @@ rx = ry = rz = 0
 print('Application Starting Now...')
 pyglet.app.run()
 
-    
+ 
 
 
 
