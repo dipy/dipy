@@ -72,7 +72,7 @@ def jackknife(pdf, statistic = np.std, M = None):
         large.
     statistic : method (optional)
         Method to calculate the desired statistic. (Default: calculate 
-        standard error)
+        standard deviation)
     M : integer (M < N)
         Total number of samples in jackknife pdf. (Default: 10% of N)
     
@@ -128,7 +128,7 @@ def jackknife(pdf, statistic = np.std, M = None):
         pdf_mask[rand_index] = 0
         jk_pdf[ii] = statistic(pdf[pdf_mask > 0]) 
     
-    return jk_pdf, np.mean(jk_pdf) - statistic(pdf), np.std(jk_pdf)
+    return jk_pdf, np.mean(jk_pdf) - statistic(pdf), M/(M-1)*np.std(jk_pdf)
 
 def residual_bootstrap(data):
     pass
