@@ -194,6 +194,25 @@ rx = ry = rz = 0
 print('Application Starting Now...')
 pyglet.app.run()
 
+
+'''
+History of Eleftherios' demo:
+
+import pyglet
+cd Devel/dipy/scratch/
+run simulation_dsi_ian.py
+sim_data.shape
+figure(1); plot(tn.FA[:1000])
+figure(2); plot(tn.evecs[:1000][0])
+figure(2); plot(tn.evecs[:1000,0])
+figure(2); plot(tn.evals[:1000,0])
+figure(2); plot(tn.evals[:1000,1])
+figure(2); plot(tn.evals[:1000,2])
+figure(3);plot(gq.QA[:1000,0])
+figure(3);plot(gq.QA[:1000,1])
+figure(3);plot(gq.QA[:1000,2])
+
+'''
  
 
 
