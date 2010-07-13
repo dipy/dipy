@@ -97,7 +97,7 @@ class GeneralizedQSampling():
             IN = np.zeros((x,5))      
             
 
-        normal_param = 0
+        glob_norm_param = 0
 
         self.q2odf_params=q2odf_params
 
@@ -109,7 +109,7 @@ class GeneralizedQSampling():
             #Q to ODF
             odf=np.dot(s,q2odf_params)            
             peaks,inds=rp.peak_finding(odf,odf_faces)            
-            normal_param=max(np.max(odf),normal_param)
+            global_normalalisation_param=max(np.max(odf),global_normalisation_param)
             #remove the isotropic part
             peaks = peaks - np.min(odf)
             l=min(len(peaks),5)
@@ -117,7 +117,7 @@ class GeneralizedQSampling():
             IN[i][:l] = inds[:l]
 
         #normalize
-        QA/=normal_param
+        QA/=glob_norm_param
 
        
         if len(datashape) == 4:
@@ -130,5 +130,5 @@ class GeneralizedQSampling():
             self.QA=QA
             self.IN=IN
             
-        self.normal_param = normal_param
+        self.glob_norm_param = glob_norm_param
         
