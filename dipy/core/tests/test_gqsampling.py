@@ -214,7 +214,8 @@ def test_gqiodf():
     indmax1, odfmax1 = triple[0]
     indmax2, odfmax2 = triple[1]
     indmax3, odfmax3 = triple[2] 
-    
+
+    '''
     from dipy.viz import fos
     r=fos.ren()
     for v in vertices:
@@ -228,7 +229,7 @@ def test_gqiodf():
     fos.add(r,fos.sphere(upper_hemi_map(summary['0']['evecs'][:,2]),radius=0.025,color=fos.blue,opacity=0.7))
     fos.add(r,fos.sphere([0,0,0],radius=0.01,color=fos.white))
     fos.show(r)
-    
+    '''
     
     mat = np.vstack([vertices[indmax1],vertices[indmax2],vertices[indmax3]])
 

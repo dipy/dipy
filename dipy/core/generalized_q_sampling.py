@@ -6,7 +6,7 @@ from os.path import join as opj
 class GeneralizedQSampling():
 
 
-    def __init__(self,data,bvals,gradients,Lambda=1.2):
+    def __init__(self,data,bvals,gradients,Lambda=1.2,odfsphere=None):
 
         ''' Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
@@ -48,11 +48,16 @@ class GeneralizedQSampling():
         FACT_Delta, Tensor
 
         '''
-        
-        eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))        
+        if odfsphere == None:
+            eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))
+        else:
+            eds=np.load(opj(os.path.dirname(__file__),'matrices',odfsphere))
+            # e.g. odfsphere = evenly_distributed_sphere_642.npz
+
         odf_vertices=eds['vertices']
         odf_faces=eds['faces']
-
+            
+            
         # 0.01506 = 6*D where D is the free water diffusion coefficient 
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
