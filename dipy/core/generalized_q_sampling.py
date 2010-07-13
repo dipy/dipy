@@ -109,7 +109,7 @@ class GeneralizedQSampling():
             #Q to ODF
             odf=np.dot(s,q2odf_params)            
             peaks,inds=rp.peak_finding(odf,odf_faces)            
-            global_normalalisation_param=max(np.max(odf),global_normalisation_param)
+            glob_norm_param=max(np.max(odf),glob_norm_param)
             #remove the isotropic part
             peaks = peaks - np.min(odf)
             l=min(len(peaks),5)
