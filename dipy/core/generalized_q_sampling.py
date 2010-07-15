@@ -73,6 +73,7 @@ class GeneralizedQSampling():
 
         #define total mask 
         #tot_mask = (mask > 0) & (data[...,0] > thresh)
+
         
         S=data
 
@@ -124,6 +125,23 @@ class GeneralizedQSampling():
 
             self.QA=QA
             self.IN=IN
-            
+
+        
         self.normal_param = normal_param
         
+
+
+    def odf(self,s):
+        '''
+        Parameters
+        ----------
+        s: array, shape(D) diffusion signal for one point in the dataset
+
+        Returns
+        -------
+        odf: array, shape(len(odf_vertices)), orientation distribution function
+
+        '''
+
+        return np.dot(s,self.q2odf_params)
+
