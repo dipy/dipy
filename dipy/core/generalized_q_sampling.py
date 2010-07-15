@@ -48,8 +48,12 @@ class GeneralizedQSampling():
         FACT_Delta, Tensor
 
         '''
-        
-        eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))        
+        if odfsphere == None:
+            eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))
+        else:
+            eds=np.load(opj(os.path.dirname(__file__),'matrices',odfsphere))
+            # e.g. odfsphere = evenly_distributed_sphere_642.npz
+
         odf_vertices=eds['vertices']
         odf_faces=eds['faces']
 
@@ -105,7 +109,7 @@ class GeneralizedQSampling():
             #Q to ODF
             odf=np.dot(s,q2odf_params)            
             peaks,inds=rp.peak_finding(odf,odf_faces)            
-            normal_param=max(np.max(odf),normal_param)
+            glob_norm_param=max(np.max(odf),glob_norm_param)
             #remove the isotropic part
             peaks = peaks - np.min(odf)
             l=min(len(peaks),5)
@@ -113,7 +117,7 @@ class GeneralizedQSampling():
             IN[i][:l] = inds[:l]
 
         #normalize
-        QA/=normal_param
+        QA/=glob_norm_param
 
        
         if len(datashape) == 4:
@@ -125,9 +129,8 @@ class GeneralizedQSampling():
 
             self.QA=QA
             self.IN=IN
-
-        
-        self.normal_param = normal_param
+            
+        self.glob_norm_param = glob_norm_param
         
 
 
