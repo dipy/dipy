@@ -153,14 +153,18 @@ class Surface(object):
                                              
 
 
-fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_1fibre'
+fname='/home/ian/Data/SimData/results_SNR030_1fibre'
 #fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_isotropic'
-marta_table_fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/Dir_and_bvals_DSI_marta.txt'
+
+
+''' file  has one row for every voxel, every voxel is repeating 1000
+times with the same noise level , then we have 100 different
+directions. 1000 * 100 is the number of all rows.
+
+'''
+marta_table_fname='/home/ian/Data/SimData/Dir_and_bvals_DSI_marta.txt'
 sim_data=np.loadtxt(fname)
 #bvalsf='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/bvals101D_float.txt'
-dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
-
-#real_data,affine,bvals,gradients=dp.load_dcm_dir(dname)
 
 b_vals_dirs=np.loadtxt(marta_table_fname)
 
@@ -171,6 +175,7 @@ sim_data=sim_data
 
 gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
+#'''
 
 evals=tn.evals[0]
 evecs=tn.evecs[0]
@@ -178,7 +183,7 @@ evecs=tn.evecs[0]
 setup()
 batch = pyglet.graphics.Batch()
 
-eds=np.load('/home/eg01/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz')
+eds=np.load('/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz')
 
 vertices=eds['vertices']
 faces=eds['faces']
@@ -189,6 +194,25 @@ rx = ry = rz = 0
 print('Application Starting Now...')
 pyglet.app.run()
 
+
+'''
+History of Eleftherios' demo:
+
+import pyglet
+cd Devel/dipy/scratch/
+run simulation_dsi_ian.py
+sim_data.shape
+figure(1); plot(tn.FA[:1000])
+figure(2); plot(tn.evecs[:1000][0])
+figure(2); plot(tn.evecs[:1000,0])
+figure(2); plot(tn.evals[:1000,0])
+figure(2); plot(tn.evals[:1000,1])
+figure(2); plot(tn.evals[:1000,2])
+figure(3);plot(gq.QA[:1000,0])
+figure(3);plot(gq.QA[:1000,1])
+figure(3);plot(gq.QA[:1000,2])
+
+'''
  
 
 

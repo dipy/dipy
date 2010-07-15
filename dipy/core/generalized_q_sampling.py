@@ -48,8 +48,12 @@ class GeneralizedQSampling():
         FACT_Delta, Tensor
 
         '''
-        
-        eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))        
+        if odfsphere == None:
+            eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))
+        else:
+            eds=np.load(opj(os.path.dirname(__file__),'matrices',odfsphere))
+            # e.g. odfsphere = evenly_distributed_sphere_642.npz
+
         odf_vertices=eds['vertices']
         odf_faces=eds['faces']
 
@@ -73,6 +77,7 @@ class GeneralizedQSampling():
 
         #define total mask 
         #tot_mask = (mask > 0) & (data[...,0] > thresh)
+
         
         S=data
 
@@ -104,7 +109,7 @@ class GeneralizedQSampling():
             #Q to ODF
             odf=np.dot(s,q2odf_params)            
             peaks,inds=rp.peak_finding(odf,odf_faces)            
-            normal_param=max(np.max(odf),normal_param)
+            glob_norm_param=max(np.max(odf),glob_norm_param)
             #remove the isotropic part
             peaks = peaks - np.min(odf)
             l=min(len(peaks),5)
@@ -112,11 +117,9 @@ class GeneralizedQSampling():
             IN[i][:l] = inds[:l]
 
         #normalize
-        QA/=normal_param
+        QA/=glob_norm_param
 
-        print('shape %d,%d,%d' % (x,y,z))
-        print('datashape',datashape)
-
+       
         if len(datashape) == 4:
 
             self.QA=QA.reshape(x,y,z,5)    
@@ -127,5 +130,21 @@ class GeneralizedQSampling():
             self.QA=QA
             self.IN=IN
             
-        self.normal_param = normal_param
+        self.glob_norm_param = glob_norm_param
         
+
+
+    def odf(self,s):
+        '''
+        Parameters
+        ----------
+        s: array, shape(D) diffusion signal for one point in the dataset
+
+        Returns
+        -------
+        odf: array, shape(len(odf_vertices)), orientation distribution function
+
+        '''
+
+        return np.dot(s,self.q2odf_params)
+
