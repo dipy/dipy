@@ -171,7 +171,6 @@ sim_data=sim_data
 
 gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
-#'''
 
 evals=tn.evals[0]
 evecs=tn.evecs[0]

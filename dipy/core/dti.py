@@ -230,13 +230,10 @@ class Tensor(object):
         -----
         ADC is calculated with the following equation:
 
-        .. math:: ADC = \frac{D_xx+D_yy+D_zz}{3}
+        .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
 
         """
-        Dxx = self.D[..., 0, 0]
-        Dyy = self.D[..., 1, 1]
-        Dzz = self.D[..., 2, 2]
-        return (Dxx + Dyy + Dzz) / 3.
+        return self.evals.sum(-1) / 3.
 
     @property
     def FA(self):
