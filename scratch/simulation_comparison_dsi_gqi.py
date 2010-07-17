@@ -26,6 +26,9 @@ gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
 #'''
 
+print tn.evals.shape()
+print tn.evecs.shape()
+
 evals=tn.evals[0]
 evecs=tn.evecs[0]
 
