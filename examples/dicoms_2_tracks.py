@@ -24,7 +24,6 @@ print('data shape is ',data.shape)
 
 #calculate QA
 gqs=gq.GeneralizedQSampling(data,bvals,gradients)
-
 print('gqs.QA.shape ',gqs.QA.shape)
 
 
@@ -32,7 +31,6 @@ t3=time.clock()
 print ('Generate QA in %d secs' %(t3-t2))
 
 T=tp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=10000).tracks
-
 t4=time.clock()
 print ('Create %d QA tracks in %d secs' %(len(T),t4-t3))
 

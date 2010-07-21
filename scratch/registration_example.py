@@ -18,12 +18,18 @@ search='affine'
 optimizer= 'powell'
 
 
-def eddy_current_correction(data,affine):
+def eddy_current_correction(data,affine,target=None,target_affine=None):
     result=[]
     
     no_dirs=data.shape[-1]
-    for i in range(1,no_dirs):        
+
+    if target==None and target_affine==None:
         target=ni.Nifti1Image(data[:,:,:,0],affine)
+    else:
+        target=ni.Nifti1Image(target,target_affine)
+        
+    for i in range(1,no_dirs):        
+        
         source=ni.Nifti1Image(data[:,:,:,i],affine)        
         T=dp.volume_register(source,target,similarity,\
                                  interp,subsampling,search,optimizer)
@@ -53,17 +59,18 @@ def save_volumes_as_mosaic(fname,volume_list):
     
     vols=[]
     for vol in volume_list:
-    
-        sh=vol.shape    
+            
+        vol=np.rollaxis(vol,2,1)
+        sh=vol.shape
         arr=vol.reshape(sh[0],sh[1]*sh[2])
+        arr=np.interp(arr,[arr.min(),arr.max()],[0,255])
         arr=arr.astype('ubyte')
 
         print 'arr.shape',arr.shape
         
         vols.append(arr)
 
-    mosaic=np.concatenate(vols)    
-
+    mosaic=np.concatenate(vols)
     Image.fromarray(mosaic).save(fname)
 
 
@@ -76,18 +83,22 @@ if __name__ == '__main__':
     data_101,affine_101,bvals_101,gradients_101=dp.load_dcm_dir(dname_grid_101)    
     data_114,affine_114,bvals_114,gradients_114=dp.load_dcm_dir(dname_shell_114)
 
-    print data_101.shape,data_114.shape
+    print data_101.shape,data_114.shape    
     
-    '''
-    t1=time.clock()
-    res=eddy_current_correction(data,affine)
-    t2=time.clock()
-    print 'final shape',res.get_data().shape
-    '''
+    img_101T=register_source_2_target(data_101[...,0],affine_101,data_114[...,0],affine_114)    
+    target_101T=img_101T.get_data()
+    affine_101T=img_101T.get_affine()
+    img_101Tall=eddy_current_correction(data_101,affine_101,target=target_101T,target_affine=affine_101T)
 
-    img_101T=register_source_2_target(data_101[...,0],affine_101,data_114[...,0],affine_114)
-    save_volumes_as_mosaic('/tmp/mosaic1.png',[img_101T.get_data(),data_114[...,0]])
+    img_101Tall_data=img_101Tall.get_data()
+    img_101Tall_data[img_101Tall_data<0]=255
     
-
+    ten_101T=dp.Tensor( img_101Tall_data,bvals_101,gradients_101,thresh=50)
+    ten_114=dp.Tensor(data_114,bvals_114,gradients_114,thresh=50)
+        
+    save_volumes_as_mosaic('/tmp/mosaic.png',[data_114[...,0],img_101T.get_data(),ten_114.FA,ten_101T.FA])
+    
+    #save_volumes_as_mosaic('/tmp/mosaic_extra2.png',[data_114[...,0]])#,data_114[...,0]])
+    
 
     
