@@ -25,6 +25,38 @@ cdef extern from "math.h" nogil:
 # initialize numpy runtime
 cnp.import_array()
 
+#@cython.boundscheck(False)
+@cython.wraparound(False)
+def pf_bago(odf, edges_on_sphere):
+
+    cdef:
+        cnp.ndarray[cnp.uint16_t, ndim=2] cedges = np.ascontiguousarray(edges_on_sphere)
+        cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
+        cnp.ndarray[cnp.uint8_t, ndim=1] cpeak = np.ones(odf.shape, np.uint8)
+        int i=0
+        int lenedges = len(cedges)
+        int find0,find1
+    
+    for i from 0 <= i < lenedges:
+
+        find0 = cedges[i,0]
+        find1 = cedges[i,1]
+        
+        if codf[find0] >= codf[find1]:
+            cpeak[find1] = 0
+        else:
+            cpeak[find0] = 0
+
+    cpeak=np.array(cpeak)
+
+    #find local maxima and give fiber orientation (inds) and magnitude
+    #peaks in a descending order
+
+    inds=cpeak.nonzero()[0]
+    pinds=np.argsort(odf[inds])
+    peaks=odf[inds[pinds]][::-1]
+
+    return peaks, inds[pinds][::-1]
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
