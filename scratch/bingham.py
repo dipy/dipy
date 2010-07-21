@@ -44,7 +44,7 @@ def bingham_kernel(k1,k2,theta,phi):
     return np.exp(((k1*np.cos(phi)**2+k2*np.sin(phi)**2)*np.sin(theta)**2)/4*np.pi)
 
 def d(k1,k2):
-    print (k1,k2)
+    #print (k1,k2)
     return dblquad(lambda theta, phi: bingham_kernel(k1,k2,theta,phi), 0, np.pi, lambda phi: 0, lambda phi: 2*np.pi)[0]
 
 print d(-6.999, -3.345)
@@ -52,15 +52,15 @@ print d(-6.999, -3.345)
 
 #K1,K2,t1,t2,ph,th=sympy.symbols('K1,K2,t1,t2,ph,th')
 
-N = 1000
+N = 100
 
 def F((k1,k2),(t1,t2,N)):
     val = -N*4*np.pi - N*np.log(d(k1,k2)) + k1*t1 + k2*t2
-    print -val
+    print (-val,k1,k2)
     return -val
     
     
-min = fmin_powell(F,(1,1), ((-3.345, -6.999, 1000),))
+min = fmin_powell(F,(-1,-1), ((-3.345, -6.999, 1000),))
 
 print min
 
