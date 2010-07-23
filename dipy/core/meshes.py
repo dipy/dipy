@@ -342,11 +342,18 @@ def equatorial_statistics(vertices, width=0.02):
     ''' 
     equatorial_counts = [len(equatorial_vertices(vertices, pole, width)) for pole in vertices]
 
-    unique_counts = list(set(equatorial_counts))
+    #unique_counts = np.sort(np.array(list(set(equatorial_counts))))
+    bin_counts = np.bincount(equatorial_counts)
+    
+    #counts_tokens = [(uc,  bin_counts[uc]) for uc in bin_counts if ]
 
-    tokens = [len([i for i,c in enumerate(equatorial_counts) if c == uc]) for uc in unique_counts] 
+    args = np.where(bin_counts>0)
 
-    print '(number, frequency):', zip(unique_counts,tokens)
+    #print '(number, frequency):', zip(unique_counts,tokens)
+    #print '(number, frequency):', counts_tokens
+
+    #print zip(args, bin_counts[args])
+    print zip(list(args[0]), bin_counts[args])
 
 
 
