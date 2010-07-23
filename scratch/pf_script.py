@@ -4,7 +4,7 @@ from dipy.core.reconstruction_performance import pf_bago
 
 from dipy.core.triangle_subdivide import create_unit_sphere, remove_half_sphere
 
-v, e, t = create_unit_sphere(7)
+v, e, t = create_unit_sphere(5)
 vH, eH, tH = remove_half_sphere(v, e, t)
 
 odf = np.random.random(len(vH))
