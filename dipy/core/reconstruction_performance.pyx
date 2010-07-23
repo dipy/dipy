@@ -36,27 +36,32 @@ def pf_bago(odf, edges_on_sphere):
         int i=0
         int lenedges = len(cedges)
         int find0,find1
+        double odf0,odf1
     
     for i from 0 <= i < lenedges:
 
         find0 = cedges[i,0]
         find1 = cedges[i,1]
-        
-        if codf[find0] >= codf[find1]:
-            cpeak[find1] = 0
-        else:
-            cpeak[find0] = 0
 
-    cpeak=np.array(cpeak)
+        odf0 = codf[find0]
+        odf1 = codf[find1]
+
+        if odf0 > odf1:
+            cpeak[find1] = 0
+        elif odf0 < odf1:
+            cpeak[find1] = 0
+
+    cpeak = np.array(cpeak)
 
     #find local maxima and give fiber orientation (inds) and magnitude
     #peaks in a descending order
 
-    inds=cpeak.nonzero()[0]
-    pinds=np.argsort(odf[inds])
-    peaks=odf[inds[pinds]][::-1]
+    inds = cpeak.nonzero()[0]
+    pinds = odf[inds].argsort()
+    inds = inds[pinds][::-1]
+    peaks = odf[inds]
 
-    return peaks, inds[pinds][::-1]
+    return peaks, inds
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

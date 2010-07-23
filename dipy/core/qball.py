@@ -85,6 +85,21 @@ def sph_harm_ind_list(sh_order):
     m_list = m_list[..., np.newaxis]
     return (m_list, n_list)
 
+def cartesian2polar(x=0, y=0, z=0):
+    """Converts cartesian coordinates to polar coordinates
+
+    converts a list of cartesian coordinates (x, y, z) to polar coordinates 
+    (R, theta, phi).
+
+    """
+    R = np.sqrt(x**2+y**2+z**2)
+    theta = np.arctan2(y, x)
+    phi = np.arccos(z)
+
+    R, theta, phi = np.broadcast_arrays(R, theta, phi)
+
+    return R, theta, phi
+
 class ODF(object):
 
     def _getshape(self):
@@ -118,8 +133,8 @@ class ODF(object):
         dwi = b_values > 0
         self.ngrad = dwi.sum()
 
-        theta = np.arctan2(grad_table[1, dwi], grad_table[0, dwi])
-        phi = np.arccos(grad_table[2, dwi])
+        R, theta, phi = cartesian2polar(grad_table[dwi, 0], grad_table[dwi, 0],
+                                        grad_table[dwi, 2])
 
         m_list, n_list = sph_harm_ind_list(self.sh_order)
         if m_list.size > self.ngrad:
@@ -148,16 +163,16 @@ class ODF(object):
     def evaluate_at(self, theta_e, phi_e):
         
         m_list, n_list = sph_harm_ind_list(self.sh_order)
-        design_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
-                                 phi_e.flat[:])
+        design_mat = real_sph_harm(m_list, n_list, theta_e.ravel(),
+                                 phi_e.ravel())
         values = np.dot(self._coef, design_mat)
         values.shape = self.shape + np.broadcast(theta_e,phi_e).shape
         return values
 
     def evaluate_boot(self, theta_e, phi_e, permute=None):
         m_list, n_list = sph_harm_ind_list(self.sh_order)
-        design_mat = real_sph_harm(m_list, n_list, theta_e.flat[:],
-                                 phi_e.flat[:])
+        design_mat = real_sph_harm(m_list, n_list, theta_e.ravel(),
+                                 phi_e.ravel())
         if permute is None:
             permute = np.random.permutation(self.ngrad)
         values = np.dot(self._coef + np.dot(self._resid[..., permute],
