@@ -1,13 +1,15 @@
+import time
+import os
+
+import numpy as np
+
+from nibabel import trackvis as tv
+
 from dipy.viz import fos
-from dipy.io import trackvis as tv
 from dipy.io import pickles as pkl
 from dipy.core import track_learning as tl
 from dipy.core import track_performance as pf
 from dipy.core import track_metrics as tm
-
-import time
-import numpy as np
-import os
 
 fname='/home/eg01/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 C_fname='/tmp/larch_tree.pkl'
