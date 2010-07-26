@@ -11,7 +11,8 @@ def bs_se(bs_pdf):
     """
     Calculates the bootstrap standard error estimate of a statistic
     """
-    return np.std(bs_pdf) * 1 / np.sqrt(len(bs_pdf) - 1)
+    N = len(bs_pdf)
+    return np.std(bs_pdf) * np.sqrt(N / (N - 1))
 
 def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
     """
@@ -218,7 +219,7 @@ def jackknife(pdf, statistic = np.std, M = None):
         Method to calculate the desired statistic. (Default: calculate 
         standard deviation)
     M : integer (M < N)
-        Total number of samples in jackknife pdf. (Default: 10% of N)
+        Total number of samples in jackknife pdf. (Default: M == N)
     
     Returns
     -------
@@ -258,9 +259,11 @@ def jackknife(pdf, statistic = np.std, M = None):
         look at the jackknife. Ann. Stat. 7, 1-26.
     """     
     N = len(pdf)
-    pdf_mask = np.ones((N,),dtype='int16')
+    pdf_mask = np.ones((N,),dtype='int16') #keeps track of all n - 1 indexes
+    mask_index = np.copy(pdf_mask)
     if M == None:
-        M = np.round(0.10 * len(pdf))
+        M = N
+    M = np.minimum(M, N - 1)
     jk_pdf = np.empty((M,))
     
     for ii in range(0, M):
@@ -268,11 +271,14 @@ def jackknife(pdf, statistic = np.std, M = None):
         #choose a unique random sample to remove
         while pdf_mask[rand_index] == 0 :
             rand_index = np.round(np.random.random() * (N - 1))
-        #set mask to zero for chosen random index
+        #set mask to zero for chosen random index so not to choose again
         pdf_mask[rand_index] = 0
-        jk_pdf[ii] = statistic(pdf[pdf_mask > 0]) 
-    
-    return jk_pdf, np.mean(jk_pdf) - statistic(pdf), M/(M-1)*np.std(jk_pdf)
+        mask_index[rand_index] = 0
+        jk_pdf[ii] = statistic(pdf[mask_index > 0]) #compute n-1 statistic
+        mask_index[rand_index] = 1
+
+    return jk_pdf, (N - 1) * (np.mean(jk_pdf) - statistic(pdf)), np.sqrt(N - 
+                                                          1) * np.std(jk_pdf)
 
 def residual_bootstrap(data):
     pass
