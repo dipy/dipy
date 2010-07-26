@@ -10,8 +10,7 @@ import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
 import dipy.core.track_propagation as tp
 import dipy.core.dti as dt
-import dipy.core.meshes as meshes
-
+import dipy.core.meshes as meshes 
 
 @parametric
 def test_gqiodf():
@@ -108,7 +107,8 @@ def test_gqiodf():
     or equivalently 2*v - f == 4
     '''
 
-    yield assert_equal(2*v-f, 4,'Euler test fails')
+    yield assert_equal(2*v-f, 4,'Direct Euler test fails')
+    yield assert_true(meshes.euler_characteristic_check(odf_vertices, odf_faces,chi=2),'euler_characteristic_check fails')
     
     for (i,s) in enumerate(S):
 
