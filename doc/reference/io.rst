@@ -13,4 +13,3 @@
    dwiparams
    pickles
    structreader
-   trackvis

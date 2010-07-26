@@ -6,7 +6,7 @@ from os.path import join as opj
 class GeneralizedQSampling():
 
 
-    def __init__(self,data,bvals,gradients,Lambda=1.2):
+    def __init__(self,data,bvals,gradients,Lambda=1.2,odfsphere=None):
 
         ''' Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
@@ -97,7 +97,7 @@ class GeneralizedQSampling():
             IN = np.zeros((x,5))      
             
 
-        normal_param = 0
+        glob_norm_param = 0
 
         self.q2odf_params=q2odf_params
 

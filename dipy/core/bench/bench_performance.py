@@ -2,8 +2,11 @@
 
 import os
 from os.path import join as pjoin
+
 import numpy as np
-import dipy.io.trackvis as tv
+
+import nibabel.trackvis as tv
+
 import dipy.core.track_performance as pf
 import dipy.core.track_metrics as tm
 
@@ -33,7 +36,7 @@ def bench_cut_plane():
 def bench_mdl_traj():
     t=np.concatenate(tracks300)
     #t=tracks300[0]
-    
+
     print 'MDL traj'
     print '=' * 10
     opt_time = measure('pf.approximate_mdl_trajectory(t)')
@@ -41,8 +44,7 @@ def bench_mdl_traj():
     #opt_time= measure('tm.minimum_description_length_unpartitoned(t)')
     print 'optimized time: %f' % opt_time
     print
-   
-    
+
 
 if __name__ == '__main__' :
     #bench_zhang()
@@ -50,10 +52,10 @@ if __name__ == '__main__' :
     bench_mdl_traj()
     '''
     import pstats, cProfile
-    
+
     cProfile.runctx("bench_mdl_traj()", globals(), locals(), "Profile.prof")
 
     s = pstats.Stats("Profile.prof")
     s.strip_dirs().sort_stats("time").print_stats()
     '''
-    
+

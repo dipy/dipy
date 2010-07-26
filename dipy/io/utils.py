@@ -206,36 +206,3 @@ def allopen(fname, *args, **kwargs):
     else:
         opener = open
     return opener(fname, *args, **kwargs)
-
-
-def rec2dict(rec):
-    ''' Convert recarray to dictionary
-
-    Also converts scalar values to scalars
-
-    Parameters
-    ----------
-    rec : ndarray
-       structured ndarray
-
-    Returns
-    -------
-    dct : dict
-       dict with key, value pairs as for `rec`
-
-    Examples
-    --------
-    >>> r = np.zeros((), dtype = [('x', 'i4'), ('s', 'S10')])
-    >>> d = rec2dict(r)
-    >>> d == {'x': 0, 's': ''}
-    True
-    '''
-    dct = {}
-    for key in rec.dtype.fields:
-        val = rec[key]
-        try:
-            val = np.asscalar(val)
-        except ValueError:
-            pass
-        dct[key] = val
-    return dct

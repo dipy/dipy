@@ -1,11 +1,13 @@
-from dipy.core import track_metrics as tm
-from dipy.viz import fos
-from dipy.io import trackvis as tv
-from dipy.io import pickles as pkl
-from dipy.core import track_performance as pf
 import time
+
 import numpy as np
 
+from nibabel import trackvis as tv
+
+from dipy.core import track_metrics as tm
+from dipy.viz import fos
+from dipy.io import pickles as pkl
+from dipy.core import track_performance as pf
 
 fname='/home/eg01/Data_Backup/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
 #fname='/home/eg309/Data/PBC/pbc2009icdm/brain1/brain1_scan1_fiber_track_mni.trk'
