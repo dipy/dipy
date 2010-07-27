@@ -1,5 +1,6 @@
 import numpy as np
 import dipy as dp
+import dipy.io.pickles as pkl
 
 
 fname='/home/ian/Data/SimData/results_SNR030_1fibre'
