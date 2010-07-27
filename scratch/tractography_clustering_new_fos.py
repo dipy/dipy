@@ -1,8 +1,10 @@
 import time
+
 import numpy as np
 
+from nibabel import trackvis as tv
+
 from dipy.core import track_metrics as tm
-from dipy.io import trackvis as tv
 from dipy.core import track_performance as pf
 
 from fos.core.scene  import Scene
