@@ -1,6 +1,7 @@
 import numpy as np
 import dipy as dp
 import dipy.io.pickles as pkl
+import scipy as sp
 
 
 fname='/home/ian/Data/SimData/results_SNR030_1fibre'
@@ -27,6 +28,13 @@ gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
 #'''
 
+gqfile = '/home/ian/Data/SimData/gq_SNR030_1fibre.pkl'
+pkl.save_pickle(gqfile,gq)
+tnfile = '/home/ian/Data/SimData/tn_SNR030_1fibre.pkl'
+pkl.save_pickle(tnfile,tn)
+
+
+'''
 print tn.evals.shape
 print tn.evecs.shape
 
@@ -35,41 +43,8 @@ evecs=tn.evecs[0]
 
 print evecs.shape 
 
-
-'''
-
-import numpy as np
-evecs[:,0]
-np.dot(evecs[:,0].T,evecs[:,0])
-np.dot(evecs[:,1].T,evecs[:,1])
-np.dot(evecs[:,2].T,evecs[:,2])
-np.dot(evecs[:,:].T,evecs[:,:])
-evecs[:,0]
-tn.evecs
 first_directions = tn.evecs[:,:,0]
-first_directions.shape
-np.sum(first_direction,axis=0)
-np.sum(first_directions,axis=0)
-np.sum(first_directions[:1000,:],axis=0)
-np.sum(first_directions[:1000,:],axis=0)[2]
-np.sum(first_directions[:1000,:],axis=0)[2]**2
-plot(first_directions[:1000,0])
-plot(first_directions[:1000,1])
-plot(first_directions[:1000,2])
-plot(first_directions[:1000,0]**2)
-_ip.magic("clear ")
-plot(first_directions[:1000,0]**2)
-plot(first_directions[:1000,1]**2)
-plot(first_directions[:1000,2]**2)
-plot(first_directions[:1000,2]**2)
 first1000 = first_directions[:1000,:]
 cross = np.dot(first1000.T,first1000)
-cross
-np.trace(cross)
-import scipy as sp
 np.linalg.eig(cross)
-_ip.magic("history -n")
-
 '''
-    
-    
