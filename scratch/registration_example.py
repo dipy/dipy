@@ -1,18 +1,21 @@
+import os
 import numpy as np
 import dipy as dp
 import nibabel as ni
 import resources
 import time
+from subprocess import Popen,PIPE 
+
 
 #Registration options
 #similarity 'cc', 'cr', 'crl1', 'mi', je', 'ce', 'nmi', 'smi'.  'cr'
-similarity='mi'
+similarity='cr'
 #interp 'pv', 'tri'
 interp =  'tri'
 #subsampling None or sequence (3,)
 subsampling=None
 #search 'affine', 'rigid', 'similarity' or ['rigid','affine']
-search='rigid'
+search='affine'
 #optimizer 'simplex', 'powell', 'steepest', 'cg', 'bfgs' or
 #sequence of optimizers
 optimizer= 'powell'
@@ -74,71 +77,91 @@ def save_volumes_as_mosaic(fname,volume_list):
     Image.fromarray(mosaic).save(fname)
 
 
-if __name__ == '__main__':
+def haircut_dwi_reference(nii,nii_hair):
+    cmd='bet '+nii+' '+ nii_hair + ' -f .2 -g 0'
+    print cmd
+    p = Popen(cmd, shell=True,stdout=PIPE,stderr=PIPE)
+    sto=p.stdout.readlines()
+    ste=p.stderr.readlines()
 
-    #compare FA of grid versus shell acquisitions using STEAM
+    print sto
+    print ste
+   
 
-    dname_grid=resources.get_paths('DSI STEAM 101 Trio')[2]
-    dname_shell=resources.get_paths('DTI STEAM 114 Trio')[2]
-    fname_T1=resources.get_paths('MPRAGE nifti Trio')[2]
+def register_FA_same_subj_diff_sessions(dname_grid,dname_shell):
 
+
+    print('create temporary directory')
+    tmp_dir='/tmp'
+
+    print('load dicom data')
     data_gr,affine_gr,bvals_gr,gradients_gr=dp.load_dcm_dir(dname_grid)
     data_sh,affine_sh,bvals_sh,gradients_sh=dp.load_dcm_dir(dname_shell)
-    imT1=ni.load(fname_T1)
-    data_T1=imT1.get_data()
-    data_T1=data_T1.astype('uint16')
-    affine_T1=imT1.get_affine()
+
+    print('save DWI reference as nifti')
+    tmp_grid=os.path.join(tmp_dir,os.path.basename(dname_grid)+'_ref.nii')
+    tmp_shell=os.path.join(tmp_dir,os.path.basename(dname_shell)+'_ref.nii')    
+    ni.save(ni.Nifti1Image(data_gr[...,0],affine_gr),tmp_grid)    
+    ni.save(ni.Nifti1Image(data_sh[...,0],affine_sh),tmp_shell)
+
+    print('prepare filenames for haircut (bet)')
+    tmp_grid_bet=os.path.join(os.path.dirname(tmp_grid),\
+                                  os.path.splitext(os.path.basename(dname_grid))[0]+\
+                                  '_ref_bet.nii.gz')    
+    tmp_shell_bet=os.path.join(os.path.dirname(tmp_shell),\
+                                   os.path.splitext(os.path.basename(dname_shell))[0]+\
+                                   '_ref_bet.nii.gz')
+
+    print('bet is running')
+    haircut_dwi_reference(tmp_grid,tmp_grid_bet)
+    haircut_dwi_reference(tmp_shell,tmp_shell_bet)
+
+    print('load nii.gz reference (s0) volumes')
+    img_gr_bet=ni.load(tmp_grid_bet)
+    img_sh_bet=ni.load(tmp_shell_bet)
     
-    #data_T1,affine_T1,bvals_NaN,gradients_NaN=dp.load_dcm_dir(dname_T1)      
-    #assuming that these are already eddy_current corrected 
+    print('register the shell reference to the grid reference')
+    source=img_sh_bet
+    target=img_gr_bet    
+    T=dp.volume_register(source,target,similarity,\
+                              interp,subsampling,search,optimizer)
 
-    s0_gr_T1=register_source_2_target(data_gr[...,0],affine_gr,data_T1,affine_T1) 
-    s0_sh_T1=register_source_2_target(data_sh[...,0],affine_sh,data_T1,affine_T1)
+    print('apply the inverse of the transformation matrix')
+    sourceT=dp.volume_transform(source, T.inv(), reference=target)   
+    #ni.save(sourceT,'/tmp/result.nii.gz')
 
-    data_s0_gr=s0_gr_T1.get_data()
-    data_s0_sh=s0_sh_T1.get_data()
-    
-    save_volumes_as_mosaic('/tmp/mosaic_rigid2.png',[data_T1,data_s0_gr,data_s0_sh])
-    
-    '''
-    #dicom directories
-    dname_grid_101=resources.get_paths('DSI STEAM 101 Trio')[2]
-    dname_shell_114=resources.get_paths('DTI STEAM 114 Trio')[2]
+    print('calculate FA for grid and shell data')
+    FA_grid=dp.Tensor( data_gr,bvals_gr,gradients_gr,thresh=50).FA
+    FA_shell=dp.Tensor(data_sh,bvals_sh,gradients_sh,thresh=50).FA
 
-    
-    #dname_shell_114=resources.get_paths('DTI STEAM 96 Trio')[2] 
+    print('create an FA nibabel image for shell')
+    FA_shell_img=ni.Nifti1Image(FA_shell,affine_sh)
 
-    data_101,affine_101,bvals_101,gradients_101=dp.load_dcm_dir(dname_grid_101)    
-    data_114,affine_114,bvals_114,gradients_114=dp.load_dcm_dir(dname_shell_114)
+    print('transform FA_shell')
+    FA_shell_imgT=dp.volume_transform(FA_shell_img,T.inv(),reference=target)
 
-    print data_101.shape,data_114.shape    
-    
-    img_101T=register_source_2_target(data_101[...,0],affine_101,data_114[...,0],affine_114)    
-    target_101T=img_101T.get_data()
-    affine_101T=img_101T.get_affine()
+    return ni.Nifti1Image(FA_grid,affine_gr),FA_shell_imgT
 
-    save_volumes_as_mosaic('/tmp/mosaic_101.png',[data_101[...,0]])
-    save_volumes_as_mosaic('/tmp/mosaic_101T.png',[target_101T])
 
-    img_114T=register_source_2_target(data_114[...,0],affine_114,data_101[...,0],affine_101)    
-    target_114T=img_114T.get_data()
-    affine_114T=img_114T.get_affine()
+if __name__ == '__main__':
 
-    save_volumes_as_mosaic('/tmp/mosaic_114.png',[data_114[...,0]])
-    save_volumes_as_mosaic('/tmp/mosaic_114T.png',[target_114T])
-    
-    img_101Tall=eddy_current_correction(data_101,affine_101,target=target_101T,target_affine=affine_101T)
 
-    img_101Tall_data=img_101Tall.get_data()
-    img_101Tall_data[img_101Tall_data<0]=255
-    
-    ten_101T=dp.Tensor( img_101Tall_data,bvals_101,gradients_101,thresh=50)
-    ten_114=dp.Tensor(data_114,bvals_114,gradients_114,thresh=50)
+    print('Goal is to compare FA of grid versus shell acquisitions using STEAM')
+
+    print('find filenames for grid and shell data')    
+    dname_grid=resources.get_paths('DSI STEAM 101 Trio')[2]
+    dname_shell=resources.get_paths('DTI STEAM 114 Trio')[2]
+    #print('find filenames for T1')
+    #fname_T1=resources.get_paths('MPRAGE nifti Trio')[2]   
+
+    FA_grid_img,FA_shell_imgT=register_FA_same_subj_diff_sessions(dname_grid,dname_shell)
         
-    save_volumes_as_mosaic('/tmp/mosaic_mi.png',[data_114[...,0],img_101T.get_data(),ten_114.FA,ten_101T.FA])
+    #FA_shell_data=FA_shell_imgT.get_data()
+    #FA_shell_data[FA_shell_data<0]=0
     
-    #save_volumes_as_mosaic('/tmp/mosaic_extra2.png',[data_114[...,0]])#,data_114[...,0]])
+    print('tile volumes')
+    save_volumes_as_mosaic('/tmp/mosaic_fa.png',\
+                               [FA_grid_img.get_data(),FA_shell_imgT.get_data()])
 
-    '''
-
+    
     
