@@ -329,16 +329,22 @@ def euler_characteristic_check(vertices, faces, chi=2):
     else:
         return False
 
-def equatorial_vertices(vertices, pole, width=.02):
+def equatorial_zone_vertices(vertices, pole, width=.02):
     '''
-    finds the 'vertices' in the equatorial band conjugate
-    to 'pole' with inner product with 'pole' less than
-    'width' radians (np.arcsin(width)*180/np.pi degrees)
+    finds the 'vertices' in the equatorial zone conjugate
+    to 'pole' with width half 'width' radians
     '''
     return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]
 
+def polar_zone_vertices(vertices, pole, width=0.02):
+    '''
+    finds the 'vertices' in the equatorial band around
+    the 'pole' of radius 'width' radians (np.arcsin(width)*180/np.pi degrees)
+    '''
+    return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) > 1-width]
 
-def equatorial_statistics(vertices, width=0.02):
+
+def spherical_statistics(vertices, width=0.02):
     '''
     function to evaluate a spherical triangulation by looking at
     variability of numbers of vertices in 'vertices' in equatorial bands
@@ -346,18 +352,26 @@ def equatorial_statistics(vertices, width=0.02):
     ''' 
     equatorial_counts = [len(equatorial_vertices(vertices, pole, width=width)) for pole in vertices]
 
+    equatorial_counts = np.bincount(equatorial_counts)
+    
+    args = np.where(equatorial_counts>0)
+
+    print zip(list(args[0]), equatorial_counts[args])
+
+    polar_counts = [len(polar_vertices(vertices, pole, width=width)) for pole in vertices]
+
     #unique_counts = np.sort(np.array(list(set(equatorial_counts))))
-    bin_counts = np.bincount(equatorial_counts)
+    polar_counts = np.bincount(polar_counts)
     
     #counts_tokens = [(uc,  bin_counts[uc]) for uc in bin_counts if ]
 
-    args = np.where(bin_counts>0)
+    args = np.where(polar_counts>0)
 
     #print '(number, frequency):', zip(unique_counts,tokens)
     #print '(number, frequency):', counts_tokens
 
     #print zip(args, bin_counts[args])
-    print zip(list(args[0]), bin_counts[args])
+    print zip(list(args[0]), polar_counts[args])
 
 
 

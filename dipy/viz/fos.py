@@ -66,6 +66,7 @@ tan=np.array([ 0.82352941,  0.70588235,  0.54901961])
 chartreuse=np.array([ 0.49803922,  1.        ,  0.        ])
 coral=np.array([ 1.        ,  0.49803922,  0.31372549])
 
+
 #a track buffer used only with picking tracks
 track_buffer=[]
 #indices buffer for the tracks
@@ -1567,7 +1568,7 @@ def annotatePick(object, event):
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None):
+def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,png_magnify=10):
     ''' Show window 
     
     Parameters
@@ -1621,12 +1622,31 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None)
     iren = vtk.vtkRenderWindowInteractor()    
     iren.SetRenderWindow(window)
     iren.SetPicker(picker)
+
+    def key_press(obj,event):
+
+        key = obj.GetKeySym()
+        if key=='s' or key=='S':
+            print('Saving image...')            
+            renderLarge = vtk.vtkRenderLargeImage()
+            renderLarge.SetInput(ren)
+            renderLarge.SetMagnification(png_magnify)
+            renderLarge.Update()
+            writer = vtk.vtkPNGWriter()
+            writer.SetInputConnection(renderLarge.GetOutputPort())
+            writer.SetFileName('fos.png')
+            writer.Write()            
+            print('Look for fos.png in your current dir.')
+
     
+    iren.AddObserver('KeyPressEvent',key_press)    
     iren.SetInteractorStyle(style)
     iren.Initialize()
     picker.Pick(85, 126, 0, ren)    
     window.Render()
     iren.Start()
+
+       
        
     
 if __name__ == "__main__":
