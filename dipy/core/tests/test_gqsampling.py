@@ -247,7 +247,7 @@ def upper_hemi_map(v):
 
 def equatorial_maximum(vertices, odf, pole, width):
 
-    eqvert = meshes.equatorial_vertices(vertices, pole, width)
+    eqvert = meshes.equatorial_zone_vertices(vertices, pole, width)
 
     '''
     need to test for whether eqvert is empty or not
