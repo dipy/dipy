@@ -50,13 +50,20 @@ def get_vertex_set(key):
     print key, ': number of vertices = ', vertices.shape[0], '(drop ',omit,')'
     return vertices[omit:,:]
 
+xup=np.array([ 1,0,0])
+xdn=np.array([-1,0,0])
+yup=np.array([0, 1,0])
+ydn=np.array([0,-1,0])
+zup=np.array([0,0, 1])
+zdn=np.array([0,0,-1])
+
 for key in sphere_dic:
     v = get_vertex_set(key)
     #print v.shape[0]
     r = fos.ren()
     fos.add(r,fos.point(v,fos.green, point_radius= 0.01))
     fos.show(r, title=key, size=(1000,1000))
-    equat, polar = meshes.spherical_statistics(v,width=0.1)
+    equat, polar = meshes.spherical_statistics(v,north=xup,width=0.1)
     l = 2.*len(v)
     equat = equat/l
     polar = polar/l
