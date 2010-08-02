@@ -26,6 +26,9 @@ def sphere2cart(r, theta, phi):
     the angle between the projection of P onto the XY plane, and the X
     axis.
 
+    Geographical nomenclature designates theta as 'co-latitude', and phi
+    as 'longitude'
+
     Parameters
     ----------
     r : array-like
@@ -348,3 +351,28 @@ def vector_cosine(vecs1, vecs2):
     dots = np.inner(vecs1, vecs2)
     lens = lens1 * lens2
     return dots / lens
+
+def lambert_equal_area(theta, phi):
+    ''' Return positions in (y1,y2) plane corresponding to the points
+    (theta, phi) on the unit sphere, under the Lambert Equal Area
+    Projection (see Mardia and Jupp (2000), Directional Statistics,
+    p. 161).  for Cartesian 3D coordinates `x`, `y`, and `z`
+    
+    See doc for ``sphere2cart`` for angle conventions
+
+    0 >= `theta` >= pi and 0 >= `phi` >= 2*pi
+    |(y1,y2)| <= 2
+
+    Parameters
+    ----------
+    theta : array-like
+       theta spherical coordinates
+    phi : array-like
+       phi spherical coordinates
+
+    Returns
+    -------
+    y : (N,2) array
+       positions of points under Lambert's EAP.
+    '''
+    return 2 * np.repeat(theta,2).reshape((10,2)) * np.column_stack((p.cos(phi), np.sin(phi))
