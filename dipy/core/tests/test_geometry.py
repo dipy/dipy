@@ -9,7 +9,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 sphere_distance,
                                 cart_distance,
                                 vector_cosine,
-                                lambert_equal_area_projection
+                                lambert_equal_area_projection_polar
                                 )
 
 from nose.tools import assert_true, assert_false, \
@@ -147,11 +147,27 @@ def test_vector_cosine():
     
 
 @parametric
-def test_lambert_equal_area_projection():
+def test_lambert_equal_area_projection_polar():
 
-    thetas = np.repeat(np.pi/3,10)
-    phis = np.linspace(0,2*np.pi,10)
+    theta = np.repeat(np.pi/3,10)
+    phi = np.linspace(0,2*np.pi,10)
     # points sit on circle with co-latitude pi/3 (60 degrees)
-    leap = lambert_equal_area_projection(thetas,phis)
+    leap = lambert_equal_area_projection_polar(theta,phi)
     yield assert_array_almost_equal(np.sqrt(np.sum(leap**2,axis=1)), np.array([ 1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]))
     # points map onto the circle of radius 1
+
+@parametric
+def test_lambert_equal_area_projection_cart():
+
+    xyz = np.array([[1,0,0],[0,1,0],[0,0,1],[-1,0,0],[0,-1,0],[0,0,-1]])
+    # points sit on +/-1 on all 3 axes
+    
+    r,theta,phi = cart2sphere(*xyz.T)
+
+    leap = lambert_equal_area_projection_polar(theta,phi)
+    r2 = np.sqrt(2)
+    yield assert_array_almost_equal(np.sqrt(np.sum(leap**2,axis=1)),
+                                    np.array([ r2,r2,0,r2,r2,2]))
+    # x and y =+/-1 map onto circle of radius sqrt(2)
+    # z=1 maps to origin, and z=-1 maps to (an arbitrary point on) the
+    # outer circle of radius 2

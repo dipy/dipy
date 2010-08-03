@@ -352,11 +352,11 @@ def vector_cosine(vecs1, vecs2):
     lens = lens1 * lens2
     return dots / lens
 
-def lambert_equal_area_projection(theta, phi):
+def lambert_equal_area_projection_polar(theta, phi):
     ''' Return positions in (y1,y2) plane corresponding to the points
-    (theta, phi) on the unit sphere, under the Lambert Equal Area
-    Projection mapping (see Mardia and Jupp (2000), Directional
-    Statistics, p. 161).
+    with polar coordinates (theta, phi) on the unit sphere, under the
+    Lambert Equal Area Projection mapping (see Mardia and Jupp (2000),
+    Directional Statistics, p. 161).
     
     See doc for ``sphere2cart`` for angle conventions
 

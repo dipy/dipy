@@ -3,6 +3,7 @@ import dipy.core.meshes as meshes
 from dipy.core.triangle_subdivide import create_unit_sphere
 from dipy.viz import fos
 from dipy.io import dicomreaders as dcm
+import dipy.core.geometry as geometry
 
 sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
               'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
@@ -60,12 +61,19 @@ zdn=np.array([0,0,-1])
 for key in sphere_dic:
     v = get_vertex_set(key)
     #print v.shape[0]
-    r = fos.ren()
-    fos.add(r,fos.point(v,fos.green, point_radius= 0.01))
-    fos.show(r, title=key, size=(1000,1000))
+    plot_sphere(v,key)
+    plot_lambert(v,key)
     equat, polar = meshes.spherical_statistics(v,north=xup,width=0.1)
     l = 2.*len(v)
     equat = equat/l
     polar = polar/l
     print '%6.3f %6.3f %6.3f %6.3f' % (equat.min(), equat.mean(), equat.max(), np.sqrt(equat.var()))
     print '%6.3f %6.3f %6.3f %6.3f' % (polar.min(), polar.mean(), polar.max(), np.sqrt(polar.var()))
+
+def plot_sphere(v,key):
+    r = fos.ren()
+    fos.add(r,fos.point(v,fos.green, point_radius= 0.01))
+    fos.show(r, title=key, size=(1000,1000))
+
+def plot_lambert(v,key):
+    geometry.
