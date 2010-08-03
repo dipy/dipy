@@ -93,7 +93,7 @@ def test_WLS_fit():
     
     ### Testing WLS Fit on Single Voxel ###
     #Estimate tensor from test signals
-    tensor_est = dti.Tensor(Y,bval,gtab.T)
+    tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8)
     yield assert_array_almost_equal(tensor_est[0].evals, evals)
     yield assert_array_almost_equal(tensor_est[0].D, tensor,err_msg= "Calculation of tensor from Y does not compare to analytical solution")
 

@@ -180,7 +180,7 @@ class Tensor(object):
                                 doc = "Eigenvectors of self diffusion tensor")
 
     def __init__(self, data, b_values,grad_table, mask = True, thresh = 0,
-                 verbose = False):    
+                 min_signal=1, verbose = False):
         dims = data.shape
         
         #64 bit design matrix makes for faster pinv
@@ -191,11 +191,11 @@ class Tensor(object):
         self._evals = np.zeros(data.shape[:-1] + (3,))
         
         #Define total mask from thresh and mask
-        tot_mask = (mask > 0) & (data[...,0] > thresh)
+        tot_mask = (mask > 0) & (data[..., b_values == 0].min(-1) > thresh)
         
         #Perform WLS fit on masked data
-        self._evals[tot_mask], self._evecs[tot_mask] = wls_fit_tensor(B, 
-                                                              data[tot_mask])
+        evals, evecs = wls_fit_tensor(B, data[tot_mask], min_signal=min_signal)
+        self._evals[tot_mask], self._evecs[tot_mask] = evals, evecs
         #wls fit returns all 3 eigenvecs...but we want to only store first two
         self._evecs = self._evecs[..., 0:2]
 
@@ -205,9 +205,9 @@ class Tensor(object):
         evecs_flat = self.evecs.reshape((-1, 3, 3))
         D_flat = np.empty(evecs_flat.shape)
         for ii, eval in enumerate(evals_flat): 
-            L = np.diag(eval)
+            L = eval
             Q = evecs_flat[ii, ...]
-            D_flat[ii, ...] = np.dot(np.dot(Q, L), Q.T) #timeit = 11.5us
+            D_flat[ii, ...] = np.dot(Q*L, Q.T) #timeit = 11.5us
         return D_flat.reshape(self.evecs.shape)
     
     D = property(_getD, doc = "Self diffusion tensor")
@@ -316,7 +316,7 @@ class Tensor(object):
         '''
         return quantize_evecs(self.evecs,odf_vertices=None)
 
-def wls_fit_tensor(design_matrix, data):
+def wls_fit_tensor(design_matrix, data, min_signal=1):
     """
     Computes weighted least squares (WLS) fit to calculate self-diffusion 
     tensor using a linear regression model [1]_.
@@ -387,19 +387,19 @@ def wls_fit_tensor(design_matrix, data):
     
     for ii, sig in enumerate(data_flat):
         evals[ii], evecs[ii,:,:] = _wls_iter(ols_fit, design_matrix, 
-                                                                ii, sig)    
+                                             sig, min_signal=min_signal)
     evals.shape = data.shape[:-1]+(3,)
     evecs.shape = data.shape[:-1]+(3,3)
     return evals, evecs
     
 
-def _wls_iter(SI,design_matrix,ii,sig):
+def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     ''' 
     Function used by wls_fit_tensor for later optimization.
     '''
-    sig[sig == 0] = 1 #throw out zero signals
+    sig = np.maximum(sig, min_signal) #throw out zero signals
     log_s = np.log(sig)
-    w = np.exp(np.dot(SI, log_s))
+    w = np.exp(np.dot(ols_fit, log_s))
     D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
     return decompose_tensor(D)
 
@@ -758,17 +758,3 @@ def __save_scalar_maps(scalar_maps, img=None, coordmap=None):
 
     return
 
-
-
-        
-
-        
-
-    
-
-
-    
-
-    
-
-    
