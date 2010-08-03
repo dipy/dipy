@@ -4,6 +4,7 @@ from dipy.core.triangle_subdivide import create_unit_sphere
 from dipy.viz import fos
 from dipy.io import dicomreaders as dcm
 import dipy.core.geometry as geometry
+import matplotlib as mpl
 
 sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
               'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
@@ -18,6 +19,15 @@ sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/ev
               #'create9': {},
               'marta200': {'filepath': '/home/ian/Data/Spheres/200.npy', 'object': 'npy', 'omit': 0, 'hemi': True},
               'dsi101': {'filepath': '/home/ian/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI', 'object': 'dicom', 'omit': 0, 'hemi': True}}
+
+def plot_sphere(v,key):
+    r = fos.ren()
+    fos.add(r,fos.point(v,fos.green, point_radius= 0.01))
+    fos.show(r, title=key, size=(1000,1000))
+
+def plot_lambert(v,key):
+    lamb = geometry.lambert_equal_area_projection_cart(*v.T)
+    mpl.plot(lamb)
 
 def get_vertex_set(key):
     if key[:6] == 'create':
@@ -70,10 +80,3 @@ for key in sphere_dic:
     print '%6.3f %6.3f %6.3f %6.3f' % (equat.min(), equat.mean(), equat.max(), np.sqrt(equat.var()))
     print '%6.3f %6.3f %6.3f %6.3f' % (polar.min(), polar.mean(), polar.max(), np.sqrt(polar.var()))
 
-def plot_sphere(v,key):
-    r = fos.ren()
-    fos.add(r,fos.point(v,fos.green, point_radius= 0.01))
-    fos.show(r, title=key, size=(1000,1000))
-
-def plot_lambert(v,key):
-    geometry.
