@@ -9,6 +9,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 sphere_distance,
                                 cart_distance,
                                 vector_cosine,
+                                lambert_equal_area_projection
                                 )
 
 from nose.tools import assert_true, assert_false, \
@@ -145,4 +146,12 @@ def test_vector_cosine():
     yield assert_array_almost_equal(cc, vcos)
     
 
+@parametric
+def test_lambert_equal_area_projection():
 
+    thetas = np.repeat(np.pi/3,10)
+    phis = np.linspace(0,2*np.pi,10)
+    # points sit on circle with co-latitude pi/3 (60 degrees)
+    leap = lambert_equal_area_projection(thetas,phis)
+    yield assert_array_almost_equal(np.sqrt(np.sum(leap**2,axis=1)), np.array([ 1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]))
+    # points map onto the circle of radius 1

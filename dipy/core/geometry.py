@@ -352,11 +352,11 @@ def vector_cosine(vecs1, vecs2):
     lens = lens1 * lens2
     return dots / lens
 
-def lambert_equal_area(theta, phi):
+def lambert_equal_area_projection(theta, phi):
     ''' Return positions in (y1,y2) plane corresponding to the points
     (theta, phi) on the unit sphere, under the Lambert Equal Area
-    Projection (see Mardia and Jupp (2000), Directional Statistics,
-    p. 161).  for Cartesian 3D coordinates `x`, `y`, and `z`
+    Projection mapping (see Mardia and Jupp (2000), Directional
+    Statistics, p. 161).
     
     See doc for ``sphere2cart`` for angle conventions
 
@@ -369,10 +369,9 @@ def lambert_equal_area(theta, phi):
        theta spherical coordinates
     phi : array-like
        phi spherical coordinates
-
     Returns
     -------
     y : (N,2) array
-       positions of points under Lambert's EAP.
+       planar coordinates of points following mapping by Lambert's EAP.
     '''
-    return 2 * np.repeat(theta,2).reshape((10,2)) * np.column_stack((p.cos(phi), np.sin(phi))
+    return 2 * np.repeat(np.sin(theta/2),2).reshape((theta.shape[0],2)) * np.column_stack((np.cos(phi), np.sin(phi)))
