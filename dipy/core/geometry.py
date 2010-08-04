@@ -375,3 +375,29 @@ def lambert_equal_area_projection_polar(theta, phi):
        planar coordinates of points following mapping by Lambert's EAP.
     '''
     return 2 * np.repeat(np.sin(theta/2),2).reshape((theta.shape[0],2)) * np.column_stack((np.cos(phi), np.sin(phi)))
+
+
+def lambert_equal_area_projection_cart(x,y,z):
+    ''' Return positions in (y1,y2) plane corresponding to the
+    directions of the vectors with cartesian coordinates xyz under the
+    Lambert Equal Area Projection mapping (see Mardia and Jupp (2000),
+    Directional Statistics, p. 161).
+    
+    See doc for ``sphere2cart`` for angle conventions
+
+    Parameters
+    ----------
+    x : array-like
+       x coordinate in Cartesion space
+    y : array-like
+       y coordinate in Cartesian space
+    z : array-like
+       z coordinate
+
+    Returns
+    -------
+    y : (N,2) array
+       planar coordinates of points following mapping by Lambert's EAP.
+    '''
+    (r, theta, phi) = cart2sphere(x,y,z)
+    return lambert_equal_area_projection_polar(theta, phi)
