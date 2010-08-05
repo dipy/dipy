@@ -457,6 +457,84 @@ def most_similar_track_zhang(tracks,metric='avg'):
     return si, track2others
 
 
+def bundles_distances_zhang(tracksA, tracksB, metric='avg'):
+    ''' The purpose of this function is to implement a much faster version of 
+    bundles_distances_zhang from dipy.core.track_metrics as implemented 
+    from Zhang et. al 2008. 
+    
+    Parameters
+    ----------
+    tracksA : sequence 
+       of tracks as arrays, shape (N1,3) .. (Nm,3)
+    tracksB : sequence 
+       of tracks as arrays, shape (N1,3) .. (Nm,3)
+    metric : str
+       'avg', 'min', 'max'
+            
+    Returns
+    -------
+    DM: array, shape (len(tracksA), len(tracksB))
+        distances between tracksA and tracksB according to metric
+    
+    '''
+    cdef:
+        size_t i, j, lentA, lentB
+        int metric_type
+    if metric=='avg':
+        metric_type = 0
+    elif metric == 'min':
+        metric_type = 1
+    elif metric == 'max':
+        metric_type = 2
+    else:
+        raise ValueError('Metric should be one of avg, min, max')
+    # preprocess tracks
+    cdef:
+        size_t longest_track_len = 0, track_len
+        cnp.ndarray[object, ndim=1] tracksA32
+        cnp.ndarray[object, ndim=1] tracksB32
+        cnp.ndarray[cnp.double_t, ndim=2] DM
+    lentA = len(tracksA)
+    lentB = len(tracksB)
+    tracksA32 = np.zeros((lentA,), dtype=object)
+    tracksB32 = np.zeros((lentB,), dtype=object)
+    DM = np.zeros((lentA,lentB), dtype=np.double)
+    # process tracks to predictable memory layout, find longest track
+    for i in range(lentA):
+        tracksA32[i] = np.ascontiguousarray(tracksA[i], dtype=f32_dt)
+        track_len = tracksA32[i].shape[0]
+        if track_len > longest_track_lenA:
+            longest_track_lenA = track_len
+    for i in range(lentB):
+        tracksB32[i] = np.ascontiguousarray(tracksB[i], dtype=f32_dt)
+        track_len = tracksB32[i].shape[0]
+        if track_len > longest_track_lenB:
+            longest_track_lenB = track_len
+    if longest_track_lenB > longest_track_lenA:
+        longest_track_lenA = longest_track_lenB
+    # preallocate buffer array for track distance calculations
+    cdef:
+        cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
+        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer
+    distances_buffer = np.zeros((longest_track_lenA*2,), dtype=np.float32)
+    min_buffer = <cnp.float32_t *> distances_buffer.data
+    # cycle over tracks
+    cdef:
+        cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
+        size_t t1_len, t2_len
+    for i from 0 <= i < lentA:
+        t1 = tracksA32[i]
+        t1_len = t1.shape[0]
+        t1_ptr = <cnp.float32_t *>t1.data
+        for j from 0 <= j < lentB:
+            t2 = tracksB32[j]
+            t2_len = t2.shape[0]
+            t2_ptr = <cnp.float32_t *>t2.data
+            DM[i,j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
+
+    return DM
+
+
 cdef cnp.float32_t inf = np.inf
 
 @cython.cdivision(True)

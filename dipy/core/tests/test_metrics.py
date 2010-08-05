@@ -71,6 +71,18 @@ def test_most_similar_zhang():
         yield assert_almost_equal, si,si2
     
     
+def test_bundles_distances_zhang():
+    xyz1A = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
+    xyz2A = np.array([[0,1,1],[1,0,1],[2,3,-2]],dtype='float32')
+    xyz1B = np.array([[-1,0,0],[2,0,0],[2,3,0],[3,0,0]],dtype='float32')
+    tracksA = [xyz1A, xyz2A]
+    tracksB = [xyz1B, xyz1A, xyz2A]
+    for metric in ('avg', 'min', 'max'):
+        DM1 = tm.bundles_distances_zhang(tracksA, tracksB, metric=metric)
+        DM2 = pf.bundles_distances_zhang(tracksA, tracksB, metric=metric)
+        yield assert_array_almost_equal, DM1,DM2
+    
+    
 def test_zhang_distances():
     xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]])
     xyz2 = np.array([[0,1,1],[1,0,1],[2,3,-2]])
