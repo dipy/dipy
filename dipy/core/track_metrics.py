@@ -734,6 +734,38 @@ def bundle_similarities_zhang(bundle,metric='avg'):
     return S_avg,S_min,S_max 
 
 
+def bundles_distances_zhang(bundleA, bundleB ,metric='avg'):
+    ''' Calculate the distance matrix using Zhang 2008 distances.
+    
+    Parameters:
+    ---------------
+    bundleA: sequence 
+            of tracks as arrays, shape (N1,3) .. (Nm,3)
+    bundleB: sequence 
+            of tracks as arrays, shape (N1,3) .. (Nm,3)
+    metric: string
+            'avg', 'min', 'max'
+            
+    Returns:
+    ----------
+    Appropriate metric from this list:
+    
+    DM : array, shape (len(bundleA),len(bundleB))
+         distances between tracksA and tracksB according to metric
+
+    '''
+
+    lenA = len(bundleA)
+    lenB = len(bundleB)
+    DM = np.zeros((lenA,lenB))
+    
+    for i in xrange(lenA):
+        for j in xrange(lenB):
+            DM[i,j] = zhang_distances(bundleA[i],bundleB[j], metric=metric)
+        
+    return DM
+
+
 def most_similar_track_zhang(bundle,metric='avg'):
     ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
     
