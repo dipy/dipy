@@ -1,13 +1,14 @@
 import numpy as np
 import dipy.core.meshes as meshes
+import get_vertices as gv
 from dipy.core.triangle_subdivide import create_unit_sphere
 #from dipy.viz import fos
-from dipy.io import dicomreaders as dcm
+#from dipy.io import dicomreaders as dcm
 #import dipy.core.geometry as geometry
 #import matplotlib.pyplot as mplp
 import dipy.core.sphere_plots as splot
 
-sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
+'''sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
               'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
               'siem64': {'filepath':'/home/ian/Devel/dipy/dipy/core/tests/data/small_64D.gradients.npy', 'object': 'npy', 'omit': 1, 'hemi': True},
               'create2': {},
@@ -20,6 +21,7 @@ sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/ev
               #'create9': {},
               'marta200': {'filepath': '/home/ian/Data/Spheres/200.npy', 'object': 'npy', 'omit': 0, 'hemi': True},
               'dsi101': {'filepath': '/home/ian/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI', 'object': 'dicom', 'omit': 0, 'hemi': True}}
+'''
 
 '''
 def plot_sphere(v,key):
@@ -44,7 +46,7 @@ def plot_lambert(v,key):
     figure.waitforbuttonpress()
     mplp.close()
 '''    
-
+'''
 def get_vertex_set(key):
     if key[:6] == 'create':
         number = eval(key[6:])
@@ -76,6 +78,7 @@ def get_vertex_set(key):
             vertices = np.vstack([vertices, -vertices])
     print key, ': number of vertices = ', vertices.shape[0], '(drop ',omit,')'
     return vertices[omit:,:]
+'''
 
 xup=np.array([ 1,0,0])
 xdn=np.array([-1,0,0])
@@ -85,11 +88,12 @@ zup=np.array([0,0, 1])
 zdn=np.array([0,0,-1])
 
 #for key in sphere_dic:
-for key in ['siem64']:
-    v = get_vertex_set(key)
+#for key in ['siem64']:
+for key in ['fy642']:
+    v = gv.get_vertex_set(key)
     splot.plot_sphere(v,key)
     splot.plot_lambert(v,key,centre=np.array([0.,0.]))
-    equat, polar = meshes.spherical_statistics(v,north=xup,width=0.1)
+    equat, polar = meshes.spherical_statistics(v,north=xup,width=0.2)
     l = 2.*len(v)
     equat = equat/l
     polar = polar/l
