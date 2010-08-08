@@ -2,12 +2,12 @@
  The B matrix and Siemens DICOM
 ================================
 
-This is a short note to explain the nature of the ``B_matrix`` found in
-the :ref:`csa-header` of a diffusion weighted acquistion and its
-relationship with the  $b$ *value* and the *gradient vector*.  The
-acquisition is made with a planned (requested) b value - say $b_{req} =
-1000$, and with a requested gradient direction $\mathbf{g}_{req} = [g_x,
-g_y, g_z]$ (supposedly a unit vector).
+This is a short note to explain the nature of the ``B_matrix`` found in the
+Siemens private (CSA) fields of the DICOM headers of a diffusion weighted
+acquisition.  We trying to explain the relationship between the ``B_matrix`` and
+the *b value* and the *gradient vector*.  The acquisition is made with a planned
+(requested) b value - say $b_{req} = 1000$, and with a requested gradient
+direction $\mathbf{g}_{req} = [g_x, g_y, g_z]$ (supposedly a unit vector).
 
 Note that here we're using $\mathbf{q}$ in the sense of an approximation
 to a vector in $q$ space.  Other people use $\mathbf{b}$ for the same

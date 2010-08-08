@@ -8,8 +8,4 @@
 .. autosummary::
    :toctree:
 
-   dicomreaders
-   csareader
-   dwiparams
    pickles
-   structreader

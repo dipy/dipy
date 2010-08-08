@@ -42,17 +42,15 @@ dipy_ requires the following packages::
 
        sudo apt-get install python-numpy python-scipy ipython cython python-dev python-vtk
        sudo easy_install -U sphinx
-       sudo easy_install -U pydicom
        
 It also requires nibabel for reading medical images::
 
         cd ..
+        sudo easy_install -U pydicom
         git clone git://github.com/hanke/nibabel.git
-        cd nibabel
-        python setup.py build_ext --inplace
 
-and then add nibabel directory to your PYTHONPATH. We usually add the
-PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every
+and then add the ``nibabel/nibabel`` directory to your PYTHONPATH. We usually
+add the PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every
 time. This should look like::
 
          export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel:/home/user_dir/Devel/nipy
@@ -80,7 +78,6 @@ Finally, download and install nipy::
          wget http://nipy.sourceforge.net/data-packages/nipy-data-0.2.tar.gz
          tar -xzvf nipy-data-0.2.tar.gz
          mv nipy-data-0.2/data .                 
-
 
 After doing the above execute ipython in the terminal and try::
 
