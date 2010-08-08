@@ -67,22 +67,22 @@ def test_MaskedView():
                        np.asarray(dataS_part).shape[0])
     yield assert_array_equal(dataS_part.mask, mask[10:20,10:20,10:20])
 
-    print '1 ',dataS_zero.dtype, dataS_zero.shape#, dataS_zero
-    print '2 ',data[0].dtype, data[0].shape#, np.sum(data[0]-dataS_zero)
-
-    print np.subtract(data[0],dataS_zero)
+    #corrected from yield assert_array_equal(dataS_zero, data[0])
+    yield assert_array_equal(dataS_zero._data[0], data[0])
     
-    '''
-    yield assert_array_equal(dataS_zero, data[0])
+    #corrected from yield assert_array_equal(dataS_one, fill_value)
+    yield assert_equal(dataS_one.fill_value, fill_value)
     
-    yield assert_array_equal(dataS_one, fill_value)
     yield assert_equal(type(dataS_ind), np.ndarray)
     yield assert_equal(dataS_ind.shape, mask.shape)
     yield assert_array_equal(dataS_ind[mask], data[:,0,0,0])
 
-
     #test __array_wrap__
+
     new_view = dataS + np.array(0)
+    
     yield assert_equal(type(new_view), type(dataS))
 
-    '''
+
+    
+
