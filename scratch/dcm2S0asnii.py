@@ -1,6 +1,8 @@
-from dipy.io import dicomreaders as dcm
-import nibabel as ni
 import numpy as np
+
+import nibabel as ni
+from nibabel.dicom import dicomreaders as dcm
+
 import dipy.core.generalized_q_sampling as gq
 
 

@@ -1,6 +1,9 @@
 import time
+
 import numpy as np
-from dipy.io import dicomreaders as dcm
+
+from nibabel.dicom import dicomreaders as dcm
+
 import dipy.core.generalized_q_sampling as gq
 import dipy.core.dti as dt
 import dipy.core.track_propagation as tp

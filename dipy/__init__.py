@@ -15,16 +15,13 @@ try:
     from nipy.neurospin import transform as volume_transform
 except ImportError:
     print('nipy registration is not available')
-    
+
 try:
-    from nibabel import load,save   
+    from nibabel import load, save
 except ImportError:
     raise ImportError('nibabel is not installed')
 
-try:    
-    from dipy.io.dicomreaders import read_mosaic_dir as load_dcm_dir
+try:
+    from nibabel.dicom.dicomreaders import read_mosaic_dir as load_dcm_dir
 except ImportError:
-    raise ImportError('dipy.io.dicomreaders cannot be found')
-    
-
-
+    raise ImportError('nibabel.dicom.dicomreaders cannot be found')

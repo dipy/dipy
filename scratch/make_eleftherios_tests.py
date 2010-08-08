@@ -6,7 +6,8 @@ import numpy as np
 
 import dicom
 
-import dipy.io.dicomreaders as didr
+import nibabel.dicom.dicomreaders as didr
+
 from dipy.io.vectors import vector_norm
 
 data_dir = os.path.expanduser(
