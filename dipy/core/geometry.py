@@ -353,7 +353,7 @@ def vector_cosine(vecs1, vecs2):
     return dots / lens
 
 def lambert_equal_area_projection_polar(theta, phi):
-    ''' Lambert Equal Area Projection from sphere to plane
+    ''' Lambert Equal Area Projection from polar sphere to plane
 
     Return positions in (y1,y2) plane corresponding to the points
     with polar coordinates (theta, phi) on the unit sphere, under the
@@ -382,7 +382,9 @@ def lambert_equal_area_projection_polar(theta, phi):
 
 
 def lambert_equal_area_projection_cart(x,y,z):
-    ''' Return positions in (y1,y2) plane corresponding to the
+    ''' Lambert Equal Area Projection from cartesian vector to plane
+
+    Return positions in (y1,y2) plane corresponding to the
     directions of the vectors with cartesian coordinates xyz under the
     Lambert Equal Area Projection mapping (see Mardia and Jupp (2000),
     Directional Statistics, p. 161).
@@ -403,5 +405,6 @@ def lambert_equal_area_projection_cart(x,y,z):
     y : (N,2) array
        planar coordinates of points following mapping by Lambert's EAP.
     '''
+
     (r, theta, phi) = cart2sphere(x,y,z)
     return lambert_equal_area_projection_polar(theta, phi)
