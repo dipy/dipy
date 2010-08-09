@@ -353,7 +353,9 @@ def vector_cosine(vecs1, vecs2):
     return dots / lens
 
 def lambert_equal_area_projection_polar(theta, phi):
-    ''' Return positions in (y1,y2) plane corresponding to the points
+    ''' Lambert Equal Area Projection from sphere to plane
+
+    Return positions in (y1,y2) plane corresponding to the points
     with polar coordinates (theta, phi) on the unit sphere, under the
     Lambert Equal Area Projection mapping (see Mardia and Jupp (2000),
     Directional Statistics, p. 161).
@@ -369,11 +371,13 @@ def lambert_equal_area_projection_polar(theta, phi):
        theta spherical coordinates
     phi : array-like
        phi spherical coordinates
+
     Returns
     -------
     y : (N,2) array
        planar coordinates of points following mapping by Lambert's EAP.
     '''
+
     return 2 * np.repeat(np.sin(theta/2),2).reshape((theta.shape[0],2)) * np.column_stack((np.cos(phi), np.sin(phi)))
 
 
