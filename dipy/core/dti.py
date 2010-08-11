@@ -11,6 +11,15 @@ from copy import copy, deepcopy
 #dipy modules
 from dipy.core.maskedview import MaskedView
 
+def _makearray(a):
+    new = np.asarray(a)
+    wrap = getattr(a, "__array_wrap__", new.__array_wrap__)
+    return new, wrap
+
+def _filled(a):
+    filled = getattr(a, 'filled', np.asarray)
+    return filled(a)
+
 class Tensor(object):
     """
     Tensor object that when initialized calculates single self diffusion 
@@ -119,121 +128,74 @@ class Tensor(object):
     shape = property(_getshape, doc = "Shape of tensor array")
 
     ### Ndim Property ###
-    def _getndim(self):
+    @property
+    def ndim(self):
         return self._evals.ndim - 1
     
-    ndim = property(_getndim, doc = "Number of dimensions in tensor array")
-
     ### Getitem Property ###    
     def __getitem__(self, index):
+        """
+        Returns part of the tensor array
+
+        """
         if type(index) is not tuple:
             index = (index,)
         if len(index) > self.ndim:
             raise IndexError('invalid index')
-        for ii in index:
-            if ii is Ellipsis:
-                index = index + (slice(None),)
+        for ii, slc in enumerate(index):
+            if slc is Ellipsis:
+                n_ellipsis = len(self.shape) - len(index) + 1
+                index = index[:ii] + n_ellipsis*(slice(None),) + index[ii+1:]
                 break
-        
+                 
         new_tensor = copy(self)
         new_tensor._evals = self._evals[index]
         new_tensor._evecs = self._evecs[index]
         return new_tensor
     
     ### Eigenvalues Property ###
-    def _getevals(self):
-        evals = self._evals
-        return evals
+    @property
+    def evals(self):
+        return _filled(self._evals)
     
-    def _setevals(self,evals):
-        if self._evals.shape != evals.shape[:-1] + (3,) :
-            raise ValueError('Setting evals requires a (V, 3) shape')
-        self._evals = evals
-
-    evals = property(_getevals, _setevals, 
-                                doc = "Eigenvalues of self diffusion tensor")
-
     ### Eigenvectors Property ###
-    def _getevecs(self):
-        evecs_flat = self._evecs.reshape((-1, 3, 2))
-        evs = np.empty((evecs_flat.shape[0],)+(3, 3))
+    @property
+    def evecs(self):
+        return _filled(self._evecs)
         
-        if evecs_flat.ndim == 2: # for single voxel case
-            evecs_flat = evecs_flat[np.newaxis, ...]
-            evs = evs[np.newaxis, ...]
-        
-        #Calculate 3rd eigenvector from cached eigenvectors
-        for ii, p_s_evecs in enumerate(evecs_flat): 
-            evs[ii, :, 0:2] = p_s_evecs
-            evs[ii, :, 2] = np.cross(p_s_evecs[:, 0], p_s_evecs[:, 1]) 
-                #time 26.9 us
-        return evs.reshape(self._evecs.shape[:-2]+(3, 3))
-
-    def _setevecs(self,evs):
-        if self._evecs.shape != evs.shape[:-1] + (3,) and \
-           self._evecs.shape != evs.shape[:-1] + (2,) :
-            raise ValueError('Setting evecs requires a (V, 3, 3) or (V, 3, 2)\
-                              shape')
-        self._evecs = evs[...,0:2] # only cache first two vectors
-    
-    evecs = property(_getevecs, _setevecs, 
-                                doc = "Eigenvectors of self diffusion tensor")
-
     def __init__(self, data, b_values,grad_table, mask = True, thresh = 0,
-                 min_signal=1, verbose = False):
-        dims = data.shape
+                 min_signal=1, verbose = False, data_is_flat=False):
         
         #64 bit design matrix makes for faster pinv
         B = design_matrix(grad_table.T, b_values)
         self.B = B
 
-        self._evecs = np.zeros(data.shape[:-1] + (3, 3))
-        self._evals = np.zeros(data.shape[:-1] + (3,))
-        
         #Define total mask from thresh and mask
-        tot_mask = (mask > 0) & (data[..., b_values == 0].min(-1) > thresh)
-        
+        thresh = np.maximum(thresh, min_signal)
+        self.mask = (mask > 0) & (data[..., b_values == 0].min(-1) > thresh)
+
+        if data_is_flat:
+            data_flat = data
+        else:
+            data_flat = data[self.mask]
+
         #Perform WLS fit on masked data
-        evals, evecs = wls_fit_tensor(B, data[tot_mask], min_signal=min_signal)
-        self._evals[tot_mask], self._evecs[tot_mask] = evals, evecs
-        #wls fit returns all 3 eigenvecs...but we want to only store first two
-        self._evecs = self._evecs[..., 0:2]
+        evals, evecs = wls_fit_tensor(B, data_flat, min_signal=min_signal)
+        self._evals = MaskedView(self.mask, evals, 0)
+        self._evecs = MaskedView(self.mask, evecs, 0)
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
         evals_flat = self.evals.reshape((-1, 3))
         evecs_flat = self.evecs.reshape((-1, 3, 3))
         D_flat = np.empty(evecs_flat.shape)
-        for ii, eval in enumerate(evals_flat): 
+        for ii, eval in enumerate(evals_flat):
             L = eval
-            Q = evecs_flat[ii, ...]
-            D_flat[ii, ...] = np.dot(Q*L, Q.T) #timeit = 11.5us
+            Q = evecs_flat[ii]
+            D_flat[ii] = np.dot(Q*L, Q.T) #timeit = 11.5us
         return D_flat.reshape(self.evecs.shape)
     
     D = property(_getD, doc = "Self diffusion tensor")
-
-    @property
-    def ADC(self):
-        return self.adc()
-    
-    def adc(self):
-        """
-        Apparent diffusion coefficient (ADC) calculated from diagonal elements
-        of calculated self diffusion tensor. 
-        
-        Returns
-        -------
-        adc : ndarray (V, 1)
-            Calculated ADC.
-
-        Notes
-        -----
-        ADC is calculated with the following equation:
-
-        .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
-
-        """
-        return self.evals.sum(-1) / 3.
 
     @property
     def FA(self):
@@ -258,25 +220,16 @@ class Tensor(object):
                     \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
                     \lambda_2^2+\lambda_3^2} }
         """
-        ev1 = self.evals[..., 0]
-        ev2 = self.evals[..., 1]
-        ev3 = self.evals[..., 2]
+        evals, wrap = _makearray(self._evals)
+        ev1 = evals[..., 0]
+        ev2 = evals[..., 1]
+        ev3 = evals[..., 2]
 
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1**2 + ev2**2 + ev3**2))
-        #force bounds
-        fa = np.minimum(fa, 1)
-        fa = np.maximum(fa, 0)
-        #fancy array indexing to avoid erroneous FA
-        #but need to check if fa is a ndarray
-        if fa.ndim == 0:
-            if ev1 + ev2 + ev3 == 0:
-                fa = 0
-        else:
-            fa[(ev1 + ev2 + ev3) == 0] = 0
 
-        return fa 
-
+        fa = wrap(fa)
+        return _filled(fa)
 
     @property
     def MD(self):
@@ -297,10 +250,8 @@ class Tensor(object):
 
         .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
-        #adc = (ev1+ev2+ev3)/3
-        return (self.evals[..., 0] + self.evals[..., 1] + 
-                self.evals[..., 2]) / 3
-
+        #adc/md = (ev1+ev2+ev3)/3
+        return self.evals.mean(-1)
 
     @property
     def IN(self):
@@ -326,15 +277,15 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     design_matrix : ndarray (g, g)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : ndarray or MaskedView (X, Y, Z, ..., g)
+    data : ndarray
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
 
     Returns
     -------
-    eigvals : ndarray (X, Y, Z, ..., 3)
+    eigvals : ndarray (..., 3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (X, Y, Z, ..., 3, 3)
+    eigvecs : ndarray (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
         eigvals[j])
@@ -386,7 +337,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     ols_fit = _ols_fit_matrix(design_matrix)
     
     for ii, sig in enumerate(data_flat):
-        evals[ii], evecs[ii,:,:] = _wls_iter(ols_fit, design_matrix, 
+        evals[ii], evecs[ii] = _wls_iter(ols_fit, design_matrix, 
                                              sig, min_signal=min_signal)
     evals.shape = data.shape[:-1]+(3,)
     evecs.shape = data.shape[:-1]+(3,3)
@@ -401,7 +352,8 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
     D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
-    return decompose_tensor(D)
+    tensor = _full_tensor(D)
+    return decompose_tensor(tensor)
 
 def ols_fit_tensor(design_matrix, data):
     """
@@ -410,18 +362,19 @@ def ols_fit_tensor(design_matrix, data):
     
     Parameters
     ----------
-    design_matrix : ndarray (g, g)
+    design_matrix : ndarray (g, 7)
         Design matrix holding the covariants used to solve for the regression
-        coefficients.
-    data : ndarray or MaskedView (X, Y, Z, ..., g)
+        coefficients. Use design_matrix to build a valid design matrix from 
+        bvalues and a gradient table.
+    data : ndarray
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
 
     Returns
     -------
-    eigvals : ndarray (X, Y, Z, ..., 3)
+    eigvals : ndarray (..., 3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (X, Y, Z, ..., 3, 3)
+    eigvecs : ndarray (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
         eigvals[j])
@@ -429,7 +382,7 @@ def ols_fit_tensor(design_matrix, data):
 
     See Also
     --------
-    WLS_fit_tensor, decompose_tensor
+    WLS_fit_tensor, decompose_tensor, design_matrix
 
     Notes
     -----
@@ -461,7 +414,8 @@ def ols_fit_tensor(design_matrix, data):
     Ds = np.dot(data_flat,np.linalg.pinv(design_matrix.T))
 
     for ii, sig in enumerate(data_flat):
-        evals[ii, :], evecs[ii, :, :] = decompose_tensor(Ds[ii, :])
+        tensor = _full_tensor(Ds[ii, :])
+        evals[ii, :], evecs[ii, :, :] = decompose_tensor(tensor)
 
     evals.shape = data.shape[:-1]+(3,)
     evecs.shape = data.shape[:-1]+(3,3)
@@ -486,45 +440,53 @@ def _ols_fit_matrix(design_matrix):
     U,S,V = np.linalg.svd(design_matrix, False)
     return np.dot(U, U.T)
 
-def decompose_tensor(D):
+def _full_tensor(D):
     """
-    Computes tensor eigen decomposition to calculate eigenvalues and 
+    Returns a tensor given the six unique tensor elements
+
+    Given the six unique tensor elments (in the order: Dxx, Dyy, Dzz, Dxy, Dxz,
+    Dyz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+
+    """
+
+    tensor = np.empty((3,3),dtype=D.dtype)
+
+    tensor[0, 0] = D[0]  #Dxx
+    tensor[1, 1] = D[1]  #Dyy
+    tensor[2, 2] = D[2]  #Dzz
+    tensor[1, 0] = tensor[0, 1] = D[3]  #Dxy
+    tensor[2, 0] = tensor[0, 2] = D[4]  #Dxz
+    tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
+
+    return tensor
+
+def decompose_tensor(tensor):
+    """
+    Returns eigenvalues and eigenvectors given a diffusion tensor
+
+    Computes tensor eigen decomposition to calculate eigenvalues and
     eigenvectors of self-diffusion tensor. (Basser et al., 1994a)
 
     Parameters
     ----------
-    D : ndarray (7,) or (3,3)
-        If (7, ) shape, array holding the six unique diffusitivities 
-        and log(S_o) (Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_o)).If (3, 3) shape,
-        array is holding the actual tensor. Assumes D has units on order of 
+    D : ndarray (3,3)
+        array holding a tensor. Assumes D has units on order of
         ~ 10^-4 mm^2/s
 
     Results
     -------
     eigvals : ndarray (3,)
         Eigenvalues from eigen decomposition of the tensor. Negative
-        eigenvalues are forced to zero.
+        eigenvalues are replaced by zero. Sorted from largest to smallest.
     eigvecs : ndarray (3,3)
         Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
 
     See Also
     --------
     numpy.linalg.eig
     """
-
-    tensor = np.empty((3,3),dtype=D.dtype)
-   
-    if D.flat[:].shape[0] == 7 : 
-        tensor[0, 0] = D[0]  #Dxx
-        tensor[1, 1] = D[1]  #Dyy
-        tensor[2, 2] = D[2]  #Dzz
-        tensor[1, 0] = tensor[0, 1] = D[3]  #Dxy
-        tensor[2, 0] = tensor[0, 2] = D[4]  #Dxz
-        tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
-    else :
-        tensor = D
 
     #outputs multiplicity as well so need to unique
     eigenvals, eigenvecs = np.linalg.eig(tensor)
@@ -538,9 +500,8 @@ def decompose_tensor(D):
     eigenvals = np.maximum(eigenvals, 0)
     # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
     # eigenvecs: each vector is columnar
-    
-    return eigenvals, eigenvecs
 
+    return eigenvals, eigenvecs
 
 def design_matrix(gtab, bval, dtype=None):
     """
@@ -616,7 +577,7 @@ def __WLS_fit (data,gtab,bval,verbose=False):
 
     Parameters
     ----------
-    data : ndarray (X,Y,Z,g) OR Maskedview (X,Y,Z)
+    data : ndarray (X,Y,Z,g)
         The image data will be masked if ndarray is given with threshold = 25.
     gtab : ndarray (3,g)
         Diffusion gradient table found in DICOM header as a numpy ndarray.

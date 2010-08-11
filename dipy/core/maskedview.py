@@ -66,6 +66,10 @@ class MaskedView(object):
         #the data type of a masked view is the same as the _data array
         return self._data.dtype
 
+    @property
+    def ndim(self):
+        return self._data.ndim + self._imask.ndim - 1
+
     def filled(self, fill_value=None):
         """
         Returns an ndarray copy of itself. Where mask is zero, fill_value is used 
@@ -203,9 +207,6 @@ class MaskedView(object):
                 self._data = np.r_[self._data, values[np.newaxis]]
         else:
             self._data[imask[imask >= 0]] = values
-    
-    def __iter__(self):
-        return self.__array__().__iter__()
     
     def __array__(self, dtype=None):
 
