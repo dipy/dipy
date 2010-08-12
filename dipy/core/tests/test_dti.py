@@ -137,5 +137,15 @@ def test_masked_array_with_Tensor():
     yield assert_equal(tensor.evecs.shape, (3,3))
     yield assert_equal(type(tensor._evals), np.ndarray)
 
-
+@parametric
+def test_init():
+    data = np.ones((2,4,56))
+    mask = np.ones((2,4),'bool')
+    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),
+                                             'data','55dir_grad.bvec'))
+    tensor = dti.Tensor(data, bval, gtab.T, mask, thresh=0)
+    mask[:] = False
+    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, mask)
+    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, min_signal=-1)    
+    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, thresh=1)
 

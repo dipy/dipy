@@ -24,57 +24,57 @@ def _filled(a):
 
 class Tensor(object):
     """
-    Tensor object that when initialized calculates single self diffusion 
-    tensor[1]_ in each voxel using selected fitting algorithm 
-    (DEFAULT: weighted least squares[1]_)
+    Fits a diffusion tensor given diffusion-weighted signals and gradient info
 
-    Requires a given gradient table, b value for each diffusion-weighted 
-    gradient vector, and image data given all as numpy ndarrays.
+    Tensor object that when initialized calculates single self diffusion
+    tensor[1]_ in each voxel using selected fitting algorithm
+    (DEFAULT: weighted least squares[1]_)
+    Requires a given gradient table, b value for each diffusion-weighted
+    gradient vector, and image data given all as ndarrays.
 
     Parameters
     ----------
-    data : ndarray (V, g)
-        The image data needs at least 2 dimensions where the first dimension
-        holds the set of voxels that WLS_fit will perform on and second 
-        dimension holds the diffusion weighted signals.
-
-    bval : ndarray (g, 1)
+    data : ndarray ([X, Y, Z, ...], g)
+        Diffusion-weighted signals. The dimension corresponding to the
+        diffusion weighting must be the last dimenssion
+    bval : ndarray (g,)
         Diffusion weighting factor b for each vector in gtab.
-
     gtab : ndarray (g, 3)
-        Diffusion gradient table found in DICOM header as a numpy ndarray.
-        
-    mask : ndarray (0 <= V, 1), optional
-        Mask of data that WLS_fit will NOT perform on. If mask is not boolean,
-        then WLS_fit will operate where mask > 0. Note: mask.ndim <= data.ndim
-    thresh : data.dtype (0 <= data[..., 0].max()), optional
-        Simple threshold to exclude voxels from WLS_fit. Default value for 
-        threshold is 0.
+        Diffusion gradient table found in DICOM header as a ndarray.
+    mask : ndarray, optional
+        The tensor will only be fit where mask is True. Mask must must
+        broadcast to the shape of data and must have fewer dimensions than data
+    thresh : float, default = 0
+        The tensor will not be fit where data[bval == 0] < thresh. If multiple
+        b0 volumes are given, the minimum b0 signal is used.
+    min_signal : float
+        All diffusion weighted signals below min_signal are replaced with
+        min_signal. min_signal must be > 0.
 
     Attributes
     ----------
-    D : ndarray (V, 3, 3)
+    D : ndarray (..., 3, 3)
         Self diffusion tensor calculated from cached eigenvalues and 
         eigenvectors.
+    mask : ndarray
+        True in voxels where a tensor was fit, false if the voxel was skipped
     B : ndarray (g, 7)
         Design matrix or B matrix constructed from given gradient table and
         b-value vector.
-    evals : ndarray (V, 3) 
+    evals : ndarray (..., 3) 
         Cached eigenvalues of self diffusion tensor for given index. 
         (eval1, eval2, eval3)
-    evecs : ndarray (V, 3, 3)
+    evecs : ndarray (..., 3, 3)
         Cached associated eigenvectors of self diffusion tensor for given 
         index. Note: evals[..., j] is associated with evecs[..., :, j]
 
 
     Methods
     -------
-    adc : ndarray (V, 1)
-        Calculates the apparent diffusion coefficient [2]_. 
-    fa : ndarray (V, 1)
+    fa : ndarray
         Calculates fractional anisotropy [2]_.
-    md : ndarray (V, 1)
-        Calculates the mean diffusitivity [2]_. 
+    md : ndarray
+        Calculates the mean diffusivity [2]_. 
         Note: [units ADC] ~ [units b value]*10**-1
     
     See Also
@@ -110,7 +110,7 @@ class Tensor(object):
     >>> x = 1
     >>> y = 1
     >>> z = 1
-    >>> tensor = dti.tensor(data, gtab, bvals)
+    >>> tensor = dti.Tensor(data, gtab, bvals)
 
     To get the tensor for a particular voxel
     
@@ -125,16 +125,29 @@ class Tensor(object):
     """
     ### Shape Property ###
     def _getshape(self):
+        """
+        Gives the shape of the tensor array
+
+        """
+
         return self._evals.shape[:-1]
 
-    shape = property(_getshape, doc = "Shape of tensor array")
+    def _setshape(self, shape):
+        """
+        Sets the shape of the tensor array
+
+        """
+        self._evals.shape = shape + (3,)
+        self._evecs.shape = shape + (3,3)
+
+    shape = property(_getshape, _setshape, doc = "Shape of tensor array")
 
     ### Ndim Property ###
     @property
     def ndim(self):
         return self._evals.ndim - 1
-    
-    ### Getitem Property ###    
+
+    ### Getitem Property ###
     def __getitem__(self, index):
         """
         Returns part of the tensor array
@@ -158,15 +171,29 @@ class Tensor(object):
     ### Eigenvalues Property ###
     @property
     def evals(self):
+        """
+        Returns the eigenvalues of the tensor as an ndarray
+
+        """
+
         return _filled(self._evals)
 
     ### Eigenvectors Property ###
     @property
     def evecs(self):
+        """
+        Returns the eigenvectors of teh tensor as an ndarray
+
+        """
+
         return _filled(self._evecs)
 
-    def __init__(self, data, b_values,grad_table, mask = True, thresh = 0,
-                 min_signal=1, verbose = False):
+    def __init__(self, data, b_values, grad_table, mask=True, thresh=0,
+                 min_signal=1, verbose=False):
+        """
+        Fits a tensors to diffusion weighted data.
+
+        """
 
         if min_signal <= 0:
             raise ValueError('min_signal must be > 0')
@@ -193,7 +220,7 @@ class Tensor(object):
         #Perform WLS fit on masked data
         evals, evecs = wls_fit_tensor(B, data, min_signal=min_signal)
 
-        #if the data came in flat or we flattened it
+        #if we flattened the data
         if not mask_all_true:
             self._evals = MaskedView(self.mask, evals, 0)
             self._evecs = MaskedView(self.mask, evecs, 0)
@@ -290,10 +317,10 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     
     Parameters
     ----------
-    design_matrix : ndarray (g, g)
+    design_matrix : ndarray (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : ndarray
+    data : ndarray ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
 
@@ -382,7 +409,7 @@ def ols_fit_tensor(design_matrix, data):
         Design matrix holding the covariants used to solve for the regression
         coefficients. Use design_matrix to build a valid design matrix from 
         bvalues and a gradient table.
-    data : ndarray
+    data : ndarray ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
 
