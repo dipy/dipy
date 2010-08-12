@@ -17,8 +17,10 @@ def _makearray(a):
     return new, wrap
 
 def _filled(a):
-    filled = getattr(a, 'filled', np.asarray)
-    return filled(a)
+    if hasattr(a, 'filled'):
+        return a.filled()
+    else:
+        return a
 
 class Tensor(object):
     """
@@ -124,7 +126,7 @@ class Tensor(object):
     ### Shape Property ###
     def _getshape(self):
         return self._evals.shape[:-1]
-    
+
     shape = property(_getshape, doc = "Shape of tensor array")
 
     ### Ndim Property ###
@@ -147,42 +149,57 @@ class Tensor(object):
                 n_ellipsis = len(self.shape) - len(index) + 1
                 index = index[:ii] + n_ellipsis*(slice(None),) + index[ii+1:]
                 break
-                 
+
         new_tensor = copy(self)
         new_tensor._evals = self._evals[index]
         new_tensor._evecs = self._evecs[index]
         return new_tensor
-    
+
     ### Eigenvalues Property ###
     @property
     def evals(self):
         return _filled(self._evals)
-    
+
     ### Eigenvectors Property ###
     @property
     def evecs(self):
         return _filled(self._evecs)
-        
+
     def __init__(self, data, b_values,grad_table, mask = True, thresh = 0,
-                 min_signal=1, verbose = False, data_is_flat=False):
-        
+                 min_signal=1, verbose = False):
+
+        if min_signal <= 0:
+            raise ValueError('min_signal must be > 0')
+
         #64 bit design matrix makes for faster pinv
         B = design_matrix(grad_table.T, b_values)
         self.B = B
 
+        mask = np.atleast_1d(mask)
         #Define total mask from thresh and mask
-        thresh = np.maximum(thresh, min_signal)
-        self.mask = (mask > 0) & (data[..., b_values == 0].min(-1) > thresh)
+        self.mask = mask & (data[..., b_values == 0].min(-1) > thresh)
 
-        if data_is_flat:
-            data_flat = data
-        else:
-            data_flat = data[self.mask]
+        #if mask is all False
+        if not self.mask.any():
+            raise ValueError('between mask and thresh, there is no data to '+
+            'fit')
+
+        mask_all_true = self.mask.all()
+        #and the mask is not all True
+        if not mask_all_true:
+            #leave only data[mask is True]
+            data = data[self.mask]
 
         #Perform WLS fit on masked data
-        evals, evecs = wls_fit_tensor(B, data_flat, min_signal=min_signal)
-        self._evals = MaskedView(self.mask, evals, 0)
-        self._evecs = MaskedView(self.mask, evecs, 0)
+        evals, evecs = wls_fit_tensor(B, data, min_signal=min_signal)
+
+        #if the data came in flat or we flattened it
+        if not mask_all_true:
+            self._evals = MaskedView(self.mask, evals, 0)
+            self._evecs = MaskedView(self.mask, evecs, 0)
+        else:
+            self._evals = evals
+            self._evecs = evecs
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
@@ -227,8 +244,7 @@ class Tensor(object):
 
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1**2 + ev2**2 + ev3**2))
-
-        fa = wrap(fa)
+        fa = wrap(np.asarray(fa))
         return _filled(fa)
 
     @property
