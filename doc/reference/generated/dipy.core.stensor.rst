@@ -5,6 +5,16 @@
 .. automodule:: dipy.core.stensor
 
 
+Functions
+----------
+
+.. autofunction:: eig
+
+.. autofunction:: lstsq
+
+
+
+
 Classes
 --------
 

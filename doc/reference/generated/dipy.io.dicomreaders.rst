@@ -8,23 +8,27 @@
 Functions
 ----------
 
-.. autofunction:: B2q
+.. autofunction:: _instance_sorter
 
-.. autofunction:: _fairly_close
+.. autofunction:: _slice_sorter
 
-.. autofunction:: get_b_matrix
-
-.. autofunction:: get_csa_header
-
-.. autofunction:: get_q_vector
-
-.. autofunction:: get_vox_to_dpcs
-
-.. autofunction:: has_csa
-
-.. autofunction:: is_mosaic
+.. autofunction:: _third_pass
 
 .. autofunction:: mosaic_to_nii
+
+.. autofunction:: join
+
+.. autofunction:: read_mosaic_dir
+
+.. autofunction:: read_mosaic_dwi_dir
+
+.. autofunction:: slices_to_series
+
+.. autofunction:: vector_norm
+
+.. autofunction:: wrapper_from_data
+
+.. autofunction:: wrapper_from_file
 
 
 
@@ -34,14 +38,7 @@ Functions
 Exceptions
 ------------
 
-.. autoclass:: CSAError
-   :show-inheritance:
-   :members:
-   :inherited-members:
-   :undoc-members:
-   
-
-.. autoclass:: MosaicError
+.. autoclass:: DicomReadError
    :show-inheritance:
    :members:
    :inherited-members:

@@ -8,7 +8,13 @@
 Functions
 ----------
 
-.. autofunction:: read_bvec_file
+.. autofunction:: cartesian2polar
+
+.. autofunction:: copy
+
+.. autofunction:: deepcopy
+
+.. autofunction:: lpn
 
 .. autofunction:: real_sph_harm
 
@@ -20,7 +26,7 @@ Functions
 Classes
 --------
 
-.. autoclass:: odf
+.. autoclass:: ODF
    :show-inheritance:
    :members:
    :inherited-members:

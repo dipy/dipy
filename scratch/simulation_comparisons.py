@@ -7,6 +7,10 @@ import dipy.core.sphere_plots as splot
 import dipy.core.geometry as geometry
 import get_vertices as gv
 
+fname='/home/ian/Data/SimData/results_SNR030_1fibre'
+
+sim_data=np.loadtxt(fname)
+
 v = gv.get_vertex_set('dsi101')
 
 gqfile = '/home/ian/Data/SimData/gq_SNR030_1fibre.pkl'

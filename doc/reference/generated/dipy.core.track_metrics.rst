@@ -18,6 +18,8 @@ Functions
 
 .. autofunction:: bundle_similarities_zhang
 
+.. autofunction:: bundles_distances_zhang
+
 .. autofunction:: center_of_mass
 
 .. autofunction:: downsample

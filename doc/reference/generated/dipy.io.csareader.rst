@@ -14,7 +14,11 @@ Functions
 
 .. autofunction:: get_b_value
 
+.. autofunction:: get_csa_header
+
 .. autofunction:: get_g_vector
+
+.. autofunction:: get_ice_dims
 
 .. autofunction:: get_n_mosaic
 
@@ -23,6 +27,8 @@ Functions
 .. autofunction:: get_slice_normal
 
 .. autofunction:: get_vector
+
+.. autofunction:: is_mosaic
 
 .. autofunction:: nt_str
 
@@ -46,6 +52,13 @@ Classes
 
 Exceptions
 ------------
+
+.. autoclass:: CSAError
+   :show-inheritance:
+   :members:
+   :inherited-members:
+   :undoc-members:
+   
 
 .. autoclass:: CSAReadError
    :show-inheritance:
