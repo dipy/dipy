@@ -4,17 +4,17 @@
  DIY Stuff about b and q
 =========================
 
-This is a short note to explain the nature of the ``B_matrix`` found
-in the :ref:`csa-header` of a diffusion weighted acquisition and its
-relationship with the *b value* and the *gradient vector*.  The
-acquisition is made with a planned (requested) $b$-value - say
-$b_{req} = 1000$, and with a requested gradient direction
-$\mathbf{g}_{req} = [g_x, g_y, g_z]$ (supposedly a unit vector) and
-peak amplitude $G$. When the sequence runs the gradient is modulated
-by an amplitude envelope $\rho(t)$ with $\max |\rho(t)| = 1$ so that
-the time course of the gradient is $G\rho(t)\mathbf{g}.$ $G$ is
-measured in units of $T \mathrm{mm}^-1.$ This leads to an important
-temporal weighting parameter of the acquisition:
+This is a short note to explain the nature of the ``B_matrix`` found in the
+Siemens private (CSA) fields of the DICOM headers of a diffusion weighted
+acquisition.  We trying to explain the relationship between the ``B_matrix`` and
+the *b value* and the *gradient vector*.  The acquisition is made with a planned
+(requested) $b$-value - say $b_{req} = 1000$, and with a requested gradient
+direction $\mathbf{g}_{req} = [g_x, g_y, g_z]$ (supposedly a unit vector) and
+peak amplitude $G$. When the sequence runs the gradient is modulated by an
+amplitude envelope $\rho(t)$ with $\max |\rho(t)| = 1$ so that the time course
+of the gradient is $G\rho(t)\mathbf{g}.$ $G$ is measured in units of $T
+\mathrm{mm}^-1.$ This leads to an important temporal weighting parameter of the
+acquisition:
 
 ..  math::
 

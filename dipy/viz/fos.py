@@ -1568,7 +1568,7 @@ def annotatePick(object, event):
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,png_magnify=10):
+def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,png_magnify=3):
     ''' Show window 
     
     Parameters

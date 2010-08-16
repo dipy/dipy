@@ -13,7 +13,7 @@ similarity='cr'
 #interp 'pv', 'tri'
 interp =  'tri'
 #subsampling None or sequence (3,)
-subsampling=None
+subsampling=[1,1,1]
 #search 'affine', 'rigid', 'similarity' or ['rigid','affine']
 search='affine'
 #optimizer 'simplex', 'powell', 'steepest', 'cg', 'bfgs' or
@@ -127,7 +127,7 @@ def register_FA_same_subj_diff_sessions(dname_grid,dname_shell):
                               interp,subsampling,search,optimizer)
 
     print('apply the inverse of the transformation matrix')
-    sourceT=dp.volume_transform(source, T.inv(), reference=target)   
+    sourceT=dp.volume_transform(source, T.inv(), reference=target)    
     #ni.save(sourceT,'/tmp/result.nii.gz')
 
     print('calculate FA for grid and shell data')
@@ -138,14 +138,28 @@ def register_FA_same_subj_diff_sessions(dname_grid,dname_shell):
     FA_shell_img=ni.Nifti1Image(FA_shell,affine_sh)
 
     print('transform FA_shell')
-    FA_shell_imgT=dp.volume_transform(FA_shell_img,T.inv(),reference=target)
+    FA_shell_imgT=dp.volume_transform(FA_shell_img,T.inv(),reference=target)    
 
     return ni.Nifti1Image(FA_grid,affine_gr),FA_shell_imgT
+
+def flirt(in_nii, ref_nii,out_nii,transf_mat):
+    cmd='flirt -in ' + in_nii + ' -ref ' + ref_nii + ' -out ' \
+        + out_nii +' -dof 6 -omat ' + transf_mat
+    print(cmd)
+    pipe(cmd)
+    
+def flirt_apply_transform(in_nii, target_nii, out_nii, transf_mat):
+    cmd='flirt -in ' + in_nii + ' -ref ' + target_nii + ' -out ' \
+        + out_nii +' -init ' + transf_mat +' -applyxfm'
+    print(cmd)
+    pipe(cmd)
+
 
 
 if __name__ == '__main__':
 
 
+    '''
     print('Goal is to compare FA of grid versus shell acquisitions using STEAM')
 
     print('find filenames for grid and shell data')    
@@ -163,5 +177,54 @@ if __name__ == '__main__':
     save_volumes_as_mosaic('/tmp/mosaic_fa.png',\
                                [FA_grid_img.get_data(),FA_shell_imgT.get_data()])
 
+    '''
+
+    S012='/tmp/compare_12_with_32_Verio_directly/18620_0004.nii_S0.nii.gz'
+    S032='/tmp/compare_12_with_32_Verio_directly/18620_0006.nii_S0.nii.gz'
+    S012T='/tmp/compare_12_with_32_Verio_directly/18620_0004.nii_S0_reg.nii.gz'
+    MP='/tmp/compare_12_with_32_Verio_directly/MPRAGE.nii'
+        
+    source=ni.load(S012)
+    #target=ni.load(S032)
+    target=ni.load(MP)
+
+    target._data=np.squeeze(target._data)
+    #target._affine= np.dot(np.diag([-1, -1, 1, 1]), target._affine)
+
     
+    similarity='cr'
+    interp =  'tri'    
+    subsampling=None
+    search='affine'    
+    optimizer= 'powell'
+
+    T=dp.volume_register(source,target,similarity,\
+                              interp,subsampling,search,optimizer)
+
+    print('Transformation matrix')
+    print(T.inv())
+        
+    sourceT=dp.volume_transform(source,T.inv(),reference=target,interp_order=0)     
+
+    sourceTd=sourceT.get_data()
+    sourceTd[sourceTd<0]=0
+
+    sourceT._data=sourceTd
+
+    ni.save(sourceT,S012T)
+
+    sourced=source.get_data()
+    targetd=target.get_data()
+    sourceTd=sourceT.get_data()
+    
+    print 'source info',sourced.min(), sourced.max()
+    print 'target info',targetd.min(), targetd.max()
+    print 'sourceT info',sourceTd.min(), sourceTd.max()
+    
+    #save_volumes_as_mosaic('/tmp/mosaic_S0_MP_cr_pv_powell.png',\
+    #                           [sourced,sourceTd,targetd])
+
+    # RAS to LPS np.dot(np.diag([-1, -1, 1, 1]), A)
+    # LPS to RAS
+
     

@@ -54,7 +54,6 @@ def test_MaskedView():
     yield assert_array_equal(dataS.mask, mask)
     yield assert_equal(dataS.get_size(), np.asarray(dataS).shape[0])
     yield assert_true(dataS.base is None)
-    yield 4 is None
     
     #test filld
     slice_one = dataS[:,:,10,:,:,:].filled()
@@ -66,14 +65,23 @@ def test_MaskedView():
     yield assert_equal(dataS_part.get_size(), 
                        np.asarray(dataS_part).shape[0])
     yield assert_array_equal(dataS_part.mask, mask[10:20,10:20,10:20])
+
+    #this is the correct behaviour
     yield assert_array_equal(dataS_zero, data[0])
+    
+    #this is the correct behaviour
     yield assert_array_equal(dataS_one, fill_value)
+    
     yield assert_equal(type(dataS_ind), np.ndarray)
     yield assert_equal(dataS_ind.shape, mask.shape)
     yield assert_array_equal(dataS_ind[mask], data[:,0,0,0])
 
-
     #test __array_wrap__
+
     new_view = dataS + np.array(0)
+    
     yield assert_equal(type(new_view), type(dataS))
+
+
+    
 

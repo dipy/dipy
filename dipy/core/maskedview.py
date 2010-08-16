@@ -47,13 +47,13 @@ class MaskedView(object):
         self._data = data
         try:
             self.fill_value = np.array(fill_value, dtype=data.dtype)
-        except TypeError as error:
+        except TypeError:
             if fill_value is None:
                 self.fill_value = np.array(0, dtype=data.dtype)
             else:
-                raise error
+                raise
         self.base = None
-        self._imask = np.empty(mask.shape, 'int32')
+        self._imask = np.empty(mask.shape, 'int')
         self._imask.fill(-1)
         self._imask[mask] = np.arange(len(data))
     
