@@ -1,4 +1,4 @@
-.. _development:
+ .. _development:
 
 DiPy development
 ================

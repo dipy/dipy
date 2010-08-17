@@ -4,15 +4,14 @@
 
 .. currentmodule:: dipy.core
 
-
 .. autosummary::
    :toctree:
 
    geometry
-   track_metrics
-   track_learning
-   track_performance
-   qball
-   stensor
+   core/track_metrics
+   core/track_learning
+   core/track_performance
+   core/qball
+   core/stensor
 
    

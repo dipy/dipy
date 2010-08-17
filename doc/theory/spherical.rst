@@ -28,7 +28,7 @@ radial distance
 
 z axis
    The vertical of the sphere.  If we consider the sphere as a globe,
-   then the z axis runs from north to south.  This is the zenith direction of the sphere. 
+   then the z axis runs from south to north.  This is the zenith direction of the sphere. 
 
 Reference plane
    The plane containing the origin and orthogonal to the z axis
@@ -46,10 +46,10 @@ x axis
 
 Inclination angle
    The angle between OP and the z axis. This can also be called the
-   polar angle.
+   polar angle, or the co-latitude.
 
 Azimuth angle
-   or azimuthal angle.  The angle between the projection of OP onto the
+   or azimuthal angle or longitude.  The angle between the projection of OP onto the
    reference plane and the x axis
 
 
