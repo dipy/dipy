@@ -1,4 +1,4 @@
-.. _development:
+.. _installation:
 
 ======================
  Installing dipy
@@ -20,7 +20,8 @@ a release is coming soon.
 
 In case ``easy_install`` is not installed then please install
 setuptools_ ::
-            sudo apt-get install python-setuptools
+
+        sudo apt-get install python-setuptools
 
 Install git using::
 

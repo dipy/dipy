@@ -4,7 +4,6 @@
 
 .. currentmodule:: dipy.core
 
-
 .. autosummary::
    :toctree:
 
