@@ -8,10 +8,10 @@
    :toctree:
 
    geometry
-   core/track_metrics
-   core/track_learning
-   core/track_performance
-   core/qball
-   core/stensor
+   track_metrics
+   track_learning
+   track_performance
+   qball
+   stensor
 
    
