@@ -22,8 +22,6 @@ b_vals_dirs=np.loadtxt(marta_table_fname)
 bvals=b_vals_dirs[:,0]*1000
 gradients=b_vals_dirs[:,1:]
 
-sim_data=sim_data
-
 gq = dp.GeneralizedQSampling(sim_data,bvals,gradients)
 tn = dp.Tensor(sim_data,bvals,gradients)
 #'''

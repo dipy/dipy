@@ -592,10 +592,10 @@ def quantize_evecs(evecs,odf_vertices=None):
         eds=np.load(os.path.join(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))
         odf_vertices=eds['vertices']
 
-    x,y,z=max_evecs.shape[:3]
-    mec=max_evecs.reshape(x*y*z,3)
+    tup=max_evecs.shape[:-1]
+    mec=max_evecs.reshape(np.prod(np.array(tup)),3)
     IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
-    IN=IN.reshape(x,y,z)
+    IN=IN.reshape(tup)
 
     return IN
 

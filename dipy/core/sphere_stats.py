@@ -26,9 +26,6 @@ def eigenstats(points, alpha=0.05):
 
     e = np.zeros((2,2))
 
-    print h[:,0].T
-    print points.shape
-
     p0 = np.dot(points,h[:,0])
     p1 = np.dot(points,h[:,1])
     p2 = np.dot(points,h[:,2])

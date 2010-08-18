@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import dipy as dp
 import dipy.io.pickles as pkl
@@ -64,19 +65,49 @@ tn.__hash__          tn._getD
 
 ''' file  has one row for every voxel, every voxel is repeating 1000
 times with the same noise level , then we have 100 different
-directions. 1000 * 100 is the number of all rows.
+directions. 100 * 1000 is the number of all rows.
 '''
 
-results = []
+def analyze_maxima(max_dirs):
 
-dt_first_directions = tn.evecs[:,:,0].reshape((100,1000,3))
+    results = []
+
+
+    for direction in range(100):
+
+        batch = max_dirs[direction,:,:]
+
+        c,b = sphats.eigenstats(batch)
+
+        results.append(np.concatenate((c,b)))
+
+    return results
+
+#dt_first_directions = tn.evecs[:,:,0].reshape((100,1000,3))
 # these are the principal direcections for the full set of simulations
 
 
-for direction in range(100):
+eds=np.load(os.path.join(os.path.dirname(dp.__file__),'core','matrices','evenly_distributed_sphere_362.npz'))
 
-    dt_batch = dt_first_directions[direction,:,:]
-    
+odf_vertices=eds['vertices']
+
+dt_first_directions_in=odf_vertices[tn.IN]
+
+print dt_first_directions_in.shape
+
+results = analyze_maxima(dt_first_directions_in.reshape((100,1000,3)))
+
+#for gqi see example dicoms_2_tracks gq.IN[:,0]
+
+np.set_printoptions(precision=6, suppress=True)
+
+out = open('newtable.txt','w')
+
+print >> out, np.vstack(results)
+
+out.close()
+
+
     #up = dt_batch[:,2]>= 0
 
     #splots.plot_sphere(dt_batch[up], 'batch '+str(direction))
@@ -99,10 +130,3 @@ for direction in range(100):
 
     #splot.plot_lambert(rotated[up],'batch '+str(direction))
 
-    c,b = sphats.eigenstats(dt_batch)
-
-    results.append(np.concatenate((c,b)))
-
-np.set_printoptions(precision=6, suppress=True)
-    
-print np.vstack(results)
