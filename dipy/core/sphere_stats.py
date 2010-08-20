@@ -35,14 +35,16 @@ def eigenstats(points, alpha=0.05):
     e[0,1] = np.sum((p0*p1*(p2**2))/(n*(tau[0]-tau[2])*(tau[1]-tau[2])))
     e[1,0] = e[0,1]
 
-    d = -2*np.log(alpha)/n
+    try:
+        f = np.linalg.inv(e)
 
-    f = np.linalg.inv(e)
-
-    t, y = np.linalg.eig(f)
+    except np.linalg.LinAlgError, sing:
+        return centre, np.array([0,0])
     
+    b = np.array([0,0])
+    t, y = np.linalg.eig(f)
+    d = -2*np.log(alpha)/n
     g = np.sqrt(d/t)
-
     b = np.arcsin(g)*rad2deg
 
     return centre, b
