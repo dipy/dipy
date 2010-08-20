@@ -154,43 +154,30 @@ def flirt_apply_transform(in_nii, target_nii, out_nii, transf_mat):
     print(cmd)
     pipe(cmd)
 
+def test_registration():
 
-
-if __name__ == '__main__':
-
-
-    '''
-    print('Goal is to compare FA of grid versus shell acquisitions using STEAM')
-
-    print('find filenames for grid and shell data')    
-    dname_grid=resources.get_paths('DSI STEAM 101 Trio')[2]
-    dname_shell=resources.get_paths('DTI STEAM 114 Trio')[2]
-    #print('find filenames for T1')
-    #fname_T1=resources.get_paths('MPRAGE nifti Trio')[2]   
-
-    FA_grid_img,FA_shell_imgT=register_FA_same_subj_diff_sessions(dname_grid,dname_shell)
-        
-    #FA_shell_data=FA_shell_imgT.get_data()
-    #FA_shell_data[FA_shell_data<0]=0
-    
-    print('tile volumes')
-    save_volumes_as_mosaic('/tmp/mosaic_fa.png',\
-                               [FA_grid_img.get_data(),FA_shell_imgT.get_data()])
-
-    '''
 
     S012='/tmp/compare_12_with_32_Verio_directly/18620_0004.nii_S0.nii.gz'
     S032='/tmp/compare_12_with_32_Verio_directly/18620_0006.nii_S0.nii.gz'
-    S012T='/tmp/compare_12_with_32_Verio_directly/18620_0004.nii_S0_reg.nii.gz'
+    S012T='/tmp/compare_12_with_32_Verio_directly/S0_reg.nii.gz'
     MP='/tmp/compare_12_with_32_Verio_directly/MPRAGE.nii'
+    D114=resources.get_paths('DTI STEAM 114 Trio')[2]
+    data,affine,bvals,gradients=dp.load_dcm_dir(D114)
+    D114i=ni.Nifti1Image(data[...,0],affine)
+
+    D101=resources.get_paths('DSI STEAM 101 Trio')[2]
+    data,affine,bvals,gradients=dp.load_dcm_dir(D101)
+    D101i=ni.Nifti1Image(data[...,0],affine)
+    ni.save(D101i,'/tmp/compare_12_with_32_Verio_directly/S0_101_reg.nii.gz')
         
-    source=ni.load(S012)
+    #source=ni.load(S012)
+    source=D114i
+    #target=D101i
     #target=ni.load(S032)
     target=ni.load(MP)
 
     target._data=np.squeeze(target._data)
     #target._affine= np.dot(np.diag([-1, -1, 1, 1]), target._affine)
-
     
     similarity='cr'
     interp =  'tri'    
@@ -226,5 +213,36 @@ if __name__ == '__main__':
 
     # RAS to LPS np.dot(np.diag([-1, -1, 1, 1]), A)
     # LPS to RAS
+
+
+    
+
+if __name__ == '__main__':
+
+
+    '''
+    print('Goal is to compare FA of grid versus shell acquisitions using STEAM')
+
+    print('find filenames for grid and shell data')    
+    dname_grid=resources.get_paths('DSI STEAM 101 Trio')[2]
+    dname_shell=resources.get_paths('DTI STEAM 114 Trio')[2]
+    #print('find filenames for T1')
+    #fname_T1=resources.get_paths('MPRAGE nifti Trio')[2]   
+
+    FA_grid_img,FA_shell_imgT=register_FA_same_subj_diff_sessions(dname_grid,dname_shell)
+        
+    #FA_shell_data=FA_shell_imgT.get_data()
+    #FA_shell_data[FA_shell_data<0]=0
+    
+    print('tile volumes')
+    save_volumes_as_mosaic('/tmp/mosaic_fa.png',\
+                               [FA_grid_img.get_data(),FA_shell_imgT.get_data()])
+
+    '''
+
+    
+
+
+
 
     
