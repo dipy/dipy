@@ -68,12 +68,12 @@ times with the same noise level , then we have 100 different
 directions. 100 * 1000 is the number of all rows.
 '''
 
-def analyze_maxima(max_dirs):
+def analyze_maxima(max_dirs,subsets):
 
     results = []
 
 
-    for direction in range(100):
+    for direction in subsets:
 
         batch = max_dirs[direction,:,:]
 
@@ -95,7 +95,7 @@ dt_first_directions_in=odf_vertices[tn.IN]
 
 print dt_first_directions_in.shape
 
-results = analyze_maxima(dt_first_directions_in.reshape((100,1000,3)))
+results = analyze_maxima(dt_first_directions_in.reshape((100,1000,3)),range(1))
 
 #for gqi see example dicoms_2_tracks gq.IN[:,0]
 
