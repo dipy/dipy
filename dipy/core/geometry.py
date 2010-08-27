@@ -1,9 +1,28 @@
 ''' Utility functions for algebra etc '''
 
 import math
-
 import numpy as np
 import numpy.linalg as npl
+
+# epsilon for testing whether a number is close to zero
+_EPS = np.finfo(float).eps * 4.0
+
+# axis sequences for Euler angles
+_NEXT_AXIS = [1, 2, 0, 1]
+
+# map axes strings to/from tuples of inner axis, parity, repetition, frame
+_AXES2TUPLE = {
+    'sxyz': (0, 0, 0, 0), 'sxyx': (0, 0, 1, 0), 'sxzy': (0, 1, 0, 0),
+    'sxzx': (0, 1, 1, 0), 'syzx': (1, 0, 0, 0), 'syzy': (1, 0, 1, 0),
+    'syxz': (1, 1, 0, 0), 'syxy': (1, 1, 1, 0), 'szxy': (2, 0, 0, 0),
+    'szxz': (2, 0, 1, 0), 'szyx': (2, 1, 0, 0), 'szyz': (2, 1, 1, 0),
+    'rzyx': (0, 0, 0, 1), 'rxyx': (0, 0, 1, 1), 'ryzx': (0, 1, 0, 1),
+    'rxzx': (0, 1, 1, 1), 'rxzy': (1, 0, 0, 1), 'ryzy': (1, 0, 1, 1),
+    'rzxy': (1, 1, 0, 1), 'ryxy': (1, 1, 1, 1), 'ryxz': (2, 0, 0, 1),
+    'rzxz': (2, 0, 1, 1), 'rxyz': (2, 1, 0, 1), 'rzyz': (2, 1, 1, 1)}
+
+_TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
+
 
 
 def sphere2cart(r, theta, phi):
@@ -408,3 +427,273 @@ def lambert_equal_area_projection_cart(x,y,z):
 
     (r, theta, phi) = cart2sphere(x,y,z)
     return lambert_equal_area_projection_polar(theta, phi)
+
+
+
+
+def euler_matrix(ai, aj, ak, axes='sxyz'):
+    """Return homogeneous rotation matrix from Euler angles and axis sequence.
+
+    Code modified from the work of Christoph Gohlke link provided here
+    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+
+    Parameters
+    ----------    
+    ai, aj, ak : Euler's roll, pitch and yaw angles
+    axes : One of 24 axis sequences as string or encoded tuple
+
+    Returns
+    -------
+    matrix: 4x4 numpy array
+
+    Code modified from the work of Christoph Gohlke link provided here
+    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+
+    Example
+    -------
+    >>> R = euler_matrix(1, 2, 3, 'syxz')
+    >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)
+    True
+    >>> R = euler_matrix(1, 2, 3, (0, 1, 0, 1))
+    >>> numpy.allclose(numpy.sum(R[0]), -0.383436184)
+    True
+    >>> ai, aj, ak = (4.0*math.pi) * (numpy.random.random(3) - 0.5)
+    >>> for axes in _AXES2TUPLE.keys():
+    ...    R = euler_matrix(ai, aj, ak, axes)
+    >>> for axes in _TUPLE2AXES.keys():
+    ...    R = euler_matrix(ai, aj, ak, axes)
+
+    """
+    try:
+        firstaxis, parity, repetition, frame = _AXES2TUPLE[axes]
+    except (AttributeError, KeyError):
+        _ = _TUPLE2AXES[axes]
+        firstaxis, parity, repetition, frame = axes
+
+    i = firstaxis
+    j = _NEXT_AXIS[i+parity]
+    k = _NEXT_AXIS[i-parity+1]
+
+    if frame:
+        ai, ak = ak, ai
+    if parity:
+        ai, aj, ak = -ai, -aj, -ak
+
+    si, sj, sk = math.sin(ai), math.sin(aj), math.sin(ak)
+    ci, cj, ck = math.cos(ai), math.cos(aj), math.cos(ak)
+    cc, cs = ci*ck, ci*sk
+    sc, ss = si*ck, si*sk
+
+    M = np.identity(4)
+    if repetition:
+        M[i, i] = cj
+        M[i, j] = sj*si
+        M[i, k] = sj*ci
+        M[j, i] = sj*sk
+        M[j, j] = -cj*ss+cc
+        M[j, k] = -cj*cs-sc
+        M[k, i] = -sj*ck
+        M[k, j] = cj*sc+cs
+        M[k, k] = cj*cc-ss
+    else:
+        M[i, i] = cj*ck
+        M[i, j] = sj*sc-cs
+        M[i, k] = sj*cc+ss
+        M[j, i] = cj*sk
+        M[j, j] = sj*ss+cc
+        M[j, k] = sj*cs-sc
+        M[k, i] = -sj
+        M[k, j] = cj*si
+        M[k, k] = cj*ci
+    return M
+
+
+def compose_matrix(scale=None, shear=None, angles=None, translate=None,perspective=None):
+    """Return 4x4 transformation matrix from sequence of
+    transformations.
+
+    Code modified from the work of Christoph Gohlke link provided here
+    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+
+    This is the inverse of the decompose_matrix function.
+
+    Parameters
+    ----------    
+    scale : vector of 3 scaling factors
+    shear : list of shear factors for x-y, x-z, y-z axes
+    angles : list of Euler angles about static x, y, z axes
+    translate : translation vector along x, y, z axes
+    perspective : perspective partition of matrix
+
+    Returns
+    -------
+    matrix : 4x4 array
+    
+
+    Examples
+    --------
+    >>> import math
+    >>> import numpy as np
+    >>> import dipy.core.geometry as gm
+    >>> scale = np.random.random(3) - 0.5
+    >>> shear = np.random.random(3) - 0.5
+    >>> angles = (np.random.random(3) - 0.5) * (2*math.pi)
+    >>> trans = np.random.random(3) - 0.5
+    >>> persp = np.random.random(4) - 0.5
+    >>> M0 = gm.compose_matrix(scale, shear, angles, trans, persp)
+    """
+    M = np.identity(4)
+    if perspective is not None:
+        P = np.identity(4)
+        P[3, :] = perspective[:4]
+        M = np.dot(M, P)
+    if translate is not None:
+        T = np.identity(4)
+        T[:3, 3] = translate[:3]
+        M = np.dot(M, T)
+    if angles is not None:
+        R = euler_matrix(angles[0], angles[1], angles[2], 'sxyz')
+        M = np.dot(M, R)
+    if shear is not None:
+        Z = np.identity(4)
+        Z[1, 2] = shear[2]
+        Z[0, 2] = shear[1]
+        Z[0, 1] = shear[0]
+        M = np.dot(M, Z)
+    if scale is not None:
+        S = np.identity(4)
+        S[0, 0] = scale[0]
+        S[1, 1] = scale[1]
+        S[2, 2] = scale[2]
+        M = np.dot(M, S)
+    M /= M[3, 3]
+    return M
+
+
+
+
+def decompose_matrix(matrix):
+    """Return sequence of transformations from transformation matrix.
+
+    Code modified from the excellent work of Christoph Gohlke link provided here
+    http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
+    
+    Parameters
+    ----------
+    matrix : array_like
+        Non-degenerative homogeneous transformation matrix
+
+    Returns
+    -------
+
+    tuple of:
+    
+        scale : vector of 3 scaling factors
+        shear : list of shear factors for x-y, x-z, y-z axes
+        angles : list of Euler angles about static x, y, z axes
+        translate : translation vector along x, y, z axes
+        perspective : perspective partition of matrix
+
+    
+    Raise ValueError if matrix is of wrong type or degenerative.
+
+    Examples
+    ---------
+    
+    >>> scale, shear, angles, trans, persp = decompose_matrix(T0)
+
+
+    """
+    M = np.array(matrix, dtype=np.float64, copy=True).T
+    if abs(M[3, 3]) < _EPS:
+        raise ValueError("M[3, 3] is zero")
+    M /= M[3, 3]
+    P = M.copy()
+    P[:, 3] = 0, 0, 0, 1
+    if not np.linalg.det(P):
+        raise ValueError("matrix is singular")
+
+    scale = np.zeros((3, ), dtype=np.float64)
+    shear = [0, 0, 0]
+    angles = [0, 0, 0]
+
+    if any(abs(M[:3, 3]) > _EPS):
+        perspective = np.dot(M[:, 3], np.linalg.inv(P.T))
+        M[:, 3] = 0, 0, 0, 1
+    else:
+        perspective = np.array((0, 0, 0, 1), dtype=np.float64)
+
+    translate = M[3, :3].copy()
+    M[3, :3] = 0
+
+    row = M[:3, :3].copy()
+    scale[0] = vector_norm(row[0])
+    row[0] /= scale[0]
+    shear[0] = np.dot(row[0], row[1])
+    row[1] -= row[0] * shear[0]
+    scale[1] = vector_norm(row[1])
+    row[1] /= scale[1]
+    shear[0] /= scale[1]
+    shear[1] = np.dot(row[0], row[2])
+    row[2] -= row[0] * shear[1]
+    shear[2] = np.dot(row[1], row[2])
+    row[2] -= row[1] * shear[2]
+    scale[2] = vector_norm(row[2])
+    row[2] /= scale[2]
+    shear[1:] /= scale[2]
+
+    if np.dot(row[0], np.cross(row[1], row[2])) < 0:
+        scale *= -1
+        row *= -1
+
+    angles[1] = math.asin(-row[0, 2])
+    if math.cos(angles[1]):
+        angles[0] = math.atan2(row[1, 2], row[2, 2])
+        angles[2] = math.atan2(row[0, 1], row[0, 0])
+    else:
+        #angles[0] = math.atan2(row[1, 0], row[1, 1])
+        angles[0] = math.atan2(-row[2, 1], row[1, 1])
+        angles[2] = 0.0
+
+    return scale, shear, angles, translate, perspective
+
+def vector_norm(data, axis=None, out=None):
+    """Return length, i.e. eucledian norm, of ndarray along axis.
+
+    >>> v = numpy.random.random(3)
+    >>> n = vector_norm(v)
+    >>> numpy.allclose(n, numpy.linalg.norm(v))
+    True
+    >>> v = numpy.random.rand(6, 5, 3)
+    >>> n = vector_norm(v, axis=-1)
+    >>> numpy.allclose(n, numpy.sqrt(numpy.sum(v*v, axis=2)))
+    True
+    >>> n = vector_norm(v, axis=1)
+    >>> numpy.allclose(n, numpy.sqrt(numpy.sum(v*v, axis=1)))
+    True
+    >>> v = numpy.random.rand(5, 4, 3)
+    >>> n = numpy.empty((5, 3), dtype=numpy.float64)
+    >>> vector_norm(v, axis=1, out=n)
+    >>> numpy.allclose(n, numpy.sqrt(numpy.sum(v*v, axis=1)))
+    True
+    >>> vector_norm([])
+    0.0
+    >>> vector_norm([1.0])
+    1.0
+
+    """
+    data = np.array(data, dtype=np.float64, copy=True)
+    if out is None:
+        if data.ndim == 1:
+            return math.sqrt(np.dot(data, data))
+        data *= data
+        out = np.atleast_1d(np.sum(data, axis=axis))
+        np.sqrt(out, out)
+        return out
+    else:
+        data *= data
+        np.sum(data, axis=axis, out=out)
+        np.sqrt(out, out)
+
+
+        
