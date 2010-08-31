@@ -13,6 +13,7 @@ from dipy.core.track_propagation import FACT_Delta
 try:
     from nipy.neurospin.registration import register as volume_register
     from nipy.neurospin.registration import transform as volume_transform
+    from nipy.neurospin.registration._registration import rotation_vec2mat
 except ImportError:
     print('nipy registration is not available')
 
