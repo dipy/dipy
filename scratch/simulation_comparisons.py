@@ -68,7 +68,7 @@ times with the same noise level , then we have 100 different
 directions. 100 * 1000 is the number of all rows.
 '''
 
-def analyze_maxima(max_dirs,subsets):
+def analyze_maxima(indices, max_dirs,subsets):
 
     results = []
 
@@ -77,9 +77,13 @@ def analyze_maxima(max_dirs,subsets):
 
         batch = max_dirs[direction,:,:]
 
+        index_variety = np.array([len(set(indices[direction,:]))])
+
         c,b = sphats.eigenstats(batch)
 
-        results.append(np.concatenate((c,b)))
+        print c.shape, b.shape, index_variety
+
+        results.append(np.concatenate((c,b, index_variety)))
 
     return results
 
@@ -93,17 +97,25 @@ odf_vertices=eds['vertices']
 
 dt_first_directions_in=odf_vertices[tn.IN]
 
-print dt_first_directions_in.shape
+dt_indices = tn.IN.reshape((100,1000))
 
-results = analyze_maxima(dt_first_directions_in.reshape((100,1000,3)),range(1))
+dt_results = analyze_maxima(dt_indices, dt_first_directions_in.reshape((100,1000,3)),range(100))
+
+gq_indices = np.array(gq.IN[:,0],dtype='int').reshape((100,1000))
+
+gq_first_directions_in=odf_vertices[np.array(gq.IN[:,0],dtype='int')]
+
+print gq_first_directions_in.shape
+
+gq_results = analyze_maxima(gq_indices, gq_first_directions_in.reshape((100,1000,3)),range(100))
 
 #for gqi see example dicoms_2_tracks gq.IN[:,0]
 
-np.set_printoptions(precision=6, suppress=True)
+np.set_printoptions(precision=6, suppress=True, linewidth=200)
 
-out = open('newtable.txt','w')
+out = open('dt_and_gq.txt','w')
 
-print >> out, np.vstack(results)
+print >> out, np.hstack((np.vstack(dt_results), np.vstack(gq_results)))
 
 out.close()
 
