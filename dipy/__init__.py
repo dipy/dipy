@@ -14,6 +14,8 @@ try:
     from nipy.neurospin.registration import register as volume_register
     from nipy.neurospin.registration import transform as volume_transform
     from nipy.neurospin.registration._registration import rotation_vec2mat as _rotation_vec2mat
+    from nipy.neurospin.registration.affine import Affine as _affine
+    
 except ImportError:
     print('nipy registration is not available')
 

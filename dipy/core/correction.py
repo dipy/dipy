@@ -110,9 +110,37 @@ def bvecs_correction(bvecs,mats):
     return nbvecs
     
 
+def slight_rotation(image):
+    ''' When you try to correct the diffusion weighted volumes you might
+    get stuck on the initial transform due to a known issue known as
+    "interpolation artifacts" in the registration literature. A
+    classical fix is to apply a slight initial rotation to avoid
+    registration starting with perfectly aligned image grids.
+    '''
+    #translation [0:3], rotation [3:6], scaling [6:9], shearing [9:12]    
+    A=np.array([0,0,0,.11,.12,.13,0,0,0,0,0,0])
+    A=dp._affine(A)
+    return dp.volume_transform(image, A, reference=image,interp_order=0), A
+
+def preprocess_volumes(data,options='same'):
+    ''' changing the values of your data could possibly change the
+    result of the registration.
+
+    '''
+
+    if options=='same':
+        return data
+
+    if options=='binary':        
+        data[data>30]=255
+        data[data<=30]=0
+
+    return data
+
+    
 
 def motion_correction(data,affine,ref=0,similarity='cr',interp='tri',subsampling=None,search='affine',optimizer='powel',order=0):
-    ''' Correct for motion and eddy current correction using the nipy affine
+    ''' Correct for motion and eddy currents using the nipy affine
     registration tools.    
     
     Parameters
@@ -146,24 +174,50 @@ def motion_correction(data,affine,ref=0,similarity='cr',interp='tri',subsampling
 
     affine_mats: sequence, with all affine transformation matrices applied
         
-    '''    
+    '''
+
+    #preprocess volumes
+    data=preprocess_volumes(data,'binary')
+
+    #target image
     T=ni.Nifti1Image(data[...,ref],affine)
 
-    ND=np.zeros(data.shape)
-    ND[...,ref]=data[...,ref]
+    #copy initial reference image
+    init_T=T
+    
+    #apply an small rotation to debloke 
+    T,SR=slight_rotation(T)
+    
+    #ni.save(T,'/tmp/18620_0006_slight_volume0.nii.gz')
 
-    A_mats={ref:np.eye(4)}
+    #corrected final image
+    ND=np.zeros(data.shape)
+
+    #ND[...,ref]=T.get_data()    
+    #ND[...,ref]=data[...,ref]
+    ND[...,ref]=dp.volume_transform(T, SR.inv(), reference=init_T,interp_order=order).get_data()
+    
+
+    #dictionary for the applied transformations
+    A_mats={ref:np.eye(4)} #change that to affine
     
     for s in range(data.shape[-1]):
         if s!=ref:
             print('Working on volume number =========>  %d  '% (s))
-            S=ni.Nifti1Image(data[...,s],affine)            
+
+            S=ni.Nifti1Image(data[...,s],affine)
+
+            #register S to T
+            #volume_register is doing the interpolation on the target
+            #space and in the joint histogram after every tranform 
             A=dp.volume_register(S,T,similarity,\
                        interp,subsampling,search,optimizer)
-            #transform volume
-            ST=dp.volume_transform(S, A.inv(), reference=T,interp_order=order)            
+            
+            #transform volume 
+            ST=dp.volume_transform(S, SR.inv().__mul__(A.inv()), reference=init_T,interp_order=order)            
             ND[...,s]=ST.get_data()
-            A_mats[s]=A#._get_param()
+            #A_mats[s]=A#._get_param()
+            A_mats[s]=SR.inv().__mul__(A.inv())
 
             #USE dp.rotation_vec2mat to get matrix from rotation perhaps
             #you probably need the inverse first
@@ -175,7 +229,7 @@ def motion_correction(data,affine,ref=0,similarity='cr',interp='tri',subsampling
 #dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
 #data,affine,bvals,gradients=dp.load_dcm_dir(dname)
 
-#'''
+'''
 
 img=ni.load('/tmp/testing_features/18620_0006.nii')
 data=img.get_data().astype('uint16')
@@ -183,7 +237,10 @@ affine=img.get_affine()
 data_corr,mats=motion_correction(data,affine,similarity='cr',order=3)
 
 img=ni.Nifti1Image(data_corr,affine)
-ni.save(img,'/tmp/18620_0006_cr_order3.nii.gz')
+ni.save(img,'/tmp/18620_0006_dipy_corr_binary.nii.gz')
 
-#'''
+bvecs=np.loadtxt('/tmp/testing_features/18620_0006.bvecs').T
+nbvecs=bvecs_correction(bvecs,mats)
+
+'''
 
