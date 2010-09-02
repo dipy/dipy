@@ -34,9 +34,9 @@ def test_default_motion_correction():
     S_corr,mats=corr.motion_correction(S,np.eye(4),ref=0)
     
     Simg=ni.Nifti1Image(S,np.eye(4))
-    ni.save(Simg,'/tmp/Simg.nii.gz')   
+    #ni.save(Simg,'/tmp/Simg.nii.gz')   
     Simg2=ni.Nifti1Image(S_corr,np.eye(4))
-    ni.save(Simg2,'/tmp/Simg2.nii.gz')
+    #ni.save(Simg2,'/tmp/Simg2.nii.gz')
 
     #yield assert_array_almost_equal(xyz, pt)
     #return S,S_corr,mats
