@@ -177,7 +177,7 @@ def motion_correction(data,affine,ref=0,similarity='cr',interp='tri',subsampling
     '''
 
     #preprocess volumes
-    data=preprocess_volumes(data,'binary')
+    #data=preprocess_volumes(data,'binary')
 
     #target image
     T=ni.Nifti1Image(data[...,ref],affine)
