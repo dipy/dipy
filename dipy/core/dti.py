@@ -44,7 +44,7 @@ class Tensor(object):
     mask : ndarray, optional
         The tensor will only be fit where mask is True. Mask must must
         broadcast to the shape of data and must have fewer dimensions than data
-    thresh : float, default = 0
+    thresh : float, default = None
         The tensor will not be fit where data[bval == 0] < thresh. If multiple
         b0 volumes are given, the minimum b0 signal is used.
     min_signal : float
@@ -147,6 +147,13 @@ class Tensor(object):
     def ndim(self):
         return self._evals.ndim - 1
 
+    @property
+    def mask(self):
+        if hasattr(self._evals, 'mask'):
+            return self._evals.mask
+        else:
+            return np.ones(self.shape, 'bool')
+
     ### Getitem Property ###
     def __getitem__(self, index):
         """
@@ -188,7 +195,7 @@ class Tensor(object):
 
         return _filled(self._evecs)
 
-    def __init__(self, data, b_values, grad_table, mask=True, thresh=0,
+    def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
                  min_signal=1, verbose=False):
         """
         Fits a tensors to diffusion weighted data.
@@ -203,30 +210,25 @@ class Tensor(object):
         self.B = B
 
         mask = np.atleast_1d(mask)
-        #Define total mask from thresh and mask
-        self.mask = mask & (data[..., b_values == 0].min(-1) > thresh)
+        if mask is not None:
+            #Define total mask from thresh and mask
+            mask = mask & (np.min(data[..., b_values == 0], -1) > thresh)
 
         #if mask is all False
-        if not self.mask.any():
+        if not mask.any():
             raise ValueError('between mask and thresh, there is no data to '+
             'fit')
 
-        mask_all_true = self.mask.all()
         #and the mask is not all True
-        if not mask_all_true:
+        if not mask.all():
             #leave only data[mask is True]
-            data = data[self.mask]
+            data = data[mask]
+            data = MaskedView(mask, data)
 
         #Perform WLS fit on masked data
         evals, evecs = wls_fit_tensor(B, data, min_signal=min_signal)
-
-        #if we flattened the data
-        if not mask_all_true:
-            self._evals = MaskedView(self.mask, evals, 0)
-            self._evecs = MaskedView(self.mask, evecs, 0)
-        else:
-            self._evals = evals
-            self._evecs = evecs
+        self._evals = evals
+        self._evecs = evecs
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
@@ -368,6 +370,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
         NeuroImage 33, 531-541.
     """
 
+    data, wrap = _makearray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     evals = np.empty((len(data_flat), 3))
     evecs = np.empty((len(data_flat), 3, 3))
@@ -384,8 +387,10 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
                                              sig, min_signal=min_signal)
     evals.shape = data.shape[:-1]+(3,)
     evecs.shape = data.shape[:-1]+(3,3)
+    evals = wrap(evals)
+    evecs = wrap(evecs)
     return evals, evecs
-    
+
 
 def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     ''' 
@@ -444,6 +449,7 @@ def ols_fit_tensor(design_matrix, data):
         NeuroImage 33, 531-541.
     """
 
+    data = _makearray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     evals = np.empty((len(data_flat), 3))
     evecs = np.empty((len(data_flat), 3, 3))
@@ -462,6 +468,8 @@ def ols_fit_tensor(design_matrix, data):
 
     evals.shape = data.shape[:-1]+(3,)
     evecs.shape = data.shape[:-1]+(3,3)
+    evals = wrap(evals)
+    evecs = wrap(evecs)
     return evals, evecs
 
 def _ols_fit_matrix(design_matrix):

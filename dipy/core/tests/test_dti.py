@@ -50,7 +50,7 @@ def test_tensor_scalar_attributes():
     yield assert_array_almost_equal(D, tensor[0].D, err_msg = "Recovery of self diffusion tensor from eig not adaquate")
     yield assert_almost_equal(FA, tensor.fa(), msg = "Calculation of FA of self diffusion tensor is not adequate")
     yield assert_almost_equal(MD, tensor.md(), msg = "Calculation of MD of self diffusion tensor is not adequate")
-
+    yield assert_equal(True, tensor.mask.all())
 
     #yield assert_equal(m_list.shape, n_list.shape)
     #yield assert_equal(m_list.ndim, 2)
@@ -122,13 +122,49 @@ def test_masked_array_with_Tensor():
     yield assert_equal(tensor.evals.shape, (2,4,3))
     yield assert_equal(tensor.evecs.shape, (2,4,3,3))
     yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_array_equal(tensor.mask, mask)
 
-    tensor = tensor[0]    
+    tensor = tensor[0]
     yield assert_equal(tensor.shape, (4,))
     yield assert_equal(tensor.fa().shape, (4,))
     yield assert_equal(tensor.evals.shape, (4,3))
     yield assert_equal(tensor.evecs.shape, (4,3,3))
     yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_array_equal(tensor.mask, mask[0])
+
+    tensor = tensor[0]
+    yield assert_equal(tensor.shape, tuple())
+    yield assert_equal(tensor.fa().shape, tuple())
+    yield assert_equal(tensor.evals.shape, (3,))
+    yield assert_equal(tensor.evecs.shape, (3,3))
+    yield assert_equal(type(tensor._evals), np.ndarray)
+
+@parametric
+def test_passing_maskedview():
+    data = np.ones((2,4,56))
+    mask = np.array([[True, False, False, True],
+                     [True, False, True, False]])
+
+    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),
+                    'data','55dir_grad.bvec'))
+    data = data[mask]
+    mv = MaskedView(mask, data)
+
+    tensor = dti.Tensor(mv, bval, gtab.T, min_signal=1e-9)
+    yield assert_equal(tensor.shape, (2,4))
+    yield assert_equal(tensor.fa().shape, (2,4))
+    yield assert_equal(tensor.evals.shape, (2,4,3))
+    yield assert_equal(tensor.evecs.shape, (2,4,3,3))
+    yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_array_equal(tensor.mask, mask)
+
+    tensor = tensor[0]
+    yield assert_equal(tensor.shape, (4,))
+    yield assert_equal(tensor.fa().shape, (4,))
+    yield assert_equal(tensor.evals.shape, (4,3))
+    yield assert_equal(tensor.evecs.shape, (4,3,3))
+    yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_array_equal(tensor.mask, mask[0])
 
     tensor = tensor[0]
     yield assert_equal(tensor.shape, tuple())
