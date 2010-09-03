@@ -210,7 +210,7 @@ class Tensor(object):
         self.B = B
 
         mask = np.atleast_1d(mask)
-        if mask is not None:
+        if thresh is not None:
             #Define total mask from thresh and mask
             mask = mask & (np.min(data[..., b_values == 0], -1) > thresh)
 
