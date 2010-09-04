@@ -12,15 +12,18 @@ class MaskedView(object):
     --------
     >>> mask = np.array([[True, False, True],[False, True, False]])
     >>> data = np.arange(2*3*4)
-    >>> data.shape = (2,3,4)
-    >>> mv = MaskedView(mask, data[mask])
+    >>> data.shape = (2, 3, 4)
+    >>> mv = MaskedView(mask, data[mask], fill_value=10)
     >>> mv.shape
-    (2, 3)
-    >>> data[0,0,:]
+    (2, 3, 4)
+    >>> data[0, 0, :]
     array([0, 1, 2, 3])
-    >>> mv[0,0]
-    array([0, 1, 2, 3])
-
+    >>> mv[0, 1]
+    array([10, 10, 10, 10])
+    >>> mv[:,:,0]
+    array([[ 0, 10,  8],
+           [10, 16, 10]])
+    
     """
 
     def __init__(self, mask, data, fill_value=None):
@@ -65,6 +68,10 @@ class MaskedView(object):
     def dtype(self):
         #the data type of a masked view is the same as the _data array
         return self._data.dtype
+
+    @property
+    def ndim(self):
+        return self._data.ndim + self._imask.ndim - 1
 
     def filled(self, fill_value=None):
         """
@@ -194,6 +201,12 @@ class MaskedView(object):
                 return new_mp
     
     def __setitem__(self, index, values):
+        """
+        Sets part of the maskedview
+
+        is this useful?
+        """
+
         imask = self._imask[index]
         if isinstance(imask, int):
             if imask >= 0:
@@ -204,10 +217,11 @@ class MaskedView(object):
         else:
             self._data[imask[imask >= 0]] = values
     
-    def __iter__(self):
-        return self.__array__().__iter__()
-    
     def __array__(self, dtype=None):
+        """
+        Returns the underlying data
+        
+        """
 
         #to save time only index _data when base is not None
         if self.base is None:
