@@ -110,7 +110,7 @@ def bvecs_correction(bvecs,mats):
     return nbvecs
     
 
-def slight_rotation(image):
+def slight_rotation(image,order):
     ''' When you try to correct the diffusion weighted volumes you might
     get stuck on the initial transform due to a known issue known as
     "interpolation artifacts" in the registration literature. A
@@ -120,7 +120,7 @@ def slight_rotation(image):
     #translation [0:3], rotation [3:6], scaling [6:9], shearing [9:12]    
     A=np.array([0,0,0,.11,.12,.13,0,0,0,0,0,0])
     A=dp._affine(A)
-    return dp.volume_transform(image, A, reference=image,interp_order=0), A
+    return dp.volume_transform(image, A, reference=image,interp_order=order), A
 
 def preprocess_volumes(data,options='same'):
     ''' changing the values of your data could possibly change the
@@ -141,7 +141,9 @@ def preprocess_volumes(data,options='same'):
 
 def motion_correction(data,affine,ref=0,similarity='cr',interp='tri',subsampling=None,search='affine',optimizer='powel',order=0):
     ''' Correct for motion and eddy currents using the nipy affine
-    registration tools.    
+    registration tools.
+
+    NOT READY YET. TOWARDS but not there yet.
     
     Parameters
     ----------
@@ -185,8 +187,8 @@ def motion_correction(data,affine,ref=0,similarity='cr',interp='tri',subsampling
     #copy initial reference image
     init_T=T
     
-    #apply an small rotation to debloke 
-    T,SR=slight_rotation(T)
+    #apply an small rotation to deblock
+    T,SR=slight_rotation(T,order)
     
     #ni.save(T,'/tmp/18620_0006_slight_volume0.nii.gz')
 
