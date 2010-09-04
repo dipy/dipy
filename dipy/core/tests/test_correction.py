@@ -23,7 +23,8 @@ def test_default_motion_correction():
     #rotate second volume
     #A=np.array([0,0,0,.4,.4,.4,0,0,0,0,0,0])   
     #A=dp._affine(A)
-    
+
+    '''
     S0=rotate(S0,5,reshape=False)
     
     S1=rotate(S0,30,reshape=False)
@@ -38,6 +39,7 @@ def test_default_motion_correction():
     T=register(S1img,S0img,interp='pv')
     NS1img=transform(S1img, T)
     ni.save(NS1img,'/tmp/NS1img.nii.gz')
+    '''
     
 
     '''
