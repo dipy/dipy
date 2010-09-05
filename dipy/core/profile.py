@@ -34,6 +34,8 @@ class Profiler():
     >>> p.Profiler(tm.length,np.random.rand(1000000,3))
     >>> fname='test.py'
     >>> p.Profiler(fname)
+    >>> p.print_stats(10)
+    >>> p.print_stats('det')
 
     References
     ----------
@@ -79,7 +81,7 @@ class Profiler():
 
         You can use it in all different ways developed in pstats
         for example
-        print_stats(10) will give you the 10 slower calls
+        print_stats(10) will give you the 10 slowest calls
         or
         print_stats('function_name')
         will give you the stats for all the calls with name 'function_name'
