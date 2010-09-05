@@ -1,4 +1,7 @@
 ''' Motion and eddy-current correction using affine registration.
+
+Not ready yet... be patient :-)
+
 '''
 import numpy as np
 import nibabel as ni
@@ -29,7 +32,7 @@ def add_padding(data,pad=10,value=0):
     new_data=value*np.ones((data.shape[0]+2*pad,data.shape[1]+2*pad,data.shape[2]+2*pad),dtype=data.dtype)
     new_data[pad:pad+data.shape[0],pad:pad+data.shape[1],pad:pad+data.shape[2]]=data
     return new_data
-        
+
 
 def rm_padding(data,pad=10):
     ''' well if you added padding before the registration you should
@@ -225,6 +228,13 @@ def motion_correction(data,affine,ref=0,similarity='cr',interp='tri',subsampling
             #you probably need the inverse first
         
     return ND, A_mats
+
+
+def synthesize_structural(data,bvals):
+    ''' to be continued ...
+    '''       
+
+    pass
 
 
 #dname = '/home/eg01/Data_Backup/Data/Eleftherios/CBU090133_METHODS/20090227_145404/Series_003_CBU_DTI_64D_iso_1000'
