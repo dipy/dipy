@@ -13,17 +13,29 @@ import numpy as np
 cimport numpy as cnp
 
 
+
 cdef extern from "math.h" nogil:
     double floor(double x)
     float sqrt(float x)
     float fabs(float x)
     double log2(double x)
+    double cos(double x)
+    double sin(double x)
     float acos(float x )   
     bint isnan(double x)
+    double sqrt(double x)
     
 
 # initialize numpy runtime
 cnp.import_array()
+
+#numpy pointers
+cdef inline float* asfp(cnp.ndarray pt):
+    return <float *>pt.data
+
+cdef inline double* asdp(cnp.ndarray pt):
+    return <double *>pt.data
+
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
@@ -309,3 +321,492 @@ def argmax_from_countarrs(cnp.ndarray vals,
         return np.array([])
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
+
+
+
+
+def trilinear_interpolation(X):
+
+    Xf=np.floor(X)        
+    #d holds the distance from the (floor) corner of the voxel
+    d=X-Xf
+    #nd holds the distance from the opposite corner
+    nd = 1-d
+    #filling the weights
+    W=np.array([[ nd[0] * nd[1] * nd[2] ],
+                [  d[0] * nd[1] * nd[2] ],
+                [ nd[0] *  d[1] * nd[2] ],
+                [ nd[0] * nd[1] *  d[2] ],
+                [  d[0] *  d[1] * nd[2] ],
+                [ nd[0] *  d[1] *  d[2] ],
+                [  d[0] * nd[1] *  d[2] ],
+                [  d[0] *  d[1] *  d[2] ]])
+
+    IN=np.array([[ Xf[0]   , Xf[1]  , Xf[2] ],
+                 [ Xf[0]+1 , Xf[1]  , Xf[2] ],
+                 [ Xf[0]   , Xf[1]+1, Xf[2] ],
+                 [ Xf[0]   , Xf[1]  , Xf[2]+1 ],
+                 [ Xf[0]+1 , Xf[1]+1, Xf[2] ],
+                 [ Xf[0]   , Xf[1]+1, Xf[2]+1 ],
+                 [ Xf[0]+1 , Xf[1]  , Xf[2]+1 ],
+                 [ Xf[0]+1 , Xf[1]+1, Xf[2]+1 ]])
+
+    return W,IN.astype(np.int)
+
+
+cdef inline void ctrilinear_interpolation(double * X, double W[8], double IN[8][3]):
+
+    cdef int i,j
+    cdef double Xf[3],d[3],nd[3]
+    cdef double f0,f1,f2
+    #cdef double W[8],IN[8][3]
+
+
+    for i in range(3):
+        Xf[i]=floor(X[i])
+        d[i]=X[i]-Xf[i]#d holds the distance from the (floor) corner of the voxel
+        nd[i]=1-d[i]#nd holds the distance from the opposite corner
+
+    f0=Xf[0]
+    f1=Xf[1]
+    f2=Xf[2]
+    
+    #fill the weights
+    W[0]=nd[0] * nd[1] * nd[2]
+    W[1]= d[0] * nd[1] * nd[2]
+    W[2]=nd[0] *  d[1] * nd[2]
+    W[3]=nd[0] * nd[1] *  d[2]
+    W[4]= d[0] *  d[1] * nd[2]
+    W[5]=nd[0] *  d[1] *  d[2]
+    W[6]= d[0] * nd[1] *  d[2]
+    W[7]= d[0] *  d[1] *  d[2]                  
+
+    #fill the indices
+
+    IN[0][0]=f0  ; IN[0][1]=f1  ;  IN[0][2]=f2                            
+    IN[1][0]=f0+1; IN[1][1]=f1  ;  IN[1][2]=f2
+    IN[2][0]=f0  ; IN[2][1]=f1+1;  IN[2][2]=f2                           
+    IN[3][0]=f0  ; IN[3][1]=f1  ;  IN[3][2]=f2+1
+    IN[4][0]=f0+1; IN[4][1]=f1+1;  IN[4][2]=f2                              
+    IN[5][0]=f0  ; IN[5][1]=f1+1;  IN[5][2]=f2+1
+    IN[6][0]=f0+1; IN[6][1]=f1  ;  IN[6][2]=f2+1
+    IN[7][0]=f0+1; IN[7][1]=f1+1;  IN[7][2]=f2+1
+
+
+
+def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.):
+    ''' Give the nearest direction to a point
+
+    Parameters
+    ----------        
+    dx: array, shape(3,), as float, moving direction of the current
+    tracking
+
+    qa: array, shape(Np,), float, quantitative anisotropy matrix,
+    where Np the number of peaks, found using self.Np
+
+    ind: array, shape(Np,), float, index of the track orientation
+
+    odf_vertices: array, shape(N,3), float, odf sampling directions
+
+    qa_thr: float, threshold for QA, we want everything higher than
+    this threshold 
+
+    ang_thr: float, theshold, we only select fiber orientation with
+    this range 
+
+    Returns
+    --------
+    delta: bool, delta funtion, if 1 we give it weighting if it is 0
+    we don't give any weighting
+
+    direction: array, shape(3,), the fiber orientation to be
+    consider in the interpolation
+
+    '''
+
+    Np=qa.shape[-1]
+    #Np=65
+    
+
+    max_dot=0
+    max_doti=0
+    angl = np.cos((np.pi*ang_thr)/180.) 
+    if qa[0] <= qa_thr:
+        return False, np.array([0,0,0])
+        
+    for i in range(Np):
+        if qa[i]<= qa_thr:
+            break
+        curr_dot = np.abs(np.dot(dx, odf_vertices[ind[i]]))
+        if curr_dot > max_dot:
+            max_dot = curr_dot
+            max_doti = i
+                
+    if max_dot < angl :
+        return False, np.array([0,0,0])
+
+    if np.dot(dx,odf_vertices[ind[max_doti]]) < 0:
+        return True, - odf_vertices[ind[max_doti]]
+    else:
+        return True,   odf_vertices[ind[max_doti]]
+
+    
+#cdef cnearest_direction(<double *>dx,<double *>qa, <double *>ind, odf_vertices,qa_thr,ang_thr):
+    
+
+
+def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr):
+    ''' Find where you are moving next
+    '''
+    total_w = 0 # total weighting
+    new_direction = np.array([0,0,0])
+    w,index=trilinear_interpolation(point)
+
+    #check if you are outside of the volume
+    for i in range(3):
+        if index[7][i] >= qa.shape[i] or index[0][i] < 0:
+            return False, np.array([0,0,0])
+
+    #calculate qa & ind of each of the 8 corners
+    for m in range(8):            
+        x,y,z = index[m]
+        qa_tmp = qa[x,y,z]
+        ind_tmp = ind[x,y,z]
+        delta,direction = nearest_direction(dx,qa_tmp,ind_tmp,odf_vertices,qa_thr,ang_thr)
+        #print delta, direction
+        if not delta:
+            continue
+        total_w += w[m]
+        new_direction = new_direction + w[m][0]*direction
+
+    if total_w < .5: # termination criteria
+        return False, np.array([0,0,0])
+
+    return True, new_direction/np.sqrt(np.sum(new_direction**2))
+
+
+    
+
+def initial_direction(seed,qa,ref,ind,odf_vertices,qa_thr):
+    ''' First direction that we get from a seeding point
+
+    '''
+    #very tricky/cool addition/flooring that helps create a valid
+    #neighborhood (grid) for the trilinear interpolation to run smoothly
+    seed+=0.5
+    point=np.floor(seed)
+    x,y,z = point
+
+    #check if you are outside of the volume
+    for i in range(3):
+        if point[i] >= qa.shape[i] or point[0] < 0:
+            return False, np.array([0,0,0])
+    
+    qa_tmp=qa[x,y,z,ref]#maximum qa
+    ind_tmp=ind[x,y,z,ref]#corresponing orientation indices for max qa
+
+    if qa_tmp < qa_thr:
+        return False, np.array([0,0,0])
+    else:
+        return True, odf_vertices[ind_tmp]
+
+
+#@cython.boundscheck(False)
+#@cython.wraparound(False)
+def propagation(seed,qa,ref,ind,odf_vertices,qa_thr,ang_thr,step_sz):
+    '''
+    Parameters
+    ----------
+    seed: array, shape(3,), point where the tracking starts        
+    qa: array, shape(Np,), float, quantitative anisotropy matrix,
+    where Np the number of peaks, found using self.Np
+    ind: array, shape(Np,), float, index of the track orientation        
+                
+    Returns
+    -------
+    d: bool, delta function result        
+    idirection: array, shape(3,), index of the direction of the propagation
+
+    '''
+
+    cdef :
+        cnp.ndarray[cnp.float64_t, ndim=4] cqa = np.ascontiguousarray(qa)
+        cnp.ndarray[cnp.float64_t, ndim=4] cind = np.ascontiguousarray(ind)
+        cnp.ndarray[cnp.float64_t, ndim=2] codf_vertices = np.ascontiguousarray(odf_vertices)
+        cnp.ndarray[cnp.float64_t, ndim=2] track = np.zeros((500,3))
+        double *cseed=asdp(seed)        
+        double cqshape[4]
+        double cpoint[3]
+        double dx[3]
+        double qa_tmp
+        int ind_tmp
+        double qa_t[10] # carefull up to 10 peaks allowed
+        int ind_t[10] #
+        double idirection[3],new_direction[3],direction[3]
+        int i,j,m
+        int n_points=0
+        int up_range=0
+        int down_range=0
+        int delta=0
+        double W[8]
+        double IN[8][3]
+        double total_w=0
+        
+        int x,y,z
+        int Np
+        int middle=0#250
+        double maxdot, maxdoti
+        
+        cdef double Xf[3],d[3],nd[3]
+        cdef double f0,f1,f2
+
+    #number of allowed peaks    
+    Np=qa.shape[-1]
+    #print('Np',Np)
+
+    #check if you are outside of the volume
+    for i in range(3):
+        cqshape[i]=<double>qa.shape[i]
+        cpoint[i]=floor(cseed[i]+0.5)
+        #print('cpoint_i',cpoint[i])
+        #print('cqshape',cqshape[i])
+        if cpoint[i] >= cqshape[i] or cpoint[i] < 0:
+            return None
+        
+    #get peak and index of interest according to ref
+    #ref=0 is max peak, ref=1 is second maximum etc.
+    qa_tmp=cqa[<int>cpoint[0],<int>cpoint[1],<int>cpoint[2],ref]#maximum qa
+    ind_tmp=cind[<int>cpoint[0],<int>cpoint[1],<int>cpoint[2],ref]#corresponing orientation indices for max qa
+
+    #check qa threshold
+    if qa_tmp < qa_thr:
+        return None
+    else:
+        #if higher than threshold then get primary direction
+        for i in range(3):
+            idirection[i]=codf_vertices[ind_tmp,i]
+
+    #copy and store first point
+    for i in range(3):
+        cpoint[i]=cseed[i] 
+        track[middle,i]=cseed[i]
+        #copy first_direction
+        dx[i]=idirection[i]
+
+    #increase counter for number of points in track
+    n_points+=1
+        
+    #return track#[:n_points]            
+    #return np.random.rand(10,3)
+
+    #delta function is now 1
+    delta=1
+    
+    #tracking towards one direction
+    while delta==1:
+
+        #here is propagation direction implemented
+        total_w = 0 # total weighting        
+        for i in range(3):
+            new_direction[i]=0
+            
+        #ctrilinear_interpolation(cpoint,W,IN)
+        #'''
+        for i in range(3):
+            Xf[i]=floor(cpoint[i])
+            d[i]=cpoint[i]-Xf[i]#d holds the distance from the (floor) corner of the voxel
+            nd[i]=1-d[i]#nd holds the distance from the opposite corner
+
+        f0=Xf[0]
+        f1=Xf[1]
+        f2=Xf[2]
+    
+        #fill the weights
+        W[0]=nd[0] * nd[1] * nd[2]
+        W[1]= d[0] * nd[1] * nd[2]
+        W[2]=nd[0] *  d[1] * nd[2]
+        W[3]=nd[0] * nd[1] *  d[2]
+        W[4]= d[0] *  d[1] * nd[2]
+        W[5]=nd[0] *  d[1] *  d[2]
+        W[6]= d[0] * nd[1] *  d[2]
+        W[7]= d[0] *  d[1] *  d[2]                  
+
+        #fill the indices
+
+        IN[0][0]=f0  ; IN[0][1]=f1  ;  IN[0][2]=f2                            
+        IN[1][0]=f0+1; IN[1][1]=f1  ;  IN[1][2]=f2
+        IN[2][0]=f0  ; IN[2][1]=f1+1;  IN[2][2]=f2                           
+        IN[3][0]=f0  ; IN[3][1]=f1  ;  IN[3][2]=f2+1
+        IN[4][0]=f0+1; IN[4][1]=f1+1;  IN[4][2]=f2                              
+        IN[5][0]=f0  ; IN[5][1]=f1+1;  IN[5][2]=f2+1
+        IN[6][0]=f0+1; IN[6][1]=f1  ;  IN[6][2]=f2+1
+        IN[7][0]=f0+1; IN[7][1]=f1+1;  IN[7][2]=f2+1
+        #'''
+
+        #check if you are outside of the volume
+        for i in range(3):
+            if IN[7][i] >= cqshape[i] or IN[0][i] < 0:
+                #return None
+                delta = 0
+                break
+
+        #print('1.')
+        
+        #make sure delta is true
+        if delta==0:
+            break
+        
+        #print('2.')
+        #calculate qa & ind of each of the 8 corners
+        for m in range(8):
+            
+            x = <int>IN[m][0]
+            y = <int>IN[m][1]
+            z = <int>IN[m][2]
+
+            #print(x,y,z)
+            
+            for i in range(Np):                
+                qa_t[i] = cqa[x,y,z,i]
+                ind_t[i] = <int>cind[x,y,z,i]
+
+            #here is nearest_direction implemented
+            #delta,direction = nearest_direction(dx,qa_tmp,ind_tmp,odf_vertices,qa_thr,ang_thr)
+            max_dot=0
+            max_doti=0
+            #angl = np.cos((np.pi*ang_thr)/180.)
+            angl = cos((3.1415926535897931*ang_thr)/180.)
+
+            #check threshold for maximum peak
+            if qa_t[0] <= qa_thr:
+                #return None
+                delta=0
+                #break
+                continue
+            
+            #print('3.')
+            
+            for i in range(Np):
+                if qa_t[i]<= qa_thr:
+                    break
+                #curr_dot = np.abs(np.dot(dx, odf_vertices[ind[i]]))
+                curr_dot = dx[0]*codf_vertices[ind_t[i],0]+dx[1]*codf_vertices[ind_t[i],1]+dx[2]*codf_vertices[ind_t[i],2]
+                if curr_dot < 0:
+                    curr_dot=-curr_dot                      
+
+                if curr_dot > max_dot:
+                    max_dot = curr_dot
+                    max_doti = i
+                
+            if max_dot < angl :
+                delta=0
+                #return None
+                #break
+                continue
+
+            if dx[0]*codf_vertices[ind_t[max_doti],0]+dx[1]*codf_vertices[ind_t[max_doti],1]+dx[2]*codf_vertices[ind_t[max_doti],2] < 0:
+                delta=1
+                for i in range(3):
+                    direction[i]=-codf_vertices[ind_t[max_doti],i]
+            else:
+                delta=1
+                for i in range(3):
+                    direction[i]= codf_vertices[ind_t[max_doti],i]
+                    
+            '''
+            if np.dot(dx,odf_vertices[ind[max_doti]]) < 0:
+                return True, - odf_vertices[ind[max_doti]]
+            else:
+                return True,   odf_vertices[ind[max_doti]]
+            '''
+            
+            #print delta, direction
+            #if delta == 0:
+            #    continue
+
+            #sum oll the weights
+            total_w += W[m]
+            #update new direction
+            for i in range(3):                
+                new_direction[i] = new_direction[i] + W[m]*direction[i]
+
+        if total_w < .5: # termination criteria
+            delta=0
+            break
+            #return None
+
+        #return True, new_direction/np.sqrt(np.sum(new_direction**2))
+        delta=1
+        new_dirnorm=sqrt(new_direction[0]**2+new_direction[1]**2+new_direction[2]**2)
+        #normalize
+        for i in range(3):
+            dx[i]=new_direction[i]/new_dirnorm
+
+        #check delta function
+        #if delta==0:
+        #    break
+        
+        #update the track points
+        for i in range(3):
+            cpoint[i]=cpoint[i]+step_sz*dx[i]
+            track[middle+n_points,i]=cpoint[i]
+            
+        n_points+=1
+
+        #print(n_points)
+        
+
+
+    #delta function is now 1
+    delta=1
+    up_range=n_points    
+
+    return track[middle:middle+up_range]
+  
+
+
+
+
+    '''
+    
+    #d is the delta function 
+    d,idirection=initial_direction(seed,qa,ref,ind,odf_vertices,qa_thr)
+    #print d
+    if not d:
+        return None
+        
+    dx = idirection
+    point = seed
+    track = []
+    track.append(point)
+    #track towards one direction 
+    while d:
+        d,dx = propagation_direction(point,dx,qa,ind,\
+                                                  odf_vertices,qa_thr,ang_thr)
+        if not d:
+            break
+        point = point + step_sz*dx
+        track.append(point)
+
+    d = True
+    dx = - idirection
+    point = seed
+    #track towards the opposite direction
+    while d:
+        d,dx = propagation_direction(point,dx,qa,ind,\
+                                         odf_vertices,qa_thr,ang_thr)
+        if not d:
+            break
+        point = point + step_sz*dx
+        track.insert(0,point)
+
+    return np.array(track)
+
+    '''
+
+    
+
+
+
+
