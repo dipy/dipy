@@ -38,19 +38,15 @@ def test_fact():
     t3=time()    
     print 'X', t3-t2, 'time.'
 
-    print (t3-t2)/(t2-t1), ' ratio '
-
-    #T2=FACT_Delta2(ten.FA,ten.IN,seeds_no=1000,qa_thr=0.2).tracks
+    print (t3-t2)/(t2-t1), ' ratio '   
     
     print(len(T1))
     print(len(T2))
 
-    print 'T1[0]'
-    print T1[0]
-    print 'T2[0]'
-    print T2[0]
+    for i in range(len(FD.seed_list)):
+        
+        print('T1[%d]' % i)
+        print T1[i]
 
-    print 'T1[1]'
-    print T1[1]
-    print 'T2[1]'
-    print T2[1]  
+        print('T2[%d]' % i)
+        print T2[i]
