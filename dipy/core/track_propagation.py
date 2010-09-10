@@ -1,5 +1,7 @@
 import os
 import numpy as np
+#from dipy.core.reconstruction_performance import propagation
+
 
 
 class FACT_Delta():
@@ -76,11 +78,16 @@ class FACT_Delta():
                         'evenly_distributed_sphere_362.npz'))
             odf_vertices=eds['vertices']
 
+        self.seed_list=[]
+            
         for i in range(seeds_no):
             rx=(x-1)*np.random.rand()
             ry=(y-1)*np.random.rand()
             rz=(z-1)*np.random.rand()            
             seed=np.array([rx,ry,rz])
+            
+            self.seed_list.append(seed)
+            
             track=self.propagation(seed,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)
 
             if track == None:
@@ -88,6 +95,7 @@ class FACT_Delta():
             else:
                 tlist.append(track)
 
+        
         self.tracks=tlist
             
 
@@ -273,7 +281,7 @@ class FACT_Delta():
 
 
 
-class FACT_Delta2():
+class FACT_DeltaX():
     ''' New experimental Version
     
     Generates tracks with termination criteria defined by a
@@ -305,7 +313,7 @@ class FACT_Delta2():
 
     '''
 
-    def __init__(self,qa,ind,seeds_no=1000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.):
+    def __init__(self,qa,ind,seed_list,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.):
         '''
         Parameters
         ----------
@@ -339,30 +347,50 @@ class FACT_Delta2():
             ind.shape=ind.shape+(1,)
 
         #store number of maximum peacks
-        self.Np=qa.shape[-1]
+        #self.Np=qa.shape[-1]
 
         x,y,z,g=qa.shape
-        tlist=[]       
+        tlist=[]
+      
 
         if odf_vertices==None:
             eds=np.load(os.path.join(os.path.dirname(__file__),'matrices',\
                         'evenly_distributed_sphere_362.npz'))
             odf_vertices=eds['vertices']
+            
+        print 'Shapes'
+        print 'qa',qa.shape, qa.dtype
+        print 'ind',ind.shape, ind.dtype
+        print 'odf_vertices',odf_vertices.shape, odf_vertices.dtype
 
+        
+
+        '''
+        #for all seed points    
         for i in range(seeds_no):
             rx=(x-1)*np.random.rand()
             ry=(y-1)*np.random.rand()
-            rz=(z-1)*np.random.rand()            
+            rz=(z-1)*np.random.rand()
             seed=np.array([rx,ry,rz])
-            track=self.propagation(seed,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)
+        '''
+        for seed in seed_list:
 
-            if track == None:
-                pass
-            else:
-                tlist.append(track)
+            print 'seed',seed
+
+            #for all peaks
+            for ref in range(1): # g
+                #propagate up 
+                track =propagation(seed,qa,ref,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
+                if track == None:
+                    pass
+                else:
+                    tlist.append(track)
 
         self.tracks=tlist
             
+
+
+
 
 
     def trilinear_interpolation(self,X):
@@ -544,14 +572,3 @@ class FACT_Delta2():
         return np.array(track)
 
 
-
-
-
-
-
-
-
-    
-
-
-    

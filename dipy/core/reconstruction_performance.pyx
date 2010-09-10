@@ -13,17 +13,29 @@ import numpy as np
 cimport numpy as cnp
 
 
+
 cdef extern from "math.h" nogil:
     double floor(double x)
     float sqrt(float x)
     float fabs(float x)
     double log2(double x)
+    double cos(double x)
+    double sin(double x)
     float acos(float x )   
     bint isnan(double x)
+    
     
 
 # initialize numpy runtime
 cnp.import_array()
+
+#numpy pointers
+cdef inline float* asfp(cnp.ndarray pt):
+    return <float *>pt.data
+
+cdef inline double* asdp(cnp.ndarray pt):
+    return <double *>pt.data
+
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
@@ -309,3 +321,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
         return np.array([])
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
+
+
+
+

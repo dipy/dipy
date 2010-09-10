@@ -1,9 +1,11 @@
 import os
 import numpy as np
 import dipy as dp
-from dipy.core.track_propagation import FACT_Delta2
+from dipy.core.track_propagation import FACT_DeltaX
 import nibabel as ni
 from os.path import join as opj
+from time import time
+
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -22,13 +24,29 @@ def test_fact():
                                   'data','small_64D.nii'))
     data=img.get_data()    
 
-    print(data.shape)
-
-    gqs = dp.GeneralizedQSampling(data,bvals,gradients)
-    ten = dp.Tensor(data,bvals,gradients,thresh=50)
+    print(data.shape)    
+    gqs = dp.GeneralizedQSampling(data,bvals,gradients)       
+    #ten = dp.Tensor(data,bvals,gradients,thresh=50)
+    
+    t1=time()
+    FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=5)
+    T1=FD.tracks
+    t2=time()    
+    print 'I', t2-t1, 'time.'
         
-    T1=FACT_Delta2(gqs.QA,gqs.IN,seeds_no=1000).tracks
-    T2=FACT_Delta2(ten.FA,ten.IN,seeds_no=1000,qa_thr=0.2).tracks
+    T2=FACT_DeltaX(gqs.QA,gqs.IN,seed_list=FD.seed_list).tracks
+    t3=time()    
+    print 'X', t3-t2, 'time.'
+
+    print (t3-t2)/(t2-t1), ' ratio '   
     
     print(len(T1))
     print(len(T2))
+
+    for i in range(len(FD.seed_list)):
+        
+        print('T1[%d]' % i)
+        print T1[i]
+
+        print('T2[%d]' % i)
+        print T2[i]
