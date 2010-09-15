@@ -9,8 +9,11 @@ import dipy.core.dti as dt
 import dipy.core.track_propagation as tp
 from dipy.viz import fos
 
-dname ='/home/eg01/Data_Backup/Data/Eleftherios/CBU090134_METHODS/20090227_154122/Series_003_CBU_DTI_64D_iso_1000'
-#dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
+#dname ='/home/eg01/Data_Backup/Data/Eleftherios/CBU090134_METHODS/20090227_154122/Series_003_CBU_DTI_64D_iso_1000'
+#dname =
+#'/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
+
+dname='/home/eg01/Data_Backup/Data/MR10032/CBU101204_MR10032/20100914_184223/Series_003_ep2d_advdiff_DSI_25x25x25_b4000'
 
 #
 #The datasets need to have isotropic voxel size.

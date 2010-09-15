@@ -212,7 +212,12 @@ class Tensor(object):
         mask = np.atleast_1d(mask)
         if thresh is not None:
             #Define total mask from thresh and mask
-            mask = mask & (np.min(data[..., b_values == 0], -1) > thresh)
+            #mask = mask & (np.min(data[..., b_values == 0], -1) >
+            #thresh)
+            #the assumption that the lowest b_value is always 0 is
+            #incorrect the lowest b_value could also be higher than 0
+            #this is common with grid q-spaces
+            mask = mask & (np.min(data[..., b_values == np.min(b_values)], -1) > thresh)
 
         #if mask is all False
         if not mask.any():
