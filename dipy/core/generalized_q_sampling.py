@@ -148,3 +148,5 @@ class GeneralizedQSampling():
 
         return np.dot(s,self.q2odf_params)
 
+
+

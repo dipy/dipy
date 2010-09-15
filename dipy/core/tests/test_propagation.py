@@ -29,7 +29,7 @@ def test_fact():
     #ten = dp.Tensor(data,bvals,gradients,thresh=50)
     
     t1=time()
-    FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=5)
+    FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=500)
     T1=FD.tracks
     t2=time()    
     print 'I', t2-t1, 'time.'
@@ -43,6 +43,14 @@ def test_fact():
     print(len(T1))
     print(len(T2))
 
+    from dipy.core.track_metrics import length
+
+    print(sum([length(t) for t in T1]))
+    print(sum([length(t) for t in T2]))
+    
+    
+
+    '''
     for i in range(len(FD.seed_list)):
         
         print('T1[%d]' % i)
@@ -50,3 +58,6 @@ def test_fact():
 
         print('T2[%d]' % i)
         print T2[i]
+    '''
+
+    

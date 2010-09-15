@@ -1,17 +1,29 @@
-===========
- DiPy core
-===========
+++++++++++++++++++++++++++++++++++++
+ DiPy module: core.track_performance
+++++++++++++++++++++++++++++++++++++
 
-.. currentmodule:: dipy.core
+.. automodule:: dipy.core.track_performance
+   :members:
 
-.. autosummary::
-   :toctree:
++++++++++++++++++++++++++++
+ DiPy module: core.geometry
++++++++++++++++++++++++++++
 
-   geometry
-   track_metrics
-   track_learning
-   track_performance
-   qball
-   stensor
+.. automodule:: dipy.core.geometry
+   :members:
+
+
+
+
+
+
+
+
+ 
+
+
+
+
+
 
    
