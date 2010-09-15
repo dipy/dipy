@@ -322,9 +322,33 @@ def argmax_from_countarrs(cnp.ndarray vals,
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
 
+cdef long coffset(long *indices,long *strides,int ndim, int size) nogil:
+    cdef int i
+    cdef long summ
+    for i from 0<=i<ndim:
+        summ+=strides[i]*indices[i]        
+    summ/=size
+    return summ
+
+def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
+                 cnp.ndarray[long, ndim=1] strides,int ndim, int size):
+    ''' find offset in an ndarray using strides
+    Example
+    -------
+    >>> import numpy as np
+    >>> from dipy.core.reconstruction_performance import ndarray_offset
+    >>> I=np.array[1,1]
+    >>> A=np.array([[1,0,0],[0,2,0],[0,0,3]])
+    >>> S=np.array(A.strides)
+    >>> ndarray_offset(I,S,2,8)
+     4
+
+    '''
+
+    return coffset_d(<long*>indices.data,<long*>strides.data,ndim)
 
 
-def trilinear_interpolation(X) nogil:
+def trilinear_interpolation(X):
 
     Xf=np.floor(X)        
     #d holds the distance from the (floor) corner of the voxel
@@ -352,7 +376,7 @@ def trilinear_interpolation(X) nogil:
 
     return W,IN.astype(np.int)
 
-def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.) nogil:
+def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.):
     ''' Give the nearest direction to a point
 
         Parameters
@@ -407,7 +431,7 @@ def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.) nogil:
 
 
         
-def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr) nogil:
+def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr):
     ''' Find where you are moving next
     '''
     total_w = 0 # total weighting
@@ -436,7 +460,11 @@ def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr) nogil:
 
     return True, new_direction/np.sqrt(np.sum(new_direction**2))
     
-def initial_direction(seed,qa,ind,odf_vertices,qa_thr) nogil:
+def initial_direction(cnp.ndarray[double,ndim=1] seed,\
+                          cnp.ndarray[double,ndim=4] qa,\
+                          cnp.ndarray[double,ndim=4] ind,\
+                          cnp.ndarray[double,ndim=2] odf_vertices,\
+                          double qa_thr):
     ''' First direction that we get from a seeding point
 
     '''
@@ -454,7 +482,11 @@ def initial_direction(seed,qa,ind,odf_vertices,qa_thr) nogil:
         return True, odf_vertices[ind_tmp]
 
 
-def propagation(seed,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz) nogil:
+def propagation(cnp.ndarray[double,ndim=1] seed,\
+                    cnp.ndarray[double,ndim=4] qa,\
+                    cnp.ndarray[double,ndim=4] ind,\
+                    cnp.ndarray[double,ndim=2] odf_vertices,\
+                    double qa_thr,double ang_thr,double step_sz):
     '''
         Parameters
         ----------
