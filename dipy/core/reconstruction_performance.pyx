@@ -322,30 +322,63 @@ def argmax_from_countarrs(cnp.ndarray vals,
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
 
-cdef long coffset(long *indices,long *strides,int ndim, int size) nogil:
+cdef inline long coffset(long *indices,long *strides,int lenind, int typesize):# nogil:
+
+    '''
+    Parameters
+    ----------
+    indices: long * (int64 *), indices of the array which we want to
+    find the offset
+    strides: long * strides
+    lenind: int, len(indices)
+    typesize: int, number of bytes for data type e.g. if double is 8 if
+    int32 is 4
+
+    Returns:
+    --------
+    offset: integer, offset from 0 pointer in memory normalized by dtype
+    '''
+ 
     cdef int i
-    cdef long summ
-    for i from 0<=i<ndim:
+    cdef long summ=0
+    for i from 0<=i<lenind:
+        print('st',strides[i],indices[i])
         summ+=strides[i]*indices[i]        
-    summ/=size
+    summ/=<long>typesize
     return summ
 
 def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
-                 cnp.ndarray[long, ndim=1] strides,int ndim, int size):
+                 cnp.ndarray[long, ndim=1] strides,int lenind, int typesize):
     ''' find offset in an ndarray using strides
+
+    Parameters
+    ----------
+    indices: array, shape(N,), indices of the array which we want to
+    find the offset
+    strides: array, shape(N,), strides
+    lenind: int, len(indices)
+    typesize: int, number of bytes for data type e.g. if double is 8 if
+    int32 is 4
+    
+    Returns:
+    --------
+    offset: integer, offset from 0 pointer in memory normalized by dtype
+    
     Example
     -------
     >>> import numpy as np
     >>> from dipy.core.reconstruction_performance import ndarray_offset
-    >>> I=np.array[1,1]
+    >>> I=np.array([1,1])
     >>> A=np.array([[1,0,0],[0,2,0],[0,0,3]])
     >>> S=np.array(A.strides)
     >>> ndarray_offset(I,S,2,8)
-     4
+    4
+    >>> A.ravel()[4]==A[1,1]
+    True
 
     '''
 
-    return coffset_d(<long*>indices.data,<long*>strides.data,ndim)
+    return coffset(<long*>indices.data,<long*>strides.data,lenind, typesize)
 
 
 def trilinear_interpolation(X):
@@ -481,6 +514,43 @@ def initial_direction(cnp.ndarray[double,ndim=1] seed,\
     else:
         return True, odf_vertices[ind_tmp]
 
+cdef int cinitial_direction(double *seed, double *qa,\
+                        double *ind, double* odf_vertices,\
+                        long *strides, long* vert_strides,\
+                        double qa_thr, double *idirection):# nogil:
+    ''' 
+    '''
+    cdef double qa_tmp,ind_tmp
+    cdef long point[3], index[2], offset
+    
+    point[0]=<long>floor(seed[0]+.5)
+    point[1]=<long>floor(seed[1]+.5)
+    point[2]=<long>floor(seed[2]+.5)
+    point[3]=0#ref
+
+    print(seed[0],seed[1],seed[2])
+    print(point[0],point[1],point[2])
+
+    
+    offset=coffset(<long *>point,strides,4,8)
+    qa_tmp=qa[offset]
+    
+    if qa_tmp < qa_thr:
+        return 0
+    else:
+        ind_tmp=ind[offset]
+    
+        index[0]=<long>ind_tmp
+        index[1]=0
+        idirection[0]=odf_vertices[coffset(<long *>index,vert_strides,2,8)]
+        index[0]=<long>ind_tmp
+        index[1]=1
+        idirection[1]=odf_vertices[coffset(<long *>index,vert_strides,2,8)]
+        index[0]=<long>ind_tmp
+        index[1]=2
+        idirection[2]=odf_vertices[coffset(<long *>index,vert_strides,2,8)]
+        
+        return 1
 
 def propagation(cnp.ndarray[double,ndim=1] seed,\
                     cnp.ndarray[double,ndim=4] qa,\
@@ -502,8 +572,29 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
 
     '''
     #d is the delta function 
-    d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
-    #print d
+    #d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
+
+    cdef cnp.ndarray[double, ndim=1] idirection=np.ones(3,)*[100,200,300]
+    cdef cnp.ndarray[cnp.int64_t, ndim=1] strides=np.array((10,10,10,5),dtype=np.int64)#(qa.strides)
+    cdef cnp.ndarray[cnp.int64_t, ndim=1] vert_strides=np.ascontiguousarray(np.array((362,3),dtype=np.int64))#odf_vertices.strides)
+    cdef int d
+    cdef double *pid=<double *>idirection.data
+    cdef long *vsid=<long *>vert_strides.data
+
+    print(idirection)
+    print(pid[0])
+    print(strides)
+    print(vert_strides)    
+    print(vsid[0])
+
+    
+
+    d=cinitial_direction(<double *>seed.data, <double *>qa.data,\
+                         <double *>ind.data, <double *>odf_vertices.data,\
+                         <long *>strides.data, <long *>vert_strides.data,\
+                         qa_thr, <double *>idirection.data)
+    
+    print d
     if not d:
         return None
         
@@ -511,6 +602,8 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     point = seed
     track = []
     track.append(point)
+
+    return np.array(track)
     #track towards one direction 
     while d:
         d,dx = propagation_direction(point,dx,qa,ind,\
@@ -533,4 +626,6 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
         track.insert(0,point)
 
     return np.array(track)
+
+
 
