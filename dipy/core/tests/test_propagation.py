@@ -2,6 +2,7 @@ import os
 import numpy as np
 import dipy as dp
 from dipy.core.track_propagation import FACT_DeltaX
+from dipy.core.reconstruction_performance import ndarray_offset
 import nibabel as ni
 from os.path import join as opj
 from time import time
@@ -33,6 +34,8 @@ def test_fact():
     T1=FD.tracks
     t2=time()    
     print 'I', t2-t1, 'time.'
+
+    
         
     T2=FACT_DeltaX(gqs.QA,gqs.IN,seed_list=FD.seed_list).tracks
     t3=time()    
@@ -48,7 +51,9 @@ def test_fact():
     print(sum([length(t) for t in T1]))
     print(sum([length(t) for t in T2]))
     
-    
+
+    print(gqs.QA[1,3,1,0])
+    print(gqs.QA.ravel()[ndarray_offset(np.array([1,3,1,0]),np.array(gqs.QA.strides),4,8)])
 
     '''
     for i in range(len(FD.seed_list)):

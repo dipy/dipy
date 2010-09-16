@@ -322,7 +322,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
     # fancy indexing always produces a copy
     return maxinds[argsort(maxes[:n_maxes])]
 
-cdef inline long coffset(long *indices,long *strides,int lenind, int typesize):# nogil:
+cdef inline long coffset(long *indices,long *strides,int lenind, int typesize) nogil:
 
     '''
     Parameters
@@ -342,7 +342,7 @@ cdef inline long coffset(long *indices,long *strides,int lenind, int typesize):#
     cdef int i
     cdef long summ=0
     for i from 0<=i<lenind:
-        print('st',strides[i],indices[i])
+        #print('st',strides[i],indices[i])
         summ+=strides[i]*indices[i]        
     summ/=<long>typesize
     return summ
@@ -508,7 +508,8 @@ def initial_direction(cnp.ndarray[double,ndim=1] seed,\
     x,y,z = point
     qa_tmp=qa[x,y,z,0]#maximum qa
     ind_tmp=ind[x,y,z,0]#corresponing orientation indices for max qa
-
+    print('qa_tmp_initial',qa_tmp)
+    print('qa_thr_initial',qa_thr)
     if qa_tmp < qa_thr:
         return False, np.array([0,0,0])
     else:
@@ -521,20 +522,22 @@ cdef int cinitial_direction(double *seed, double *qa,\
     ''' 
     '''
     cdef double qa_tmp,ind_tmp
-    cdef long point[3], index[2], offset
+    cdef long point[4], index[2], offset
     
     point[0]=<long>floor(seed[0]+.5)
     point[1]=<long>floor(seed[1]+.5)
     point[2]=<long>floor(seed[2]+.5)
-    point[3]=0#ref
+    point[3]=<long>0#ref
 
-    print(seed[0],seed[1],seed[2])
-    print(point[0],point[1],point[2])
+    print('seed',seed[0],seed[1],seed[2])
+    print('point',point[0],point[1],point[2])
+    print('strides',strides[0],strides[1],strides[2],strides[3])
 
-    
-    offset=coffset(<long *>point,strides,4,8)
-    qa_tmp=qa[offset]
-    
+    offset=coffset(point,strides,4,8)
+    qa_tmp=<double>qa[offset]
+
+    print('qa_tmp_cinitial',qa_tmp)
+    print('qa_thr_cinitial',qa_thr)
     if qa_tmp < qa_thr:
         return 0
     else:
@@ -581,18 +584,21 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     cdef double *pid=<double *>idirection.data
     cdef long *vsid=<long *>vert_strides.data
 
-    print(idirection)
-    print(pid[0])
-    print(strides)
-    print(vert_strides)    
-    print(vsid[0])
-
+    print('idirection', idirection)
+    print('strides',strides)
+    print('vert_strides',vert_strides)
+    print('idirection_before',idirection)
     
-
     d=cinitial_direction(<double *>seed.data, <double *>qa.data,\
                          <double *>ind.data, <double *>odf_vertices.data,\
                          <long *>strides.data, <long *>vert_strides.data,\
                          qa_thr, <double *>idirection.data)
+
+    print('idirection_after',idirection)
+
+
+    d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
+    print('idirection_python',idirection)
     
     print d
     if not d:
@@ -604,6 +610,7 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     track.append(point)
 
     return np.array(track)
+
     #track towards one direction 
     while d:
         d,dx = propagation_direction(point,dx,qa,ind,\
