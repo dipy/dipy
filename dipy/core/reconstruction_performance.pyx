@@ -515,100 +515,92 @@ def initial_direction(cnp.ndarray[double,ndim=1] seed,\
     else:
         return True, odf_vertices[ind_tmp]
 
-cdef int cinitial_direction(double *seed, double *qa,\
-                        double *ind, double* odf_vertices,\
-                        long *strides, long* vert_strides,\
-                        double qa_thr, double *idirection):# nogil:
-    ''' 
-    '''
-    cdef double qa_tmp,ind_tmp
-    cdef long point[4], index[2], offset
-    
-    point[0]=<long>floor(seed[0]+.5)
-    point[1]=<long>floor(seed[1]+.5)
-    point[2]=<long>floor(seed[2]+.5)
-    point[3]=<long>0#ref
+cdef long cinitial_direction(double *seed, double *pqa, double *pind, \
+                             double *podf_vertices, long* strides, long* vstrides,double qa_thr):
 
+    cdef:
+        long point[4],offset
+        double qa_tmp,ind_tmp
+        int i
+
+    for i from 0<=i<3:
+        point[i]=<long>floor(seed[i]+.5)
+    point[3]=0
     print('seed',seed[0],seed[1],seed[2])
-    print('point',point[0],point[1],point[2])
-    print('strides',strides[0],strides[1],strides[2],strides[3])
+    print('point',point[0],point[1],point[2],point[3])
 
     offset=coffset(<long *>point,strides,4,8)
-    print('offset_cinitial',offset)
-    
-    qa_tmp=<double>qa[offset]
-
+    qa_tmp=pqa[offset]
     print('qa_tmp_cinitial',qa_tmp)
-    print('qa_thr_cinitial',qa_thr)
     if qa_tmp < qa_thr:
         return 0
     else:
-        ind_tmp=ind[offset]
-    
-        index[0]=<long>ind_tmp
-        index[1]=0
-        idirection[0]=odf_vertices[coffset(<long *>index,vert_strides,2,8)]
-        index[0]=<long>ind_tmp
-        index[1]=1
-        idirection[1]=odf_vertices[coffset(<long *>index,vert_strides,2,8)]
-        index[0]=<long>ind_tmp
-        index[1]=2
-        idirection[2]=odf_vertices[coffset(<long *>index,vert_strides,2,8)]
-        
         return 1
+    
+    
 
-def propagation(cnp.ndarray[double,ndim=1] seed,\
-                    cnp.ndarray[double,ndim=4] qa,\
-                    cnp.ndarray[double,ndim=4] ind,\
-                    cnp.ndarray[double,ndim=2] odf_vertices,\
+def propagation(seed,\
+                    qa,\
+                    ind,\
+                    odf_vertices,\
                     double qa_thr,double ang_thr,double step_sz):
     '''
-        Parameters
-        ----------
-        seed: array, shape(3,), point where the tracking starts        
-        qa: array, shape(Np,), float, quantitative anisotropy matrix,
-        where Np the number of peaks, found using self.Np
-        ind: array, shape(Np,), float, index of the track orientation        
+    Parameters
+    ----------
+    seed: array, shape(3,), point where the tracking starts        
+    qa: array, shape(Np,), float, quantitative anisotropy matrix,
+    where Np the number of peaks, found using self.Np
+    ind: array, shape(Np,), float, index of the track orientation        
                 
-        Returns
-        -------
-        d: bool, delta function result        
-        idirection: array, shape(3,), index of the direction of the propagation
+    Returns
+    -------
+    d: bool, delta function result        
+    idirection: array, shape(3,), index of the direction of the propagation
 
     '''
-    #d is the delta function 
-    #d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
-
-    cdef cnp.ndarray[double, ndim=1] idirection=np.ones(3,)*[100,200,300]
-    cdef cnp.ndarray[cnp.int64_t, ndim=1] strides=np.array((10,10,10,5),dtype=np.int64)#(qa.strides)
-    cdef cnp.ndarray[cnp.int64_t, ndim=1] vert_strides=np.ascontiguousarray(np.array((362,3),dtype=np.int64))#odf_vertices.strides)
-    cdef int d
-    cdef double *pid=<double *>idirection.data
-    cdef long *vsid=<long *>vert_strides.data
-
-    print('idirection', idirection)
-    print('strides',strides)
-    print('vert_strides',vert_strides)
-    print('idirection_before',idirection)
-    
-    d=cinitial_direction(<double *>seed.data, <double *>qa.data,\
-                         <double *>ind.data, <double *>odf_vertices.data,\
-                         <long *>strides.data, <long *>vert_strides.data,\
-                         qa_thr, <double *>idirection.data)
-
-    print('idirection_after',idirection)
-
-    fseed=np.zeros(4,).astype('int64')
-    fseed[:3]=np.floor(seed).astype('int64')
-    offset=ndarray_offset(fseed,strides,4,8)
-
-    print('fseed',fseed)
-    print('offset_initial',offset)
-    print('qa_tmp_initial2',qa.ravel()[offset])
-    print('qa_real',qa[fseed[0],fseed[1],fseed[2],fseed[3]])
+    cdef:
+        cnp.ndarray[double,ndim=1] cseed = seed
+        cnp.ndarray[double,ndim=4] cqa  = qa
+        cnp.ndarray[double,ndim=4] cind = ind
+        cnp.ndarray[double,ndim=2] codf_vertices = odf_vertices        
+        #cnp.ndarray[long, ndim=1] indices = np.array([1,1,2,0])
+        cnp.ndarray[long, ndim=1] strides = np.array(qa.strides)        
+        #cnp.ndarray[long, ndim=1] vert_indices = np.array([1,1])
+        cnp.ndarray[long, ndim=1] vert_strides = np.array(odf_vertices.strides)        
+        double *pcqa, *pcind, *cidirection, *pcvertices, *pseed
+        long *pstrides, *pvstrides
+        int d2
         
+    #d is the delta function         
     d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
+    
     print('idirection_python',idirection)
+   
+    pcqa=<double *>cqa.data
+    pcind=<double *>cind.data
+    pcvertices=<double *>codf_vertices.data
+    pseed=<double *>cseed.data
+    pstrides=<long *>strides.data
+    pvstrides=<long *>vert_strides.data
+
+    '''
+    print('qa real',qa[1,1,2,0])
+    print('qa ndoffset',np.ravel(qa)[ndarray_offset(indices,strides,4,8)])    
+    print('qa offset',pcqa[coffset(<long *>indices.data,<long *>strides.data,4,8)])
+    
+    print('ind real',ind[1,1,2,0])
+    print('ind ndoffset',np.ravel(ind)[ndarray_offset(indices,strides,4,8)])    
+    print('ind offset',pcind[coffset(<long *>indices.data,<long *>strides.data,4,8)])
+    
+    print('ndoffset',ndarray_offset(indices,strides,4,8))
+    print('coffset',coffset(<long *>indices.data,<long *>strides.data,4,8))
+    
+    print('odf_vertices real',odf_vertices[1,1])
+    print('odf_vertices ndoffset',np.ravel(odf_vertices)[ndarray_offset(vert_indices,vert_strides,2,8)])    
+    print('odf_vertices offset',pcvertices[coffset(<long *>vert_indices.data,<long *>vert_strides.data,2,8)])
+
+    '''
+    print(cinitial_direction(pseed, pcqa, pcind, pcvertices, pstrides, pvstrides ,qa_thr))
     
     print d
     if not d:
@@ -620,6 +612,8 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     track.append(point)
 
     return np.array(track)
+
+    '''
 
     #track towards one direction 
     while d:
@@ -643,6 +637,8 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
         track.insert(0,point)
 
     return np.array(track)
+
+    '''
 
 
 
