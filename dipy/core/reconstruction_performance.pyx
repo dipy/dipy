@@ -533,7 +533,9 @@ cdef int cinitial_direction(double *seed, double *qa,\
     print('point',point[0],point[1],point[2])
     print('strides',strides[0],strides[1],strides[2],strides[3])
 
-    offset=coffset(point,strides,4,8)
+    offset=coffset(<long *>point,strides,4,8)
+    print('offset_cinitial',offset)
+    
     qa_tmp=<double>qa[offset]
 
     print('qa_tmp_cinitial',qa_tmp)
@@ -596,7 +598,15 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
 
     print('idirection_after',idirection)
 
+    fseed=np.zeros(4,).astype('int64')
+    fseed[:3]=np.floor(seed).astype('int64')
+    offset=ndarray_offset(fseed,strides,4,8)
 
+    print('fseed',fseed)
+    print('offset_initial',offset)
+    print('qa_tmp_initial2',qa.ravel()[offset])
+    print('qa_real',qa[fseed[0],fseed[1],fseed[2],fseed[3]])
+        
     d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
     print('idirection_python',idirection)
     

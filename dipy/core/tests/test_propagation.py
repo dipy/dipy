@@ -52,8 +52,8 @@ def test_fact():
     print(sum([length(t) for t in T2]))
     
 
-    print(gqs.QA[1,3,1,0])
-    print(gqs.QA.ravel()[ndarray_offset(np.array([1,3,1,0]),np.array(gqs.QA.strides),4,8)])
+    print(gqs.QA[1,4,8,0])
+    print(gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
 
     '''
     for i in range(len(FD.seed_list)):
