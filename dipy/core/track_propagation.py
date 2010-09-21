@@ -266,7 +266,7 @@ class FACT_Delta():
             return None
         
         dx = idirection
-        point = seed
+        point = seed-0.5
         track = []
         track.append(point)
         #track towards one direction 
@@ -377,7 +377,6 @@ class FACT_DeltaX():
         print 'qa',qa.shape, qa.dtype
         print 'ind',ind.shape, ind.dtype
         print 'odf_vertices',odf_vertices.shape, odf_vertices.dtype
-
         
 
         '''
@@ -395,7 +394,7 @@ class FACT_DeltaX():
             #for all peaks
             for ref in range(1): # g
                 #propagate up 
-                track =propagation(seed,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
+                track =propagation(seed.copy(),qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
                 if track == None:
                     pass
                 else:

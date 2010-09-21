@@ -26,6 +26,7 @@ cdef extern from "math.h" nogil:
     double fabs(double x)
     
 DEF PI=3.1415926535897931
+DEF PEAK_NO=5
 
 # initialize numpy runtime
 cnp.import_array()
@@ -584,7 +585,8 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
         long index[24],i,j,m,xyz[4]
         double normd
         
-    #calculate qa & ind of each of the 8 corners
+    #calculate qa & ind of each of the 8 neighboring voxels
+    #to do that we use trilinear interpolation
     _trilinear_interpolation(point,<double *>w,<long *>index)
     
     #check if you are outside of the volume
@@ -649,26 +651,30 @@ def initial_direction(cnp.ndarray[double,ndim=1] seed,\
 
 cdef inline long _initial_direction(double* seed,double *qa,\
                                         double* ind, double* odf_vertices,\
-                                        double qa_thr, long* strides,\
-                                        long* vstrides,double* direction) nogil:
+                                        double qa_thr, long* strides, int ref,\
+                                        double* direction) nogil:
     cdef:
-        long point[3],off
+        long point[4],off
         long i
         double qa_tmp,ind_tmp
 
+    #find the index for qa
     for i from 0<=i<3:
         point[i]=<long>floor(seed[i]+.5)
-
-    off=offset(<long*>point,strides,4,8)
+    point[3]=ref
+    #find the offcet in memory to access the qa value
+    off=offset(<long*>point,strides,4,8)    
     qa_tmp=qa[off]
     #print('qa_tmp  _initial',qa_tmp)
+    #check for threshold
     if qa_tmp < qa_thr:
         return 0
-    else:        
+    else:
+        #find the correct direction from the indices
         ind_tmp=ind[off]
+        #return initial direction through odf_vertices by ind
         for i from 0<=i<3:
             direction[i]=odf_vertices[3*<long>ind_tmp+i]
-        
         return 1
         
 
@@ -697,26 +703,67 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
         double *pin=<double*>ind.data
         double *pverts=<double*>odf_vertices.data
         long *pstr=<long *>qa.strides
+        long *qa_shape=<long *>qa.shape
         long *pvstr=<long *>odf_vertices.strides
-        long res=0,d,i,j
-        double direction[3],dx[3]
+        long ref,d,i,j
+        double direction[3],dx[3],idirection[3],ps2[3]
         double trajectory[30000]
         
-        
-    d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,pvstr,direction)
+    print('hey')
+    ref=0
+    d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)
     #print 'res',res, direction[0],direction[1],direction[2]
 
     if d==0:
         return None
 
     for i from 0<=i<3:
-        dx[i]=direction[i]
+        #store the initial direction
+        dx[i]=idirection[i]
+        #ps2 is for downwards and ps for upwards propagation
+        ps2[i]=ps[i]
 
+    print('hi')
+    
     point=seed.copy()
     track = []
 
-    track.append(point)
+    #print('point first',point)
+    track.append(point.copy())
     return np.array(track)
+
+    while d:
+       d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
+                                   ang_thr,qa_shape,pstr,direction)
+       if d==0:
+           break
+       for i from 0<=i<3:
+           dx[i]=direction[i]
+           ps[i]+=step_sz*dx[i]
+           point[i]=ps[i]#to be changed
+       #print('point up',point)        
+       track.append(point.copy())
+       
+    d=1
+    for i from 0<=i<3:
+        dx[i]=-idirection[i]
+
+    #track towards the opposite direction 
+    while d:
+        d= _propagation_direction(ps2,dx,pqa,pin,pverts,qa_thr,\
+                                   ang_thr,qa_shape,pstr,direction)
+        if d==0:
+            break
+        for i from 0<=i<3:
+            dx[i]=direction[i]
+            ps2[i]+=step_sz*dx[i]
+            point[i]=ps2[i]#to be changed           
+        #print('point down',point)               
+        track.insert(0,point.copy())
+    
+    print(np.array(track))
+    return np.array(track)
+
 
     '''
     d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
@@ -729,11 +776,7 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     track = []
     track.append(point)
 
-    return np.array(track)
-
-    '''
-
-    '''
+    #return np.array(track)    
 
     #track towards one direction 
     while d:
