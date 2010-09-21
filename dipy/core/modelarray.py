@@ -22,7 +22,9 @@ class ModelArray(object):
         Sets the shape of the tensor array
 
         """
-        self.model_params.shape = shape + self.model_params.shape[-1]
+        if type(shape) is not tuple:
+            shape = (shape,)
+        self.model_params.shape = shape + self.model_params.shape[-1:]
 
     shape = property(_getshape, _setshape, doc = "Shape of model array")
 
