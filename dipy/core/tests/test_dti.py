@@ -61,10 +61,10 @@ def test_tensor_scalar_attributes():
 @parametric
 def test_WLS_and_LS_fit():
     """
-    Tests the WLS fitting function to see if it returns the correct
+    Tests the WLS and LS fitting functions to see if they returns the correct
     eigenvalues and eigenvectors.
 
-    Uses data/55dir_grad.bvec as the gradient table and 3by3by56.nii 
+    Uses data/55dir_grad.bvec as the gradient table and 3by3by56.nii
     as the data.
 
     """
@@ -187,6 +187,11 @@ def test_init():
     tensor = dti.Tensor(data, bval, gtab.T, mask, thresh=0)
     mask[:] = False
     yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, mask)
-    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, min_signal=-1)    
+    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
+                        min_signal=-1)
     yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, thresh=1)
+    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
+                        fit_method='s')
+    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
+                        fit_method=0)
 
