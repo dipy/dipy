@@ -40,8 +40,7 @@ def test_tensor_scalar_attributes():
     dummy_gtab = np.zeros((10,3))
     dummy_bval = np.zeros((10,))
     tensor = dti.Tensor(dummy_data,dummy_bval,dummy_gtab)
-    tensor._evals = evals.reshape((-1,)+evals.shape)
-    tensor._evecs = evecs.reshape((-1,)+evecs.shape)
+    tensor.model_params = np.r_['-1,2', evals, evecs.ravel()]
 
     ### TESTS ###
     yield assert_almost_equal(np.abs(np.dot(evecs[:, 2],
@@ -121,7 +120,7 @@ def test_masked_array_with_Tensor():
     yield assert_equal(tensor.fa().shape, (2,4))
     yield assert_equal(tensor.evals.shape, (2,4,3))
     yield assert_equal(tensor.evecs.shape, (2,4,3,3))
-    yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_equal(type(tensor.model_params), MaskedView)
     yield assert_array_equal(tensor.mask, mask)
 
     tensor = tensor[0]
@@ -129,7 +128,7 @@ def test_masked_array_with_Tensor():
     yield assert_equal(tensor.fa().shape, (4,))
     yield assert_equal(tensor.evals.shape, (4,3))
     yield assert_equal(tensor.evecs.shape, (4,3,3))
-    yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_equal(type(tensor.model_params), MaskedView)
     yield assert_array_equal(tensor.mask, mask[0])
 
     tensor = tensor[0]
@@ -137,7 +136,7 @@ def test_masked_array_with_Tensor():
     yield assert_equal(tensor.fa().shape, tuple())
     yield assert_equal(tensor.evals.shape, (3,))
     yield assert_equal(tensor.evecs.shape, (3,3))
-    yield assert_equal(type(tensor._evals), np.ndarray)
+    yield assert_equal(type(tensor.model_params), np.ndarray)
 
 @parametric
 def test_passing_maskedview():
@@ -155,7 +154,7 @@ def test_passing_maskedview():
     yield assert_equal(tensor.fa().shape, (2,4))
     yield assert_equal(tensor.evals.shape, (2,4,3))
     yield assert_equal(tensor.evecs.shape, (2,4,3,3))
-    yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_equal(type(tensor.model_params), MaskedView)
     yield assert_array_equal(tensor.mask, mask)
 
     tensor = tensor[0]
@@ -163,7 +162,7 @@ def test_passing_maskedview():
     yield assert_equal(tensor.fa().shape, (4,))
     yield assert_equal(tensor.evals.shape, (4,3))
     yield assert_equal(tensor.evecs.shape, (4,3,3))
-    yield assert_equal(type(tensor._evals), MaskedView)
+    yield assert_equal(type(tensor.model_params), MaskedView)
     yield assert_array_equal(tensor.mask, mask[0])
 
     tensor = tensor[0]
@@ -171,7 +170,7 @@ def test_passing_maskedview():
     yield assert_equal(tensor.fa().shape, tuple())
     yield assert_equal(tensor.evals.shape, (3,))
     yield assert_equal(tensor.evecs.shape, (3,3))
-    yield assert_equal(type(tensor._evals), np.ndarray)
+    yield assert_equal(type(tensor.model_params), np.ndarray)
 
 @parametric
 def test_init():

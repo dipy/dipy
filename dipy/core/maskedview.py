@@ -2,6 +2,17 @@ import numpy as np
 from operator import mul
 from copy import copy
 
+def _makearray(a):
+    new = np.asarray(a)
+    wrap = getattr(a, "__array_wrap__", new.__array_wrap__)
+    return new, wrap
+
+def _filled(a, *args, **kargs):
+    if hasattr(a, 'filled'):
+        return a.filled(*args, **kargs)
+    else:
+        return a
+
 class MaskedView(object):
     """
     An interface to allow the user to interact with a data array as if it is a
