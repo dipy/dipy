@@ -59,7 +59,7 @@ def test_tensor_scalar_attributes():
     #yield assert_raises(ValueError, qball.sph_harm_ind_list, 1)
 
 @parametric
-def test_WLS_fit():
+def test_WLS_and_LS_fit():
     """
     Tests the WLS fitting function to see if it returns the correct
     eigenvalues and eigenvectors.
@@ -101,6 +101,12 @@ def test_WLS_fit():
     #test 0d tensor
     y = Y[0]
     tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8)
+    yield assert_equal(tensor_est.shape, tuple())
+    yield assert_array_almost_equal(tensor_est.evals, evals)
+    yield assert_array_almost_equal(tensor_est.D, tensor)
+    yield assert_almost_equal(tensor_est.md(), md)
+
+    tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8, fit_method='LS')
     yield assert_equal(tensor_est.shape, tuple())
     yield assert_array_almost_equal(tensor_est.evals, evals)
     yield assert_array_almost_equal(tensor_est.D, tensor)

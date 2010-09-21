@@ -33,9 +33,19 @@ class Tensor(ModelArray):
     thresh : float, default = None
         The tensor will not be fit where data[bval == 0] < thresh. If multiple
         b0 volumes are given, the minimum b0 signal is used.
-    min_signal : float
-        All diffusion weighted signals below min_signal are replaced with
-        min_signal. min_signal must be > 0.
+    fit_method : funciton or string, default = 'WLS'
+        The method to be used to fit the given data to a tensor. Any function
+        that takes the B matrix and the data and returns eigen values and eigen
+        vectors can be passed as the fit method. Any of the common fit methods
+        can be passed as a string.
+    *args, **kargs :
+        Any other arguments or keywards will be passed to fit_method.
+
+    common fit methods:
+        'WLS' : weighted least squares
+            dti.wls_fit_tensor
+        'LS' : ordinary least squares
+            dti.ols_fit_tensor
 
     Attributes
     ----------
@@ -131,14 +141,11 @@ class Tensor(ModelArray):
         return evecs.reshape(self.shape + (3, 3))
 
     def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
-                 fit_method='WLS', min_signal=1, verbose=False):
+                 fit_method='WLS', verbose=False, *args, **kargs):
         """
         Fits a tensors to diffusion weighted data.
 
         """
-
-        if min_signal <= 0:
-            raise ValueError('min_signal must be > 0')
 
         if not callable(fit_method):
             try:
@@ -174,7 +181,7 @@ class Tensor(ModelArray):
             data = MaskedView(mask, data)
 
         #Perform WLS fit on masked data
-        dti_params = fit_method(B, data, min_signal=min_signal)
+        dti_params = fit_method(B, data, *args, **kargs)
         self.model_params = dti_params
 
     ### Self Diffusion Tensor Property ###
@@ -185,7 +192,7 @@ class Tensor(ModelArray):
         evecs_flat = evecs.reshape((-1, 3, 3))
         D_flat = np.empty(evecs_flat.shape)
         for L, Q, D in zip(evals_flat, evecs_flat, D_flat):
-            D[:] = np.dot(Q*L, Q.T) #timeit = 11.5us
+            D[:] = np.dot(Q*L, Q.T)
         return D_flat.reshape(evecs.shape)
 
     D = property(_getD, doc = "Self diffusion tensor")
@@ -272,6 +279,9 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     data : ndarray ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
+    min_signal : default = 1
+        All values below min_signal are repalced with min_signal. This is done
+        in order to avaid taking log(0) durring the tensor fitting.
 
     Returns
     -------
@@ -316,6 +326,8 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
+    if min_signal <= 0:
+        raise ValueError('min_signal must be > 0')
 
     data, wrap = _makearray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
@@ -336,7 +348,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     return dti_params
 
 def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
-    ''' 
+    '''
     Function used by wls_fit_tensor for later optimization.
     '''
     sig = np.maximum(sig, min_signal) #throw out zero signals
@@ -346,7 +358,18 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     tensor = _full_tensor(D)
     return decompose_tensor(tensor)
 
-def ols_fit_tensor(design_matrix, data):
+def _ols_iter(inv_design, sig, min_signal=1):
+    '''
+    Function used by ols_fit_tensor for later optimization.
+    '''
+    sig = np.maximum(sig, min_signal) #throw out zero signals
+    log_s = np.log(sig)
+    D = np.dot(inv_design, log_s)
+    tensor = _full_tensor(D)
+    return decompose_tensor(tensor)
+
+
+def ols_fit_tensor(design_matrix, data, min_signal=1):
     """
     Computes ordinary least squares (OLS) fit to calculate self-diffusion 
     tensor using a linear regression model [1]_.
@@ -360,6 +383,9 @@ def ols_fit_tensor(design_matrix, data):
     data : ndarray ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
+    min_signal : default = 1
+        All values below min_signal are repalced with min_signal. This is done
+        in order to avaid taking log(0) durring the tensor fitting.
 
     Returns
     -------
@@ -392,7 +418,7 @@ def ols_fit_tensor(design_matrix, data):
         NeuroImage 33, 531-541.
     """
 
-    data = _makearray(data)
+    data, wrap = _makearray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     evals = np.empty((len(data_flat), 3))
     evecs = np.empty((len(data_flat), 3, 3))
@@ -404,13 +430,12 @@ def ols_fit_tensor(design_matrix, data):
     #math: ols_fit = X*beta_ols*inv(y)
     #ols_fit =  np.dot(U, U.T)
 
-    Ds = np.dot(data_flat,np.linalg.pinv(design_matrix.T))
+    inv_design = np.linalg.pinv(design_matrix)
 
-    for param, Dii in zip(dti_params, data_flat):
-        tensor = _full_tensor(Dii)
-        param[0], param[1:] = decompose_tensor(tensor)
+    for param, sig in zip(dti_params, data_flat):
+        param[0], param[1:] = _ols_iter(inv_design, sig, min_signal)
 
-    dti_params.shape = data.shape[:-1]+(12)
+    dti_params.shape = data.shape[:-1]+(12,)
     dti_params = wrap(dti_params)
     return dti_params
 
@@ -550,6 +575,6 @@ def quantize_evecs(evecs,odf_vertices=None):
 
     return IN
 
-common_fit_methods={'WLS': wls_fit_tensor,
-                    'LS': ols_fit_tensor}
+common_fit_methods = {'WLS': wls_fit_tensor,
+                      'LS': ols_fit_tensor}
 
