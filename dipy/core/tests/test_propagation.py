@@ -33,10 +33,10 @@ def test_fact():
     FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=500)
     T1=FD.tracks
     t2=time()    
-    print 'I', t2-t1, 'time.'
+    print 'I', t2-t1, 'time.'    
 
-    
-        
+    #return
+
     T2=FACT_DeltaX(gqs.QA,gqs.IN,seed_list=FD.seed_list).tracks
     t3=time()    
     print 'X', t3-t2, 'time.'

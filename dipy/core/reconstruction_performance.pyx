@@ -23,8 +23,9 @@ cdef extern from "math.h" nogil:
     double sin(double x)
     float acos(float x )   
     bint isnan(double x)
+    double fabs(double x)
     
-    
+DEF PI=3.1415926535897931
 
 # initialize numpy runtime
 cnp.import_array()
@@ -409,6 +410,42 @@ def trilinear_interpolation(X):
 
     return W,IN.astype(np.int)
 
+cdef void _trilinear_interpolation(double *X, double *W, long *IN):
+
+    cdef double Xf[3],d[3],nd[3]
+    cdef long i
+
+    for i from 0<=i<3:
+        
+        Xf[i]=floor(X[i])
+        d[i]=X[i]-Xf[i]
+        nd[i]=1-d[i]
+
+    #weights
+
+    W[0]=nd[0] * nd[1] * nd[2]
+    W[1]= d[0] * nd[1] * nd[2]
+    W[2]=nd[0] *  d[1] * nd[2]
+    W[3]=nd[0] * nd[1] *  d[2]
+    W[4]= d[0] *  d[1] * nd[2]
+    W[5]=nd[0] *  d[1] *  d[2]
+    W[6]= d[0] * nd[1] *  d[2]
+    W[7]= d[0] *  d[1] *  d[2]
+
+    #indices
+
+    IN[0] =<long>Xf[0];   IN[1] =<long>Xf[1];    IN[2] =<long>Xf[2]     
+    IN[3] =<long>Xf[0]+1; IN[4] =<long>Xf[1];    IN[5] =<long>Xf[2]
+    IN[6] =<long>Xf[0];   IN[7] =<long>Xf[1]+1;  IN[8] =<long>Xf[2]
+    IN[9] =<long>Xf[0];   IN[10]=<long>Xf[1];    IN[11]=<long>Xf[2]+1    
+    IN[12]=<long>Xf[0]+1; IN[13]=<long>Xf[1]+1;  IN[14]=<long>Xf[2]
+    IN[15]=<long>Xf[0];   IN[16]=<long>Xf[1]+1;  IN[17]=<long>Xf[2]+1
+    IN[18]=<long>Xf[0]+1; IN[19]=<long>Xf[1];    IN[20]=<long>Xf[2]+1
+    IN[21]=<long>Xf[0]+1; IN[22]=<long>Xf[1]+1;  IN[23]=<long>Xf[2]+1
+    
+
+    return 
+
 def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.):
     ''' Give the nearest direction to a point
 
@@ -461,6 +498,48 @@ def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.):
         return True, - odf_vertices[ind[max_doti]]
     else:
         return True,   odf_vertices[ind[max_doti]]
+    
+    
+cdef inline long _nearest_direction(double* dx,double* qa,\
+                                        double *ind, double *odf_vertices,\
+                                        double qa_thr, double ang_thr,\
+                                        double *direction):
+    cdef:
+        double max_dot=0
+        double angl,curr_dot
+        double odfv[3]
+        long i,max_doti=0
+
+    angl=cos((PI*ang_thr)/180.)
+    if qa[0] <= qa_thr:
+        return 0
+
+    for i from 0<=i<5:#hardcoded 5? needs to change
+        if qa[i]<=qa_thr:
+            break
+        for j from 0<=j<3:
+            odfv[j]=odf_vertices[3*<long>ind[i]+j]
+        curr_dot = fabs(dx[0]*odfv[0]+dx[1]*odfv[1]+dx[2]*odfv[2])
+        if curr_dot > max_dot:
+            max_dot=curr_dot
+            max_doti = i
+
+    if max_dot < angl:        
+        return 0
+    
+    for j from 0<=j<3:
+        odfv[j]=odf_vertices[3*<long>ind[max_doti]+j]
+        
+    if dx[0]*odfv[0]+dx[1]*odfv[1]+dx[2]*odfv[2] < 0:
+        for j from 0<=j<3:
+            direction[j]=-odf_vertices[3*<long>ind[max_doti]+j]
+        return 1    
+    else:
+        for j from 0<=j<3:
+            direction[j]= odf_vertices[3*<long>ind[max_doti]+j]
+        return 1
+    
+
 
 
         
@@ -477,7 +556,7 @@ def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr):
             return False, np.array([0,0,0])
 
     #calculate qa & ind of each of the 8 corners
-    for m in range(8):            
+    for m in range(8):
         x,y,z = index[m]
         qa_tmp = qa[x,y,z]
         ind_tmp = ind[x,y,z]
@@ -492,6 +571,59 @@ def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr):
         return False, np.array([0,0,0])
 
     return True, new_direction/np.sqrt(np.sum(new_direction**2))
+
+cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
+                                double *ind, double *odf_vertices,\
+                                double qa_thr, double ang_thr,\
+                                long *qa_shape,long* strides,\
+                                double *direction):
+    cdef:
+        double total_w=0,delta=0
+        double new_direction[3]
+        double w[8],qa_tmp[5],ind_tmp[5]
+        long index[24],i,j,m,xyz[4]
+        double normd
+        
+    #calculate qa & ind of each of the 8 corners
+    _trilinear_interpolation(point,<double *>w,<long *>index)
+    
+    #check if you are outside of the volume
+    for i from 0<=i<3:
+        if index[7*3+i] >= qa_shape[i] or index[i] < 0:
+            return 0
+
+    for m from 0<=m<8:
+        for i from 0<=i<3:
+            xyz[i]=index[m*3+i]
+        
+        for j from 0<=j<5:#hardcoded needs to change
+            xyz[3]=j
+            off=offset(<long*>xyz,strides,4,8)
+            qa_tmp[j]=qa[off]
+            ind_tmp[j]=ind[off]
+        delta=_nearest_direction(dx,qa_tmp,ind_tmp,odf_vertices,\
+                                         qa_thr, ang_thr,direction)
+        if delta==0:
+            continue
+        total_w+=w[m]
+        for i from 0<=i<3:
+            new_direction[i]+=w[m]*direction[i]
+
+    if total_w < .5: #termination
+        return 0
+
+    normd=new_direction[0]**2+new_direction[1]**2+new_direction[2]**2
+    normd=1./sqrt(normd)
+    
+    for i from 0<=i<3:
+        direction[i]=new_direction[i]*normd
+    
+    return 1
+
+        
+ 
+
+
     
 def initial_direction(cnp.ndarray[double,ndim=1] seed,\
                           cnp.ndarray[double,ndim=4] qa,\
@@ -518,22 +650,25 @@ def initial_direction(cnp.ndarray[double,ndim=1] seed,\
 cdef inline long _initial_direction(double* seed,double *qa,\
                                         double* ind, double* odf_vertices,\
                                         double qa_thr, long* strides,\
-                                        long* vstrides):
+                                        long* vstrides,double* direction) nogil:
     cdef:
         long point[3],off
-        int i
+        long i
         double qa_tmp,ind_tmp
 
-    for i from 0<=i<4:
+    for i from 0<=i<3:
         point[i]=<long>floor(seed[i]+.5)
 
     off=offset(<long*>point,strides,4,8)
     qa_tmp=qa[off]
-    print('qa_tmp  _initial',qa_tmp)
+    #print('qa_tmp  _initial',qa_tmp)
     if qa_tmp < qa_thr:
         return 0
-    else:
-        #return odf_vertices[ind_tmp]
+    else:        
+        ind_tmp=ind[off]
+        for i from 0<=i<3:
+            direction[i]=odf_vertices[3*<long>ind_tmp+i]
+        
         return 1
         
 
@@ -563,21 +698,40 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
         double *pverts=<double*>odf_vertices.data
         long *pstr=<long *>qa.strides
         long *pvstr=<long *>odf_vertices.strides
-        long res=0
+        long res=0,d,i,j
+        double direction[3],dx[3]
+        double trajectory[30000]
+        
+        
+    d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,pvstr,direction)
+    #print 'res',res, direction[0],direction[1],direction[2]
 
-    res=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,pvstr)
-    print res
+    if d==0:
+        return None
+
+    for i from 0<=i<3:
+        dx[i]=direction[i]
+
+    point=seed.copy()
+    track = []
+
+    track.append(point)
+    return np.array(track)
+
+    '''
     d,idirection=initial_direction(seed,qa,ind,odf_vertices,qa_thr)
-    print d
+    print d, idirection
     if not d:
         return None
         
     dx = idirection
-    point = seed
+    point = seed.copy()
     track = []
     track.append(point)
 
     return np.array(track)
+
+    '''
 
     '''
 
