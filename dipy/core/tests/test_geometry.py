@@ -9,7 +9,8 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 sphere_distance,
                                 cart_distance,
                                 vector_cosine,
-                                lambert_equal_area_projection_polar
+                                lambert_equal_area_projection_polar,
+                                circumradius
                                 )
 
 from nose.tools import assert_true, assert_false, \
@@ -171,3 +172,8 @@ def test_lambert_equal_area_projection_cart():
     # x and y =+/-1 map onto circle of radius sqrt(2)
     # z=1 maps to origin, and z=-1 maps to (an arbitrary point on) the
     # outer circle of radius 2
+
+@parametric
+def test_circumradius():
+
+    yield assert_array_almost_equal(np.sqrt(0.5), circumradius(np.array([0,2,0]),np.array([2,0,0]),np.array([0,0,0])))

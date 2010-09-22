@@ -8,22 +8,23 @@ from dipy.core.triangle_subdivide import create_unit_sphere
 #import matplotlib.pyplot as mplp
 import dipy.core.sphere_plots as splot
 
-'''sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
+# set up a dictionary of sphere points that are in use EITHER as a set
+# directions for diffusion weighted acquisitions OR as a set of
+# evaluation points for an ODF (orientation distribution function.
+sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
               'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
               'siem64': {'filepath':'/home/ian/Devel/dipy/dipy/core/tests/data/small_64D.gradients.npy', 'object': 'npy', 'omit': 1, 'hemi': True},
               'create2': {},
               'create3': {},
               'create4': {},
               'create5': {},
-              #'create6': {},
-              #'create7': {},
-              #'create8': {},
-              #'create9': {},
+              'create6': {},
+              'create7': {},
+              'create8': {},
+              'create9': {},
               'marta200': {'filepath': '/home/ian/Data/Spheres/200.npy', 'object': 'npy', 'omit': 0, 'hemi': True},
               'dsi101': {'filepath': '/home/ian/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI', 'object': 'dicom', 'omit': 0, 'hemi': True}}
-'''
 
-'''
 def plot_sphere(v,key):
     r = fos.ren()
     fos.add(r,fos.point(v,fos.green, point_radius= 0.01))
@@ -45,8 +46,7 @@ def plot_lambert(v,key):
     figure.show()
     figure.waitforbuttonpress()
     mplp.close()
-'''    
-'''
+    
 def get_vertex_set(key):
     if key[:6] == 'create':
         number = eval(key[6:])
@@ -78,7 +78,7 @@ def get_vertex_set(key):
             vertices = np.vstack([vertices, -vertices])
     print key, ': number of vertices = ', vertices.shape[0], '(drop ',omit,')'
     return vertices[omit:,:]
-'''
+
 
 xup=np.array([ 1,0,0])
 xdn=np.array([-1,0,0])
