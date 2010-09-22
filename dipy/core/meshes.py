@@ -1,7 +1,8 @@
 ''' Mesh analysis '''
 
 import numpy as np
-from scipy import sparse 
+from scipy import sparse
+import dipy.core.geometry as geom
 
 FLOAT64_EPS = np.finfo(np.float64).eps
 FLOAT_TYPES = np.sctypes['float']
@@ -383,6 +384,13 @@ def spherical_proportion(zone_width):
 def angle_for_zone(zone_width):
     return np.arcsin(zone_width/2.)
 
+def coarseness(faces):
+    faces = np.asarray(faces)
+    coarseness = 0.0
+    for face in faces:
+        a, b, c = face
+        coarse = np.max(coarse, geom.circumradius(a,b,c))
+    return coarse
 
 
 

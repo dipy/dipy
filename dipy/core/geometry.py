@@ -697,3 +697,20 @@ def vector_norm(data, axis=None, out=None):
 
 
         
+def circumradius(a, b, c):
+    ''' a, b and c are 3-dimensional vectors being the vertices of a
+    triangle. The function returns the circumradius of the triangle. In
+    the degenerate case when the 3 points are collinear it returns the
+    half the distance between the furthest apart points.
+    '''
+    x = a-c
+    xx = np.linalg.norm(x)**2
+    y = b-c
+    yy = np.linalg.norm(y)**2
+    z = np.cross(x,y)
+    if np.linalg.norm(z) == 0:
+        return np.sqrt(np.max(np.dot(x,x), np.dot(y,y), np.dot(a-b,a-b)))/2.
+    else:
+        m = np.vstack((x,y,z))
+        w = np.dot(np.linalg.inv(m.T),np.array([xx/2.,yy/2.,0]))
+        return np.linalg.norm(w)/2.

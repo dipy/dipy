@@ -9,6 +9,20 @@ import dipy.core.sphere_stats as sphats
 import dipy.core.geometry as geometry
 import get_vertices as gv
 
+'''
+results_SNR030_1fibre
+results_SNR030_1fibre+iso
+results_SNR030_2fibres_15deg
+results_SNR030_2fibres_30deg
+results_SNR030_2fibres_60deg
+results_SNR030_2fibres_90deg
+results_SNR030_2fibres+iso_15deg
+results_SNR030_2fibres+iso_30deg
+results_SNR030_2fibres+iso_60deg
+results_SNR030_2fibres+iso_90deg
+results_SNR030_isotropic
+'''
+
 fname='/home/ian/Data/SimData/results_SNR030_1fibre'
 #fname='/home/eg01/Data_Backup/Data/Marta/DSI/SimData/results_SNR030_isotropic'
 
@@ -17,6 +31,10 @@ sim_data=np.loadtxt(fname)
 ''' file  has one row for every voxel, every voxel is repeating 1000
 times with the same noise level , then we have 100 different
 directions. 1000 * 100 is the number of all rows.
+
+The 100 conditions are given by 10 polar angles (in degrees) 0, 20, 40, 60, 80,
+80, 60, 40, 20 and 0, and each of these with longitude angle 0, 40, 80,
+120, 160, 200, 240, 280, 320, 360. 
 
 '''
 
@@ -30,8 +48,7 @@ gradients=b_vals_dirs[:,1:]
 
 #splots.plot_sphere(gradients, 'Marta DSI gradients')
 
-v = gv.get_vertex_set('dsi102')
-
+#v = gv.get_vertex_set('dsi102')
 #splots.plot_sphere(v, 'dsi102 axes')
 
 gqfile = '/home/ian/Data/SimData/gq_SNR030_1fibre.pkl'
@@ -66,9 +83,18 @@ tn.__hash__          tn._getD
 ''' file  has one row for every voxel, every voxel is repeating 1000
 times with the same noise level , then we have 100 different
 directions. 100 * 1000 is the number of all rows.
+
+At the moment this module is hardwired to the use of the EDS362
+spherical mesh. I am assumung (needs testing) that directions 181 to 361
+are the antipodal partners of directions 0 to 180. So when counting the
+number of different vertices that occur as maximal directions we wll map
+the indices modulo 181.
 '''
 
 def analyze_maxima(indices, max_dirs,subsets):
+    '''This calculates the eigenstats for each of the replicated batches
+    of the simulation data
+    '''
 
     results = []
 
@@ -77,18 +103,16 @@ def analyze_maxima(indices, max_dirs,subsets):
 
         batch = max_dirs[direction,:,:]
 
-        index_variety = np.array([len(set(indices[direction,:]))])
+        index_variety = np.array([len(set(np.remainder(indices[direction,:],181)))])
 
         c,b = sphats.eigenstats(batch)
-
-        print c.shape, b.shape, index_variety
 
         results.append(np.concatenate((c,b, index_variety)))
 
     return results
 
 #dt_first_directions = tn.evecs[:,:,0].reshape((100,1000,3))
-# these are the principal direcections for the full set of simulations
+# these are the principal directions for the full set of simulations
 
 
 eds=np.load(os.path.join(os.path.dirname(dp.__file__),'core','matrices','evenly_distributed_sphere_362.npz'))
@@ -115,7 +139,9 @@ np.set_printoptions(precision=6, suppress=True, linewidth=200)
 
 out = open('dt_and_gq.txt','w')
 
-print >> out, np.hstack((np.vstack(dt_results), np.vstack(gq_results)))
+results = np.hstack((np.vstack(dt_results), np.vstack(gq_results)))
+
+print >> out, results[[0,1,5,6,4,9,2,3,7,8],:]
 
 out.close()
 

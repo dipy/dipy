@@ -110,6 +110,9 @@ def test_gqiodf():
     yield assert_equal(2*v-f, 4,'Direct Euler test fails')
     yield assert_true(meshes.euler_characteristic_check(odf_vertices, odf_faces,chi=2),'euler_characteristic_check fails')
     
+    coarse = meshes.coarseness(odf_faces)
+    print 'coarseness: ', coarse
+
     for (i,s) in enumerate(S):
 
         #print 'Volume %d' % i
