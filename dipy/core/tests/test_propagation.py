@@ -54,7 +54,7 @@ def test_fact():
     print(gqs.QA[1,4,8,0])
     print(gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
 
-    #'''
+    '''
     for i in range(len(FD.seed_list)):
 
         print('seed',FD.seed_list[i])
@@ -64,7 +64,7 @@ def test_fact():
 
         print('T2[%d]' % i)
         print T2[i]
-    #'''
+    
 
     from dipy.viz import fos
     #import numpy as np
@@ -86,4 +86,6 @@ def test_fact():
 
     
     fos.show(r)
+
+    '''
     
