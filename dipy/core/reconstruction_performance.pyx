@@ -412,7 +412,7 @@ def trilinear_interpolation(X):
 
     return W,IN.astype(np.int)
 
-cdef void _trilinear_interpolation(double *X, double *W, long *IN):
+cdef inline void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
 
     cdef double Xf[3],d[3],nd[3]
     cdef long i
@@ -505,12 +505,12 @@ def nearest_direction(dx,qa,ind,odf_vertices,qa_thr=0.0245,ang_thr=60.):
 cdef inline long _nearest_direction(double* dx,double* qa,\
                                         double *ind, double *odf_vertices,\
                                         double qa_thr, double ang_thr,\
-                                        double *direction):
+                                        double *direction) nogil:
     cdef:
         double max_dot=0
         double angl,curr_dot
         double odfv[3]
-        long i,max_doti=0
+        long i,j,max_doti=0
 
     angl=cos((PI*ang_thr)/180.)
     if qa[0] <= qa_thr:
@@ -576,11 +576,12 @@ def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr):
 
     return True, new_direction/np.sqrt(np.sum(new_direction**2))
 
+@cython.cdivision(True)
 cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
                                 double *ind, double *odf_vertices,\
                                 double qa_thr, double ang_thr,\
                                 long *qa_shape,long* strides,\
-                                double *direction):
+                                double *direction) nogil:
     cdef:
         double total_w=0,delta=0
         double new_direction[3]
@@ -619,7 +620,7 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
         return 0
 
     normd=new_direction[0]**2+new_direction[1]**2+new_direction[2]**2
-    normd=1./sqrt(normd)
+    normd=1/sqrt(normd)
     
     for i from 0<=i<3:
         direction[i]=new_direction[i]*normd
