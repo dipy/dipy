@@ -30,7 +30,7 @@ def test_fact():
     #ten = dp.Tensor(data,bvals,gradients,thresh=50)
     
     t1=time()
-    FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=5)
+    FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=5000)
     T1=FD.tracks
     t2=time()    
     print 'I', t2-t1, 'time.'    
@@ -66,4 +66,24 @@ def test_fact():
         print T2[i]
     #'''
 
+    from dipy.viz import fos
+    #import numpy as np
+
+    r=fos.ren()
+    fos.add(r,fos.line(T1,fos.red,opacity=0.1))
+
+    for se in FD.seed_list:
+        x,y,z=se
+        #fos.add(r,fos.sphere((x,y,z),color=(1,1,0)))
+    
+    T2=[t+np.array([10,0,0]) for t in T2]
+    fos.add(r,fos.line(T2,fos.green,opacity=0.1))
+
+    for se in FD.seed_list:
+        x,y,z=se+np.array([10,0,0])
+        #fos.add(r,fos.sphere((x,y,z),color=(1,1,0)))
+    
+
+    
+    fos.show(r)
     
