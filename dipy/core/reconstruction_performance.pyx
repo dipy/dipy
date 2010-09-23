@@ -542,11 +542,7 @@ cdef inline long _nearest_direction(double* dx,double* qa,\
         for j from 0<=j<3:
             direction[j]= odf_vertices[3*<long>ind[max_doti]+j]
         return 1
-    
-
-
-
-        
+            
 def propagation_direction(point,dx,qa,ind,odf_vertices,qa_thr,ang_thr):
     ''' Find where you are moving next
     '''
@@ -617,6 +613,7 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
             new_direction[i]+=w[m]*direction[i]
 
     if total_w < .5: #termination
+        #print('weird termination >>>>>>>>')
         return 0
 
     normd=new_direction[0]**2+new_direction[1]**2+new_direction[2]**2
@@ -626,11 +623,6 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
         direction[i]=new_direction[i]*normd
     
     return 1
-
-        
- 
-
-
     
 def initial_direction(cnp.ndarray[double,ndim=1] seed,\
                           cnp.ndarray[double,ndim=4] qa,\
@@ -712,21 +704,12 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
         long *pvstr=<long *>odf_vertices.strides
         long ref,d,i,j
         double direction[3],dx[3],idirection[3],ps2[3]
-        double trajectory[30000]
-        
-
+    
     ref=0
     d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)
-    #print 'res',res, direction[0],direction[1],direction[2]
-
-    #d2,idirection2=initial_direction(seed.copy(),qa,ind,odf_vertices,qa_thr)
-
 
     if d==0:
         return None
-
-    #print('idirection',idirection[0],idirection[1],idirection[2])
-    #print('idirection2',idirection2)
     
     for i from 0<=i<3:
         #store the initial direction
@@ -743,14 +726,6 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     while d:
        d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
                                    ang_thr,qa_shape,pstr,direction)
-
-       #d2,direction2 = propagation_direction(point,idirection2,qa,ind,\
-       #                                           odf_vertices,qa_thr,ang_thr)
-
-       #print('while direction ',direction[0] ,direction[1] ,direction[2])
-       #print('while direction2',direction2[0],direction2[1],direction2[2])
-        
-       
        if d==0:
            break
        for i from 0<=i<3:
@@ -768,8 +743,6 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     while d:
         d= _propagation_direction(ps2,dx,pqa,pin,pverts,qa_thr,\
                                    ang_thr,qa_shape,pstr,direction)
-
-                
         if d==0:
             break
         for i from 0<=i<3:
@@ -778,8 +751,7 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
             point[i]=ps2[i]#to be changed           
         #print('point down',point)               
         track.insert(0,point.copy())
-    
-    #print(np.array(track))
+        
     return np.array(track)
 
 

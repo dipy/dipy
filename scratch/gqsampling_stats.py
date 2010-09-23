@@ -262,7 +262,7 @@ def equatorial_maximum(vertices, odf, pole, width):
         return Null, Null
 
     eqvals = [odf[i] for i in eqvert]
-
+    
     eqargmax = np.argmax(eqvals)
 
     eqvertmax = eqvert[eqargmax]

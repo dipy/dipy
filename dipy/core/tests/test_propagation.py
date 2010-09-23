@@ -30,7 +30,7 @@ def test_fact():
     #ten = dp.Tensor(data,bvals,gradients,thresh=50)
     
     t1=time()
-    FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=5000)
+    FD=dp.FACT_Delta(gqs.QA,gqs.IN,seeds_no=5)
     T1=FD.tracks
     t2=time()    
     print 'I', t2-t1, 'time.'    
