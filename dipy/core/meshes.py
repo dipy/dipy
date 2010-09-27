@@ -330,20 +330,6 @@ def euler_characteristic_check(vertices, faces, chi=2):
     else:
         return False
 
-def equatorial_zone_vertices(vertices, pole, width=.02):
-    '''
-    finds the 'vertices' in the equatorial zone conjugate
-    to 'pole' with width half 'width' radians
-    '''
-    return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]
-
-def polar_zone_vertices(vertices, pole, width=0.02):
-    '''
-    finds the 'vertices' in the equatorial band around
-    the 'pole' of radius 'width' radians (np.arcsin(width)*180/np.pi degrees)
-    '''
-    return [i for i,v in enumerate(vertices) if np.dot(v,pole) > 1-width]
-
 
 def spherical_statistics(vertices, north=np.array([0,0,1]), width=0.02):
     '''

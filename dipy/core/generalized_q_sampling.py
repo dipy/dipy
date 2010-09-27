@@ -23,7 +23,6 @@ class GeneralizedQSampling():
         Parameters
         -----------
         data: array, shape(X,Y,Z,D)        
-        
         bvals: array, shape (N,)
         
         gradients: array, shape (N,3) also known as bvecs
@@ -56,6 +55,8 @@ class GeneralizedQSampling():
 
         odf_vertices=eds['vertices']
         odf_faces=eds['faces']
+
+        self.odf_vertices=odf_vertices
 
         # 0.01506 = 6*D where D is the free water diffusion coefficient 
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
@@ -145,8 +146,86 @@ class GeneralizedQSampling():
         odf: array, shape(len(odf_vertices)), orientation distribution function
 
         '''
-
         return np.dot(s,self.q2odf_params)
 
+    def npa(self,s,width=0.5):
+        '''
+        '''   
+        odf=self.odf(s)
+        t0,t1,t2=triple_odf_maxima(self.odf_vertices, odf, width)
+
+        #print 'tom >>>> ',t0,t1,t2
+
+        return t0,t1,t2
+
+    
+
+        
+
+
+def equatorial_zone_vertices(vertices, pole, width=.02):
+    '''
+    finds the 'vertices' in the equatorial zone conjugate
+    to 'pole' with width half 'width' radians
+    '''
+    return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < width]
+
+def polar_zone_vertices(vertices, pole, width=0.02):
+    '''
+    finds the 'vertices' in the equatorial band around
+    the 'pole' of radius 'width' radians (np.arcsin(width)*180/np.pi degrees)
+    '''
+    return [i for i,v in enumerate(vertices) if np.dot(v,pole) > 1-width]
+
+
+def upper_hemi_map(v):
+    '''
+    maps a 3-vector into the z-upper hemisphere
+    '''
+    return np.sign(v[2])*v
+
+def equatorial_maximum(vertices, odf, pole, width):
+    eqvert = equatorial_zone_vertices(vertices, pole, width)
+    #need to test for whether eqvert is empty or not
+    if len(eqvert) == 0:
+        print('empty equatorial band at %s  pole with width %f' % (np.array_str(pole), width))
+        return Null, Null
+    eqvals = [odf[i] for i in eqvert]
+    eqargmax = np.argmax(eqvals)
+    eqvertmax = eqvert[eqargmax]
+    eqvalmax = eqvals[eqargmax]
+
+    return eqvertmax, eqvalmax
+
+#'''
+def patch_vertices(vertices,pole, width):
+    '''
+    find 'vertices' within the cone of 'width' around 'pole'
+    '''
+    return [i for i,v in enumerate(vertices) if np.dot(v,pole) > 1- width]
+#'''
+
+def patch_maximum(vertices, odf, pole, width):
+    eqvert = patch_vertices(vertices, pole, width)    
+    #need to test for whether eqvert is empty or not    
+    if len(eqvert) == 0:
+        print('empty cone around pole %s with with width %f' % (np.array_str(pole), width))
+        return Null, Null
+    eqvals = [odf[i] for i in eqvert]
+    eqargmax = np.argmax(eqvals)
+    eqvertmax = eqvert[eqargmax]
+    eqvalmax = eqvals[eqargmax]
+    return eqvertmax, eqvalmax
+
+def triple_odf_maxima(vertices, odf, width):
+
+    indmax1 = np.argmax([odf[i] for i,v in enumerate(vertices)])
+    odfmax1 = odf[indmax1]
+    indmax2, odfmax2 = equatorial_maximum(vertices,\
+                                              odf, vertices[indmax1], width)
+    cross12 = np.cross(vertices[indmax1],vertices[indmax2])
+    cross12 = cross12/np.sqrt(np.sum(cross12**2))    
+    indmax3, odfmax3 = patch_maximum(vertices, odf, cross12, width)
+    return [(indmax1, odfmax1),(indmax2, odfmax2),(indmax3, odfmax3)]
 
 

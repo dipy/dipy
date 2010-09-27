@@ -403,7 +403,6 @@ def peak_finding(odf,odf_faces):
 
     #proton density already include from the scaling b_table[0][0] and s[0]
 
-
     #find local maxima
 
     peak=odf.copy()
@@ -425,7 +424,6 @@ def peak_finding(odf,odf_faces):
 
     #for later testing expecting peak.max 794595.94774980657 and
     #np.where(peak>0) (array([166, 347]),)
-
 
     #we just need the first half of peak
 
