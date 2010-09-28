@@ -3,15 +3,22 @@
 
 #import modules
 from numpy import asarray, ones
-from copy import copy, deepcopy
+from copy import copy
 
 class ModelArray(object):
-    """
+    """A class that has a shape and can be indexed like an ndarray
+
+    When using a model to describe many voxels, ModelArray allows the
+    parameters of a model to be stored as an ndarray where the last dimension
+    of the array represents the parameters, and the first n-1 dimensions
+    represent the shape or arrangement of the voxels. Model array is meant to
+    be sub-classed to make more specific model classes.
+
     """
     ### Shape Property ###
     def _getshape(self):
         """
-        Gives the shape of the tensor array
+        Gives the shape of the ModelArray
 
         """
 
@@ -19,7 +26,7 @@ class ModelArray(object):
 
     def _setshape(self, shape):
         """
-        Sets the shape of the tensor array
+        Sets the shape of the ModelArray
 
         """
         if type(shape) is not tuple:
@@ -31,10 +38,14 @@ class ModelArray(object):
     ### Ndim Property ###
     @property
     def ndim(self):
+        """Gives the number of dimensions of the ModelArray
+        """
         return self.model_params.ndim - 1
 
     @property
     def mask(self):
+        """If the model_params array has a mask, returns the mask
+        """
         if hasattr(self.model_params, 'mask'):
             return self.model_params.mask
         else:
@@ -61,9 +72,17 @@ class ModelArray(object):
         return new_model
 
     def _get_model_params(self):
+        """Parameters of the model
+
+        All the parameters needed for a model should be flattened into the last
+        dimension of model_params. The shape of the ModelArray is determined by
+        the model_params.shape[:-1].
+        """
         return self._model_params
 
     def _set_model_params(self, params):
+        """Sets model_params
+        """
         self._model_params = params
 
     model_params = property(_get_model_params, _set_model_params)
