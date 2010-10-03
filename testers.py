@@ -7,8 +7,8 @@ The typical use for this module is as a makefile target, as in::
 
     # Print out info for possible install methods
     check-version-info:
-        $(PYTHON) -c 'from nisext.testers import info_from_here; info_from_here("mypackage")'
-    
+        python -c 'from nisext.testers import info_from_here; info_from_here("mypackage")'
+
 '''
 
 import os
@@ -81,7 +81,7 @@ def contexts_print_info(mod_name, repo_path, install_path):
     # first test archive
     os.chdir(repo_path)
     out_fname = pjoin(install_path, 'test.zip')
-    my_call('git archive --format zip -o %s master' % out_fname)
+    my_call('git archive --format zip -o %s HEAD' % out_fname)
     os.chdir(install_path)
     zip_extract_all('test.zip')
     my_call('python setup.py --quiet install --prefix=%s %s' % (install_path,
