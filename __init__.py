@@ -12,8 +12,8 @@ For example::
     git merge -s ours --no-commit nisext/master
     # Read nisext contents as nisext subdirectory
     git read-tree --prefix=nisext/ -u nisext/master
-    $ git commit -m "Merge nisext project as subtree'
-    
+    git commit -m "Merge nisext project as subtree"
+
 Then you would typically add a makefile target like::
 
     # Update nisext subtree from remote
