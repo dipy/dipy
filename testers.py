@@ -1,4 +1,14 @@
 ''' Test package information in various install settings
+
+The routines here install the package in various settings and print out the
+corresponding version info from the installation.
+
+The typical use for this module is as a makefile target, as in::
+
+    # Print out info for possible install methods
+    check-version-info:
+        $(PYTHON) -c 'from nisext.testers import info_from_here; info_from_here("mypackage")'
+    
 '''
 
 import os
