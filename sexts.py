@@ -8,8 +8,8 @@ from distutils.command.build_py import build_py
 
 from distutils import log
 
-def get_build_cmd(pkg_dir):
-    class MyBuildPy(build_py):
+def get_build_cmd(pkg_dir, build_cmd=build_py):
+    class MyBuildPy(build_cmd):
         ''' Subclass to write commit data into installation tree '''
         def run(self):
             build_py.run(self)
