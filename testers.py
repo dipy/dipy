@@ -42,7 +42,7 @@ def sys_print_info(mod_name, pkg_path):
         shutil.rmtree(tmpdir)
 
 
-def zip_extract_all(fname):
+def zip_extract_all(fname, path=None):
     ''' Extract all members from zipfile
 
     Deals with situation where the directory is stored in the zipfile as a name,
@@ -52,7 +52,26 @@ def zip_extract_all(fname):
     members = zf.namelist()
     # Remove members that are just bare directories
     members = [m for m in members if not m.endswith('/')]
-    zf.extractall(members = members)
+    for zipinfo in members:
+        zf.extract(zipinfo, path, None)
+
+
+def install_from_to(from_dir, to_dir, py_lib_sdir):
+    """ Install package in `from_dir` to standard location in `to_dir`
+
+    Return path to package directory (containing __init__.py)
+    """
+    site_pkgs_path = os.path.join(to_dir, py_lib_sdir)
+    py_lib_locs = ' --install-purelib=%s --install-platlib=%s' % (
+        site_pkgs_path, site_pkgs_path)
+    pwd = os.abspath(os.getcwd())
+    try:
+        os.chdir(from_dir)
+        my_call('python setup.py --quiet install --prefix=%s %s' % (to_dir,
+                                                                    py_lib_locs))
+    finally:
+        os.chdir(pwd)
+    return site_pkgs_path
 
 
 def contexts_print_info(mod_name, repo_path, install_path):
@@ -82,17 +101,19 @@ def contexts_print_info(mod_name, repo_path, install_path):
     os.chdir(repo_path)
     out_fname = pjoin(install_path, 'test.zip')
     my_call('git archive --format zip -o %s HEAD' % out_fname)
-    os.chdir(install_path)
-    zip_extract_all('test.zip')
-    my_call('python setup.py --quiet install --prefix=%s %s' % (install_path,
-                                                                py_lib_locs))
+    zip_extract_all(out_fname, install_path)
+    install_from = pjoin(install_path, mod_name)
+    site_pkgs_path = install_from_to(install_from,
+                                     install_path,
+                                     PY_LIB_SDIR)
     sys_print_info(mod_name, site_pkgs_path)
     # remove installation
+    shutil.rmtree(install_from)
     shutil.rmtree(site_pkgs_path)
     # now test install into a directory from the repository
-    os.chdir(repo_path)
-    my_call('python setup.py --quiet install --prefix=%s %s' % (install_path,
-                                                                py_lib_locs))
+    site_pkgs_path = install_from_to(repo_path,
+                                     install_path,
+                                     PY_LIB_SDIR)
     sys_print_info(mod_name, site_pkgs_path)
     # test from development tree
     sys_print_info(mod_name, repo_path)
