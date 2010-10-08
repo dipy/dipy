@@ -59,12 +59,13 @@ def zip_extract_all(fname, path=None):
 def install_from_to(from_dir, to_dir, py_lib_sdir):
     """ Install package in `from_dir` to standard location in `to_dir`
 
-    Return path to package directory (containing __init__.py)
+    Return path to directory containing package directory. The package directory
+    is the directory containing __init__.py
     """
     site_pkgs_path = os.path.join(to_dir, py_lib_sdir)
     py_lib_locs = ' --install-purelib=%s --install-platlib=%s' % (
         site_pkgs_path, site_pkgs_path)
-    pwd = os.abspath(os.getcwd())
+    pwd = os.path.abspath(os.getcwd())
     try:
         os.chdir(from_dir)
         my_call('python setup.py --quiet install --prefix=%s %s' % (to_dir,
@@ -72,6 +73,40 @@ def install_from_to(from_dir, to_dir, py_lib_sdir):
     finally:
         os.chdir(pwd)
     return site_pkgs_path
+
+
+def check_installed_files(repo_mod_path, install_mod_path):
+    """ Check files in `repo_mod_path` are installed at `install_mod_path`
+
+    At the moment, all this does is check that all the ``*.py`` files in
+    `repo_mod_path` are installed at `install_mod_path`.
+
+    Parameters
+    ----------
+    repo_mod_path : str
+        repository path containing package files, e.g. <nibabel-repo>/nibabel>
+    install_mod_path : str
+        path at which package has been installed.  This is the path where the
+        root package ``__init__.py`` lives.
+
+    Return
+    ------
+    uninstalled : list
+        list of files that should have been installed, but have not been
+        installed
+    """
+    repo_mod_path = os.path.abspath(repo_mod_path)
+    uninstalled = []
+    # Walk directory tree to get py files
+    for dirpath, dirnames, filenames in os.walk(repo_mod_path):
+        out_dirpath = dirpath.replace(repo_mod_path, install_mod_path)
+        for fname in filenames:
+            if not fname.lower().endswith('.py'):
+                continue
+            equiv_fname = os.path.join(out_dirpath, fname)
+            if not os.path.isfile(equiv_fname):
+                uninstalled.append(pjoin(dirpath, fname))
+    return uninstalled
 
 
 def contexts_print_info(mod_name, repo_path, install_path):
@@ -83,7 +118,8 @@ def contexts_print_info(mod_name, repo_path, install_path):
     * with setup.py install from repository directory
     * just running code from repository directory
 
-    and prints out result of get_info in each case
+    and prints out result of get_info in each case.  There will be many files
+    written into `install_path` that you may want to clean up somehow.
 
     Parameters
     ----------
@@ -98,23 +134,29 @@ def contexts_print_info(mod_name, repo_path, install_path):
     py_lib_locs = ' --install-purelib=%s --install-platlib=%s' % (
         site_pkgs_path, site_pkgs_path)
     # first test archive
-    os.chdir(repo_path)
+    pwd = os.path.abspath(os.getcwd())
     out_fname = pjoin(install_path, 'test.zip')
-    my_call('git archive --format zip -o %s HEAD' % out_fname)
-    zip_extract_all(out_fname, install_path)
+    try:
+        os.chdir(repo_path)
+        my_call('git archive --format zip -o %s HEAD' % out_fname)
+    finally:
+        os.chdir(pwd)
     install_from = pjoin(install_path, mod_name)
+    zip_extract_all(out_fname, install_from)
     site_pkgs_path = install_from_to(install_from,
                                      install_path,
                                      PY_LIB_SDIR)
     sys_print_info(mod_name, site_pkgs_path)
-    # remove installation
-    shutil.rmtree(install_from)
-    shutil.rmtree(site_pkgs_path)
     # now test install into a directory from the repository
     site_pkgs_path = install_from_to(repo_path,
                                      install_path,
                                      PY_LIB_SDIR)
     sys_print_info(mod_name, site_pkgs_path)
+    # Take the opportunity to audit the py files
+    repo_mod_path = os.path.join(repo_path, mod_name)
+    install_mod_path = os.path.join(site_pkgs_path, mod_name)
+    print 'Files not taken across by the installation:'
+    print check_installed_files(repo_mod_path, install_mod_path)
     # test from development tree
     sys_print_info(mod_name, repo_path)
     return
@@ -137,3 +179,5 @@ def info_from_here(mod_name):
         contexts_print_info(mod_name, repo_path, install_path)
     finally:
         shutil.rmtree(install_path)
+
+
