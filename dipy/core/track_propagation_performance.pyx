@@ -357,7 +357,6 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
        track.append(point.copy())
        
     d=1
-
     
     for i from 0<=i<3:
         dx[i]=-idirection[i]

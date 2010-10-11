@@ -88,13 +88,14 @@ class FACT_Delta():
 
             #print 'init seed', seed
             
-            self.seed_list.append(seed.copy())
+            #self.seed_list.append(seed.copy())
             
-            track=self.propagation(seed,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)
+            track=self.propagation(seed.copy(),qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)
 
             if track == None:
                 pass
             else:
+                self.seed_list.append(seed.copy())
                 tlist.append(track)
         
         self.tracks=tlist
@@ -232,8 +233,8 @@ class FACT_Delta():
         '''
         #very tricky/cool addition/flooring that helps create a valid
         #neighborhood (grid) for the trilinear interpolation to run smoothly
-        seed+=0.5
-        point=np.floor(seed)
+        #seed+=0.5
+        point=np.floor(seed+.5)
         x,y,z = point
         qa_tmp=qa[x,y,z,0]#maximum qa
         ind_tmp=ind[x,y,z,0]#corresponing orientation indices for max qa
@@ -259,6 +260,8 @@ class FACT_Delta():
         idirection: array, shape(3,), index of the direction of the propagation
 
         '''
+        point_bak=seed.copy()
+        point=seed.copy()
         #d is the delta function 
         d,idirection=self.initial_direction(seed,qa,ind,odf_vertices,qa_thr)
         #print d
@@ -266,9 +269,9 @@ class FACT_Delta():
             return None
         
         dx = idirection
-        point = seed-0.5
+        #point = seed-0.5
         track = []
-        track.append(point)
+        track.append(point.copy())
         #track towards one direction 
         while d:
             d,dx = self.propagation_direction(point,dx,qa,ind,\
@@ -280,7 +283,8 @@ class FACT_Delta():
 
         d = True
         dx = - idirection
-        point = seed
+        point=point_bak.copy()
+        #point = seed
         #track towards the opposite direction
         while d:
             d,dx = self.propagation_direction(point,dx,qa,ind,\
@@ -288,7 +292,7 @@ class FACT_Delta():
             if not d:
                 break
             point = point + step_sz*dx
-            track.insert(0,point)
+            track.insert(0,point.copy())
 
         return np.array(track)
 

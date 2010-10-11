@@ -2,6 +2,7 @@
 # 5/17/2010
 
 #import modules
+import os
 import numpy as np
 
 #fro dipy
