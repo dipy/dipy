@@ -96,17 +96,25 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
 
 cdef inline void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
 
+    ''' interpolate in 3d volumes given point X
+    Returns
+    -------
+    W: weights
+    IN: indices of the volume
+    '''
     cdef double Xf[3],d[3],nd[3]
     cdef long i
-
-    for i from 0<=i<3:
-        
+    #define the rectangular box where every corner is a neighboring voxel (assuming center)
+    #!!! this needs to change for the affine case
+    for i from 0<=i<3:        
         Xf[i]=floor(X[i])
         d[i]=X[i]-Xf[i]
         nd[i]=1-d[i]
-
     #weights
-
+    #the weights are actualy the volumes of the 8 smaller boxes that define the initial rectangular box
+    #for more on trilinear have a look here
+    #http://en.wikipedia.org/wiki/Trilinear_interpolation
+    #http://local.wasp.uwa.edu.au/~pbourke/miscellaneous/interpolation/index.html
     W[0]=nd[0] * nd[1] * nd[2]
     W[1]= d[0] * nd[1] * nd[2]
     W[2]=nd[0] *  d[1] * nd[2]
@@ -115,9 +123,8 @@ cdef inline void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
     W[5]=nd[0] *  d[1] *  d[2]
     W[6]= d[0] * nd[1] *  d[2]
     W[7]= d[0] *  d[1] *  d[2]
-
     #indices
-
+    #the indices give you the indices of the neighboring voxels (the corners of the box) e.g. the qa coordinates
     IN[0] =<long>Xf[0];   IN[1] =<long>Xf[1];    IN[2] =<long>Xf[2]     
     IN[3] =<long>Xf[0]+1; IN[4] =<long>Xf[1];    IN[5] =<long>Xf[2]
     IN[6] =<long>Xf[0];   IN[7] =<long>Xf[1]+1;  IN[8] =<long>Xf[2]
@@ -127,15 +134,14 @@ cdef inline void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
     IN[18]=<long>Xf[0]+1; IN[19]=<long>Xf[1];    IN[20]=<long>Xf[2]+1
     IN[21]=<long>Xf[0]+1; IN[22]=<long>Xf[1]+1;  IN[23]=<long>Xf[2]+1
 
-    return 
-   
+    return    
     
 cdef inline long _nearest_direction(double* dx,double* qa,\
                                         double *ind,long peaks,double *odf_vertices,\
                                         double qa_thr, double ang_thr,\
                                         double *direction) nogil:
 
-    ''' Give the nearest direction to a point
+    ''' Give the nearest direction to a point and also check for the threshold and the angle
 
         Parameters
         ----------        
@@ -147,7 +153,7 @@ cdef inline long _nearest_direction(double* dx,double* qa,\
 
         ind: array, shape(Np,), float, index of the track orientation
 
-        odf_vertices: array, shape(N,3), float, odf sampling directions
+        odf_vertices: array, shape(N,3), float, sampling directions on the sphere
 
         qa_thr: float, threshold for QA, we want everything higher than
         this threshold 
@@ -162,38 +168,42 @@ cdef inline long _nearest_direction(double* dx,double* qa,\
 
         direction: array, shape(3,), the fiber orientation to be
         consider in the interpolation
-
     '''
-
     cdef:
         double max_dot=0
         double angl,curr_dot
         double odfv[3]
         long i,j,max_doti=0
 
-    angl=cos((PI*ang_thr)/180.)
- 
+    #calculate the cos with radians 
+    angl=cos((PI*ang_thr)/180.)    
+    #if the maximum peak is lower than the threshold then there is no point continuing tracking
     if qa[0] <= qa_thr:
         return 0
-
+    #for all peaks find the minimum angle between odf_vertices and dx
     for i from 0<=i<peaks:
+        #if the current peak is smaller than the threshold then jump out
         if qa[i]<=qa_thr:
             break
+        #copy odf_vertices
         for j from 0<=j<3:
             odfv[j]=odf_vertices[3*<long>ind[i]+j]
-        curr_dot = dx[0]*odfv[0]+dx[1]*odfv[1]+dx[2]*odfv[2] 
-        if curr_dot < 0: #abs
+        #calculate the absolute dot product between dx and odf_vertices
+        curr_dot = dx[0]*odfv[0]+dx[1]*odfv[1]+dx[2]*odfv[2]         
+        if curr_dot < 0: #abs check
             curr_dot = -curr_dot
+        #maximum dot means minimum angle
+        #store tha maximum dot and the corresponding index from the neighboring voxel in maxdoti
         if curr_dot > max_dot:
             max_dot=curr_dot
             max_doti = i
-
+    #if maxdot smaller than our angular *dot* threshold stop tracking
     if max_dot < angl:        
-        return 0
-    
+        return 0       
+    #copy the odf_vertices for the voxel qa indices which have the smaller angle
     for j from 0<=j<3:
-        odfv[j]=odf_vertices[3*<long>ind[max_doti]+j]
-        
+        odfv[j]=odf_vertices[3*<long>ind[max_doti]+j]        
+    #if the dot product is negative then return the opposite direction otherwise return the same direction
     if dx[0]*odfv[0]+dx[1]*odfv[1]+dx[2]*odfv[2] < 0:
         for j from 0<=j<3:
             direction[j]=-odf_vertices[3*<long>ind[max_doti]+j]
@@ -211,51 +221,52 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
                                 long *qa_shape,long* strides,\
                                 double *direction) nogil:
     cdef:
-        double total_w=0,delta=0
-        double new_direction[3]
+        double total_w=0 #total weighting useful for interpolation  
+        double delta=0 #store delta function (stopping function) result
+        double new_direction[3] #new propagation direction
         double w[8],qa_tmp[PEAK_NO],ind_tmp[PEAK_NO]
         long index[24],i,j,m,xyz[4]
         double normd
-        long peaks=qa_shape[3]
+        long peaks=qa_shape[3]#number of allowed peaks e.g. for fa is 1 for gqi.qa is 5
         
     #calculate qa & ind of each of the 8 neighboring voxels
-    #to do that we use trilinear interpolation
+    #to do that we use trilinear interpolation and return the weights 
+    #and the indices for the weights i.e. xyz in qa[x,y,z]
     _trilinear_interpolation(point,<double *>w,<long *>index)
-
     #check if you are outside of the volume
     for i from 0<=i<3:
         new_direction[i]=0
         if index[7*3+i] >= qa_shape[i] or index[i] < 0:
             return 0
-
+    #for every weight sum the total weighting
     for m from 0<=m<8:
         for i from 0<=i<3:
             xyz[i]=index[m*3+i]
-        
+        #fill qa_tmp and ind_tmp 
         for j from 0<=j<peaks:
             xyz[3]=j
             off=offset(<long*>xyz,strides,4,8)
             qa_tmp[j]=qa[off]
-            ind_tmp[j]=ind[off]
-            
-        #print qa_tmp[0],qa_tmp[1],qa_tmp[2],qa_tmp[3],qa_tmp[4]
+            ind_tmp[j]=ind[off]            
+        #return the nearest direction by searching in all peaks
         delta=_nearest_direction(dx,qa_tmp,ind_tmp,peaks,odf_vertices,\
                                          qa_thr, ang_thr,direction)
+        #if delta is 0 then that means that there was no good direction (obeying the thresholds) 
+        #from that neighboring voxel, so this voxel is not adding to the total weight
         if delta==0:
             continue
+        #add in total
         total_w+=w[m]
         for i from 0<=i<3:
             new_direction[i]+=w[m]*direction[i]
-
+    #if less than half the volume is time to stop propagating
     if total_w < .5: #termination
         return 0
-
+    #all good return normalized weighted next direction
     normd=new_direction[0]**2+new_direction[1]**2+new_direction[2]**2
-    normd=1/sqrt(normd)
-    
+    normd=1/sqrt(normd)    
     for i from 0<=i<3:
-        direction[i]=new_direction[i]*normd
-    
+        direction[i]=new_direction[i]*normd    
     return 1
 
 
@@ -264,7 +275,6 @@ cdef inline long _initial_direction(double* seed,double *qa,\
                                         double qa_thr, long* strides, long ref,\
                                         double* direction) nogil:
     ''' First direction that we get from a seeding point
-
     '''
     cdef:
         long point[4],off
@@ -272,16 +282,14 @@ cdef inline long _initial_direction(double* seed,double *qa,\
         double qa_tmp,ind_tmp
     #very tricky/cool addition/flooring that helps create a valid
     #neighborhood (grid) for the trilinear interpolation to run smoothly
-
     #find the index for qa
     for i from 0<=i<3:
         point[i]=<long>floor(seed[i]+.5)
     point[3]=ref
     #find the offcet in memory to access the qa value
     off=offset(<long*>point,strides,4,8)    
-    qa_tmp=qa[off]
-    #print('qa_tmp  _initial',qa_tmp)
-    #check for threshold
+    qa_tmp=qa[off] 
+    #check for scalar threshold
     if qa_tmp < qa_thr:
         return 0
     else:
@@ -293,7 +301,7 @@ cdef inline long _initial_direction(double* seed,double *qa,\
         return 1
         
 
-def propagation(cnp.ndarray[double,ndim=1] seed,\
+def fdx_propagation(cnp.ndarray[double,ndim=1] seed,\
                     long ref,\
                     cnp.ndarray[double,ndim=4] qa,\
                     cnp.ndarray[double,ndim=4] ind,\
@@ -302,7 +310,8 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     '''
     Parameters
     ----------
-    seed: array, shape(3,), point where the tracking starts        
+    seed: array, shape(3,), point where the tracking starts     
+    ref: long int, which peak to follow first
     qa: array, shape(Np,), float, quantitative anisotropy matrix,
     where Np the number of peaks, found using self.Np
     ind: array, shape(Np,), float, index of the track orientation        
@@ -324,9 +333,7 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
         long d,i,j
         double direction[3],dx[3],idirection[3],ps2[3]
     
-    #ref=0    
     d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)    
-
     if d==0:
         return None
     
@@ -339,12 +346,14 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
     point=seed.copy()
     track = []
     track.append(point.copy())   
-
+    
+    #track towards one direction
     while d:
        d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
                                    ang_thr,qa_shape,pstr,direction)
        if d==0:
            break
+       #update the track
        for i from 0<=i<3:
            dx[i]=direction[i]
            ps[i]+=step_sz*dx[i]
@@ -363,10 +372,12 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
                                    ang_thr,qa_shape,pstr,direction)
         if d==0:
             break
+        #update the track
         for i from 0<=i<3:
             dx[i]=direction[i]
             ps2[i]+=step_sz*dx[i]
             point[i]=ps2[i]#to be changed           
+
         #print('point down',point)               
         track.insert(0,point.copy())
 

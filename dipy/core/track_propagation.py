@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from dipy.core.track_propagation_performance import propagation
+from dipy.core.track_propagation_performance import fdx_propagation
 
 
 
@@ -404,7 +404,7 @@ class FACT_DeltaX():
             #for all peaks
             for ref in range(qa.shape[-1]): # g
                 #propagate up 
-                track =propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
+                track =fdx_propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
                 if track == None:
                     pass
                 else:
