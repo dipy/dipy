@@ -32,16 +32,21 @@ rec_ext, cmdclass = make_cython_ext(
     'dipy.core.reconstruction_performance',
     include_dirs = [np.get_include()])
 
+tpp_ext, cmdclass = make_cython_ext(
+    'dipy.core.track_propagation_performance',
+    include_dirs = [np.get_include()])
+
+
 
 setup(name='dipy',
-      version='0.1a',
+      version='0.11a',
       description='Diffusion utilities in Python',
       author='DIPY Team',
       author_email='nipy-devel@neuroimaging.scipy.org',
       url='http://github.com/Garyfallidis/dipy',
       packages=['dipy', 'dipy.io', 'dipy.core', 'dipy.viz', 'dipy.testing'],
       package_data={'dipy.io': ['tests/data/*', 'tests/*.py']},
-      ext_modules = [per_ext,tvol_ext, rec_ext],
+      ext_modules = [per_ext,tvol_ext, rec_ext,tpp_ext],
       cmdclass    = cmdclass,
       scripts=glob('scripts/*.py')
       )
