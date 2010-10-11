@@ -402,9 +402,9 @@ class FACT_DeltaX():
             #print 'seed',seed
 
             #for all peaks
-            for ref in range(1): # g
+            for ref in range(qa.shape[-1]): # g
                 #propagate up 
-                track =propagation(seed.copy(),qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
+                track =propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
                 if track == None:
                     pass
                 else:
