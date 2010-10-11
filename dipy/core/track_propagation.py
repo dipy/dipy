@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from dipy.core.reconstruction_performance import propagation
+from dipy.core.track_propagation_performance import propagation
 
 
 
@@ -86,10 +86,8 @@ class FACT_Delta():
             rz=(z-1)*np.random.rand()            
             seed=np.array([rx,ry,rz])
 
-            #print 'init seed', seed
-            
-            #self.seed_list.append(seed.copy())
-            
+            #print 'init seed', seed            
+            #self.seed_list.append(seed.copy())            
             track=self.propagation(seed.copy(),qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)
 
             if track == None:
@@ -205,6 +203,10 @@ class FACT_Delta():
         new_direction = np.array([0,0,0])
         w,index=self.trilinear_interpolation(point)
 
+        #print w[0],w[1],w[2],w[3],w[4],w[5],w[6],w[7]
+
+        #print index
+
         #check if you are outside of the volume
         for i in range(3):
             if index[7][i] >= qa.shape[i] or index[0][i] < 0:
@@ -215,6 +217,7 @@ class FACT_Delta():
             x,y,z = index[m]
             qa_tmp = qa[x,y,z]
             ind_tmp = ind[x,y,z]
+            print qa_tmp[0]#,qa_tmp[1],qa_tmp[2],qa_tmp[3],qa_tmp[4]
             delta,direction = self.nearest_direction(dx,qa_tmp,ind_tmp,odf_vertices,qa_thr,ang_thr)
             #print delta, direction
             if not delta:
@@ -264,6 +267,9 @@ class FACT_Delta():
         point=seed.copy()
         #d is the delta function 
         d,idirection=self.initial_direction(seed,qa,ind,odf_vertices,qa_thr)
+
+        print('FD',idirection[0],idirection[1],idirection[2])
+
         #print d
         if not d:
             return None

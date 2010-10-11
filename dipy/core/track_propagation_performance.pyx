@@ -24,7 +24,7 @@ cdef extern from "math.h" nogil:
     
     
 DEF PI=3.1415926535897931
-DEF PEAK_NO=5
+DEF PEAK_NO=1
 
 # initialize numpy runtime
 cnp.import_array()
@@ -182,7 +182,7 @@ cdef inline long _nearest_direction(double* dx,double* qa,\
     if qa[0] <= qa_thr:
         return 0
 
-    for i from 0<=i<5:#hardcoded 5? needs to change
+    for i from 0<=i<PEAK_NO:#hardcoded 5? needs to change
         if qa[i]<=qa_thr:
             break
         for j from 0<=j<3:
@@ -215,17 +215,19 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
                                 double *ind, double *odf_vertices,\
                                 double qa_thr, double ang_thr,\
                                 long *qa_shape,long* strides,\
-                                double *direction) nogil:
+                                double *direction):# nogil:
     cdef:
         double total_w=0,delta=0
         double new_direction[3]
-        double w[8],qa_tmp[5],ind_tmp[5]
+        double w[8],qa_tmp[PEAK_NO],ind_tmp[PEAK_NO]
         long index[24],i,j,m,xyz[4]
         double normd
         
     #calculate qa & ind of each of the 8 neighboring voxels
     #to do that we use trilinear interpolation
     _trilinear_interpolation(point,<double *>w,<long *>index)
+
+    #print w[0],w[1],w[2],w[3],w[4],w[5],w[6],w[7]
     
     #check if you are outside of the volume
     for i from 0<=i<3:
@@ -237,11 +239,13 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
         for i from 0<=i<3:
             xyz[i]=index[m*3+i]
         
-        for j from 0<=j<5:#hardcoded needs to change
+        for j from 0<=j<PEAK_NO:#hardcoded needs to change
             xyz[3]=j
             off=offset(<long*>xyz,strides,4,8)
             qa_tmp[j]=qa[off]
             ind_tmp[j]=ind[off]
+            print qa_tmp[j]
+        #print qa_tmp[0],qa_tmp[1],qa_tmp[2],qa_tmp[3],qa_tmp[4]
         delta=_nearest_direction(dx,qa_tmp,ind_tmp,odf_vertices,\
                                          qa_thr, ang_thr,direction)
         if delta==0:
@@ -264,7 +268,7 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
 
 cdef inline long _initial_direction(double* seed,double *qa,\
                                         double* ind, double* odf_vertices,\
-                                        double qa_thr, long* strides, int ref,\
+                                        double qa_thr, long* strides, long ref,\
                                         double* direction) nogil:
     ''' First direction that we get from a seeding point
 
@@ -327,7 +331,12 @@ def propagation(cnp.ndarray[double,ndim=1] seed,\
         double direction[3],dx[3],idirection[3],ps2[3]
     
     ref=0
+
+
+    
     d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)
+
+    print('FDX',idirection[0],idirection[1],idirection[2])
 
     if d==0:
         return None
