@@ -375,8 +375,7 @@ class FACT_DeltaX():
 
         x,y,z,g=qa.shape
         self.Np=g
-        tlist=[]
-      
+        tlist=[]      
 
         if odf_vertices==None:
             eds=np.load(os.path.join(os.path.dirname(__file__),'matrices',\
@@ -388,7 +387,6 @@ class FACT_DeltaX():
         print 'ind',ind.shape, ind.dtype
         print 'odf_vertices',odf_vertices.shape, odf_vertices.dtype
         
-
         '''
         #for all seed points    
         for i in range(seeds_no):
@@ -400,7 +398,6 @@ class FACT_DeltaX():
         for seed in seed_list:
 
             #print 'seed',seed
-
             #for all peaks
             for ref in range(qa.shape[-1]): # g
                 #propagate up 
@@ -409,9 +406,10 @@ class FACT_DeltaX():
                     pass
                 else:
                     tlist.append(track)
-
         self.tracks=tlist
-            
+               
+    def native(affine):        
+        self.tracks=[np.dot(affine,t.T).T for t in self.tracks]
 
 
 
