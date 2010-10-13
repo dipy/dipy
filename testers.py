@@ -23,8 +23,16 @@ my_call = partial(call, shell=True)
 
 PY_LIB_SDIR = 'pylib'
 
-def sys_print_info(mod_name, pkg_path):
-    ''' Run info print in own process in anonymous path
+def run_mod_cmd(mod_name, pkg_path, cmd):
+    ''' Run command in own process in anonymous path
+
+    Parameters
+    ----------
+    mod_name : str
+        Name of module to import - e.g. 'nibabel'
+    pkg_path : str
+        directory containing `mod_name` package.  Typically that will be the
+        directory containing the e.g. 'nibabel' directory.
     '''
     cwd = os.getcwd()
     tmpdir = tempfile.mkdtemp()
@@ -33,10 +41,10 @@ def sys_print_info(mod_name, pkg_path):
         my_call('python -c "import sys; sys.path.insert(1,\'%s\'); '
                 'import %s;'
                 'print %s.__file__;'
-                'print %s.get_info()"' % (pkg_path,
-                                          mod_name,
-                                          mod_name,
-                                          mod_name))
+                '%s"' % (pkg_path,
+                         mod_name,
+                         mod_name,
+                         cmd))
     finally:
         os.chdir(cwd)
         shutil.rmtree(tmpdir)
@@ -131,8 +139,6 @@ def contexts_print_info(mod_name, repo_path, install_path):
        path into which to install temporary installations
     '''
     site_pkgs_path = os.path.join(install_path, PY_LIB_SDIR)
-    py_lib_locs = ' --install-purelib=%s --install-platlib=%s' % (
-        site_pkgs_path, site_pkgs_path)
     # first test archive
     pwd = os.path.abspath(os.getcwd())
     out_fname = pjoin(install_path, 'test.zip')
@@ -146,19 +152,20 @@ def contexts_print_info(mod_name, repo_path, install_path):
     site_pkgs_path = install_from_to(install_from,
                                      install_path,
                                      PY_LIB_SDIR)
-    sys_print_info(mod_name, site_pkgs_path)
+    cmd_str = 'print %s.get_info()' % mod_name
+    run_mod_cmd(mod_name, site_pkgs_path, cmd_str)
     # now test install into a directory from the repository
     site_pkgs_path = install_from_to(repo_path,
                                      install_path,
                                      PY_LIB_SDIR)
-    sys_print_info(mod_name, site_pkgs_path)
+    run_mod_cmd(mod_name, site_pkgs_path, cmd_str)
     # Take the opportunity to audit the py files
     repo_mod_path = os.path.join(repo_path, mod_name)
     install_mod_path = os.path.join(site_pkgs_path, mod_name)
     print 'Files not taken across by the installation:'
     print check_installed_files(repo_mod_path, install_mod_path)
     # test from development tree
-    sys_print_info(mod_name, repo_path)
+    run_mod_cmd(mod_name, repo_path, cmd_str)
     return
 
 
@@ -177,6 +184,28 @@ def info_from_here(mod_name):
     install_path = tempfile.mkdtemp()
     try:
         contexts_print_info(mod_name, repo_path, install_path)
+    finally:
+        shutil.rmtree(install_path)
+
+
+def tests_installed(mod_name, repo_path=None):
+    """ Install from `repo_path` into temporary directory; run tests
+
+    Parameters
+    ----------
+    mod_name : str
+        name of module - e.g. 'nibabel'
+    repo_path : None or str
+        Path from which to install.  If None, defaults to working directory
+    """
+    if repo_path is None:
+        repo_path = os.path.abspath(os.getcwd())
+    install_path = tempfile.mkdtemp()
+    try:
+        site_pkgs_path = install_from_to(repo_path,
+                                         install_path,
+                                         PY_LIB_SDIR)
+        run_mod_cmd(mod_name, site_pkgs_path, mod_name + '.test()')
     finally:
         shutil.rmtree(install_path)
 
