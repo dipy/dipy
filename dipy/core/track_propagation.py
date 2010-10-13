@@ -217,7 +217,7 @@ class FACT_Delta():
             x,y,z = index[m]
             qa_tmp = qa[x,y,z]
             ind_tmp = ind[x,y,z]
-            print qa_tmp[0]#,qa_tmp[1],qa_tmp[2],qa_tmp[3],qa_tmp[4]
+            #print qa_tmp[0]#,qa_tmp[1],qa_tmp[2],qa_tmp[3],qa_tmp[4]
             delta,direction = self.nearest_direction(dx,qa_tmp,ind_tmp,odf_vertices,qa_thr,ang_thr)
             #print delta, direction
             if not delta:
@@ -268,7 +268,7 @@ class FACT_Delta():
         #d is the delta function 
         d,idirection=self.initial_direction(seed,qa,ind,odf_vertices,qa_thr)
 
-        print('FD',idirection[0],idirection[1],idirection[2])
+        #print('FD',idirection[0],idirection[1],idirection[2])
 
         #print d
         if not d:
@@ -337,7 +337,7 @@ class FACT_DeltaX():
 
     '''
 
-    def __init__(self,qa,ind,seed_list,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.):
+    def __init__(self,qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.):
         '''
         Parameters
         ----------
@@ -348,7 +348,9 @@ class FACT_DeltaX():
         ind: array, shape(x,y,z,Np), indices of orientations of the QA
         peaks found at odf_vertices used in QA or, shape(x,y,z), ind
 
-        seeds_no: number of random seeds
+        seed_list: list of seeds
+        
+        seed_no: number of random seeds if seed_list is None
 
         odf_vertices: sphere points which define a discrete
         representation of orientations for the peaks, the same for all voxels
@@ -359,14 +361,15 @@ class FACT_DeltaX():
         ang_thr: float, if turning angle is smaller than this threshold
         then tracking stops.        
 
-        Returns
-        -------
+        Properties
+        ----------
 
         tracks: sequence of arrays
 
         '''
 
         if len(qa.shape)==3:
+            
             qa.shape=qa.shape+(1,)
             ind.shape=ind.shape+(1,)
 
@@ -387,19 +390,21 @@ class FACT_DeltaX():
         print 'ind',ind.shape, ind.dtype
         print 'odf_vertices',odf_vertices.shape, odf_vertices.dtype
         
-        '''
-        #for all seed points    
-        for i in range(seeds_no):
-            rx=(x-1)*np.random.rand()
-            ry=(y-1)*np.random.rand()
-            rz=(z-1)*np.random.rand()
-            seed=np.array([rx,ry,rz])
-        '''
-        for seed in seed_list:
 
-            #print 'seed',seed
+        if seed_list==None:
+            #for all seed points    
+            for i in range(seed_no):
+                rx=(x-1)*np.random.rand()
+                ry=(y-1)*np.random.rand()
+                rz=(z-1)*np.random.rand()
+                seed_list.append(np.array([rx,ry,rz]))
+                
+
+
+        ind=ind.astype(np.double)
+        for seed in seed_list:
             #for all peaks
-            for ref in range(qa.shape[-1]): # g
+            for ref in range(qa.shape[-1]): 
                 #propagate up 
                 track =fdx_propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
                 if track == None:
@@ -407,6 +412,8 @@ class FACT_DeltaX():
                 else:
                     tlist.append(track)
         self.tracks=tlist
+
+        
                
     def native(self,affine):        
         print affine.shape
