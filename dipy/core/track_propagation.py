@@ -408,8 +408,10 @@ class FACT_DeltaX():
                     tlist.append(track)
         self.tracks=tlist
                
-    def native(affine):        
-        self.tracks=[np.dot(affine,t.T).T for t in self.tracks]
+    def native(self,affine):        
+        print affine.shape
+        print self.tracks[0].shape
+        self.tracks=[np.transpose(np.dot(affine[:3,:3],np.transpose(t)))+np.transpose(affine[:3,3]) for t in self.tracks]
 
 
 

@@ -27,7 +27,7 @@ cdef extern from "math.h" nogil:
     
     
 DEF PI=3.1415926535897931
-DEF PEAK_NO=5
+
 
 # initialize numpy runtime
 cnp.import_array()
