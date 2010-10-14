@@ -13,6 +13,7 @@ The typical use for this module is as a makefile target, as in::
 
 import os
 from os.path import join as pjoin
+from glob import glob
 import shutil
 import tempfile
 import zipfile
@@ -188,25 +189,58 @@ def info_from_here(mod_name):
         shutil.rmtree(install_path)
 
 
-def tests_installed(mod_name, repo_path=None):
-    """ Install from `repo_path` into temporary directory; run tests
+def tests_installed(mod_name, source_path=None):
+    """ Install from `source_path` into temporary directory; run tests
 
     Parameters
     ----------
     mod_name : str
         name of module - e.g. 'nibabel'
-    repo_path : None or str
+    source_path : None or str
         Path from which to install.  If None, defaults to working directory
     """
-    if repo_path is None:
-        repo_path = os.path.abspath(os.getcwd())
+    if source_path is None:
+        source_path = os.path.abspath(os.getcwd())
     install_path = tempfile.mkdtemp()
     try:
-        site_pkgs_path = install_from_to(repo_path,
+        site_pkgs_path = install_from_to(source_path,
                                          install_path,
                                          PY_LIB_SDIR)
         run_mod_cmd(mod_name, site_pkgs_path, mod_name + '.test()')
     finally:
         shutil.rmtree(install_path)
 
+
+def tests_from_zip(mod_name, zip_fname):
+    """ Runs test from sdist zip source archive """
+    install_path = tempfile.mkdtemp()
+    try:
+        zip_extract_all(zip_fname, install_path)
+        pkg_dirs = glob(pjoin(install_path, mod_name + "*"))
+        if len(pkg_dirs) != 1:
+            raise OSError('There must be one and only one package dir')
+        pkg_contents = pjoin(install_path, pkg_dirs[0])
+        tests_installed(mod_name, pkg_contents)
+    finally:
+        shutil.rmtree(install_path)
+
+
+def sdist_tests(mod_name, repo_path=None):
+    """ Make sdist zip, install from it, and run tests """
+    pwd = os.path.abspath(os.getcwd())
+    if repo_path is None:
+        repo_path = pwd
+    install_path = tempfile.mkdtemp()
+    try:
+        os.chdir(repo_path)
+        my_call('python setup.py sdist --formats=zip --dist-dir='
+                + install_path)
+        zip_fnames = glob(pjoin(install_path, mod_name + "*.zip"))
+        if len(zip_fnames) != 1:
+            raise OSError('There must be one and only one zip file, '
+                          'but I found "%s"' % ': '.join(zip_fnames))
+        tests_from_zip(mod_name, zip_fnames[0])
+    finally:
+        os.chdir(pwd)
+        shutil.rmtree(install_path)
 
