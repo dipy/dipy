@@ -3,6 +3,7 @@
 # the setup.py file, this Makefile is just meant as a command
 # convenience/reminder while doing development.
 
+PYTHON?=python
 PKGDIR=dipy
 DOCDIR=${PKGDIR}/doc
 TESTDIR=${PKGDIR}/tests
@@ -47,3 +48,19 @@ clean:
 %.html : %.pyx
 	cython -a $<
 
+# Print out info for possible install methods
+check-version-info:
+	$(PYTHON) -c 'from nisext.testers import info_from_here; info_from_here("dipy")'
+
+# Run tests from installed code
+installed-tests:
+	$(PYTHON) -c 'from nisext.testers import tests_installed; tests_installed("dipy")'
+
+# Run tests from installed code
+sdist-tests:
+	$(PYTHON) -c 'from nisext.testers import sdist_tests; sdist_tests("dipy")'
+
+# Update nisext subtree from remote
+update-nisext:
+	git fetch nisext
+	git merge --squash -s subtree --no-commit nisext/master

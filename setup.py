@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 ''' Installation script for dipy package '''
 
+import os
 from os.path import join as pjoin
 from glob import glob
+
+# BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
+# update it when the contents of directories change.
+if os.path.exists('MANIFEST'): os.remove('MANIFEST')
+
 from distutils.core import setup
 from distutils.extension import Extension
 from distutils.version import LooseVersion
@@ -10,6 +16,9 @@ from distutils.version import LooseVersion
 import numpy as np
 
 from build_helpers import make_cython_ext
+
+from nisext.sexts import get_comrec_build, package_check
+cmdclass = {'build_py': get_comrec_build('nibabel')}
 
 # we use cython to compile the modules
 try:
@@ -35,7 +44,6 @@ rec_ext, cmdclass = make_cython_ext(
 tpp_ext, cmdclass = make_cython_ext(
     'dipy.core.track_propagation_performance',
     include_dirs = [np.get_include()])
-
 
 
 setup(name='dipy',
