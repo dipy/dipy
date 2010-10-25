@@ -166,6 +166,11 @@ def contexts_print_info(mod_name, repo_path, install_path):
     print 'Files not taken across by the installation:'
     print check_installed_files(repo_mod_path, install_mod_path)
     # test from development tree
+    try:
+        os.chdir(repo_path)
+        my_call('python setup.py build_ext -i')
+    finally:
+        os.chdir(pwd)
     run_mod_cmd(mod_name, repo_path, cmd_str)
     return
 

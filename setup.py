@@ -2,6 +2,7 @@
 ''' Installation script for dipy package '''
 
 import os
+import sys
 from os.path import join as pjoin
 from glob import glob
 
@@ -11,51 +12,105 @@ if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
 from distutils.core import setup
 from distutils.extension import Extension
-from distutils.version import LooseVersion
 
 import numpy as np
 
-from build_helpers import make_cython_ext
+# For some commands, use setuptools
+if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
+            'bdist_wininst', 'install_egg_info', 'egg_info', 'easy_install',
+            )).intersection(sys.argv)) > 0:
+    # setup_egg imports setuptools setup, thus monkeypatching distutils. 
+    from setup_egg import extra_setuptools_args
+
+# extra_setuptools_args can be defined from the line above, but it can
+# also be defined here because setup.py has been exec'ed from
+# setup_egg.py.
+if not 'extra_setuptools_args' in globals():
+    extra_setuptools_args = dict()
 
 from nisext.sexts import get_comrec_build, package_check
-cmdclass = {'build_py': get_comrec_build('nibabel')}
+cmdclass = {'build_py': get_comrec_build('dipy')}
+
+# Get version and release info, which is all stored in dipy/info.py
+ver_file = os.path.join('dipy', 'info.py')
+execfile(ver_file)
+
+# Do dependency checking
+package_check('numpy', NUMPY_MIN_VERSION)
+package_check('scipy', SCIPY_MIN_VERSION)
+package_check('nibabel', NIBABEL_MIN_VERSION)
+# Cython can be a build dependency
+def _cython_version(pkg_name):
+    from Cython.Compiler.Version import version
+    return version
+package_check('cython',
+              CYTHON_MIN_VERSION,
+              version_getter=_cython_version)
+
+if 'setuptools' in sys.modules:
+    extra_setuptools_args['extras_require'] = dict(
+        doc='Sphinx>=1.0',
+        test='nose>=0.10.1')
 
 # we use cython to compile the modules
-try:
-    from Cython.Compiler.Version import version
-except ImportError:
-    raise RuntimeError('You need cython to build dipy')
-if LooseVersion(version) < LooseVersion('0.12.1'):
-    raise RuntimeError('Need cython >= 0.12.1 to build dipy')
+from Cython.Distutils import build_ext
+cmdclass['build_ext'] = build_ext
+EXTS = []
+for modulename, other_sources in (
+    ('dipy.io.track_volumes', []),
+    ('dipy.core.track_performance', []),
+    ('dipy.core.reconstruction_performance', []),
+    ('dipy.core.track_propagation_performance', [])):
+    pyx_src = pjoin(*modulename.split('.')) + '.pyx'
+    EXTS.append(Extension(modulename,
+                          [pyx_src] + other_sources,
+                          include_dirs = [np.get_include()]))
 
 
-per_ext, cmdclass = make_cython_ext(
-    'dipy.core.track_performance',
-    include_dirs = [np.get_include()])
+def main(**extra_args):
+    setup(name=NAME,
+          maintainer=MAINTAINER,
+          maintainer_email=MAINTAINER_EMAIL,
+          description=DESCRIPTION,
+          long_description=LONG_DESCRIPTION,
+          url=URL,
+          download_url=DOWNLOAD_URL,
+          license=LICENSE,
+          classifiers=CLASSIFIERS,
+          author=AUTHOR,
+          author_email=AUTHOR_EMAIL,
+          platforms=PLATFORMS,
+          version=VERSION,
+          requires=REQUIRES,
+          provides=PROVIDES,
+          packages     = ['dipy',
+                          'dipy.core',
+                          'dipy.core.tests',
+                          'dipy.core.bench',
+                          'dipy.core.stat',
+                          'dipy.io',
+                          'dipy.io.tests',
+                          'dipy.viz',
+                          'dipy.viz.tests',
+                          'dipy.testing',
+                          # required in setup.py, hence needs to go into source
+                          # dist
+                          'nisext'],
+          ext_modules = EXTS,
+          # The package_data spec has no effect for me (on python 2.6) -- even
+          # changing to data_files doesn't get this stuff included in the source
+          # distribution -- not sure if it has something to do with the magic
+          # above, but distutils is surely the worst piece of code in all of
+          # python -- duplicating things into MANIFEST.in but this is admittedly
+          # only a workaround to get things started -- not a solution
+          package_data = {'dipy':
+                          [pjoin('core', 'tests', 'data', '*'),
+                          ]},
+          scripts      = glob(pjoin('scripts', '*')),
+          cmdclass = cmdclass,
+          **extra_args
+         )
 
-tvol_ext, cmdclass = make_cython_ext(
-    'dipy.io.track_volumes',
-    include_dirs = [np.get_include()])
 
-rec_ext, cmdclass = make_cython_ext(
-    'dipy.core.reconstruction_performance',
-    include_dirs = [np.get_include()])
-
-tpp_ext, cmdclass = make_cython_ext(
-    'dipy.core.track_propagation_performance',
-    include_dirs = [np.get_include()])
-
-
-setup(name='dipy',
-      version='0.11a',
-      description='Diffusion utilities in Python',
-      author='DIPY Team',
-      author_email='nipy-devel@neuroimaging.scipy.org',
-      url='http://github.com/Garyfallidis/dipy',
-      packages=['dipy', 'dipy.io', 'dipy.core', 'dipy.viz', 'dipy.testing'],
-      package_data={'dipy.io': ['tests/data/*', 'tests/*.py']},
-      ext_modules = [per_ext,tvol_ext, rec_ext,tpp_ext],
-      cmdclass    = cmdclass,
-      scripts=glob('scripts/*.py')
-      )
-
+if __name__ == "__main__":
+    main(**extra_setuptools_args)
