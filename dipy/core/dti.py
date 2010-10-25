@@ -204,7 +204,7 @@ class Tensor(ModelArray):
         return self.fa()
 
     def fa(self):
-        """
+        r"""
         Fractional anisotropy (FA) calculated from cached eigenvalues. 
         
         Returns
@@ -238,7 +238,7 @@ class Tensor(ModelArray):
         return self.md()
     
     def md(self):
-        """
+        r"""
         Mean diffusitivity (MD) calculated from cached eigenvalues. 
         
         Returns
@@ -272,7 +272,7 @@ class Tensor(ModelArray):
         return quantize_evecs(self.evecs,odf_vertices=None)
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
-    """
+    r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion 
     tensor using a linear regression model [1]_.
     
@@ -375,7 +375,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
 
 
 def ols_fit_tensor(design_matrix, data, min_signal=1):
-    """
+    r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion 
     tensor using a linear regression model [1]_.
     
