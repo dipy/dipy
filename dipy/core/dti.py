@@ -1,4 +1,5 @@
 #!/usr/bin/python
+""" Classes and functions for fitting tensors """
 # 5/17/2010
 
 #import modules
