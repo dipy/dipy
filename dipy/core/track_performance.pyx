@@ -1,9 +1,7 @@
-''' A type of -*- python -*- file
+ # A type of -*- python -*- file
+""" Optimized track metrics and correspondence measures
+"""
 
-Performance functions for dipy
-
-
-'''
 # cython: profile=True
 # cython: embedsignature=True
 

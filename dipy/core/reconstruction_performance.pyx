@@ -1,9 +1,7 @@
-''' A type of -*- python -*- file
+# Emacs should think this is a -*- python -*- file
+""" Optimized routines for creating voxel diffusion models
+"""
 
-Performance functions for dipy
-
-
-'''
 # cython: profile=True
 # cython: embedsignature=True
 

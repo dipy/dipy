@@ -27,6 +27,6 @@ except ImportError:
     raise ImportError('nibabel is not installed')
 
 try:
-    from nibabel.dicom.dicomreaders import read_mosaic_dir as load_dcm_dir
+    from nibabel.nicom.dicomreaders import read_mosaic_dir as load_dcm_dir
 except ImportError:
-    raise ImportError('nibabel.dicom.dicomreaders cannot be found')
+    raise ImportError('nibabel.nicom.dicomreaders cannot be found')

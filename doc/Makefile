@@ -38,9 +38,6 @@ clean:
 	-rm -rf _build/*
 	-rm *-stamp
 
-gendoc:
-	sphinx-autogen -o reference/generated reference/*.rst
-
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
 

@@ -1,8 +1,7 @@
-''' A type of -*- python -*- file
+# A type of -*- python -*- file
+""" Track propagation performance functions
+"""
 
-Track propagation performance functions for dipy
-
-'''
 # cython: profile=True
 # cython: embedsignature=True
 
