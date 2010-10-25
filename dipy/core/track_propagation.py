@@ -2,8 +2,6 @@ import os
 import numpy as np
 from dipy.core.track_propagation_performance import fdx_propagation
 
-
-
 class FACT_Delta():
     ''' Generates tracks with termination criteria defined by a
     delta function [1]_ and it has similarities with FACT algorithm [2]_.
@@ -374,8 +372,6 @@ class FACT_DeltaX():
             ind.shape=ind.shape+(1,)
 
         #store number of maximum peacks
-        #self.Np=qa.shape[-1]
-
         x,y,z,g=qa.shape
         self.Np=g
         tlist=[]      
@@ -392,27 +388,29 @@ class FACT_DeltaX():
         
 
         if seed_list==None:
+            seed_list=[]
             #for all seed points    
             for i in range(seed_no):
                 rx=(x-1)*np.random.rand()
                 ry=(y-1)*np.random.rand()
                 rz=(z-1)*np.random.rand()
-                seed_list.append(np.array([rx,ry,rz]))
-                
-
+                seed_list.append(np.array([rx,ry,rz]))          
 
         ind=ind.astype(np.double)
-        for seed in seed_list:
+        for seed in seed_list:            
             #for all peaks
             for ref in range(qa.shape[-1]): 
-                #propagate up 
+                #propagate up and down 
                 track =fdx_propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
                 if track == None:
                     pass
                 else:
+                    #tlist.append(track.astype(np.float32))                                        
                     tlist.append(track)
-        self.tracks=tlist
 
+        self.tracks=tlist
+        qa=np.squeeze(qa)
+        ind=np.squeeze(ind) 
         
                
     def native(self,affine):        

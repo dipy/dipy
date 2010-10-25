@@ -383,7 +383,7 @@ def fdx_propagation(cnp.ndarray[double,ndim=1] seed,\
 
     
         
-    return np.array(track)
+    return np.array(track,dtype=np.float32)
 
 
 
