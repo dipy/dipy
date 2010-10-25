@@ -6,4 +6,5 @@ recursive-include tools *
 # put this stuff back into setup.py (package_data) once I'm enlightened
 # enough to accomplish this herculean task
 recursive-include dipy/core/tests/data *
+recursive-include dipy/core/matrices *
 include dipy/COMMIT_INFO.txt

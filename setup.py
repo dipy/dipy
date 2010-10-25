@@ -105,6 +105,7 @@ def main(**extra_args):
           # only a workaround to get things started -- not a solution
           package_data = {'dipy':
                           [pjoin('core', 'tests', 'data', '*'),
+                           pjoin('core', 'matrices', '*')
                           ]},
           scripts      = glob(pjoin('scripts', '*')),
           cmdclass = cmdclass,
