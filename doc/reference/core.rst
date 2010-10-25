@@ -1,29 +1,20 @@
-++++++++++++++++++++++++++++++++++++
- DiPy module: core.track_performance
-++++++++++++++++++++++++++++++++++++
+===========
+ DiPy core
+===========
 
-.. automodule:: dipy.core.track_performance
-   :members:
+.. currentmodule:: dipy.core
 
-+++++++++++++++++++++++++++
- DiPy module: core.geometry
-+++++++++++++++++++++++++++
+.. autosummary::
+    :toctree:
 
-.. automodule:: dipy.core.geometry
-   :members:
-
-
-
-
-
-
-
-
- 
-
-
-
-
-
-
-   
+    dti
+    geometry
+    meshes
+    maskedview
+    modelarray
+    profile
+    reconstruction_performance
+    track_learning
+    track_performance
+    track_propagation_performance
+    triangle_subdivide
