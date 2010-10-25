@@ -1,5 +1,5 @@
-dipy.core.geometry
-==================
+:mod:`dipy.core.geometry`
+=========================
 
 .. automodule:: dipy.core.geometry
     :members:
