@@ -3,10 +3,12 @@
 # the setup.py file, this Makefile is just meant as a command
 # convenience/reminder while doing development.
 
+PYTHON ?= python
 PKGDIR=dipy
-DOCDIR=${PKGDIR}/doc
+DOCSRC_DIR=doc
+DOCDIR=${PKGDIR}/${DOCSRC_DIR}
 TESTDIR=${PKGDIR}/tests
-
+SF_USER ?= matthewbrett
 
 help:
 	@echo "Numpy/Cython tasks.  Available tasks:"
@@ -17,9 +19,10 @@ help:
 
 all: ext html test
 
-ext: track_performance.so track_volumes.so reconstruction_performance.so
+ext: track_performance.so track_volumes.so reconstruction_performance.so \
+    track_propagation_performance.so
 
-test:   ext
+test: ext
 	nosetests .
 
 html:  ${PKGDIR}/core/track_performance.html ${PKGDIR}/io/track_volumes.html ${PKGDIR}/io/reconstrunction_performance.html
@@ -27,6 +30,7 @@ html:  ${PKGDIR}/core/track_performance.html ${PKGDIR}/io/track_volumes.html ${P
 track_performance.so: ${PKGDIR}/core/track_performance.pyx
 track_volumes.so: ${PKGDIR}/io/track_volumes.pyx
 reconstruction_performance.so: ${PKGDIR}/core/reconstruction_performance.pyx
+track_propagation_performance.so: ${PKGDIR}/core/track_propagation_performance.pyx
 
 	python setup.py build_ext --inplace
 
@@ -46,4 +50,33 @@ clean:
 
 %.html : %.pyx
 	cython -a $<
+
+# Print out info for possible install methods
+check-version-info:
+	$(PYTHON) -c 'from nisext.testers import info_from_here; info_from_here("dipy")'
+
+# Run tests from installed code
+installed-tests:
+	$(PYTHON) -c 'from nisext.testers import tests_installed; tests_installed("dipy")'
+
+# Run tests from installed code
+sdist-tests:
+	$(PYTHON) -c 'from nisext.testers import sdist_tests; sdist_tests("dipy")'
+
+# Update nisext subtree from remote
+update-nisext:
+	git fetch nisext
+	git merge --squash -s subtree --no-commit nisext/master
+
+# Build html
+htmldoc: ext
+	cd $(DOCSRC_DIR) && PYTHONPATH=$(CURDIR) $(MAKE) html
+
+# This one udates for the specific user named at the top of the makefile
+upload-htmldoc: htmldoc upload-htmldoc-$(SF_USER)
+
+# Upload webiste to sourceforg# Upload webiste to sourceforgee
+upload-htmldoc-%: htmldoc
+	rsync -rzhvp --delete --chmod=Dg+s,g+rw $(HTML_DIR)/* \
+		$*,nipy@web.sourceforge.net:/home/groups/n/ni/nipy/htdocs/nibabel/
 

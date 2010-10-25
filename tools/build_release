@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+"""dipy release build script.
+"""
+import os
+from toollib import (c, get_dipydir, compile_tree, cd, pjoin, remove_tree)
+
+# Get main dipy dir, this will raise if it doesn't pass some checks
+dipydir = get_dipydir()
+cd(dipydir)
+
+# Load release info
+execfile(pjoin('dipy','info.py'))
+
+# Check that everything compiles
+compile_tree()
+
+# Cleanup
+for d in ['build','dist',pjoin('docs','_build'),pjoin('docs','dist')]:
+    if os.path.isdir(d):
+        remove_tree(d)
+
+# Build source and binary distros
+c('./setup.py sdist --formats=gztar,zip')
+
+# Build eggs
+for version in ['2.5', '2.6', '2.7']:
+    cmd='python'+version+' ./setup_egg.py bdist_egg'
+    stat = os.system(cmd)
