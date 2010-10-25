@@ -1,8 +1,8 @@
+""" Class for profiling cython code
+"""
 import pstats, cProfile
 import os
 import subprocess
-
-import dipy.core.reconstruction_performance as rp
 
 import pyximport
 pyximport.install()
@@ -74,7 +74,6 @@ class Profiler():
 
     def _profile_function(self):
         self.call(*self.args)
-        
 
     def print_stats(self,N=10):
         ''' Print stats for profiling
@@ -91,38 +90,4 @@ class Profiler():
         N: stats.print_stats argument
 
         '''
-        
         self.stats.print_stats(N)
-
-
-            
-
-            
-
-
-            
-
-        
-    
-
-            
-            
-
-            
-
-            
-
-            
-
-        
-
-            
-
-            
-
-            
-
-
-    
-
-        

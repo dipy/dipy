@@ -218,9 +218,10 @@ class Tensor(ModelArray):
 
         .. math::
 
-        FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                    \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
-                    \lambda_2^2+\lambda_3^2} }
+            FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
+                        \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
+                        \lambda_2^2+\lambda_3^2} }
+
         """
         evals, wrap = _makearray(self.model_params[..., :3])
         ev1 = evals[..., 0]
@@ -249,7 +250,9 @@ class Tensor(ModelArray):
         -----
         MD is calculated with the following equation:
 
-        .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
+        .. math::
+
+            ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
         #adc/md = (ev1+ev2+ev3)/3
         return self.evals.mean(-1)
@@ -313,14 +316,14 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     
     .. math::
 
-    y = \mathrm{data} \\
-    X = \mathrm{design matrix} \\
-    \hat{\beta}_WLS = \mathrm{desired regression coefficients (e.g. tensor)}\\
-    \\
-    \hat{\beta}_WLS = (X^T W X)^-1 X^T W y \\
-    \\
-    W = \mathrm{diag}((X \hat{\beta}_OLS)^2),
-    \mathrm{where} \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        y = \mathrm{data} \\
+        X = \mathrm{design matrix} \\
+        \hat{\beta}_WLS = \mathrm{desired regression coefficients (e.g. tensor)}\\
+        \\
+        \hat{\beta}_WLS = (X^T W X)^-1 X^T W y \\
+        \\
+        W = \mathrm{diag}((X \hat{\beta}_OLS)^2),
+        \mathrm{where} \hat{\beta}_OLS = (X^T X)^-1 X^T y
 
     References
     ----------
@@ -408,10 +411,11 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     This function is offered mainly as a quick comparison to WLS.
 
     .. math::
-    y = \mathrm{data} \\
-    X = \mathrm{design matrix} \\
+
+        y = \mathrm{data} \\
+        X = \mathrm{design matrix} \\
     
-    \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        \hat{\beta}_OLS = (X^T X)^-1 X^T y
 
     References
     ----------
