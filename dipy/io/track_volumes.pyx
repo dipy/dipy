@@ -1,8 +1,7 @@
-''' A type of -*- python -*- file
+# A type of -*- python -*- file
+""" Counting incidence of tracks in voxels of volume
+"""
 
-Counting incidence of tracks in voxels of volume
-
-'''
 import numpy as np
 cimport numpy as cnp
 

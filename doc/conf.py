@@ -13,6 +13,12 @@
 
 import sys, os
 
+# Doc generation depends on being able to import dipy
+try:
+    import dipy
+except ImportError:
+    raise RuntimeError('Cannot import dipy, please investigate')
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
