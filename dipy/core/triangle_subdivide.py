@@ -1,4 +1,3 @@
-
 '''Create a unitsphere recursively by subdividing all triangles in an octahedron
 recursively.
 
@@ -57,8 +56,7 @@ def normalize_v3(arr):
     arr /= lens[:,None]
 
 def divide_all( vertices, edges, triangles ):
-    """Subdivides a triangle
-
+    r"""Subdivides a triangle
 
     Parameters
     ----------
@@ -67,36 +65,58 @@ def divide_all( vertices, edges, triangles ):
     edges : ndarray
         An Ex2 array were each pair of values is an index 
 
-    Subdivide each triangle in the old approximation and normalize
-     the new points thus generated to lie on the surface of the unit
-     sphere.
-    Each input triangle with vertices labelled [0,1,2], as shown
-     below, is represented by a set of edges. The edges are written in such
-     a way so that the second vertex in each edge is the first vertex in the
-     next edge. for Example:  
-                       [0, 1]
-                       [1, 2]
-                       [2, 0]
-    
-               Make new points
-                    b = (0+1)/2
-                    c = (1+2)/2
-                    a = (2+0)/2
-           1
-          /\        Normalize a, b, c
-         /  \ 
-       b/____\ c    Construct new triangles:
-       /\    /\       t1 [0b,ba,a0]
-      /  \  /  \      t2 [1c,cb,b1]
-     /____\/____\     t3 [2a,ac,c2]
-    0      a     2    t4 [ba,ac,cb]
-    
-    When constructed this way edges[triangles,0] or edges[triangles,1] will
-     both return the three vertices that make up each triangle (in a different
-     order):
-    """
+    Returns
+    -------
+    vertices : array
+        A 2d array with the x, y, and z coordinates of vertices
+    edges : array
+        A 2d array of vertex pairs for every set of neighboring vertexes
+    triangles : array
+        A 2d array of edge triplets representing triangles
 
-    
+    Notes
+    -----
+    Subdivide each triangle in the old approximation and normalize the new
+    points thus generated to lie on the surface of the unit sphere.
+
+    Each input triangle with vertices labelled [0,1,2], as shown below, is
+    represented by a set of edges. The edges are written in such a way so that
+    the second vertex in each edge is the first vertex in the next edge. For
+    example::
+
+         [0, 1]
+         [1, 2]
+         [2, 0]
+
+    Make new points::
+
+         b = (0+1)/2
+         c = (1+2)/2
+         a = (2+0)/2
+
+    Construct new triangles::
+
+        t1 [0b,ba,a0]
+        t2 [1c,cb,b1]
+        t3 [2a,ac,c2]
+        t4 [ba,ac,cb]
+
+    Like this::
+
+                  1
+                 /\
+                /  \
+              b/____\ c
+              /\    /\
+             /  \  /  \
+            /____\/____\
+           0      a     2
+
+    Normalize a, b, c.
+
+    When constructed this way edges[triangles,0] or edges[triangles,1] will both
+    return the three vertices that make up each triangle (in a different order):
+    """
     num_vertices = len(vertices)
     num_edges = len(edges)
     num_triangles = len(triangles)
@@ -109,14 +129,12 @@ def divide_all( vertices, edges, triangles ):
     v_b = new_v_ind[triangles[:,0]]
     v_c = new_v_ind[triangles[:,1]]
     v_a = new_v_ind[triangles[:,2]]
-    
     edges = np.vstack((np.c_[edges[:,0], new_v_ind],
                        np.c_[new_v_ind, edges[:,1]],
                        np.c_[v_b, v_a],
                        np.c_[v_a, v_c],
                        np.c_[v_c, v_b],
                        ))
-
     E_0b = triangles[:,0]
     E_b1 = triangles[:,0] + num_edges
     E_1c = triangles[:,1]
@@ -126,13 +144,11 @@ def divide_all( vertices, edges, triangles ):
     E_ba = np.arange(3*num_triangles, 4*num_triangles, dtype='uint16')
     E_ac = np.arange(4*num_triangles, 5*num_triangles, dtype='uint16')
     E_cb = np.arange(5*num_triangles, 6*num_triangles, dtype='uint16')
-
     triangles = np.vstack((np.c_[E_0b, E_ba, E_a0],
                            np.c_[E_1c, E_cb, E_b1],
                            np.c_[E_2a, E_ac, E_c2],
                            np.c_[E_ba, E_ac, E_cb],
                            ))
- 
     return vertices, edges, triangles
 
 def create_unit_sphere( recursion_level=2 ):

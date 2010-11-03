@@ -8,7 +8,6 @@ PKGDIR=dipy
 DOCSRC_DIR=doc
 DOCDIR=${PKGDIR}/${DOCSRC_DIR}
 TESTDIR=${PKGDIR}/tests
-SF_USER ?= matthewbrett
 
 help:
 	@echo "Numpy/Cython tasks.  Available tasks:"
@@ -67,16 +66,4 @@ sdist-tests:
 update-nisext:
 	git fetch nisext
 	git merge --squash -s subtree --no-commit nisext/master
-
-# Build html
-htmldoc: ext
-	cd $(DOCSRC_DIR) && PYTHONPATH=$(CURDIR) $(MAKE) html
-
-# This one udates for the specific user named at the top of the makefile
-upload-htmldoc: htmldoc upload-htmldoc-$(SF_USER)
-
-# Upload webiste to sourceforg# Upload webiste to sourceforgee
-upload-htmldoc-%: htmldoc
-	rsync -rzhvp --delete --chmod=Dg+s,g+rw $(HTML_DIR)/* \
-		$*,nipy@web.sourceforge.net:/home/groups/n/ni/nipy/htdocs/nibabel/
 

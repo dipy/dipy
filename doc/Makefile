@@ -4,10 +4,8 @@
 # download".  To use, set your sourceforge username with 'export
 # SF_USER=garyfallidis' or similar, then 'make upload-website'
 SF_USER ?= matthewbrett
-WWW_SF=$(SF_USER),nipy@web.sourceforge.net:htdocs/dipy/
-FRS_SF=$(SF_USER)@frs.sourceforge.net:uploads
+WWW_SF=nipy@web.sourceforge.net:/home/groups/n/ni/nipy/htdocs/dipy
 RSYNC_SF=rsync -rzhvp --delete --chmod=Dg+s,g+rw
-
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
@@ -104,13 +102,8 @@ pdf-stamp: latex
 	cd _build/latex && make all-pdf
 	touch $@
 
+# This one udates for the specific user named at the top of the makefile
+upload-website: upload-website-$(SF_USER)
 
-upload-website: web-pdf-stamp
-web-pdf-stamp: pdf html
-	$(RSYNC_SF) _build/latex/* _build/html/* $(WWW_SF)
-	touch $@
-
-upload-htmldoc: web-html-stamp
-web-html-stamp: html
-	$(RSYNC_SF) _build/html/* $(WWW_SF)
-	touch $@
+upload-website-%: pdf-stamp html
+	$(RSYNC_SF) _build/html/* _build/latex/*.pdf $*,$(WWW_SF)
