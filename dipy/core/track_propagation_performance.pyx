@@ -35,7 +35,7 @@ cdef inline float* asfp(cnp.ndarray pt):
 cdef inline double* asdp(cnp.ndarray pt):
     return <double *>pt.data
 
-cdef inline long offset(long *indices,long *strides,int lenind, int typesize) nogil:
+cdef  long offset(long *indices,long *strides,int lenind, int typesize) nogil:
 
     '''
     Parameters
@@ -93,7 +93,7 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
 
     return offset(<long*>indices.data,<long*>strides.data,lenind, typesize)
 
-cdef inline void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
+cdef  void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
 
     ''' interpolate in 3d volumes given point X
     Returns
@@ -135,7 +135,7 @@ cdef inline void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
 
     return    
     
-cdef inline long _nearest_direction(double* dx,double* qa,\
+cdef  long _nearest_direction(double* dx,double* qa,\
                                         double *ind,long peaks,double *odf_vertices,\
                                         double qa_thr, double ang_thr,\
                                         double *direction) nogil:
@@ -214,7 +214,7 @@ cdef inline long _nearest_direction(double* dx,double* qa,\
            
 
 @cython.cdivision(True)
-cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
+cdef long _propagation_direction(double *point,double* dx,double* qa,\
                                 double *ind, double *odf_vertices,\
                                 double qa_thr, double ang_thr,\
                                 long *qa_shape,long* strides,\
@@ -269,7 +269,7 @@ cdef inline long _propagation_direction(double *point,double* dx,double* qa,\
     return 1
 
 
-cdef inline long _initial_direction(double* seed,double *qa,\
+cdef  long _initial_direction(double* seed,double *qa,\
                                         double* ind, double* odf_vertices,\
                                         double qa_thr, long* strides, long ref,\
                                         double* direction) nogil:
@@ -380,8 +380,6 @@ def fdx_propagation(cnp.ndarray[double,ndim=1] seed,\
         #print('point down',point)               
         track.insert(0,point.copy())
 
-    
-        
     return np.array(track,dtype=np.float32)
 
 

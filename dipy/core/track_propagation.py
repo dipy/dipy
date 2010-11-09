@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from dipy.core.track_propagation_performance import fdx_propagation
+from dipy.core.track_metrics import length
 
 class FACT_Delta():
     ''' Generates tracks with termination criteria defined by a
@@ -335,7 +336,7 @@ class FACT_DeltaX():
 
     '''
 
-    def __init__(self,qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.):
+    def __init__(self,qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.,as_generator=False):
         '''
         Parameters
         ----------
@@ -356,7 +357,7 @@ class FACT_DeltaX():
         qa_thr: float, threshold for QA(typical 0.023)  or FA(typical 0.2) 
         step_sz: float, propagation step
 
-        ang_thr: float, if turning angle is smaller than this threshold
+        ang_thr: float, if turning angle is bigger than this threshold
         then tracking stops.        
 
         Properties
@@ -404,19 +405,105 @@ class FACT_DeltaX():
                 track =fdx_propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
                 if track == None:
                     pass
-                else:
+                else:                    
+                    
                     #tlist.append(track.astype(np.float32))                                        
-                    tlist.append(track)
+                    if length(track)>length_thr:
+                        if as_generator==True:
+                            yield (track,None,None)
+                        else: 
+                            tlist.append(track)
 
         self.tracks=tlist
         qa=np.squeeze(qa)
         ind=np.squeeze(ind) 
         
-               
+    '''           
     def native(self,affine):        
         print affine.shape
         print self.tracks[0].shape
-        self.tracks=[np.transpose(np.dot(affine[:3,:3],np.transpose(t)))+np.transpose(affine[:3,3]) for t in self.tracks]
+        self.tracks=[np.transpose(np.dot(affine[:3,:3],np.transpose(t)))+np.transpose(affine[:3,3]) for t in self.tracks]        
+    '''
+    
+
+def fdx_function(qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.):
+    '''
+    Parameters
+    ----------
+
+    qa: array, shape(x,y,z,Np), magnitude of the peak (QA) or
+    shape(x,y,z) a scalar volume like FA.
+
+    ind: array, shape(x,y,z,Np), indices of orientations of the QA
+    peaks found at odf_vertices used in QA or, shape(x,y,z), ind
+
+    seed_list: list of seeds
+    
+    seed_no: number of random seeds if seed_list is None
+
+    odf_vertices: sphere points which define a discrete
+    representation of orientations for the peaks, the same for all voxels
+
+    qa_thr: float, threshold for QA(typical 0.023)  or FA(typical 0.2) 
+    step_sz: float, propagation step
+
+    ang_thr: float, if turning angle is bigger than this threshold
+    then tracking stops.        
+
+    Properties
+    ----------
+
+    tracks: sequence of arrays
+
+    '''
+
+    if len(qa.shape)==3:
+        
+        qa.shape=qa.shape+(1,)
+        ind.shape=ind.shape+(1,)
+
+    #store number of maximum peacks
+    x,y,z,g=qa.shape
+    Np=g
+    tlist=[]      
+
+    if odf_vertices==None:
+        eds=np.load(os.path.join(os.path.dirname(__file__),'matrices',\
+                    'evenly_distributed_sphere_362.npz'))
+        odf_vertices=eds['vertices']
+        
+    print 'Shapes'
+    print 'qa',qa.shape, qa.dtype
+    print 'ind',ind.shape, ind.dtype
+    print 'odf_vertices',odf_vertices.shape, odf_vertices.dtype
+
+    if seed_list==None:
+        seed_list=[]
+        #for all seed points    
+        for i in range(seed_no):
+            rx=(x-1)*np.random.rand()
+            ry=(y-1)*np.random.rand()
+            rz=(z-1)*np.random.rand()
+            seed_list.append(np.array([rx,ry,rz]))          
+
+    ind=ind.astype(np.double)
+    for seed in seed_list:            
+        #for all peaks
+        for ref in range(qa.shape[-1]): 
+            #propagate up and down 
+            track =fdx_propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
+            if track == None:
+                pass
+            else:              
+                
+                #tlist.append(track.astype(np.float32))                                        
+                if length(track)>length_thr:
+                    
+                    yield (track,None,None)
+                    
+    tracks=tlist
+    qa=np.squeeze(qa)
+    ind=np.squeeze(ind) 
 
 
 
