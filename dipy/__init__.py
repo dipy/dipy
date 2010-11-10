@@ -30,7 +30,8 @@ except ImportError:
 try:
     from nibabel.nicom.dicomreaders import read_mosaic_dir as load_dcm_dir
 except ImportError:
-    raise ImportError('nibabel.nicom.dicomreaders cannot be found')
+    pass
+#    raise ImportError('nibabel.nicom.dicomreaders cannot be found')
 
 # Test callable
 from numpy.testing import Tester
