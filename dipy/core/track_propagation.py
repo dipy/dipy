@@ -304,11 +304,13 @@ class FACT_Delta():
 
 
 
-class FACT_DeltaX():
+class EuDX():
     ''' New experimental Version
+    Euler Delta and Crossings
     
     Generates tracks with termination criteria defined by a
-    delta function [1]_ and it has similarities with FACT algorithm [2]_.
+    delta function [1]_ and it has similarities with FACT algorithm [2]_ and Basser's method 
+    but uses trilinear interpolation.
 
     Can be used with any reconstruction method as DTI,DSI,QBI,GQI which can
     calculate an orientation distribution function and find the local peaks of
@@ -333,14 +335,13 @@ class FACT_DeltaX():
     .. [2] Mori et al. Three-dimensional tracking of axonal projections
     in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
     
-
     '''
 
-    def __init__(self,qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.,as_generator=False):
-        '''
+    def __init__(self,qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.):
+        ''' Euler integration with multiple stopping criteria and supporting multiple peaks
+        
         Parameters
         ----------
-
         qa: array, shape(x,y,z,Np), magnitude of the peak (QA) or
         shape(x,y,z) a scalar volume like FA.
 
@@ -358,153 +359,77 @@ class FACT_DeltaX():
         step_sz: float, propagation step
 
         ang_thr: float, if turning angle is bigger than this threshold
-        then tracking stops.        
-
-        Properties
-        ----------
-
-        tracks: sequence of arrays
+        then tracking stops.
+        
+        Examples
+        ---------
+        This works as an iterator class because otherwise it could fill your entire RAM if you generate many tracks. 
+        Something very common as you can easily generate millions of tracks.
 
         '''
-
-        if len(qa.shape)==3:
-            
-            qa.shape=qa.shape+(1,)
-            ind.shape=ind.shape+(1,)
+        
+        self.qa=qa.copy()
+        self.ind=ind.copy()
+        self.qa_thr=qa_thr
+        self.ang_thr=ang_thr
+        self.step_sz=step_sz
+        self.length_thr=length_thr
+        
+        if len(self.qa.shape)==3:            
+            self.qa.shape=self.qa.shape+(1,)
+            self.ind.shape=self.ind.shape+(1,)
 
         #store number of maximum peacks
-        x,y,z,g=qa.shape
+        x,y,z,g=self.qa.shape
         self.Np=g
         tlist=[]      
 
         if odf_vertices==None:
             eds=np.load(os.path.join(os.path.dirname(__file__),'matrices',\
                         'evenly_distributed_sphere_362.npz'))
-            odf_vertices=eds['vertices']
+            self.odf_vertices=eds['vertices']
             
         print 'Shapes'
-        print 'qa',qa.shape, qa.dtype
-        print 'ind',ind.shape, ind.dtype
-        print 'odf_vertices',odf_vertices.shape, odf_vertices.dtype
+        print 'qa',self.qa.shape, self.qa.dtype
+        print 'ind',self.ind.shape, self.ind.dtype
+        print 'odf_vertices',self.odf_vertices.shape, self.odf_vertices.dtype
         
-
-        if seed_list==None:
-            seed_list=[]
+        self.seed_no=seed_no
+        self.seed_list=seed_list
+        
+        if self.seed_list==None:
+            self.seed_list=[]
             #for all seed points    
-            for i in range(seed_no):
+            for i in range(self.seed_no):
                 rx=(x-1)*np.random.rand()
                 ry=(y-1)*np.random.rand()
                 rz=(z-1)*np.random.rand()
-                seed_list.append(np.array([rx,ry,rz]))          
+                self.seed_list.append(np.array([rx,ry,rz]))          
 
-        ind=ind.astype(np.double)
-        for seed in seed_list:            
+        self.ind=self.ind.astype(np.double)        
+        
+    def __iter__(self):
+        ''' This is were all the fun starts '''
+        #for all seeds
+        for seed in self.seed_list:
             #for all peaks
-            for ref in range(qa.shape[-1]): 
+            for ref in range(self.qa.shape[-1]): 
                 #propagate up and down 
-                track =fdx_propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
+                track =fdx_propagation(seed.copy(),ref,self.qa,self.ind,self.odf_vertices,self.qa_thr,self.ang_thr,self.step_sz)                  
                 if track == None:
                     pass
-                else:                    
-                    
+                else:        
                     #tlist.append(track.astype(np.float32))                                        
-                    if length(track)>length_thr:
-                        if as_generator==True:
-                            yield (track,None,None)
-                        else: 
-                            tlist.append(track)
-
-        self.tracks=tlist
-        qa=np.squeeze(qa)
-        ind=np.squeeze(ind) 
-        
+                    if length(track)>self.length_thr:                        
+                        yield track
+                        
+                        
     '''           
     def native(self,affine):        
         print affine.shape
         print self.tracks[0].shape
         self.tracks=[np.transpose(np.dot(affine[:3,:3],np.transpose(t)))+np.transpose(affine[:3,3]) for t in self.tracks]        
     '''
-    
-
-def fdx_function(qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.):
-    '''
-    Parameters
-    ----------
-
-    qa: array, shape(x,y,z,Np), magnitude of the peak (QA) or
-    shape(x,y,z) a scalar volume like FA.
-
-    ind: array, shape(x,y,z,Np), indices of orientations of the QA
-    peaks found at odf_vertices used in QA or, shape(x,y,z), ind
-
-    seed_list: list of seeds
-    
-    seed_no: number of random seeds if seed_list is None
-
-    odf_vertices: sphere points which define a discrete
-    representation of orientations for the peaks, the same for all voxels
-
-    qa_thr: float, threshold for QA(typical 0.023)  or FA(typical 0.2) 
-    step_sz: float, propagation step
-
-    ang_thr: float, if turning angle is bigger than this threshold
-    then tracking stops.        
-
-    Properties
-    ----------
-
-    tracks: sequence of arrays
-
-    '''
-
-    if len(qa.shape)==3:
-        
-        qa.shape=qa.shape+(1,)
-        ind.shape=ind.shape+(1,)
-
-    #store number of maximum peacks
-    x,y,z,g=qa.shape
-    Np=g
-    tlist=[]      
-
-    if odf_vertices==None:
-        eds=np.load(os.path.join(os.path.dirname(__file__),'matrices',\
-                    'evenly_distributed_sphere_362.npz'))
-        odf_vertices=eds['vertices']
-        
-    print 'Shapes'
-    print 'qa',qa.shape, qa.dtype
-    print 'ind',ind.shape, ind.dtype
-    print 'odf_vertices',odf_vertices.shape, odf_vertices.dtype
-
-    if seed_list==None:
-        seed_list=[]
-        #for all seed points    
-        for i in range(seed_no):
-            rx=(x-1)*np.random.rand()
-            ry=(y-1)*np.random.rand()
-            rz=(z-1)*np.random.rand()
-            seed_list.append(np.array([rx,ry,rz]))          
-
-    ind=ind.astype(np.double)
-    for seed in seed_list:            
-        #for all peaks
-        for ref in range(qa.shape[-1]): 
-            #propagate up and down 
-            track =fdx_propagation(seed.copy(),ref,qa,ind,odf_vertices,qa_thr,ang_thr,step_sz)                  
-            if track == None:
-                pass
-            else:              
-                
-                #tlist.append(track.astype(np.float32))                                        
-                if length(track)>length_thr:
-                    
-                    yield (track,None,None)
-                    
-    tracks=tlist
-    qa=np.squeeze(qa)
-    ind=np.squeeze(ind) 
-
 
 
 
