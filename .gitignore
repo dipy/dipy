@@ -1,5 +1,6 @@
 *.pyc
 *.so
+*.c
 build
 *~
 doc/_build
