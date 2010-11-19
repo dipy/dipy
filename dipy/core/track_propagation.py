@@ -412,6 +412,13 @@ class EuDX():
         ''' This is were all the fun starts '''
         #for all seeds
         for seed in self.seed_list:
+            #print seed
+            #print self.qa.shape,self.qa.dtype,self.qa.flags
+            #print self.ind.shape,self.ind.dtype,self.ind.flags
+            #print self.odf_vertices.shape,self.odf_vertices.dtype,self.odf_vertices.flags
+            #print self.qa_thr,self.ang_thr,self.step_sz
+            
+            seed=np.ascontiguousarray(seed,dtype=np.float64)
             #for all peaks
             for ref in range(self.qa.shape[-1]): 
                 #propagate up and down 
