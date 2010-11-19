@@ -300,7 +300,7 @@ cdef  long _initial_direction(double* seed,double *qa,\
         return 1
         
 
-def fdx_propagation(cnp.ndarray[double,ndim=1] seed,\
+def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
                     long ref,\
                     cnp.ndarray[double,ndim=4] qa,\
                     cnp.ndarray[double,ndim=4] ind,\

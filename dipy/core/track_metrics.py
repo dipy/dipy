@@ -918,7 +918,7 @@ def any_segment_intersect_sphere(xyz,center,radius):
     return False
     
 
-def intersect_sphere(xyz,center,radius):
+def inside_sphere(xyz,center,radius):
     ''' If any point of the track is inside a sphere of a specified
     center and radius return True otherwise False.  Mathematicaly this
     can be simply described by ||x-c||<=r where ``x`` a point ``c`` the
@@ -942,12 +942,12 @@ def intersect_sphere(xyz,center,radius):
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
     >>> sph_radius = 1
-    >>> intersect_sphere(line,sph_cent,sph_radius)
+    >>> inside_sphere(line,sph_cent,sph_radius)
     '''
     return (np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius).any()==True
 
 
-def intersect_sphere_points(xyz,center,radius):
+def inside_sphere_points(xyz,center,radius):
     ''' If a track intersects with a sphere of a specified center and
     radius return the points that are inside the sphere otherwise False.
     Mathematicaly this can be simply described by ||x-c||<=r where ``x``
@@ -973,7 +973,7 @@ def intersect_sphere_points(xyz,center,radius):
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
     >>> sph_radius = 1
-    >>> intersect_sphere_points(line,sph_cent,sph_radius)
+    >>> inside_sphere_points(line,sph_cent,sph_radius)
     '''
     return xyz[(np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius)]
 
@@ -1004,7 +1004,7 @@ def orientation_in_sphere(xyz,center,radius):
     >>> orientation_in_sphere(track)
     array([1.,1.,1.])
     '''
-    xyzn=intersect_sphere_points(xyz,center,radius)   
+    xyzn=inside_sphere_points(xyz,center,radius)   
     if xyzn.shape[0] >1:
         #calculate gradient
         dxyz=np.gradient(xyzn)[0]

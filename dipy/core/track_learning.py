@@ -306,7 +306,7 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
                 for p in tracks[t]:
                     
                     #if you intersect the sphere surrounding the point of the random track increase a counter
-                    if tm.intersect_sphere(tracks[tri],p,ball_radius): cnt_intersected_balls+=1
+                    if tm.inside_sphere(tracks[tri],p,ball_radius): cnt_intersected_balls+=1
                 
                 #if all spheres are covered then accept this track as your neighbour
                 if cnt_intersected_balls ==len(tracks[t]): 

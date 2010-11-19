@@ -7,8 +7,8 @@
 
 cimport cython
 
-import numpy as np
 import time
+import numpy as np
 cimport numpy as cnp
 
 
@@ -33,6 +33,7 @@ cdef extern from "stdlib.h" nogil:
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
+
 
 
 cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
@@ -1699,25 +1700,16 @@ def larch_3merge(C,thr=10.):
     ts=np.zeros((3,3),dtype=np.float32)
 
     lenC=len(C)
-
     C2=C.copy()
     
     for c in range(0,lenC-1):
-
-
-        ch=np.ascontiguousarray(C[c]['rep3']/C[c]['N'],dtype=f32_dt)        
-
+        ch=np.ascontiguousarray(C[c]['rep3']/C[c]['N'],dtype=f32_dt)
         krange=range(c+1,lenC)
         klen=len(krange)
-
         alld=np.zeros(klen)
         flip=np.zeros(klen)
-
-
         for k in range(c+1,lenC):
-
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
-
             track_direct_flip_3dist(
                 asfp(ch[0]),asfp(ch[1]),asfp(ch[2]), 
                 asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
@@ -1731,27 +1723,74 @@ def larch_3merge(C,thr=10.):
 
         m_k=np.min(alld)
         i_k=np.argmin(alld)
-
-
         if m_k<thr:     
-
             if flip[i_k]==1:                
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
                 C2[i_k+c]['rep3']+=ts
             else:
-                C2[i_k+c]['rep3']+=ch
-                
+                C2[i_k+c]['rep3']+=ch                
             C2[i_k+c]['N']+=C2[c]['N']
-
             C2[i_k+c]['indices']+=C2[c]['indices']
-
             del C2[c]
-
 
     return C2
 
 
 
+def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=1] point, double sq_dist_thr):
+    ''' Check if square distance of track from point is smaller than threshold
+    
+    Parameters
+    ----------
+    track: array,float32, shape (N,3)
+    point: array,float32, shape (3,)
+    sq_dist_thr: double, threshold
+    
+    Returns
+    -------
+    bool: True, if sq_distance <= sq_dist_thr, otherwise False. 
+    
+    Examples
+    --------    
+    >>> from dipy.core.track_performance import point_track_sq_distance_check
+    >>> t=np.random.rand(10,3).astype(np.float32)
+    >>> p=np.array([0.5,0.5,0.5],dtype=np.float32)
+    >>> point_track_sq_distance_check(t,p,2**2)
+    True
+    >>> t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
+    >>> p=np.array([-1,-1.,-1],dtype='f4')
+    >>> point_track_sq_distance_check(t,p,.2**2)
+    False
+    >>> point_track_sq_distance_check(t,p,2**2)
+    True
+    '''
+        
+    cdef:
+        float *t=<float *>track.data
+        float *p=<float *>point.data
+        float a[3],b[3]
+        int tlen = len(track)
+        int curr = 0
+        float dist = 0
+        int i
+       
+    
+    for i from 0<=i<tlen-1:
+        
+        curr=i*3        
+        a[0]=t[curr]
+        a[1]=t[curr+1]
+        a[2]=t[curr+2]              
+        b[0]=t[curr+3]
+        b[1]=t[curr+4]
+        b[2]=t[curr+5]               
+                         
+        dist=cpoint_segment_sq_dist(<float *>a,<float *>b,p)
+        
+        if dist<=sq_dist_thr:            
+            return True
+        
+    return False
 
 
 

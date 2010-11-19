@@ -1,7 +1,7 @@
 import os
 import numpy as np
 import dipy as dp
-from dipy.core.track_propagation import FACT_DeltaX
+from dipy.core.track_propagation import EuDX
 from dipy.core.track_propagation_performance import ndarray_offset
 import nibabel as ni
 from os.path import join as opj
@@ -28,8 +28,13 @@ def test_fact():
 
     seed_list=np.dot(np.diag(np.arange(10)),np.ones((10,3)))
     
-    T =FACT_DeltaX(gqs.QA,gqs.IN,seed_list=seed_list).tracks
-    T2=FACT_DeltaX(ten.FA,ten.IN,seed_list=seed_list).tracks
+    iT=iter(EuDX(gqs.QA,gqs.IN,seed_list=seed_list))
+    T=[]
+    for t in iT: T.append(t)
+    
+    iT2=iter(EuDX(ten.FA,ten.IN,seed_list=seed_list))
+    T2=[]
+    for t in iT2: T2.append(t)
 
     from dipy.core.track_metrics import length
     print('length T ',sum([length(t) for t in T]))  
@@ -65,7 +70,11 @@ def uniform_seed_grid():
     for m in M: 
         print m
     gqs = dp.GeneralizedQSampling(data,bvals,gradients)
-    T =FACT_DeltaX(gqs.QA,gqs.IN,seed_list=M).tracks
+    iT=iter(EuDX(gqs.QA,gqs.IN,seed_list=M))    
+    T=[]
+    for t in iT:
+        T.append(i)
+    
     print 'lenT',len(T)
 
     yield assert_equal, len(T), 1221

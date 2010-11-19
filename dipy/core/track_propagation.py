@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from dipy.core.track_propagation_performance import fdx_propagation
+from dipy.core.track_propagation_performance import eudx_propagation
 from dipy.core.track_metrics import length
 
 class FACT_Delta():
@@ -397,32 +397,38 @@ class EuDX():
         self.seed_no=seed_no
         self.seed_list=seed_list
         
-        if self.seed_list==None:
-            self.seed_list=[]
-            #for all seed points    
-            for i in range(self.seed_no):
-                rx=(x-1)*np.random.rand()
-                ry=(y-1)*np.random.rand()
-                rz=(z-1)*np.random.rand()
-                self.seed_list.append(np.array([rx,ry,rz]))          
+        if self.seed_list!=None:
+            self.seed_no=len(seed_list)
+            
+#        if self.seed_list==None:
+#            self.seed_list=[]
+#            #for all seed points    
+#            for i in range(self.seed_no):
+#                rx=(x-1)*np.random.rand()
+#                ry=(y-1)*np.random.rand()
+#                rz=(z-1)*np.random.rand()
+#                self.seed_list.append(np.array([rx,ry,rz]))          
 
         self.ind=self.ind.astype(np.double)        
         
     def __iter__(self):
         ''' This is were all the fun starts '''
+        x,y,z,g=self.qa.shape
         #for all seeds
-        for seed in self.seed_list:
-            #print seed
-            #print self.qa.shape,self.qa.dtype,self.qa.flags
-            #print self.ind.shape,self.ind.dtype,self.ind.flags
-            #print self.odf_vertices.shape,self.odf_vertices.dtype,self.odf_vertices.flags
-            #print self.qa_thr,self.ang_thr,self.step_sz
+        for i in range(self.seed_no):
             
-            seed=np.ascontiguousarray(seed,dtype=np.float64)
+            if self.seed_list==None:
+                rx=(x-1)*np.random.rand()
+                ry=(y-1)*np.random.rand()
+                rz=(z-1)*np.random.rand()            
+                seed=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
+            else:
+                seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)
+                            
             #for all peaks
             for ref in range(self.qa.shape[-1]): 
                 #propagate up and down 
-                track =fdx_propagation(seed.copy(),ref,self.qa,self.ind,self.odf_vertices,self.qa_thr,self.ang_thr,self.step_sz)                  
+                track =eudx_propagation(seed.copy(),ref,self.qa,self.ind,self.odf_vertices,self.qa_thr,self.ang_thr,self.step_sz)                  
                 if track == None:
                     pass
                 else:        
