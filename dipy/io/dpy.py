@@ -105,7 +105,27 @@ def test_on_the_fly():
 class Dpy():
 
     def __init__(self,fname,mode,compression=0):
+        '''
+        Parameters
+        ----------
+        fname: str, full filename
+        mode: 'r' read or 'w' write
+        compression: 0 no compression to 9 maximum compression
         
+        Examples
+        ---------
+        >>> from dipy.io.dpy import Dpy   
+        >>> dpr=Dpy(fqa_warp_dpy,'r')   
+        >>> T=[]       
+        >>> print dpr.track_no   
+        >>> #read on track at a time
+        >>> for i in range(dpr.track_no):        
+        >>>     track=dpr.read_track()
+        >>>     T.append(track)
+        >>> #read specific tracks
+        >>> T2=dpr.read_indexed([0, 6, 10, 100])
+        >>> dpr.close()        
+        '''
                 
         
         self.mode=mode        
