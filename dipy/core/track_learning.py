@@ -45,7 +45,7 @@ def larch(tracks,
     print 'Done in ', t2-t1, 'secs'
     
     print 'Reducing to n-point approximate tracks...'
-    atracks=[pf.approximate_ei_trajectory(t) for t in tracks]
+    atracks=[pf.approx_polygon_track(t) for t in tracks]
 
     t3=time.clock()
     print 'Done in ', t3-t2, 'secs'

@@ -126,10 +126,10 @@ def inner_3vecs(vec1, vec2):
     return cinner_3vecs(<float *>fvec1.data, <float*>fvec2.data)
 
 
-cdef inline float cinner_3vecs(float *vec1, float *vec2):
+cdef inline float cinner_3vecs(float *vec1, float *vec2) nogil:
     cdef int i
     cdef float ip = 0
-    for i in range(3):
+    for i from 0<=i<3:
         ip += vec1[i]*vec2[i]
     return ip
 
@@ -142,9 +142,9 @@ def sub_3vecs(vec1, vec2):
     return vec_out
 
 
-cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out):
+cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = vec1[i]-vec2[i]
 
 
@@ -156,9 +156,9 @@ def add_3vecs(vec1, vec2):
     return vec_out
 
 
-cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out):
+cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = vec1[i]+vec2[i]
 
 def mul_3vecs(vec1, vec2):
@@ -168,9 +168,9 @@ def mul_3vecs(vec1, vec2):
     cmul_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
     return vec_out
 
-cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out):
+cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = vec1[i]*vec2[i]
 
 def mul_3vec(a, vec):
@@ -179,11 +179,10 @@ def mul_3vec(a, vec):
     cmul_3vec(a,<float *>fvec.data, <float *>vec_out.data)
     return vec_out        
 
-cdef inline void cmul_3vec(float a, float *vec, float *vec_out):
+cdef inline void cmul_3vec(float a, float *vec, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = a*vec[i]
-
 
 
 # float 32 dtype for casting
@@ -934,9 +933,9 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
     return sqrt((1-cos_theta_squared)*l1)
 
 
-def approximate_ei_trajectory(xyz,alpha=0.392):
-    ''' Fast and simple Approximate Trajectory
-        Algorithm by Eleftherios and Ian
+def approx_polygon_track(xyz,alpha=0.392):
+    ''' Fast and simple trajectory approximation algorithm 
+    by Eleftherios and Ian
     
     Parameters
     ------------------
@@ -954,13 +953,14 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
     
     Examples
     --------
+    >>> from fos.core.track_performance import approx_polygon_track
     >>> #approximating a helix
     >>> t=np.linspace(0,1.75*2*np.pi,100)
     >>> x = np.sin(t)
     >>> y = np.cos(t)
     >>> z = t        
     >>> xyz=np.vstack((x,y,z)).T     
-    >>> xyza = pf.approximate_ei_trajectory(xyz)
+    >>> xyza = approx_polygon_track(xyz)
     >>> len(xyz)
     >>> len(xyza)
     
@@ -1242,8 +1242,9 @@ def point_segment_sq_distance(a,b,c):
     cc = asfp(c)
     
     return cpoint_segment_sq_dist(ca, cb, cc)
-    
-cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c):
+
+@cython.cdivision(True)    
+cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
     ''' Calculate the squared distance from a point c to a line segment ab.
     
     '''
@@ -1257,9 +1258,11 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c):
     
     e = cinner_3vecs(ac, ab)
     #Handle cases where c projects outside ab
-    if e <= 0.:  return cinner_3vecs(ac, ac)
+    if e <= 0.:  
+        return cinner_3vecs(ac, ac)
     f = cinner_3vecs(ab, ab)
-    if e >= f : return cinner_3vecs(bc, bc)
+    if e >= f : 
+        return cinner_3vecs(bc, bc)
     #Handle case where c projects onto ab
     return cinner_3vecs(ac, ac) - e * e / f
 
@@ -1773,25 +1776,86 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[f
         int curr = 0
         float dist = 0
         int i
+        int intersects = 0
        
-    
-    for i from 0<=i<tlen-1:
-        
-        curr=i*3        
-        a[0]=t[curr]
-        a[1]=t[curr+1]
-        a[2]=t[curr+2]              
-        b[0]=t[curr+3]
-        b[1]=t[curr+4]
-        b[2]=t[curr+5]               
-                         
-        dist=cpoint_segment_sq_dist(<float *>a,<float *>b,p)
-        
-        if dist<=sq_dist_thr:            
-            return True
-        
-    return False
+    with nogil:
+        for i from 0<=i<tlen-1:
+            
+            curr=i*3        
+            a[0]=t[curr]
+            a[1]=t[curr+1]
+            a[2]=t[curr+2]              
+            b[0]=t[curr+3]
+            b[1]=t[curr+4]
+            b[2]=t[curr+5]                                        
+            dist=cpoint_segment_sq_dist(<float *>a,<float *>b,p)        
+            if dist<=sq_dist_thr:
+                intersects=1            
+                break
+            
+    if intersects==1:
+        return True
+    else:
+        return False
 
+def track_roi_intersection_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=2] roi, double sq_dist_thr):
+    ''' Check if a track is intersecting a region of interest
+    
+    Parameters
+    ----------
+    track: array,float32, shape (N,3)
+    roi: array,float32, shape (M,3)
+    sq_dist_thr: double, threshold, check squared euclidean distance from every roi point 
+    
+    Returns
+    -------
+    bool: True, if sq_distance <= sq_dist_thr, otherwise False. 
+    
+    Examples
+    --------    
+    >>> from dipy.core.track_performance import track_roi_intersection_check
+    >>> roi=np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='f4')    
+    >>> t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
+    >>> track_roi_intersection_check(t,roi)
+    True
+    '''
+        
+    cdef:
+        float *t=<float *>track.data
+        float *r=<float *>roi.data
+        float a[3],b[3],p[3]
+        int tlen = len(track)
+        int rlen = len(roi) 
+        int curr = 0
+        int currp = 0
+        float dist = 0
+        int i,j     
+        int intersects=0
+    
+    with nogil:        
+        for i from 0<=i<tlen-1:            
+            curr=i*3        
+            a[0]=t[curr]
+            a[1]=t[curr+1]
+            a[2]=t[curr+2]              
+            b[0]=t[curr+3]
+            b[1]=t[curr+4]
+            b[2]=t[curr+5]                
+            for j from 0<=j<rlen:                
+                currp=j*3                    
+                p[0]=r[currp]
+                p[1]=r[currp+1]
+                p[2]=r[currp+2]                                                                   
+                dist=cpoint_segment_sq_dist(<float *>a,<float *>b,<float *>p)        
+                if dist<=sq_dist_thr:            
+                    intersects=1
+                    break                
+            if intersects==1:
+                break    
+    if intersects==1:        
+        return True
+    else:
+        return False
 
 
         

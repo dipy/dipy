@@ -126,7 +126,7 @@ class Dpy():
         if self.mode=='r':
             self.tracks=self.f.root.streamlines.tracks
             self.offsets=self.f.root.streamlines.offsets
-            self.tracks_no=len(self.offsets)-1
+            self.track_no=len(self.offsets)-1
             
             self.offs_pos=0
      

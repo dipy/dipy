@@ -43,7 +43,7 @@ C=pf.local_skeleton_clustering(tracks,d_thr=20)
 print 'Done in', time.clock()-now,'s.'
 
 print 'Reducing the number of points...'
-T=[pf.approximate_ei_trajectory(t) for t in T]
+T=[pf.approx_polygon_track(t) for t in T]
 
 print 'Showing initial dataset.'
 

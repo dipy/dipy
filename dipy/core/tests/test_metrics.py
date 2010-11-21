@@ -113,7 +113,7 @@ def test_approx_ei_traj():
     
     xyz=np.vstack((x,y,z)).T    
     
-    xyza=pf.approximate_ei_trajectory(xyz)
+    xyza=pf.approx_polygon_track(xyz)
     yield assert_equal, len(xyza), 27
 
 def test_approx_mdl_traj():
@@ -208,3 +208,30 @@ def test_add_sub_3vecs():
     vec2 = [2, -3, 4.3]
     yield assert_array_almost_equal, vec1 - vec2, pf.sub_3vecs(vec1, vec2)
     yield assert_array_almost_equal, vec1 + vec2, pf.add_3vecs(vec1, vec2)
+    
+def test_point_track_sq_distance():
+    
+    t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
+    p=np.array([-1,-1.,-1],dtype='f4')
+    yield assert_equal, pf.point_track_sq_distance_check(t,p,.2**2), False    
+    yield pf.point_track_sq_distance_check(t,p,2**2), True
+    t=np.array([[0,0,0],[1,0,0],[2,2,0]],dtype='f4')
+    p=np.array([.5,0,0],dtype='f4')
+    yield assert_equal, pf.point_track_sq_distance_check(t,p,.2**2), True
+    p=np.array([.5,1,0],dtype='f4')
+    yield assert_equal, pf.point_track_sq_distance_check(t,p,.2**2), False
+    
+def test_track_roi_intersection_check():    
+    roi=np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='f4')    
+    t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
+    yield assert_equal, pf.track_roi_intersection_check(t,roi,1), True
+    t=np.array([[0,0,0],[1,0,0],[2,2,2]],dtype='f4')
+    yield assert_equal, pf.track_roi_intersection_check(t,roi,1), True
+    t=np.array([[1,1,0],[1,0,0],[1,-1,0]],dtype='f4')
+    yield assert_equal, pf.track_roi_intersection_check(t,roi,1), True    
+    t=np.array([[4,0,0],[4,1,1],[4,2,0]],dtype='f4')
+    yield assert_equal, pf.track_roi_intersection_check(t,roi,1), False
+    
+    
+    
+
