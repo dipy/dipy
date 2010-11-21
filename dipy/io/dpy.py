@@ -114,19 +114,23 @@ class Dpy():
         
         Examples
         ---------
-        >>> from dipy.io.dpy import Dpy   
-        >>> dpr=Dpy(fqa_warp_dpy,'r')   
-        >>> T=[]       
-        >>> print dpr.track_no   
-        >>> #read on track at a time
-        >>> for i in range(dpr.track_no):        
-        >>>     track=dpr.read_track()
-        >>>     T.append(track)
-        >>> #read specific tracks
-        >>> T2=dpr.read_indexed([0, 6, 10, 100])
-        >>> dpr.close()        
-        '''
-                
+        
+        >>> dpw = Dpy('test.dpy','w')
+        >>> A=np.ones((5,3))
+        >>> B=2*A.copy()
+        >>> C=3*A.copy()    
+        >>> dpw.write_track(A)
+        >>> dpw.write_track(B)
+        >>> dpw.write_track(C)    
+        >>> dpw.close()    
+        >>> dpr = Dpy('test.dpy','r')    
+        >>> print(dpr.read_track())
+        >>> print(dpr.read_track())    
+        >>> T=dpr.read_indexed([0,1,2,0,0,2])    
+        >>> print T    
+        >>> dpr.close()
+        
+        '''                
         
         self.mode=mode        
         self.f = tables.openFile(fname, mode = self.mode)
