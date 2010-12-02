@@ -47,6 +47,22 @@ def length(xyz, along=False):
         return np.cumsum(dists)
     return np.sum(dists)
 
+def bytes(xyz):
+    ''' Size of track in bytes 
+        
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+    
+    Returns
+    -------
+    int : number of bytes
+       
+    '''    
+    return xyz.nbytes
+
+
 
 def midpoint(xyz):
     ''' Midpoint of track line
@@ -697,7 +713,7 @@ def generate_combinations(items, n):
             for cc in generate_combinations(items[i+1:], n-1):
                 yield [items[i]] + cc
             
-def bundle_similarities_zhang(bundle,metric='avg'):
+def bundle_similarities_mam(bundle,metric='avg'):
     ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
     
     Parameters:
@@ -734,7 +750,7 @@ def bundle_similarities_zhang(bundle,metric='avg'):
     return S_avg,S_min,S_max 
 
 
-def bundles_distances_zhang(bundleA, bundleB ,metric='avg'):
+def bundles_distances_mam(bundleA, bundleB ,metric='avg'):
     ''' Calculate the distance matrix using Zhang 2008 distances.
     
     Parameters:
@@ -766,7 +782,7 @@ def bundles_distances_zhang(bundleA, bundleB ,metric='avg'):
     return DM
 
 
-def most_similar_track_zhang(bundle,metric='avg'):
+def most_similar_track_mam(bundle,metric='avg'):
     ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
     
     Parameters:
@@ -842,7 +858,7 @@ def longest_track_bundle(bundle,sort=False):
 def most_similar_track(S,sort=False):
     ''' Return the index of the most similar track given a diagonal
     similarity matrix as returned from function
-    bundle_similarities_zhang(bundle)
+    bundle_similarities_mam(bundle)
     '''
     if sort:
         return (S+S.T).sum(axis=0).argsort()    

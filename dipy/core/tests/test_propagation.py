@@ -30,12 +30,12 @@ def test_fact():
     
     iT=iter(EuDX(gqs.QA,gqs.IN,seed_list=seed_list))
     T=[]
-    for t in iT: T.append(t)
-    
+    for t in iT: 
+        T.append(t)    
     iT2=iter(EuDX(ten.FA,ten.IN,seed_list=seed_list))
     T2=[]
-    for t in iT2: T2.append(t)
-
+    for t in iT2: 
+        T2.append(t)
     from dipy.core.track_metrics import length
     print('length T ',sum([length(t) for t in T]))  
     print('length T2',sum([length(t) for t in T2]))  
@@ -45,8 +45,12 @@ def test_fact():
 
     yield assert_equal, gqs.QA[1,4,8,0], gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)]
 
-    yield assert_equal, sum([length(t) for t in T ]) , 77.999996662139893
-    yield assert_equal, sum([length(t) for t in T2]) , 63.499998092651367
+    #yield assert_equal, sum([length(t) for t in T ]) , 77.999996662139893
+    #yield assert_equal, sum([length(t) for t in T2]) , 63.499998092651367
+    yield assert_equal, sum([length(t) for t in T ]) , 75.214988201856613
+    yield assert_equal, sum([length(t) for t in T2]) , 60.202986091375351
+    
+
 
 
 def uniform_seed_grid():

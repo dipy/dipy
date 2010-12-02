@@ -81,7 +81,7 @@ for c in C:
         bundle.append(data[i])
 
     
-    bi=pf.most_similar_track_zhang(bundle)[0]
+    bi=pf.most_similar_track_mam(bundle)[0]
     C[c]['skeletal']=bundle[bi]
     
 
@@ -118,6 +118,6 @@ print 'tripletons ',lens.count(3)
 ''' Next Level
 
 12: cluster0=[T[t] for t in C[0]['indices']]
-13: pf.most_similar_track_zhang(cluster0)
+13: pf.most_similar_track_mam(cluster0)
 
 '''

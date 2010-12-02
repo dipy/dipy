@@ -345,9 +345,9 @@ def cut_plane(tracks,ref):
 DEF biggest_double = 1.79769e+308
 
 
-def most_similar_track_zhang(tracks,metric='avg'):    
+def most_similar_track_mam(tracks,metric='avg'):    
     ''' The purpose of this function is to implement a much faster version of 
-    most_similar_track_zhang from dipy.core.track_metrics  as we implemented 
+    most_similar_track_mam from dipy.core.track_metrics  as we implemented 
     from Zhang et. al 2008. 
     
     Parameters
@@ -356,7 +356,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
        of tracks as arrays, shape (N1,3) .. (Nm,3)
     metric : str
        'avg', 'min', 'max'
-            
+    
     Returns
     -------
     si : int
@@ -455,9 +455,9 @@ def most_similar_track_zhang(tracks,metric='avg'):
     return si, track2others
 
 
-def bundles_distances_zhang(tracksA, tracksB, metric='avg'):
+def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     ''' The purpose of this function is to implement a much faster version of 
-    bundles_distances_zhang from dipy.core.track_metrics as implemented 
+    bundles_distances_mam from dipy.core.track_metrics as implemented 
     from Zhang et. al 2008. 
     
     Parameters
@@ -1001,8 +1001,7 @@ def approx_polygon_track(xyz,alpha=0.392):
         
         #csub_3vecs(<float *>fvec1.data,<float *>fvec0.data,vec0)
         csub_3vecs(fvec1,fvec0,vec0)
-        csub_3vecs(fvec2,fvec1,vec1)
-          
+        csub_3vecs(fvec2,fvec1,vec1)          
         
         tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
         
@@ -1401,16 +1400,14 @@ def local_skeleton_clustering(tracks, d_thr=10):
     Parameters
     -----------
     tracks: sequence
-        of tracks as arrays, shape (N1,3) .. (Nm,3)
+        of tracks as arrays, shape (N,3) .. (N,3) where N=3
 
     d_thr: float, average euclidean distance threshold
-
 
     Returns
     --------
     C: dict
-    
-    
+        
     Examples
     --------
     >>> from dipy.viz import fos
@@ -1452,7 +1449,6 @@ def local_skeleton_clustering(tracks, d_thr=10):
     for it in range(1,lent):
         
         track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
-            
         lenC=len(C.keys())
         
         if it%1000==0:
@@ -1493,6 +1489,8 @@ def local_skeleton_clustering(tracks, d_thr=10):
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
                 C[i_k]['hidden']+=ts
             else:                
+                #print(track.shape)
+                #print(track.dtype)
                 C[i_k]['hidden']+=track
                 
             C[i_k]['N']+=1
@@ -1503,17 +1501,6 @@ def local_skeleton_clustering(tracks, d_thr=10):
             C[lenC]['hidden']=track.copy()
             C[lenC]['N']=1
             C[lenC]['indices']=[it]
-    
-    '''   
-    fos.clear(r)
-
-    color=[fos.red,fos.green,fos.blue,fos.yellow]
-    for c in C:
-        for i in C[c]['indices']:
-            fos.add(r,fos.line(tracks[i],color[c]))
-                
-    fos.show(r)
-    '''
     
     return C
 

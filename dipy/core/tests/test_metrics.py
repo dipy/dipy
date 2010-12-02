@@ -59,31 +59,31 @@ def test_segment_intersection():
     yield assert_equal, tm.any_segment_intersect_sphere(xyz,center,radius), True
 
 
-def test_most_similar_zhang():
+def test_most_similar_mam():
     xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     xyz2 = np.array([[0,1,1],[1,0,1],[2,3,-2]],dtype='float32')
     xyz3 = np.array([[-1,0,0],[2,0,0],[2,3,0],[3,0,0]],dtype='float32')
     tracks=[xyz1,xyz2,xyz3]
     for metric in ('avg', 'min', 'max'):
-        si,s=tm.most_similar_track_zhang(tracks,metric=metric)
+        si,s=tm.most_similar_track_mam(tracks,metric=metric)
         #pf should be much faster and the results equivalent
-        si2,s2=pf.most_similar_track_zhang(tracks,metric=metric)
+        si2,s2=pf.most_similar_track_mam(tracks,metric=metric)
         yield assert_almost_equal, si,si2
     
     
-def test_bundles_distances_zhang():
+def test_bundles_distances_mam():
     xyz1A = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     xyz2A = np.array([[0,1,1],[1,0,1],[2,3,-2]],dtype='float32')
     xyz1B = np.array([[-1,0,0],[2,0,0],[2,3,0],[3,0,0]],dtype='float32')
     tracksA = [xyz1A, xyz2A]
     tracksB = [xyz1B, xyz1A, xyz2A]
     for metric in ('avg', 'min', 'max'):
-        DM1 = tm.bundles_distances_zhang(tracksA, tracksB, metric=metric)
-        DM2 = pf.bundles_distances_zhang(tracksA, tracksB, metric=metric)
+        DM1 = tm.bundles_distances_mam(tracksA, tracksB, metric=metric)
+        DM2 = pf.bundles_distances_mam(tracksA, tracksB, metric=metric)
         yield assert_array_almost_equal, DM1,DM2
     
     
-def test_zhang_distances():
+def test_mam_distances():
     xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]])
     xyz2 = np.array([[0,1,1],[1,0,1],[2,3,-2]])
     # dm=array([[ 2,  2, 17], [ 3,  1, 14], [6,  2, 13], [11,  5, 14]])

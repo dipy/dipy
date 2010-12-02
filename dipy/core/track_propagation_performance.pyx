@@ -352,13 +352,20 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
                                    ang_thr,qa_shape,pstr,direction)
        if d==0:
            break
+       
        #update the track
        for i from 0<=i<3:
            dx[i]=direction[i]
            ps[i]+=step_sz*dx[i]
+           #check for boundaries
+           if ps[i] >=qa_shape[i] or ps[i] < 0:
+               d==0
+               break
            point[i]=ps[i]#to be changed
-       #print('point up',point)        
-       track.append(point.copy())
+           
+       #print('point up',point)
+       if d!=0:
+           track.append(point.copy())
        
     d=1
     
@@ -375,10 +382,14 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
         for i from 0<=i<3:
             dx[i]=direction[i]
             ps2[i]+=step_sz*dx[i]
+            if ps2[i] >=qa_shape[i] or ps2[i] < 0:
+               d==0
+               break
             point[i]=ps2[i]#to be changed           
 
-        #print('point down',point)               
-        track.insert(0,point.copy())
+        #print('point down',point)
+        if d!=0:               
+            track.insert(0,point.copy())
 
     return np.array(track,dtype=np.float32)
 

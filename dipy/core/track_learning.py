@@ -62,7 +62,7 @@ def larch(tracks,
         local_tracks=[atracks[i] for i in C[c]['indices']]        
         #identify the most similar track in the cluster C[c] and return the index of
         #the track and the distances of this track with all other tracks
-        msi,distances=pf.most_similar_track_zhang(local_tracks,metric='avg')
+        msi,distances=pf.most_similar_track_mam(local_tracks,metric='avg')
         
         C[c]['repz']=atracks[C[c]['indices'][msi]]
         C[c]['repz_dists']=distances
@@ -530,7 +530,7 @@ def track_indices_for_a_value_in_atlas(atlas,value,tes,tracks):
     return list(indices)
 
 
-def relabel_by_atlas_value_and_zhang(atlas_tracks,atlas,tes,tracks,tracksd,zhang_thr):
+def relabel_by_atlas_value_and_mam(atlas_tracks,atlas,tes,tracks,tracksd,zhang_thr):
     
     emi=emi_atlas()
     
