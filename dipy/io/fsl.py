@@ -5,6 +5,7 @@ from os.path import join as pjoin
 import numpy as np
 import nibabel as nib
 import numpy.linalg as npl
+from scipy.ndimage import map_coordinates as mc
 
 _VAL_FMT = '   %e'
 
@@ -39,8 +40,6 @@ def write_bvals_bvecs(bvals, bvecs, outpath=None, prefix=''):
         bvf.write(fmt % tuple(dim_vals))
 
 
-
-
 def flirt2aff(mat, in_img, ref_img):
     """ Transform from `in_img` voxels to `ref_img` voxels given `matfile`
 
@@ -65,11 +64,11 @@ def flirt2aff(mat, in_img, ref_img):
     in_zoomer = np.diag(in_hdr.get_zooms() + (1,))
     ref_zoomer = np.diag(ref_hdr.get_zooms() + (1,))
     
-    if npl.det(in_img.get_affine()>=0):        
+    if npl.det(in_img.get_affine())>=0:        
         print('positive determinant in in')
         print('swaping is needed i_s=Nx-1-i_o')
         print('which is not implemented yet')
-    if npl.det(in_img.get_affine()>=0):        
+    if npl.det(ref_img.get_affine())>=0:        
         print('positive determinant in ref')
         print('swapping is needed i_s=Nx-1-i_o')
         print('which is not implemented yet')
@@ -89,9 +88,6 @@ def flirt2aff(mat, in_img, ref_img):
     MATLAB, note that all of the voxel coordinates start at 0, not 1.
     
     '''
-        
-        
-    
     # The in_img voxels to ref_img voxels as recorded in the current affines
     current_in2ref = np.dot(ref_img.get_affine(), in_img.get_affine())
     if npl.det(current_in2ref) < 0:
@@ -121,6 +117,51 @@ def flirt2aff_files(matfile, in_fname, ref_fname):
     in_img = nib.load(in_fname)
     ref_img = nib.load(ref_fname)
     return flirt2aff(mat, in_img, ref_img)
+
+def warp_displacements(ffa,flaff,fdis,fref,ffaw):
+    ''' Warp an image using fsl displacements 
+    
+    Parameters
+    ----------
+    ffa: filename of nifti to be warped
+    flaff: filename of .mat  (flirt)
+    fdis:  filename of displacements (fnirtfileutils)
+    fref: filename of reference volume e.g. (FMRIB58_FA_1mm.nii.gz)
+    ffaw: filename for the output warped image
+    
+    '''
+    
+    refaff=nib.load(fref).get_affine()    
+    disdata=nib.load(fdis).get_data()
+    imgfa=nib.load(ffa)
+    fadata=imgfa.get_data()
+    fazooms=imgfa.get_header().get_zooms()    
+    #from fa index to ref index
+    res=flirt2aff_files(flaff,ffa,fref)
+    #from ref index to fa index
+    ires=np.linalg.inv(res)        
+    #create the grid indices for the reference
+    refinds = np.ndindex(disdata.shape[:3])   
+    #create the 4d volume which has the indices for the reference image  
+    reftmp=np.zeros(disdata.shape)    
+    for ijk_t in refinds:
+        i,j,k = ijk_t   
+        reftmp[i,j,k,0]=i
+        reftmp[i,j,k,1]=j
+        reftmp[i,j,k,2]=k
+    #affine transform from reference index to the fa index
+    A = np.dot(reftmp,ires[:3,:3].T)+ires[:3,3]
+    #add the displacements but first devide them by the voxel sizes
+    A2=A+disdata/fazooms
+    #hold the displacements' shape reshaping
+    di,dj,dk,dl=disdata.shape
+    #do the interpolation using map coordinates
+    #the list of points where the interpolation is done given by the reshaped in 2D A2 (list of 3d points in fa index)
+    W=mc(fadata,A2.reshape(di*dj*dk,dl).T,order=1).reshape(di,dj,dk)    
+    #save the warped image
+    Wimg=nib.Nifti1Image(W,refaff)
+    nib.save(Wimg,ffaw)
+    
 
 
 
