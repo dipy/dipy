@@ -6,6 +6,7 @@ import numpy as np
 import nibabel as nib
 import numpy.linalg as npl
 from scipy.ndimage import map_coordinates as mc
+from numpy import newaxis
 
 _VAL_FMT = '   %e'
 
@@ -139,16 +140,23 @@ def warp_displacements(ffa,flaff,fdis,fref,ffaw):
     #from fa index to ref index
     res=flirt2aff_files(flaff,ffa,fref)
     #from ref index to fa index
-    ires=np.linalg.inv(res)        
-    #create the grid indices for the reference
-    refinds = np.ndindex(disdata.shape[:3])   
+    ires=np.linalg.inv(res)    
     #create the 4d volume which has the indices for the reference image  
-    reftmp=np.zeros(disdata.shape)    
+    reftmp=np.zeros(disdata.shape)
+    '''    
+    #create the grid indices for the reference
+    #refinds = np.ndindex(disdata.shape[:3])  
     for ijk_t in refinds:
         i,j,k = ijk_t   
         reftmp[i,j,k,0]=i
         reftmp[i,j,k,1]=j
         reftmp[i,j,k,2]=k
+    '''
+    #same as commented above but much faster
+    reftmp[...,0] = np.arange(disdata.shape[0])[:,newaxis,newaxis]
+    reftmp[...,1] = np.arange(disdata.shape[1])[newaxis,:,newaxis]
+    reftmp[...,2] = np.arange(disdata.shape[2])[newaxis,newaxis,:]
+        
     #affine transform from reference index to the fa index
     A = np.dot(reftmp,ires[:3,:3].T)+ires[:3,3]
     #add the displacements but first devide them by the voxel sizes
