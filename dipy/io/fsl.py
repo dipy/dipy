@@ -119,7 +119,7 @@ def flirt2aff_files(matfile, in_fname, ref_fname):
     ref_img = nib.load(ref_fname)
     return flirt2aff(mat, in_img, ref_img)
 
-def warp_displacements(ffa,flaff,fdis,fref,ffaw):
+def warp_displacements(ffa,flaff,fdis,fref,ffaw,order=1):
     ''' Warp an image using fsl displacements 
     
     Parameters
@@ -165,7 +165,7 @@ def warp_displacements(ffa,flaff,fdis,fref,ffaw):
     di,dj,dk,dl=disdata.shape
     #do the interpolation using map coordinates
     #the list of points where the interpolation is done given by the reshaped in 2D A2 (list of 3d points in fa index)
-    W=mc(fadata,A2.reshape(di*dj*dk,dl).T,order=1).reshape(di,dj,dk)    
+    W=mc(fadata,A2.reshape(di*dj*dk,dl).T,order=order).reshape(di,dj,dk)    
     #save the warped image
     Wimg=nib.Nifti1Image(W,refaff)
     nib.save(Wimg,ffaw)

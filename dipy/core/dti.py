@@ -261,6 +261,20 @@ class Tensor(ModelArray):
     def IN(self):
         ''' Quantizes eigenvectors with maximum eigenvalues  on an
         evenly distributed sphere so that the can be used for tractography.
+        DEPRECATED TO BE REMOVED use
+
+        Returns
+        -------
+        IN: array, shape(x,y,z) integer indices for the points of the
+        evenly distributed sphere representing tensor  eigenvectors of
+        maximum eigenvalue
+    
+        '''
+        return quantize_evecs(self.evecs,odf_vertices=None)
+        
+    def ind(self):
+        ''' Quantizes eigenvectors with maximum eigenvalues  on an
+        evenly distributed sphere so that the can be used for tractography.
 
         Returns
         -------

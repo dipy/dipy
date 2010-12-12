@@ -356,7 +356,7 @@ def most_similar_track_mam(tracks,metric='avg'):
        of tracks as arrays, shape (N1,3) .. (Nm,3)
     metric : str
        'avg', 'min', 'max'
-    
+        
     Returns
     -------
     si : int
@@ -1349,11 +1349,10 @@ def track_dist_3pts(tracka,trackb):
     
         
     
-
-cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+@cython.cdivision(True)   
+cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
     ''' Calculate the euclidean distance between two 3pt tracks
     both direct and flip are given as output
-    
     
     Parameters
     ----------------
@@ -1364,15 +1363,14 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     -----------
     out: a float[2] array having the euclidean distance and the fliped euclidean distance
     
-    
     '''
     
     cdef:
         int i
         float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
-        
-    
-    for i in range(3):
+
+    #for i in range(3):
+    for i from 0<=i<3:
         tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
         tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
         tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
@@ -1393,7 +1391,7 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     
 
 def local_skeleton_clustering(tracks, d_thr=10):
-    ''' For historical purposes as it was used for the HBM2010 abstract
+    ''' Used for the HBM2010 abstract
     "Fast Dimensionality Reduction for Brain Tractography Clustering" by E.Garyfallidis et.al
     we keep this function that does a first pass clustering.
 
@@ -1466,7 +1464,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
             #print h
             track_direct_flip_3dist(
                 asfp(track[0]),asfp(track[1]),asfp(track[2]), 
-                asfp(h[0]), asfp(h[1]),asfp(h[2]),d)
+                asfp(h[0]), asfp(h[1]),asfp(h[2]),<float *>d)
                 
             #d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
             #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
