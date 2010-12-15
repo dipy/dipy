@@ -1379,7 +1379,7 @@ def annotatePick(object, event):
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,png_magnify=3):
+def show(ren,title='Fos',size=(300,300),png_magnify=3):
     ''' Show window 
     
     Parameters
@@ -1390,10 +1390,6 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,
             a string for the window title bar
     size : (int, int) 
             (width,height) of the window
-    track_bf : sequence (default None)
-                tracklist 
-    color_bf : array, shape (N,3) where N =len(track_bf), default None
-                a color for every track
     
     Examples
     --------    
@@ -1407,21 +1403,6 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,
     >>> fos.add(r,l)
     >>> fos.show(r)
     '''
-    global track_buffer,tmp_ren,ind_buffer
-    
-    #if a list of tracks is available for picking show the tracks with red
-    if track_bf!=None:
-        track_buffer=track_bf
-        ind_buffer=ind_bf
-        
-        if color_bf==None:
-            ren.AddActor(line(track_buffer,red,opacity=1))
-        else:
-            ren.AddActor(line(track_buffer,color_bf,opacity=1))
-        tmp_ren=ren
-
-    picker.AddObserver("EndPickEvent", annotatePick)
-    
     ren.AddActor2D(textActor)
     
     ren.ResetCamera()        
@@ -1456,6 +1437,74 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,
     picker.Pick(85, 126, 0, ren)    
     window.Render()
     iren.Start()
+
+def record(ren=None,cam_pos=(0,0,600),cam_focal=(0,0,0),cam_view=(0,0,1),outdir=None,n_frames=10,magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
+    ''' This will record your scene 
+    
+    Parameters
+    ----------
+    ren:
+    camera_position:
+    outdir: 
+    n_frames:
+    magnification:    
+      
+    '''
+    
+    if ren==None:
+        ren = vtk.vtkRenderer()
+   
+    ren.SetBackground(bgr_color)
+    renWin = vtk.vtkRenderWindow()
+    renWin.AddRenderer(ren)
+    renWin.SetSize(size)
+    iren = vtk.vtkRenderWindowInteractor()
+    iren.SetRenderWindow(renWin)
+
+    #ren.GetActiveCamera().Azimuth(180)   
+
+    '''
+    # We'll set up the view we want.
+    ren.GetActiveCamera().SetPosition(0, 1, 0)
+    ren.GetActiveCamera().SetFocalPoint(0, 0, 0)
+    ren.GetActiveCamera().SetViewUp(0, 0, 1)
+    # Let the renderer compute a good position and focal point.
+    ren.ResetCamera()
+    ren.GetActiveCamera().Dolly(1.4)
+    ren.ResetCameraClippingRange()
+    '''
+
+    renderLarge = vtk.vtkRenderLargeImage()
+    renderLarge.SetInput(ren)
+    renderLarge.SetMagnification(magnification)
+    renderLarge.Update()
+    
+    writer = vtk.vtkPNGWriter()        
+    ang=0
+    
+    cx,cy,cz=cam_pos
+    ren.GetActiveCamera().SetPosition(cx,cy,cz)
+    fx,fy,fz=cam_focal
+    ren.GetActiveCamera().SetFocalPoint(fx,fy,fz)    
+    ux,uy,uz=cam_view
+    ren.GetActiveCamera().SetViewUp(ux, uy, uz)
+    
+    for i in range(n_frames):        
+        ren.GetActiveCamera().Azimuth(ang)        
+        renderLarge = vtk.vtkRenderLargeImage()
+        renderLarge.SetInput(ren)
+        renderLarge.SetMagnification(magnification)
+        renderLarge.Update()        
+        writer.SetInputConnection(renderLarge.GetOutputPort())
+        #filename='/tmp/'+str(3000000+i)+'.png'
+        if outdir==None:
+            filename=str(1000000+i)+'.png'
+        else:
+            filename=outdir+str(1000000+i)+'.png'
+        writer.SetFileName(filename)
+        writer.Write()               
+        
+        ang=+10
 
        
        
