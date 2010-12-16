@@ -43,7 +43,7 @@ C=pf.local_skeleton_clustering(tracks,d_thr=20)
 print 'Done in', time.clock()-now,'s.'
 
 print 'Reducing the number of points...'
-T=[pf.approximate_ei_trajectory(t) for t in T]
+T=[pf.approx_polygon_track(t) for t in T]
 
 print 'Showing initial dataset.'
 
@@ -81,7 +81,7 @@ for c in C:
         bundle.append(data[i])
 
     
-    bi=pf.most_similar_track_zhang(bundle)[0]
+    bi=pf.most_similar_track_mam(bundle)[0]
     C[c]['skeletal']=bundle[bi]
     
 
@@ -118,6 +118,6 @@ print 'tripletons ',lens.count(3)
 ''' Next Level
 
 12: cluster0=[T[t] for t in C[0]['indices']]
-13: pf.most_similar_track_zhang(cluster0)
+13: pf.most_similar_track_mam(cluster0)
 
 '''

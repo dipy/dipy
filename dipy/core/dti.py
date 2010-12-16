@@ -1,7 +1,9 @@
 #!/usr/bin/python
+""" Classes and functions for fitting tensors """
 # 5/17/2010
 
 #import modules
+import os
 import numpy as np
 
 #fro dipy
@@ -203,7 +205,7 @@ class Tensor(ModelArray):
         return self.fa()
 
     def fa(self):
-        """
+        r"""
         Fractional anisotropy (FA) calculated from cached eigenvalues. 
         
         Returns
@@ -217,9 +219,10 @@ class Tensor(ModelArray):
 
         .. math::
 
-        FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                    \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
-                    \lambda_2^2+\lambda_3^2} }
+            FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
+                        \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
+                        \lambda_2^2+\lambda_3^2} }
+
         """
         evals, wrap = _makearray(self.model_params[..., :3])
         ev1 = evals[..., 0]
@@ -236,7 +239,7 @@ class Tensor(ModelArray):
         return self.md()
     
     def md(self):
-        """
+        r"""
         Mean diffusitivity (MD) calculated from cached eigenvalues. 
         
         Returns
@@ -248,13 +251,29 @@ class Tensor(ModelArray):
         -----
         MD is calculated with the following equation:
 
-        .. math:: ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
+        .. math::
+
+            ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
         #adc/md = (ev1+ev2+ev3)/3
         return self.evals.mean(-1)
 
     @property
     def IN(self):
+        ''' Quantizes eigenvectors with maximum eigenvalues  on an
+        evenly distributed sphere so that the can be used for tractography.
+        DEPRECATED TO BE REMOVED use
+
+        Returns
+        -------
+        IN: array, shape(x,y,z) integer indices for the points of the
+        evenly distributed sphere representing tensor  eigenvectors of
+        maximum eigenvalue
+    
+        '''
+        return quantize_evecs(self.evecs,odf_vertices=None)
+        
+    def ind(self):
         ''' Quantizes eigenvectors with maximum eigenvalues  on an
         evenly distributed sphere so that the can be used for tractography.
 
@@ -268,7 +287,7 @@ class Tensor(ModelArray):
         return quantize_evecs(self.evecs,odf_vertices=None)
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
-    """
+    r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion 
     tensor using a linear regression model [1]_.
     
@@ -312,14 +331,14 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     
     .. math::
 
-    y = \mathrm{data} \\
-    X = \mathrm{design matrix} \\
-    \hat{\beta}_WLS = \mathrm{desired regression coefficients (e.g. tensor)}\\
-    \\
-    \hat{\beta}_WLS = (X^T W X)^-1 X^T W y \\
-    \\
-    W = \mathrm{diag}((X \hat{\beta}_OLS)^2),
-    \mathrm{where} \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        y = \mathrm{data} \\
+        X = \mathrm{design matrix} \\
+        \hat{\beta}_WLS = \mathrm{desired regression coefficients (e.g. tensor)}\\
+        \\
+        \hat{\beta}_WLS = (X^T W X)^-1 X^T W y \\
+        \\
+        W = \mathrm{diag}((X \hat{\beta}_OLS)^2),
+        \mathrm{where} \hat{\beta}_OLS = (X^T X)^-1 X^T y
 
     References
     ----------
@@ -371,7 +390,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
 
 
 def ols_fit_tensor(design_matrix, data, min_signal=1):
-    """
+    r"""
     Computes ordinary least squares (OLS) fit to calculate self-diffusion 
     tensor using a linear regression model [1]_.
     
@@ -407,10 +426,11 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     This function is offered mainly as a quick comparison to WLS.
 
     .. math::
-    y = \mathrm{data} \\
-    X = \mathrm{design matrix} \\
+
+        y = \mathrm{data} \\
+        X = \mathrm{design matrix} \\
     
-    \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        \hat{\beta}_OLS = (X^T X)^-1 X^T y
 
     References
     ----------

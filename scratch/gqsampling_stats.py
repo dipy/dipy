@@ -8,7 +8,7 @@ from os.path import join as opj
 import nibabel as ni
 import dipy.core.generalized_q_sampling as gq
 from dipy.testing import parametric
-import dipy.core.track_propagation as tp
+#import dipy.core.track_propagation as tp
 import dipy.core.dti as dt
 import dipy.core.meshes as meshes 
 

@@ -9,7 +9,7 @@ spherical coordinate system`_ and `Mathworld spherical coordinate
 system`_.
 
 There is more information in the docstring for the
-:func:`~dipy.core.geometry.cart2sphere` function.
+:func:`~dipy.core.geometry.sphere2cart` function.
 
 Terms
 =====

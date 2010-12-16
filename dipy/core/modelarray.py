@@ -1,4 +1,5 @@
 #!/usr/bin/python
+""" Class to present model parameters as voxel-shaped array """
 # 5/17/2010
 
 #import modules

@@ -1,15 +1,12 @@
-''' A type of -*- python -*- file
+# A type of -*- python -*- file
+""" Counting incidence of tracks in voxels of volume
+"""
 
-Counting incidence of tracks in voxels of volume
-
-'''
 import numpy as np
 cimport numpy as cnp
 
 cdef extern from "math.h":
     double floor(double x)
-
-
 
 def track_counts(tracks, vol_dims, vox_sizes, return_elements=True):
     ''' Counts of points in `tracks` that pass through voxels in volume

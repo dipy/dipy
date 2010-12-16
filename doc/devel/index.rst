@@ -10,6 +10,8 @@ Contents:
 
    intro
    gitwash/index
+   make_release
+   commit_codes
 
 Indices and tables
 ==================

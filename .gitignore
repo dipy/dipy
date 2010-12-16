@@ -1,6 +1,9 @@
 *.pyc
 *.so
+*.c
 build
 *~
 doc/_build
 doc/*-stamp
+MANIFEST
+dist/

@@ -45,7 +45,7 @@ def larch(tracks,
     print 'Done in ', t2-t1, 'secs'
     
     print 'Reducing to n-point approximate tracks...'
-    atracks=[pf.approximate_ei_trajectory(t) for t in tracks]
+    atracks=[pf.approx_polygon_track(t) for t in tracks]
 
     t3=time.clock()
     print 'Done in ', t3-t2, 'secs'
@@ -62,7 +62,7 @@ def larch(tracks,
         local_tracks=[atracks[i] for i in C[c]['indices']]        
         #identify the most similar track in the cluster C[c] and return the index of
         #the track and the distances of this track with all other tracks
-        msi,distances=pf.most_similar_track_zhang(local_tracks,metric='avg')
+        msi,distances=pf.most_similar_track_mam(local_tracks,metric='avg')
         
         C[c]['repz']=atracks[C[c]['indices'][msi]]
         C[c]['repz_dists']=distances
@@ -306,7 +306,7 @@ def skeletal_tracks(tracks,rand_selected=1000,ball_radius=5,neighb_no=50):
                 for p in tracks[t]:
                     
                     #if you intersect the sphere surrounding the point of the random track increase a counter
-                    if tm.intersect_sphere(tracks[tri],p,ball_radius): cnt_intersected_balls+=1
+                    if tm.inside_sphere(tracks[tri],p,ball_radius): cnt_intersected_balls+=1
                 
                 #if all spheres are covered then accept this track as your neighbour
                 if cnt_intersected_balls ==len(tracks[t]): 
@@ -530,7 +530,7 @@ def track_indices_for_a_value_in_atlas(atlas,value,tes,tracks):
     return list(indices)
 
 
-def relabel_by_atlas_value_and_zhang(atlas_tracks,atlas,tes,tracks,tracksd,zhang_thr):
+def relabel_by_atlas_value_and_mam(atlas_tracks,atlas,tes,tracks,tracksd,zhang_thr):
     
     emi=emi_atlas()
     

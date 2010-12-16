@@ -17,12 +17,14 @@ More papers are on their way and please see our :ref:`documentation` for more de
 
 The core development team consists of the following individuals:
 
-- Eleftherios Garyfallidis (leading programmer), University of Cambridge
-- Ian Nimmo-Smith, MRC - Cognition and Brain Sciences Unit
-- Matthew Brett, University of California, Berkeley
-- Bago Amirbekian, University of California, San Fransisco
-- Frank Yeh, Carnegie Mellon University
-- Christopher Nguyen, University of California, Los Angeles
+- Eleftherios Garyfallidis (leading programmer), University of Cambridge, UK 
+- Ian Nimmo-Smith, MRC Cognition and Brain Sciences Unit, Cambridge, UK
+- Matthew Brett, University of California, Berkeley, CA
+- Bago Amirbekian, University of California, San Fransisco, CA
+- Frank Yeh, Carnegie Mellon University, Pittsburgh, PA
+- Christopher Nguyen, University of California, Los Angeles, CA
+- Emanuele Olivetti, NeuroInformatics Laboratory (NILab), Trento, Italy
+- Yaroslav Halchenco, PBS Department, Dartmouth, NH
 - And your name here ...
 
 **Join in the fun** and enjoy the `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we made for the Summer Exhibition in London for the celebration of the 350 years of the Royal Society.

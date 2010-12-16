@@ -1,16 +1,14 @@
-''' A type of -*- python -*- file
+ # A type of -*- python -*- file
+""" Optimized track metrics and correspondence measures
+"""
 
-Performance functions for dipy
-
-
-'''
 # cython: profile=True
 # cython: embedsignature=True
 
 cimport cython
 
-import numpy as np
 import time
+import numpy as np
 cimport numpy as cnp
 
 
@@ -35,6 +33,7 @@ cdef extern from "stdlib.h" nogil:
 
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
+
 
 
 cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
@@ -127,10 +126,10 @@ def inner_3vecs(vec1, vec2):
     return cinner_3vecs(<float *>fvec1.data, <float*>fvec2.data)
 
 
-cdef inline float cinner_3vecs(float *vec1, float *vec2):
+cdef inline float cinner_3vecs(float *vec1, float *vec2) nogil:
     cdef int i
     cdef float ip = 0
-    for i in range(3):
+    for i from 0<=i<3:
         ip += vec1[i]*vec2[i]
     return ip
 
@@ -143,9 +142,9 @@ def sub_3vecs(vec1, vec2):
     return vec_out
 
 
-cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out):
+cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = vec1[i]-vec2[i]
 
 
@@ -157,9 +156,9 @@ def add_3vecs(vec1, vec2):
     return vec_out
 
 
-cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out):
+cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = vec1[i]+vec2[i]
 
 def mul_3vecs(vec1, vec2):
@@ -169,9 +168,9 @@ def mul_3vecs(vec1, vec2):
     cmul_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
     return vec_out
 
-cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out):
+cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = vec1[i]*vec2[i]
 
 def mul_3vec(a, vec):
@@ -180,11 +179,10 @@ def mul_3vec(a, vec):
     cmul_3vec(a,<float *>fvec.data, <float *>vec_out.data)
     return vec_out        
 
-cdef inline void cmul_3vec(float a, float *vec, float *vec_out):
+cdef inline void cmul_3vec(float a, float *vec, float *vec_out) nogil:
     cdef int i
-    for i in range(3):
+    for i from 0<=i<3:
         vec_out[i] = a*vec[i]
-
 
 
 # float 32 dtype for casting
@@ -347,9 +345,9 @@ def cut_plane(tracks,ref):
 DEF biggest_double = 1.79769e+308
 
 
-def most_similar_track_zhang(tracks,metric='avg'):    
+def most_similar_track_mam(tracks,metric='avg'):    
     ''' The purpose of this function is to implement a much faster version of 
-    most_similar_track_zhang from dipy.core.track_metrics  as we implemented 
+    most_similar_track_mam from dipy.core.track_metrics  as we implemented 
     from Zhang et. al 2008. 
     
     Parameters
@@ -358,7 +356,7 @@ def most_similar_track_zhang(tracks,metric='avg'):
        of tracks as arrays, shape (N1,3) .. (Nm,3)
     metric : str
        'avg', 'min', 'max'
-            
+        
     Returns
     -------
     si : int
@@ -457,9 +455,9 @@ def most_similar_track_zhang(tracks,metric='avg'):
     return si, track2others
 
 
-def bundles_distances_zhang(tracksA, tracksB, metric='avg'):
+def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     ''' The purpose of this function is to implement a much faster version of 
-    bundles_distances_zhang from dipy.core.track_metrics as implemented 
+    bundles_distances_mam from dipy.core.track_metrics as implemented 
     from Zhang et. al 2008. 
     
     Parameters
@@ -935,9 +933,9 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
     return sqrt((1-cos_theta_squared)*l1)
 
 
-def approximate_ei_trajectory(xyz,alpha=0.392):
-    ''' Fast and simple Approximate Trajectory
-        Algorithm by Eleftherios and Ian
+def approx_polygon_track(xyz,alpha=0.392):
+    ''' Fast and simple trajectory approximation algorithm 
+    by Eleftherios and Ian
     
     Parameters
     ------------------
@@ -955,13 +953,14 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
     
     Examples
     --------
+    >>> from fos.core.track_performance import approx_polygon_track
     >>> #approximating a helix
     >>> t=np.linspace(0,1.75*2*np.pi,100)
     >>> x = np.sin(t)
     >>> y = np.cos(t)
     >>> z = t        
     >>> xyz=np.vstack((x,y,z)).T     
-    >>> xyza = pf.approximate_ei_trajectory(xyz)
+    >>> xyza = approx_polygon_track(xyz)
     >>> len(xyz)
     >>> len(xyza)
     
@@ -1002,8 +1001,7 @@ def approximate_ei_trajectory(xyz,alpha=0.392):
         
         #csub_3vecs(<float *>fvec1.data,<float *>fvec0.data,vec0)
         csub_3vecs(fvec1,fvec0,vec0)
-        csub_3vecs(fvec2,fvec1,vec1)
-          
+        csub_3vecs(fvec2,fvec1,vec1)          
         
         tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))        
         
@@ -1243,8 +1241,9 @@ def point_segment_sq_distance(a,b,c):
     cc = asfp(c)
     
     return cpoint_segment_sq_dist(ca, cb, cc)
-    
-cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c):
+
+@cython.cdivision(True)    
+cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
     ''' Calculate the squared distance from a point c to a line segment ab.
     
     '''
@@ -1258,9 +1257,11 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c):
     
     e = cinner_3vecs(ac, ab)
     #Handle cases where c projects outside ab
-    if e <= 0.:  return cinner_3vecs(ac, ac)
+    if e <= 0.:  
+        return cinner_3vecs(ac, ac)
     f = cinner_3vecs(ab, ab)
-    if e >= f : return cinner_3vecs(bc, bc)
+    if e >= f : 
+        return cinner_3vecs(bc, bc)
     #Handle case where c projects onto ab
     return cinner_3vecs(ac, ac) - e * e / f
 
@@ -1348,11 +1349,10 @@ def track_dist_3pts(tracka,trackb):
     
         
     
-
-cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
+@cython.cdivision(True)   
+cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
     ''' Calculate the euclidean distance between two 3pt tracks
     both direct and flip are given as output
-    
     
     Parameters
     ----------------
@@ -1363,15 +1363,14 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     -----------
     out: a float[2] array having the euclidean distance and the fliped euclidean distance
     
-    
     '''
     
     cdef:
         int i
         float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
-        
-    
-    for i in range(3):
+
+    #for i in range(3):
+    for i from 0<=i<3:
         tmp1=tmp1+(a1[i]-a2[i])*(a1[i]-a2[i])
         tmp2=tmp2+(b1[i]-b2[i])*(b1[i]-b2[i])
         tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
@@ -1392,23 +1391,21 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     
 
 def local_skeleton_clustering(tracks, d_thr=10):
-    ''' For historical purposes as it was used for the HBM2010 abstract
+    ''' Used for the HBM2010 abstract
     "Fast Dimensionality Reduction for Brain Tractography Clustering" by E.Garyfallidis et.al
     we keep this function that does a first pass clustering.
 
     Parameters
     -----------
     tracks: sequence
-        of tracks as arrays, shape (N1,3) .. (Nm,3)
+        of tracks as arrays, shape (N,3) .. (N,3) where N=3
 
     d_thr: float, average euclidean distance threshold
-
 
     Returns
     --------
     C: dict
-    
-    
+        
     Examples
     --------
     >>> from dipy.viz import fos
@@ -1450,7 +1447,6 @@ def local_skeleton_clustering(tracks, d_thr=10):
     for it in range(1,lent):
         
         track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
-            
         lenC=len(C.keys())
         
         if it%1000==0:
@@ -1468,7 +1464,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
             #print h
             track_direct_flip_3dist(
                 asfp(track[0]),asfp(track[1]),asfp(track[2]), 
-                asfp(h[0]), asfp(h[1]),asfp(h[2]),d)
+                asfp(h[0]), asfp(h[1]),asfp(h[2]),<float *>d)
                 
             #d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
             #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
@@ -1491,6 +1487,8 @@ def local_skeleton_clustering(tracks, d_thr=10):
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
                 C[i_k]['hidden']+=ts
             else:                
+                #print(track.shape)
+                #print(track.dtype)
                 C[i_k]['hidden']+=track
                 
             C[i_k]['N']+=1
@@ -1501,17 +1499,6 @@ def local_skeleton_clustering(tracks, d_thr=10):
             C[lenC]['hidden']=track.copy()
             C[lenC]['N']=1
             C[lenC]['indices']=[it]
-    
-    '''   
-    fos.clear(r)
-
-    color=[fos.red,fos.green,fos.blue,fos.yellow]
-    for c in C:
-        for i in C[c]['indices']:
-            fos.add(r,fos.line(tracks[i],color[c]))
-                
-    fos.show(r)
-    '''
     
     return C
 
@@ -1701,25 +1688,16 @@ def larch_3merge(C,thr=10.):
     ts=np.zeros((3,3),dtype=np.float32)
 
     lenC=len(C)
-
     C2=C.copy()
     
     for c in range(0,lenC-1):
-
-
-        ch=np.ascontiguousarray(C[c]['rep3']/C[c]['N'],dtype=f32_dt)        
-
+        ch=np.ascontiguousarray(C[c]['rep3']/C[c]['N'],dtype=f32_dt)
         krange=range(c+1,lenC)
         klen=len(krange)
-
         alld=np.zeros(klen)
         flip=np.zeros(klen)
-
-
         for k in range(c+1,lenC):
-
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
-
             track_direct_flip_3dist(
                 asfp(ch[0]),asfp(ch[1]),asfp(ch[2]), 
                 asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
@@ -1733,28 +1711,136 @@ def larch_3merge(C,thr=10.):
 
         m_k=np.min(alld)
         i_k=np.argmin(alld)
-
-
         if m_k<thr:     
-
             if flip[i_k]==1:                
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
                 C2[i_k+c]['rep3']+=ts
             else:
-                C2[i_k+c]['rep3']+=ch
-                
+                C2[i_k+c]['rep3']+=ch                
             C2[i_k+c]['N']+=C2[c]['N']
-
             C2[i_k+c]['indices']+=C2[c]['indices']
-
             del C2[c]
-
 
     return C2
 
 
 
+def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=1] point, double sq_dist_thr):
+    ''' Check if square distance of track from point is smaller than threshold
+    
+    Parameters
+    ----------
+    track: array,float32, shape (N,3)
+    point: array,float32, shape (3,)
+    sq_dist_thr: double, threshold
+    
+    Returns
+    -------
+    bool: True, if sq_distance <= sq_dist_thr, otherwise False. 
+    
+    Examples
+    --------    
+    >>> from dipy.core.track_performance import point_track_sq_distance_check
+    >>> t=np.random.rand(10,3).astype(np.float32)
+    >>> p=np.array([0.5,0.5,0.5],dtype=np.float32)
+    >>> point_track_sq_distance_check(t,p,2**2)
+    True
+    >>> t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
+    >>> p=np.array([-1,-1.,-1],dtype='f4')
+    >>> point_track_sq_distance_check(t,p,.2**2)
+    False
+    >>> point_track_sq_distance_check(t,p,2**2)
+    True
+    '''
+        
+    cdef:
+        float *t=<float *>track.data
+        float *p=<float *>point.data
+        float a[3],b[3]
+        int tlen = len(track)
+        int curr = 0
+        float dist = 0
+        int i
+        int intersects = 0
+       
+    with nogil:
+        for i from 0<=i<tlen-1:
+            
+            curr=i*3        
+            a[0]=t[curr]
+            a[1]=t[curr+1]
+            a[2]=t[curr+2]              
+            b[0]=t[curr+3]
+            b[1]=t[curr+4]
+            b[2]=t[curr+5]                                        
+            dist=cpoint_segment_sq_dist(<float *>a,<float *>b,p)        
+            if dist<=sq_dist_thr:
+                intersects=1            
+                break
+            
+    if intersects==1:
+        return True
+    else:
+        return False
 
+def track_roi_intersection_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=2] roi, double sq_dist_thr):
+    ''' Check if a track is intersecting a region of interest
+    
+    Parameters
+    ----------
+    track: array,float32, shape (N,3)
+    roi: array,float32, shape (M,3)
+    sq_dist_thr: double, threshold, check squared euclidean distance from every roi point 
+    
+    Returns
+    -------
+    bool: True, if sq_distance <= sq_dist_thr, otherwise False. 
+    
+    Examples
+    --------    
+    >>> from dipy.core.track_performance import track_roi_intersection_check
+    >>> roi=np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='f4')    
+    >>> t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
+    >>> track_roi_intersection_check(t,roi)
+    True
+    '''
+        
+    cdef:
+        float *t=<float *>track.data
+        float *r=<float *>roi.data
+        float a[3],b[3],p[3]
+        int tlen = len(track)
+        int rlen = len(roi) 
+        int curr = 0
+        int currp = 0
+        float dist = 0
+        int i,j     
+        int intersects=0
+    
+    with nogil:        
+        for i from 0<=i<tlen-1:            
+            curr=i*3        
+            a[0]=t[curr]
+            a[1]=t[curr+1]
+            a[2]=t[curr+2]              
+            b[0]=t[curr+3]
+            b[1]=t[curr+4]
+            b[2]=t[curr+5]                
+            for j from 0<=j<rlen:                
+                currp=j*3                    
+                p[0]=r[currp]
+                p[1]=r[currp+1]
+                p[2]=r[currp+2]                                                                   
+                dist=cpoint_segment_sq_dist(<float *>a,<float *>b,<float *>p)        
+                if dist<=sq_dist_thr:            
+                    intersects=1
+                    break                
+            if intersects==1:
+                break    
+    if intersects==1:        
+        return True
+    else:
+        return False
 
 
         

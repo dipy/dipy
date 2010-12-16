@@ -12,15 +12,6 @@
     >>> fos.add(r,a)
     >>> fos.show(r)
     
-    The future version will be as simple as 
-    Foz Example:
-    ----------------
-    >>> from dipy.viz import fos
-    >>> foz=fos.Foz()
-    >>> foz.axes()
-    
-    but Foz is still ongoing and needs more testing...
-    
 '''
 
 try:
@@ -87,113 +78,6 @@ textActor.VisibilityOff()
 textActor.SetMapper(textMapper)
 # Create a cell picker.
 picker = vtk.vtkCellPicker()
-
-class Foz(object):
-    ''' An object for fast accessing the fos utilities.
-    '''
-    def __init__(self):
-        
-        self.canvas={}
-        self.cren=0
-        self.canvas[0]=ren()
-        self.canvas[1]=ren()
-        self.canvas[2]=ren()
-        self.canvas[3]=ren()
-        self.on=True
-        self.clear()
-        
-        '''
-        Note :
-        ------
-        add actors below their renderers
-        '''
-        
-        
-    def __len__(self):
-        pass
-
-    def __iter__(self):
-        pass            
-
-    def length(self):
-        pass
-
-    def volume(self,vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,trilinear=1,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
-        
-        v=volume(vol,voxsz,affine,center_origin,info,maptype,trilinear,iso,iso_thr,opacitymap,colormap)   
-        add(self.canvas[self.cren],v)
-        if self.on:
-            show(self.canvas[self.cren])
-        
-        return v
-        
-    def origin(self,scale=(1,1,1),colorx=(1,0,0),colory=(0,1,0),colorz=(0,0,1),opacity=1):
-                
-        ax=axes(scale,colorx,colory,colorz,opacity)
-        add(self.canvas[self.cren],ax)
-        if self.on:
-            show(self.canvas[self.cren])
-       
-        return ax
-    
-    def line(self,lines,colors,opacity=1,linewidth=1):
-        
-        l=line(lines,colors,opacity,linewidth)
-        add(self.canvas[self.cren],l)
-        if self.on:
-            show(self.canvas[self.cren])
-        
-        return l
-    
-    def point(self,points,colors,opacity=1):
-        
-        p=point(points,colors,opacity)
-        add(self.canvas[self.cren],p)
-        if self.on:
-            show(self.canvas[self.cren])
-    
-    def dots(self,points,color=(1,0,0),opacity=1):
-        
-        d=dots(points,color,opacity)
-        add(self.canvas[self.cren],d)
-        if self.on:
-            show(self.canvas[self.cren])
-        
-        return d    
-    
-    def label(self,ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
-        
-        la=label(ren=self.cren,text=text,pos=pos,scale=scale,color=color)        
-        if self.on:
-            show(self.canvas[self.cren])
-        
-        return la
-    
-    def sphere(self,position=(0,0,0),radius=0.5,thetares=8,phires=8,color=(0,0,1),opacity=1,tessel=0):
-
-        s=sphere(position,radius,thetares,phires,color,opacity,tessel)
-        add(self.canvas[self.cren],s)
-        if self.on:
-            show(self.canvas[self.cren])
-        return s
-    
-    def show(self,title='Fos',size=(300,300)):
-        
-        show(self.canvas[self.cren],title='Foz ',size=(300,300))
-        self.on=False
-        
-    def clear(self,actor=None):
-        if actor == None:
-            clear(self.canvas[self.cren])
-        else:
-            rm(self.canvas[self.cren],actor)
-            
-        
-    @property
-    def new(self):
-        pass
-                
-
 
 def ren():
     ''' Create a renderer
@@ -519,79 +403,6 @@ def dots(points,color=(1,0,0),opacity=1):
     aPolyVertexActor.GetProperty().SetOpacity(opacity)
     return aPolyVertexActor
 
-def point_deprecated(points,colors,opacity=1):
-    ''' Create 3d points and generate only one actor for all points. Similar with dots but here you can 
-    color every point or class of points with a different color.
-    '''
-    #return dots(points,color=(1,0,0),opacity=1)
-    
-    if np.array(colors).ndim==1:
-        return dots(points,colors,opacity)
-    
-    points_=vtk.vtkCellArray()
-    pointscalars=vtk.vtkFloatArray()
-   
-    #lookuptable=vtk.vtkLookupTable()
-    lookuptable=_lookup(colors)
-
-    scalarmin=0
-    if colors.ndim==2:            
-        scalarmax=colors.shape[0]-1
-    if colors.ndim==1:        
-        scalarmax=0    
-
-
-    if points.ndim==2:
-        points_no=points.shape[0]
-    else:
-        points_no=1
-
-    polyVertexPoints = vtk.vtkPoints()
-    polyVertexPoints.SetNumberOfPoints(points_no)
-    aPolyVertex = vtk.vtkPolyVertex()
-    aPolyVertex.GetPointIds().SetNumberOfIds(points_no)
-
-    cnt=0
-    
-    if points.ndim>1:
-        for point in points:
-            
-            pointscalars.SetNumberOfComponents(1)                        
-            polyVertexPoints.InsertPoint(cnt, point[0], point[1], point[2])
-            pointscalars.InsertNextTuple1(cnt)
-            aPolyVertex.GetPointIds().SetId(cnt, cnt)
-            cnt+=1
-            
-    else:
-        polyVertexPoints.InsertPoint(cnt, points[0], points[1], points[2])
-        aPolyVertex.GetPointIds().SetId(cnt, cnt)
-        cnt+=1
-        
-
-    aPolyVertexGrid = vtk.vtkUnstructuredGrid()
-    aPolyVertexGrid.Allocate(1, 1)
-    aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(), aPolyVertex.GetPointIds())
-    
-
-    aPolyVertexGrid.SetPoints(polyVertexPoints)
-    aPolyVertexGrid.GetPointData().SetScalars(pointscalars)
-    
-    aPolyVertexMapper = vtk.vtkDataSetMapper()
-    aPolyVertexMapper.SetInput(aPolyVertexGrid)
-    aPolyVertexMapper.SetLookupTable(lookuptable)
-    
-    
-    aPolyVertexMapper.SetColorModeToMapScalars()
-    aPolyVertexMapper.SetScalarRange(scalarmin,scalarmax)
-    aPolyVertexMapper.SetScalarModeToUsePointData()
-    
-    aPolyVertexActor = vtk.vtkActor()
-    aPolyVertexActor.SetMapper(aPolyVertexMapper)
-
-    #aPolyVertexActor.GetProperty().SetColor(color)
-    aPolyVertexActor.GetProperty().SetOpacity(opacity)
-
-    return aPolyVertexActor
 
 def point(points,colors,opacity=1,point_radius=0.001):
     
@@ -1568,7 +1379,7 @@ def annotatePick(object, event):
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,png_magnify=3):
+def show(ren,title='Fos',size=(300,300),png_magnify=3):
     ''' Show window 
     
     Parameters
@@ -1579,10 +1390,6 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,
             a string for the window title bar
     size : (int, int) 
             (width,height) of the window
-    track_bf : sequence (default None)
-                tracklist 
-    color_bf : array, shape (N,3) where N =len(track_bf), default None
-                a color for every track
     
     Examples
     --------    
@@ -1596,21 +1403,6 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,
     >>> fos.add(r,l)
     >>> fos.show(r)
     '''
-    global track_buffer,tmp_ren,ind_buffer
-    
-    #if a list of tracks is available for picking show the tracks with red
-    if track_bf!=None:
-        track_buffer=track_bf
-        ind_buffer=ind_bf
-        
-        if color_bf==None:
-            ren.AddActor(line(track_buffer,red,opacity=1))
-        else:
-            ren.AddActor(line(track_buffer,color_bf,opacity=1))
-        tmp_ren=ren
-
-    picker.AddObserver("EndPickEvent", annotatePick)
-    
     ren.AddActor2D(textActor)
     
     ren.ResetCamera()        
@@ -1645,6 +1437,74 @@ def show(ren,title='Fos',size=(300,300),track_bf=None,ind_bf=None,color_bf=None,
     picker.Pick(85, 126, 0, ren)    
     window.Render()
     iren.Start()
+
+def record(ren=None,cam_pos=(0,0,600),cam_focal=(0,0,0),cam_view=(0,0,1),outdir=None,n_frames=10,magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
+    ''' This will record your scene 
+    
+    Parameters
+    ----------
+    ren:
+    camera_position:
+    outdir: 
+    n_frames:
+    magnification:    
+      
+    '''
+    
+    if ren==None:
+        ren = vtk.vtkRenderer()
+   
+    ren.SetBackground(bgr_color)
+    renWin = vtk.vtkRenderWindow()
+    renWin.AddRenderer(ren)
+    renWin.SetSize(size)
+    iren = vtk.vtkRenderWindowInteractor()
+    iren.SetRenderWindow(renWin)
+
+    #ren.GetActiveCamera().Azimuth(180)   
+
+    '''
+    # We'll set up the view we want.
+    ren.GetActiveCamera().SetPosition(0, 1, 0)
+    ren.GetActiveCamera().SetFocalPoint(0, 0, 0)
+    ren.GetActiveCamera().SetViewUp(0, 0, 1)
+    # Let the renderer compute a good position and focal point.
+    ren.ResetCamera()
+    ren.GetActiveCamera().Dolly(1.4)
+    ren.ResetCameraClippingRange()
+    '''
+
+    renderLarge = vtk.vtkRenderLargeImage()
+    renderLarge.SetInput(ren)
+    renderLarge.SetMagnification(magnification)
+    renderLarge.Update()
+    
+    writer = vtk.vtkPNGWriter()        
+    ang=0
+    
+    cx,cy,cz=cam_pos
+    ren.GetActiveCamera().SetPosition(cx,cy,cz)
+    fx,fy,fz=cam_focal
+    ren.GetActiveCamera().SetFocalPoint(fx,fy,fz)    
+    ux,uy,uz=cam_view
+    ren.GetActiveCamera().SetViewUp(ux, uy, uz)
+    
+    for i in range(n_frames):        
+        ren.GetActiveCamera().Azimuth(ang)        
+        renderLarge = vtk.vtkRenderLargeImage()
+        renderLarge.SetInput(ren)
+        renderLarge.SetMagnification(magnification)
+        renderLarge.Update()        
+        writer.SetInputConnection(renderLarge.GetOutputPort())
+        #filename='/tmp/'+str(3000000+i)+'.png'
+        if outdir==None:
+            filename=str(1000000+i)+'.png'
+        else:
+            filename=outdir+str(1000000+i)+'.png'
+        writer.SetFileName(filename)
+        writer.Write()               
+        
+        ang=+10
 
        
        

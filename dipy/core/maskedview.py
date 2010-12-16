@@ -1,3 +1,4 @@
+""" Class to allow masked view of data array """
 import numpy as np
 from operator import mul
 from copy import copy

@@ -68,14 +68,13 @@ def merge(C,thr):
 def most(C):
 
     for c in C:
-        
-        pass'pf.most_similar_track_zhang()
+        pass # pf.most_similar_track_mam()
 
 
 T=pkl.load_pickle(fname)
 
 print 'Reducing the number of points...'
-T=[pf.approximate_ei_trajectory(t) for t in T]
+T=[pf.approx_polygon_track(t) for t in T]
 
 print 'Reducing further to tracks with 3 pts...'
 T2=[tm.downsample(t,3) for t in T]

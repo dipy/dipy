@@ -14,6 +14,32 @@ import dipy.core.meshes as meshes
 
 
 @parametric
+def test_gqiodfmask():
+
+    #read bvals,gradients and data
+    bvals=np.load(opj(os.path.dirname(__file__), \
+                          'data','small_64D.bvals.npy'))
+    gradients=np.load(opj(os.path.dirname(__file__), \
+                              'data','small_64D.gradients.npy'))    
+    img =ni.load(os.path.join(os.path.dirname(__file__),\
+                                  'data','small_64D.nii'))
+    data=img.get_data()        
+
+    mask =np.random.random(data.shape[:3])
+
+    mask[mask >.5]=1
+    mask[mask<=.5]=0
+    
+    gqs = gq.GeneralizedQSampling(data,bvals,gradients,mask=mask)   
+
+    mask=np.zeros(data.shape[:3])
+    gqs = gq.GeneralizedQSampling(data,bvals,gradients,mask=mask)
+
+    yield assert_equal(np.sum(np.isnan(gqs.QA)),5000) #all voxels should be NULL
+    
+    
+
+@parametric
 def test_gqiodf():
 
     #read bvals,gradients and data
@@ -28,6 +54,8 @@ def test_gqiodf():
     #print(bvals.shape)
     #print(gradients.shape)
     #print(data.shape)
+    
+
 
 
     t1=time.clock()

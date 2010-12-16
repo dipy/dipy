@@ -17,12 +17,12 @@ _track_tuples, _ = tv.read(pjoin(_data_path, 'tracks300.trk.gz'))
 tracks300 = [_t[0] for _t in _track_tuples]
 
 
-def bench_zhang():
+def bench_mam():
     print 'Zhang min'
     print '=' * 10
-    #ref_time = measure('tm.most_similar_track_zhang(tracks300)')
+    #ref_time = measure('tm.most_similar_track_mam(tracks300)')
     #print 'reference time: %f' % ref_time
-    opt_time = measure('pf.most_similar_track_zhang(tracks300)')
+    opt_time = measure('pf.most_similar_track_mam(tracks300)')
     print 'optimized time: %f' % opt_time
     print
 
@@ -47,7 +47,7 @@ def bench_mdl_traj():
 
 
 if __name__ == '__main__' :
-    #bench_zhang()
+    #bench_mam()
     #bench_cut_plane()
     bench_mdl_traj()
     '''
