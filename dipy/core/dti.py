@@ -167,7 +167,8 @@ class Tensor(ModelArray):
             #the assumption that the lowest b_value is always 0 is
             #incorrect the lowest b_value could also be higher than 0
             #this is common with grid q-spaces
-            mask = mask & (np.min(data[..., b_values == np.min(b_values)], -1) > thresh)
+            min_b0_sig = np.min(data[..., b_values == b_values.min()], -1)
+            mask = mask & (min_b0_sig > thresh)
 
         #if mask is all False
         if not mask.any():
@@ -477,6 +478,18 @@ def _full_tensor(D):
     tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
 
     return tensor
+
+def _compact_tensor(tensor, b0=1):
+    """
+    Returns the six unique values of the tensor and a dummy value in the order
+    expected by the design matrix
+    """
+    D = np.empty(tensor.shape[:-2] + (7,))
+    row = [0, 1, 2, 1, 2, 2]
+    colm = [0, 1, 2, 0, 0, 1]
+    D[..., :6] = tensor[..., row, colm]
+    D[..., 6] = np.log(b0)
+    return D
 
 def decompose_tensor(tensor):
     """
