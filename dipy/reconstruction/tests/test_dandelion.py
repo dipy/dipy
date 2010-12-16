@@ -43,8 +43,8 @@ faces=faces.astype(np.uint32)
 
 colors=np.ones((len(vertices),4))
 colors[:,0]=np.interp(sdf,[sdf.min(),sdf.max()],[0,1])
-colors[167]=np.array([1,0,0,1])
-colors[143]=np.array([0,1,0,1])
+colors[inds[0]]=np.array([1,0,0,1])
+colors[inds2[0]]=np.array([0,1,0,1])
 colors=colors.astype('f4')
 
 len(vertices)

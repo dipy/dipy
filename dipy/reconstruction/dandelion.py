@@ -53,7 +53,7 @@ class SphericalDandelion():
         #q2odf_params[np.isnan(q2odf_params)]= 1.
        
         self.gradients=gradients
-        self.weighting=np.dot(gradients,self.odf_vertices.T)     
+        self.weighting=np.abs(np.dot(gradients,self.odf_vertices.T))     
         
         '''
         r=[[],[],[]]
@@ -62,9 +62,6 @@ class SphericalDandelion():
                 if sL[si]-L[i]==0: 
                     r[si].append(i)
         '''            
-
-        
-                  
         S=data
         datashape=S.shape #initial shape
         msk=None #tmp mask
@@ -133,29 +130,37 @@ class SphericalDandelion():
     
     def spherical_diffusivity(self,s):
         ob=-1/self.bvals[1:]
-        d=ob*np.log(s[1:])/np.log(s[0])
         
-        d=d.reshape(1,len(d))
+        print 'ob'
+        print ob.shape
+        print ob
+        lg=np.log(s[1:])-np.log(s[0])
+        print 'lg'
+        print lg.shape
+        #print lg
         
-        np.set_printoptions(3)
-        print 'gradients'
-        print self.gradients.shape
-        print self.gradients
-        print 'sphere'
-        print (self.odf_vertices.T).shape
-        print self.odf_vertices.T
-        print 'weighting'
-        print self.weighting.shape
-        print self.weighting
-        print np.sqrt(np.sum(self.weighting**2,axis=1))
-        print np.sqrt(np.sum(self.weighting**2,axis=0))
+        d=ob*(np.log(s[1:])-np.log(s[0]))        
+        d=d.reshape(1,len(d)) 
         print 'd'
-        print d.shape
-        print d
-        print 'spherical diffusivity'
-        print np.round(10000*np.abs(np.dot(d,self.weighting[1:,:]))).astype('i8')
+        #print d
+        print d.min(),d.mean(),d.max(),d.shape
+        res=np.dot(d,self.weighting[1:,:])
+        print 'res'
+        #print res
+        print res.min(),res.mean(),res.max(),res.shape
+        print 'tmp'
+        tmp=d.max()*(res/res.max())
+        #print tmp
+        print tmp.min(),tmp.mean(),tmp.max(),tmp.shape
+        #sum weighting
+        print 'axis=1'
+        print np.sum(self.weighting[1:,:],axis=1)
+        print 'axis=0'
+        print np.sum(self.weighting[1:,:],axis=0)
+
+        #print np.round(10000*np.abs(np.dot(d,self.weighting[1:,:]))).astype('i8')               
+        return np.dot(d,self.weighting[1:,:])
         
-        return np.abs(np.dot(d,self.weighting[1:,:]))
             
     def odf(self,s):
         '''
