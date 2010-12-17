@@ -10,17 +10,6 @@ import dipy.io.track_volumes as track_volumes
 from dipy.core.generalized_q_sampling import GeneralizedQSampling
 from dipy.core.dti import Tensor
 from dipy.core.track_propagation import FACT_Delta
-
-'''
-try:
-    from nipy.neurospin.registration import register as volume_register
-    from nipy.neurospin.registration import transform as volume_transform
-    from nipy.neurospin.registration._registration import rotation_vec2mat as _rotation_vec2mat
-    from nipy.neurospin.registration.affine import Affine as _affine
-    
-except ImportError:
-    print('nipy registration is not available')
-'''
     
 try:
     from nibabel import load, save

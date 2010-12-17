@@ -9,36 +9,36 @@ from nose.tools import assert_true, assert_false, \
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.viz import fos
+from dipy.viz import fvtk
 
 
-def test_fos_functions():
+def test_fvtk_functions():
     
     # Create a renderer
-    r=fos.ren()    
+    r=fvtk.ren()    
     
     # Create 2 lines with 2 different colors
     lines=[np.random.rand(10,3),np.random.rand(20,3)]    
     colors=np.random.rand(2,3)
-    c=fos.line(lines,colors)    
-    fos.add(r,c)    
+    c=fvtk.line(lines,colors)    
+    fvtk.add(r,c)    
 
     # Create a volume and return a volumetric actor using volumetric rendering        
     vol=100*np.random.rand(100,100,100)
     vol=vol.astype('uint8')    
-    r = fos.ren()
-    v = fos.volume(vol)
-    fos.add(r,v)
+    r = fvtk.ren()
+    v = fvtk.volume(vol)
+    fvtk.add(r,v)
     
     # Remove all objects
-    fos.rm_all(r)
+    fvtk.rm_all(r)
     
     # Put some text
     
-    l=fos.label(r,text='Yes Men')
-    fos.add(r,l)
+    l=fvtk.label(r,text='Yes Men')
+    fvtk.add(r,l)
 
     # Show everything
-    #fos.show(r)
+    #fvtk.show(r)
 
     

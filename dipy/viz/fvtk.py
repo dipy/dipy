@@ -1,16 +1,16 @@
-''' Fos module implements simple visualization functions using VTK. Fos means light in Greek.    
+''' Fvtk module implements simple visualization functions using VTK. Fos means light in Greek.    
    
     The main idea is the following:
     A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
     You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
     
-    fos Example:
+    fvtk Example:
     ----------------
-    >>> from dipy.viz import fos
-    >>> r=fos.ren()    
-    >>> a=fos.axes()        
-    >>> fos.add(r,a)
-    >>> fos.show(r)
+    >>> from dipy.viz import fvtk
+    >>> r=fvtk.ren()    
+    >>> a=fvtk.axes()        
+    >>> fvtk.add(r,a)
+    >>> fvtk.show(r)
     
 '''
 
@@ -88,7 +88,7 @@ def ren():
     
     Examples
     ---------
-    >>> from dipy.viz import fos
+    >>> from dipy.viz import fvtk
     >>> import numpy as np
     >>> r=ren()    
     >>> lines=[np.random.rand(10,3)]        
@@ -243,13 +243,13 @@ def line(lines,colors,opacity=1,linewidth=1):
     
     Examples
     --------    
-    >>> from dipy.viz import fos
-    >>> r=fos.ren()    
+    >>> from dipy.viz import fvtk
+    >>> r=fvtk.ren()    
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
     >>> colors=np.random.rand(2,3)
-    >>> c=fos.line(lines,colors)    
-    >>> fos.add(r,c)
-    >>> fos.show(r)
+    >>> c=fvtk.line(lines,colors)    
+    >>> fvtk.add(r,c)
+    >>> fvtk.show(r)
     '''    
     if not isinstance(lines,types.ListType):
         lines=[lines]    
@@ -554,11 +554,11 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
     
     Examples
     --------  
-    >>> from dipy.viz import fos  
-    >>> r=fos.ren()    
-    >>> l=fos.label(r)
-    >>> fos.add(r,l)
-    >>> fos.show(r)
+    >>> from dipy.viz import fvtk  
+    >>> r=fvtk.ren()    
+    >>> l=fvtk.label(r)
+    >>> fvtk.add(r,l)
+    >>> fvtk.show(r)
     '''
     atext=vtk.vtkVectorText()
     atext.SetText(text)
@@ -642,26 +642,26 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
     ------------
     First example random points    
     
-    >>> from dipy.viz import fos
+    >>> from dipy.viz import fvtk
     >>> import numpy as np
     >>> vol=100*np.random.rand(100,100,100)
     >>> vol=vol.astype('uint8')
     >>> print vol.min(), vol.max()
-    >>> r = fos.ren()
-    >>> v = fos.volume(vol)
-    >>> fos.add(r,v)
-    >>> fos.show(r)
+    >>> r = fvtk.ren()
+    >>> v = fvtk.volume(vol)
+    >>> fvtk.add(r,v)
+    >>> fvtk.show(r)
     
     Second example with a more complicated function
         
-    >>> from dipy.viz import fos
+    >>> from dipy.viz import fvtk
     >>> import numpy as np
     >>> x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
     >>> s = np.sin(x*y*z)/(x*y*z)
-    >>> r = fos.ren()
-    >>> v = fos.volume(s)
-    >>> fos.add(r,v)
-    >>> fos.show(r)
+    >>> r = fvtk.ren()
+    >>> v = fvtk.volume(s)
+    >>> fvtk.add(r,v)
+    >>> fvtk.show(r)
     
     If you find this function too complicated you can always use mayavi. 
     Please do not forget to use the -wthread switch in ipython if you are running mayavi.
@@ -886,12 +886,12 @@ def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50],colors=[np.array([1.
     Examples:
     -------------
     >>> import numpy as np
-    >>> from dipy.viz import fos
+    >>> from dipy.viz import fvtk
     >>> A=np.zeros((10,10,10))
     >>> A[3:-3,3:-3,3:-3]=1
-    >>> r=fos.ren()
-    >>> fos.add(r,fos.contour(A,levels=[1]))
-    >>> fos.show(r)
+    >>> r=fvtk.ren()
+    >>> fvtk.add(r,fvtk.contour(A,levels=[1]))
+    >>> fvtk.show(r)
     
     '''
     
@@ -1164,13 +1164,13 @@ def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[2
     --------------
     >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
     >>> s = np.sin(x*y*z)/(x*y*z)
-    >>> r=fos.ren()
-    >>> fos.slicer(r,s)
+    >>> r=fvtk.ren()
+    >>> fvtk.slicer(r,s)
     
     >>> import form
     >>> vol,voxsz,affine=form.loadvol('/home/eg01/Devel/mricron/templates/ch2better.nii')
-    >>> from dipy.viz import fos
-    >>> fos.slicer(r,vol,contours=0,planes=1,levels=[80,114],planesx=[150],planesy=[150],planesz=[150])
+    >>> from dipy.viz import fvtk
+    >>> fvtk.slicer(r,vol,contours=0,planes=1,levels=[80,114],planesx=[150],planesy=[150],planesz=[150])
 
     
     
@@ -1379,7 +1379,7 @@ def annotatePick(object, event):
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='Fos',size=(300,300),png_magnify=3):
+def show(ren,title='fvtk',size=(300,300),png_magnify=3):
     ''' Show window 
     
     Parameters
@@ -1393,15 +1393,15 @@ def show(ren,title='Fos',size=(300,300),png_magnify=3):
     
     Examples
     --------    
-    >>> from dipy.viz import fos
-    >>> r=fos.ren()    
+    >>> from dipy.viz import fvtk
+    >>> r=fvtk.ren()    
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
     >>> colors=[0.2,0.8]
-    >>> c=fos.line(lines,colors)    
-    >>> fos.add(r,c)
-    >>> l=fos.label(r)
-    >>> fos.add(r,l)
-    >>> fos.show(r)
+    >>> c=fvtk.line(lines,colors)    
+    >>> fvtk.add(r,c)
+    >>> l=fvtk.label(r)
+    >>> fvtk.add(r,l)
+    >>> fvtk.show(r)
     '''
     ren.AddActor2D(textActor)
     
@@ -1426,9 +1426,9 @@ def show(ren,title='Fos',size=(300,300),png_magnify=3):
             renderLarge.Update()
             writer = vtk.vtkPNGWriter()
             writer.SetInputConnection(renderLarge.GetOutputPort())
-            writer.SetFileName('fos.png')
+            writer.SetFileName('fvtk.png')
             writer.Write()            
-            print('Look for fos.png in your current dir.')
+            print('Look for fvtk.png in your current dir.')
 
     
     iren.AddObserver('KeyPressEvent',key_press)    
