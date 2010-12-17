@@ -8,9 +8,10 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   introduction
-   mission
+   introduction   
+   mission   
    installation
+   faq
    devel/index
    theory/index
    reference/index

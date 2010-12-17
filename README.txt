@@ -13,6 +13,12 @@ Website
 Current information can always be found at the NIPY dipy website::
 
     http://nipy.org/dipy
+    
+or directly form the DIPY website::
+
+    http://dipy.org
+    
+   
 
 Mailing Lists
 =============
@@ -32,7 +38,7 @@ You can find our sources and single-click downloads:
 * Downloads of all `available releases`_.
 
 .. _main repository: http://github.com/Garyfallidis/dipy
-.. _Documentation: http://nipy.org/dipy
+.. _Documentation: http://dipy.org
 .. _current trunk: http://github.com/Garyfallidis/dipy/archives/master
 .. _available releases: http://github.com/Garyfallidis/dipy/downloads
 

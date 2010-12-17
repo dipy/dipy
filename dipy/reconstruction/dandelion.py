@@ -51,9 +51,10 @@ class SphericalDandelion():
         #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
         #q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))        
         #q2odf_params[np.isnan(q2odf_params)]= 1.
-       
+               
         self.gradients=gradients
         self.weighting=np.abs(np.dot(gradients,self.odf_vertices.T))     
+        self.weighting=self.weighting/np.sum(self.weighting,axis=0)
         
         '''
         r=[[],[],[]]

@@ -45,8 +45,9 @@ Website
 =======
 
 Current information can always be found at the NIPY dipy website::
-
-    http://nipy.org/dipy
+    http://nipy.org/dipy    
+or directly from the DIPY website::
+    http://dipy.org
 
 Mailing Lists
 =============
@@ -66,7 +67,7 @@ You can find our sources and single-click downloads:
 * Downloads of all `available releases`_.
 
 .. _main repository: http://github.com/Garyfallidis/dipy
-.. _Documentation: http://nipy.org/dipy
+.. _Documentation: http://dipy.org
 .. _current trunk: http://github.com/Garyfallidis/dipy/archives/master
 .. _available releases: http://github.com/Garyfallidis/dipy/downloads
 
@@ -90,11 +91,11 @@ MAINTAINER          = "Eleftherios Garyfallidis"
 MAINTAINER_EMAIL    = "nipy-devel@neuroimaging.scipy.org"
 DESCRIPTION         = description
 LONG_DESCRIPTION    = long_description
-URL                 = "http://nipy.org/dipy"
+URL                 = "http://dipy.org"
 DOWNLOAD_URL        = "http://github.com/Garyfallidis/dipy/archives/master"
 LICENSE             = "BSD license"
 CLASSIFIERS         = CLASSIFIERS
-AUTHOR              = "The dipy team"
+AUTHOR              = "dipy developers"
 AUTHOR_EMAIL        = "nipy-devel@neuroimaging.scipy.org"
 PLATFORMS           = "OS Independent"
 MAJOR               = _version_major
