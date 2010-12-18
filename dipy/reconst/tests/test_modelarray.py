@@ -5,7 +5,7 @@
 import numpy as np
 from numpy.ma import MaskedArray
 
-from dipy.core.modelarray import ModelArray
+from dipy.reconst.modelarray import ModelArray
 #for reading in nifti test data
 
 from nose.tools import assert_true, assert_false, \
@@ -13,21 +13,16 @@ from nose.tools import assert_true, assert_false, \
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.testing import parametric
-
 import os
 
 
 def test_model_shape():
 
     shape = (10,11,12)
-
     ma = ModelArray()
     ma.model_params = np.zeros(shape+(4,))
-
     assert_equal(ma[..., 0].shape, shape[:-1])
     assert_equal(ma[0].shape, shape[1:])
-
     ma.shape = (-1)
     assert(ma.ndim == 1)
     ma.shape = shape[::-1]
@@ -37,7 +32,6 @@ def test_model_mask():
 
     shape = (10,11,12)
     data = np.zeros(shape+(4,))
-
     ma = ModelArray()
     ma.model_params = data
     assert(ma.mask.all())
@@ -51,10 +45,8 @@ def test_indexing_and_setting():
 
     shape = (10,11,12)
     data = np.random.random(shape+(4,))
-
     ma = ModelArray()
     ma.model_params = data
-
     assert_array_equal(ma[0].model_params, data[0])
     assert_array_equal(ma[:, 1].model_params, data[:, 1])
     assert_array_equal(ma[:, :, 2].model_params, data[:, :, 2])

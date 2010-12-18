@@ -7,8 +7,8 @@ import os
 import numpy as np
 
 #fro dipy
-from dipy.core.maskedview import MaskedView, _makearray, _filled
-from dipy.core.modelarray import ModelArray
+from dipy.reconst.maskedview import MaskedView, _makearray, _filled
+from dipy.reconst.modelarray import ModelArray
 
 class Tensor(ModelArray):
     """
@@ -103,22 +103,7 @@ class Tensor(ModelArray):
     
     Examples
     --------
-    >>> data = np.ones((5, 6, 7, 56)) * 100.
-    >>> data[..., 0] *= 10
-    >>> x = 1
-    >>> y = 1
-    >>> z = 1
-    >>> tensor = dti.Tensor(data, gtab, bvals)
-
-    To get the tensor for a particular voxel
-    
-    >>> tensor[x, y, z].D.shape
-    (3, 3)
-
-    To get the tensors of all the voxels in a slice
-
-    >>> tensor[:, :, 2].D.shape
-    (5, 6, 3, 3)
+    For a complete example have a look at the main dipy/examples folder    
     
     """
 
@@ -200,9 +185,6 @@ class Tensor(ModelArray):
 
     D = property(_getD, doc = "Self diffusion tensor")
 
-    @property
-    def FA(self):
-        return self.fa()
 
     def fa(self):
         r"""
@@ -234,9 +216,6 @@ class Tensor(ModelArray):
         fa = wrap(np.asarray(fa))
         return _filled(fa)
 
-    @property
-    def MD(self):
-        return self.md()
     
     def md(self):
         r"""
@@ -258,20 +237,6 @@ class Tensor(ModelArray):
         #adc/md = (ev1+ev2+ev3)/3
         return self.evals.mean(-1)
 
-    @property
-    def IN(self):
-        ''' Quantizes eigenvectors with maximum eigenvalues  on an
-        evenly distributed sphere so that the can be used for tractography.
-        DEPRECATED TO BE REMOVED use
-
-        Returns
-        -------
-        IN: array, shape(x,y,z) integer indices for the points of the
-        evenly distributed sphere representing tensor  eigenvectors of
-        maximum eigenvalue
-    
-        '''
-        return quantize_evecs(self.evecs,odf_vertices=None)
         
     def ind(self):
         ''' Quantizes eigenvectors with maximum eigenvalues  on an

@@ -1,17 +1,15 @@
 import numpy as np
-from dipy.core.reconstruction_performance import peak_finding
+from dipy.reconst.recspeed import peak_finding
 import os
 from os.path import join as opj
 from dipy.data import get_sphere
 
 class SphericalDandelion():
-    ''' Garyfallidis E., Nimmo-Smith I. TMI 2011 (to appear)    
+    ''' Garyfallidis E., Nimmo-Smith I. TMI 2011 (to appear)        
+    HIGHLY EXPERIMENTAL - PLEASE DO NOT USE.    
     '''
-
     def __init__(self,data,bvals,gradients,smoothing=1.,odfsphere=None,mask=None):
-
         '''
-
         Parameters
         -----------
         data: array, shape(X,Y,Z,D)        

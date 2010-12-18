@@ -3,12 +3,11 @@
 """
 
 import numpy as np
-
-import dipy.core.dti as dti
-from dipy.core.maskedview import MaskedView
-#for reading in nifti test data
+import dipy.reconst.dti as dti
+from dipy.reconst.maskedview import MaskedView
 import nibabel as nib
 from dipy.io.bvectxt import read_bvec_file
+from dipy.data import get_data
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_almost_equal, assert_raises
@@ -83,8 +82,7 @@ def test_WLS_and_LS_fit():
     tensor[0, 2] = tensor[2, 0] = D[4]
     tensor[1, 2] = tensor[2, 1] = D[5]
     #Design Matrix
-    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),
-                    'data','55dir_grad.bvec'))
+    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     X = dti.design_matrix(gtab, bval)
     #Signals
     Y = np.exp(np.dot(X,D))
@@ -118,9 +116,8 @@ def test_masked_array_with_Tensor():
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
 
-    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),
-                    'data','55dir_grad.bvec'))
-
+    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    
     tensor = dti.Tensor(data, bval, gtab.T, mask=mask, min_signal=1e-9)
     yield assert_equal(tensor.shape, (2,4))
     yield assert_equal(tensor.fa().shape, (2,4))
@@ -150,8 +147,8 @@ def test_passing_maskedview():
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
 
-    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),
-                    'data','55dir_grad.bvec'))
+    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    
     data = data[mask]
     mv = MaskedView(mask, data)
 
@@ -182,8 +179,8 @@ def test_passing_maskedview():
 def test_init():
     data = np.ones((2,4,56))
     mask = np.ones((2,4),'bool')
-    gtab, bval = read_bvec_file(os.path.join(os.path.dirname(__file__),
-                                             'data','55dir_grad.bvec'))
+    
+    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     tensor = dti.Tensor(data, bval, gtab.T, mask, thresh=0)
     mask[:] = False
     yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, mask)

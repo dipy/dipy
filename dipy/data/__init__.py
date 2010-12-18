@@ -12,6 +12,8 @@ def get_data(name='small_64D'):
         fbvecs=os.path.join(os.path.dirname(__file__),'small_64D.gradients.npy')
         fimg =os.path.join(os.path.dirname(__file__),'small_64D.nii')        
         return fimg,fbvals, fbvecs
+    if name=='55dir_grad.bvec':
+        return os.path.join(os.path.dirname(__file__),'55dir_grad.bvec')
     
         
     

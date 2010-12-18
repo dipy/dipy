@@ -1,5 +1,6 @@
 import numpy as np
-import dipy.core.reconstruction_performance as rp
+import dipy.reconst.recspeed as rp
+from dipy.data import get_sphere
 import os
 from os.path import join as opj
 
@@ -49,10 +50,7 @@ class GeneralizedQSampling():
         '''
         
         if odfsphere == None:
-            eds=np.load(opj(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))
-        else:
-            eds=np.load(opj(os.path.dirname(__file__),'matrices',odfsphere))
-            # e.g. odfsphere = evenly_distributed_sphere_642.npz
+            eds = eds=np.load(get_sphere('symmetric362'))            
 
         odf_vertices=eds['vertices']
         odf_faces=eds['faces']

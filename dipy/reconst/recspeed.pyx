@@ -40,7 +40,7 @@ cdef inline double* asdp(cnp.ndarray pt):
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
-def pf_bago(odf, edges_on_sphere):
+def peak_finding_edges(odf, edges_on_sphere):
 
     cdef:
         cnp.ndarray[cnp.uint16_t, ndim=2] cedges = np.ascontiguousarray(edges_on_sphere)
@@ -120,7 +120,8 @@ def peak_finding(odf, odf_faces):
     
     Examples
     --------
-    Coming soon ..
+    This is called from GeneralizedQSampling or QBall and other models with orientation
+    distribution functions.
 
     See also
     --------
