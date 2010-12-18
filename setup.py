@@ -57,10 +57,10 @@ from Cython.Distutils import build_ext
 cmdclass['build_ext'] = build_ext
 EXTS = []
 for modulename, other_sources in (
-    ('dipy.io.track_volumes', []),
-    ('dipy.core.track_performance', []),
-    ('dipy.core.reconstruction_performance', []),
-    ('dipy.core.track_propagation_performance', [])):
+    ('dipy.reconst.recspeed', []),
+    ('dipy.tracking.distances', []),
+    ('dipy.tracking.vox2track', []),
+    ('dipy.tracking.propspeed', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,
                           [pyx_src] + other_sources,
@@ -86,13 +86,20 @@ def main(**extra_args):
           packages     = ['dipy',
                           'dipy.core',
                           'dipy.core.tests',
-                          'dipy.core.bench',
-                          'dipy.core.stat',
+                          'dipy.tracking',
+                          'dipy.tracking.tests',
+                          'dipy.reconst',
+                          'dipy.reconst.tests'                          
                           'dipy.io',
                           'dipy.io.tests',
                           'dipy.viz',
                           'dipy.viz.tests',
                           'dipy.testing',
+                          'dipy.boots',
+                          'dipy.data',
+                          'dipy.external',
+                          'dipy.external.tests',
+                          'examples',
                           # required in setup.py, hence needs to go into source
                           # dist
                           'nisext'],
@@ -104,8 +111,7 @@ def main(**extra_args):
           # python -- duplicating things into MANIFEST.in but this is admittedly
           # only a workaround to get things started -- not a solution
           package_data = {'dipy':
-                          [pjoin('core', 'tests', 'data', '*'),
-                           pjoin('core', 'matrices', '*')
+                          [pjoin('data', '*')                           
                           ]},
           scripts      = glob(pjoin('scripts', '*')),
           cmdclass = cmdclass,

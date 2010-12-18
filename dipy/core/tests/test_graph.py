@@ -17,36 +17,26 @@ def test_graph():
     g.add_edge('b','d')
     
     print('Nodes')
-    print(g.node)
-    
+    print(g.node)    
     print('Successors')
-    print(g.succ)
-    
+    print(g.succ)    
     print('Predecessors')
-    print(g.pred)
-    
+    print(g.pred)    
     print('Paths above d')
-    print(g.up('d'))
-    
+    print(g.up('d'))    
     print('Paths below a')
-    print(g.down('a'))
-    
+    print(g.down('a'))    
     print('Shortest path above d')
-    print(g.up_short('d'))
-    
+    print(g.up_short('d'))    
     print('Shortest path below a')
-    print(g.down_short('a'))
-    
+    print(g.down_short('a'))    
     print( 'Deleting node b')
     #g.del_node_and_edges('b')
-    g.del_node('b')
-        
+    g.del_node('b')        
     print( 'Nodes')
-    print( g.node)
-    
+    print( g.node)    
     print( 'Successors')
-    print( g.succ)
-    
+    print( g.succ)    
     print( 'Predecessors')
     print( g.pred)
     

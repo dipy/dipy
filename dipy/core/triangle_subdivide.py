@@ -116,6 +116,11 @@ def divide_all( vertices, edges, triangles ):
 
     When constructed this way edges[triangles,0] or edges[triangles,1] will both
     return the three vertices that make up each triangle (in a different order):
+    
+    Code was adjusted from dlampetest website
+    http://sites.google.com/site/dlampetest/python/triangulating-a-sphere-recursively
+    
+    
     """
     num_vertices = len(vertices)
     num_edges = len(edges)

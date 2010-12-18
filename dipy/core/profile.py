@@ -1,6 +1,16 @@
 """ Class for profiling cython code
 """
-import pstats, cProfile
+
+try:
+    import cProfile
+except ImportError:
+    raise ImportError('cProfile is not installed')
+try:
+    import pstats
+except ImportError:
+    raise ImportError('pstats is not installed it is part of the python-profiler package')
+    print('In Ubuntu you will need to do sudo apt-get install python-profiler')
+ 
 import os
 import subprocess
 
@@ -29,13 +39,13 @@ class Profiler():
     
     Examples
     --------
-    >>> import dipy.core.profile as p
-    >>> import dipy.core.track_metrics as tm
-    >>> p.Profiler(tm.length,np.random.rand(1000000,3))
-    >>> fname='test.py'
-    >>> p.Profiler(fname)
-    >>> p.print_stats(10)
-    >>> p.print_stats('det')
+    import dipy.core.profile as p
+    import numpy as np
+    p.Profiler(np.sum,np.random.rand(1000000,3))
+    fname='test.py'
+    p.Profiler(fname)
+    p.print_stats(10)
+    p.print_stats('det')
 
     References
     ----------

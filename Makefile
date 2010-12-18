@@ -18,18 +18,18 @@ help:
 
 all: ext html test
 
-ext: track_performance.so track_volumes.so reconstruction_performance.so \
-    track_propagation_performance.so
+ext: recspeed.so propspeed.so vox2track.so \
+    distances.so
 
 test: ext
 	nosetests .
 
-html:  ${PKGDIR}/core/track_performance.html ${PKGDIR}/io/track_volumes.html ${PKGDIR}/io/reconstrunction_performance.html
+html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html 
 
-track_performance.so: ${PKGDIR}/core/track_performance.pyx
-track_volumes.so: ${PKGDIR}/io/track_volumes.pyx
-reconstruction_performance.so: ${PKGDIR}/core/reconstruction_performance.pyx
-track_propagation_performance.so: ${PKGDIR}/core/track_propagation_performance.pyx
+recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
+propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
+vox2track.so: ${PKGDIR}/tracking/vox2track.pyx
+distances.so: ${PKGDIR}/tracking/distances.pyx
 
 	python setup.py build_ext --inplace
 

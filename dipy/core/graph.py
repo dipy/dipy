@@ -1,8 +1,35 @@
 class Graph(object):
-    ''' A very simple graph class
+    ''' A simple graph class 
+    
     '''
 
     def __init__(self):
+        ''' A graph class with nodes and edges :-)
+        
+        This class allows to 
+        
+        1. find the shortest path
+        2. find all paths
+        3. add/delete nodes and edges
+        4. get parent & children nodes
+        
+        Examples
+        --------
+        >>> from dipy.core.graph import Graph
+        >>> g=Graph()    
+        >>> g.add_node('a',5)
+        >>> g.add_node('b',6)
+        >>> g.add_node('c',10)
+        >>> g.add_node('d',11)
+        >>> g.add_edge('a','b')
+        >>> g.add_edge('b','c')
+        >>> g.add_edge('c','d')
+        >>> g.add_edge('b','d')
+        >>> g.up_short('d')
+        ['d', 'b', 'a']
+        
+        '''
+        
         self.node={}
         self.pred={}
         self.succ={}
