@@ -2,26 +2,35 @@
 '''
 
 import numpy as np
-import tables
+
+try:
+    import tables
+except ImportError:
+    raise ImportError('pytables is not installed')
 
        
 class Dpy():
 
     def __init__(self,fname,mode='r',compression=0):
-        '''
+        ''' Advanced storage system for tractography based on HDF5
+        
         Parameters
         ----------
         fname: str, full filename
         mode: 'r' read 
          'w' write 
          'r+' read and write only if file already exists
-         'a'  read and write even if file doesn't exist        
+         'a'  read and write even if file doesn't exist (not used yet)       
         compression: 0 no compression to 9 maximum compression
         
         Examples
         ---------
-        
-        >>> dpw = Dpy('test.dpy','w')
+        >>> import os
+        >>> from tempfile import mkstemp #temp file
+        >>> from dipy.io.dpy import Dpy
+        >>> fd,fname = mkstemp()
+        >>> fname = fname + '.dpy' #add correct extension
+        >>> dpw = Dpy(fname,'w')
         >>> A=np.ones((5,3))
         >>> B=2*A.copy()
         >>> C=3*A.copy()    
@@ -30,21 +39,24 @@ class Dpy():
         >>> dpw.write_track(C)    
         >>> dpw.close()    
         >>> dpr = Dpy('test.dpy','r')    
-        >>> print(dpr.read_track())
-        >>> print(dpr.read_track())    
-        >>> T=dpr.read_tracksi([0,1,2,0,0,2])    
-        >>> print T    
+        >>> A=dpr.read_track()
+        >>> B=dpr.read_track()    
+        >>> T=dpr.read_tracksi([0,1,2,0,0,2])
         >>> dpr.close()
+        >>> os.remove(fname) #delete file from disk
         
         '''                
         
         self.mode=mode        
         self.f = tables.openFile(fname, mode = self.mode)
-        self.N = 5*10**8
+        self.N = 5*10**9
         self.compression = compression
         
         if self.mode=='w':
             self.streamlines=self.f.createGroup(self.f.root,'streamlines')
+            #create a version number
+            self.version=self.f.createArray(self.f.root,'version',['0.0.1'],'Dpy Version Number')
+            
             self.tracks = self.f.createEArray(self.f.root.streamlines, 'tracks',tables.Float32Atom(), (0, 3),
                     "scalar Float32 earray", tables.Filters(self.compression),expectedrows=self.N)            
             self.offsets = self.f.createEArray(self.f.root.streamlines, 'offsets',tables.Int64Atom(), (0,),
@@ -57,6 +69,10 @@ class Dpy():
             self.offsets=self.f.root.streamlines.offsets
             self.track_no=len(self.offsets)-1            
             self.offs_pos=0
+            
+    def version(self):
+        ver=self.f.root.version[:]
+        return ver[0]
                          
     def write_track(self,track):      
         ''' write on track each time

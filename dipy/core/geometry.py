@@ -451,6 +451,7 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
 
     Example
     -------
+    >>> import numpy
     >>> R = euler_matrix(1, 2, 3, 'syxz')
     >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)
     True
@@ -585,9 +586,7 @@ def decompose_matrix(matrix):
 
     Returns
     -------
-
-    tuple of:
-    
+    tuple of:    
         scale : vector of 3 scaling factors
         shear : list of shear factors for x-y, x-z, y-z axes
         angles : list of Euler angles about static x, y, z axes
@@ -598,8 +597,9 @@ def decompose_matrix(matrix):
     Raise ValueError if matrix is of wrong type or degenerative.
 
     Examples
-    ---------
-    
+    --------
+    >>> import numpy as np
+    >>> T0=np.diag([2,1,1,1])
     >>> scale, shear, angles, trans, persp = decompose_matrix(T0)
 
 
@@ -660,6 +660,10 @@ def decompose_matrix(matrix):
 def vector_norm(data, axis=None, out=None):
     """Return length, i.e. eucledian norm, of ndarray along axis.
 
+    Examples
+    --------
+    
+    >>> import numpy
     >>> v = numpy.random.random(3)
     >>> n = vector_norm(v)
     >>> numpy.allclose(n, numpy.linalg.norm(v))

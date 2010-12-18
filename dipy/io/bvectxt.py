@@ -3,8 +3,8 @@ from os.path import splitext
 
 def read_bvec_file(filename, atol=.001):
     """
-    Read gradient table infromation from a pair of files with extentions
-    .bcec and .bval. The bval file should have one row of values
+    Read gradient table information from a pair of files with extentions
+    .bvec and .bval. The bval file should have one row of values
     representing the bvalues of each volume in the dwi data set. The bvec
     file should have three rows, where the rows are the x, y, and z
     components of the normalized gradient direction for each of the

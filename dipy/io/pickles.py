@@ -19,6 +19,11 @@ def save_pickle(fname,dix):
     >>> save_pickle(fname, d)
     >>> d2=load_pickle(fname)
     >>> os.remove(fname)
+    
+    See also
+    --------
+    ``load_pickle``
+    
     '''
     out=open(fname,'wb')
     cPickle.dump(dix,out)
