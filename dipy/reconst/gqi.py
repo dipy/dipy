@@ -148,6 +148,11 @@ class GeneralizedQSampling():
         self.glob_norm_param = glob_norm_param
         
 
+    def qa(self):
+        return self.QA
+    
+    def ind(self):
+        return self.IN
 
     def odf(self,s):
         '''

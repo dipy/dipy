@@ -6,6 +6,8 @@ from scipy.interpolate import splprep, splev
 
 def length(xyz, along=False):
     ''' Euclidean length of track line
+    
+    This will give length in mm if you tracts are expressed in world coordinates.
 
     Parameters
     ----------
@@ -23,6 +25,7 @@ def length(xyz, along=False):
 
     Examples
     --------
+    >>> from dipy.tracking.metrics import length
     >>> xyz = np.array([[1,1,1],[2,3,4],[0,0,0]])
     >>> expected_lens = np.sqrt([1+2**2+3**2, 2**2+3**2+4**2])
     >>> length(xyz) == expected_lens.sum()
@@ -65,7 +68,7 @@ def bytes(xyz):
 
 
 def midpoint(xyz):
-    ''' Midpoint of track line
+    ''' Midpoint of track
 
     Parameters
     ----------
@@ -83,6 +86,8 @@ def midpoint(xyz):
 
     Examples
     --------
+    
+    >>> from dipy.tracking.metrics import midpoint
     >>> midpoint([])
     Traceback (most recent call last):
        ...
@@ -134,6 +139,7 @@ def center_of_mass(xyz):
 
     Examples
     --------
+    >>> from dipy.tracking.metrics import center_of_mass
     >>> center_of_mass([])
     Traceback (most recent call last):
        ...
@@ -211,7 +217,7 @@ def frenet_serret(xyz):
     Create a helix and calculate its tangent,normal, binormal, curvature
     and torsion
     
-    >>> from dipy.core import track_metrics as tm
+    >>> from dipy.tracking import metrics as tm
     >>> import numpy as np
     >>> theta = 2*np.pi*np.linspace(0,2,100)
     >>> x=np.cos(theta)
@@ -225,33 +231,23 @@ def frenet_serret(xyz):
     if n_pts == 0:
         raise ValueError('xyz array cannot be empty')
     
-    dxyz=np.gradient(xyz)[0]        
-    
-    ddxyz=np.gradient(dxyz)[0]
-    
+    dxyz=np.gradient(xyz)[0]            
+    ddxyz=np.gradient(dxyz)[0]    
     #Tangent        
-    T=np.divide(dxyz,magn(dxyz,3))
-    
+    T=np.divide(dxyz,magn(dxyz,3))    
     #Derivative of Tangent
-    dT=np.gradient(T)[0]
-    
+    dT=np.gradient(T)[0]    
     #Normal
-    N = np.divide(dT,magn(dT,3))
-    
+    N = np.divide(dT,magn(dT,3))    
     #Binormal
-    B = np.cross(T,N)
-    
+    B = np.cross(T,N)    
     #Curvature 
     k = magn(np.cross(dxyz,ddxyz),1)/(magn(dxyz,1)**3)    
-    
     #Torsion 
     #(In matlab was t=dot(-B,N,2))
-    t = np.sum(-B*N,axis=1)
-    
+    t = np.sum(-B*N,axis=1)    
     #return T,N,B,k,t,dxyz,ddxyz,dT   
     return T,N,B,k,t
-
-
     
 def mean_curvature(xyz):    
     ''' Calculates the mean curvature of a curve
@@ -270,22 +266,19 @@ def mean_curvature(xyz):
     --------
     Create a straight line and a semi-circle and print their mean curvatures
     
-    >>> from dipy.core import track_metrics as tm
+    >>> from dipy.tracking import metrics as tm
     >>> import numpy as np
     >>> x=np.linspace(0,1,100)
     >>> y=0*x
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> m=tm.mean_curvature(xyz)
-    >>> print('Mean curvature for straight line',m)
-    >>> 
+    >>> m=tm.mean_curvature(xyz) #mean curvature straight line    
     >>> theta=np.pi*np.linspace(0,1,100)
     >>> x=np.cos(theta)
     >>> y=np.sin(theta)
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> m=tm.mean_curvature(xyz)
-    >>> print('Mean curvature for semi-circle',m)        
+    >>> m=tm.mean_curvature(xyz) #mean curvature for semi-circle    
     '''
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
@@ -303,7 +296,7 @@ def mean_curvature(xyz):
 
 def mean_orientation(xyz):
     '''
-    Calculates the mean curvature of a curve
+    Calculates the mean orientation of a curve
     
     Parameters
     ----------
@@ -324,375 +317,24 @@ def mean_orientation(xyz):
         
     return np.mean(dxyz,axis=0)
     
-def lee_distances(start0, end0, start1, end1,w=[1.,1.,1.]):
-    ''' Based on Lee , Han & Whang SIGMOD07.
-        Calculates 3 etric for the distance between two line segments
-        and returns a w-weighted combination
     
-    Parameters:
-    -----------
-        start0: float array(3,)
-        end0: float array(3,)
-        start1: float array(3,)
-        end1: float array(3,)
-    
-    Returns:
-    --------
-    weighted_distance: float
-        w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
-    
-    Examples:
-    --------
-    >>> import dipy.core.track_metrics as tm 
-    >>> tm.lee_distances([0,0,0],[1,0,0],[3,4,5],[5,4,3],[1,0,0])
-    >>> 5.9380966767403436  
-    >>> tm.lee_distances([0,0,0],[1,0,0],[3,4,5],[5,4,3],[0,1,0])
-    >>> 3.0  
-    >>> tm.lee_distances([0,0,0],[1,0,0],[3,4,5],[5,4,3],[0,0,1])
-    >>> 2.0  
-    '''
-    start0=np.asarray(start0,dtype='float64')    
-    end0=np.asarray(end0,dtype='float64')    
-    start1=np.asarray(start1,dtype='float64')    
-    end1=np.asarray(end1,dtype='float64')    
-    
-    l_0 = np.inner(end0-start0,end0-start0)
-    l_1 = np.inner(end1-start1,end1-start1)
-
-    if l_1 > l_0:
-        s_tmp = start0
-        e_tmp = end0
-        start0 = start1
-        end0 = end1
-        start1 = s_tmp
-        end1 = e_tmp
-    
-    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-    ps = start0+u1*(end0-start0)
-    pe = start0+u2*(end0-start0)
-    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
-    lperp2 = np.sqrt(np.inner(ps-end1,ps-end1))
-    
-    perpendicular_distance = (lperp1**2+lperp2**2)/(lperp1+lperp2)
-    ## do we need to do something about division by zero????
-
-    lpar1=np.min(np.inner(start0-ps, start0-ps),np.inner(end0-ps, end0-ps))
-    lpar2=np.min(np.inner(start0-pe, start0-pe),np.inner(end0-pe, end0-pe))
-
-    parallel_distance=np.sqrt(np.min(lpar1, lpar2))
-
-    cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ \
-        (np.inner(end0-start0,end0-start0)*np.inner(end1-start1,end1-start1))
-
-    angle_distance = np.sqrt((1-cos_theta_squared)*np.inner(end1-start1, end1-start1))
-
-    return w[0]*perpendicular_distance+w[1]*parallel_distance+w[2]*angle_distance
-
-
-def lee_perpendicular_distance(start0, end0, start1, end1):
-    ''' Based on Lee , Han & Whang SIGMOD07.
-        Calculates perpendicular distance metric for the distance between two line segments
-    
-    Parameters:
-    -----------
-        start0: float array(3,)
-        end0: float array(3,)
-        start1: float array(3,)
-        end1: float array(3,)
-    
-    Returns:
-    --------
-        perpendicular_distance: float
-
-    Examples:
-    --------
-    >>> import dipy.core.track_metrics as tm 
-    >>> tm.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    >>> 6.658057955239661
-    '''
-    start0=np.asarray(start0,dtype='float64')    
-    end0=np.asarray(end0,dtype='float64')    
-    start1=np.asarray(start1,dtype='float64')    
-    end1=np.asarray(end1,dtype='float64')    
-    
-    l_0 = np.inner(end0-start0,end0-start0)
-    l_1 = np.inner(end1-start1,end1-start1)
-
-    #''' !
-    if l_1 > l_0:
-        s_tmp = start0
-        e_tmp = end0
-        start0 = start1
-        end0 = end1
-        start1 = s_tmp
-        end1 = e_tmp
-    #'''
-    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-    u2 = np.inner(end1-start0 ,end0-start0)/np.inner(end0-start0,end0-start0)
-
-    ps = start0+u1*(end0-start0)
-    pe = start0+u2*(end0-start0)
-
-    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
-    
-    lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
-
-    if lperp1+lperp2 > 0.:
-        return (lperp1**2+lperp2**2)/(lperp1+lperp2)
-    else:
-        return 0.
-
-
-def lee_parallel_distance(start0, end0, start1, end1):
-    ''' Based on Lee , Han & Whang SIGMOD07.
-        Calculates parallel distance metric for the distance between two line segments
-    
-    Parameters:
-    -----------
-        start0: float array(3,)
-        end0: float array(3,)
-        start1: float array(3,)
-        end1: float array(3,)
-    
-    Returns:
-    --------
-        parallel_distance: float
-
-    Examples:
-    --------
-    >>> import dipy.core.track_metrics as tm 
-    >>> tm.lee_parallel_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    >>> 3.0  
-    '''
-    start0=np.asarray(start0,dtype='float64')    
-    end0=np.asarray(end0,dtype='float64')    
-    start1=np.asarray(start1,dtype='float64')    
-    end1=np.asarray(end1,dtype='float64')    
-    
-    u1 = np.inner(start1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-    u2 = np.inner(end1-start0,end0-start0)/np.inner(end0-start0,end0-start0)
-    ps = start0+u1*(end0-start0)
-    pe = start0+u2*(end0-start0)
-    lpar1=np.min(np.inner(start0-ps, start0-ps),np.inner(end0-ps, end0-ps))
-    lpar2=np.min(np.inner(start0-pe, start0-pe),np.inner(end0-pe, end0-pe))
-
-    return np.sqrt(np.min(lpar1, lpar2))
-
-
-def lee_angle_distance(start0, end0, start1, end1):
-    ''' Based on Lee , Han & Whang SIGMOD07.
-        Calculates angle distance metric for the distance between two line segments
-    
-    Parameters:
-    -----------
-        start0: float array(3,)
-        end0: float array(3,)
-        start1: float array(3,)
-        end1: float array(3,)
-    
-    Returns:
-    --------
-        angle_distance: float
-
-    Examples:
-    --------
-    >>> import dipy.core.track_metrics as tm 
-    >>> tm.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    >>> 2.0 
-    '''
-    start0=np.asarray(start0,dtype='float64')    
-    end0=np.asarray(end0,dtype='float64')    
-    start1=np.asarray(start1,dtype='float64')    
-    end1=np.asarray(end1,dtype='float64')    
-    
-    l_0 = np.inner(end0-start0,end0-start0)
-    l_1 = np.inner(end1-start1,end1-start1)
-        
-    #print l_0
-    #print l_1
-
-    #''' !!!
-    if l_1 > l_0:
-        s_tmp = start0
-        e_tmp = end0
-        start0 = start1
-        end0 = end1
-        start1 = s_tmp
-        end1 = e_tmp
-    #'''
-    #print l_0
-    #print l_1
-    
-    cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
-    
-    #print cos_theta_squared
-
-    return np.sqrt((1-cos_theta_squared)*l_1)
-
-
-def approximate_trajectory_partitioning(xyz, alpha=1.):
-    ''' Implementation of Lee et al Approximate Trajectory
-        Partitioning Algorithm
-    
-    Parameters:
-    ------------------
-    xyz: array(N,3) 
-        initial trajectory
-    alpha: float
-        smoothing parameter (>1 => smoother, <1 => rougher)
-    
-    Returns:
-    ------------
-    characteristic_points: list of M array(3,) points
-        which can be turned into an array with np.asarray() 
-    '''
-    
-    characteristic_points=[xyz[0]]
-    start_index = 0
-    length = 2
-    while start_index+length < len(xyz):
-        current_index = start_index+length
-        cost_par = minimum_description_length_partitoned(xyz[start_index:current_index+1])
-        #        print cost_par
-        cost_nopar = minimum_description_length_unpartitoned(xyz[start_index:current_index+1])
-        #        print cost_nopar
-        #print cost_par, cost_nopar, start_index,length 
-        if alpha*cost_par>cost_nopar:
-        #            print "cost_par>cost_nopar"
-            characteristic_points.append(xyz[current_index-1])
-            start_index = current_index-1
-            length = 2
-        else:
-        #            print "cost_par<=cost_nopar"
-            length+=1
-    #        raw_input()
-    characteristic_points.append(xyz[-1])
-    return np.array(characteristic_points)
-
-
-def minimum_description_length_partitoned(xyz):   
-    # L(H)
-    val=np.log2(np.sqrt(np.inner(xyz[-1]-xyz[0],xyz[-1]-xyz[0])))
-    
-    # L(D|H) 
-    val+=np.sum(np.log2([lee_perpendicular_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
-    val+=np.sum(np.log2([lee_angle_distance(xyz[j],xyz[j+1],xyz[0],xyz[-1]) for j in range(1,len(xyz)-1)]))
-    
-    return val
-
-
-def minimum_description_length_unpartitoned(xyz):
-    '''
-    Example:
-    --------
-    >>> xyz = np.array([[0,0,0],[2,2,0],[3,1,0],[4,2,0],[5,0,0]])
-    >>> tm.minimum_description_length_unpartitoned(xyz) == np.sum(np.log2([8,2,2,5]))/2
-    '''
-    return np.sum(np.log2((np.diff(xyz, axis=0)**2).sum(axis=1)))/2
-    
-def zhang_distances(xyz1,xyz2,metric='all'):
-    '''Distance between tracks xyz1 and xyz2 using metrics in Zhang 2008
-    
-    Based on the metrics in Zhang, Correia, Laidlaw 2008 
-    http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
-    which in turn are based on those of Corouge et al. 2004
- 
-    Parameters
-    ----------
-    xyz1 : array, shape (N1,3)
-    xyz2 : array, shape (N2,3)
-       arrays representing x,y,z of the N1 and N2 points  of two tracks
-    
-    Returns
-    -------
-    avg_mcd : float
-       average_mean_closest_distance
-    min_mcd : float
-       minimum_mean_closest_distance
-    max_mcd : float
-       maximum_mean_closest_distance
-    '''
-    mcd12,mcd21 = mean_closest_distances(xyz1,xyz2)
-    
-    if metric=='all':
-        return (mcd12+mcd21)/2.0, min(mcd12,mcd21), max(mcd12,mcd21)
-    elif metric=='avg':
-        return (mcd12+mcd21)/2.0
-    elif metric=='min':            
-        return min(mcd12,mcd21)
-    elif metric =='max':
-        return max(mcd12,mcd21)
-    else :
-        ValueError('Wrong argument for metric')
-
-
-def mean_closest_distances(xyz1,xyz2):
-    '''Average distances between tracks xyz1 and xyz2
-    
-    Based on the metrics in Zhang, Correia, Laidlaw 2008 
-    http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
-    which in turn are based on those of Corouge et al. 2004
- 
-    Parameters
-    ----------
-    xyz1 : array, shape (N1,3)
-    xyz2 : array, shape (N2,3)
-       arrays representing x,y,z of the N1 and N2 points  of two tracks
-    
-    Returns
-    -------
-    mcd12 : float
-       Mean closest distance from `xyz1` to `xyz2`
-    mcd12 : float
-       Mean closest distance from `xyz2` to `xyz1`
-    '''
-    n1 = xyz1.shape[0]
-    n2 = xyz2.shape[0]
-    d = np.resize(np.tile(xyz1,(n2)),(n1,n2,3)) \
-        - np.transpose(np.resize(np.tile(xyz2,(n1)),(n2,n1,3)),(1,0,2))
-    dm = np.sqrt(np.sum(d**2,axis=2))
-    return np.average(np.min(dm,axis=0)), np.average(np.min(dm,axis=1))
-   
-def max_end_distances(xyz1,xyz2):
-    '''Maximum distance of ends of tracks xyz1 from xyz2
-    
-     
-    Parameters
-    ----------
-    xyz1 : array, shape (N1,3)
-    xyz2 : array, shape (N2,3)
-       arrays representing x,y,z of the N1 and N2 points  of two tracks
-    
-    Returns
-    -------
-    maxend : float
-       Max end distance from `xyz1` to `xyz2`
-    
-    '''
-    maxend=0.0
-    
-    for end in [xyz1[0],xyz1[-1]]:
-        maxend = max(maxend,min([np.inner(t-end,t-end) for t in xyz2]))
-    return np.sqrt(maxend)
 
 
 def generate_combinations(items, n):
     """ Combine sets of size n from items
     
-    Parameters:
-    ---------------
-    items : sequence
-    
-    n : int
-    
-    Returns:
+    Parameters
     ----------
+    items : sequence    
+    n : int
         
+    Returns
+    -------        
     ic : iterator
     
     Examples:
     -------------
+    >>> from dipy.tracking.metrics import generate_combinations
     >>> ic=generate_combinations(range(3),2)
     >>> for i in ic: print i
     [0, 1]
@@ -712,118 +354,7 @@ def generate_combinations(items, n):
         for i in xrange(len(items)):
             for cc in generate_combinations(items[i+1:], n-1):
                 yield [items[i]] + cc
-            
-def bundle_similarities_mam(bundle,metric='avg'):
-    ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
-    
-    Parameters:
-    ---------------
-    bundle: sequence 
-            of tracks as arrays, shape (N1,3) .. (Nm,3)
-    metric: string
-            'avg', 'min', 'max'
-            
-    Returns:
-    ----------
-    Appropriate metric from this list:
-    
-    S_avg : array, shape (len(bundle),len(bundle))
-                average similarity matrix    
-    S_min : array, shape (len(bundle),len(bundle))
-                minimum similarity matrix
-    S_max : array, shape (len(bundle),len(bundle))  
-                maximum similarity matrix
-    
-        
-    '''
-    
-    track_pairs = generate_combinations(range(len(bundle)), 2)
-
-    S_avg=np.zeros((len(bundle),len(bundle)))
-    S_min=np.zeros((len(bundle),len(bundle)))
-    S_max=np.zeros((len(bundle),len(bundle)))
-    
-    for p in track_pairs:
-        
-        S_avg[p[0],p[1]],S_min[p[0],p[1]],S_max[p[0],p[1]]=zhang_distances(bundle[p[0]],bundle[p[1]])        
-        
-    return S_avg,S_min,S_max 
-
-
-def bundles_distances_mam(bundleA, bundleB ,metric='avg'):
-    ''' Calculate the distance matrix using Zhang 2008 distances.
-    
-    Parameters:
-    ---------------
-    bundleA: sequence 
-            of tracks as arrays, shape (N1,3) .. (Nm,3)
-    bundleB: sequence 
-            of tracks as arrays, shape (N1,3) .. (Nm,3)
-    metric: string
-            'avg', 'min', 'max'
-            
-    Returns:
-    ----------
-    Appropriate metric from this list:
-    
-    DM : array, shape (len(bundleA),len(bundleB))
-         distances between tracksA and tracksB according to metric
-
-    '''
-
-    lenA = len(bundleA)
-    lenB = len(bundleB)
-    DM = np.zeros((lenA,lenB))
-    
-    for i in xrange(lenA):
-        for j in xrange(lenB):
-            DM[i,j] = zhang_distances(bundleA[i],bundleB[j], metric=metric)
-        
-    return DM
-
-
-def most_similar_track_mam(bundle,metric='avg'):
-    ''' Calculate the average, min and max similarity matrices using Zhang 2008 distances
-    
-    Parameters:
-    ---------------
-    bundle: sequence 
-            of tracks as arrays, shape (N1,3) .. (Nm,3)
-    
-    metric : string
-            'avg', 'min', 'max'
-                    
-    Returns:
-    ----------
-    si : int 
-        index of track with least average metric
-    s  : array, shape (len(bundle),)
-        similarities of si with all the other tracks
-    '''
-    track_pairs = generate_combinations(range(len(bundle)), 2)
-    s = np.zeros((len(bundle)))    
-    '''
-    for p in track_pairs:
-        delta = zhang_distances(bundle[p[0]],bundle[p[1]],metric)
-        s[p[0]] += delta
-        s[p[1]] += delta
-        
-    '''
-    deltas=[(zhang_distances(bundle[p[0]],bundle[p[1]],metric),p[0],p[1])
-            for p in track_pairs]
-    for d in deltas:
-        s[d[1]]+=d[0]
-        s[d[2]]+=d[0]
-    si=np.argmin(s)
-    smin=[zhang_distances(t,bundle[si],metric) for t in bundle]
-    return si, np.array(smin)
-
-
-def track_bundle_similarity(t,S): 
-    ''' Calculate between track `t` and rest of the tracks in the bundle 
-    using an upper diagonal similarity matrix S.
-    '''    
-    return np.hstack((S[:t,t],np.array([0]),S[t,t+1:]))
+          
 
 
 def longest_track_bundle(bundle,sort=False):
@@ -844,6 +375,18 @@ def longest_track_bundle(bundle,sort=False):
     longest_or_indices : array
        longest track - shape (N,3) -  (if `sort` is False), or indices
        of length sorted tracks (if `sort` is True)
+       
+    Examples
+    --------
+    >>> from dipy.tracking.metrics import longest_track_bundle
+    >>> import numpy as np
+    >>> bundle = [np.array([[0,0,0],[2,2,2]]),np.array([[0,0,0],[4,4,4]])]
+    >>> longest_track_bundle(bundle)
+    array([[0, 0, 0],
+           [4, 4, 4]])
+    >>> longest_track_bundle(bundle,True)
+    array([0, 1])
+
     '''
     alllengths=[length(t) for t in bundle]
     alllengths=np.array(alllengths)        
@@ -855,18 +398,8 @@ def longest_track_bundle(bundle,sort=False):
         return bundle[ilongest]
  
 
-def most_similar_track(S,sort=False):
-    ''' Return the index of the most similar track given a diagonal
-    similarity matrix as returned from function
-    bundle_similarities_mam(bundle)
-    '''
-    if sort:
-        return (S+S.T).sum(axis=0).argsort()    
-    else:        
-        return   (S+S.T).sum(axis=0).argmin()
 
-
-def any_segment_intersect_sphere(xyz,center,radius):
+def intersect_sphere(xyz,center,radius):
     ''' If any segment of the track is intersecting with a sphere of
     specific center and radius return True otherwise False
     
@@ -883,6 +416,13 @@ def any_segment_intersect_sphere(xyz,center,radius):
     -------
     tf : {True,False}           
        True if track `xyz` intersects sphere
+    
+    >>> from dipy.tracking.metrics import intersect_sphere
+    >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
+    >>> sph_cent=np.array([1,1,1])
+    >>> sph_radius = 1
+    >>> intersect_sphere(line,sph_cent,sph_radius)
+    True
        
     Notes
     -----
@@ -898,12 +438,10 @@ def any_segment_intersect_sphere(xyz,center,radius):
     lt=xyz.shape[0]
     
     for i in xrange(lt-1):
-
         #first point
         x1=xyz[i]
         #second point
-        x2=xyz[i+1]
-        
+        x2=xyz[i+1]        
         #do the calculations as given in the Notes        
         x=x2-x1
         a=np.inner(x,x)
@@ -920,8 +458,7 @@ def any_segment_intersect_sphere(xyz,center,radius):
             #check if point is inside the segment 
             #print 'p',p
             if np.inner(p-x1,p-x1) <= a:
-                return True
-           
+                return True           
         if bb4ac > 0: #two intersection points p1 and p2
             mu=(-b+np.sqrt(bb4ac))/(2*a)
             p1=x1+mu*x            
@@ -931,8 +468,7 @@ def any_segment_intersect_sphere(xyz,center,radius):
             #print 'p1,p2',p1,p2
             if np.inner(p1-x1,p1-x1) <= a or np.inner(p2-x1,p2-x1) <= a:
                 return True
-    return False
-    
+    return False    
 
 def inside_sphere(xyz,center,radius):
     ''' If any point of the track is inside a sphere of a specified
@@ -955,10 +491,12 @@ def inside_sphere(xyz,center,radius):
     
     Examples
     --------
+    >>> from dipy.tracking.metrics import inside_sphere
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
     >>> sph_radius = 1
     >>> inside_sphere(line,sph_cent,sph_radius)
+    True
     '''
     return (np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius).any()==True
 
@@ -986,48 +524,16 @@ def inside_sphere_points(xyz,center,radius):
     
     Examples
     --------
+    >>> from dipy.tracking.metrics import inside_sphere_points
     >>> line=np.array(([0,0,0],[1,1,1],[2,2,2]))
     >>> sph_cent=np.array([1,1,1])
     >>> sph_radius = 1
     >>> inside_sphere_points(line,sph_cent,sph_radius)
+    array([[1, 1, 1]])
     '''
     return xyz[(np.sqrt(np.sum((xyz-center)**2,axis=1))<=radius)]
 
 
-def orientation_in_sphere(xyz,center,radius):
-    '''Calculate average orientation of a track segment inside a sphere
-    
-    Parameters
-    --------------
-    xyz : array, shape (N,3)
-       representing x,y,z of the N points of the track
-    center : array, shape (3,)
-       center of the sphere
-    radius : float
-       radius of the sphere    
-    
-    Returns
-    -------
-    orientation : array, shape (3,)
-       vector representing the average orientation of the track inside
-       sphere
-        
-    Examples
-    --------
-    >>> track=np.array([[1,1,1],[2,2,2],[3,3,3]])    
-    >>> center=(2,2,2)
-    >>> radius=5
-    >>> orientation_in_sphere(track)
-    array([1.,1.,1.])
-    '''
-    xyzn=inside_sphere_points(xyz,center,radius)   
-    if xyzn.shape[0] >1:
-        #calculate gradient
-        dxyz=np.gradient(xyzn)[0]
-        #average orientation
-        return np.mean(dxyz,axis=0)
-    else:
-        return None
 
 
 def spline(xyz,s=3,k=2,nest=-1):
@@ -1075,21 +581,19 @@ def spline(xyz,s=3,k=2,nest=-1):
     
     Examples
     --------
-    >>> import numpy as np
-    >>> # make ascending spiral in 3-space
-    >>> t=np.linspace(0,1.75*2*np.pi,100)
-
+    >>> import numpy as np    
+    >>> t=np.linspace(0,1.75*2*np.pi,100)# make ascending spiral in 3-space
     >>> x = np.sin(t)
     >>> y = np.cos(t)
-    >>> z = t
-
-    >>> # add noise
-    >>> x+= np.random.normal(scale=0.1, size=x.shape)
+    >>> z = t    
+    >>> x+= np.random.normal(scale=0.1, size=x.shape) # add noise
     >>> y+= np.random.normal(scale=0.1, size=y.shape)
-    >>> z+= np.random.normal(scale=0.1, size=z.shape)
-    
+    >>> z+= np.random.normal(scale=0.1, size=z.shape)    
     >>> xyz=np.vstack((x,y,z)).T    
     >>> xyzn=spline(xyz,3,2,-1)
+    >>> len(xyzn) > len(xyz)
+    True
+    
     
     See also
     ----------
@@ -1104,12 +608,59 @@ def spline(xyz,s=3,k=2,nest=-1):
 
 
 def startpoint(xyz):
+    ''' First point of the track
+    
+    Parameters
+    ----------
+    xyz: array, shape(N,3) representing the track
+    
+    Returns
+    -------
+    sp: array, shape(3,) first track point
+    
+    Examples
+    --------
+    >>> from dipy.tracking.metrics import startpoint
+    >>> import numpy as np
+    >>> theta=np.pi*np.linspace(0,1,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> sp=startpoint(xyz)
+    >>> sp.any()==xyz[0].any()
+    True
+
+    '''
     return xyz[0]
 
 
 def endpoint(xyz):
+    '''
+    Parameters
+    ----------
+    xyz: array, shape(N,3) representing the track
+    
+    Returns
+    -------
+    ep: array, shape(3,) first track point
+    
+    Examples
+    --------
+    >>> from dipy.tracking.metrics import endpoint
+    >>> import numpy as np
+    >>> theta=np.pi*np.linspace(0,1,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> ep=endpoint(xyz)
+    >>> ep.any()==xyz[-1].any()
+    True
+    '''
+    
     return xyz[-1]
-
+    
 
 def arbitrarypoint(xyz,distance):
     ''' Select an arbitrary point along distance on the track (curve)
@@ -1130,15 +681,15 @@ def arbitrarypoint(xyz,distance):
        nearest `xyz` points.  If `xyz` is empty, return a ValueError
     
     Examples
-    -----------
+    --------
     >>> import numpy as np
+    >>> from dipy.tracking.metrics import arbitrarypoint, length
     >>> theta=np.pi*np.linspace(0,1,100)
     >>> x=np.cos(theta)
     >>> y=np.sin(theta)
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> ap=arbitrarypoint(xyz,tm.length(xyz)/3)
-    >>> print('The point along the curve that traveled the given distance is ',ap)        
+    >>> ap=arbitrarypoint(xyz,length(xyz)/3)           
     '''
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
@@ -1171,10 +722,11 @@ def _extrap(xyz,cumlen,distance):
 
 
 def downsample(xyz,n_pols=3):
-    ''' downsample for a specific number of points along the curve
+    ''' downsample for a specific number of points along the curve/track
 
     Uses the length of the curve. It works in as similar fashion to
-    midpoint and arbitrarypoint.
+    midpoint and arbitrarypoint but it also reduces the number of segments
+    of a track.
     
     Parameters
     ----------
@@ -1205,7 +757,11 @@ def downsample(xyz,n_pols=3):
     >>> z=0*y
     >>> xyz=np.vstack((x,y,z)).T
     >>> xyz2=downsample(xyz,3)
+    >>> len(xyz2)
+    3
     >>> xyz3=downsample(xyz,10)
+    >>> len(xyz3)
+    10
     '''
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
@@ -1227,7 +783,32 @@ def downsample(xyz,n_pols=3):
 
 
 def principal_components(xyz):
-    ''' We use PCA to calculate the 3 principal directions for dataset xyz
+    ''' We use PCA to calculate the 3 principal directions for a track
+    
+    Parameters
+    ----------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+    
+    Returns
+    -------
+    va : eigenvalues
+    ve : eigenvectors
+    
+    Examples
+    --------    
+    >>> import numpy as np
+    >>> from dipy.tracking.metrics import principal_components    
+    >>> theta=np.pi*np.linspace(0,1,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> va, ve =principal_components(xyz)
+    >>> va
+    array([ 0.51010101,  0.09883545,  0.        ])
+    
+    
     '''
     C=np.cov(xyz.T)    
     va,ve=np.linalg.eig(C)
@@ -1248,32 +829,28 @@ def midpoint2point(xyz,p):
     Returns
     -------
     d : float
-       a float number representing Euclidean distance         
+       a float number representing Euclidean distance    
+       
+    Examples
+    --------    
+    >>> import numpy as np
+    >>> from dipy.tracking.metrics import midpoint2point, midpoint 
+    >>> theta=np.pi*np.linspace(0,1,100)
+    >>> x=np.cos(theta)
+    >>> y=np.sin(theta)
+    >>> z=0*x
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> dist=midpoint2point(xyz,np.array([0,0,0]))
+      
     '''
     mid=midpoint(xyz)     
     return np.sqrt(np.sum((xyz-mid)**2))
 
 
-def test_approximate_trajectory_partitioning():
-    
-    t=np.linspace(0,1.75*2*np.pi,1000)
-
-    x = np.sin(t)
-    y = np.cos(t)
-    z = t
-    
-    xyz=np.vstack((x,y,z)).T 
-    
-    xyza1 = approximate_trajectory_partitioning(xyz,alpha=1.)
-    xyza2 = approximate_trajectory_partitioning(xyz,alpha=2.) 
-    
     
 
 if __name__ == "__main__":
-#    pass
-
-    import cProfile
-    cProfile.run('test_approximate_trajectory_partitioning()', 'fooprof')
+    pass
 
     
 
