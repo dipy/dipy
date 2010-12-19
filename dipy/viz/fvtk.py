@@ -10,7 +10,7 @@
     >>> r=fvtk.ren()    
     >>> a=fvtk.axes()        
     >>> fvtk.add(r,a)
-    >>> fvtk.show(r)
+    >>> ##fvtk.show(r)
     
 '''
 
@@ -90,11 +90,11 @@ def ren():
     ---------
     >>> from dipy.viz import fvtk
     >>> import numpy as np
-    >>> r=ren()    
+    >>> r=fvtk.ren()    
     >>> lines=[np.random.rand(10,3)]        
-    >>> c=line(lines)    
-    >>> add(r,c)
-    >>> show(r)    
+    >>> c=fvtk.line(lines)    
+    >>> fvtk.add(r,c)
+    >>> #fvtk.show(r)    
     '''
     return vtk.vtkRenderer()
 
@@ -249,7 +249,7 @@ def line(lines,colors,opacity=1,linewidth=1):
     >>> colors=np.random.rand(2,3)
     >>> c=fvtk.line(lines,colors)    
     >>> fvtk.add(r,c)
-    >>> fvtk.show(r)
+    >>> #fvtk.show(r)
     '''    
     if not isinstance(lines,types.ListType):
         lines=[lines]    
@@ -558,7 +558,7 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
     >>> r=fvtk.ren()    
     >>> l=fvtk.label(r)
     >>> fvtk.add(r,l)
-    >>> fvtk.show(r)
+    >>> #fvtk.show(r)
     '''
     atext=vtk.vtkVectorText()
     atext.SetText(text)
@@ -650,7 +650,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
     >>> r = fvtk.ren()
     >>> v = fvtk.volume(vol)
     >>> fvtk.add(r,v)
-    >>> fvtk.show(r)
+    >>> #fvtk.show(r)
     
     Second example with a more complicated function
         
@@ -661,17 +661,17 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
     >>> r = fvtk.ren()
     >>> v = fvtk.volume(s)
     >>> fvtk.add(r,v)
-    >>> fvtk.show(r)
+    >>> #fvtk.show(r)
     
     If you find this function too complicated you can always use mayavi. 
     Please do not forget to use the -wthread switch in ipython if you are running mayavi.
     
-    >>> from enthought.mayavi import mlab       
-    >>> import numpy as np
-    >>> x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
-    >>> s = np.sin(x*y*z)/(x*y*z)
-    >>> mlab.pipeline.volume(mlab.pipeline.scalar_field(s))
-    >>> mlab.show()
+    from enthought.mayavi import mlab       
+    import numpy as np
+    x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
+    s = np.sin(x*y*z)/(x*y*z)
+    mlab.pipeline.volume(mlab.pipeline.scalar_field(s))
+    mlab.show()
     
     More mayavi demos are available here:
     
@@ -891,7 +891,7 @@ def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50],colors=[np.array([1.
     >>> A[3:-3,3:-3,3:-3]=1
     >>> r=fvtk.ren()
     >>> fvtk.add(r,fvtk.contour(A,levels=[1]))
-    >>> fvtk.show(r)
+    >>> #fvtk.show(r)
     
     '''
     
@@ -1401,7 +1401,7 @@ def show(ren,title='fvtk',size=(300,300),png_magnify=3):
     >>> fvtk.add(r,c)
     >>> l=fvtk.label(r)
     >>> fvtk.add(r,l)
-    >>> fvtk.show(r)
+    >>> #fvtk.show(r)
     '''
     ren.AddActor2D(textActor)
     

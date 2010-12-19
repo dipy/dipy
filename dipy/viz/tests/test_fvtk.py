@@ -33,8 +33,7 @@ def test_fvtk_functions():
     # Remove all objects
     fvtk.rm_all(r)
     
-    # Put some text
-    
+    # Put some text    
     l=fvtk.label(r,text='Yes Men')
     fvtk.add(r,l)
 
