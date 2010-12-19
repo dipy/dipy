@@ -9,6 +9,7 @@ import numpy as np
 #fro dipy
 from dipy.reconst.maskedview import MaskedView, _makearray, _filled
 from dipy.reconst.modelarray import ModelArray
+from dipy.data import get_sphere
 
 class Tensor(ModelArray):
     """
@@ -563,7 +564,7 @@ def quantize_evecs(evecs,odf_vertices=None):
 
     if odf_vertices==None:
         
-        eds=np.load(os.path.join(os.path.dirname(__file__),'matrices','evenly_distributed_sphere_362.npz'))
+        eds=np.load(get_sphere('symmetric362'))
         odf_vertices=eds['vertices']
 
     tup=max_evecs.shape[:-1]

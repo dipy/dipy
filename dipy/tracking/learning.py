@@ -111,7 +111,7 @@ def detect_corresponding_tracks_plus(indices,tracks1,indices2,tracks2):
     for i in indices:
         rt=[pf.mam_distances(tracks1[i],t,'avg') for t in tracks2]
         rt=np.array(rt)
-        track2track[cnt]=np.array([cnt,i,indices2[rt.argmin()]])        
+        track2track[cnt]=np.array([cnt,i,indices2[rt.argmin()]])   
         cnt+=1        
     return track2track.astype(int)
 

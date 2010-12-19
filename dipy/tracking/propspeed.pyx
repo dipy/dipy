@@ -37,7 +37,9 @@ cdef inline double* asdp(cnp.ndarray pt):
 
 cdef  long offset(long *indices,long *strides,int lenind, int typesize) nogil:
 
-    '''
+    ''' Very general way to access any element of any ndimensional numpy array
+    using cython.
+    
     Parameters
     ----------
     indices: long * (int64 *), indices of the array which we want to
@@ -80,7 +82,7 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     Example
     -------
     >>> import numpy as np
-    >>> from dipy.core.reconstruction_performance import ndarray_offset
+    >>> from dipy.tracking.propspeed import ndarray_offset
     >>> I=np.array([1,1])
     >>> A=np.array([[1,0,0],[0,2,0],[0,0,3]])
     >>> S=np.array(A.strides)
