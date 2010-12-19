@@ -38,7 +38,9 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
             
     Notes
     -----
-    To find the corresponding tracks we use mam_distances
+    To find the corresponding tracks we use mam_distances with 'avg' option. Then we calculate the 
+    argmin of all the calculated distances and return it for every index. (See 3rd column of arr
+    in the example given below.
        
        
     '''
@@ -93,7 +95,10 @@ def detect_corresponding_tracks_plus(indices,tracks1,indices2,tracks2):
     
     Notes
     -----
-    To find the corresponding tracks we use mam_distances
+    To find the corresponding tracks we use mam_distances with 'avg' option. Then we calculate the 
+    argmin of all the calculated distances and return it for every index. (See 3rd column of arr
+    in the example given below.
+    
     
     See also
     --------
