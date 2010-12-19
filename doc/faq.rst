@@ -77,7 +77,17 @@ less movement in that direction. Yes, it is counterintuitive correct!
   crossing fibers of high order. Also it is very fast to calculate (~2 minutes for 1 million tracks ). We hope that at a later stage we will 
   be able to test more methods e.g. probabilistic, global & graph-theoretic.
   
-
+9. We made the mistake in our lab to generate datasets with nonisotropic voxelsizes what do we do?
+  
+  You need to resample your raw data to an isotropic size. Have a look at the module dipy.align.noniso2iso
+  
+10. Why anisotropic voxel sizes are a bad idea in diffusion?
+  
+  If for example you have 2x2x4 mm^3 voxels, the last dimension will
+  be averaged over the double distance and less detail will be captured compared
+  to the other two dimensions. Furthermore, with very anisotropic voxels 
+  the uncertainty on orientation estimates will depend on the position of 
+  the subject in the scanner.
 
 ---------
 Practical
@@ -95,13 +105,13 @@ Practical
 
   The best ever designed numerical library numpy.   
   
-2. Which python interpreter do your recommend?
+2. Which python console do your recommend?
 
   ipython
 
 3. What do you use for visualization?
 
-  We use fosvtk(fvtk) this is actually using python-vtk 
+  We use fosvtk(fvtk) this depends on python-vtk 
   from dipy.viz import fvtk
 
 4. What about interactive visualization?
@@ -112,14 +122,22 @@ Practical
 
 5. Which file formats do you support?
   
-  Dicom (Siemens), Nifti, Trackvis, dpy, npy, npz and all other formats supported by nibabel
+  Dicom (Siemens), Nifti (.nii) , Trackvis (.trk), Dipy (.dpy), Numpy (.npy, ,npz), text and all other formats supported by nibabel,nifti and pydicom.
   
 6. What is Dpy?
 
   Dpy is and hdf5 file format which we use in dipy to store tractography and other information. This allows us to store huge tractographies and load different parts of the datasets directly from the disk like it was in memory.
 
-6. Which python editor should I use?
+7. Which python editor should I use?
 
   Any text editor would do the job but we prefer the following Aptana, Emacs, Vim and Eclipse (with PyDev).
   
+8. I have problems reading my dicom files using nibabel, what should I do?
 
+  Use Chris Roden's dcm2nii to transform them to nifti files.  
+  http://www.cabiatl.com/mricro/mricron/dcm2nii.html
+  Or you can make your own reader using pydicom   
+  http://code.google.com/p/pydicom/
+  and then use nibabel to store the data as niftis.
+  
+  
