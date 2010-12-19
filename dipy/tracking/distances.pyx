@@ -615,8 +615,8 @@ cdef inline void min_distances(size_t t1_len,
         min_t2t1[t2_pi]=sqrt(min_t2t1[t2_pi])
 
 
-def zhang_distances(xyz1,xyz2,metric='all'):
-    ''' Distance between tracks xyz1 and xyz2 using Zhang metrics
+def mam_distances(xyz1,xyz2,metric='all'):
+    ''' Min/Max/Mean Average Minimume Distance between tracks xyz1 and xyz2
     
     Based on the metrics in Zhang, Correia, Laidlaw 2008
     http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
