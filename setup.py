@@ -89,7 +89,7 @@ def main(**extra_args):
                           'dipy.tracking',
                           'dipy.tracking.tests',
                           'dipy.reconst',
-                          'dipy.reconst.tests'                          
+                          'dipy.reconst.tests',                          
                           'dipy.io',
                           'dipy.io.tests',
                           'dipy.viz',
@@ -117,6 +117,7 @@ def main(**extra_args):
           cmdclass = cmdclass,
           **extra_args
          )
+
 
 
 if __name__ == "__main__":
