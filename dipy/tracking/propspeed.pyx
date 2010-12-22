@@ -35,6 +35,7 @@ cdef inline float* asfp(cnp.ndarray pt):
 cdef inline double* asdp(cnp.ndarray pt):
     return <double *>pt.data
 
+@cython.cdivision(True)
 cdef  long offset(long *indices,long *strides,int lenind, int typesize) nogil:
 
     ''' Very general way to access any element of any ndimensional numpy array
