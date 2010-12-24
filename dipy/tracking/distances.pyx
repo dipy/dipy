@@ -487,6 +487,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     # preprocess tracks
     cdef:
         size_t longest_track_len = 0, track_len
+        longest_track_lenA, longest_track_lenB
         cnp.ndarray[object, ndim=1] tracksA32
         cnp.ndarray[object, ndim=1] tracksB32
         cnp.ndarray[cnp.double_t, ndim=2] DM
