@@ -17,7 +17,7 @@ More papers are on their way and please see our :ref:`documentation` for more de
 
 The core development team consists of the following individuals:
 
-- Eleftherios Garyfallidis (leading programmer), University of Cambridge, UK 
+- Eleftherios Garyfallidis, University of Cambridge, UK 
 - Ian Nimmo-Smith, MRC Cognition and Brain Sciences Unit, Cambridge, UK
 - Matthew Brett, University of California, Berkeley, CA
 - Bago Amirbekian, University of California, San Fransisco, CA

@@ -12,7 +12,12 @@ in dipy.
 
 .. toctree::
 
-   core
-   io
+	align
+	core
+  	reconst
+  	tracking
+  	io
+  	viz
+   
 
 

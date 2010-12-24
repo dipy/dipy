@@ -1,5 +1,5 @@
 =========
- DiPy IO
+ dipy io
 =========
 
 .. currentmodule:: dipy.io

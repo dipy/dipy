@@ -1,7 +1,7 @@
-'''Create a unitsphere recursively by subdividing all triangles in an octahedron
+'''Create a unit sphere by subdividing all triangles of an octahedron
 recursively.
 
-A unitsphere has a radius of 1, which also means that all points in this sphere
+A unit sphere has a radius of 1, which also means that all points in this sphere
 have an absolute value of 1. Another feature of an unitsphere is that the
 normals of this sphere are exactly the same as the vertices.
 
@@ -56,7 +56,7 @@ def normalize_v3(arr):
     arr /= lens[:,None]
 
 def divide_all( vertices, edges, triangles ):
-    r"""Subdivides a triangle
+    r""" Subdivides a triangle
 
     Parameters
     ----------
@@ -157,19 +157,20 @@ def divide_all( vertices, edges, triangles ):
     return vertices, edges, triangles
 
 def create_unit_sphere( recursion_level=2 ):
-    """Creates a unit sphere by subdivides a unit octahedron
+    """ Creates a unit sphere by subdividing a unit octahedron.
 
     Starts with a unit octahedron and subdivides the faces, projecting the
     resulting points onto the surface of a unit sphere.
 
     Parameters
     ----------
+    
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere.
 
     Returns
-    -------
+    --------
     vertices : array
         A 2d array with the x, y, and z coordinates of vertices on a unit
         sphere.
@@ -181,7 +182,7 @@ def create_unit_sphere( recursion_level=2 ):
         unit sphere. 
 
     See Also
-    --------
+    ---------
     create_half_sphere, divide_all
 
     """
@@ -196,7 +197,7 @@ def create_unit_sphere( recursion_level=2 ):
     return vertex_array, edge_array, triangle_array
 
 def create_half_unit_sphere( recursion_level=2 ):
-    """Creates a unit sphere and returns the top half
+    """ Creates a unit sphere and returns the top half
 
     Starting with a symmetric sphere of points, removes half the points so that
     for any pair of points a, -a only one is kept. Removes half the edges so
@@ -232,7 +233,7 @@ def create_half_unit_sphere( recursion_level=2 ):
     return remove_half_sphere(v, e, t)
     
 def remove_half_sphere(v, e, t):
-    """Returns a triangulated half sphere
+    """ Returns a triangulated half sphere
 
     Removes half the vertices, edges, and triangles from a unit sphere created
     by create_unit_sphere
