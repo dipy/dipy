@@ -12,8 +12,7 @@ from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
 
 class Tensor(ModelArray):
-    """
-    Fits a diffusion tensor given diffusion-weighted signals and gradient info
+    """ Fits a diffusion tensor given diffusion-weighted signals and gradient info
 
     Tensor object that when initialized calculates single self diffusion
     tensor[1]_ in each voxel using selected fitting algorithm

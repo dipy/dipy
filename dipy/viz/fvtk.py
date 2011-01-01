@@ -4,7 +4,7 @@
     A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
     You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
     
-    fvtk Example:
+    Examples
     ----------------
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()    
@@ -215,7 +215,7 @@ def line(lines,colors,opacity=1,linewidth=1):
     ''' Create an actor for one or more lines.    
     
     Parameters
-    ----------
+    ------------
     lines :  list of arrays representing lines as 3d points  for example            
             lines=[np.random.rand(10,3),np.random.rand(20,3)]   
             represents 2 lines the first with 10 points and the second with 20 points in x,y,z coordinates.
@@ -242,7 +242,7 @@ def line(lines,colors,opacity=1,linewidth=1):
     vtkActor object
     
     Examples
-    --------    
+    ----------    
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()    
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
@@ -541,7 +541,7 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
     This actor will always face the camera
     
     Parameters
-    ----------
+    ------------
     ren : vtkRenderer() object as returned from ren()
     text : a text for the label
     pos : left down position of the label
@@ -553,7 +553,7 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
     vtkActor object
     
     Examples
-    --------  
+    ----------
     >>> from dipy.viz import fvtk  
     >>> r=fvtk.ren()    
     >>> l=fvtk.label(r)
@@ -582,7 +582,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
     ''' Create a volume and return a volumetric actor using volumetric rendering. 
     This function has many different interesting capabilities. The maptype, opacitymap and colormap are the most crucial parameters here.
     
-    Parameters:
+    Parameters
     ----------------
     vol : array, shape (N, M, K), dtype uint8
          an array representing the volumetric dataset that we want to visualize using volumetric rendering            
@@ -623,11 +623,11 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
             The color map assigns a color value to every point in the volume.
             When None from the histogram it uses a red-blue colormap.
                 
-    Returns:
+    Returns
     ----------
     vtkVolume    
     
-    Notes:
+    Notes
     --------
     What is the difference between TextureMapper2D and RayCastFunction? 
     Coming soon... See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
@@ -638,7 +638,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
     What about trilinear interpolation?
     Coming soon... well when time permits really ... :-)
     
-    Examples:
+    Examples
     ------------
     First example random points    
     
@@ -861,7 +861,7 @@ def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50],colors=[np.array([1.
     ''' Take a volume and draw surface contours for any any number of thresholds (levels) where every contour has its own
     color and opacity
     
-    Parameters:
+    Parameters
     ----------------
     vol : array, shape (N, M, K)
         an array representing the volumetric dataset for which we will draw some beautiful contours .         
@@ -878,12 +878,12 @@ def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50],colors=[np.array([1.
     opacities : sequence of floats [0,1]
             
         
-    Returns:
+    Returns
     -----------
     ass: assembly of actors
             representing the contour surfaces
             
-    Examples:
+    Examples
     -------------
     >>> import numpy as np
     >>> from dipy.viz import fvtk
@@ -991,7 +991,7 @@ def colors(v,colormap):
     as an array of shape (N,3) where every row gives the corresponding
     r,g,b value. The colormaps we use are similar with that of pylab.
     
-    Notes :
+    Notes 
     -------
     If you want to add more colormaps here is what you could do. Go to
     this website http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
@@ -1132,7 +1132,7 @@ def _closest_track(p,tracks):
 def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[20,30,40],opacities=[0.8,0.7,0.3],colors=None,planesx=[20,30],planesy=[30,40],planesz=[20,30]):
     ''' Slicer and contour rendering of 3d volumes
     
-    Parameters:
+    Parameters
     ----------------
     vol : array, shape (N, M, K), dtype uint8
          an array representing the volumetric dataset that we want to visualize using volumetric rendering            
@@ -1160,17 +1160,13 @@ def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[2
     planesz : axial
        
     
-    Examples:
+    Examples
     --------------
     >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
     >>> s = np.sin(x*y*z)/(x*y*z)
     >>> r=fvtk.ren()
     >>> fvtk.slicer(r,s)
-    
-    >>> import form
-    >>> vol,voxsz,affine=form.loadvol('/home/eg01/Devel/mricron/templates/ch2better.nii')
-    >>> from dipy.viz import fvtk
-    >>> fvtk.slicer(r,vol,contours=0,planes=1,levels=[80,114],planesx=[150],planesy=[150],planesz=[150])
+    >>> fvtk.show(r)
 
     
     
@@ -1383,7 +1379,7 @@ def show(ren,title='fvtk',size=(300,300),png_magnify=3):
     ''' Show window 
     
     Parameters
-    ----------
+    ------------
     ren : vtkRenderer() object 
             as returned from function ren()
     title : string 
@@ -1392,7 +1388,7 @@ def show(ren,title='fvtk',size=(300,300),png_magnify=3):
             (width,height) of the window
     
     Examples
-    --------    
+    ----------    
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()    
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
@@ -1442,7 +1438,7 @@ def record(ren=None,cam_pos=(0,0,600),cam_focal=(0,0,0),cam_view=(0,0,1),outdir=
     ''' This will record your scene 
     
     Parameters
-    ----------
+    -----------
     ren:
     camera_position:
     outdir: 

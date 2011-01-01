@@ -17,7 +17,7 @@ def track_counts(tracks, vol_dims, vox_sizes, return_elements=True):
     the line that enters the voxel. 
 
     Parameters
-    ----------
+    ------------
     tracks : sequence
        sequence of tracks.  Tracks are ndarrays of shape (N, 3), where N
        is the number of points in that track, and ``tracks[t][n]`` is
@@ -33,7 +33,7 @@ def track_counts(tracks, vol_dims, vox_sizes, return_elements=True):
        below)
 
     Returns
-    -------
+    ---------
     tcs : ndarray shape `vol_dim`
        An array where entry ``tcs[x, y, z]`` is the number of tracks
        that passed through voxel at voxel coordinate x, y, z

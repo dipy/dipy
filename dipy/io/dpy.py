@@ -15,16 +15,16 @@ class Dpy():
         ''' Advanced storage system for tractography based on HDF5
         
         Parameters
-        ----------
-        fname: str, full filename
-        mode: 'r' read 
+        ------------
+        fname : str, full filename
+        mode : 'r' read 
          'w' write 
          'r+' read and write only if file already exists
          'a'  read and write even if file doesn't exist (not used yet)       
         compression: 0 no compression to 9 maximum compression
         
         Examples
-        ---------
+        ----------
         >>> import os
         >>> from tempfile import mkstemp #temp file
         >>> from dipy.io.dpy import Dpy

@@ -87,7 +87,6 @@ simdata = ['fibres_2_SNR_80_angle_90_l1_1.4_l2_0.35_l3_0.35_iso_0_diso_00',
  'fibres_2_SNR_40_angle_90_l1_1.4_l2_0.35_l3_0.35_iso_1_diso_0.7',
  'fibres_2_SNR_20_angle_90_l1_1.4_l2_0.35_l3_0.35_iso_0_diso_00']
 
-
 simdir = '/home/ian/Data/SimVoxels/'
 
 def gq_tn_calc_save():

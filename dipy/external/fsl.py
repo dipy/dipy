@@ -14,7 +14,7 @@ def write_bvals_bvecs(bvals, bvecs, outpath=None, prefix=''):
     ''' Write FSL FDT bvals and bvecs files
 
     Parameters
-    ----------
+    -------------
     bvals : (N,) sequence
        Vector with diffusion gradient strength (one per diffusion
        acquisition, N=no of acquisitions)
@@ -45,7 +45,7 @@ def flirt2aff(mat, in_img, ref_img):
     """ Transform from `in_img` voxels to `ref_img` voxels given `matfile`
 
     Parameters
-    ----------
+    ------------
     matfile : (4,4) array
         contents (as array) of output ``-omat`` transformation file from flirt
     in_img : img
@@ -54,7 +54,7 @@ def flirt2aff(mat, in_img, ref_img):
         image passed (as filename) to flirt as ``-ref`` image
 
     Returns
-    -------
+    ---------
     aff : (4,4) array
         Transform from voxel coordinates in ``in_img`` to voxel coordinates in
         ``ref_img``
@@ -100,7 +100,7 @@ def flirt2aff_files(matfile, in_fname, ref_fname):
     """ Map from `in_fname` image voxels to `ref_fname` voxels given `matfile`
 
     Parameters
-    ----------
+    ------------
     matfile : str
         filename of output ``-omat`` transformation file from flirt
     in_fname : str
@@ -123,12 +123,12 @@ def warp_displacements(ffa,flaff,fdis,fref,ffaw,order=1):
     ''' Warp an image using fsl displacements 
     
     Parameters
-    ----------
-    ffa: filename of nifti to be warped
-    flaff: filename of .mat  (flirt)
-    fdis:  filename of displacements (fnirtfileutils)
-    fref: filename of reference volume e.g. (FMRIB58_FA_1mm.nii.gz)
-    ffaw: filename for the output warped image
+    ------------
+    ffa : filename of nifti to be warped
+    flaff : filename of .mat  (flirt)
+    fdis :  filename of displacements (fnirtfileutils)
+    fref : filename of reference volume e.g. (FMRIB58_FA_1mm.nii.gz)
+    ffaw : filename for the output warped image
     
     '''
     

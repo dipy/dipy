@@ -1,3 +1,4 @@
+""" Classes and functions for generalized q-sampling """
 import numpy as np
 import dipy.reconst.recspeed as rp
 from dipy.data import get_sphere
@@ -5,16 +6,56 @@ import os
 from os.path import join as opj
 
 class GeneralizedQSampling():
+    """ Implements Generalized Q-Sampling
+    
+    Generates a model-free description for every voxel that can
+    be used from simple to very complicated configurations like
+    quintuple crossings if your datasets support them.
 
+    You can use this class for every kind of DWI image but it will
+    perform much better when you have a balanced sampling scheme.
+
+    Implements equation [9] from Generalized Q-Sampling as
+    described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
+    Generalized Q-Sampling Imaging. IEEE TMI, 2010.
+    
+    Parameters
+    -----------
+    data : array, 
+        shape(X,Y,Z,D)        
+    bvals : array, 
+        shape (N,)
+    gradients : array, 
+        shape (N,3) also known as bvecs        
+    Lambda : float, 
+        smoothing parameter - diffusion sampling length
+
+    Key Properties
+    ---------------
+    QA : array, shape(X,Y,Z,5), quantitative anisotropy
+    IN : array, shape(X,Y,Z,5), indices of QA, qa unit directions
+    fwd : float, normalization parameter
+
+    Notes
+    -------
+    In order to reconstruct the spin distribution function  a nice symmetric evenly distributed sphere is provided using 362 or 642 points. This is usually
+    sufficient for most of the datasets. 
+
+    See also
+    ----------
+    dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
+   
+    
+    """
 
     def __init__(self,data,bvals,gradients,Lambda=1.2,odfsphere=None,mask=None):
 
-        ''' Generates a model-free description for every voxel that can
+        """ Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
         quintuple crossings if your datasets support them.
 
         You can use this class for every kind of DWI image but it will
-        perform better when you have a balanced sampling scheme.
+        perform much better when you have a balanced sampling scheme.
 
         Implements equation [9] from Generalized Q-Sampling as
         described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
@@ -39,15 +80,15 @@ class GeneralizedQSampling():
         fwd : float, normalization parameter
 
         Notes
-        -----
+        -------
         In order to reconstruct the spin distribution function  a nice symmetric evenly distributed sphere is provided using 362 points. This is usually
         sufficient for most of the datasets. 
 
         See also
-        --------
-        FACT_Delta, Tensor
+        ----------        
+        dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.__init__.get_sphere
 
-        '''
+        """
         
         if odfsphere == None:
             eds = eds=np.load(get_sphere('symmetric362'))            
@@ -149,27 +190,37 @@ class GeneralizedQSampling():
         
 
     def qa(self):
+        """ quantitative anisotropy
+        """
         return self.QA
     
     def ind(self):
+        """ 
+        indices on the sampling sphere
+        """
         return self.IN
 
     def odf(self,s):
-        '''
+        """ spin density orientation distribution function
+         
         Parameters
-        ----------
-        s: array, shape(D) diffusion signal for one point in the dataset
-
+        -----------        
+        s : array, shape(D),
+            diffusion signal for one point in the dataset
+        
         Returns
-        -------
-        odf: array, shape(len(odf_vertices)), orientation distribution function
+        ---------
+        odf : array, shape(len(odf_vertices)), 
+            spin density orientation distribution function        
 
-        '''
+        """
         return np.dot(s,self.q2odf_params)
 
     def npa(self,s,width=5):
-        '''
-        '''   
+        """ non-parametric anisotropy
+        
+        Nimmo-Smith et. al  ISMRM 2011
+        """   
         odf=self.odf(s)
         t0,t1,t2=triple_odf_maxima(self.odf_vertices, odf, width)
         psi0 = t0[1]**2
@@ -182,24 +233,24 @@ class GeneralizedQSampling():
 
 
 def equatorial_zone_vertices(vertices, pole, width=5):
-    '''
+    """
     finds the 'vertices' in the equatorial zone conjugate
     to 'pole' with width half 'width' degrees
-    '''
+    """
     return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) < np.abs(np.sin(np.pi*width/180))]
 
 def polar_zone_vertices(vertices, pole, width=5):
-    '''
+    """
     finds the 'vertices' in the equatorial band around
     the 'pole' of radius 'width' degrees
-    '''
+    """
     return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) > np.abs(np.cos(np.pi*width/180))]
 
 
 def upper_hemi_map(v):
-    '''
+    """
     maps a 3-vector into the z-upper hemisphere
-    '''
+    """
     return np.sign(v[2])*v
 
 def equatorial_maximum(vertices, odf, pole, width):
@@ -215,13 +266,13 @@ def equatorial_maximum(vertices, odf, pole, width):
 
     return eqvertmax, eqvalmax
 
-#'''
+#"""
 def patch_vertices(vertices,pole, width):
-    '''
+    """
     find 'vertices' within the cone of 'width' degrees around 'pole'
-    '''
+    """
     return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) > np.abs(np.cos(np.pi*width/180))]
-#'''
+#"""
 
 def patch_maximum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)    
@@ -245,11 +296,11 @@ def triple_odf_maxima(vertices, odf, width):
                                               odf, pole, width)
     indmax3 = eqvert[np.argmin([np.abs(np.dot(vertices[indmax2],vertices[p])) for p in eqvert])]
     odfmax3 = odf[indmax3]
-    '''
+    """
     cross12 = np.cross(vertices[indmax1],vertices[indmax2])
     cross12 = cross12/np.sqrt(np.sum(cross12**2))    
     indmax3, odfmax3 = patch_maximum(vertices, odf, cross12, 2*width)
-    '''
+    """
     return [(indmax1, odfmax1),(indmax2, odfmax2),(indmax3, odfmax3)]
 
 

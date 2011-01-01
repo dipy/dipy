@@ -42,17 +42,17 @@ cdef  long offset(long *indices,long *strides,int lenind, int typesize) nogil:
     using cython.
     
     Parameters
-    ----------
-    indices: long * (int64 *), indices of the array which we want to
+    ------------
+    indices : long * (int64 *), indices of the array which we want to
     find the offset
-    strides: long * strides
-    lenind: int, len(indices)
-    typesize: int, number of bytes for data type e.g. if double is 8 if
+    strides : long * strides
+    lenind : int, len(indices)
+    typesize : int, number of bytes for data type e.g. if double is 8 if
     int32 is 4
 
-    Returns:
-    --------
-    offset: integer, offset from 0 pointer in memory normalized by dtype
+    Returns
+    ----------
+    offset : integer, offset from 0 pointer in memory normalized by dtype
     '''
  
     cdef int i
@@ -68,20 +68,20 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     ''' find offset in an ndarray using strides
 
     Parameters
-    ----------
-    indices: array, shape(N,), indices of the array which we want to
+    ------------
+    indices : array, shape(N,), indices of the array which we want to
     find the offset
-    strides: array, shape(N,), strides
-    lenind: int, len(indices)
-    typesize: int, number of bytes for data type e.g. if double is 8 if
+    strides : array, shape(N,), strides
+    lenind : int, len(indices)
+    typesize : int, number of bytes for data type e.g. if double is 8 if
     int32 is 4
     
-    Returns:
-    --------
-    offset: integer, offset from 0 pointer in memory normalized by dtype
+    Returns
+    -----------
+    offset : integer, offset from 0 pointer in memory normalized by dtype
     
     Example
-    -------
+    ----------
     >>> import numpy as np
     >>> from dipy.tracking.propspeed import ndarray_offset
     >>> I=np.array([1,1])
@@ -101,8 +101,8 @@ cdef  void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
     ''' interpolate in 3d volumes given point X
     Returns
     -------
-    W: weights
-    IN: indices of the volume
+    W : weights
+    IN : indices of the volume
     '''
     cdef double Xf[3],d[3],nd[3]
     cdef long i
@@ -146,29 +146,29 @@ cdef  long _nearest_direction(double* dx,double* qa,\
     ''' Give the nearest direction to a point and also check for the threshold and the angle
 
         Parameters
-        ----------        
-        dx: array, shape(3,), as float, moving direction of the current
+        ------------        
+        dx : array, shape(3,), as float, moving direction of the current
         tracking
 
-        qa: array, shape(Np,), float, quantitative anisotropy matrix,
+        qa : array, shape(Np,), float, quantitative anisotropy matrix,
         where Np the number of peaks, found using self.Np
 
-        ind: array, shape(Np,), float, index of the track orientation
+        ind : array, shape(Np,), float, index of the track orientation
 
-        odf_vertices: array, shape(N,3), float, sampling directions on the sphere
+        odf_vertices : array, shape(N,3), float, sampling directions on the sphere
 
-        qa_thr: float, threshold for QA, we want everything higher than
+        qa_thr : float, threshold for QA, we want everything higher than
         this threshold 
 
-        ang_thr: float, theshold, we only select fiber orientation with
+        ang_thr : float, theshold, we only select fiber orientation with
         this range 
 
         Returns
         --------
-        delta: bool, delta funtion, if 1 we give it weighting if it is 0
+        delta : bool, delta funtion, if 1 we give it weighting if it is 0
         we don't give any weighting
 
-        direction: array, shape(3,), the fiber orientation to be
+        direction : array, shape(3,), the fiber orientation to be
         consider in the interpolation
     '''
     cdef:
@@ -311,17 +311,17 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
                     double qa_thr,double ang_thr,double step_sz):
     '''
     Parameters
-    ----------
-    seed: array, shape(3,), point where the tracking starts     
-    ref: long int, which peak to follow first
-    qa: array, shape(Np,), float, quantitative anisotropy matrix,
+    ------------
+    seed : array, shape(3,), point where the tracking starts     
+    ref : long int, which peak to follow first
+    qa : array, shape(Np,), float, quantitative anisotropy matrix,
     where Np the number of peaks, found using self.Np
-    ind: array, shape(Np,), float, index of the track orientation        
+    ind : array, shape(Np,), float, index of the track orientation        
                 
     Returns
     -------
-    d: bool, delta function result        
-    idirection: array, shape(3,), index of the direction of the propagation
+    d : bool, delta function result        
+    idirection : array, shape(3,), index of the direction of the propagation
 
     '''
     cdef:

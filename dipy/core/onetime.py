@@ -8,7 +8,7 @@ later in the object's life cycle, but once evaluated they become normal, static
 attributes with no function call overhead on access or any other constraints.
 
 References
-----------
+------------
 [1] How-To Guide for Descriptors, Raymond
 Hettinger. http://users.rcn.com/python/download/Descriptor.htm
 
@@ -22,7 +22,7 @@ class OneTimeProperty(object):
        """Create a OneTimeProperty instance.
 
         Parameters
-        ----------
+        -------------
           func : method
           
             The method that will be called the first time to compute a value.
@@ -56,14 +56,14 @@ def setattr_on_read(func):
     """Decorator to create OneTimeProperty attributes.
 
     Parameters
-    ----------
+    ------------
       func : method
         The method that will be called the first time to compute a value.
         Afterwards, the method's name will be a standard attribute holding the
         value of this computation.
 
     Examples
-    --------
+    -----------
     >>> class MagicProp(object):
     ...     @setattr_on_read
     ...     def a(self):

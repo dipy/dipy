@@ -21,7 +21,7 @@ class MaskedView(object):
     the nonzero elements of mask, where mask is zero fill_value is used.
 
     Examples
-    --------
+    -----------
     >>> mask = np.array([[True, False, True],[False, True, False]])
     >>> data = np.arange(2*3*4)
     >>> data.shape = (2, 3, 4)
@@ -43,7 +43,7 @@ class MaskedView(object):
         Creates a MaskedView of data.
 
         Parameters
-        ----------
+        ------------
         mask : ndarray of bools
             mask indicating where the data belongs
         data : ndarray, ndim >= mask.ndim
@@ -91,7 +91,7 @@ class MaskedView(object):
         (self.fill_value defult).
 
         Parameters
-        ----------
+        ------------
         fill_value :
             Value to be used in place of data where mask is 0.
         """

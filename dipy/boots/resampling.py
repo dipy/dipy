@@ -21,7 +21,7 @@ def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
     function (pdf).
 
     Parameters
-    ----------
+    ------------
     x : ndarray (N, 1)
         Observable sample to resample. N should be reasonably large.
     statistic : method (optional)
@@ -33,7 +33,7 @@ def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
         Percentile for confidence interval of the statistic. (Default: 0.05)
     
     Returns
-    -------
+    ---------
     bs_pdf : ndarray (M, 1)
         Jackknife probabilisty distribution function of the statistic.
     se : float
@@ -42,11 +42,11 @@ def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
         Confidence interval of the statistic.
 
     See Also
-    --------
+    -----------
     numpy.std, numpy.random.random
 
     Notes
-    -----
+    --------
     Bootstrap resampling is non parametric. It is quite powerful in
     determining the standard error and the confidence interval of a sample
     distribution. The key characteristics of bootstrap is:
@@ -145,7 +145,7 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
     Function that calculates the bias z_0 for abc method.
     
     See Also
-    --------
+    ----------
     abc, __tt, __tt_dot, __tt_dot_dot
     """
     n = len(x)
@@ -169,7 +169,7 @@ def __tt(x, p_0, statistic = bs_se):
     given proportional weighting.
 
     Parameters
-    ----------
+    ------------
     x : np.ndarray
         Observable data (e.g. from gold standard).
     p_0 : np.ndarray
@@ -181,7 +181,7 @@ def __tt(x, p_0, statistic = bs_se):
         Desired statistic of the observable data.
 
     See Also
-    --------
+    -----------
     abc, __tt_dot, __tt_dot_dot
     """
     return statistic(x / p_0)
@@ -211,7 +211,7 @@ def jackknife(pdf, statistic = np.std, M = None):
     error of a desired statistic in a probability distribution function (pdf).
 
     Parameters
-    ----------
+    ------------
     pdf : ndarray (N, 1)
         Probability distribution function to resample. N should be reasonably
         large.
@@ -222,7 +222,7 @@ def jackknife(pdf, statistic = np.std, M = None):
         Total number of samples in jackknife pdf. (Default: M == N)
     
     Returns
-    -------
+    ---------
     jk_pdf : ndarray (M, 1)
         Jackknife probabilisty distribution function of the statistic.
     bias : float
@@ -231,11 +231,11 @@ def jackknife(pdf, statistic = np.std, M = None):
         Standard error of the statistic.
 
     See Also
-    --------
+    -----------
     numpy.std, numpy.mean, numpy.random.random
 
     Notes
-    -----
+    --------
     Jackknife resampling like bootstrap resampling is non parametric. However,
     it requires a large distribution to be accurate and in some ways can be 
     considered deterministic (if one removes the same set of samples, 
@@ -254,7 +254,7 @@ def jackknife(pdf, statistic = np.std, M = None):
     mean[true population])
     
     References
-    ----------
+    -------------
     ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
         look at the jackknife. Ann. Stat. 7, 1-26.
     """     

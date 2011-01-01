@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 import dipy.core.geometry as geometry
-from dipy.core.generalized_q_sampling import upper_hemi_map
+from dipy.reconst.gqi import upper_hemi_map
 
 def eigenstats(points, alpha=0.05):
     '''Principal direction and confidence ellipse

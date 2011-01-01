@@ -90,7 +90,7 @@ def peak_finding(odf, odf_faces):
     the results from peak finding routine will be unpredictable.
 
     Parameters
-    ----------
+    ------------
     odf : (N,) array
        function values on the sphere, where N is the number of vertices
        on the sphere
@@ -99,7 +99,7 @@ def peak_finding(odf, odf_faces):
        of faces on the sphere
 
     Returns
-    -------
+    ---------
     peaks : (L,) array, dtype np.float64
        peak values, shape (L,) where L can vary and is the number of
        local moximae (peaks).  Values are sorted, largest first
@@ -119,12 +119,12 @@ def peak_finding(odf, odf_faces):
     dipy/core/matrices/evenly*.npz to use them try numpy.load()['faces']
     
     Examples
-    --------
+    ----------
     This is called from GeneralizedQSampling or QBall and other models with orientation
     distribution functions.
 
     See also
-    --------
+    -----------
     dipy.core.meshes
     '''
     cdef:
@@ -179,7 +179,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maxima from `vals` given adjacent points
 
     Parameters
-    ----------
+    ------------
     vals : (N,) array, dtype np.float64
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
@@ -190,7 +190,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
        the neighboring points
 
     Returns
-    -------
+    ---------
     inds : (M,) array
        Indices into `vals` giving local maxima of vals, given topology
        from `adj_inds`, and restrictions from `vertex_inds`.  Inds are
@@ -214,13 +214,13 @@ def adj_to_countarrs(adj_inds):
     We use this to provide expected input to ``argmax_from_countarrs``
 
     Parameters
-    ----------
+    ------------
     adj_indices : sequence
        length V sequence of sequences, where sequence ``i`` contains the
        neighbors of a particular vertex.
 
     Returns
-    -------
+    ---------
     counts : (V,) array
        Number of neighbors for each vertex
     adj_inds : (n,) array
@@ -248,7 +248,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
     """ Indices of local maxima from `vals` from count, array neighbors
 
     Parameters
-    ----------
+    ------------
     vals : (N,) array, dtype float
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
@@ -261,7 +261,7 @@ def argmax_from_countarrs(cnp.ndarray vals,
        Indices for neighbors for each point.  ``P=sum(adj_counts)`` 
 
     Returns
-    -------
+    ---------
     inds : (M,) array
        Indices into `vals` giving local maxima of vals, given topology
        from `adj_counts` and `adj_inds`, and restrictions from

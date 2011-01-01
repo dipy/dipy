@@ -12,14 +12,14 @@ class SphericalDandelion():
         '''
         Parameters
         -----------
-        data: array, shape(X,Y,Z,D)        
-        bvals: array, shape (N,)
-        gradients: array, shape (N,3) also known as bvecs
-        smoothing: float, smoothing parameter
+        data : array, shape(X,Y,Z,D)        
+        bvals : array, shape (N,)
+        gradients : array, shape (N,3) also known as bvecs
+        smoothing : float, smoothing parameter
 
         See also
-        --------
-        Tensor, GeneralizedQSampling
+        ----------
+        dipy.reconst.dti.Tensor, dipy.reconst.gqi.GeneralizedQSampling
 
         '''
         

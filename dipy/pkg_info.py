@@ -24,12 +24,12 @@ def pkg_commit_hash(pkg_path):
     If all these fail, we return a not-found placeholder tuple
 
     Parameters
-    ----------
+    -------------
     pkg_path : str
        directory containing package
 
     Returns
-    -------
+    ---------
     hash_from : str
        Where we got the hash from - description
     hash_str : str
@@ -62,12 +62,12 @@ def get_pkg_info(pkg_path):
     ''' Return dict describing the context of this package
 
     Parameters
-    ----------
+    ------------
     pkg_path : str
        path containing __init__.py for package
 
     Returns
-    -------
+    ----------
     context : dict
        with named parameters of interest
     '''

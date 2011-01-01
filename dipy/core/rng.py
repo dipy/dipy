@@ -10,7 +10,7 @@ def WichmannHill2006():
     for advice on generating many sequences for use together, and on alternative algorithms and codes
 
     Examples
-    --------    
+    ----------    
     >>> from dipy.core import rng
     >>> rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
     >>> N = 1000

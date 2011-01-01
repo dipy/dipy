@@ -27,7 +27,7 @@ class EuDX():
     the propagation.
 
     References
-    ----------
+    ------------
     .. [1] Yeh. et al. Generalized Q-Sampling Imaging, TMI 2010.
     
     .. [2] Mori et al. Three-dimensional tracking of axonal projections
@@ -39,28 +39,28 @@ class EuDX():
         ''' Euler integration with multiple stopping criteria and supporting multiple peaks
         
         Parameters
-        ----------
-        qa: array, shape(x,y,z,Np), magnitude of the peak (QA) or
+        ------------
+        qa : array, shape(x,y,z,Np), magnitude of the peak (QA) or
         shape(x,y,z) a scalar volume like FA.
 
-        ind: array, shape(x,y,z,Np), indices of orientations of the QA
+        ind : array, shape(x,y,z,Np), indices of orientations of the QA
         peaks found at odf_vertices used in QA or, shape(x,y,z), ind
 
-        seed_list: list of seeds
+        seed_list : list of seeds
         
-        seed_no: number of random seeds if seed_list is None
+        seed_no : number of random seeds if seed_list is None
 
-        odf_vertices: sphere points which define a discrete
+        odf_vertices : sphere points which define a discrete
         representation of orientations for the peaks, the same for all voxels
 
-        qa_thr: float, threshold for QA(typical 0.023)  or FA(typical 0.2) 
-        step_sz: float, propagation step
+        qa_thr : float, threshold for QA(typical 0.023)  or FA(typical 0.2) 
+        step_sz : float, propagation step
 
-        ang_thr: float, if turning angle is bigger than this threshold
+        ang_thr : float, if turning angle is bigger than this threshold
         then tracking stops.
         
         Examples
-        ---------
+        ----------
         This works as an iterator class because otherwise it could fill your entire RAM if you generate many tracks. 
         Something very common as you can easily generate millions of tracks.
 

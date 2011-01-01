@@ -29,16 +29,16 @@ class Profiler():
     @cython.profile(False)
 
     Parameters
-    ----------
+    -------------
     caller: file or function call
     args: function arguments
 
     Attributes
-    ----------
+    ------------
     stats: function, stats.print_stats(10) will prin the 10 slower functions
     
     Examples
-    --------
+    -----------
     import dipy.core.profile as p
     import numpy as np
     p.Profiler(np.sum,np.random.rand(1000000,3))
@@ -48,7 +48,7 @@ class Profiler():
     p.print_stats('det')
 
     References
-    ----------
+    -------------
     http://docs.cython.org/src/tutorial/profiling_tutorial.html
     http://docs.python.org/library/profile.html
     http://packages.python.org/line_profiler/
@@ -96,8 +96,8 @@ class Profiler():
         will give you the stats for all the calls with name 'function_name'
                 
         Parameters
-        ----------
-        N: stats.print_stats argument
+        ------------
+        N : stats.print_stats argument
 
         '''
         self.stats.print_stats(N)

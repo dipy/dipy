@@ -31,21 +31,21 @@ def boys2rgb(v):
     Code was initially in matlab and was rewritten in Python for dipy by
     the Dipy Team. Thank you Cagatay for putting this online.
 
-    Parameters:
-    -----------
+    Parameters
+    ------------
 
-    v: array, shape (N, 3) of unit vectors (e.g., principal eigenvectors of 
+    v : array, shape (N, 3) of unit vectors (e.g., principal eigenvectors of 
        tensor data) representing one of the two directions of the 
        undirected lines in a line field. 
      
-    Returns:
-    --------
+    Returns
+    ---------
      
-    c: array, shape (N, 3) matrix of rgb colors corresponding to the vectors 
+    c : array, shape (N, 3) matrix of rgb colors corresponding to the vectors 
            given in V.
 
-    Examples:
-    --------
+    Examples
+    ----------
 
     >>> from dipy.viz import colormaps
     >>> v=np.array([[1,0,0],[0,1,0],[0,0,1]])

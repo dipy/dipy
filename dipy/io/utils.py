@@ -69,7 +69,7 @@ class Recoder(object):
 	same way - see the examples in the class docstring. 
 
         Parameters
-        ----------
+        ------------
         codes : seqence of sequences
             Each sequence defines values (codes) that are equivalent
         fields : {('code',) string sequence}, optional
@@ -89,8 +89,8 @@ class Recoder(object):
     def add_codes(self, codes):
         ''' Add codes to object
 
-	>>> codes = ((1, 'one'), (2, 'two'))
-	>>> rc = Recoder(codes)
+	    >>> codes = ((1, 'one'), (2, 'two'))
+	    >>> rc = Recoder(codes)
         >>> rc.value_set() == set((1,2))
         True
         >>> rc.add_codes(((3, 'three'), (1, 'first')))
@@ -106,29 +106,29 @@ class Recoder(object):
     def __getitem__(self, key):
         ''' Return value from field1 dictionary (first column of values)
 
-	Returns same value as ``obj.field1[key]`` and, with the
+	    Returns same value as ``obj.field1[key]`` and, with the
         default initializing ``fields`` argument of fields=('code',),
         this will return the same as ``obj.code[key]``
 
-	>>> codes = ((1, 'one'), (2, 'two'))
-	>>> Recoder(codes)['two']
-	2
+	    >>> codes = ((1, 'one'), (2, 'two'))
+	    >>> Recoder(codes)['two']
+	    2
         '''
         return self.field1[key]
 
     def keys(self):
     	''' Return all available code and alias values 
 
-	Returns same value as ``obj.field1.keys()`` and, with the
+	    Returns same value as ``obj.field1.keys()`` and, with the
         default initializing ``fields`` argument of fields=('code',),
         this will return the same as ``obj.code.keys()``
 
-	>>> codes = ((1, 'one'), (2, 'two'), (1, 'repeat value'))
-	>>> k = Recoder(codes).keys()
-	>>> k.sort() # Just to guarantee order for doctest output
-	>>> k
-	[1, 2, 'one', 'repeat value', 'two']
-	'''
+	    >>> codes = ((1, 'one'), (2, 'two'), (1, 'repeat value'))
+	    >>> k = Recoder(codes).keys()
+	    >>> k.sort() # Just to guarantee order for doctest output
+	    >>> k
+	    [1, 2, 'one', 'repeat value', 'two']
+	    '''
         return self.field1.keys()
 
     def value_set(self, name=None):
@@ -136,23 +136,23 @@ class Recoder(object):
 
         By default, the column is the first column.
 
-	Returns same values as ``set(obj.field1.values())`` and,
+	    Returns same values as ``set(obj.field1.values())`` and,
         with the default initializing ``fields`` argument of
         fields=('code',), this will return the same as
         ``set(obj.code.values())``
 
         Parameters
-        ----------
+        ------------
         name : {None, string}
             Where default of None gives result for first column
 
         Returns
-        -------
+        ---------
         val_set : set
            set of all values for `name`
 
         Examples
-        --------
+        -----------
         >>> codes = ((1, 'one'), (2, 'two'), (1, 'repeat value'))
         >>> vs = Recoder(codes).value_set()
         >>> vs == set([1, 2]) # Sets are not ordered, hence this test

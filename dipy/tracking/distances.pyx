@@ -51,11 +51,11 @@ def normalized_3vec(vec):
     Vector divided by Euclidean (L2) norm
 
     Parameters
-    ----------
+    ------------
     vec : array-like shape (3,)
 
     Returns
-    -------
+    ---------
     vec_out : array shape (3,)
     '''
     cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_in = as_float_3vec(vec)
@@ -68,11 +68,11 @@ def norm_3vec(vec):
     ''' Euclidean (L2) norm of length 3 vector
 
     Parameters
-    ----------
+    ------------
     vec : array-like shape (3,)
 
     Returns
-    -------
+    ---------
     norm : float
        Euclidean norm
     '''
@@ -84,12 +84,12 @@ cdef inline float cnorm_3vec(float *vec):
     ''' Calculate Euclidean norm of input vector
 
     Parameters
-    ----------
+    ------------
     vec : float *
        length 3 float vector
 
     Returns
-    -------
+    ---------
     norm : float
        Euclidean norm
     '''
@@ -104,14 +104,14 @@ cdef inline void cnormalized_3vec(float *vec_in, float *vec_out):
     ''' Calculate and fill normalized 3D vector 
 
     Parameters
-    ----------
+    ------------
     vec_in : float *
        Length 3 vector to normalize
     vec_out : float *
        Memory into which to write normalized length 3 vector
 
     Returns
-    -------
+    ---------
     void
     '''
     cdef float norm = cnorm_3vec(vec_in)
@@ -194,19 +194,19 @@ def cut_plane(tracks,ref):
     between planes normal to the reference fiber and other tracks
     
     Parameters
-    ----------
-    tracks: sequence
+    ------------
+    tracks : sequence
         of tracks as arrays, shape (N1,3) .. (Nm,3)
-    ref: array, shape (N,3)
+    ref : array, shape (N,3)
         reference track
         
     Returns
-    -------
-    hits: sequence
+    ---------
+    hits : sequence
        list of points and rcds (radial coefficient of divergence)``
     
     Examples
-    --------
+    ----------
     >>> from dipy.tracking.distances import cut_plane
     >>> refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     >>> bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
@@ -351,14 +351,14 @@ def most_similar_track_mam(tracks,metric='avg'):
     using distances calculated from Zhang et. al 2008. 
     
     Parameters
-    ----------
+    ------------
     tracks : sequence 
        of tracks as arrays, shape (N1,3) .. (Nm,3)
     metric : str
        'avg', 'min', 'max'
         
     Returns
-    -------
+    ----------
     si : int
        index of the most similar track in tracks. This can be used as a
        reference track for a bundle.
@@ -459,7 +459,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     ''' Calculate distances between list of tracks A and list of tracks B
     
     Parameters
-    ----------
+    ------------
     tracksA : sequence 
        of tracks as arrays, shape (N1,3) .. (Nm,3)
     tracksB : sequence 
@@ -468,8 +468,8 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
        'avg', 'min', 'max'
             
     Returns
-    -------
-    DM: array, shape (len(tracksA), len(tracksB))
+    ---------
+    DM : array, shape (len(tracksA), len(tracksB))
         distances between tracksA and tracksB according to metric
     
     '''
@@ -622,7 +622,7 @@ def mam_distances(xyz1,xyz2,metric='all'):
     which in turn are based on those of Corouge et al. 2004
     
     Parameters
-    ----------
+    ------------
     xyz1 : array, shape (N1,3), dtype float32
     xyz2 : array, shape (N2,3), dtype float32
        arrays representing x,y,z of the N1 and N2 points of two tracks
@@ -631,12 +631,12 @@ def mam_distances(xyz1,xyz2,metric='all'):
        returns a tuple
        
     Returns
-    -------
-    avg_mcd: float
+    ---------
+    avg_mcd : float
        average_mean_closest_distance
-    min_mcd: float
+    min_mcd : float
        minimum_mean_closest_distance
-    max_mcd: float
+    max_mcd : float
        maximum_mean_closest_distance
                     
     Notes
@@ -704,17 +704,17 @@ def minimum_closest_distance(xyz1,xyz2):
     ''' Find the minimum distance between two curves xyz1, xyz2
     
     Parameters
-    -----------
+    -------------
     xyz1 : array, shape (N1,3), dtype float32
     xyz2 : array, shape (N2,3), dtype float32
         arrays representing x,y,z of the N1 and N2 points  of two tracks
     
     Returns
-    -------
+    ---------
     md : minimum distance
     
     Notes
-    -----
+    --------
     Algorithmic description
     
     Lets say we have curves A and B
@@ -765,15 +765,15 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     This function assumes that norm(end0-start0)>norm(end1-start1)
     i.e. that the first segment will be bigger than the second one.
     Parameters
-    -----------
-        start0: float array(3,)
-        end0: float array(3,)
-        start1: float array(3,)
-        end1: float array(3,)
+    ------------
+        start0 : float array(3,)
+        end0 : float array(3,)
+        start1 : float array(3,)
+        end1 : float array(3,)
     
     Returns
     --------
-        perpendicular_distance: float
+    perpendicular_distance: float
 
     Examples
     ---------
@@ -782,7 +782,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     5.9380966767403436  
     
     Notes
-    -----
+    -------
     l0 = np.inner(end0-start0,end0-start0)
     l1 = np.inner(end1-start1,end1-start1)
     
@@ -869,24 +869,24 @@ def lee_angle_distance(start0, end0, start1, end1):
     i.e. that the first segment will be bigger than the second one.
     
     Parameters
-    -----------
-    start0: float array(3,)
-    end0: float array(3,)
-    start1: float array(3,)
-    end1: float array(3,)
+    ------------
+    start0 : float array(3,)
+    end0 : float array(3,)
+    start1 : float array(3,)
+    end1 : float array(3,)
     
     Returns
-    --------
-    angle_distance: float
+    ---------
+    angle_distance : float
 
     Examples
-    --------
+    ---------
     >>> import dipy.tracking.distances as pf 
     >>> pf.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
     2.0 
     
     Notes
-    -----
+    -------
     
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
@@ -931,30 +931,29 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
 
 
 def approx_polygon_track(xyz,alpha=0.392):
-    ''' Fast and simple trajectory approximation algorithm 
-    by Eleftherios and Ian 
+    ''' Fast and simple trajectory approximation algorithm by Eleftherios and Ian 
     
     It will reduce the number of points of the track by keeping
     intact the start and endpoints of the track and trying to remove
     as many points as possible without distorting much the shape of 
-    the track.
+    the track
     
     Parameters
-    ----------
-    xyz: array(N,3) 
+    ------------
+    xyz : array(N,3) 
         initial trajectory
-    alpha: float
+    alpha : float
         smoothing parameter (<0.392 smoother, >0.392 rougher) if the
         trajectory was a smooth circle then with alpha =0.393
         ~=pi/8. the circle would be approximated with an decahexagon if
         alpha = 0.7853 ~=pi/4. with an octagon.
     
     Returns
-    -------
+    ---------
     characteristic_points: list of M array(3,) points
     
     Examples
-    --------
+    ----------
     >>> from fos.tracking.distances import approx_polygon_track
     >>> #approximating a helix
     >>> t=np.linspace(0,1.75*2*np.pi,100)
@@ -967,7 +966,7 @@ def approx_polygon_track(xyz,alpha=0.392):
     True
     
     Notes
-    -----
+    -------
     Assuming that a good approximation for a circle is an octagon then
     that means that the points of the octagon will have angle alpha =
     2*pi/8 = pi/4 . We calculate the angle between every two neighbour
@@ -1021,15 +1020,15 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
     This is base on the minimum description length principle
     
     Parameters
-    ----------
-    xyz: array(N,3) 
+    ------------
+    xyz : array(N,3) 
         initial trajectory
-    alpha: float
+    alpha : float
         smoothing parameter (>1 smoother, <1  rougher)
     
     Returns
     ------------
-    characteristic_points: list of M array(3,) points
+    characteristic_points : list of M array(3,) points
         
     '''
     cdef :
@@ -1087,7 +1086,7 @@ def intersect_segment_cylinder(sa,sb,p,q,r):
     Look p.197 from Real Time Collision Detection C. Ericson
     
     Examples
-    --------
+    ----------
     >>> from dipy.tracking.distances import intersect_segment_cylinder as isc
     >>> # Define cylinder using a segment defined by 
     >>> p=np.array([0,0,0],dtype=float32)
@@ -1188,7 +1187,7 @@ def point_segment_sq_distance(a,b,c):
     ''' Calculate the squared distance from a point c to a finite line segment ab.
  
     Examples
-    --------
+    ----------
     >>> from dipy.tracking.distances import point_segment_sq_distance 
     >>> a=np.array([0,0,0],dtype=float32)
     >>> b=np.array([1,0,0],dtype=float32)
@@ -1246,18 +1245,18 @@ def track_dist_3pts(tracka,trackb):
     both direct and flip distances are calculated but only the smallest is returned
 
     Parameters
-    -----------
-    a: array, shape (3,3)
+    ------------
+    a : array, shape (3,3)
     a three point track
-    b: array, shape (3,3)
+    b : array, shape (3,3)
     a three point track
 
     Returns
-    --------
-    dist:float
+    ---------
+    dist :float
 
     Examples
-    --------
+    ----------
     >>> import numpy as np
     >>> from dipy.tracking.distances import track_dist_3pts
     >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])            
@@ -1292,12 +1291,12 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     
     Parameters
     ----------------
-    a1,b1,c1: 3 float[3] arrays representing the first track
-    a2,b2,c2: 3 float[3] arrays representing the second track
+    a1,b1,c1 : 3 float[3] arrays representing the first track
+    a2,b2,c2 : 3 float[3] arrays representing the second track
     
     Returns
     -----------
-    out: a float[2] array having the euclidean distance and the fliped euclidean distance
+    out : a float[2] array having the euclidean distance and the fliped euclidean distance
     
     '''
     
@@ -1328,16 +1327,16 @@ def local_skeleton_clustering(tracks, d_thr=10):
 
     Parameters
     -----------
-    tracks: sequence
+    tracks : sequence
         of tracks as arrays, shape (N,3) .. (N,3) where N=3
-    d_thr: float, average euclidean distance threshold
+    d_thr : float, average euclidean distance threshold
 
     Returns
     --------
-    C: dict
+    C : dict
         
     Examples
-    --------
+    ----------
     >>> from dipy.viz import fvtk
     >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
             np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
@@ -1422,13 +1421,13 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
     both direct and flip are given as output
     
     Parameters
-    -----------
-    a1,b1,c1: 3 float[3] arrays representing the first track
-    a2,b2,c2: 3 float[3] arrays representing the second track
+    ------------
+    a1,b1,c1 : 3 float[3] arrays representing the first track
+    a2,b2,c2 : 3 float[3] arrays representing the second track
     
     Returns
     --------
-    out: a float[2] array having the euclidean distance and the fliped euclidean distance
+    out : a float[2] array having the euclidean distance and the fliped euclidean distance
         
     '''
     
@@ -1452,24 +1451,24 @@ def larch_3split(tracks,indices=None,thr=10.):
     ''' Generate a first pass clustering using 3 points (first, mid and last) on the tracks only.
 
     Parameters
-    ----------
+    ------------
 
-    tracks: sequence
+    tracks : sequence
         of tracks as arrays, shape (N1,3) .. (Nm,3)
 
-    indices: sequence 
+    indices : sequence 
         of integer indices of tracks  
     
-    trh: float
+    trh : float
         squared euclidean distance threshold
     
     Returns
-    -------
+    ---------
 
-    C: dict, a tree graph containing the clusters
+    C : dict, a tree graph containing the clusters
 
     Examples
-    --------
+    ----------
     >>> import numpy as np
     >>> from dipy.viz import fvtk        
     >>> from dipy.tracking.distances as pf
@@ -1486,7 +1485,7 @@ def larch_3split(tracks,indices=None,thr=10.):
     
     
     Visualize
-    ---------
+    -----------
     Here is an example of how to visualize the clustering above
     
     r=fvtk.ren()
@@ -1503,7 +1502,7 @@ def larch_3split(tracks,indices=None,thr=10.):
 
 
     Notes
-    -----
+    -------
     If a 3 point track (3track) is far away from all clusters then add a new cluster and assign
     this 3track as the rep(representative) track for the new cluster. Otherwise the rep
     3track of each cluster is the average track of the cluster

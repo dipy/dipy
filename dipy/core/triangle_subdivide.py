@@ -59,14 +59,14 @@ def divide_all( vertices, edges, triangles ):
     r""" Subdivides a triangle
 
     Parameters
-    ----------
+    ------------
     vertices : ndarray
         A Vx3 array with the x, y, and z coordinates of of each vertex
     edges : ndarray
         An Ex2 array were each pair of values is an index 
 
     Returns
-    -------
+    ---------
     vertices : array
         A 2d array with the x, y, and z coordinates of vertices
     edges : array
@@ -75,7 +75,7 @@ def divide_all( vertices, edges, triangles ):
         A 2d array of edge triplets representing triangles
 
     Notes
-    -----
+    -------
     Subdivide each triangle in the old approximation and normalize the new
     points thus generated to lie on the surface of the unit sphere.
 
@@ -163,14 +163,14 @@ def create_unit_sphere( recursion_level=2 ):
     resulting points onto the surface of a unit sphere.
 
     Parameters
-    ----------
+    ------------
     
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere.
 
     Returns
-    --------
+    ---------
     vertices : array
         A 2d array with the x, y, and z coordinates of vertices on a unit
         sphere.
@@ -182,7 +182,7 @@ def create_unit_sphere( recursion_level=2 ):
         unit sphere. 
 
     See Also
-    ---------
+    ----------
     create_half_sphere, divide_all
 
     """
@@ -206,13 +206,13 @@ def create_half_unit_sphere( recursion_level=2 ):
     replaced by a reference to -r. Removes half the triangles in the same way.
     
     Parameters
-    ----------
+    -------------
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere.
 
     Returns
-    -------
+    ---------
     vertices : array
         A 2d array with the x, y, and z coordinates of vertices on a unit
         sphere.
@@ -224,7 +224,7 @@ def create_half_unit_sphere( recursion_level=2 ):
         unit sphere. 
 
     See Also
-    --------
+    ----------
     create_half_sphere, divide_all
 
     """

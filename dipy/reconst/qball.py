@@ -14,7 +14,8 @@ def real_sph_harm(m, n, theta, phi):
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
     
-    :Parameters:
+    Parameters
+    -----------
       - `m` : int |m| <= n
         The order of the harmonic.
       - `n` : int >= 0
@@ -24,7 +25,8 @@ def real_sph_harm(m, n, theta, phi):
       - `phi` : float [0, pi]
         The polar (colatitudinal) coordinate.
     
-    :Returns:
+    Returns
+    --------
       - `y_mn` : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
 
