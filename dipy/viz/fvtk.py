@@ -10,7 +10,7 @@
     >>> r=fvtk.ren()    
     >>> a=fvtk.axes()        
     >>> fvtk.add(r,a)
-    >>> ##fvtk.show(r)
+    >>> #fvtk.show(r)
     
 '''
 
@@ -92,7 +92,7 @@ def ren():
     >>> import numpy as np
     >>> r=fvtk.ren()    
     >>> lines=[np.random.rand(10,3)]        
-    >>> c=fvtk.line(lines)    
+    >>> c=fvtk.line(lines,fvtk.red)    
     >>> fvtk.add(r,c)
     >>> #fvtk.show(r)    
     '''
@@ -578,7 +578,7 @@ def label(ren,text='Origin',pos=(0,0,0),scale=(0.2,0.2,0.2),color=(1,1,1)):
         
     return texta
 
-def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,trilinear=1,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
+def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=0,maptype=0,trilinear=1,iso=0,iso_thr=100,opacitymap=None,colormap=None):    
     ''' Create a volume and return a volumetric actor using volumetric rendering. 
     This function has many different interesting capabilities. The maptype, opacitymap and colormap are the most crucial parameters here.
     
@@ -647,6 +647,7 @@ def volume(vol,voxsz=(1.0,1.0,1.0),affine=None,center_origin=1,info=1,maptype=0,
     >>> vol=100*np.random.rand(100,100,100)
     >>> vol=vol.astype('uint8')
     >>> print vol.min(), vol.max()
+    0 99
     >>> r = fvtk.ren()
     >>> v = fvtk.volume(vol)
     >>> fvtk.add(r,v)
@@ -931,7 +932,7 @@ def contour(vol,voxsz=(1.0,1.0,1.0),affine=None,levels=[50],colors=[np.array([1.
         skin.SetMapper(skinMapper)
         skin.GetProperty().SetOpacity(opacities[i])
         
-        print colors[i]
+        #print colors[i]
         skin.GetProperty().SetColor(colors[i][0],colors[i][1],colors[i][2])
         #skin.Update()
         
@@ -1162,11 +1163,13 @@ def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[2
     
     Examples
     --------------
+    >>> import numpy as np
+    >>> from dipy.viz import fvtk
     >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
     >>> s = np.sin(x*y*z)/(x*y*z)
     >>> r=fvtk.ren()
-    >>> fvtk.slicer(r,s)
-    >>> fvtk.show(r)
+    >>> #fvtk.slicer(r,s) #does showing as well
+    
 
     
     
@@ -1244,7 +1247,7 @@ def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[2
     
     x1,x2,y1,y2,z1,z2=im.GetExtent()
     
-    print x1,x2,y1,y2,z1,z2
+    #print x1,x2,y1,y2,z1,z2
 
     # Create the first of the three planes. The filter vtkImageMapToColors
     # maps the data through the corresponding lookup table created above.
@@ -1389,11 +1392,12 @@ def show(ren,title='fvtk',size=(300,300),png_magnify=3):
     
     Examples
     ----------    
+    >>> import numpy as np
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()    
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]    
-    >>> colors=[0.2,0.8]
-    >>> c=fvtk.line(lines,colors)    
+    >>> colors=np.array([[0.2,0.2,0.2],[0.8,0.8,0.8]])
+    >>> c=fvtk.line(lines,colors)
     >>> fvtk.add(r,c)
     >>> l=fvtk.label(r)
     >>> fvtk.add(r,l)
