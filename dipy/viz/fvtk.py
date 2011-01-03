@@ -1167,8 +1167,8 @@ def slicer(ren,vol,voxsz=(1.0,1.0,1.0),affine=None,contours=1,planes=1,levels=[2
     >>> from dipy.viz import fvtk
     >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
     >>> s = np.sin(x*y*z)/(x*y*z)
-    >>> r=fvtk.ren()
-    >>> #fvtk.slicer(r,s) #does showing as well
+    >>> r=fvtk.ren()    
+    >>> #fvtk.slicer(r,s) #does showing too 
     
 
     
@@ -1381,6 +1381,10 @@ def annotatePick(object, event):
 def show(ren,title='fvtk',size=(300,300),png_magnify=3):
     ''' Show window 
     
+    Notes
+    ------
+    To save a screenshot press 's' and check your current directory for fvtk.png
+    
     Parameters
     ------------
     ren : vtkRenderer() object 
@@ -1402,6 +1406,11 @@ def show(ren,title='fvtk',size=(300,300),png_magnify=3):
     >>> l=fvtk.label(r)
     >>> fvtk.add(r,l)
     >>> #fvtk.show(r)
+    
+    See also
+    ----------
+    dipy.viz.fvtk.record
+    
     '''
     ren.AddActor2D(textActor)
     
@@ -1437,17 +1446,42 @@ def show(ren,title='fvtk',size=(300,300),png_magnify=3):
     picker.Pick(85, 126, 0, ren)    
     window.Render()
     iren.Start()
-
-def record(ren=None,cam_pos=(0,0,600),cam_focal=(0,0,0),cam_view=(0,0,1),outdir=None,n_frames=10,magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
-    ''' This will record your scene 
     
+def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,outdir=None,n_frames=10, az_ang=10, magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
+    ''' This will record a video of your scene
+    
+    Records a video as a series of .png files of your scene by rotating the azimuth angle az_angle in every frame      
+        
     Parameters
     -----------
-    ren:
-    camera_position:
-    outdir: 
-    n_frames:
-    magnification:    
+    ren : vtkRenderer() object 
+            as returned from function ren() 
+    cam_pos : None or sequence (3,) 
+        camera position
+    cam_focal : None or sequence (3,)
+        camera focal point
+    cam_view : None or sequence (3,)
+        camera view up
+    outdir : str 
+        output directory for the frames 
+    n_frames : int
+        number of frames to save
+    az_ang : float
+        azimuthal angle of camera rotation
+    magnification : int
+        how much to magnify the saved frame 
+    
+    Examples
+    ---------
+    
+    >>> from dipy.viz import fvtk
+    >>> r=fvtk.ren()
+    >>> a=fvtk.axes()    
+    >>> from dipy.viz import fvtk
+    >>> r=fvtk.ren()
+    >>> fvtk.add(r,fvtk.axes())
+    >>> #uncomment below to record
+    >>> #fvtk.record(r,cam_pos=(0,0,-10))
       
     '''
     
@@ -1482,12 +1516,15 @@ def record(ren=None,cam_pos=(0,0,600),cam_focal=(0,0,0),cam_view=(0,0,1),outdir=
     writer = vtk.vtkPNGWriter()        
     ang=0
     
-    cx,cy,cz=cam_pos
-    ren.GetActiveCamera().SetPosition(cx,cy,cz)
-    fx,fy,fz=cam_focal
-    ren.GetActiveCamera().SetFocalPoint(fx,fy,fz)    
-    ux,uy,uz=cam_view
-    ren.GetActiveCamera().SetViewUp(ux, uy, uz)
+    if cam_pos!=None:
+        cx,cy,cz=cam_pos
+        ren.GetActiveCamera().SetPosition(cx,cy,cz)
+    if cam_focal!=None:
+        fx,fy,fz=cam_focal
+        ren.GetActiveCamera().SetFocalPoint(fx,fy,fz)
+    if cam_view!=None:    
+        ux,uy,uz=cam_view
+        ren.GetActiveCamera().SetViewUp(ux, uy, uz)
     
     for i in range(n_frames):        
         ren.GetActiveCamera().Azimuth(ang)        
@@ -1504,7 +1541,7 @@ def record(ren=None,cam_pos=(0,0,600),cam_focal=(0,0,0),cam_view=(0,0,1),outdir=
         writer.SetFileName(filename)
         writer.Write()               
         
-        ang=+10
+        ang=+az_ang
 
        
        

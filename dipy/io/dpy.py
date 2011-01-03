@@ -21,7 +21,7 @@ class Dpy():
          'w' write 
          'r+' read and write only if file already exists
          'a'  read and write even if file doesn't exist (not used yet)       
-        compression: 0 no compression to 9 maximum compression
+        compression : 0 no compression to 9 maximum compression
         
         Examples
         ----------
@@ -38,7 +38,7 @@ class Dpy():
         >>> dpw.write_track(B)
         >>> dpw.write_track(C)    
         >>> dpw.close()    
-        >>> dpr = Dpy('test.dpy','r')    
+        >>> dpr = Dpy(fname,'r')    
         >>> A=dpr.read_track()
         >>> B=dpr.read_track()    
         >>> T=dpr.read_tracksi([0,1,2,0,0,2])
