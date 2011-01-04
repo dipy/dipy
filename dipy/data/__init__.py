@@ -7,7 +7,8 @@ def get_sim_voxels(name='fib1'):
     
     Parameters
     ------------
-    name : str, which file? 'fib1' or 'fib2' ?
+    name : str, which file? 
+        'fib0', 'fib1' or 'fib2' ?
     
     Returns
     ---------
