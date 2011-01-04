@@ -1,4 +1,57 @@
+""" Read test or example data
+"""
 import os
+
+def get_sim_voxels(name='fib1'):
+    """ provide some simulated voxel data
+    
+    Parameters
+    ------------
+    name : str, which file? 'fib1' or 'fib2' ?
+    
+    Returns
+    ---------
+    dix : dictionary, where dix['data'] returns a 2d array 
+        where every row is a simulated voxel with different orientation 
+    
+    Examples
+    ----------
+    >>> from dipy.data import get_sim_voxels
+    >>> sv=get_sim_voxels('fib1')
+    >>> sv['data'].shape
+    (100, 102)
+    >>> sv['fibres']
+    '1'
+    >>> sv['gradients'].shape
+    (102, 3)
+    >>> sv['bvals'].shape
+    (102,)
+    >>> sv['snr']
+    '60'
+    >>> sv2=get_sim_voxels('fib2')
+    >>> sv2['fibres']
+    '2'
+    >>> sv2['snr']
+    '80'
+    
+    Notes
+    -------
+    These sim voxels where provided by M.M. Correia using Rician noise.
+    
+        
+    """
+    
+    if name=='fib1':
+        fname=os.path.join(os.path.dirname(__file__),'fib1.pkl.gz')
+    if name=='fib2':
+        fname=os.path.join(os.path.dirname(__file__),'fib2.pkl.gz')
+    
+    import cPickle
+    import gzip
+    
+    return cPickle.loads(gzip.open(fname,'rb').read())
+        
+        
 
 def get_sphere(name='symmetric362'):    
     ''' provide triangulated spheres
@@ -68,6 +121,8 @@ def get_data(name='small_64D'):
         fbvecs=os.path.join(os.path.dirname(__file__),'small_101D.bvec')
         fimg=os.path.join(os.path.dirname(__file__),'small_101D.nii.gz')
         return fimg,fbvals, fbvecs
+    
+    
     
         
     
