@@ -14,8 +14,6 @@ except ImportError:
 import os
 import subprocess
 
-import pyximport
-pyximport.install()
 
 class Profiler():
     ''' Profile python/cython files or functions
@@ -56,6 +54,10 @@ class Profiler():
     '''
 
     def __init__(self,call=None,*args):
+        # Delay import until use of class instance.  We were getting some very
+        # odd build-as-we-go errors running tests and documentation otherwise
+        import pyximport
+        pyximport.install()
 
         try:
             
