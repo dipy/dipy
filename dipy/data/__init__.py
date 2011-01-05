@@ -42,6 +42,8 @@ def get_sim_voxels(name='fib1'):
         
     """
     
+    if name=='fib0':
+        fname=os.path.join(os.path.dirname(__file__),'fib0.pkl.gz')
     if name=='fib1':
         fname=os.path.join(os.path.dirname(__file__),'fib1.pkl.gz')
     if name=='fib2':
