@@ -35,61 +35,70 @@ class EuDX():
     
     '''
 
-    def __init__(self,qa,ind,seed_list=None,seed_no=10000,odf_vertices=None,qa_thr=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.):
+    def __init__(self,a,ind,seed_list=None,seed_no=10000,odf_vertices=None,a_low=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.):
         ''' Euler integration with multiple stopping criteria and supporting multiple peaks
         
         Parameters
         ------------
-        qa : array, shape(x,y,z,Np), magnitude of the peak (QA) or
-        shape(x,y,z) a scalar volume like FA.
+        a : array, shape(x,y,z,Np), magnitude of the peak of a scalar 
+            anisotropic function e.g. QA (quantitative anisotropy)  or
+            a different function of shape(x,y,z) e.g FA or GFA.
 
-        ind : array, shape(x,y,z,Np), indices of orientations of the QA
-        peaks found at odf_vertices used in QA or, shape(x,y,z), ind
+        ind : array, shape(x,y,z,Np), indices of orientations of the scalar anisotropic
+            peaks found on the sampling sphere 
 
         seed_list : list of seeds
         
         seed_no : number of random seeds if seed_list is None
 
         odf_vertices : sphere points which define a discrete
-        representation of orientations for the peaks, the same for all voxels
+            representation of orientations for the peaks, the same for all voxels
 
-        qa_thr : float, threshold for QA(typical 0.023)  or FA(typical 0.2) 
-        step_sz : float, propagation step
+        a_low : float, low threshold for QA(typical 0.023)  or FA(typical 0.2) or 
+            any other anisotropic function
+          
+        step_sz : float, euler propagation step size
 
         ang_thr : float, if turning angle is bigger than this threshold
-        then tracking stops.
+            then tracking stops.
         
         Examples
         ----------
+        
+        
+        Notes
+        -------
         This works as an iterator class because otherwise it could fill your entire RAM if you generate many tracks. 
         Something very common as you can easily generate millions of tracks.
 
         '''
         
-        self.qa=qa.copy()
+        self.a=a.copy()
         self.ind=ind.copy()
-        self.qa_thr=qa_thr
+        self.a_low=a_low
         self.ang_thr=ang_thr
         self.step_sz=step_sz
         self.length_thr=length_thr
         
-        if len(self.qa.shape)==3:            
-            self.qa.shape=self.qa.shape+(1,)
+        if len(self.a.shape)==3:            
+            self.a.shape=self.a.shape+(1,)
             self.ind.shape=self.ind.shape+(1,)
 
         #store number of maximum peacks
-        x,y,z,g=self.qa.shape
+        x,y,z,g=self.a.shape
         self.Np=g
         tlist=[]      
 
         if odf_vertices==None:
             eds=np.load(get_sphere('symmetric362'))
             self.odf_vertices=eds['vertices']
-            
+        
+        '''    
         print 'Shapes'
-        print 'qa',self.qa.shape, self.qa.dtype
+        print 'a',self.a.shape, self.a.dtype
         print 'ind',self.ind.shape, self.ind.dtype
         print 'odf_vertices',self.odf_vertices.shape, self.odf_vertices.dtype
+        '''
         
         self.seed_no=seed_no
         self.seed_list=seed_list
@@ -110,7 +119,7 @@ class EuDX():
         
     def __iter__(self):
         ''' This is were all the fun starts '''
-        x,y,z,g=self.qa.shape
+        x,y,z,g=self.a.shape
         #for all seeds
         for i in range(self.seed_no):
             
@@ -123,9 +132,9 @@ class EuDX():
                 seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)
                             
             #for all peaks
-            for ref in range(self.qa.shape[-1]): 
+            for ref in range(self.a.shape[-1]): 
                 #propagate up and down 
-                track =eudx_propagation(seed.copy(),ref,self.qa,self.ind,self.odf_vertices,self.qa_thr,self.ang_thr,self.step_sz)                  
+                track =eudx_propagation(seed.copy(),ref,self.a,self.ind,self.odf_vertices,self.a_low,self.ang_thr,self.step_sz)                  
                 if track == None:
                     pass
                 else:        
