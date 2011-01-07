@@ -2,11 +2,9 @@
 """ Classes and functions for fitting tensors """
 # 5/17/2010
 
-#import modules
 import os
 import numpy as np
 
-#fro dipy
 from dipy.reconst.maskedview import MaskedView, _makearray, _filled
 from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
@@ -18,18 +16,18 @@ class Tensor(ModelArray):
     tensor[1]_ in each voxel using selected fitting algorithm
     (DEFAULT: weighted least squares[1]_)
     Requires a given gradient table, b value for each diffusion-weighted
-    gradient vector, and image data given all as ndarrays.
+    gradient vector, and image data given all as arrays.
 
     Parameters
-    ----------
-    data : ndarray ([X, Y, Z, ...], g)
+    -------------
+    data : array ([X, Y, Z, ...], g)
         Diffusion-weighted signals. The dimension corresponding to the
         diffusion weighting must be the last dimenssion
-    bval : ndarray (g,)
+    bval : array (g,)
         Diffusion weighting factor b for each vector in gtab.
-    gtab : ndarray (g, 3)
-        Diffusion gradient table found in DICOM header as a ndarray.
-    mask : ndarray, optional
+    gtab : array (g, 3)
+        Diffusion gradient table found in DICOM header as a array.
+    mask : array, optional
         The tensor will only be fit where mask is True. Mask must must
         broadcast to the shape of data and must have fewer dimensions than data
     thresh : float, default = None
@@ -50,38 +48,37 @@ class Tensor(ModelArray):
             dti.ols_fit_tensor
 
     Attributes
-    ----------
-    D : ndarray (..., 3, 3)
+    ------------
+    D : array (..., 3, 3)
         Self diffusion tensor calculated from cached eigenvalues and 
         eigenvectors.
-    mask : ndarray
+    mask : array
         True in voxels where a tensor was fit, false if the voxel was skipped
-    B : ndarray (g, 7)
+    B : array (g, 7)
         Design matrix or B matrix constructed from given gradient table and
         b-value vector.
-    evals : ndarray (..., 3) 
+    evals : array (..., 3) 
         Cached eigenvalues of self diffusion tensor for given index. 
         (eval1, eval2, eval3)
-    evecs : ndarray (..., 3, 3)
+    evecs : array (..., 3, 3)
         Cached associated eigenvectors of self diffusion tensor for given 
         index. Note: evals[..., j] is associated with evecs[..., :, j]
 
 
     Methods
-    -------
-    fa : ndarray
+    ---------
+    fa : array
         Calculates fractional anisotropy [2]_.
-    md : ndarray
+    md : array
         Calculates the mean diffusivity [2]_. 
         Note: [units ADC] ~ [units b value]*10**-1
     
     See Also
-    --------
-    dipy.io.bvectxt.read_bvec_file, WLS_tensor, design_matrix, 
-    dipy.core.qball.ODF
+    ----------
+    dipy.io.bvectxt.read_bvec_file, dipy.core.qball.ODF
     
     Notes
-    -----
+    --------
     Due to the fact that diffusion MRI entails large volumes (e.g. [256,256,
     50,64]), memory can be an issue. Therefore, only the following parameters 
     of the self diffusion tensor are cached for each voxel:
@@ -93,7 +90,7 @@ class Tensor(ModelArray):
     parameter.
 
     References
-    ----------
+    ------------
     ..  [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
         the effective self-diffusion tensor from the NMR spin echo. J Magn 
         Reson B 103, 247-254.
@@ -102,7 +99,7 @@ class Tensor(ModelArray):
         Journal of Magnetic Resonance 111, 209-219.
     
     Examples
-    --------
+    ----------
     For a complete example have a look at the main dipy/examples folder    
     
     """
@@ -111,7 +108,7 @@ class Tensor(ModelArray):
     @property
     def evals(self):
         """
-        Returns the eigenvalues of the tensor as an ndarray
+        Returns the eigenvalues of the tensor as an array
 
         """
 
@@ -121,7 +118,7 @@ class Tensor(ModelArray):
     @property
     def evecs(self):
         """
-        Returns the eigenvectors of teh tensor as an ndarray
+        Returns the eigenvectors of teh tensor as an array
 
         """
         evecs = _filled(self.model_params[..., 3:])
@@ -191,12 +188,12 @@ class Tensor(ModelArray):
         Fractional anisotropy (FA) calculated from cached eigenvalues. 
         
         Returns
-        -------
-        fa : ndarray (V, 1)
+        ---------
+        fa : array (V, 1)
             Calculated FA. Note: range is 0 <= FA <= 1.
 
         Notes
-        -----
+        --------
         FA is calculated with the following equation:
 
         .. math::
@@ -222,12 +219,12 @@ class Tensor(ModelArray):
         Mean diffusitivity (MD) calculated from cached eigenvalues. 
         
         Returns
-        -------
-        md : ndarray (V, 1)
+        ---------
+        md : array (V, 1)
             Calculated MD.
 
         Notes
-        -----
+        --------
         MD is calculated with the following equation:
 
         .. math::
@@ -243,8 +240,8 @@ class Tensor(ModelArray):
         evenly distributed sphere so that the can be used for tractography.
 
         Returns
-        -------
-        IN: array, shape(x,y,z) integer indices for the points of the
+        ---------
+        IN : array, shape(x,y,z) integer indices for the points of the
         evenly distributed sphere representing tensor  eigenvectors of
         maximum eigenvalue
     
@@ -258,10 +255,10 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     
     Parameters
     ----------
-    design_matrix : ndarray (g, 7)
+    design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
-    data : ndarray ([X, Y, Z, ...], g)
+    data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
@@ -270,9 +267,9 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
     Returns
     -------
-    eigvals : ndarray (..., 3)
+    eigvals : array (..., 3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (..., 3, 3)
+    eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
         eigvals[j])
@@ -361,11 +358,11 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     
     Parameters
     ----------
-    design_matrix : ndarray (g, 7)
+    design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients. Use design_matrix to build a valid design matrix from 
         bvalues and a gradient table.
-    data : ndarray ([X, Y, Z, ...], g)
+    data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last 
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
@@ -374,9 +371,9 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
 
     Returns
     -------
-    eigvals : ndarray (..., 3)
+    eigvals : array (..., 3)
         Eigenvalues from eigen decomposition of the tensor.
-    eigvecs : ndarray (..., 3, 3)
+    eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
         eigvals[j])
@@ -485,16 +482,16 @@ def decompose_tensor(tensor):
 
     Parameters
     ----------
-    D : ndarray (3,3)
+    D : array (3,3)
         array holding a tensor. Assumes D has units on order of
         ~ 10^-4 mm^2/s
 
     Results
     -------
-    eigvals : ndarray (3,)
+    eigvals : array (3,)
         Eigenvalues from eigen decomposition of the tensor. Negative
         eigenvalues are replaced by zero. Sorted from largest to smallest.
-    eigvecs : ndarray (3,3)
+    eigvecs : array (3,3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
@@ -526,16 +523,16 @@ def design_matrix(gtab, bval, dtype=None):
 
     Parameters
     ----------
-    gtab : ndarray with shape (3,g)
-        Diffusion gradient table found in DICOM header as a numpy ndarray.
-    bval : ndarray with shape (g,)
+    gtab : array with shape (3,g)
+        Diffusion gradient table found in DICOM header as a numpy array.
+    bval : array with shape (g,)
         Diffusion weighting factor b for each vector in gtab.
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
 	Return
 	------
-	design_matrix : ndarray (g,7)
+	design_matrix : array (g,7)
 		Design matrix or B matrix assuming Gaussian distributed tensor model.
 		Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
 
