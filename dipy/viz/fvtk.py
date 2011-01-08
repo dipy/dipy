@@ -1378,7 +1378,7 @@ def annotatePick(object, event):
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
 
-def show(ren,title='fvtk',size=(300,300),png_magnify=3):
+def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=3):
     ''' Show window 
     
     Notes

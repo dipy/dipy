@@ -102,7 +102,7 @@ print('Number of QA tracks %d' % len(gqs_tracks))
 """ Do you see the difference between the number of gqs tracks and ten tracks? Can you think a reason why? Correct, CROSSINGS!!!
 """
 gqs_tracks_asobj=np.array(gqs_tracks,dtype=np.object)
-np.save('gqs_tracks.npy',ten_tracks_asobj)
+np.save('gqs_tracks.npy',gqs_tracks_asobj)
 print('QA tracks saved in gqs_tracks.npy')
 """
 This is the end of this very simple example you can load again the saved tracks using np.load
@@ -114,20 +114,6 @@ gqs_tracks2=[t+np.array([10,0,0]) for t in gqs_tracks]
 fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.1))
 fvtk.show(r)
 
-''' 
-T2=tp.FACT_Delta(ten.FA,ten.IN,seeds_no=10000,qa_thr=0.2).tracks
-t6=time.clock()
-print ('Create %d FA tracks in %d secs' %(len(T2),t6-t5))
-
-T2=[t+np.array([100,0,0]) for t in T2]
-
-print('Red tracks propagated based on QA')
-print('Green tracks propagated based on FA')
-r=fos.ren()
-fos.add(r,fos.line(T,fos.red))
-fos.add(r,fos.line(T2,fos.green))
-fos.show(r)
-'''
 
 
 
