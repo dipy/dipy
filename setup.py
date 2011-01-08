@@ -99,7 +99,6 @@ def main(**extra_args):
                           'dipy.data',
                           'dipy.external',
                           'dipy.external.tests',
-                          'examples',
                           # required in setup.py, hence needs to go into source
                           # dist
                           'nisext'],
@@ -111,14 +110,15 @@ def main(**extra_args):
           # python -- duplicating things into MANIFEST.in but this is admittedly
           # only a workaround to get things started -- not a solution
           package_data = {'dipy':
-                          [pjoin('data', '*')                           
+                          [pjoin('data', '*')
                           ]},
+          data_files=[('share/doc/dipy/examples', glob(pjoin('doc','examples','*.py')))],                                       
           scripts      = glob(pjoin('scripts', '*')),
           cmdclass = cmdclass,
           **extra_args
          )
 
-
-
+#simple way to test what setup will do
+#python setup.py install --prefix=/tmp
 if __name__ == "__main__":
     main(**extra_setuptools_args)
