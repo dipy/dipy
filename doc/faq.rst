@@ -122,7 +122,7 @@ Practical
 
 5. Which file formats do you support?
   
-  Dicom (Siemens), Nifti (.nii) , Trackvis (.trk), Dipy (.dpy), Numpy (.npy, ,npz), text and all other formats supported by nibabel,nifti and pydicom.
+  Nifti (.nii), Dicom (Siemens), Trackvis (.trk), Dipy (.dpy), Numpy (.npy, ,npz), text and all other formats supported by nibabel,nifti and pydicom.
   
 6. What is Dpy?
 

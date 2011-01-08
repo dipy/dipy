@@ -12,11 +12,11 @@ TESTDIR=${PKGDIR}/tests
 help:
 	@echo "Numpy/Cython tasks.  Available tasks:"
 	@echo "ext  -> build the Cython extension module."
-	@echo "html -> create annotated HTML from the .pyx sources"
+	@echo "cython-html -> create annotated HTML from the .pyx sources"
 	@echo "test -> run a simple test demo."
 	@echo "all  -> Call ext, html and finally test."
 
-all: ext html test
+all: ext cython-html test
 
 ext: recspeed.so propspeed.so vox2track.so \
     distances.so
@@ -24,7 +24,7 @@ ext: recspeed.so propspeed.so vox2track.so \
 test: ext
 	nosetests .
 
-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html 
+cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html 
 
 recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
 propspeed.so: ${PKGDIR}/tracking/propspeed.pyx

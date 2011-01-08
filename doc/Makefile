@@ -35,11 +35,12 @@ help:
 clean:
 	-rm -rf _build/*
 	-rm *-stamp
+	-rm examples/fig/*
 
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
 
-html:
+html: rstexamples
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
@@ -96,6 +97,9 @@ doctest:
 	$(SPHINXBUILD) -b doctest $(ALLSPHINXOPTS) _build/doctest
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in _build/doctest/output.txt."
+
+rstexamples:
+	../tools/make_examples.py
 
 pdf: pdf-stamp
 pdf-stamp: latex

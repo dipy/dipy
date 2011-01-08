@@ -1,0 +1,277 @@
+#!/usr/bin/env python
+#
+# Note: this file is copied (possibly with minor modifications) from the
+# sources of the PyMVPA project - http://pymvpa.org.  It remains licensed as
+# the rest of PyMVPA (MIT license as of October 2010).
+#
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+#
+#   See COPYING file distributed along with the PyMVPA package for the
+#   copyright and license terms.
+#
+### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ### ##
+
+"""Helper to automagically generate ReST versions of examples"""
+
+__docformat__ = 'restructuredtext'
+
+
+import os
+import sys
+import re
+import glob
+from optparse import OptionParser
+
+
+def auto_image(line):
+    """Automatically replace generic image markers with ones that have full
+    size (width/height) info, plus a :target: link to the original png, to be
+    used in the html docs.
+    """
+    img_re = re.compile(r'(\s*)\.\. image::\s*(.*)$')
+    m = img_re.match(line)
+    if m is None:
+        # Not an image declaration, leave the line alone and return unmodified
+        return line
+
+    # Match means it's an image spec, we rewrite it with extra tags
+    ini_space = m.group(1)
+    lines = [line,
+             ini_space + '   :width: 500\n',
+             #ini_space + '   :height: 350\n'
+             ]
+    fspec = m.group(2)
+    if fspec.endswith('.*'):
+        fspec = fspec.replace('.*', '.png')
+    fspec = fspec.replace('fig/', '../_images/')
+    lines.append(ini_space + ('   :target: %s\n' % fspec) )
+    lines.append('\n')
+    return ''.join(lines)
+
+def exfile2rst(filename):
+    """Open a Python script and convert it into an ReST string.
+    """
+    # output string
+    s = ''
+
+    # open source file
+    xfile = open(filename)
+
+    # parser status vars
+    inheader = True
+    indocs = False
+    doc2code = False
+    code2doc = False
+    # an empty line found in the example enables the check for a potentially
+    # indented docstring starting on the next line (as an attempt to exclude
+    # function or class docstrings)
+    last_line_empty = False
+    # indentation of indented docstring, which is removed from the RsT output
+    # since we typically do not want an indentation there.
+    indent_level = 0
+
+    for line in xfile:
+        # skip header
+        if inheader and \
+          not (line.startswith('"""') or line.startswith("'''")):
+            continue
+        # determine end of header
+        if inheader and (line.startswith('"""') or line.startswith("'''")):
+            inheader = False
+
+        # strip comments and remove trailing whitespace
+        if not indocs and last_line_empty:
+            # first remove leading whitespace and store indent level
+            cleanline = line[:line.find('#')].lstrip()
+            indent_level = len(line) - len(cleanline) - 1
+            cleanline = cleanline.rstrip()
+        else:
+            cleanline = line[:line.find('#')].rstrip()
+
+        if not indocs and line == '\n':
+            last_line_empty = True
+        else:
+            last_line_empty = False
+
+        # if we have something that should go into the text
+        if indocs \
+          or (cleanline.startswith('"""') or cleanline.startswith("'''")):
+            proc_line = None
+            # handle doc start
+            if not indocs:
+                # guarenteed to start with """
+                if len(cleanline) > 3 \
+                  and (cleanline.endswith('"""') \
+                       or cleanline.endswith("'''")):
+                    # single line doc
+                    code2doc = True
+                    doc2code = True
+                    proc_line = cleanline[3:-3]
+                else:
+                    # must be start of multiline block
+                    indocs = True
+                    code2doc = True
+                    # rescue what is left on the line
+                    proc_line = cleanline[3:] # strip """
+            else:
+                # we are already in the docs
+                # handle doc end
+                if cleanline.endswith('"""') or cleanline.endswith("'''"):
+                    indocs = False
+                    doc2code = True
+                    # rescue what is left on the line
+                    proc_line = cleanline[:-3]
+                    # reset the indentation
+                    indent_level = 0
+                else:
+                    # has to be documentation
+                    # if the indentation is whitespace remove it, other wise
+                    # keep it (accounts for some variation in docstring
+                    # styles
+                    real_indent = \
+                            indent_level - len(line[:indent_level].lstrip())
+                    proc_line = line[real_indent:]
+
+            if code2doc:
+                code2doc = False
+                s += '\n'
+
+            proc_line = auto_image(proc_line)
+            
+            if proc_line:
+                s += proc_line.rstrip() + '\n'
+
+        else:
+            if doc2code:
+                doc2code = False
+                s += '\n::\n'
+
+            # has to be code
+            s += '  %s' % line
+
+    xfile.close()
+
+    return s
+
+
+def exfile2rstfile(filename, opts):
+    """
+    """
+    #  doc filename
+    dfilename = os.path.basename(filename[:-3]) + '.rst'
+
+    # open dest file
+    dfile = open(os.path.join(opts.outdir, os.path.basename(dfilename)), 'w')
+
+    # place header
+    dfile.write('.. AUTO-GENERATED FILE -- DO NOT EDIT!\n\n')
+
+    # place cross-ref target
+    dfile.write('.. _example_' + dfilename[:-4] + ':\n\n')
+
+    # write converted ReST
+    dfile.write(exfile2rst(filename))
+
+    if opts.sourceref:
+        # write post example see also box
+        msg = """
+        
+.. admonition:: Example source code
+
+   You can download :download:`the full source code of this example <%s>`.
+   This same script is also included in the %s source distribution under the
+   :file:`doc/examples/` directory.
+
+"""    % (filename, opts.project)
+
+        dfile.write(msg)
+
+    dfile.close()
+
+
+
+def main():
+    parser = OptionParser( \
+        usage="%prog [options] <filename|directory> [...]", \
+        version="%prog 0.1", description="""\
+%prog converts Python scripts into restructered text (ReST) format suitable for
+integration into the Sphinx documentation framework. Its key feature is that it
+extracts stand-alone (unassigned) single, or multiline triple-quote docstrings
+and moves them out of the code listing so that they are rendered as regular
+ReST, while at the same time maintaining their position relative to the
+listing.
+
+The detection of such docstrings is exclusively done by parsing the raw code so
+it is never actually imported into a running Python session. Docstrings have to
+be written using triple quotes (both forms " and ' are possible).
+
+It is recommend that such docstrings are preceded and followed by an empty line.
+Intended docstring can make use of the full linewidth from the second docstring
+line on. If the indentation of multiline docstring is maintained for all lines,
+the respective indentation is removed in the ReST output.
+
+The parser algorithm automatically excludes file headers and starts with the
+first (module-level) docstring instead.
+""" ) #'
+
+    # define options
+    parser.add_option('--verbose', action='store_true', dest='verbose',
+                      default=False, help='print status messages')
+    parser.add_option('-x', '--exclude', action='append', dest='excluded',
+                      help="""\
+Use this option to exclude single files from the to be parsed files. This is
+especially useful to exclude files when parsing complete directories. This
+option can be specified multiple times.
+""")
+    parser.add_option('-o', '--outdir', action='store', dest='outdir',
+                      type='string', default=None, help="""\
+Target directory to write the ReST output to. This is a required option.
+""")
+    parser.add_option('--no-sourceref', action='store_false', default=True,
+                      dest='sourceref', help="""\
+If specified, the source reference section will be suppressed.
+""")
+    parser.add_option('--project', type='string', action='store', default='',
+                      dest='project', help="""\
+Name of the project that contains the examples. This name is used in the
+'seealso' source references. Default: ''
+""")
+
+    # parse options
+    (opts, args) = parser.parse_args() # read sys.argv[1:] by default
+
+    # check for required options
+    if opts.outdir is None:
+        print('Required option -o, --outdir not specified.')
+        sys.exit(1)
+
+    # build up list of things to parse
+    toparse = []
+    for t in args:
+        # expand dirs
+        if os.path.isdir(t):
+            # add all python files in that dir
+            toparse += glob.glob(os.path.join(t, '*.py'))
+        else:
+            toparse.append(t)
+
+    # filter parse list
+    if not opts.excluded is None:
+        toparse = [t for t in toparse if not t in opts.excluded]
+
+    toparse_list = toparse
+    toparse = set(toparse)
+
+    if len(toparse) != len(toparse_list):
+        print('Ignoring duplicate parse targets.')
+
+    if not os.path.exists(opts.outdir):
+        os.mkdir(outdir)
+
+    # finally process all examples
+    for t in toparse:
+        exfile2rstfile(t, opts)
+
+
+if __name__ == '__main__':
+    main()

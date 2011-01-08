@@ -9,8 +9,8 @@ Contents:
    :maxdepth: 2
 
    introduction   
-   mission   
-   installation
+   mission
+   examples/index
    faq
    devel/index
    theory/index

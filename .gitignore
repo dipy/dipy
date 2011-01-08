@@ -7,3 +7,6 @@ doc/_build
 doc/*-stamp
 MANIFEST
 dist/
+.project
+.pydevproject
+*.swp
