@@ -124,6 +124,8 @@ def get_data(name='small_64D'):
         fbvecs=os.path.join(os.path.dirname(__file__),'small_101D.bvec')
         fimg=os.path.join(os.path.dirname(__file__),'small_101D.nii.gz')
         return fimg,fbvals, fbvecs
+    if name=='aniso_vox':
+        return os.path.join(os.path.dirname(__file__),'aniso_vox.nii.gz')
     
     
     
