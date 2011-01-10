@@ -18,11 +18,10 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
             
     Returns
     ---------
-    track2track : array (N,3) where N is len(indices)
-       of int showing the correspondance in th following way
-       the first column is the counter for the index
-       the second colum is the current index of tracks1
-       the third column is the corresponding index in tracks2
+    track2track : array (N,2) where N is len(indices)
+       of int showing the correspondance in th following way       
+       the first colum is the current index of tracks1
+       the second column is the corresponding index in tracks2
     
     Examples
     ----------
@@ -46,12 +45,12 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
     '''
     li=len(indices)
     
-    track2track=np.zeros((li,3))
+    track2track=np.zeros((li,2))
     cnt=0
     for i in indices:                
         rt=[pf.mam_distances(tracks1[i],t,'avg') for t in tracks2]
         rt=np.array(rt)      
-        track2track[cnt]=np.array([cnt,i,rt.argmin()])        
+        track2track[cnt]=np.array([i,rt.argmin()])        
         cnt+=1
         
     return track2track.astype(int)
@@ -74,11 +73,10 @@ def detect_corresponding_tracks_plus(indices,tracks1,indices2,tracks2):
             
     Returns
     ---------
-    track2track : array (N,3) of int, where N is len(indices)
-       of int showing the correspondance in th following way
-       the first column is the counter for the index
-       the second colum is the current index of tracks1
-       the third column is the corresponding index in tracks2
+    track2track : array (N,2) where N is len(indices)
+       of int showing the correspondance in th following way       
+       the first colum is the current index of tracks1
+       the second column is the corresponding index in tracks2
     
     Examples
     ----------
@@ -106,12 +104,12 @@ def detect_corresponding_tracks_plus(indices,tracks1,indices2,tracks2):
     
     '''
     li=len(indices)    
-    track2track=np.zeros((li,3))
+    track2track=np.zeros((li,2))
     cnt=0
     for i in indices:
         rt=[pf.mam_distances(tracks1[i],t,'avg') for t in tracks2]
         rt=np.array(rt)
-        track2track[cnt]=np.array([cnt,i,indices2[rt.argmin()]])   
+        track2track[cnt]=np.array([i,indices2[rt.argmin()]])   
         cnt+=1        
     return track2track.astype(int)
 

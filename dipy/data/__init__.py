@@ -1,6 +1,8 @@
 """ Read test or example data
 """
 import os
+import cPickle
+import gzip
 
 def get_sim_voxels(name='fib1'):
     """ provide some simulated voxel data
@@ -8,7 +10,7 @@ def get_sim_voxels(name='fib1'):
     Parameters
     ------------
     name : str, which file? 
-        'fib0', 'fib1' or 'fib2' ?
+        'fib0', 'fib1' or 'fib2' 
     
     Returns
     ---------
@@ -37,8 +39,7 @@ def get_sim_voxels(name='fib1'):
     
     Notes
     -------
-    These sim voxels where provided by M.M. Correia using Rician noise.
-    
+    These sim voxels where provided by M.M. Correia using Rician noise.    
         
     """
     
@@ -49,12 +50,35 @@ def get_sim_voxels(name='fib1'):
     if name=='fib2':
         fname=os.path.join(os.path.dirname(__file__),'fib2.pkl.gz')
     
-    import cPickle
-    import gzip
-    
     return cPickle.loads(gzip.open(fname,'rb').read())
         
+def get_skeleton(name='C1'):
+    """ provide skeletons generated from Local Skeleton Clustering (LSC)
+    
+    Parameters
+    -----------
+    name : str, 'C1' or 'C3'
+    
+    Returns
+    ---------    
+    dix : dictionary
+    
+    Examples
+    ---------
+    >>> from dipy.data import get_skeleton
+    >>> C1=get_skeleton('C1')
+    >>> C1[0].keys()
+    ['indices', 'most', 'hidden', 'N']
+    >>> C1[0]['N'] # number of tracks on bundle 0
+    1136
         
+    """   
+     
+    if name=='C1':
+        fname=os.path.join(os.path.dirname(__file__),'C1.pkl.gz')
+    if name=='C3':
+        fname=os.path.join(os.path.dirname(__file__),'C3.pkl.gz')        
+    return cPickle.loads(gzip.open(fname,'rb').read())
 
 def get_sphere(name='symmetric362'):    
     ''' provide triangulated spheres
