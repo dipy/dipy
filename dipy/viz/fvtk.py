@@ -1491,7 +1491,7 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,outdir=None,n_fram
     ren.SetBackground(bgr_color)
     renWin = vtk.vtkRenderWindow()
     renWin.AddRenderer(ren)
-    renWin.SetSize(size)
+    renWin.SetSize(size[0],size[1])
     iren = vtk.vtkRenderWindowInteractor()
     iren.SetRenderWindow(renWin)
 

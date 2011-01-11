@@ -5,6 +5,7 @@ import numpy as np
 
 try:
     import tables
+    no_pytables = False
 except ImportError:
     raise ImportError('pytables is not installed')
 
