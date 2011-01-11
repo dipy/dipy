@@ -271,11 +271,72 @@ and visualize the tracks using ``fvtk``:
 
 from dipy.viz import fvtk
 r=fvtk.ren()
-fvtk.add(r,fvtk.line(ten_tracks,fvtk.red,opacity=0.1))
+fvtk.add(r,fvtk.line(ten_tracks,fvtk.red,opacity=0.05))
 gqs_tracks2=[t+np.array([10,0,0]) for t in gqs_tracks]
-fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.1))
-fvtk.show(r)
+fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.05))
+#fvtk.show(r,png_magnify=1)
 
+qa=QA[0,0,0]
+IN=gqs.ind()
+ind=IN[0,0,0]
+print qa
+print ind
+
+from dipy.data import get_sphere
+
+fname=get_sphere('symmetric362')
+sph=np.load(fname)
+verts=sph['vertices']
+faces=sph['faces']
+
+fvtk.clear(r)
+#fvtk.add(r,fvtk.line([]))
+
+print verts[117]
+print verts[1]
+
+#T= [np.vstack((verts[117],-verts[117])), np.vstack((verts[1],-verts[1]))]
+#fvtk.add(r,fvtk.line(T,fvtk.yellow))
+#fvtk.show(r)
+
+print np.sum(ind>0) 
+
+for index in np.ndindex(QA.shape[:3]):
+    if QA[index][0] > .0239:
+        print index, np.sum(IN[index]>0), QA[index]
+
+#print QA[3,8,6]
+#print IN[3,8,6]
+
+def cross(qa,ind,verts,scale=1):
+    Ts=[]
+    print qa
+    print ind    
+    for (i,_i) in enumerate(ind):
+        if _i > 0:
+            Ts.append([scale*qa[i]*np.vstack((verts[_i],-verts[_i]))])
+    return Ts
+
+Ts2=cross(QA[3,8,4],IN[3,8,4],verts,scale=0.3)
+for T in Ts2:
+    T[0]=T[0]+np.array([-.2,0,0])
+    fvtk.add(r,fvtk.line(T,fvtk.indigo,linewidth=10.))
+#fvtk.show(r)
+
+Ts3=cross(QA[3,8,5],IN[3,8,5],verts)
+for T in Ts3:    
+    T[0]=T[0]+np.array([-.1,0,0])
+    fvtk.add(r,fvtk.line(T,fvtk.blue,linewidth=10.))
+#fvtk.show(r)
+
+Ts=cross(QA[3,8,6],IN[3,8,6],verts)
+for T in Ts:    
+    fvtk.add(r,fvtk.line(T,fvtk.azure,linewidth=10.))
+fvtk.show(r,png_magnify=1)
+
+
+        
+    
 """
 **Thank you!**
 --------------

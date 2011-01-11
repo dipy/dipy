@@ -39,7 +39,7 @@ T1=[]
 for c in C1:
     T1.append(C1[c]['most'])
 
-fvtk.add(r,fvtk.line(T1,fvtk.red))    
+fvtk.add(r,fvtk.line(T1,fvtk.gray))    
 
 T3=[]
 for c in C3:
@@ -47,9 +47,9 @@ for c in C3:
 
 T3s=[t+ np.array([100,0,0]) for t in T3]
 
-fvtk.add(r,fvtk.line(T3s,fvtk.green))
+fvtk.add(r,fvtk.line(T3s,fvtk.gray))
 
-fvtk.show(r)    
+#fvtk.show(r)    
 
 indices=range(len(T1))    
 track2track=[]
@@ -81,19 +81,19 @@ track2track=np.delete(track2track,toberemoved,0)
 
 print track2track
 
-fvtk.clear(r)
+#fvtk.clear(r)
 
 for row in track2track:
     
     color=np.random.rand(3)
     T=[T1[int(row[0])],T3s[int(row[1])]]
-    fvtk.add(r,fvtk.line(T,color))
+    fvtk.add(r,fvtk.line(T,color,linewidth=10))
     pos1=T1[int(row[0])][0]
     pos3=T3s[int(row[1])][0]
-    fvtk.add(r,fvtk.label(r,str(row[0]),tuple(pos1),(5,5,5)))
-    fvtk.add(r,fvtk.label(r,str(row[0]),tuple(pos3),(5,5,5)))
+    fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos1),(5,5,5)))
+    fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos3),(5,5,5)))
 
-fvtk.show(r)
+fvtk.show(r,png_magnify=1)
 
 
 
