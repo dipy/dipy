@@ -84,6 +84,8 @@ def main(**extra_args):
           requires=REQUIRES,
           provides=PROVIDES,
           packages     = ['dipy',
+                          'dipy.align',
+                          'dipy.align.tests',
                           'dipy.core',
                           'dipy.core.tests',
                           'dipy.tracking',
