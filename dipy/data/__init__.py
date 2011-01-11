@@ -66,12 +66,14 @@ def get_skeleton(name='C1'):
     Examples
     ---------
     >>> from dipy.data import get_skeleton
-    >>> C1=get_skeleton('C1')
-    >>> C1[0].keys()
+    >>> C=get_skeleton('C1')
+    >>> len(C.keys())
+    117
+    >>> for c in C: break
+    >>> C[c].keys()
     ['indices', 'most', 'hidden', 'N']
-    >>> C1[0]['N'] # number of tracks on bundle 0
-    1136
-        
+    
+    
     """   
      
     if name=='C1':
