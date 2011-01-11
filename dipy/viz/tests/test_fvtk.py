@@ -8,10 +8,21 @@ from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+import numpy.testing as npt
 
-from dipy.viz import fvtk
+try:    
+    from dipy.io.dpy import Dpy
+    no_pytables = False    
+except ImportError:
+    no_pytables = True
+    
+try:    
+    from dipy.viz import fvtk
+    no_vtk = False
+except ImportError:
+    no_vtk = True
 
-
+@npt.dec.skipif(no_vtk)
 def test_fvtk_functions():
     
     # Create a renderer
@@ -38,6 +49,6 @@ def test_fvtk_functions():
     fvtk.add(r,l)
 
     # Show everything
-    #fvtk.show(r)
+    fvtk.show(r)
 
     

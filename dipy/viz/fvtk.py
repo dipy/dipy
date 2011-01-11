@@ -15,7 +15,7 @@
 '''
 
 try:
-    import vtk       
+    import vtk      
 except ImportError:
     raise ImportError('VTK is not installed.')
     
@@ -1418,7 +1418,7 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=3):
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
     window.SetWindowName(title)    
-    renWin.SetSize(size[0],size[1])
+    window.SetSize(size[0],size[1])
     style=vtk.vtkInteractorStyleTrackballCamera()        
     iren = vtk.vtkRenderWindowInteractor()    
     iren.SetRenderWindow(window)

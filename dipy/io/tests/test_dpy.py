@@ -2,13 +2,19 @@ import os
 import numpy as np
 from tempfile import mkstemp
 
-from dipy.io.dpy import Dpy
+try:    
+    from dipy.io.dpy import Dpy
+    no_pytables = False    
+except ImportError:
+    no_pytables = True
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+import numpy.testing as npt
 
+@npt.dec.skipif(no_pytables)
 def test_dpy():
 
     fd,fname = mkstemp()    
