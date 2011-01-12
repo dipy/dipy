@@ -9,7 +9,7 @@ Please do join in the fun.
 The lead developer is Eleftherios Garyfallidis, with support from Ian
 Nimmo-Smith, Matthew Brett, Bago Amirbekian, Frank Yeh, Christopher Nguyen and (your name here).
 
-The primary develpment repository is `dipy github`_ 
+The primary develpoment repository is `dipy github`_ 
 
 Please do contribute.  Have a look at :ref:`using-git` for some ideas on
 how to get going.
