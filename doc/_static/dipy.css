@@ -31,3 +31,8 @@ div.footer {
 div.body {
     background-color: white;
 }
+
+
+tt {
+    background-color: transparent;
+}
