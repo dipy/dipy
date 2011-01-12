@@ -7,6 +7,7 @@ import nibabel as nib
 import numpy.linalg as npl
 from scipy.ndimage import map_coordinates as mc
 from numpy import newaxis
+from subprocess import Popen,PIPE
 
 _VAL_FMT = '   %e'
 
@@ -170,6 +171,42 @@ def warp_displacements(ffa,flaff,fdis,fref,ffaw,order=1):
     Wimg=nib.Nifti1Image(W,refaff)
     nib.save(Wimg,ffaw)
     
+def pipe(cmd):
+    """ A tine pipeline system to run external tools.
+            
+    For more advanced pipelining use nipype http://www.nipy.org/nipype    
+    """
+    p = Popen(cmd, shell=True,stdout=PIPE,stderr=PIPE)
+    sto=p.stdout.readlines()
+    ste=p.stderr.readlines()
+    print(sto)
+    print(ste)
+
+def dcm2nii(dname,outdir,filt='*.dcm',options='-d n -g n -i n -o'):
+    cmd='dcm2nii '+options +' ' + outdir +' ' + dname + '/' + filt
+    print(cmd)
+    pipe(cmd)
+
+def bet(in_nii,out_nii,options=' -F -f .2 -g 0'):
+    cmd='bet '+in_nii+' '+ out_nii + options
+    print(cmd)
+    pipe(cmd)
+    
+def apply_warp(in_nii,affine_mat,nonlin_nii,out_nii):
+    cmd='applywarp --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --in='+in_nii+' --warp='+nonlin_nii+' --out='+out_nii
+    print(cmd)
+    pipe(cmd)
+
+def create_displacements(in_nii,affine_mat,nonlin_nii,invw_nii,disp_nii,dispa_nii):
+    commands=[]    
+    commands.append('flirt -ref ${FSLDIR}/data/standard/FMRIB58_FA_1mm -in '+in_nii+' -omat ' + affine_mat)
+    commands.append('fnirt --in='+in_nii+' --aff='+affine_mat+' --cout='+nonlin_nii+' --config=FA_2_FMRIB58_1mm')
+    commands.append('invwarp --ref='+in_nii+' --warp='+nonlin_nii+' --out='+invw_nii)
+    commands.append('fnirtfileutils --in='+nonlin_nii+' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out='+disp_nii)
+    commands.append('fnirtfileutils --in='+nonlin_nii+' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out='+dispa_nii + ' --withaff')
+    for c in commands:
+        print(c)
+        pipe(c)
 
 
 
