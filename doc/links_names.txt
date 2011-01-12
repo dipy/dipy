@@ -56,9 +56,10 @@
 .. _bazaar: http://bazaar-vcs.org/
 .. _nose: http://somethingaboutorange.com/mrl/projects/nose
 .. _`python coverage tester`: http://nedbatchelder.com/code/modules/coverage.html
+.. _cython: http://cython.org
 
 .. Other python projects
-.. _numpy: http://www.scipy.org/NumPy
+.. _numpy: http://numpy.scipy.org
 .. _scipy: http://www.scipy.org
 .. _ipython: http://ipython.scipy.org
 .. _`ipython manual`: http://ipython.scipy.org/doc/manual/html
@@ -70,6 +71,8 @@
 .. _mayavi: http://mayavi.sourceforge.net/
 .. _sympy: http://code.google.com/p/sympy/
 .. _setuptools: http://pypi.python.org/pypi/setuptools
+.. _pytables: http://www.pytables.org
+.. _python-vtk: http://www.vtk.org
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org
