@@ -7,7 +7,7 @@ scipy_ (for more specific mathematical operations), and cython_ (for extra speed
 
 Dipy is multiplatform and will run under any standard operating systems such as *Windows*, *Linux*, *Mac OS X*.  
 
-Just some of our **killer** applications are:
+Just some of our **state-of-the-art** applications are:
 
 - Reconstruction algorithms e.g. GQI, DTI  
 - Tractography generation algorithms e.g. EuDX
@@ -20,9 +20,11 @@ Just some of our **killer** applications are:
 - Reading many different file formats e.g. Trackvis or Nifti
 - Dealing with huge tractographies without memory restrictions
 - Playing with datasets interactively without storing
-- And much more and even more to come next ...
+- And much more and even more to come in next releases 
 
-Here is a tiny code snippet to get you started
+**Join in the fun** and enjoy the `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we made for the Summer Exhibition in London for the celebration of the 350 years of the Royal Society.
+
+Here is a tiny usage example for dipy 
 
 ::
 
@@ -39,11 +41,9 @@ Here is a tiny code snippet to get you started
   >>> FA=ten.fa()
   >>> MASK = FA < 0.2
   
-In this very small example we loaded a small dataset with their data, bvecs and bvals, 
+In this code snippet we loaded a small diffusion dataset with their data, bvecs and bvals, 
 calculated the Tensors and fractional anisotropy (FA) and then created a mask to remove the 
-regions with low anisotropy. 
-
-**Join in the fun** and enjoy the `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we made for the Summer Exhibition in London for the celebration of the 350 years of the Royal Society.
+regions with low anisotropy.  
 
 .. figure:: _static/simplified_tractography.png
    :align: center

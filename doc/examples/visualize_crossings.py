@@ -199,7 +199,7 @@ for T in Ts3:
 Ts=cross(QA[3,8,6],IN[3,8,6],verts)
 for T in Ts:    
     fvtk.add(r,fvtk.line(T,fvtk.azure,linewidth=10.))
-fvtk.show(r,png_magnify=1)
+#fvtk.show(r,png_magnify=1)
 
 
         

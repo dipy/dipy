@@ -93,7 +93,7 @@ for row in track2track:
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos1),(5,5,5)))
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos3),(5,5,5)))
 
-fvtk.show(r,png_magnify=1)
+#fvtk.show(r,png_magnify=1)
 
 
 

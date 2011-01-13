@@ -137,12 +137,16 @@ Generate a tractography
 -----------------------
 Here we use the Euler Delta Crossings (EuDX) algorithm.
 The main input parameters of ``EuDX`` are 
-  - an anisotropic scalar metric e.g. FA,
-  - the indices for the peaks on the sampling sphere. 
+
+  * an anisotropic scalar metric e.g. FA
+  * the indices for the peaks on the sampling sphere. 
+  
 Other important options are 
-  - the number of random seeds where the track propagation is initiated, 
-  - a stopping criterion, for example a low threshold for anisotropy. For instance 
-    if we are using *Fractional Anisotropy (FA)* a typical threshold value might be ``a_low=.2``    
+
+  * the number of random seeds where the track propagation is initiated, 
+  * a stopping criterion, for example a low threshold for anisotropy. For instance 
+    if we are using *Fractional Anisotropy (FA)* a typical threshold value might be ``a_low=.2``
+    
 """
 
 eu=EuDX(a=FA,ind=ten.ind(),seed_no=10000,a_low=.2)
@@ -269,8 +273,16 @@ print('QA tracks saved in gqs_tracks.npy')
 and visualize the tracks using ``fvtk``:
 """
 
-    
+from dipy.viz import fvtk
+r=fvtk.ren()
+fvtk.add(r,fvtk.line(ten_tracks,fvtk.red,opacity=0.05))
+gqs_tracks2=[t+np.array([10,0,0]) for t in gqs_tracks]
+fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.05))
+#fvtk.show(r,png_magnify=1)
+
 """
+Press 's' to save this beautiful screenshot.
+
 **Thank you!**
 --------------
 """
