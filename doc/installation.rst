@@ -12,13 +12,20 @@ General usage
 
 .. _using-on-cmdline:
 
-
 In case ``easy_install`` is not installed then please install
 setuptools_  and then try ::
 
-               easy_install dipy         
+    easy_install dipy         
 
 This command should work under Linux, Mac OS X and Windows.
+
+Then from any python console or script try ::
+
+    >>> import dipy
+
+Does it work? For any problems/suggestions please let us know by sending us
+an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
+with ``[dipy]``.
 
 
 Ubuntu/Debian development usage
@@ -26,7 +33,7 @@ Ubuntu/Debian development usage
 
 The primary development repository is `dipy github`_ 
 
-We are describing here the installation for Ubuntu 9.10 or 10.04 
+We are describing here the installation for Ubuntu 9.10 or 10.04 or 10.10
 assuming that the installation for other Linux, Macosx and Windows 
 distributions is straightforward. We know that it is not ;-) Don't panic 
 a release is coming soon.
@@ -70,7 +77,7 @@ and then add the ``nibabel/nibabel`` directory to your PYTHONPATH. We usually
 add the PYTHONPATH at the end of ~/.bashrc so we don't need to retype it every
 time. This should look like::
 
-         export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel:/home/user_dir/Devel/nipy
+         export PYTHONPATH=/home/user_dir/Devel/dipy:/home/user_dir/Devel/nibabel
 
 After changing the ~/.bashrc try::
 
@@ -79,23 +86,6 @@ After changing the ~/.bashrc try::
 so that you can have immediate access to dipy_ without needing to
 restart your terminal.
 
-Finally, download and install nipy::
-
-     
-         mkdir ~/.nipy
-         mkdir ~/.nipy/nipy
-         cd ~/.nipy/nipy
-         wget http://nipy.sourceforge.net/data-packages/nipy-templates-0.2.tar.gz
-         tar -xzvf nipy-templates-0.2.tar.gz
-         mv nipy-templates-0.2/templates .
-         wget http://nipy.sourceforge.net/data-packages/nipy-data-0.2.tar.gz
-         tar -xzvf nipy-data-0.2.tar.gz
-         mv nipy-data-0.2/data .                 
-         sudo easy_install -U sympy
-         cd ~/Devel
-         git clone git://github.com/nipy/nipy.git
-         cd nipy
-         python setup.py build_ext --inplace     
 
 After doing the above execute ipython in the terminal and try::
 

@@ -1,3 +1,5 @@
+.. _dipy_developers:
+
 Developers
 ================
 
