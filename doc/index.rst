@@ -1,6 +1,6 @@
 
 
-Dipy_ is an **international**, **free**, **open**, **clear** and **welcoming** software project for **diffusion** magnetic resonance imaging **analysis**, **research** and **development**.  
+Dipy_ is an *international*, **free** and **open soure** software project for **diffusion** *magnetic resonance imaging* **analysis**.  
 
 Depends on a few standard libraries: python_ (the core language), numpy_ (for numerical computation), 
 scipy_ (for more specific mathematical operations), and cython_ (for extra speed). Optionally, it can use python-vtk_ (for visualisation), pytables_ (for handling large datasets), matplotlib_ (for scientific plotting), and ipython_ (for interaction with the code and its results).

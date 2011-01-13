@@ -7,7 +7,7 @@ dipy_ is in development mode at the moment.
 Please do join in the fun.
 
 The lead developer is Eleftherios Garyfallidis, with support from Ian
-Nimmo-Smith, Matthew Brett, Bago Amirbekian, Frank Yeh, Christopher Nguyen and (your name here). Here is a full list of dipy developers_ and contributors.
+Nimmo-Smith, Matthew Brett, Bago Amirbekian, Frank Yeh, Christopher Nguyen and (your name here). See the main documentation for the full list of dipy developers and contributors.
 
 The primary develpoment repository is `dipy github`_ 
 

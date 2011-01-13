@@ -49,6 +49,6 @@ def test_fvtk_functions():
     fvtk.add(r,l)
 
     # Show everything
-    fvtk.show(r)
+    #fvtk.show(r)
 
     
