@@ -3,7 +3,12 @@
 # vi: set ft=python sts=4 ts=4 sw=4 et:
 """Wrapper to run setup.py using setuptools."""
 
-from setuptools import setup 
+# Deal with setuptools monkeypatching bug for Pyrex
+import sys
+from os.path import dirname, join as pjoin
+sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
+
+from setuptools import setup
 
 ################################################################################
 # Call the setup.py script, injecting the setuptools-specific arguments.
