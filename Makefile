@@ -42,6 +42,9 @@ clean:
 	- find ${PKGDIR} -name "*.c" -print0 | xargs -0 rm
 	- find ${PKGDIR} -name "*.html" -print0 | xargs -0 rm
 	rm -rf build
+	rm -rf dist
+	rm -rf docs/_build
+	rm -rf docs/dist
 
 # Suffix rules
 %.c : %.pyx
@@ -66,4 +69,11 @@ sdist-tests:
 update-nisext:
 	git fetch nisext
 	git merge --squash -s subtree --no-commit nisext/master
+
+source-release: clean
+	python -m compileall .
+	python setup.py sdist --formats=gztar,zip
+
+binary-release:
+	python setup_egg.py bdist_egg
 
