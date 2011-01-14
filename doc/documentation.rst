@@ -1,6 +1,6 @@
 .. _documentation:
 
-Dipy documentation
+Documentation
 ===================
 
 Contents:
@@ -9,8 +9,8 @@ Contents:
    :maxdepth: 2
 
    introduction
-   installation      
-   mission   
+   mission
+   installation
    examples/index
    faq
    developers

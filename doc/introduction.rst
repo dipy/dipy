@@ -5,34 +5,37 @@
 ===============
 
 
-* **Dipy is a python package for analyzing diffusion data**
+* **a python package** for analyzing ``diffusion data``
 
-* **Dipy is a software library or API**
+* a software library or **API**
 
-* **Dipy is a module and a toolkit**
+* a **module** and a lightweight **toolkit**
 
-* **Dipy is a platform to develop and test new algorithms**
+* **a platform** to develop and test **old/new** algorithms
 
-* **Dipy is part of a bigger plan - the nipy suite**
+* part of a **bigger plan** - the nipy_ suite
 
-* **Dipy is a new easy way to do diffusion research**
+* a new easy way to do diffusion **research**
 
-* **Dipy is fast but also clear and readable**
+* **quick**, **scriptable** and **readable**
 
-* **Dipy is a welcoming platform for those who want to contribute and share**
+* a project to contribute and **share** your code
 
-* **Dipy is and always be free**
+* always **free**
 
-* **Dipy is and always be open source**
+* always **open source**
 
-* **Dipy shows new views of the brain.**
+* **A new** *window* into the ``brain``.
+
+Want to know more? Read our :ref:`documentation`, :ref:`installation` guidelines and try the :ref:`examples`. Didn't find what you are looking for? Then try :ref:`faq` and then if this doesn't help
+either send an e-mail to our e-mail list nipy-devel@neuroimaging.scipy.org with subject starting with ``[dipy]``. We would love to help :-)
 
 .. figure:: _static/three_brains_golden_new_small.png
    :align: center
       
    **This is a depiction of track correspondence between three different brains**. 
    
-   A few tracks were selected on the red brain and their corresponding tracks were found on the cyan
+   A few tracks were selected on the red brain and their corresponding tracks were found automatically on the cyan
    and blue brains [1].
    If you want to learn more how you can create these with your datasets 
    read the examples in our :ref:`documentation` .

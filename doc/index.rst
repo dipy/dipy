@@ -1,9 +1,9 @@
+.. _home:
 
-
-Dipy_ is an *international*, **free** and **open soure** software project for **diffusion** *magnetic resonance imaging* **analysis**.  
+Dipy_ is an *international*, **free** and **open source** software project for **diffusion** magnetic resonance  imaging analysis.  
 
 Depends on a few standard libraries: python_ (the core language), numpy_ (for numerical computation), 
-scipy_ (for more specific mathematical operations), and cython_ (for extra speed). Optionally, it can use python-vtk_ (for visualisation), pytables_ (for handling large datasets), matplotlib_ (for scientific plotting), and ipython_ (for interaction with the code and its results).
+scipy_ (for more specific mathematical operations), cython_ (for extra speed) and nibabel_ (for file formats). Optionally, it can use python-vtk_ (for visualisation), pytables_ (for handling large datasets), matplotlib_ (for scientific plotting), and ipython_ (for interaction with the code and its results).
 
 Dipy is multiplatform and will run under any standard operating systems such as *Windows*, *Linux*, *Mac OS X*.  
 
@@ -24,6 +24,10 @@ Just some of our **state-of-the-art** applications are:
 
 **Join in the fun** and enjoy the `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we made for the Summer Exhibition in London for the celebration of the 350 years of the Royal Society.
 
+An Example
+~~~~~~~~~~~~~
+
+
 Here is a tiny usage example for dipy 
 
 ::
@@ -41,9 +45,14 @@ Here is a tiny usage example for dipy
   >>> FA=ten.fa()
   >>> MASK = FA < 0.2
   
-In this code snippet we loaded a small diffusion dataset with their data, bvecs and bvals, 
+In this code snippet we loaded a small diffusion dataset with their data, b-vectors and b-values, 
 calculated the Tensors and fractional anisotropy (FA) and then created a mask to remove the 
-regions with low anisotropy.  
+regions with low anisotropy. :ref:`Install dipy <installation>` and try it for yourself.
+
+
+A skeleton
+~~~~~~~~~~~~~
+  
 
 .. figure:: _static/simplified_tractography.png
    :align: center
@@ -61,6 +70,7 @@ regions with low anisotropy.
    :hidden:
 
    documentation
+
 
 
 .. include:: ./links_names.txt

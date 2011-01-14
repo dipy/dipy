@@ -141,7 +141,7 @@ Practical
   Nifti (.nii), Dicom (Siemens), Trackvis (.trk), Dipy (.dpy), Numpy (.npy, ,npz), text 
   and any other formats supported by nibabel,nifti and pydicom.
   
-6. **What is *dpy*?
+6. **What is dpy**?
 
   ``dpy`` is an ``hdf5`` file format which we use in dipy to store tractography and other information. 
   This allows us to store huge tractographies and load different parts of the datasets 

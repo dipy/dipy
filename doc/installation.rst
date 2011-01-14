@@ -1,7 +1,7 @@
 .. _installation:
 
 ======================
- Installing dipy
+ Installation
 ======================
 
 dipy_ is in active development at the moment and we are doing our best
@@ -27,9 +27,45 @@ Does it work? For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
 with ``[dipy]``.
 
+Windows
+---------
 
-Ubuntu/Debian development usage
-----------------------------------
+For windows you can use pythonxy_ . This is quite a big package but will install many other tools too useful for your scientific endeavors.
+
+After that you need to download dipy and install it using ::  
+
+    python setup.py install
+    
+Then you can try ::
+
+    >>> import dipy
+    
+Does it work?
+  
+If yout get an error saying  "unable to find vcvarsall.bat" then you need to create a file 
+called "pydistutils.cfg" in notepad and give it the contents ::
+
+  [build_ext]
+  compiler=mingw32
+
+Save this to the home directory, which can be found by typing at the python or ipython command prompt ::
+
+  >>> import os
+  >>> os.path.expanduser('~')
+
+  
+Debian/Ubuntu
+--------------
+
+Well this is the easiest just install with aptitude or synaptic the package python-dipy ::
+
+    sudo apt-get install python-dipy
+    
+Done!
+
+    
+Ubuntu/Debian Developers
+-------------------------
 
 The primary development repository is `dipy github`_ 
 
