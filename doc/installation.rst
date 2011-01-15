@@ -5,10 +5,10 @@
 ======================
 
 dipy_ is in active development at the moment and we are doing our best
-to create a release as soon as we can. 
+to create a release as soon as we can. Soon here is not hypothetical a release is planned before the end of January 2011.
 
-General usage
----------------
+General usage [not available]
+------------------------------
 
 .. _using-on-cmdline:
 
@@ -27,8 +27,8 @@ Does it work? For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
 with ``[dipy]``.
 
-Windows
----------
+Windows [available]
+--------------------
 
 For windows you can use pythonxy_ . This is quite a big package but will install many other tools too useful for your scientific endeavors.
 
@@ -54,8 +54,8 @@ Save this to the home directory, which can be found by typing at the python or i
   >>> os.path.expanduser('~')
 
   
-Debian/Ubuntu
---------------
+Debian/Ubuntu [not available]
+------------------------------
 
 Well this is the easiest just install with aptitude or synaptic the package python-dipy ::
 
@@ -64,8 +64,8 @@ Well this is the easiest just install with aptitude or synaptic the package pyth
 Done!
 
     
-Ubuntu/Debian Developers
--------------------------
+Ubuntu/Debian Developers [available]
+---------------------------------------
 
 The primary development repository is `dipy github`_ 
 

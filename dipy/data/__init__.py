@@ -113,11 +113,16 @@ def get_sphere(name='symmetric362'):
         return os.path.join(os.path.dirname(__file__),'evenly_distributed_sphere_642.npz')
     
 def get_data(name='small_64D'):
-    ''' provides test datasets
+    ''' provides filenames of some test datasets
       
     Parameters
     ------------
     name: str, the filename/s of which dataset to return
+        'small_64D' small region of interest nifti,bvecs,bvals 64 directions
+        'small_101D' small region of interest nifti,bvecs,bvals 101 directions
+        'aniso_vox' volume with anisotropic voxel size as Nifti
+        'fornix' 300 tracks in Trackvis format (from PBC Competition)
+    
     
     Examples
     ----------
@@ -134,8 +139,7 @@ def get_data(name='small_64D'):
     >>> bvals.shape
     (102,)
     >>> bvecs.shape
-    (102, 3)
-        
+    (102, 3)       
     
     '''    
     if name=='small_64D':
@@ -152,6 +156,11 @@ def get_data(name='small_64D'):
         return fimg,fbvals, fbvecs
     if name=='aniso_vox':
         return os.path.join(os.path.dirname(__file__),'aniso_vox.nii.gz')
+    
+    if name=='fornix':
+        return os.path.join(os.path.dirname(__file__),'tracks300.trk')
+    
+    
     
     
     
