@@ -163,46 +163,44 @@ from dipy.viz import fvtk
 
 r=fvtk.ren()
 
+#3,8,4 no crossing
+no_cross=fvtk.crossing(QA[3,8,4],IN[3,8,4],verts,1)
 
-print verts[117]
-print verts[1]
-print np.sum(ind>0) 
+#3,8,5 crossing
+cross=fvtk.crossing(QA[3,8,5],IN[3,8,5],verts,1)
 
-for index in np.ndindex(QA.shape[:3]):
-    if QA[index][0] > .0239:
-        print index, np.sum(IN[index]>0), QA[index]
+#3,8,6 double crossing
+dcross=fvtk.crossing(QA[3,8,6],IN[3,8,6],verts,1)
 
-#print QA[3,8,6]
-#print IN[3,8,6]
+all=fvtk.crossing(QA,IN,verts,1)
+fvtk.add(r,fvtk.line(all,fvtk.azure,linewidth=1.))
 
-def cross(qa,ind,verts,scale=1):
-    Ts=[]
-    print qa
-    print ind    
-    for (i,_i) in enumerate(ind):
-        if _i > 0:
-            Ts.append([scale*qa[i]*np.vstack((verts[_i],-verts[_i]))])
-    return Ts
+no_cross_shift=[c+np.array([3,8,4]) for c in no_cross]
+cross_shift=[c+np.array([3,8,5]) for c in cross]
+dcross_shift=[c+np.array([3,8,6]) for c in dcross]
 
-Ts2=cross(QA[3,8,4],IN[3,8,4],verts,scale=0.3)
-for T in Ts2:
-    T[0]=T[0]+np.array([-.2,0,0])
-    fvtk.add(r,fvtk.line(T,fvtk.indigo,linewidth=10.))
-#fvtk.show(r)
+fvtk.add(r,fvtk.line(no_cross_shift,fvtk.blue,linewidth=5.))
+fvtk.add(r,fvtk.line(cross_shift,fvtk.indigo,linewidth=5.))
+fvtk.add(r,fvtk.line(dcross_shift,fvtk.red,linewidth=5.))
 
-Ts3=cross(QA[3,8,5],IN[3,8,5],verts)
-for T in Ts3:    
-    T[0]=T[0]+np.array([-.1,0,0])
-    fvtk.add(r,fvtk.line(T,fvtk.blue,linewidth=10.))
-#fvtk.show(r)
+from dipy.viz import colormap as cm
 
-Ts=cross(QA[3,8,6],IN[3,8,6],verts)
-for T in Ts:    
-    fvtk.add(r,fvtk.line(T,fvtk.azure,linewidth=10.))
-#fvtk.show(r,png_magnify=1)
+all_shift=[c+np.array([10,0,0]) for c in all]
+all_shift2=[c+np.array([20,0,0]) for c in all]
 
+colors=np.zeros((len(all),3))
+colors2=np.zeros((len(all),3))
+for (i,a) in enumerate(all):
+    print a[0]
+    colors[i]=cm.boys2rgb(a[0])
+    colors2[i]=cm.orient2rgb(a[0])
 
-        
+fvtk.add(r,fvtk.line(all_shift,colors,linewidth=1.))
+fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))
+
+fvtk.show(r)
+
+    
     
 """
 **Hope that helps!**

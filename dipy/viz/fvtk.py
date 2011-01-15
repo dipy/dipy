@@ -1127,6 +1127,33 @@ def _closest_track(p,tracks):
     
     return int(d[imin,0])
 
+def crossing(a,ind,sph,scale):
+    """ visualize a volume of crossings
+    
+    Examples
+    ----------
+    See 'dipy/doc/examples/visualize_crossings.py' at :ref:`examples`
+    
+    """
+    
+    T=[]
+    
+    if a.ndim == 4 or a.ndim ==3 :
+        
+        for pos in np.ndindex(*ind.shape[:-1]):
+            i,j,k=pos
+            pos_=np.array(pos)
+            ind_=ind[i,j,k]       
+            a_=a[i,j,k] 
+            for (i,_i) in enumerate(ind_):        
+                T.append(pos_ + scale*a_[i]*np.vstack((sph[_i],-sph[_i])))
+                
+    if a.ndim == 1:
+        
+        for (i,_i) in enumerate(ind):        
+                T.append(scale*a[i]*np.vstack((sph[_i],-sph[_i])))
+                        
+    return T
 
 
     
@@ -1377,6 +1404,8 @@ def annotatePick(object, event):
             label(tmp_ren,text=str(ind_buffer[closest]),pos=(track_buffer[closest][0][0],track_buffer[closest][0][1],track_buffer[closest][0][2]))
             
             tmp_ren.AddActor(line(track_buffer[closest],golden,opacity=1))
+            
+
 
 def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=3):
     ''' Show window 
