@@ -62,9 +62,10 @@ for modulename, other_sources in (
     ('dipy.tracking.vox2track', []),
     ('dipy.tracking.propspeed', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
-    EXTS.append(Extension(modulename,
-                          [pyx_src] + other_sources,
-                          include_dirs = [np.get_include()]))
+    EXTS.append(Extension(modulename,[pyx_src] + other_sources,include_dirs = [np.get_include()]))
+
+
+
 
 
 def main(**extra_args):
@@ -122,4 +123,5 @@ def main(**extra_args):
 #simple way to test what setup will do
 #python setup.py install --prefix=/tmp
 if __name__ == "__main__":
+    
     main(**extra_setuptools_args)
