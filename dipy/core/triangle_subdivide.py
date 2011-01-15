@@ -1,16 +1,17 @@
 '''Create a unit sphere by subdividing all triangles of an octahedron
 recursively.
 
-A unit sphere has a radius of 1, which also means that all points in this sphere
-have an absolute value of 1. Another feature of an unitsphere is that the
-normals of this sphere are exactly the same as the vertices.
+The unit sphere has a radius of 1, which also means that all points in this sphere
+(assumed to have centre at [0, 0, 0])
+have an absolute value (modulus) of 1. Another feature of the unit sphere is that the
+unit normals of this sphere are exactly the same as the vertices.
 
 This recursive method will avoid the common problem of the polar singularity, 
-produced by 2d parameterization methods.
+produced by 2d (lon-lat) parameterization methods.
 
-If you wish a sphere with another radius than that of 1, simply multiply every
-single value in the vertex array with this new radius 
-(although this will break the "vertex array equal to normal array" property)
+If you require a sphere with another radius than that of 1, simply multiply every
+single value in the vertex array by this new radius 
+(although this will break the "vertex array equal to unit normal array" property)
 '''
 import numpy
 np = numpy

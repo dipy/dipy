@@ -268,7 +268,7 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
     ---------
     d : (N,) or (0,) array
        Distances between corresponding points in `pts1` and `pts2`
-       across the spherical surface
+       across the spherical surface, i.e. the great circle distance
 
     See also
     ----------
@@ -659,7 +659,7 @@ def decompose_matrix(matrix):
     return scale, shear, angles, translate, perspective
 
 def vector_norm(data, axis=None, out=None):
-    """Return length, i.e. eucledian norm, of ndarray along axis.
+    """Return length, i.e. euclidean norm, of ndarray along axis.
 
     Examples
     ----------
@@ -703,9 +703,10 @@ def vector_norm(data, axis=None, out=None):
 
         
 def circumradius(a, b, c):
-    ''' a, b and c are 3-dimensional vectors being the vertices of a
-    triangle. The function returns the circumradius of the triangle. In
-    the degenerate case when the 3 points are collinear it returns the
+    ''' a, b and c are 3-dimensional vectors which are the vertices of a
+    triangle. The function returns the circumradius of the triangle, i.e
+    the radius of the smallest circle that can contain the triangle. In
+    the degenerate case when the 3 points are collinear it returns
     half the distance between the furthest apart points.
     '''
     x = a-c
