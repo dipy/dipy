@@ -458,8 +458,8 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     Code modified from the work of Christoph Gohlke link provided here
     http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
 
-    Example
-    -------
+    Examples
+    --------
     >>> import numpy
     >>> R = euler_matrix(1, 2, 3, 'syxz')
     >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)

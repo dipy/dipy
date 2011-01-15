@@ -68,7 +68,7 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     ''' find offset in an ndarray using strides
 
     Parameters
-    ------------
+    ----------
     indices : array, shape(N,), indices of the array which we want to
     find the offset
     strides : array, shape(N,), strides
@@ -77,11 +77,11 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     int32 is 4
     
     Returns
-    -----------
+    -------
     offset : integer, offset from 0 pointer in memory normalized by dtype
     
-    Example
-    ----------
+    Examples
+    --------
     >>> import numpy as np
     >>> from dipy.tracking.propspeed import ndarray_offset
     >>> I=np.array([1,1])
@@ -91,9 +91,7 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     4
     >>> A.ravel()[4]==A[1,1]
     True
-
     '''
-
     return offset(<long*>indices.data,<long*>strides.data,lenind, typesize)
 
 cdef  void _trilinear_interpolation(double *X, double *W, long *IN) nogil:

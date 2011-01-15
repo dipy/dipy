@@ -2,9 +2,8 @@
  dipy core
 ===========
 
-.. autosummary::
-
-    dipy.core
+.. automodule:: dipy.core
+    :members:
 
 .. currentmodule:: dipy.core
 

@@ -1,7 +1,6 @@
 =========
-Dipy data
+dipy data
 =========
 
-.. autosummary::
-
-    dipy.data
+.. automodule:: dipy.data
+    :members:

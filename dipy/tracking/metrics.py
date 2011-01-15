@@ -331,8 +331,8 @@ def generate_combinations(items, n):
     --------   
     ic : iterator
     
-    Examples:
-    -------------
+    Examples
+    --------
     >>> from dipy.tracking.metrics import generate_combinations
     >>> ic=generate_combinations(range(3),2)
     >>> for i in ic: print i

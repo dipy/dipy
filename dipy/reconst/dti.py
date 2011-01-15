@@ -19,7 +19,7 @@ class Tensor(ModelArray):
     gradient vector, and image data given all as arrays.
 
     Parameters
-    -------------
+    ----------
     data : array ([X, Y, Z, ...], g)
         Diffusion-weighted signals. The dimension corresponding to the
         diffusion weighting must be the last dimenssion
@@ -48,7 +48,7 @@ class Tensor(ModelArray):
             dti.ols_fit_tensor
 
     Attributes
-    ------------
+    ----------
     D : array (..., 3, 3)
         Self diffusion tensor calculated from cached eigenvalues and 
         eigenvectors.
@@ -66,7 +66,7 @@ class Tensor(ModelArray):
 
 
     Methods
-    ---------
+    -------
     fa : array
         Calculates fractional anisotropy [2]_.
     md : array
@@ -74,11 +74,11 @@ class Tensor(ModelArray):
         Note: [units ADC] ~ [units b value]*10**-1
     
     See Also
-    ----------
+    --------
     dipy.io.bvectxt.read_bvec_file, dipy.core.qball.ODF
     
     Notes
-    --------
+    -----
     Due to the fact that diffusion MRI entails large volumes (e.g. [256,256,
     50,64]), memory can be an issue. Therefore, only the following parameters 
     of the self diffusion tensor are cached for each voxel:
@@ -90,15 +90,17 @@ class Tensor(ModelArray):
     parameter.
 
     References
-    ------------
-    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of the effective self-diffusion tensor from the NMR spin echo. J Magn Reson B 103, 247-254.
+    ----------
+    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
+       the effective self-diffusion tensor from the NMR spin echo. J Magn 
+       Reson B 103, 247-254.
+    .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
+       features of tissues elucidated by quantitative diffusion-tensor MRI. 
+       Journal of Magnetic Resonance 111, 209-219.
 
-    .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological features of tissues elucidated by quantitative diffusion-tensor MRI. Journal of Magnetic Resonance 111, 209-219.
-    
     Examples
     ----------
     For a complete example have a look at the main dipy/examples folder    
-    
     """
 
     ### Eigenvalues Property ###
@@ -106,7 +108,6 @@ class Tensor(ModelArray):
     def evals(self):
         """
         Returns the eigenvalues of the tensor as an array
-
         """
 
         return _filled(self.model_params[..., :3])
@@ -483,7 +484,7 @@ def decompose_tensor(tensor):
         array holding a tensor. Assumes D has units on order of
         ~ 10^-4 mm^2/s
 
-    Results
+    Returns
     -------
     eigvals : array (3,)
         Eigenvalues from eigen decomposition of the tensor. Negative
@@ -527,12 +528,11 @@ def design_matrix(gtab, bval, dtype=None):
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
-	Return
-	------
+	Returns
+	-------
 	design_matrix : array (g,7)
 		Design matrix or B matrix assuming Gaussian distributed tensor model.
 		Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
-
     """
     G = gtab
     B = np.zeros((bval.size, 7), dtype = G.dtype)

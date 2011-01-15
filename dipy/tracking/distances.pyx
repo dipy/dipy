@@ -1481,13 +1481,10 @@ def larch_3split(tracks,indices=None,thr=10.):
     >>>         np.array([[0,0,0],[0,1,0],[0,2,0]],dtype=np.float32),
     >>>         np.array([[0.2,0,0],[0.2,1,0],[0.2,2,0]],dtype=np.float32),
     >>>         np.array([[-0.2,0,0],[-0.2,1,0],[-0.2,2,0]],dtype=np.float32)]
-    >>> C=pf.larch_fast_split(tracks,None,0.5)        
-    
-    
-    Visualize
-    -----------
+    >>> C=pf.larch_fast_split(tracks,None,0.5)
+
     Here is an example of how to visualize the clustering above
-    
+
     r=fvtk.ren()
     fvtk.add(r,fvtk.line(tracks,fvtk.red))
     fvtk.show(r)
@@ -1496,17 +1493,16 @@ def larch_3split(tracks,indices=None,thr=10.):
          for i in C[c]['indices']:
              fos.add(r,fvtk.line(tracks[i],color))
     fvtk.show(r)
-    for c in C:    
+    for c in C:
         fvtk.add(r,fos.line(C[c]['rep3']/C[c]['N'],fos.white))
     fvtk.show(r)
 
-
     Notes
-    -------
-    If a 3 point track (3track) is far away from all clusters then add a new cluster and assign
-    this 3track as the rep(representative) track for the new cluster. Otherwise the rep
-    3track of each cluster is the average track of the cluster
-
+    -----
+    If a 3 point track (3track) is far away from all clusters then add a new
+    cluster and assign this 3track as the rep(representative) track for the new
+    cluster. Otherwise the rep 3track of each cluster is the average track of
+    the cluster.
     '''
 
     cdef :

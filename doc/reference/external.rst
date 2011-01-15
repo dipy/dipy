@@ -1,6 +1,9 @@
 #############
-Dipy external
+dipy external
 #############
+
+.. automodule:: dipy.external
+    :members:
 
 .. currentmodule:: dipy.external
 
