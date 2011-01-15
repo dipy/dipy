@@ -312,16 +312,18 @@ def peak_finding_compatible(vertices,
 
 def euler_characteristic_check(vertices, faces, chi=2):
     '''
-    If e = number_of_edges the Euler formula says f-e+v = 2 for a mesh
+    If $f$ = number of faces, $e$ = number_of_edges and $v$ = number of vertices,
+    the Euler formula says $f-e+v = 2$ for a mesh
     on a sphere. Here, assuming we have a healthy triangulation every
     face is a triangle, all 3 of whose edges should belong to exactly
-    two faces. So 2*e = 3*f. To avoid integer division and consequential
-    integer rounding we test whether 2*f - 3*f + 2*v == 4 or, more generally,
-    whether 2*v - f == 2*chi.
+    two faces. So $2*e = 3*f$. To avoid integer division and consequential
+    integer rounding we test whether $2*f - 3*f + 2*v == 4$ or, more generally,
+    whether $2*v - f == 2*\chi$ where $\chi$ is the Euler characteristic of the mesh.
 
-    Circle has chi 0
-    Disk   has chi 1
-    Sphere has chi 2
+    - Open chain (track) has $\chi=1$
+    - Closed chain (loop) has $\chi=0$
+    - Disk has $\chi=1$
+    - Sphere has $\chi=2$
     '''
     v = vertices.shape[0]
     f = faces.shape[0]
@@ -333,7 +335,7 @@ def euler_characteristic_check(vertices, faces, chi=2):
 
 def spherical_statistics(vertices, north=np.array([0,0,1]), width=0.02):
     '''
-    function to evaluate a spherical triangulation by looking at
+    function to evaluate a spherical triangulation by looking at the
     variability of numbers of vertices in 'vertices' in equatorial bands
     of width 'width' orthogonal to each point in 'vertices'
     ''' 
