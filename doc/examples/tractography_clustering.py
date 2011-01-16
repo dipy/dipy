@@ -13,7 +13,7 @@ Overview
 First import the necessary modules
 ----------------------------------
 
-* ``numpy`` is for numerical computation
+``numpy`` is for numerical computation
 
 """
 
@@ -37,13 +37,13 @@ fname=get_data('fornix')
 print(fname)
 
 """
-Loading Trackvis file
+Load Trackvis file for *Fornix*:
 """
 
 streams,hdr=tv.read(fname)
 
 """
-Copying tracks...
+Copy tracks:
 """
 
 T=[i[0] for i in streams]
@@ -51,19 +51,19 @@ T=[i[0] for i in streams]
 #T=T[:1000]
 
 """
-Representing tracks using only 3 pts
+Downsample tracks to just 3 points:
 """
 
 tracks=[tm.downsample(t,3) for t in T]
 
 """
-Deleting unnecessary data...
+Delete unnecessary data:
 """
 
 del streams,hdr
 
 """
-Local Skeleton Clustering
+Perform Local Skeleton Clustering (LSC) with a 5mm threshold:
 """
 
 now=time.clock()
@@ -72,13 +72,13 @@ print('Done in %.2f s'  % (time.clock()-now,))
 
 
 """
-Reducing the number of points for faster visualization
+Reduce the number of points for faster visualization using the ``approx_polygon_track`` algorithm which retains points depending on how much they are need to define the shape of the track:
 """
 
 T=[td.approx_polygon_track(t) for t in T]
 
 """
-Show initial dataset.
+Show the initial *Fornix* dataset:
 """
 
 r=fvtk.ren()
@@ -86,7 +86,7 @@ fvtk.add(r,fvtk.line(T,fvtk.white,opacity=1))
 fvtk.show(r)
 
 """
-Showing dataset after clustering. (with random bundle colors)
+Show the *Fornix* after clustering (with random bundle colors):
 """
 
 fvtk.clear(r)
@@ -109,7 +109,7 @@ print('doubletons %d' % lens.count(2))
 print('tripletons %d' % lens.count(3))
 
 """
-Finding most representative tracks in bundle (cluster)
+Find and display the skeleton of most representative tracks in each cluster:
 """
 
 skeleton=[]
@@ -127,13 +127,14 @@ fvtk.add(r,fvtk.line(skeleton,colors,opacity=1))
 fvtk.show(r)
 
 """
-Lets save in the dictionary the skeleton information 
+Save the skeleton information in the dictionary. Now try to play with different thresholds LSC and check the different results.
+Try it with your datasets and gives us some feedback.
+
 """
 
 for (i,c) in enumerate(C):    
     C[c]['most']=skeleton[i]
     
-
 for c in C:    
     print('Keys in bundle %d' % c)
     print(C[c].keys())
@@ -141,11 +142,6 @@ for c in C:
 
 pkl.save_pickle('skeleton_fornix.pkl',C)
 
-
-"""
-Try to play with different thresholds LSC and check the different results.
-Try it with your datasets and gives us some feedback.
-"""
 
 
 

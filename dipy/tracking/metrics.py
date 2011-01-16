@@ -182,15 +182,25 @@ def frenet_serret(xyz):
     In the following equations the prime ($'$) indicates differentiation 
     with respect to the parameter $s$ of a parametrised curve $\mathbf{r}(s)$. 
 
-    $\mathbf{T}=\mathbf{r'}/|\mathbf{r'}|$ (Tangent vector)
+..  math::
+
+        \mathbf{T}=\mathbf{r'}/|\mathbf{r'}|\qquad \mathrm{(Tangent vector)}
     
-    $\mathbf{N}=\mathbf{T'}/|\mathbf{T'}|$ (Normal vector)
+..  math::
+
+        \mathbf{N}=\mathbf{T'}/|\mathbf{T'}|\qquad \mathrm{(Normal vector)}
     
-    $\mathbf{B}=\mathbf{T}\wedge\mathbf{N}$ (Binormal vector)
+..  math::
+
+        \mathbf{B}=\mathbf{T}\times\mathbf{N}\qquad \mathrm{(Binormal vector)}
  
-    $\kappa=|\mathbf{T'}|$  (Curvature)
+..  math::
+
+        \kappa=|\mathbf{T'}|\qquad  \mathrm{(Curvature)}
  
-    $\mathrm{tau}=-\mathbf{B'}\cdot\mathbf{N}$ (Torsion)
+..  math::
+
+        \mathrm{\tau}=-\mathbf{B'}\cdot\mathbf{N} \mathrm{(Torsion)}
         
     Parameters
     ------------

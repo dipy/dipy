@@ -9,25 +9,25 @@ Visualize Crossings
 Overview
 ========
 
-**This example visualizes the crossings struture of a few voxels.**
+**This example visualizes the crossings structure of a few voxels.**
 
 First import the necessary modules
 ----------------------------------
 
-* ``numpy`` is for numerical computation
+``numpy`` is for numerical computation
 
 """
 
 import numpy as np
 
 """
-* ``nibabel`` is for data formats
+``nibabel`` is for data formats
 """
 
 import nibabel as nib
 
 """
-* ``dipy.reconst`` is for the reconstruction algorithms which we use to create directionality models 
+``dipy.reconst`` is for the reconstruction algorithms which we use to create directionality models 
 for a voxel from the raw data. 
 """
 
@@ -35,18 +35,17 @@ import dipy.reconst.gqi as gqi
 import dipy.reconst.dti as dti
 
 """
-* ``dipy.tracking`` is for tractography algorithms which create sets of tracks by integrating 
+``dipy.tracking`` is for tractography algorithms which create sets of tracks by integrating 
   directionality models across voxels.
 """
 
 from dipy.tracking.propagation import EuDX
 
 """
-* ``dipy.data`` is for small datasets we use in tests and examples.
+``dipy.data`` is for small datasets we use in tests and examples.
 """
 
 from dipy.data import get_data
-
 
 """ 
 Isotropic voxel sizes required
@@ -71,13 +70,13 @@ to convert the dicom files to nii, bvec and bval files using ``dcm2nii``.
 fimg,fbvals,fbvecs=get_data('small_101D')
 
 """ 
-* **Load the nifti file found at path fimg as an Nifti1Image.**
+**Load the nifti file found at path fimg as an Nifti1Image.**
 """
 
 img=nib.load(fimg)
 
 """ 
-* **Read the datasets from the Nifti1Image.**
+**Read the datasets from the Nifti1Image.**
 """
 
 data=img.get_data()
@@ -91,21 +90,21 @@ This produces the output::
 As you would expect, the raw diffusion weighted MR data is 4-dimensional as 
 we have one 3-d volume (6 by 10 by 10) for each gradient direction.
 
-* **Read the affine matrix**
+**Read the affine matrix**
   which gives the mapping between volume indices (voxel coordinates) and world coordinates.
 """
 
 affine=img.get_affine()
 
 """ 
-* **Read the b-values** which are a function of the strength, duration, temporal spacing and timing parameters of the 
-  specific paradigm used in the scanner, one per gradient direction.
+**Read the b-values** which are a function of the strength, duration, temporal spacing and timing parameters of the 
+specific paradigm used in the scanner, one per gradient direction.
 """
 
 bvals=np.loadtxt(fbvals)
 
 """ 
-* **Read the b-vectors**, the unit gradient directions.
+**Read the b-vectors**, the unit gradient directions.
 """
 
 gradients=np.loadtxt(fbvecs).T
@@ -144,14 +143,14 @@ We explore the voxel [0,0,0].
 qa=QA[0,0,0]
 
 """
-- qa is the quantitative anisotropy metric
+``qa`` is the quantitative anisotropy metric
 """
 
 IN=gqs.ind()
 ind=IN[0,0,0]
 
 """
-- ind holds the indices of the vertices of (up to 5) gqi odf local maxima
+``ind`` holds the indices of the vertices of (up to 5) gqi odf local maxima
 """
 
 print 'quantitative anisotropy metric =', qa
@@ -210,8 +209,13 @@ We locate 3 contiguous voxels [3,8,4], [3,8,5], and [3,8,6] which have respectiv
 1, 2, and 3 crossings.
 
 ``fvtk.crossing`` is a helper function which we use to graph the orientations of the maxima 
-for these 3 voxels. We use 3 different colours and offset the graphs to display them 
-in one diagram.
+of all the voxels in our dataset. We use 3 different colourings and offset the graphs to display them 
+in one diagram. The colourings are:
+
+- all blue, with the 3 voxels used above ([3,8,4], [3,8,5], and [3,8,6]) marked in blue, indigo, and red.
+- the Boys' colour map (see ``colormap.boys2rgb.py``)
+- the orientation colour map (see ``colormap.orient2rgb.py`` with red: left-right; green: anteroposterior; blue: superior-inferior. 
+
 """
 
 #3,8,4 no crossing
@@ -242,7 +246,7 @@ all_shift2=[c+np.array([20,0,0]) for c in all]
 colors=np.zeros((len(all),3))
 colors2=np.zeros((len(all),3))
 for (i,a) in enumerate(all):
-    print a[0]
+    #print a[0]
     colors[i]=cm.boys2rgb(a[0])
     colors2[i]=cm.orient2rgb(a[0])
 
@@ -250,10 +254,3 @@ fvtk.add(r,fvtk.line(all_shift,colors,linewidth=1.))
 fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))
 
 fvtk.show(r)
-    
-    
-"""
-**Hope that helps!**
----------------------
-"""
-
