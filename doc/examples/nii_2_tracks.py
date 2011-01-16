@@ -14,20 +14,20 @@ Overview
 First import the necessary modules
 ----------------------------------
 
-* ``numpy`` is for numerical computation
+``numpy`` is for numerical computation
 
 """
 
 import numpy as np
 
 """
-* ``nibabel`` is for data formats
+``nibabel`` is for data formats
 """
 
 import nibabel as nib
 
 """
-* ``dipy.reconst`` is for the reconstruction algorithms which we use to create directionality models 
+``dipy.reconst`` is for the reconstruction algorithms which we use to create directionality models 
 for a voxel from the raw data. 
 """
 
@@ -35,14 +35,14 @@ import dipy.reconst.gqi as gqi
 import dipy.reconst.dti as dti
 
 """
-* ``dipy.tracking`` is for tractography algorithms which create sets of tracks by integrating 
+``dipy.tracking`` is for tractography algorithms which create sets of tracks by integrating 
   directionality models across voxels.
 """
 
 from dipy.tracking.propagation import EuDX
 
 """
-* ``dipy.data`` is for small datasets we use in tests and examples.
+``dipy.data`` is for small datasets we use in tests and examples.
 """
 
 from dipy.data import get_data
@@ -76,13 +76,13 @@ or to convert the dicom files to nii, bvec and bval files using ``dcm2nii``.
 fimg,fbvals,fbvecs=get_data('small_101D')
 
 """ 
-* **Load the nifti file found at path fimg as an Nifti1Image.**
+**Load the nifti file found at path fimg as an Nifti1Image.**
 """
 
 img=nib.load(fimg)
 
 """ 
-* **Read the datasets from the Nifti1Image.**
+**Read the datasets from the Nifti1Image.**
 """
 
 data=img.get_data()
@@ -96,21 +96,21 @@ This produces the output::
 As you would expect, the raw diffusion weighted MR data is 4-dimensional as 
 we have one 3-d volume (6 by 10 by 10) for each gradient direction.
 
-* **Read the affine matrix**
+**Read the affine matrix**
   which gives the mapping between volume indices (voxel coordinates) and world coordinates.
 """
 
 affine=img.get_affine()
 
 """ 
-* **Read the b-values** which are a function of the strength, duration, temporal spacing and timing parameters of the 
-  specific paradigm used in the scanner, one per gradient direction.
+**Read the b-values** which are a function of the strength, duration, temporal spacing 
+and timing parameters of the specific paradigm used in the scanner, one per gradient direction.
 """
 
 bvals=np.loadtxt(fbvals)
 
 """ 
-* **Read the b-vectors**, the unit gradient directions.
+**Read the b-vectors**, the unit gradient directions.
 """
 
 gradients=np.loadtxt(fbvecs).T
@@ -121,13 +121,13 @@ Calculating models and parameters of directionality
 We are now set up with all the data and parameters to start calculating directional models 
 for voxels and their associated parameters, e.g. anisotropy.
 
-* **Calculate the Single Tensor Model (STM).**  
+**Calculate the Single Tensor Model (STM).**  
 """
 
 ten=dti.Tensor(data,bvals,gradients,thresh=50)
 
 """ 
-* **Calculate Fractional Anisotropy (FA) from STM**
+**Calculate Fractional Anisotropy (FA) from STM**
 """
 
 FA=ten.fa()
@@ -239,6 +239,7 @@ This shows one of the advantages of our EuDX algorithm: it can be used with a wi
   - Multiple Tensor 
   - Stick & Ball
   - Higher Order Tensor 
+
 and model-free methods such as 
   - DSI
   - QBall
@@ -283,12 +284,13 @@ r=fvtk.ren()
 fvtk.add(r,fvtk.line(ten_tracks,fvtk.red,opacity=0.05))
 gqs_tracks2=[t+np.array([10,0,0]) for t in gqs_tracks]
 fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.05))
-#fvtk.show(r,png_magnify=1)
 
 """
-Press 's' to save this beautiful screenshot.
+Press 's' to save this beautiful screenshot when you have displayed it with ``fvtk.show``.
 
 **Thank you!**
 --------------
 """
+
+#fvtk.show(r,png_magnify=1)
 
