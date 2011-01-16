@@ -14,7 +14,8 @@ def ss(na,nd):
 
 def boys2rgb(v):
 
-    '''
+    """ boys 2 rgb cool colormap
+    
     Maps a given field of undirected lines (line field) to rgb 
     colors using Boy's Surface immersion of the real projective 
     plane. 
@@ -47,17 +48,34 @@ def boys2rgb(v):
     Examples
     ----------
 
-    >>> from dipy.viz import colormaps
+    >>> from dipy.viz import colormap
     >>> v=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> c=colormap.boys2rgb(v)
+
+    """
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    if v.ndim==1:
+        
+        x=v[0]
+        y=v[1]
+        z=v[2]
 
     
+    if v.ndim==2:
+    
+        x=v[:,0]
+        y=v[:,1]
+        z=v[:,2]
 
 
-    '''
-
-    x=v[:,0]
-    y=v[:,1]
-    z=v[:,2]
 
     #return x,y,z
 
@@ -186,15 +204,56 @@ def boys2rgb(v):
 
     trl_z = -2.1899 
 
-    N = len(x)
+    
+    
+    if v.ndim==2:
+        
+        N = len(x)
 
-    C = np.zeros((N, 3)) 
-
-    C[:,0] = 0.9 * np.abs(((X-trl_x)/w_x)) + 0.05
-
-    C[:,1] = 0.9 * np.abs(((Y-trl_y)/w_y)) + 0.05 
-
-    C[:,2] = 0.9 * np.abs(((Z-trl_z)/w_z)) + 0.05
+        C = np.zeros((N, 3)) 
+    
+        C[:,0] = 0.9 * np.abs(((X-trl_x)/w_x)) + 0.05
+    
+        C[:,1] = 0.9 * np.abs(((Y-trl_y)/w_y)) + 0.05 
+    
+        C[:,2] = 0.9 * np.abs(((Z-trl_z)/w_z)) + 0.05
+    
+    if v.ndim==1:
+        
+        C = np.zeros((3,)) 
+    
+        C[0] = 0.9 * np.abs(((X-trl_x)/w_x)) + 0.05
+    
+        C[1] = 0.9 * np.abs(((Y-trl_y)/w_y)) + 0.05 
+    
+        C[2] = 0.9 * np.abs(((Z-trl_z)/w_z)) + 0.05
+        
 
     return C
+
+def orient2rgb(v):
+    """ standard orientation 2 rgb colormap
+    
+    v : array, shape (N, 3) of vectors not necessarily normalized  
+    
+    Returns
+    ---------
+     
+    c : array, shape (N, 3) matrix of rgb colors corresponding to the vectors 
+           given in V.
+
+    Examples
+    ----------
+
+    >>> from dipy.viz import colormap
+    >>> v=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> c=colormap.boys2rgb(v)
+    
+    """   
+              
+    orient=v
+    orient=np.abs(orient/np.linalg.norm(orient))
+            
+    return orient
+
 

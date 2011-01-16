@@ -6,7 +6,6 @@ Find correspondence between tractographies
 First import the necessary modules
 
 numpy is for numerical computation
-
 """
 
 import numpy as np
@@ -30,7 +29,7 @@ dipy.data is for getting some small datasets used in examples and tests.
 from dipy.data import get_skeleton
 
 """
-``get_skeleton provides two skeletons 'C1' and 'C3' 
+``get_skeleton`` provides two skeletons 'C1' and 'C3' 
 previously generated from Local Skeleton Clustering (LSC)
 """
 C1=get_skeleton('C1')

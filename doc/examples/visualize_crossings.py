@@ -209,36 +209,48 @@ maxcounts[maxcounts>0] = [  0 405 152  30  10], so there are
 We locate 3 contiguous voxels [3,8,4], [3,8,5], and [3,8,6] which have respectively
 1, 2, and 3 crossings.
 
-``cross`` is a helper function which we use to graph the orientations of the maxima 
+``fvtk.crossing`` is a helper function which we use to graph the orientations of the maxima 
 for these 3 voxels. We use 3 different colours and offset the graphs to display them 
 in one diagram.
 """
 
-def cross(qa,ind,verts,scale=1):
-    Ts=[]
-    #print qa
-    #print ind    
-    for (i,_i) in enumerate(ind):
-        if _i > 0:
-            Ts.append([scale*qa[i]*np.vstack((verts[_i],-verts[_i]))])
-    return Ts
+#3,8,4 no crossing
+no_cross=fvtk.crossing(QA[3,8,4],IN[3,8,4],verts,1)
 
-Ts2=cross(QA[3,8,4],IN[3,8,4],verts,scale=0.3)
-for T in Ts2:
-    T[0]=T[0]+np.array([-.2,0,0])
-    fvtk.add(r,fvtk.line(T,fvtk.indigo,linewidth=10.))
-#fvtk.show(r)
+#3,8,5 crossing
+cross=fvtk.crossing(QA[3,8,5],IN[3,8,5],verts,1)
 
-Ts3=cross(QA[3,8,5],IN[3,8,5],verts)
-for T in Ts3:    
-    T[0]=T[0]+np.array([-.1,0,0])
-    fvtk.add(r,fvtk.line(T,fvtk.blue,linewidth=10.))
-#fvtk.show(r)
+#3,8,6 double crossing
+dcross=fvtk.crossing(QA[3,8,6],IN[3,8,6],verts,1)
 
-Ts=cross(QA[3,8,6],IN[3,8,6],verts)
-for T in Ts:    
-    fvtk.add(r,fvtk.line(T,fvtk.azure,linewidth=10.))
-#fvtk.show(r,png_magnify=1)      
+all=fvtk.crossing(QA,IN,verts,1)
+fvtk.add(r,fvtk.line(all,fvtk.azure,linewidth=1.))
+
+no_cross_shift=[c+np.array([3,8,4]) for c in no_cross]
+cross_shift=[c+np.array([3,8,5]) for c in cross]
+dcross_shift=[c+np.array([3,8,6]) for c in dcross]
+
+fvtk.add(r,fvtk.line(no_cross_shift,fvtk.blue,linewidth=5.))
+fvtk.add(r,fvtk.line(cross_shift,fvtk.indigo,linewidth=5.))
+fvtk.add(r,fvtk.line(dcross_shift,fvtk.red,linewidth=5.))
+
+from dipy.viz import colormap as cm
+
+all_shift=[c+np.array([10,0,0]) for c in all]
+all_shift2=[c+np.array([20,0,0]) for c in all]
+
+colors=np.zeros((len(all),3))
+colors2=np.zeros((len(all),3))
+for (i,a) in enumerate(all):
+    print a[0]
+    colors[i]=cm.boys2rgb(a[0])
+    colors2[i]=cm.orient2rgb(a[0])
+
+fvtk.add(r,fvtk.line(all_shift,colors,linewidth=1.))
+fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))
+
+fvtk.show(r)
+    
     
 """
 **Hope that helps!**
