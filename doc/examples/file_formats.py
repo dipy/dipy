@@ -11,6 +11,7 @@ Overview
 Read :ref:`faq`
 
 """
+
 import numpy as np
 from dipy.data import get_data
 from nibabel import trackvis
@@ -21,9 +22,6 @@ read trackvis
 
 fname=get_data('fornix')
 print(fname)
-
-
-
 
 streams,hdr=trackvis.read(fname)
 tracks=[s[0] for s in streams]
@@ -70,6 +68,7 @@ dpw.write_track(tracks2[0]*6)
 """
 or one track each time
 """
+
 for t in tracks:
     dpw.write_track(t*3)
 
@@ -85,7 +84,7 @@ dpr.close()
 
 
 """
-overview
+Number of tracks in before and after
 """
 
 print(len(tracks))
