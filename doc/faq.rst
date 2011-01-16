@@ -138,8 +138,13 @@ Practical
 
 5. **Which file formats do you support?**
   
-  Nifti (.nii), Dicom (Siemens), Trackvis (.trk), Dipy (.dpy), Numpy (.npy, ,npz), text 
-  and any other formats supported by nibabel,nifti and pydicom.
+  Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), Dipy (.dpy), Numpy (.npy, ,npz), text 
+  and any other formats supported by nibabel and pydicom. 
+  
+  You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2 using scipy.io.loadmat. For higher versions >= 7.3
+  you can use pytables or any other python to hdf5 library e.g. h5py .
+  
+  For object serialization you can used dipy.io.pickles function load_pickle, save_pickle.  
   
 6. **What is dpy**?
 

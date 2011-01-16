@@ -47,7 +47,7 @@ Here is a tiny usage example for dipy
   
 In this code snippet we loaded a small diffusion dataset with their data, b-vectors and b-values, 
 calculated the Tensors and fractional anisotropy (FA) and then created a mask to remove the 
-regions with low anisotropy. :ref:`Install dipy <installation>` and try it for yourself.
+regions with low anisotropy. :ref:`Download <installation>` dipy and try it for yourself.
 
 
 A skeleton

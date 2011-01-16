@@ -10,6 +10,7 @@ Examples
    :maxdepth: 2
    
    note_about_examples
-   visualize_crossings
-   find_correspondence
    nii_2_tracks
+   find_correspondence
+   visualize_crossings
+   tractography_clustering

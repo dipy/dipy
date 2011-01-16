@@ -1407,12 +1407,12 @@ def annotatePick(object, event):
             
 
 
-def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=3):
+def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
     ''' Show window 
     
     Notes
     ------
-    To save a screenshot press 's' and check your current directory for fvtk.png
+    To save a screenshot press 's' and check your current directory for ``fvtk.png``
     
     Parameters
     ------------
@@ -1422,6 +1422,22 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=3):
             a string for the window title bar
     size : (int, int) 
             (width,height) of the window
+            
+    png_magnify : int
+            number of times to magnify the screenshot
+            
+    Notes
+    -------
+    If you want to:
+    
+    * navigate in the the 3d world use the left - middle - right mouse buttons
+    * reset the screen press 'r'
+    * save a screenshot press 's'
+    * quit press 'q'
+    
+    See also
+    ---------
+    dipy.viz.fvtk.record
     
     Examples
     ----------    
