@@ -3,7 +3,7 @@
 .. include:: ../links_names.txt
 
 ===============================
-Anisotropic Voxel to Isotropic 
+Anisotropic Voxels to Isotropic 
 ===============================
 
 Overview
@@ -62,7 +62,7 @@ img2=nib.Nifti1Image(data2,affine2)
 nib.save(img2,'iso_vox.nii.gz')
 
 """
-Or as analyze
+Or as analyze format
 """
 
 img3=nib.Spm2AnalyzeImage(data2,affine2)
