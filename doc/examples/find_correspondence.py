@@ -29,8 +29,16 @@ dipy.data is for getting some small datasets used in examples and tests.
 
 from dipy.data import get_skeleton
 
+"""
+``get_skeleton provides two skeletons 'C1' and 'C3' 
+previously generated from Local Skeleton Clustering (LSC)
+"""
 C1=get_skeleton('C1')
 C3=get_skeleton('C3')
+
+"""
+We create a diagram with the two skeletons offset [100,0,0] apart
+"""
 
 from dipy.viz import fvtk
 r=fvtk.ren()

@@ -7,7 +7,7 @@ from scipy.interpolate import splprep, splev
 def length(xyz, along=False):
     ''' Euclidean length of track line
     
-    This will give length in mm if you tracts are expressed in world coordinates.
+    This will give length in mm if tracks are expressed in world coordinates.
 
     Parameters
     ------------
@@ -171,35 +171,34 @@ def magn(xyz,n=1):
 def frenet_serret(xyz):
     ''' Frenet-Serret Space Curve Invarients
  
-    Calculates the 3 vector and 2 scaler invarients of a space curve
-    defined by vectors x,y and z.  If z is omitted then the curve is
-    only a 2D, but the equations are still valid.
+    Calculates the 3 vector and 2 scalar invariants of a space curve
+    defined by vectors r = (x,y,z).  If z is omitted (i.e. the array xyz has 
+    shape (N,2), then the curve is
+    only 2D (planar), but the equations are still valid.
     
     Similar to
     http://www.mathworks.com/matlabcentral/fileexchange/11169
 
-    _    r'
-    T = ----  (Tangent)
-        |r'|
- 
-    _    T'
-    N = ----  (Normal)
-        |T'|
-    _   _   _
-    B = T x N (Binormal)
+    In the following equations the prime ($'$) indicates differentiation 
+    with respect to the parameter $s$ of a parametrised curve $\mathbf{r}(s)$. 
 
-    k = |T'|  (Curvature)
- 
-    t = dot(-B',N) (Torsion)
+    $\mathbf{T}=\mathbf{r'}/|\mathbf{r'}|$ (Tangent vector)
     
+    $\mathbf{N}=\mathbf{T'}/|\mathbf{T'}|$ (Normal vector)
+    
+    $\mathbf{B}=\mathbf{T}\wedge\mathbf{N}$ (Binormal vector)
+ 
+    $\kappa=|\mathbf{T'}|$  (Curvature)
+ 
+    $\mathrm{tau}=-\mathbf{B'}\cdot\mathbf{N}$ (Torsion)
+        
     Parameters
     ------------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
-    
-    
+      
     Returns
-    -------
+    ---------
     T : array shape (N,3)
         array representing the tangent of the curve xyz
     N : array shape (N,3)
@@ -212,9 +211,8 @@ def frenet_serret(xyz):
         array representing the torsion of the curve xyz
 
     Examples
-    ----------
-    
-    Create a helix and calculate its tangent,normal, binormal, curvature
+    ----------    
+    Create a helix and calculate its tangent, normal, binormal, curvature
     and torsion
     
     >>> from dipy.tracking import metrics as tm
@@ -226,6 +224,7 @@ def frenet_serret(xyz):
     >>> xyz=np.vstack((x,y,z)).T
     >>> T,N,B,k,t=tm.frenet_serret(xyz)
     '''
+
     xyz = np.asarray(xyz)
     n_pts = xyz.shape[0]
     if n_pts == 0:
@@ -473,8 +472,8 @@ def intersect_sphere(xyz,center,radius):
 def inside_sphere(xyz,center,radius):
     ''' If any point of the track is inside a sphere of a specified
     center and radius return True otherwise False.  Mathematicaly this
-    can be simply described by ||x-c||<=r where ``x`` a point ``c`` the
-    center of the sphere and ``r`` the radius of the sphere.
+    can be simply described by $|x-c|\le r$ where $x$ a point $c$ the
+    center of the sphere and $r$ the radius of the sphere.
             
     Parameters
     -------------
@@ -504,8 +503,8 @@ def inside_sphere(xyz,center,radius):
 def inside_sphere_points(xyz,center,radius):
     ''' If a track intersects with a sphere of a specified center and
     radius return the points that are inside the sphere otherwise False.
-    Mathematicaly this can be simply described by ||x-c||<=r where ``x``
-    a point ``c`` the center of the sphere and ``r`` the radius of the
+    Mathematicaly this can be simply described by $|x-c| \le r$ where $x$
+    a point $c$ the center of the sphere and $r$ the radius of the
     sphere.
             
     Parameters
@@ -724,7 +723,7 @@ def _extrap(xyz,cumlen,distance):
 def downsample(xyz,n_pols=3):
     ''' downsample for a specific number of points along the curve/track
 
-    Uses the length of the curve. It works in as similar fashion to
+    Uses the length of the curve. It works in a similar fashion to
     midpoint and arbitrarypoint but it also reduces the number of segments
     of a track.
     
@@ -738,7 +737,7 @@ def downsample(xyz,n_pols=3):
     Returns
     ---------
     xyz2 : array shape (M,3)
-       array representing x,z,z of M points that where extrapolated. M
+       array representing x,y,z of M points that where extrapolated. M
        should be equal to n_pols
     
     Examples

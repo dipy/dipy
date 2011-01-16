@@ -9,7 +9,7 @@ Visualize Crossings
 Overview
 ========
 
-**This example visualizes a few voxels.**
+**This example visualizes the crossings struture of a few voxels.**
 
 First import the necessary modules
 ----------------------------------
@@ -134,26 +134,36 @@ QA is a 4-d array with up to 5 peak QA values for each voxel::
 
   QA.shape (6,10,10,5)
   
-QA array is 
+The QA array is 
 significantly different in shape from the FA array, 
 however it too can be directly input to the EuDX class:
-"""
 
+We explore the voxel [0,0,0].
 """
-**This is the end of this very simple example** You can reload the saved tracks using 
-``np.load`` from your current directory. You can optionaly install ``python-vtk``
-and visualize the tracks using ``fvtk``:
-"""
-
 
 qa=QA[0,0,0]
+
+"""
+- qa is the quantitative anisotropy metric
+"""
+
 IN=gqs.ind()
 ind=IN[0,0,0]
-print qa
-print ind
+
+"""
+- ind holds the indices of the vertices of (up to 5) gqi odf local maxima
+"""
+
+print 'quantitative anisotropy metric =', qa
+print 'indices of local gqi odf maxima =', ind
+
+"""
+There are approximately equal maxima in the directions of vertices 117 and 1. To find out
+where these are we need to work with the symmetric 362 vertex sphere on which 
+the reconstruction was performed. 
+"""
 
 from dipy.data import get_sphere
-
 fname=get_sphere('symmetric362')
 sph=np.load(fname)
 verts=sph['vertices']
@@ -163,22 +173,51 @@ from dipy.viz import fvtk
 
 r=fvtk.ren()
 
+print 'Vertex 117 is', verts[117]
+print 'Vertex 1 is', verts[1]
+print 'The number of local maxima is', np.sum(ind>0)
 
-print verts[117]
-print verts[1]
-print np.sum(ind>0) 
+"""
+- Vertex 117 is [ 0.54813892  0.76257497  0.34354511]
+- Vertex 1 is [ 0.0566983   0.17449942  0.98302352]
+- The number of local maxima is 2
+""" 
 
-for index in np.ndindex(QA.shape[:3]):
+summary = []
+for i, index in enumerate(np.ndindex(QA.shape[:3])):
     if QA[index][0] > .0239:
-        print index, np.sum(IN[index]>0), QA[index]
+        summary.append([index, np.sum(IN[index]>0), QA[index]])
+        #print i, index, np.sum(IN[index]>0), QA[index]
 
-#print QA[3,8,6]
-#print IN[3,8,6]
+print "There are %d suprathreshold voxels" % len(summary)
+maxcounts = np.zeros(10,'int')
+for voxel, count, indices in summary:
+    maxcounts[count]+=1
+#print maxcounts[maxcounts>0]
+
+"""
+We are using a fairly low threshold of 0.0239 and all 600 voxels are suprathreshold.
+
+maxcounts[maxcounts>0] = [  0 405 152  30  10], so there are 
+
+- 405 voxels with a single maximum (no crossing), 
+- 152 with 2 maxima, 
+- 30 voxels with 3 maxima, 
+- 10 voxels with 4 maxima, 
+- and 3 voxels with (at least) 5 maxima.  
+
+We locate 3 contiguous voxels [3,8,4], [3,8,5], and [3,8,6] which have respectively
+1, 2, and 3 crossings.
+
+``cross`` is a helper function which we use to graph the orientations of the maxima 
+for these 3 voxels. We use 3 different colours and offset the graphs to display them 
+in one diagram.
+"""
 
 def cross(qa,ind,verts,scale=1):
     Ts=[]
-    print qa
-    print ind    
+    #print qa
+    #print ind    
     for (i,_i) in enumerate(ind):
         if _i > 0:
             Ts.append([scale*qa[i]*np.vstack((verts[_i],-verts[_i]))])
@@ -199,10 +238,7 @@ for T in Ts3:
 Ts=cross(QA[3,8,6],IN[3,8,6],verts)
 for T in Ts:    
     fvtk.add(r,fvtk.line(T,fvtk.azure,linewidth=10.))
-#fvtk.show(r,png_magnify=1)
-
-
-        
+#fvtk.show(r,png_magnify=1)      
     
 """
 **Hope that helps!**

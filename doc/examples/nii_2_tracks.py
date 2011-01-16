@@ -234,6 +234,7 @@ This shows one of the advantages of our EuDX algorithm: it can be used with a wi
   - Multiple Tensor 
   - Stick & Ball
   - Higher Order Tensor 
+
 and model-free methods such as 
   - DSI
   - QBall
