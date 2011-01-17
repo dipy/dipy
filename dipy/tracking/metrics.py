@@ -169,7 +169,7 @@ def magn(xyz,n=1):
     
 
 def frenet_serret(xyz):
-    ''' Frenet-Serret Space Curve Invarients
+    r''' Frenet-Serret Space Curve Invarients
  
     Calculates the 3 vector and 2 scalar invariants of a space curve
     defined by vectors r = (x,y,z).  If z is omitted (i.e. the array xyz has 
@@ -182,25 +182,15 @@ def frenet_serret(xyz):
     In the following equations the prime ($'$) indicates differentiation 
     with respect to the parameter $s$ of a parametrised curve $\mathbf{r}(s)$. 
 
-..  math::
-
-        \mathbf{T}=\mathbf{r'}/|\mathbf{r'}|\qquad \mathrm{(Tangent vector)}
+    - $\mathbf{T}=\mathbf{r'}/|\mathbf{r'}|\qquad$ (Tangent vector)}
     
-..  math::
-
-        \mathbf{N}=\mathbf{T'}/|\mathbf{T'}|\qquad \mathrm{(Normal vector)}
+    - $\mathbf{N}=\mathbf{T'}/|\mathbf{T'}|\qquad$ (Normal vector)
     
-..  math::
-
-        \mathbf{B}=\mathbf{T}\times\mathbf{N}\qquad \mathrm{(Binormal vector)}
+    - $\mathbf{B}=\mathbf{T}\times\mathbf{N}\qquad$ (Binormal vector)
  
-..  math::
-
-        \kappa=|\mathbf{T'}|\qquad  \mathrm{(Curvature)}
+    - $\kappa=|\mathbf{T'}|\qquad$ (Curvature)
  
-..  math::
-
-        \mathrm{\tau}=-\mathbf{B'}\cdot\mathbf{N} \mathrm{(Torsion)}
+    - $\mathrm{\tau}=-\mathbf{B'}\cdot\mathbf{N}$ (Torsion)
         
     Parameters
     ------------
@@ -480,7 +470,7 @@ def intersect_sphere(xyz,center,radius):
     return False    
 
 def inside_sphere(xyz,center,radius):
-    ''' If any point of the track is inside a sphere of a specified
+    r''' If any point of the track is inside a sphere of a specified
     center and radius return True otherwise False.  Mathematicaly this
     can be simply described by $|x-c|\le r$ where $x$ a point $c$ the
     center of the sphere and $r$ the radius of the sphere.

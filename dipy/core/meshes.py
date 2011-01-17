@@ -19,7 +19,7 @@ def sym_hemisphere(vertices,
     the first occurring of each pair.
 
     Parameters
-    ------------
+    ----------
     vertices : (N,3) array-like
        (x, y, z) Point coordinates of N vertices
     hemisphere : str, optional
@@ -103,14 +103,14 @@ def vertinds_to_neighbors(vertex_inds, faces):
     """ Return indices of neighbors of vertices given `faces`
 
     Parameters
-    -------------
+    ----------
     vertex_inds : sequence
        length N.  Indices of vertices
     faces : (F, 3) array-like
        Faces given by indices of vertices for each of ``F`` faces
 
     Returns
-    ----------
+    -------
     adj : list
        For each ``N`` vertex indicated by `vertex_inds`, the vertex
        indices that are neighbors according to the graph given by
@@ -128,12 +128,12 @@ def neighbors(faces):
     """ Return indices of neighbors for each vertex within `faces`
 
     Parameters
-    -------------
+    ----------
     faces : (F, 3) array-like
        Faces given by indices of vertices for each of ``F`` faces
 
     Returns
-    ---------
+    -------
     adj : list
        For each vertex found within `faces`, the vertex
        indices that are neighbors according to the graph given by
@@ -168,7 +168,7 @@ def vertinds_faces(vertex_inds, faces):
     """ Return faces containing any of `vertex_inds`
 
     Parameters
-    ------------
+    ----------
     vertex_inds : sequence
        length N.  Indices of vertices
     faces : (F, 3) array-like
@@ -191,14 +191,14 @@ def edges(vertex_inds, faces):
         taking regard of direction.
 
     Parameters
-    ------------
+    ----------
     vertex_inds : sequence
        length N.  Indices of vertices
     faces : (F, 3) array-like
        Faces given by indices of vertices for each of ``F`` faces
 
     Returns
-    ---------
+    -------
     edgearray : (E2, 2) array
        where E2 = 2*``E``, twice the number of edges. If e= (a,b) is an
        edge then [a,b] and [b,a] are included in edgearray.
@@ -237,7 +237,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
     routine. 
     
     Parameters
-    ------------
+    ----------
     vals : (N,) array-like
        values at all vertices referred to in either of `vertex_inds` or
        `adj_inds`'
@@ -249,7 +249,7 @@ def argmax_from_adj(vals, vertex_inds, adj_inds):
        the neighboring points
 
     Returns
-    ----------
+    -------
     inds : (M,) array
        Indices into `vals` giving local maxima of vals, given topology
        from `adj_inds`, and restrictions from `vertex_inds`.  Inds are
@@ -281,7 +281,7 @@ def peak_finding_compatible(vertices,
     """ Check that a sphere mesh is compatible with ``peak_finding``
 
     Parameters
-    ------------
+    ----------
     vertices : (N,3) array-like
        (x, y, z) Point coordinates of N vertices
     hemisphere : str, optional
@@ -301,7 +301,7 @@ def peak_finding_compatible(vertices,
        of ``vertices``
     
     Returns
-    ---------
+    -------
     compatible : bool
        True if the sphere mesh is compatible with ``peak_finding``
     """
@@ -311,7 +311,7 @@ def peak_finding_compatible(vertices,
     return np.all(inds == np.arange(N))
 
 def euler_characteristic_check(vertices, faces, chi=2):
-    '''
+    r'''
     If $f$ = number of faces, $e$ = number_of_edges and $v$ = number of vertices,
     the Euler formula says $f-e+v = 2$ for a mesh
     on a sphere. Here, assuming we have a healthy triangulation every
@@ -324,7 +324,22 @@ def euler_characteristic_check(vertices, faces, chi=2):
     - Closed chain (loop) has $\chi=0$
     - Disk has $\chi=1$
     - Sphere has $\chi=2$
+
+    Parameters
+    ----------
+    vertices : (N,3) array-like
+       (x, y, z) Point coordinates of N vertices
+    faces : (M,3) array-like of type int
+       (i1, i2, i3) Integer indices of the vertices of the (triangular) faces
+    chi : int, or None
+       The Euler characteristic of the mesh to be checked
+       
+    Returns
+    -------
+    check : bool
+       True if the mesh has Euler characteristic chi
     '''
+    
     v = vertices.shape[0]
     f = faces.shape[0]
     if 2*v-f==2*chi:
@@ -339,6 +354,7 @@ def spherical_statistics(vertices, north=np.array([0,0,1]), width=0.02):
     variability of numbers of vertices in 'vertices' in equatorial bands
     of width 'width' orthogonal to each point in 'vertices'
     ''' 
+
     equatorial_counts = np.array([len(equatorial_zone_vertices(vertices, pole, width=width)) for pole in vertices if np.dot(pole,north) >= 0])
 
     #equatorial_counts = np.bincount(equatorial_counts)
