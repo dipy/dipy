@@ -289,8 +289,8 @@ gqs_tracks2=[t+np.array([10,0,0]) for t in gqs_tracks]
 fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.05))
 
 """
-Press 's' to save this beautiful screenshot when you have displayed it with ``fvtk.show``.
-Or you can record a video using ``fvtk.record``.
+Press 's' to save this screenshot when you have displayed it with ``fvtk.show``.
+Or you can even record a video using ``fvtk.record``.
 
 .. figure:: ../_static/nii_2_tracks.png
    :align: center
