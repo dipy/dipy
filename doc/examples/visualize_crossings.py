@@ -253,4 +253,4 @@ for (i,a) in enumerate(all):
 fvtk.add(r,fvtk.line(all_shift,colors,linewidth=1.))
 fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))
 
-fvtk.show(r)
+#fvtk.show(r)

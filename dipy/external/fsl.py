@@ -186,6 +186,11 @@ def dcm2nii(dname,outdir,filt='*.dcm',options='-d n -g n -i n -o'):
     cmd='dcm2nii '+options +' ' + outdir +' ' + dname + '/' + filt
     print(cmd)
     pipe(cmd)
+    
+def eddy_correct(in_nii,out_nii,ref=0):
+    cmd='eddy_correct '+in_nii+' '+ out_nii + ' '+str(ref)
+    print(cmd)
+    pipe(cmd)
 
 def bet(in_nii,out_nii,options=' -F -f .2 -g 0'):
     cmd='bet '+in_nii+' '+ out_nii + options

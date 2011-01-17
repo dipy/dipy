@@ -247,7 +247,7 @@ def orient2rgb(v):
 
     >>> from dipy.viz import colormap
     >>> v=np.array([[1,0,0],[0,1,0],[0,0,1]])
-    >>> c=colormap.boys2rgb(v)
+    >>> c=colormap.orient2rgb(v)
     
     """   
               

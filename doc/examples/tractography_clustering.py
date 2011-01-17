@@ -83,7 +83,7 @@ Show the initial *Fornix* dataset:
 
 r=fvtk.ren()
 fvtk.add(r,fvtk.line(T,fvtk.white,opacity=1))
-fvtk.show(r)
+#fvtk.show(r)
 
 """
 Show the *Fornix* after clustering (with random bundle colors):
@@ -96,7 +96,7 @@ for c in C:
     for i in C[c]['indices']:
         colors[i]=color
 fvtk.add(r,fvtk.line(T,colors,opacity=1))
-fvtk.show(r)
+#fvtk.show(r)
 
 """
 Calculate some statistics about the clusters
@@ -124,7 +124,7 @@ for c in C:
     fvtk.label(r,text=str(len(bundle)),pos=(bundle[si][-1]),scale=(2,2,2))
 
 fvtk.add(r,fvtk.line(skeleton,colors,opacity=1))
-fvtk.show(r)
+#fvtk.show(r)
 
 """
 Save the skeleton information in the dictionary. Now try to play with different thresholds LSC and check the different results.
