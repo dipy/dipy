@@ -47,8 +47,8 @@ def test_eudx():
 
     #assert_equal, sum([length(t) for t in T ]) , 77.999996662139893
     #assert_equal, sum([length(t) for t in T2]) , 63.499998092651367
-    assert_almost_equal(sum([length(t) for t in T ]) , 75.214988201856613)
-    assert_almost_equal(sum([length(t) for t in T2]) , 60.202986091375351)
+    assert_almost_equal(sum([length(t) for t in T ]) , 75.214988201856613,places=3)
+    assert_almost_equal(sum([length(t) for t in T2]) , 60.202986091375351,places=3)
 
 
 def uniform_seed_grid():
