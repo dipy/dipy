@@ -299,7 +299,7 @@ Or you can even record a video using ``fvtk.record``.
 
 """
 
-fvtk.show(r,png_magnify=1,size=(600,600))
+#fvtk.show(r,png_magnify=1,size=(600,600))
 #fvtk.record(r,cam_pos=(0,40,-40),cam_focal=(5,0,0),n_frames=50,magnification=1,out_path='./nii_2_tracks',size=(600,600),bgr_color=(0,0,0))
 
 

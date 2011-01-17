@@ -109,7 +109,7 @@ Now plot the corresponding tracks in the same colours
 .. figure:: ../_static/find_corr.png
    :align: center
       
-   **Showing correspondance between these two modest tractographies**.
+   **Showing correspondence between these two modest tractographies**.
    
    The labels on the corresponding tracks are the indices of the first tractography on the left.
 
@@ -125,7 +125,7 @@ for row in track2track:
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos1),(5,5,5)))
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos3),(5,5,5)))
 
-fvtk.show(r,png_magnify=1,size=(600,600))
+#fvtk.show(r,png_magnify=1,size=(600,600))
 
 
 
