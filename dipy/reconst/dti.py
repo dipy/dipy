@@ -13,8 +13,8 @@ class Tensor(ModelArray):
     """ Fits a diffusion tensor given diffusion-weighted signals and gradient info
 
     Tensor object that when initialized calculates single self diffusion
-    tensor[1]_ in each voxel using selected fitting algorithm
-    (DEFAULT: weighted least squares[1]_)
+    tensor [1]_ in each voxel using selected fitting algorithm
+    (DEFAULT: weighted least squares [2]_)
     Requires a given gradient table, b value for each diffusion-weighted
     gradient vector, and image data given all as arrays.
 
@@ -83,20 +83,17 @@ class Tensor(ModelArray):
     50,64]), memory can be an issue. Therefore, only the following parameters 
     of the self diffusion tensor are cached for each voxel:
 
-        -All three eigenvalues
-        -Primary and secondary eigenvectors
+    - All three eigenvalues
+    - Primary and secondary eigenvectors
 
     From these cached parameters, one can presumably construct any desired
     parameter.
 
     References
     ------------
-    ..  [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
-        the effective self-diffusion tensor from the NMR spin echo. J Magn 
-        Reson B 103, 247-254.
-    ..  [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
-        features of tissues elucidated by quantitative diffusion-tensor MRI. 
-        Journal of Magnetic Resonance 111, 209-219.
+    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of the effective self-diffusion tensor from the NMR spin echo. J Magn Reson B 103, 247-254.
+
+    .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological features of tissues elucidated by quantitative diffusion-tensor MRI. Journal of Magnetic Resonance 111, 209-219.
     
     Examples
     ----------
@@ -285,8 +282,8 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     preliminary estimate of the weights and therefore the ordinary least 
     squares (OLS) estimates were used. A "two pass" method was implemented:
     
-        (1) calculate OLS estimates of the data
-        (2) apply the OLS estimates as weights to the WLS fit of the data 
+        1. calculate OLS estimates of the data
+        2. apply the OLS estimates as weights to the WLS fit of the data 
     
     This ensured heteroscadasticity could be properly modeled for various 
     types of bootstrap resampling (namely residual bootstrap).
@@ -295,16 +292,16 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
-        \hat{\beta}_WLS = \mathrm{desired regression coefficients (e.g. tensor)}\\
+        \hat{\beta}_\mathrm{WLS} = \mathrm{desired regression coefficients (e.g. tensor)}\\
         \\
-        \hat{\beta}_WLS = (X^T W X)^-1 X^T W y \\
+        \hat{\beta}_\mathrm{WLS} = (X^T W X)^{-1} X^T W y \\
         \\
-        W = \mathrm{diag}((X \hat{\beta}_OLS)^2),
-        \mathrm{where} \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        W = \mathrm{diag}((X \hat{\beta}_\mathrm{OLS})^2),
+        \mathrm{where} \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
 
     References
     ----------
-    ..  [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+    ..  _[1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
@@ -392,7 +389,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
     
-        \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
 
     References
     ----------

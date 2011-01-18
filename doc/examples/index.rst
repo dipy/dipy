@@ -10,9 +10,9 @@ Examples
    :maxdepth: 2
    
    note_about_examples
-   nii_2_tracks
-   find_correspondence
-   aniso_vox_2_isotropic
    visualize_crossings
-   tractography_clustering
+   aniso_vox_2_isotropic
+   find_correspondence
    file_formats
+   tractography_clustering
+   nii_2_tracks

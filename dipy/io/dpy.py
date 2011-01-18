@@ -1,4 +1,11 @@
-''' Some ideas for the dipy format
+''' A class for handling large tractography datasets.
+
+    It is built using the pytables tools which in turn implement 
+    key features of the HDF5 (hierachical data format) API [1]_.
+
+    References
+    ----------
+    .. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
 '''
 
 import numpy as np

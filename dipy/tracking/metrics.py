@@ -169,7 +169,7 @@ def magn(xyz,n=1):
     
 
 def frenet_serret(xyz):
-    r''' Frenet-Serret Space Curve Invarients
+    r''' Frenet-Serret Space Curve Invariants
  
     Calculates the 3 vector and 2 scalar invariants of a space curve
     defined by vectors r = (x,y,z).  If z is omitted (i.e. the array xyz has 

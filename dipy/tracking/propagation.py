@@ -11,7 +11,7 @@ class EuDX():
     delta function [1]_ and it has similarities with FACT algorithm [2]_ and Basser's method 
     but uses trilinear interpolation.
 
-    Can be used with any reconstruction method as DTI,DSI,QBI,GQI which can
+    Can be used with any reconstruction method as DTI, DSI, QBI, GQI which can
     calculate an orientation distribution function and find the local peaks of
     that function. For example a single tensor model can give you only
     one peak a dual tensor model 2 peaks and quantitative anisotropy
