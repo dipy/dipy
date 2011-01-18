@@ -11,7 +11,7 @@ from dipy.tracking.metrics import length
 import nibabel as ni
 
 from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
+     assert_equal, assert_raises, assert_almost_equal
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
@@ -43,12 +43,12 @@ def test_eudx():
     print(gqs.QA[1,4,8,0])
     print(gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
 
-    assert_equal(gqs.QA[1,4,8,0], gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
+    assert_almost_equal(gqs.QA[1,4,8,0], gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
 
     #assert_equal, sum([length(t) for t in T ]) , 77.999996662139893
     #assert_equal, sum([length(t) for t in T2]) , 63.499998092651367
-    assert_equal(sum([length(t) for t in T ]) , 75.214988201856613)
-    assert_equal(sum([length(t) for t in T2]) , 60.202986091375351)
+    assert_almost_equal(sum([length(t) for t in T ]) , 75.214988201856613,places=3)
+    assert_almost_equal(sum([length(t) for t in T2]) , 60.202986091375351,places=3)
 
 
 def uniform_seed_grid():

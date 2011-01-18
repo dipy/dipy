@@ -253,4 +253,15 @@ for (i,a) in enumerate(all):
 fvtk.add(r,fvtk.line(all_shift,colors,linewidth=1.))
 fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))
 
-fvtk.show(r)
+
+"""
+
+.. figure:: ../_static/visualize_cross.png
+   :align: center
+      
+   **The crossings of a region of interest shown with one color, or boy2rgb or standard orient2rgb colormap**.
+   
+"""
+
+
+fvtk.show(r,size=(800,800))

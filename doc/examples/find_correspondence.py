@@ -105,6 +105,14 @@ print 'With mam_threshold %f we find %d correspondence pairs' % (mam_threshold, 
 
 """
 Now plot the corresponding tracks in the same colours
+
+.. figure:: ../_static/find_corr.png
+   :align: center
+      
+   **Showing correspondence between these two modest tractographies**.
+   
+   The labels on the corresponding tracks are the indices of the first tractography on the left.
+
 """
 
 for row in track2track:
@@ -117,7 +125,7 @@ for row in track2track:
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos1),(5,5,5)))
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos3),(5,5,5)))
 
-#fvtk.show(r,png_magnify=1)
+#fvtk.show(r,png_magnify=1,size=(600,600))
 
 
 

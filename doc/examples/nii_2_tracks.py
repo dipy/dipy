@@ -64,10 +64,13 @@ In order to make this work with your data you should comment out the line below 
 for your nifti file (``*.nii`` or ``*.nii.gz``) and your ``*.bvec`` and ``*.bval files``. 
 
 If you are not using nifti files or you don't know how to create the ``*.bvec`` and ``*.bval`` files 
-from your raw dicom (``*.dcm``) data then you can either try recent module 
+from your raw dicom (``*.dcm``) data then you can either try recent module nibabel.nicom 
 """
 
-from nibabel.nicom.dicomreaders import read_mosaic_dir
+try:
+    from nibabel.nicom.dicomreaders import read_mosaic_dir
+except:
+    print('nicom for dicom is not installed')
 
 """
 or to convert the dicom files to nii, bvec and bval files using ``dcm2nii``. 
@@ -286,11 +289,18 @@ gqs_tracks2=[t+np.array([10,0,0]) for t in gqs_tracks]
 fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.05))
 
 """
-Press 's' to save this beautiful screenshot when you have displayed it with ``fvtk.show``.
+Press 's' to save this screenshot when you have displayed it with ``fvtk.show``.
+Or you can even record a video using ``fvtk.record``.
 
-**Thank you!**
---------------
+.. figure:: ../_static/nii_2_tracks.png
+   :align: center
+      
+   **Same region of interest with different underlying voxel representations generates different tractographies**.
+
 """
 
-#fvtk.show(r,png_magnify=1)
+#fvtk.show(r,png_magnify=1,size=(600,600))
+#fvtk.record(r,cam_pos=(0,40,-40),cam_focal=(5,0,0),n_frames=50,magnification=1,out_path='./nii_2_tracks',size=(600,600),bgr_color=(0,0,0))
+
+
 

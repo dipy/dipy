@@ -36,7 +36,7 @@ def test_dpy():
     dpr.close()
     assert_array_equal(A,T[0])
     assert_array_equal(C,T[5])
-    os.remove(fname)
+    #os.remove(fname)
 
     
     

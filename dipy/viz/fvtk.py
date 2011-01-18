@@ -1492,7 +1492,7 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
     window.Render()
     iren.Start()
     
-def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,outdir=None,n_frames=10, az_ang=10, magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
+def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_frames=10, az_ang=10, magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
     ''' This will record a video of your scene
     
     Records a video as a series of .png files of your scene by rotating the azimuth angle az_angle in every frame      
@@ -1507,7 +1507,7 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,outdir=None,n_fram
         camera focal point
     cam_view : None or sequence (3,)
         camera view up
-    outdir : str 
+    out_path : str 
         output directory for the frames 
     n_frames : int
         number of frames to save
@@ -1570,7 +1570,14 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,outdir=None,n_fram
     if cam_view!=None:    
         ux,uy,uz=cam_view
         ren.GetActiveCamera().SetViewUp(ux, uy, uz)
-    
+
+    cam=ren.GetActiveCamera()
+    print('------------------------------------')
+    print('Camera Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
+    print('Camera Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
+    print('Camera View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
+    print('------------------------------------')
+
     for i in range(n_frames):        
         ren.GetActiveCamera().Azimuth(ang)        
         renderLarge = vtk.vtkRenderLargeImage()
@@ -1579,10 +1586,10 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,outdir=None,n_fram
         renderLarge.Update()        
         writer.SetInputConnection(renderLarge.GetOutputPort())
         #filename='/tmp/'+str(3000000+i)+'.png'
-        if outdir==None:
+        if out_path==None:
             filename=str(1000000+i)+'.png'
         else:
-            filename=outdir+str(1000000+i)+'.png'
+            filename=out_path+str(1000000+i)+'.png'
         writer.SetFileName(filename)
         writer.Write()               
         
