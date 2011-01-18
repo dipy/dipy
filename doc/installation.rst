@@ -7,7 +7,7 @@
 dipy_ is in active development at the moment and we are doing our best
 to create a release as soon as we can. Soon here is not hypothetical a release is planned before the end of January 2011.
 
-General usage [not available]
+General usage [available soon]
 ------------------------------
 
 .. _using-on-cmdline:
@@ -54,7 +54,7 @@ Save this to the home directory, which can be found by typing at the python or i
   >>> os.path.expanduser('~')
 
   
-Debian/Ubuntu [not available]
+Debian/Ubuntu [available soon]
 ------------------------------
 
 Well this is the easiest just install with aptitude or synaptic the package python-dipy ::
@@ -106,7 +106,6 @@ dipy_ requires the following packages::
 It also requires nibabel for reading medical images::
 
         cd ..
-        sudo easy_install -U pydicom
         git clone git://github.com/hanke/nibabel.git
 
 and then add the ``nibabel/nibabel`` directory to your PYTHONPATH. We usually
@@ -122,7 +121,6 @@ After changing the ~/.bashrc try::
 so that you can have immediate access to dipy_ without needing to
 restart your terminal.
 
-
 After doing the above execute ipython in the terminal and try::
 
     >>> import dipy
@@ -133,5 +131,46 @@ Do they work? For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
 with ``[dipy]``.
 
+Windows Developers [available]
+---------------------------------------
+
+First download and install pythonxy from::
+
+      http://www.pythonxy.com/
+
+this will install python and all the other tools interesting for scientific development
+
+then download and install git for windows::  
+
+      http://code.google.com/p/msysgit/downloads/list
+
+and then download the code::
+
+      git clone git://github.com/Garyfallidis/dipy.git
+      git clone git://github.com/hanke/nibabel.git
+
+      cd nibabel
+      python setup.py install
+      cd ..
+      cd dipy
+      python setup.py install
+
+then open console and run::
+
+      ipython -pylab
+      
+and then try::
+      
+      >>> import dipy
+      >>> dipy.test()
+
+Does it work?
+
+If yes you can try the examples from the dipy website
+http://nipy.sourceforge.net/dipy/examples/index.html
+
+For any problems/suggestions please let us know by sending us
+an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
+with ``[dipy]``.
 
 .. include:: links_names.txt
