@@ -30,7 +30,7 @@ with ``[dipy]``.
 Windows [available]
 --------------------
 
-For windows you can use pythonxy_ . This is quite a big package but will install many other tools too useful for your scientific endeavors.
+For windows you can use pythonxy_ This is quite a big package but will install many other tools too useful for your scientific endeavors.
 
 After that you need to download dipy and install it using ::  
 
@@ -173,4 +173,4 @@ For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
 with ``[dipy]``.
 
-.. include:: links_names.txt
+.. include:: ./links_names.txt
