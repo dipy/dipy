@@ -1,6 +1,5 @@
 
 """ 
-.. include:: ../links_names.txt
 
 ===============================
 Anisotropic Voxels to Isotropic 

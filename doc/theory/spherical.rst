@@ -97,4 +97,4 @@ Matlab convention
 Matlab has functions ``sph2cart`` and ``cart2sph``.  These use the terms ``theta`` and ``phi``, but with a different meaning again from the standard physics and mathematics conventions.   Here ``theta`` is the azimuth angle, as for the mathematics convention, but ``phi`` is the angle between the reference plane and OP.  This implies different formulae for the conversions between Cartesian and spherical coordinates that are easy to derive.  
 
 
-.. include:: ../links_names.txt
+

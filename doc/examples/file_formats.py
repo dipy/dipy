@@ -1,5 +1,4 @@
 """ 
-.. include:: ../links_names.txt
 
 =====================
 File Format Friendly 
