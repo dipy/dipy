@@ -173,4 +173,6 @@ For any problems/suggestions please let us know by sending us
 an e-mail to nipy-devel@neuroimaging.scipy.org with subject starting
 with ``[dipy]``.
 
+
 .. include:: ./links_names.txt
+

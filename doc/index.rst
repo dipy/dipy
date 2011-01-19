@@ -73,4 +73,4 @@ A skeleton
 
 
 
-.. include:: ./links_names.txt
+

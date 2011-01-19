@@ -96,6 +96,5 @@
       $\boldsymbol{\hat{u}}$ is a convention to express the fact that it
       is a unit vector.
 
-.. include:: links_names.txt
        
        

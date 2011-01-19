@@ -1,6 +1,5 @@
 
 """ 
-.. include:: ../links_names.txt
 
 ===============================
 From raw data to tractographies
