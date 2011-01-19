@@ -100,10 +100,7 @@ def main(**extra_args):
                           'dipy.boots',
                           'dipy.data',
                           'dipy.external',
-                          'dipy.external.tests',
-                          # required in setup.py, hence needs to go into source
-                          # dist
-                          'nisext'],
+                          'dipy.external.tests'],
           ext_modules = EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the source
