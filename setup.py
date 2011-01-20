@@ -10,9 +10,6 @@ from glob import glob
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-from distutils.core import setup
-from distutils.extension import Extension
-
 import numpy as np
 
 # For some commands, use setuptools
@@ -21,6 +18,11 @@ if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
             )).intersection(sys.argv)) > 0:
     # setup_egg imports setuptools setup, thus monkeypatching distutils. 
     from setup_egg import extra_setuptools_args
+
+# Import distutils _after_ potential setuptools import above, and after removing
+# MANIFEST
+from distutils.core import setup
+from distutils.extension import Extension
 
 # extra_setuptools_args can be defined from the line above, but it can
 # also be defined here because setup.py has been exec'ed from
@@ -63,9 +65,6 @@ for modulename, other_sources in (
     ('dipy.tracking.propspeed', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,include_dirs = [np.get_include()]))
-
-
-
 
 
 def main(**extra_args):
@@ -120,5 +119,4 @@ def main(**extra_args):
 #simple way to test what setup will do
 #python setup.py install --prefix=/tmp
 if __name__ == "__main__":
-    
     main(**extra_setuptools_args)
