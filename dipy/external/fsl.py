@@ -247,7 +247,7 @@ def bet(in_nii,out_nii,options=' -F -f .2 -g 0'):
     pipe(cmd)
 
 
-def flirt(in_img, ref_img, dof=6, flags=''):
+def run_flirt_imgs(in_img, ref_img, dof=6, flags=''):
     """ Run flirt on nibabel images, returning affine
 
     Parameters
