@@ -73,7 +73,6 @@
 .. _setuptools: http://pypi.python.org/pypi/setuptools
 .. _pytables: http://www.pytables.org
 .. _python-vtk: http://www.vtk.org
-.. _pythonxy: http://code.google.com/p/pythonxy/
 
 .. Python imaging projects
 .. _PyMVPA: http://www.pymvpa.org
