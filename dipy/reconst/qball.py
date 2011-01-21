@@ -3,6 +3,10 @@ import numpy as np
 from scipy.special import sph_harm, lpn
 from copy import copy, deepcopy
 
+import warnings
+
+warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
+
 def real_sph_harm(m, n, theta, phi):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is

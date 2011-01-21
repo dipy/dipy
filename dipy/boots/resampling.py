@@ -7,6 +7,10 @@ import numpy as np
 import scipy as sp
 from copy import copy, deepcopy
 
+import warnings
+
+warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
+
 def bs_se(bs_pdf):
     """
     Calculates the bootstrap standard error estimate of a statistic

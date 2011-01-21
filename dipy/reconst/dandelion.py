@@ -3,6 +3,9 @@ from dipy.reconst.recspeed import peak_finding
 import os
 from os.path import join as opj
 from dipy.data import get_sphere
+import warnings
+
+warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
 
 class SphericalDandelion():
     ''' Garyfallidis E., Nimmo-Smith I. TMI 2011 (to appear)        
