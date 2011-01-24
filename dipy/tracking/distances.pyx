@@ -1,5 +1,5 @@
  # A type of -*- python -*- file
-""" Optimized track metrics and correspondence measures
+""" Optimized track distances, similarities and clustering algorithms using track distances 
 """
 
 # cython: profile=True
@@ -34,7 +34,8 @@ cdef extern from "stdlib.h" nogil:
 #@cython.boundscheck(False)
 #@cython.wraparound(False)
 
-
+DEF biggest_double = 1.79769e+308 #np.finfo('f8').max
+DEF biggest_float = 3.4028235e+38 #np.finfo('f4').max
 
 cdef inline cnp.ndarray[cnp.float32_t, ndim=1] as_float_3vec(object vec):
     ''' Utility function to convert object to 3D float vector '''
@@ -343,7 +344,7 @@ def cut_plane(tracks,ref):
     return Hit[1:]            
 
 
-DEF biggest_double = 1.79769e+308
+
 
 
 def most_similar_track_mam(tracks,metric='avg'):    
@@ -1356,8 +1357,70 @@ ctypedef struct LSC_Cluster:
 @cython.boundscheck(False)
 @cython.wraparound(False)    
 @cython.cdivision(True)
-def local_skeleton_clustering_v2(tracks, d_thr=10,points=3):
-    """ Experimental
+def local_skeleton_clustering(tracks, d_thr=10,points=3):
+    """ Efficient tractography clustering     
+       
+    Every track can needs to have the same number of points. 
+    Use dipy.tracking.metrics.downsample to restrict the number of points
+
+           
+    Parameters
+    -----------
+    tracks : sequence
+        of tracks as arrays, shape (N,3) .. (N,3) where N=points
+    d_thr : float, average euclidean distance threshold
+
+    Returns
+    --------
+    C : dict
+        
+    Examples
+    ----------
+    >>> from dipy.tracking.distances import local_skeleton_clustering
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
+            np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
+            np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
+            np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
+            np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+            np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
+            np.array([[0,0,0],[0,1,0],[0,2,0]])]
+    >>> C=local_skeleton_clustering(tracks,d_thr=0.5,3)
+    
+    Notes
+    ------
+    The distance calculated between two tracks
+    
+    t_1       t_2
+    
+    0*   a    *0    
+      \       | 
+       \      |
+       1*     |
+        |  b  *1
+        |      \   
+       2*       \
+            c    *2
+           
+    is equal to (a+b+c)/3 where a the euclidean distance between t_1[0] and t_2[0], 
+    b between  t_1[1] and t_2[1] and c between t_1[2] and t_2[2]. Also the fliped
+    
+    Visualization
+    --------------
+    
+    It is possible to visualize the clustering C from the example
+    above using the fvtk module 
+    
+    from dipy.viz import fvtk    
+    r=fvtk.ren()
+    for c in C:
+        color=np.random.rand(3)
+        for i in C[c]['indices']:
+            fvtk.add(r,fos.line(tracks[i],color))
+    fvtk.show(r)
+    
+    See also
+    ---------
+    dipy.tracking.metrics.downsample
     
     """
     cdef :
@@ -1414,7 +1477,7 @@ def local_skeleton_clustering_v2(tracks, d_thr=10,points=3):
                     flip[k]=1
                 alld[k]=d[0]
             
-            m_d = 100000000
+            m_d = biggest_float
             #find minimum distance and index    
             for k from 0<=k<lenC:
                 if alld[k] < m_d:
@@ -1443,10 +1506,7 @@ def local_skeleton_clustering_v2(tracks, d_thr=10,points=3):
                 for i from 0<=i<dim:        
                     cluster[lenC-1].hidden[i]=ptr[i]    
                 cluster[lenC-1].N=1
-                
-            
-
-            
+                            
             free(alld)
             free(flip)    
     
@@ -1481,8 +1541,12 @@ def local_skeleton_clustering_v2(tracks, d_thr=10,points=3):
     
     return C
 
-def local_skeleton_clustering(tracks, d_thr=10):
+def local_skeleton_clustering_3pts(tracks, d_thr=10):
     ''' Does a first pass clustering
+    
+    Every track can only have 3 pts neither less or more. 
+    Use dipy.tracking.metrics.downsample to restrict the number of points
+
            
     Parameters
     -----------
