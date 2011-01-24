@@ -7,6 +7,58 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.tracking import metrics as tm
 from dipy.tracking import distances as pf
 
+
+def test_LSCv2():
+    xyz1=np.array([[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
+    xyz2=np.array([[1,0,0],[1,2,0],[1,3,0]],dtype='float32')
+    xyz3=np.array([[1.1,0,0],[1,2,0],[1,3,0]],dtype='float32')
+    xyz4=np.array([[1,0,0],[2.1,0,0],[3,0,0]],dtype='float32')
+    
+    xyz5=np.array([[100,0,0],[200,0,0],[300,0,0]],dtype='float32')
+    xyz6=np.array([[0,20,0],[0,40,0],[300,50,0]],dtype='float32')
+    
+    T=[xyz1,xyz2,xyz3,xyz4,xyz5,xyz6]
+    C=pf.local_skeleton_clustering_v2(T,0.2,3)
+    
+    #print C
+    #print len(C)
+    
+    C2=pf.local_skeleton_clustering(T,0.2)
+    
+    #print C2
+    #print len(C2)
+            
+    #"""
+    
+    for i in range(40):
+        xyz=np.random.rand(3,3).astype('f4')
+        T.append(xyz)
+            
+    from time import time
+    t1=time()
+    C3=pf.local_skeleton_clustering_v2(T,.5,3)
+    t2=time()
+    print t2-t1
+    print len(C3)
+    
+    t1=time()
+    C4=pf.local_skeleton_clustering(T,.5)
+    t2=time()
+    print t2-t1
+    print len(C4)
+
+    for c in C3:
+        assert_equal(np.sum(C3[c]['hidden']-C4[c]['hidden']),0)
+    
+    T2=[]
+    for i in range(10):
+        xyz=np.random.rand(10,3).astype('f4')
+        T2.append(xyz)
+    t1=time()
+    C5=pf.local_skeleton_clustering_v2(T2,.5)
+    t2=time()
+    print len(C5)
+
 def test_splines():
     #create a helix
     t=np.linspace(0,1.75*2*np.pi,100)
