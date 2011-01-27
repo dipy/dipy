@@ -1286,8 +1286,40 @@ def track_dist_3pts(tracka,trackb):
 @cython.wraparound(False)      
 @cython.cdivision(True)
 cdef inline void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
-    '''
+    ''' Direct and flip average distance between two tracks
     
+    Parameters
+    ------------
+        a : first track
+        b : second track
+        rows : number of points of the track 
+            both tracks need to have the same number of points
+    
+    Returns
+    --------
+        out : direct and flipped average distance added
+    
+    Notes
+    ------
+    The distance calculated between two tracks
+    
+    t_1       t_2
+    
+    0*   a    *0    
+      \       | 
+       \      |
+       1*     |
+        |  b  *1
+        |      \   
+       2*       \
+            c    *2
+           
+    is equal to (a+b+c)/3 where a the euclidean distance between t_1[0] and t_2[0], 
+    b between  t_1[1] and t_2[1] and c between t_1[2] and t_2[2]. Also the fliped
+    
+    See also
+    ---------
+    dipy.tracking.distances.local_skeleton_clustering
     
     '''
     cdef:
@@ -1415,7 +1447,7 @@ def local_skeleton_clustering(tracks, d_thr=10,points=3):
     for c in C:
         color=np.random.rand(3)
         for i in C[c]['indices']:
-            fvtk.add(r,fos.line(tracks[i],color))
+            fvtk.add(r,fvtk.line(tracks[i],color))
     fvtk.show(r)
     
     See also

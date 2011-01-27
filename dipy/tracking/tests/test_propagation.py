@@ -45,11 +45,63 @@ def test_eudx():
 
     assert_almost_equal(gqs.QA[1,4,8,0], gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
 
-    #assert_equal, sum([length(t) for t in T ]) , 77.999996662139893
-    #assert_equal, sum([length(t) for t in T2]) , 63.499998092651367
-    assert_almost_equal(sum([length(t) for t in T ]) , 75.214988201856613,places=3)
-    assert_almost_equal(sum([length(t) for t in T2]) , 60.202986091375351,places=3)
+    assert_almost_equal(sum([length(t) for t in T ]) , 66.999997615814209,places=3)
+    assert_almost_equal(sum([length(t) for t in T2]) , 54.499999046325684,places=3)
 
+
+def test_eudx_further():
+    """ Cause we love testin.. ;-)
+    """
+
+    fimg,fbvals,fbvecs=get_data('small_101D')
+    img=ni.load(fimg)
+    affine=img.get_affine()
+    bvals=np.loadtxt(fbvals)
+    gradients=np.loadtxt(fbvecs).T    
+    data=img.get_data()
+    ten=Tensor(data,bvals,gradients,thresh=50)
+    x,y,z=data.shape[:3]
+    seeds=np.zeros((1000,3))
+    for i in range(1000):
+        rx=(x-1)*np.random.rand()
+        ry=(y-1)*np.random.rand()
+        rz=(z-1)*np.random.rand()            
+        seeds[i]=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
+    
+    #print seeds
+    #"""    
+    eu=EuDX(a=ten.fa(),ind=ten.ind(),seed_list=seeds,a_low=.2)
+    T=[e for e in eu]
+    
+    #check that there are no negative elements
+    for t in T:
+        assert_equal(np.sum(t.ravel()<0),0)
+    
+    
+    """
+    
+    for (i,t) in enumerate(T):
+        for row in t:
+            if row[0]<0 or row[1]<0 or row[2]<0:
+                print 'l======'
+                print i,row
+                print t[0]
+                print t[-1]
+                
+            if row[0]>=data.shape[0] or row[1]>=data.shape[1] or row[2]>=data.shape[2]:
+                print 'h======'
+                print i,row
+                print t[0]
+                print t[-1]
+            
+    
+    from dipy.viz import fvtk
+    
+    r=fvtk.ren()
+    fvtk.add(r,fvtk.line(T,fvtk.red))
+    fvtk.add(r,fvtk.point(seeds,fvtk.green))
+    fvtk.show(r)
+    """
 
 def uniform_seed_grid():
 

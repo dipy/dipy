@@ -48,7 +48,7 @@ def test_LSCv2():
         assert_equal(np.sum(C3[c]['hidden']-C4[c]['hidden']),0)
     
     T2=[]
-    for i in range(10**5):
+    for i in range(10**4):
         xyz=np.random.rand(10,3).astype('f4')
         T2.append(xyz)
     t1=time()
@@ -56,6 +56,51 @@ def test_LSCv2():
     t2=time()
     print t2-t1
     print len(C5)
+    
+    from dipy.data import get_data
+    from nibabel import trackvis as tv
+    from dipy.viz import fvtk
+    
+    streams,hdr=tv.read(get_data('fornix'))
+    T3=[tm.downsample(s[0],6) for s in streams]    
+    
+
+    print 'lenT3',len(T3)
+    
+    C=pf.local_skeleton_clustering(T3,10.,10)
+    
+    print 'lenC',len(C)
+    
+    """
+    
+    r=fvtk.ren()
+    colors=np.zeros((len(C),3))
+    for c in C:
+        color=np.random.rand(3)
+        for i in C[c]['indices']:
+            fvtk.add(r,fvtk.line(T3[i],color))
+        colors[c]=color
+    fvtk.show(r)
+    fvtk.clear(r)
+    skeleton=[]
+    
+    def width(w):
+        if w<1:
+            return 1
+        else:
+            return w
+    
+    for c in C:
+    
+        bundle=[T3[i] for i in C[c]['indices']]
+        si,s=pf.most_similar_track_mam(bundle,'avg')    
+        skeleton.append(bundle[si])
+        fvtk.label(r,text=str(len(bundle)),pos=(bundle[si][-1]),scale=(2,2,2))
+        fvtk.add(r,fvtk.line(skeleton,colors,opacity=1,linewidth=width(len(bundle)/10.)))
+    
+    fvtk.show(r)
+    
+    """
     
 def test_bundles_distances_mam():
     xyz1A = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')

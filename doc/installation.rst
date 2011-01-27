@@ -31,7 +31,7 @@ Windows [available]
 --------------------
 
 For windows you can use pythonxy_ This is quite a big package but will install
-many other tools too useful for your scientific endeavors.
+many other tools too very useful for your scientific endeavors.
 
 After that you need to download dipy and install it using ::
 

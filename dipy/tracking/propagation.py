@@ -105,15 +105,6 @@ class EuDX():
         
         if self.seed_list!=None:
             self.seed_no=len(seed_list)
-            
-#        if self.seed_list==None:
-#            self.seed_list=[]
-#            #for all seed points    
-#            for i in range(self.seed_no):
-#                rx=(x-1)*np.random.rand()
-#                ry=(y-1)*np.random.rand()
-#                rz=(z-1)*np.random.rand()
-#                self.seed_list.append(np.array([rx,ry,rz]))          
 
         self.ind=self.ind.astype(np.double)        
         
@@ -138,17 +129,11 @@ class EuDX():
                 if track == None:
                     pass
                 else:        
-                    #tlist.append(track.astype(np.float32))                                        
+                    #return a track from that seed                                        
                     if length(track)>self.length_thr:                        
                         yield track
                         
                         
-    '''           
-    def native(self,affine):        
-        print affine.shape
-        print self.tracks[0].shape
-        self.tracks=[np.transpose(np.dot(affine[:3,:3],np.transpose(t)))+np.transpose(affine[:3,3]) for t in self.tracks]        
-    '''
 
 
 
