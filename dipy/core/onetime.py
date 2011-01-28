@@ -1,6 +1,6 @@
 """Descriptor support for NIPY.
 
-Utilities to support special Python descriptors [1,2], in particular the use of
+Utilities to support special Python descriptors ([1]_, [2]_), in particular the use of
 a useful pattern for properties we call 'one time properties'.  These are
 object attributes which are declared as properties, but become regular
 attributes once they've been read the first time.  They can thus be evaluated
@@ -9,10 +9,10 @@ attributes with no function call overhead on access or any other constraints.
 
 References
 ------------
-[1] How-To Guide for Descriptors, Raymond
+.. [1] How-To Guide for Descriptors, Raymond
 Hettinger. http://users.rcn.com/python/download/Descriptor.htm
 
-[2] Python data model, http://docs.python.org/reference/datamodel.html
+.. [2] Python data model, http://docs.python.org/reference/datamodel.html
 """
 
 class OneTimeProperty(object):

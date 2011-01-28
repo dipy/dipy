@@ -98,12 +98,12 @@ def sphere2cart(r, theta, phi):
 
 
 def cart2sphere(x, y, z):
-    ''' Return angles for Cartesian 3D coordinates `x`, `y`, and `z`
+    r''' Return angles for Cartesian 3D coordinates `x`, `y`, and `z`
 
     See doc for ``sphere2cart`` for angle conventions and derivation
     of the formulae.
 
-    0 >= `theta` >= pi and 0 >= `phi` >= 2*pi
+    $0 \le \theta \mathrm{(theta)} \le \pi$ and $0 \le \phi \mathrm{(phi)} \le 2 \pi$
 
     Parameters
     ------------
@@ -130,7 +130,7 @@ def cart2sphere(x, y, z):
 
 
 def normalized_vector(vec):
-    ''' Return vector divided by Euclidean (L2) norm
+    ''' Return vector divided by its Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
 
@@ -302,7 +302,7 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
 def cart_distance(pts1, pts2):
     ''' Cartesian distance between `pts1` and `pts2`
 
-    If either of `pts1` or 'pts2` is 2D, then we take the first
+    If either of `pts1` or `pts2` is 2D, then we take the first
     dimension to index points, and the second indexes coordinate.  More
     generally, we take the last dimension to be the coordinate
     dimension. 
@@ -373,7 +373,7 @@ def vector_cosine(vecs1, vecs2):
     return dots / lens
 
 def lambert_equal_area_projection_polar(theta, phi):
-    ''' Lambert Equal Area Projection from polar sphere to plane
+    r''' Lambert Equal Area Projection from polar sphere to plane
 
     Return positions in (y1,y2) plane corresponding to the points
     with polar coordinates (theta, phi) on the unit sphere, under the
@@ -382,11 +382,14 @@ def lambert_equal_area_projection_polar(theta, phi):
     
     See doc for ``sphere2cart`` for angle conventions
 
-    0 >= `theta` >= pi and 0 >= `phi` >= 2*pi
-    |(y1,y2)| <= 2
-
+    - $0 \le \theta \le \pi$ and $0 \le \phi \le 2 \pi$
+    - $|(y_1,y_2)| \le 2$
+    
+    The Lambert EAP maps the upper hemisphere to the planar disc of radius 1 
+    and the lower hemisphere to the planar annulus between radii 1 and 2,
+    and *vice versa*.  
     Parameters
-    -------------
+    ----------
     theta : array-like
        theta spherical coordinates
     phi : array-like
@@ -402,13 +405,18 @@ def lambert_equal_area_projection_polar(theta, phi):
 
 
 def lambert_equal_area_projection_cart(x,y,z):
-    ''' Lambert Equal Area Projection from cartesian vector to plane
+    r''' Lambert Equal Area Projection from cartesian vector to plane
 
-    Return positions in (y1,y2) plane corresponding to the
+    Return positions in $(y_1,y_2)$ plane corresponding to the
     directions of the vectors with cartesian coordinates xyz under the
     Lambert Equal Area Projection mapping (see Mardia and Jupp (2000),
     Directional Statistics, p. 161).
     
+    The Lambert EAP maps the upper hemisphere to the planar disc of radius 1 
+    and the lower hemisphere to the planar annulus between radii 1 and 2, 
+    The Lambert EAP maps the upper hemisphere to the planar disc of radius 1 
+    and the lower hemisphere to the planar annulus between radii 1 and 2.
+    and *vice versa*.
     See doc for ``sphere2cart`` for angle conventions
 
     Parameters
@@ -450,8 +458,8 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
     Code modified from the work of Christoph Gohlke link provided here
     http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
 
-    Example
-    -------
+    Examples
+    --------
     >>> import numpy
     >>> R = euler_matrix(1, 2, 3, 'syxz')
     >>> numpy.allclose(numpy.sum(R[0]), -1.34786452)
@@ -708,12 +716,23 @@ def circumradius(a, b, c):
     the radius of the smallest circle that can contain the triangle. In
     the degenerate case when the 3 points are collinear it returns
     half the distance between the furthest apart points.
+
+    Parameters
+    ----------
+    a, b, c : (3,) arraylike
+       the three vertices of the triangle
+    
+    Returns
+    -------
+    circumradius : float
+        the desired circumradius
     '''
     x = a-c
     xx = np.linalg.norm(x)**2
     y = b-c
     yy = np.linalg.norm(y)**2
     z = np.cross(x,y)
+    # test for collinearity
     if np.linalg.norm(z) == 0:
         return np.sqrt(np.max(np.dot(x,x), np.dot(y,y), np.dot(a-b,a-b)))/2.
     else:

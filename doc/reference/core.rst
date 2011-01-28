@@ -2,17 +2,19 @@
  dipy core
 ===========
 
+.. automodule:: dipy.core
+    :members:
+
 .. currentmodule:: dipy.core
 
 .. autosummary::
     :toctree:
 
     geometry
+    graph
     meshes
-    profile
-    triangle_subdivide
     onetime
+    profile
     rng
+    triangle_subdivide
     sphere_stats
-	
-    

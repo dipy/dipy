@@ -12,7 +12,7 @@ def sym_hemisphere(vertices,
                    hemisphere='z',
                    equator_thresh=None,
                    dist_thresh=None):
-    """ Symmetric hemisphere indices from sphere `vertices` 
+    """ Indices for hemisphere from an array of `vertices` on a sphere 
 
     Selects the vertices from a sphere that lie in one hemisphere.
     If there are pairs of symmetric points on the equator, we return only
@@ -187,7 +187,7 @@ def vertinds_faces(vertex_inds, faces):
     return faces[in_inds]
 
 def edges(vertex_inds, faces):
-    """ Return array of starts and ends of edges from list of faces
+    r""" Return array of starts and ends of edges from list of faces
         taking regard of direction.
 
     Parameters
@@ -195,12 +195,12 @@ def edges(vertex_inds, faces):
     vertex_inds : sequence
        length N.  Indices of vertices
     faces : (F, 3) array-like
-       Faces given by indices of vertices for each of ``F`` faces
+       Faces given by indices of vertices for each of F faces
 
     Returns
     -------
     edgearray : (E2, 2) array
-       where E2 = 2*``E``, twice the number of edges. If e= (a,b) is an
+       where E2 = 2*E, twice the number of edges. If e= (a,b) is an
        edge then [a,b] and [b,a] are included in edgearray.
     """
 
@@ -221,7 +221,19 @@ def edges(vertex_inds, faces):
  
 def vertex_adjacencies(vertex_inds, faces):
     """ Return matrix which shows the adjacent vertices
-        of each vertex"""
+        of each vertex
+        
+    Parameters
+    ----------
+    vertex_inds : sequence
+       length N.  Indices of vertices
+    
+    faces : (F, 3) array-like
+       Faces given by indices of vertices for each of F faces
+    
+    Returns
+    -------
+    """
     edgearray = edges(vertex_inds, faces)
     V = len(vertex_inds)
     a = sparse.coo_matrix((np.ones(edgearray.shape[0]),
@@ -346,55 +358,5 @@ def euler_characteristic_check(vertices, faces, chi=2):
         return True
     else:
         return False
-
-
-def spherical_statistics(vertices, north=np.array([0,0,1]), width=0.02):
-    '''
-    function to evaluate a spherical triangulation by looking at the
-    variability of numbers of vertices in 'vertices' in equatorial bands
-    of width 'width' orthogonal to each point in 'vertices'
-    ''' 
-
-    equatorial_counts = np.array([len(equatorial_zone_vertices(vertices, pole, width=width)) for pole in vertices if np.dot(pole,north) >= 0])
-
-    #equatorial_counts = np.bincount(equatorial_counts)
-    
-    #args = np.where(equatorial_counts>0)
-
-    #print zip(list(args[0]), equatorial_counts[args])
-
-    polar_counts = np.array([len(polar_zone_vertices(vertices, pole, width=width)) for pole in vertices if np.dot(pole,north) >= 0])
-
-    #unique_counts = np.sort(np.array(list(set(equatorial_counts))))
-    #polar_counts = np.bincount(polar_counts)
-    
-    #counts_tokens = [(uc,  bin_counts[uc]) for uc in bin_counts if ]
-
-    #args = np.where(polar_counts>0)
-
-    #print '(number, frequency):', zip(unique_counts,tokens)
-    #print '(number, frequency):', counts_tokens
-
-    #print zip(args, bin_counts[args])
-    #print zip(list(args[0]), polar_counts[args])
-
-    return equatorial_counts, polar_counts
-
-def spherical_proportion(zone_width):
-    # assuming radius is 1: (2*np.pi*zone_width)/(4*np.pi)
-    # 0 <= zone_width <= 2 
-    return zone_width/2.
-
-def angle_for_zone(zone_width):
-    return np.arcsin(zone_width/2.)
-
-def coarseness(faces):
-    faces = np.asarray(faces)
-    coarseness = 0.0
-    for face in faces:
-        a, b, c = face
-        coarse = np.max(coarse, geom.circumradius(a,b,c))
-    return coarse
-
 
 

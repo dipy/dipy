@@ -1,29 +1,52 @@
-''' Some ideas for the dipy format
+''' A class for handling large tractography datasets.
+
+    It is built using the pytables tools which in turn implement 
+    key features of the HDF5 (hierachical data format) API [1]_.
+
+    References
+    ----------
+    .. [1] http://www.hdfgroup.org/HDF5/doc/H5.intro.html
 '''
 
 import numpy as np
 
+# Conditional import machinery for pytables
+from ..utils.tripwire import TripWire, is_tripwire
+
 try:
     import tables
-    no_pytables = False
 except ImportError:
-    raise ImportError('pytables is not installed')
+    tables = TripWire('We need pytables for these functions, but '
+                      '``import tables`` raised an ImportError')
 
-       
-class Dpy():
+def setup_module():
+    """Sets up doctests in module for nosetests
+
+    We need to skip doctests if pytables is not installed
+    """
+    if not is_tripwire(tables):
+        return
+    try:
+        import nose
+    except ImportError:
+        return
+    raise nose.plugins.skip.SkipTest('No pytables for these tests')
+
+
+class Dpy(object):
 
     def __init__(self,fname,mode='r',compression=0):
         ''' Advanced storage system for tractography based on HDF5
-        
+
         Parameters
         ------------
         fname : str, full filename
-        mode : 'r' read 
-         'w' write 
+        mode : 'r' read
+         'w' write
          'r+' read and write only if file already exists
-         'a'  read and write even if file doesn't exist (not used yet)       
+         'a'  read and write even if file doesn't exist (not used yet)
         compression : 0 no compression to 9 maximum compression
-        
+
         Examples
         ----------
         >>> import os
@@ -34,7 +57,7 @@ class Dpy():
         >>> dpw = Dpy(fname,'w')
         >>> A=np.ones((5,3))
         >>> B=2*A.copy()
-        >>> C=3*A.copy()    
+        >>> C=3*A.copy()
         >>> dpw.write_track(A)
         >>> dpw.write_track(B)
         >>> dpw.write_track(C)    
@@ -125,27 +148,3 @@ class Dpy():
 
 if __name__ == '__main__':
     pass
-
-    
-
-        
-    
-    
-    
-    
-
-
-
-        
-
-        
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    

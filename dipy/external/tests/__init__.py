@@ -1,5 +1,2 @@
+# Externals test directory made into package with this file
 
-# Test callable
-from numpy.testing import Tester
-test = Tester().test
-del Tester

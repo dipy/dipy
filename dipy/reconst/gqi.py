@@ -30,22 +30,21 @@ class GeneralizedQSampling():
     Lambda : float, 
         smoothing parameter - diffusion sampling length
 
-    Key Properties
-    ---------------
+    Properties
+    ----------
     QA : array, shape(X,Y,Z,5), quantitative anisotropy
     IN : array, shape(X,Y,Z,5), indices of QA, qa unit directions
     fwd : float, normalization parameter
 
     Notes
-    -------
-    In order to reconstruct the spin distribution function  a nice symmetric evenly distributed sphere is provided using 362 or 642 points. This is usually
-    sufficient for most of the datasets. 
+    -----
+    In order to reconstruct the spin distribution function a nice symmetric
+    evenly distributed sphere is provided using 362 or 642 points. This is
+    usually sufficient for most of the datasets.
 
     See also
-    ----------
+    --------
     dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
-   
-    
     """
 
     def __init__(self,data,bvals,gradients,Lambda=1.2,odfsphere=None,mask=None):

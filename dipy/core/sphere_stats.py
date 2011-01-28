@@ -1,14 +1,28 @@
-import sys
+""" Statistics on spheres
+"""
 
 import numpy as np
 import dipy.core.geometry as geometry
-from dipy.reconst.gqi import upper_hemi_map
 
 def eigenstats(points, alpha=0.05):
-    '''Principal direction and confidence ellipse
+    r'''Principal direction and confidence ellipse
 
     Implements equations in section 6.3.1(ii) of Fisher, Lewis and
     Embleton, supplemented by equations in section 3.2.5.
+
+    Parameters
+    ----------
+    points : arraey_like (N,3)
+        array of points on the sphere of radius 1 in $\mathbb{R}^3$
+    alpha : real or None
+        1 minus the coverage for the confidence ellipsoid, e.g. 0.05 for 95% coverage. 
+
+    Returns
+    -------
+    centre : vector (3,)
+        centre of ellipsoid
+    b1 : vector (2,)
+        lengths of semi-axes of ellipsoid
     '''
     n = points.shape[0]
     # the number of points

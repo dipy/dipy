@@ -1,11 +1,21 @@
 .. _home:
 
-Dipy_ is an *international*, **free** and **open source** software project for **diffusion** magnetic resonance  imaging analysis.  
+####
+Dipy
+####
 
-Depends on a few standard libraries: python_ (the core language), numpy_ (for numerical computation), 
-scipy_ (for more specific mathematical operations), cython_ (for extra speed) and nibabel_ (for file formats). Optionally, it can use python-vtk_ (for visualisation), pytables_ (for handling large datasets), matplotlib_ (for scientific plotting), and ipython_ (for interaction with the code and its results).
+Dipy_ is an *international*, **free** and **open soure** software project for
+**diffusion** *magnetic resonance imaging* **analysis**.
 
-Dipy is multiplatform and will run under any standard operating systems such as *Windows*, *Linux*, *Mac OS X*.  
+Depends on a few standard libraries: python_ (the core language), numpy_ (for
+numerical computation), scipy_ (for more specific mathematical operations),
+cython_ (for extra speed) and nibabel_ (for file formats). Optionally, it can
+use python-vtk_ (for visualisation), pytables_ (for handling large datasets),
+matplotlib_ (for scientific plotting), and ipython_ (for interaction with the
+code and its results).
+
+Dipy is multiplatform and will run under any standard operating systems such as
+*Windows*, *Linux*, *Mac OS X*.
 
 Just some of our **state-of-the-art** applications are:
 
@@ -27,7 +37,6 @@ Just some of our **state-of-the-art** applications are:
 An Example
 ~~~~~~~~~~~~~
 
-
 Here is a tiny usage example for dipy 
 
 ::
@@ -44,7 +53,7 @@ Here is a tiny usage example for dipy
   >>> ten=dti.Tensor(data,bvals,gradients,thresh=50)  
   >>> FA=ten.fa()
   >>> MASK = FA < 0.2
-  
+
 In this code snippet we loaded a small diffusion dataset with their data, b-vectors and b-values, 
 calculated the Tensors and fractional anisotropy (FA) and then created a mask to remove the 
 regions with low anisotropy. :ref:`Download <installation>` dipy and try it for yourself.
@@ -52,13 +61,12 @@ regions with low anisotropy. :ref:`Download <installation>` dipy and try it for 
 
 A skeleton
 ~~~~~~~~~~~~~
-  
 
 .. figure:: _static/simplified_tractography.png
    :align: center
-      
+
    **This is a depiction of a tractography skeleton created using dipy**. 
-   
+
    Using skeletal tracks we can very easily have a fast visual description of our
    datasets. If you want to learn more how you can create these with your datasets 
    read the examples in our :ref:`documentation` .
@@ -71,6 +79,3 @@ A skeleton
 
    documentation
 
-
-
-.. include:: ./links_names.txt

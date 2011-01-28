@@ -43,4 +43,4 @@ either send an e-mail to our e-mail list nipy-devel@neuroimaging.scipy.org with 
    [1] Garyfallidis E, Brett M, Tsiaras V, Vogiatzis G, Nimmo-Smith I (2010), *“Identification of corresponding tracks in diffusion MRI tractographies”* Proc. Intl. Soc. Mag. Reson. Med. 18
    
    
-.. include:: ./links_names.txt
+

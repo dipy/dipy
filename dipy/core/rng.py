@@ -1,3 +1,5 @@
+""" Random number generation utilities """
+
 from math import floor
 from platform import architecture
 

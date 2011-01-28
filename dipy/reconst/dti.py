@@ -13,13 +13,13 @@ class Tensor(ModelArray):
     """ Fits a diffusion tensor given diffusion-weighted signals and gradient info
 
     Tensor object that when initialized calculates single self diffusion
-    tensor[1]_ in each voxel using selected fitting algorithm
-    (DEFAULT: weighted least squares[1]_)
+    tensor [1]_ in each voxel using selected fitting algorithm
+    (DEFAULT: weighted least squares [2]_)
     Requires a given gradient table, b value for each diffusion-weighted
     gradient vector, and image data given all as arrays.
 
     Parameters
-    -------------
+    ----------
     data : array ([X, Y, Z, ...], g)
         Diffusion-weighted signals. The dimension corresponding to the
         diffusion weighting must be the last dimenssion
@@ -48,7 +48,7 @@ class Tensor(ModelArray):
             dti.ols_fit_tensor
 
     Attributes
-    ------------
+    ----------
     D : array (..., 3, 3)
         Self diffusion tensor calculated from cached eigenvalues and 
         eigenvectors.
@@ -66,7 +66,7 @@ class Tensor(ModelArray):
 
 
     Methods
-    ---------
+    -------
     fa : array
         Calculates fractional anisotropy [2]_.
     md : array
@@ -74,34 +74,33 @@ class Tensor(ModelArray):
         Note: [units ADC] ~ [units b value]*10**-1
     
     See Also
-    ----------
+    --------
     dipy.io.bvectxt.read_bvec_file, dipy.core.qball.ODF
     
     Notes
-    --------
+    -----
     Due to the fact that diffusion MRI entails large volumes (e.g. [256,256,
     50,64]), memory can be an issue. Therefore, only the following parameters 
     of the self diffusion tensor are cached for each voxel:
 
-        -All three eigenvalues
-        -Primary and secondary eigenvectors
+    - All three eigenvalues
+    - Primary and secondary eigenvectors
 
     From these cached parameters, one can presumably construct any desired
     parameter.
 
     References
-    ------------
-    ..  [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
-        the effective self-diffusion tensor from the NMR spin echo. J Magn 
-        Reson B 103, 247-254.
-    ..  [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
-        features of tissues elucidated by quantitative diffusion-tensor MRI. 
-        Journal of Magnetic Resonance 111, 209-219.
-    
+    ----------
+    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
+       the effective self-diffusion tensor from the NMR spin echo. J Magn 
+       Reson B 103, 247-254.
+    .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
+       features of tissues elucidated by quantitative diffusion-tensor MRI. 
+       Journal of Magnetic Resonance 111, 209-219.
+
     Examples
     ----------
     For a complete example have a look at the main dipy/examples folder    
-    
     """
 
     ### Eigenvalues Property ###
@@ -109,7 +108,6 @@ class Tensor(ModelArray):
     def evals(self):
         """
         Returns the eigenvalues of the tensor as an array
-
         """
 
         return _filled(self.model_params[..., :3])
@@ -285,8 +283,8 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     preliminary estimate of the weights and therefore the ordinary least 
     squares (OLS) estimates were used. A "two pass" method was implemented:
     
-        (1) calculate OLS estimates of the data
-        (2) apply the OLS estimates as weights to the WLS fit of the data 
+        1. calculate OLS estimates of the data
+        2. apply the OLS estimates as weights to the WLS fit of the data 
     
     This ensured heteroscadasticity could be properly modeled for various 
     types of bootstrap resampling (namely residual bootstrap).
@@ -295,16 +293,16 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
-        \hat{\beta}_WLS = \mathrm{desired regression coefficients (e.g. tensor)}\\
+        \hat{\beta}_\mathrm{WLS} = \mathrm{desired regression coefficients (e.g. tensor)}\\
         \\
-        \hat{\beta}_WLS = (X^T W X)^-1 X^T W y \\
+        \hat{\beta}_\mathrm{WLS} = (X^T W X)^{-1} X^T W y \\
         \\
-        W = \mathrm{diag}((X \hat{\beta}_OLS)^2),
-        \mathrm{where} \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        W = \mathrm{diag}((X \hat{\beta}_\mathrm{OLS})^2),
+        \mathrm{where} \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
 
     References
     ----------
-    ..  [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+    ..  _[1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
@@ -392,7 +390,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
     
-        \hat{\beta}_OLS = (X^T X)^-1 X^T y
+        \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
 
     References
     ----------
@@ -486,7 +484,7 @@ def decompose_tensor(tensor):
         array holding a tensor. Assumes D has units on order of
         ~ 10^-4 mm^2/s
 
-    Results
+    Returns
     -------
     eigvals : array (3,)
         Eigenvalues from eigen decomposition of the tensor. Negative
@@ -530,12 +528,11 @@ def design_matrix(gtab, bval, dtype=None):
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
-	Return
-	------
+	Returns
+	-------
 	design_matrix : array (g,7)
 		Design matrix or B matrix assuming Gaussian distributed tensor model.
 		Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
-
     """
     G = gtab
     B = np.zeros((bval.size, 7), dtype = G.dtype)

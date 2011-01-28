@@ -4,7 +4,6 @@ import dipy.tracking.distances as pf
 
 def detect_corresponding_tracks(indices,tracks1,tracks2):
     ''' Detect corresponding tracks from list tracks1 to list tracks2
-    
     where tracks1 & tracks2 are lists of tracks
     
     Parameters
@@ -18,9 +17,9 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
             
     Returns
     ---------
-    track2track : array (N,2) where N is len(indices)
-       of int showing the correspondance in th following way       
-       the first colum is the current index of tracks1
+    track2track : array (N,2) where N is len(indices) of int 
+       it shows the correspondance in the following way:       
+       the first column is the current index in tracks1
        the second column is the corresponding index in tracks2
     
     Examples
@@ -56,9 +55,7 @@ def detect_corresponding_tracks(indices,tracks1,tracks2):
     return track2track.astype(int)
 
 def detect_corresponding_tracks_plus(indices,tracks1,indices2,tracks2):
-    ''' Detect corresponding tracks from 1 to 2
-    
-    where tracks1 & tracks2 are sequences of tracks
+    ''' Detect corresponding tracks from 1 to 2 where tracks1 & tracks2 are sequences of tracks
     
     Parameters
     ------------

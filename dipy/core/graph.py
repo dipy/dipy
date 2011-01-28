@@ -1,3 +1,5 @@
+""" A simple graph class """
+
 class Graph(object):
     ''' A simple graph class 
     
@@ -6,7 +8,7 @@ class Graph(object):
     def __init__(self):
         ''' A graph class with nodes and edges :-)
         
-        This class allows to 
+        This class allows us to:
         
         1. find the shortest path
         2. find all paths

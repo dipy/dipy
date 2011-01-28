@@ -121,7 +121,7 @@ def get_data(name='small_64D'):
         'small_64D' small region of interest nifti,bvecs,bvals 64 directions
         'small_101D' small region of interest nifti,bvecs,bvals 101 directions
         'aniso_vox' volume with anisotropic voxel size as Nifti
-        'fornix' 300 tracks in Trackvis format (from PBC Competition)
+        'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
     
     
     Examples

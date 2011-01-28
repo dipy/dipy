@@ -2,11 +2,7 @@ import os
 import numpy as np
 from tempfile import mkstemp
 
-try:    
-    from dipy.io.dpy import Dpy
-    no_pytables = False    
-except ImportError:
-    no_pytables = True
+from ..dpy import Dpy, tables
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -14,9 +10,14 @@ from nose.tools import assert_true, assert_false, \
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
 
-@npt.dec.skipif(no_pytables)
-def test_dpy():
+from ...utils.tripwire import is_tripwire
 
+# Decorator to protect tests from being run without pytables present
+iftables = npt.dec.skipif(is_tripwire(tables),
+                          'Pytables does not appear to be installed')
+
+@iftables
+def test_dpy():
     fd,fname = mkstemp()    
     dpw = Dpy(fname,'w')    
     A=np.ones((5,3))
@@ -36,8 +37,5 @@ def test_dpy():
     dpr.close()
     assert_array_equal(A,T[0])
     assert_array_equal(C,T[5])
-    #os.remove(fname)
-
-    
-    
-    
+    # This might cause problems on windows
+    os.remove(fname)

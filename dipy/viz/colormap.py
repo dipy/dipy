@@ -2,15 +2,10 @@ import numpy as np
 
 
 def cc(na,nd):
-
     return ( na * np.cos( nd * np.pi/180.0 ) );
 
-
 def ss(na,nd):
-
     return na * np.sin( nd * np.pi/180.0 ) ;
-
-
 
 def boys2rgb(v):
 
@@ -53,14 +48,6 @@ def boys2rgb(v):
     >>> c=colormap.boys2rgb(v)
 
     """
-    
-    
-    
-    
-    
-    
-    
-    
     
     if v.ndim==1:
         
@@ -250,9 +237,15 @@ def orient2rgb(v):
     >>> c=colormap.orient2rgb(v)
     
     """   
-              
-    orient=v
-    orient=np.abs(orient/np.linalg.norm(orient))
+            
+    if v.ndim==1:
+        orient=v
+        orient=np.abs(orient/np.linalg.norm(orient))
+        
+    if v.ndim==2:
+        orientn=np.sqrt(v[:,0]**2+v[:,1]**2+v[:,2]**2)
+        orientn.shape=orientn.shape+(1,)
+        orient=np.abs(v/orientn)
             
     return orient
 

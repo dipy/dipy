@@ -68,7 +68,7 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     ''' find offset in an ndarray using strides
 
     Parameters
-    ------------
+    ----------
     indices : array, shape(N,), indices of the array which we want to
     find the offset
     strides : array, shape(N,), strides
@@ -77,11 +77,11 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     int32 is 4
     
     Returns
-    -----------
+    -------
     offset : integer, offset from 0 pointer in memory normalized by dtype
     
-    Example
-    ----------
+    Examples
+    --------
     >>> import numpy as np
     >>> from dipy.tracking.propspeed import ndarray_offset
     >>> I=np.array([1,1])
@@ -91,9 +91,7 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     4
     >>> A.ravel()[4]==A[1,1]
     True
-
     '''
-
     return offset(<long*>indices.data,<long*>strides.data,lenind, typesize)
 
 cdef  void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
@@ -296,7 +294,7 @@ cdef  long _initial_direction(double* seed,double *qa,\
         return 0
     else:
         #find the correct direction from the indices
-        ind_tmp=ind[off]
+        ind_tmp=ind[off] #similar to ind[point] in numpy syntax
         #return initial direction through odf_vertices by ind
         for i from 0<=i<3:
             direction[i]=odf_vertices[3*<long>ind_tmp+i]
@@ -333,7 +331,15 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
         long *qa_shape=<long *>qa.shape
         long *pvstr=<long *>odf_vertices.strides
         long d,i,j
-        double direction[3],dx[3],idirection[3],ps2[3]
+        double direction[3],dx[3],idirection[3],ps2[3],tmp
+    
+    
+    """
+    #don't track seeds on the boundaries    
+    for i from 0<=i<3:
+        if seed[i] ==qa_shape[i]-1 or seed[i] == 0:
+            return None
+    """
     
     d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)    
     if d==0:
@@ -348,30 +354,39 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
     point=seed.copy()
     track = []
     track.append(point.copy())   
-    
+
     #track towards one direction
     while d:
-       d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
+        d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
                                    ang_thr,qa_shape,pstr,direction)
-       if d==0:
-           break
+        if d==0:
+            break
        
-       #update the track
-       for i from 0<=i<3:
-           dx[i]=direction[i]
-           ps[i]+=step_sz*dx[i]
-           #check for boundaries
-           if ps[i] >=qa_shape[i] or ps[i] < 0:
-               d==0
-               break
-           point[i]=ps[i]#to be changed
-           
-       #print('point up',point)
-       if d!=0:
-           track.append(point.copy())
+        #update the track
+        for i from 0<=i<3:
+            dx[i]=direction[i]
+            
+            #check for boundaries
+            tmp=ps[i]+step_sz*dx[i]
+            """
+            if tmp >=qa_shape[i] or tmp < 0:
+                d==0
+                break
+            """
+            #propagate
+            ps[i]=tmp           
+            point[i]=ps[i]
+        
+        """
+        if d==0:
+            break
+        """   
+        #print('point up',point)
+        if d==1:
+            track.append(point.copy())
        
     d=1
-    
+        
     for i from 0<=i<3:
         dx[i]=-idirection[i]
 
@@ -384,17 +399,47 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
         #update the track
         for i from 0<=i<3:
             dx[i]=direction[i]
-            ps2[i]+=step_sz*dx[i]
-            if ps2[i] >=qa_shape[i] or ps2[i] < 0:
-               d==0
-               break
-            point[i]=ps2[i]#to be changed           
+            
+            #check for boundaries
+            tmp=ps2[i]+step_sz*dx[i]
+            """
+            if tmp >=qa_shape[i] or tmp < 0:
+                d==0
+                break
+            """
+            #propagate
+            ps2[i]=tmp        
+            point[i]=ps2[i] #to be changed
 
-        #print('point down',point)
-        if d!=0:               
+        """                       
+        if  d==0:
+            break        
+        """
+        #add track point
+        if d==1:               
             track.insert(0,point.copy())
 
-    return np.array(track,dtype=np.float32)
+
+    #prepare to return final track for the current seed
+    tmp_track=np.array(track,dtype=np.float32)
+    #some times one of the ends takes small negative values
+    #needs to be investigated further
+
+    try:
+        if tmp_track[0,0]<0 or tmp_track[0,1] or tmp_track[0,2]:
+            tmp_track=np.delete(tmp_track,0,0)
+    except:
+        pass
+    
+    try:   
+        if tmp_track[-1,0]<0 or tmp_track[-1,1] or tmp_track[-1,2]:
+            tmp_track=np.delete(tmp_track,len(tmp_track)-1,0)
+    except:
+        pass
+
+    
+    #return track for the current seed point and ref
+    return tmp_track
 
 
 
