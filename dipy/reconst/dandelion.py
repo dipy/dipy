@@ -151,7 +151,7 @@ class SphericalDandelion():
         #print res
         #print res.min(),res.mean(),res.max(),res.shape
         #print 'tmp'
-        tmp=d.max()*(res/res.max())
+        #tmp=d.max()*(res/res.max())
         #print tmp
         #print tmp.min(),tmp.mean(),tmp.max(),tmp.shape
         #sum weighting
