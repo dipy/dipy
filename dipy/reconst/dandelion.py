@@ -133,32 +133,32 @@ class SphericalDandelion():
     def spherical_diffusivity(self,s):
         ob=-1/self.bvals[1:]
         
-        print 'ob'
-        print ob.shape
-        print ob
+        #print 'ob'
+        #print ob.shape
+        #print ob
         lg=np.log(s[1:])-np.log(s[0])
-        print 'lg'
-        print lg.shape
+        #print 'lg'
+        #print lg.shape
         #print lg
         
         d=ob*(np.log(s[1:])-np.log(s[0]))        
         d=d.reshape(1,len(d)) 
-        print 'd'
+        #print 'd'
         #print d
-        print d.min(),d.mean(),d.max(),d.shape
+        #print d.min(),d.mean(),d.max(),d.shape
         res=np.dot(d,self.weighting[1:,:])
-        print 'res'
+        #print 'res'
         #print res
-        print res.min(),res.mean(),res.max(),res.shape
-        print 'tmp'
-        tmp=d.max()*(res/res.max())
+        #print res.min(),res.mean(),res.max(),res.shape
+        #print 'tmp'
+        #tmp=d.max()*(res/res.max())
         #print tmp
-        print tmp.min(),tmp.mean(),tmp.max(),tmp.shape
+        #print tmp.min(),tmp.mean(),tmp.max(),tmp.shape
         #sum weighting
-        print 'axis=1'
-        print np.sum(self.weighting[1:,:],axis=1)
-        print 'axis=0'
-        print np.sum(self.weighting[1:,:],axis=0)
+        #print 'axis=1'
+        #print np.sum(self.weighting[1:,:],axis=1)
+        #print 'axis=0'
+        #print np.sum(self.weighting[1:,:],axis=0)
 
         #print np.round(10000*np.abs(np.dot(d,self.weighting[1:,:]))).astype('i8')               
         return np.dot(d,self.weighting[1:,:])
