@@ -28,11 +28,11 @@ def test_eudx():
     gqs = GeneralizedQSampling(data,bvals,gradients)       
     ten = Tensor(data,bvals,gradients,thresh=50)
     seed_list=np.dot(np.diag(np.arange(10)),np.ones((10,3)))    
-    iT=iter(EuDX(gqs.qa(),gqs.ind(),seed_list=seed_list))
+    iT=iter(EuDX(gqs.qa(),gqs.ind(),seeds=seed_list))
     T=[]
     for t in iT: 
         T.append(t)    
-    iT2=iter(EuDX(ten.fa(),ten.ind(),seed_list=seed_list))
+    iT2=iter(EuDX(ten.fa(),ten.ind(),seeds=seed_list))
     T2=[]
     for t in iT2: 
         T2.append(t)
@@ -70,7 +70,7 @@ def test_eudx_further():
     
     #print seeds
     #"""    
-    eu=EuDX(a=ten.fa(),ind=ten.ind(),seed_list=seeds,a_low=.2)
+    eu=EuDX(a=ten.fa(),ind=ten.ind(),seeds=seeds,a_low=.2)
     T=[e for e in eu]
     
     #check that there are no negative elements
@@ -123,7 +123,7 @@ def uniform_seed_grid():
     for m in M: 
         print(m)
     gqs = GeneralizedQSampling(data,bvals,gradients)
-    iT=iter(EuDX(gqs.QA,gqs.IN,seed_list=M))    
+    iT=iter(EuDX(gqs.QA,gqs.IN,seeds=M))    
     T=[]
     for t in iT:
         T.append(i)

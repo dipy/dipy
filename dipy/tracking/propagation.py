@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from dipy.tracking.propspeed import eudx_propagation
+from dipy.tracking.propspeed import eudx_both_directions
 from dipy.tracking.metrics import length
 from dipy.data import get_sphere
 
@@ -35,7 +35,7 @@ class EuDX():
     
     '''
 
-    def __init__(self,a,ind,seed_list=None,seed_no=10000,odf_vertices=None,a_low=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.):
+    def __init__(self,a,ind,seeds=10000,odf_vertices=None,a_low=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.,total_weight=.5):
         ''' Euler integration with multiple stopping criteria and supporting multiple peaks
         
         Parameters
@@ -46,10 +46,8 @@ class EuDX():
 
         ind : array, shape(x,y,z,Np), indices of orientations of the scalar anisotropic
             peaks found on the sampling sphere 
-
-        seed_list : list of seeds
         
-        seed_no : number of random seeds if seed_list is None
+        seeds : number of random seeds or list of seeds
 
         odf_vertices : sphere points which define a discrete
             representation of orientations for the peaks, the same for all voxels
@@ -61,15 +59,27 @@ class EuDX():
 
         ang_thr : float, if turning angle is bigger than this threshold
             then tracking stops.
+            
+        total_weight : float, total weighting threshold
         
         Examples
         ----------
+        >>> from dipy.data import get_data        
+        >>> fimg,fbvals,fbvecs=get_data('small_101D')
+        >>> img=ni.load(fimg)
+        >>> affine=img.get_affine()
+        >>> bvals=np.loadtxt(fbvals)
+        >>> gradients=np.loadtxt(fbvecs).T    
+        >>> data=img.get_data()
+        >>> ten=Tensor(data,bvals,gradients,thresh=50)
+        >>> eu=EuDX(a=ten.fa(),ind=ten.ind(),seeds=100,a_low=.2)
+        >>> tracks=[e for e in eu]
         
         
         Notes
         -------
         This works as an iterator class because otherwise it could fill your entire RAM if you generate many tracks. 
-        Something very common as you can easily generate millions of tracks.
+        Something very common as you can easily generate millions of tracks if you have many seeds.
 
         '''
         
@@ -79,6 +89,7 @@ class EuDX():
         self.ang_thr=ang_thr
         self.step_sz=step_sz
         self.length_thr=length_thr
+        self.total_weight=total_weight
         
         if len(self.a.shape)==3:            
             self.a.shape=self.a.shape+(1,)
@@ -100,11 +111,16 @@ class EuDX():
         print 'odf_vertices',self.odf_vertices.shape, self.odf_vertices.dtype
         '''
         
-        self.seed_no=seed_no
-        self.seed_list=seed_list
+        
+        try:        
+            if len(seeds)>0:            
+                self.seed_list=seeds
+        except TypeError:
+            self.seed_no=seeds
         
         if self.seed_list!=None:
-            self.seed_no=len(seed_list)
+            self.seed_list=seeds
+            self.seed_no=len(seeds)
 
         self.ind=self.ind.astype(np.double)        
         
@@ -125,7 +141,7 @@ class EuDX():
             #for all peaks
             for ref in range(self.a.shape[-1]): 
                 #propagate up and down 
-                track =eudx_propagation(seed.copy(),ref,self.a,self.ind,self.odf_vertices,self.a_low,self.ang_thr,self.step_sz)                  
+                track =eudx_both_directions(seed.copy(),ref,self.a,self.ind,self.odf_vertices,self.a_low,self.ang_thr,self.step_sz,self.total_weight)                  
                 if track == None:
                     pass
                 else:        

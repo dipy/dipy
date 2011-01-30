@@ -34,13 +34,6 @@ import dipy.reconst.gqi as gqi
 import dipy.reconst.dti as dti
 
 """
-``dipy.tracking`` is for tractography algorithms which create sets of tracks by integrating 
-  directionality models across voxels.
-"""
-
-from dipy.tracking.propagation import EuDX
-
-"""
 ``dipy.data`` is for small datasets we use in tests and examples.
 """
 

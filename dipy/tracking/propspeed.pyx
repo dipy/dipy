@@ -219,7 +219,7 @@ cdef long _propagation_direction(double *point,double* dx,double* qa,\
                                 double *ind, double *odf_vertices,\
                                 double qa_thr, double ang_thr,\
                                 long *qa_shape,long* strides,\
-                                double *direction) nogil:
+                                double *direction,double total_weight) nogil:
     cdef:
         double total_w=0 #total weighting useful for interpolation  
         double delta=0 #store delta function (stopping function) result
@@ -260,7 +260,7 @@ cdef long _propagation_direction(double *point,double* dx,double* qa,\
         for i from 0<=i<3:
             new_direction[i]+=w[m]*direction[i]
     #if less than half the volume is time to stop propagating
-    if total_w < .5: #termination
+    if total_w < total_weight: #termination
         return 0
     #all good return normalized weighted next direction
     normd=new_direction[0]**2+new_direction[1]**2+new_direction[2]**2
@@ -301,12 +301,12 @@ cdef  long _initial_direction(double* seed,double *qa,\
         return 1
         
 
-def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
+def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
                     long ref,\
                     cnp.ndarray[double,ndim=4] qa,\
                     cnp.ndarray[double,ndim=4] ind,\
                     cnp.ndarray[double,ndim=2] odf_vertices,\
-                    double qa_thr,double ang_thr,double step_sz):
+                    double qa_thr,double ang_thr,double step_sz,double total_weight):
     '''
     Parameters
     ------------
@@ -314,12 +314,12 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
     ref : long int, which peak to follow first
     qa : array, shape(Np,), float, quantitative anisotropy matrix,
     where Np the number of peaks, found using self.Np
-    ind : array, shape(Np,), float, index of the track orientation        
+    ind : array, shape(Np,), float, index of the track orientation
+    total_weight : double 
                 
     Returns
     -------
-    d : bool, delta function result        
-    idirection : array, shape(3,), index of the direction of the propagation
+    track : array, shape(N,3)
 
     '''
     cdef:
@@ -358,7 +358,7 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
     #track towards one direction
     while d:
         d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
-                                   ang_thr,qa_shape,pstr,direction)
+                                   ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
             break
        
@@ -368,19 +368,10 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
             
             #check for boundaries
             tmp=ps[i]+step_sz*dx[i]
-            """
-            if tmp >=qa_shape[i] or tmp < 0:
-                d==0
-                break
-            """
             #propagate
             ps[i]=tmp           
             point[i]=ps[i]
         
-        """
-        if d==0:
-            break
-        """   
         #print('point up',point)
         if d==1:
             track.append(point.copy())
@@ -393,7 +384,7 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
     #track towards the opposite direction 
     while d:
         d= _propagation_direction(ps2,dx,pqa,pin,pverts,qa_thr,\
-                                   ang_thr,qa_shape,pstr,direction)
+                                   ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
             break
         #update the track
@@ -402,19 +393,11 @@ def eudx_propagation(cnp.ndarray[double,ndim=1] seed,\
             
             #check for boundaries
             tmp=ps2[i]+step_sz*dx[i]
-            """
-            if tmp >=qa_shape[i] or tmp < 0:
-                d==0
-                break
-            """
+
             #propagate
             ps2[i]=tmp        
             point[i]=ps2[i] #to be changed
 
-        """                       
-        if  d==0:
-            break        
-        """
         #add track point
         if d==1:               
             track.insert(0,point.copy())

@@ -156,7 +156,7 @@ Other important options are
     
 """
 
-eu=EuDX(a=FA,ind=ten.ind(),seed_no=10000,a_low=.2)
+eu=EuDX(a=FA,ind=ten.ind(),seeds=10000,a_low=.2)
 
 """ 
 EuDX returns a generator class which yields a further track each time this class is called. 
@@ -233,7 +233,7 @@ significantly different in shape from the FA array,
 however it too can be directly input to the EuDX class:
 """
 
-eu2=EuDX(a=QA,ind=gqs.ind(),seed_no=10000,a_low=.0239)
+eu2=EuDX(a=QA,ind=gqs.ind(),seeds=10000,a_low=.0239)
 
 """
 This shows one of the advantages of our EuDX algorithm: it can be used with a wide range of model-based methods, such as 
