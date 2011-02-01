@@ -55,7 +55,7 @@ class SphericalDandelion():
                
         self.gradients=gradients
         self.weighting=np.abs(np.dot(gradients,self.odf_vertices.T))     
-        self.weighting=self.weighting/np.sum(self.weighting,axis=0)
+        #self.weighting=self.weighting/np.sum(self.weighting,axis=0)
         
         '''
         r=[[],[],[]]

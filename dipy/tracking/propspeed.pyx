@@ -368,9 +368,9 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
             
             #check for boundaries
             tmp=ps[i]+step_sz*dx[i]
-            ftmp=floor(tmp+.5)
+            #ftmp=floor(tmp+.5)
             
-            if ftmp >= qa_shape[i] or tmp < 0.:
+            if ftmp > qa_shape[i]-1 or tmp < 0.:
                  d=0
                  break
             
@@ -400,8 +400,8 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
             
             #check for boundaries
             tmp=ps2[i]+step_sz*dx[i]            
-            ftmp=floor(tmp+.5)            
-            if ftmp >= qa_shape[i] or tmp < 0.:
+            #ftmp=floor(tmp+.5)            
+            if tmp > qa_shape[i]-1 or tmp < 0.:
                  d=0
                  break
 

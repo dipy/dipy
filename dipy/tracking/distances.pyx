@@ -1285,7 +1285,7 @@ def track_dist_3pts(tracka,trackb):
 @cython.boundscheck(False)
 @cython.wraparound(False)      
 @cython.cdivision(True)
-cdef inline void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
+cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     ''' Direct and flip average distance between two tracks
     
     Parameters

@@ -45,8 +45,8 @@ def test_eudx():
 
     assert_almost_equal(gqs.QA[1,4,8,0], gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
 
-    assert_almost_equal(sum([length(t) for t in T ]) , 72.999996185302734,places=3)
-    assert_almost_equal(sum([length(t) for t in T2]) , 58.999998092651367,places=3)
+    assert_almost_equal(sum([length(t) for t in T ]) , 70.999996185302734,places=3)
+    assert_almost_equal(sum([length(t) for t in T2]) , 56.999997615814209,places=3)
 
 
 def test_eudx_further():
@@ -61,8 +61,8 @@ def test_eudx_further():
     data=img.get_data()
     ten=Tensor(data,bvals,gradients,thresh=50)
     x,y,z=data.shape[:3]
-    seeds=np.zeros((10**3,3))
-    for i in range(10**3):
+    seeds=np.zeros((10**4,3))
+    for i in range(10**4):
         rx=(x-1)*np.random.rand()
         ry=(y-1)*np.random.rand()
         rz=(z-1)*np.random.rand()            
