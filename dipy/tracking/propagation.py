@@ -45,7 +45,7 @@ class EuDX():
             a different function of shape(x,y,z) e.g FA or GFA.
 
         ind : array, shape(x,y,z,Np), indices of orientations of the scalar anisotropic
-            peaks found on the sampling sphere 
+            peaks found on the resampling sphere 
         
         seeds : number of random seeds or list of seeds
 

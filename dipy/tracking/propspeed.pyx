@@ -331,7 +331,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
         long *qa_shape=<long *>qa.shape
         long *pvstr=<long *>odf_vertices.strides
         long d,i,j
-        double direction[3],dx[3],idirection[3],ps2[3],tmp
+        double direction[3],dx[3],idirection[3],ps2[3],tmp,ftmp
     
     
     """
@@ -368,6 +368,12 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
             
             #check for boundaries
             tmp=ps[i]+step_sz*dx[i]
+            ftmp=floor(tmp+.5)
+            
+            if ftmp >= qa_shape[i] or tmp < 0.:
+                 d=0
+                 break
+            
             #propagate
             ps[i]=tmp           
             point[i]=ps[i]
@@ -375,6 +381,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
         #print('point up',point)
         if d==1:
             track.append(point.copy())
+        
        
     d=1
         
@@ -392,7 +399,11 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
             dx[i]=direction[i]
             
             #check for boundaries
-            tmp=ps2[i]+step_sz*dx[i]
+            tmp=ps2[i]+step_sz*dx[i]            
+            ftmp=floor(tmp+.5)            
+            if ftmp >= qa_shape[i] or tmp < 0.:
+                 d=0
+                 break
 
             #propagate
             ps2[i]=tmp        
@@ -401,12 +412,14 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
         #add track point
         if d==1:               
             track.insert(0,point.copy())
-
+       
 
     #prepare to return final track for the current seed
     tmp_track=np.array(track,dtype=np.float32)
     #some times one of the ends takes small negative values
     #needs to be investigated further
+
+    """
 
     try:
         if tmp_track[0,0]<0 or tmp_track[0,1] or tmp_track[0,2]:
@@ -420,7 +433,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
     except:
         pass
 
-    
+    """
     #return track for the current seed point and ref
     return tmp_track
 
