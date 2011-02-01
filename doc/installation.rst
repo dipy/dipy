@@ -5,7 +5,7 @@
 ======================
 
 dipy_ is in active development at the moment and we are doing our best
-to create a release as soon as we can. Soon here is not hypothetical a release is planned before the end of January 2011.
+to create a release as soon as we can. Soon here is not hypothetical a release is planned before the end of February 2011.
 
 General usage [available soon]
 ------------------------------

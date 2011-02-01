@@ -8,13 +8,11 @@ Publications
 
 [3] Correia M.M, Williams G.B, Yeh F-C, Nimmo-Smith I, Garyfallidis E (2011), “Robustness of diffusion scalar metrics when estimated with Generalized Q-Sampling Imaging acquisition schemes”, Proc. Intl. Soc. Mag. Reson. Med. 19
 
-[4] Nimmo-Smith I, Yeh F-C, Correia M.M, Williams G.B, Garyfallidis E (2011), “Non-parametric anisotropy based on Generalized Q-sampling ODF”, Proc. Intl. Soc. Mag. Reson. Med. 19
+[4] Chamberlain SR, Hampshire A, Menzies LA, Garyfallidis E, Grant JE, Odlaug BL, Craig K, Fineberg N, Sahakian BJ (2010), “Reduced brain white matter integrity in trichotillomania: a diffusion tensor imaging study.” Arch Gen Psychiatry 67(9):965-71
 
-[5] Chamberlain SR, Hampshire A, Menzies LA, Garyfallidis E, Grant JE, Odlaug BL, Craig K, Fineberg N, Sahakian BJ (2010), “Reduced brain white matter integrity in trichotillomania: a diffusion tensor imaging study.” Arch Gen Psychiatry 67(9):965-71
+[5] Garyfallidis E, Brett M, Amirbekian B, Nguyen C, Yeh F-C, Olivetti E, Halchenko Y, Nimmo-Smith I "Dipy - a novel software library for diffusion MR and tractography", 17th Annual Meeting of the Organization for Human Brain Mapping.
 
-[6] Garyfallidis E, Brett M, Amirbekian B, Nguyen C, Yeh F-C, Olivetti E, Halchenko Y, Nimmo-Smith I "Dipy - a novel software library for diffusion MR and tractography", 17th Annual Meeting of the Organization for Human Brain Mapping.
-
-[7] Yeh F-C, Wedeen VJ, Tseng WY,  "Generalized Q-Sampling Imaging"
+[6] Yeh F-C, Wedeen VJ, Tseng WY,  "Generalized Q-Sampling Imaging"
 
 A short note
 --------------

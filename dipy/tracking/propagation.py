@@ -98,7 +98,8 @@ class EuDX():
         #store number of maximum peacks
         x,y,z,g=self.a.shape
         self.Np=g
-        tlist=[]      
+        tlist=[]
+        
 
         if odf_vertices==None:
             eds=np.load(get_sphere('symmetric362'))
@@ -110,18 +111,15 @@ class EuDX():
         print 'ind',self.ind.shape, self.ind.dtype
         print 'odf_vertices',self.odf_vertices.shape, self.odf_vertices.dtype
         '''
-        
-        
+                
         try:        
             if len(seeds)>0:            
                 self.seed_list=seeds
+                self.seed_no=len(seeds)
         except TypeError:
             self.seed_no=seeds
-        
-        if self.seed_list!=None:
-            self.seed_list=seeds
-            self.seed_no=len(seeds)
-
+            self.seed_list=None
+ 
         self.ind=self.ind.astype(np.double)        
         
     def __iter__(self):
