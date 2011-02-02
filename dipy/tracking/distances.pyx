@@ -1389,7 +1389,7 @@ ctypedef struct LSC_Cluster:
 @cython.boundscheck(False)
 @cython.wraparound(False)    
 @cython.cdivision(True)
-def local_skeleton_clustering(tracks, d_thr=10,points=3):
+def local_skeleton_clustering(tracks, d_thr=10):
     """ Efficient tractography clustering     
        
     Every track can needs to have the same number of points. 
@@ -1458,12 +1458,13 @@ def local_skeleton_clustering(tracks, d_thr=10,points=3):
     cdef :
         cnp.ndarray[cnp.float32_t, ndim=2] track       
         LSC_Cluster *cluster
-        long lent = 0,lenC = 0, dim = 0
+        long lent = 0,lenC = 0, dim = 0, points=0
         long i=0, j=0, c=0, i_k=0, rows=0 ,cit=0
         float *ptr, *hid, *alld
         float d[2],m_d,cd_thr        
         long *flip
         
+    points=len(tracks[0])
     dim = points*3
     rows = points
     cd_thr = d_thr

@@ -15,7 +15,7 @@ def test_LSCv2():
     xyz6=np.array([[0,20,0],[0,40,0],[300,50,0]],dtype='float32')
     
     T=[xyz1,xyz2,xyz3,xyz4,xyz5,xyz6]
-    C=pf.local_skeleton_clustering(T,0.2,3)
+    C=pf.local_skeleton_clustering(T,0.2)
     
     #print C
     #print len(C)
@@ -33,7 +33,7 @@ def test_LSCv2():
             
     from time import time
     t1=time()
-    C3=pf.local_skeleton_clustering(T,.5,3)
+    C3=pf.local_skeleton_clustering(T,.5)
     t2=time()
     print t2-t1
     print len(C3)
@@ -52,7 +52,7 @@ def test_LSCv2():
         xyz=np.random.rand(10,3).astype('f4')
         T2.append(xyz)
     t1=time()
-    C5=pf.local_skeleton_clustering(T2,.5,10)
+    C5=pf.local_skeleton_clustering(T2,.5)
     t2=time()
     print t2-t1
     print len(C5)
@@ -67,7 +67,7 @@ def test_LSCv2():
 
     print 'lenT3',len(T3)
     
-    C=pf.local_skeleton_clustering(T3,10.,10)
+    C=pf.local_skeleton_clustering(T3,10.)
     
     print 'lenC',len(C)
     
