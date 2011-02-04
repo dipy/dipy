@@ -1139,12 +1139,19 @@ def crossing(a,ind,sph,scale):
     T=[]
     
     if a.ndim == 4 or a.ndim ==3 :
-        
-        for pos in np.ndindex(*ind.shape[:-1]):
+        x,y,z=ind.shape[:3]
+        for pos in np.ndindex(x,y,z):
             i,j,k=pos
             pos_=np.array(pos)
             ind_=ind[i,j,k]       
             a_=a[i,j,k] 
+            
+            try:
+                len(ind_)
+            except TypeError:
+                ind_=[ind_]
+                a_=[a_]            
+
             for (i,_i) in enumerate(ind_):        
                 T.append(pos_ + scale*a_[i]*np.vstack((sph[_i],-sph[_i])))
                 
