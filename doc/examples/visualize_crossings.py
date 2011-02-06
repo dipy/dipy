@@ -220,7 +220,7 @@ cross=fvtk.crossing(QA[3,8,5],IN[3,8,5],verts,1)
 #3,8,6 double crossing
 dcross=fvtk.crossing(QA[3,8,6],IN[3,8,6],verts,1)
 
-all=fvtk.crossing(QA,IN,verts,1)
+all,allo=fvtk.crossing(QA,IN,verts,1,True)
 fvtk.add(r,fvtk.line(all,fvtk.azure,linewidth=1.))
 
 no_cross_shift=[c+np.array([3,8,4]) for c in no_cross]
@@ -240,8 +240,8 @@ colors=np.zeros((len(all),3))
 colors2=np.zeros((len(all),3))
 for (i,a) in enumerate(all):
     #print a[0]
-    colors[i]=cm.boys2rgb(a[0])
-    colors2[i]=cm.orient2rgb(a[0])
+    colors[i]=cm.boys2rgb(allo[i])
+    colors2[i]=cm.orient2rgb(allo[i])
 
 fvtk.add(r,fvtk.line(all_shift,colors,linewidth=1.))
 fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))

@@ -404,10 +404,11 @@ def dots(points,color=(1,0,0),opacity=1):
     return aPolyVertexActor
 
 
-def point(points,colors,opacity=1,point_radius=0.001):
+def point(points,colors,opacity=1,point_radius=0.001,theta=3,phi=3):
     
     if np.array(colors).ndim==1:
-        return dots(points,colors,opacity)
+        #return dots(points,colors,opacity)
+        colors=np.tile(colors,(len(points),1))
     
        
     scalars=vtk.vtkUnsignedCharArray()
@@ -433,8 +434,8 @@ def point(points,colors,opacity=1,point_radius=0.001):
     #src = vtk.vtkPointSource()
     src = vtk.vtkSphereSource()
     src.SetRadius(point_radius)
-    src.SetThetaResolution(3)
-    src.SetPhiResolution(3)
+    src.SetThetaResolution(theta)
+    src.SetPhiResolution(phi)
     
     polyData = vtk.vtkPolyData()
     polyData.SetPoints(pts)
@@ -1127,7 +1128,7 @@ def _closest_track(p,tracks):
     
     return int(d[imin,0])
 
-def crossing(a,ind,sph,scale):
+def crossing(a,ind,sph,scale,orient=False):
     """ visualize a volume of crossings
     
     Examples
@@ -1137,8 +1138,8 @@ def crossing(a,ind,sph,scale):
     """
     
     T=[]
-    
-    if a.ndim == 4 or a.ndim ==3 :
+    Tor=[]
+    if a.ndim == 4 or a.ndim ==3:
         x,y,z=ind.shape[:3]
         for pos in np.ndindex(x,y,z):
             i,j,k=pos
@@ -1154,12 +1155,17 @@ def crossing(a,ind,sph,scale):
 
             for (i,_i) in enumerate(ind_):        
                 T.append(pos_ + scale*a_[i]*np.vstack((sph[_i],-sph[_i])))
+                if orient:
+                    Tor.append(sph[_i])
                 
     if a.ndim == 1:
         
         for (i,_i) in enumerate(ind):        
                 T.append(scale*a[i]*np.vstack((sph[_i],-sph[_i])))
-                        
+                if orient:
+                    Tor.append(sph[_i])       
+    if orient:
+        return T,Tor
     return T
 
 
