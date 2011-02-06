@@ -8,7 +8,7 @@ import warnings
 warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
 
 class SphericalDandelion():
-    ''' Garyfallidis E., Nimmo-Smith I. TMI 2011 (to appear)        
+    ''' 
     HIGHLY EXPERIMENTAL - PLEASE DO NOT USE.    
     '''
     def __init__(self,data,bvals,gradients,smoothing=1.,odfsphere=None,mask=None):
@@ -27,9 +27,9 @@ class SphericalDandelion():
         '''
         
         if odfsphere == None:            
-            eds=np.load(get_sphere('symmetric362'))
+            eds=np.load(get_sphere('symmetric642'))#362
         else:
-            eds=np.load(odfsphere)
+            eds=odfsphere
             # e.g. odfsphere = evenly_distributed_sphere_642.npz
 
         odf_vertices=eds['vertices']
