@@ -86,7 +86,7 @@ rst_epilog = open('links_names.inc', 'rt').read()
 
 # List of directories, relative to source directory, that shouldn't be searched
 # for source files.
-exclude_trees = ['_build']
+exclude_trees = ['_build', 'examples']
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

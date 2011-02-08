@@ -41,7 +41,11 @@ clean:
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
 
-html: rstexamples
+html: html-after-examples rstexamples
+	# build full docs including examples
+
+html-after-examples:
+	# Standard html build after examples have been prepared
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
