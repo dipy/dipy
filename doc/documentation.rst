@@ -11,7 +11,7 @@ Contents:
    introduction
    mission
    installation
-   examples/index
+   examples_index
    faq
    developers
    cite

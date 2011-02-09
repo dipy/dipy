@@ -1507,31 +1507,31 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
     
 def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_frames=10, az_ang=10, magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
     ''' This will record a video of your scene
-    
-    Records a video as a series of .png files of your scene by rotating the azimuth angle az_angle in every frame      
-        
+
+    Records a video as a series of .png files of your scene by rotating the
+    azimuth angle az_angle in every frame.
+
     Parameters
     -----------
-    ren : vtkRenderer() object 
-            as returned from function ren() 
-    cam_pos : None or sequence (3,) 
+    ren : vtkRenderer() object
+        as returned from function ren()
+    cam_pos : None or sequence (3,), optional
         camera position
-    cam_focal : None or sequence (3,)
+    cam_focal : None or sequence (3,), optional
         camera focal point
-    cam_view : None or sequence (3,)
+    cam_view : None or sequence (3,), optional
         camera view up
-    out_path : str 
-        output directory for the frames 
-    n_frames : int
-        number of frames to save
-    az_ang : float
-        azimuthal angle of camera rotation
-    magnification : int
-        how much to magnify the saved frame 
-    
+    out_path : str, optional
+        output directory for the frames
+    n_frames : int, optional
+        number of frames to save, default 10
+    az_ang : float, optional
+        azimuthal angle of camera rotation.
+    magnification : int, optional
+        how much to magnify the saved frame
+
     Examples
     ---------
-    
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()
     >>> a=fvtk.axes()    
@@ -1540,12 +1540,9 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_fr
     >>> fvtk.add(r,fvtk.axes())
     >>> #uncomment below to record
     >>> #fvtk.record(r,cam_pos=(0,0,-10))
-      
     '''
-    
     if ren==None:
         ren = vtk.vtkRenderer()
-   
     ren.SetBackground(bgr_color)
     renWin = vtk.vtkRenderWindow()
     renWin.AddRenderer(ren)

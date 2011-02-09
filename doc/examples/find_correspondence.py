@@ -11,12 +11,6 @@ numpy is for numerical computation
 import numpy as np
 
 """
-nibabel is for data formats
-"""
-
-import nibabel as nib
-
-"""
 dipy.tracking.distances is for tractography distances
 """
 
@@ -57,7 +51,8 @@ T3s=[t+ np.array([100,0,0]) for t in T3]
 
 fvtk.add(r,fvtk.line(T3s,fvtk.gray))
 
-#fvtk.show(r)    bout 
+# To show now use:
+#fvtk.show(r)
 
 """
 For each track in T1 find the minimum average distance to all the 
@@ -101,16 +96,17 @@ track2track=track2track[good_correspondence,:]
 
 print 'With mam_threshold %f we find %d correspondence pairs' % (mam_threshold, np.size(track2track,0))
 
+# If you did an fvtk.show(r) before, you'll need to clear the figure
 #fvtk.clear(r)
 
 """
 Now plot the corresponding tracks in the same colours
 
-.. figure:: ../_static/find_corr.png
+.. figure:: find_corr1000000.png
    :align: center
-      
+
    **Showing correspondence between these two modest tractographies**.
-   
+
    The labels on the corresponding tracks are the indices of the first tractography on the left.
 
 """
@@ -125,14 +121,17 @@ for row in track2track:
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos1),(5,5,5)))
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos3),(5,5,5)))
 
+# To see in an interactive window:
 #fvtk.show(r,png_magnify=1,size=(600,600))
 
-
-
-
-
-
-
-
-
+# To make the illustration
+print('Saving illustration as find_corr1000000.png')
+fvtk.record(r, n_frames=1, # single snapshot
+            out_path='find_corr',
+            bgr_color=(0,0,0),
+            size=(600,600),
+            cam_pos=(52,-15,390),
+            cam_focal=(52, -15, 5),
+            cam_view=(0, 1, 0),
+           )
 

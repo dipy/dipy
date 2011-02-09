@@ -31,7 +31,6 @@ for a voxel from the raw data.
 """
 
 import dipy.reconst.gqi as gqi
-import dipy.reconst.dti as dti
 
 """
 ``dipy.data`` is for small datasets we use in tests and examples.
@@ -249,12 +248,23 @@ fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))
 
 """
 
-.. figure:: ../_static/visualize_cross.png
+.. figure:: visualize_cross1000000.png
    :align: center
-      
+
    **The crossings of a region of interest shown with one color, or boy2rgb or standard orient2rgb colormap**.
-   
+
 """
 
+# To show the figure
+# fvtk.show(r,size=(800,800))
 
-fvtk.show(r,size=(800,800))
+# Here's how we make the illustration.
+print('Saving illustration as visualize_cross1000000.png')
+fvtk.record(r, n_frames=1, # single snapshot
+            out_path='visualize_cross',
+            bgr_color=(0,0,0),
+            size=(700,500),
+            cam_pos=(28, 33, -20),
+            cam_focal=(12, 3, 7),
+            cam_view=(-0.4, -0.5, -0.8),
+           )
