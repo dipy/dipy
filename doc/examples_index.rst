@@ -10,7 +10,7 @@ Examples
 .. toctree::
    :maxdepth: 2
 
-   examples_built/note_about_examples
+   note_about_examples
    examples_built/nii_2_tracks
    examples_built/find_correspondence
    examples_built/aniso_vox_2_isotropic
