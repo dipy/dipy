@@ -85,7 +85,9 @@ qthelp:
 	@echo "To view the help file:"
 	@echo "# assistant -collectionFile _build/qthelp/dipy.qhc"
 
-latex:
+latex: rstexamples latex-after-examples
+
+latex-after-examples:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) _build/latex
 	@echo
 	@echo "Build finished; the LaTeX files are in _build/latex."
@@ -108,8 +110,10 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in _build/doctest/output.txt."
 
-rstexamples:
+rstexamples: rstexamples-stamp
+rstexamples-stamp:
 	../tools/make_examples.py
+	touch $@
 
 pdf: pdf-stamp
 pdf-stamp: latex
