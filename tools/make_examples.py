@@ -13,7 +13,7 @@ Steps are:
 
 # Stdlib imports
 import os
-from os.path import join as pjoin, abspath
+from os.path import join as pjoin, abspath, splitext
 import shutil
 from subprocess import check_call
 from glob import glob
@@ -50,18 +50,24 @@ plt.show = show
 # Main script
 #-----------------------------------------------------------------------------
 
+# Where things are
+EG_INDEX_FNAME = abspath('examples_index.rst')
+EG_SRC_DIR = abspath('examples')
+
 # Work in examples directory
 os.chdir('examples_built')
 if not os.getcwd().endswith('doc/examples_built'):
-    raise OSError('This must be run from doc/examples_built directory')
+    raise OSError('This must be run from the doc directory')
 
-# Copy the py files
-# Finding which py files to copy could come from the examples_index
-eg_src_dir = abspath(pjoin('..', 'examples'))
-pyfilelist = [fname for fname in os.listdir(eg_src_dir)
+# Copy the py files; check they are in the examples list and warn if not
+eg_index_contents = open(EG_INDEX_FNAME, 'rt').read()
+pyfilelist = [fname for fname in os.listdir(EG_SRC_DIR)
               if fname.endswith('.py')]
 for fname in pyfilelist:
-    shutil.copyfile(pjoin(eg_src_dir, fname), fname)
+    shutil.copyfile(pjoin(EG_SRC_DIR, fname), fname)
+    froot, _ = splitext(fname)
+    if froot not in eg_index_contents:
+        print 'Example %s not in index file %s' % (EG_SRC_DIR, EG_INDEX_FNAME)
 
 # Run the conversion from .py to rst file
 check_call('../../tools/ex2rst --project dipy --outdir . .',
@@ -75,4 +81,10 @@ for script in glob('*.py'):
     figure_basename = os.path.join('fig', os.path.splitext(script)[0])
     execfile(script)
     plt.close('all')
+
+# clean up stray images, pickles, npy files, etc
+for globber in ('*.nii.gz', '*.dpy', '*.npy', '*.pkl', '*.mat', '*.img',
+                '*.hdr'):
+    for fname in glob(globber):
+        os.unlink(fname)
 

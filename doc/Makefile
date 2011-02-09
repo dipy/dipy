@@ -33,10 +33,15 @@ help:
 	@echo "  linkcheck to check all external links for integrity"
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
-clean:
+clean: examples-clean
 	-rm -rf _build/*
 	-rm *-stamp
-	-rm examples/fig/*
+
+examples-clean:
+	-cd examples_built && rm -rf *.py *.rst *.png fig
+
+examples-tgz: examples-clean rstexamples
+
 
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
