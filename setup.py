@@ -98,6 +98,7 @@ def main(**extra_args):
                           'dipy.testing',
                           'dipy.boots',
                           'dipy.data',
+                          'dipy.utils',
                           'dipy.external',
                           'dipy.external.tests'],
           ext_modules = EXTS,
