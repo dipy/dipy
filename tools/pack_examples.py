@@ -1,19 +1,28 @@
 #!/usr/bin/env python
 """ Script to pack built examples into suitably named archive
+
+Usage %s output_dir [doc_dir]
 """
 
 import os
 from os.path import join as pjoin
 import sys
-import glob
+import shutil
 import tarfile
 
 import dipy
 
+__doc__ = __doc__ % sys.argv[0]
+
+EG_BUILT_SDIR = 'examples_built'
 dpv = 'dipy-' + dipy.__version__
 archive_name = dpv + '-doc-examples.tar.gz'
 
-out_root = sys.argv[1]
+try:
+    out_root = sys.argv[1]
+except IndexError:
+    print __doc__
+    sys.exit(1)
 try:
     os.mkdir(out_root)
 except OSError:
@@ -25,13 +34,16 @@ except IndexError:
 
 archive_fname = os.path.join(out_root, archive_name)
 
-tarobj = tarfile.open(archive_fname, 'w|gz')
-eg_built_dir = pjoin(doc_dir, 'examples_built')
-for globber in ('*.rst', '*.png', pjoin('figs', '*')):
-    globs = glob.glob(pjoin(eg_built_dir, globber))
-    for in_fname in globs:
-        arc_fname = pjoin(dpv, 'doc', in_fname)
-        fobj = tarobj.gettarinfo(in_fname)
-        fobj.name = arc_fname
-        tarobj.addfile(fobj)
-tarobj.close()
+eg_built_dir = pjoin(doc_dir, EG_BUILT_SDIR)
+eg_out_base = pjoin(out_root, dpv, 'doc')
+eg_out_dir = pjoin(eg_out_base, EG_BUILT_SDIR)
+if os.path.isdir(eg_out_dir):
+    shutil.rmtree(eg_out_dir)
+def ignorandi(src, names):
+    return [name for name in names if name == 'README' or name == '.gitignore']
+shutil.copytree(eg_built_dir, eg_out_dir, ignore=ignorandi)
+os.chdir(out_root)
+tar = tarfile.open(archive_fname, 'w|gz')
+tar.add(dpv)
+tar.close()
+print("Written " + archive_fname)

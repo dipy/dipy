@@ -10,3 +10,4 @@ dist/
 .project
 .pydevproject
 *.swp
+dipy.egg-info/

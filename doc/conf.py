@@ -19,6 +19,11 @@ try:
 except ImportError:
     raise RuntimeError('Cannot import dipy, please investigate')
 
+from distutils.version import LooseVersion
+import sphinx
+if LooseVersion(sphinx.__version__) < LooseVersion('1'):
+    raise RuntimeError('Need sphinx >= 1 for numpydoc to work correctly')
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.

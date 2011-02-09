@@ -41,12 +41,12 @@ examples-clean:
 	-cd examples_built && rm -rf *.py *.rst *.png fig
 
 examples-tgz: examples-clean rstexamples
-	../tools/pack_examples_built.py
+	../tools/pack_examples.py ../dist
 
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
 
-html: html-after-examples rstexamples
+html: rstexamples html-after-examples
 	# build full docs including examples
 
 html-after-examples:
