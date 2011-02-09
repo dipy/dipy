@@ -124,5 +124,18 @@ Release checklist
     Please take a look at the Makefile rules ``devel-src``,
     ``devel-dsc`` and ``orig-src``.
 
+* Make a tarball for the examples, for packagers to get away without having vtk
+  or a display on the build machines::
+
+        cd doc
+        make examples-tgz
+
+  The command requires pytables_ and python vtk on your machine. It writes an
+  archive named for the dipy version and the docs, e.g::
+
+    <dipy root>/dist/dipy-0.5.0.dev-doc-examples.tar.gz
+
+  We need to decided where to put this tarball.
+
 * Announce to the mailing lists.
 

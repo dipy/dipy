@@ -1,0 +1,15 @@
+Examples built README
+---------------------
+
+This directory is a build-time container for the examples.  The
+<root>/tools/make_examples.py script takes the examples in <root>/doc/examples,
+compiles the examples to rst files, builds all the graphics, and puts the
+result into this directory, along with copies of the .py files.
+
+The contents of this directory then gets included because the
+<root>/doc/example_index.rst file points to this directory and the built .rst
+files.
+
+Please don't put anything in this directory other than the .gitignore (ignore
+everything) and this README.  If you need something in here, please copy it
+from the make_examples.py script.

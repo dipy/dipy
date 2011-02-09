@@ -2,6 +2,8 @@
 '''
 import os
 
+from .info import __version__, long_description as __doc__
+
 import align
 import reconst
 import io

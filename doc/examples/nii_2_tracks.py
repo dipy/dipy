@@ -1,4 +1,3 @@
-
 """ 
 
 ===============================
@@ -291,15 +290,31 @@ fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.05))
 Press 's' to save this screenshot when you have displayed it with ``fvtk.show``.
 Or you can even record a video using ``fvtk.record``.
 
-.. figure:: ../_static/nii_2_tracks.png
+You would show the figure with something like::
+
+    fvtk.show(r,png_magnify=1,size=(600,600))
+
+To record a video of 50 frames of png, something like::
+
+    fvtk.record(r,cam_pos=(0,40,-40),cam_focal=(5,0,0),n_frames=50,magnification=1,out_path='nii_2_tracks',size=(600,600),bgr_color=(0,0,0))
+
+.. figure:: nii_2_tracks1000000.png
    :align: center
-      
+
    **Same region of interest with different underlying voxel representations generates different tractographies**.
 
 """
 
-#fvtk.show(r,png_magnify=1,size=(600,600))
-#fvtk.record(r,cam_pos=(0,40,-40),cam_focal=(5,0,0),n_frames=50,magnification=1,out_path='./nii_2_tracks',size=(600,600),bgr_color=(0,0,0))
+# Here's how we make the figure.
+print('Saving illustration as nii_2_tracks1000000.png')
+fvtk.record(r, n_frames=1, # single snapshot
+            out_path='nii_2_tracks',
+            bgr_color=(0,0,0),
+            size=(600,600),
+            cam_pos=(26,28,-10),
+            cam_focal=(8, 5, 5),
+            cam_view=(-0.4, -0.2, -0.9),
+           )
 
 
 

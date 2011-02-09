@@ -33,15 +33,24 @@ help:
 	@echo "  linkcheck to check all external links for integrity"
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
-clean:
+clean: examples-clean
 	-rm -rf _build/*
 	-rm *-stamp
-	-rm examples/fig/*
+
+examples-clean:
+	-cd examples_built && rm -rf *.py *.rst *.png fig
+
+examples-tgz: examples-clean rstexamples
+	../tools/pack_examples.py ../dist
 
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
 
-html: rstexamples
+html: rstexamples html-after-examples
+	# build full docs including examples
+
+html-after-examples:
+	# Standard html build after examples have been prepared
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
@@ -76,7 +85,9 @@ qthelp:
 	@echo "To view the help file:"
 	@echo "# assistant -collectionFile _build/qthelp/dipy.qhc"
 
-latex:
+latex: rstexamples latex-after-examples
+
+latex-after-examples:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) _build/latex
 	@echo
 	@echo "Build finished; the LaTeX files are in _build/latex."
@@ -99,8 +110,10 @@ doctest:
 	@echo "Testing of doctests in the sources finished, look at the " \
 	      "results in _build/doctest/output.txt."
 
-rstexamples:
+rstexamples: rstexamples-stamp
+rstexamples-stamp:
 	../tools/make_examples.py
+	touch $@
 
 pdf: pdf-stamp
 pdf-stamp: latex
