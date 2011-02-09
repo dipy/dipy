@@ -2,7 +2,6 @@
 """ Classes and functions for fitting tensors """
 # 5/17/2010
 
-import os
 import numpy as np
 
 from dipy.reconst.maskedview import MaskedView, _makearray, _filled

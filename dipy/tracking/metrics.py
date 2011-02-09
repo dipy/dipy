@@ -1,6 +1,5 @@
 ''' Metrics for tracks, where tracks are arrays of points '''
 
-import math
 import numpy as np
 from scipy.interpolate import splprep, splev
 
@@ -783,33 +782,31 @@ def downsample(xyz,n_pols=3):
 
 def principal_components(xyz):
     ''' We use PCA to calculate the 3 principal directions for a track
-    
+
     Parameters
-    ------------
+    ----------
     xyz : array-like shape (N,3)
        array representing x,y,z of N points in a track
-    
+
     Returns
-    ----------
+    -------
     va : eigenvalues
     ve : eigenvectors
-    
+
     Examples
-    -----------  
+    --------
     >>> import numpy as np
-    >>> from dipy.tracking.metrics import principal_components    
+    >>> from dipy.tracking.metrics import principal_components
     >>> theta=np.pi*np.linspace(0,1,100)
     >>> x=np.cos(theta)
     >>> y=np.sin(theta)
     >>> z=0*x
     >>> xyz=np.vstack((x,y,z)).T
-    >>> va, ve =principal_components(xyz)
-    >>> va
-    array([ 0.51010101,  0.09883545,  0.        ])
-    
-    
+    >>> va, ve = principal_components(xyz)
+    >>> np.allclose(va, [0.51010101, 0.09883545, 0])
+    True
     '''
-    C=np.cov(xyz.T)    
+    C=np.cov(xyz.T)
     va,ve=np.linalg.eig(C)
     return va,ve
 

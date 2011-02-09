@@ -1,12 +1,12 @@
-import os
 import numpy as np
+
 from dipy.tracking.propspeed import eudx_both_directions
 from dipy.tracking.metrics import length
 from dipy.data import get_sphere
 
-class EuDX():
+class EuDX(object):
     ''' Euler Delta Crossings
-    
+
     Generates tracks with termination criteria defined by a
     delta function [1]_ and it has similarities with FACT algorithm [2]_ and Basser's method 
     but uses trilinear interpolation.
@@ -16,7 +16,7 @@ class EuDX():
     that function. For example a single tensor model can give you only
     one peak a dual tensor model 2 peaks and quantitative anisotropy
     method as used in GQI can give you 3,4,5 or even more peaks.    
-    
+
     The parameters of the delta function are checking thresholds for the
     direction propagation magnitude and the angle of propagation.
 
@@ -29,15 +29,15 @@ class EuDX():
     References
     ------------
     .. [1] Yeh. et al. Generalized Q-Sampling Imaging, TMI 2010.
-    
+
     .. [2] Mori et al. Three-dimensional tracking of axonal projections
     in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
-    
+
     '''
 
     def __init__(self,a,ind,seeds=10000,odf_vertices=None,a_low=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.,total_weight=.5):
         ''' Euler integration with multiple stopping criteria and supporting multiple peaks
-        
+
         Parameters
         ------------
         a : array, shape(x,y,z,Np), magnitude of the peak of a scalar 
@@ -46,7 +46,7 @@ class EuDX():
 
         ind : array, shape(x,y,z,Np), indices of orientations of the scalar anisotropic
             peaks found on the resampling sphere 
-        
+
         seeds : number of random seeds or list of seeds
 
         odf_vertices : sphere points which define a discrete
@@ -54,35 +54,35 @@ class EuDX():
 
         a_low : float, low threshold for QA(typical 0.023)  or FA(typical 0.2) or 
             any other anisotropic function
-          
+
         step_sz : float, euler propagation step size
 
         ang_thr : float, if turning angle is bigger than this threshold
             then tracking stops.
-            
+
         total_weight : float, total weighting threshold
-        
+
         Examples
         ----------
-        >>> from dipy.data import get_data        
+        >>> import nibabel as nib
+        >>> from dipy.reconst.dti import Tensor
+        >>> from dipy.data import get_data
         >>> fimg,fbvals,fbvecs=get_data('small_101D')
-        >>> img=ni.load(fimg)
+        >>> img=nib.load(fimg)
         >>> affine=img.get_affine()
         >>> bvals=np.loadtxt(fbvals)
-        >>> gradients=np.loadtxt(fbvecs).T    
+        >>> gradients=np.loadtxt(fbvecs).T
         >>> data=img.get_data()
         >>> ten=Tensor(data,bvals,gradients,thresh=50)
         >>> eu=EuDX(a=ten.fa(),ind=ten.ind(),seeds=100,a_low=.2)
         >>> tracks=[e for e in eu]
-        
-        
+
         Notes
         -------
         This works as an iterator class because otherwise it could fill your entire RAM if you generate many tracks. 
         Something very common as you can easily generate millions of tracks if you have many seeds.
 
         '''
-        
         self.a=a.copy()
         self.ind=ind.copy()
         self.a_low=a_low
@@ -90,8 +90,8 @@ class EuDX():
         self.step_sz=step_sz
         self.length_thr=length_thr
         self.total_weight=total_weight
-        
-        if len(self.a.shape)==3:            
+
+        if len(self.a.shape)==3:
             self.a.shape=self.a.shape+(1,)
             self.ind.shape=self.ind.shape+(1,)
 
