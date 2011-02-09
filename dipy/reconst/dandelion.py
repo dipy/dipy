@@ -27,7 +27,7 @@ class SphericalDandelion():
         '''
         
         if odfsphere == None:            
-            eds=np.load(get_sphere('symmetric642'))#362
+            eds=np.load(get_sphere('symmetric362'))#642
         else:
             eds=odfsphere
             # e.g. odfsphere = evenly_distributed_sphere_642.npz
@@ -93,9 +93,20 @@ class SphericalDandelion():
         ob=-1/self.bvals[1:]
         lg=np.log(s[1:])-np.log(s[0])
         d=ob*(np.log(s[1:])-np.log(s[0]))        
-        d=d.reshape(1,len(d)) 
-        res=np.dot(d,self.weighting[1:,:])         
-        return np.squeeze(np.dot(d,self.weighting[1:,:]))
+        #d=d.reshape(1,len(d)) 
+        #return np.squeeze(np.dot(d,self.weighting[1:,:]))
+        
+        '''
+        final_sphere=np.zeros(self.odf_vertices.shape[0])
+        for i in range(len(d)):
+            final_sphere+=d[i]*np.abs(np.dot(self.gradients[i+1],self.odf_vertices.T)**(2))
+        #return (final_sphere-final_sphere.min())/float(len(d))
+        return final_sphere/float(len(d))
+        '''
+        final_sphere=np.zeros((len(d),self.odf_vertices.shape[0]))
+        for i in range(len(d)):
+            final_sphere[i]=d[i]*np.abs(np.dot(self.gradients[i+1],self.odf_vertices.T)**(2))
+        return np.max(final_sphere,axis=0)
     
     def xa(self):
         return self.XA

@@ -10,14 +10,24 @@ from dipy.reconst.gqi import GeneralizedQSampling
 
 def test_dandelion():
     
-    fimg,fbvals,fbvecs=get_data('small_64D')    
-    bvals=np.load(fbvals)
-    gradients=np.load(fbvecs)
+    fimg,fbvals,fbvecs=get_data('small_101D')    
+    bvals=np.loadtxt(fbvals)
+    gradients=np.loadtxt(fbvecs).T
     data=nib.load(fimg).get_data()    
     
     print(bvals.shape, gradients.shape, data.shape)    
     sd=SphericalDandelion(data,bvals,gradients)    
+    
     sdf=sd.spherical_diffusivity(data[5,5,5])    
+    
+    XA=sd.xa()
+    np.set_printoptions(2)
+    print XA.min(),XA.max(),XA.mean()
+    print sdf*10**4
+    
+    
+    
+    """
     print(sdf.shape)
     gq=GeneralizedQSampling(data,bvals,gradients)
     sodf=gq.odf(data[5,5,5])     
@@ -30,6 +40,7 @@ def test_dandelion():
     print(peaks, inds)    
     peaks2,inds2=peak_finding(np.squeeze(sodf),faces)
     print(peaks2, inds2)
+    """
         
     '''
     from fos.data import get_sphere
@@ -54,8 +65,7 @@ def test_dandelion():
     print vertices.min(),vertices.max(),vertices.mean()
     print normals.min(),normals.max(), normals.mean()
     
-    print vertices.dtype,faces.dtype, colors.dtype, normals.dtype
-    
+    print vertices.dtype,faces.dtype, colors.dtype, normals.dtype    
     
     from fos.actor.surf import Surface
     from fos import Window, World, DefaultCamera

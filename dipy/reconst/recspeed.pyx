@@ -116,7 +116,7 @@ def peak_finding(odf, odf_faces):
     end you only have the peak points with nonzero values.
 
     For precalculated odf_faces look under
-    dipy/core/matrices/evenly*.npz to use them try numpy.load()['faces']
+    dipy/data/evenly*.npz to use them try numpy.load()['faces']
     
     Examples
     ----------
