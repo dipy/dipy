@@ -41,7 +41,7 @@ examples-clean:
 	-cd examples_built && rm -rf *.py *.rst *.png fig
 
 examples-tgz: examples-clean rstexamples
-
+	../tools/pack_examples_built.py
 
 gitwash-update:
 	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
