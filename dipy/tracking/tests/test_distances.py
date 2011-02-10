@@ -1,4 +1,5 @@
 import numpy as np
+import nose
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.tracking import metrics as tm
@@ -59,7 +60,11 @@ def test_LSCv2():
     
     from dipy.data import get_data
     from nibabel import trackvis as tv
-    from dipy.viz import fvtk
+    try:
+        from dipy.viz import fvtk
+    except ImportError, e:
+        raise nose.plugins.skip.SkipTest(
+            'Fails to import dipy.viz due to %s' % str(e))
     
     streams,hdr=tv.read(get_data('fornix'))
     T3=[tm.downsample(s[0],6) for s in streams]    
