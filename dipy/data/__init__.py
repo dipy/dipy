@@ -6,6 +6,8 @@ import gzip
 
 import numpy as np
 
+from ..utils.arrfuncs import as_native_array
+
 THIS_DIR = dirname(__file__)
 SPHERE_FILES = {
     'symmetric362': pjoin(THIS_DIR, 'evenly_distributed_sphere_362.npz'),
@@ -127,7 +129,8 @@ def get_sphere(name='symmetric363'):
     res = np.load(fname)
     # Set to native byte order to avoid errors in compiled routines for
     # big-endian platforms, when using these spheres.
-    return res['vertices'].newbyteorder('='), res['faces'].newbyteorder('=')
+    return (as_native_array(res['vertices']),
+            as_native_array(res['faces']))
 
 
 def get_data(name='small_64D'):
