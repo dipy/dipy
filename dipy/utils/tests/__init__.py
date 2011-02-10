@@ -1,1 +1,1 @@
-# Tests for spheres - as package
+# Tests for utilities - as package
