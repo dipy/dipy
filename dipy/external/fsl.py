@@ -9,6 +9,8 @@ import numpy.linalg as npl
 from numpy import newaxis
 
 from scipy.ndimage import map_coordinates as mc
+from scipy.ndimage import affine_transform
+from dipy.io.dpy import Dpy
 
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
@@ -216,6 +218,99 @@ def warp_displacements(ffa,flaff,fdis,fref,ffaw,order=1):
     #save the warped image
     Wimg=nib.Nifti1Image(W,refaff)
     nib.save(Wimg,ffaw)
+    
+    
+def warp_displacements_tracks(fdpy,ffa,fmat,finv,fdis,fdisa,fref,fdpyw):
+    """ Warp tracks from native space to the FMRIB58/MNI space
+    
+    We use here the fsl displacements. Have a look at create_displacements to
+    see an example of how to use these displacements.  
+    
+    Parameters
+    ------------
+    fdpy : filename of the .dpy file with the tractography
+    ffa : filename of nifti to be warped
+    fmat : filename of .mat  (flirt)
+    fdis :  filename of displacements (fnirtfileutils)
+    fdisa :  filename of displacements (fnirtfileutils + affine)
+    finv : filename of invwarp displacements (invwarp)
+    fref : filename of reference volume e.g. (FMRIB58_FA_1mm.nii.gz)
+    fdpyw : filename of the warped tractography
+       
+    
+    See also
+    -----------
+    dipy.external.fsl.create_displacements
+    
+    """   
+    
+    #read the tracks from the image space 
+    dpr=Dpy(fdpy,'r')
+    T=dpr.read_tracks()
+    dpr.close()    
+    
+    #copy them in a new file
+    dpw=Dpy(fdpyw,'w',compression=1)
+    dpw.write_tracks(T)
+    dpw.close()
+    
+    #from fa index to ref index
+    res=flirt2aff_files(fmat,ffa,fref)
+    
+    #load the reference img    
+    imgref=nib.load(fref)
+    refaff=imgref.get_affine()
+    
+    #load the invwarp displacements
+    imginvw=nib.load(finv)
+    invwdata=imginvw.get_data()
+    invwaff = imginvw.get_affine()
+    
+    #load the forward displacements
+    imgdis=nib.load(fdis)
+    disdata=imgdis.get_data()
+    
+    #load the forward displacements + affine
+    imgdis2=nib.load(fdisa)
+    disdata2=imgdis2.get_data()
+    
+    #from their difference create the affine
+    disaff=disdata2-disdata
+    
+    del disdata
+    del disdata2
+    
+    shape=nib.load(ffa).get_data().shape
+    
+    #transform the displacements affine back to image space
+    disaff0=affine_transform(disaff[...,0],res[:3,:3],res[:3,3],shape,order=1)
+    disaff1=affine_transform(disaff[...,1],res[:3,:3],res[:3,3],shape,order=1)
+    disaff2=affine_transform(disaff[...,2],res[:3,:3],res[:3,3],shape,order=1)
+    
+    #remove the transformed affine from the invwarp displacements
+    di=invwdata[:,:,:,0] + disaff0
+    dj=invwdata[:,:,:,1] + disaff1
+    dk=invwdata[:,:,:,2] + disaff2    
+    
+    dprw=Dpy(fdpyw,'r+')
+    rows=len(dprw.f.root.streamlines.tracks)   
+    blocks=np.round(np.linspace(0,rows,10)).astype(int)#lets work in blocks
+    #print rows
+    for i in range(len(blocks)-1):        
+        #print blocks[i],blocks[i+1]   
+        #copy a lot of tracks together
+        caboodle=dprw.f.root.streamlines.tracks[blocks[i]:blocks[i+1]]
+        mci=mc(di,caboodle.T,order=1) #interpolations for i displacement
+        mcj=mc(dj,caboodle.T,order=1) #interpolations for j displacement
+        mck=mc(dk,caboodle.T,order=1) #interpolations for k displacement            
+        D=np.vstack((mci,mcj,mck)).T
+        #go back to mni image space                        
+        WI2=np.dot(caboodle,res[:3,:3].T)+res[:3,3]+D
+        #and then to mni world space
+        caboodlew=np.dot(WI2,refaff[:3,:3].T)+refaff[:3,3]
+        #write back       
+        dprw.f.root.streamlines.tracks[blocks[i]:blocks[i+1]]=caboodlew.astype('f4')
+    dprw.close()
     
 def pipe(cmd):
     """ A tine pipeline system to run external tools.
