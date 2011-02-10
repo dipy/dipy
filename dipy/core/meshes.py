@@ -2,7 +2,6 @@
 
 import numpy as np
 from scipy import sparse
-import dipy.core.geometry as geom
 
 FLOAT64_EPS = np.finfo(np.float64).eps
 FLOAT_TYPES = np.sctypes['float']

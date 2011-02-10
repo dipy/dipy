@@ -32,38 +32,45 @@ class EuDX(object):
 
     .. [2] Mori et al. Three-dimensional tracking of axonal projections
     in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
-
     '''
 
-    def __init__(self,a,ind,seeds=10000,odf_vertices=None,a_low=0.0239,step_sz=0.5,ang_thr=60.,length_thr=0.,total_weight=.5):
+    def __init__(self, a, ind,
+                 seeds=10000,
+                 odf_vertices=None,
+                 a_low=0.0239,
+                 step_sz=0.5,
+                 ang_thr=60.,
+                 length_thr=0.,
+                 total_weight=.5):
         ''' Euler integration with multiple stopping criteria and supporting multiple peaks
 
         Parameters
         ------------
-        a : array, shape(x,y,z,Np), magnitude of the peak of a scalar 
-            anisotropic function e.g. QA (quantitative anisotropy)  or
-            a different function of shape(x,y,z) e.g FA or GFA.
-
-        ind : array, shape(x,y,z,Np), indices of orientations of the scalar anisotropic
-            peaks found on the resampling sphere 
-
-        seeds : number of random seeds or list of seeds
-
-        odf_vertices : sphere points which define a discrete
-            representation of orientations for the peaks, the same for all voxels
-
-        a_low : float, low threshold for QA(typical 0.023)  or FA(typical 0.2) or 
-            any other anisotropic function
-
-        step_sz : float, euler propagation step size
-
-        ang_thr : float, if turning angle is bigger than this threshold
-            then tracking stops.
-
-        total_weight : float, total weighting threshold
+        a : array, shape(x,y,z,Np)
+            magnitude of the peak of a scalar anisotropic function e.g. QA
+            (quantitative anisotropy)  or a different function of shape(x,y,z)
+            e.g FA or GFA.
+        ind : array, shape(x,y,z,Np)
+            indices of orientations of the scalar anisotropic peaks found on the
+            resampling sphere
+        seeds : int or sequence, optional
+            number of random seeds or list of seeds
+        odf_vertices : None or ndarray, optional
+            sphere points which define a discrete representation of orientations
+            for the peaks, the same for all voxels. None results in 
+        a_low : float, optional
+            low threshold for QA(typical 0.023)  or FA(typical 0.2) or any other
+            anisotropic function
+        step_sz : float, optional
+            euler propagation step size
+        ang_thr : float, optional
+            if turning angle is bigger than this threshold then tracking stops.
+        length_thr: float, optional
+        total_weight : float, optional
+            total weighting threshold
 
         Examples
-        ----------
+        --------
         >>> import nibabel as nib
         >>> from dipy.reconst.dti import Tensor
         >>> from dipy.data import get_data
@@ -99,29 +106,27 @@ class EuDX(object):
         x,y,z,g=self.a.shape
         self.Np=g
         tlist=[]
-        
 
         if odf_vertices==None:
-            eds=np.load(get_sphere('symmetric362'))
-            self.odf_vertices=eds['vertices']
-        
-        '''    
+            vertices, faces = get_sphere('symmetric362')
+            self.odf_vertices = vertices
+        '''
         print 'Shapes'
         print 'a',self.a.shape, self.a.dtype
         print 'ind',self.ind.shape, self.ind.dtype
         print 'odf_vertices',self.odf_vertices.shape, self.odf_vertices.dtype
         '''
-                
-        try:        
-            if len(seeds)>0:            
+
+        try:
+            if len(seeds)>0:
                 self.seed_list=seeds
                 self.seed_no=len(seeds)
         except TypeError:
             self.seed_no=seeds
             self.seed_list=None
- 
-        self.ind=self.ind.astype(np.double)        
-        
+
+        self.ind=self.ind.astype(np.double)
+
     def __iter__(self):
         ''' This is were all the fun starts '''
         x,y,z,g=self.a.shape

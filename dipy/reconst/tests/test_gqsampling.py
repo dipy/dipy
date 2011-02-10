@@ -10,7 +10,7 @@ import dipy.reconst.gqi as gq
 
 import dipy.reconst.dti as dt
 import dipy.core.meshes as meshes
-from dipy.data import get_data,get_sphere
+from dipy.data import get_data, get_sphere
 
 def test_gqiodfmask():
 
@@ -26,8 +26,6 @@ def test_gqiodfmask():
     gqs = gq.GeneralizedQSampling(data,bvals,gradients,mask=mask)
 
     assert_equal(np.sum(np.isnan(gqs.QA)),5000) #all voxels should be NULL
-    
-    
 
 
 def test_gqiodf():
@@ -61,15 +59,10 @@ def test_gqiodf():
     evals = evals.reshape(xyz,3)
     #print evals.shape
 
-    
-
     t2=time.clock()
     #print('GQS in %d' %(t2-t1))
         
-    eds=np.load(get_sphere('symmetric362'))
-    
-    odf_vertices=eds['vertices']
-    odf_faces=eds['faces']
+    odf_vertices, odf_faces = get_sphere('symmetric362')
 
     #Yeh et.al, IEEE TMI, 2010
     #calculate the odf using GQI
@@ -233,10 +226,7 @@ def test_gqi_small():
 
     t2=time.clock()
     print('GQS in %d' %(t2-t1))
-    eds=np.load(get_sphere('symmetric362'))   
-   
-    odf_vertices=eds['vertices']
-    odf_faces=eds['faces']
+    odf_vertices, odf_faces = get_sphere('symmetric362')
 
     #Yeh et.al, IEEE TMI, 2010
     #calculate the odf using GQI

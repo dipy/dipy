@@ -1,43 +1,37 @@
-import numpy as np
-from dipy.reconst.recspeed import peak_finding
-import os
-from os.path import join as opj
-from dipy.data import get_sphere
 import warnings
+
+import numpy as np
+
+from dipy.reconst.recspeed import peak_finding
+from dipy.utils.spheremakers import sphere_vf_from
 
 warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
 
-class SphericalDandelion():
-    ''' 
-    HIGHLY EXPERIMENTAL - PLEASE DO NOT USE.    
+class SphericalDandelion(object):
     '''
-    def __init__(self,data,bvals,gradients,smoothing=1.,odfsphere=None,mask=None):
+    HIGHLY EXPERIMENTAL - PLEASE DO NOT USE.
+    '''
+    def __init__(self, data, bvals, gradients, smoothing=1.,
+                 odf_sphere='symmetric362', mask=None):
         '''
         Parameters
         -----------
-        data : array, shape(X,Y,Z,D)        
+        data : array, shape(X,Y,Z,D)
         bvals : array, shape (N,)
         gradients : array, shape (N,3) also known as bvecs
         smoothing : float, smoothing parameter
+        odf_sphere : str or tuple, optional
+            If str, then load sphere of given name using ``get_sphere``.
+            If tuple, gives (vertices, faces) for sphere.
 
         See also
         ----------
         dipy.reconst.dti.Tensor, dipy.reconst.gqi.GeneralizedQSampling
-
         '''
-        
-        if odfsphere == None:            
-            eds=np.load(get_sphere('symmetric362'))#642
-        else:
-            eds=odfsphere
-            # e.g. odfsphere = evenly_distributed_sphere_642.npz
-
-        odf_vertices=eds['vertices']
-        odf_faces=eds['faces']
-
+        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.odf_vertices=odf_vertices
         self.bvals=bvals
-        
+
         gradients[np.isnan(gradients)] = 0.
         self.gradients=gradients
         self.weighting=np.abs(np.dot(gradients,self.odf_vertices.T))     

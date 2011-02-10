@@ -155,10 +155,7 @@ the reconstruction was performed.
 """
 
 from dipy.data import get_sphere
-fname=get_sphere('symmetric362')
-sph=np.load(fname)
-verts=sph['vertices']
-faces=sph['faces']
+verts, faces = get_sphere('symmetric362')
 
 from dipy.viz import fvtk
 
@@ -172,7 +169,7 @@ print 'The number of local maxima is', np.sum(ind>0)
 - Vertex 117 is [ 0.54813892  0.76257497  0.34354511]
 - Vertex 1 is [ 0.0566983   0.17449942  0.98302352]
 - The number of local maxima is 2
-""" 
+"""
 
 summary = []
 for i, index in enumerate(np.ndindex(QA.shape[:3])):

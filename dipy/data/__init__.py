@@ -1,22 +1,34 @@
 """ Read test or example data
 """
-import os
+from os.path import join as pjoin, dirname
 import cPickle
 import gzip
 
+import numpy as np
+
+THIS_DIR = dirname(__file__)
+SPHERE_FILES = {
+    'symmetric362': pjoin(THIS_DIR, 'evenly_distributed_sphere_362.npz'),
+    'symmetric642': pjoin(THIS_DIR, 'evenly_distributed_sphere_642.npz'),
+}
+
+class DataError(Exception):
+    pass
+
+
 def get_sim_voxels(name='fib1'):
     """ provide some simulated voxel data
-    
+
     Parameters
     ------------
     name : str, which file? 
         'fib0', 'fib1' or 'fib2' 
-    
+
     Returns
     ---------
     dix : dictionary, where dix['data'] returns a 2d array 
         where every row is a simulated voxel with different orientation 
-    
+
     Examples
     ----------
     >>> from dipy.data import get_sim_voxels
@@ -39,30 +51,28 @@ def get_sim_voxels(name='fib1'):
     
     Notes
     -------
-    These sim voxels where provided by M.M. Correia using Rician noise.    
-        
+    These sim voxels were provided by M.M. Correia using Rician noise.
     """
-    
     if name=='fib0':
-        fname=os.path.join(os.path.dirname(__file__),'fib0.pkl.gz')
+        fname=pjoin(THIS_DIR,'fib0.pkl.gz')
     if name=='fib1':
-        fname=os.path.join(os.path.dirname(__file__),'fib1.pkl.gz')
+        fname=pjoin(THIS_DIR,'fib1.pkl.gz')
     if name=='fib2':
-        fname=os.path.join(os.path.dirname(__file__),'fib2.pkl.gz')
-    
+        fname=pjoin(THIS_DIR,'fib2.pkl.gz')
     return cPickle.loads(gzip.open(fname,'rb').read())
-        
+
+
 def get_skeleton(name='C1'):
     """ provide skeletons generated from Local Skeleton Clustering (LSC)
-    
+
     Parameters
     -----------
     name : str, 'C1' or 'C3'
-    
+
     Returns
-    ---------    
+    -------
     dix : dictionary
-    
+
     Examples
     ---------
     >>> from dipy.data import get_skeleton
@@ -72,52 +82,59 @@ def get_skeleton(name='C1'):
     >>> for c in C: break
     >>> C[c].keys()
     ['indices', 'most', 'hidden', 'N']
-    
-    
-    """   
-     
+    """
     if name=='C1':
-        fname=os.path.join(os.path.dirname(__file__),'C1.pkl.gz')
+        fname=pjoin(THIS_DIR,'C1.pkl.gz')
     if name=='C3':
-        fname=os.path.join(os.path.dirname(__file__),'C3.pkl.gz')        
+        fname=pjoin(THIS_DIR,'C3.pkl.gz')
     return cPickle.loads(gzip.open(fname,'rb').read())
 
-def get_sphere(name='symmetric362'):    
+
+def get_sphere(name='symmetric363'):
     ''' provide triangulated spheres
-    
+
     Parameters
     ------------
-    name : str, which sphere
-        'symmetric362' 
-        'symmetric642'
-    
+    name : str
+        which sphere - one of:
+        * 'symmetric362' 
+        * 'symmetric642'
+
+    Returns
+    -------
+    vertices : ndarray
+        vertices for sphere
+    faces : ndarray
+        faces
+
     Examples
-    ----------    
-    
+    --------
     >>> import numpy as np
     >>> from dipy.data import get_sphere
-    >>> fname=get_sphere('symmetric362')
-    >>> sph=np.load(fname)
-    >>> verts=sph['vertices']
-    >>> faces=sph['faces']
+    >>> verts, faces = get_sphere('symmetric362')
     >>> verts.shape
     (362, 3)
     >>> faces.shape
     (720, 3)
-            
+    >>> verts, faces = get_sphere('not a sphere name')
+    Traceback (most recent call last):
+        ...
+    DataError: No sphere called "not a sphere name"
     '''
-    
-    if name=='symmetric362':
-        return os.path.join(os.path.dirname(__file__),'evenly_distributed_sphere_362.npz')
-    if name=='symmetric642':
-        return os.path.join(os.path.dirname(__file__),'evenly_distributed_sphere_642.npz')
+    fname = SPHERE_FILES.get(name)
+    if fname is None:
+        raise DataError('No sphere called "%s"' % name)
+    res = np.load(fname)
+    # Set to native byte order to avoid errors in compiled routines for
+    # big-endian platforms, when using these spheres.
+    return res['vertices'].newbyteorder('='), res['faces'].newbyteorder('=')
 
 
 def get_data(name='small_64D'):
     ''' provides filenames of some test datasets
 
     Parameters
-    ------------
+    ----------
     name: str
         the filename/s of which dataset to return, one of:
         'small_64D' small region of interest nifti,bvecs,bvals 64 directions
@@ -148,19 +165,19 @@ def get_data(name='small_64D'):
     (102, 3)
     '''
     if name=='small_64D':
-        fbvals=os.path.join(os.path.dirname(__file__),'small_64D.bvals.npy')
-        fbvecs=os.path.join(os.path.dirname(__file__),'small_64D.gradients.npy')
-        fimg =os.path.join(os.path.dirname(__file__),'small_64D.nii')        
+        fbvals=pjoin(THIS_DIR,'small_64D.bvals.npy')
+        fbvecs=pjoin(THIS_DIR,'small_64D.gradients.npy')
+        fimg =pjoin(THIS_DIR,'small_64D.nii')
         return fimg,fbvals, fbvecs
     if name=='55dir_grad.bvec':
-        return os.path.join(os.path.dirname(__file__),'55dir_grad.bvec')
+        return pjoin(THIS_DIR,'55dir_grad.bvec')
     if name=='small_101D':
-        fbvals=os.path.join(os.path.dirname(__file__),'small_101D.bval')
-        fbvecs=os.path.join(os.path.dirname(__file__),'small_101D.bvec')
-        fimg=os.path.join(os.path.dirname(__file__),'small_101D.nii.gz')
+        fbvals=pjoin(THIS_DIR,'small_101D.bval')
+        fbvecs=pjoin(THIS_DIR,'small_101D.bvec')
+        fimg=pjoin(THIS_DIR,'small_101D.nii.gz')
         return fimg,fbvals, fbvecs
     if name=='aniso_vox':
-        return os.path.join(os.path.dirname(__file__),'aniso_vox.nii.gz')
+        return pjoin(THIS_DIR,'aniso_vox.nii.gz')
     if name=='fornix':
-        return os.path.join(os.path.dirname(__file__),'tracks300.trk')
+        return pjoin(THIS_DIR,'tracks300.trk')
 

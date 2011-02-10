@@ -547,24 +547,30 @@ def design_matrix(gtab, bval, dtype=None):
     B[:, 6] = np.ones(bval.size)
     return -B
 
-def quantize_evecs(evecs,odf_vertices=None):
 
+def quantize_evecs(evecs, odf_vertices=None):
     ''' Find the closest orientation of an evenly distributed sphere
+
+    Parameters
+    ----------
+    evecs : ndarray
+    odf_vertices : None or ndarray
+        If None, then set vertices from symmetric362 sphere.  Otherwise use
+        passed ndarray as vertices
+
+    Returns
+    -------
+    IN : ndarray
     '''
-    
     max_evecs=evecs[...,:,0]
-
     if odf_vertices==None:
-        
-        eds=np.load(get_sphere('symmetric362'))
-        odf_vertices=eds['vertices']
-
+        odf_vertices, _ = get_sphere('symmetric362')
     tup=max_evecs.shape[:-1]
     mec=max_evecs.reshape(np.prod(np.array(tup)),3)
     IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
     IN=IN.reshape(tup)
-
     return IN
+
 
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor}

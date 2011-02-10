@@ -1,13 +1,14 @@
 """ Classes and functions for generalized q-sampling """
 import numpy as np
-import dipy.reconst.recspeed as rp
-from dipy.data import get_sphere
-import os
-from os.path import join as opj
 
-class GeneralizedQSampling():
+import dipy.reconst.recspeed as rp
+
+from dipy.utils.spheremakers import sphere_vf_from
+
+
+class GeneralizedQSampling(object):
     """ Implements Generalized Q-Sampling
-    
+
     Generates a model-free description for every voxel that can
     be used from simple to very complicated configurations like
     quintuple crossings if your datasets support them.
@@ -18,16 +19,16 @@ class GeneralizedQSampling():
     Implements equation [9] from Generalized Q-Sampling as
     described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
     Generalized Q-Sampling Imaging. IEEE TMI, 2010.
-    
+
     Parameters
     -----------
-    data : array, 
-        shape(X,Y,Z,D)        
-    bvals : array, 
+    data : array,
+        shape(X,Y,Z,D)
+    bvals : array,
         shape (N,)
-    gradients : array, 
-        shape (N,3) also known as bvecs        
-    Lambda : float, 
+    gradients : array,
+        shape (N,3) also known as bvecs
+    Lambda : float,
         smoothing parameter - diffusion sampling length
 
     Properties
@@ -46,9 +47,8 @@ class GeneralizedQSampling():
     --------
     dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
     """
-
-    def __init__(self,data,bvals,gradients,Lambda=1.2,odfsphere=None,mask=None):
-
+    def __init__(self, data, bvals, gradients,
+                 Lambda=1.2, odf_sphere='symmetric362', mask=None):
         """ Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
         quintuple crossings if your datasets support them.
@@ -59,42 +59,36 @@ class GeneralizedQSampling():
         Implements equation [9] from Generalized Q-Sampling as
         described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
         Generalized Q-Sampling Imaging. IEEE TMI, 2010.
-        
 
         Parameters
         -----------
-        data: array, shape(X,Y,Z,D)        
+        data: array, shape(X,Y,Z,D)
         bvals: array, shape (N,)
-        
         gradients: array, shape (N,3) also known as bvecs
-        
-        Lambda: float, smoothing parameter - diffusion sampling length
+        Lambda: float, optional
+            smoothing parameter - diffusion sampling length
+        odf_sphere : None or str or tuple, optional
+            input that will result in vertex, face arrays for a sphere.
+        mask : None or ndarray, optional
 
         Key Properties
         ---------------
-        QA : array, shape(X,Y,Z,5), quantitative anisotropy               
-
+        QA : array, shape(X,Y,Z,5), quantitative anisotropy
         IN : array, shape(X,Y,Z,5), indices of QA, qa unit directions
-
         fwd : float, normalization parameter
 
         Notes
         -------
-        In order to reconstruct the spin distribution function  a nice symmetric evenly distributed sphere is provided using 362 points. This is usually
-        sufficient for most of the datasets. 
+        In order to reconstruct the spin distribution function  a nice symmetric
+        evenly distributed sphere is provided using 362 points. This is usually
+        sufficient for most of the datasets.
 
         See also
-        ----------        
-        dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.__init__.get_sphere
-
+        --------
+        dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor,
+        dipy.data.__init__.get_sphere
         """
-        
-        if odfsphere == None:
-            eds = eds=np.load(get_sphere('symmetric362'))            
-
-        odf_vertices=eds['vertices']
-        odf_faces=eds['faces']
-
+        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.odf_vertices=odf_vertices
 
         # 0.01506 = 6*D where D is the free water diffusion coefficient 

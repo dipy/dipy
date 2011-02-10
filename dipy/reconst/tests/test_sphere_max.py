@@ -43,7 +43,8 @@ N_VERTICES = VERTICES.shape[0]
 VERTEX_INDS = np.array([0,1,2,3,4,5])
 
 DATA_PATH = pjoin(dirname(__file__), '..', 'matrices')
-SPHERE_DATA = np.load(get_sphere('symmetric362'))
+# vertex, face tuple
+SPHERE_DATA = get_sphere('symmetric362')
 
 def test_sym_hemisphere():
     assert_raises(ValueError, sym_hemisphere,
@@ -59,11 +60,12 @@ def test_sym_hemisphere():
             assert_false(np.any(np.all(
                     vert * -1 == verts)))
     # Test the sphere mesh data
-    vertices = SPHERE_DATA['vertices']
+    vertices, _ = SPHERE_DATA
     n_vertices = vertices.shape[0]
     vert_inds = sym_hemisphere(vertices)
     assert_array_equal(vert_inds,
-                             np.arange(n_vertices / 2))
+                       np.arange(n_vertices / 2))
+
 
 def test_vertinds_neighbors():
     adj = neighbors(FACES)
@@ -98,8 +100,7 @@ def test_vertinds_neighbors():
                               [0, 1, 3, 5],
                               [1, 2, 3, 4]])
     # just test right size for the real mesh
-    vertices = SPHERE_DATA['vertices']
-    faces = SPHERE_DATA['faces']
+    vertices, faces = SPHERE_DATA
     n_vertices = vertices.shape[0]
     adj = vertinds_to_neighbors(np.arange(n_vertices),
                                       faces)
@@ -160,11 +161,9 @@ def test_neighbor_max():
         # w_vert_inds, w_adj_inds)
 
 
-
 def test_performance():
     # test this implementation against Frank Yeh implementation
-    vertices = SPHERE_DATA['vertices']
-    faces = SPHERE_DATA['faces']
+    vertices, faces = SPHERE_DATA
     n_vertices = vertices.shape[0]
     vert_inds = sym_hemisphere(vertices)
     adj = vertinds_to_neighbors(vert_inds, faces)
@@ -175,14 +174,12 @@ def test_performance():
     assert_array_equal(maxinds, pfmaxinds[::-1])
 
 
-
 def test_sym_check():
     assert_true(peak_finding_compatible(VERTICES))
-    vertices = SPHERE_DATA['vertices']
-    faces = SPHERE_DATA['faces']
+    vertices, faces = SPHERE_DATA
     assert_true(peak_finding_compatible(vertices))
     assert_false(peak_finding_compatible(vertices[::-1]))
-                       
+
 
 def test_adjacencies():
     faces = FACES
