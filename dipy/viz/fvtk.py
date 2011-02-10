@@ -1,32 +1,46 @@
 ''' Fvtk module implements simple visualization functions using VTK. Fos means light in Greek.    
-   
-    The main idea is the following:
-    A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
-    You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
-    
-    Examples
-    ----------------
-    >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()    
-    >>> a=fvtk.axes()        
-    >>> fvtk.add(r,a)
-    >>> #fvtk.show(r)
-    
+
+The main idea is the following:
+A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
+You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
+
+Examples
+----------------
+>>> from dipy.viz import fvtk
+>>> r=fvtk.ren()
+>>> a=fvtk.axes()
+>>> fvtk.add(r,a)
+>>> #fvtk.show(r)
 '''
 
-try:
-    import vtk      
-except ImportError:
-    raise ImportError('VTK is not installed.')
-    
-try:
-    import numpy as np
-except ImportError:
-    raise ImportError('Numpy is not installed.')
+import types
 
+import numpy as np
 
-import types    
 import scipy as sp
+
+# Conditional import machinery for pytables
+from ..utils.tripwire import TripWire, is_tripwire
+
+try:
+    import vtk
+except ImportError:
+    vtk = TripWire('We need vtk for these functions, but '
+                   '``import vtk`` raised an ImportError')
+
+
+def setup_module():
+    """Sets up doctests in module for nosetests
+
+    We need to skip doctests if vtk is not installed
+    """
+    if not is_tripwire(vtk):
+        return
+    try:
+        import nose
+    except ImportError:
+        return
+    raise nose.plugins.skip.SkipTest('No vtk for these tests')
 
 '''
 For more color names see
