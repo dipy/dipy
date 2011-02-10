@@ -38,7 +38,6 @@ Most work on Dipy so far has been by Eleftherios Garyfallidis, Ian Nimmo-Smith, 
     * Resampling datasets with anisotropic voxels to isotropic
     * Visualizing multiple brains simultaneously
     * Finding track correspondence between different brains
-    * Warping tractographies into another space e.g. MNI space
     * Reading many different file formats e.g. Trackvis or Nifti
     * Dealing with huge tractographies without memory restrictions
     * Playing with datasets interactively without storing
