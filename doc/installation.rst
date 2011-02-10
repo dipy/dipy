@@ -4,8 +4,9 @@
  Installation
 ======================
 
-dipy_ is in active development at the moment and we are doing our best
-to create a release as soon as we can. Soon here is not hypothetical a release is planned before the end of February 2011.
+dipy_ is in active development at the moment and we are doing our best to create
+a release as soon as we can. Soon here is not hypothetical a release is planned
+before the end of February 2011.
 
 General usage [available soon]
 ------------------------------
@@ -30,7 +31,7 @@ e-mail to the `nipy mailing list`_ with the subject line starting with
 Windows [available]
 --------------------
 
-For windows you can use pythonxy_ This is quite a big package but will install
+For windows you can use pythonxy_ . This is quite a big package but will install
 many other tools too very useful for your scientific endeavors.
 
 After that you need to download dipy and install it using ::
@@ -43,7 +44,7 @@ Then you can try ::
 
 Does it work?
 
-If yout get an error saying  "unable to find vcvarsall.bat" then you need to
+If you get an error saying  "unable to find vcvarsall.bat" then you need to
 create a file called "pydistutils.cfg" in notepad and give it the contents ::
 
   [build_ext]
@@ -55,11 +56,10 @@ ipython command prompt ::
   >>> import os
   >>> os.path.expanduser('~')
 
-
 Debian/Ubuntu [available soon]
 ------------------------------
 
-Well this is the easiest just install with aptitude or synaptic the package
+Well this is the easiest; just install with aptitude or synaptic the package
 python-dipy ::
 
     sudo apt-get install python-dipy
@@ -134,7 +134,7 @@ Do they work? For any problems/suggestions please let us know by sending us an
 e-mail to the `nipy mailing list`_ with subject starting with ``[dipy]``.
 
 Windows Developers [available]
----------------------------------------
+------------------------------
 
 First download and install pythonxy from::
 
@@ -170,7 +170,7 @@ and then try::
 Does it work?
 
 If yes you can try the examples from the dipy website
-http://nipy.sourceforge.net/dipy/examples/index.html
+http://nipy.sourceforge.net/dipy/examples_index.html
 
 For any problems/suggestions please let us know by sending us
 an e-mail to the `nipy mailing list`_ with subject starting

@@ -2,7 +2,7 @@ import os
 import numpy as np
 from tempfile import mkstemp
 
-from ..dpy import Dpy, tables
+from ..dpy import Dpy, have_tables
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -10,10 +10,8 @@ from nose.tools import assert_true, assert_false, \
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
 
-from ...utils.tripwire import is_tripwire
-
 # Decorator to protect tests from being run without pytables present
-iftables = npt.dec.skipif(is_tripwire(tables),
+iftables = npt.dec.skipif(not have_tables,
                           'Pytables does not appear to be installed')
 
 @iftables

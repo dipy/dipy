@@ -1,19 +1,15 @@
 """ Class for profiling cython code
 """
 
-try:
-    import cProfile
-except ImportError:
-    raise ImportError('cProfile is not installed')
-try:
-    import pstats
-except ImportError:
-    raise ImportError('pstats is not installed it is part of the python-profiler package')
-    print('In Ubuntu you will need to do sudo apt-get install python-profiler')
- 
 import os
 import subprocess
 
+from ..utils.optpkg import optional_package
+
+cProfile, _, _ = optional_package('cProfile')
+pstats, _, _ = optional_package('pstats',
+                                'pstats is not installed.  It is part of the'
+                                'python-profiler package in Debian/Ubuntu')
 
 class Profiler():
     ''' Profile python/cython files or functions

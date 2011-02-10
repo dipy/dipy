@@ -11,26 +11,10 @@
 import numpy as np
 
 # Conditional import machinery for pytables
-from ..utils.tripwire import TripWire, is_tripwire
+from ..utils.optpkg import optional_package
 
-try:
-    import tables
-except ImportError:
-    tables = TripWire('We need pytables for these functions, but '
-                      '``import tables`` raised an ImportError')
-
-def setup_module():
-    """Sets up doctests in module for nosetests
-
-    We need to skip doctests if pytables is not installed
-    """
-    if not is_tripwire(tables):
-        return
-    try:
-        import nose
-    except ImportError:
-        return
-    raise nose.plugins.skip.SkipTest('No pytables for these tests')
+# Allow import, but disable doctests, if we don't have pytables
+tables, have_tables, setup_module = optional_package('tables')
 
 
 class Dpy(object):

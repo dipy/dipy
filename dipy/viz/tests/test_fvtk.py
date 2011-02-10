@@ -2,10 +2,7 @@
 """
 import numpy as np
 
-from ...utils.tripwire import is_tripwire
-
 from .. import fvtk
-no_vtk = is_tripwire(fvtk.vtk)
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -14,7 +11,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
 
 
-@npt.dec.skipif(no_vtk)
+@npt.dec.skipif(not fvtk.have_vtk)
 def test_fvtk_functions():
     
     # Create a renderer

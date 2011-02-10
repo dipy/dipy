@@ -19,31 +19,11 @@ import numpy as np
 
 import scipy as sp
 
-# Conditional import machinery for pytables
-from ..utils.tripwire import TripWire
+# Conditional import machinery for vtk
+from ..utils.optpkg import optional_package
 
-try:
-    import vtk
-except ImportError:
-    vtk = TripWire('We need vtk for these functions, but '
-                   '``import vtk`` raised an ImportError')
-    have_vtk = False
-else:
-    have_vtk = True
-
-
-def setup_module():
-    """Sets up doctests in module for nosetests
-
-    We need to skip doctests if vtk is not installed
-    """
-    if have_vtk:
-        return
-    try:
-        import nose
-    except ImportError:
-        return
-    raise nose.plugins.skip.SkipTest('No vtk for these tests')
+# Allow import, but disable doctests if we don't have vtk
+vtk, have_vtk, setup_module = optional_package('vtk')
 
 '''
 For more color names see
@@ -59,7 +39,7 @@ azure=np.array([0,0.49,1])
 golden=np.array([1,0.84,0])
 white=np.array([1,1,1])
 black=np.array([0,0,0])
-           	
+
 aquamarine=np.array([0.498,1.,0.83])
 indigo=np.array([ 0.29411765,  0.,  0.50980392])
 lime=np.array([ 0.74901961,  1.,  0.])
