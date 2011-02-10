@@ -257,11 +257,4 @@ fvtk.add(r,fvtk.line(all_shift2,colors2,linewidth=2.))
 
 # Here's how we make the illustration.
 print('Saving illustration as visualize_cross1000000.png')
-fvtk.record(r, n_frames=1, # single snapshot
-            out_path='visualize_cross',
-            bgr_color=(0,0,0),
-            size=(700,500),
-            cam_pos=(28, 33, -20),
-            cam_focal=(12, 3, 7),
-            cam_view=(-0.4, -0.5, -0.8),
-           )
+fvtk.record(r,n_frames=1,out_path='visualize_cross',size=(600,600))

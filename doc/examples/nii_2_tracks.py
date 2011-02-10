@@ -307,14 +307,5 @@ To record a video of 50 frames of png, something like::
 
 # Here's how we make the figure.
 print('Saving illustration as nii_2_tracks1000000.png')
-fvtk.record(r, n_frames=1, # single snapshot
-            out_path='nii_2_tracks',
-            bgr_color=(0,0,0),
-            size=(600,600),
-            cam_pos=(26,28,-10),
-            cam_focal=(8, 5, 5),
-            cam_view=(-0.4, -0.2, -0.9),
-           )
-
-
+fvtk.record(r,n_frames=1,out_path='nii_2_tracks',size=(600,600))
 

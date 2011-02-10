@@ -992,7 +992,7 @@ def _cm2colors(colormap='Blues'):
     return red1,red2,green1,green2,blue1,blue2
 
 
-def colors(v,colormap):
+def colors(v,colormap,auto=True):
 
     ''' Create colors from a specific colormap and return it 
     as an array of shape (N,3) where every row gives the corresponding
@@ -1030,8 +1030,11 @@ def colors(v,colormap):
     if v.ndim>1:
         ValueError('This function works only with 1d arrays. Use ravel()')
 
-    v=np.interp(v,[v.min(),v.max()],[0,1])
     
+    if auto:
+        v=np.interp(v,[v.min(),v.max()],[0,1])
+    else:    
+        v=np.interp(v,[0,1],[0,1])
 
     if colormap=='jet':
         #print 'jet'
@@ -1508,7 +1511,7 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
     iren.Start()
 
 
-def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_frames=10, az_ang=10, magnification=1,size=(125,125),bgr_color=(0.1,0.2,0.4)):
+def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_frames=10, az_ang=10, magnification=1,size=(300,300),bgr_color=(0,0,0)):
     ''' This will record a video of your scene
 
     Records a video as a series of .png files of your scene by rotating the
@@ -1565,6 +1568,7 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_fr
     ren.GetActiveCamera().Dolly(1.4)
     ren.ResetCameraClippingRange()
     '''
+    ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
     renderLarge.SetInput(ren)

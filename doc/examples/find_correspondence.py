@@ -115,7 +115,7 @@ for row in track2track:
 
     color=np.random.rand(3)
     T=[T1[int(row[0])],T3s[int(row[1])]]
-    fvtk.add(r,fvtk.line(T,color,linewidth=10))
+    fvtk.add(r,fvtk.line(T,color,linewidth=5))
     pos1=T1[int(row[0])][0]
     pos3=T3s[int(row[1])][0]
     fvtk.add(r,fvtk.label(r,str(int(row[0])),tuple(pos1),(5,5,5)))
@@ -126,12 +126,5 @@ for row in track2track:
 
 # To make the illustration
 print('Saving illustration as find_corr1000000.png')
-fvtk.record(r, n_frames=1, # single snapshot
-            out_path='find_corr',
-            bgr_color=(0,0,0),
-            size=(600,600),
-            cam_pos=(52,-15,390),
-            cam_focal=(52, -15, 5),
-            cam_view=(0, 1, 0),
-           )
+fvtk.record(r,n_frames=1,out_path='find_corr',size=(600,600))
 

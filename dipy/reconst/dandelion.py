@@ -97,10 +97,27 @@ class SphericalDandelion(object):
         #return (final_sphere-final_sphere.min())/float(len(d))
         return final_sphere/float(len(d))
         '''
+        d=np.zeros(d.shape)
+        d[0]=12
+        #d=12*np.ones(d.shape)
+        o=np.ones(d.shape)
+        
+        finald=self.koukou(d)
+        finalo=self.koukou(o)
+        #print finald.shape,finalo.shape
+        return finald/finalo
+        
+    def koukou(self,d):
+        width=1
         final_sphere=np.zeros((len(d),self.odf_vertices.shape[0]))
         for i in range(len(d)):
-            final_sphere[i]=d[i]*np.abs(np.dot(self.gradients[i+1],self.odf_vertices.T)**(2))
-        return np.max(final_sphere,axis=0)
+            #f=np.abs(np.dot(self.gradients[i+1],self.odf_vertices.T)**(2))
+            cos2=np.dot(self.gradients[i+1],self.odf_vertices.T)**(2)
+            sin2=1-cos2
+            Sinc=np.sinc(width*sin2)**2
+            final_sphere[i]=d[i]*Sinc
+        #return final_sphere
+        return np.sum(final_sphere,axis=0)#/float(len(d))
     
     def xa(self):
         return self.XA

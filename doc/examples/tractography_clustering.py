@@ -83,6 +83,14 @@ Show the initial *Fornix* dataset:
 r=fvtk.ren()
 fvtk.add(r,fvtk.line(T,fvtk.white,opacity=1))
 #fvtk.show(r)
+fvtk.record(r,n_frames=1,out_path='fornix_initial',size=(600,600))
+
+"""
+.. figure:: fornix_initial1000000.png
+   :align: center
+
+   **Initial Fornix dataset**.
+"""
 
 """
 Show the *Fornix* after clustering (with random bundle colors):
@@ -96,6 +104,15 @@ for c in C:
         colors[i]=color
 fvtk.add(r,fvtk.line(T,colors,opacity=1))
 #fvtk.show(r)
+fvtk.record(r,n_frames=1,out_path='fornix_clust',size=(600,600))
+
+"""
+.. figure:: fornix_clust1000000.png
+   :align: center
+
+   **Showing the different clusters with random colors**.
+   
+"""
 
 """
 Calculate some statistics about the clusters
@@ -124,6 +141,18 @@ for c in C:
 
 fvtk.add(r,fvtk.line(skeleton,colors,opacity=1))
 #fvtk.show(r)
+fvtk.record(r,n_frames=1,out_path='fornix_most',size=(600,600))
+
+"""
+.. figure:: fornix_most1000000.png
+   :align: center
+
+   **Showing skeleton with the most representative tracks as the skeletal representation**.
+   
+   The numbers are depicting the number of tracks in each cluster. This is a very compact way to see the underlying
+   structures an alternative would be to draw the representative tracks with different widths.
+   
+"""
 
 """
 Save the skeleton information in the dictionary. Now try to play with different thresholds LSC and check the different results.
