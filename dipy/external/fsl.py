@@ -1,5 +1,7 @@
 ''' FSL IO '''
 
+from __future__ import with_statement
+
 import os
 from os.path import join as pjoin
 from subprocess import Popen,PIPE
