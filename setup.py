@@ -42,22 +42,26 @@ cmdclass = {'build_py': get_comrec_build('dipy')}
 ver_file = os.path.join('dipy', 'info.py')
 execfile(ver_file)
 
-# We're running via setuptools
+# We're running via setuptools - specify exta setuptools stuff
 if 'setuptools' in sys.modules:
     extra_setuptools_args['extras_require'] = dict(
         doc=['Sphinx>=1.0'],
         test=['nose>=0.10.1'],
     )
+    # I removed numpy and scipy from install requires because easy_install seems
+    # to want to fetch these if they are already installed, meaning of course
+    # that there's a long fragile and unnecessary compile before the install
+    # finishes.
     extra_setuptools_args['install_requires'] = [
-        'numpy>=' + NUMPY_MIN_VERSION,
-        'scipy>=' + SCIPY_MIN_VERSION,
         'nibabel>=' + NIBABEL_MIN_VERSION,
     ]
-else:
-    # Do our own install time dependency checking
-    package_check('numpy', NUMPY_MIN_VERSION)
-    package_check('scipy', SCIPY_MIN_VERSION)
-    package_check('nibabel', NIBABEL_MIN_VERSION)
+
+# Do our own install time dependency checking.  The dependency checks in
+# setuptools above go into the egg so are useful for easy_install. These checks
+# below run whenever we run setup.py - so - install or build via setup.py
+package_check('numpy', NUMPY_MIN_VERSION)
+package_check('scipy', SCIPY_MIN_VERSION)
+package_check('nibabel', NIBABEL_MIN_VERSION)
 
 # Cython is a build dependency
 def _cython_version(pkg_name):
@@ -77,7 +81,8 @@ for modulename, other_sources in (
     ('dipy.tracking.vox2track', []),
     ('dipy.tracking.propspeed', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
-    EXTS.append(Extension(modulename,[pyx_src] + other_sources,include_dirs = [np.get_include()]))
+    EXTS.append(Extension(modulename,[pyx_src] + other_sources,
+                          include_dirs = [np.get_include()]))
 
 
 def main(**extra_args):
@@ -125,7 +130,8 @@ def main(**extra_args):
           package_data = {'dipy':
                           [pjoin('data', '*')
                           ]},
-          data_files=[('share/doc/dipy/examples', glob(pjoin('doc','examples','*.py')))],                                       
+          data_files=[('share/doc/dipy/examples',
+                       glob(pjoin('doc','examples','*.py')))],
           scripts      = glob(pjoin('scripts', '*')),
           cmdclass = cmdclass,
           **extra_args

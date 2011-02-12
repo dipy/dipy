@@ -12,8 +12,14 @@
 .. _`Brain Imaging Center`: http://bic.berkeley.edu/
 .. _dipy: http://dipy.org
 .. _`dipy github`: http://github.com/Garyfallidis/dipy
+.. _dipy pypi: http://pypi.python.org/pypi/dipy
 .. _nibabel: http://nipy.sourceforge.net/nibabel
+.. _nibabel pypi: http://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: http://nipy.sourceforge.net/devel
+
+.. Packaging
+.. _neurodebian: http://neuro.debian.net
+.. _neurodebian how to: http://neuro.debian.net/#how-to-use-this-repository
 
 .. Documentation tools
 .. _graphviz: http://www.graphviz.org/
@@ -38,6 +44,7 @@
 .. _`nipy bugs`: https://bugs.launchpad.net/nipy
 .. _pep8: http://www.python.org/dev/peps/pep-0008/
 .. _`numpy coding style`: http://scipy.org/scipy/numpy/wiki/CodingStyleGuidelines
+.. _python module path: http://docs.python.org/tutorial/modules.html#the-module-search-path
 
 .. Code support stuff
 .. _pychecker: http://pychecker.sourceforge.net/
@@ -106,7 +113,8 @@
 .. General software
 .. _gcc: http://gcc.gnu.org
 .. _xcode: http://developer.apple.com/TOOLS/xcode
-.. _mingw: http://www.mingw.org
+.. _mingw: http://www.mingw.org/wiki/Getting_Started
+.. _mingw distutils bug: http://bugs.python.org/issue2698
 .. _cygwin: http://cygwin.com
 .. _macports: http://www.macports.org/
 .. _VTK: http://www.vtk.org/
@@ -145,4 +153,4 @@
 .. _`wikipedia reflection`: http://en.wikipedia.org/wiki/Reflection_(mathematics)
 .. _`wikipedia direction cosine`: http://en.wikipedia.org/wiki/Direction_cosine
 
-
+.. vim:syntax=rst
