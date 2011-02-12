@@ -9,29 +9,28 @@ Dipy Development Changelog
 Dipy is a diffusion MR imaging library written in Python
 
 'Close gh-' statements refer to GitHub issues that are available at::
-  
-  http://github.com/Garyfallidis/dipy/issues
 
+  http://github.com/Garyfallidis/dipy/issues
 
 The full VCS changelog is available here:
 
   http://github.com/Garyfallidis/dipy/commits/master
-  
 
 Releases
 ~~~~~~~~
 
 Dipy
-+++++++
+++++
 
-Most work on Dipy so far has been by Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett, Bago Amirbekian, Christopher Nguyen, Yaroslav Halchenko and  Emanuele Olivetti.
-   
+Most work on Dipy so far has been by Eleftherios Garyfallidis, Ian
+Nimmo-Smith, Matthew Brett, Bago Amirbekian, Christopher Nguyen, Yaroslav
+Halchenko and  Emanuele Olivetti.
 
-* 0.5.0 (Thu, 10 Feb 2011)
+* 0.5.0 (Friday, 11 Feb 2011)
 
   * Initial release.
 
-    * Reconstruction algorithms e.g. GQI, DTI  
+    * Reconstruction algorithms e.g. GQI, DTI
     * Tractography generation algorithms e.g. EuDX
     * Intelligent downsampling of tracks
     * Ultra fast tractography clustering
@@ -41,5 +40,4 @@ Most work on Dipy so far has been by Eleftherios Garyfallidis, Ian Nimmo-Smith, 
     * Reading many different file formats e.g. Trackvis or Nifti
     * Dealing with huge tractographies without memory restrictions
     * Playing with datasets interactively without storing
-    * And much more and even more to come in next releases 
-
+    * And much more and even more to come in next releases
