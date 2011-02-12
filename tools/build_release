@@ -15,7 +15,7 @@ execfile(pjoin('dipy','info.py'))
 compile_tree()
 
 # Cleanup
-for d in ['build','dist',pjoin('docs','_build'),pjoin('docs','dist')]:
+for d in ['build','dist',pjoin('doc','_build'),pjoin('doc','dist')]:
     if os.path.isdir(d):
         remove_tree(d)
 

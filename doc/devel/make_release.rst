@@ -63,9 +63,29 @@ Release checklist
   Then manually go over the *git log* to make sure the release notes are
   as complete as possible and that every contributor was recognized.
 
-* Make sure all tests pass::
+* Check the ``long_description`` in ``dipy/info.py``.  Check it matches the
+  ``README`` in the root directory.
 
+* Clean and compile::
+
+    make distclean
+    python setup.py build_ext --inplace
+
+* Make sure all tests pass (from the dipy root directory)::
+
+    cd ..
     nosetests --with-doctest dipy
+    cd dipy # back to the root directory
+
+* Check the documentation doctests::
+
+    cd doc
+    make doctest
+    cd ..
+
+  At the moment this generates lots of errors from the autodoc documentation
+  running the doctests in the code, where the doctests pass when run in nose -
+  we should find out why this is at some point, but leave it for now.
 
 * Make sure all tests pass from sdist::
 
@@ -75,17 +95,38 @@ Release checklist
 
     make bdist-egg-tests
 
-* First pass run :file:`build_release` from the :file:`tools` directory::
-
-    cd tools
-    ./build_release
-
 * The release should now be ready.
 
 * Edit :file:`dipy/info.py` to set ``_version_extra`` to ``''``; commit
 
-* Once everything looks good, run :file:`release` from the
-  :file:`tools` directory.
+* Build the release files::
+
+    make distclean
+    make source-release
+
+* Once everything looks good, upload the source release to PyPi.  See
+  `setuptools intro`_::
+
+    python setup.py register
+    python setup.py sdist --formats=gztar,zip upload
+
+* Then upload the binary release for the platform you are currently on::
+
+    python setup.py bdist_egg upload
+
+* Do binary builds for any virtualenvs you have::
+
+    workon python25
+    python setup.py bdist_egg upload
+    deactivate
+
+  etc.  (``workon`` is a virtualenvwrapper command).
+
+* Get to a windows machine and do egg and wininst builds::
+
+    make distclean
+    python setup.py bdist_egg upload
+    python setup.py bdist_wininst upload
 
 * Tag the release with tag of form ``1.0.0``::
 
@@ -133,7 +174,8 @@ Release checklist
 
     <dipy root>/dist/dipy-0.5.0.dev-doc-examples.tar.gz
 
-  We need to decided where to put this tarball.
+  We need to decide where to put this tarball.
 
 * Announce to the mailing lists.
 
+.. _setuptools intro: http://packages.python.org/an_example_pypi_project/setuptools.html

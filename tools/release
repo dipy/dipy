@@ -4,7 +4,8 @@
 This should only be run at real release time.
 """
 
-from toollib import *
+from os.path import join as pjoin
+from toollib import get_dipydir, cd, c
 
 # Get main dipy dir, this will raise if it doesn't pass some checks
 dipydir = get_dipydir()
@@ -41,6 +42,7 @@ c('./setup.py register')
 
 # Upload all files
 c('./setup.py sdist --formats=gztar,zip upload')
+c('./setup.py bdist_egg upload')
 cd(distdir)
 #print "Uploading distribution files..."
 #c('scp * dipy@dipy.scipy.org:www/dist/')

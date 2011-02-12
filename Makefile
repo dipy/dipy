@@ -75,6 +75,6 @@ source-release: clean
 	python -m compileall .
 	python setup.py sdist --formats=gztar,zip
 
-binary-release:
+binary-release: clean
 	python setup_egg.py bdist_egg
 
