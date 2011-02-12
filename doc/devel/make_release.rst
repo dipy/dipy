@@ -21,8 +21,10 @@ utilities::
     |- release
     |- toollib.py
 
-There are also some release utilities in :file:`nisext/testers.py`, with
-makefile targets for their use.  The relevant targets are::
+There are also some release utilities that come with nibabel_.  nibabel should
+install these as the ``nisext`` package, and the testing stuff is understandably
+in the ``testers`` module of that package.  Dipy has Makefile targets for their
+use.  The relevant targets are::
 
     make check-version-info
     make sdist-tests
@@ -33,6 +35,14 @@ is working and information parameters are set correctly.
 
 The second (``sdist-tests``) makes an sdist source distribution archive,
 installs it to a temporary directory, and runs the tests of that install.
+
+If you have a version of nibabel trunk past February 11th 2011, there will also
+be a functional make target::
+
+    make bdist-egg-tests
+
+This builds an egg (which is a zip file), hatches it (unzips the egg) and runs
+the tests from the resulting directory.
 
 .. _release-checklist:
 
@@ -60,6 +70,10 @@ Release checklist
 * Make sure all tests pass from sdist::
 
     make sdist-tests
+
+  and bdist_egg::
+
+    make bdist-egg-tests
 
 * First pass run :file:`build_release` from the :file:`tools` directory::
 
@@ -107,22 +121,6 @@ Release checklist
 
   If this is just a maintenance release from ``maint/1.0.x`` or similar, just
   tag and set the version number to - say - ``1.0.2.dev``.
-
-* Make next development release tag
-
-    After each release the master branch should be tagged
-    with an annotated (or/and signed) tag, naming the intended
-    next version, plus an 'upstream/' prefix and 'dev' suffix.
-    For example 'upstream/1.0.0.dev' means "development start
-    for upcoming version 1.0.0.
-
-    This tag is used in the Makefile rules to create development snapshot
-    releases to create proper versions for those. The version derives its name
-    from the last available annotated tag, the number of commits since that, and
-    an abbrevated SHA1. See the docs of ``git describe`` for more info.
-
-    Please take a look at the Makefile rules ``devel-src``,
-    ``devel-dsc`` and ``orig-src``.
 
 * Make a tarball for the examples, for packagers to get away without having vtk
   or a display on the build machines::

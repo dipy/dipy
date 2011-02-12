@@ -42,9 +42,11 @@ clean:
 	- find ${PKGDIR} -name "*.c" -print0 | xargs -0 rm
 	- find ${PKGDIR} -name "*.html" -print0 | xargs -0 rm
 	rm -rf build
-	rm -rf dist
 	rm -rf docs/_build
 	rm -rf docs/dist
+
+distclean: clean
+	rm -rf dist
 
 # Suffix rules
 %.c : %.pyx
@@ -64,6 +66,9 @@ installed-tests:
 # Run tests from installed code
 sdist-tests:
 	$(PYTHON) -c 'from nisext.testers import sdist_tests; sdist_tests("dipy")'
+
+bdist-egg-tests:
+	$(PYTHON) -c 'from nisext.testers import bdist_egg_tests; bdist_egg_tests("dipy")'
 
 source-release: clean
 	python -m compileall .
