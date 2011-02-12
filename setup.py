@@ -30,29 +30,42 @@ from distutils.extension import Extension
 if not 'extra_setuptools_args' in globals():
     extra_setuptools_args = dict()
 
-from nisext.sexts import get_comrec_build, package_check
+# Import build helpers
+try:
+    from nisext.sexts import package_check, get_comrec_build
+except ImportError:
+    raise RuntimeError('Need nisext package from nibabel installation'
+                       ' - please install nibabel first')
 cmdclass = {'build_py': get_comrec_build('dipy')}
 
 # Get version and release info, which is all stored in dipy/info.py
 ver_file = os.path.join('dipy', 'info.py')
 execfile(ver_file)
 
-# Do dependency checking
-package_check('numpy', NUMPY_MIN_VERSION)
-package_check('scipy', SCIPY_MIN_VERSION)
-package_check('nibabel', NIBABEL_MIN_VERSION)
-# Cython can be a build dependency
+# We're running via setuptools
+if 'setuptools' in sys.modules:
+    extra_setuptools_args['extras_require'] = dict(
+        doc=['Sphinx>=1.0'],
+        test=['nose>=0.10.1'],
+    )
+    extra_setuptools_args['install_requires'] = [
+        'numpy>=' + NUMPY_MIN_VERSION,
+        'scipy>=' + SCIPY_MIN_VERSION,
+        'nibabel>=' + NIBABEL_MIN_VERSION,
+    ]
+else:
+    # Do our own install time dependency checking
+    package_check('numpy', NUMPY_MIN_VERSION)
+    package_check('scipy', SCIPY_MIN_VERSION)
+    package_check('nibabel', NIBABEL_MIN_VERSION)
+
+# Cython is a build dependency
 def _cython_version(pkg_name):
     from Cython.Compiler.Version import version
     return version
 package_check('cython',
-              CYTHON_MIN_VERSION,
-              version_getter=_cython_version)
-
-if 'setuptools' in sys.modules:
-    extra_setuptools_args['extras_require'] = dict(
-        doc='Sphinx>=1.0',
-        test='nose>=0.10.1')
+            CYTHON_MIN_VERSION,
+            version_getter=_cython_version)
 
 # we use cython to compile the modules
 from Cython.Distutils import build_ext

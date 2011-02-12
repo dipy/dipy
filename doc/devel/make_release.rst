@@ -56,9 +56,9 @@ Release checklist
 * Review and update the release notes.  Review and update the :file:`Changelog`
   file.  Get a partial list of contributors with something like::
 
-      git log 0.9.0.. | grep '^Author' | cut -d' ' -f 2- | sort | uniq
+      git log 0.4.0.. | grep '^Author' | cut -d' ' -f 2- | sort | uniq
 
-  where ``0.9.0`` was the last release tag name.
+  where ``0.4.0`` was the last release tag name.
 
   Then manually go over the *git log* to make sure the release notes are
   as complete as possible and that every contributor was recognized.
@@ -133,9 +133,9 @@ Release checklist
   Maybe virtualenvs for the different versions of python?  I haven't explored
   that yet.
 
-* Tag the release with tag of form ``1.0.0``::
+* Tag the release with tag of form ``0.5.0``::
 
-    git tag -am 'First public release' 1.0.0
+    git tag -am 'First public release' 0.5.0
 
 * Now the version number is OK, push the docs to sourceforge with::
 
@@ -154,8 +154,8 @@ Release checklist
       git co -b maint/1.0.x
 
     Set ``_version_extra`` back to ``.dev`` and bump ``_version_micro`` by 1.
-    Thus the maintenance series will have version numbers like - say - '1.0.1.dev'
-    until the next maintenance release - say '1.0.1'.  Commit.
+    Thus the maintenance series will have version numbers like - say - '0.5.1.dev'
+    until the next maintenance release - say '0.5.1'.  Commit.
 
   * Start next development series::
 
@@ -163,10 +163,10 @@ Release checklist
 
     then restore ``.dev`` to ``_version_extra``, and bump ``_version_minor`` by 1.
     Thus the development series ('trunk') will have a version number here of
-    '1.1.0.dev' and the next full release will be '1.1.0'.
+    '0.6.0.dev' and the next full release will be '0.6.0'.
 
-  If this is just a maintenance release from ``maint/1.0.x`` or similar, just
-  tag and set the version number to - say - ``1.0.2.dev``.
+  If this is just a maintenance release from ``maint/0.5.x`` or similar, just
+  tag and set the version number to - say - ``0.5.2.dev``.
 
 * Make a tarball for the examples, for packagers to get away without having vtk
   or a display on the build machines::
