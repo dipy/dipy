@@ -10,22 +10,14 @@ clinical decisions.
 Website
 =======
 
-Current information can always be found at the NIPY dipy website::
-
-    http://nipy.org/dipy
-    
-or directly form the DIPY website::
-
-    http://dipy.org
-    
-   
+Current information can always be found at the NIPY dipy website -
+http://nipy.org/dipy - or directly from the DIPY website - http://dipy.org
 
 Mailing Lists
 =============
 
-Please see the developer's list here::
-
-    http://mail.scipy.org/mailman/listinfo/nipy-devel
+Please see the developer's list at
+http://mail.scipy.org/mailman/listinfo/nipy-devel
 
 Code
 ====

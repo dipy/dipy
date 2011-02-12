@@ -13,15 +13,7 @@ A guide for developers who are doing a dipy release
 Release tools
 =============
 
-In the :file:`tools` directory, among other files, you will find the following
-utilities::
-
-    tools/
-    |- build_release
-    |- release
-    |- toollib.py
-
-There are also some release utilities that come with nibabel_.  nibabel should
+There are some release utilities that come with nibabel_.  nibabel should
 install these as the ``nisext`` package, and the testing stuff is understandably
 in the ``testers`` module of that package.  Dipy has Makefile targets for their
 use.  The relevant targets are::
