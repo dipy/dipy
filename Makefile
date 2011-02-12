@@ -39,6 +39,7 @@ distances.so: ${PKGDIR}/tracking/distances.pyx
 
 clean:
 	- find ${PKGDIR} -name "*.so" -print0 | xargs -0 rm
+	- find ${PKGDIR} -name "*.pyd" -print0 | xargs -0 rm
 	- find ${PKGDIR} -name "*.c" -print0 | xargs -0 rm
 	- find ${PKGDIR} -name "*.html" -print0 | xargs -0 rm
 	rm -rf build
