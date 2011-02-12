@@ -122,11 +122,16 @@ Release checklist
 
   etc.  (``workon`` is a virtualenvwrapper command).
 
+* Repeat binary builds for Linux 32, 64 bit and OS X.
+
 * Get to a windows machine and do egg and wininst builds::
 
     make distclean
-    python setup.py bdist_egg upload
-    python setup.py bdist_wininst upload
+    c:\Python26\python.exe setup.py bdist_egg upload
+    c:\Python26\python.exe setup.py bdist_wininst --target-version=2.6 register upload
+
+  Maybe virtualenvs for the different versions of python?  I haven't explored
+  that yet.
 
 * Tag the release with tag of form ``1.0.0``::
 
