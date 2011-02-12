@@ -14,10 +14,14 @@ def save_pickle(fname,dix):
     ----------
     >>> import os
     >>> from tempfile import mkstemp
-    >>> fd, fname = mkstemp() # make temporary file
+    >>> fd, fname = mkstemp() # make temporary file (opened, attached to fh)
     >>> d={0:{'d':1}}
     >>> save_pickle(fname, d)
     >>> d2=load_pickle(fname)
+
+    We remove the temporary file we created for neatness
+
+    >>> os.close(fd) # the file is still open, we need to close the fh
     >>> os.remove(fname)
     
     See also
