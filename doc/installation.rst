@@ -26,14 +26,15 @@ with ``which python``.  This should show something like::
 
     /Library/Frameworks/Python.framework/Versions/2.6/bin/python
 
-We've compiled dipy against this python, and all our testing on OSX too.
+We've compiled and tested dipy against this python.  The OSX system python may
+work, but it will be harder for you to install dipy (and other software).
 
 ********************
 Installing a release
 ********************
 
 If you are on Debian or Ubuntu Linux we recommend you try
-:ref:`install-packages` first. Otherwise please try `install-easy-install`.
+:ref:`install-packages` first. Otherwise please try :ref:`install-easy-install`.
 
 .. _install-easy-install:
 
