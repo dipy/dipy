@@ -129,10 +129,21 @@ Release checklist
 
   etc.  (``workon`` is a virtualenvwrapper command).
 
-  For OSX - if the installation didn't recognize it was doing a fat (i386 + PPC)
-  build, I had to change the build line to::
+  For OSX and python 2.5 only, the installation didn't recognize it was doing a fat (i386 + PPC)
+  build, and build with name ``dipy-0.5.0-py2.5-macosx-10.3-i386.egg``.  I tried
+  to tell it to use ``fat`` and ``universal`` in the name, but uploading these
+  tp pypi didn't result in in easy_install finding them.  In the end did the
+  standard::
 
-    python setup.py bdist_egg --plat-name macosx-10.3-fat upload
+    python setup.py bdist_egg upload
+
+  - which uploaded the 'i386' egg, followed by::
+
+    python setup.py bdist_egg --plat-name macosx-10.3-ppc upload
+
+  which may or may not work to allow easy_install to find the egg for PPC.  It
+  does work for easy_install on my Intel machine.  I found the default platform
+  name with ``python setup.py bdist_egg --help``.
 
   When trying to upload in python25, after previously saving my ``~/.pypirc``
   during the initial ``register`` step, I got a configparser error.  I found
