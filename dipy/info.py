@@ -100,4 +100,6 @@ MICRO               = _version_micro
 ISRELEASE           = _version_extra == ''
 VERSION             = __version__
 PROVIDES            = ["dipy"]
-REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION]
+REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
+                       "scipy (>=%s)" % SCIPY_MIN_VERSION,
+                       "nibabel (>=%s)" % NIBABEL_MIN_VERSION]
