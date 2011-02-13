@@ -201,19 +201,20 @@ Release checklist
   If this is just a maintenance release from ``maint/0.5.x`` or similar, just
   tag and set the version number to - say - ``0.5.2.dev``.
 
-* Make a tarball for the examples, for packagers to get away without having vtk
-  or a display on the build machines::
+* Make a tarball for the examples, to allow packagers to bypass the need for
+  having vtk or pytables or a display on the build machines::
 
         cd doc
-        make examples-tgz
+        make upload-examples-mysfusername
 
   The command requires pytables_ and python vtk on your machine. It writes an
   archive named for the dipy version and the docs, e.g::
 
     <dipy root>/dist/dipy-0.5.0.dev-doc-examples.tar.gz
 
-  We need to decide where to put this tarball.
+  and thence writes the archive to the dipy doc directory on sourceforge.
 
-* Announce to the mailing lists.
+* Announce to the mailing lists.  With fear and trembling.
+
 
 .. _setuptools intro: http://packages.python.org/an_example_pypi_project/setuptools.html
