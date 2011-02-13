@@ -129,6 +129,32 @@ Release checklist
 
   etc.  (``workon`` is a virtualenvwrapper command).
 
+  For OSX - if the installation didn't recognize it was doing a fat (i386 + PPC)
+  build, I had to change the build line to::
+
+    python setup.py bdist_egg --plat-name macosx-10.3-fat upload
+
+  When trying to upload in python25, after previously saving my ``~/.pypirc``
+  during the initial ``register`` step, I got a configparser error.  I found
+  `this python 2.5 pypirc page
+  <http://docs.python.org/release/2.5.2/dist/pypirc.html>`_ and so hand edited
+  the ``~/.pypirc`` file to have a new section::
+
+    [server-login]
+    username:my-username
+    password:my-password
+
+  after which python25 upload seemed to go smoothly.
+
+  For OSX (see `MBs OSX setup
+  <http://matthew-brett.github.com/pydagogue/develop_mac.html>`_) you might want
+  to also run::
+
+    python tools/osxbuild.py
+
+  This script comes from numpy and uses the ``bdist_mpkg`` script we might have
+  installed above.
+
 * Repeat binary builds for Linux 32, 64 bit and OS X.
 
 * Get to a windows machine and do egg and wininst builds::
@@ -146,7 +172,7 @@ Release checklist
 
 * Now the version number is OK, push the docs to sourceforge with::
 
-    make upload-htmldoc-mysfusername
+    make upload-website-mysfusername
 
   where ``mysfusername`` is obviously your own sourceforge username.
 
@@ -158,7 +184,7 @@ Release checklist
 
   * Branch to maintainance::
 
-      git co -b maint/1.0.x
+      git co -b maint/0.5.x
 
     Set ``_version_extra`` back to ``.dev`` and bump ``_version_micro`` by 1.
     Thus the maintenance series will have version numbers like - say - '0.5.1.dev'
