@@ -21,7 +21,7 @@ A short note
 
 * If you are using track correspondence use [2].
 
-* If you are using Generalized Q-sampling please cite [7].
+* If you are using Generalized Q-sampling please cite [6].
 
-* For everything else please cite [6].
- 
+* For everything else please cite [5].
+
