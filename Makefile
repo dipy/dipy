@@ -45,6 +45,7 @@ clean:
 	rm -rf build
 	rm -rf docs/_build
 	rm -rf docs/dist
+	rm -rf dipy/dipy.egg-info
 
 distclean: clean
 	rm -rf dist

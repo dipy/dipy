@@ -15,6 +15,7 @@ import os
 import sys
 import shutil
 import subprocess
+from optparse import OptionParser
 from getpass import getuser
 
 #USER_README = 'docs/README.txt'
@@ -22,26 +23,36 @@ from getpass import getuser
 
 BUILD_DIR = 'build'
 DIST_DIR = 'dist'
+DIST_DMG_DIR = 'dist-dmg'
 
-def remove_dirs():
+def remove_dirs(sudo):
     print 'Removing old build and distribution directories...'
     print """The distribution is built as root, so the files have the correct
     permissions when installed by the user.  Chown them to user for removal."""
     if os.path.exists(BUILD_DIR):
-        cmd = 'sudo chown -R %s %s' % (getuser(), BUILD_DIR)
+        cmd = 'chown -R %s %s' % (getuser(), BUILD_DIR)
+        if sudo:
+            cmd = 'sudo ' + cmd
         shellcmd(cmd)
         shutil.rmtree(BUILD_DIR)
     if os.path.exists(DIST_DIR):
         cmd = 'sudo chown -R %s %s' % (getuser(), DIST_DIR)
+        if sudo:
+            cmd = 'sudo ' + cmd
         shellcmd(cmd)
         shutil.rmtree(DIST_DIR)
 
-def build_dist():
+
+def build_dist(readme, python_exe, sudo):
     print 'Building distribution... (using sudo)'
-    cmd = 'sudo python setup_egg.py bdist_mpkg'
+    cmd = '%s setup_egg.py bdist_mpkg --readme=%s' % (
+        python_exe, readme)
+    if sudo:
+        cmd = 'sudo ' + cmd
     shellcmd(cmd)
 
-def build_dmg():
+
+def build_dmg(sudo):
     print 'Building disk image...'
     # Since we removed the dist directory at the start of the script,
     # our pkg should be the only file there.
@@ -49,9 +60,19 @@ def build_dmg():
     fn, ext = os.path.splitext(pkg)
     dmg = fn + '.dmg'
     srcfolder = os.path.join(DIST_DIR, pkg)
-    dstfolder = os.path.join(DIST_DIR, dmg)
+    dstfolder = os.path.join(DIST_DMG_DIR, dmg)
     # build disk image
-    cmd = 'sudo hdiutil create -srcfolder %s %s' % (srcfolder, dstfolder)
+    try:
+        os.mkdir(DIST_DMG_DIR)
+    except OSError:
+        pass
+    try:
+        os.unlink(dstfolder)
+    except OSError:
+        pass
+    cmd = 'hdiutil create -srcfolder %s %s' % (srcfolder, dstfolder)
+    if sudo:
+        cmd = 'sudo ' + cmd
     shellcmd(cmd)
 
 def copy_readme():
@@ -81,8 +102,22 @@ def shellcmd(cmd, verbose=True):
         raise Exception(msg)
 
 def build():
+    parser = OptionParser()
+    parser.add_option("-p", "--python", dest="python",
+                      default=sys.executable,
+                      help="python interpreter executable",
+                      metavar="PYTHON_EXE")
+    parser.add_option("-r", "--readme", dest="readme",
+                      default='README.txt',
+                      help="README file",
+                      metavar="README")
+    parser.add_option("-s", "--sudo", dest="sudo",
+                      default=False,
+                      help="Run as sudo or no",
+                      metavar="SUDO")
+    (options, args) = parser.parse_args()
     try:
-        src_dir = sys.argv[1]
+        src_dir = args[0]
     except IndexError:
         src_dir = '.'
     # Check source directory
@@ -94,15 +129,14 @@ def build():
     #copy_readme()
     #shellcmd("svn stat %s"%DEV_README)
 
-
     # change to source directory
     cwd = os.getcwd()
     os.chdir(src_dir)
 
     # build distribution
-    remove_dirs()
-    build_dist()
-    build_dmg()
+    remove_dirs(options.sudo)
+    build_dist(options.readme, options.python, options.sudo)
+    build_dmg(options.sudo)
 
     # change back to original directory
     os.chdir(cwd)

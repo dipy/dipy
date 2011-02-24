@@ -157,14 +157,26 @@ Release checklist
 
   after which python25 upload seemed to go smoothly.
 
-  For OSX (see `MBs OSX setup
-  <http://matthew-brett.github.com/pydagogue/develop_mac.html>`_) you might want
-  to also run::
+* Building OSX dmgs.  This is very unpleasant.
 
+  See `MBs OSX setup
+  <http://matthew-brett.github.com/pydagogue/develop_mac.html>`_).
+
+  The problem here is that we need to run the package build as root, so that the
+  files have root permissions when installed from the installer.  We also can't
+  use virtualenvs, because the installer needs to find the correct system path
+  into which to install - so the python ``sys.prefix`` has to be e.g.
+  ``/Library/Frameworks/Python.framework/Versions/2.6``.  What I ended up doing
+  was to make a script to set paths etc from a handy virtualenv, but run the
+  relevant system python, as root.  See the crude, fragile ``tools/pythonsudo``
+  bash script for details.  The procedure then::
+
+    sudo ./tools/pythonsudo 5
+    make clean
     python tools/osxbuild.py
 
-  This script comes from numpy and uses the ``bdist_mpkg`` script we might have
-  installed above.
+  The ``osxbuild.py`` script comes from numpy and uses the ``bdist_mpkg`` script
+  we might have installed above.
 
 * Repeat binary builds for Linux 32, 64 bit and OS X.
 

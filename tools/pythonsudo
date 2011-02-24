@@ -1,0 +1,16 @@
+#!/bin/bash
+if [ $# -ne 1 ]
+then
+  echo "Usage: `basename $0` {python-minor-version}"
+  exit 1
+fi
+PYV=$1
+WORKON_HOME=/Users/mb312/.virtualenvs
+PYPATH=/Library/Frameworks/Python.framework/Versions/2.$PYV/bin
+VENV=$WORKON_HOME/python2$PYV
+VENV_LIB=$VENV/lib/python2.$PYV/site-packages
+export PATH=$PYPATH:$PATH:$VENV/bin
+export PYTHONPATH=$VENV_LIB:$VENV_LIB/Cython-0.14.1-py2.$PYV-macosx-10.3-i386.egg:/Users/mb312/.virtualenvs/python2$PYV/lib/python2.$PYV/site-packages/nibabel-1.0.0-py2.$PYV.egg
+export CC=/usr/bin/gcc-4.0
+export CXX=/usr/bin/g++-4.0
+bash
