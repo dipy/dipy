@@ -3,7 +3,7 @@
 
 import os
 import sys
-from os.path import join as pjoin, splitext
+from os.path import join as pjoin, splitext, dirname
 from subprocess import check_call
 from glob import glob
 
@@ -13,22 +13,45 @@ if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
 import numpy as np
 
-# For some commands, use setuptools
-if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
-            'bdist_wininst', 'install_egg_info', 'egg_info', 'easy_install',
-           )).intersection(sys.argv)) > 0:
-    force_setuptools = True
-else:
-    force_setuptools = False
+# Get version and release info, which is all stored in dipy/info.py
+ver_file = pjoin('dipy', 'info.py')
+execfile(ver_file)
 
-# Get setuptools-specific parameters and imports
-if force_setuptools or 'setuptools' in sys.modules:
-    if not 'extra_setuptools_args' in globals():
-        from setup_egg import extra_setuptools_args
-    # Get setuptools version of install command, after forcing setuptools
-    # import.  We need to get this version of the install, because we're going
-    # to override it later, and it takes different options in the setuptools
-    # incantation
+# force_setuptools can be set from the setup_egg.py script
+if not 'force_setuptools' in globals():
+    # For some commands, use setuptools
+    if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
+                'bdist_wininst', 'install_egg_info', 'egg_info',
+                'easy_install')).intersection(sys.argv)) > 0:
+        force_setuptools = True
+    else:
+        force_setuptools = False
+
+if force_setuptools:
+    # Try to preempt setuptools monkeypatching of Extension handling when Pyrex
+    # is missing.  Otherwise the monkeypatched Extension will change .pyx
+    # filenames to .c filenames, and we probably don't have the .c files.
+    sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
+    import setuptools
+
+# We may just have imported setuptools, or we may have been exec'd from a
+# setuptools environment like pip
+if 'setuptools' in sys.modules:
+    extra_setuptools_args = dict(
+        tests_require=['nose'],
+        test_suite='nose.collector',
+        zip_safe=False,
+        extras_require = dict(
+            doc=['Sphinx>=1.0'],
+            test=['nose>=0.10.1']),
+        install_requires = ['nibabel>=' + NIBABEL_MIN_VERSION])
+    # I removed numpy and scipy from install requires because easy_install seems
+    # to want to fetch these if they are already installed, meaning of course
+    # that there's a long fragile and unnecessary compile before the install
+    # finishes.
+    # We need setuptools install command because we're going to override it
+    # further down.  Using distutils install command causes some confusion, due
+    # to the Pyrex fix above.
     from setuptools.command import install
 else:
     extra_setuptools_args = {}
@@ -38,11 +61,8 @@ else:
 # MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
+from distutils.version import LooseVersion
 from distutils.command import build_py, build_ext, sdist
-
-# Get version and release info, which is all stored in dipy/info.py
-ver_file = os.path.join('dipy', 'info.py')
-execfile(ver_file)
 
 # Do our own build and install time dependency checking. setup.py gets called in
 # many different ways, and may be called just to collect information (egg_info).
@@ -61,36 +81,35 @@ try:
 except ImportError: # No nibabel
     msg = ('Need nisext package from nibabel installation'
            ' - please install nibabel first')
-    cmdclass = dict(
-        build_py = derror_maker(build_py.build_py, msg),
-        build_ext = derror_maker(build_ext.build_ext, msg),
-        install = derror_maker(install.install, msg))
+    pybuilder = derror_maker(build_py.build_py, msg)
+    extbuilder = derror_maker(build_ext.build_ext, msg)
+    installer = derror_maker(install.install, msg)
 else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
     # Cython is a dependency for building extensions
-    def _cython_version(pkg_name):
-        from Cython.Compiler.Version import version
-        return version
     try:
-        package_check('cython',
-                      CYTHON_MIN_VERSION,
-                      version_getter=_cython_version)
-    except RuntimeError:
+        from Cython.Compiler.Version import version as cyversion
+    except ImportError:
+        cython_ok = False
+    else:
+        cython_ok = LooseVersion(cyversion) >= CYTHON_MIN_VERSION
+    if not cython_ok:
         extbuilder = derror_maker(build_ext.build_ext,
                                   'Need cython>=%s to build extensions'
                                   % CYTHON_MIN_VERSION)
     else: # We have a good-enough cython
         from Cython.Distutils import build_ext as extbuilder
-    class Install(install.install):
+    class installer(install.install):
         def run(self):
             package_check('numpy', NUMPY_MIN_VERSION)
             package_check('scipy', SCIPY_MIN_VERSION)
             package_check('nibabel', NIBABEL_MIN_VERSION)
             install.install.run(self)
-    cmdclass = dict(
-        build_py=pybuilder,
-        build_ext=extbuilder,
-        install=Install)
+
+cmdclass = dict(
+    build_py=pybuilder,
+    build_ext=extbuilder,
+    install=installer)
 
 EXTS = []
 for modulename, other_sources in (
@@ -102,10 +121,11 @@ for modulename, other_sources in (
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
                           include_dirs = [np.get_include()]))
 
-# Custom sdist command to generate .c files from pyx files.  We need the C files
-# because pip will not allow us to workaround setuptools when it checks for
-# Pyrex and, not finding it, tries to compile .c files instead of the .pyx
-# files.
+# Custom sdist command to generate .c files from pyx files.  We need the .c
+# files because pip will not allow us to preempt setuptools from checking for
+# Pyrex. When setuptools doesn't find Pyrex, it changes .pyx filenames in the
+# extension sources into .c filenames.  By putting the .c files into the source
+# archive, at least pip does not crash in a confusing way.
 class SDist(sdist.sdist):
     def make_distribution(self):
         """ Compile up C files and add to sources """
