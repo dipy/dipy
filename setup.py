@@ -3,7 +3,8 @@
 
 import os
 import sys
-from os.path import join as pjoin
+from os.path import join as pjoin, splitext
+from subprocess import check_call
 from glob import glob
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
@@ -15,65 +16,82 @@ import numpy as np
 # For some commands, use setuptools
 if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
             'bdist_wininst', 'install_egg_info', 'egg_info', 'easy_install',
-            )).intersection(sys.argv)) > 0:
-    # setup_egg imports setuptools setup, thus monkeypatching distutils. 
-    from setup_egg import extra_setuptools_args
+           )).intersection(sys.argv)) > 0:
+    force_setuptools = True
+else:
+    force_setuptools = False
+
+# Get setuptools-specific parameters and imports
+if force_setuptools or 'setuptools' in sys.modules:
+    if not 'extra_setuptools_args' in globals():
+        from setup_egg import extra_setuptools_args
+    # Get setuptools version of install command, after forcing setuptools
+    # import.  We need to get this version of the install, because we're going
+    # to override it later, and it takes different options in the setuptools
+    # incantation
+    from setuptools.command import install
+else:
+    extra_setuptools_args = {}
+    from distutils.command import install
 
 # Import distutils _after_ potential setuptools import above, and after removing
 # MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
-
-# extra_setuptools_args can be defined from the line above, but it can
-# also be defined here because setup.py has been exec'ed from
-# setup_egg.py.
-if not 'extra_setuptools_args' in globals():
-    extra_setuptools_args = dict()
-
-# Import build helpers
-try:
-    from nisext.sexts import package_check, get_comrec_build
-except ImportError:
-    raise RuntimeError('Need nisext package from nibabel installation'
-                       ' - please install nibabel first')
-cmdclass = {'build_py': get_comrec_build('dipy')}
+from distutils.command import build_py, build_ext, sdist
 
 # Get version and release info, which is all stored in dipy/info.py
 ver_file = os.path.join('dipy', 'info.py')
 execfile(ver_file)
 
-# We're running via setuptools - specify exta setuptools stuff
-if 'setuptools' in sys.modules:
-    extra_setuptools_args['extras_require'] = dict(
-        doc=['Sphinx>=1.0'],
-        test=['nose>=0.10.1'],
-    )
-    # I removed numpy and scipy from install requires because easy_install seems
-    # to want to fetch these if they are already installed, meaning of course
-    # that there's a long fragile and unnecessary compile before the install
-    # finishes.
-    extra_setuptools_args['install_requires'] = [
-        'nibabel>=' + NIBABEL_MIN_VERSION,
-    ]
+# Do our own build and install time dependency checking. setup.py gets called in
+# many different ways, and may be called just to collect information (egg_info).
+# We need to set up tripwires to raise errors when actually doing things, like
+# building, rather than unconditionally in the setup.py import or exec
+def derror_maker(klass, msg):
+    """ Decorate distutils class to make run method raise error """
+    class K(klass):
+        def run(self):
+            raise RuntimeError(msg)
+    return K
 
-# Do our own install time dependency checking.  The dependency checks in
-# setuptools above go into the egg so are useful for easy_install. These checks
-# below run whenever we run setup.py - so - install or build via setup.py
-package_check('numpy', NUMPY_MIN_VERSION)
-package_check('scipy', SCIPY_MIN_VERSION)
-package_check('nibabel', NIBABEL_MIN_VERSION)
+# We may make tripwire versions of these commands
+try:
+    from nisext.sexts import package_check, get_comrec_build
+except ImportError: # No nibabel
+    msg = ('Need nisext package from nibabel installation'
+           ' - please install nibabel first')
+    cmdclass = dict(
+        build_py = derror_maker(build_py.build_py, msg),
+        build_ext = derror_maker(build_ext.build_ext, msg),
+        install = derror_maker(install.install, msg))
+else: # We have nibabel
+    pybuilder = get_comrec_build('dipy')
+    # Cython is a dependency for building extensions
+    def _cython_version(pkg_name):
+        from Cython.Compiler.Version import version
+        return version
+    try:
+        package_check('cython',
+                      CYTHON_MIN_VERSION,
+                      version_getter=_cython_version)
+    except RuntimeError:
+        extbuilder = derror_maker(build_ext.build_ext,
+                                  'Need cython>=%s to build extensions'
+                                  % CYTHON_MIN_VERSION)
+    else: # We have a good-enough cython
+        from Cython.Distutils import build_ext as extbuilder
+    class Install(install.install):
+        def run(self):
+            package_check('numpy', NUMPY_MIN_VERSION)
+            package_check('scipy', SCIPY_MIN_VERSION)
+            package_check('nibabel', NIBABEL_MIN_VERSION)
+            install.install.run(self)
+    cmdclass = dict(
+        build_py=pybuilder,
+        build_ext=extbuilder,
+        install=Install)
 
-# Cython is a build dependency
-def _cython_version(pkg_name):
-    from Cython.Compiler.Version import version
-    return version
-package_check('cython',
-            CYTHON_MIN_VERSION,
-            version_getter=_cython_version)
-
-# we use cython to compile the modules
-from Cython.Distutils import build_ext
-cmdclass['build_ext'] = build_ext
 EXTS = []
 for modulename, other_sources in (
     ('dipy.reconst.recspeed', []),
@@ -83,6 +101,25 @@ for modulename, other_sources in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
                           include_dirs = [np.get_include()]))
+
+# Custom sdist command to generate .c files from pyx files.  We need the C files
+# because pip will not allow us to workaround setuptools when it checks for
+# Pyrex and, not finding it, tries to compile .c files instead of the .pyx
+# files.
+class SDist(sdist.sdist):
+    def make_distribution(self):
+        """ Compile up C files and add to sources """
+        for mod in EXTS:
+            for source in mod.sources:
+                base, ext = splitext(source)
+                if not ext in ('.pyx', '.py'):
+                    continue
+                c_file = base + '.c'
+                check_call('cython ' + source, shell=True)
+                self.filelist.append(c_file)
+        sdist.sdist.make_distribution(self)
+
+cmdclass['sdist'] = SDist
 
 
 def main(**extra_args):
