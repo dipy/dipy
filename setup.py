@@ -3,8 +3,7 @@
 
 import os
 import sys
-from os.path import join as pjoin, splitext, dirname
-from subprocess import check_call
+from os.path import join as pjoin, dirname
 from glob import glob
 
 # BEFORE importing distutils, remove MANIFEST. distutils doesn't properly
@@ -61,56 +60,11 @@ else:
 # MANIFEST
 from distutils.core import setup
 from distutils.extension import Extension
-from distutils.version import LooseVersion
-from distutils.command import build_py, build_ext, sdist
+from distutils.command import build_py, build_ext
 
-# Do our own build and install time dependency checking. setup.py gets called in
-# many different ways, and may be called just to collect information (egg_info).
-# We need to set up tripwires to raise errors when actually doing things, like
-# building, rather than unconditionally in the setup.py import or exec
-def derror_maker(klass, msg):
-    """ Decorate distutils class to make run method raise error """
-    class K(klass):
-        def run(self):
-            raise RuntimeError(msg)
-    return K
+from cythexts import cython_process_exts, PyxSDist, derror_maker
 
-# We may make tripwire versions of these commands
-try:
-    from nisext.sexts import package_check, get_comrec_build
-except ImportError: # No nibabel
-    msg = ('Need nisext package from nibabel installation'
-           ' - please install nibabel first')
-    pybuilder = derror_maker(build_py.build_py, msg)
-    extbuilder = derror_maker(build_ext.build_ext, msg)
-    installer = derror_maker(install.install, msg)
-else: # We have nibabel
-    pybuilder = get_comrec_build('dipy')
-    # Cython is a dependency for building extensions
-    try:
-        from Cython.Compiler.Version import version as cyversion
-    except ImportError:
-        cython_ok = False
-    else:
-        cython_ok = LooseVersion(cyversion) >= CYTHON_MIN_VERSION
-    if not cython_ok:
-        extbuilder = derror_maker(build_ext.build_ext,
-                                  'Need cython>=%s to build extensions'
-                                  % CYTHON_MIN_VERSION)
-    else: # We have a good-enough cython
-        from Cython.Distutils import build_ext as extbuilder
-    class installer(install.install):
-        def run(self):
-            package_check('numpy', NUMPY_MIN_VERSION)
-            package_check('scipy', SCIPY_MIN_VERSION)
-            package_check('nibabel', NIBABEL_MIN_VERSION)
-            install.install.run(self)
-
-cmdclass = dict(
-    build_py=pybuilder,
-    build_ext=extbuilder,
-    install=installer)
-
+# Define extensions
 EXTS = []
 for modulename, other_sources in (
     ('dipy.reconst.recspeed', []),
@@ -121,25 +75,40 @@ for modulename, other_sources in (
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
                           include_dirs = [np.get_include()]))
 
-# Custom sdist command to generate .c files from pyx files.  We need the .c
-# files because pip will not allow us to preempt setuptools from checking for
-# Pyrex. When setuptools doesn't find Pyrex, it changes .pyx filenames in the
-# extension sources into .c filenames.  By putting the .c files into the source
-# archive, at least pip does not crash in a confusing way.
-class SDist(sdist.sdist):
-    def make_distribution(self):
-        """ Compile up C files and add to sources """
-        for mod in EXTS:
-            for source in mod.sources:
-                base, ext = splitext(source)
-                if not ext in ('.pyx', '.py'):
-                    continue
-                c_file = base + '.c'
-                check_call('cython ' + source, shell=True)
-                self.filelist.append(c_file)
-        sdist.sdist.make_distribution(self)
 
-cmdclass['sdist'] = SDist
+# Do our own build and install time dependency checking. setup.py gets called in
+# many different ways, and may be called just to collect information (egg_info).
+# We need to set up tripwires to raise errors when actually doing things, like
+# building, rather than unconditionally in the setup.py import or exec
+# We may make tripwire versions of build_ext, build_py, install
+try:
+    from nisext.sexts import package_check, get_comrec_build
+except ImportError: # No nibabel
+    msg = ('Need nisext package from nibabel installation'
+           ' - please install nibabel first')
+    pybuilder = derror_maker(build_py.build_py, msg)
+    extbuilder = derror_maker(build_ext.build_ext, msg)
+    installer = derror_maker(install.install, msg)
+else: # We have nibabel
+    pybuilder = get_comrec_build('dipy')
+    # Cython is a dependency for building extensions, iff we don't have stamped
+    # up pyx and c files.
+    extbuilder = cython_process_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
+    # Installer that checks for install-time dependencies
+    class installer(install.install):
+        def run(self):
+            package_check('numpy', NUMPY_MIN_VERSION)
+            package_check('scipy', SCIPY_MIN_VERSION)
+            package_check('nibabel', NIBABEL_MIN_VERSION)
+            install.install.run(self)
+
+
+cmdclass = dict(
+    build_py=pybuilder,
+    build_ext=extbuilder,
+    install=installer,
+    sdist=PyxSDist)
+
 
 
 def main(**extra_args):
