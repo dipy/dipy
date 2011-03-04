@@ -31,7 +31,7 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
     tf : bool
         True if there is a corresponding c file for each pyx or py file in
         `exts` sources, and the hash for both the (pyx, py) file *and* the c
-        file match those recorded in the file named in `hash_stamp_fixes`.
+        file match those recorded in the file named in `hash_stamp_fname`.
     """
     # Calculate hashes for pyx and c files.  Check for presence of c files.
     stamps = {}
@@ -116,13 +116,20 @@ def cython_process_exts(exts, cython_min_version, hash_stamps_fname):
                         % cython_min_version)
 
 
-# Custom sdist command to generate .c files from pyx files.  We need the .c
-# files because pip will not allow us to preempt setuptools from checking for
-# Pyrex. When setuptools doesn't find Pyrex, it changes .pyx filenames in the
-# extension sources into .c filenames.  By putting the .c files into the source
-# archive, at least pip does not crash in a confusing way.
-
 class PyxSDist(sdist):
+    """ Custom distutils sdist command to generate .c files from pyx files.
+
+    Running the command object ``obj.run()`` will compile the pyx / py files in
+    any extensions, into c files, and add them to the list of files to put into
+    the source archive, as well as the usual behavior of distutils ``sdist``.
+    It will also take the sha1 hashes of the pyx / py and c files, and store
+    them in a file ``pyx-stamps``, and put this file in the release tree.  This
+    allows someone who has the archive to know that the pyx and c files that
+    they have are the ones packed into the archive, and therefore they may not
+    need Cython at install time.  See ``cython_process_exts`` for the build-time
+    command.
+    """
+
     def make_distribution(self):
         """ Compile pyx to c files, add to sources, stamp sha1s """
         stamps = []
@@ -150,6 +157,4 @@ class PyxSDist(sdist):
         stamp_file.write('# Auto-generated file, do not edit\n')
         stamp_file.writelines(self.stamps)
         stamp_file.close()
-
-
 
