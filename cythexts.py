@@ -69,7 +69,9 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
     return len(stamps) == 0
 
 
-def cython_process_exts(exts, cython_min_version, hash_stamps_fname):
+def cyproc_exts(exts, cython_min_version,
+                hash_stamps_fname = 'pyx-stamps',
+                build_ext=build_ext):
     """ Process sequence of `exts` to check if we need Cython.  Return builder
 
     Parameters
@@ -79,14 +81,18 @@ def cython_process_exts(exts, cython_min_version, hash_stamps_fname):
         the pyx or py files with their compiled up c versions inplace.
     cython_min_version : str
         Minimum cython version neede for compile
-    hash_stamps_fname : str
-        filename with hashes for pyx/py and c files known to be in sync
+    hash_stamps_fname : str, optional
+        filename with hashes for pyx/py and c files known to be in sync. Default
+        is 'pyx-stamps'
+    build_ext : distutils command
+        default build_ext to return if not cythonizing.  Default is distutils
+        ``build_ext`` class
 
     Returns
     -------
     builder : ``distutils`` ``build_ext`` class or similar
-        Can be standard distutils class (if we have good c files) or cython
-        ``build_ext`` if we have a good cython or a class raising an informative
+        Can be ``build_ext`` input (if we have good c files) or cython
+        ``build_ext`` if we have a good cython, or a class raising an informative
         error on ``run()``
     """
     if stamped_pyx_ok(exts, hash_stamps_fname):
@@ -116,45 +122,65 @@ def cython_process_exts(exts, cython_min_version, hash_stamps_fname):
                         % cython_min_version)
 
 
-class PyxSDist(sdist):
-    """ Custom distutils sdist command to generate .c files from pyx files.
+def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
+    """ Add pyx->c conversion, hash recording to sdist command `sdist_like`
 
-    Running the command object ``obj.run()`` will compile the pyx / py files in
-    any extensions, into c files, and add them to the list of files to put into
-    the source archive, as well as the usual behavior of distutils ``sdist``.
-    It will also take the sha1 hashes of the pyx / py and c files, and store
-    them in a file ``pyx-stamps``, and put this file in the release tree.  This
-    allows someone who has the archive to know that the pyx and c files that
-    they have are the ones packed into the archive, and therefore they may not
-    need Cython at install time.  See ``cython_process_exts`` for the build-time
-    command.
+    Parameters
+    ----------
+    sdist_like : sdist command class, optional
+        command that will do work of ``distutils.command.sdist.sdist``.  By
+        default we use the distutils version
+    hash_stamps_fname : str, optional
+        filename to which to write hashes of pyx / py and c files.  Default is
+        ``pyx-stamps``
+
+    Returns
+    -------
+    modified_sdist : sdist-like command class
+        decorated `sdist_like` class, for compiling pyx / py files to c, putting
+        the .c files in the the source archive, and writing hashes for these
+        into the file named from `hash_stamps_fname`
     """
+    class PyxSDist(sdist_like):
+        """ Custom distutils sdist command to generate .c files from pyx files.
 
-    def make_distribution(self):
-        """ Compile pyx to c files, add to sources, stamp sha1s """
-        stamps = []
-        for mod in self.distribution.ext_modules:
-            for source in mod.sources:
-                base, ext = splitext(source)
-                if not ext in ('.pyx', '.py'):
-                    continue
-                source_hash = sha1(open(source, 'rt').read()).hexdigest()
-                stamps.append('%s, %s\n' % (source, source_hash))
-                c_fname = base + '.c'
-                check_call('cython ' + source, shell=True)
-                c_hash = sha1(open(c_fname, 'rt').read()).hexdigest()
-                stamps.append('%s, %s\n' % (c_fname, c_hash))
-                self.filelist.append(c_fname)
-        self.stamps = stamps
-        sdist.make_distribution(self)
+        Running the command object ``obj.run()`` will compile the pyx / py files
+        in any extensions, into c files, and add them to the list of files to
+        put into the source archive, as well as the usual behavior of distutils
+        ``sdist``.  It will also take the sha1 hashes of the pyx / py and c
+        files, and store them in a file ``pyx-stamps``, and put this file in the
+        release tree.  This allows someone who has the archive to know that the
+        pyx and c files that they have are the ones packed into the archive, and
+        therefore they may not need Cython at install time.  See
+        ``cython_process_exts`` for the build-time command.
+        """
 
-    def make_release_tree(self, base_dir, files):
-        """ Put pyx stamps file into release tree """
-        sdist.make_release_tree(self, base_dir, files)
-        stamp_fname = pjoin(base_dir, 'pyx-stamps')
-        stamp_file = open(stamp_fname, 'wt')
-        stamp_file.write('# SHA1 hashes for pyx files and generated c files\n')
-        stamp_file.write('# Auto-generated file, do not edit\n')
-        stamp_file.writelines(self.stamps)
-        stamp_file.close()
+        def make_distribution(self):
+            """ Compile pyx to c files, add to sources, stamp sha1s """
+            stamps = []
+            for mod in self.distribution.ext_modules:
+                for source in mod.sources:
+                    base, ext = splitext(source)
+                    if not ext in ('.pyx', '.py'):
+                        continue
+                    source_hash = sha1(open(source, 'rt').read()).hexdigest()
+                    stamps.append('%s, %s\n' % (source, source_hash))
+                    c_fname = base + '.c'
+                    check_call('cython ' + source, shell=True)
+                    c_hash = sha1(open(c_fname, 'rt').read()).hexdigest()
+                    stamps.append('%s, %s\n' % (c_fname, c_hash))
+                    self.filelist.append(c_fname)
+            self.stamps = stamps
+            sdist_like.make_distribution(self)
 
+        def make_release_tree(self, base_dir, files):
+            """ Put pyx stamps file into release tree """
+            sdist_like.make_release_tree(self, base_dir, files)
+            stamp_fname = pjoin(base_dir, hash_stamps_fname)
+            stamp_file = open(stamp_fname, 'wt')
+            stamp_file.write('# SHA1 hashes for pyx files and generated c files\n')
+            stamp_file.write('# Auto-generated file, do not edit\n')
+            stamp_file.writelines(self.stamps)
+            stamp_file.close()
+
+    return PyxSDist

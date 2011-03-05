@@ -50,7 +50,7 @@ if 'setuptools' in sys.modules:
     # finishes.
     # We need setuptools install command because we're going to override it
     # further down.  Using distutils install command causes some confusion, due
-    # to the Pyrex fix above.
+    # to the Pyrex / setuptools hack above (force_setuptools)
     from setuptools.command import install
 else:
     extra_setuptools_args = {}
@@ -62,7 +62,7 @@ from distutils.core import setup
 from distutils.extension import Extension
 from distutils.command import build_py, build_ext
 
-from cythexts import cython_process_exts, PyxSDist, derror_maker
+from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
 
 # Define extensions
 EXTS = []
@@ -88,27 +88,26 @@ except ImportError: # No nibabel
            ' - please install nibabel first')
     pybuilder = derror_maker(build_py.build_py, msg)
     extbuilder = derror_maker(build_ext.build_ext, msg)
-    installer = derror_maker(install.install, msg)
 else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
     # Cython is a dependency for building extensions, iff we don't have stamped
     # up pyx and c files.
-    extbuilder = cython_process_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
-    # Installer that checks for install-time dependencies
-    class installer(install.install):
-        def run(self):
-            package_check('numpy', NUMPY_MIN_VERSION)
-            package_check('scipy', SCIPY_MIN_VERSION)
-            package_check('nibabel', NIBABEL_MIN_VERSION)
-            install.install.run(self)
+    extbuilder = cyproc_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
+
+# Installer that checks for install-time dependencies
+class installer(install.install):
+    def run(self):
+        package_check('numpy', NUMPY_MIN_VERSION)
+        package_check('scipy', SCIPY_MIN_VERSION)
+        package_check('nibabel', NIBABEL_MIN_VERSION)
+        install.install.run(self)
 
 
 cmdclass = dict(
     build_py=pybuilder,
     build_ext=extbuilder,
     install=installer,
-    sdist=PyxSDist)
-
+    sdist=get_pyx_sdist())
 
 
 def main(**extra_args):
