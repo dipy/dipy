@@ -2,11 +2,12 @@ import nibabel
 import os
 import numpy as np
 import dipy as dp
-import dipy.core.generalized_q_sampling as dgqs
+#import dipy.core.generalized_q_sampling as dgqs#dipy.
+import dipy.reconst.gqi as dgqs
 import dipy.io.pickles as pkl
 import scipy as sp
 from matplotlib.mlab import find
-import dipy.core.sphere_plots as splots
+#import dipy.core.sphere_plots as splots
 import dipy.core.sphere_stats as sphats
 import dipy.core.geometry as geometry
 import get_vertices as gv

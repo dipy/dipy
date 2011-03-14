@@ -117,16 +117,44 @@ def test_bundles_distances_mam():
         DM2 = pf.bundles_distances_mam(tracksA, tracksB, metric=metric)
         
 def test_bundles_distances_mdf():
-    xyz1A = np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='float32')
+    xyz1A = np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='float32')    
     xyz2A = np.array([[0,1,1],[1,0,1],[2,3,-2]],dtype='float32')
+    xyz3A = np.array([[0,0,0],[1,0,0],[3,0,0]],dtype='float32')    
     xyz1B = np.array([[-1,0,0],[2,0,0],[2,3,0]],dtype='float32')
+       
     tracksA = [xyz1A,xyz2A]
     tracksB = [xyz1B, xyz1A, xyz2A]           
     DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
-    #DM=np.zeros(DM2.shape) 
-    #for ta in tracksA:
-    #    for tb in tracksB:
-    #        np.sum(ta-tb)**2
+    
+    tracksA = [xyz1A,xyz1A]
+    tracksB = [xyz1A,xyz1A]
+    
+    DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
+    assert_array_almost_equal(DM2,np.zeros((2,2)))
+    
+    tracksA = [xyz1A,xyz3A]
+    tracksB = [xyz2A]
+    
+    DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
+    print DM2
+        
+    #assert_array_almost_equal(DM2,np.zeros((2,2)))    
+    DM=np.zeros(DM2.shape)
+    for (a,ta) in enumerate(tracksA):
+        for (b,tb) in enumerate(tracksB):
+            md=np.sum(np.sqrt(np.sum((ta-tb)**2,axis=1)))/3.
+            md2=np.sum(np.sqrt(np.sum((ta-tb[::-1])**2,axis=1)))/3.
+            DM[a,b]=np.min(md,md2)
+    print DM
+    
+    print '--------------'
+    for t in tracksA:
+        print t
+    print '--------------'
+    for t in tracksB:
+        print t
+        
+    assert_array_almost_equal(DM,DM2,4)
     
 def test_mam_distances():
     xyz1 = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]])

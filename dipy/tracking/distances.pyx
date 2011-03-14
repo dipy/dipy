@@ -455,7 +455,8 @@ def most_similar_track_mam(tracks,metric='avg'):
         track2others[j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
     return si, track2others
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     ''' Calculate distances between list of tracks A and list of tracks B
     
@@ -532,17 +533,20 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
 
     return DM
 
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def bundles_distances_mdf(tracksA, tracksB):
     ''' Calculate distances between list of tracks A and list of tracks B
     
-    Tracks need to have the same number of points
+    All tracks need to have the same number of points
         
     Parameters
     ------------
     tracksA : sequence 
-       of tracks as arrays, shape (N1,3) .. (Nm,3)
+       of tracks as arrays, [(N,3) .. (N,3)]
     tracksB : sequence 
-       of tracks as arrays, shape (N1,3) .. (Nm,3)
+       of tracks as arrays, [(N,3) .. (N,3)]
             
     Returns
     ---------
@@ -574,26 +578,25 @@ def bundles_distances_mdf(tracksA, tracksB):
     for i in range(lentB):
         tracksB32[i] = np.ascontiguousarray(tracksB[i], dtype=f32_dt)        
     # preallocate buffer array for track distance calculations
-    cdef:
-        cnp.ndarray [cnp.float32_t, ndim=1] distances_buffer
-        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer
-    distances_buffer = np.zeros((lentA*lentB,), dtype=np.float32)
-    min_buffer = <cnp.float32_t *> distances_buffer.data
+    cdef:        
+        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer    
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
         size_t t1_len, t2_len
         float d[2]
+    t_len = tracksA32[0].shape[0]
+    
     for i from 0 <= i < lentA:
         t1 = tracksA32[i]
-        t1_len = t1.shape[0]
+        #t1_len = t1.shape[0]
         t1_ptr = <cnp.float32_t *>t1.data
         for j from 0 <= j < lentB:
             t2 = tracksB32[j]
-            t2_len = t2.shape[0]
+            #t2_len = t2.shape[0]
             t2_ptr = <cnp.float32_t *>t2.data
             #DM[i,j] = czhang(t1_len, t1_ptr, t2_len, t2_ptr, min_buffer, metric_type)
-            track_direct_flip_dist(t1_ptr, t2_ptr,t2_len,<float *>d)
+            track_direct_flip_dist(t1_ptr, t2_ptr,t_len,<float *>d)
             if d[0]<d[1]:
                 DM[i,j]=d[0]
             else:
