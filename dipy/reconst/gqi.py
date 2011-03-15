@@ -224,7 +224,6 @@ class GeneralizedQSampling(object):
 
         return t0,t1,t2,npa
 
-
 def equatorial_zone_vertices(vertices, pole, width=5):
     """
     finds the 'vertices' in the equatorial zone conjugate
@@ -278,6 +277,18 @@ def patch_maximum(vertices, odf, pole, width):
     eqvertmax = eqvert[eqargmax]
     eqvalmax = eqvals[eqargmax]
     return eqvertmax, eqvalmax
+
+def odf_sum(odf):
+    return np.sum(odf)
+
+
+def patch_sum(vertices, odf, pole, width):
+    eqvert = patch_vertices(vertices, pole, width)    
+    #need to test for whether eqvert is empty or not    
+    if len(eqvert) == 0:
+        print('empty cone around pole %s with with width %f' % (np.array_str(pole), width))
+        return np.Null
+    return np.sum([odf[i] for i in eqvert])
 
 def triple_odf_maxima(vertices, odf, width):
 

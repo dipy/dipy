@@ -3,10 +3,12 @@ import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import time
-import dipy.core.reconstruction_performance as rp
+#import dipy.core.reconstruction_performance as rp
+import dipy.reconst.recspeed as rp
 from os.path import join as opj
 import nibabel as ni
-import dipy.core.generalized_q_sampling as gq
+#import dipy.core.generalized_q_sampling as gq
+import dipy.reconst.gqi as gq
 from dipy.testing import parametric
 #import dipy.core.track_propagation as tp
 import dipy.core.dti as dt
@@ -446,7 +448,8 @@ def peak_finding(odf,odf_faces):
 
 if __name__ == "__main__":
 
-    T=test_gqiodf()
+    #T=test_gqiodf()
+    T=test_gqi_small()
     
 
 
