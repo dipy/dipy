@@ -775,8 +775,12 @@ def downsample(xyz,n_pols=3):
     if n_pols<=2:
         raise ValueError('Given number of points n_pols needs to be'
                          ' higher than 2. ')
-    xyz2=[_extrap(xyz,cumlen,distance)
-          for distance in np.arange(0,cumlen[-1],step)]
+        
+    ar= np.arange(0,cumlen[-1],step)
+    if np.abs(ar[-1]-cumlen[-1]) < np.finfo('f4').eps:
+        ar=ar[:-1]        
+        
+    xyz2=[_extrap(xyz,cumlen,distance) for distance in ar]
     return np.vstack((np.array(xyz2),xyz[-1]))
 
 
