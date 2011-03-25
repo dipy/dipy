@@ -340,7 +340,8 @@ def run_gq_sims(sample_data=[35,23,46,39,40,10,37,27,21,20]):
     
 def run_small_data():
     
-    smalldir = '/home/ian/Devel/dipy/dipy/data/'
+    #smalldir = '/home/ian/Devel/dipy/dipy/data/'
+    smalldir = '/home/eg309/Devel/dipy/dipy/data/'
 #    from os.path import join as opj
 
 #    bvals=np.load(opj(os.path.dirname(__file__), \

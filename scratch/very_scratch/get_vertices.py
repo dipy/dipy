@@ -14,7 +14,7 @@ sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/data/evenly_dist
 
 import numpy as np
 from dipy.core.triangle_subdivide import create_unit_sphere
-from dipy.io import dicomreaders as dcm
+#from dipy.io import dicomreaders as dcm
 
 def get_vertex_set(key):
 
