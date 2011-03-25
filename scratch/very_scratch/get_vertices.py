@@ -1,6 +1,6 @@
-sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
-              'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
-              'siem64': {'filepath':'/home/ian/Devel/dipy/dipy/core/tests/data/small_64D.gradients.npy', 'object': 'npy', 'omit': 1, 'hemi': True},
+sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/data/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
+              'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/data/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
+              'siem64': {'filepath':'/home/ian/Devel/dipy/dipy/data/small_64D.gradients.npy', 'object': 'npy', 'omit': 1, 'hemi': True},
               'create2': {},
               'create3': {},
               'create4': {},
@@ -22,6 +22,7 @@ def get_vertex_set(key):
         number = eval(key[6:])
         vertices, edges, faces = create_unit_sphere(number) 
         omit = 0
+        return vertices
     else:
         entry = sphere_dic[key]
 
@@ -48,3 +49,24 @@ def get_vertex_set(key):
             vertices = np.vstack([vertices, -vertices])
 
         return vertices[omit:,:]
+
+print sphere_dic.keys()
+
+#vertices = get_vertex_set('create5')
+#vertices = get_vertex_set('siem64')
+#vertices = get_vertex_set('dsi102')
+
+vertices = get_vertex_set('fy362')
+gradients = get_vertex_set('siem64')
+gradients = gradients[:gradients.shape[0]/2]
+print gradients.shape
+
+from dipy.viz import fvtk
+sph=-np.sinc(np.dot(gradients[1],vertices.T))
+r=fvtk.ren()
+#sph = np.arange(vertices.shape[0]) 
+print sph.shape
+cols=fvtk.colors(sph,'jet')
+fvtk.add(r,fvtk.point(vertices,cols,point_radius=.1,theta=10,phi=10))
+fvtk.show(r)
+
