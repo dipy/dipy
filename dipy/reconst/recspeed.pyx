@@ -61,7 +61,7 @@ def peak_finding_edges(odf, edges_on_sphere):
         if odf0 > odf1:
             cpeak[find1] = 0
         elif odf0 < odf1:
-            cpeak[find1] = 0
+            cpeak[find0] = 0
 
     cpeak = np.array(cpeak)
 

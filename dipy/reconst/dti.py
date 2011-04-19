@@ -69,56 +69,44 @@ class Tensor(ModelArray):
     fa : array
         Calculates fractional anisotropy [2]_.
     md : array
-        Calculates the mean diffusivity [2]_. 
+        Calculates the mean diffusivity [2]_.
         Note: [units ADC] ~ [units b value]*10**-1
-    
+
     See Also
     --------
     dipy.io.bvectxt.read_bvec_file, dipy.core.qball.ODF
-    
-    Notes
-    -----
-    Due to the fact that diffusion MRI entails large volumes (e.g. [256,256,
-    50,64]), memory can be an issue. Therefore, only the following parameters 
-    of the self diffusion tensor are cached for each voxel:
-
-    - All three eigenvalues
-    - Primary and secondary eigenvectors
-
-    From these cached parameters, one can presumably construct any desired
-    parameter.
 
     References
     ----------
-    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
-       the effective self-diffusion tensor from the NMR spin echo. J Magn 
+    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+       the effective self-diffusion tensor from the NMR spin echo. J Magn
        Reson B 103, 247-254.
     .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
-       features of tissues elucidated by quantitative diffusion-tensor MRI. 
+       features of tissues elucidated by quantitative diffusion-tensor MRI.
        Journal of Magnetic Resonance 111, 209-219.
 
     Examples
     ----------
-    For a complete example have a look at the main dipy/examples folder    
+    For a complete example have a look at the main dipy/examples folder
     """
 
     ### Eigenvalues Property ###
     @property
-    def evals(self):
+    def evals(self, fillvalue=np.nan):
         """
         Returns the eigenvalues of the tensor as an array
         """
 
-        return _filled(self.model_params[..., :3])
+        return _filled(self.model_params[..., :3], fillvalue)
 
     ### Eigenvectors Property ###
     @property
-    def evecs(self):
+    def evecs(self, fillvalue=np.nan):
         """
         Returns the eigenvectors of teh tensor as an array
 
         """
-        evecs = _filled(self.model_params[..., 3:])
+        evecs = _filled(self.model_params[..., 3:], fillvalue)
         return evecs.reshape(self.shape + (3, 3))
 
     def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
@@ -180,7 +168,7 @@ class Tensor(ModelArray):
     D = property(_getD, doc = "Self diffusion tensor")
 
 
-    def fa(self):
+    def fa(self, fillvalue=np.nan):
         r"""
         Fractional anisotropy (FA) calculated from cached eigenvalues. 
         
@@ -208,7 +196,7 @@ class Tensor(ModelArray):
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1*ev1 + ev2*ev2 + ev3*ev3))
         fa = wrap(np.asarray(fa))
-        return _filled(fa)
+        return _filled(fa, fillvalue)
 
     
     def md(self):
