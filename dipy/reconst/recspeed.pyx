@@ -39,17 +39,53 @@ cdef inline double* asdp(cnp.ndarray pt):
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
-def peak_finding_edges(odf, edges_on_sphere):
+def peak_finding_onedge(odf, edges):
+    """Given a function, odf, and neighbor pairs, edges, finds the local maxima
+
+    If a function is evaluated on some set of points where each pair of
+    neighboring points is in edges, the function compares each pair of
+    neighbors and returns the value and location of each point that is >= all
+    its neighbors.
+
+    Parameters
+    ----------
+    odf : array_like
+        The odf of some function evaluated at some set of points
+    edges : array_like (N, 2)
+        every edges(i,:) is a pair of neighboring points
+
+    Returns
+    -------
+    peaks : ndarray
+        odf at local maximums, orders the peaks in descending order
+    inds : ndarray
+        location of local maximums, indexes to odf array so that
+        odf[inds[i]] == peaks[i]
+
+    Note
+    ----
+    Comparing on edges might be faster then comparing on faces if edges does
+    not contain repeated entries. Additionally in the event that some function
+    is symmetric in some way, that symmetry can be exploited to further reduce
+    the domain of the search and the number of input edges. This is done in the
+    create_half_unit_sphere function of dipy.core.triangle_subdivide for
+    functions with antipodal symmetry.
+
+    See Also
+    --------
+    create_half_unit_sphere
+
+    """
 
     cdef:
-        cnp.ndarray[cnp.uint16_t, ndim=2] cedges = np.ascontiguousarray(edges_on_sphere)
+        cnp.ndarray[cnp.uint16_t, ndim=2] cedges = np.ascontiguousarray(edges)
         cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
-        cnp.ndarray[cnp.uint8_t, ndim=1] cpeak = np.ones(odf.shape, np.uint8)
+        cnp.ndarray[cnp.uint8_t, ndim=1] cpeak = np.ones(len(odf), 'uint8')
         int i=0
         int lenedges = len(cedges)
-        int find0,find1
-        double odf0,odf1
-    
+        int find0, find1
+        double odf0, odf1
+
     for i from 0 <= i < lenedges:
 
         find0 = cedges[i,0]
