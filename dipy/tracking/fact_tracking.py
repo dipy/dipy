@@ -39,7 +39,6 @@ def track_tensor(tensor, start_loc, start_step, vox_size, fa_limit,
     dot_limit = cos(pi*angle_limit/180)
 
     all_tracks = []
-    prev_step = start_step
 
     for vox_loc in start_loc:
         track = [vox_loc]
@@ -90,7 +89,7 @@ def seeds_from_mask(mask, density):
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
     sp = empty(3)
-    sp[:] = 1/asarray(density)
+    sp[:] = 1/asarray(density).astype('float')
 
     voxels = mask.nonzero()
     mg = mgrid[0:1:sp[0], 0:1:sp[1], 0:1:sp[2]]
