@@ -14,7 +14,7 @@ print((data_mask.sum()+0.)/prod(data_mask.shape))
 bvec, bval = read_bvec_file('E8885S6I1.bvec')
 roi_img = load('E8885S6I1_tracking_roi.nii.gz')
 roi_mask = roi_img.get_data()
-seeds = seeds_from_mask(roi_mask, [2,2,6])
+seeds = seeds_from_mask(roi_mask, [1,1,3])
 
 #making the tensors can be slow for large images
 tensor = Tensor(data, bval, bvec.T, data_mask, min_signal=1)
