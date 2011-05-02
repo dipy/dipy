@@ -88,11 +88,12 @@ def seeds_from_mask(mask, density):
     mask = atleast_3d(mask)
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
+    density = array(density, 'int')
     sp = empty(3)
-    sp[:] = 1/asarray(density).astype('float')
+    sp[:] = 1./density
 
     voxels = mask.nonzero()
-    mg = mgrid[0:1:sp[0], 0:1:sp[1], 0:1:sp[2]]
+    mg = mgrid[-.5:5:sp[0], -.5:.5:sp[1], -.5:.5:sp[2]]
 
     seeds = [] 
     for ii, jj, kk in zip(voxels, mg, sp):
