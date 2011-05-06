@@ -1,7 +1,9 @@
-from numpy import arange, arccos, arctan, atleast_1d, broadcast_arrays, c_, \
+from numpy import arange, arccos, arctan2, atleast_1d, broadcast_arrays, c_, \
                   diag, dot, empty, repeat, sqrt
 from numpy.linalg import inv, pinv
 from scipy.special import sph_harm, lpn
+from .maskedview import MaskedView, _filled, _makearray
+from .modelarray import ModelArray
 
 def real_sph_harm(m, n, theta, phi):
     """
@@ -88,7 +90,7 @@ def sph_harm_ind_list(sh_order):
 def cartesian2polar(x=0, y=0, z=0):
     """Converts cartesian coordinates to polar coordinates
 
-    converts a list of cartesian coordinates (x, y, z) to polar coordinates 
+    converts a list of cartesian coordinates (x, y, z) to polar coordinates
     (R, theta, phi).
 
     """
@@ -100,34 +102,96 @@ def cartesian2polar(x=0, y=0, z=0):
 
     return R, theta, phi
 
-def smooth_inv(design_matrix, l)
-    L = diag(l)
-    inv = pinv(c_[design_matrix, L])
-    inv = inv[:design_matrix.shape[1]]
-    return inv
+def reg_pinv(B, L):
+    """Regularized psudo-inverse
 
-def qball_odf_fit(sh_order, bvec, smooth):
+    Computes a regularized least square inverse of B
+
+    Parameters
+    ----------
+    B : array_like (n, m)
+        Matrix to be inverted
+    L : array_like (n,)
+
+    Returns
+    -------
+    inv : ndarray (m, n)
+        regularized least square inverse of B
+
+    Notes
+    -----
+    In the literature this inverse is often written $(B^{T}B+L^{2})^{-1}B^{T}$.
+    However here this inverse is implemented using the psudo-inverse because it
+    is more numerically stable than the direct implementation of the matrix
+    product. Also because of the transpose issue, B and the result are both
+    transposed compared to the literature.
+
+    """
+    inv = pinv(c_[B, diag(L)])
+    return inv[:B.shape[1]]
+
+def blah(B, L):
+    return dot(B.T, inv(dot(B, B.T) + diag(L*L)))
+
+def qball_odf_fit(data, m, n, bvec, smooth):
+
+    data, wrap = _makearray(data)
     R, theta, phi = cartesian2polar(*bvec)
-    m, n = sph_harm_ind_list(sh_order)
-    design_matrix = real_sph_harm(m[:, None], n[:, None], theta, phi)
-    l = n * (n+1) * sqrt(smooth)
-    fm = smooth_inv(design_matrix, l)
+    B = real_sph_harm(m[:, None], n[:, None], theta, phi)
+    L = n * (n+1)
+    lsqB = smooth_pinv(B, sqrt(smooth)*L)
+
+    C = dot(data, lsqB)
+
     legendre0 = lpn(sh_order, 0)[0]
-    funk_radon = legendre0[n]
-    fm *= funk_radon
-    return fm
+    F = legendre0[n]
+    return wrap(F*C)
 
-def OPDT(sh_order, bvec, smooth)
+def qball_opdf_fit(data, m, n, bvec, smooth, min_signal=1e-5):
+    """Fits an Orientation Probability Density Function to some diffusion data
+
+    The OPDF is a
+    """
+
+    data, wrap = _makearray(data)
     R, theta, phi = cartesian2polar(*bvec)
-    m, n = sph_harm_ind_list(sh_order)
-    design_matrix = real_sph_harm(m[:, None], n[:, None], theta, phi)
-    l = n * n+1 * sqrt(smooth)
-    inv = smooth_inv(design_mat, L)
-    fm =
-    C = dot(
+    B = real_sph_harm(m[:, None], n[:, None], theta, phi)
+    L = n * n+1
+    lsqB = smooth_pinv(B, sqrt(smooth)*L)
 
-def qball_odf_fit(data, sh_order, bvec smoothness=0):
-    fm = qball_odf_fit(sh_order, bvec, smoothness)
-    C = dot(data, fm)
-    return C
-    
+    E = maximum(data, min_signal)
+    D = log(E)
+    C = dot(2*D*(3+2*D)*E, lsqB) - L*dot(E, lsqB)
+
+    legendre0 = lpn(sh_order, 0)[0]
+    F = legendre0[n]
+    return wrap(F*C)
+
+class SphHarmModels(ModelArray):
+
+    def __init__(self, data, bvec, sh_order=6, mask=True, fit_method=OPDT,
+                 *args, **kargs):
+
+        mask = atleast_1d(mask)
+        if not mask.any():
+            raise ValueError('Mask cannot be all false')
+
+        if not mask.all():
+            data = data[mask]
+            data = MaskedView(mask, data)
+        m, n = sph_harm_ind_list(sh_order)
+        sph_hamr_coef = fit_method(data, m, n, bvec, *args, **kargs)
+
+        self.sh_order = sh_order
+        self.m = m
+        self.n = n
+        self.model_params = sph_harm_coef
+
+    def eval_at(self, points):
+        R, theta, phi = cartesian2polar(*points)
+        n = self.n[:,None]
+        m = self.m[:,None]
+        design = real_sph_harm(m, n, theta, phi)
+
+        return dot(self.model_params, design)
+

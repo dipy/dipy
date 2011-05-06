@@ -9,7 +9,7 @@ import reconst
 import io
 import tracking
 import viz
-import external
+#import external
 import core
 
 '''
