@@ -92,7 +92,7 @@ def get_skeleton(name='C1'):
     return cPickle.loads(gzip.open(fname,'rb').read())
 
 
-def get_sphere(name='symmetric363'):
+def get_sphere(name='symmetric362'):
     ''' provide triangulated spheres
 
     Parameters
