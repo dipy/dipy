@@ -2,9 +2,8 @@ from numpy import abs, array, asarray, atleast_3d, cos, dot, empty, mgrid, \
                   pi, round, sqrt
 
 pn_edge = array([[0], [1]])
-small_number = 1e-1
 
-def propagate(voxel_location, cur_step, prev_step, vox_size):
+def propagate(voxel_location, cur_step, prev_step, vox_size, over_step=1e-1):
     """takes a step just past the edge of the next voxel along cur_step
 
     given a location and a cur_step, finds the smallest step needed to move 
@@ -24,7 +23,9 @@ def propagate(voxel_location, cur_step, prev_step, vox_size):
     step_size.sort()
     #because all values in space are > 0 and < 1, 3 step_sizes are < 0 and 3
     #are > 0, take the smallest step > 0
-    smallest_step = step_size[3] + small_number
+    if step_size[3] == 0:
+        raise ValueError('step_size[3] should not be zero')
+    smallest_step = step_size[3] + over_step
     new_loc = voxel_location + smallest_step*vox_step
 
     #we need to know cur_step to pass to the next propagation step
@@ -81,7 +82,7 @@ def seeds_from_mask(mask, density):
 
     places evanly spaced points in nonzero voxels of mask, spaces the points
     based on density. For example if density is [1, 2, 3], there will be 6
-    points in each voxel, at x=.5, y=[.25, .7] and z=[.166, .5, .833]. 
+    points in each voxel, at x=.5, y=[.25, .75] and z=[.166, .5, .833]. 
     density = a is the same as density = [a, a, a]
 
     """
@@ -93,7 +94,7 @@ def seeds_from_mask(mask, density):
     sp[:] = 1./density
 
     voxels = mask.nonzero()
-    mg = mgrid[-.5:5:sp[0], -.5:.5:sp[1], -.5:.5:sp[2]]
+    mg = mgrid[-.5:.5:sp[0], -.5:.5:sp[1], -.5:.5:sp[2]]
 
     seeds = [] 
     for ii, jj, kk in zip(voxels, mg, sp):
