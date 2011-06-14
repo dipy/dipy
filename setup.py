@@ -70,7 +70,8 @@ for modulename, other_sources in (
     ('dipy.reconst.recspeed', []),
     ('dipy.tracking.distances', []),
     ('dipy.tracking.vox2track', []),
-    ('dipy.tracking.propspeed', [])):
+    ('dipy.tracking.propspeed', []),
+    ('dipy.tracking.bootspeed', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
                           include_dirs = [np.get_include()]))

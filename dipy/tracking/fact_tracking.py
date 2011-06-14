@@ -3,15 +3,12 @@ from numpy import abs, array, asarray, atleast_3d, cos, dot, empty, mgrid, \
 
 pn_edge = array([[0], [1]])
 
-def propagate(voxel_location, cur_step, prev_step, vox_size, over_step=1e-1):
+def propagate(voxel_location, cur_step, vox_size, over_step=1e-1):
     """takes a step just past the edge of the next voxel along cur_step
 
-    given a location and a cur_step, finds the smallest step needed to move 
+    given a location and a cur_step, finds the smallest step needed to move
     into the next voxel
     """
-
-    if dot(cur_step, prev_step) < 0:
-        cur_step = -cur_step
 
     #change cur_step from mm to vox dim
     vox_step = cur_step/vox_size
@@ -31,12 +28,53 @@ def propagate(voxel_location, cur_step, prev_step, vox_size, over_step=1e-1):
     #we need to know cur_step to pass to the next propagation step
     return new_loc, cur_step
 
-def track_tensor(tensor, start_loc, start_step, vox_size, fa_limit, 
+def fact_tracking(voxel_model, seeds, start_step):
+    all_tracks = []
+    for vox_loc in seeds:
+        track = [vox_loc]
+        step = voxel_model.next_step(vox_loc, start_step)
+        while step:
+            propagate(vox_lox, step, vox_size, over_step)
+            step = voxel_model.next_step(vox_loc, step)
+        all_tracks.append(array(track)*vox_size)
+    return tracks
+
+class FactTensorModel(object):
+    def _get_angel_limit(self):
+        return arccos(self.dot_limit)*180/pi
+    def _set_angel_limit(self, angle):
+        if angle >= 0 and angle <= 90:
+            self.dot_limit = cos(angle*pi/180)
+        else:
+            raise ValueError("angle should be between 0 and 180")
+    self.angel_limit = property(_get_angel_limit, _set_angel_limit)
+
+    def from_tensor(tensor, fa_limit=None, angle_limit=None)
+        self.fa_vol = tensor.fa()
+        self.evec1_vol = tensor.evec[..., 0]
+        if fa_limit is not None:
+            self.fa_limit = fa_limit
+        if angle_limit is not None:
+            self.angel_limit = angle_limit
+
+    def next_step(vox_loc, prev_step):
+        if self.fa_vol[vox_loc] < self.fa_limit:
+            return False
+        step = self.evec1_vol[vox_loc]
+        angle_dot = dot(step, prev_step)
+        if abs(angle_dot) < dot_limit:
+            return False
+        if dot_limit > 0:
+            return step
+        else:
+            return -step
+
+def track_tensor(evec1_vol, fa_vol, start_loc, start_step, vox_size, fa_limit,
                  angle_limit):
     """makes tracks using tensor starting from stat_loc"""
 
-    evec1_vol = tensor.evecs[...,0]
-    fa_vol = tensor.fa()
+    #evec1_vol = tensor.evecs[...,0]
+    #fa_vol = tensor.fa()
     dot_limit = cos(pi*angle_limit/180)
 
     all_tracks = []
@@ -49,7 +87,7 @@ def track_tensor(tensor, start_loc, start_step, vox_size, fa_limit,
         else:
             prev_step = -cur_step
         while keep_tracking(cur_step, prev_step, fa, fa_limit, dot_limit):
-            vox_loc, prev_step = propagate(vox_loc, cur_step, prev_step, 
+            vox_loc, prev_step = propagate(vox_loc, cur_step, prev_step,
                                            vox_size)
             track.append(vox_loc)
             cur_step, fa = get_tensor_info(vox_loc, evec1_vol, fa_vol)
@@ -57,6 +95,21 @@ def track_tensor(tensor, start_loc, start_step, vox_size, fa_limit,
             all_tracks.append((array(track)*vox_size, None, None))
 
     return all_tracks
+
+def track_model(voxel_model, track_end, propogator):
+    """blah"""
+
+    t = []
+    for vox_loc in strat_loc:
+
+
+class tt(Tensor):
+
+    def get_tracking_info(vox_loc):
+        ind = tuple(round(vox_loc))
+        step = self.evec1_vol[ind]
+        fa = self.fa()[ind]
+        return step, fa
 
 def get_tensor_info(vox_loc, evec1_vol, fa_vol):
     """returns ev1 and fa for a given location"""
@@ -82,7 +135,7 @@ def seeds_from_mask(mask, density):
 
     places evanly spaced points in nonzero voxels of mask, spaces the points
     based on density. For example if density is [1, 2, 3], there will be 6
-    points in each voxel, at x=.5, y=[.25, .75] and z=[.166, .5, .833]. 
+    points in each voxel, at x=.5, y=[.25, .75] and z=[.166, .5, .833].
     density = a is the same as density = [a, a, a]
 
     """
@@ -96,11 +149,11 @@ def seeds_from_mask(mask, density):
     voxels = mask.nonzero()
     mg = mgrid[-.5:.5:sp[0], -.5:.5:sp[1], -.5:.5:sp[2]]
 
-    seeds = [] 
+    seeds = []
     for ii, jj, kk in zip(voxels, mg, sp):
         s = ii[:,None] + jj.ravel() + kk/2
         seeds.append(s.ravel())
-    
+
     seeds = array(seeds).T
     return seeds
 
