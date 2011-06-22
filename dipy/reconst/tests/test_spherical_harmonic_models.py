@@ -11,26 +11,6 @@ from dipy.reconst.spherical_harmonic_models import qball_opdf_fit, \
         real_sph_harm, sph_harm_ind_list, cartesian2polar, qball_odf_fit, \
         qball_design, _robust_peaks, _closest_peak, OpdfModel, \
         normalize_data, ClosestPeakSelector
-"""
-def draw(ii):
-    ms = v.T*odf[ii]
-    mlab.triangular_mesh(ms[0], ms[1], ms[2], e[f,0])
-
-def iplot():
-    plt.figure()
-    orig_dist = np.dot(vecs_xy, [1,0,0])
-    res = np.array([foo(ii) for ii in pk_odf])
-    new_dist = np.dot(v[res],[1,0,0])
-    plt.plot(orig_dist, new_dist, '*b')
-    res = np.array([foo(ii) for ii in pk_opdf])
-    new_dist = np.dot(v[res],[1,0,0])
-    pylab.plot(orig_dist, new_dist, '*r')
-"""
-def foo(inp):
-    if len(inp[1]) > 1 and inp[0][1] > inp[0][0]*.5:
-        return inp[1][1]
-    else:
-        return inp[1][0]
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -142,7 +122,7 @@ def make_fake_signal():
     gtab[1:] = v
     bvec = gtab.T
     B = design_matrix(bvec, bval)
-    
+
     tensor_moveing = np.empty_like(evecs_moveing)
     for ii in xrange(len(vecs_xy)):
         tensor_moveing[ii] = np.dot(evecs_moveing[ii]*evals,
