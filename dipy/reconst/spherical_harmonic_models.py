@@ -18,8 +18,6 @@ from numpy.linalg import inv, pinv, svd
 from numpy.random import randint
 from scipy.special import sph_harm, lpn
 from .recspeed import peak_finding_edges
-from .maskedview import MaskedView, _filled, _makearray
-from .modelarray import ModelArray
 
 def real_sph_harm(m, n, theta, phi):
     """
@@ -144,25 +142,6 @@ def smooth_pinv(B, L):
     """
     inv = pinv(r_[B, diag(L)])
     return inv[:, :len(B)]
-
-def qball_design(sh_order, bval, gtab, smooth):
-    m, n = sph_harm_ind_list(sh_order)
-    L = n*(n+1)
-    legendre0 = lpn(sh_order, 0)[0]
-    F = legendre0[n]
-    bvec = gtab[bval > 0].T
-    r, theta, phi = cartesian2polar(*bvec)
-    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
-    invB = smooth_pinv(B, sqrt(smooth)*L)
-
-    return B, invB, L, F
-
-def qball_odf_fit(data, stuff):
-
-    data, wrap = _makearray(data)
-    B, invB, L, F = stuff
-    C = dot(data, F*invB.T)
-    return wrap(C)
 
 class OpdfModel(object):
     """A model for fitting diffussion data
@@ -347,51 +326,6 @@ def _closest_peak(peak_points, prev_step, dot_limit):
         return peak_points[closest_peak]
     else:
         return -peak_points[closest_peak]
-"""
-class BootstrapPeakSelector(object):
-    def __init__(self, model, data, mask=True)
-"""
-def qball_opdf_fit(data, sh_order, bval, gtab, smooth=0, min_signal=1e-5):
-    """Fits an Orientation Probability Density Function to some diffusion data
-
-    The OPDF is a
-    """
-
-    m, n = sph_harm_ind_list(sh_order)
-    L = n*(n+1)
-    legendre0 = lpn(sh_order, 0)[0]
-    F = legendre0[n]
-    bvec = gtab[bval > 0].T
-    r, theta, phi = cartesian2polar(*bvec)
-    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
-    invB = smooth_pinv(B, sqrt(smooth)*L)
-
-    data, wrap = _makearray(data)
-    if min_signal is not None:
-        data = maximum(data, min_signal)
-    mean_b0 = data[..., bval == 0].mean(-1)
-    mean_b0 = mean_b0[..., None]
-    E = data[..., bval > 0]/mean_b0
-    D = -log(E)
-
-    #{ M#F#L#invB#E - M#F#invB#(4*D*(1.5-D)*E) }.T
-    C = dot(E, F*L*invB.T) - dot(D*(1.5-D)*E, F*invB.T*4)
-
-    C = wrap(C)
-    return C
-
-def _apply_mask(mask, data):
-    """ returns a masked view if mask has both True and False values
-    """
-
-    if not mask.any():
-        raise ValueError('Mask cannot be all false')
-
-    if not mask.all():
-        data = data[mask]
-        data = MaskedView(mask, data)
-
-    return data
 
 def hat(B, bvec):
     """Returns the hat matrix for the design matrix B
