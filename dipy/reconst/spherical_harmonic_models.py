@@ -1,7 +1,23 @@
-from numpy import arange, arccos, arctan2, atleast_1d, broadcast_arrays, c_, \
-                  diag, dot, empty, repeat, sqrt
-from numpy.linalg import inv, pinv
+""" Tools for using spherical homonic models to fit diffussion data
+
+Note about the Transpose:
+In the literature the matrix represenation of these methods is often writen as
+Y = Bd where B is some design matrix and Y and d are column vectors. In our
+case the incomming data, for example, is stored as row vectors (ndarrays) of
+the form (x, y, z, n), where n is the number of diffusion directions. In this
+case we can implement the method by doing something like Y' = dot(data, B.T) or
+equivelently writen Y' = d.T B.T, where Y' is simply Y.T. Please forgive all
+B.T and R.T, but I thought that would be easier to read than a lot of
+data.reshape(...) and parmas.reshape(...).
+"""
+
+from numpy import arange, arccos, arctan2, array, atleast_1d, \
+                  broadcast_arrays, c_, cos, diag, dot, empty, eye, log, \
+                  maximum, pi, r_, repeat, sqrt, eye
+from numpy.linalg import inv, pinv, svd
+from numpy.random import randint
 from scipy.special import sph_harm, lpn
+from .recspeed import peak_finding_edges
 from .maskedview import MaskedView, _filled, _makearray
 from .modelarray import ModelArray
 
@@ -102,7 +118,7 @@ def cartesian2polar(x=0, y=0, z=0):
 
     return R, theta, phi
 
-def reg_pinv(B, L):
+def smooth_pinv(B, L):
     """Regularized psudo-inverse
 
     Computes a regularized least square inverse of B
@@ -123,75 +139,298 @@ def reg_pinv(B, L):
     In the literature this inverse is often written $(B^{T}B+L^{2})^{-1}B^{T}$.
     However here this inverse is implemented using the psudo-inverse because it
     is more numerically stable than the direct implementation of the matrix
-    product. Also because of the transpose issue, B and the result are both
-    transposed compared to the literature.
+    product.
 
     """
-    inv = pinv(c_[B, diag(L)])
-    return inv[:B.shape[1]]
+    inv = pinv(r_[B, diag(L)])
+    return inv[:, :len(B)]
 
-def blah(B, L):
-    return dot(B.T, inv(dot(B, B.T) + diag(L*L)))
-
-def qball_odf_fit(data, m, n, bvec, smooth):
-
-    data, wrap = _makearray(data)
-    R, theta, phi = cartesian2polar(*bvec)
-    B = real_sph_harm(m[:, None], n[:, None], theta, phi)
-    L = n * (n+1)
-    lsqB = smooth_pinv(B, sqrt(smooth)*L)
-
-    C = dot(data, lsqB)
-
+def qball_design(sh_order, bval, gtab, smooth):
+    m, n = sph_harm_ind_list(sh_order)
+    L = n*(n+1)
     legendre0 = lpn(sh_order, 0)[0]
     F = legendre0[n]
-    return wrap(F*C)
+    bvec = gtab[bval > 0].T
+    r, theta, phi = cartesian2polar(*bvec)
+    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+    invB = smooth_pinv(B, sqrt(smooth)*L)
 
-def qball_opdf_fit(data, m, n, bvec, smooth, min_signal=1e-5):
+    return B, invB, L, F
+
+def qball_odf_fit(data, stuff):
+
+    data, wrap = _makearray(data)
+    B, invB, L, F = stuff
+    C = dot(data, F*invB.T)
+    return wrap(C)
+
+class OpdfModel(object):
+    """A model for fitting diffussion data
+    """
+    def __init__(self, sh_order, bval, bvec, smooth=0, sampling_points=None,
+                 sampling_edges=None):
+        """Creates a model that can be used to fit and sample diffusion data
+
+        Arguments
+        ---------
+        sh_order : even int
+            the spherical harmonic order of the model
+        bval : array_like (n,)
+            the b values for the data, where n is the number of volumes in data
+        bvec : array_like (3, n)
+            the diffusing weighting gradient directions for the data, n is the
+            number of volumes in the data
+        smoothness : float between 0 and 1
+            The regulization peramater of the model
+        sampling_points : array_like (3, m)
+            points for sampling the model, these points are used when the
+            sample method is called
+
+        """
+        m, n = sph_harm_ind_list(sh_order)
+        L = n*(n+1)
+        legendre0 = lpn(sh_order, 0)[0]
+        F = legendre0[n]
+        bvec = bvec[:, bval > 0]
+        x, y, z = bvec
+        r, theta, phi = cartesian2polar(x, y, z)
+        B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+        invB = smooth_pinv(B, sqrt(smooth)*L)
+        L = L[:, None]
+        F = F[:, None]
+        delta_b = F*L*invB
+        delta_q = 4*F*invB
+        self._fit_matrix = delta_b, delta_q
+        self._m = m
+        self._n = n
+        if sampling_points is not None:
+            self.set_sampling_points(sampling_points, sampling_edges)
+
+    def fit_data(self, data):
+        """Fits the model to diffusion data and returns the coefficients
+        """
+        delta_b, delta_q = self._fit_matrix
+        logd = log(data)
+        return dot(data, delta_b.T) - dot(logd*(1.5-logd)*data, delta_q.T)
+
+    def set_sampling_points(self, sampling_points, sampling_edges=None):
+        """Sets the sampling points
+
+        The sampling points are the points at which the modle is sampled when
+        the sample method is called.
+
+        Parameters
+        ----------
+        sampling_points : ndarray (n, 3), dtype=float
+            The x, y, z coordinates of n points on a unit sphere.
+        sampling_edges : ndarray (m, 2), dtype=int
+            Indices to sampling_points so that every unique pair of neighbors
+            in sampling_points is one of the m edges.
+
+        """
+        x, y, z = sampling_points.T
+        r, theta, phi = cartesian2polar(x, y, z)
+        theta = theta[:, None]
+        phi = phi[:, None]
+        S = real_sph_harm(self._m, self._n, theta, phi)
+
+        delta_b, delta_q = self._fit_matrix
+        delta_b = dot(S, delta_b)
+        delta_q = dot(S, delta_q)
+        self._sampling_matrix = delta_b, delta_q
+        self.sampling_points = sampling_points
+        self.sampling_edges = sampling_edges
+
+    def sample(self, data):
+        """Fits the model to diffusion data and returns samples
+
+        The points used to sample the model can be set using the
+        set_sampling_points method
+
+        Parameters
+        ----------
+        data : ndarray (..., n)
+            Diffusion data to be fit using the model. The data should be
+            normilzed before it is fit.
+
+        """
+        delta_b, delta_q = self._sampling_matrix
+        logd = log(data)
+        return dot(data, delta_b.T) - dot(logd*(1.5-logd)*data, delta_q.T)
+
+def normalize_data(data, bval, min_signal=1e-5):
+    """Normalizes the data with respect to the mean b0
+    """
+    dwi = data[..., bval > 0]
+    b0 = data[..., bval == 0].mean(-1)
+    b0 = b0[..., None]
+    dwi = maximum(dwi, min_signal)
+    b0 = maximum(b0, min_signal)
+    return dwi/b0
+
+def gfa(samples):
+    diff = samples - samples.mean(-1)[..., None]
+    n = samples.shape[-1]
+    numer = n*(diff*diff).sum(-1)
+    denom = (n-1)*(samples*samples).sum(-1)
+    return sqrt(numer/denom)
+
+class ClosestPeakSelector(object):
+    """Step selector with next_step method to be used for fiber tracking
+
+    """
+    def _get_angle_limit(self):
+        return 180/pi * arccos(self.dot_limit)
+
+    def _set_angle_limit(self, angle_limit):
+        if angle_limit < 0 or angle_limit > 90:
+            raise ValueError("angle_limit must be between 0 and 90")
+        self.dot_limit = cos(angle_limit*pi/180)
+
+    angle_limit = property(_get_angle_limit, _set_angle_limit)
+
+    def __init__(self, model, data, gfa_limit=0, dot_limit=0,
+                 angle_limit=None, min_relative_peak=.5, peak_spacing=.75):
+        self._samples = model.sample(data)
+        self._gfa = gfa(self._samples)
+        self.gfa_limit = gfa_limit
+        self.min_relative_peak = min_relative_peak
+        self.peak_spacing = peak_spacing
+        if angle_limit is not None:
+            self.angle_limit = angle_limit
+        else:
+            self.dot_limit = dot_limit
+        self.sampling_points = model.sampling_points
+        self.sampling_edges = model.sampling_edges
+
+    def next_step(self, vox_loc, prev_step):
+        if self._gfa[vox_loc] < self.gfa_limit:
+            return False
+        vox_samples = self._samples[vox_loc]
+        peak_values, peak_inds = peak_finding_edges(vox_samples,
+                                                    self.sampling_edges)
+        peak_points = self.sampling_points[peak_inds]
+        peak_points = _robust_peaks(peak_points, peak_values,
+                                    self.min_relative_peak, self.peak_spacing)
+        return _closest_peak(peak_points, prev_step, self.dot_limit)
+
+def _robust_peaks(peak_points, peak_values, min_relative_value,
+                        closest_neighbor):
+    """Removes peaks that are too small and child peaks too close to a parent
+    peak
+    """
+    if peak_points.ndim == 1:
+        return peak_points
+    min_value = peak_values[0] * min_relative_value
+    good_peaks = [peak_points[0]]
+    for ii in xrange(1, len(peak_values)):
+        if peak_values[ii] < min_value:
+            break
+        inst = peak_points[ii]
+        dist = dot(good_peaks, inst)
+        if abs(dist).max() < closest_neighbor:
+            good_peaks.append(inst)
+
+    return array(good_peaks)
+
+def _closest_peak(peak_points, prev_step, dot_limit):
+    """Returns peak form peak_points closest to prev_step
+
+    Returns either the closest peak or False if dot(prev, closets) < dot_limit
+    """
+    peak_dots = dot(peak_points, prev_step)
+    closest_peak = abs(peak_dots).argmax()
+    dot_closest_peak = peak_dots[closest_peak]
+    if abs(dot_closest_peak) < dot_limit:
+        return False
+    if dot_closest_peak > 0:
+        return peak_points[closest_peak]
+    else:
+        return -peak_points[closest_peak]
+"""
+class BootstrapPeakSelector(object):
+    def __init__(self, model, data, mask=True)
+"""
+def qball_opdf_fit(data, sh_order, bval, gtab, smooth=0, min_signal=1e-5):
     """Fits an Orientation Probability Density Function to some diffusion data
 
     The OPDF is a
     """
 
-    data, wrap = _makearray(data)
-    R, theta, phi = cartesian2polar(*bvec)
-    B = real_sph_harm(m[:, None], n[:, None], theta, phi)
-    L = n * n+1
-    lsqB = smooth_pinv(B, sqrt(smooth)*L)
-
-    E = maximum(data, min_signal)
-    D = log(E)
-    C = dot(2*D*(3+2*D)*E, lsqB) - L*dot(E, lsqB)
-
+    m, n = sph_harm_ind_list(sh_order)
+    L = n*(n+1)
     legendre0 = lpn(sh_order, 0)[0]
     F = legendre0[n]
-    return wrap(F*C)
+    bvec = gtab[bval > 0].T
+    r, theta, phi = cartesian2polar(*bvec)
+    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+    invB = smooth_pinv(B, sqrt(smooth)*L)
 
-class SphHarmModels(ModelArray):
+    data, wrap = _makearray(data)
+    if min_signal is not None:
+        data = maximum(data, min_signal)
+    mean_b0 = data[..., bval == 0].mean(-1)
+    mean_b0 = mean_b0[..., None]
+    E = data[..., bval > 0]/mean_b0
+    D = -log(E)
 
-    def __init__(self, data, bvec, sh_order=6, mask=True, fit_method=OPDT,
-                 *args, **kargs):
+    #{ M#F#L#invB#E - M#F#invB#(4*D*(1.5-D)*E) }.T
+    C = dot(E, F*L*invB.T) - dot(D*(1.5-D)*E, F*invB.T*4)
 
-        mask = atleast_1d(mask)
-        if not mask.any():
-            raise ValueError('Mask cannot be all false')
+    C = wrap(C)
+    return C
 
-        if not mask.all():
-            data = data[mask]
-            data = MaskedView(mask, data)
-        m, n = sph_harm_ind_list(sh_order)
-        sph_hamr_coef = fit_method(data, m, n, bvec, *args, **kargs)
+def _apply_mask(mask, data):
+    """ returns a masked view if mask has both True and False values
+    """
 
-        self.sh_order = sh_order
-        self.m = m
-        self.n = n
-        self.model_params = sph_harm_coef
+    if not mask.any():
+        raise ValueError('Mask cannot be all false')
 
-    def eval_at(self, points):
-        R, theta, phi = cartesian2polar(*points)
-        n = self.n[:,None]
-        m = self.m[:,None]
-        design = real_sph_harm(m, n, theta, phi)
+    if not mask.all():
+        data = data[mask]
+        data = MaskedView(mask, data)
 
-        return dot(self.model_params, design)
+    return data
+
+def hat(B, bvec):
+    """Returns the hat matrix for the design matrix B
+    """
+
+    U, S, V = svd(B, False)
+    H = dot(U, U.T)
+    return H
+
+def lcr_matrix(H):
+    """Returns a matrix for computing leveraged, centered residuals from data
+
+    if r = (d-Hd), the leveraged centered residuals are lcr = (r/l)-mean(r/l)
+    ruturns the matrix R, such lcr = Rd
+
+    """
+    if H.ndim != 2 or H.shape[0] != H.shape[1]:
+        raise ValueError('H should be a square matrix')
+
+    leverages = sqrt(1-H.diagonal())
+    leverages = leverages[:, None]
+    R = (eye(len(H)) - H) / leverages
+    return R - R.mean(0)
+
+def bootstrap_data_array(data, H, R, permute=None):
+    """Returns a bootsrapped sample of data given H and R
+
+    Calculated the bootsrapped
+    """
+
+    if permute is None:
+        permute = randint(data.shape[-1], size=data.shape[-1])
+    R = R[:, permute]
+    return dot(data, (H+R).T)
+
+def bootstrap_data_voxel(data, H, R, permute=None):
+    if permute is None:
+        permute = randint(data.shape[-1], size=data.shape[-1])
+    r = dot(data, R.T)
+    r = r[permute]
+    return dot(data, H.T) + r
 
