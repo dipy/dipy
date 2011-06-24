@@ -7,10 +7,9 @@ from dipy.reconst.recspeed import peak_finding_edges
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.reconst.spherical_harmonic_models import qball_opdf_fit, \
-        real_sph_harm, sph_harm_ind_list, cartesian2polar, qball_odf_fit, \
-        qball_design, _robust_peaks, _closest_peak, OpdfModel, \
-        normalize_data, ClosestPeakSelector
+from dipy.reconst.spherical_harmonic_models import real_sph_harm, \
+        sph_harm_ind_list, cartesian2polar, _robust_peaks, _closest_peak, \
+        OpdfModel, normalize_data, ClosestPeakSelector
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -19,7 +18,6 @@ def test_sph_harm_ind_list():
     assert_true(np.all(np.abs(m_list) <= n_list))
     assert_array_equal(n_list % 2, 0)
     assert_raises(ValueError, sph_harm_ind_list, 1)
-
 
 def test_real_sph_harm():
     # Tests derived from tables in
@@ -134,7 +132,6 @@ def make_fake_signal():
     sig = np.exp(np.dot(D_moveing, B.T)) + 1.1*np.exp(np.dot(B, D_fixed))
     return v, e, vecs_xy, bval, bvec, sig
 
-
 def test_ClosestPeakSelector():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
@@ -151,4 +148,12 @@ def test_ClosestPeakSelector():
             assert_array_equal(vecs_xy[ii], step)
             step = stepper.next_step(ii, [1., 0, 0.])
             assert_array_equal([1., 0, 0.], step)
+
+    norm_sig.shape = (2, 2, 4, -1)
+    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, gfa_limit=0,
+                                  angle_limit=55)
+    step = stepper.next_step([0, 0, 0], [1, 0, 0])
+    assert_array_equal(step, [1, 0, 0])
+    step = stepper.next_step(np.array([0, 0, 0]), [1, 0, 0])
+    assert_array_equal(step, [1, 0, 0])
 

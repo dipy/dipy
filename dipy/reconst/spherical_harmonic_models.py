@@ -174,6 +174,7 @@ class OpdfModel(object):
         x, y, z = bvec
         r, theta, phi = cartesian2polar(x, y, z)
         B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+        self.B = B
         invB = smooth_pinv(B, sqrt(smooth)*L)
         L = L[:, None]
         F = F[:, None]
@@ -182,8 +183,7 @@ class OpdfModel(object):
         self._fit_matrix = delta_b, delta_q
         self._m = m
         self._n = n
-        if sampling_points is not None:
-            self.set_sampling_points(sampling_points, sampling_edges)
+        self.set_sampling_points(sampling_points, sampling_edges)
 
     def fit_data(self, data):
         """Fits the model to diffusion data and returns the coefficients
@@ -207,18 +207,31 @@ class OpdfModel(object):
             in sampling_points is one of the m edges.
 
         """
-        x, y, z = sampling_points.T
-        r, theta, phi = cartesian2polar(x, y, z)
-        theta = theta[:, None]
-        phi = phi[:, None]
-        S = real_sph_harm(self._m, self._n, theta, phi)
+        if sampling_points is not None:
+            x, y, z = sampling_points.T
+            r, theta, phi = cartesian2polar(x, y, z)
+            theta = theta[:, None]
+            phi = phi[:, None]
+            S = real_sph_harm(self._m, self._n, theta, phi)
 
-        delta_b, delta_q = self._fit_matrix
-        delta_b = dot(S, delta_b)
-        delta_q = dot(S, delta_q)
-        self._sampling_matrix = delta_b, delta_q
-        self.sampling_points = sampling_points
-        self.sampling_edges = sampling_edges
+            delta_b, delta_q = self._fit_matrix
+            delta_b = dot(S, delta_b)
+            delta_q = dot(S, delta_q)
+            self._sampling_matrix = delta_b, delta_q
+            self._sampling_points = sampling_points
+            self._sampling_edges = sampling_edges
+        else:
+            self._sampling_matrix = None
+            self._sampling_points = None
+            self._sampling_edges = None
+
+    @property
+    def sampling_points(self):
+        return self._sampling_points
+
+    @property
+    def sampling_edges(self):
+        return self._sampling_edges
 
     def sample(self, data):
         """Fits the model to diffusion data and returns samples
@@ -283,9 +296,18 @@ class ClosestPeakSelector(object):
         self.sampling_edges = model.sampling_edges
 
     def next_step(self, vox_loc, prev_step):
-        if self._gfa[vox_loc] < self.gfa_limit:
+        try:
+            vox_loc = tuple(vox_loc)
+        except TypeError:
+            pass
+
+        try:
+            if self._gfa[vox_loc] < self.gfa_limit:
+                return False
+            vox_samples = self._samples[vox_loc]
+        except IndexError:
             return False
-        vox_samples = self._samples[vox_loc]
+
         peak_values, peak_inds = peak_finding_edges(vox_samples,
                                                     self.sampling_edges)
         peak_points = self.sampling_points[peak_inds]
@@ -368,3 +390,55 @@ def bootstrap_data_voxel(data, H, R, permute=None):
     r = r[permute]
     return dot(data, H.T) + r
 
+class BootstrapClosestPeakSelector(object):
+    """Step selector with next_step method to be used for fiber tracking
+
+    """
+    def _get_angle_limit(self):
+        return 180/pi * arccos(self.dot_limit)
+
+    def _set_angle_limit(self, angle_limit):
+        if angle_limit < 0 or angle_limit > 90:
+            raise ValueError("angle_limit must be between 0 and 90")
+        self.dot_limit = cos(angle_limit*pi/180)
+
+    angle_limit = property(_get_angle_limit, _set_angle_limit)
+
+    def __init__(self, model, data, gfa_limit=0, dot_limit=0,
+                 angle_limit=None, min_relative_peak=.5, peak_spacing=.75):
+        self._data = data
+        self.model = model
+        samples = model.sample(data)
+        self._gfa = gfa(samples)
+        self.gfa_limit = gfa_limit
+        self.min_relative_peak = min_relative_peak
+        self.peak_spacing = peak_spacing
+        if angle_limit is not None:
+            self.angle_limit = angle_limit
+        else:
+            self.dot_limit = dot_limit
+        self.sampling_points = model.sampling_points
+        self.sampling_edges = model.sampling_edges
+
+    def next_step(self, vox_loc, prev_step, permute=None):
+        try:
+            vox_loc = tuple(vox_loc)
+        except TypeError:
+            pass
+
+        try:
+            if self._gfa[vox_loc] < self.gfa_limit:
+                return False
+            vox_data = self._data[vox_loc]
+        except IndexError:
+            return False
+
+        bootstrap_vox_data = bootstrap_data_voxel(vox_data, self._H, self._R,
+                                                  permute=permute)
+        vox_samples = model.sample(bootstrap_vox_data)
+        peak_values, peak_inds = peak_finding_edges(vox_samples,
+                                                    self.sampling_edges)
+        peak_points = self.sampling_points[peak_inds]
+        peak_points = _robust_peaks(peak_points, peak_values,
+                                    self.min_relative_peak, self.peak_spacing)
+        return _closest_peak(peak_points, prev_step, self.dot_limit)
