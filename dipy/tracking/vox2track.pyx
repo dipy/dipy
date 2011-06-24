@@ -8,25 +8,31 @@ cimport numpy as cnp
 cdef extern from "math.h":
     double floor(double x)
 
-def track_counts(tracks, vol_dims, vox_sizes, return_elements=True):
+def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     ''' Counts of points in `tracks` that pass through voxels in volume
 
     We find whether a point passed through a track by rounding the mm
     point values to voxels.  For a track that passes through a voxel more
     than once, we only record counts and elements for the first point in
-    the line that enters the voxel. 
+    the line that enters the voxel.
 
     Parameters
     ------------
     tracks : sequence
-       sequence of tracks.  Tracks are ndarrays of shape (N, 3), where N
-       is the number of points in that track, and ``tracks[t][n]`` is
-       the n-th point in the t-th track.  Points are of form x, y, z in
-       *mm* coordinates.
-    vol_dim : sequence length 3
+       sequence of T tracks.  One track is an ndarray of shape (N, 3), where N
+       is the number of points in that track, and ``tracks[t][n]`` is the n-th
+       point in the t-th track.  Points are of form x, y, z in *voxel mm*
+       coordinates. That is, if ``i, j, k`` is the possibly non-integer voxel
+       coordinate of the track point, and `vox_sizes` are 3 floats giving voxel
+       sizes of dimensions 0, 1, 2 respectively, then the voxel mm coordinates
+       ``x, y, z`` are simply ``i * vox_sizes[0], j * vox_sizes[1], k *
+       vox_sizes[2]``.  This convention derives from trackviz.  To pass in
+       tracks as voxel coordinates, just pass ``vox_sizes=(1, 1, 1)`` (see
+       below).
+    vol_dims : sequence length 3
        volume dimensions in voxels, x, y, z.
-    vox_sizes : sequence length 3
-       voxel sizes in mm
+    vox_sizes : optional, sequence length 3
+       voxel sizes in mm.  Default is (1,1,1)
     return_elements : {True, False}, optional
        If True, also return object array with one list per voxel giving
        track indices and point indices passing through the voxel (see
@@ -42,6 +48,33 @@ def track_counts(tracks, vol_dims, vox_sizes, return_elements=True):
        one object per voxel. The objects at each voxel are a list of
        integers, where the integers are the indices of the track that
        passed through the voxel.
+
+    Example
+    -------
+    Imagine you have a volume (voxel) space of dimension ``(10,20,30)``.
+    Imagine you had voxel coordinate tracks in ``vs``.  To just fill an array
+    with the counts of how many tracks pass through each voxel:
+
+    >>> vox_track0 = np.array([[0,0,0],[1.1,2.2,3.3],[2.2,4.4,6.6]])
+    >>> vox_track1 = np.array([[0,0,0],[0,0,1],[0,0,2]])
+    >>> vs = (vox_track0, vox_track1)
+    >>> vox_dim = (10, 20, 30) # original voxel array size
+    >>> tcs=track_counts(vs, vox_dim, (1,1,1), False)
+    >>> tcs.shape
+    (10, 20, 30)
+    >>> tcs[0,0,0:4]
+    array([2, 1, 1, 0])
+    >>> tcs[1,2,3], tcs[2,4,7]
+    (1, 1)
+
+    You can also use the routine to count into larger-than-voxel boxes.  To do
+    this, increase the voxel size and decrease the ``vox_dim`` accordingly:
+
+    >>> tcs=track_counts(vs, (10/2., 20/2., 30/2.), (2,2,2), False)
+    >>> tcs.shape
+    (5, 10, 15)
+    >>> tcs[1,1,2], tcs[1,2,3]
+    (1, 1)
     '''
     vol_dims = np.asarray(vol_dims).astype(np.int)
     vox_sizes = np.asarray(vox_sizes).astype(np.double)

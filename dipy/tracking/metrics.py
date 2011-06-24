@@ -3,6 +3,58 @@
 import numpy as np
 from scipy.interpolate import splprep, splev
 
+def winding(xyz):
+    ''' Total turning angle projected
+    
+    Project space curve to best fitting plane. Calculate the cumulative signed angle between each line 
+    segment and the previous one.
+    
+    Parameters
+    ------------
+    xyz : array-like shape (N,3)
+       array representing x,y,z of N points in a track
+    
+    Returns
+    ---------
+    a : scalar, total turning angle in degrees
+
+    '''
+    
+    U,s,V=np.linalg.svd(xyz-np.mean(xyz,axis=0),0)
+    proj=np.dot(U[:,0:2],np.diag(s[0:2]))
+    
+    
+    """
+    turn =0
+    for j in range(len(xyz)-2):
+        #print np.rad2deg(turn)
+        v0=proj[j+1]-proj[j]
+        v1=proj[j+2]-proj[j+1]
+        tmp=np.arccos(np.dot(v0,v1)/(np.linalg.norm(v0)*np.linalg.norm(v1)))
+        if np.isnan(tmp):
+            turn+=0
+        else:
+            turn+=tmp
+    """
+    
+    #"""
+    turn=0
+    for j in range(len(xyz)-1):
+        v0=proj[j]
+        v1=proj[j+1]
+        v=np.dot(v0,v1)/(np.linalg.norm(v0)*np.linalg.norm(v1))
+        tmp=np.arccos(v)
+        turn+=tmp
+    #"""
+    
+    """
+    angles=np.arctan2(proj[:,1],proj[:,0])
+    turn=np.abs(np.sum(np.diff(angles)))
+    """
+
+    return np.rad2deg(turn)
+    
+
 def length(xyz, along=False):
     ''' Euclidean length of track line
     
