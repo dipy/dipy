@@ -37,7 +37,7 @@ def fact_tracking(voxel_model, seeds, start_step):
             propagate(vox_lox, step, vox_size, over_step)
             step = voxel_model.next_step(vox_loc, step)
         all_tracks.append(array(track)*vox_size)
-    return tracks
+    return all_tracks
 
 class FactTensorModel(object):
     def _get_angel_limit(self):
@@ -58,13 +58,14 @@ class FactTensorModel(object):
             self.angel_limit = angle_limit
 
     def next_step(vox_loc, prev_step):
+        vox_loc = round(vox_lox).astype('int')
         if self.fa_vol[vox_loc] < self.fa_limit:
             return False
         step = self.evec1_vol[vox_loc]
         angle_dot = dot(step, prev_step)
-        if abs(angle_dot) < dot_limit:
+        if abs(angle_dot) < self.dot_limit:
             return False
-        if dot_limit > 0:
+        if angle_dot > 0:
             return step
         else:
             return -step
@@ -87,6 +88,8 @@ def track_tensor(evec1_vol, fa_vol, start_loc, start_step, vox_size, fa_limit,
         else:
             prev_step = -cur_step
         while keep_tracking(cur_step, prev_step, fa, fa_limit, dot_limit):
+            if dot(cur_step, prev_step) < 0:
+                cur_step = -cur_step
             vox_loc, prev_step = propagate(vox_loc, cur_step, prev_step,
                                            vox_size)
             track.append(vox_loc)
@@ -95,21 +98,6 @@ def track_tensor(evec1_vol, fa_vol, start_loc, start_step, vox_size, fa_limit,
             all_tracks.append((array(track)*vox_size, None, None))
 
     return all_tracks
-
-def track_model(voxel_model, track_end, propogator):
-    """blah"""
-
-    t = []
-    for vox_loc in strat_loc:
-
-
-class tt(Tensor):
-
-    def get_tracking_info(vox_loc):
-        ind = tuple(round(vox_loc))
-        step = self.evec1_vol[ind]
-        fa = self.fa()[ind]
-        return step, fa
 
 def get_tensor_info(vox_loc, evec1_vol, fa_vol):
     """returns ev1 and fa for a given location"""
