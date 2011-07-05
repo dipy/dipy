@@ -409,7 +409,7 @@ def dots(points,color=(1,0,0),opacity=1):
     return aPolyVertexActor
 
 
-def point(points,colors,opacity=1,point_radius=0.001,theta=3,phi=3):
+def point(points,colors,opacity=1,point_radius=0.1,theta=3,phi=3):
     
     if np.array(colors).ndim==1:
         #return dots(points,colors,opacity)
