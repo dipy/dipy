@@ -42,6 +42,10 @@ class GeneralizedQSampling(object):
     In order to reconstruct the spin distribution function a nice symmetric
     evenly distributed sphere is provided using 362 or 642 points. This is
     usually sufficient for most of the datasets.
+    
+    GQI is performing better with specific grid-like acquisition schemes. The table
+    used in the scanner for 101 directions + 1 b0 volume is provided in 
+    dipy.data.get_data('gqi_vectors').
 
     See also
     --------
