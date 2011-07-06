@@ -5,11 +5,16 @@ import numpy as np
 from dipy.reconst.recspeed import peak_finding
 from dipy.utils.spheremakers import sphere_vf_from
 
-warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
+#warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
 
 class DiffusionSpectrumImaging(object):
-    '''
-    HIGHLY EXPERIMENTAL - PLEASE DO NOT USE.
+    ''' Calculate the PDF and ODF using Diffusion Spectrum Imaging
+    
+    Based on the paper "Mapping Complex Tissue Architecture With Diffusion Spectrum Magnetic Resonance Imaging"
+    by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM 2005
+    
+    
+    
     '''
     def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None):
         '''
@@ -26,11 +31,8 @@ class DiffusionSpectrumImaging(object):
         ----------
         dipy.reconst.dti.Tensor, dipy.reconst.gqi.GeneralizedQSampling
         '''
-        
-        self.dotpow=dotpow
-        self.width=width
-        self.sincpow=sincpow
-        
+       
+       
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.odf_vertices=odf_vertices
         self.bvals=bvals
