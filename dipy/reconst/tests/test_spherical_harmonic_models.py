@@ -3,13 +3,13 @@ import numpy as np
 from dipy.core.triangle_subdivide import create_half_unit_sphere
 from dipy.reconst.dti import design_matrix, _compact_tensor
 
-from dipy.reconst.recspeed import peak_finding_edges
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.reconst.spherical_harmonic_models import real_sph_harm, \
         sph_harm_ind_list, cartesian2polar, _robust_peaks, _closest_peak, \
-        OpdfModel, normalize_data, ClosestPeakSelector
+        OpdfModel, normalize_data, ClosestPeakSelector, QballOdfModel, hat, \
+        lcr_matrix, NearestNeighborInterpolator
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -84,7 +84,7 @@ def test_closest_peak():
     cp = _closest_peak(peak_points, -prev, .5)
     assert_array_equal(cp, -peak_points[0])
     cp = _closest_peak(peak_points, prev, .75)
-    assert_equal(cp, False)
+    assert cp is None
 
 def test_set_angle_limit():
     bval = np.ones(100)
@@ -95,15 +95,15 @@ def test_set_angle_limit():
     e = None
     opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
     norm_sig = normalize_data(sig, bval, min_signal=0)
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, gfa_limit=0,
-                                  angle_limit=55)
+    mask = np.ones(sig.shape[:-1], 'bool')
+    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, mask, angle_limit=55)
     assert_raises(ValueError, stepper._set_angle_limit, 99)
     assert_raises(ValueError, stepper._set_angle_limit, -1.1)
 
 def make_fake_signal():
     v, e, f = create_half_unit_sphere(4)
     vecs_xy = v[np.flatnonzero(v[:, 2] == 0)]
-    evals = np.array([1.8, .2, .2])*10**-3
+    evals = np.array([1.8, .2, .2])*10**-3*1.5
     evecs_moveing = np.empty((len(vecs_xy), 3, 3))
     evecs_moveing[:, :, 0] = vecs_xy
     evecs_moveing[:, :, 1] = [0, 0, 1]
@@ -136,13 +136,14 @@ def test_ClosestPeakSelector():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
     norm_sig = normalize_data(sig, bval, min_signal=0)
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, gfa_limit=0,
-                                  angle_limit=55)
-
+    mask = np.ones(sig.shape[:-1], 'bool')
+    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, mask, angle_limit=49)
+    C = opdf_fitter.fit_data(norm_sig)
+    S = opdf_fitter.sample(norm_sig)
     for ii in xrange(len(vecs_xy)):
         step = stepper.next_step(ii, [0, 1., 0])
-        if np.dot(vecs_xy[ii], [0, 1., 0]) < .57:
-            assert_false(step)
+        if np.dot(vecs_xy[ii], [0, 1., 0]) < .56:
+            assert step is None
         else:
             s2 = stepper.next_step(ii, vecs_xy[ii])
             assert_array_equal(vecs_xy[ii], step)
@@ -150,10 +151,67 @@ def test_ClosestPeakSelector():
             assert_array_equal([1., 0, 0.], step)
 
     norm_sig.shape = (2, 2, 4, -1)
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, gfa_limit=0,
-                                  angle_limit=55)
+    mask.shape = (2, 2, 4)
+    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, mask, angle_limit=49)
     step = stepper.next_step([0, 0, 0], [1, 0, 0])
     assert_array_equal(step, [1, 0, 0])
     step = stepper.next_step(np.array([0, 0, 0]), [1, 0, 0])
     assert_array_equal(step, [1, 0, 0])
+
+def testQballOdfModel():
+    v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
+    qball_fitter = QballOdfModel(6, bval, bvec, sampling_points=v,
+                                 sampling_edges=e)
+    norm_sig = normalize_data(sig, bval, min_signal=0)
+    C = qball_fitter.fit_data(norm_sig)
+    S = qball_fitter.sample(norm_sig)
+    mask = np.ones(sig.shape[:-1])
+    stepper = ClosestPeakSelector(qball_fitter, norm_sig, mask, angle_limit=39)
+    for ii in xrange(len(vecs_xy)):
+        step = stepper.next_step(ii, [0, 1., 0])
+        if np.dot(vecs_xy[ii], [0, 1., 0]) < .84:
+            assert step is None
+        else:
+            s2 = stepper.next_step(ii, vecs_xy[ii])
+            assert step is not None
+            assert np.dot(vecs_xy[ii], step) > .98
+            step = stepper.next_step(ii, [1., 0, 0.])
+            assert_array_equal([1., 0, 0.], step)
+
+def test_hat_and_lcr():
+    v, e, f = create_half_unit_sphere(6)
+    m, n = sph_harm_ind_list(8)
+    r, theta, phi = cartesian2polar(*v.T)
+    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+    H = hat(B)
+    B_hat = np.dot(H, B)
+    assert_array_almost_equal(B, B_hat)
+    
+    R = lcr_matrix(H)
+    d = np.arange(len(theta))
+    r = d - np.dot(H, d)
+    lev = np.sqrt(1-H.diagonal())
+    r /= lev
+    r -= r.mean()
+
+    r2 = np.dot(R, d)
+    assert_array_almost_equal(r, r2)
+
+    r3 = np.dot(d, R.T)
+    assert_array_almost_equal(r, r3)
+
+def test_NearestNeighborInterpolator():
+    a, b, c = np.ogrid[0:6,0:6,0:6]
+    data = a+b+c
+
+    nni = NearestNeighborInterpolator(data)
+    a, b, c = np.mgrid[0:6:.6, 0:6:.6, .0:6:.6]
+    for ii in xrange(a.size):
+        x = a.flat[ii]
+        y = b.flat[ii]
+        z = c.flat[ii]
+        expected_result = int(x) + int(y) + int(z)
+        assert nni[x, y, z] == expected_result
+        ind = np.array([x, y, z])
+        assert nni[ind] == expected_result
 

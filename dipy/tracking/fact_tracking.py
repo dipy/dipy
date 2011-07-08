@@ -1,5 +1,5 @@
-from numpy import abs, array, asarray, atleast_3d, cos, dot, empty, mgrid, \
-                  pi, round, sqrt
+from numpy import abs, array, asarray, atleast_3d, broadcast_arrays, cos, \
+                  dot, empty, floor, mgrid, pi, sqrt
 
 pn_edge = array([[0], [1]])
 
@@ -13,7 +13,7 @@ def propagate(voxel_location, cur_step, vox_size, over_step=1e-1):
     #change cur_step from mm to vox dim
     vox_step = cur_step/vox_size
 
-    space = (voxel_location - .5) % 1
+    space = voxel_location % 1
     dist = pn_edge - space
     step_size = dist/vox_step
     step_size = step_size.ravel()
@@ -26,16 +26,22 @@ def propagate(voxel_location, cur_step, vox_size, over_step=1e-1):
     new_loc = voxel_location + smallest_step*vox_step
 
     #we need to know cur_step to pass to the next propagation step
-    return new_loc, cur_step
+    return new_loc
 
-def fact_tracking(voxel_model, seeds, start_step):
+def fact_tracking(voxel_model, seeds, start_steps, over_step=1e-1):
     all_tracks = []
-    for vox_loc in seeds:
+    seeds, start_steps = broadcast_arrays(seeds, start_steps)
+    next_step = voxel_model.next_step
+    vox_size = voxel_model.vox_size
+    for ii in xrange(len(seeds)):
+        vox_loc = seeds[ii]
+        step = start_steps[ii]
         track = [vox_loc]
-        step = voxel_model.next_step(vox_loc, start_step)
-        while step:
-            propagate(vox_lox, step, vox_size, over_step)
-            step = voxel_model.next_step(vox_loc, step)
+        step = next_step(vox_loc, step)
+        while step is not None:
+            vox_loc = propagate(vox_loc, step, vox_size, over_step)
+            track.append(vox_loc)
+            step = next_step(vox_loc, step)
         all_tracks.append(array(track)*vox_size)
     return all_tracks
 
@@ -47,9 +53,9 @@ class FactTensorModel(object):
             self.dot_limit = cos(angle*pi/180)
         else:
             raise ValueError("angle should be between 0 and 180")
-    self.angel_limit = property(_get_angel_limit, _set_angel_limit)
+    angel_limit = property(_get_angel_limit, _set_angel_limit)
 
-    def from_tensor(tensor, fa_limit=None, angle_limit=None)
+    def from_tensor(tensor, fa_limit=None, angle_limit=None):
         self.fa_vol = tensor.fa()
         self.evec1_vol = tensor.evec[..., 0]
         if fa_limit is not None:
@@ -58,7 +64,7 @@ class FactTensorModel(object):
             self.angel_limit = angle_limit
 
     def next_step(vox_loc, prev_step):
-        vox_loc = round(vox_lox).astype('int')
+        vox_loc = vox_loc.astype('int')
         if self.fa_vol[vox_loc] < self.fa_limit:
             return False
         step = self.evec1_vol[vox_loc]
@@ -101,7 +107,7 @@ def track_tensor(evec1_vol, fa_vol, start_loc, start_step, vox_size, fa_limit,
 
 def get_tensor_info(vox_loc, evec1_vol, fa_vol):
     """returns ev1 and fa for a given location"""
-    ind = round(vox_loc)
+    ind = vox_loc.asytpe('int')
     step = evec1_vol[ind[0], ind[1], ind[2]]
     fa = fa_vol[ind[0], ind[1], ind[2]]
     return step, fa
@@ -135,7 +141,7 @@ def seeds_from_mask(mask, density):
     sp[:] = 1./density
 
     voxels = mask.nonzero()
-    mg = mgrid[-.5:.5:sp[0], -.5:.5:sp[1], -.5:.5:sp[2]]
+    mg = mgrid[0:1:sp[0], 0:1:sp[1], 0:1:sp[2]]
 
     seeds = []
     for ii, jj, kk in zip(voxels, mg, sp):
@@ -145,4 +151,16 @@ def seeds_from_mask(mask, density):
     seeds = array(seeds).T
     return seeds
 
-
+def target(tracks, voxel_dim, mask):
+    assert mask.ndim == 3
+    result_tracks = []
+    for ii in tracks:
+        ind = (ii/voxel_dim).T.astype('int')
+        try:
+            state = mask[ind[0], ind[1], ind[2]]
+        except IndexError:
+            1./0
+        else:
+            if state.any():
+                result_tracks.append(ii)
+    return result_tracks
