@@ -90,10 +90,10 @@ def peak_finding(odf, odf_faces):
 
     Parameters
     ------------
-    odf : (N,) array
+    odf : (N,) array of dtype np.float64
        function values on the sphere, where N is the number of vertices
        on the sphere
-    odf_faces : (M,3) array
+    odf_faces : (M,3) array of dtype np.uint16
        faces of the triangulation on the sphere, where M is the number
        of faces on the sphere
 

@@ -282,6 +282,8 @@ def create_unit_sphere( recursion_level=2 ):
 
     """
     
+    
+    
     vertex_array, edge_array, triangle_array = octahedron_vertices, \
                                                octahedron_edges, \
                                                octahedron_triangles

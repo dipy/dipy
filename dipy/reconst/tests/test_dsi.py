@@ -12,6 +12,7 @@ from dipy.reconst.sims import SticksAndBall
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sphere 
 from scipy.ndimage import map_coordinates
+from dipy.utils.spheremakers import sphere_vf_from
 
 def test_dsi():
        
@@ -28,7 +29,7 @@ if __name__ == '__main__':
     #shifting
     origin=32
     #hanning width
-    filter_width=32.
+    filter_width=64.
     #number of signal sampling points
     n=515
     #odf radius
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     #S=img.get_data()[38,50,20]#[96/2,96/2,20]
     bvals=btable[:,0]
     bvecs=btable[:,1:]
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0040, S0=100, angles=[(0, 0),(45,0),(90,90)], fractions=[50,50,0], snr=None)
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0040, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)
     
     """
     #show projected signal
@@ -99,11 +100,13 @@ if __name__ == '__main__':
     #"""
     
     """
-    from enthought.mayavi import mlab        
+    from enthought.mayavi import mlab
     mlab.pipeline.volume(mlab.pipeline.scalar_field(Sq))
-    mlab.show()    
+    mlab.show()
     """
-    vertices, edges, faces  = create_half_unit_sphere(5)    
+    
+    #vertices, edges, faces  = create_unit_sphere(5)    
+    vertices, faces = sphere_vf_from('symmetric362')           
     odf = np.zeros(len(vertices))
         
     for m in range(len(vertices)):
@@ -116,16 +119,22 @@ if __name__ == '__main__':
         for i in range(len(radius)):
             odf[m]=odf[m]+PrI[i]*r[i]**2
     
+    #"""
     ren=fvtk.ren()
     colors=fvtk.colors(odf,'jet')
     fvtk.add(ren,fvtk.point(vertices,colors,point_radius=.05,theta=8,phi=8))
     fvtk.show(ren)
+    #"""
     
-        
-
+    peaks,inds=peak_finding(odf.astype('f8'),faces.astype('uint16'))
+    
+    print peaks
+    a=vertices[inds[0]]
+    b=vertices[inds[1]]
+    print np.min(np.rad2deg(np.arccos(np.dot(a,b))),90-np.rad2deg(np.arccos(np.dot(a,b))))
     
 
-
+    
 
 
 
