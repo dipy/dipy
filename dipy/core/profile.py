@@ -33,11 +33,11 @@ class Profiler():
     
     Examples
     -----------
-    import dipy.core.profile as p
+    from dipy.core.profile import Profiler
     import numpy as np
-    p.Profiler(np.sum,np.random.rand(1000000,3))
+    p=Profiler(np.sum,np.random.rand(1000000,3))
     fname='test.py'
-    p.Profiler(fname)
+    p=Profiler(fname)
     p.print_stats(10)
     p.print_stats('det')
 

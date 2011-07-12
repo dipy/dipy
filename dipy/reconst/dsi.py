@@ -56,7 +56,8 @@ class DiffusionSpectrum(object):
         qtable=np.vstack((bv,bv,bv)).T*gradients
         qtable=np.floor(qtable+.5)             
         #odf collecting radius
-        self.radius=np.arange(2.1,6,.2)         
+        self.radius=np.arange(2.1,6,.2)
+        self.radiusn=len(self.radius)         
         #calculate r - hanning filter free parameter
         r = np.sqrt(qtable[:,0]**2+qtable[:,1]**2+qtable[:,2]**2)    
         #setting hanning filter width and hanning
@@ -66,7 +67,6 @@ class DiffusionSpectrum(object):
         self.q=self.q.astype('i8')
         #peak threshold
         self.peak_thr=2.
-                
 
         if len(datashape)==4:
             x,y,z,g=S.shape        
@@ -98,8 +98,9 @@ class DiffusionSpectrum(object):
                     #print peaks
                     if len(peaks)>0:
                         ismallp=np.where(peaks/peaks.min()<self.peak_thr)                                                                        
-                        l=ismallp[0][0]                                        
-                        IN[i][:l] = inds[:l]
+                        l=ismallp[0][0]
+                        if l<5:                                        
+                            IN[i][:l] = inds[:l]
 
         if mask==None:
             for (i,s) in enumerate(S):
@@ -147,6 +148,7 @@ class DiffusionSpectrum(object):
         #fill the odf by sampling radially on the pdf
         #crucial parameter here is self.radius
         odf = np.zeros(self.odfn)
+ 
         #for all odf vertices        
         for m in range(self.odfn):
             xi=self.origin+self.radius*self.odf_vertices[m,0]
@@ -154,8 +156,9 @@ class DiffusionSpectrum(object):
             zi=self.origin+self.radius*self.odf_vertices[m,2]
             #apply linear 3d interpolation (trilinear)             
             PrI=map_coordinates(Pr,np.vstack((xi,yi,zi)),order=1)
-            for i in range(len(self.radius)):
+            for i in range(self.radiusn):
                 odf[m]=odf[m]+PrI[i]*self.radius[i]**2
+ 
         return odf
     
     def std_over_rsm(self,odf):        

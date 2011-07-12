@@ -105,7 +105,8 @@ def test_dsi():
     
     
 
-if __name__ == '__main__':
+
+def visualizing():
 
     
     test_dsi()
@@ -230,8 +231,7 @@ if __name__ == '__main__':
     a=vertices[inds[0]]
     b=vertices[inds[1]]
     print np.rad2deg(np.arccos(np.dot(a,b)))    
-    
-    
+        
     ismallp=np.where(peaks/peaks.min()<2.)
     print ismallp                                               
     l=ismallp[0][0]
@@ -258,9 +258,52 @@ if __name__ == '__main__':
     #fvtk.add(r,fvtk.volume(Pr))
     #fvtk.show(r)
     
+if __name__ == '__main__':
 
-
-
+    #fname='/home/eg309/Data/project01_dsi/connectome_0001/tp1/RAWDATA/OUT/mr000001.nii.gz'
+    #fname='/home/eg309/Data/project02_dsi/PH0005/tp1/RAWDATA/OUT/PH0005_1.MR.5_100.ima.nii.gz'
+    fname='/home/eg309/Data/project03_dsi/tp2/RAWDATA/OUT/mr000001.nii.gz'
+    
+    
+    import nibabel as nib
+    from dipy.reconst.dsi import DiffusionSpectrum
+    from dipy.reconst.dti import Tensor
+    from dipy.data import get_data
+    
+    btable=np.loadtxt(get_data('dsi515btable'))
+    bvals=btable[:,0]
+    bvecs=btable[:,1:]
+    img=nib.load(fname)
+    data=img.get_data()
+    print data.shape
+    
+    D=data[40:60,40:60,18:22]
+    
+    ds=DiffusionSpectrum(D,bvals,bvecs)
+    GFA=ds.gfa()
+    
+    ten=Tensor(D,bvals,bvecs)
+    FA=ten.fa()
+    
+    from dipy.tracking.propagation import EuDX
+    
+    IN=ds.ind()
+    
+    eu=EuDX(ten.fa(),IN[:,:,:,0],seeds=1000,a_low=0.2)
+    tracks=[e for e in eu]
+    
+    #FAX=np.zeros(IN.shape)    
+    #for i in range(FAX.shape[-1]):
+    #    FAX[:,:,:,i]=GFA
+        
+    eu2=EuDX(ds.gfa(),IN[:,:,:,0],seeds=1000,a_low=0.2)
+    tracks2=[e for e in eu2]
+    
+    from dipy.viz import fvtk
+    r=fvtk.ren()
+    fvtk.add(r,fvtk.line(tracks,fvtk.red))
+    fvtk.add(r,fvtk.line(tracks2,fvtk.green))
+    fvtk.show(r)
 
 
 
