@@ -275,35 +275,51 @@ if __name__ == '__main__':
     bvecs=btable[:,1:]
     img=nib.load(fname)
     data=img.get_data()
-    print data.shape
+    print data.shape   
     
-    D=data[40:60,40:60,18:22]
+    mask=data[:,:,:,0]>50
+    #D=data[20:90,20:90,18:22]
+    #D=data[40:44,40:44,18:22]    
+    #del data
+    D=data
     
-    ds=DiffusionSpectrum(D,bvals,bvecs)
+    from time import time
+    
+    t0=time()    
+    ds=DiffusionSpectrum(D,bvals,bvecs,mask=mask)
+    t1=time()
+    print t1-t0,' secs'
+    
     GFA=ds.gfa()
     
-    ten=Tensor(D,bvals,bvecs)
+    t2=time()
+    ten=Tensor(D,bvals,bvecs,mask=mask)
+    t3=time()
+    print t3-t2,' secs'
+    
     FA=ten.fa()
     
     from dipy.tracking.propagation import EuDX
     
     IN=ds.ind()
     
-    eu=EuDX(ten.fa(),IN[:,:,:,0],seeds=1000,a_low=0.2)
+    eu=EuDX(ten.fa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
     tracks=[e for e in eu]
     
     #FAX=np.zeros(IN.shape)    
     #for i in range(FAX.shape[-1]):
     #    FAX[:,:,:,i]=GFA
         
-    eu2=EuDX(ds.gfa(),IN[:,:,:,0],seeds=1000,a_low=0.2)
+    eu2=EuDX(ds.gfa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
     tracks2=[e for e in eu2]
     
+    """
     from dipy.viz import fvtk
     r=fvtk.ren()
     fvtk.add(r,fvtk.line(tracks,fvtk.red))
     fvtk.add(r,fvtk.line(tracks2,fvtk.green))
     fvtk.show(r)
+    """
 
 
 

@@ -173,6 +173,21 @@ def peak_finding(odf, odf_faces):
 
     return peaks, inds[pinds][::-1]
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def pdf_to_odf(cnp.ndarray[double, ndim=1] odf, \
+                 cnp.ndarray[double, ndim=1] PrIs,\
+                 cnp.ndarray[double, ndim=1] radius,\
+                 int odfn,int radiusn):
+    """ Expecting interpolated pdf then calculates the odf for that pdf
+    """    
+    cdef int m,i
+    for m in range(odfn):
+        for i in range(radiusn):
+            odf[m]=odf[m]+PrIs[m*radiusn+i]*radius[i]*radius[i]
+
+    return
+
 
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maxima from `vals` given adjacent points

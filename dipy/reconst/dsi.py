@@ -1,9 +1,10 @@
 import warnings
 import numpy as np
 from scipy.ndimage import map_coordinates
-from dipy.reconst.recspeed import peak_finding
+from dipy.reconst.recspeed import peak_finding, pdf_to_odf
 from dipy.utils.spheremakers import sphere_vf_from
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
+
 
 #warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
 
@@ -67,6 +68,9 @@ class DiffusionSpectrum(object):
         self.q=self.q.astype('i8')
         #peak threshold
         self.peak_thr=2.
+        
+        #precompute coordinates for pdf interpolation
+        self.Xs=self.precompute()
 
         if len(datashape)==4:
             x,y,z,g=S.shape        
@@ -147,19 +151,38 @@ class DiffusionSpectrum(object):
     def odf(self,Pr):
         #fill the odf by sampling radially on the pdf
         #crucial parameter here is self.radius
-        odf = np.zeros(self.odfn)
- 
+        odf = np.zeros(self.odfn)        
+        """ 
         #for all odf vertices        
         for m in range(self.odfn):
             xi=self.origin+self.radius*self.odf_vertices[m,0]
             yi=self.origin+self.radius*self.odf_vertices[m,1]
             zi=self.origin+self.radius*self.odf_vertices[m,2]
-            #apply linear 3d interpolation (trilinear)             
+            #apply linear 3d interpolation (trilinear)
             PrI=map_coordinates(Pr,np.vstack((xi,yi,zi)),order=1)
             for i in range(self.radiusn):
                 odf[m]=odf[m]+PrI[i]*self.radius[i]**2
+        """
+        PrIs=map_coordinates(Pr,self.Xs,order=1)
+        
+        #print PrIs.shape
+        """
+        for m in range(self.odfn):
+            for i in range(self.radiusn):
+                odf[m]=odf[m]+PrIs[m*self.radiusn+i]*self.radius[i]**2
+        """
+        pdf_to_odf(odf,PrIs, self.radius,self.odfn,self.radiusn)                 
  
         return odf
+    
+    def precompute(self):            
+        Xs=[]
+        for m in range(self.odfn):
+            xi=self.origin+self.radius*self.odf_vertices[m,0]
+            yi=self.origin+self.radius*self.odf_vertices[m,1]
+            zi=self.origin+self.radius*self.odf_vertices[m,2]
+            Xs.append(np.vstack((xi,yi,zi)).T)
+        return np.concatenate(Xs).T
     
     def std_over_rsm(self,odf):        
         numer=len(odf)*np.sum((odf-np.mean(odf))**2)
