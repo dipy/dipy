@@ -99,7 +99,7 @@ class GeneralizedQSampling(object):
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
         scaling = np.sqrt(bvals*0.01506)
-        tmp=np.tile(scaling, (3,1))
+        tmp=np.tile(scaling,(3,1))
 
         #the b vectors might have nan values where they correspond to b
         #value equals with 0

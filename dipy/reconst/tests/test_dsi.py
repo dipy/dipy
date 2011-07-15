@@ -85,8 +85,8 @@ def test_dsi():
     S2=S.copy()
     S2=S2.reshape(1,len(S))    
     ds=DiffusionSpectrum(S2,bvals,bvecs)    
-    assert_equal(np.sum(ds.pdf(S)-pdf0),0)
-    assert_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
+    assert_almost_equal(np.sum(ds.pdf(S)-pdf0),0)
+    assert_almost_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
     
     #compare gfa
     psi=odf0/odf0.max()
@@ -147,7 +147,7 @@ def visualizing():
     ds=DiffusionSpectrum(S2,bvals,bvecs)    
     tpr=ds.pdf(S)
     todf=ds.odf(tpr)
-        
+    
     """
     #show projected signal
     Bvecs=np.concatenate([bvecs[1:],-bvecs[1:]])
@@ -306,10 +306,10 @@ if __name__ == '__main__':
     eu=EuDX(ten.fa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
     tracks=[e for e in eu]
     
-    #FAX=np.zeros(IN.shape)    
+    #FAX=np.zeros(IN.shape)
     #for i in range(FAX.shape[-1]):
     #    FAX[:,:,:,i]=GFA
-        
+    
     eu2=EuDX(ds.gfa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
     tracks2=[e for e in eu2]
     

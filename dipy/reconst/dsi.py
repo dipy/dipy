@@ -15,7 +15,7 @@ class DiffusionSpectrum(object):
     by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM 2005
         
     '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None):
+    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,filter=None):
         '''
         Parameters
         -----------
@@ -25,6 +25,8 @@ class DiffusionSpectrum(object):
         odf_sphere : str or tuple, optional
             If str, then load sphere of given name using ``get_sphere``.
             If tuple, gives (vertices, faces) for sphere.
+        filter : array, shape(len(vertices),) 
+            default is None (using standard hanning filter for DSI)
 
         See also
         ----------
@@ -62,7 +64,10 @@ class DiffusionSpectrum(object):
         #calculate r - hanning filter free parameter
         r = np.sqrt(qtable[:,0]**2+qtable[:,1]**2+qtable[:,2]**2)    
         #setting hanning filter width and hanning
-        self.filter=.5*np.cos(2*np.pi*r/self.filter_width)
+        if filter==None:
+            self.filter=.5*np.cos(2*np.pi*r/self.filter_width)
+        else:
+            self.filter=filter
         #center and index in qspace volume
         self.q=qtable+self.origin
         self.q=self.q.astype('i8')
@@ -76,7 +81,10 @@ class DiffusionSpectrum(object):
             x,y,z,g=S.shape        
             S=S.reshape(x*y*z,g)
             GFA=np.zeros((x*y*z))
-            IN=np.zeros((x*y*z,5))  
+            IN=np.zeros((x*y*z,5))
+            NFA=np.zeros((x*y*z,5))
+            QA=np.zeros((x*y*z,5))
+            
             if mask != None:
                 if mask.shape[:3]==datashape[:3]:
                     msk=mask.ravel().copy()
@@ -84,7 +92,13 @@ class DiffusionSpectrum(object):
         if len(datashape)==2:
             x,g= S.shape
             GFA=np.zeros(x)
-            IN=np.zeros((x,5)) 
+            IN=np.zeros((x,5))
+            NFA=np.zeros((x,5))
+            QA=np.zeros((x,5)) 
+        
+        #find the global normalization parameter 
+        #useful for quantitative anisotropy    
+        glob_norm_param = 0.
         
         if mask !=None:
             for (i,s) in enumerate(S):        
@@ -93,8 +107,10 @@ class DiffusionSpectrum(object):
                     Pr=self.pdf(s)           
                     #calculate the orientation distribution function        
                     odf=self.odf(Pr)
+                    #normalization for QA
+                    glob_norm_param=max(np.max(odf),glob_norm_param)
                     #calculate the generalized fractional anisotropy
-                    GFA[i]=self.std_over_rsm(odf)                   
+                    GFA[i]=self.std_over_rsm(odf)
                     #find peaks
                     peaks,inds=peak_finding(odf,odf_faces)
                     #remove small peaks
@@ -105,6 +121,8 @@ class DiffusionSpectrum(object):
                         l=ismallp[0][0]
                         if l<5:                                        
                             IN[i][:l] = inds[:l]
+                            NFA[i][:l] = GFA[i]
+                            QA[i][:l] = peaks[:l]-np.min(odf)
 
         if mask==None:
             for (i,s) in enumerate(S):
@@ -112,6 +130,8 @@ class DiffusionSpectrum(object):
                 Pr=self.pdf(s)
                 #calculate the orientation distribution function
                 odf=self.odf(Pr)
+                #normalization for QA
+                glob_norm_param=max(np.max(odf),glob_norm_param)
                 #calculate the generalized fractional anisotropy
                 GFA[i]=self.std_over_rsm(odf) 
                 #find peaks
@@ -126,16 +146,21 @@ class DiffusionSpectrum(object):
                     #print l, len(peaks), len(inds)
                     if l<5:                    
                         IN[i][:l] = inds[:l]
-                
+                        NFA[i][:l] = GFA[i]
+                        QA[i][:l] = peaks[:l]-np.min(odf)
+                        
         if len(datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
+            self.NFA=NFA.reshape(x,y,z,5)
+            self.QA=QA.reshape(x,y,z,5)/glob_norm_param
             self.IN=IN.reshape(x,y,z,5)           
-
+            
         if len(datashape) == 2:            
             self.GFA=GFA
+            self.NFA=NFA
+            self.QA=QA
             self.IN=IN
-            
-    
+        
     def pdf(self,s):
         values=s*self.filter
         #create the signal volume    
@@ -191,6 +216,12 @@ class DiffusionSpectrum(object):
     
     def gfa(self):
         return self.GFA
+    def nfa(self):
+        return self.NFA
+    def qa(self):
+        return self.QA
     def ind(self):
+        """ peak indices
+        """
         return self.IN
 
