@@ -22,9 +22,7 @@ def SticksAndBall(bvals,gradients,d=0.0015,S0=100,angles=[(0,0),(90,0)],fraction
     S: simulated signal
     sticks: sticks in cartesian coordinates 
     
-    Examples
-    ---------
-    
+     
     
     """
     

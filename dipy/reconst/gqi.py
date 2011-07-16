@@ -52,8 +52,8 @@ class GeneralizedQSampling(object):
     dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
     """
     def __init__(self, data, bvals, gradients,
-                 Lambda=1.2, odf_sphere='symmetric362', mask=None):
-        """ Generates a model-free description for every voxel that can
+                 Lambda=1.2, odf_sphere='symmetric362', mask=None,squared=False):
+        r""" Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
         quintuple crossings if your datasets support them.
 
@@ -74,6 +74,8 @@ class GeneralizedQSampling(object):
         odf_sphere : None or str or tuple, optional
             input that will result in vertex, face arrays for a sphere.
         mask : None or ndarray, optional
+        squared : boolean, True or False
+            If True it will calculate the odf using the $L^2$ weighting.   
 
         Key Properties
         ---------------
@@ -108,8 +110,12 @@ class GeneralizedQSampling(object):
         b_vector=gradsT*tmp # element-wise also known as the Hadamard product
 
         #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)              
-
-        q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+        
+        if squared==True:
+            vf=np.vectorize(self.squared_radial_component)
+            q2odf_params=np.real(vf(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+        else:
+            q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
         
         #q2odf_params[np.isnan(q2odf_params)]= 1.
 
@@ -184,7 +190,14 @@ class GeneralizedQSampling(object):
             self.IN=IN
             
         self.glob_norm_param = glob_norm_param
-        
+
+    def squared_radial_component(self,x):
+        """ implementing equation (8) in the referenced paper by Yeh et al. 2010
+        """
+        if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
+            return 1/3.
+        return 2*np.cos(x)/x**2 + (x**2-2)*np.sin(x)/x**3
+                
 
     def qa(self):
         """ quantitative anisotropy
