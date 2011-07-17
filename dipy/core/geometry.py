@@ -739,3 +739,51 @@ def circumradius(a, b, c):
         m = np.vstack((x,y,z))
         w = np.dot(np.linalg.inv(m.T),np.array([xx/2.,yy/2.,0]))
         return np.linalg.norm(w)/2.
+    
+def vec2vec_rotmat(u,v):
+    r""" rotation matrix from 2 unit vectors  
+    
+    u,v being unit 3d vectors return the 3x3 rotation matrix R than aligns u to v
+    The transpose of R will align v to u
+    
+    Parameters
+    -----------
+    u : array, shape(3,)
+    v : array, shape(3,)
+    
+    Returns
+    ---------
+    R : array, shape(3,3)
+    
+    Examples
+    ---------
+    >>> import numpy as np
+    >>> from dipy.core.geometry import vec2vec_rotmat
+    >>> u=np.array([1,0,0])
+    >>> v=np.array([0,1,0])
+    >>> R=vec2vec_rotmat(u,v)
+    >>> np.dot(R,u)
+    array([ 0.,  1.,  0.])
+    >>> np.dot(R.T,v)
+    array([ 1.,  0.,  0.])
+    
+    """
+
+    w=np.cross(u,v)
+    w=w/np.linalg.norm(w)
+
+    # vp is in plane of u,v,  perpendicular to u
+    vp=(v-(np.dot(u,v)*u))
+    vp=vp/np.linalg.norm(vp)
+
+    # (u vp w) is an orthonormal basis
+    P=np.array([u,vp,w])
+    Pt=P.T
+    cosa=np.dot(u,v)
+    sina=np.sqrt(1-cosa**2)
+    R=np.array([[cosa,-sina,0],[sina,cosa,0],[0,0,1]])
+    Rp=np.dot(Pt,np.dot(R,P))
+    return Rp
+   
+    
+    
