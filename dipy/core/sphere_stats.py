@@ -143,3 +143,44 @@ def eigenstats(points, alpha=0.05):
             b2= np.arcsin(g)*rad2deg
     '''
 
+def compare_orientation_sets(S,T):
+    r'''Computes the mean cosine distance of the best match between
+    points of two sets of vectors S and T
+
+    Parameters
+    -----------
+    S: array, shape (m,d)
+    T: array, shape (n,d)
+        
+    Returns
+    --------
+    max_mean_cosine: float
+    
+    Examples
+    ---------
+    >>> from dipy.core.sphere_stats import compare_orientation_sets
+    >>> m = 3
+    >>> n = 2
+    >>> S=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> T=np.array([[1,0,0],[0,0,1]])
+    >>> compare_orientation_sets(S,T)
+    1.0
+    >>> T=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> S=np.array([[1,0,0],[0,0,1]])
+    >>> compare_orientation_sets(S,T)
+    1.0
+
+    '''
+    import itertools
+    m = len(S)
+    n = len(T)
+    if m < n:
+	A = S.copy()
+	a = m
+	S = T
+	T = A
+	m = n
+        n = a
+    v = [np.sum([np.dot(p[i],T[i]) for i in range(n)]) for p in itertools.permutations(S,n)]
+    return np.max(v)/np.float(n)
+
