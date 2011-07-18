@@ -24,10 +24,10 @@ def random_uniform_on_sphere(n=1,coords='xyz'):
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
     >>> X=random_uniform_on_sphere(4,'radians')
     >>> X.shape
-    (4,2)
+    (4, 2)
     >>> X=random_uniform_on_sphere(4,'xyz')
     >>> X.shape
-    (4,3)
+    (4, 3)
     '''
     u = np.random.normal(0,1,(n,3))
     u = u/np.sqrt(np.sum(u**2,axis=1)).reshape(n,1)
@@ -159,8 +159,6 @@ def compare_orientation_sets(S,T):
     Examples
     ---------
     >>> from dipy.core.sphere_stats import compare_orientation_sets
-    >>> m = 3
-    >>> n = 2
     >>> S=np.array([[1,0,0],[0,1,0],[0,0,1]])
     >>> T=np.array([[1,0,0],[0,0,1]])
     >>> compare_orientation_sets(S,T)
@@ -169,7 +167,11 @@ def compare_orientation_sets(S,T):
     >>> S=np.array([[1,0,0],[0,0,1]])
     >>> compare_orientation_sets(S,T)
     1.0
-
+    >>> from dipy.core.sphere_stats import compare_orientation_sets
+    >>> S=np.array([[-1,0,0],[0,1,0],[0,0,1]])
+    >>> T=np.array([[1,0,0],[0,0,-1]])
+    >>> compare_orientation_sets(S,T)
+    1.0
     '''
     import itertools
     m = len(S)
@@ -181,6 +183,6 @@ def compare_orientation_sets(S,T):
 	T = A
 	m = n
         n = a
-    v = [np.sum([np.dot(p[i],T[i]) for i in range(n)]) for p in itertools.permutations(S,n)]
+    v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in itertools.permutations(S,n)]
     return np.max(v)/np.float(n)
 
