@@ -164,5 +164,9 @@ Practical
   http://code.google.com/p/pydicom/
   and then use nibabel to store the data as niftis.
   
+9. **Where can I find diffusion data?**
+
+  Have a look at Beijing Enhanced 
+  http://fcon_1000.projects.nitrc.org/indi/IndiRetro.html
   
 \

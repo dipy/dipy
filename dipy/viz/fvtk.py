@@ -1475,12 +1475,12 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
     dipy.viz.fvtk.record
     
     '''
-    ren.AddActor2D(textActor)
+    
     
     ren.ResetCamera()        
     window = vtk.vtkRenderWindow()
-    window.AddRenderer(ren)
-    window.SetWindowName(title)    
+    window.AddRenderer(ren)    
+    window.SetWindowName(title)
     window.SetSize(size[0],size[1])
     style=vtk.vtkInteractorStyleTrackballCamera()        
     iren = vtk.vtkRenderWindowInteractor()    
@@ -1500,7 +1500,9 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
             writer.SetInputConnection(renderLarge.GetOutputPort())
             writer.SetFileName('fvtk.png')
             writer.Write()            
-            print('Look for fvtk.png in your current dir.')
+            print('Look for fvtk.png in your current working directory.')
+            
+
 
     
     iren.AddObserver('KeyPressEvent',key_press)    
@@ -1509,6 +1511,12 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
     picker.Pick(85, 126, 0, ren)    
     window.Render()
     iren.Start()
+    
+    #window.RemoveAllObservers()
+    #ren.SetRenderWindow(None)
+    window.RemoveRenderer(ren)
+    ren.SetRenderWindow(None)
+
 
 
 def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_frames=10, az_ang=10, magnification=1,size=(300,300),bgr_color=(0,0,0)):
