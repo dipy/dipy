@@ -42,14 +42,18 @@ class GeneralizedQSampling(object):
     In order to reconstruct the spin distribution function a nice symmetric
     evenly distributed sphere is provided using 362 or 642 points. This is
     usually sufficient for most of the datasets.
+    
+    GQI is performing better with specific grid-like acquisition schemes. The table
+    used in the scanner for 101 directions + 1 b0 volume is provided in 
+    dipy.data.get_data('gqi_vectors').
 
     See also
     --------
     dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
     """
     def __init__(self, data, bvals, gradients,
-                 Lambda=1.2, odf_sphere='symmetric362', mask=None):
-        """ Generates a model-free description for every voxel that can
+                 Lambda=1.2, odf_sphere='symmetric362', mask=None,squared=False):
+        r""" Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
         quintuple crossings if your datasets support them.
 
@@ -70,6 +74,8 @@ class GeneralizedQSampling(object):
         odf_sphere : None or str or tuple, optional
             input that will result in vertex, face arrays for a sphere.
         mask : None or ndarray, optional
+        squared : boolean, True or False
+            If True it will calculate the odf using the $L^2$ weighting.   
 
         Key Properties
         ---------------
@@ -95,7 +101,7 @@ class GeneralizedQSampling(object):
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
         scaling = np.sqrt(bvals*0.01506)
-        tmp=np.tile(scaling, (3,1))
+        tmp=np.tile(scaling,(3,1))
 
         #the b vectors might have nan values where they correspond to b
         #value equals with 0
@@ -104,8 +110,12 @@ class GeneralizedQSampling(object):
         b_vector=gradsT*tmp # element-wise also known as the Hadamard product
 
         #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)              
-
-        q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+        
+        if squared==True:
+            vf=np.vectorize(self.squared_radial_component)
+            q2odf_params=np.real(vf(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+        else:
+            q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
         
         #q2odf_params[np.isnan(q2odf_params)]= 1.
 
@@ -180,7 +190,14 @@ class GeneralizedQSampling(object):
             self.IN=IN
             
         self.glob_norm_param = glob_norm_param
-        
+
+    def squared_radial_component(self,x):
+        """ implementing equation (8) in the referenced paper by Yeh et al. 2010
+        """
+        if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
+            return 1/3.
+        return 2*np.cos(x)/x**2 + (x**2-2)*np.sin(x)/x**3
+                
 
     def qa(self):
         """ quantitative anisotropy

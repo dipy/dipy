@@ -18,6 +18,7 @@ class DataError(Exception):
     pass
 
 
+
 def get_sim_voxels(name='fib1'):
     """ provide some simulated voxel data
 
@@ -92,7 +93,7 @@ def get_skeleton(name='C1'):
     return cPickle.loads(gzip.open(fname,'rb').read())
 
 
-def get_sphere(name='symmetric363'):
+def get_sphere(name='symmetric362'):
     ''' provide triangulated spheres
 
     Parameters
@@ -134,7 +135,7 @@ def get_sphere(name='symmetric363'):
 
 
 def get_data(name='small_64D'):
-    ''' provides filenames of some test datasets
+    ''' provides filenames of some test datasets or other useful parametrisations
 
     Parameters
     ----------
@@ -144,7 +145,8 @@ def get_data(name='small_64D'):
         'small_101D' small region of interest nifti,bvecs,bvals 101 directions
         'aniso_vox' volume with anisotropic voxel size as Nifti
         'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
-
+        'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
+        
     Returns
     -------
     fnames : tuple
@@ -183,4 +185,9 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR,'aniso_vox.nii.gz')
     if name=='fornix':
         return pjoin(THIS_DIR,'tracks300.trk')
+    if name=='gqi_vectors':
+        return pjoin(THIS_DIR,'ScannerVectors_GQI101.txt')
+    if name=='dsi515btable':
+        return pjoin(THIS_DIR,'dsi515_b_table.txt')
+    
 

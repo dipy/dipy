@@ -409,7 +409,7 @@ def dots(points,color=(1,0,0),opacity=1):
     return aPolyVertexActor
 
 
-def point(points,colors,opacity=1,point_radius=0.001,theta=3,phi=3):
+def point(points,colors,opacity=1,point_radius=0.1,theta=3,phi=3):
     
     if np.array(colors).ndim==1:
         #return dots(points,colors,opacity)
@@ -1540,12 +1540,11 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_fr
     ---------
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()
-    >>> a=fvtk.axes()    
-    >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
-    >>> fvtk.add(r,fvtk.axes())
+    >>> a=fvtk.axes()
+    >>> fvtk.add(r,a)
     >>> #uncomment below to record
-    >>> #fvtk.record(r,cam_pos=(0,0,-10))
+    >>> #fvtk.record(r)
+    >>> #check for new images in current directory
     '''
     if ren==None:
         ren = vtk.vtkRenderer()

@@ -4,6 +4,45 @@
 import numpy as np
 import dipy.core.geometry as geometry
 
+
+def random_uniform_on_sphere(n=1,coords='xyz'):
+    r''' Random unit vectors from a uniform distribution on the sphere
+    
+    Parameters
+    -----------
+    n: int, number of random vectors
+    coords: str, 'xyz' in cartesian form
+        'radians' for spherical form in rads
+        'degrees' for spherical form in degrees
+        
+    Returns
+    --------
+    X: array, shape (n,3) if coords='xyz' or shape (n,2) otherwise
+    
+    Examples
+    ---------
+    >>> from dipy.core.sphere_stats import random_uniform_on_sphere
+    >>> X=random_uniform_on_sphere(4,'radians')
+    >>> X.shape
+    (4, 2)
+    >>> X=random_uniform_on_sphere(4,'xyz')
+    >>> X.shape
+    (4, 3)
+    '''
+    u = np.random.normal(0,1,(n,3))
+    u = u/np.sqrt(np.sum(u**2,axis=1)).reshape(n,1)
+    if coords=='xyz':
+        return u
+    else:
+        angles = np.zeros((n,2))
+        for (i,xyz) in enumerate(u):
+            angles[i,:]=geometry.cart2sphere(*xyz)[1:]
+        if coords=='radians':
+            return angles
+        if coords=='degrees':
+            return (180./np.pi)*angles
+
+
 def eigenstats(points, alpha=0.05):
     r'''Principal direction and confidence ellipse
 
@@ -103,4 +142,47 @@ def eigenstats(points, alpha=0.05):
             g = np.sqrt(d/t)
             b2= np.arcsin(g)*rad2deg
     '''
+
+def compare_orientation_sets(S,T):
+    r'''Computes the mean cosine distance of the best match between
+    points of two sets of vectors S and T
+
+    Parameters
+    -----------
+    S: array, shape (m,d)
+    T: array, shape (n,d)
+        
+    Returns
+    --------
+    max_mean_cosine: float
+    
+    Examples
+    ---------
+    >>> from dipy.core.sphere_stats import compare_orientation_sets
+    >>> S=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> T=np.array([[1,0,0],[0,0,1]])
+    >>> compare_orientation_sets(S,T)
+    1.0
+    >>> T=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> S=np.array([[1,0,0],[0,0,1]])
+    >>> compare_orientation_sets(S,T)
+    1.0
+    >>> from dipy.core.sphere_stats import compare_orientation_sets
+    >>> S=np.array([[-1,0,0],[0,1,0],[0,0,1]])
+    >>> T=np.array([[1,0,0],[0,0,-1]])
+    >>> compare_orientation_sets(S,T)
+    1.0
+    '''
+    import itertools
+    m = len(S)
+    n = len(T)
+    if m < n:
+	A = S.copy()
+	a = m
+	S = T
+	T = A
+	m = n
+        n = a
+    v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in itertools.permutations(S,n)]
+    return np.max(v)/np.float(n)
 

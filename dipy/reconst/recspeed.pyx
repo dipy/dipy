@@ -126,10 +126,10 @@ def peak_finding(odf, odf_faces):
 
     Parameters
     ------------
-    odf : (N,) array
+    odf : (N,) array of dtype np.float64
        function values on the sphere, where N is the number of vertices
        on the sphere
-    odf_faces : (M,3) array
+    odf_faces : (M,3) array of dtype np.uint16
        faces of the triangulation on the sphere, where M is the number
        of faces on the sphere
 
@@ -208,6 +208,21 @@ def peak_finding(odf, odf_faces):
     peaks=peak[inds[pinds]][::-1]
 
     return peaks, inds[pinds][::-1]
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def pdf_to_odf(cnp.ndarray[double, ndim=1] odf, \
+                 cnp.ndarray[double, ndim=1] PrIs,\
+                 cnp.ndarray[double, ndim=1] radius,\
+                 int odfn,int radiusn):
+    """ Expecting interpolated pdf then calculates the odf for that pdf
+    """    
+    cdef int m,i
+    for m in range(odfn):
+        for i in range(radiusn):
+            odf[m]=odf[m]+PrIs[m*radiusn+i]*radius[i]*radius[i]
+
+    return
 
 
 def argmax_from_adj(vals, vertex_inds, adj_inds):

@@ -11,8 +11,8 @@ import dipy.core.sphere_plots as splot
 # set up a dictionary of sphere points that are in use EITHER as a set
 # directions for diffusion weighted acquisitions OR as a set of
 # evaluation points for an ODF (orientation distribution function.
-sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
-              'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/core/matrices/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
+sphere_dic = {'fy362': {'filepath' : '/home/ian/Devel/dipy/dipy/core/data/evenly_distributed_sphere_362.npz', 'object': 'npz', 'vertices': 'vertices', 'omit': 0, 'hemi': False},
+              'fy642': {'filepath' : '/home/ian/Devel/dipy/dipy/core/data/evenly_distributed_sphere_642.npz', 'object': 'npz', 'vertices': 'odf_vertices', 'omit': 0, 'hemi': False},
               'siem64': {'filepath':'/home/ian/Devel/dipy/dipy/core/tests/data/small_64D.gradients.npy', 'object': 'npy', 'omit': 1, 'hemi': True},
               'create2': {},
               'create3': {},
