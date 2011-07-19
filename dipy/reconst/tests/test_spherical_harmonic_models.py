@@ -95,8 +95,7 @@ def test_set_angle_limit():
     e = None
     opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
     norm_sig = normalize_data(sig, bval, min_signal=0)
-    mask = np.ones(sig.shape[:-1], 'bool')
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, mask, angle_limit=55)
+    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=55)
     assert_raises(ValueError, stepper._set_angle_limit, 99)
     assert_raises(ValueError, stepper._set_angle_limit, -1.1)
 
@@ -136,10 +135,9 @@ def test_ClosestPeakSelector():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
     norm_sig = normalize_data(sig, bval, min_signal=0)
-    mask = np.ones(sig.shape[:-1], 'bool')
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, mask, angle_limit=49)
+    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
     C = opdf_fitter.fit_data(norm_sig)
-    S = opdf_fitter.sample(norm_sig)
+    S = opdf_fitter.evaluate(norm_sig)
     for ii in xrange(len(vecs_xy)):
         step = stepper.next_step(ii, [0, 1., 0])
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .56:
@@ -151,11 +149,8 @@ def test_ClosestPeakSelector():
             assert_array_equal([1., 0, 0.], step)
 
     norm_sig.shape = (2, 2, 4, -1)
-    mask.shape = (2, 2, 4)
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, mask, angle_limit=49)
-    step = stepper.next_step([0, 0, 0], [1, 0, 0])
-    assert_array_equal(step, [1, 0, 0])
-    step = stepper.next_step(np.array([0, 0, 0]), [1, 0, 0])
+    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
+    step = stepper.next_step((0, 0, 0), [1, 0, 0])
     assert_array_equal(step, [1, 0, 0])
 
 def testQballOdfModel():
@@ -164,9 +159,8 @@ def testQballOdfModel():
                                  sampling_edges=e)
     norm_sig = normalize_data(sig, bval, min_signal=0)
     C = qball_fitter.fit_data(norm_sig)
-    S = qball_fitter.sample(norm_sig)
-    mask = np.ones(sig.shape[:-1])
-    stepper = ClosestPeakSelector(qball_fitter, norm_sig, mask, angle_limit=39)
+    S = qball_fitter.evaluate(norm_sig)
+    stepper = ClosestPeakSelector(qball_fitter, norm_sig, angle_limit=39)
     for ii in xrange(len(vecs_xy)):
         step = stepper.next_step(ii, [0, 1., 0])
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .84:
@@ -186,7 +180,7 @@ def test_hat_and_lcr():
     H = hat(B)
     B_hat = np.dot(H, B)
     assert_array_almost_equal(B, B_hat)
-    
+
     R = lcr_matrix(H)
     d = np.arange(len(theta))
     r = d - np.dot(H, d)

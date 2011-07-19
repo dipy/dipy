@@ -11,9 +11,10 @@ B.T and R.T, but I thought that would be easier to read than a lot of
 data.reshape(...) and parmas.reshape(...).
 """
 
+from operator import mul
 from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
-                  broadcast_arrays, c_, cos, diag, dot, empty, eye, log, \
-                  maximum, pi, r_, repeat, sqrt, eye
+                  broadcast_arrays, c_, concatenate, cos, diag, dot, empty, \
+                  eye, log, maximum, pi, r_, repeat, sqrt, eye, ix_, floor
 from numpy.linalg import inv, pinv, svd
 from numpy.random import randint
 from scipy.special import sph_harm, lpn
@@ -169,10 +170,10 @@ class SphHarmModel(object):
             number of volumes in the data
         smoothness : float between 0 and 1
             The regulization peramater of the model
-        sampling_points : ndarray (3, m)
+        sampling_points : ndarray (3, m), optional
             points for sampling the model, these points are used when the
             sample method is called
-        sampling_edges : ndarray (m, 2), dtype=int
+        sampling_edges : ndarray (e, 2), dtype=int, optional
             Indices to sampling_points so that every unique pair of neighbors
             in sampling_points is one of the m edges.
 
@@ -246,7 +247,7 @@ class OpdfModel(SphHarmModel):
         delta_b, delta_q = self._fit_matrix
         return _opdf_product(data, delta_b, delta_q)
 
-    def sample(self, data):
+    def evaluate(self, data):
         """Fits the model to diffusion data and returns samples
 
         The points used to sample the model can be set using the
@@ -311,7 +312,7 @@ class QballOdfModel(SphHarmModel):
         """
         return dot(data, self._fit_matrix.T)
 
-    def sample(self, data):
+    def evaluate(self, data):
         """Fits the model to diffusion data and returns samples
 
         The points used to sample the model can be set using the
@@ -344,107 +345,6 @@ def gfa(samples):
     denom = (n-1)*(samples*samples).sum(-1)
     return sqrt(numer/denom)
 
-class PeakSelector(object):
-    """Step selector with next_step method to be used for fiber tracking
-
-    """
-    def _get_angle_limit(self):
-        return 180/pi * arccos(self.dot_limit)
-
-    def _set_angle_limit(self, angle_limit):
-        if angle_limit < 0 or angle_limit > 90:
-            raise ValueError("angle_limit must be between 0 and 90")
-        self.dot_limit = cos(angle_limit*pi/180)
-
-    angle_limit = property(_get_angle_limit, _set_angle_limit)
-
-    def __init__(self, model, data, mask, dot_limit=0, angle_limit=None, \
-                 min_relative_peak=.5, peak_spacing=.75):
-
-        mask = asarray(mask, 'bool')
-        assert mask.shape == data.shape[:-1]
-        self._data = data
-        self._model = model
-        self._mask = mask
-        self.min_relative_peak = min_relative_peak
-        self.peak_spacing = peak_spacing
-        if angle_limit is not None:
-            self.angle_limit = angle_limit
-        else:
-            self.dot_limit = dot_limit
-
-class ClosestPeakSelector(PeakSelector):
-    """Step selector with next_step method to be used for fiber tracking
-
-    """
-
-    def next_step(self, vox_loc, prev_step):
-
-        try:
-            vox_loc = tuple(int(ii) for ii in vox_loc)
-        except TypeError:
-            vox_loc = int(vox_loc)
-
-        try:
-            vox_data = self._data[vox_loc]
-        except IndexError:
-            return
-
-        if not self._mask[vox_loc]:
-            return
-
-        sampling_points = self._model.sampling_points
-        sampling_edges = self._model.sampling_edges
-        samples = self._model.sample(vox_data)
-
-        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
-        peak_points = sampling_points[peak_inds]
-        peak_points = _robust_peaks(peak_points, peak_values,
-                                    self.min_relative_peak, self.peak_spacing)
-        return _closest_peak(peak_points, prev_step, self.dot_limit)
-
-class BootstrapClosestPeakSelector(ClosestPeakSelector):
-    """Step selector with next_step method to be used for fiber tracking
-
-    """
-
-    def __init__(self, model, data, mask, dot_limit=0,
-                 angle_limit=None, min_relative_peak=.5, peak_spacing=.75):
-
-        ClosestPeakSelector.__init__(self, model, data, mask, dot_limit, \
-                                angle_limit, min_relative_peak, peak_spacing)
-        self._H = hat(model.B)
-        self._R = self._R = lcr_matrix(self._H)
-        self._min_signal = self._data.min()
-
-    def next_step(self, vox_loc, prev_step, permute=None):
-
-        try:
-            vox_loc = tuple(int(ii) for ii in vox_loc)
-        except TypeError:
-            vox_loc = int(vox_loc)
-
-        try:
-            vox_data = self._data[vox_loc]
-        except IndexError:
-            return
-
-        if not self._mask[vox_loc]:
-            return
-
-        sampling_points = self._model.sampling_points
-        sampling_edges = self._model.sampling_edges
-
-        vox_data = bootstrap_data_voxel(vox_data, self._H, self._R, permute,
-                                        self._min_signal)
-        samples = self._model.sample(vox_data)
-
-        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
-        peak_points = sampling_points[peak_inds]
-        peak_points = _robust_peaks(peak_points, peak_values,
-                                    self.min_relative_peak, self.peak_spacing)
-        return _closest_peak(peak_points, prev_step, self.dot_limit)
-
 def _robust_peaks(peak_points, peak_values, min_relative_value,
                         closest_neighbor):
     """Removes peaks that are too small and child peaks too close to a parent
@@ -453,16 +353,17 @@ def _robust_peaks(peak_points, peak_values, min_relative_value,
     if peak_points.ndim == 1:
         return peak_points
     min_value = peak_values[0] * min_relative_value
-    good_peaks = [peak_points[0]]
+    good_peaks = peak_points[0:1]
     for ii in xrange(1, len(peak_values)):
         if peak_values[ii] < min_value:
             break
         inst = peak_points[ii]
         dist = dot(good_peaks, inst)
         if abs(dist).max() < closest_neighbor:
-            good_peaks.append(inst)
+            inst.shape = (1, 3)
+            good_peaks = concatenate((good_peaks, inst))
 
-    return array(good_peaks)
+    return good_peaks
 
 def _closest_peak(peak_points, prev_step, dot_limit):
     """Returns peak form peak_points closest to prev_step
@@ -513,7 +414,7 @@ def bootstrap_data_array(data, H, R, permute=None):
     R = R[:, permute]
     return dot(data, (H+R).T)
 
-def bootstrap_data_voxel(data, H, R, permute, min_signal):
+def bootstrap_data_voxel(data, H, R, permute=None, min_signal=0):
     if permute is None:
         permute = randint(data.shape[-1], size=data.shape[-1])
     r = dot(data, R.T)
@@ -537,24 +438,146 @@ class NearestNeighborInterpolator(Interpolator):
             index = tuple(int(ii) for ii in index)
         except ValueError:
             index = int(index)
-       
+
         if self._mask is not None:
             if self._mask[index] == False:
                 raise IndexError("mask is False at index")
         return self._data[index]
 
-class BootstrapWrapper(Interpolator):
+class TrilinearInterpolator(Interpolator):
 
-    def __init__(self, input, B, size, min_signal=0):
-        self._input = input
+    def __getitem__(self, index):
+        try:
+            for ii in index:
+                if ii < .5:
+                    raise IndexError
+        except TypeError:
+            if index < .5:
+                raise IndexError
+            index = (index,)
+
+        floor_index = tuple(int(ii-.5) for ii in index)
+        ind = ix_(*[[ii, ii+1] for ii in floor_index])
+        d = self._data[ind]
+        w = tuple((ii-.5) % 1 for ii in index)
+        weights = ix_(*[[1.-ii, ii] for ii in w])
+        weights = reduce(mul, weights)
+        pres = d.shape[len(index):]
+        weights.shape += (d.ndim-len(index))*(1,)
+        d = weights*d
+        d.shape = (-1,) + pres
+        d = d.sum(0)
+        return d
+
+class ResidualBootstrapWrapper(Interpolator):
+    """Returns a residual bootstrap sample of the signal_object when indexed
+
+    Wraps a signal_object, this signal object can be an interpolator. When
+    indexed, the the wrapper indexes the signal_object to get the signal.
+    There wrapper than samples the residual boostrap distribution of signal and
+    returns that sample.
+    """
+    def __init__(self, signal_object, B, min_signal=0):
+        """Builds a ResidualBootstrapWapper
+
+        Given some linear model described by B, the design matrix, and a
+        signal_object, returns an object which can sample the residual
+        bootstrap distribution of the signal.
+
+        Parameters
+        ----------
+        signal_object : some object that can be indexed
+            This object should return diffusion weighted signals when indexed.
+        B : ndarray, ndim=2
+            The design matrix of spherical hormonic model usded to fit the
+            data. This is the model that will be used to compute the residuals
+            and sample the residual bootstrap distribution
+        ngrad : int
+            Number of diffusion gradient directions in sgnal_object
+        """
+        self._signal_object = signal_object
         self._H = hat(B)
         self._R = lcr_matrix(self._H)
         self._min_signal = min_signal
-        self._size = size
-    
+
     def __getitem__(self, index):
-        sample = randomint(size, size=size)
-        d = self._input[index]
-        d = bootstrap_data_voxel(d, self._H, self._R, sample, 
-                                 self._min_signal)
+        """Indexes self._singal_object and bootsraps the result"""
+        d = self._signal_object[index]
+        d = bootstrap_data_voxel(d, self._H, self._R,
+                                 min_signal=self._min_signal)
+        return d
+
+class ClosestPeakSelector(object):
+    """Step selector with next_step method to be used for fiber tracking
+
+    Parameters:
+    -----------
+    model : must have sample method
+        A model which accepts dwi data to the sample method
+    data_interpolator : Indexable with floating point numbers
+        Some interface to dwi data which can accept real choardinates as
+        indices, and return dwi at the given index
+    angle_limit : float, 0 <= angle_limit <= 90
+        angle_limit is used when next_step is called,
+    dot_limit : float, 0 <= dot_limit <= 1
+        A
+
+
+    """
+    def _get_angle_limit(self):
+        return 180/pi * arccos(self.dot_limit)
+
+    def _set_angle_limit(self, angle_limit):
+        if angle_limit < 0 or angle_limit > 90:
+            raise ValueError("angle_limit must be between 0 and 90")
+        self.dot_limit = cos(angle_limit*pi/180)
+
+    angle_limit = property(_get_angle_limit, _set_angle_limit)
+
+    def __init__(self, model, interpolator, angle_limit=None, dot_limit=0, \
+                 min_relative_peak=.5, peak_spacing=.75):
+
+        self._interpolator = interpolator
+        self._model = model
+        self.min_relative_peak = min_relative_peak
+        self.peak_spacing = peak_spacing
+        if angle_limit is not None:
+            self.angle_limit = angle_limit
+        else:
+            self.dot_limit = dot_limit
+
+    def next_step(self, vox_loc, prev_step):
+        """Returns the peak closest to prev_step at vox_loc
+
+        Fits the data from vox_loc using model and evaluates that model on the
+        surface of a sphere. Then the point on the sphere which is both a
+        local maxima and closest to prev_step is returned.
+
+        Parameters
+        ----------
+        vox_loc : points in space
+            vox_loc is passed to the interpolator in order to get data
+        prev_step: array_like (3,)
+            the direction of the previous tracking step
+
+        """
+        try:
+            vox_data = self._interpolator[vox_loc]
+        except IndexError:
+            return
+        if vox_data.min() < 0:
+            print vox_data
+
+        sampling_points = self._model.sampling_points
+        sampling_edges = self._model.sampling_edges
+        samples = self._model.evaluate(vox_data)
+        if vox_data.min() < 0:
+            print vox_data
+            print samples
+
+        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
+        peak_points = sampling_points[peak_inds]
+        peak_points = _robust_peaks(peak_points, peak_values,
+                                    self.min_relative_peak, self.peak_spacing)
+        return _closest_peak(peak_points, prev_step, self.dot_limit)
 
