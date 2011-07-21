@@ -94,10 +94,55 @@ def test_set_angle_limit():
     v = np.ones((200, 3))
     e = None
     opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
-    norm_sig = normalize_data(sig, bval, min_signal=0)
+    norm_sig = sig[..., 1:]
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=55)
     assert_raises(ValueError, stepper._set_angle_limit, 99)
     assert_raises(ValueError, stepper._set_angle_limit, -1.1)
+
+def test_normalize_data():
+
+    sig = np.arange(1, 66)[::-1]
+
+    bval = np.zeros(64)
+    assert_raises(ValueError, normalize_data, sig, bval)
+    bval = np.zeros(65)
+    assert_raises(ValueError, normalize_data, sig, bval)
+    bval = np.ones(65)
+    assert_raises(ValueError, normalize_data, sig, bval)
+    bval[0] = 0
+    d = normalize_data(sig, bval, 1)
+    assert_raises(ValueError, normalize_data, None, bval, 0)
+
+    bval[[0, 1]] = [0, 1]
+    norm_sig = normalize_data(sig, bval, min_signal=1)
+    assert_array_equal(norm_sig, sig[..., 1:]/65.)
+    norm_sig = normalize_data(sig, bval, min_signal=5)
+    assert_array_equal(norm_sig[-5:], 5/65.)
+
+    bval[[0, 1]] = [0, 0]
+    norm_sig = normalize_data(sig, bval, min_signal=1)
+    assert_array_equal(norm_sig, sig[..., 2:]/64.5)
+    norm_sig = normalize_data(sig, bval, min_signal=5)
+    assert_array_equal(norm_sig[-5:], 5/64.5)
+
+    sig = sig*np.ones((2,3,1))
+
+    bval[[0, 1]] = [0, 1]
+    norm_sig = normalize_data(sig, bval, min_signal=1)
+    assert_array_equal(norm_sig, sig[..., 1:]/65.)
+    norm_sig = normalize_data(sig, bval, min_signal=5)
+    assert_array_equal(norm_sig[..., -5:], 5/65.)
+
+    bval[[0, 1]] = [0, 0]
+    norm_sig = normalize_data(sig, bval, min_signal=1)
+    assert_array_equal(norm_sig, sig[..., 2:]/64.5)
+    norm_sig = normalize_data(sig, bval, min_signal=5)
+    assert_array_equal(norm_sig[..., -5:], 5/64.5)
+
+    sig[..., -1] = 100.
+    norm_sig = normalize_data(sig, bval, min_signal=1)
+    assert_array_equal(norm_sig[...,:-1], sig[..., 2:-1]/64.5)
+    assert_array_equal(norm_sig[..., -1], 1)
 
 def make_fake_signal():
     v, e, f = create_half_unit_sphere(4)
@@ -128,13 +173,15 @@ def make_fake_signal():
     tensor_fixed = np.diag(evals)
     D_fixed = _compact_tensor(tensor_fixed)
 
-    sig = np.exp(np.dot(D_moveing, B.T)) + 1.1*np.exp(np.dot(B, D_fixed))
+    sig = .45*np.exp(np.dot(D_moveing, B.T)) + .55*np.exp(np.dot(B, D_fixed))
+    assert sig.max() <= 1
+    assert sig.min() > 0
     return v, e, vecs_xy, bval, bvec, sig
 
 def test_ClosestPeakSelector():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
-    norm_sig = normalize_data(sig, bval, min_signal=0)
+    norm_sig = sig[..., 1:] 
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
     C = opdf_fitter.fit_data(norm_sig)
     S = opdf_fitter.evaluate(norm_sig)
@@ -157,7 +204,8 @@ def testQballOdfModel():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     qball_fitter = QballOdfModel(6, bval, bvec, sampling_points=v,
                                  sampling_edges=e)
-    norm_sig = normalize_data(sig, bval, min_signal=0)
+    
+    norm_sig = sig[..., 1:]
     C = qball_fitter.fit_data(norm_sig)
     S = qball_fitter.evaluate(norm_sig)
     stepper = ClosestPeakSelector(qball_fitter, norm_sig, angle_limit=39)

@@ -14,7 +14,8 @@ data.reshape(...) and parmas.reshape(...).
 from operator import mul
 from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
                   broadcast_arrays, c_, concatenate, cos, diag, dot, empty, \
-                  eye, log, maximum, pi, r_, repeat, sqrt, eye, ix_, floor
+                  eye, log, minimum, maximum, pi, r_, repeat, sqrt, eye, ix_, \
+                  floor
 from numpy.linalg import inv, pinv, svd
 from numpy.random import randint
 from scipy.special import sph_harm, lpn
@@ -330,13 +331,29 @@ class QballOdfModel(SphHarmModel):
 def normalize_data(data, bval, min_signal=1e-5):
     """Normalizes the data with respect to the mean b0
     """
-    assert len(bval) == data.shape[-1]
-    dwi = data[..., bval > 0]
-    b0 = data[..., bval == 0].mean(-1)
+    if min_signal <= 0:
+        raise ValueError("min_signal must be > 0")
+    where_b0 = bval == 0
+    if len(where_b0) != data.shape[-1]:
+        message = "number of bvalues does not match number of input signals"
+        raise ValueError(message)
+    if not where_b0.any():
+        raise ValueError("data must contain at least one image set with no "+
+                         "diffusion weighting")
+    elif where_b0.all():
+        raise ValueError("data must contain at least one dwi set")
+        
+    dwi = data[..., ~where_b0]
+    dwi = asarray(dwi, 'float')
+    b0 = data[..., where_b0].mean(-1)
     b0 = b0[..., None]
-    dwi = maximum(dwi, min_signal)
-    b0 = maximum(b0, min_signal)
-    return dwi/b0
+    b0 = asarray(b0, 'float')
+    
+    maximum(dwi, min_signal, dwi)
+    maximum(b0, min_signal, b0)
+    dwi /= b0
+    minimum(dwi, 1, dwi)
+    return dwi
 
 def gfa(samples):
     diff = samples - samples.mean(-1)[..., None]
@@ -510,18 +527,21 @@ class ResidualBootstrapWrapper(Interpolator):
 class ClosestPeakSelector(object):
     """Step selector with next_step method to be used for fiber tracking
 
-    Parameters:
+    Attributes:
     -----------
-    model : must have sample method
-        A model which accepts dwi data to the sample method
-    data_interpolator : Indexable with floating point numbers
-        Some interface to dwi data which can accept real choardinates as
-        indices, and return dwi at the given index
     angle_limit : float, 0 <= angle_limit <= 90
-        angle_limit is used when next_step is called,
+        angle_limit is used when next_step is called, see also dot_limit.
     dot_limit : float, 0 <= dot_limit <= 1
-        A
-
+        Same as cos(angle_limit), chaning dot_limit will change angle_limit
+        and vice versa
+    min_relative_peak : float, 0 <= min_relative_peak < 1
+        Peaks smaller than min_relative_peak of the largest peak are assumed to
+        be artifacts and ignored
+    peak_spacing : float, 0 <= peak_spacing <= 1
+        The minimum spacing between neighboring peaks, spacing_angle is 
+        arccos(peak_spacing). If two peaks are less than spacing_angle appart
+        it is assumed to be an artifact and only the greater of the two peaks
+        is treated as a true peak.
 
     """
     def _get_angle_limit(self):
@@ -536,6 +556,23 @@ class ClosestPeakSelector(object):
 
     def __init__(self, model, interpolator, angle_limit=None, dot_limit=0, \
                  min_relative_peak=.5, peak_spacing=.75):
+        """Creates a peakfinder which can be used to get next_step
+
+        Parameters:
+        -----------
+        model : must have evaluate method
+            A model used to fit data
+        interpolator : must be indexable
+            An object which returns diffusion weighted data when indexed
+        angle_limit : float
+            see angle_limit attribute
+        dot_limit : float
+            see dot_limit attribute
+        min_relative_peak : float
+            see min_relative_peak attritube
+        peak_spacing : float
+            see peak_spacing attribute
+        """
 
         self._interpolator = interpolator
         self._model = model
@@ -555,7 +592,7 @@ class ClosestPeakSelector(object):
 
         Parameters
         ----------
-        vox_loc : points in space
+        vox_loc : point in space
             vox_loc is passed to the interpolator in order to get data
         prev_step: array_like (3,)
             the direction of the previous tracking step
@@ -565,8 +602,6 @@ class ClosestPeakSelector(object):
             vox_data = self._interpolator[vox_loc]
         except IndexError:
             return
-        if vox_data.min() < 0:
-            print vox_data
 
         sampling_points = self._model.sampling_points
         sampling_edges = self._model.sampling_edges
