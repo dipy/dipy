@@ -139,33 +139,6 @@ class DiffusionSpectrum(object):
                         NFA[i][:l] = GFA[i]
                         QA[i][:l] = peaks[:l]-np.min(odf)
 
-        """
-        if mask==None:
-            for (i,s) in enumerate(S):
-                #calculate the diffusion propagator or spectrum
-                Pr=self.pdf(s)
-                #calculate the orientation distribution function
-                odf=self.odf(Pr)
-                #normalization for QA
-                glob_norm_param=max(np.max(odf),glob_norm_param)
-                #calculate the generalized fractional anisotropy
-                GFA[i]=self.std_over_rsm(odf) 
-                #find peaks
-                peaks,inds=peak_finding(odf,odf_faces)                               
-                #remove small peaks
-                #print odf
-                #print peaks
-                if len(peaks)>0:
-                    ismallp=np.where(peaks/peaks.min()<self.peak_thr)
-                    #keep only peaks with high values                                                    
-                    l=ismallp[0][0]
-                    #print l, len(peaks), len(inds)
-                    if l<5:                    
-                        IN[i][:l] = inds[:l]
-                        NFA[i][:l] = GFA[i]
-                        QA[i][:l] = peaks[:l]-np.min(odf)
-        """
-                     
         if len(datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
             self.NFA=NFA.reshape(x,y,z,5)
@@ -215,7 +188,7 @@ class DiffusionSpectrum(object):
         pdf_to_odf(odf,PrIs, self.radius,self.odfn,self.radiusn) 
         return odf
     
-    def precompute_interp_coords(self):            
+    def precompute_interp_coords(self):
         Xs=[]
         for m in range(self.odfn):
             xi=self.origin+self.radius*self.odf_vertices[m,0]
@@ -224,7 +197,7 @@ class DiffusionSpectrum(object):
             Xs.append(np.vstack((xi,yi,zi)).T)
         return np.concatenate(Xs).T
     
-    def std_over_rsm(self,odf):        
+    def std_over_rsm(self,odf):
         numer=len(odf)*np.sum((odf-np.mean(odf))**2)
         denom=(len(odf)-1)*np.sum(odf**2)        
         return np.sqrt(numer/denom)
