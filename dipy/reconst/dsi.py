@@ -15,11 +15,11 @@ class DiffusionSpectrum(object):
     by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM 2005
         
     '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,filter=None):
+    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,filter=None,half_sphere_grads=False):
         '''
         Parameters
         -----------
-        data : array, shape(X,Y,Z,D) , or (X,D)
+        data : array, shape(X,Y,Z,D), or (X,D)
         bvals : array, shape (N,)
         gradients : array, shape (N,3) also known as bvecs        
         odf_sphere : str or tuple, optional
@@ -27,6 +27,9 @@ class DiffusionSpectrum(object):
             If tuple, gives (vertices, faces) for sphere.
         filter : array, shape(len(vertices),) 
             default is None (using standard hanning filter for DSI)
+        half_sphere_grad : boolean Default(False) 
+            in order to create the q-space we use the bvals and gradients. 
+            If the gradients are only one hemisphere then 
 
         See also
         ----------
@@ -37,6 +40,13 @@ class DiffusionSpectrum(object):
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.odf_vertices=odf_vertices
         self.odfn=len(self.odf_vertices)
+        
+        #check if bvectors are provided only on a hemisphere
+        if half_sphere_grads==True:
+            bvals=np.append(bvals.copy(),bvals[1:].copy())
+            bvecs=np.append(bvecs.copy(),-bvecs[1:].copy(),axis=0)
+            data=np.append(data.copy(),data[...,1:].copy(),axis=-1)
+        
         #load bvals and bvecs
         self.bvals=bvals
         gradients[np.isnan(gradients)] = 0.
@@ -52,7 +62,7 @@ class DiffusionSpectrum(object):
         self.origin=8
         #hanning filter width
         self.filter_width=32.        
-        #creat the q-table from bvecs and bvals
+        #create the q-table from bvecs and bvals        
         bv=bvals
         bmin=np.sort(bv)[1]
         bv=np.sqrt(bv/bmin)
@@ -72,58 +82,64 @@ class DiffusionSpectrum(object):
         self.q=qtable+self.origin
         self.q=self.q.astype('i8')
         #peak threshold
-        self.peak_thr=2.
-        
+        self.peak_thr=2.        
         #precompute coordinates for pdf interpolation
-        self.Xs=self.precompute()
-
+        self.Xs=self.precompute_interp_coords()
+        #memory allocations for 4D volumes 
         if len(datashape)==4:
             x,y,z,g=S.shape        
             S=S.reshape(x*y*z,g)
             GFA=np.zeros((x*y*z))
             IN=np.zeros((x*y*z,5))
             NFA=np.zeros((x*y*z,5))
-            QA=np.zeros((x*y*z,5))
-            
+            QA=np.zeros((x*y*z,5))            
             if mask != None:
                 if mask.shape[:3]==datashape[:3]:
                     msk=mask.ravel().copy()
-                    
+            if mask == None:
+                mask=np.ones(datashape[:3])
+                msk=mask.ravel().copy()
+        #memory allocations for a series of voxels       
         if len(datashape)==2:
             x,g= S.shape
             GFA=np.zeros(x)
             IN=np.zeros((x,5))
             NFA=np.zeros((x,5))
-            QA=np.zeros((x,5)) 
-        
+            QA=np.zeros((x,5))
+            if mask != None:
+                if mask.shape[0]==datashape[0]:
+                    msk=mask.ravel().copy()
+            if mask == None:
+                mask=np.ones(datashape[:1])
+                msk=mask.ravel().copy()
         #find the global normalization parameter 
-        #useful for quantitative anisotropy    
+        #useful for quantitative anisotropy
         glob_norm_param = 0.
-        
-        if mask !=None:
-            for (i,s) in enumerate(S):        
-                if msk[i]>0:
-                    #calculate the diffusion propagator or spectrum                   
-                    Pr=self.pdf(s)           
-                    #calculate the orientation distribution function        
-                    odf=self.odf(Pr)
-                    #normalization for QA
-                    glob_norm_param=max(np.max(odf),glob_norm_param)
-                    #calculate the generalized fractional anisotropy
-                    GFA[i]=self.std_over_rsm(odf)
-                    #find peaks
-                    peaks,inds=peak_finding(odf,odf_faces)
-                    #remove small peaks
-                    #print odf
-                    #print peaks
-                    if len(peaks)>0:
-                        ismallp=np.where(peaks/peaks.min()<self.peak_thr)                                                                        
-                        l=ismallp[0][0]
-                        if l<5:                                        
-                            IN[i][:l] = inds[:l]
-                            NFA[i][:l] = GFA[i]
-                            QA[i][:l] = peaks[:l]-np.min(odf)
+        #loop over all voxels
+        for (i,s) in enumerate(S):
+            if msk[i]>0:
+                #calculate the diffusion propagator or spectrum                   
+                Pr=self.pdf(s)           
+                #calculate the orientation distribution function        
+                odf=self.odf(Pr)
+                #normalization for QA
+                glob_norm_param=max(np.max(odf),glob_norm_param)
+                #calculate the generalized fractional anisotropy
+                GFA[i]=self.std_over_rsm(odf)
+                #find peaks
+                peaks,inds=peak_finding(odf,odf_faces)
+                #remove small peaks
+                #print odf
+                #print peaks
+                if len(peaks)>0:
+                    ismallp=np.where(peaks/peaks.min()<self.peak_thr)                                                                        
+                    l=ismallp[0][0]
+                    if l<5:                                        
+                        IN[i][:l] = inds[:l]
+                        NFA[i][:l] = GFA[i]
+                        QA[i][:l] = peaks[:l]-np.min(odf)
 
+        """
         if mask==None:
             for (i,s) in enumerate(S):
                 #calculate the diffusion propagator or spectrum
@@ -148,7 +164,8 @@ class DiffusionSpectrum(object):
                         IN[i][:l] = inds[:l]
                         NFA[i][:l] = GFA[i]
                         QA[i][:l] = peaks[:l]-np.min(odf)
-                        
+        """
+                     
         if len(datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
             self.NFA=NFA.reshape(x,y,z,5)
@@ -188,19 +205,17 @@ class DiffusionSpectrum(object):
             for i in range(self.radiusn):
                 odf[m]=odf[m]+PrI[i]*self.radius[i]**2
         """
-        PrIs=map_coordinates(Pr,self.Xs,order=1)
-        
+        PrIs=map_coordinates(Pr,self.Xs,order=1)        
         #print PrIs.shape
         """
         for m in range(self.odfn):
             for i in range(self.radiusn):
                 odf[m]=odf[m]+PrIs[m*self.radiusn+i]*self.radius[i]**2
         """
-        pdf_to_odf(odf,PrIs, self.radius,self.odfn,self.radiusn)                 
- 
+        pdf_to_odf(odf,PrIs, self.radius,self.odfn,self.radiusn) 
         return odf
     
-    def precompute(self):            
+    def precompute_interp_coords(self):            
         Xs=[]
         for m in range(self.odfn):
             xi=self.origin+self.radius*self.odf_vertices[m,0]
@@ -215,6 +230,9 @@ class DiffusionSpectrum(object):
         return np.sqrt(numer/denom)
     
     def gfa(self):
+        """ Generalized Fractional Anisotropy
+        Defined as the std/rms of the odf values.
+        """
         return self.GFA
     def nfa(self):
         return self.NFA
@@ -224,4 +242,33 @@ class DiffusionSpectrum(object):
         """ peak indices
         """
         return self.IN
+
+
+def project_hemisph_bvecs(bvals,bvecs):
+    """ project any near identical bvecs to the other hemisphere
+    
+    Notes
+    -------
+    Very useful when working with dsi data because the full q-space needs to be mapped.
+    """
+    bvs=bvals[1:]
+    bvcs=bvecs[1:]
+    b=bvs[:,None]*bvcs
+    bb=np.zeros((len(bvs),len(bvs)))    
+    pairs=[]
+    for (i,vec) in enumerate(b):
+        for (j,vec2) in enumerate(b):
+            bb[i,j]=np.sqrt(np.sum((vec-vec2)**2))            
+        I=np.argsort(bb[i])
+        for j in I:
+            if j!=i:
+                break
+        if (j,i) in pairs:
+            pass
+        else:
+            pairs.append((i,j))
+    bvecs2=bvecs.copy()
+    for (i,j) in pairs:
+        bvecs2[1+j]=-bvecs2[1+j]    
+    return bvecs2,pairs
 
