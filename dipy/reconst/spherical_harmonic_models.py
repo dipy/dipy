@@ -142,7 +142,8 @@ def smooth_pinv(B, L):
     product.
 
     """
-    inv = pinv(r_[B, diag(L)])
+    L = diag(L)
+    inv = pinv(concatenate((B, L)))
     return inv[:, :len(B)]
 
 nierror = NotImplementedError("User must implement this method in a subclass")
@@ -186,7 +187,7 @@ class SphHarmModel(object):
         theta = theta[:, None]
         phi = phi[:, None]
         B = real_sph_harm(m, n, theta, phi)
-        L = n*(n+1)
+        L = -n*(n+1)
         legendre0 = lpn(sh_order, 0)[0]
         F = legendre0[n]
         self.B = B
@@ -196,16 +197,92 @@ class SphHarmModel(object):
         if sampling_points is not None:
             self.set_sampling_points(sampling_points, sampling_edges)
 
+    def set_sampling_points(self, sampling_points, sampling_edges=None):
+        """Sets the sampling points
+
+        The sampling points are the points at which the modle is sampled when
+        the sample method is called.
+
+        Parameters
+        ----------
+        sampling_points : ndarray (n, 3), dtype=float
+            The x, y, z coordinates of n points on a unit sphere.
+        sampling_edges : ndarray (m, 2), dtype=int
+            Indices to sampling_points so that every unique pair of neighbors
+            in sampling_points is one of the m edges.
+
+        """
+        x, y, z = sampling_points.T
+        r, theta, phi = cartesian2polar(x, y, z)
+        theta = theta[:, None]
+        phi = phi[:, None]
+        S = real_sph_harm(self._m, self._n, theta, phi)
+
+        self._sampling_matrix = dot(S, self._fit_matrix)
+        self._sampling_points = sampling_points
+        self._sampling_edges = sampling_edges
+
     def _set_fit_matrix(self, *args):
         raise nierror
 
-    def set_sampling_matrix(self, *args):
-        raise nierror
+class MonoExpOpdfModel(SphHarmModel):
+    """Implementaion of Solid Angle method with mono-exponential assumtion
 
-class OpdfModel(SphHarmModel):
-    """Implementaion of Tristen-Vega method 2009
+    References
+    ----------
+    Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
+    Angle Consideration.
+    Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
+    populations in white matter of the brain with Funk-Radon transform.
+    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+    Q-ball imaging.
     """
 
+    def _set_fit_matrix(self, B, L, F, smooth):
+        """The fit matrix, is used by fit_data to return the coefficients of
+        the model"""
+        invB = smooth_pinv(B, sqrt(smooth)*L)
+        L = L[:, None]
+        F = F[:, None]
+        self._fit_matrix = F*L*invB
+
+    def fit_data(self, data):
+        """Fits the model to diffusion data and returns the coefficients
+        """
+        d = log(-log(data))
+        return dot(d, self._fit_matrix.T)
+
+    def evaluate(self, data):
+        """Fits the model to diffusion data and evaluates the model at
+        sampling_points
+
+        The points used to sample the model can be set using the
+        set_sampling_points method
+
+        Parameters
+        ----------
+        data : ndarray (..., n)
+            Diffusion data to be fit using the model. The data should be
+            normilzed before it is fit.
+
+        """
+        d = log(-log(data))
+        return dot(d, self._sampling_matrix.T)
+
+class SlowAdcOpdfModel(SphHarmModel):
+    """Implementaion of Tristen-Vega 2009 method with slow varying ADC
+    assumption
+
+    References
+    ----------
+    Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
+    Angle Consideration.
+    Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
+    populations in white matter of the brain with Funk-Radon transform.
+    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+    Q-ball imaging.
+
+    """
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, sqrt(smooth)*L)
         L = L[:, None]
@@ -243,13 +320,14 @@ class OpdfModel(SphHarmModel):
         self._sampling_edges = sampling_edges
 
     def fit_data(self, data):
-        """Fits the model to diffusion data and returns the coefficients
-        """
+        """The fit matrix, is used by fit_data to return the coefficients of
+        the model"""
         delta_b, delta_q = self._fit_matrix
         return _opdf_product(data, delta_b, delta_q)
 
     def evaluate(self, data):
-        """Fits the model to diffusion data and returns samples
+        """Fits the model to diffusion data and evaluates the model at
+        sampling_points
 
         The points used to sample the model can be set using the
         set_sampling_points method
@@ -264,15 +342,9 @@ class OpdfModel(SphHarmModel):
         delta_b, delta_q = self._sampling_matrix
         return _opdf_product(data, delta_b, delta_q)
 
-    def old_sample(self, data):
-        delta_b, delta_q = self._sampling_matrix
-        logd = log(data)
-        return dot(data, delta_b.T) - dot(logd*(1.5-logd)*data, delta_q.T)
-
-
 def _opdf_product(data, delta_b, delta_q):
     logd = -log(data)
-    return dot(data, delta_b.T) + dot(logd*(1.5-logd)*data, delta_q.T)
+    return dot(logd*(1.5-logd)*data, delta_q.T) - dot(data, delta_b.T)
 
 class QballOdfModel(SphHarmModel):
     """Implementaion Qball Odf Model
@@ -282,31 +354,6 @@ class QballOdfModel(SphHarmModel):
         invB = smooth_pinv(B, sqrt(smooth)*L)
         F = F[:, None]
         self._fit_matrix = F*invB
-
-    def set_sampling_points(self, sampling_points, sampling_edges=None):
-        """Sets the sampling points
-
-        The sampling points are the points at which the modle is sampled when
-        the sample method is called.
-
-        Parameters
-        ----------
-        sampling_points : ndarray (n, 3), dtype=float
-            The x, y, z coordinates of n points on a unit sphere.
-        sampling_edges : ndarray (m, 2), dtype=int
-            Indices to sampling_points so that every unique pair of neighbors
-            in sampling_points is one of the m edges.
-
-        """
-        x, y, z = sampling_points.T
-        r, theta, phi = cartesian2polar(x, y, z)
-        theta = theta[:, None]
-        phi = phi[:, None]
-        S = real_sph_harm(self._m, self._n, theta, phi)
-
-        self._sampling_matrix = dot(S, self._fit_matrix)
-        self._sampling_points = sampling_points
-        self._sampling_edges = sampling_edges
 
     def fit_data(self, data):
         """Fits the model to diffusion data and returns the coefficients
@@ -342,13 +389,13 @@ def normalize_data(data, bval, min_signal=1e-5):
                          "diffusion weighting")
     elif where_b0.all():
         raise ValueError("data must contain at least one dwi set")
-        
+
     dwi = data[..., ~where_b0]
     dwi = asarray(dwi, 'float')
     b0 = data[..., where_b0].mean(-1)
     b0 = b0[..., None]
     b0 = asarray(b0, 'float')
-    
+
     maximum(dwi, min_signal, dwi)
     maximum(b0, min_signal, b0)
     dwi /= b0
@@ -538,7 +585,7 @@ class ClosestPeakSelector(object):
         Peaks smaller than min_relative_peak of the largest peak are assumed to
         be artifacts and ignored
     peak_spacing : float, 0 <= peak_spacing <= 1
-        The minimum spacing between neighboring peaks, spacing_angle is 
+        The minimum spacing between neighboring peaks, spacing_angle is
         arccos(peak_spacing). If two peaks are less than spacing_angle appart
         it is assumed to be an artifact and only the greater of the two peaks
         is treated as a true peak.

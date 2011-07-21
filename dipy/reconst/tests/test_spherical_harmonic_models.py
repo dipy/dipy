@@ -1,5 +1,6 @@
 
 import numpy as np
+import numpy.linalg as npl
 from dipy.core.triangle_subdivide import create_half_unit_sphere
 from dipy.reconst.dti import design_matrix, _compact_tensor
 
@@ -8,8 +9,8 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.reconst.spherical_harmonic_models import real_sph_harm, \
         sph_harm_ind_list, cartesian2polar, _robust_peaks, _closest_peak, \
-        OpdfModel, normalize_data, ClosestPeakSelector, QballOdfModel, hat, \
-        lcr_matrix, NearestNeighborInterpolator
+        SlowAdcOpdfModel, normalize_data, ClosestPeakSelector, QballOdfModel, hat, \
+        lcr_matrix, NearestNeighborInterpolator, smooth_pinv
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -93,11 +94,35 @@ def test_set_angle_limit():
     sig = np.zeros(100)
     v = np.ones((200, 3))
     e = None
-    opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
+    opdf_fitter = SlowAdcOpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
     norm_sig = sig[..., 1:]
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=55)
     assert_raises(ValueError, stepper._set_angle_limit, 99)
     assert_raises(ValueError, stepper._set_angle_limit, -1.1)
+
+def test_smooth_pinv():
+    v, e, f = create_half_unit_sphere(3)
+    m, n = sph_harm_ind_list(4)
+    r, theta, phi = cartesian2polar(*v.T)
+    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+    L = np.zeros(len(m))
+    C = smooth_pinv(B, L)
+    D = np.dot(npl.inv(np.dot(B.T, B)), B.T)
+    assert_array_almost_equal(C, D)
+
+    L = n*(n+1)*.05
+    C = smooth_pinv(B, L)
+    L = np.diag(L)
+    D = np.dot(npl.inv(np.dot(B.T, B) + L*L), B.T)
+
+    assert_array_almost_equal(C, D)
+
+    L = np.arange(len(n))*.05
+    C = smooth_pinv(B, L)
+    L = np.diag(L)
+    D = np.dot(npl.inv(np.dot(B.T, B) + L*L), B.T)
+    assert_array_almost_equal(C, D)
 
 def test_normalize_data():
 
@@ -180,8 +205,8 @@ def make_fake_signal():
 
 def test_ClosestPeakSelector():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
-    opdf_fitter = OpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
-    norm_sig = sig[..., 1:] 
+    opdf_fitter = SlowAdcOpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
+    norm_sig = sig[..., 1:]
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
     C = opdf_fitter.fit_data(norm_sig)
     S = opdf_fitter.evaluate(norm_sig)
