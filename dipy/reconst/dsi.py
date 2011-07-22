@@ -69,7 +69,8 @@ class DiffusionSpectrum(object):
         bmin=np.sort(bv)[1]
         bv=np.sqrt(bv/bmin)
         qtable=np.vstack((bv,bv,bv)).T*gradients
-        qtable=np.floor(qtable+.5)             
+        qtable=np.floor(qtable+.5)
+        self.qtable=qtable             
         #odf collecting radius
         self.radius=np.arange(2.1,6,.2)
         self.radiusn=len(self.radius)         

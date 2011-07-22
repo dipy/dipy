@@ -103,6 +103,11 @@ def test_dsi():
     data[:,:,:]=S    
     ds=DiffusionSpectrum(data,bvals,bvecs)
     
+    ds2=DiffusionSpectrum(data,bvals,bvecs,auto=False)
+    r = np.sqrt(ds2.qtable[:,0]**2+ds2.qtable[:,1]**2+ds2.qtable[:,2]**2)    
+    ds2.filter=.5*np.cos(2*np.pi*r/32)
+    ds2.fit()
+    assert_almost_equal(np.sum(ds2.qa()-ds.qa()),0)
     
 
     
