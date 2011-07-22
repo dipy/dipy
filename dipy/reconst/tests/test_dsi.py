@@ -8,7 +8,7 @@ from dipy.data import get_data, get_sphere
 from dipy.reconst.recspeed import peak_finding
 from dipy.reconst.gqi import GeneralizedQSampling
 from dipy.reconst.dsi import DiffusionSpectrum
-from dipy.reconst.sims import SticksAndBall
+from dipy.sims.voxel import SticksAndBall
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sphere 
 from scipy.ndimage import map_coordinates
