@@ -109,6 +109,31 @@ def test_dsi():
     ds2.fit()
     assert_almost_equal(np.sum(ds2.qa()-ds.qa()),0)
     
+    #1 fiber
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[100,0,0], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),1)
+    
+    #2 fibers
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),2)
+    
+    #3 fibers
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),3)
+    
+    #isotropic
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[0,0,0], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),0)
+    
+    
 
     
 if __name__ == '__main__':
