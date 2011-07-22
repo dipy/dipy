@@ -100,7 +100,7 @@ class DiffusionSpectrum(object):
             QA=np.zeros((x*y*z,5))            
             if self.mask != None:
                 if self.mask.shape[:3]==self.datashape[:3]:
-                    msk=mask.ravel().copy()
+                    msk=self.mask.ravel().copy()
             if self.mask == None:
                 self.mask=np.ones(self.datashape[:3])
                 msk=self.mask.ravel().copy()
