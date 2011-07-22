@@ -50,7 +50,7 @@ Here is a tiny usage example for dipy
   >>> data=img.get_data()
   >>> bvals=np.loadtxt(fbvals)
   >>> gradients=np.loadtxt(fbvecs).T
-  >>> ten=dti.Tensor(data,bvals,gradients,thresh=50)  
+  >>> ten=Tensor(data,bvals,gradients,thresh=50)  
   >>> FA=ten.fa()
   >>> MASK = FA < 0.2
 

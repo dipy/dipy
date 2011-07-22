@@ -9,20 +9,18 @@ def SticksAndBall(bvals,gradients,d=0.0015,S0=100,angles=[(0,0),(90,0)],fraction
     
     Parameters
     -----------
-    bvals: array, shape (N,)
-    gradients: array, shape (N,3) also known as bvecs
-    d: diffusivity value 
-    S0: unweighted signal value
-    angles: list of polar angles (in degrees) for the sticks
-    fractions: percentage of each stick
-    snr: signal to noise ration assuming gaussian noise. Provide None for no noise.
+    bvals : array, shape (N,)
+    gradients : array, shape (N,3) also known as bvecs
+    d : diffusivity value 
+    S0 : unweighted signal value
+    angles : list of polar angles (in degrees) for the sticks
+    fractions : percentage of each stick
+    snr : signal to noise ration assuming gaussian noise. Provide None for no noise.
     
     Returns
     --------
-    S: simulated signal
-    sticks: sticks in cartesian coordinates 
-    
-     
+    S : simulated signal
+    sticks : sticks in cartesian coordinates 
     
     """
     
@@ -34,10 +32,41 @@ def SticksAndBall(bvals,gradients,d=0.0015,S0=100,angles=[(0,0),(90,0)],fraction
     for (i,g) in enumerate(gradients[1:]):
         S[i+1]=f0*np.exp(-bvals[i+1]*d)+ np.sum([fractions[j]*np.exp(-bvals[i+1]*d*np.dot(s,g)**2) for (j,s) in enumerate(sticks)])
         S[i+1]=S0*S[i+1]    
-    S[0]=S0
-    
+    S[0]=S0    
     if snr!=None:
         std=S0/snr
         S=S+np.random.randn(len(S))*std
     
     return S,sticks
+
+def SingleTensor(bvals,gradients,S0,evals,evecs,snr=None):
+    """ Simulated signal with a Single Tensor
+     
+    Parameters
+    ----------- 
+    bvals : array, shape (N,)
+    gradients : array, shape (N,3) also known as bvecs
+    S0 : double,
+    evals : array, shape (3,) eigen values
+    evecs : array, shape (3,3) eigen vectors
+    snr : signal to noise ratio assuming gaussian noise. 
+        Provide None for no noise.
+    
+    Returns
+    --------
+    S : simulated signal
+    
+    
+    """
+    S=np.zeros(len(gradients))
+    D=np.dot(np.dot(evecs.T,np.diag(evals)),evecs)
+    #print D.shape    
+    for (i,g) in enumerate(gradients[1:]):
+        S[i+1]=S0*np.exp(-bvals[i+1]*np.dot(np.dot(g.T,D),g))
+    S[0]=S0
+    if snr!=None:
+        std=S0/snr
+        S=S+np.random.randn(len(S))*std
+    return S
+    
+
