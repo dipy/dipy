@@ -92,21 +92,20 @@ class Tensor(ModelArray):
 
     ### Eigenvalues Property ###
     @property
-    def evals(self, fillvalue=np.nan):
+    def evals(self):
         """
         Returns the eigenvalues of the tensor as an array
         """
-
-        return _filled(self.model_params[..., :3], fillvalue)
+        return _filled(self.model_params[..., :3])
 
     ### Eigenvectors Property ###
     @property
-    def evecs(self, fillvalue=np.nan):
+    def evecs(self):
         """
         Returns the eigenvectors of teh tensor as an array
 
         """
-        evecs = _filled(self.model_params[..., 3:], fillvalue)
+        evecs = _filled(self.model_params[..., 3:])
         return evecs.reshape(self.shape + (3, 3))
 
     def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
@@ -148,7 +147,7 @@ class Tensor(ModelArray):
         if not mask.all():
             #leave only data[mask is True]
             data = data[mask]
-            data = MaskedView(mask, data)
+            data = MaskedView(mask, data, fill_value=0)
 
         #Perform WLS fit on masked data
         dti_params = fit_method(B, data, *args, **kargs)
@@ -173,10 +172,10 @@ class Tensor(ModelArray):
         D = self._getD()
         return lower_triangular(D, b0)
 
-    def fa(self, fillvalue=np.nan):
+    def fa(self, fill_value=0):
         r"""
-        Fractional anisotropy (FA) calculated from cached eigenvalues. 
-        
+        Fractional anisotropy (FA) calculated from cached eigenvalues.
+
         Returns
         ---------
         fa : array (V, 1)
@@ -201,13 +200,12 @@ class Tensor(ModelArray):
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1*ev1 + ev2*ev2 + ev3*ev3))
         fa = wrap(np.asarray(fa))
-        return _filled(fa, fillvalue)
+        return _filled(fa, fill_value)
 
-    
     def md(self):
         r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues. 
-        
+        Mean diffusitivity (MD) calculated from cached eigenvalues.
+
         Returns
         ---------
         md : array (V, 1)
@@ -483,6 +481,40 @@ def lower_triangular(tensor, b0=None):
     D[..., :6] = tensor[..., row, colm]
     return D
 
+def tensor_eig_from_lo_tri(B, data):
+    """Calculates parameters for creating a Tensor instance
+
+    Calculates tensor parameters from the six unique tensor elements. This
+    function can be passed to the Tensor class as a fit_method for creating a
+    Tensor instance from tensors stored in a nifti file.
+
+    Parameters:
+    -----------
+    B :
+        not currently used
+    data : array_like (..., 6)
+        diffusion tensors elements stored in lower triangular order
+
+    Returns
+    -------
+    dti_params
+        Eigen values and vectors, used by the Tensor class to create an
+        instance
+    """
+    data, wrap = _makearray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dti_params = np.empty((len(data_flat), 4, 3))
+
+    for ii in xrange(len(data_flat)):
+        tensor = from_lower_triangular(data_flat[ii])
+        eigvals, eigvecs = decompose_tensor(tensor)
+        dti_params[ii, 0] = eigvals
+        dti_params[ii, 1:] = eigvecs
+
+    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params = wrap(dti_params)
+    return dti_params
+
 def decompose_tensor(tensor):
     """
     Returns eigenvalues and eigenvectors given a diffusion tensor
@@ -584,5 +616,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     return IN
 
 common_fit_methods = {'WLS': wls_fit_tensor,
-                      'LS': ols_fit_tensor}
+                      'LS': ols_fit_tensor,
+                      'from lower triangular': tensor_eig_from_lo_tri,
+                     }
 
