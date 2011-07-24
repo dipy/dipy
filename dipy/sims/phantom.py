@@ -67,7 +67,7 @@ def orbitual_phantom(bvals=None,
     snr : signal to noise ratio
         Used for applying rician noise to the data.
         Default 200. Common is 20. 
-    
+    background_noise : boolean, Default False
     
     Returns
     ---------
@@ -144,7 +144,6 @@ def orbitual_phantom(bvals=None,
 if __name__ == "__main__":
     
     ##TODO: this can become a nice tutorial for generating phantoms
-    
     
     def f(t):
         x=np.sin(t)
