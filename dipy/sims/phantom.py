@@ -2,8 +2,8 @@ import numpy as np
 from dipy.sims.voxel import SingleTensor
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data    
-from dipy.viz import fvtk
-from dipy.reconst.dti import Tensor
+#from dipy.viz import fvtk
+#from dipy.reconst.dti import Tensor
 
 def diff2eigenvectors(dx,dy,dz):
     """ numerical derivatives 2 eigenvectors 
@@ -33,7 +33,8 @@ def orbitual_phantom(bvals=None,
                      angles=np.linspace(0,2*np.pi,32),
                      radii=np.linspace(0.2,2,6),
                      S0=100.,
-                     snr=200.):
+                     snr=200.,
+                     background_noise=False):
     """ Create a phantom based on a 3d orbit f(t)->(x,y,z)
     
     Parameters
@@ -76,8 +77,8 @@ def orbitual_phantom(bvals=None,
     --------
     Crossings can be created by adding multiple orbitual_phantom outputs.
     
-    Example
-    --------
+    Examples
+    ---------
     
     def f(t):
         x=np.sin(t)
@@ -133,14 +134,17 @@ def orbitual_phantom(bvals=None,
             for j in range(len(angles)):
                 rb=np.dot(R,np.array([bx[j],by[j],bz[j]])) 
                 vol[x[i]+r*rb[0],y[i]+r*rb[1],z[i]+r*rb[2]]+=S
-    
-    ten=Tensor(vol,bvals,bvecs)
-    FA=ten.fa()
-    FA[np.isnan(FA)]=0
-    return FA
+        
+    #ten=Tensor(vol,bvals,bvecs)
+    #FA=ten.fa()
+    #FA[np.isnan(FA)]=0
+    return vol
 
 
 if __name__ == "__main__":
+    
+    ##TODO: this can become a nice tutorial for generating phantoms
+    
     
     def f(t):
         x=np.sin(t)
@@ -149,6 +153,40 @@ if __name__ == "__main__":
         z=np.linspace(-1,1,len(x))
         return x,y,z
     
-    FA=orbitual_phantom(func=f)
+    #helix
+    vol=orbitual_phantom(func=f)
+    
+    def f2(t):
+        x=np.linspace(-1,1,len(t))
+        y=np.linspace(-1,1,len(t))    
+        z=np.zeros(x.shape)
+        return x,y,z
 
+    #first direction
+    vol2=orbitual_phantom(func=f2)
+    
+    def f3(t):
+        x=np.linspace(-1,1,len(t))
+        y=-np.linspace(-1,1,len(t))    
+        z=np.zeros(x.shape)
+        return x,y,z
+
+    #second direction
+    vol3=orbitual_phantom(func=f3)
+    #double crossing
+    vol23=vol2+vol3
+    
+    def f4(t):
+        x=np.zeros(t.shape)
+        y=np.zeros(t.shape)
+        z=np.linspace(-1,1,len(t))
+        return x,y,z
+    
+    #triple crossing
+    vol4=orbitual_phantom(func=f4)
+    vol234=vol23+vol4
+    
+    #r=fvtk.ren()
+    #fvtk.add(r,fvtk.volume(vol234[...,0]))
+    #fvtk.show(r)
     
