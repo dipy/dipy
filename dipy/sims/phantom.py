@@ -27,26 +27,66 @@ def orbitual_phantom(bvals=None,
                      evals=np.array([1.4,.35,.35])*10**(-3),
                      func=None,
                      t=np.linspace(0,2*np.pi,1000),
-                     volshape=(64,64,64,65),
+                     datashape=(64,64,64,65),
                      origin=(32,32,32),
                      scale=(25,25,25),
                      angles=np.linspace(0,2*np.pi,32),
-                     radius=np.linspace(0.2,2,6),
+                     radii=np.linspace(0.2,2,6),
                      S0=100.,
                      snr=200.):
     """ Create a phantom based on a 3d orbit f(t)->(x,y,z)
     
     Parameters
     -----------
-    bvals : 
-    bvecs :
-    evals : 
-    func : user defined function f(t) 
+    bvals : array, shape (N,)
+    bvecs : array, shape (N,3)
+    evals : array, shape (3,)
+        tensor eigenvalues
+    func : user defined function f(t)->(x,y,z) 
+        It could be desirable for -1=<x,y,z <=1 
         if None creates a circular orbit
+    t : array, shape (K,)
+        represents time for the orbit
+        Default is np.linspace(0,2*np.pi,1000)
+    datashape : array, shape (X,Y,Z,W)
+        size of the output simulated data
+    origin : tuple, shape (3,)
+        define the center for the volume
+    scale : tuple, shape (3,)
+        scale the function before applying to the grid
+    angles : array, shape (L,)
+        density angle points, always perpendicular to the first eigen vector
+        Default np.linspace(0,2*np.pi,32),
+    radii : array, shape (M,)
+        thickness radii    
+        Default np.linspace(0.2,2,6)
+        angles and radii define the total thickness options 
+    S0 : double, simulated signal without diffusion gradients applied
+        Default 100.
+    snr : signal to noise ratio
+        Used for applying rician noise to the data.
+        Default 200. Common is 20. 
+    
     
     Returns
     ---------
+    data : array, shape (datashape)
     
+    Notes 
+    --------
+    Crossings can be created by adding multiple orbitual_phantom outputs.
+    
+    Example
+    --------
+    
+    def f(t):
+        x=np.sin(t)
+        y=np.cos(t)        
+        z=np.linspace(-1,1,len(x))
+        return x,y,z
+    
+    data=orbitual_phantom(func=f)
+        
     """
     
     if bvals==None:
@@ -76,7 +116,7 @@ def orbitual_phantom(bvals=None,
     by=np.sin(angles)
     bz=np.cos(angles)
     
-    vol=np.zeros(volshape)    
+    vol=np.zeros(datashape)    
     sigma=np.float(S0)/np.float(snr)
     
     #stop
@@ -89,7 +129,7 @@ def orbitual_phantom(bvals=None,
         #add racian noise
         S=np.sqrt((S+noise)**2+noise**2)        
         vol[x[i],y[i],z[i],:]+=S
-        for r in radius:
+        for r in radii:
             for j in range(len(angles)):
                 rb=np.dot(R,np.array([bx[j],by[j],bz[j]])) 
                 vol[x[i]+r*rb[0],y[i]+r*rb[1],z[i]+r*rb[2]]+=S
@@ -97,9 +137,8 @@ def orbitual_phantom(bvals=None,
     ten=Tensor(vol,bvals,bvecs)
     FA=ten.fa()
     FA[np.isnan(FA)]=0
-
     return FA
-        
+
 
 if __name__ == "__main__":
     
