@@ -188,6 +188,22 @@ def pdf_to_odf(cnp.ndarray[double, ndim=1] odf, \
 
     return
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
+                 cnp.ndarray[double, ndim=1] LEs,\
+                 cnp.ndarray[double, ndim=1] radius,\
+                 int odfn,int radiusn):
+    """ Expecting interpolated laplacian normalized signal and  then calculates the odf for that.
+    """    
+    cdef int m,i,j    
+    for m in range(odfn):
+        for i in range(radiusn):
+            odf[m]=odf[m]+PrIs[m*radiusn+i]*radius[i]*radius[i]
+
+    return
+
+
 
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maxima from `vals` given adjacent points
