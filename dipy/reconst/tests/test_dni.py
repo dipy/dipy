@@ -7,7 +7,7 @@ from dipy.viz import fvtk
 from dipy.data import get_data, get_sphere
 from dipy.reconst.recspeed import peak_finding
 from dipy.reconst.gqi import GeneralizedQSampling
-from dipy.reconst.dsi import DiffusionSpectrum
+from dipy.reconst.dni import DiffusionNabla
 from dipy.sims.voxel import SticksAndBall
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sphere 
@@ -24,6 +24,7 @@ def test_dsi():
     #pdf0,odf0,peaks0=standard_dsi_algorithm(S,bvals,bvecs)    
     S2=S.copy()
     S2=S2.reshape(1,len(S))
+    dn=DiffusionNabla(S2,bvals,bvecs)
     
     """
     ds=DiffusionSpectrum(S2,bvals,bvecs)    

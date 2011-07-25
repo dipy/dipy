@@ -182,9 +182,11 @@ def pdf_to_odf(cnp.ndarray[double, ndim=1] odf, \
     """ Expecting interpolated pdf then calculates the odf for that pdf
     """    
     cdef int m,i
-    for m in range(odfn):
-        for i in range(radiusn):
-            odf[m]=odf[m]+PrIs[m*radiusn+i]*radius[i]*radius[i]
+    
+    with nogil:
+        for m in range(odfn):
+            for i in range(radiusn):
+                odf[m]=odf[m]+PrIs[m*radiusn+i]*radius[i]*radius[i]
 
     return
 
@@ -193,13 +195,18 @@ def pdf_to_odf(cnp.ndarray[double, ndim=1] odf, \
 def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
                  cnp.ndarray[double, ndim=1] LEs,\
                  cnp.ndarray[double, ndim=1] radius,\
-                 int odfn,int radiusn):
+                 int odfn,\
+                 int radiusn,\
+                 int anglesn):
     """ Expecting interpolated laplacian normalized signal and  then calculates the odf for that.
     """    
     cdef int m,i,j    
-    for m in range(odfn):
-        for i in range(radiusn):
-            odf[m]=odf[m]+PrIs[m*radiusn+i]*radius[i]*radius[i]
+    
+    with nogil:    
+        for m in range(odfn):
+            for i in range(radiusn):
+                for j in range(anglesn):
+                    odf[m]=odf[m]-LEs[(m*radiusn+i)*anglesn+j]*radius[i]
 
     return
 
