@@ -77,8 +77,8 @@ class DiffusionNabla(object):
         qtable=np.floor(qtable+.5)
         self.qtable=qtable             
         #odf collecting radius
-        self.radius=np.arange(2.1,6,.4)
-        self.radiusn=len(self.radius)         
+        self.radius=np.arange(2.1,6,.2)
+        self.radiusn=len(self.radius)       
         #calculate r - hanning filter free parameter
         #r = np.sqrt(qtable[:,0]**2+qtable[:,1]**2+qtable[:,2]**2)    
         #setting hanning filter width and hanning        
@@ -87,17 +87,17 @@ class DiffusionNabla(object):
         self.q=qtable+self.origin
         self.q=self.q.astype('i8')
         #peak threshold
-        self.peak_thr=2.
+        self.peak_thr=20.
         #calculate coordinates of equators
         self.radon_params()
         #precompute coordinates for pdf interpolation
         self.Xs=self.precompute_interp_coords()        
-                
+        
         if auto:
             self.fit()        
         
         
-    def radon_params(self,ang_res=32):
+    def radon_params(self,ang_res=64):
         #calculate radon integration parameters
         phis=np.linspace(0,2*np.pi,ang_res)
         planars=[]
@@ -120,7 +120,8 @@ class DiffusionNabla(object):
             GFA=np.zeros((x*y*z))
             IN=np.zeros((x*y*z,5))
             NFA=np.zeros((x*y*z,5))
-            QA=np.zeros((x*y*z,5))            
+            QA=np.zeros((x*y*z,5))
+            PK=np.zeros((x*y*z,5))        
             if self.mask != None:
                 if self.mask.shape[:3]==self.datashape[:3]:
                     msk=self.mask.ravel().copy()
@@ -135,6 +136,7 @@ class DiffusionNabla(object):
             IN=np.zeros((x,5))
             NFA=np.zeros((x,5))
             QA=np.zeros((x,5))
+            PK=np.zeros((x,5))
             if self.mask != None:
                 if mask.shape[0]==self.datashape[0]:
                     msk=self.mask.ravel().copy()
@@ -159,20 +161,23 @@ class DiffusionNabla(object):
                 if len(peaks)>0:
                     ismallp=np.where(peaks/peaks.min()<self.peak_thr)                                                                        
                     l=ismallp[0][0]
-                    if l<5:                                        
+                    if l<5:                       
                         IN[i][:l] = inds[:l]
                         NFA[i][:l] = GFA[i]
                         QA[i][:l] = peaks[:l]-np.min(odf)
+                        PK[i][:l] = peaks[:l]
         if len(self.datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
             self.NFA=NFA.reshape(x,y,z,5)
             self.QA=QA.reshape(x,y,z,5)/glob_norm_param
-            self.IN=IN.reshape(x,y,z,5)
+            self.PK=PK.reshape(x,y,z,5)
+            self.IN=IN.reshape(x,y,z,5)            
             self.QA_norm=glob_norm_param            
         if len(self.datashape) == 2:
             self.GFA=GFA
             self.NFA=NFA
             self.QA=QA
+            self.PK=PK
             self.IN=IN
             self.QA_norm=None
         
@@ -226,6 +231,8 @@ class DiffusionNabla(object):
         return self.NFA
     def qa(self):
         return self.QA
+    def pk(self):
+        return self.PK
     def ind(self):
         """ peak indices
         """
