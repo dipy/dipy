@@ -149,29 +149,22 @@ def add_rician_noise(vol,snr=20):
     voln : array, same shape as vol
         vol with additional rician noise
         
-        
+    Reference
+    ----------
+    http://my.fit.edu/~kozaitis/Matlab/MatNoiseIm.html   
     """ 
     
-    if len(vol.shape)==4:
-                
-        voln=np.random.rand(*vol.shape[:3])
-        pvol=np.sum(vol[...,0]**2) #power of initial volume
-        pnoise=np.sum(np.random.rand(*voln.shape[:3])**2) #power of noise volume    
-        K=pvol/pnoise
-        print pvol,pnoise,K
-        noise1=np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)
-        
-        voln=np.random.rand(*vol.shape[:3])
-        pvol=np.sum(vol[...,0]**2) #power of initial volume
-        pnoise=np.sum(np.random.rand(*voln.shape[:3])**2) #power of noise volume    
-        K=pvol/pnoise
-        print pvol,pnoise, K
-        noise2=np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)
-        
-        
-            
+    if len(vol.shape)==4:        
+        def gaussian_noise(vol):
+            voln=np.random.randn(*vol.shape[:3])
+            pvol=np.sum(vol[...,0]**2) #power of initial volume
+            pnoise=np.sum(np.random.randn(*voln.shape[:3])**2) #power of noise volume    
+            K=pvol/pnoise
+            #print pvol,pnoise,K
+            return np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)                
+        noise1=gaussian_noise(vol)
+        noise2=gaussian_noise(vol)
     return np.sqrt((vol+noise1)**2+noise2**2)
-
 
 def add_gaussian_noise(vol,snr=20):
     """ add gaussian noise in a 4D array with a specific snr
@@ -189,14 +182,13 @@ def add_gaussian_noise(vol,snr=20):
         
     Reference
     ----------
-    http://my.fit.edu/~kozaitis/Matlab/MatNoiseIm.html    
-    
+    http://my.fit.edu/~kozaitis/Matlab/MatNoiseIm.html
     """
     
     if len(vol.shape)==4:        
-        voln=np.random.rand(*vol.shape[:3])
+        voln=np.random.randn(*vol.shape[:3])
         pvol=np.sum(vol[...,0]**2) #power of initial volume
-        pnoise=np.sum((np.random.rand(*voln.shape)-.5)**2) #power of noise volume    
+        pnoise=np.sum((np.random.randn(*voln.shape)-.5)**2) #power of noise volume    
         K=pvol/pnoise
         print pvol,pnoise,K
         noise=np.sqrt(K/np.float(snr))*(np.random.randn(*vol.shape))    
@@ -221,9 +213,7 @@ if __name__ == "__main__":
         return x,y,z
     
     #helix
-    vol=orbital_phantom(func=f)
-    
-    stop
+    vol=orbital_phantom(func=f)   
     
     def f2(t):
         x=np.linspace(-1,1,len(t))
@@ -241,12 +231,10 @@ if __name__ == "__main__":
         return x,y,z
 
     #second direction
-    #vol3=orbital_phantom(func=f3)
+    vol3=orbital_phantom(func=f3)
     #double crossing
     vol23=vol2+vol3
-    
-     
-    
+       
     #"""
     def f4(t):
         x=np.zeros(t.shape)
@@ -257,6 +245,9 @@ if __name__ == "__main__":
     #triple crossing
     vol4=orbital_phantom(func=f4)
     vol234=vol23+vol4
+    
+    voln=add_rician_noise(vol234)
+    
     #"""
     
     #r=fvtk.ren()
