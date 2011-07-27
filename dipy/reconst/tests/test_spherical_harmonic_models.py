@@ -271,7 +271,7 @@ def test_NearestNeighborInterpolator():
     a, b, c = np.ogrid[0:6,0:6,0:6]
     data = a+b+c
 
-    nni = NearestNeighborInterpolator(data)
+    nni = NearestNeighborInterpolator(data, (1,1,1))
     a, b, c = np.mgrid[0:6:.6, 0:6:.6, .0:6:.6]
     for ii in xrange(a.size):
         x = a.flat[ii]

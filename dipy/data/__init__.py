@@ -46,6 +46,8 @@ def sample_tracking_seedNtarget():
     target_img = load(pjoin(THIS_DIR, 'mcR.nii.gz'))
     target_mask = target_img.get_data() > 0
 
+    return seed_mask, target_mask
+
 def get_sim_voxels(name='fib1'):
     """ provide some simulated voxel data
 
