@@ -1,51 +1,102 @@
 from numpy import abs, array, asarray, atleast_3d, broadcast_arrays, cos, \
-                  dot, empty, floor, mgrid, pi, sqrt
+                  dot, empty, floor, mgrid, pi, signbit, sqrt, vstack
 
-pn_edge = array([[0], [1]])
+class FactPropogator(object):
+    """Used for fact fiber tracking"""
+    def __init__(self, voxel_size=(1,1,1), overstep=1e-1):
+        """Creates a propogator instance
 
-def propagate(voxel_location, cur_step, vox_size, over_step=1e-1):
-    """takes a step just past the edge of the next voxel along cur_step
+        Parameters:
+        -----------
+        voxel_size : array-like
+            Size of voxels in data volume
+        overstep : float
+            A small number used to prevent the track from getting stuck at the
+            edge of a voxel.
+        """
+        self.overstep = overstep
+        self.voxel_size = asarray(voxel_size)
 
-    given a location and a cur_step, finds the smallest step needed to move
-    into the next voxel
+    def propagate(self, location, step):
+        """takes a step just past the edge of the next voxel along step
+
+        given a location and a step, finds the smallest step needed to move
+        into the next voxel
+
+        Parameters:
+        -----------
+        location : array-like, (3,)
+            location to propagate
+        step : array-like, (3,)
+            direction in 3 space to propagate along
+        """
+        space = location % self.voxel_size
+        dist = self.voxel_size*(~signbit(step)) - space
+        step_sizes = dist/step
+        smallest_step = step_sizes.min()
+        assert smallest_step >= 0
+        smallest_step += self.overstep
+        new_location = location + smallest_step*step
+        return new_location
+
+class FixedStepPropogator(object):
+    def __init__(self, step_size=.5):
+        self.step_size = step_size
+    def propagate(self, location, step):
+        """Takes a step of step_size from location"""
+        new_location = self.step_size*step + location
+        return new_loctation
+
+def track_streamlines(stepper, propogator, seeds, start_steps):
+    """Creates streamlines using a stepper and propogator
+
+    Creates streamlines starting at each of the seeds, and integrates them
+    using the propogator, getting the direction of each step from stepper.
+
+    Parameters:
+    -----------
+    stepper : object with next_step method
+        The next_step method should take a location, (x, y, z) cordinates in
+        3-space, and the previous step, a unit vector in 3-space, and return a
+        new step
+    propogator : object with a propagate method
+        The propagate method should take a location and a step, as defined
+        above and return a new location.
+    seeds : array-like (N, 3)
+        Locations where to start tracking.
+    start_steps : array-like
+        start_steps should be broadcastable with seeds and is used in place of
+        prev_step when determining the initial step for each seed.
+
+    Returns:
+    --------
+    tracks : list
+        Each element of tracks is a streamline, an (M, 3) array of coordinates
+        in 3-space.
     """
-
-    #change cur_step from mm to vox dim
-    vox_step = cur_step/vox_size
-
-    space = voxel_location % 1
-    dist = pn_edge - space
-    step_size = dist/vox_step
-    step_size = step_size.ravel()
-    step_size.sort()
-    #because all values in space are > 0 and < 1, 3 step_sizes are < 0 and 3
-    #are > 0, take the smallest step > 0
-    if step_size[3] == 0:
-        raise ValueError('step_size[3] should not be zero')
-    smallest_step = step_size[3] + over_step
-    new_loc = voxel_location + smallest_step*vox_step
-
-    #we need to know cur_step to pass to the next propagation step
-    return new_loc
-
-def fact_tracking(voxel_model, seeds, start_steps, over_step=1e-1):
-    all_tracks = []
+    start_steps = asarray(start_steps)
+    norm_start_steps = sqrt((start_steps*start_steps).sum(-1))
+    norm_start_steps = norm_start_steps.reshape((-1, 1))
+    start_steps = start_steps/norm_start_steps
     seeds, start_steps = broadcast_arrays(seeds, start_steps)
-    next_step = voxel_model.next_step
-    vox_size = voxel_model.vox_size
+
+    all_tracks = []
+    next_step = stepper.next_step
+    propagate = propogator.propagate
     for ii in xrange(len(seeds)):
-        vox_loc = seeds[ii]
+        location = seeds[ii]
         step = start_steps[ii]
-        track = [vox_loc]
-        step = next_step(vox_loc, step)
+        track = [location]
+        step = next_step(location, step)
         while step is not None:
-            vox_loc = propagate(vox_loc, step, vox_size, over_step)
-            track.append(vox_loc)
-            step = next_step(vox_loc, step)
-        all_tracks.append(array(track)*vox_size)
+            location = propagate(location, step)
+            track.append(location)
+            step = next_step(location, step)
+        all_tracks.append(array(track))
     return all_tracks
 
-class FactTensorModel(object):
+class TensorStepper(object):
+    """Used for tracking diffusion tensors, has next_step method"""
     def _get_angel_limit(self):
         return arccos(self.dot_limit)*180/pi
     def _set_angel_limit(self, angle):
@@ -55,76 +106,44 @@ class FactTensorModel(object):
             raise ValueError("angle should be between 0 and 180")
     angel_limit = property(_get_angel_limit, _set_angel_limit)
 
-    def from_tensor(tensor, fa_limit=None, angle_limit=None):
+    def __init__(self, voxel_size, fa_limit=None, angle_limit=None,
+                 fa_vol=None, evec1_vol=None):
+        self.voxel_size = voxel_size
+        self.fa_limit = fa_limit
+        self.angle_limit = angle_limit
+        if fa_vol.shape != evec1_vol.shape[:-1]:
+            msg = "the fa and eigen vector volumes are not the same shape"
+            raise ValueError(msg)
+        if evec1_vol.shape[-1] != 3:
+            msg = "eigen vector volume should have vecetors of length 3 " + \
+                  "along the last dimmension"
+            raise ValueError(msg)
+        self.fa_vol = fa_vol
+        self.evec1_vol = evec1_vol
+
+    def from_tensor(tensor):
         self.fa_vol = tensor.fa()
         self.evec1_vol = tensor.evec[..., 0]
-        if fa_limit is not None:
-            self.fa_limit = fa_limit
-        if angle_limit is not None:
-            self.angel_limit = angle_limit
 
-    def next_step(vox_loc, prev_step):
-        vox_loc = vox_loc.astype('int')
-        if self.fa_vol[vox_loc] < self.fa_limit:
-            return False
-        step = self.evec1_vol[vox_loc]
+    def next_step(location, prev_step):
+        """Returns the nearest neighbor tensor for location"""
+        vox_loc = location/self.voxel_size
+        vox_loc = tuple(int(ii) for ii in vox_loc)
+        try:
+            if self.fa_vol[vox_loc] < self.fa_limit:
+                return
+            step = self.evec1_vol[vox_loc]
+        except IndexError:
+            return
         angle_dot = dot(step, prev_step)
         if abs(angle_dot) < self.dot_limit:
-            return False
+            return
         if angle_dot > 0:
             return step
         else:
             return -step
 
-def track_tensor(evec1_vol, fa_vol, start_loc, start_step, vox_size, fa_limit,
-                 angle_limit):
-    """makes tracks using tensor starting from stat_loc"""
-
-    #evec1_vol = tensor.evecs[...,0]
-    #fa_vol = tensor.fa()
-    dot_limit = cos(pi*angle_limit/180)
-
-    all_tracks = []
-
-    for vox_loc in start_loc:
-        track = [vox_loc]
-        cur_step, fa = get_tensor_info(vox_loc, evec1_vol, fa_vol)
-        if dot(cur_step, start_step) > 0:
-            prev_step = cur_step
-        else:
-            prev_step = -cur_step
-        while keep_tracking(cur_step, prev_step, fa, fa_limit, dot_limit):
-            if dot(cur_step, prev_step) < 0:
-                cur_step = -cur_step
-            vox_loc, prev_step = propagate(vox_loc, cur_step, prev_step,
-                                           vox_size)
-            track.append(vox_loc)
-            cur_step, fa = get_tensor_info(vox_loc, evec1_vol, fa_vol)
-        if len(track) > 1:
-            all_tracks.append((array(track)*vox_size, None, None))
-
-    return all_tracks
-
-def get_tensor_info(vox_loc, evec1_vol, fa_vol):
-    """returns ev1 and fa for a given location"""
-    ind = vox_loc.asytpe('int')
-    step = evec1_vol[ind[0], ind[1], ind[2]]
-    fa = fa_vol[ind[0], ind[1], ind[2]]
-    return step, fa
-
-def keep_tracking(cur_step, prev_step, fa, fa_limit, dot_limit):
-    """checks the fa_limit and dot_limit for the current location"""
-
-    if fa < fa_limit:
-        return False
-
-    d = dot(cur_step, prev_step)
-    if abs(d) < dot_limit:
-        return False
-
-    return True
-
-def seeds_from_mask(mask, density):
+def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
     """Takes a binary mask and returns seeds in voxels != 0
 
     places evanly spaced points in nonzero voxels of mask, spaces the points
@@ -136,7 +155,7 @@ def seeds_from_mask(mask, density):
     mask = atleast_3d(mask)
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
-    density = array(density, 'int')
+    density = asarray(density, 'int')
     sp = empty(3)
     sp[:] = 1./density
 
@@ -149,18 +168,37 @@ def seeds_from_mask(mask, density):
         seeds.append(s.ravel())
 
     seeds = array(seeds).T
+    seeds *= voxel_size
     return seeds
 
-def target(tracks, voxel_dim, mask):
-    assert mask.ndim == 3
+def target(tracks, target_mask, voxel_size):
+    """Retain tracks that pass though target_mask
+
+    Parameters:
+    -----------
+    tracks
+        A squence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline
+    target_mask : array-like
+        A mask used as a target
+    voxel_size
+        Size of the voxels in the target_mask
+
+    Returns:
+    tracks
+        A sequence of streamlines that pass though target_mask
+    """
     result_tracks = []
     for ii in tracks:
-        ind = (ii/voxel_dim).T.astype('int')
+        ind = (ii/voxel_size).astype('int')
+        i, j, k = ind.T
         try:
-            state = mask[ind[0], ind[1], ind[2]]
+            state = target_mask[i, j, k]
         except IndexError:
-            1./0
-        else:
-            if state.any():
-                result_tracks.append(ii)
+            vol_dim = (i.max(), j.max(), k.max())
+            msg = "traget_mask is too small, target_mask should be at least "+\
+                  str(vol_dim)
+            raise ValueError(msg)
+        if state.any():
+            result_tracks.append(ii)
     return result_tracks

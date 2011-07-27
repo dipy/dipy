@@ -484,12 +484,13 @@ def bootstrap_data_voxel(data, H, R, permute=None, min_signal=0):
     r = dot(data, R.T)
     r = r[permute]
     d = dot(data, H.T) + r
-    d = maximum(min_signal, d)
+    maximum(min_signal, d, d)
     return d
 
 class Interpolator(object):
-    def __init__(self, data, mask=None):
+    def __init__(self, data, voxel_size, mask=None):
         self._data = data
+        self._voxel_size = asarray(voxel_size, 'float')
         if mask is not None:
             self._mask = asarray(mask, 'bool')
         else:
@@ -498,39 +499,36 @@ class Interpolator(object):
 class NearestNeighborInterpolator(Interpolator):
 
     def __getitem__(self, index):
-        try:
-            index = tuple(int(ii) for ii in index)
-        except ValueError:
-            index = int(index)
-
+        index = index/self._voxel_size
+        index = tuple(index.astype('int'))
         if self._mask is not None:
             if self._mask[index] == False:
                 raise IndexError("mask is False at index")
         return self._data[index]
 
-class TrilinearInterpolator(Interpolator):
+class LinearInterpolator(Interpolator):
 
     def __getitem__(self, index):
-        try:
-            for ii in index:
-                if ii < .5:
-                    raise IndexError
-        except TypeError:
-            if index < .5:
-                raise IndexError
-            index = (index,)
+        index = index/self._voxel_size
+        if index.min() < .5:
+            smallest_index = tuple(self._voxel_size/2)
+            msg = "Index too small, smallest indices allowed are " + \
+                  str(smallest_index)
+            raise IndexError(msg)
+        floor_index = (index-.5).astype('int')
+        resid = (index-.5) % 1
 
-        floor_index = tuple(int(ii-.5) for ii in index)
-        ind = ix_(*[[ii, ii+1] for ii in floor_index])
-        d = self._data[ind]
-        w = tuple((ii-.5) % 1 for ii in index)
-        weights = ix_(*[[1.-ii, ii] for ii in w])
+        weights = ix_(*[(1.-ii, ii) for ii in resid])
         weights = reduce(mul, weights)
-        pres = d.shape[len(index):]
+        ind = ix_(*[(ii, ii+1) for ii in floor_index])
+        d = self._data[ind]
+
+        shape_result = d.shape[len(index):]
         weights.shape += (d.ndim-len(index))*(1,)
         d = weights*d
-        d.shape = (-1,) + pres
+        d.shape = (-1,) + shape_result
         d = d.sum(0)
+
         return d
 
 class ResidualBootstrapWrapper(Interpolator):
@@ -653,13 +651,10 @@ class ClosestPeakSelector(object):
         sampling_points = self._model.sampling_points
         sampling_edges = self._model.sampling_edges
         samples = self._model.evaluate(vox_data)
-        if vox_data.min() < 0:
-            print vox_data
-            print samples
 
         peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
         peak_points = sampling_points[peak_inds]
         peak_points = _robust_peaks(peak_points, peak_values,
                                     self.min_relative_peak, self.peak_spacing)
-        return _closest_peak(peak_points, prev_step, self.dot_limit)
-
+        step = _closest_peak(peak_points, prev_step, self.dot_limit)
+        return step
