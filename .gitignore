@@ -4,6 +4,12 @@
 *.c
 *.png
 *.gz
+*.dpy
+*.npy
+*.img
+*.hdr
+*.mat
+*.pkl
 build
 *~
 doc/_build
