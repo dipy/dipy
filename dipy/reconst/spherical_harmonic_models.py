@@ -146,8 +146,6 @@ def smooth_pinv(B, L):
     inv = pinv(concatenate((B, L)))
     return inv[:, :len(B)]
 
-nierror = NotImplementedError("User must implement this method in a subclass")
-
 class SphHarmModel(object):
     @property
     def sampling_points(self):
@@ -207,7 +205,7 @@ class SphHarmModel(object):
         ----------
         sampling_points : ndarray (n, 3), dtype=float
             The x, y, z coordinates of n points on a unit sphere.
-        sampling_edges : ndarray (m, 2), dtype=int
+        sampling_edges : ndarray (m, 2), dtype=int, optional
             Indices to sampling_points so that every unique pair of neighbors
             in sampling_points is one of the m edges.
 
@@ -223,7 +221,9 @@ class SphHarmModel(object):
         self._sampling_edges = sampling_edges
 
     def _set_fit_matrix(self, *args):
-        raise nierror
+        """Should be set in a sublcass and is called by __init__"""
+        msg = "User must implement this method in a subclass"
+        raise NotImplementedError(msg)
 
 class MonoExpOpdfModel(SphHarmModel):
     """Implementaion of Solid Angle method with mono-exponential assumtion
@@ -301,7 +301,7 @@ class SlowAdcOpdfModel(SphHarmModel):
         ----------
         sampling_points : ndarray (n, 3), dtype=float
             The x, y, z coordinates of n points on a unit sphere.
-        sampling_edges : ndarray (m, 2), dtype=int
+        sampling_edges : ndarray (m, 2), dtype=int, optional
             Indices to sampling_points so that every unique pair of neighbors
             in sampling_points is one of the m edges.
 
@@ -323,7 +323,7 @@ class SlowAdcOpdfModel(SphHarmModel):
         """The fit matrix, is used by fit_data to return the coefficients of
         the model"""
         delta_b, delta_q = self._fit_matrix
-        return _opdf_product(data, delta_b, delta_q)
+        return _slowadc_formula(data, delta_b, delta_q)
 
     def evaluate(self, data):
         """Fits the model to diffusion data and evaluates the model at
@@ -340,9 +340,10 @@ class SlowAdcOpdfModel(SphHarmModel):
 
         """
         delta_b, delta_q = self._sampling_matrix
-        return _opdf_product(data, delta_b, delta_q)
+        return _slowadc_formula(data, delta_b, delta_q)
 
-def _opdf_product(data, delta_b, delta_q):
+def _slowadc_formula(data, delta_b, delta_q):
+    """formula used in SlowAdcOpdfModel"""
     logd = -log(data)
     return dot(logd*(1.5-logd)*data, delta_q.T) - dot(data, delta_b.T)
 
@@ -403,6 +404,7 @@ def normalize_data(data, bval, min_signal=1e-5):
     return dwi
 
 def gfa(samples):
+    """gfa of some function from a set of samples os that function"""
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
     numer = n*(diff*diff).sum(-1)
@@ -479,6 +481,7 @@ def bootstrap_data_array(data, H, R, permute=None):
     return dot(data, (H+R).T)
 
 def bootstrap_data_voxel(data, H, R, permute=None, min_signal=0):
+    """Like bootstrap_data_array but faster when for a single voxel"""
     if permute is None:
         permute = randint(data.shape[-1], size=data.shape[-1])
     r = dot(data, R.T)
@@ -488,6 +491,7 @@ def bootstrap_data_voxel(data, H, R, permute=None, min_signal=0):
     return d
 
 class Interpolator(object):
+    """Class to be subclassed by different interpolator types"""
     def __init__(self, data, voxel_size, mask=None):
         self._data = data
         self._voxel_size = asarray(voxel_size, 'float')
@@ -497,6 +501,7 @@ class Interpolator(object):
             self._mask = None
 
 class NearestNeighborInterpolator(Interpolator):
+    """Interpolates data using nearest neighbor interpolation"""
 
     def __getitem__(self, index):
         index = index/self._voxel_size
