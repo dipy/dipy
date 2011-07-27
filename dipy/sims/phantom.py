@@ -22,7 +22,7 @@ def diff2eigenvectors(dx,dy,dz):
     return eigs, R
 
 
-def orbitual_phantom(bvals=None,
+def orbital_phantom(bvals=None,
                      bvecs=None,
                      evals=np.array([1.4,.35,.35])*10**(-3),
                      func=None,
@@ -32,9 +32,7 @@ def orbitual_phantom(bvals=None,
                      scale=(25,25,25),
                      angles=np.linspace(0,2*np.pi,32),
                      radii=np.linspace(0.2,2,6),
-                     S0=100.,
-                     snr=200.,
-                     background_noise=False):
+                     S0=100.):
     """ Create a phantom based on a 3d orbit f(t)->(x,y,z)
     
     Parameters
@@ -118,7 +116,7 @@ def orbitual_phantom(bvals=None,
     bz=np.cos(angles)
     
     vol=np.zeros(datashape)    
-    sigma=np.float(S0)/np.float(snr)
+    
     
     #stop
     
@@ -126,9 +124,6 @@ def orbitual_phantom(bvals=None,
         evecs,R=diff2eigenvectors(dx[i],dy[i],dz[i])        
         S=SingleTensor(bvals,bvecs,S0,evals,evecs,snr=None)
         #print sigma, S0/snr, S0, snr
-        noise=np.random.normal(0,sigma)
-        #add racian noise
-        S=np.sqrt((S+noise)**2+noise**2)        
         vol[x[i],y[i],z[i],:]+=S
         for r in radii:
             for j in range(len(angles)):
@@ -139,6 +134,70 @@ def orbitual_phantom(bvals=None,
     #FA=ten.fa()
     #FA[np.isnan(FA)]=0
     return vol
+
+def add_rician_noise(vol,snr=20):
+    """ add rician noise in 4D diffusion data   
+    
+    Parameters
+    -----------
+    vol : array, shape (X,Y,Z,W) or (X,W)    
+    snr : float, 
+        signal to noise ratio
+    
+    Returns
+    --------
+    voln : array, same shape as vol
+        vol with additional rician noise
+        
+        
+    Notes
+    ------
+    What is here is wrong! You know it and I know it. Try to call this function
+    if you can. If it does work send an e-mail with subject [dipy->church->miracles]
+    """ 
+      
+    if len(vol.shape)==4: 
+        x,y,z,g=vol.shape
+        V=vol.reshape(x*y*z,g)    
+    for (i,v) in enumerate(V):
+        sigma=np.float(v[0])/np.float(snr)
+        print sigma
+        for (j,s) in enumerate(v):
+            noisea=np.random.normal(0,sigma)
+            noiseb=np.random.normal(0,sigma)       
+            V[i,j]=np.sqrt((s+noisea)**2+noiseb**2)        
+    if len(vol.shape)==4:
+        return V.reshape(x,y,z,g)
+    return V
+
+
+def add_gaussian_noise(vol,snr=20):
+    """ add gaussian noise in an array with a specific snr
+    
+    Parameters
+    -----------
+    vol : array, shape (X,Y,Z,W) or (X,Y,Z) or (X,W)    
+    snr : float, 
+        signal to noise ratio
+    
+    Returns
+    --------
+    voln : array, same shape as vol
+        vol with additional rician noise    
+    """
+    
+    voln=np.random.randn(*vol.shape)
+    pvol=np.sum(vol**2) #power of initial volume
+    pnoise=np.sum(np.random.randn(*voln.shape)**2) #power of noise volume    
+    K=pvol/pnoise
+    noise=np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)    
+    return vol+noise
+    
+    
+            
+    
+    
+
 
 
 if __name__ == "__main__":
@@ -153,7 +212,7 @@ if __name__ == "__main__":
         return x,y,z
     
     #helix
-    vol=orbitual_phantom(func=f)
+    vol=orbital_phantom(func=f)
     
     def f2(t):
         x=np.linspace(-1,1,len(t))
@@ -162,7 +221,7 @@ if __name__ == "__main__":
         return x,y,z
 
     #first direction
-    vol2=orbitual_phantom(func=f2)
+    vol2=orbital_phantom(func=f2)
     
     def f3(t):
         x=np.linspace(-1,1,len(t))
@@ -171,10 +230,12 @@ if __name__ == "__main__":
         return x,y,z
 
     #second direction
-    vol3=orbitual_phantom(func=f3)
+    vol3=orbital_phantom(func=f3)
     #double crossing
     vol23=vol2+vol3
     
+    
+    #"""
     def f4(t):
         x=np.zeros(t.shape)
         y=np.zeros(t.shape)
@@ -182,10 +243,11 @@ if __name__ == "__main__":
         return x,y,z
     
     #triple crossing
-    vol4=orbitual_phantom(func=f4)
+    vol4=orbital_phantom(func=f4)
     vol234=vol23+vol4
+    #"""
     
     #r=fvtk.ren()
     #fvtk.add(r,fvtk.volume(vol234[...,0]))
     #fvtk.show(r)
-    
+    #vol234n=add_rician_noise(vol234,20)

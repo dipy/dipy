@@ -2,6 +2,8 @@
 *.pyd
 *.so
 *.c
+*.png
+*.gz
 build
 *~
 doc/_build
