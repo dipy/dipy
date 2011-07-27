@@ -140,7 +140,7 @@ def add_rician_noise(vol,snr=20):
     
     Parameters
     -----------
-    vol : array, shape (X,Y,Z,W) or (X,W)    
+    vol : array, shape (X,Y,Z,W)
     snr : float, 
         signal to noise ratio
     
@@ -150,33 +150,35 @@ def add_rician_noise(vol,snr=20):
         vol with additional rician noise
         
         
-    Notes
-    ------
-    What is here is wrong! You know it and I know it. Try to call this function
-    if you can. If it does work send an e-mail with subject [dipy->church->miracles]
     """ 
-      
-    if len(vol.shape)==4: 
-        x,y,z,g=vol.shape
-        V=vol.reshape(x*y*z,g)    
-    for (i,v) in enumerate(V):
-        sigma=np.float(v[0])/np.float(snr)
-        print sigma
-        for (j,s) in enumerate(v):
-            noisea=np.random.normal(0,sigma)
-            noiseb=np.random.normal(0,sigma)       
-            V[i,j]=np.sqrt((s+noisea)**2+noiseb**2)        
+    
     if len(vol.shape)==4:
-        return V.reshape(x,y,z,g)
-    return V
+                
+        voln=np.random.rand(*vol.shape[:3])
+        pvol=np.sum(vol[...,0]**2) #power of initial volume
+        pnoise=np.sum(np.random.rand(*voln.shape[:3])**2) #power of noise volume    
+        K=pvol/pnoise
+        print pvol,pnoise,K
+        noise1=np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)
+        
+        voln=np.random.rand(*vol.shape[:3])
+        pvol=np.sum(vol[...,0]**2) #power of initial volume
+        pnoise=np.sum(np.random.rand(*voln.shape[:3])**2) #power of noise volume    
+        K=pvol/pnoise
+        print pvol,pnoise, K
+        noise2=np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)
+        
+        
+            
+    return np.sqrt((vol+noise1)**2+noise2**2)
 
 
 def add_gaussian_noise(vol,snr=20):
-    """ add gaussian noise in an array with a specific snr
+    """ add gaussian noise in a 4D array with a specific snr
     
     Parameters
     -----------
-    vol : array, shape (X,Y,Z,W) or (X,Y,Z) or (X,W)    
+    vol : array, shape (X,Y,Z,W) 
     snr : float, 
         signal to noise ratio
     
@@ -184,13 +186,20 @@ def add_gaussian_noise(vol,snr=20):
     --------
     voln : array, same shape as vol
         vol with additional rician noise    
+        
+    Reference
+    ----------
+    http://my.fit.edu/~kozaitis/Matlab/MatNoiseIm.html    
+    
     """
     
-    voln=np.random.randn(*vol.shape)
-    pvol=np.sum(vol**2) #power of initial volume
-    pnoise=np.sum(np.random.randn(*voln.shape)**2) #power of noise volume    
-    K=pvol/pnoise
-    noise=np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)    
+    if len(vol.shape)==4:        
+        voln=np.random.rand(*vol.shape[:3])
+        pvol=np.sum(vol[...,0]**2) #power of initial volume
+        pnoise=np.sum((np.random.rand(*voln.shape)-.5)**2) #power of noise volume    
+        K=pvol/pnoise
+        print pvol,pnoise,K
+        noise=np.sqrt(K/np.float(snr))*(np.random.randn(*vol.shape))    
     return vol+noise
     
     
@@ -214,6 +223,8 @@ if __name__ == "__main__":
     #helix
     vol=orbital_phantom(func=f)
     
+    stop
+    
     def f2(t):
         x=np.linspace(-1,1,len(t))
         y=np.linspace(-1,1,len(t))    
@@ -230,10 +241,11 @@ if __name__ == "__main__":
         return x,y,z
 
     #second direction
-    vol3=orbital_phantom(func=f3)
+    #vol3=orbital_phantom(func=f3)
     #double crossing
     vol23=vol2+vol3
     
+     
     
     #"""
     def f4(t):
