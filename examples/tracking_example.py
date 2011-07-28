@@ -66,7 +66,7 @@ def main():
 
     """
     Uncomment this to save tracks
-    """
+    
     trk_tracks = [(streamline, None, None) for streamline in tracks]
     trgt_trk_tracks = [(streamline, None, None) for streamline in targeted_tracks]
 
@@ -76,7 +76,7 @@ def main():
     trk_hdr['dim'] = fa.shape
     write('example_tracks_before_target.trk', trk_tracks, trk_hdr)
     write('example_tracks_after_target.trk', trgt_trk_tracks, trk_hdr)
-
+    """
 
 if __name__ == "__main__":
     main()
