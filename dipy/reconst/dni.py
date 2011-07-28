@@ -96,7 +96,6 @@ class DiffusionNabla(object):
         if auto:
             self.fit()        
         
-        
     def radon_params(self,ang_res=64):
         #calculate radon integration parameters
         phis=np.linspace(0,2*np.pi,ang_res)
@@ -109,8 +108,7 @@ class DiffusionNabla(object):
             R=vec2vec_rotmat(np.array([0,0,1]),v)  
             planarsR.append(np.dot(R,planars.T).T)        
         self.equators=planarsR
-        self.equatorn=len(phis)
-        
+        self.equatorn=len(phis)        
         
     def fit(self):
         #memory allocations for 4D volumes 
@@ -203,10 +201,8 @@ class DiffusionNabla(object):
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
         return odf
     
-    def precompute_interp_coords(self):
-        
-        Xs=[]
-        
+    def precompute_interp_coords(self):        
+        Xs=[]        
         for m in range(self.odfn):
             for q in self.radius:                
                     #print disk.shape
