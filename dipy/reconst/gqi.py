@@ -52,7 +52,7 @@ class GeneralizedQSampling(object):
     dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
     """
     def __init__(self, data, bvals, gradients,
-                 Lambda=1.2, odf_sphere='symmetric362', mask=None,squared=False,auto=True):
+                 Lambda=1.2, odf_sphere='symmetric362', mask=None,squared=False,auto=True,save_odfs=False):
         r""" Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
         quintuple crossings if your datasets support them.
@@ -79,7 +79,9 @@ class GeneralizedQSampling(object):
         auto : boolean, default True 
             if True then the processing of all voxels will start automatically 
             with the class constructor,if False then you will have to call .fit()
-            in order to do the heavy duty processing for every voxel      
+            in order to do the heavy duty processing for every voxel
+        save_odfs : boolean, default False
+            save odfs, which is memory expensive
 
         Key Properties
         ---------------
@@ -101,8 +103,11 @@ class GeneralizedQSampling(object):
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.odf_vertices=odf_vertices
         self.odf_faces=odf_faces
+        self.odfn=len(self.odf_vertices)
         self.mask=mask
         self.data=data
+        self.save_odfs=save_odfs
+        
         # 0.01506 = 6*D where D is the free water diffusion coefficient 
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
@@ -137,6 +142,8 @@ class GeneralizedQSampling(object):
             S=S.reshape(x*y*z,g)
             QA = np.zeros((x*y*z,5))
             IN = np.zeros((x*y*z,5))
+            if self.save_odfs:
+                ODF=np.zeros((x*y*z,self.odfn))  
             if self.mask != None:
                 if self.mask.shape[:3]==datashape[:3]:
                     msk=self.mask.ravel().copy()
@@ -148,10 +155,12 @@ class GeneralizedQSampling(object):
             x,g= S.shape
             QA = np.zeros((x,5))
             IN = np.zeros((x,5))
+            if self.save_odfs:
+                ODF=np.zeros((x,self.odfn))            
             if self.mask != None:
                 if self.mask.shape[0]==datashape[0]:
                     msk=self.mask.ravel().copy()
-            if mask == None:
+            if self.mask == None:
                 self.mask=np.ones(datashape[:1])
                 msk=self.mask.ravel().copy()
         glob_norm_param = 0        
@@ -161,11 +170,14 @@ class GeneralizedQSampling(object):
         for (i,s) in enumerate(S):                            
             if msk[i]>0:
                 #Q to ODF
-                odf=np.dot(s,self.q2odf_params)            
+                odf=np.dot(s,self.q2odf_params)
+                min_odf=np.min(odf)
+                if self.save_odfs:
+                    ODF[i]=odf-min_odf            
                 peaks,inds=rp.peak_finding(odf,self.odf_faces)            
                 glob_norm_param=max(np.max(odf),glob_norm_param)
                 #remove the isotropic part
-                peaks = peaks - np.min(odf)
+                peaks = peaks - min_odf
                 l=min(len(peaks),5)
                 QA[i][:l] = peaks[:l]
                 IN[i][:l] = inds[:l]
@@ -175,10 +187,14 @@ class GeneralizedQSampling(object):
         if len(datashape) == 4:
             self.QA=QA.reshape(x,y,z,5)    
             self.IN=IN.reshape(x,y,z,5)  
+            if self.save_odfs:
+                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])
             self.QA_norm= glob_norm_param         
         if len(datashape) == 2:
             self.QA=QA
             self.IN=IN 
+            if self.save_odfs:
+                self.ODF=ODF
             self.QA_norm=None           
         self.glob_norm_param = glob_norm_param
 
@@ -215,6 +231,9 @@ class GeneralizedQSampling(object):
 
         """
         return np.dot(s,self.q2odf_params)
+
+    def odfs(self):
+        return self.ODF
 
     def npa(self,s,width=5):
         """ non-parametric anisotropy

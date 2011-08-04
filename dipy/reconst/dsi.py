@@ -12,7 +12,7 @@ class DiffusionSpectrum(object):
     by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM 2005
         
     '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,half_sphere_grads=False,auto=True):
+    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,half_sphere_grads=False,auto=True,save_odfs=False):
         '''
         Parameters
         -----------
@@ -30,7 +30,9 @@ class DiffusionSpectrum(object):
         auto : boolean, default True 
             if True then the processing of all voxels will start automatically 
             with the class constructor,if False then you will have to call .fit()
-            in order to do the heavy duty processing for every voxel  
+            in order to do the heavy duty processing for every voxel
+        save_odfs : boolean, default False
+            save odfs, which is memory expensive  
 
         See also
         ----------
@@ -42,6 +44,7 @@ class DiffusionSpectrum(object):
         self.odf_vertices=odf_vertices
         self.odf_faces=odf_faces
         self.odfn=len(self.odf_vertices)
+        self.save_odfs=save_odfs
         
         #check if bvectors are provided only on a hemisphere
         if half_sphere_grads==True:
@@ -84,10 +87,11 @@ class DiffusionSpectrum(object):
         #peak threshold
         self.peak_thr=2.        
         #precompute coordinates for pdf interpolation
-        self.Xs=self.precompute_interp_coords()        
+        self.precompute_interp_coords()        
         #
         if auto:
             self.fit()        
+    
         
     def fit(self):
         #memory allocations for 4D volumes 
@@ -97,7 +101,9 @@ class DiffusionSpectrum(object):
             GFA=np.zeros((x*y*z))
             IN=np.zeros((x*y*z,5))
             NFA=np.zeros((x*y*z,5))
-            QA=np.zeros((x*y*z,5))            
+            QA=np.zeros((x*y*z,5))
+            if self.save_odfs:
+                ODF=np.zeros((x*y*z,self.odfn))            
             if self.mask != None:
                 if self.mask.shape[:3]==self.datashape[:3]:
                     msk=self.mask.ravel().copy()
@@ -112,6 +118,8 @@ class DiffusionSpectrum(object):
             IN=np.zeros((x,5))
             NFA=np.zeros((x,5))
             QA=np.zeros((x,5))
+            if self.save_odfs:
+                ODF=np.zeros((x,self.odfn))
             if self.mask != None:
                 if mask.shape[0]==self.datashape[0]:
                     msk=self.mask.ravel().copy()
@@ -128,6 +136,8 @@ class DiffusionSpectrum(object):
                 Pr=self.pdf(s)           
                 #calculate the orientation distribution function        
                 odf=self.odf(Pr)
+                if self.save_odfs:
+                    ODF[i]=odf
                 #normalization for QA
                 glob_norm_param=max(np.max(odf),glob_norm_param)
                 #calculate the generalized fractional anisotropy
@@ -147,12 +157,16 @@ class DiffusionSpectrum(object):
             self.NFA=NFA.reshape(x,y,z,5)
             self.QA=QA.reshape(x,y,z,5)/glob_norm_param
             self.IN=IN.reshape(x,y,z,5)
+            if self.save_odfs:
+                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])
             self.QA_norm=glob_norm_param            
         if len(self.datashape) == 2:
             self.GFA=GFA
             self.NFA=NFA
             self.QA=QA
             self.IN=IN
+            if self.save_odfs:
+                self.ODF=ODF
             self.QA_norm=None
         
     def pdf(self,s):
@@ -194,6 +208,9 @@ class DiffusionSpectrum(object):
         pdf_to_odf(odf,PrIs, self.radius,self.odfn,self.radiusn) 
         return odf
     
+    def odfs(self):
+        return self.ODF
+    
     def precompute_interp_coords(self):
         Xs=[]
         for m in range(self.odfn):
@@ -201,7 +218,7 @@ class DiffusionSpectrum(object):
             yi=self.origin+self.radius*self.odf_vertices[m,1]
             zi=self.origin+self.radius*self.odf_vertices[m,2]
             Xs.append(np.vstack((xi,yi,zi)).T)
-        return np.concatenate(Xs).T
+        self.Xs=np.concatenate(Xs).T
     
     def std_over_rsm(self,odf):
         numer=len(odf)*np.sum((odf-np.mean(odf))**2)

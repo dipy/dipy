@@ -17,7 +17,7 @@ class DiffusionNabla(object):
     
     As described in E.Garyfallidis PhD thesis, 2011.           
     '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,half_sphere_grads=False,auto=True):
+    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,half_sphere_grads=False,auto=True,save_odfs=False):
         '''
         Parameters
         -----------
@@ -35,7 +35,9 @@ class DiffusionNabla(object):
         auto : boolean, default True 
             if True then the processing of all voxels will start automatically 
             with the class constructor,if False then you will have to call .fit()
-            in order to do the heavy duty processing for every voxel  
+            in order to do the heavy duty processing for every voxel
+        save_odfs : boolean, default False
+            save odfs, which is memory expensive
 
         See also
         ----------
@@ -47,6 +49,7 @@ class DiffusionNabla(object):
         self.odf_vertices=odf_vertices
         self.odf_faces=odf_faces
         self.odfn=len(self.odf_vertices)
+        self.save_odfs=save_odfs
         
         #check if bvectors are provided only on a hemisphere
         if half_sphere_grads==True:
@@ -112,7 +115,9 @@ class DiffusionNabla(object):
             IN=np.zeros((x*y*z,5))
             NFA=np.zeros((x*y*z,5))
             QA=np.zeros((x*y*z,5))
-            PK=np.zeros((x*y*z,5))        
+            PK=np.zeros((x*y*z,5))
+            if self.save_odfs:
+                ODF=np.zeros((x*y*z,self.odfn))        
             if self.mask != None:
                 if self.mask.shape[:3]==self.datashape[:3]:
                     msk=self.mask.ravel().copy()
@@ -128,6 +133,8 @@ class DiffusionNabla(object):
             NFA=np.zeros((x,5))
             QA=np.zeros((x,5))
             PK=np.zeros((x,5))
+            if self.save_odfs:
+                ODF=np.zeros((x,self.odfn))
             if self.mask != None:
                 if mask.shape[0]==self.datashape[0]:
                     msk=self.mask.ravel().copy()
@@ -142,6 +149,8 @@ class DiffusionNabla(object):
             if msk[i]>0:
                 #calculate the orientation distribution function        
                 odf=self.odf(s)
+                if self.save_odfs:
+                    ODF[i]=odf
                 #normalization for QA
                 glob_norm_param=max(np.max(odf),glob_norm_param)
                 #calculate the generalized fractional anisotropy
@@ -162,7 +171,9 @@ class DiffusionNabla(object):
             self.NFA=NFA.reshape(x,y,z,5)
             self.QA=QA.reshape(x,y,z,5)/glob_norm_param
             self.PK=PK.reshape(x,y,z,5)
-            self.IN=IN.reshape(x,y,z,5)            
+            self.IN=IN.reshape(x,y,z,5)
+            if self.save_odfs:
+                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])            
             self.QA_norm=glob_norm_param            
         if len(self.datashape) == 2:
             self.GFA=GFA
@@ -170,6 +181,8 @@ class DiffusionNabla(object):
             self.QA=QA
             self.PK=PK
             self.IN=IN
+            if self.save_odfs:
+                self.ODF=ODF
             self.QA_norm=None
         
     def odf(self,s):
@@ -194,10 +207,13 @@ class DiffusionNabla(object):
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
         return odf
     
+    def odfs(self):
+        return self.ODF
+    
     def precompute_interp_coords(self):        
         Xs=[]        
         for m in range(self.odfn):
-            for q in self.radius:                
+            for q in self.radius:           
                     #print disk.shape
                     xi=self.origin + q*self.equators[m][:,0]
                     yi=self.origin + q*self.equators[m][:,1]
