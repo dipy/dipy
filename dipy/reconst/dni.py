@@ -62,39 +62,32 @@ class DiffusionNabla(object):
         self.dn=data.shape[-1]        
         self.data=data
         self.datashape=data.shape #initial shape  
-        self.mask=mask                     
-        #3d volume for Sq
-        self.sz=16
-        #necessary shifting for centering
-        self.origin=8
-        #hanning filter width
-        self.filter_width=32.        
-        #create the q-table from bvecs and bvals        
-        bv=bvals
-        bmin=np.sort(bv)[1]
-        bv=np.sqrt(bv/bmin)
-        qtable=np.vstack((bv,bv,bv)).T*gradients
-        qtable=np.floor(qtable+.5)
-        self.qtable=qtable             
-        #odf collecting radius
+        self.mask=mask
+        #odf sampling radius  
         self.radius=np.arange(2.1,6,.2)
-        self.radiusn=len(self.radius)       
-        #calculate r - hanning filter free parameter
-        #r = np.sqrt(qtable[:,0]**2+qtable[:,1]**2+qtable[:,2]**2)    
-        #setting hanning filter width and hanning        
-        #self.filter=.5*np.cos(2*np.pi*r/self.filter_width)        
-        #center and index in qspace volume
-        self.q=qtable+self.origin
-        self.q=self.q.astype('i8')
+        self.radiusn=len(self.radius)
+        self.create_qspace(bvals,gradients,16,8)
         #peak threshold
         self.peak_thr=20.
         #calculate coordinates of equators
         self.radon_params()
         #precompute coordinates for pdf interpolation
-        self.Xs=self.precompute_interp_coords()        
+        self.precompute_interp_coords()        
         
         if auto:
-            self.fit()        
+            self.fit() 
+    
+    def create_qspace(self,bvals,gradients,size,origin):
+        bv=bvals
+        bmin=np.sort(bv)[1]
+        bv=np.sqrt(bv/bmin)
+        qtable=np.vstack((bv,bv,bv)).T*gradients
+        qtable=np.floor(qtable+.5)
+        self.qtable=qtable
+        self.q=qtable+origin
+        self.q=self.q.astype('i8')
+        self.origin=origin
+        self.sz=size
         
     def radon_params(self,ang_res=64):
         #calculate radon integration parameters
@@ -210,7 +203,7 @@ class DiffusionNabla(object):
                     yi=self.origin + q*self.equators[m][:,1]
                     zi=self.origin + q*self.equators[m][:,2]        
                     Xs.append(np.vstack((xi,yi,zi)).T)
-        return np.concatenate(Xs).T
+        self.Xs=np.concatenate(Xs).T
         
     
     def std_over_rsm(self,odf):
