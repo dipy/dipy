@@ -71,11 +71,11 @@ class DiffusionNabla(object):
         self.datashape=data.shape #initial shape  
         self.mask=mask
         #odf sampling radius  
-        self.radius=np.arange(2.1,6,.2)
+        self.radius=np.arange(0,6,.2)
         self.radiusn=len(self.radius)
         self.create_qspace(bvals,gradients,16,8)
         #peak threshold
-        self.peak_thr=20.
+        self.peak_thr=3.
         #calculate coordinates of equators
         self.radon_params()
         #precompute coordinates for pdf interpolation
@@ -164,15 +164,20 @@ class DiffusionNabla(object):
                 GFA[i]=self.std_over_rsm(odf)
                 #find peaks
                 peaks,inds=peak_finding(odf,self.odf_faces)
-                #remove small peaks
-                if len(peaks)>0:
-                    ismallp=np.where(peaks/peaks.min()<self.peak_thr)                                                                        
+                #remove small peaks                
+                if np.var(peaks)>5000:
+                    if self.laplacian:
+                        ismallp=np.where(peaks[0]/peaks>self.peak_thr)
+                    else:
+                        ismallp=np.where(peaks[0]/peaks<self.peak_thr)
                     l=ismallp[0][0]
-                    if l<5:                       
+                    #print ismallp[0][0]
+                    if l<5:
                         IN[i][:l] = inds[:l]
                         NFA[i][:l] = GFA[i]
                         QA[i][:l] = peaks[:l]-np.min(odf)
                         PK[i][:l] = peaks[:l]
+                    
         if len(self.datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
             self.NFA=NFA.reshape(x,y,z,5)
@@ -200,7 +205,7 @@ class DiffusionNabla(object):
         for i in range(self.dn):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
         if self.laplacian:
-            LEq=laplace(Eq)            
+            LEq=laplace(Eq)         
         else:
             LEq=Eq
         self.Eq=Eq

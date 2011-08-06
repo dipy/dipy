@@ -14,133 +14,107 @@ from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sp
 from scipy.ndimage import map_coordinates
 from dipy.utils.spheremakers import sphere_vf_from
 
+def sim_data(bvals,bvecs,d=0.0015,S0=100,snr=None):
+    
+    data=np.zeros((14,len(bvals)))
+    #isotropic
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(90,0),(90,90)], 
+                          fractions=[0,0,0], snr=snr)
+    data[0]=S.copy()
+    #one fiber    
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(30, 0),(90,0),(90,90)], 
+                          fractions=[100,0,0], snr=snr)
+    data[1]=S.copy()
+    #two fibers
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(90,0),(90,90)], 
+                          fractions=[50,50,0], snr=snr)
+    data[2]=S.copy()
+    #three fibers
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(90,0),(90,90)], 
+                          fractions=[33,33,33], snr=snr)
+    data[3]=S.copy()
+    #three fibers iso
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(90,0),(90,90)], 
+                          fractions=[23,23,23], snr=snr)
+    data[4]=S.copy()
+    #three fibers more iso
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(90,0),(90,90)], 
+                          fractions=[13,13,13], snr=snr)
+    data[5]=S.copy()
+    #three fibers one at 60
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(60,0),(90,90)], 
+                          fractions=[33,33,33], snr=snr)
+    data[6]=S.copy()    
+    
+    #three fibers one at 90,90 one smaller
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(60,0),(90,90)], 
+                          fractions=[33,33,23], snr=snr)
+    data[7]=S.copy()
+    
+    #three fibers one at 90,90 one even smaller
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(60,0),(90,90)], 
+                          fractions=[33,33,13], snr=snr)
+    data[8]=S.copy()
+    
+    #two fibers one at 60 one even smaller
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(60,0),(90,90)], 
+                          fractions=[50,30,0], snr=snr)
+    data[9]=S.copy()
+    
+    #two fibers one at 30 one at 60 even smaller
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(20,0),(90,90)], 
+                          fractions=[50,50,0], snr=snr)
+    data[10]=S.copy()
+    
+    #one fiber one at 30 but small
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(30, 0),(60,0),(90,90)], 
+                          fractions=[60,0,0], snr=snr)
+    data[11]=S.copy()
+    
+    #one fiber one at 30 but even smaller
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(0, 0),(60,0),(90,90)], 
+                          fractions=[30,0,0], snr=snr)
+    data[12]=S.copy()
+    
+    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
+                          angles=[(30, 0),(60,0),(90,90)], 
+                          fractions=[0,0,0], snr=snr)
+    data[13]=S.copy()
+    
+    return data
 
-def test_dsi():
+if __name__ == '__main__':
+#def test_dni():
  
     btable=np.loadtxt(get_data('dsi515btable'))    
     bvals=btable[:,0]
-    bvecs=btable[:,1:]        
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)    
-    #pdf0,odf0,peaks0=standard_dsi_algorithm(S,bvals,bvecs)    
-    S2=S.copy()
-    S2=S2.reshape(1,len(S))
-    dn=DiffusionNabla(S2,bvals,bvecs)
-    
-    """
-    ds=DiffusionSpectrum(S2,bvals,bvecs)    
-    assert_almost_equal(np.sum(ds.pdf(S)-pdf0),0)
-    assert_almost_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
-    
-    #compare gfa
-    psi=odf0/odf0.max()
-    numer=len(psi)*np.sum((psi-np.mean(psi))**2)
-    denom=(len(psi)-1)*np.sum(psi**2) 
-    GFA=np.sqrt(numer/denom)    
-    assert_almost_equal(ds.gfa()[0],GFA)
-    
-    #compare indices
-    #print ds.ind()    
-    #print peak_finding(odf0,odf_faces)
-    #print peaks0
-    data=np.zeros((3,3,3,515))
-    data[:,:,:]=S    
-    ds=DiffusionSpectrum(data,bvals,bvecs)
-    
-    ds2=DiffusionSpectrum(data,bvals,bvecs,auto=False)
-    r = np.sqrt(ds2.qtable[:,0]**2+ds2.qtable[:,1]**2+ds2.qtable[:,2]**2)    
-    ds2.filter=.5*np.cos(2*np.pi*r/32)
-    ds2.fit()
-    assert_almost_equal(np.sum(ds2.qa()-ds.qa()),0)
-    
-    #1 fiber
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[100,0,0], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
-    assert_equal(np.sum(QA>0),1)
-    
-    #2 fibers
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
-    assert_equal(np.sum(QA>0),2)
-    
-    #3 fibers
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
-    assert_equal(np.sum(QA>0),3)
-    
-    #isotropic
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[0,0,0], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
-    assert_equal(np.sum(QA>0),0)
-    """
-    
-
-    
-if __name__ == '__main__':
-
-    #fname='/home/eg309/Data/project01_dsi/connectome_0001/tp1/RAWDATA/OUT/mr000001.nii.gz'
-    #fname='/home/eg309/Data/project02_dsi/PH0005/tp1/RAWDATA/OUT/PH0005_1.MR.5_100.ima.nii.gz'
-    fname='/home/eg309/Data/project03_dsi/tp2/RAWDATA/OUT/mr000001.nii.gz'
-    
-    
-    import nibabel as nib
-    from dipy.reconst.dsi import DiffusionSpectrum
-    from dipy.reconst.dti import Tensor
-    from dipy.data import get_data
-    
-    btable=np.loadtxt(get_data('dsi515btable'))
-    bvals=btable[:,0]
     bvecs=btable[:,1:]
-    img=nib.load(fname)
-    data=img.get_data()
-    print data.shape   
+    data=sim_data(bvals,bvecs)
     
-    mask=data[:,:,:,0]>50
-    #D=data[20:90,20:90,18:22]
-    #D=data[40:44,40:44,18:22]    
-    #del data
-    D=data
+    dn=DiffusionNabla(data,bvals,bvecs,save_odfs=True)
+    pks=dn.pk()
+    #assert_array_equal(np.sum(pks>0,axis=1),
+    #                   np.array([0, 1, 2, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1, 0]))
     
-    from time import time
+    odfs=dn.odfs()
+    peaks,inds=peak_finding(odfs[10],dn.odf_faces)
     
-    t0=time()    
-    ds=DiffusionSpectrum(D,bvals,bvecs,mask=mask)
-    t1=time()
-    print t1-t0,' secs'
+
     
-    GFA=ds.gfa()
-    
-    t2=time()
-    ten=Tensor(D,bvals,bvecs,mask=mask)
-    t3=time()
-    print t3-t2,' secs'
-    
-    FA=ten.fa()
-    
-    from dipy.tracking.propagation import EuDX
-    
-    IN=ds.ind()
-    
-    eu=EuDX(ten.fa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
-    tracks=[e for e in eu]
-    
-    #FAX=np.zeros(IN.shape)
-    #for i in range(FAX.shape[-1]):
-    #    FAX[:,:,:,i]=GFA
-    
-    eu2=EuDX(ds.gfa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
-    tracks2=[e for e in eu2]
-    
-    """
-    from dipy.viz import fvtk
-    r=fvtk.ren()
-    fvtk.add(r,fvtk.line(tracks,fvtk.red))
-    fvtk.add(r,fvtk.line(tracks2,fvtk.green))
-    fvtk.show(r)
-    """
+
 
 
 
