@@ -17,7 +17,11 @@ class DiffusionNabla(object):
     
     As described in E.Garyfallidis PhD thesis, 2011.           
     '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,half_sphere_grads=False,auto=True,save_odfs=False):
+    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', 
+                 mask=None,
+                 half_sphere_grads=False,
+                 auto=True,
+                 save_odfs=False,laplacian=True):
         '''
         Parameters
         -----------
@@ -76,6 +80,8 @@ class DiffusionNabla(object):
         self.radon_params()
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()        
+        #calculate laplacian
+        self.laplacian=laplacian
         
         if auto:
             self.fit() 
@@ -149,6 +155,7 @@ class DiffusionNabla(object):
             if msk[i]>0:
                 #calculate the orientation distribution function        
                 odf=self.odf(s)
+                #odf=odf/self.odf(np.ones(s.shape))
                 if self.save_odfs:
                     ODF[i]=odf
                 #normalization for QA
@@ -186,26 +193,23 @@ class DiffusionNabla(object):
             self.QA_norm=None
         
     def odf(self,s):
-        """ 
-        """
+        """ Calculate the orientation distribution function 
+        """        
         odf = np.zeros(self.odfn)
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        LEq=laplace(Eq)        
-        
-        """
-        azimsums=[]
-        for disk in self.planarsR:
-            diskshift=4*disk+self.origin
-            LEq0=map_coordinates(LEq,diskshift.T,order=1)
-            azimsums.append(np.sum(LEq0))        
-        #pdf_to_odf(odf,PrIs, self.radius,self.odfn,self.radiusn) 
-        return -np.array(azimsums)
-        """
+        if self.laplacian:
+            LEq=laplace(Eq)            
+        else:
+            LEq=Eq
+        self.Eq=Eq
         LEs=map_coordinates(LEq,self.Xs,order=1)        
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
-        return odf
+        if self.laplacian:
+            return odf
+        else:
+            return -odf#-(odf-odf.max())
     
     def odfs(self):
         return self.ODF
