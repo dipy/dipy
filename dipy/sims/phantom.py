@@ -89,7 +89,7 @@ def orbital_phantom(bvals=None,
     """
     
     if bvals==None:
-        fimg,fbvals,fbvecs=get_data('small_64D')    
+        fimg,fbvals,fbvecs=get_data('small_64D')
         bvals=np.load(fbvals)
         bvecs=np.load(fbvecs)
         bvecs[np.isnan(bvecs)]=0
@@ -115,10 +115,7 @@ def orbital_phantom(bvals=None,
     by=np.sin(angles)
     bz=np.cos(angles)
     
-    vol=np.zeros(datashape)    
-    
-    
-    #stop
+    vol=np.zeros(datashape)
     
     for i in range(len(dx)):
         evecs,R=diff2eigenvectors(dx[i],dy[i],dz[i])        
