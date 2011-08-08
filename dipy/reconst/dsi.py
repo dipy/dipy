@@ -141,7 +141,7 @@ class DiffusionSpectrum(object):
                 #normalization for QA
                 glob_norm_param=max(np.max(odf),glob_norm_param)
                 #calculate the generalized fractional anisotropy
-                GFA[i]=self.std_over_rsm(odf)
+                GFA[i]=self.std_over_rms(odf)
                 #find peaks
                 peaks,inds=peak_finding(odf,self.odf_faces)
                 #remove small peaks
@@ -220,7 +220,7 @@ class DiffusionSpectrum(object):
             Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T
     
-    def std_over_rsm(self,odf):
+    def std_over_rms(self,odf):
         numer=len(odf)*np.sum((odf-np.mean(odf))**2)
         denom=(len(odf)-1)*np.sum(odf**2)        
         return np.sqrt(numer/denom)

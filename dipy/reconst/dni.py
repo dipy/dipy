@@ -100,7 +100,7 @@ class DiffusionNabla(object):
         
     def radon_params(self,ang_res=64):
         #calculate radon integration parameters
-        phis=np.linspace(0,2*np.pi,ang_res)
+        phis=np.linspace(0,2*np.pi,ang_res)[:-1]
         planars=[]
         for phi in phis:
             planars.append(sphere2cart(1,np.pi/2,phi))
@@ -161,16 +161,18 @@ class DiffusionNabla(object):
                 #normalization for QA
                 glob_norm_param=max(np.max(odf),glob_norm_param)
                 #calculate the generalized fractional anisotropy
-                GFA[i]=self.std_over_rsm(odf)
+                GFA[i]=self.std_over_rms(odf)
                 #find peaks
                 peaks,inds=peak_finding(odf,self.odf_faces)
                 #remove small peaks                
                 if np.var(peaks)>5000:
+                    print peaks
                     if self.laplacian:
                         ismallp=np.where(peaks[0]/peaks>self.peak_thr)
                     else:
                         ismallp=np.where(peaks[0]/peaks<self.peak_thr)
                     l=ismallp[0][0]
+                    
                     #print ismallp[0][0]
                     if l<5:
                         IN[i][:l] = inds[:l]
@@ -231,7 +233,7 @@ class DiffusionNabla(object):
         self.Xs=np.concatenate(Xs).T
         
     
-    def std_over_rsm(self,odf):
+    def std_over_rms(self,odf):
         numer=len(odf)*np.sum((odf-np.mean(odf))**2)
         denom=(len(odf)-1)*np.sum(odf**2)        
         return np.sqrt(numer/denom)
