@@ -171,7 +171,10 @@ class DiffusionNabla(object):
                         ismallp=np.where(peaks[0]/peaks>self.peak_thr)
                     else:
                         ismallp=np.where(peaks[0]/peaks<self.peak_thr)
-                    l=ismallp[0][0]
+                    if len(ismallp[0])>0:
+                        l=ismallp[0][0]
+                    else:
+                        l=0
                     
                     #print ismallp[0][0]
                     if l<5:

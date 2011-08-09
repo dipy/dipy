@@ -59,8 +59,8 @@ def SingleTensor(bvals,gradients,S0,evals,evecs,snr=None):
     
     """
     S=np.zeros(len(gradients))
-    D=np.dot(np.dot(evecs.T,np.diag(evals)),evecs)
-    #print D.shape    
+    D=np.dot(np.dot(evecs,np.diag(evals)),evecs.T)    
+    #print D.shape
     for (i,g) in enumerate(gradients[1:]):
         S[i+1]=S0*np.exp(-bvals[i+1]*np.dot(np.dot(g.T,D),g))
     S[0]=S0
