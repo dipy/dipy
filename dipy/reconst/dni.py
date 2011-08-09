@@ -174,8 +174,7 @@ class DiffusionNabla(object):
                     if len(ismallp[0])>0:
                         l=ismallp[0][0]
                     else:
-                        l=0
-                    
+                        l=0                    
                     #print ismallp[0][0]
                     if l<5:
                         IN[i][:l] = inds[:l]
