@@ -14,8 +14,7 @@ data.reshape(...) and parmas.reshape(...).
 from operator import mul
 from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
                   broadcast_arrays, c_, concatenate, cos, diag, dot, empty, \
-                  eye, log, minimum, maximum, pi, r_, repeat, sqrt, eye, ix_, \
-                  floor
+                  eye, log, minimum, maximum, pi, r_, repeat, sqrt, eye, ix_
 from numpy.linalg import inv, pinv, svd
 from numpy.random import randint
 from scipy.special import sph_harm, lpn
@@ -416,7 +415,7 @@ def _robust_peaks(peak_points, peak_values, min_relative_value,
     """Removes peaks that are too small and child peaks too close to a parent
     peak
     """
-    if peak_points.ndim == 1:
+    if peak_points.ndim == 1 or len(peak_points) == 1:
         return peak_points
     min_value = peak_values[0] * min_relative_value
     good_peaks = peak_points[0:1]
@@ -514,18 +513,18 @@ class NearestNeighborInterpolator(Interpolator):
 class LinearInterpolator(Interpolator):
 
     def __getitem__(self, index):
-        index = index/self._voxel_size
-        if index.min() < .5:
+        index = index/self._voxel_size - .5
+        if index.min() < 0:
             smallest_index = tuple(self._voxel_size/2)
             msg = "Index too small, smallest indices allowed are " + \
                   str(smallest_index)
             raise IndexError(msg)
-        floor_index = (index-.5).astype('int')
-        resid = (index-.5) % 1
+        resid = index % 1
+        index = index.astype('int')
 
         weights = ix_(*[(1.-ii, ii) for ii in resid])
         weights = reduce(mul, weights)
-        ind = ix_(*[(ii, ii+1) for ii in floor_index])
+        ind = ix_(*[(ii, ii+1) for ii in index])
         d = self._data[ind]
 
         shape_result = d.shape[len(index):]
@@ -633,23 +632,23 @@ class ClosestPeakSelector(object):
         else:
             self.dot_limit = dot_limit
 
-    def next_step(self, vox_loc, prev_step):
-        """Returns the peak closest to prev_step at vox_loc
+    def next_step(self, location, prev_step):
+        """Returns the peak closest to prev_step at location
 
-        Fits the data from vox_loc using model and evaluates that model on the
+        Fits the data from location using model and evaluates that model on the
         surface of a sphere. Then the point on the sphere which is both a
         local maxima and closest to prev_step is returned.
 
         Parameters
         ----------
-        vox_loc : point in space
-            vox_loc is passed to the interpolator in order to get data
+        location : point in space
+            location is passed to the interpolator in order to get data
         prev_step: array_like (3,)
             the direction of the previous tracking step
 
         """
         try:
-            vox_data = self._interpolator[vox_loc]
+            vox_data = self._interpolator[location]
         except IndexError:
             return
 

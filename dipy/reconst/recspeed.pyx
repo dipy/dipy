@@ -36,6 +36,85 @@ cdef inline float* asfp(cnp.ndarray pt):
 cdef inline double* asdp(cnp.ndarray pt):
     return <double *>pt.data
 
+def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data, 
+                     cnp.ndarray[cnp.float_t, ndim=1] index,
+                     cnp.ndarray[cnp.float_t, ndim=1] voxel_size):
+    """Interpolates data at index
+
+    Interpolates data from a 4d volume, first 3 dimenssions are x, y, z the
+    last dimenssion holds data.
+    """
+    cdef:
+        float x = index[0] / voxel_size[0] - .5
+        float y = index[1] / voxel_size[1] - .5
+        float z = index[2] / voxel_size[2] - .5
+        int x_ind = <int> x
+        int y_ind = <int> y
+        int z_ind = <int> z
+        int ii, jj, kk, LL
+        int last_d = data.shape[3]
+        cnp.ndarray[cnp.float_t, ndim=1] result=np.zeros(last_d)
+    x = x % 1
+    y = y % 1
+    z = z % 1
+
+    for ii from 0 <= ii <= 1:
+        for jj from 0 <= jj <= 1:
+            for kk from 0 <= kk <= 1:
+                weight = wght(ii, x)*wght(jj, y)*wght(kk, z)
+                for LL from 0 <= LL < last_d:
+                    result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
+    return result
+
+def wght(bint i, float r):
+    if i == 1:
+        return r
+    else:
+        return 1.-r
+
+def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
+                  cnp.ndarray[cnp.float_t, ndim=1] peak_values,
+                  float min_relative_value, float closest_neighbor):
+    """Faster version of shm._robust_peaks
+    """
+    """some assumptions,
+    1)  peak_values are sorted largest to smallest
+    2)  peak_vetices are unit vectors
+    3)  closest neighbor is cos(angle) where angle is smallest permiisible
+        angle between between two robust peaks
+    """
+    cdef:
+        cnp.ndarray[cnp.float_t, ndim=1] inst
+        float min_value = peak_values[0] * min_relative_value
+        float a, b, c
+        int ii
+        bint t
+    if len(peak_vertices) == 1:
+        return peak_vertices
+
+    good_peak_vertices = [peak_vertices[0]]
+    for ii from 1 <= ii < len(peak_values):
+        if peak_values[ii] < min_value:
+            break
+        a = peak_vertices[ii,0]
+        b = peak_vertices[ii,1]
+        c = peak_vertices[ii,2]
+        t = 1
+        for inst in good_peak_vertices:
+            dist = a*inst[0] + b*inst[1] + c*inst[2]
+            if dist >= 0:
+                if dist > closest_neighbor:
+                    t = 0
+                    break
+            else:
+                if -dist > closest_neighbor:
+                    t = 0
+                    break
+        if t:
+            good_peak_vertices.append(peak_vertices[ii])
+
+    good_peak_vertices = np.array(good_peak_vertices)
+    return good_peak_vertices
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
