@@ -1,6 +1,6 @@
 from nibabel import load
 from nibabel.trackvis import empty_header, write
-from dipy.tracking.fact_tracking import FactPropogator, track_streamlines, \
+from dipy.tracking.fact_tracking import FactIntegrator, generate_streamlines, \
     seeds_from_mask, target
 from dipy.reconst.spherical_harmonic_models import SlowAdcOpdfModel, \
     NearestNeighborInterpolator, ClosestPeakSelector, normalize_data, \
@@ -48,8 +48,8 @@ def simple_tracking_function(data, fa, bval, bvec, seed_mask, start_steps,
     seeds = seeds_from_mask(seed_mask, density, voxel_size)
 
     #the propagator is used to integrate the streamlines
-    propogator = FactPropogator(voxel_size)
-    tracks = track_streamlines(peak_finder, propogator, seeds, start_steps)
+    propogator = FactIntegrator(voxel_size)
+    tracks = generate_streamlines(peak_finder, propogator, seeds, start_steps)
 
     return tracks
 
@@ -62,13 +62,14 @@ def main():
     start_step = [-0.3, -0.7, -0.7]
     tracks = simple_tracking_function(data, fa, bval, bvec, seed_mask, start_step,
                                       voxel_size, density)
+    tracks = list(tracks)
     targeted_tracks = target(tracks, target_mask, voxel_size)
-
+    
     """
     Uncomment this to save tracks
-    
-    trk_tracks = [(streamline, None, None) for streamline in tracks]
-    trgt_trk_tracks = [(streamline, None, None) for streamline in targeted_tracks]
+    """
+    trk_tracks = ((streamline, None, None) for streamline in tracks)
+    trgt_trk_tracks = ((streamline, None, None) for streamline in targeted_tracks)
 
     trk_hdr = empty_header()
     trk_hdr['voxel_order'] = 'LPI'
@@ -76,7 +77,6 @@ def main():
     trk_hdr['dim'] = fa.shape
     write('example_tracks_before_target.trk', trk_tracks, trk_hdr)
     write('example_tracks_after_target.trk', trgt_trk_tracks, trk_hdr)
-    """
 
 if __name__ == "__main__":
     main()
