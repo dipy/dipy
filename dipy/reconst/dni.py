@@ -21,7 +21,7 @@ class DiffusionNabla(object):
                  mask=None,
                  half_sphere_grads=False,
                  auto=True,
-                 save_odfs=False,laplacian=True):
+                 save_odfs=False):
         '''
         Parameters
         -----------
@@ -75,13 +75,12 @@ class DiffusionNabla(object):
         self.radiusn=len(self.radius)
         self.create_qspace(bvals,gradients,16,8)
         #peak threshold
-        self.peak_thr=3.
+        self.peak_thr=.4
+        self.iso_thr=.7
         #calculate coordinates of equators
         self.radon_params()
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()        
-        #calculate laplacian
-        self.laplacian=laplacian
         
         if auto:
             self.fit() 
@@ -163,25 +162,20 @@ class DiffusionNabla(object):
                 #calculate the generalized fractional anisotropy
                 GFA[i]=self.std_over_rms(odf)
                 #find peaks
-                peaks,inds=peak_finding(odf,self.odf_faces)
-                #remove small peaks                
-                if np.var(peaks)>5000:
-                    print peaks
-                    if self.laplacian:
-                        ismallp=np.where(peaks[0]/peaks>self.peak_thr)
-                    else:
-                        ismallp=np.where(peaks[0]/peaks<self.peak_thr)
-                    if len(ismallp[0])>0:
-                        l=ismallp[0][0]
-                    else:
-                        l=0                    
-                    #print ismallp[0][0]
-                    if l<5:
-                        IN[i][:l] = inds[:l]
-                        NFA[i][:l] = GFA[i]
-                        QA[i][:l] = peaks[:l]-np.min(odf)
-                        PK[i][:l] = peaks[:l]
-                    
+                peaks,inds=peak_finding(odf,self.odf_faces)                
+                l=self.reduce_peaks(peaks,odf.min())
+                #print '#',l,peaks[:l]         
+                if l==0:
+                    IN[i][l] = inds[l]
+                    NFA[i][l] = GFA[i]
+                    QA[i][l] = peaks[l]-np.min(odf)
+                    PK[i][l] = peaks[l]                         
+                if l>0:
+                    IN[i][:l] = inds[:l]
+                    NFA[i][:l] = GFA[i]
+                    QA[i][:l] = peaks[:l]-np.min(odf)
+                    PK[i][:l] = peaks[:l]
+            
         if len(self.datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
             self.NFA=NFA.reshape(x,y,z,5)
@@ -201,6 +195,24 @@ class DiffusionNabla(object):
                 self.ODF=ODF
             self.QA_norm=None
         
+    def reduce_peaks(self,peaks,odf_min):
+        """ helping peak_finding when too many peaks are available 
+        
+        """
+        if len(peaks)==0:
+            return -1 
+        if odf_min<self.iso_thr*peaks[0]:
+            #remove small peaks
+            ismallp=np.where(peaks[:4]<self.peak_thr*peaks[0])
+            if len(ismallp[0])>0:
+                l=ismallp[0][0]
+            else:
+                l=0
+        else:
+            return -1
+        return l
+        
+        
     def odf(self,s):
         """ Calculate the orientation distribution function 
         """        
@@ -208,17 +220,10 @@ class DiffusionNabla(object):
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        if self.laplacian:
-            LEq=laplace(Eq)         
-        else:
-            LEq=Eq
-        self.Eq=Eq
+        LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Xs,order=1)        
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
-        if self.laplacian:
-            return odf
-        else:
-            return -odf#-(odf-odf.max())
+        return odf
     
     def odfs(self):
         return self.ODF

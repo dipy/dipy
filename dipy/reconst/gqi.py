@@ -128,6 +128,10 @@ class GeneralizedQSampling(object):
         #q2odf_params[np.isnan(q2odf_params)]= 1.
         #define total mask 
         #tot_mask = (mask > 0) & (data[...,0] > thresh)
+        self.peak_thr=.3
+        self.iso_thr=.9
+        
+        
         if auto:
             self.fit()
     
@@ -176,11 +180,28 @@ class GeneralizedQSampling(object):
                     ODF[i]=odf#-min_odf            
                 peaks,inds=rp.peak_finding(odf,self.odf_faces)            
                 glob_norm_param=max(np.max(odf),glob_norm_param)
+                
+                print peaks,min_odf
                 #remove the isotropic part
+                l=self.reduce_peaks(peaks,min_odf)
+                if l==0:
+                    QA[i][0] = peaks[0]-min_odf
+                    IN[i][0] = inds[0]
+                if l>0:
+                    QA[i][:l] = peaks[:l]-min_odf
+                    IN[i][:l] = inds[:l]
+                
+                
+                """
                 peaks = peaks - min_odf
                 l=min(len(peaks),5)
-                QA[i][:l] = peaks[:l]
-                IN[i][:l] = inds[:l]
+                if l==0:
+                    QA[i][0] = peaks[0]
+                    IN[i][0] = inds[0]
+                if l>0:
+                    QA[i][:l] = peaks[:l]
+                    IN[i][:l] = inds[:l]
+                """
 
         #normalize QA
         QA/=glob_norm_param
@@ -197,6 +218,23 @@ class GeneralizedQSampling(object):
                 self.ODF=ODF
             self.QA_norm=None           
         self.glob_norm_param = glob_norm_param
+    
+    def reduce_peaks(self,peaks,odf_min):
+        """ helping peak_finding when too many peaks are available 
+        
+        """
+        if len(peaks)==0:
+            return -1 
+        if odf_min<self.iso_thr*peaks[0]:
+            #remove small peaks
+            ismallp=np.where(peaks<self.peak_thr*peaks[0])
+            if len(ismallp[0])>0:
+                l=ismallp[0][0]
+            else:
+                l=0
+        else:
+            return -1
+        return l
 
     def squared_radial_component(self,x):
         """ implementing equation (8) in the referenced paper by Yeh et al. 2010

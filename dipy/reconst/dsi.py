@@ -85,7 +85,8 @@ class DiffusionSpectrum(object):
         self.q=qtable+self.origin
         self.q=self.q.astype('i8')
         #peak threshold
-        self.peak_thr=2.        
+        self.peak_thr=.4
+        self.iso_thr=.7        
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()        
         #
@@ -102,6 +103,7 @@ class DiffusionSpectrum(object):
             IN=np.zeros((x*y*z,5))
             NFA=np.zeros((x*y*z,5))
             QA=np.zeros((x*y*z,5))
+            PK=np.zeros((x*y*z,5))
             if self.save_odfs:
                 ODF=np.zeros((x*y*z,self.odfn))            
             if self.mask != None:
@@ -118,6 +120,7 @@ class DiffusionSpectrum(object):
             IN=np.zeros((x,5))
             NFA=np.zeros((x,5))
             QA=np.zeros((x,5))
+            PK=np.zeros((x,5))
             if self.save_odfs:
                 ODF=np.zeros((x,self.odfn))
             if self.mask != None:
@@ -145,18 +148,42 @@ class DiffusionSpectrum(object):
                 #find peaks
                 peaks,inds=peak_finding(odf,self.odf_faces)
                 #remove small peaks
+                l=self.reduce_peaks(peaks,odf.min())
+                #print '#',l,peaks[:l]         
+                if l==0:
+                    IN[i][l] = inds[l]
+                    NFA[i][l] = GFA[i]
+                    QA[i][l] = peaks[l]-np.min(odf)
+                    PK[i][l] = peaks[l]                         
+                if l>0:
+                    IN[i][:l] = inds[:l]
+                    NFA[i][:l] = GFA[i]
+                    QA[i][:l] = peaks[:l]-np.min(odf)
+                    PK[i][:l] = peaks[:l]
+                
+                
+                """
                 if len(peaks)>0:
                     ismallp=np.where(peaks/peaks.min()<self.peak_thr)                                                                        
                     l=ismallp[0][0]
-                    if l<5:                                        
+                    
+                    if l<5 and l>0:                                        
                         IN[i][:l] = inds[:l]
                         NFA[i][:l] = GFA[i]
                         QA[i][:l] = peaks[:l]-np.min(odf)
+                    if l==0:
+                        IN[i][l] = inds[l]
+                        NFA[i][l] = GFA[i]
+                        QA[i][l] = peaks[l]-np.min(odf)
+                """
+
+                        
         if len(self.datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
             self.NFA=NFA.reshape(x,y,z,5)
             self.QA=QA.reshape(x,y,z,5)/glob_norm_param
             self.IN=IN.reshape(x,y,z,5)
+            self.PK=PK.reshape(x,y,z,5)
             if self.save_odfs:
                 self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])
             self.QA_norm=glob_norm_param            
@@ -165,10 +192,28 @@ class DiffusionSpectrum(object):
             self.NFA=NFA
             self.QA=QA
             self.IN=IN
+            self.PK=PK
             if self.save_odfs:
                 self.ODF=ODF
             self.QA_norm=None
+    
+    def reduce_peaks(self,peaks,odf_min):
+        """ helping peak_finding when too many peaks are available 
         
+        """
+        if len(peaks)==0:
+            return -1 
+        if odf_min<self.iso_thr*peaks[0]:
+            #remove small peaks
+            ismallp=np.where(peaks[:4]<self.peak_thr*peaks[0])
+            if len(ismallp[0])>0:
+                l=ismallp[0][0]
+            else:
+                l=0
+        else:
+            return -1
+        return l    
+    
     def pdf(self,s):
         values=s*self.filter
         #create the signal volume    
