@@ -179,8 +179,7 @@ class GeneralizedQSampling(object):
                 if self.save_odfs:
                     ODF[i]=odf#-min_odf            
                 peaks,inds=rp.peak_finding(odf,self.odf_faces)            
-                glob_norm_param=max(np.max(odf),glob_norm_param)
-                
+                glob_norm_param=max(np.max(odf),glob_norm_param)                
                 print peaks,min_odf
                 #remove the isotropic part
                 l=self.reduce_peaks(peaks,min_odf)
@@ -231,7 +230,7 @@ class GeneralizedQSampling(object):
             if len(ismallp[0])>0:
                 l=ismallp[0][0]
             else:
-                l=0
+                l=len(peaks)
         else:
             return -1
         return l

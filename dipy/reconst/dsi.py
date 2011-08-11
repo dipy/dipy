@@ -205,11 +205,11 @@ class DiffusionSpectrum(object):
             return -1 
         if odf_min<self.iso_thr*peaks[0]:
             #remove small peaks
-            ismallp=np.where(peaks[:4]<self.peak_thr*peaks[0])
+            ismallp=np.where(peaks<self.peak_thr*peaks[0])
             if len(ismallp[0])>0:
                 l=ismallp[0][0]
             else:
-                l=0
+                l=len(peaks)
         else:
             return -1
         return l    
