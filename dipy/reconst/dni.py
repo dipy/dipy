@@ -170,7 +170,7 @@ class DiffusionNabla(object):
                     NFA[i][l] = GFA[i]
                     QA[i][l] = peaks[l]-np.min(odf)
                     PK[i][l] = peaks[l]                         
-                if l>0:
+                if l>0 and l<5:                    
                     IN[i][:l] = inds[:l]
                     NFA[i][:l] = GFA[i]
                     QA[i][:l] = peaks[:l]-np.min(odf)
@@ -225,8 +225,51 @@ class DiffusionNabla(object):
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
         return odf
     
+    def grid(self,s):
+        Eq=np.zeros((self.sz,self.sz,self.sz))
+        for i in range(self.dn):
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+        return Eq
+    
     def odfs(self):
         return self.ODF
+    
+    def fast_odf(self,s):
+        odf = np.zeros(self.odfn)
+        Eq=np.zeros((self.sz,self.sz,self.sz))
+        for i in range(self.dn):
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+        LEq=laplace(Eq)
+        LEs=map_coordinates(LEq,self.Ys,order=1)
+        
+        LEs=LEs.reshape(self.odfn,self.radiusn)
+        LEsum=np.sum(LEs,axis=1)
+        
+        return LEsum
+        
+    def precompute_equator_indices(self,thr=10):
+        eq_inds=[]        
+        for (i,v) in enumerate(self.odf_vertices):
+            eq_inds.append([])            
+            for (j,k) in enumerate(self.odf_vertices):
+                angle=np.rad2deg(np.arccos(np.dot(v,k)))
+                if  angle < 90 + thr and angle > 90 - thr:
+                    eq_inds[i].append(j)
+        
+        return eq_inds
+        
+        
+    def precompute_fast_coords(self):
+        Ys=[]
+        for m in range(self.odfn):
+            for q in self.radius:           
+                    #print disk.shape
+                    xi=self.origin + q*self.odf_vertices[m,0]
+                    yi=self.origin + q*self.odf_vertices[m,1]
+                    zi=self.origin + q*self.odf_vertices[m,2]        
+                    Ys.append(np.vstack((xi,yi,zi)).T)
+        self.Ys=np.concatenate(Ys).T
+        
     
     def precompute_interp_coords(self):        
         Xs=[]        

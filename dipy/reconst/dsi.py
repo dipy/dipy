@@ -155,7 +155,7 @@ class DiffusionSpectrum(object):
                     NFA[i][l] = GFA[i]
                     QA[i][l] = peaks[l]-np.min(odf)
                     PK[i][l] = peaks[l]                         
-                if l>0:
+                if l>0 and l<5:
                     IN[i][:l] = inds[:l]
                     NFA[i][:l] = GFA[i]
                     QA[i][:l] = peaks[:l]-np.min(odf)

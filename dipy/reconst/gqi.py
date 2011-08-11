@@ -186,7 +186,7 @@ class GeneralizedQSampling(object):
                 if l==0:
                     QA[i][0] = peaks[0]-min_odf
                     IN[i][0] = inds[0]
-                if l>0:
+                if l>0 and l<5:
                     QA[i][:l] = peaks[:l]-min_odf
                     IN[i][:l] = inds[:l]
                 
