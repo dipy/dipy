@@ -21,7 +21,8 @@ class DiffusionNabla(object):
                  mask=None,
                  half_sphere_grads=False,
                  auto=True,
-                 save_odfs=False):
+                 save_odfs=False,
+                 fast=True):
         '''
         Parameters
         -----------
@@ -81,7 +82,14 @@ class DiffusionNabla(object):
         self.radon_params()
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()        
+        self.precompute_fast_coords()
+        self.zone=5.
+        self.precompute_equator_indices(self.zone)
         
+        if fast==True:
+            self.odf=self.fast_odf
+        else:
+            self.odf=self.slow_odf        
         if auto:
             self.fit() 
     
@@ -153,7 +161,9 @@ class DiffusionNabla(object):
         for (i,s) in enumerate(S):
             if msk[i]>0:
                 #calculate the orientation distribution function        
+                #odf=self.odf(s)
                 odf=self.odf(s)
+                
                 #odf=odf/self.odf(np.ones(s.shape))
                 if self.save_odfs:
                     ODF[i]=odf
@@ -213,7 +223,7 @@ class DiffusionNabla(object):
         return l
         
         
-    def odf(self,s):
+    def slow_odf(self,s):
         """ Calculate the orientation distribution function 
         """        
         odf = np.zeros(self.odfn)
@@ -240,34 +250,40 @@ class DiffusionNabla(object):
         for i in range(self.dn):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
         LEq=laplace(Eq)
-        LEs=map_coordinates(LEq,self.Ys,order=1)
-        
+        LEs=map_coordinates(LEq,self.Ys,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
+        LEs=LEs*self.radius
         LEsum=np.sum(LEs,axis=1)
-        
-        return LEsum
+        #print LEsum.shape
+        for i in xrange(self.odfn):
+            odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
+        #    #np.float(len(self.eqinds[i]))
+        return - odf
         
     def precompute_equator_indices(self,thr=10):
-        eq_inds=[]        
+        eq_inds=[]
+        eq_inds_len=np.zeros(self.odfn)        
         for (i,v) in enumerate(self.odf_vertices):
             eq_inds.append([])            
             for (j,k) in enumerate(self.odf_vertices):
                 angle=np.rad2deg(np.arccos(np.dot(v,k)))
                 if  angle < 90 + thr and angle > 90 - thr:
                     eq_inds[i].append(j)
+            eq_inds_len[i]=len(eq_inds[i])
         
-        return eq_inds
+        self.eqinds=eq_inds
+        self.eqinds_len=eq_inds_len
         
         
     def precompute_fast_coords(self):
         Ys=[]
         for m in range(self.odfn):
             for q in self.radius:           
-                    #print disk.shape
-                    xi=self.origin + q*self.odf_vertices[m,0]
-                    yi=self.origin + q*self.odf_vertices[m,1]
-                    zi=self.origin + q*self.odf_vertices[m,2]        
-                    Ys.append(np.vstack((xi,yi,zi)).T)
+                #print disk.shape
+                xi=self.origin + q*self.odf_vertices[m,0]
+                yi=self.origin + q*self.odf_vertices[m,1]
+                zi=self.origin + q*self.odf_vertices[m,2]        
+                Ys.append(np.vstack((xi,yi,zi)).T)
         self.Ys=np.concatenate(Ys).T
         
     
