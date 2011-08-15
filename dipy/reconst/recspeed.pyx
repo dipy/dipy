@@ -48,6 +48,7 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
         float x = index[0] / voxel_size[0] - .5
         float y = index[1] / voxel_size[1] - .5
         float z = index[2] / voxel_size[2] - .5
+        float weight
         int x_ind = <int> x
         int y_ind = <int> y
         int z_ind = <int> z
@@ -66,8 +67,8 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
                     result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
     return result
 
-def wght(bint i, float r):
-    if i == 1:
+cdef float wght(int i, float r):
+    if i:
         return r
     else:
         return 1.-r
