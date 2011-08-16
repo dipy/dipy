@@ -246,19 +246,42 @@ class DiffusionNabla(object):
     
     def fast_odf(self,s):
         odf = np.zeros(self.odfn)
+        #Eq=np.zeros((self.sz,self.sz,self.sz))
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
+            #Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+        
+        self.Eq=Eq
         LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Ys,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
-        LEs=LEs*self.radius
+        LEs=LEs*self.radius#**2.
         LEsum=np.sum(LEs,axis=1)
         #print LEsum.shape
         for i in xrange(self.odfn):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        #    #np.float(len(self.eqinds[i]))
-        return - odf
+        return - odf #self.fast_odf_normalizer()
+    
+    def fast_odf_normalizer(self):
+        s=np.ones(self.dn)
+        odf = np.zeros(self.odfn)
+        #Eq=np.zeros((self.sz,self.sz,self.sz))
+        Eq=np.zeros((self.sz,self.sz,self.sz))
+        for i in range(self.dn):
+            #Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+        
+        self.Eq=Eq
+        LEq=laplace(Eq)
+        LEs=map_coordinates(LEq,self.Ys,order=1)        
+        LEs=LEs.reshape(self.odfn,self.radiusn)
+        LEs=LEs*self.radius#**2.
+        LEsum=np.sum(LEs,axis=1)
+        #print LEsum.shape
+        for i in xrange(self.odfn):
+            odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
+        return odf
         
     def precompute_equator_indices(self,thr=10):
         eq_inds=[]
