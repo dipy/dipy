@@ -213,7 +213,8 @@ class DiffusionNabla(object):
             return -1 
         if odf_min<self.iso_thr*peaks[0]:
             #remove small peaks
-            ismallp=np.where(peaks<self.peak_thr*peaks[0])
+            pks=peaks-np.abs(odf_min)
+            ismallp=np.where(pks<self.peak_thr*pks[0])
             if len(ismallp[0])>0:
                 l=ismallp[0][0]
             else:
@@ -261,27 +262,9 @@ class DiffusionNabla(object):
         #print LEsum.shape
         for i in xrange(self.odfn):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        return - odf #self.fast_odf_normalizer()
+        return - odf
     
-    def fast_odf_normalizer(self):
-        s=np.ones(self.dn)
-        odf = np.zeros(self.odfn)
-        #Eq=np.zeros((self.sz,self.sz,self.sz))
-        Eq=np.zeros((self.sz,self.sz,self.sz))
-        for i in range(self.dn):
-            #Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        
-        self.Eq=Eq
-        LEq=laplace(Eq)
-        LEs=map_coordinates(LEq,self.Ys,order=1)        
-        LEs=LEs.reshape(self.odfn,self.radiusn)
-        LEs=LEs*self.radius#**2.
-        LEsum=np.sum(LEs,axis=1)
-        #print LEsum.shape
-        for i in xrange(self.odfn):
-            odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        return odf
+    
         
     def precompute_equator_indices(self,thr=10):
         eq_inds=[]
