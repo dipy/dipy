@@ -263,8 +263,7 @@ class DiffusionNabla(object):
         for i in xrange(self.odfn):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
         return - odf
-    
-    
+        
         
     def precompute_equator_indices(self,thr=10):
         eq_inds=[]
