@@ -85,6 +85,11 @@ class DiffusionNabla(object):
         self.precompute_fast_coords()
         self.zone=5.
         self.precompute_equator_indices(self.zone)
+        #precompute botox weighting
+        self.botox_smooth=.05
+        self.botox_level=.3
+        self.W=np.dot(self.odf_vertices,self.odf_vertices.T)
+        self.W=self.W.astype('f8')
         
         if fast==True:
             self.odf=self.fast_odf
@@ -163,28 +168,49 @@ class DiffusionNabla(object):
                 #calculate the orientation distribution function        
                 #odf=self.odf(s)
                 odf=self.odf(s)
-                
                 #odf=odf/self.odf(np.ones(s.shape))
                 if self.save_odfs:
-                    ODF[i]=odf
+                    ODF[i]=odf              
+                
                 #normalization for QA
                 glob_norm_param=max(np.max(odf),glob_norm_param)
                 #calculate the generalized fractional anisotropy
                 GFA[i]=self.std_over_rms(odf)
-                #find peaks
-                peaks,inds=peak_finding(odf,self.odf_faces)                
-                l=self.reduce_peaks(peaks,odf.min())
-                #print '#',l,peaks[:l]         
-                if l==0:
-                    IN[i][l] = inds[l]
-                    NFA[i][l] = GFA[i]
-                    QA[i][l] = peaks[l]-np.min(odf)
-                    PK[i][l] = peaks[l]                         
-                if l>0 and l<5:                    
-                    IN[i][:l] = inds[:l]
-                    NFA[i][:l] = GFA[i]
-                    QA[i][:l] = peaks[:l]-np.min(odf)
-                    PK[i][:l] = peaks[:l]
+                
+                odf_max=odf.max()
+                #if not in isotropic case
+                if odf.min()<self.iso_thr*odf_max:
+                
+                    #botox smoothing 
+                    W2=np.dot(1./np.abs(odf[:,None]),np.abs(odf[None,:]))
+                    Z=np.zeros(self.W.shape)
+                    Z[W2>1]=1.
+                    E=np.exp(Z*self.W/self.botox_smooth)
+                    E=E/np.sum(E,axis=1)[:,None] 
+                    odf[odf<self.botox_level*odf_max]=0
+                    odf=np.dot(odf[None,:],E).ravel()                
+                                                                                    
+                    #find peaks
+                    peaks,inds=peak_finding(odf,self.odf_faces)                
+                    ismallp=np.where(peaks/peaks[0]<self.peak_thr)      
+                    if len(ismallp[0])>0:
+                        l=ismallp[0][0]
+                        #do not allow more that three peaks
+                        if l>3:
+                            l=3
+                    else:
+                        l=len(peaks)
+                    if l==0:
+                        IN[i][l] = inds[l]
+                        NFA[i][l] = GFA[i]
+                        QA[i][l] = peaks[l]-np.min(odf)
+                        PK[i][l] = peaks[l]                         
+                    if l>0 and l<=3:                    
+                        IN[i][:l] = inds[:l]
+                        NFA[i][:l] = GFA[i]
+                        QA[i][:l] = peaks[:l]-np.min(odf)
+                        PK[i][:l] = peaks[:l]
+                    
             
         if len(self.datashape) == 4:
             self.GFA=GFA.reshape(x,y,z)
