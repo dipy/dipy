@@ -6,6 +6,10 @@ from scipy import sparse
 FLOAT64_EPS = np.finfo(np.float64).eps
 FLOAT_TYPES = np.sctypes['float']
 
+white = 0
+red = 1
+black = 2
+green = 3
 
 def sym_hemisphere(vertices,
                    hemisphere='z',
@@ -185,6 +189,28 @@ def vertinds_faces(vertex_inds, faces):
             in_inds.append(ind)
     return faces[in_inds]
 
+def vertinds_faceinds(vertex_inds, faces):
+    """ Return indices of faces containing any of `vertex_inds`
+
+    Parameters
+    ----------
+    vertex_inds : sequence
+       length N.  Indices of vertices
+    faces : (F, 3) array-like
+       Faces given by indices of vertices for each of ``F`` faces
+
+    Returns
+    ---------
+    in_inds : sequence
+       Indices of `faces` which contain any of `vertex_inds`
+    """
+    in_inds = []
+    vertex_inds = set(vertex_inds)
+    for ind, face in enumerate(faces):
+        if vertex_inds.intersection(face):
+            in_inds.append(ind)
+    return in_inds
+
 def edges(vertex_inds, faces):
     r""" Return array of starts and ends of edges from list of faces
         taking regard of direction.
@@ -358,4 +384,18 @@ def euler_characteristic_check(vertices, faces, chi=2):
     else:
         return False
 
+def adjacent_uncoloured(vertinds, vertex_colour, face_colour, faces):
 
+    adjacent_faces = np.array(vertinds_faceinds(vertinds, faces))
+
+    uncoloured_adjacent_faces = adjacent_faces[np.where(face_colour[adjacent_faces]==white)]
+
+    adjacent_vertices = np.array(list(set(faces[uncoloured_adjacent_faces].ravel())))
+    
+    l = list(adjacent_vertices)
+    
+    w = np.where(vertex_colour[l]==white)
+    
+    uncoloured_adjacent_vertices = adjacent_vertices[w]
+    
+    return(uncoloured_adjacent_vertices, uncoloured_adjacent_faces)
