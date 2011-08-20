@@ -12,7 +12,11 @@ class DiffusionSpectrum(object):
     by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM 2005
         
     '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', mask=None,half_sphere_grads=False,auto=True,save_odfs=False):
+    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362',
+                mask=None,
+                half_sphere_grads=False,
+                auto=True,
+                save_odfs=False):
         '''
         Parameters
         -----------
@@ -66,7 +70,7 @@ class DiffusionSpectrum(object):
         #necessary shifting for centering
         self.origin=8
         #hanning filter width
-        self.filter_width=32.        
+        self.filter_width=32.
         #create the q-table from bvecs and bvals        
         bv=bvals
         bmin=np.sort(bv)[1]

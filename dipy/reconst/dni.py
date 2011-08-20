@@ -135,7 +135,8 @@ class DiffusionNabla(object):
             QA=np.zeros((x*y*z,5))
             PK=np.zeros((x*y*z,5))
             if self.save_odfs:
-                ODF=np.zeros((x*y*z,self.odfn))        
+                ODF=np.zeros((x*y*z,self.odfn))
+                BODF=np.zeros((x*y*z,self.odfn))        
             if self.mask != None:
                 if self.mask.shape[:3]==self.datashape[:3]:
                     msk=self.mask.ravel().copy()
@@ -153,6 +154,7 @@ class DiffusionNabla(object):
             PK=np.zeros((x,5))
             if self.save_odfs:
                 ODF=np.zeros((x,self.odfn))
+                BODF=np.zeros((x,self.odfn))                
             if self.mask != None:
                 if mask.shape[0]==self.datashape[0]:
                     msk=self.mask.ravel().copy()
@@ -170,7 +172,7 @@ class DiffusionNabla(object):
                 odf=self.odf(s)
                 #odf=odf/self.odf(np.ones(s.shape))
                 if self.save_odfs:
-                    ODF[i]=odf              
+                    ODF[i]=odf   
                 
                 #normalization for QA
                 glob_norm_param=max(np.max(odf),glob_norm_param)
@@ -189,7 +191,10 @@ class DiffusionNabla(object):
                     E=E/np.sum(E,axis=1)[:,None] 
                     odf[odf<self.botox_level*odf_max]=0
                     odf=np.dot(odf[None,:],E).ravel()                
-                                                                                    
+                    
+                    if self.save_odfs:
+                        BODF[i]=odf
+                                                                                                        
                     #find peaks
                     peaks,inds=peak_finding(odf,self.odf_faces)                
                     ismallp=np.where(peaks/peaks[0]<self.peak_thr)      
@@ -219,7 +224,8 @@ class DiffusionNabla(object):
             self.PK=PK.reshape(x,y,z,5)
             self.IN=IN.reshape(x,y,z,5)
             if self.save_odfs:
-                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])            
+                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])
+                self.BODF=BODF.reshape(x,y,z,BODF.shape[-1])            
             self.QA_norm=glob_norm_param            
         if len(self.datashape) == 2:
             self.GFA=GFA
@@ -229,6 +235,7 @@ class DiffusionNabla(object):
             self.IN=IN
             if self.save_odfs:
                 self.ODF=ODF
+                self.BODF=BODF
             self.QA_norm=None
         
     def reduce_peaks(self,peaks,odf_min):
