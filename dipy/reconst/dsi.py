@@ -84,7 +84,7 @@ class DiffusionSpectrum(object):
         #calculate r - hanning filter free parameter
         r = np.sqrt(qtable[:,0]**2+qtable[:,1]**2+qtable[:,2]**2)    
         #setting hanning filter width and hanning        
-        self.filter=.5*np.cos(2*np.pi*r/self.filter_width)        
+        self.filter=.5*np.cos(2*np.pi*r/self.filter_width)                
         #center and index in qspace volume
         self.q=qtable+self.origin
         self.q=self.q.astype('i8')
@@ -93,7 +93,6 @@ class DiffusionSpectrum(object):
         self.iso_thr=.7        
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()        
-        #
         if auto:
             self.fit()        
     
