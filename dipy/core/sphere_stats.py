@@ -3,7 +3,7 @@
 
 import numpy as np
 import dipy.core.geometry as geometry
-
+from itertools import permutations
 
 def random_uniform_on_sphere(n=1,coords='xyz'):
     r''' Random unit vectors from a uniform distribution on the sphere
@@ -163,7 +163,7 @@ def compare_orientation_sets(S,T):
     >>> T=np.array([[1,0,0],[0,0,1]])
     >>> compare_orientation_sets(S,T)
     1.0
-    >>> T=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> T=np.array([[0,1,0],[1,0,0],[0,0,1]])
     >>> S=np.array([[1,0,0],[0,0,1]])
     >>> compare_orientation_sets(S,T)
     1.0
@@ -173,7 +173,7 @@ def compare_orientation_sets(S,T):
     >>> compare_orientation_sets(S,T)
     1.0
     '''
-    import itertools
+    
     m = len(S)
     n = len(T)
     if m < n:
@@ -183,6 +183,6 @@ def compare_orientation_sets(S,T):
 	T = A
 	m = n
         n = a
-    v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in itertools.permutations(S,n)]
+    v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in permutations(S,n)]
     return np.max(v)/np.float(n)
 

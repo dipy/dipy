@@ -8,7 +8,7 @@ from dipy.data import get_data, get_sphere
 from dipy.reconst.recspeed import peak_finding
 from dipy.reconst.gqi import GeneralizedQSampling
 from dipy.reconst.dsi import DiffusionSpectrum
-from dipy.reconst.sims import SticksAndBall
+from dipy.sims.voxel import SticksAndBall
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sphere 
 from scipy.ndimage import map_coordinates
@@ -102,6 +102,36 @@ def test_dsi():
     data=np.zeros((3,3,3,515))
     data[:,:,:]=S    
     ds=DiffusionSpectrum(data,bvals,bvecs)
+    
+    ds2=DiffusionSpectrum(data,bvals,bvecs,auto=False)
+    r = np.sqrt(ds2.qtable[:,0]**2+ds2.qtable[:,1]**2+ds2.qtable[:,2]**2)    
+    ds2.filter=.5*np.cos(2*np.pi*r/32)
+    ds2.fit()
+    assert_almost_equal(np.sum(ds2.qa()-ds.qa()),0)
+    
+    #1 fiber
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[100,0,0], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),1)
+    
+    #2 fibers
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),2)
+    
+    #3 fibers
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),3)
+    
+    #isotropic
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[0,0,0], snr=None)   
+    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
+    QA=ds.qa()
+    assert_equal(np.sum(QA>0),0)
     
     
 
