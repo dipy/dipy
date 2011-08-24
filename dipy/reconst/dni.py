@@ -276,8 +276,8 @@ class DiffusionNabla(object):
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):            
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        #Eq=zoom(Eq,(2,2,2))
-                
+        #Eq=zoom(Eq,(2,2,2),order=1)
+        
         self.Eq=Eq
         LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Ys,order=1)        
