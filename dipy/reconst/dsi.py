@@ -53,7 +53,7 @@ class DiffusionSpectrum(object):
         #check if bvectors are provided only on a hemisphere
         if half_sphere_grads==True:
             bvals=np.append(bvals.copy(),bvals[1:].copy())
-            bvecs=np.append(bvecs.copy(),-bvecs[1:].copy(),axis=0)
+            gradients=np.append(gradients.copy(),-gradients[1:].copy(),axis=0)
             data=np.append(data.copy(),data[...,1:].copy(),axis=-1)
         
         #load bvals and bvecs
