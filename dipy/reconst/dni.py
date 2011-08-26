@@ -180,7 +180,7 @@ class DiffusionNabla(object):
                 #calculate the orientation distribution function        
                 #odf=self.odf(s)
                 odf=self.odf(s)                
-                odf=self.angular_weighting(odf)                                
+                #odf=self.angular_weighting(odf)                                
                 if self.save_odfs:
                     ODF[i]=odf                
                 #normalization for QA
@@ -257,16 +257,16 @@ class DiffusionNabla(object):
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+        Eq=zoom(Eq,(3,3,3),order=2)
+        #from dipy.viz import fvtk
+        #r=fvtk.ren()
+        #fvtk.add(r,fvtk.volume(Eq))
+        #fvtk.show(r)
+        
         LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Xs,order=1)        
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
         return odf
-    
-    def grid(self,s):
-        Eq=np.zeros((self.sz,self.sz,self.sz))
-        for i in range(self.dn):
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        return Eq
     
     def odfs(self):
         return self.ODF
@@ -276,9 +276,9 @@ class DiffusionNabla(object):
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):            
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        #Eq=zoom(Eq,(2,2,2),order=1)
-        
+        Eq=zoom(Eq,(3,3,3),order=2)
         self.Eq=Eq
+        
         LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Ys,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
@@ -331,11 +331,11 @@ class DiffusionNabla(object):
         Xs=[]        
         for m in range(self.odfn):
             for q in self.radius:           
-                    #print disk.shape
-                    xi=self.origin + q*self.equators[m][:,0]
-                    yi=self.origin + q*self.equators[m][:,1]
-                    zi=self.origin + q*self.equators[m][:,2]        
-                    Xs.append(np.vstack((xi,yi,zi)).T)
+                #print disk.shape
+                xi=self.origin + q*self.equators[m][:,0]
+                yi=self.origin + q*self.equators[m][:,1]
+                zi=self.origin + q*self.equators[m][:,2]        
+                Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T
         
     
