@@ -89,7 +89,7 @@ class DiffusionNabla(object):
         #precompute botox weighting
         #self.precompute_botox(0.05,.3)
         self.precompute_angular(0.1)
-        
+                
         if fast==True:
             self.odf=self.fast_odf
         else:
@@ -111,7 +111,7 @@ class DiffusionNabla(object):
     def create_qspace(self,bvals,gradients,size,origin):
         bv=bvals
         bmin=np.sort(bv)[1]
-        bv=np.sqrt(bv/bmin)
+        bv=np.sqrt(bv/bmin)        
         qtable=np.vstack((bv,bv,bv)).T*gradients
         qtable=np.floor(qtable+.5)
         self.qtable=qtable
@@ -256,13 +256,14 @@ class DiffusionNabla(object):
         odf = np.zeros(self.odfn)
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        Eq=zoom(Eq,(3,3,3),order=2)
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/s[0]
+        #Eq=zoom(Eq,(3,3,3),order=1,mode='nearest')
+        #Eq[Eq<0]=0
+        self.Eq=Eq
         #from dipy.viz import fvtk
         #r=fvtk.ren()
         #fvtk.add(r,fvtk.volume(Eq))
-        #fvtk.show(r)
-        
+        #fvtk.show(r)        
         LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Xs,order=1)        
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
@@ -334,7 +335,8 @@ class DiffusionNabla(object):
                 #print disk.shape
                 xi=self.origin + q*self.equators[m][:,0]
                 yi=self.origin + q*self.equators[m][:,1]
-                zi=self.origin + q*self.equators[m][:,2]        
+                zi=self.origin + q*self.equators[m][:,2]
+                        
                 Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T
         
