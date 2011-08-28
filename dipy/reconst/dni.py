@@ -180,7 +180,7 @@ class DiffusionNabla(object):
                 #calculate the orientation distribution function        
                 #odf=self.odf(s)
                 odf=self.odf(s)                
-                #odf=self.angular_weighting(odf)                                
+                odf=self.angular_weighting(odf)                                
                 if self.save_odfs:
                     ODF[i]=odf                
                 #normalization for QA
@@ -257,13 +257,6 @@ class DiffusionNabla(object):
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/s[0]
-        #Eq=zoom(Eq,(3,3,3),order=1,mode='nearest')
-        #Eq[Eq<0]=0
-        self.Eq=Eq
-        #from dipy.viz import fvtk
-        #r=fvtk.ren()
-        #fvtk.add(r,fvtk.volume(Eq))
-        #fvtk.show(r)        
         LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Xs,order=1)        
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
@@ -276,10 +269,7 @@ class DiffusionNabla(object):
         odf = np.zeros(self.odfn)        
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):            
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        Eq=zoom(Eq,(3,3,3),order=2)
-        self.Eq=Eq
-        
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
         LEq=laplace(Eq)
         LEs=map_coordinates(LEq,self.Ys,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
@@ -297,23 +287,18 @@ class DiffusionNabla(object):
         return np.dot(odf[None,:],self.E).ravel()
         
     def precompute_equator_indices(self,thr=5):        
-        eq_inds=[]
-        #eq_weights=[]
+        eq_inds=[]        
         eq_inds_len=np.zeros(self.odfn)        
         for (i,v) in enumerate(self.odf_vertices):
-            eq_inds.append([])
-            #eq_weights.append([])            
+            eq_inds.append([])                    
             for (j,k) in enumerate(self.odf_vertices):
                 angle=np.rad2deg(np.arccos(np.dot(v,k)))
                 if  angle < 90 + thr and angle > 90 - thr:
-                    eq_inds[i].append(j)
-                    #w=np.exp(-(90-angle)**2/(2*sigma**2))/np.sqrt(2*np.pi*sigma**2)
-                    #eq_weights[i].append(w)
-            eq_inds_len[i]=len(eq_inds[i])
-            #eq_weights[i]=np.array(eq_weights[i])        
+                    eq_inds[i].append(j)                    
+            eq_inds_len[i]=len(eq_inds[i])                    
         self.eqinds=eq_inds
         self.eqinds_len=eq_inds_len
-        #self.eqweights=eq_weights
+        
     
         
     def precompute_fast_coords(self):
@@ -335,15 +320,13 @@ class DiffusionNabla(object):
                 #print disk.shape
                 xi=self.origin + q*self.equators[m][:,0]
                 yi=self.origin + q*self.equators[m][:,1]
-                zi=self.origin + q*self.equators[m][:,2]
-                        
+                zi=self.origin + q*self.equators[m][:,2]                        
                 Xs.append(np.vstack((xi,yi,zi)).T)
-        self.Xs=np.concatenate(Xs).T
-        
+        self.Xs=np.concatenate(Xs).T        
     
     def std_over_rms(self,odf):
         numer=len(odf)*np.sum((odf-np.mean(odf))**2)
-        denom=(len(odf)-1)*np.sum(odf**2)        
+        denom=(len(odf)-1)*np.sum(odf**2)
         return np.sqrt(numer/denom)
     
     def gfa(self):
