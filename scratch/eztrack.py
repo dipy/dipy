@@ -124,13 +124,6 @@ class EZTrackingInterface(HasStrictTraits):
     affine = Array(dtype='float', shape=(4,4))
     shape = Tuple((0,0,0))
 
-    def dump(self, file):
-        try:
-            file = open(file, 'rb')
-        except TypeError:
-            file = file
-        pickle.dump(self, file)
-
     def track_shm(self):
 
         data, voxel_size, affine, fa, bvec, bval = self.all_inputs.read_data()
@@ -147,7 +140,7 @@ class EZTrackingInterface(HasStrictTraits):
 
         if self.smoothing_kernel is not None:
             kernel = self.smoothing_kernel.get_kernel()
-            data = asarray(data, 'float')
+            data = np.asarray(data, 'float')
             convolve(data, kernel, data)
         data = normalize_data(data, bval, self.min_signal)
         if self.bootstrap_input:

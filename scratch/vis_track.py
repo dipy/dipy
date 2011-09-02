@@ -1,5 +1,13 @@
 from eztrack import EZTrackingInterface
 from traitsui.api import Item, Group, View, ArrayEditor
+from traits.api import File, on_trait_change
+import nibabel as nib
+from nibabel.trackvis import write, empty_header
+import numpy as np
+from os import path
+from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
+                            reorient_bvec
+import pickle
 
 class VizTrackingInterface(EZTrackingInterface):
 
@@ -46,8 +54,8 @@ class VizTrackingInterface(EZTrackingInterface):
                                   Item( 'targets' ),
                                   show_border=True),
                             Group(
-                                  Item( 'save_tracks_to' ),
-                                  Item( 'save_track_counts_to' ),
+                                  Item( 'save_streamlines_to' ),
+                                  Item( 'save_counts_to' ),
                                   show_border=True),
                             orientation = 'vertical'),
                         buttons=['OK', 'Cancel'], resizable=True)
@@ -72,35 +80,37 @@ class VizTrackingInterface(EZTrackingInterface):
             counts = counts.astype('uint16')
         nib.save(nib.Nifti1Image(counts, self.affine), self.save_counts_to)
 
-    def gui_track():
-        if self.save_tracks_to == '' and self.save_counts_to == '':
+    def gui_track(self):
+        if self.save_streamlines_to == '' and self.save_counts_to == '':
             raiseIOError('must provide filename where to save results')
         streamlines = list(self.track_shm())
         self.save_streamlines(streamlines)
-        self.save_counts_to(streamlines)
+        self.save_counts(streamlines)
 
 if __name__ == "__main__":
     b = VizTrackingInterface()
     b.model_type = 'QballOdf'
-    b.min_peak_spacing = 45
-    b.min_relative_peak = .5
-    b.direction = [-1,0,1]
-    b.fa_threshold = 150
+    b.min_peak_spacing = np.sqrt(.5)
+    b.min_relative_peak = .25
+    b.direction = [0,-1,0]
+    b.fa_threshold = .150
     b.max_turn_angle = 60
-    b.dwi_images = '/data/henry4/controls/MB/HARDI/E1937S5I1.nii.gz'
+    b.dwi_images = '/home/npapinu/August2011/Jam_5/090529_8597/data.nii.gz'
+    b.all_inputs.bvec_file = '/home/npapinu/August2011/Jam_5/090529_8597/qBall/data.bvec'
+    b.all_inputs.fa_file = '/home/npapinu/August2011/Jam_5/090529_8597/dti_FA.nii.gz'
     b.all_inputs.bvec_orientation = 'las'
-    #b.smoothing_kernel_type = 'Box'
-    #b.smoothing_kernel.shape = (3,3,3)
+    b.smoothing_kernel_type = 'Box'
+    b.smoothing_kernel.shape = (3,3,3)
     b.sh_order = 4
-    b.sphere_coverage = 4
+    b.sphere_coverage = 5
     b.Lambda = 0
-    b.seed_roi = '/data/henry4/controls/MB/HARDI/Hand_all_L.nii.gz'
+    b.seed_roi = '/home/npapinu/August2011/Jam_5/090529_8597/qBall/Pole_L_toFA_mask.nii.gz'
     #b.targets.append('/home/bagrata/scrap/target_roi.nii.gz')
-    b.bootstrap = True
+    b.probabilistic = False
 
     b.seed_density = [2,2,2]
-    b.save_tracks_to = '/home/bagrata/scrap/hardi_tracks_seed5_sc4_qball.trk'
-    b.save_counts_to = '/home/bagrata/scrap/hardi_tracks_seed5_sc4_qball.nii.gz'
+    b.save_streamlines_to = '/home/npapinu/August2011/Jam_5/090529_8597/tracks.trk'
+    b.save_counts_to = '/home/npapinu/August2011/Jam_5/090529_8597/tracks.nii.gz'
     if b.configure_traits():
-        stream = b.track_shm()
+        stream = b.gui_track()
 
