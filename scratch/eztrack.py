@@ -8,7 +8,7 @@ from nibabel.trackvis import write, empty_header
 from dipy.reconst.shm import SlowAdcOpdfModel, MonoExpOpdfModel, \
         QballOdfModel, normalize_data, ClosestPeakSelector, \
         ResidualBootstrapWrapper, hat, lcr_matrix, bootstrap_data_array
-from dipy.reconst.interpolate import LinearInterpolator, \
+from dipy.reconst.interpolate import TriLinearInterpolator, \
         NearestNeighborInterpolator
 from dipy.core.triangle_subdivide import create_half_unit_sphere, \
         disperse_charges
@@ -78,7 +78,7 @@ class BoxKernel(HasTraits):
 
 all_kernels = {None:None,'Box':BoxKernel,'Gausian':GausianKernel}
 all_interpolators = {'NearestNeighbor':NearestNeighborInterpolator,
-                     'TriLinear':LinearInterpolator}
+                     'TriLinear':TriLinearInterpolator}
 all_shmodels = {'QballOdf':QballOdfModel, 'SlowAdcOpdf':SlowAdcOpdfModel,
                 'MonoExpOpdf':MonoExpOpdfModel}
 all_integrators = {'Fact':FactIntegrator, 'FixedStep':FixedStepIntegrator}
