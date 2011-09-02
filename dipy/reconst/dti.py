@@ -578,8 +578,8 @@ class TensorStepper(object):
         self._interp_inst = _interpolator(self.evec1_vol, self.voxe_size, mask)
     fa_limit = property(_get_fa_limit, _set_fa_limit)
 
-    def __init__(self, fa_vol, evec1_vol, voxel_size, fa_limit=None,
-                 angle_limit=None, interpolator=NearestNeighborInterpolator):
+    def __init__(self, fa_vol, evec1_vol, voxel_size, interpolator,
+                 fa_limit=None, angle_limit=None):
         self.voxel_size = voxel_size
         self.angle_limit = angle_limit
         if fa_vol.shape != evec1_vol.shape[:-1]:
@@ -607,6 +607,8 @@ class TensorStepper(object):
             return -step
 
 def stepper_from_tensor(tensor, *args, **kargs):
+    """stepper_from_tensor(tensor, fa_vol, evec1_vol, voxel_size, interpolator)
+    """
     fa_vol = tensor.fa()
     evec1_vol = tensor.evec[..., 0]
     stepper = TensorStepper(fa_vol, evec1_vol, *args, **kargs)

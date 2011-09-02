@@ -5,7 +5,7 @@ import nibabel as nib
 from scipy.ndimage import convolve
 from traits.api import *
 from nibabel.trackvis import write, empty_header
-from dipy.reconst.spherical_harmonic_models import SlowAdcOpdfModel, \
+from dipy.reconst.shm import SlowAdcOpdfModel, \
         MonoExpOpdfModel, QballOdfModel, NearestNeighborInterpolator, \
         LinearInterpolator, normalize_data, ClosestPeakSelector, \
         ResidualBootstrapWrapper, hat, lcr_matrix, bootstrap_data_array

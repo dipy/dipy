@@ -1,10 +1,10 @@
 from nibabel import load
 from nibabel.trackvis import empty_header, write
-from dipy.tracking.fact_tracking import FactIntegrator, generate_streamlines, \
-    seeds_from_mask, target
-from dipy.reconst.spherical_harmonic_models import SlowAdcOpdfModel, \
-    NearestNeighborInterpolator, ClosestPeakSelector, normalize_data, \
-    ResidualBootstrapWrapper
+from dipy.tracking.integration import FactIntegrator, generate_streamlines
+from dipy.tracking.utils import seeds_from_mask, target
+from dipy.reconst.shm import SlowAdcOpdfModel, ClosestPeakSelector, \
+    normalize_data, ResidualBootstrapWrapper
+from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.core.triangle_subdivide import create_half_unit_sphere
 
 from dipy.data import sample_hardi_data, sample_tracking_seedNtarget
@@ -64,10 +64,10 @@ def main():
                                       voxel_size, density)
     tracks = list(tracks)
     targeted_tracks = target(tracks, target_mask, voxel_size)
-    
+
     """
     Uncomment this to save tracks
-    """
+
     trk_tracks = ((streamline, None, None) for streamline in tracks)
     trgt_trk_tracks = ((streamline, None, None) for streamline in targeted_tracks)
 
@@ -77,6 +77,7 @@ def main():
     trk_hdr['dim'] = fa.shape
     write('example_tracks_before_target.trk', trk_tracks, trk_hdr)
     write('example_tracks_after_target.trk', trgt_trk_tracks, trk_hdr)
+    """
 
 if __name__ == "__main__":
     main()

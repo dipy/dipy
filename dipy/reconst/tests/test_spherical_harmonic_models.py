@@ -7,10 +7,10 @@ from dipy.reconst.dti import design_matrix, _compact_tensor
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.reconst.spherical_harmonic_models import real_sph_harm, \
+from dipy.reconst.shm import real_sph_harm, \
         sph_harm_ind_list, cartesian2polar, _robust_peaks, _closest_peak, \
         SlowAdcOpdfModel, normalize_data, ClosestPeakSelector, QballOdfModel, hat, \
-        lcr_matrix, NearestNeighborInterpolator, smooth_pinv
+        lcr_matrix, smooth_pinv
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -84,8 +84,7 @@ def test_closest_peak():
     assert_array_equal(cp, peak_points[0])
     cp = _closest_peak(peak_points, -prev, .5)
     assert_array_equal(cp, -peak_points[0])
-    cp = _closest_peak(peak_points, prev, .75)
-    assert cp is None
+    assert_raises(StopIteration, _closest_peak, peak_points, prev, .75)
 
 def test_set_angle_limit():
     bval = np.ones(100)
@@ -211,10 +210,10 @@ def test_ClosestPeakSelector():
     C = opdf_fitter.fit_data(norm_sig)
     S = opdf_fitter.evaluate(norm_sig)
     for ii in xrange(len(vecs_xy)):
-        step = stepper.next_step(ii, [0, 1., 0])
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .56:
-            assert step is None
+            assert_raises(StopIteration, stepper.next_step, ii, [0, 1., 0])
         else:
+            step = stepper.next_step(ii, [0, 1., 0])
             s2 = stepper.next_step(ii, vecs_xy[ii])
             assert_array_equal(vecs_xy[ii], step)
             step = stepper.next_step(ii, [1., 0, 0.])
@@ -229,16 +228,16 @@ def testQballOdfModel():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     qball_fitter = QballOdfModel(6, bval, bvec, sampling_points=v,
                                  sampling_edges=e)
-    
+
     norm_sig = sig[..., 1:]
     C = qball_fitter.fit_data(norm_sig)
     S = qball_fitter.evaluate(norm_sig)
     stepper = ClosestPeakSelector(qball_fitter, norm_sig, angle_limit=39)
     for ii in xrange(len(vecs_xy)):
-        step = stepper.next_step(ii, [0, 1., 0])
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .84:
-            assert step is None
+            assert_raises(StopIteration, stepper.next_step, ii, [0, 1., 0])
         else:
+            step = stepper.next_step(ii, [0, 1., 0])
             s2 = stepper.next_step(ii, vecs_xy[ii])
             assert step is not None
             assert np.dot(vecs_xy[ii], step) > .98
@@ -267,19 +266,4 @@ def test_hat_and_lcr():
     r3 = np.dot(d, R.T)
     assert_array_almost_equal(r, r3)
 
-def test_NearestNeighborInterpolator():
-    a, b, c = np.ogrid[0:6,0:6,0:6]
-    data = a+b+c
-
-    nni = NearestNeighborInterpolator(data, (1,1,1))
-    a, b, c = np.mgrid[0:6:.6, 0:6:.6, .0:6:.6]
-    for ii in xrange(a.size):
-        x = a.flat[ii]
-        y = b.flat[ii]
-        z = c.flat[ii]
-        expected_result = int(x) + int(y) + int(z)
-        assert nni[x, y, z] == expected_result
-        ind = np.array([x, y, z])
-        assert nni[ind] == expected_result
-    assert_raises(IndexError, nni.__getitem__, (-.1, 0, 0))
 

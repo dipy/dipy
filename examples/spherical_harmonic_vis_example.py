@@ -2,13 +2,13 @@ from numpy import abs, asarray, concatenate
 from enthought.mayavi import mlab
 from dipy.data import sample_hardi_data
 from dipy.core.triangle_subdivide import create_unit_sphere
-from dipy.reconst.spherical_harmonic_models import normalize_data, MonoExpOpdfModel
+from dipy.reconst.shm import normalize_data, MonoExpOpdfModel
 
 def show_blobs(blobs, v, faces):
     """Mayavi gets really slow when triangular_mesh is called too many times
     sot this function stacks blobs and calls triangular_mesh once
     """
- 
+
     blobs
     xcen = blobs.shape[0]/2
     ycen = blobs.shape[1]/2
@@ -66,8 +66,9 @@ def main():
 
     #display the opdf blobs using mayavi
     faces = edges[efaces, 0]
-#    show_blobs(opdfs_sampled_at_verts, verts, faces)
-#    mlab.imshow(fa_slice, colormap='gray', interpolate=False)
+    show_blobs(opdfs_sampled_at_verts, verts, faces)
+    mlab.imshow(fa_slice, colormap='gray', interpolate=False)
+    mlab.show()
 
 if __name__ == '__main__':
     main()
