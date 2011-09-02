@@ -86,4 +86,12 @@ def orientation_from_string(string_ornt):
     if (check != np.arange(len(string_ornt))).any():
         msg = string_ornt + " does not seem to be a valid orientation string"
         raise ValueError(msg)
-    return ornt    
+    return ornt
+
+def orientation_to_string(ornt):
+    orientation_dict = {(0,1):'r', (0,-1):'l', (1,1):'a',
+                        (1,-1):'p', (2,1):'s', (2,-1):'i'}
+    ornt_string = ''
+    for ii in ornt:
+        ornt_string += orientation_dict[(ii[0], ii[1])]
+    return ornt_string

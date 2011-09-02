@@ -281,4 +281,5 @@ def test_NearestNeighborInterpolator():
         assert nni[x, y, z] == expected_result
         ind = np.array([x, y, z])
         assert nni[ind] == expected_result
+    assert_raises(IndexError, nni.__getitem__, (-.1, 0, 0))
 

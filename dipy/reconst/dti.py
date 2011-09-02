@@ -559,6 +559,58 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN=IN.reshape(tup)
     return IN
 
+class TensorStepper(object):
+    """Used for tracking diffusion tensors, has a next_step method"""
+    def _get_angel_limit(self):
+        return np.arccos(self.dot_limit)*180/pi
+    def _set_angel_limit(self, angle):
+        if angle >= 0 and angle <= 90:
+            self.dot_limit = cos(angle*pi/180)
+        else:
+            raise ValueError("angle should be between 0 and 180")
+    angel_limit = property(_get_angel_limit, _set_angel_limit)
+
+    def _get_fa_limit(self):
+        return self._fa_limit
+    def _set_fa_limit(self, arg):
+        self._fa_limit = arg
+        mask = self.fa_vol > arg
+        self._interp_inst = _interpolator(self.evec1_vol, self.voxe_size, mask)
+    fa_limit = property(_get_fa_limit, _set_fa_limit)
+
+    def __init__(self, fa_vol, evec1_vol, voxel_size, fa_limit=None,
+                 angle_limit=None, interpolator=NearestNeighborInterpolator):
+        self.voxel_size = voxel_size
+        self.angle_limit = angle_limit
+        if fa_vol.shape != evec1_vol.shape[:-1]:
+            msg = "the fa and eigen vector volumes are not the same shape"
+            raise ValueError(msg)
+        if evec1_vol.shape[-1] != 3:
+            msg = "eigen vector volume should have vecetors of length 3 " + \
+                  "along the last dimmension"
+            raise ValueError(msg)
+        self.evec1_vol = evec1_vol
+        self.fa_vol = fa_vol
+        self._interpolator = interpolator
+        #self._interp_inst is created when fa_limit is set
+        self.fa_limit = fa_limit
+
+    def next_step(location, prev_step):
+        """Returns the nearest neighbor tensor for location"""
+        step = self._interp_inst[location]
+        angle_dot = dot(step, prev_step)
+        if np.abs(angle_dot) < self.dot_limit:
+            raise StopIteration
+        if angle_dot > 0:
+            return step
+        else:
+            return -step
+
+def stepper_from_tensor(tensor, *args, **kargs):
+    fa_vol = tensor.fa()
+    evec1_vol = tensor.evec[..., 0]
+    stepper = TensorStepper(fa_vol, evec1_vol, *args, **kargs)
+    return stepper
 
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor}

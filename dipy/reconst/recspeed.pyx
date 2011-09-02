@@ -36,6 +36,7 @@ cdef inline float* asfp(cnp.ndarray pt):
 cdef inline double* asdp(cnp.ndarray pt):
     return <double *>pt.data
 
+@cython.wraparound(False)
 def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data, 
                      cnp.ndarray[cnp.float_t, ndim=1] index,
                      cnp.ndarray[cnp.float_t, ndim=1] voxel_size):
@@ -49,9 +50,9 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
         float y = index[1] / voxel_size[1] - .5
         float z = index[2] / voxel_size[2] - .5
         float weight
-        int x_ind = <int> x
-        int y_ind = <int> y
-        int z_ind = <int> z
+        int x_ind = <int> floor(x)
+        int y_ind = <int> floor(y)
+        int z_ind = <int> floor(z)
         int ii, jj, kk, LL
         int last_d = data.shape[3]
         cnp.ndarray[cnp.float_t, ndim=1] result=np.zeros(last_d)
@@ -73,6 +74,8 @@ cdef float wght(int i, float r):
     else:
         return 1.-r
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
                   cnp.ndarray[cnp.float_t, ndim=1] peak_values,
                   float min_relative_value, float closest_neighbor):
@@ -84,12 +87,13 @@ def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
     3)  closest neighbor is cos(angle) where angle is smallest permiisible
         angle between between two robust peaks
     """
+    if peak_vertices.shape[1] != 3:
+        raise ValueError()
     cdef:
         cnp.ndarray[cnp.float_t, ndim=1] inst
         float min_value = peak_values[0] * min_relative_value
         float a, b, c
         int ii
-        bint t
     if len(peak_vertices) == 1:
         return peak_vertices
 
@@ -103,14 +107,9 @@ def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
         t = 1
         for inst in good_peak_vertices:
             dist = a*inst[0] + b*inst[1] + c*inst[2]
-            if dist >= 0:
-                if dist > closest_neighbor:
-                    t = 0
-                    break
-            else:
-                if -dist > closest_neighbor:
-                    t = 0
-                    break
+            if fabs(dist) > closest_neighbor:
+                t = 0
+                break
         if t:
             good_peak_vertices.append(peak_vertices[ii])
 

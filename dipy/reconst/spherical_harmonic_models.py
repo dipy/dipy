@@ -12,13 +12,14 @@ data.reshape(...) and parmas.reshape(...).
 """
 
 from operator import mul
+from math import floor
 from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
                   broadcast_arrays, c_, concatenate, cos, diag, dot, empty, \
                   eye, log, minimum, maximum, pi, r_, repeat, sqrt, eye, ix_
 from numpy.linalg import inv, pinv, svd
 from numpy.random import randint
 from scipy.special import sph_harm, lpn
-from .recspeed import peak_finding_onedge
+from .recspeed import peak_finding_onedge, _robust_peaks
 
 def real_sph_harm(m, n, theta, phi):
     """
@@ -410,7 +411,7 @@ def gfa(samples):
     denom = (n-1)*(samples*samples).sum(-1)
     return sqrt(numer/denom)
 
-def _robust_peaks(peak_points, peak_values, min_relative_value,
+def _py_robust_peaks(peak_points, peak_values, min_relative_value,
                         closest_neighbor):
     """Removes peaks that are too small and child peaks too close to a parent
     peak
@@ -439,7 +440,7 @@ def _closest_peak(peak_points, prev_step, dot_limit):
     closest_peak = abs(peak_dots).argmax()
     dot_closest_peak = peak_dots[closest_peak]
     if abs(dot_closest_peak) < dot_limit:
-        return
+        raise StopIteration("angle between peaks too large")
     if dot_closest_peak > 0:
         return peak_points[closest_peak]
     else:
@@ -468,25 +469,29 @@ def lcr_matrix(H):
     R = (eye(len(H)) - H) / leverages
     return R - R.mean(0)
 
-def bootstrap_data_array(data, H, R, permute=None):
-    """Returns a bootsrapped sample of data given H and R
+def bootstrap_data_array(data, H, R, permute=None, min_signal=1e-5):
+    """Applies the Residual Bootstraps to the data given H and R
 
-    Calculated the bootsrapped
+    data must be normalized, ie 0 < data <= 1
     """
 
     if permute is None:
         permute = randint(data.shape[-1], size=data.shape[-1])
     R = R[:, permute]
-    return dot(data, (H+R).T)
+    data = dot(data, (H+R).T, data)
+    data.clip(min_signal, 1., data)
 
-def bootstrap_data_voxel(data, H, R, permute=None, min_signal=0):
-    """Like bootstrap_data_array but faster when for a single voxel"""
+def bootstrap_data_voxel(data, H, R, permute=None, min_signal=1e-5):
+    """Like bootstrap_data_array but faster when for a single voxel
+    
+    data must be 1d and normalized
+    """
     if permute is None:
         permute = randint(data.shape[-1], size=data.shape[-1])
     r = dot(data, R.T)
     r = r[permute]
     d = dot(data, H.T) + r
-    maximum(min_signal, d, d)
+    d.clip(min_signal, 1., d)
     return d
 
 class Interpolator(object):
@@ -495,6 +500,8 @@ class Interpolator(object):
         self._data = data
         self._voxel_size = asarray(voxel_size, 'float')
         if mask is not None:
+            if mask.ndim != len(self._voxel_size):
+                raise ValueError()
             self._mask = asarray(mask, 'bool')
         else:
             self._mask = None
@@ -504,36 +511,30 @@ class NearestNeighborInterpolator(Interpolator):
 
     def __getitem__(self, index):
         index = index/self._voxel_size
-        index = tuple(index.astype('int'))
+        index = tuple(int(floor(ii)) for ii in index)
         if self._mask is not None:
             if self._mask[index] == False:
-                raise IndexError("mask is False at index")
+                raise StopIteration('outside mask')
         return self._data[index]
 
 class LinearInterpolator(Interpolator):
+    def __init__(self, data, voxel_size, mask=None, thresh=0):
+        self._data = data
+        self._voxel_size = asarray(voxel_size, 'float')
+        self.thresh = thresh
+        if mask is not None:
+            mask = asarray(mask, 'float')
+            mask = mask.reshape(mask.shape + (1,))
+            self._mask = mask
+        else:
+            self._mask = None
 
     def __getitem__(self, index):
-        index = index/self._voxel_size - .5
-        if index.min() < 0:
-            smallest_index = tuple(self._voxel_size/2)
-            msg = "Index too small, smallest indices allowed are " + \
-                  str(smallest_index)
-            raise IndexError(msg)
-        resid = index % 1
-        index = index.astype('int')
-
-        weights = ix_(*[(1.-ii, ii) for ii in resid])
-        weights = reduce(mul, weights)
-        ind = ix_(*[(ii, ii+1) for ii in index])
-        d = self._data[ind]
-
-        shape_result = d.shape[len(index):]
-        weights.shape += (d.ndim-len(index))*(1,)
-        d = weights*d
-        d.shape = (-1,) + shape_result
-        d = d.sum(0)
-
-        return d
+        if mask is not None:
+            mask_value = trilinear_interp(self._mask, index, self._voxel_size)
+            if mask_value < 1:
+                raise StopIteration('outside mask')
+        return trilinear_interp(self._mask, index, self.voxel_size)
 
 class ResidualBootstrapWrapper(Interpolator):
     """Returns a residual bootstrap sample of the signal_object when indexed
@@ -647,10 +648,7 @@ class ClosestPeakSelector(object):
             the direction of the previous tracking step
 
         """
-        try:
-            vox_data = self._interpolator[location]
-        except IndexError:
-            return
+        vox_data = self._interpolator[location]
 
         sampling_points = self._model.sampling_points
         sampling_edges = self._model.sampling_edges

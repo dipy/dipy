@@ -35,7 +35,6 @@ def sample_hardi_data():
 
     bvec, bval = read_bvec_file(pjoin(THIS_DIR, 'E1381S6_edcor.bval'))
 
-
     return data, fa, bvec, bval, voxel_size
 
 def sample_tracking_seedNtarget():
