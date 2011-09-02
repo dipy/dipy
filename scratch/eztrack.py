@@ -5,10 +5,11 @@ import nibabel as nib
 from scipy.ndimage import convolve
 from traits.api import *
 from nibabel.trackvis import write, empty_header
-from dipy.reconst.shm import SlowAdcOpdfModel, \
-        MonoExpOpdfModel, QballOdfModel, NearestNeighborInterpolator, \
-        LinearInterpolator, normalize_data, ClosestPeakSelector, \
+from dipy.reconst.shm import SlowAdcOpdfModel, MonoExpOpdfModel, \
+        QballOdfModel, normalize_data, ClosestPeakSelector, \
         ResidualBootstrapWrapper, hat, lcr_matrix, bootstrap_data_array
+from dipy.reconst.interpolate import LinearInterpolator, \
+        NearestNeighborInterpolator
 from dipy.core.triangle_subdivide import create_half_unit_sphere, \
         disperse_charges
 from dipy.tracking.integration import FactIntegrator, FixedStepIntegrator, \
@@ -16,7 +17,7 @@ from dipy.tracking.integration import FactIntegrator, FixedStepIntegrator, \
 from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
         streamline_counts
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
-                            reorient_bvec
+        reorient_bvec
 import pickle
 
 nifti_file = File(filter=['*.nii.gz'])
@@ -186,6 +187,4 @@ class EZTrackingInterface(HasStrictTraits):
             streamlines = target(streamlines, target_mask, voxel_size)
 
         return streamlines
-
-
 
