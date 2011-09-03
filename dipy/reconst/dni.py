@@ -258,6 +258,8 @@ class DiffusionNabla(object):
         for i in range(self.dn):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/s[0]
         LEq=laplace(Eq)
+        self.Eq=Eq
+        self.LEq=LEq
         LEs=map_coordinates(LEq,self.Xs,order=1)        
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
         return odf
@@ -271,6 +273,8 @@ class DiffusionNabla(object):
         for i in range(self.dn):            
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
         LEq=laplace(Eq)
+        self.Eq=Eq
+        self.LEq=LEq
         LEs=map_coordinates(LEq,self.Ys,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
