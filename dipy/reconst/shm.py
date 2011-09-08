@@ -376,7 +376,7 @@ class QballOdfModel(SphHarmModel):
         """
         return dot(data, self._sampling_matrix.T)
 
-def normalize_data(data, bval, min_signal=1e-5):
+def normalize_data(data, bval, min_signal=1e-5, mask=None):
     """Normalizes the data with respect to the mean b0
     """
     if min_signal <= 0:
