@@ -275,7 +275,13 @@ class DiffusionNabla(object):
         LEq=laplace(Eq)
         self.Eq=Eq
         self.LEq=LEq
-        LEs=map_coordinates(LEq,self.Ys,order=1)        
+        
+        LEq=np.sqrt(-np.log(-LEq))
+        
+        LEs=map_coordinates(LEq,self.Ys,order=1)
+        
+        LEs=-np.exp(-LEs**2)
+                
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
         LEsum=np.sum(LEs,axis=1)
