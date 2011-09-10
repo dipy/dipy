@@ -239,7 +239,7 @@ class GeneralizedQSampling(object):
         """ implementing equation (8) in the referenced paper by Yeh et al. 2010
         """
         if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
-            print 'small'
+            #print 'small'
             return 1/3.
         return 2*np.cos(x)/x**2 + (x**2-2)*np.sin(x)/x**3
     

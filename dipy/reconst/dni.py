@@ -274,14 +274,18 @@ class DiffusionNabla(object):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
         LEq=laplace(Eq)
         self.Eq=Eq
-        self.LEq=LEq
+        self.LEq=LEq        
+        #CHANGE
         
-        LEq=np.sqrt(-np.log(-LEq))
+        LEq=np.sqrt(-np.log(Eq))
+        print 'hey'        
+        print np.sum(np.isnan(LEq))
         
-        LEs=map_coordinates(LEq,self.Ys,order=1)
-        
-        LEs=-np.exp(-LEs**2)
-                
+        LEs=map_coordinates(LEq,self.Ys,order=1)        
+        LEs=np.exp(-LEs**2)
+        print 'hyw'        
+        print np.sum(np.isnan(LEs))
+                        
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
         LEsum=np.sum(LEs,axis=1)
@@ -289,7 +293,9 @@ class DiffusionNabla(object):
         for i in xrange(self.odfn):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
             #odf[i]=np.sum(self.eqweights[i]*LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        return - odf
+        print 'hoy'
+        print np.sum(np.isnan(odf))
+        return odf #- odf
         
     def angular_weighting(self,odf):        
         #W=np.dot(self.odf_vertices,self.odf_vertices.T)
