@@ -274,28 +274,42 @@ class DiffusionNabla(object):
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
         LEq=laplace(Eq)
         self.Eq=Eq
-        self.LEq=LEq        
-        #CHANGE
-        
-        LEq=np.sqrt(-np.log(Eq))
-        print 'hey'        
-        print np.sum(np.isnan(LEq))
-        
+        self.LEq=LEq       
         LEs=map_coordinates(LEq,self.Ys,order=1)        
-        LEs=np.exp(-LEs**2)
-        print 'hyw'        
-        print np.sum(np.isnan(LEs))
-                        
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
-        LEsum=np.sum(LEs,axis=1)
-        #print LEsum.shape
+        LEsum=np.sum(LEs,axis=1)        
         for i in xrange(self.odfn):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
-            #odf[i]=np.sum(self.eqweights[i]*LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        print 'hoy'
-        print np.sum(np.isnan(odf))
-        return odf #- odf
+        #print np.sum(np.isnan(odf))
+        return -odf
+    
+    def eit_odf(self,s,lg=True):
+        odf = np.zeros(self.odfn)        
+        Eq=np.zeros((self.sz,self.sz,self.sz))
+        for i in range(self.dn):            
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
+        
+        self.Eq=Eq
+        #self.LEq=LEq      
+        if lg==True:
+            LEq=np.sqrt(-np.log(Eq))
+            LEq[np.isinf(LEq)]=0
+            LEq[LEq<0]=0
+            self.Nq=LEq     
+            LEs=map_coordinates(LEq,self.Ys,order=1)        
+            LEs=np.exp(-LEs**2)
+        else:
+            LEq=laplace(Eq)
+            LEs=map_coordinates(LEq,self.Ys,order=1)
+                                   
+        LEs=LEs.reshape(self.odfn,self.radiusn)
+        LEs=LEs*self.radius
+        LEsum=np.sum(LEs,axis=1)        
+        for i in xrange(self.odfn):
+            odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
+        #print np.sum(np.isnan(odf))
+        return odf
         
     def angular_weighting(self,odf):        
         #W=np.dot(self.odf_vertices,self.odf_vertices.T)
