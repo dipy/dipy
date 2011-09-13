@@ -6,11 +6,13 @@ from dipy.utils.spheremakers import sphere_vf_from
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.reconst.dsi import project_hemisph_bvecs
 from scipy.ndimage.filters import laplace
-from scipy.ndimage import zoom
+from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
 
 import warnings
 warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
+
+
 
 
 class DiffusionNabla(object):
@@ -102,6 +104,9 @@ class DiffusionNabla(object):
         self.botox_level=.3
         
     def precompute_angular(self,smooth):
+        if smooth==None:            
+            self.E=None
+            return        
         self.W=np.dot(self.odf_vertices,self.odf_vertices.T)
         self.W=self.W.astype('f8')
         E=np.exp(self.W/smooth)
@@ -314,16 +319,21 @@ class DiffusionNabla(object):
         self.Eq=Eq
         self.LEq=LEq
         LEq=np.sqrt(-np.log(Eq))
-        LEq[np.isinf(LEq)]=0
-        LEq[LEq<0]=0
+        LEq[np.isinf(LEq)]=1000000
+        #LEq[LEq<0]=0
         self.Nq=LEq     
-        LEs=map_coordinates(LEq,self.Xs,order=1)        
-        LEs=np.exp(-LEs**2)               
+        LEs=map_coordinates(LEq,self.Xs,order=1)  
+        self.iLE=LEs      
+        LEs=np.exp(-LEs**2)
+        self.sqnegexp=LEs               
         le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
         return -odf
         
     def angular_weighting(self,odf):
-        return np.dot(odf[None,:],self.E).ravel()
+        if self.E==None:
+            return odf
+        else:
+            return np.dot(odf[None,:],self.E).ravel()
         
     def precompute_equator_indices(self,thr=5):        
         eq_inds=[]        
@@ -385,5 +395,41 @@ class DiffusionNabla(object):
         return self.IN
 
 
-
+class EquatorialInversion(DiffusionNabla):
+    
+    
+    def eit_operator(self,input, scale, output = None, mode = "reflect", cval = 0.0):
+        """Calculate a multidimensional laplace filter using an estimation
+        for the second derivative based on differences.
+        """
+        def derivative2(input, axis, output, mode, cval):
+            return correlate1d(input, scale*np.array([1, -2, 1]), axis, output, mode, cval, 0)
+        return generic_laplace(input, derivative2, output, mode, cval)
+    
+    def set_operator(self,name):
+        self.operator=name
+    
+    def fast_odf(self,s):
+        odf = np.zeros(self.odfn)        
+        Eq=np.zeros((self.sz,self.sz,self.sz))
+        for i in range(self.dn):            
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+            
+        if  self.operator=='2laplacian':       
+            LEq=self.eit_operator(Eq,2)
+            sign=-1
+        if  self.operator=='laplacian':
+            LEq=laplace(Eq)
+            sign=-1
+        if  self.operator=='signal':
+            LEq=Eq
+            sign=1
+                           
+        LEs=map_coordinates(LEq,self.Ys,order=1)        
+        LEs=LEs.reshape(self.odfn,self.radiusn)
+        LEs=LEs*self.radius
+        LEsum=np.sum(LEs,axis=1)        
+        for i in xrange(self.odfn):
+            odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]        
+        return sign*odf
 
