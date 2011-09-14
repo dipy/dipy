@@ -421,6 +421,9 @@ class EquatorialInversion(DiffusionNabla):
         if  self.operator=='laplacian':
             LEq=laplace(Eq)
             sign=-1
+        if self.operator=='laplap':
+            LEq=laplace(laplace(Eq))
+            sign=1
         if  self.operator=='signal':
             LEq=Eq
             sign=1
