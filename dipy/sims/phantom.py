@@ -130,6 +130,7 @@ def orbital_phantom(bvals=None,
     #ten=Tensor(vol,bvals,bvecs)
     #FA=ten.fa()
     #FA[np.isnan(FA)]=0
+    #vol[np.isnan(vol)]=0
     return vol
 
 def add_rician_noise(vol,snr=20):
