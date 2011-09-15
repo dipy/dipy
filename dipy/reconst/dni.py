@@ -76,28 +76,41 @@ class DiffusionNabla(object):
         self.mask=mask
         #odf sampling radius  
         self.radius=np.arange(0,6,.2)
-        self.radiusn=len(self.radius)
-        self.create_qspace(bvals,gradients,16,8)
+        #self.radiusn=len(self.radius)
+        #self.create_qspace(bvals,gradients,16,8)
         #peak threshold
         self.peak_thr=.4
         self.iso_thr=.7
         #calculate coordinates of equators
-        self.radon_params()
+        #self.radon_params()
         #precompute coordinates for pdf interpolation
-        self.precompute_interp_coords()        
-        self.precompute_fast_coords()
+        #self.precompute_interp_coords()        
+        #self.precompute_fast_coords()
         self.zone=5.
-        self.precompute_equator_indices(self.zone)
+        #self.precompute_equator_indices(self.zone)
         #precompute botox weighting
         #self.precompute_botox(0.05,.3)
-        self.precompute_angular(0.1)
-                
+        self.gaussian_weight=0.1
+        #self.precompute_angular(self.gaussian_weight)
+        
+        self.update()
+        
         if fast==True:
             self.odf=self.fast_odf
         else:
             self.odf=self.slow_odf        
         if auto:
             self.fit()
+            
+    def update(self):        
+        self.radiusn=len(self.radius)
+        self.create_qspace(self.bvals,self.gradients,16,8)
+        self.radon_params()        
+        self.precompute_interp_coords()        
+        self.precompute_fast_coords()        
+        self.precompute_equator_indices(self.zone)        
+        self.precompute_angular(self.gaussian_weight)
+        
     
     def precompute_botox(self,smooth,level):
         self.botox_smooth=.05
@@ -288,47 +301,7 @@ class DiffusionNabla(object):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
         #print np.sum(np.isnan(odf))
         return -odf
-    
-    def log_fast_odf(self,s):
-        odf = np.zeros(self.odfn)        
-        Eq=np.zeros((self.sz,self.sz,self.sz))
-        for i in range(self.dn):            
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        self.Eq=Eq 
-        LEq=np.sqrt(-np.log(Eq))
-        LEq[np.isinf(LEq)]=0
-        LEq[LEq<0]=0
-        self.Nq=LEq     
-        LEs=map_coordinates(LEq,self.Ys,order=1)        
-        LEs=np.exp(-LEs**2)
-        LEs=LEs.reshape(self.odfn,self.radiusn)
-        LEs=LEs*self.radius
-        LEsum=np.sum(LEs,axis=1)        
-        for i in xrange(self.odfn):
-            odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        return odf
-    
-    def log_slow_odf(self,s):
-        """ Calculate the orientation distribution function 
-        """        
-        odf = np.zeros(self.odfn)
-        Eq=np.zeros((self.sz,self.sz,self.sz))
-        for i in range(self.dn):
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/s[0]
-        LEq=laplace(Eq)
-        self.Eq=Eq
-        self.LEq=LEq
-        LEq=np.sqrt(-np.log(Eq))
-        LEq[np.isinf(LEq)]=1000000
-        #LEq[LEq<0]=0
-        self.Nq=LEq     
-        LEs=map_coordinates(LEq,self.Xs,order=1)  
-        self.iLE=LEs      
-        LEs=np.exp(-LEs**2)
-        self.sqnegexp=LEs               
-        le_to_odf(odf,LEs,self.radius,self.odfn,self.radiusn,self.equatorn)
-        return -odf
-        
+            
     def angular_weighting(self,odf):
         if self.E==None:
             return odf
