@@ -1,13 +1,15 @@
 import warnings
 import numpy as np
 from scipy.ndimage import map_coordinates
-from dipy.reconst.recspeed import peak_finding, le_to_odf
+from dipy.reconst.recspeed import peak_finding, le_to_odf, sum_on_blocks_1d
 from dipy.utils.spheremakers import sphere_vf_from
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.reconst.dsi import project_hemisph_bvecs
 from scipy.ndimage.filters import laplace
 from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
+
+
 
 import warnings
 warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
@@ -92,23 +94,27 @@ class DiffusionNabla(object):
         #self.precompute_botox(0.05,.3)
         self.gaussian_weight=0.1
         #self.precompute_angular(self.gaussian_weight)
-        
-        self.update()
-        
-        if fast==True:
+               
+        self.fast=fast        
+        if fast==True:            
             self.odf=self.fast_odf
         else:
-            self.odf=self.slow_odf        
+            self.odf=self.slow_odf
+            
+        self.update()
+                    
         if auto:
             self.fit()
             
     def update(self):        
         self.radiusn=len(self.radius)
         self.create_qspace(self.bvals,self.gradients,16,8)
-        self.radon_params()        
-        self.precompute_interp_coords()        
-        self.precompute_fast_coords()        
-        self.precompute_equator_indices(self.zone)        
+        if self.fast==False: 
+            self.radon_params()        
+            self.precompute_interp_coords()
+        if self.fast==True:        
+            self.precompute_fast_coords()        
+            self.precompute_equator_indices(self.zone)        
         self.precompute_angular(self.gaussian_weight)
         
     
@@ -309,17 +315,20 @@ class DiffusionNabla(object):
             return np.dot(odf[None,:],self.E).ravel()
         
     def precompute_equator_indices(self,thr=5):        
-        eq_inds=[]        
+        eq_inds=[]
+        eq_inds_complete=[]        
         eq_inds_len=np.zeros(self.odfn)        
         for (i,v) in enumerate(self.odf_vertices):
             eq_inds.append([])                    
             for (j,k) in enumerate(self.odf_vertices):
                 angle=np.rad2deg(np.arccos(np.dot(v,k)))
                 if  angle < 90 + thr and angle > 90 - thr:
-                    eq_inds[i].append(j)                    
+                    eq_inds[i].append(j)
+                    eq_inds_complete.append(j)                    
             eq_inds_len[i]=len(eq_inds[i])                    
         self.eqinds=eq_inds
-        self.eqinds_len=eq_inds_len
+        self.eqinds_com=np.array(eq_inds_complete)
+        self.eqinds_len=np.array(eq_inds_len,dtype='i8')
         
     
         
@@ -385,8 +394,9 @@ class EquatorialInversion(DiffusionNabla):
     def fast_odf(self,s):
         odf = np.zeros(self.odfn)        
         Eq=np.zeros((self.sz,self.sz,self.sz))
-        for i in range(self.dn):            
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+        #for i in range(self.dn):            
+        #    Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
+        Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/s[0]
             
         if  self.operator=='2laplacian':       
             LEq=self.eit_operator(Eq,2)
@@ -405,7 +415,13 @@ class EquatorialInversion(DiffusionNabla):
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
         LEsum=np.sum(LEs,axis=1)        
-        for i in xrange(self.odfn):
-            odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]        
+        #for i in xrange(self.odfn):
+        #    odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]        
+        #odf2=odf.copy()
+        LES=LEsum[self.eqinds_com]        
+        sum_on_blocks_1d(LES,self.eqinds_len,odf,self.odfn)
+        odf=odf/self.eqinds_len
+        
+        
         return sign*odf
 
