@@ -414,7 +414,8 @@ class EquatorialInversion(DiffusionNabla):
         LEs=map_coordinates(LEq,self.Ys,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
-        LEsum=np.sum(LEs,axis=1)        
+        LEsum=np.sum(LEs,axis=1)
+        #This is what the following code is doing        
         #for i in xrange(self.odfn):
         #    odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]        
         #odf2=odf.copy()
