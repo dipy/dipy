@@ -29,10 +29,10 @@ You can find our sources and single-click downloads:
 * Download as a tar/zip file the `current trunk`_.
 * Downloads of all `available releases`_.
 
-.. _main repository: http://github.com/Garyfallidis/dipy
+.. _main repository: http://github.com/nipy/dipy
 .. _Documentation: http://dipy.org
-.. _current trunk: http://github.com/Garyfallidis/dipy/archives/master
-.. _available releases: http://github.com/Garyfallidis/dipy/downloads
+.. _current trunk: http://github.com/nipy/dipy/archives/master
+.. _available releases: http://github.com/nipy/dipy/downloads
 
 License
 =======

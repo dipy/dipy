@@ -41,7 +41,7 @@ the tests from the resulting directory.
 Release checklist
 =================
 
-* Review the open list of `issues <http://github.com/Garyfallidis/dipy/issues>`_ .
+* Review the open list of `issues <http://github.com/nipy/dipy/issues>`_ .
   Check whether there are outstanding issues that can be closed, and whether
   there are any issues that should delay the release.  Label them !
 
