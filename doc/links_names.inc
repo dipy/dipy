@@ -11,7 +11,7 @@
 .. _nipy: http://nipy.org
 .. _`Brain Imaging Center`: http://bic.berkeley.edu/
 .. _dipy: http://dipy.org
-.. _`dipy github`: http://github.com/Garyfallidis/dipy
+.. _`dipy github`: http://github.com/nipy/dipy
 .. _dipy pypi: http://pypi.python.org/pypi/dipy
 .. _nibabel: http://nipy.sourceforge.net/nibabel
 .. _nibabel pypi: http://pypi.python.org/pypi/nibabel
