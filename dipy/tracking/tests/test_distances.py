@@ -144,7 +144,7 @@ def test_bundles_distances_mdf():
         for (b,tb) in enumerate(tracksB):
             md=np.sum(np.sqrt(np.sum((ta-tb)**2,axis=1)))/3.
             md2=np.sum(np.sqrt(np.sum((ta-tb[::-1])**2,axis=1)))/3.
-            DM[a,b]=np.min(md,md2)
+            DM[a,b]=np.min((md,md2))
     print DM
     
     print '--------------'
