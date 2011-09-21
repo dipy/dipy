@@ -4,16 +4,16 @@
  Set up your fork
 ==================
 
-First you follow the instructions for :ref:`forking`. 
+First you follow the instructions for :ref:`forking`.
 
 Overview
 ========
 
 ::
 
-   git clone git@github.com/your-user-name/dipy.git
+   git clone git@github.com:your-user-name/dipy.git
    cd dipy
-   git remote add upstream git://github.com/Garyfallidis/dipy.git
+   git remote add upstream git://github.com/nipy/dipy.git
 
 In detail
 =========
@@ -33,7 +33,7 @@ Clone your fork
    This tells you that you are currently on the ``master`` branch, and
    that you also have a ``remote`` connection to ``origin/master``.
    What remote repository is ``remote/origin``? Try ``git remote -v`` to
-   see the URLs for the remote.  They will point to your github_ fork.
+   see the URLs for the remote.  They will point to your github fork.
 
    Now you want to connect to the upstream `dipy github`_ repository, so
    you can merge in changes from trunk.
@@ -46,7 +46,7 @@ Linking your repository to the upstream repo
 ::
 
    cd dipy
-   git remote add upstream git://github.com/Garyfallidis/dipy.git
+   git remote add upstream git://github.com/nipy/dipy.git
 
 ``upstream`` here is just the arbitrary name we're using to refer to the
 main dipy_ repository at `dipy github`_.
@@ -59,10 +59,10 @@ use it to merge into our own code.
 Just for your own satisfaction, show yourself that you now have a new
 'remote', with ``git remote -v show``, giving you something like::
 
-   upstream	git://github.com/Garyfallidis/dipy.git (fetch)
-   upstream	git://github.com/Garyfallidis/dipy.git (push)
+   upstream	git://github.com/nipy/dipy.git (fetch)
+   upstream	git://github.com/nipy/dipy.git (push)
    origin	git@github.com:your-user-name/dipy.git (fetch)
    origin	git@github.com:your-user-name/dipy.git (push)
 
-.. include:: git_links.txt
+.. include:: links.inc
 
