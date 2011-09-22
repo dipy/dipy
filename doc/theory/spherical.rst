@@ -106,4 +106,4 @@ plane and OP.  This implies different formulae for the conversions between
 Cartesian and spherical coordinates that are easy to derive.
 
 
-.. include:: links_names.inc
+.. include:: ../links_names.inc
