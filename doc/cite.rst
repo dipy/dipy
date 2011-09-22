@@ -12,7 +12,8 @@ Publications
 
 [5] Garyfallidis E, Brett M, Amirbekian B, Nguyen C, Yeh F-C, Olivetti E, Halchenko Y, Nimmo-Smith I "Dipy - a novel software library for diffusion MR and tractography", 17th Annual Meeting of the Organization for Human Brain Mapping.
 
-[6] Yeh F-C, Wedeen VJ, Tseng WY,  "Generalized Q-Sampling Imaging"
+[6] Yeh F-C, Wedeen VJ, Tseng WY (2010), "Generalized Q-Sampling Imaging", IEEE Trans. Med. Imaging.
+
 
 A short note
 --------------
