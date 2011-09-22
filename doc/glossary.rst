@@ -78,7 +78,7 @@
       *rotation vector* $\boldsymbol{u}$, such that:
 
       .. math::
-      
+
          \theta =  \|\boldsymbol{u}\| \,
 
          \boldsymbol{\hat{u}} = \frac{\boldsymbol{u}}{\|\boldsymbol{u}\|}
@@ -96,5 +96,4 @@
       $\boldsymbol{\hat{u}}$ is a convention to express the fact that it
       is a unit vector.
 
-       
-       
+.. include:: links_names.inc
