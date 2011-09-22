@@ -13,7 +13,7 @@ def SticksAndBall(bvals,gradients,d=0.0015,S0=100,angles=[(0,0),(90,0)],fraction
     gradients : array, shape (N,3) also known as bvecs
     d : diffusivity value 
     S0 : unweighted signal value
-    angles : list of polar angles (in degrees) for the sticks
+    angles : array (K,2) list of polar angles (in degrees) for the sticks
         or array (K,3) with sticks as Cartesian unit vectors and K the number of sticks
     fractions : percentage of each stick
     snr : signal to noise ration assuming gaussian noise. Provide None for no noise.
