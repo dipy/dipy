@@ -35,11 +35,9 @@ Just some of our **state-of-the-art** applications are:
 **Join in the fun** and enjoy the `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we made for the Summer Exhibition in London for the celebration of the 350 years of the Royal Society.
 
 An Example
-~~~~~~~~~~~~~
+~~~~~~~~~~
 
-Here is a tiny usage example for dipy 
-
-::
+Here is a tiny usage example for dipy::
 
   >>> import numpy as np
   >>> from dipy.reconst.dti import Tensor
@@ -50,17 +48,18 @@ Here is a tiny usage example for dipy
   >>> data=img.get_data()
   >>> bvals=np.loadtxt(fbvals)
   >>> gradients=np.loadtxt(fbvecs).T
-  >>> ten=Tensor(data,bvals,gradients,thresh=50)  
+  >>> ten=Tensor(data,bvals,gradients,thresh=50)
   >>> FA=ten.fa()
   >>> MASK = FA < 0.2
 
-In this code snippet we loaded a small diffusion dataset with their data, b-vectors and b-values, 
-calculated the Tensors and fractional anisotropy (FA) and then created a mask to remove the 
-regions with low anisotropy. :ref:`Download <installation>` dipy and try it for yourself.
+In this code snippet we loaded a small diffusion dataset with their data,
+b-vectors and b-values, calculated the Tensors and fractional anisotropy (FA)
+and then created a mask to remove the regions with low anisotropy.
+:ref:`Download <installation>` dipy and try it for yourself.
 
 
 A skeleton
-~~~~~~~~~~~~~
+~~~~~~~~~~
 
 .. figure:: _static/simplified_tractography.png
    :align: center
@@ -79,3 +78,4 @@ A skeleton
 
    documentation
 
+.. include:: links_names.inc

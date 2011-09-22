@@ -38,25 +38,29 @@ import dipy.reconst.gqi as gqi
 
 from dipy.data import get_data
 
-""" 
+"""
 Isotropic voxel sizes required
 ------------------------------
-``dipy`` requires its datasets to have isotropic voxel size. If you have datasets with anisotropic voxel size 
-then you need to resample with isotropic voxel size. We have provided an algorithm for this. 
-You can have a look at the example ``resample_aniso_2_iso.py``
+``dipy`` requires its datasets to have isotropic voxel size. If you have
+datasets with anisotropic voxel size then you need to resample with isotropic
+voxel size. We have provided an algorithm for this.  You can have a look at the
+example ``resample_aniso_2_iso.py``
 
 Accessing the necessary datasets
 --------------------------------
-``get_data`` provides data for a small region of interest from a real
-diffusion weighted MR dataset acquired with 102 gradients (including one for b=0). 
+``get_data`` provides data for a small region of interest from a real diffusion
+weighted MR dataset acquired with 102 gradients (including one for b=0).
 
-In order to make this work with your data you should comment out the line below and add the paths 
-for your nifti file (``*.nii`` or ``*.nii.gz``) and your ``*.bvec`` and ``*.bval files``. 
+In order to make this work with your data you should comment out the line below
+and add the paths for your nifti file (``*.nii`` or ``*.nii.gz``) and your
+``*.bvec`` and ``*.bval files``.
 
 If you are not using nifti files or you don't know how to create the ``*.bvec``
 and ``*.bval`` files from your raw dicom (``*.dcm``) data then you can either
 try the example called ``dcm_2_tracks.py`` or use mricron_ to convert the dicom
-files to nii, bvec and bval files using ``dcm2nii``. 
+files to nii, bvec and bval files using ``dcm2nii``.
+
+.. _mricron: http://www.cabiatl.com/mricro/mricron
 """
 
 fimg,fbvals,fbvecs=get_data('small_101D')
