@@ -47,7 +47,9 @@ examples-tgz: rstexamples
 	../tools/pack_examples.py ../dist
 
 gitwash-update:
-	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=Garyfallidis
+	python ../tools/gitwash_dumper.py devel dipy --repo-name=dipy --github-user=nipy \
+            --project-url=http://nipy.org/dipy \
+            --project-ml-url=http://mail.scipy.org/mailman/listinfo/nipy-devel
 
 html: rstexamples html-after-examples
 	# build full docs including examples

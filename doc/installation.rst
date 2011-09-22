@@ -276,7 +276,15 @@ To build in the source tree so you can run the code in the source tree
 
   or::
 
+<<<<<<< HEAD
     source ~/.bash_profile
+||||||| merged common ancestors
+      git clone git://github.com/Garyfallidis/dipy.git
+      git clone git://github.com/hanke/nibabel.git
+=======
+      git clone git://github.com/nipy/dipy.git
+      git clone git://github.com/nipy/nibabel.git
+>>>>>>> DOC - point to nipy/dipy location for repository
 
   so that you can have immediate access to dipy_ without needing to
   restart your terminal.
