@@ -1356,64 +1356,64 @@ def track_dist_3pts(tracka,trackb):
         return d[1]
 
 @cython.boundscheck(False)
-@cython.wraparound(False)      
+@cython.wraparound(False)
 @cython.cdivision(True)
 cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
-    ''' Direct and flip average distance between two tracks
-    
+    r''' Direct and flip average distance between two tracks
+
     Parameters
     ------------
-        a : first track
-        b : second track
-        rows : number of points of the track 
-            both tracks need to have the same number of points
-    
+    a : first track
+    b : second track
+    rows : number of points of the track
+        both tracks need to have the same number of points
+
     Returns
     --------
-        out : direct and flipped average distance added
-    
+    out : direct and flipped average distance added
+
     Notes
     ------
-    The distance calculated between two tracks
-    
-    t_1       t_2
-    
-    0*   a    *0    
-      \       | 
-       \      |
-       1*     |
-        |  b  *1
-        |      \   
-       2*       \
-            c    *2
-           
-    is equal to (a+b+c)/3 where a the euclidean distance between t_1[0] and t_2[0], 
-    b between  t_1[1] and t_2[1] and c between t_1[2] and t_2[2]. Also the fliped
-    
+    The distance calculated between two tracks::
+
+        t_1       t_2
+
+        0*   a    *0
+          \       |
+           \      |
+           1*     |
+            |  b  *1
+            |      \
+            2*      \
+                c    *2
+
+    is equal to $(a+b+c)/3$ where $a$ the euclidean distance between t_1[0] and
+    t_2[0], $b$ between t_1[1] and t_2[1] and $c$ between t_1[2] and t_2[2].
+    Also the fliped
+
     See also
     ---------
     dipy.tracking.distances.local_skeleton_clustering
-    
     '''
     cdef:
         long i=0,j=0
-        float sub=0,subf=0,distf=0,dist=0,tmprow=0, tmprowf=0            
-    
+        float sub=0,subf=0,distf=0,dist=0,tmprow=0, tmprowf=0
+
     for i from 0<=i<rows:
         tmprow=0
         tmprowf=0
-        for j from 0<=j<3:            
-            sub=a[i*3+j]-b[i*3+j]                                           
+        for j from 0<=j<3:
+            sub=a[i*3+j]-b[i*3+j]
             subf=a[i*3+j]-b[(rows-1-i)*3+j]
             tmprow+=sub*sub
             tmprowf+=subf*subf
         dist+=sqrt(tmprow)
         distf+=sqrt(tmprowf)
-    
+
     out[0]=dist/<float>rows
     out[1]=distf/<float>rows
-        
-    
+
+
 @cython.cdivision(True)   
 cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
     ''' Calculate the euclidean distance between two 3pt tracks
