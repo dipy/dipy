@@ -743,8 +743,14 @@ def circumradius(a, b, c):
 def vec2vec_rotmat(u,v):
     r""" rotation matrix from 2 unit vectors  
     
-    u,v being unit 3d vectors return the 3x3 rotation matrix R than aligns u to v
-    The transpose of R will align v to u
+    u,v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to v.
+
+    In general there are many rotations that will map u to v. If S is any rotation
+    using v as an axis then R.S will also map u to v since (S.R)u = S(Ru) = Sv = v.
+    The rotation R returned by vec2vec_rotmat leaves fixed the perpendicular to the
+    plane spanned by u and v.
+
+    The transpose of R will align v to u.
     
     Parameters
     -----------
