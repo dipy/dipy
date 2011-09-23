@@ -1,11 +1,12 @@
 .. _examples:
 
-.. In order to build the examples, you'll need (on Debian)
-    sudo apt-get install python-tables python-matplotib python-vtk
-
 ========
 Examples
 ========
+
+.. In order to build the examples, you'll need (on Debian)
+    sudo apt-get install python-tables python-matplotib python-vtk
+
 
 .. toctree::
    :maxdepth: 2
