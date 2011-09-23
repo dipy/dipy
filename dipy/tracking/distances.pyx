@@ -489,7 +489,7 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     # preprocess tracks
     cdef:
         size_t longest_track_len = 0, track_len
-        longest_track_lenA, longest_track_lenB
+        size_t longest_track_lenA = 0, longest_track_lenB = 0
         cnp.ndarray[object, ndim=1] tracksA32
         cnp.ndarray[object, ndim=1] tracksB32
         cnp.ndarray[cnp.double_t, ndim=2] DM
@@ -1356,64 +1356,64 @@ def track_dist_3pts(tracka,trackb):
         return d[1]
 
 @cython.boundscheck(False)
-@cython.wraparound(False)      
+@cython.wraparound(False)
 @cython.cdivision(True)
 cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
-    ''' Direct and flip average distance between two tracks
-    
+    r''' Direct and flip average distance between two tracks
+
     Parameters
     ------------
-        a : first track
-        b : second track
-        rows : number of points of the track 
-            both tracks need to have the same number of points
-    
+    a : first track
+    b : second track
+    rows : number of points of the track
+        both tracks need to have the same number of points
+
     Returns
     --------
-        out : direct and flipped average distance added
-    
+    out : direct and flipped average distance added
+
     Notes
     ------
-    The distance calculated between two tracks
-    
-    t_1       t_2
-    
-    0*   a    *0    
-      \       | 
-       \      |
-       1*     |
-        |  b  *1
-        |      \   
-       2*       \
-            c    *2
-           
-    is equal to (a+b+c)/3 where a the euclidean distance between t_1[0] and t_2[0], 
-    b between  t_1[1] and t_2[1] and c between t_1[2] and t_2[2]. Also the fliped
-    
+    The distance calculated between two tracks::
+
+        t_1       t_2
+
+        0*   a    *0
+          \       |
+           \      |
+           1*     |
+            |  b  *1
+            |      \
+            2*      \
+                c    *2
+
+    is equal to $(a+b+c)/3$ where $a$ the euclidean distance between t_1[0] and
+    t_2[0], $b$ between t_1[1] and t_2[1] and $c$ between t_1[2] and t_2[2].
+    Also the same with t2 flipped (so t_1[0] compared to t_2[2] etc).
+
     See also
     ---------
     dipy.tracking.distances.local_skeleton_clustering
-    
     '''
     cdef:
         long i=0,j=0
-        float sub=0,subf=0,distf=0,dist=0,tmprow=0, tmprowf=0            
-    
+        float sub=0,subf=0,distf=0,dist=0,tmprow=0, tmprowf=0
+
     for i from 0<=i<rows:
         tmprow=0
         tmprowf=0
-        for j from 0<=j<3:            
-            sub=a[i*3+j]-b[i*3+j]                                           
+        for j from 0<=j<3:
+            sub=a[i*3+j]-b[i*3+j]
             subf=a[i*3+j]-b[(rows-1-i)*3+j]
             tmprow+=sub*sub
             tmprowf+=subf*subf
         dist+=sqrt(tmprow)
         distf+=sqrt(tmprowf)
-    
+
     out[0]=dist/<float>rows
     out[1]=distf/<float>rows
-        
-    
+
+
 @cython.cdivision(True)   
 cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
     ''' Calculate the euclidean distance between two 3pt tracks
@@ -1463,12 +1463,11 @@ ctypedef struct LSC_Cluster:
 @cython.wraparound(False)    
 @cython.cdivision(True)
 def local_skeleton_clustering(tracks, d_thr=10):
-    """ Efficient tractography clustering     
-       
-    Every track can needs to have the same number of points. 
+    r""" Efficient tractography clustering
+
+    Every track can needs to have the same number of points.
     Use dipy.tracking.metrics.downsample to restrict the number of points
 
-           
     Parameters
     -----------
     tracks : sequence
@@ -1478,11 +1477,11 @@ def local_skeleton_clustering(tracks, d_thr=10):
     Returns
     --------
     C : dict
-        
+
     Examples
     ----------
     >>> from dipy.tracking.distances import local_skeleton_clustering
-    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
             np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
             np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
             np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
@@ -1490,46 +1489,46 @@ def local_skeleton_clustering(tracks, d_thr=10):
             np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
             np.array([[0,0,0],[0,1,0],[0,2,0]])]
     >>> C=local_skeleton_clustering(tracks,d_thr=0.5,3)
-    
+
     Notes
     ------
-    The distance calculated between two tracks
-    
-    t_1       t_2
-    
-    0*   a    *0    
-      \       | 
-       \      |
-       1*     |
-        |  b  *1
-        |      \   
-       2*       \
-            c    *2
-           
-    is equal to (a+b+c)/3 where a the euclidean distance between t_1[0] and t_2[0], 
-    b between  t_1[1] and t_2[1] and c between t_1[2] and t_2[2]. Also the fliped
-    
+    The distance calculated between two tracks::
+
+        t_1       t_2
+
+        0*   a    *0
+          \       |
+           \      |
+           1*     |
+            |  b  *1
+            |      \
+            2*      \
+                c    *2
+
+    is equal to $(a+b+c)/3$ where $a$ the euclidean distance between t_1[0] and
+    t_2[0], $b$ between t_1[1] and t_2[1] and $c$ between t_1[2] and t_2[2].
+    Also the same with t2 flipped (so t_1[0] compared to t_2[2] etc).
+
     Visualization
     --------------
-    
+
     It is possible to visualize the clustering C from the example
-    above using the fvtk module 
-    
-    from dipy.viz import fvtk    
-    r=fvtk.ren()
-    for c in C:
-        color=np.random.rand(3)
-        for i in C[c]['indices']:
-            fvtk.add(r,fvtk.line(tracks[i],color))
-    fvtk.show(r)
-    
+    above using the fvtk module::
+
+        from dipy.viz import fvtk
+        r=fvtk.ren()
+        for c in C:
+            color=np.random.rand(3)
+            for i in C[c]['indices']:
+                fvtk.add(r,fvtk.line(tracks[i],color))
+        fvtk.show(r)
+
     See also
     ---------
     dipy.tracking.metrics.downsample
-    
     """
     cdef :
-        cnp.ndarray[cnp.float32_t, ndim=2] track       
+        cnp.ndarray[cnp.float32_t, ndim=2] track
         LSC_Cluster *cluster
         long lent = 0,lenC = 0, dim = 0, points=0
         long i=0, j=0, c=0, i_k=0, rows=0 ,cit=0
