@@ -111,7 +111,7 @@ fvtk.record(r,n_frames=1,out_path='fornix_clust',size=(600,600))
    :align: center
 
    **Showing the different clusters with random colors**.
-   
+
 """
 
 """

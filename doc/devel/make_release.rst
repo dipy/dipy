@@ -239,5 +239,5 @@ Release checklist
 
 * Announce to the mailing lists.  With fear and trembling.
 
-
 .. _setuptools intro: http://packages.python.org/an_example_pypi_project/setuptools.html
+.. include:: ../links_names.inc

@@ -17,3 +17,5 @@ the text of the example (which appear as blocks of text between triple quotes
 
 Thanks to the developers of PyMVPA_ for designing the software which enables us
 to provide these documented examples!
+
+.. include:: links_names.inc
