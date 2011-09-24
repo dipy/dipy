@@ -22,7 +22,7 @@ Theoretical
   three parameters and in that way control the b-value.
 
 2. **What is q-space?**
-  
+
   Q-space is the space of one or more 3D spin displacement wave vectors
   $\mathbf{q}$ as shown in equation \ref{eq:fourier}. The vector $\mathbf{q}$
   parametrises the space of diffusion gradients. It is related to the
@@ -36,9 +36,9 @@ Theoretical
   should have 60 diffusion volumes with each volume obtained for a specific
   gradient. A Diffusion Weighted Image (DWI) is the volume acquired
   from only one direction gradient.
-  
+
 3. **What DWI stands for?**
-   
+
   Diffusion Weighted Imaging (DWI) is MRI imaging designed to be sensitive
   to diffusion. A diffusion weighted image is a volume of voxel data gathered 
   by applying only one gradient direction
@@ -115,20 +115,20 @@ Practical
 
   True, some times python can be slow if you are using for example multiple nested for loops. 
   In that case we use cython which takes execution up to C speed.
-  
+
 3. **What numerical libraries do you use in python?**
 
-  The best ever designed numerical library numpy.   
-  
+  The best ever designed numerical library - numpy.
+
 2. **Which python console do your recommend?**
 
   ``ipython``
 
 3. **What do you use for visualization?**
 
-  We use ``fosvtk(fvtk)`` which depends in turn on ``python-vtk``:: 
-  
-  from dipy.viz import fvtk
+  We use ``fosvtk(fvtk)`` which depends in turn on ``python-vtk``::
+
+    from dipy.viz import fvtk
 
 4. **What about interactive visualization?**
 
@@ -137,15 +137,15 @@ Practical
   have a look at http://fos.me
 
 5. **Which file formats do you support?**
-  
+
   Nifti (.nii), Dicom (Siemens(read-only)), Trackvis (.trk), Dipy (.dpy), Numpy (.npy, ,npz), text 
-  and any other formats supported by nibabel and pydicom. 
-  
+  and any other formats supported by nibabel and pydicom.
+
   You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2 using scipy.io.loadmat. For higher versions >= 7.3
   you can use pytables or any other python to hdf5 library e.g. h5py .
-  
-  For object serialization you can used dipy.io.pickles function load_pickle, save_pickle.  
-  
+
+  For object serialization you can used dipy.io.pickles function load_pickle, save_pickle.
+
 6. **What is dpy**?
 
   ``dpy`` is an ``hdf5`` file format which we use in dipy to store tractography and other information. 
@@ -155,18 +155,18 @@ Practical
 7. **Which python editor should I use?**
 
   Any text editor would do the job but we prefer the following Aptana, Emacs, Vim and Eclipse (with PyDev).
-  
+
 8. **I have problems reading my dicom files using nibabel, what should I do?**
 
-  Use Chris Roden's dcm2nii to transform them to nifti files.  
+  Use Chris Rorden's dcm2nii to transform them to nifti files.
   http://www.cabiatl.com/mricro/mricron/dcm2nii.html
-  Or you can make your own reader using pydicom   
+  Or you can make your own reader using pydicom.
   http://code.google.com/p/pydicom/
   and then use nibabel to store the data as niftis.
-  
+
 9. **Where can I find diffusion data?**
 
-  Have a look at Beijing Enhanced 
+  Have a look at Beijing Enhanced
   http://fcon_1000.projects.nitrc.org/indi/IndiRetro.html
-  
-\
+
+.. include:: links_names.inc
