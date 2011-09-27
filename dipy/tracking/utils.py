@@ -1,5 +1,6 @@
+from __future__ import division
 from numpy import asarray, array, atleast_3d, ceil, concatenate, empty, \
-        floor, mgrid, sqrt, zeros
+        mgrid, sqrt, zeros
 from collections import defaultdict
 
 def streamline_counts(streamlines, vol_dims, voxel_size):
@@ -40,7 +41,7 @@ def streamline_counts(streamlines, vol_dims, voxel_size):
     """
     counts = zeros(vol_dims, 'int')
     for sl in streamlines:
-        inds = floor(sl/voxel_size).astype('int')
+        inds = (sl // voxel_size).astype('int')
         if inds.min() < 0:
             raise IndexError('streamline has negative values, these values ' +
                              'are outside the image volume')
@@ -53,7 +54,7 @@ def streamline_counts(streamlines, vol_dims, voxel_size):
 def streamline_mapping(streamlines, voxel_size):
     holder = defaultdict(list)
     for ii in xrange(len(streamlines)):
-        sl = floor(streamlines[ii]/voxel_size).astype('int')
+        sl = (streamlines[ii] // voxel_size).astype('int')
         for point in sl:
             point = tuple(point)
             inst = holder[point]
@@ -63,15 +64,57 @@ def streamline_mapping(streamlines, voxel_size):
     return holder
 
 def subsegment(streamlines, max_segment_length):
+    """Splits the segments of the streamlines into small segments
+
+    Replaces each segment of each of the streamlines with the smallest possible
+    number ofequally sized smaller segments such that no segmentment is longer
+    than max_segment_length. Among other things, this can useful for getting
+    streamline counts on a grid that is smaller than the length of the
+    streamline segments.
+
+    Parameters:
+    -----------
+    streamlines : sequence of ndarrays
+        The streamlines to be subsegmented.
+    max_segment_length : float
+        The longest allowable segment length.
+
+    Returns:
+    --------
+    new_streamlines : generator
+        A set of streamlines.
+
+    Notes:
+    ------
+    Segments of 0 length are removed. If unchanged
+
+    Examples:
+    ---------
+    >>> streamlines = [array([[0,0,0],[2,0,0],[5,0,0]])]
+    >>> list(subsegment(streamlines, 3.))
+    [array([[ 0.,  0.,  0.],
+           [ 2.,  0.,  0.],
+           [ 5.,  0.,  0.]])]
+    >>> list(subsegment(streamlines, 1))
+    [array([[ 0.,  0.,  0.],
+           [ 1.,  0.,  0.],
+           [ 2.,  0.,  0.],
+           [ 3.,  0.,  0.],
+           [ 4.,  0.,  0.],
+           [ 5.,  0.,  0.]])]
+    >>> list(subsegment(streamlines, 1.6))
+    [array([[ 0. ,  0. ,  0. ],
+           [ 1. ,  0. ,  0. ],
+           [ 2. ,  0. ,  0. ],
+           [ 3.5,  0. ,  0. ],
+           [ 5. ,  0. ,  0. ]])]
+    """
     for sl in streamlines:
         diff = (sl[1:] - sl[:-1])
         length = sqrt((diff*diff).sum(-1))
-        num_segments = ceil(length/max_segment_length)
-        if (num_segments == 1).all():
-            yield sl
-            continue
+        num_segments = ceil(length/max_segment_length).astype('int')
 
-        new_sl = empty((num_segments.sum()+1, 3))
+        new_sl = empty((num_segments.sum()+1, 3), 'float')
         new_sl[0] = sl[0]
 
         count = 1
@@ -116,7 +159,7 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
            [ 0.5       ,  0.75      ,  0.16666667],
            [ 0.5       ,  0.75      ,  0.5       ],
            [ 0.5       ,  0.75      ,  0.83333333]])
-    mask[0,1,2] = 1
+    >>> mask[0,1,2] = 1
     >>> seeds_from_mask(mask, [1,1,2], [1.1,1.1,2.5])
     array([[ 0.55 ,  0.55 ,  0.625],
            [ 0.55 ,  0.55 ,  1.875],

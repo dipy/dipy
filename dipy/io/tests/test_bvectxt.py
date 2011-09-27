@@ -1,9 +1,10 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 from nose.tools import assert_raises
-from dipy.io.bvectxt import orientation_from_string, reorient_bvec
+from dipy.io.bvectxt import orientation_from_string, reorient_bvec, \
+    orientation_to_string
 
-def test_orientation_from_string():
+def test_orientation_from_to_string():
     ras = np.array(((0,1), (1,1), (2,1)))
     lps = np.array(((0,-1), (1,-1), (2,1)))
     asl = np.array(((1,1), (2,1), (0,-1)))
@@ -11,6 +12,10 @@ def test_orientation_from_string():
     assert_array_equal(orientation_from_string('lps'), lps)
     assert_array_equal(orientation_from_string('asl'), asl)
     assert_raises(ValueError, orientation_from_string, 'aasl')
+
+    assert orientation_to_string(ras) == 'ras'
+    assert orientation_to_string(lps) == 'lps'
+    assert orientation_to_string(asl) == 'asl'
 
 def test_reorient_bvec():
     bvec = np.arange(12).reshape((3,4))

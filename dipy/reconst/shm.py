@@ -1,22 +1,21 @@
 """ Tools for using spherical homonic models to fit diffussion data
-
-Note about the Transpose:
-In the literature the matrix represenation of these methods is often writen as
-Y = Bd where B is some design matrix and Y and d are column vectors. In our
-case the incomming data, for example, is stored as row vectors (ndarrays) of
-the form (x, y, z, n), where n is the number of diffusion directions. In this
-case we can implement the method by doing something like Y' = dot(data, B.T) or
-equivelently writen Y' = d.T B.T, where Y' is simply Y.T. Please forgive all
-B.T and R.T, but I thought that would be easier to read than a lot of
-data.reshape(...) and parmas.reshape(...).
 """
-
-from operator import mul
-from math import floor
+"""
+Note about the Transpose:
+In the literature the matrix representation of these methods is often written
+as Y = Bx where B is some design matrix and Y and x are column vectors. In our
+case the input data, a dwi stored as a nifti file for example, is stored as row
+vectors (ndarrays) of the form (x, y, z, n), where n is the number of diffusion
+directions. We could transpose and reshape the data to be (n, x*y*z), so that
+we could directly plug it into the above equation. However, I have chosen to
+keep the data as is and implement the relevant equations rewritten in the
+following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
+where data is Y.T and sh_coef is x.T.
+"""
 from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
-                  broadcast_arrays, c_, concatenate, cos, diag, dot, empty, \
-                  eye, log, minimum, maximum, pi, r_, repeat, sqrt, eye, ix_
-from numpy.linalg import inv, pinv, svd
+                  broadcast_arrays, concatenate, cos, diag, dot, empty, \
+                  eye, log, minimum, maximum, pi, repeat, sqrt, eye
+from numpy.linalg import pinv, svd
 from numpy.random import randint
 from scipy.special import sph_harm, lpn
 from .recspeed import peak_finding_onedge, _robust_peaks
@@ -469,7 +468,7 @@ def lcr_matrix(H):
     R = (eye(len(H)) - H) / leverages
     return R - R.mean(0)
 
-def bootstrap_data_array(data, H, R, permute=None, min_signal=1e-5):
+def bootstrap_data_array(data, H, R, permute=None):
     """Applies the Residual Bootstraps to the data given H and R
 
     data must be normalized, ie 0 < data <= 1
@@ -477,13 +476,15 @@ def bootstrap_data_array(data, H, R, permute=None, min_signal=1e-5):
 
     if permute is None:
         permute = randint(data.shape[-1], size=data.shape[-1])
-    R = R[:, permute]
-    data = dot(data, (H+R).T, data)
-    data.clip(min_signal, 1., data)
+    assert R.shape == H.shape
+    assert len(permute) == R.shape[-1]
+    R = R[permute]
+    data = dot(data, (H+R).T)
+    return data
 
-def bootstrap_data_voxel(data, H, R, permute=None, min_signal=1e-5):
+def bootstrap_data_voxel(data, H, R, permute=None):
     """Like bootstrap_data_array but faster when for a single voxel
-    
+
     data must be 1d and normalized
     """
     if permute is None:
@@ -491,7 +492,6 @@ def bootstrap_data_voxel(data, H, R, permute=None, min_signal=1e-5):
     r = dot(data, R.T)
     r = r[permute]
     d = dot(data, H.T) + r
-    d.clip(min_signal, 1., d)
     return d
 
 class ResidualBootstrapWrapper(object):
@@ -507,7 +507,9 @@ class ResidualBootstrapWrapper(object):
 
         Given some linear model described by B, the design matrix, and a
         signal_object, returns an object which can sample the residual
-        bootstrap distribution of the signal.
+        bootstrap distribution of the signal. We assume that the signals are
+        normalized so we clip the bootsrap samples to be between min_signal and
+        1.
 
         Parameters
         ----------
@@ -517,8 +519,8 @@ class ResidualBootstrapWrapper(object):
             The design matrix of spherical hormonic model usded to fit the
             data. This is the model that will be used to compute the residuals
             and sample the residual bootstrap distribution
-        ngrad : int
-            Number of diffusion gradient directions in sgnal_object
+        min_signal : float
+            The lowest allowable signal.
         """
         self._signal_object = signal_object
         self._H = hat(B)
@@ -528,8 +530,8 @@ class ResidualBootstrapWrapper(object):
     def __getitem__(self, index):
         """Indexes self._singal_object and bootsraps the result"""
         d = self._signal_object[index]
-        d = bootstrap_data_voxel(d, self._H, self._R,
-                                 min_signal=self._min_signal)
+        d = bootstrap_data_voxel(d, self._H, self._R)
+        d.clip(self._min_signal, 1., d)
         return d
 
 class ClosestPeakSelector(object):

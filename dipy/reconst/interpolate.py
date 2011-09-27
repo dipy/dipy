@@ -1,4 +1,3 @@
-from math import floor
 from numpy import asarray
 from dipy.reconst.recspeed import trilinear_interp
 
@@ -18,8 +17,8 @@ class NearestNeighborInterpolator(Interpolator):
     """Interpolates data using nearest neighbor interpolation"""
 
     def __getitem__(self, index):
-        index = index/self._voxel_size
-        index = tuple(int(floor(ii)) for ii in index)
+        index = index // self._voxel_size
+        index = tuple(int(ii) for ii in index)
         if self._mask is not None:
             if self._mask[index] == False:
                 raise StopIteration('outside mask')

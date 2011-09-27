@@ -8,9 +8,10 @@ from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.reconst.shm import real_sph_harm, \
-        sph_harm_ind_list, cartesian2polar, _robust_peaks, _closest_peak, \
-        SlowAdcOpdfModel, normalize_data, ClosestPeakSelector, QballOdfModel, hat, \
-        lcr_matrix, smooth_pinv
+    sph_harm_ind_list, cartesian2polar, _robust_peaks, _closest_peak, \
+    SlowAdcOpdfModel, normalize_data, ClosestPeakSelector, QballOdfModel, hat, \
+    lcr_matrix, smooth_pinv, bootstrap_data_array, bootstrap_data_voxel, \
+    ResidualBootstrapWrapper
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -266,4 +267,30 @@ def test_hat_and_lcr():
     r3 = np.dot(d, R.T)
     assert_array_almost_equal(r, r3)
 
+def test_bootstrap_array():
+    B = np.array([[4, 5, 7, 4, 2.],
+                  [4, 6, 2, 3, 6.]])
+    H = hat(B.T)
 
+    R = np.zeros((5,5))
+    d = np.arange(1, 6)
+    dhat = np.dot(H, d)
+
+    assert_array_almost_equal(bootstrap_data_voxel(dhat, H, R), dhat)
+    assert_array_almost_equal(bootstrap_data_array(dhat, H, R), dhat)
+
+    H = np.zeros((5,5))
+
+def test_ResidualBootstrapWrapper():
+    B = np.array([[4, 5, 7, 4, 2.],
+                  [4, 6, 2, 3, 6.]])
+    B = B.T
+    H = hat(B)
+    d = np.arange(10)/8.
+    d.shape = (2,5)
+    dhat = np.dot(d, H)
+    ms = .2
+
+    boot_obj = ResidualBootstrapWrapper(dhat, B, ms)
+    assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
+    assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))

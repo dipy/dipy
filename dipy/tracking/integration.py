@@ -1,12 +1,11 @@
-from numpy import abs, array, asarray, atleast_3d, broadcast_arrays, cos, \
-                  dot, empty, floor, mgrid, pi, signbit, sqrt, vstack, \
-                  concatenate
+from __future__ import division
+from numpy import array, asarray, broadcast_arrays, signbit, sqrt
 
 class FactIntegrator(object):
     """This is the integration method used for  for FACT fiber tracking, but it
     can also be used as a component of other fiber tracking methods
     """
-    def __init__(self, voxel_size=(1,1,1), overstep=1e-1):
+    def __init__(self, voxel_size=(1, 1, 1), overstep=1e-1):
         """Creates a FactIntegrator instance
 
         Parameters:
@@ -28,9 +27,9 @@ class FactIntegrator(object):
 
         Parameters:
         -----------
-        location : array-like, (3,)
+        location : ndarray, (3,)
             location to integrate from
-        step : array-like, (3,)
+        step : ndarray, (3,)
             direction in 3 space to integrate along
         """
         space = location % self.voxel_size
@@ -81,7 +80,7 @@ def generate_streamlines(stepper, integrator, seeds, start_steps):
     """
     start_steps = asarray(start_steps)
     norm_start_steps = sqrt((start_steps*start_steps).sum(-1))
-    norm_start_steps = norm_start_steps.reshape((-1, 1))
+    norm_start_steps = norm_start_steps.reshape((-1,1))
     start_steps = start_steps/norm_start_steps
     seeds, start_steps = broadcast_arrays(seeds, start_steps)
 
