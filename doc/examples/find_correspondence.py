@@ -1,4 +1,4 @@
-""" 
+"""
 ==========================================
 Find correspondence between tractographies
 ==========================================
@@ -41,11 +41,11 @@ T1=[]
 for c in C1:
     T1.append(C1[c]['most'])
 
-fvtk.add(r,fvtk.line(T1,fvtk.gray))    
+fvtk.add(r,fvtk.line(T1,fvtk.gray))
 
 T3=[]
 for c in C3:
-    T3.append(C3[c]['most'])    
+    T3.append(C3[c]['most'])
 
 T3s=[t+ np.array([100,0,0]) for t in T3]
 
@@ -59,16 +59,16 @@ For each track in T1 find the minimum average distance to all the
 tracks in T3 and put information about it in ``track2track``. 
 """
 
-indices=range(len(T1))    
+indices=range(len(T1))
 track2track=[]
 mam_threshold=6.
 
-for i in indices:                
+for i in indices:
     rt=[mam_distances(T1[i],t,'avg') for t in T3]
     rt=np.array(rt)
     if rt.min()< mam_threshold:
-        track2track.append(np.array([i,rt.argmin(),rt.min()]))        
-        
+        track2track.append(np.array([i,rt.argmin(),rt.min()]))
+
 track2track=np.array(track2track)
 
 np.set_printoptions(2)
@@ -80,7 +80,6 @@ in T1 that has the best correspondence and remove the other.
 
 good_correspondence=[]
 for i in track2track[:,1]:
-    
     check= np.where(track2track[:,1]==i)[0]
     if len(check) == 1:
         good_correspondence.append(check[0])
@@ -112,7 +111,6 @@ Now plot the corresponding tracks in the same colours
 """
 
 for row in track2track:
-
     color=np.random.rand(3)
     T=[T1[int(row[0])],T3s[int(row[1])]]
     fvtk.add(r,fvtk.line(T,color,linewidth=5))

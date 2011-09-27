@@ -24,7 +24,7 @@ OP
    The line connecting the origin and P
 
 radial distance
-   or radius.  The Euclidean length of OP. 
+   or radius.  The Euclidean length of OP.
 
 z axis
    The vertical of the sphere.  If we consider the sphere as a globe,
@@ -56,10 +56,12 @@ Azimuth angle
 The physics convention
 ======================
 
-The radius is $r$, the inclination angle is $\theta$ and the azimuth angle is $\phi$.  Spherical coordinates are specified by the tuple of $(r, \theta, \phi)$ in that order. 
+The radius is $r$, the inclination angle is $\theta$ and the azimuth angle is
+$\phi$.  Spherical coordinates are specified by the tuple of $(r, \theta, \phi)$
+in that order.
 
-Here is a good illustration we made from the scripts kindly provided by
-`Jorge Stolfi`_ on wikipedia.
+Here is a good illustration we made from the scripts kindly provided by `Jorge
+Stolfi`_ on wikipedia.
 
 .. _`Jorge Stolfi`: http://commons.wikimedia.org/wiki/User:Jorge_Stolfi
 
@@ -89,12 +91,19 @@ and from $(r, \theta, \phi)$ to $(x, y, z)$:
 The mathematics convention
 ==========================
 
-See `wikipedia spherical coordinate system`_ .  The mathematics convention reverses the meaning of $\theta$ and $\phi$ so that $\theta$ refers to the azimuthal angle and $\phi$ refers to the inclination angle. 
+See `wikipedia spherical coordinate system`_ .  The mathematics convention
+reverses the meaning of $\theta$ and $\phi$ so that $\theta$ refers to the
+azimuthal angle and $\phi$ refers to the inclination angle.
 
 Matlab convention
 =================
 
-Matlab has functions ``sph2cart`` and ``cart2sph``.  These use the terms ``theta`` and ``phi``, but with a different meaning again from the standard physics and mathematics conventions.   Here ``theta`` is the azimuth angle, as for the mathematics convention, but ``phi`` is the angle between the reference plane and OP.  This implies different formulae for the conversions between Cartesian and spherical coordinates that are easy to derive.  
+Matlab has functions ``sph2cart`` and ``cart2sph``.  These use the terms
+``theta`` and ``phi``, but with a different meaning again from the standard
+physics and mathematics conventions.   Here ``theta`` is the azimuth angle, as
+for the mathematics convention, but ``phi`` is the angle between the reference
+plane and OP.  This implies different formulae for the conversions between
+Cartesian and spherical coordinates that are easy to derive.
 
 
-
+.. include:: ../links_names.inc

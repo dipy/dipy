@@ -107,6 +107,7 @@ class GeneralizedQSampling(object):
         self.mask=mask
         self.data=data
         self.save_odfs=save_odfs
+        self.squared=squared
         
         # 0.01506 = 6*D where D is the free water diffusion coefficient 
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
@@ -119,9 +120,18 @@ class GeneralizedQSampling(object):
         gradsT = gradients.T
         b_vector=gradsT*tmp # element-wise also known as the Hadamard product
         #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
+        
+        
         if squared==True:
             vf=np.vectorize(self.squared_radial_component)
+            def H(x):
+                res=(2*x*np.cos(x) + (x**2-2)*np.sin(x))/x**3
+                res[np.isnan(res)]=1/3.
+                return res
+            
+            self.input=np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi
             self.q2odf_params=np.real(vf(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+            #self.q2odf_params=np.real(H(1*np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
         else:
             self.q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
                 
@@ -189,18 +199,7 @@ class GeneralizedQSampling(object):
                 if l>0 and l<5:
                     QA[i][:l] = peaks[:l]-min_odf
                     IN[i][:l] = inds[:l]
-                
-                
-                """
-                peaks = peaks - min_odf
-                l=min(len(peaks),5)
-                if l==0:
-                    QA[i][0] = peaks[0]
-                    IN[i][0] = inds[0]
-                if l>0:
-                    QA[i][:l] = peaks[:l]
-                    IN[i][:l] = inds[:l]
-                """
+
 
         #normalize QA
         QA/=glob_norm_param
@@ -238,9 +237,11 @@ class GeneralizedQSampling(object):
     def squared_radial_component(self,x):
         """ implementing equation (8) in the referenced paper by Yeh et al. 2010
         """
-        if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
+        #if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
+        if x < 0.01 and x > -0.01:
+            #print 'small'
             return 1/3.
-        return 2*np.cos(x)/x**2 + (x**2-2)*np.sin(x)/x**3
+        return (2*x*np.cos(x) + (x**2-2)*np.sin(x))/x**3
     
     def qa(self):
         """ quantitative anisotropy

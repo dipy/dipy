@@ -184,6 +184,68 @@ def vector_norm(vec):
     '''
     vec = np.asarray(vec)
     return math.sqrt((vec**2).sum())
+
+def rodriguez_axis_rotation(r,theta):
+    """ Rodriguez formula    
+    
+    Rotation matrix for rotation around axis r for angle theta.
+    
+    The rotation matrix is given by the Rodrigues formula:
+    
+    R = Id + sin(theta)*Sn + (1-cos(theta))*Sn^2  
+    
+    with:
+    
+           0  -nz  ny
+    Sn =   nz   0 -nx
+          -ny  nx   0
+    
+    where n = r / ||r||
+    
+    In case the angle ||r|| is very small, the above formula may lead
+    to numerical instabilities. We instead use a Taylor expansion
+    around theta=0:
+    
+    R = I + sin(theta)/tetha Sr + (1-cos(theta))/teta2 Sr^2
+    
+    leading to:
+    
+    R = I + (1-theta2/6)*Sr + (1/2-theta2/24)*Sr^2
+    
+    Parameters
+    -----------
+    r :  array-like shape (3,), axis
+    theta : float, angle in degrees
+    
+    Returns
+    ----------
+    R : array, shape (3,3), rotation matrix
+    
+    Examples
+    ---------
+    >>> import numpy as np
+    >>> from dipy.core.geometry import rodriguez_axis_rotation
+    >>> v=np.array([0,0,1])
+    >>> u=np.array([1,0,0])
+    >>> R=rodriguez_axis_rotation(v,40)
+    >>> ur=np.dot(R,u)
+    >>> np.round(np.rad2deg(np.arccos(np.dot(ur,u))))
+    40.0
+    
+    
+    """
+    #theta = spl.norm(r)
+    theta=np.deg2rad(theta)
+    if theta > 1e-30:
+        n = r/np.linalg.norm(r)
+        Sn = np.array([[0,-n[2],n[1]],[n[2],0,-n[0]],[-n[1],n[0],0]])
+        R = np.eye(3) + np.sin(theta)*Sn + (1-np.cos(theta))*np.dot(Sn,Sn)
+    else:
+        Sr = np.array([[0,-r[2],r[1]],[r[2],0,-r[0]],[-r[1],r[0],0]])
+        theta2 = theta*theta
+        R = np.eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*np.dot(Sr,Sr)
+    return R
+
     
 
 def nearest_pos_semi_def(B):
@@ -743,8 +805,14 @@ def circumradius(a, b, c):
 def vec2vec_rotmat(u,v):
     r""" rotation matrix from 2 unit vectors  
     
-    u,v being unit 3d vectors return the 3x3 rotation matrix R than aligns u to v
-    The transpose of R will align v to u
+    u,v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to v.
+
+    In general there are many rotations that will map u to v. If S is any rotation
+    using v as an axis then R.S will also map u to v since (S.R)u = S(Ru) = Sv = v.
+    The rotation R returned by vec2vec_rotmat leaves fixed the perpendicular to the
+    plane spanned by u and v.
+
+    The transpose of R will align v to u.
     
     Parameters
     -----------

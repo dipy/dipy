@@ -246,7 +246,27 @@ def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
 
     return
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def sum_on_blocks_1d(cnp.ndarray[double, ndim=1] arr,\
+    cnp.ndarray[long, ndim=1] blocks,\
+    cnp.ndarray[double, ndim=1] out,int outn):
+    """ Summations on blocks of 1d array
+    
+    """
+    cdef:
+        int m,i,j
+        double sum    
+	
+    with nogil:
+        j=0
+        for m in range(outn):    		
+            sum=0
+            for i in range(j,j+blocks[m]):
+                sum+=arr[i]
+            out[m]=sum
+            j+=blocks[m]
+    return
 
 def argmax_from_adj(vals, vertex_inds, adj_inds):
     """ Indices of local maxima from `vals` given adjacent points
