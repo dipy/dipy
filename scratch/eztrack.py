@@ -22,21 +22,26 @@ from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
         reorient_bvec
 
-nifti_file = File(filter=['*.nii.gz'])
+nifti_file = File(filter=['Nifti Files', '*.nii.gz',
+                          'Nifti Pair or Analyze Files', '*.img.gz',
+                          'All Files', '*'])
 def read_roi(file, threshold=0, shape=None):
     img = nib.load(file)
     if shape is not None:
         if shape != img.shape:
             raise IOError('The roi image does not have the right shape, '+
                           'expecting '+str(shape)+' got '+str(img.shape))
-    mask = img.get_data() > threshold
+    img_data = img.get_data()
+    if img_data.max() > 1:
+        raise ValueError('this does not seem to be a mask')
+    mask = img_data > threshold
     return mask
 
 class InputData(HasTraits):
     dwi_images = nifti_file
     fa_file = nifti_file
     bvec_file = File(filter=['*.bvec'])
-    bvec_orientation = String('', minlen=3, maxlen=3)
+    bvec_orientation = String('IMG', minlen=3, maxlen=3)
     min_signal = Float(1)
 
     @on_trait_change('dwi_images')
@@ -57,11 +62,11 @@ class InputData(HasTraits):
         assert data_img.shape[:-1] == fa_img.shape
         bvec, bval = read_bvec_file(self.bvec_file)
         data_ornt = nib.io_orientation(affine)
-        if self.bvec_orientation is not '':
+        if self.bvec_orientation != 'IMG':
             bvec = reorient_bvec(bvec, self.bvec_orientation, data_ornt)
         fa = fa_img.get_data()
         data = data_img.get_data()
-        return data, voxel_size, affine, fa, bvec, bval, data_ornt
+        return data, voxel_size, affine, fa, bvec, bval
 
 class GausianKernel(HasTraits):
     sigma = Float(1, label='sigma (in voxels)')
@@ -138,35 +143,29 @@ class EZTrackingInterface(HasStrictTraits):
 
     #set for io
     save_streamlines_to = File('')
-    save_counts_to = File(filter=['*.nii.gz'])
+    save_counts_to = nifti_file
 
     #io methods
-    def save_streamlines(self, streamlines):
-        if self.save_streamlines_to == '':
-            return
+    def save_streamlines(self, streamlines, save_streamlines_to):
         trk_hdr = empty_header()
         voxel_order = orientation_to_string(nib.io_orientation(self.affine))
         trk_hdr['voxel_order'] = voxel_order
         trk_hdr['voxel_size'] = self.voxel_size
         trk_hdr['dim'] = self.shape
         trk_tracks = ((ii,None,None) for ii in streamlines)
-        write(self.save_streamlines_to, trk_tracks, trk_hdr)
-        pickle.dump(self, open(self.save_streamlines_to + '.p', 'wb'))
+        write(save_streamlines_to, trk_tracks, trk_hdr)
+        pickle.dump(self, open(save_streamlines_to + '.p', 'wb'))
 
-    def save_counts(self, streamlines):
-        if self.save_counts_to == '':
-            return
+    def save_counts(self, streamlines, save_counts_to):
         counts = streamline_counts(streamlines, self.shape, self.voxel_size)
-        if counts.max() < 2**16:
-            counts = counts.astype('uint16')
-        nib.save(nib.Nifti1Image(counts, self.affine), self.save_counts_to)
+        if counts.max() < 2**15:
+            counts = counts.astype('int16')
+        nib.save(nib.Nifti1Image(counts, self.affine), save_counts_to)
 
     #tracking methods
     def track_shm(self):
 
-        inputs = self.all_inputs.read_data()
-        data, voxel_size, affine, fa, bvec, bval, data_ornt = inputs
-        del inputs
+        data, voxel_size, affine, fa, bvec, bval = self.all_inputs.read_data()
         self.voxel_size = voxel_size
         self.affine = affine
         self.shape = fa.shape
@@ -186,7 +185,9 @@ class EZTrackingInterface(HasStrictTraits):
         if self.bootstrap_input:
             H = hat(model.B)
             R = lcr_matrix(H)
-            bootstrap_data_array(data, H, R, data.min())
+            dmin = data.min()
+            data = bootstrap_data_array(data, H, R)
+            data.clip(dmin, 1., data)
 
         mask = fa > self.fa_threshold
         _hack(mask)
@@ -204,6 +205,7 @@ class EZTrackingInterface(HasStrictTraits):
                             self.min_relative_peak, self.min_peak_spacing)
         peak_finder.angle_limit = 90
         start_steps = []
+        data_ornt = nib.io_orientation(self.affine)
         ind = np.asarray(data_ornt[:,0], 'int')
         best_start = self.start_direction[ind]
         best_start *= data_ornt[:,1]

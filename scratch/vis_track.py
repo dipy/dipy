@@ -1,14 +1,6 @@
 from eztrack import EZTrackingInterface
 from traitsui.api import Item, Group, View, ArrayEditor
-from traits.api import File, on_trait_change
-import nibabel as nib
-from nibabel.trackvis import write, empty_header
-import numpy as np
-from os import path
-from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
-                            reorient_bvec
-from dipy.tracking.utils import streamline_counts
-import pickle
+from traits.api import File
 
 class VizTrackingInterface(EZTrackingInterface):
 
@@ -59,12 +51,12 @@ class VizTrackingInterface(EZTrackingInterface):
         if self.save_streamlines_to == '' and self.save_counts_to == '':
             raiseIOError('must provide filename where to save results')
         streamlines = list(self.track_shm())
-        self.save_streamlines(streamlines)
-        self.save_counts(streamlines)
-        return streamlines
+        if self.save_streamlines_to != '':
+            self.save_streamlines(streamlines, self.save_streamlines_to)
+        if self.save_counts_to != '':
+            self.save_counts(streamlines, self.save_counts_to)
 
 if __name__ == "__main__":
-
     b = VizTrackingInterface()
     b.gui_track()
 
