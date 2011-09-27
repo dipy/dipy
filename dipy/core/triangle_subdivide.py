@@ -338,3 +338,58 @@ def remove_half_sphere(v, e, t):
     """
     return v[::2], e[::2]/2, t[::2]/2
 
+def _get_forces(charges):
+    """Given a set of charges on the surface of the sphere gets total force
+    those charges exert on each other.
+    """
+
+    all_charges = np.concatenate((charges, -charges))
+    all_charges = all_charges[:, None]
+    r = charges - all_charges
+    r_mag = np.sqrt((r*r).sum(-1))[:, :, None]
+    force = r / r_mag**3
+
+    d = np.arange(len(charges))
+    force[d,d] = 0
+    force = force.sum(0)
+    force_r_comp = (charges*force).sum(-1)[:, None]
+    f_theta = force - force_r_comp*charges
+    potential = 1. / r_mag
+    potential[d,d] = 0
+    potential = 2*potential.sum()
+    return f_theta, potential
+
+def disperse_charges(charges, iters, const=.05):
+    """Models electrostatic repulsion on the unit sphere
+
+    Places charges on a sphere and simulates the repulsive forces felt by each
+    one. Allows the charges to move for some number of iterations and returns
+    their final location as well as the total potential of the system at each
+    step.
+
+    Using a smaller const could provide a more accurate result, but will talk
+    longer.
+
+    Note:
+    -----
+    This function is meant to be used with diffusion imaging so antipodal
+    symmetry is assumed. Therefor each charge must not only be unique, but if
+    there is a charge at +x, there cannot be a charge at -x. These are treated
+    as the same location and because the distance between the two charges will
+    be zero, the result will be unstable.
+
+    """
+    charges = charges.copy()
+    forces, v = _get_forces(charges)
+    force_mag = np.sqrt((forces*forces).sum())
+    max_force = force_mag.max()
+    if max_force > 1:
+        const = const/max_force
+    v = np.empty(iters)
+
+    for ii in xrange(iters):
+        forces, v[ii] = _get_forces(charges)
+        charges += forces * const
+        norms = np.sqrt((charges*charges).sum(-1))
+        charges /= norms[:, None]
+    return charges, v

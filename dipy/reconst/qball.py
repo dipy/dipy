@@ -151,7 +151,7 @@ class ODF(object):
         if smoothness == 0:
             self.fit_matrix = np.linalg.pinv(design_mat)
         else:
-            L = np.diag(n_list*(n_list+1))*sqrt(smoothness)
+            L = np.diag(n_list*(n_list+1))*np.sqrt(smoothness)
             self.fit_matrix = np.linalg.pinv(np.c_[design_mat, L])[:,:self.ngrad]
         legendre0, junk = lpn(self.sh_order, 0)
         funk_radon = legendre0[n_list]

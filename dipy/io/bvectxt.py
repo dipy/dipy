@@ -1,5 +1,6 @@
 import numpy as np
 from os.path import splitext
+from nibabel.orientations import io_orientation
 
 def read_bvec_file(filename, atol=.001):
     """
@@ -49,3 +50,48 @@ def read_bvec_file(filename, atol=.001):
     
     return (grad_table, b_values)
 
+def reorient_bvec(bvec, current_ornt, new_ornt):
+    """Changes the orientation of a gradient table
+
+    After the axis of a dwi data set are flipped or transposed one may need to
+    apply the orientation change to the gradient table. Moves the gradient
+    table from current_ornt to new_orient
+    """
+    if isinstance(current_ornt, str):
+        current_ornt = orientation_from_string(current_ornt)
+    if isinstance(new_ornt, str):
+        new_ornt = orientation_from_string(new_ornt)
+        
+    if current_ornt.shape != (3,2) or new_ornt.shape != (3,2):
+        raise ValueError("ornt must from from 3-space to 3-space")
+
+    mapping = np.empty(len(current_ornt), 'int')
+    mapping.fill(-1)
+    A = current_ornt[:,0].argsort()
+    B = new_ornt[:,0].argsort()
+    mapping[B] = A
+    assert (mapping != -1).all()
+    sign = current_ornt[A,1]*new_ornt[B,1]
+    sign.shape += (1,)
+    
+    new_bvec = bvec[mapping]*sign
+    return new_bvec
+
+def orientation_from_string(string_ornt):
+    orientation_dict = dict(r=(0,1), l=(0,-1), a=(1,1), 
+                            p=(1,-1), s=(2,1), i=(2,-1))
+    ornt = tuple(orientation_dict[ii] for ii in string_ornt.lower())
+    ornt = np.array(ornt)
+    check = np.sort(ornt[:,0])
+    if (check != np.arange(len(string_ornt))).any():
+        msg = string_ornt + " does not seem to be a valid orientation string"
+        raise ValueError(msg)
+    return ornt
+
+def orientation_to_string(ornt):
+    orientation_dict = {(0,1):'r', (0,-1):'l', (1,1):'a',
+                        (1,-1):'p', (2,1):'s', (2,-1):'i'}
+    ornt_string = ''
+    for ii in ornt:
+        ornt_string += orientation_dict[(ii[0], ii[1])]
+    return ornt_string
