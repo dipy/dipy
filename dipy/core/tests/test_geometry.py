@@ -38,7 +38,17 @@ def test_sphere_cart():
     r, theta, phi = cart2sphere(*pt)
     xyz = sphere2cart(r, theta, phi)
     yield assert_array_almost_equal(xyz, pt)
-    
+
+@parametric
+def test_invert_transform():
+    n = 100
+    theta = np.random.rand(n) * np.pi   # Limited to 0,pi 
+    phi = np.random.rand(n) * 2 * np.pi  # Limited to 0,2pi
+    x, y, z = sphere2cart(1, theta, phi)  # Let's assume they're all unit vectors
+    r, new_theta, new_phi = cart2sphere(x, y, z)  # Transform back
+
+    yield assert_array_almost_equal(theta, new_theta)
+    yield assert_array_almost_equal(phi, new_phi)
 
 @parametric    
 def test_nearest_pos_semi_def():
