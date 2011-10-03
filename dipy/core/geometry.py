@@ -126,6 +126,13 @@ def cart2sphere(x, y, z):
     r = np.sqrt(x*x + y*y + z*z)
     theta = np.arccos(z/r)
     phi = np.arctan2(y, x)
+    # If there are values of phi outside this interval, move them back to the
+    # interval [0,2pi]: 
+    idx = np.where(phi < 0)
+    phi[idx] = 2 * np.pi + phi[idx]
+    idx = np.where(phi > 2 * np.pi)
+    phi[idx] = phi[idx] - (2 * np.pi)
+
     return r, theta, phi
 
 
