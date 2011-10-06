@@ -2,7 +2,7 @@
 import numpy as np
 import numpy.linalg as npl
 from dipy.core.triangle_subdivide import create_half_unit_sphere
-from dipy.reconst.dti import design_matrix, _compact_tensor
+from dipy.reconst.dti import design_matrix, lower_triangular
 
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
@@ -194,9 +194,9 @@ def make_fake_signal():
     for ii in xrange(len(vecs_xy)):
         tensor_moveing[ii] = np.dot(evecs_moveing[ii]*evals,
                                     evecs_moveing[ii].T)
-    D_moveing = _compact_tensor(tensor_moveing)
+    D_moveing = lower_triangular(tensor_moveing, 1)
     tensor_fixed = np.diag(evals)
-    D_fixed = _compact_tensor(tensor_fixed)
+    D_fixed = lower_triangular(tensor_fixed, 1)
 
     sig = .45*np.exp(np.dot(D_moveing, B.T)) + .55*np.exp(np.dot(B, D_fixed))
     assert sig.max() <= 1
