@@ -92,21 +92,20 @@ class Tensor(ModelArray):
 
     ### Eigenvalues Property ###
     @property
-    def evals(self, fillvalue=np.nan):
+    def evals(self):
         """
         Returns the eigenvalues of the tensor as an array
         """
-
-        return _filled(self.model_params[..., :3], fillvalue)
+        return _filled(self.model_params[..., :3])
 
     ### Eigenvectors Property ###
     @property
-    def evecs(self, fillvalue=np.nan):
+    def evecs(self):
         """
         Returns the eigenvectors of teh tensor as an array
 
         """
-        evecs = _filled(self.model_params[..., 3:], fillvalue)
+        evecs = _filled(self.model_params[..., 3:])
         return evecs.reshape(self.shape + (3, 3))
 
     def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
@@ -148,7 +147,7 @@ class Tensor(ModelArray):
         if not mask.all():
             #leave only data[mask is True]
             data = data[mask]
-            data = MaskedView(mask, data)
+            data = MaskedView(mask, data, fill_value=0)
 
         #Perform WLS fit on masked data
         dti_params = fit_method(B, data, *args, **kargs)
@@ -161,17 +160,22 @@ class Tensor(ModelArray):
         evals_flat = evals.reshape((-1, 3))
         evecs_flat = evecs.reshape((-1, 3, 3))
         D_flat = np.empty(evecs_flat.shape)
-        for L, Q, D in zip(evals_flat, evecs_flat, D_flat):
-            D[:] = np.dot(Q*L, Q.T)
+        for ii in xrange(len(D_flat)):
+            Q = evecs_flat[ii]
+            L = evals_flat[ii]
+            D_flat[ii] = np.dot(Q*L, Q.T)
         return D_flat.reshape(evecs.shape)
 
     D = property(_getD, doc = "Self diffusion tensor")
 
+    def lower_triangular(self, b0=None):
+        D = self._getD()
+        return lower_triangular(D, b0)
 
-    def fa(self, fillvalue=np.nan):
+    def fa(self, fill_value=0):
         r"""
-        Fractional anisotropy (FA) calculated from cached eigenvalues. 
-        
+        Fractional anisotropy (FA) calculated from cached eigenvalues.
+
         Returns
         ---------
         fa : array (V, 1)
@@ -196,13 +200,12 @@ class Tensor(ModelArray):
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1*ev1 + ev2*ev2 + ev3*ev3))
         fa = wrap(np.asarray(fa))
-        return _filled(fa, fillvalue)
+        return _filled(fa, fill_value)
 
-    
     def md(self):
         r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues. 
-        
+        Mean diffusitivity (MD) calculated from cached eigenvalues.
+
         Returns
         ---------
         md : array (V, 1)
@@ -322,7 +325,7 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
     D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
-    tensor = _full_tensor(D)
+    tensor = from_lower_triangular(D)
     return decompose_tensor(tensor)
 
 def _ols_iter(inv_design, sig, min_signal=1):
@@ -332,7 +335,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
     sig = np.maximum(sig, min_signal) #throw out zero signals
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
-    tensor = _full_tensor(D)
+    tensor = from_lower_triangular(D)
     return decompose_tensor(tensor)
 
 
@@ -426,37 +429,91 @@ def _ols_fit_matrix(design_matrix):
     U,S,V = np.linalg.svd(design_matrix, False)
     return np.dot(U, U.T)
 
-def _full_tensor(D):
+_lt_indices = np.array([[0, 1, 3],
+                        [1, 2, 4],
+                        [3, 4, 5]])
+def from_lower_triangular(D):
     """
     Returns a tensor given the six unique tensor elements
 
-    Given the six unique tensor elments (in the order: Dxx, Dyy, Dzz, Dxy, Dxz,
-    Dyz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+    Given the six unique tensor elments (in the order: Dxx, Dxy, Dyy, Dxz, Dyz,
+    Dzz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+
+    Parameters:
+    -----------
+    D : array_like, (..., >6)
+        Unique elements of the tensors
+
+    Returns:
+    --------
+    tensor : ndarray (..., 3, 3)
+        3 by 3 tensors
 
     """
+    return D[..., _lt_indices]
 
-    tensor = np.empty((3,3),dtype=D.dtype)
-
-    tensor[0, 0] = D[0]  #Dxx
-    tensor[1, 1] = D[1]  #Dyy
-    tensor[2, 2] = D[2]  #Dzz
-    tensor[1, 0] = tensor[0, 1] = D[3]  #Dxy
-    tensor[2, 0] = tensor[0, 2] = D[4]  #Dxz
-    tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
-
-    return tensor
-
-def _compact_tensor(tensor, b0=1):
+def lower_triangular(tensor, b0=None):
     """
-    Returns the six unique values of the tensor and a dummy value in the order
-    expected by the design matrix
+    Returns the six lower triangular values of the tensor and a dummy variable
+    if b0 is not None
+
+    Parameters:
+    ----------
+    tensor - array_like (..., 3, 3)
+        a collection of 3, 3 diffusion tensors
+    b0 - float
+        if b0 is not none lob(b0) is returned as the dummy variable
+
+    Returns:
+    -------
+    D - ndarray
+        If b0 is none, then the shape will be (..., 6) otherwise (..., 7)
+
     """
-    D = np.empty(tensor.shape[:-2] + (7,))
-    row = [0, 1, 2, 1, 2, 2]
-    colm = [0, 1, 2, 0, 0, 1]
+    assert tensor.shape[-2:] == (3, 3)
+    if b0 is None:
+        D = np.empty(tensor.shape[:-2] + (6,), dtype=tensor.dtype)
+    else:
+        D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
+        D[..., 6] = np.log(b0)
+    row = [0, 1, 1, 2, 2, 2]
+    colm = [0, 0, 1, 0, 1, 2]
     D[..., :6] = tensor[..., row, colm]
-    D[..., 6] = np.log(b0)
     return D
+
+def tensor_eig_from_lo_tri(B, data):
+    """Calculates parameters for creating a Tensor instance
+
+    Calculates tensor parameters from the six unique tensor elements. This
+    function can be passed to the Tensor class as a fit_method for creating a
+    Tensor instance from tensors stored in a nifti file.
+
+    Parameters:
+    -----------
+    B :
+        not currently used
+    data : array_like (..., 6)
+        diffusion tensors elements stored in lower triangular order
+
+    Returns
+    -------
+    dti_params
+        Eigen values and vectors, used by the Tensor class to create an
+        instance
+    """
+    data, wrap = _makearray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dti_params = np.empty((len(data_flat), 4, 3))
+
+    for ii in xrange(len(data_flat)):
+        tensor = from_lower_triangular(data_flat[ii])
+        eigvals, eigvecs = decompose_tensor(tensor)
+        dti_params[ii, 0] = eigvals
+        dti_params[ii, 1:] = eigvecs
+
+    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params = wrap(dti_params)
+    return dti_params
 
 def decompose_tensor(tensor):
     """
@@ -527,14 +584,13 @@ def design_matrix(gtab, bval, dtype=None):
         raise ValueError('The number of b values and gradient directions must'
                           +' be the same')
     B[:, 0] = G[0, :] * G[0, :] * 1. * bval   #Bxx
-    B[:, 1] = G[1, :] * G[1, :] * 1. * bval   #Byy
-    B[:, 2] = G[2, :] * G[2, :] * 1. * bval   #Bzz
-    B[:, 3] = G[0, :] * G[1, :] * 2. * bval   #Bxy
-    B[:, 4] = G[0, :] * G[2, :] * 2. * bval   #Bxz
-    B[:, 5] = G[1, :] * G[2, :] * 2. * bval   #Byz
+    B[:, 1] = G[0, :] * G[1, :] * 2. * bval   #Bxy
+    B[:, 2] = G[1, :] * G[1, :] * 1. * bval   #Byy
+    B[:, 3] = G[0, :] * G[2, :] * 2. * bval   #Bxz
+    B[:, 4] = G[1, :] * G[2, :] * 2. * bval   #Byz
+    B[:, 5] = G[2, :] * G[2, :] * 1. * bval   #Bzz
     B[:, 6] = np.ones(bval.size)
     return -B
-
 
 def quantize_evecs(evecs, odf_vertices=None):
     ''' Find the closest orientation of an evenly distributed sphere
@@ -615,5 +671,7 @@ def stepper_from_tensor(tensor, *args, **kargs):
     return stepper
 
 common_fit_methods = {'WLS': wls_fit_tensor,
-                      'LS': ols_fit_tensor}
+                      'LS': ols_fit_tensor,
+                      'from lower triangular': tensor_eig_from_lo_tri,
+                     }
 
