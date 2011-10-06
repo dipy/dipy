@@ -177,12 +177,13 @@ def compare_orientation_sets(S,T):
     m = len(S)
     n = len(T)
     if m < n:
-	A = S.copy()
-	a = m
-	S = T
-	T = A
-	m = n
+        A = S.copy()
+        a = m
+        S = T
+        T = A
+        m = n
         n = a
+        
     v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in permutations(S,n)]
     return np.max(v)/np.float(n)
 
