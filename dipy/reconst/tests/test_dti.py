@@ -3,20 +3,18 @@
 """
 
 import numpy as np
+from nose.tools import assert_true, assert_false, \
+     assert_equal, assert_almost_equal, assert_raises
+from numpy.testing import assert_array_equal, assert_array_almost_equal
+from dipy.testing import parametric
+import os
+
 import dipy.reconst.dti as dti
+from dipy.reconst.dti import lower_triangular, from_lower_triangular
 from dipy.reconst.maskedview import MaskedView
 import nibabel as nib
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data
-
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_almost_equal, assert_raises
-
-from numpy.testing import assert_array_equal, assert_array_almost_equal
-
-from dipy.testing import parametric
-
-import os
 
 @parametric
 def test_tensor_scalar_attributes():
@@ -67,20 +65,14 @@ def test_WLS_and_LS_fit():
     as the data.
 
     """
-    
+
     ### Defining Test Voxel (avoid nibabel dependency) ###
 
-    #Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s 
-    D = np.array([1., 1., 1., 1., 0., 0., np.log(1000) * 10.**4]) * 10.**-4
+    #Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
+    D = np.array([1., 1., 1., 0., 0., 1., np.log(1000) * 10.**4]) * 10.**-4
     evals = np.array([2., 1., 0.]) * 10.**-4
     md = evals.mean()
-    tensor = np.empty((3,3))
-    tensor[0, 0] = D[0]
-    tensor[1, 1] = D[1]
-    tensor[2, 2] = D[2]
-    tensor[0, 1] = tensor[1, 0] = D[3]
-    tensor[0, 2] = tensor[2, 0] = D[4]
-    tensor[1, 2] = tensor[2, 1] = D[5]
+    tensor = from_lower_triangular(D)
     #Design Matrix
     gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     X = dti.design_matrix(gtab, bval)
@@ -103,12 +95,14 @@ def test_WLS_and_LS_fit():
     yield assert_array_almost_equal(tensor_est.evals, evals)
     yield assert_array_almost_equal(tensor_est.D, tensor)
     yield assert_almost_equal(tensor_est.md(), md)
+    yield assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
 
     tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8, fit_method='LS')
     yield assert_equal(tensor_est.shape, tuple())
     yield assert_array_almost_equal(tensor_est.evals, evals)
     yield assert_array_almost_equal(tensor_est.D, tensor)
     yield assert_almost_equal(tensor_est.md(), md)
+    yield assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
 
 @parametric
 def test_masked_array_with_Tensor():
@@ -192,3 +186,35 @@ def test_init():
     yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
                         fit_method=0)
 
+@parametric
+def test_lower_triangular():
+    tensor = np.arange(9).reshape((3,3))
+    D = lower_triangular(tensor)
+    yield assert_array_equal(D, [0, 3, 4, 6, 7, 8])
+    D = lower_triangular(tensor, 1)
+    yield assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
+    yield assert_raises(AssertionError, lower_triangular, np.zeros((2, 3)))
+    shape = (4,5,6)
+    many_tensors = np.empty(shape + (3,3))
+    many_tensors[:] = tensor
+    result = np.empty(shape + (6,))
+    result[:] = [0, 3, 4, 6, 7, 8]
+    D = lower_triangular(many_tensors)
+    yield assert_array_equal(D, result)
+    D = lower_triangular(many_tensors, 1)
+    result = np.empty(shape + (7,))
+    result[:] = [0, 3, 4, 6, 7, 8, 0]
+    yield assert_array_equal(D, result)
+
+@parametric
+def test_from_lower_triangular():
+    result = np.array([[0, 1, 3],
+                       [1, 2, 4],
+                       [3, 4, 5]])
+    D = np.arange(7)
+    tensor = from_lower_triangular(D)
+    yield assert_array_equal(tensor, result)
+    result = result * np.ones((5, 4, 1, 1))
+    D = D * np.ones((5, 4, 1))
+    tensor = from_lower_triangular(D)
+    yield assert_array_equal(tensor, result)
