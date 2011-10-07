@@ -152,6 +152,7 @@ class EZTrackingInterface(HasStrictTraits):
         trk_hdr['voxel_order'] = voxel_order
         trk_hdr['voxel_size'] = self.voxel_size
         trk_hdr['dim'] = self.shape
+        trk_hdr['voxel_to_ras'] = self.affine
         trk_tracks = ((ii,None,None) for ii in streamlines)
         write(save_streamlines_to, trk_tracks, trk_hdr)
         pickle.dump(self, open(save_streamlines_to + '.p', 'wb'))
