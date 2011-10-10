@@ -7,10 +7,11 @@ from dipy.reconst.dti import design_matrix, lower_triangular
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
+from dipy.core.geometry import cart2sphere
 from dipy.reconst.shm import real_sph_harm, \
-    sph_harm_ind_list, cartesian2polar, _robust_peaks, _closest_peak, \
-    SlowAdcOpdfModel, normalize_data, ClosestPeakSelector, QballOdfModel, hat, \
-    lcr_matrix, smooth_pinv, bootstrap_data_array, bootstrap_data_voxel, \
+    sph_harm_ind_list, _robust_peaks, _closest_peak, SlowAdcOpdfModel, \
+    normalize_data, ClosestPeakSelector, QballOdfModel, hat, lcr_matrix, \
+    smooth_pinv, bootstrap_data_array, bootstrap_data_voxel, \
     ResidualBootstrapWrapper
 
 def test_sph_harm_ind_list():
@@ -103,8 +104,8 @@ def test_set_angle_limit():
 def test_smooth_pinv():
     v, e, f = create_half_unit_sphere(3)
     m, n = sph_harm_ind_list(4)
-    r, theta, phi = cartesian2polar(*v.T)
-    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+    r, pol, azi = cart2sphere(*v.T)
+    B = real_sph_harm(m, n, azi[:, None], pol[:, None])
 
     L = np.zeros(len(m))
     C = smooth_pinv(B, L)
@@ -248,14 +249,14 @@ def testQballOdfModel():
 def test_hat_and_lcr():
     v, e, f = create_half_unit_sphere(6)
     m, n = sph_harm_ind_list(8)
-    r, theta, phi = cartesian2polar(*v.T)
-    B = real_sph_harm(m, n, theta[:, None], phi[:, None])
+    r, pol, azi = cart2sphere(*v.T)
+    B = real_sph_harm(m, n, azi[:, None], pol[:, None])
     H = hat(B)
     B_hat = np.dot(H, B)
     assert_array_almost_equal(B, B_hat)
 
     R = lcr_matrix(H)
-    d = np.arange(len(theta))
+    d = np.arange(len(azi))
     r = d - np.dot(H, d)
     lev = np.sqrt(1-H.diagonal())
     r /= lev

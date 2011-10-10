@@ -18,6 +18,7 @@ from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
 from numpy.linalg import pinv, svd
 from numpy.random import randint
 from scipy.special import sph_harm, lpn
+from dipy.core.geometry import cart2sphere
 from .recspeed import peak_finding_onedge, _robust_peaks
 
 def real_sph_harm(m, n, theta, phi):
@@ -102,21 +103,6 @@ def sph_harm_ind_list(sh_order):
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
     return (m_list, n_list)
 
-def cartesian2polar(x=0, y=0, z=0):
-    """Converts cartesian coordinates to polar coordinates
-
-    converts a list of cartesian coordinates (x, y, z) to polar coordinates
-    (R, theta, phi).
-
-    """
-    R = sqrt(x*x+y*y+z*z)
-    theta = arctan2(y, x)
-    phi = arccos(z)
-
-    R, theta, phi = broadcast_arrays(R, theta, phi)
-
-    return R, theta, phi
-
 def smooth_pinv(B, L):
     """Regularized psudo-inverse
 
@@ -180,10 +166,8 @@ class SphHarmModel(object):
         bvec = bvec[:, bval > 0]
         m, n = sph_harm_ind_list(sh_order)
         x, y, z = bvec
-        r, theta, phi = cartesian2polar(x, y, z)
-        theta = theta[:, None]
-        phi = phi[:, None]
-        B = real_sph_harm(m, n, theta, phi)
+        r, pol, azi = cart2sphere(x, y, z)
+        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
         L = -n*(n+1)
         legendre0 = lpn(sh_order, 0)[0]
         F = legendre0[n]
@@ -210,10 +194,8 @@ class SphHarmModel(object):
 
         """
         x, y, z = sampling_points.T
-        r, theta, phi = cartesian2polar(x, y, z)
-        theta = theta[:, None]
-        phi = phi[:, None]
-        S = real_sph_harm(self._m, self._n, theta, phi)
+        r, pol, azi = cart2sphere(x, y, z)
+        S = real_sph_harm(self._m, self._n, azi[:, None], pol[:, None])
 
         self._sampling_matrix = dot(S, self._fit_matrix)
         self._sampling_points = sampling_points
@@ -306,10 +288,8 @@ class SlowAdcOpdfModel(SphHarmModel):
 
         """
         x, y, z = sampling_points.T
-        r, theta, phi = cartesian2polar(x, y, z)
-        theta = theta[:, None]
-        phi = phi[:, None]
-        S = real_sph_harm(self._m, self._n, theta, phi)
+        r, pol, azi = cart2sphere(x, y, z)
+        S = real_sph_harm(self._m, self._n, azi[:, None], pol[:, None])
 
         delta_b, delta_q = self._fit_matrix
         delta_b = dot(S, delta_b)
