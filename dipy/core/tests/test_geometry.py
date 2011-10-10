@@ -20,77 +20,73 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.testing import parametric, sphere_points
 
-
-@parametric
 def test_sphere_cart():
     # test arrays of points
     rs, thetas, phis = cart2sphere(*(sphere_points.T))
     xyz = sphere2cart(rs, thetas, phis)
-    yield assert_array_almost_equal(xyz, sphere_points.T)
+    yield assert_array_almost_equal, xyz, sphere_points.T
     # test radius estimation
     big_sph_pts = sphere_points * 10.4
     rs, thetas, phis = cart2sphere(*big_sph_pts.T)
-    yield assert_array_almost_equal(rs, 10.4)
+    yield assert_array_almost_equal, rs, 10.4
     xyz = sphere2cart(rs, thetas, phis)
-    yield assert_array_almost_equal(xyz, big_sph_pts.T, 6)
+    yield assert_array_almost_equal, xyz, big_sph_pts.T, 6
+    #test that result shapes match
+    x, y, z =  big_sph_pts.T
+    r, theta, phi = cart2sphere(x[:1], y[:1], z)
+    yield assert_equal, r.shape, theta.shape
+    yield assert_equal, r.shape, phi.shape
+    x, y, z = sphere2cart(r[:1], theta[:1], phi)
+    yield assert_equal, x.shape, y.shape
+    yield assert_equal, x.shape, z.shape
     # test a scalar point
     pt = sphere_points[3]
     r, theta, phi = cart2sphere(*pt)
     xyz = sphere2cart(r, theta, phi)
-    yield assert_array_almost_equal(xyz, pt)
+    yield assert_array_almost_equal, xyz, pt
 
-@parametric
 def test_invert_transform():
-    n = 100
-    theta = np.random.rand(n) * np.pi   # Limited to 0,pi 
-    phi = np.random.rand(n) * 2 * np.pi  # Limited to 0,2pi
+    n = 100.
+    theta = np.arange(n)/n * np.pi   # Limited to 0,pi
+    phi = (np.arange(n)/n - .5) * 2 * np.pi # Limited to 0,2pi
     x, y, z = sphere2cart(1, theta, phi)  # Let's assume they're all unit vectors
     r, new_theta, new_phi = cart2sphere(x, y, z)  # Transform back
 
-    yield assert_array_almost_equal(theta, new_theta)
-    yield assert_array_almost_equal(phi, new_phi)
+    yield assert_array_almost_equal, theta, new_theta
+    yield assert_array_almost_equal, phi, new_phi
 
-@parametric    
 def test_nearest_pos_semi_def():
     B = np.diag(np.array([1,2,3]))
-    yield assert_array_almost_equal(B, nearest_pos_semi_def(B))
+    yield assert_array_almost_equal, B, nearest_pos_semi_def(B)
     B = np.diag(np.array([0,2,3]))
-    yield assert_array_almost_equal(B, nearest_pos_semi_def(B))
+    yield assert_array_almost_equal, B, nearest_pos_semi_def(B)
     B = np.diag(np.array([0,0,3]))
-    yield assert_array_almost_equal(B, nearest_pos_semi_def(B))
+    yield assert_array_almost_equal, B, nearest_pos_semi_def(B)
     B = np.diag(np.array([-1,2,3]))
     Bpsd = np.array([[0.,0.,0.],[0.,1.75,0.],[0.,0.,2.75]])
-    yield assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    yield assert_array_almost_equal, Bpsd, nearest_pos_semi_def(B)
     B = np.diag(np.array([-1,-2,3]))
     Bpsd = np.array([[0.,0.,0.],[0.,0.,0.],[0.,0.,2.]])
-    yield assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    yield assert_array_almost_equal, Bpsd, nearest_pos_semi_def(B)
     B = np.diag(np.array([-1.e-11,0,1000]))
     Bpsd = np.array([[0.,0.,0.],[0.,0.,0.],[0.,0.,1000.]])
-    yield assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    yield assert_array_almost_equal, Bpsd, nearest_pos_semi_def(B)
     B = np.diag(np.array([-1,-2,-3]))
     Bpsd = np.array([[0.,0.,0.],[0.,0.,0.],[0.,0.,0.]])
-    yield assert_array_almost_equal(Bpsd, nearest_pos_semi_def(B))
+    yield assert_array_almost_equal, Bpsd, nearest_pos_semi_def(B)
 
-
-@parametric
 def test_cart_distance():
     a = [0, 1]
     b = [1, 0]
-    yield assert_array_almost_equal(cart_distance(a, b),
-                                    np.sqrt(2))
-    yield assert_array_almost_equal(cart_distance([1,0], [-1,0]),
-                                    2)
+    yield assert_array_almost_equal, cart_distance(a, b), np.sqrt(2)
+    yield assert_array_almost_equal, cart_distance([1,0], [-1,0]), 2
     pts1 = [2, 1, 0]
     pts2 = [0, 1, -2]
-    yield assert_array_almost_equal(
-        cart_distance(pts1, pts2), np.sqrt(8))
+    yield assert_array_almost_equal, cart_distance(pts1, pts2), np.sqrt(8)
     pts2 = [[0, 1, -2],
             [-2, 1, 0]]
-    yield assert_array_almost_equal(
-        cart_distance(pts1, pts2), [np.sqrt(8), 4])
-    
+    yield assert_array_almost_equal, cart_distance(pts1, pts2), [np.sqrt(8), 4]
 
-@parametric
 def test_sphere_distance():
     # make a circle, go around...
     radius = 3.2
@@ -110,80 +106,68 @@ def test_sphere_distance():
     cdists = np.r_[0, csums, csums[-2::-1]]
     # check approximation close to calculated
     sph_d = sphere_distance([0,radius], np.c_[x, y])
-    yield assert_array_almost_equal(cdists, sph_d, decimal=5)
+    yield assert_array_almost_equal, cdists, sph_d
     # Now check with passed radius
     sph_d = sphere_distance([0,radius], np.c_[x, y], radius=radius)
-    yield assert_array_almost_equal(cdists, sph_d, decimal=5)
+    yield assert_array_almost_equal, cdists, sph_d
     # Check points not on surface raises error when asked for
-    yield assert_raises(ValueError, sphere_distance, [1, 0],
-                        [0, 2])
+    yield assert_raises, ValueError, sphere_distance, [1, 0], [0, 2]
     # Not when check is disabled
     sph_d = sphere_distance([1, 0], [0,2], None, False)
     # Error when radii don't match passed radius
-    yield assert_raises(ValueError, sphere_distance, [1, 0],
-                        [0, 1], 2.0)
-    
-    
-@parametric
+    yield assert_raises, ValueError, sphere_distance, [1, 0], [0, 1], 2.0
+
 def test_vector_cosine():
     a = [0, 1]
     b = [1, 0]
-    yield assert_array_almost_equal(vector_cosine(a, b), 0)
-    yield assert_array_almost_equal(vector_cosine([1,0], [-1,0]),
-                                    -1)
-    yield assert_array_almost_equal(vector_cosine([1,0], [1,1]),
-                                    1 / np.sqrt(2))
-    yield assert_array_almost_equal(vector_cosine([2,0], [-4,0]),
-                                    -1)
+    yield assert_array_almost_equal, vector_cosine(a, b), 0
+    yield assert_array_almost_equal, vector_cosine([1,0], [-1,0]), -1
+    yield assert_array_almost_equal, vector_cosine([1,0], [1,1]), 1/np.sqrt(2)
+    yield assert_array_almost_equal, vector_cosine([2,0], [-4,0]), -1
     pts1 = [2, 1, 0]
     pts2 = [-2, -1, 0]
-    yield assert_array_almost_equal(
-        vector_cosine(pts1, pts2), -1)
+    yield assert_array_almost_equal, vector_cosine(pts1, pts2), -1
     pts2 = [[-2, -1, 0],
             [2, 1, 0]]
-    yield assert_array_almost_equal(
-        vector_cosine(pts1, pts2), [-1, 1])
+    yield assert_array_almost_equal, vector_cosine(pts1, pts2), [-1, 1]
     # test relationship with correlation
     # not the same if non-zero vector mean
     a = np.random.uniform(size=(100,))
     b = np.random.uniform(size=(100,))
     cc = np.corrcoef(a, b)[0,1]
     vcos = vector_cosine(a, b)
-    yield assert_false(np.allclose(cc, vcos))
+    yield assert_false, np.allclose(cc, vcos)
     # is the same if zero vector mean
     a_dm = a - np.mean(a)
     b_dm = b - np.mean(b)
     vcos = vector_cosine(a_dm, b_dm)
-    yield assert_array_almost_equal(cc, vcos)
-    
+    yield assert_array_almost_equal, cc, vcos
 
-@parametric
 def test_lambert_equal_area_projection_polar():
 
     theta = np.repeat(np.pi/3,10)
     phi = np.linspace(0,2*np.pi,10)
     # points sit on circle with co-latitude pi/3 (60 degrees)
     leap = lambert_equal_area_projection_polar(theta,phi)
-    yield assert_array_almost_equal(np.sqrt(np.sum(leap**2,axis=1)), np.array([ 1.,1.,1.,1.,1.,1.,1.,1.,1.,1.]))
+    yield assert_array_almost_equal, np.sqrt(np.sum(leap**2,axis=1)), \
+          np.array([ 1.,1.,1.,1.,1.,1.,1.,1.,1.,1.])
     # points map onto the circle of radius 1
 
-@parametric
 def test_lambert_equal_area_projection_cart():
 
     xyz = np.array([[1,0,0],[0,1,0],[0,0,1],[-1,0,0],[0,-1,0],[0,0,-1]])
     # points sit on +/-1 on all 3 axes
-    
+
     r,theta,phi = cart2sphere(*xyz.T)
 
     leap = lambert_equal_area_projection_polar(theta,phi)
     r2 = np.sqrt(2)
-    yield assert_array_almost_equal(np.sqrt(np.sum(leap**2,axis=1)),
-                                    np.array([ r2,r2,0,r2,r2,2]))
+    yield assert_array_almost_equal, np.sqrt(np.sum(leap**2,axis=1)), \
+          np.array([ r2,r2,0,r2,r2,2])
     # x and y =+/-1 map onto circle of radius sqrt(2)
     # z=1 maps to origin, and z=-1 maps to (an arbitrary point on) the
     # outer circle of radius 2
 
-@parametric
 def test_circumradius():
 
-    yield assert_array_almost_equal(np.sqrt(0.5), circumradius(np.array([0,2,0]),np.array([2,0,0]),np.array([0,0,0])))
+    yield assert_array_almost_equal, np.sqrt(0.5), circumradius(np.array([0,2,0]),np.array([2,0,0]),np.array([0,0,0]))
