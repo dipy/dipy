@@ -151,6 +151,7 @@ class EZTrackingInterface(HasStrictTraits):
         voxel_order = orientation_to_string(nib.io_orientation(self.affine))
         trk_hdr['voxel_order'] = voxel_order
         trk_hdr['voxel_size'] = self.voxel_size
+        trk_hdr['vox_to_ras'] = self.affine
         trk_hdr['dim'] = self.shape
         trk_hdr['voxel_to_ras'] = self.affine
         trk_tracks = ((ii,None,None) for ii in streamlines)
