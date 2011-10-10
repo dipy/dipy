@@ -108,7 +108,7 @@ def cart2sphere(x, y, z):
     Parameters
     ------------
     x : array-like
-       x coordinate in Cartesion space
+       x coordinate in Cartesian space
     y : array-like
        y coordinate in Cartesian space
     z : array-like
