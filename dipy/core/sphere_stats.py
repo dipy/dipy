@@ -145,8 +145,8 @@ def eigenstats(points, alpha=0.05):
 
 def compare_orientation_sets(S,T):
     r'''Computes the mean cosine distance of the best match between
-    points of two sets of vectors S and T
-
+    points of two sets of vectors S and T  (angular similarity) 
+    
     Parameters
     -----------
     S: array, shape (m,d)
@@ -172,17 +172,109 @@ def compare_orientation_sets(S,T):
     >>> T=np.array([[1,0,0],[0,0,-1]])
     >>> compare_orientation_sets(S,T)
     1.0
+    
     '''
     
     m = len(S)
     n = len(T)
     if m < n:
-	A = S.copy()
-	a = m
-	S = T
-	T = A
-	m = n
+        A = S.copy()
+        a = m
+        S = T
+        T = A
+        m = n
         n = a
+        
     v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in permutations(S,n)]
     return np.max(v)/np.float(n)
+    #return np.max(v)*np.float(n)/np.float(m)
+
+def angular_similarity(S,T):
+    r'''Computes the cosine distance of the best match between
+    points of two sets of vectors S and T
+
+    Parameters
+    -----------
+    S: array, shape (m,d)
+    T: array, shape (n,d)
+        
+    Returns
+    --------
+    max_cosine_distance:float
+    
+    Examples
+    ---------
+    >>> import numpy as np
+    >>> from dipy.core.sphere_stats import angular_similarity
+    >>> S=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> T=np.array([[1,0,0],[0,0,1]])
+    >>> angular_similarity(S,T)
+    2.0
+    >>> T=np.array([[0,1,0],[1,0,0],[0,0,1]])
+    >>> S=np.array([[1,0,0],[0,0,1]])
+    >>> angular_similarity(S,T)
+    2.0
+    >>> S=np.array([[-1,0,0],[0,1,0],[0,0,1]])
+    >>> T=np.array([[1,0,0],[0,0,-1]])
+    >>> angular_similarity(S,T)
+    2.0
+    >>> T=np.array([[0,1,0],[1,0,0],[0,0,1]])
+    >>> S=np.array([[1,0,0],[0,1,0],[0,0,1]])
+    >>> angular_similarity(S,T)
+    3.0
+    >>> S=np.array([[0,1,0],[1,0,0],[0,0,1]])
+    >>> T=np.array([[1,0,0],[0,np.sqrt(2)/2.,np.sqrt(2)/2.],[0,0,1]])
+    >>> angular_similarity(S,T)
+    2.7071067811865475
+    >>> S=np.array([[0,1,0],[1,0,0],[0,0,1]])
+    >>> T=np.array([[1,0,0]])
+    >>> angular_similarity(S,T)
+    1.0
+    >>> S=np.array([[0,1,0],[1,0,0]])
+    >>> T=np.array([[0,0,1]])
+    >>> angular_similarity(S,T)
+    0.0
+    >>> S=np.array([[0,1,0],[1,0,0]])
+    >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
+    >>> angular_similarity(S,T)
+    0.70710678118654757
+    >>> S=np.array([[0,1,0]])
+    >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
+    >>> angular_similarity(S,T)
+    0.70710678118654757
+    >>> S=np.array([[0,1,0],[0,0,1]])
+    >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
+    >>> angular_similarity(S,T)
+    0.70710678118654757
+    
+    
+    '''
+    
+    m = len(S)
+    n = len(T)
+    if m < n:
+        A = S.copy()
+        a = m
+        S = T
+        T = A
+        m = n
+        n = a
+    
+    """
+    v=[]
+    for SS in permutations(S,n):
+        angles=[]
+        for i in range(n):
+            angles.append(np.abs(np.dot(SS[i],T[i])))
+        v.append(np.sum(angles))
+    print v
+    """    
+    v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in permutations(S,n)]
+    
+    return np.float(np.max(v))#*np.float(n)/np.float(m)
+
+
+
+
+
 

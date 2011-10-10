@@ -94,8 +94,8 @@ def sphere2cart(r, theta, phi):
     x = r * np.cos(phi) * sin_theta
     y = r * np.sin(phi) * sin_theta
     z = r * np.cos(theta)
+    x, y, z = np.broadcast_arrays(x, y, z)
     return x, y, z
-
 
 def cart2sphere(x, y, z):
     r''' Return angles for Cartesian 3D coordinates `x`, `y`, and `z`
@@ -103,12 +103,12 @@ def cart2sphere(x, y, z):
     See doc for ``sphere2cart`` for angle conventions and derivation
     of the formulae.
 
-    $0 \le \theta \mathrm{(theta)} \le \pi$ and $0 \le \phi \mathrm{(phi)} \le 2 \pi$
+    $0\le\theta\mathrm{(theta)}\le\pi$ and $-\pi\le\phi\mathrm{(phi)}\le\pi$
 
     Parameters
     ------------
     x : array-like
-       x coordinate in Cartesion space
+       x coordinate in Cartesian space
     y : array-like
        y coordinate in Cartesian space
     z : array-like
@@ -126,8 +126,8 @@ def cart2sphere(x, y, z):
     r = np.sqrt(x*x + y*y + z*z)
     theta = np.arccos(z/r)
     phi = np.arctan2(y, x)
+    r, theta, phi = np.broadcast_arrays(r, theta, phi)
     return r, theta, phi
-
 
 def normalized_vector(vec):
     ''' Return vector divided by its Euclidean (L2) norm
