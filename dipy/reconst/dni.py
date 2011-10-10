@@ -329,8 +329,7 @@ class DiffusionNabla(object):
         self.eqinds=eq_inds
         self.eqinds_com=np.array(eq_inds_complete)
         self.eqinds_len=np.array(eq_inds_len,dtype='i8')
-        
-    
+            
         
     def precompute_fast_coords(self):
         Ys=[]
@@ -342,7 +341,7 @@ class DiffusionNabla(object):
                 zi=self.origin + q*self.odf_vertices[m,2]        
                 Ys.append(np.vstack((xi,yi,zi)).T)
         self.Ys=np.concatenate(Ys).T
-        
+    
     
     def precompute_interp_coords(self):        
         Xs=[]        
