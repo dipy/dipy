@@ -205,7 +205,7 @@ def target(streamlines, target_mask, voxel_size):
     Returns:
     streamlines : generator
         A sequence of streamlines that pass though target_mask
-    
+
     Raises:
     -------
     IndexError
@@ -218,11 +218,11 @@ def target(streamlines, target_mask, voxel_size):
     """
     voxel_size = asarray(voxel_size, 'float')
     for sl in streamlines:
-        ind = (sl/voxel_size).astype('int')
+        ind = sl // voxel_size
         if ind.min() < 0:
             raise IndexError('streamline has negative values, these values ' +
                              'are outside target_mask')
-        i, j, k = ind.T
+        i, j, k = ind.T.astype('int')
         try:
             state = target_mask[i, j, k]
         except IndexError:
