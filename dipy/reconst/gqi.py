@@ -124,10 +124,10 @@ class GeneralizedQSampling(object):
         
         if squared==True:
             vf=np.vectorize(self.squared_radial_component)
-            def H(x):
-                res=(2*x*np.cos(x) + (x**2-2)*np.sin(x))/x**3
-                res[np.isnan(res)]=1/3.
-                return res
+            #def H(x):
+            #    res=(2*x*np.cos(x) + (x**2-2)*np.sin(x))/x**3
+            #    res[np.isnan(res)]=1/3.
+            #    return res
             
             self.input=np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi
             self.q2odf_params=np.real(vf(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))

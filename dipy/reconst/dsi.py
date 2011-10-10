@@ -71,16 +71,25 @@ class DiffusionSpectrum(object):
         self.origin=8
         #hanning filter width
         self.filter_width=32.
-        #create the q-table from bvecs and bvals        
-        bv=bvals
-        bmin=np.sort(bv)[1]
-        bv=np.sqrt(bv/bmin)
-        qtable=np.vstack((bv,bv,bv)).T*gradients
-        qtable=np.floor(qtable+.5)
-        self.qtable=qtable             
+                     
         #odf collecting radius
         self.radius=np.arange(2.1,6,.2)
-        self.radiusn=len(self.radius)         
+        self.update()
+            
+        if auto:
+            self.fit()        
+    
+    def update(self):
+        
+        #create the q-table from bvecs and bvals        
+        bv=self.bvals
+        bmin=np.sort(bv)[1]
+        bv=np.sqrt(bv/bmin)
+        qtable=np.vstack((bv,bv,bv)).T*self.gradients
+        qtable=np.floor(qtable+.5)
+        self.qtable=qtable
+        
+        self.radiusn=len(self.radius)
         #calculate r - hanning filter free parameter
         r = np.sqrt(qtable[:,0]**2+qtable[:,1]**2+qtable[:,2]**2)    
         #setting hanning filter width and hanning        
@@ -92,10 +101,8 @@ class DiffusionSpectrum(object):
         self.peak_thr=.4
         self.iso_thr=.7        
         #precompute coordinates for pdf interpolation
-        self.precompute_interp_coords()        
-        if auto:
-            self.fit()        
-    
+        self.precompute_interp_coords()    
+        
         
     def fit(self):
         #memory allocations for 4D volumes 

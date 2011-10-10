@@ -172,9 +172,16 @@ class Tensor(ModelArray):
         D = self._getD()
         return lower_triangular(D, b0)
 
-    def fa(self, fill_value=0):
+    def fa(self, fill_value=0, nonans=True):
         r"""
         Fractional anisotropy (FA) calculated from cached eigenvalues.
+
+        Parameters
+        ----------
+        fill_value : float
+            value of fa where self.mask == True.
+        nonans : Bool
+            When True, fa is 0 when all eigenvalues are 0, otherwise fa is nan
 
         Returns
         ---------
@@ -197,8 +204,12 @@ class Tensor(ModelArray):
         ev2 = evals[..., 1]
         ev3 = evals[..., 2]
 
+        if nonans:
+            all_zero = (ev1 == 0) & (ev2 == 0) & (ev3 == 0)
+        else:
+            all_zero = 0.
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / (ev1*ev1 + ev2*ev2 + ev3*ev3))
+                      / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
         fa = wrap(np.asarray(fa))
         return _filled(fa, fill_value)
 
