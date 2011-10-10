@@ -55,6 +55,14 @@ def test_tensor_scalar_attributes():
     #yield assert_array_equal(n_list % 2, 0)
     #yield assert_raises(ValueError, qball.sph_harm_ind_list, 1)
 
+def test_fa_of_zero():
+    dummy_gtab = np.zeros((10,3))
+    dummy_bval = np.zeros((10,))
+    ten = dti.Tensor(np.zeros((0,56)), dummy_bval, dummy_gtab)
+    ten.model_params = np.zeros(12)
+    assert_equal(ten.fa(), 0)
+    assert_true(np.isnan(ten.fa(nonans=False)))
+
 @parametric
 def test_WLS_and_LS_fit():
     """
