@@ -145,8 +145,8 @@ def eigenstats(points, alpha=0.05):
 
 def compare_orientation_sets(S,T):
     r'''Computes the mean cosine distance of the best match between
-    points of two sets of vectors S and T
-
+    points of two sets of vectors S and T  (angular similarity) 
+    
     Parameters
     -----------
     S: array, shape (m,d)
@@ -172,6 +172,7 @@ def compare_orientation_sets(S,T):
     >>> T=np.array([[1,0,0],[0,0,-1]])
     >>> compare_orientation_sets(S,T)
     1.0
+    
     '''
     
     m = len(S)
