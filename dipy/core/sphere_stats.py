@@ -245,8 +245,7 @@ def angular_similarity(S,T):
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
     >>> angular_similarity(S,T)
     0.70710678118654757
-    
-    
+
     '''
     
     m = len(S)
@@ -261,10 +260,10 @@ def angular_similarity(S,T):
     
     """
     v=[]
-    for SS in permutations(S,n):
+    for p in permutations(S,n):
         angles=[]
         for i in range(n):
-            angles.append(np.abs(np.dot(SS[i],T[i])))
+            angles.append(np.abs(np.dot(p[i],T[i])))
         v.append(np.sum(angles))
     print v
     """    
