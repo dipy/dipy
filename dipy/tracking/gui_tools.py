@@ -1,8 +1,6 @@
-from eztrack import EZTrackingInterface, InputData
+from dipy.tracking.interfaces import ShmTrackingInterface, InputData
 from traitsui.api import Item, Group, View, ArrayEditor
 from traits.api import File
-
-VizTrackingInterface = EZTrackingInterface
 
 I = InputData()
 iview = I.trait_view()

@@ -5,7 +5,7 @@ import numpy as np
 import nibabel as nib
 
 from scipy.ndimage import convolve
-from traits.api import *
+import traits.api as T
 from nibabel.trackvis import write, empty_header
 
 from dipy.reconst.shm import SlowAdcOpdfModel, MonoExpOpdfModel, \
@@ -22,9 +22,9 @@ from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
         reorient_bvec
 
-nifti_file = File(filter=['Nifti Files', '*.nii.gz',
-                          'Nifti Pair or Analyze Files', '*.img.gz',
-                          'All Files', '*'])
+nifti_file = T.File(filter=['Nifti Files', '*.nii.gz',
+                            'Nifti Pair or Analyze Files', '*.img.gz',
+                            'All Files', '*'])
 def read_roi(file, threshold=0, shape=None):
     img = nib.load(file)
     if shape is not None:
@@ -37,14 +37,14 @@ def read_roi(file, threshold=0, shape=None):
     mask = img_data > threshold
     return mask
 
-class InputData(HasTraits):
+class InputData(T.HasTraits):
     dwi_images = nifti_file
     fa_file = nifti_file
-    bvec_file = File(filter=['*.bvec'])
-    bvec_orientation = String('IMG', minlen=3, maxlen=3)
-    min_signal = Float(1)
+    bvec_file = T.File(filter=['*.bvec'])
+    bvec_orientation = T.String('IMG', minlen=3, maxlen=3)
+    min_signal = T.Float(1)
 
-    @on_trait_change('dwi_images')
+    @T.on_trait_change('dwi_images')
     def update_files(self):
         dir, file = path.split(self.dwi_images)
         base = string.split(file, path.extsep, 1)[0]
@@ -68,15 +68,17 @@ class InputData(HasTraits):
         data = data_img.get_data()
         return data, voxel_size, affine, fa, bvec, bval
 
-class GausianKernel(HasTraits):
-    sigma = Float(1, label='sigma (in voxels)')
-    shape = Array('int', shape=(3,), value=[1,1,1], label='shape (in voxels)')
+class GausianKernel(T.HasTraits):
+    sigma = T.Float(1, label='sigma (in voxels)')
+    shape = T.Array('int', shape=(3,), value=[1,1,1],
+                    label='shape (in voxels)')
     def get_kernel(self):
         raise NotImplementedError
         #will get to this soon
 
-class BoxKernel(HasTraits):
-    shape = Array('int', shape=(3,), value=[3,3,3], label='shape (in voxels)')
+class BoxKernel(T.HasTraits):
+    shape = T.Array('int', shape=(3,), value=[3,3,3],
+                    label='shape (in voxels)')
 
     def get_kernel(self):
         kernel = np.ones(self.shape)/self.shape.prod()
@@ -91,21 +93,21 @@ all_shmodels = {'QballOdf':QballOdfModel, 'SlowAdcOpdf':SlowAdcOpdfModel,
 all_integrators = {'Fact':FactIntegrator, 'FixedStep':FixedStepIntegrator}
 
 def _hack(mask):
-    mask[[0,-1]] = 0
-    mask[:,[0,-1]] = 0
-    mask[:,:,[0,-1]] = 0
+    mask[0] = 0
+    mask[:, 0] = 0
+    mask[:, :, 0] = 0
 
-class EZTrackingInterface(HasStrictTraits):
+class ShmTrackingInterface(T.HasStrictTraits):
 
-    dwi_images = DelegatesTo('all_inputs')
-    all_inputs = Instance(InputData, args=())
-    min_signal = DelegatesTo('all_inputs')
+    dwi_images = T.DelegatesTo('all_inputs')
+    all_inputs = T.Instance(InputData, args=())
+    min_signal = T.DelegatesTo('all_inputs')
     seed_roi = nifti_file
-    seed_density = Array(dtype='int', shape=(3,), value=[1,1,1])
+    seed_density = T.Array(dtype='int', shape=(3,), value=[1,1,1])
 
-    smoothing_kernel_type = Enum(None, all_kernels.keys())
-    smoothing_kernel = Instance(HasTraits)
-    @on_trait_change('smoothing_kernel_type')
+    smoothing_kernel_type = T.Enum(None, all_kernels.keys())
+    smoothing_kernel = T.Instance(T.HasTraits)
+    @T.on_trait_change('smoothing_kernel_type')
     def set_smoothing_kernel(self):
         if self.smoothing_kernel_type is not None:
             kernel_factory = all_kernels[self.smoothing_kernel_type]
@@ -113,36 +115,36 @@ class EZTrackingInterface(HasStrictTraits):
         else:
             self.smoothing_kernel = None
 
-    interpolator = Enum('NearestNeighbor', all_interpolators.keys())
-    model_type = Enum('SlowAdcOpdf', all_shmodels.keys())
-    sh_order = Int(4)
-    Lambda = Float(0, desc="Smoothing on the odf")
-    sphere_coverage = Int(5)
-    min_peak_spacing = Range(0.,1,np.sqrt(.5), desc="as a dot product")
-    min_relative_peak = Range(0.,1,.25)
+    interpolator = T.Enum('NearestNeighbor', all_interpolators.keys())
+    model_type = T.Enum('SlowAdcOpdf', all_shmodels.keys())
+    sh_order = T.Int(4)
+    Lambda = T.Float(0, desc="Smoothing on the odf")
+    sphere_coverage = T.Int(5)
+    min_peak_spacing = T.Range(0.,1,np.sqrt(.5), desc="as a dot product")
+    min_relative_peak = T.Range(0.,1,.25)
 
-    probabilistic = Bool(False, label='Probabilistic (Residual Bootstrap)')
-    bootstrap_input = Bool(False)
+    probabilistic = T.Bool(False, label='Probabilistic (Residual Bootstrap)')
+    bootstrap_input = T.Bool(False)
 
     #integrator = Enum('Fact', all_integrators.keys())
-    start_direction = Array(dtype='float', shape=(3,), value=[0,0,1],
-                            desc="prefered direction from seeds when " +
+    start_direction = T.Array(dtype='float', shape=(3,), value=[0,0,1],
+                              desc="prefered direction from seeds when " +
                                  "multiple directions are available",
                             label="Start direction (RAS)")
-    track_two_directions = Bool(False)
-    fa_threshold = Float(1.0)
-    max_turn_angle = Range(0.,90,0)
+    track_two_directions = T.Bool(False)
+    fa_threshold = T.Float(1.0)
+    max_turn_angle = T.Range(0.,90,0)
 
-    stop_on_target = Bool(False)
-    targets = List(nifti_file, [])
+    stop_on_target = T.Bool(False)
+    targets = T.List(nifti_file, [])
 
     #will be set later
-    voxel_size = Array(dtype='float', shape=(3,))
-    affine = Array(dtype='float', shape=(4,4))
-    shape = Tuple((0,0,0))
+    voxel_size = T.Array(dtype='float', shape=(3,))
+    affine = T.Array(dtype='float', shape=(4,4))
+    shape = T.Tuple((0,0,0))
 
     #set for io
-    save_streamlines_to = File('')
+    save_streamlines_to = T.File('')
     save_counts_to = nifti_file
 
     #io methods
