@@ -50,6 +50,19 @@ def read_bvec_file(filename, atol=.001):
     
     return (grad_table, b_values)
 
+def ornt_mapping(ornt1, ornt2):
+    """Calculates the mapping needing to get from orn1 to orn2"""
+    
+    mapping = np.empty((len(ornt1), 2), 'int')
+    mapping[:, 0] = -1
+    A = ornt1[:, 0].argsort()
+    B = ornt2[:, 0].argsort()
+    mapping[B, 0] = A
+    assert (mapping[:, 0] != -1).all()
+    sign = ornt2[:, 1] * ornt1[mapping[:, 0], 1]
+    mapping[:, 1] = sign
+    return mapping
+
 def reorient_bvec(bvec, current_ornt, new_ornt):
     """Changes the orientation of a gradient table
 
@@ -65,16 +78,8 @@ def reorient_bvec(bvec, current_ornt, new_ornt):
     if current_ornt.shape != (3,2) or new_ornt.shape != (3,2):
         raise ValueError("ornt must from from 3-space to 3-space")
 
-    mapping = np.empty(len(current_ornt), 'int')
-    mapping.fill(-1)
-    A = current_ornt[:,0].argsort()
-    B = new_ornt[:,0].argsort()
-    mapping[B] = A
-    assert (mapping != -1).all()
-    sign = current_ornt[A,1]*new_ornt[B,1]
-    sign.shape += (1,)
-    
-    new_bvec = bvec[mapping]*sign
+    mapping = ornt_mapping(current_ornt, new_ornt)
+    new_bvec = bvec[mapping[:, 0]]*mapping[:, 1:]
     return new_bvec
 
 def orientation_from_string(string_ornt):

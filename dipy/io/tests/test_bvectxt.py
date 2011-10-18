@@ -26,5 +26,7 @@ def test_reorient_bvec():
     bvec = result
     result = bvec[[1,0,2]]*[[-1],[1],[-1]]
     assert_array_equal(reorient_bvec(bvec, 'asr', 'ial'), result)
+    result = bvec[[1,0,2]]*[[-1],[1],[1]]
+    assert_array_equal(reorient_bvec(bvec, 'asr', 'iar'), result)
     assert_raises(ValueError, reorient_bvec, bvec, 'ras', 'ra')
 
