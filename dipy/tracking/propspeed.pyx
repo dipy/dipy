@@ -312,9 +312,9 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
     ------------
     seed : array, shape(3,), point where the tracking starts     
     ref : long int, which peak to follow first
-    qa : array, shape(Np,), float, quantitative anisotropy matrix,
-    where Np the number of peaks, found using self.Np
-    ind : array, shape(Np,), float, index of the track orientation
+    qa : array, shape(X,Y,Z,Np), float64, anisotropy matrix,
+    where Np the number of maximum allowed peaks, found using self.Np
+    ind : array, shape(Np,), float64, index of the track orientation
     total_weight : double 
                 
     Returns
@@ -330,110 +330,82 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
         long *pstr=<long *>qa.strides
         long *qa_shape=<long *>qa.shape
         long *pvstr=<long *>odf_vertices.strides
-        long d,i,j
+        long d,i,j,cnt
         double direction[3],dx[3],idirection[3],ps2[3],tmp,ftmp
     
-    
-    """
-    #don't track seeds on the boundaries    
-    for i from 0<=i<3:
-        if seed[i] ==qa_shape[i]-1 or seed[i] == 0:
-            return None
-    """
-    
+
+    cnt=0
     d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)    
     if d==0:
-        return None
-    
+        return None    
     for i from 0<=i<3:
         #store the initial direction
         dx[i]=idirection[i]
         #ps2 is for downwards and ps for upwards propagation
-        ps2[i]=ps[i]
-    
+        ps2[i]=ps[i]    
     point=seed.copy()
     track = []
-    track.append(point.copy())   
-
+    track.append(point.copy()) 
     #track towards one direction
     while d:
         d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
                                    ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
-            break
-       
+            break            
+        if cnt>1000:
+            break       
         #update the track
         for i from 0<=i<3:
-            dx[i]=direction[i]
-            
+            dx[i]=direction[i]            
             #check for boundaries
             tmp=ps[i]+step_sz*dx[i]
-            #ftmp=floor(tmp+.5)
-            
+            #ftmp=floor(tmp+.5)            
             if ftmp > qa_shape[i]-1 or tmp < 0.:
                  d=0
-                 break
-            
+                 break     
             #propagate
             ps[i]=tmp           
-            point[i]=ps[i]
-        
+            point[i]=ps[i]        
         #print('point up',point)
-        if d==1:
+                
+        if d==1:  	
             track.append(point.copy())
-        
-       
-    d=1
-        
+            cnt+=1
+    d=1        
     for i from 0<=i<3:
         dx[i]=-idirection[i]
-
+    
+    cnt=0
     #track towards the opposite direction 
     while d:
         d= _propagation_direction(ps2,dx,pqa,pin,pverts,qa_thr,\
                                    ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
             break
+        if cnt>1000:
+            break
         #update the track
         for i from 0<=i<3:
-            dx[i]=direction[i]
-            
+            dx[i]=direction[i]            
             #check for boundaries
             tmp=ps2[i]+step_sz*dx[i]            
             #ftmp=floor(tmp+.5)            
             if tmp > qa_shape[i]-1 or tmp < 0.:
                  d=0
                  break
-
             #propagate
             ps2[i]=tmp        
             point[i]=ps2[i] #to be changed
-
         #add track point
         if d==1:               
             track.insert(0,point.copy())
-       
-
+            cnt+=1
     #prepare to return final track for the current seed
     tmp_track=np.array(track,dtype=np.float32)
+
     #some times one of the ends takes small negative values
     #needs to be investigated further
 
-    """
-
-    try:
-        if tmp_track[0,0]<0 or tmp_track[0,1] or tmp_track[0,2]:
-            tmp_track=np.delete(tmp_track,0,0)
-    except:
-        pass
-    
-    try:   
-        if tmp_track[-1,0]<0 or tmp_track[-1,1] or tmp_track[-1,2]:
-            tmp_track=np.delete(tmp_track,len(tmp_track)-1,0)
-    except:
-        pass
-
-    """
     #return track for the current seed point and ref
     return tmp_track
 
