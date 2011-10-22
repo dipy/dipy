@@ -86,7 +86,7 @@ class EuDX(object):
 
         Notes
         -------
-        This works as an iterator class because otherwise it could fill your entire RAM if you generate many tracks. 
+        This works as an iterator class because otherwise it could fill your entire memory if you generate many tracks. 
         Something very common as you can easily generate millions of tracks if you have many seeds.
 
         '''
@@ -97,26 +97,21 @@ class EuDX(object):
         self.step_sz=step_sz
         self.length_thr=length_thr
         self.total_weight=total_weight
-
         if len(self.a.shape)==3:
+            #tmpa=np.zeros(self.a.shape+(2,))
+            #tmpi=np.zeros(self.ind.shape+(2,))
+            #self.a=tmpa.copy()
+            #self.ind=tmpi.copy()
+            #self.a[...,0]=a.copy()
+            #self.ind[...,0]=ind.copy()                        
             self.a.shape=self.a.shape+(1,)
             self.ind.shape=self.ind.shape+(1,)
-
         #store number of maximum peacks
         x,y,z,g=self.a.shape
         self.Np=g
-        tlist=[]
-
         if odf_vertices==None:
             vertices, faces = get_sphere('symmetric362')
             self.odf_vertices = vertices
-        '''
-        print 'Shapes'
-        print 'a',self.a.shape, self.a.dtype
-        print 'ind',self.ind.shape, self.ind.dtype
-        print 'odf_vertices',self.odf_vertices.shape, self.odf_vertices.dtype
-        '''
-
         try:
             if len(seeds)>0:
                 self.seed_list=seeds
@@ -124,32 +119,46 @@ class EuDX(object):
         except TypeError:
             self.seed_no=seeds
             self.seed_list=None
-
         self.ind=self.ind.astype(np.double)
 
     def __iter__(self):
         ''' This is were all the fun starts '''
+        
         x,y,z,g=self.a.shape
-        #for all seeds
-        for i in range(self.seed_no):
             
+        #for all seeds
+        for i in range(self.seed_no):            
             if self.seed_list==None:
                 rx=(x-1)*np.random.rand()
                 ry=(y-1)*np.random.rand()
                 rz=(z-1)*np.random.rand()            
                 seed=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
             else:
-                seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)
-                            
+                seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)                            
             #for all peaks
-            for ref in range(self.a.shape[-1]): 
-                #propagate up and down 
-                track =eudx_both_directions(seed.copy(),ref,self.a,self.ind,self.odf_vertices,self.a_low,self.ang_thr,self.step_sz,self.total_weight)                  
+            for ref in range(g): 
+                #propagate up and down                
+                #print g,self.a.shape
+                #"""
+                print i,seed    
+                track =eudx_both_directions(seed.copy(),
+                                            ref,
+                                            self.a,
+                                            self.ind,
+                                            self.odf_vertices,
+                                            self.a_low,
+                                            self.ang_thr,
+                                            self.step_sz,
+                                            self.total_weight)                  
+                #"""
+                #track =None
                 if track == None:
+                    #print 'None'
                     pass
                 else:        
                     #return a track from that seed                                        
-                    if length(track)>self.length_thr:                        
+                    if length(track)>self.length_thr:
+                        #print 'track'                        
                         yield track
                         
                         

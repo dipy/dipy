@@ -139,8 +139,7 @@ class GeneralizedQSampling(object):
         #define total mask 
         #tot_mask = (mask > 0) & (data[...,0] > thresh)
         self.peak_thr=.3
-        self.iso_thr=.9
-        
+        self.iso_thr=.9        
         
         if auto:
             self.fit()
