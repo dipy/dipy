@@ -140,7 +140,7 @@ class EuDX(object):
                 #propagate up and down                
                 #print g,self.a.shape
                 #"""
-                print i,seed    
+                #print i,seed    
                 track =eudx_both_directions(seed.copy(),
                                             ref,
                                             self.a,
