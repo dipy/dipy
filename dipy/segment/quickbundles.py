@@ -6,7 +6,35 @@ from dipy.tracking.distances import bundles_distances_mdf
 
 class QuickBundles(object):
     
-    def __init__(self,tracks,dist_thr=4.,pts=12):       
+    def __init__(self,tracks,dist_thr=4.,pts=12):
+        """ Highly efficient trajectory clustering 
+        
+        Parameters
+        -----------
+        tracks : sequence of (N,3) ... (M,3) arrays,
+                    trajectories (or tractography or streamlines)
+                    
+        dist_thr : float, 
+                    distance threshold in the space of the tracks
+        pts : int, 
+                number of points for simplifying the tracks 
+                       
+        Methods
+        --------
+        clustering() returns a dict holding with the clustering result
+        virtuals() gives the virtuals (track centroids) of the clusters
+        exemplars() gives the exemplars (track medroids) of the clusters
+        
+        
+        Citation
+        ---------
+        
+        E.Garyfallidis, "Towards an accurate brain tractography", PhD thesis, 2011
+        
+        
+        """
+        
+               
         if pts!=None:                        
             self.tracksd=[downsample(track,pts) for track in tracks]
         else:
