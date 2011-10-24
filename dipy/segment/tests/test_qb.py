@@ -1,4 +1,5 @@
 import numpy as np
+import nibabel as nib
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.data import get_data
