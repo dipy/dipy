@@ -145,6 +145,8 @@ def main(**extra_args):
                           'dipy.utils.tests',
                           'dipy.external',
                           'dipy.external.tests',
+                          'dipy.segment',
+                          'dipy.segment.tests',
                           'dipy.sims',
                           'dipy.sims.tests'],
           ext_modules = EXTS,
