@@ -23,17 +23,14 @@ class QuickBundles(object):
         --------
         clustering() returns a dict holding with the clustering result
         virtuals() gives the virtuals (track centroids) of the clusters
-        exemplars() gives the exemplars (track medroids) of the clusters
-        
+        exemplars() gives the exemplars (track medoids) of the clusters        
         
         Citation
         ---------
         
-        E.Garyfallidis, "Towards an accurate brain tractography", PhD thesis, 2011
+        E.Garyfallidis, "Towards an accurate brain tractography", PhD thesis, 2011 
         
-        
-        """
-        
+        """        
                
         if pts!=None:                        
             self.tracksd=[downsample(track,pts) for track in tracks]
@@ -74,10 +71,10 @@ class QuickBundles(object):
         return self.clustering[id]
     
     def label2tracksids(self,id):
-        return [i for i in self.clustering[id]]        
+        return [i for i in self.clustering[id]['indices']]        
     
     def label2tracks(self,tracks,id):
-        return [tracks[i] for i in self.clustering[id]]
+        return [tracks[i] for i in self.clustering[id]['indices']]
        
     def total_clusters(self):
         return len(self.clustering)
