@@ -15,7 +15,9 @@ parser = OptionParser(usage)
 parser.add_option("-b","--bvec",help="text file with gradient directions")
 parser.add_option("-r","--root",help="root for files to be saved")
 parser.add_option("-m","--mask",help="use BET by default",default="BET")
-parser.add_option("--threshold",help="threshold passed to BET", default='.3')
+parser.add_option("--threshold",help="threshold passed to BET", default='.2')
+parser.add_option("--min_signal",help="minimum valid singal value",
+                  type='float', default=1.)
 opts, args = parser.parse_args()
 
 if len(args) != 1:
@@ -43,6 +45,7 @@ bvec, bval = read_bvec_file(bvec)
 
 where_dwi = bval > 0
 t2di = data[..., ~where_dwi].mean(-1)
+t2di = np.asarray(t2di, 'float32')
 nib.save(nib.Nifti1Image(t2di, affine), root+'_t2di.nii.gz')
 del t2di
 
@@ -58,23 +61,28 @@ if mask == 'BET':
 
 if mask.lower() != 'none':
     mask = nib.load(mask).get_data() > 0
+ten = Tensor(data, bval, bvec.T, mask, min_signal=opts.min_signal)
 
-ten = Tensor(data, bval, bvec.T, mask, min_signal=1)
-
-evals = ten.evals.astype("float32")
-L1, L2, L3 = np.rollaxis(evals, -1)
+L1, L2, L3 = np.rollaxis(ten.evals, -1)
+rd = (L2 + L3) / 2
+rd = np.asarray(rd, 'float32')
+L1 = np.asarray(L1, 'float32')
 nib.save(nib.Nifti1Image(L1, affine), root+'_L1.nii.gz')
-nib.save(nib.Nifti1Image(L2, affine), root+'_L2.nii.gz')
-nib.save(nib.Nifti1Image(L3, affine), root+'_L3.nii.gz')
-del L1, L2, L3
+nib.save(nib.Nifti1Image(rd, affine), root+'_rd.nii.gz')
+del L1, L2, L3, rd
 
-fa = ten.fa(0)
-fa[np.isnan(fa)] = 0.
-nib.save(nib.Nifti1Image(fa.astype("float32"), affine), root+'_fa.nii.gz')
+md = np.asarray(ten.md(), "float32")
+nib.save(nib.Nifti1Image(md, affine), root+'_md.nii.gz')
+del md
+
+fa = np.asarray(ten.fa(0), 'float32')
+assert not np.isnan(fa).any()
+nib.save(nib.Nifti1Image(fa, affine), root+'_fa.nii.gz')
 
 dfa = np.abs(fa[..., None] * ten.evecs[..., 0])
-dfa *= 256
+dfa *= 256*(1.-np.finfo(float).eps)
 assert dfa.max() < 256
+assert dfa.min() >= 0
 dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
 dfaU = np.zeros(dfa.shape[:-1], dtype)
 dfaU['R'] = dfa[..., 0]
@@ -82,10 +90,6 @@ dfaU['G'] = dfa[..., 1]
 dfaU['B'] = dfa[..., 2]
 nib.save(nib.Nifti1Image(dfaU, affine), root+'_dirFA.nii.gz')
 del fa, dfaU, dfa
-
-md = ten.md().astype("float32")
-nib.save(nib.Nifti1Image(md, affine), root+'_md.nii.gz')
-del md
 
 trk_hdr = empty_header()
 trk_hdr['voxel_order'] = orientation_to_string(nib.io_orientation(affine))
