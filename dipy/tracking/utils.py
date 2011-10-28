@@ -1,7 +1,9 @@
 from __future__ import division
 from numpy import asarray, array, atleast_3d, ceil, concatenate, empty, \
-        mgrid, sqrt, zeros
+        eye, mgrid, sqrt, zeros, linalg, diag, dot
 from collections import defaultdict
+from dipy.io.bvectxt import ornt_mapping
+
 
 def streamline_counts(streamlines, vol_dims, voxel_size):
     """Counts the number of unique streamlines that pass though each voxel
@@ -81,7 +83,7 @@ def subsegment(streamlines, max_segment_length):
 
     Returns:
     --------
-    new_streamlines : generator
+    output_streamlines : generator
         A set of streamlines.
 
     Notes:
@@ -114,21 +116,21 @@ def subsegment(streamlines, max_segment_length):
         length = sqrt((diff*diff).sum(-1))
         num_segments = ceil(length/max_segment_length).astype('int')
 
-        new_sl = empty((num_segments.sum()+1, 3), 'float')
-        new_sl[0] = sl[0]
+        output_sl = empty((num_segments.sum()+1, 3), 'float')
+        output_sl[0] = sl[0]
 
         count = 1
         for ii in xrange(len(num_segments)):
             ns = num_segments[ii]
             if ns == 1:
-                new_sl[count] = sl[ii+1]
+                output_sl[count] = sl[ii+1]
                 count += 1
             elif ns > 1:
                 small_d = diff[ii]/ns
                 point = sl[ii]
                 for jj in xrange(ns):
                     point = point + small_d
-                    new_sl[count] = point
+                    output_sl[count] = point
                     count += 1
             elif ns == 0:
                 pass
@@ -136,7 +138,7 @@ def subsegment(streamlines, max_segment_length):
             else:
                 #this should never happen because ns should be a posative int
                 assert(ns >= 0)
-        yield new_sl
+        yield output_sl
 
 def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
     """Takes a binary mask and returns seeds in voxels != 0
@@ -151,7 +153,8 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
     >>> mask = zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
     >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
-    array([[ 0.5,  0.5,  0.5]])
+    array([[ 0.5,  0.5,  0.5]])counts_mask = counts > 0
+
     >>> seeds_from_mask(mask, [1,2,3], [1,1,1])
     array([[ 0.5       ,  0.25      ,  0.16666667],
            [ 0.5       ,  0.25      ,  0.5       ],
@@ -211,7 +214,8 @@ def target(streamlines, target_mask, voxel_size):
     IndexError
         When the points of the streamlines lie outside of the target_mask
 
-    See Also:
+    See Also:from numpy import linalg as LA
+
     ---------
     streamline_counts
 
@@ -235,7 +239,8 @@ def target(streamlines, target_mask, voxel_size):
 def merge_streamlines(backward, forward):
     """Merges two sets of streamlines seeded at the same points
 
-    Because the first point of each streamline pair should be the same, only
+   
+ Because the first point of each streamline pair should be the same, only
     one is kept
 
     Parameters:
@@ -272,3 +277,81 @@ def merge_streamlines(backward, forward):
     F = iter(forward)
     while True:
         yield concatenate((B.next()[:0:-1], F.next()))
+
+
+
+def move_streamlines(streamlines, affine):
+    """Applies a linear transformation, given by affine, to streamlines
+
+    Parameters:
+    -----------
+    streamlines : sequence
+        A set of streamlines to be transformed.
+    affine : array (4, 4)
+        A linear tranformation to be applied to the streamlines. The last row
+        of affine should be [0, 0, 0, 1].
+
+    Returns:
+    --------
+    streamlines : generator
+        A sequence of transformed streamlines
+    """
+    for sl in streamlines:
+        yield dot(sl, affine[:3,:3].T) + affine[:3,3]
+
+def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
+    """Calculates a linear tranformation equivelent to chaning voxel order
+
+    Calculates a linear tranformation A such that [a, b, c, 1] = A[x, y, z, 1].
+    where [x, y, z] is a point in the coordinate system defined by input_ornt
+    and [a, b, c] is the same point in the coordinate system defined by
+    output_ornt.
+
+    Parameters:
+    -----------
+    input_ornt : array (n, 2)
+        A description of the orientation of a point in n-space. See
+        nibabel.orientation or dipy.io.bvectxt for more information.
+    output_ornt : array (n, 2)
+        A description of the orientation of a point in n-space.
+    shape
+        shape of the image in the input orientation. map = ornt_mapping(input_ornt, output_ornt)
+
+    voxel_size
+        voxel_size of the image in the input orientation.
+
+    Returns:
+    --------
+    A : array (n+1, n+1)
+        Affine matrix of the transformation between input_ornt and output_ornt.
+
+    See Also:
+    ---------
+    nibabel.orientation
+    dipy.io.bvectxt.orientation_to_string
+    dipy.io.bvectxt.orientation_from_string
+    """
+    map = ornt_mapping(input_ornt, output_ornt)
+    if input_ornt.shape != output_ornt.shape:
+        raise ValueError("input_ornt and output_ornt must have the same shape")
+    affine = eye(len(input_ornt)+1)
+    affine[:3] = affine[map[:, 0]]
+    corner = asarray(voxel_size) * shape
+    affine[:3, 3] = (map[:, 1] < 0) * corner[map[:, 0]]
+    #multiply the rows of affine to get right sign
+    affine[:3, :3] *= map[:, 1:]
+    return affine
+
+def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
+    """It takes the affine matrix from flirt (FSLdot) and the voxel size of the
+       input and output images and it returns the adjusted affine matrix for trackvis
+    """
+    input_voxsz = asarray(input_voxsz)
+    output_voxsz = asarray(output_voxsz)
+    shift = eye(4)
+    shift[:3,3] = -input_voxsz/2
+
+    affine = dot(mat_affine, shift)
+    affine[:3,3] += output_voxsz/2
+
+    return affine
