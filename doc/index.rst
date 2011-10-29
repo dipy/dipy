@@ -40,17 +40,18 @@ An Example
 Here is a tiny usage example for dipy::
 
   >>> import numpy as np
+  >>> import nibabel as nib
   >>> from dipy.reconst.dti import Tensor
   >>> from dipy.data import get_data
-  >>> fimg,fbval,fbvec=get_data('small_101D')
-  >>> import nibabel as nib
-  >>> img=nib.load(fimg)
-  >>> data=img.get_data()
-  >>> bvals=np.loadtxt(fbvals)
-  >>> gradients=np.loadtxt(fbvecs).T
-  >>> ten=Tensor(data,bvals,gradients,thresh=50)
-  >>> FA=ten.fa()
-  >>> MASK = FA < 0.2
+
+  >>> fimg, fbval, fbvec = get_data('small_101D')
+  >>> img = nib.load(fimg)
+  >>> data = img.get_data()
+  >>> bvals = np.loadtxt(fbval)
+  >>> gradients = np.loadtxt(fbvec).T
+  >>> ten = Tensor(data, bvals, gradients, thresh=50)
+  >>> FA = ten.fa()
+  >>> MASK = (FA < 0.2)
 
 In this code snippet we loaded a small diffusion dataset with their data,
 b-vectors and b-values, calculated the Tensors and fractional anisotropy (FA)
