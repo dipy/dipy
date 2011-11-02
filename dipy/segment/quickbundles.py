@@ -81,7 +81,14 @@ class QuickBundles(object):
         
     def downsampled_tracks(self):
         return self.tracksd
-        
+    
+    def remove_cluster(self,id):
+        print('Not implemented yet')
+        pass
+    
+    def remove_clusters(self,list_ids):
+        print('Not implemented yet')
+        pass
         
         
     

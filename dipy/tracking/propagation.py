@@ -32,6 +32,12 @@ class EuDX(object):
 
     .. [2] Mori et al. Three-dimensional tracking of axonal projections
     in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
+    
+    Note
+    ------
+    The coordinate system of the tractography is that of native space of image coordinates not
+    native space world coordinates therefore voxel size is always considered as having size (1,1,1).
+    
     '''
 
     def __init__(self, a, ind,
