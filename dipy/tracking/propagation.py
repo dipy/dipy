@@ -37,6 +37,8 @@ class EuDX(object):
     ------
     The coordinate system of the tractography is that of native space of image coordinates not
     native space world coordinates therefore voxel size is always considered as having size (1,1,1).
+    Therefore, the origin is at the center of the center of the first voxel of the volume and all 
+    i,j,k coordinates start from the center of the voxel they represent. 
     
     '''
 
