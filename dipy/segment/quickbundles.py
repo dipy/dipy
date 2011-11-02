@@ -30,13 +30,14 @@ class QuickBundles(object):
         
         E.Garyfallidis, "Towards an accurate brain tractography", PhD thesis, 2011 
         
-        """        
-               
+        """
+        self.dist_thr = dist_thr
+        self.pts = pts
         if pts!=None:                        
-            self.tracksd=[downsample(track,pts) for track in tracks]
+            self.tracksd=[downsample(track,self.pts) for track in tracks]
         else:
             self.tracksd=tracks                    
-        self.clustering=local_skeleton_clustering(self.tracksd,dist_thr)
+        self.clustering=local_skeleton_clustering(self.tracksd, self.dist_thr)
         self.virts=None
         self.exemps=None                
     
