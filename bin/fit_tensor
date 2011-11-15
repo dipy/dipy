@@ -95,6 +95,7 @@ trk_hdr = empty_header()
 trk_hdr['voxel_order'] = orientation_to_string(nib.io_orientation(affine))
 trk_hdr['dim'] = ten.shape
 trk_hdr['voxel_size'] = voxel_size
+trk_hdr['vox_to_ras'] = affine 
 tracks = [(np.array([[0,0,0],
                      [0,0,0]]), None, None)]
 write(root+'_dummy.trk', tracks, trk_hdr)
