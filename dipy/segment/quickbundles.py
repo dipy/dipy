@@ -90,6 +90,14 @@ class QuickBundles(object):
     def remove_clusters(self,list_ids):
         print('Not implemented yet')
         pass
+    
+    def remove_tracks(self):
+        print('Not implemented yet')
+        pass
+    
+    def points_per_track(self):
+        print('Not implemented yet')
+        pass
         
         
     
