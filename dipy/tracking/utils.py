@@ -153,7 +153,7 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
     >>> mask = zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
     >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
-    array([[ 0.5,  0.5,  0.5]])counts_mask = counts > 0
+    array([[ 0.5,  0.5,  0.5]])
 
     >>> seeds_from_mask(mask, [1,2,3], [1,1,1])
     array([[ 0.5       ,  0.25      ,  0.16666667],
