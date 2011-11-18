@@ -18,6 +18,8 @@ class NearestNeighborInterpolator(Interpolator):
 
     def __getitem__(self, index):
         index = index // self._voxel_size
+        if index.min() < 0:
+            raise IndexError('Negative Index')
         index = tuple(int(ii) for ii in index)
         if self._mask is not None:
             if self._mask[index] == False:
