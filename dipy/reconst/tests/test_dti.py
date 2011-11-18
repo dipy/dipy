@@ -16,7 +16,6 @@ import nibabel as nib
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data
 
-@parametric
 def test_tensor_scalar_attributes():
     """
     Tests that the tensor class scalar attributes (FA, ADC, etc...) are
@@ -27,7 +26,7 @@ def test_tensor_scalar_attributes():
     evals = np.array([2., 1., 0.])
     a = 1. / np.sqrt(2)
     #evec[:,j] is pair with eval[j]
-    evecs = np.array([[a, 0, -a], [a, 0, a], [0, 1., 0]]) 
+    evecs = np.array([[a, 0, -a], [a, 0, a], [0, 1., 0]])
     D = np.array([[1., 1., 0], [1., 1., 0], [0, 0, 1.]])
     FA = np.sqrt(1./2*(1+4+1)/(1+4+0)) # 0.7745966692414834
     MD = 1.
@@ -40,20 +39,20 @@ def test_tensor_scalar_attributes():
     tensor.model_params = np.r_['-1,2', evals, evecs.ravel()]
 
     ### TESTS ###
-    yield assert_almost_equal(np.abs(np.dot(evecs[:, 2],
+    assert_almost_equal(np.abs(np.dot(evecs[:, 2],
                 tensor[0].evecs[:, 2].T)), 1.,
                 msg = "Calculation of third eigenvector is not right")
-    yield assert_array_almost_equal(D, tensor[0].D, err_msg = "Recovery of self diffusion tensor from eig not adaquate")
-    yield assert_almost_equal(FA, tensor.fa(), msg = "Calculation of FA of self diffusion tensor is not adequate")
-    yield assert_almost_equal(MD, tensor.md(), msg = "Calculation of MD of self diffusion tensor is not adequate")
-    yield assert_equal(True, tensor.mask.all())
+    assert_array_almost_equal(D, tensor[0].D, err_msg = "Recovery of self diffusion tensor from eig not adaquate")
+    assert_almost_equal(FA, tensor.fa(), msg = "Calculation of FA of self diffusion tensor is not adequate")
+    assert_almost_equal(MD, tensor.md(), msg = "Calculation of MD of self diffusion tensor is not adequate")
+    assert_equal(True, tensor.mask.all())
 
-    #yield assert_equal(m_list.shape, n_list.shape)
-    #yield assert_equal(m_list.ndim, 2)
-    #yield assert_equal(m_list.shape, (45,1))
-    #yield assert_true(np.all(np.abs(m_list) <= n_list))
-    #yield assert_array_equal(n_list % 2, 0)
-    #yield assert_raises(ValueError, qball.sph_harm_ind_list, 1)
+    #assert_equal(m_list.shape, n_list.shape)
+    #assert_equal(m_list.ndim, 2)
+    #assert_equal(m_list.shape, (45,1))
+    #assert_true(np.all(np.abs(m_list) <= n_list))
+    #assert_array_equal(n_list % 2, 0)
+    #assert_raises(ValueError, qball.sph_harm_ind_list, 1)
 
 def test_fa_of_zero():
     dummy_gtab = np.zeros((10,3))
@@ -63,7 +62,6 @@ def test_fa_of_zero():
     assert_equal(ten.fa(), 0)
     assert_true(np.isnan(ten.fa(nonans=False)))
 
-@parametric
 def test_WLS_and_LS_fit():
     """
     Tests the WLS and LS fitting functions to see if they returns the correct
@@ -87,142 +85,137 @@ def test_WLS_and_LS_fit():
     #Signals
     Y = np.exp(np.dot(X,D))
     Y.shape = (-1,) + Y.shape
-    
+
     ### Testing WLS Fit on Single Voxel ###
     #Estimate tensor from test signals
     tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8)
-    yield assert_equal(tensor_est.shape, Y.shape[:-1])
-    yield assert_array_almost_equal(tensor_est.evals[0], evals)
-    yield assert_array_almost_equal(tensor_est.D[0], tensor,err_msg= "Calculation of tensor from Y does not compare to analytical solution")
-    yield assert_almost_equal(tensor_est.md()[0], md)
+    assert_equal(tensor_est.shape, Y.shape[:-1])
+    assert_array_almost_equal(tensor_est.evals[0], evals)
+    assert_array_almost_equal(tensor_est.D[0], tensor,err_msg= "Calculation of tensor from Y does not compare to analytical solution")
+    assert_almost_equal(tensor_est.md()[0], md)
 
     #test 0d tensor
     y = Y[0]
     tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8)
-    yield assert_equal(tensor_est.shape, tuple())
-    yield assert_array_almost_equal(tensor_est.evals, evals)
-    yield assert_array_almost_equal(tensor_est.D, tensor)
-    yield assert_almost_equal(tensor_est.md(), md)
-    yield assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
+    assert_equal(tensor_est.shape, tuple())
+    assert_array_almost_equal(tensor_est.evals, evals)
+    assert_array_almost_equal(tensor_est.D, tensor)
+    assert_almost_equal(tensor_est.md(), md)
+    assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
 
     tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8, fit_method='LS')
-    yield assert_equal(tensor_est.shape, tuple())
-    yield assert_array_almost_equal(tensor_est.evals, evals)
-    yield assert_array_almost_equal(tensor_est.D, tensor)
-    yield assert_almost_equal(tensor_est.md(), md)
-    yield assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
+    assert_equal(tensor_est.shape, tuple())
+    assert_array_almost_equal(tensor_est.evals, evals)
+    assert_array_almost_equal(tensor_est.D, tensor)
+    assert_almost_equal(tensor_est.md(), md)
+    assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
 
-@parametric
 def test_masked_array_with_Tensor():
     data = np.ones((2,4,56))
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
 
     gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
-    
+
     tensor = dti.Tensor(data, bval, gtab.T, mask=mask, min_signal=1e-9)
-    yield assert_equal(tensor.shape, (2,4))
-    yield assert_equal(tensor.fa().shape, (2,4))
-    yield assert_equal(tensor.evals.shape, (2,4,3))
-    yield assert_equal(tensor.evecs.shape, (2,4,3,3))
-    yield assert_equal(type(tensor.model_params), MaskedView)
-    yield assert_array_equal(tensor.mask, mask)
+    assert_equal(tensor.shape, (2,4))
+    assert_equal(tensor.fa().shape, (2,4))
+    assert_equal(tensor.evals.shape, (2,4,3))
+    assert_equal(tensor.evecs.shape, (2,4,3,3))
+    assert_equal(type(tensor.model_params), MaskedView)
+    assert_array_equal(tensor.mask, mask)
 
     tensor = tensor[0]
-    yield assert_equal(tensor.shape, (4,))
-    yield assert_equal(tensor.fa().shape, (4,))
-    yield assert_equal(tensor.evals.shape, (4,3))
-    yield assert_equal(tensor.evecs.shape, (4,3,3))
-    yield assert_equal(type(tensor.model_params), MaskedView)
-    yield assert_array_equal(tensor.mask, mask[0])
+    assert_equal(tensor.shape, (4,))
+    assert_equal(tensor.fa().shape, (4,))
+    assert_equal(tensor.evals.shape, (4,3))
+    assert_equal(tensor.evecs.shape, (4,3,3))
+    assert_equal(type(tensor.model_params), MaskedView)
+    assert_array_equal(tensor.mask, mask[0])
 
     tensor = tensor[0]
-    yield assert_equal(tensor.shape, tuple())
-    yield assert_equal(tensor.fa().shape, tuple())
-    yield assert_equal(tensor.evals.shape, (3,))
-    yield assert_equal(tensor.evecs.shape, (3,3))
-    yield assert_equal(type(tensor.model_params), np.ndarray)
+    assert_equal(tensor.shape, tuple())
+    assert_equal(tensor.fa().shape, tuple())
+    assert_equal(tensor.evals.shape, (3,))
+    assert_equal(tensor.evecs.shape, (3,3))
+    assert_equal(type(tensor.model_params), np.ndarray)
 
-@parametric
 def test_passing_maskedview():
     data = np.ones((2,4,56))
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
 
     gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
-    
+
     data = data[mask]
     mv = MaskedView(mask, data)
 
     tensor = dti.Tensor(mv, bval, gtab.T, min_signal=1e-9)
-    yield assert_equal(tensor.shape, (2,4))
-    yield assert_equal(tensor.fa().shape, (2,4))
-    yield assert_equal(tensor.evals.shape, (2,4,3))
-    yield assert_equal(tensor.evecs.shape, (2,4,3,3))
-    yield assert_equal(type(tensor.model_params), MaskedView)
-    yield assert_array_equal(tensor.mask, mask)
+    assert_equal(tensor.shape, (2,4))
+    assert_equal(tensor.fa().shape, (2,4))
+    assert_equal(tensor.evals.shape, (2,4,3))
+    assert_equal(tensor.evecs.shape, (2,4,3,3))
+    assert_equal(type(tensor.model_params), MaskedView)
+    assert_array_equal(tensor.mask, mask)
 
     tensor = tensor[0]
-    yield assert_equal(tensor.shape, (4,))
-    yield assert_equal(tensor.fa().shape, (4,))
-    yield assert_equal(tensor.evals.shape, (4,3))
-    yield assert_equal(tensor.evecs.shape, (4,3,3))
-    yield assert_equal(type(tensor.model_params), MaskedView)
-    yield assert_array_equal(tensor.mask, mask[0])
+    assert_equal(tensor.shape, (4,))
+    assert_equal(tensor.fa().shape, (4,))
+    assert_equal(tensor.evals.shape, (4,3))
+    assert_equal(tensor.evecs.shape, (4,3,3))
+    assert_equal(type(tensor.model_params), MaskedView)
+    assert_array_equal(tensor.mask, mask[0])
 
     tensor = tensor[0]
-    yield assert_equal(tensor.shape, tuple())
-    yield assert_equal(tensor.fa().shape, tuple())
-    yield assert_equal(tensor.evals.shape, (3,))
-    yield assert_equal(tensor.evecs.shape, (3,3))
-    yield assert_equal(type(tensor.model_params), np.ndarray)
+    assert_equal(tensor.shape, tuple())
+    assert_equal(tensor.fa().shape, tuple())
+    assert_equal(tensor.evals.shape, (3,))
+    assert_equal(tensor.evecs.shape, (3,3))
+    assert_equal(type(tensor.model_params), np.ndarray)
 
-@parametric
 def test_init():
     data = np.ones((2,4,56))
     mask = np.ones((2,4),'bool')
-    
+
     gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     tensor = dti.Tensor(data, bval, gtab.T, mask, thresh=0)
     mask[:] = False
-    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, mask)
-    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
+    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, mask)
+    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
                         min_signal=-1)
-    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, thresh=1)
-    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
+    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, thresh=1)
+    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
                         fit_method='s')
-    yield assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
+    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
                         fit_method=0)
 
-@parametric
 def test_lower_triangular():
     tensor = np.arange(9).reshape((3,3))
     D = lower_triangular(tensor)
-    yield assert_array_equal(D, [0, 3, 4, 6, 7, 8])
+    assert_array_equal(D, [0, 3, 4, 6, 7, 8])
     D = lower_triangular(tensor, 1)
-    yield assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
-    yield assert_raises(AssertionError, lower_triangular, np.zeros((2, 3)))
+    assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
+    assert_raises(AssertionError, lower_triangular, np.zeros((2, 3)))
     shape = (4,5,6)
     many_tensors = np.empty(shape + (3,3))
     many_tensors[:] = tensor
     result = np.empty(shape + (6,))
     result[:] = [0, 3, 4, 6, 7, 8]
     D = lower_triangular(many_tensors)
-    yield assert_array_equal(D, result)
+    assert_array_equal(D, result)
     D = lower_triangular(many_tensors, 1)
     result = np.empty(shape + (7,))
     result[:] = [0, 3, 4, 6, 7, 8, 0]
-    yield assert_array_equal(D, result)
+    assert_array_equal(D, result)
 
-@parametric
 def test_from_lower_triangular():
     result = np.array([[0, 1, 3],
                        [1, 2, 4],
                        [3, 4, 5]])
     D = np.arange(7)
     tensor = from_lower_triangular(D)
-    yield assert_array_equal(tensor, result)
+    assert_array_equal(tensor, result)
     result = result * np.ones((5, 4, 1, 1))
     D = D * np.ones((5, 4, 1))
     tensor = from_lower_triangular(D)
-    yield assert_array_equal(tensor, result)
+    assert_array_equal(tensor, result)
