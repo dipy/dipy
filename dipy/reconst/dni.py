@@ -376,9 +376,7 @@ class DiffusionNabla(object):
         return self.IN
 
 
-class EquatorialInversion(DiffusionNabla):
-    
-    
+class EquatorialInversion(DiffusionNabla):    
     def eit_operator(self,input, scale, output = None, mode = "reflect", cval = 0.0):
         """Calculate a multidimensional laplace filter using an estimation
         for the second derivative based on differences.
@@ -389,6 +387,8 @@ class EquatorialInversion(DiffusionNabla):
     
     def set_operator(self,name):
         self.operator=name
+        self.Eqs=[]
+        self.LEqs=[]
     
     def fast_odf(self,s):
         odf = np.zeros(self.odfn)        
@@ -396,12 +396,14 @@ class EquatorialInversion(DiffusionNabla):
         #for i in range(self.dn):            
         #    Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
         Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/s[0]
+        self.Eqs.append(Eq)
             
         if  self.operator=='2laplacian':       
             LEq=self.eit_operator(Eq,2)
             sign=-1
         if  self.operator=='laplacian':
             LEq=laplace(Eq)
+            self.LEqs.append(LEq)
             sign=-1
         if self.operator=='laplap':
             LEq=laplace(laplace(Eq))
@@ -420,8 +422,7 @@ class EquatorialInversion(DiffusionNabla):
         #odf2=odf.copy()
         LES=LEsum[self.eqinds_com]        
         sum_on_blocks_1d(LES,self.eqinds_len,odf,self.odfn)
-        odf=odf/self.eqinds_len
-        
+        odf=odf/self.eqinds_len       
         
         return sign*odf
 

@@ -30,7 +30,7 @@ def save_pickle(fname,dix):
     
     '''
     out=open(fname,'wb')
-    cPickle.dump(dix,out)
+    cPickle.dump(dix,out,protocol=cPickle.HIGHEST_PROTOCOL)
     out.close()
 
 
