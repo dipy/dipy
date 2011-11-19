@@ -1,5 +1,7 @@
 """ Read test or example data
 """
+from nibabel import load
+from dipy.io.bvectxt import read_bvec_file
 from os.path import join as pjoin, dirname
 import cPickle
 import gzip
@@ -17,6 +19,33 @@ SPHERE_FILES = {
 class DataError(Exception):
     pass
 
+def sample_hardi_data():
+    """High Angular Resulution Diffusion Imaging data with 150 diffusion
+    directions
+    """
+    data_img = load(pjoin(THIS_DIR, 'E1381S6_edcor.nii.gz'))
+    data = data_img.get_data()
+    aff = data_img.get_affine()
+    data_hdr = data_img.get_header()
+    voxel_size = data_hdr.get_zooms()
+    voxel_size = voxel_size[:3]
+
+    fa_img = load(pjoin(THIS_DIR, 'E1381S6_edcor_fa.nii.gz'))
+    fa = fa_img.get_data()
+
+    bvec, bval = read_bvec_file(pjoin(THIS_DIR, 'E1381S6_edcor.bval'))
+
+    return data, fa, bvec, bval, voxel_size
+
+def sample_tracking_seedNtarget():
+    """Sample seed and target masks used for fiber tracking"""
+    seed_img = load(pjoin(THIS_DIR, 'cpR.nii.gz'))
+    seed_mask = seed_img.get_data() > 0
+
+    target_img = load(pjoin(THIS_DIR, 'mcR.nii.gz'))
+    target_mask = target_img.get_data() > 0
+
+    return seed_mask, target_mask
 
 
 def get_sim_voxels(name='fib1'):

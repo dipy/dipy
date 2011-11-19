@@ -36,20 +36,135 @@ cdef inline float* asfp(cnp.ndarray pt):
 cdef inline double* asdp(cnp.ndarray pt):
     return <double *>pt.data
 
+@cython.wraparound(False)
+def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data, 
+                     cnp.ndarray[cnp.float_t, ndim=1] index,
+                     cnp.ndarray[cnp.float_t, ndim=1] voxel_size):
+    """Interpolates data at index
+
+    Interpolates data from a 4d volume, first 3 dimenssions are x, y, z the
+    last dimenssion holds data.
+    """
+    cdef:
+        float x = index[0] / voxel_size[0] - .5
+        float y = index[1] / voxel_size[1] - .5
+        float z = index[2] / voxel_size[2] - .5
+        float weight
+        int x_ind = <int> floor(x)
+        int y_ind = <int> floor(y)
+        int z_ind = <int> floor(z)
+        int ii, jj, kk, LL
+        int last_d = data.shape[3]
+        cnp.ndarray[cnp.float_t, ndim=1] result=np.zeros(last_d)
+    x = x % 1
+    y = y % 1
+    z = z % 1
+
+    for ii from 0 <= ii <= 1:
+        for jj from 0 <= jj <= 1:
+            for kk from 0 <= kk <= 1:
+                weight = wght(ii, x)*wght(jj, y)*wght(kk, z)
+                for LL from 0 <= LL < last_d:
+                    result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
+    return result
+
+cdef float wght(int i, float r):
+    if i:
+        return r
+    else:
+        return 1.-r
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
+                  cnp.ndarray[cnp.float_t, ndim=1] peak_values,
+                  float min_relative_value, float closest_neighbor):
+    """Faster version of shm._robust_peaks
+    """
+    """some assumptions,
+    1)  peak_values are sorted largest to smallest
+    2)  peak_vetices are unit vectors
+    3)  closest neighbor is cos(angle) where angle is smallest permiisible
+        angle between between two robust peaks
+    """
+    if peak_vertices.shape[1] != 3:
+        raise ValueError()
+    cdef:
+        cnp.ndarray[cnp.float_t, ndim=1] inst
+        float min_value = peak_values[0] * min_relative_value
+        float a, b, c
+        int ii
+    if len(peak_vertices) == 1:
+        return peak_vertices
+
+    good_peak_vertices = [peak_vertices[0]]
+    for ii from 1 <= ii < len(peak_values):
+        if peak_values[ii] < min_value:
+            break
+        a = peak_vertices[ii,0]
+        b = peak_vertices[ii,1]
+        c = peak_vertices[ii,2]
+        t = 1
+        for inst in good_peak_vertices:
+            dist = a*inst[0] + b*inst[1] + c*inst[2]
+            if fabs(dist) > closest_neighbor:
+                t = 0
+                break
+        if t:
+            good_peak_vertices.append(peak_vertices[ii])
+
+    good_peak_vertices = np.array(good_peak_vertices)
+    return good_peak_vertices
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
-def peak_finding_edges(odf, edges_on_sphere):
+def peak_finding_onedge(odf, edges):
+    """Given a function, odf, and neighbor pairs, edges, finds the local maxima
+
+    If a function is evaluated on some set of points where each pair of
+    neighboring points is in edges, the function compares each pair of
+    neighbors and returns the value and location of each point that is >= all
+    its neighbors.
+
+    Parameters
+    ----------
+    odf : array_like
+        The odf of some function evaluated at some set of points
+    edges : array_like (N, 2)
+        every edges(i,:) is a pair of neighboring points
+
+    Returns
+    -------
+    peaks : ndarray
+        odf at local maximums, orders the peaks in descending order
+    inds : ndarray
+        location of local maximums, indexes to odf array so that
+        odf[inds[i]] == peaks[i]
+
+    Note
+    ----
+    Comparing on edges might be faster then comparing on faces if edges does
+    not contain repeated entries. Additionally in the event that some function
+    is symmetric in some way, that symmetry can be exploited to further reduce
+    the domain of the search and the number of input edges. This is done in the
+    create_half_unit_sphere function of dipy.core.triangle_subdivide for
+    functions with antipodal symmetry.
+
+    See Also
+    --------
+    create_half_unit_sphere
+
+    """
 
     cdef:
-        cnp.ndarray[cnp.uint16_t, ndim=2] cedges = np.ascontiguousarray(edges_on_sphere)
+        cnp.ndarray[cnp.uint16_t, ndim=2] cedges = np.ascontiguousarray(edges)
         cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
-        cnp.ndarray[cnp.uint8_t, ndim=1] cpeak = np.ones(odf.shape, np.uint8)
+        cnp.ndarray[cnp.uint8_t, ndim=1] cpeak = np.ones(len(odf), 'uint8')
         int i=0
         int lenedges = len(cedges)
-        int find0,find1
-        double odf0,odf1
-    
+        int find0, find1
+        double odf0, odf1
+
     for i from 0 <= i < lenedges:
 
         find0 = cedges[i,0]
@@ -61,7 +176,7 @@ def peak_finding_edges(odf, edges_on_sphere):
         if odf0 > odf1:
             cpeak[find1] = 0
         elif odf0 < odf1:
-            cpeak[find1] = 0
+            cpeak[find0] = 0
 
     cpeak = np.array(cpeak)
 

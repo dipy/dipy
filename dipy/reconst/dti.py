@@ -69,37 +69,25 @@ class Tensor(ModelArray):
     fa : array
         Calculates fractional anisotropy [2]_.
     md : array
-        Calculates the mean diffusivity [2]_. 
+        Calculates the mean diffusivity [2]_.
         Note: [units ADC] ~ [units b value]*10**-1
-    
+
     See Also
     --------
     dipy.io.bvectxt.read_bvec_file, dipy.core.qball.ODF
-    
-    Notes
-    -----
-    Due to the fact that diffusion MRI entails large volumes (e.g. [256,256,
-    50,64]), memory can be an issue. Therefore, only the following parameters 
-    of the self diffusion tensor are cached for each voxel:
-
-    - All three eigenvalues
-    - Primary and secondary eigenvectors
-
-    From these cached parameters, one can presumably construct any desired
-    parameter.
 
     References
     ----------
-    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of 
-       the effective self-diffusion tensor from the NMR spin echo. J Magn 
+    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+       the effective self-diffusion tensor from the NMR spin echo. J Magn
        Reson B 103, 247-254.
     .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
-       features of tissues elucidated by quantitative diffusion-tensor MRI. 
+       features of tissues elucidated by quantitative diffusion-tensor MRI.
        Journal of Magnetic Resonance 111, 209-219.
 
     Examples
     ----------
-    For a complete example have a look at the main dipy/examples folder    
+    For a complete example have a look at the main dipy/examples folder
     """
 
     ### Eigenvalues Property ###
@@ -108,7 +96,6 @@ class Tensor(ModelArray):
         """
         Returns the eigenvalues of the tensor as an array
         """
-
         return _filled(self.model_params[..., :3])
 
     ### Eigenvectors Property ###
@@ -160,7 +147,7 @@ class Tensor(ModelArray):
         if not mask.all():
             #leave only data[mask is True]
             data = data[mask]
-            data = MaskedView(mask, data)
+            data = MaskedView(mask, data, fill_value=0)
 
         #Perform WLS fit on masked data
         dti_params = fit_method(B, data, *args, **kargs)
@@ -173,17 +160,29 @@ class Tensor(ModelArray):
         evals_flat = evals.reshape((-1, 3))
         evecs_flat = evecs.reshape((-1, 3, 3))
         D_flat = np.empty(evecs_flat.shape)
-        for L, Q, D in zip(evals_flat, evecs_flat, D_flat):
-            D[:] = np.dot(Q*L, Q.T)
+        for ii in xrange(len(D_flat)):
+            Q = evecs_flat[ii]
+            L = evals_flat[ii]
+            D_flat[ii] = np.dot(Q*L, Q.T)
         return D_flat.reshape(evecs.shape)
 
     D = property(_getD, doc = "Self diffusion tensor")
 
+    def lower_triangular(self, b0=None):
+        D = self._getD()
+        return lower_triangular(D, b0)
 
-    def fa(self):
+    def fa(self, fill_value=0, nonans=True):
         r"""
-        Fractional anisotropy (FA) calculated from cached eigenvalues. 
-        
+        Fractional anisotropy (FA) calculated from cached eigenvalues.
+
+        Parameters
+        ----------
+        fill_value : float
+            value of fa where self.mask == True.
+        nonans : Bool
+            When True, fa is 0 when all eigenvalues are 0, otherwise fa is nan
+
         Returns
         ---------
         fa : array (V, 1)
@@ -205,16 +204,19 @@ class Tensor(ModelArray):
         ev2 = evals[..., 1]
         ev3 = evals[..., 2]
 
+        if nonans:
+            all_zero = (ev1 == 0) & (ev2 == 0) & (ev3 == 0)
+        else:
+            all_zero = 0.
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / (ev1*ev1 + ev2*ev2 + ev3*ev3))
+                      / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
         fa = wrap(np.asarray(fa))
-        return _filled(fa)
+        return _filled(fa, fill_value)
 
-    
     def md(self):
         r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues. 
-        
+        Mean diffusitivity (MD) calculated from cached eigenvalues.
+
         Returns
         ---------
         md : array (V, 1)
@@ -334,7 +336,7 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
     D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
-    tensor = _full_tensor(D)
+    tensor = from_lower_triangular(D)
     return decompose_tensor(tensor)
 
 def _ols_iter(inv_design, sig, min_signal=1):
@@ -344,7 +346,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
     sig = np.maximum(sig, min_signal) #throw out zero signals
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
-    tensor = _full_tensor(D)
+    tensor = from_lower_triangular(D)
     return decompose_tensor(tensor)
 
 
@@ -438,37 +440,91 @@ def _ols_fit_matrix(design_matrix):
     U,S,V = np.linalg.svd(design_matrix, False)
     return np.dot(U, U.T)
 
-def _full_tensor(D):
+_lt_indices = np.array([[0, 1, 3],
+                        [1, 2, 4],
+                        [3, 4, 5]])
+def from_lower_triangular(D):
     """
     Returns a tensor given the six unique tensor elements
 
-    Given the six unique tensor elments (in the order: Dxx, Dyy, Dzz, Dxy, Dxz,
-    Dyz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+    Given the six unique tensor elments (in the order: Dxx, Dxy, Dyy, Dxz, Dyz,
+    Dzz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
+
+    Parameters:
+    -----------
+    D : array_like, (..., >6)
+        Unique elements of the tensors
+
+    Returns:
+    --------
+    tensor : ndarray (..., 3, 3)
+        3 by 3 tensors
 
     """
+    return D[..., _lt_indices]
 
-    tensor = np.empty((3,3),dtype=D.dtype)
-
-    tensor[0, 0] = D[0]  #Dxx
-    tensor[1, 1] = D[1]  #Dyy
-    tensor[2, 2] = D[2]  #Dzz
-    tensor[1, 0] = tensor[0, 1] = D[3]  #Dxy
-    tensor[2, 0] = tensor[0, 2] = D[4]  #Dxz
-    tensor[2, 1] = tensor[1, 2] = D[5]  #Dyz
-
-    return tensor
-
-def _compact_tensor(tensor, b0=1):
+def lower_triangular(tensor, b0=None):
     """
-    Returns the six unique values of the tensor and a dummy value in the order
-    expected by the design matrix
+    Returns the six lower triangular values of the tensor and a dummy variable
+    if b0 is not None
+
+    Parameters:
+    ----------
+    tensor - array_like (..., 3, 3)
+        a collection of 3, 3 diffusion tensors
+    b0 - float
+        if b0 is not none lob(b0) is returned as the dummy variable
+
+    Returns:
+    -------
+    D - ndarray
+        If b0 is none, then the shape will be (..., 6) otherwise (..., 7)
+
     """
-    D = np.empty(tensor.shape[:-2] + (7,))
-    row = [0, 1, 2, 1, 2, 2]
-    colm = [0, 1, 2, 0, 0, 1]
+    assert tensor.shape[-2:] == (3, 3)
+    if b0 is None:
+        D = np.empty(tensor.shape[:-2] + (6,), dtype=tensor.dtype)
+    else:
+        D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
+        D[..., 6] = np.log(b0)
+    row = [0, 1, 1, 2, 2, 2]
+    colm = [0, 0, 1, 0, 1, 2]
     D[..., :6] = tensor[..., row, colm]
-    D[..., 6] = np.log(b0)
     return D
+
+def tensor_eig_from_lo_tri(B, data):
+    """Calculates parameters for creating a Tensor instance
+
+    Calculates tensor parameters from the six unique tensor elements. This
+    function can be passed to the Tensor class as a fit_method for creating a
+    Tensor instance from tensors stored in a nifti file.
+
+    Parameters:
+    -----------
+    B :
+        not currently used
+    data : array_like (..., 6)
+        diffusion tensors elements stored in lower triangular order
+
+    Returns
+    -------
+    dti_params
+        Eigen values and vectors, used by the Tensor class to create an
+        instance
+    """
+    data, wrap = _makearray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    dti_params = np.empty((len(data_flat), 4, 3))
+
+    for ii in xrange(len(data_flat)):
+        tensor = from_lower_triangular(data_flat[ii])
+        eigvals, eigvecs = decompose_tensor(tensor)
+        dti_params[ii, 0] = eigvals
+        dti_params[ii, 1:] = eigvecs
+
+    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params = wrap(dti_params)
+    return dti_params
 
 def decompose_tensor(tensor):
     """
@@ -539,14 +595,13 @@ def design_matrix(gtab, bval, dtype=None):
         raise ValueError('The number of b values and gradient directions must'
                           +' be the same')
     B[:, 0] = G[0, :] * G[0, :] * 1. * bval   #Bxx
-    B[:, 1] = G[1, :] * G[1, :] * 1. * bval   #Byy
-    B[:, 2] = G[2, :] * G[2, :] * 1. * bval   #Bzz
-    B[:, 3] = G[0, :] * G[1, :] * 2. * bval   #Bxy
-    B[:, 4] = G[0, :] * G[2, :] * 2. * bval   #Bxz
-    B[:, 5] = G[1, :] * G[2, :] * 2. * bval   #Byz
+    B[:, 1] = G[0, :] * G[1, :] * 2. * bval   #Bxy
+    B[:, 2] = G[1, :] * G[1, :] * 1. * bval   #Byy
+    B[:, 3] = G[0, :] * G[2, :] * 2. * bval   #Bxz
+    B[:, 4] = G[1, :] * G[2, :] * 2. * bval   #Byz
+    B[:, 5] = G[2, :] * G[2, :] * 1. * bval   #Bzz
     B[:, 6] = np.ones(bval.size)
     return -B
-
 
 def quantize_evecs(evecs, odf_vertices=None):
     ''' Find the closest orientation of an evenly distributed sphere
@@ -571,7 +626,63 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN=IN.reshape(tup)
     return IN
 
+class TensorStepper(object):
+    """Used for tracking diffusion tensors, has a next_step method"""
+    def _get_angel_limit(self):
+        return np.arccos(self.dot_limit)*180/pi
+    def _set_angel_limit(self, angle):
+        if angle >= 0 and angle <= 90:
+            self.dot_limit = cos(angle*pi/180)
+        else:
+            raise ValueError("angle should be between 0 and 180")
+    angel_limit = property(_get_angel_limit, _set_angel_limit)
+
+    def _get_fa_limit(self):
+        return self._fa_limit
+    def _set_fa_limit(self, arg):
+        self._fa_limit = arg
+        mask = self.fa_vol > arg
+        self._interp_inst = _interpolator(self.evec1_vol, self.voxe_size, mask)
+    fa_limit = property(_get_fa_limit, _set_fa_limit)
+
+    def __init__(self, fa_vol, evec1_vol, voxel_size, interpolator,
+                 fa_limit=None, angle_limit=None):
+        self.voxel_size = voxel_size
+        self.angle_limit = angle_limit
+        if fa_vol.shape != evec1_vol.shape[:-1]:
+            msg = "the fa and eigen vector volumes are not the same shape"
+            raise ValueError(msg)
+        if evec1_vol.shape[-1] != 3:
+            msg = "eigen vector volume should have vecetors of length 3 " + \
+                  "along the last dimmension"
+            raise ValueError(msg)
+        self.evec1_vol = evec1_vol
+        self.fa_vol = fa_vol
+        self._interpolator = interpolator
+        #self._interp_inst is created when fa_limit is set
+        self.fa_limit = fa_limit
+
+    def next_step(location, prev_step):
+        """Returns the nearest neighbor tensor for location"""
+        step = self._interp_inst[location]
+        angle_dot = dot(step, prev_step)
+        if np.abs(angle_dot) < self.dot_limit:
+            raise StopIteration
+        if angle_dot > 0:
+            return step
+        else:
+            return -step
+
+def stepper_from_tensor(tensor, *args, **kargs):
+    """stepper_from_tensor(tensor, fa_vol, evec1_vol, voxel_size, interpolator)
+    """
+    fa_vol = tensor.fa()
+    evec1_vol = tensor.evec[..., 0]
+    stepper = TensorStepper(fa_vol, evec1_vol, *args, **kargs)
+    return stepper
 
 common_fit_methods = {'WLS': wls_fit_tensor,
-                      'LS': ols_fit_tensor}
+                      'LS': ols_fit_tensor,
+                      'from lower triangular': tensor_eig_from_lo_tri,
+                     }
 

@@ -1,0 +1,101 @@
+#!/usr/bin/env python
+import os
+import sys
+import string
+import numpy as np
+import nibabel as nib
+from subprocess import call
+from optparse import OptionParser
+from dipy.reconst.dti import Tensor
+from dipy.io.bvectxt import read_bvec_file, orientation_to_string
+from nibabel.trackvis import empty_header, write
+
+usage = """fit_tenor [options] dwi_images"""
+parser = OptionParser(usage)
+parser.add_option("-b","--bvec",help="text file with gradient directions")
+parser.add_option("-r","--root",help="root for files to be saved")
+parser.add_option("-m","--mask",help="use BET by default",default="BET")
+parser.add_option("--threshold",help="threshold passed to BET", default='.2')
+parser.add_option("--min_signal",help="minimum valid singal value",
+                  type='float', default=1.)
+opts, args = parser.parse_args()
+
+if len(args) != 1:
+    parser.print_help()
+    parser.exit(1)
+dwi_file = args[0]
+
+if opts.root is None:
+    pth, file = os.path.split(dwi_file)
+    root = string.split(file, os.path.extsep, 1)[0]
+    root = os.path.join(pth, root)
+else:
+    root = opts.root
+
+if opts.bvec is None:
+    bvec = root+'.bvec'
+else:
+    bvec = opts.bvec
+
+img = nib.load(dwi_file)
+affine = img.get_affine()
+voxel_size = img.get_header().get_zooms()[:3]
+data = img.get_data()
+bvec, bval = read_bvec_file(bvec)
+
+where_dwi = bval > 0
+t2di = data[..., ~where_dwi].mean(-1)
+t2di = np.asarray(t2di, 'float32')
+nib.save(nib.Nifti1Image(t2di, affine), root+'_t2di.nii.gz')
+del t2di
+
+mask = opts.mask
+if mask == 'BET':
+    env = os.environ
+    env['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
+    call(['bet2', root+'_t2di', root, '-n', '-f', opts.threshold, '-m'],
+         env=env)
+    if not os.path.exists(root+'_mask.nii.gz'):
+        raise RuntimeError("There was a problem running BET")
+    mask = root+"_mask.nii.gz"
+
+if mask.lower() != 'none':
+    mask = nib.load(mask).get_data() > 0
+ten = Tensor(data, bval, bvec.T, mask, min_signal=opts.min_signal)
+
+L1, L2, L3 = np.rollaxis(ten.evals, -1)
+rd = (L2 + L3) / 2
+rd = np.asarray(rd, 'float32')
+L1 = np.asarray(L1, 'float32')
+nib.save(nib.Nifti1Image(L1, affine), root+'_L1.nii.gz')
+nib.save(nib.Nifti1Image(rd, affine), root+'_rd.nii.gz')
+del L1, L2, L3, rd
+
+md = np.asarray(ten.md(), "float32")
+nib.save(nib.Nifti1Image(md, affine), root+'_md.nii.gz')
+del md
+
+fa = np.asarray(ten.fa(0), 'float32')
+assert not np.isnan(fa).any()
+nib.save(nib.Nifti1Image(fa, affine), root+'_fa.nii.gz')
+
+dfa = np.abs(fa[..., None] * ten.evecs[..., 0])
+dfa *= 256*(1.-np.finfo(float).eps)
+assert dfa.max() < 256
+assert dfa.min() >= 0
+dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
+dfaU = np.zeros(dfa.shape[:-1], dtype)
+dfaU['R'] = dfa[..., 0]
+dfaU['G'] = dfa[..., 1]
+dfaU['B'] = dfa[..., 2]
+nib.save(nib.Nifti1Image(dfaU, affine), root+'_dirFA.nii.gz')
+del fa, dfaU, dfa
+
+trk_hdr = empty_header()
+trk_hdr['voxel_order'] = orientation_to_string(nib.io_orientation(affine))
+trk_hdr['dim'] = ten.shape
+trk_hdr['voxel_size'] = voxel_size
+trk_hdr['vox_to_ras'] = affine 
+tracks = [(np.array([[0,0,0],
+                     [0,0,0]]), None, None)]
+write(root+'_dummy.trk', tracks, trk_hdr)

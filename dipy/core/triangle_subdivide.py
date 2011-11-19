@@ -1,24 +1,24 @@
-'''Create a unit sphere by subdividing all triangles of an octahedron
+"""Create a unit sphere by subdividing all triangles of an octahedron
 recursively.
 
-The unit sphere has a radius of 1, which also means that all points in this sphere
-(assumed to have centre at [0, 0, 0])
-have an absolute value (modulus) of 1. Another feature of the unit sphere is that the
-unit normals of this sphere are exactly the same as the vertices.
+The unit sphere has a radius of 1, which also means that all points in this
+sphere (assumed to have centre at [0, 0, 0]) have an absolute value (modulus)
+of 1. Another feature of the unit sphere is that the unit normals of this
+sphere are exactly the same as the vertices.
 
 This recursive method will avoid the common problem of the polar singularity, 
 produced by 2d (lon-lat) parameterization methods.
 
-If you require a sphere with another radius than that of 1, simply multiply every
-single value in the vertex array by this new radius 
-(although this will break the "vertex array equal to unit normal array" property)
-'''
-import numpy
-np = numpy
+If you require a sphere with a radius other than that of 1, simply multiply
+the vertex array by this new radius (although this will break the "vertex array
+equal to unit normal array" property)
+"""
+import numpy as np
+import warnings
 
 t = (1+np.sqrt(5))/2
 
-icosahedron_vertices = numpy.array( [
+icosahedron_vertices = np.array( [
     [  t,  1,  0], #  0 
     [ -t,  1,  0], #  1
     [  t, -1,  0], #  2 
@@ -33,7 +33,7 @@ icosahedron_vertices = numpy.array( [
     [  0, -t, -1]  # 11                             
     ] )
 
-icosahedron_edges = numpy.array( [
+icosahedron_edges = np.array( [
     #[ 0, 8, 4], # 0
     [0,8], [8,4],[4,0], #0,1,2
     #[ 0, 5,10], # 1
@@ -76,7 +76,7 @@ icosahedron_edges = numpy.array( [
     [11,7],[7,5],[5,11]
     ], dtype='uint16' )
 
-icosahedron_triangles = numpy.array( [ 
+icosahedron_triangles = np.array( [
     #[ 0, 8, 4], # 0
     [0,1,2],
     #[ 0, 5,10], # 1
@@ -110,7 +110,8 @@ icosahedron_triangles = numpy.array( [
     [11, 7, 5]  #19
     ], dtype='uint16')
 
-octahedron_vertices = numpy.array( [ 
+#the vertices of an octahedron
+octahedron_vertices = np.array( [
     [ 1.0, 0.0, 0.0], # 0 
     [-1.0, 0.0, 0.0], # 1
     [ 0.0, 1.0, 0.0], # 2 
@@ -119,7 +120,9 @@ octahedron_vertices = numpy.array( [
     [ 0.0, 0.0,-1.0]  # 5                                
     ] )
 
-octahedron_edges = numpy.array( [
+#each edge is a pair of neighboring vertices, the edges and triangles bellow
+#follow the cycle rule. For more on the cycle rule see divide_all.
+octahedron_edges = np.array( [
     [0, 4],  #0  #0
     [1, 5],  #10 #1
     [4, 2],  #1  #2
@@ -134,7 +137,11 @@ octahedron_edges = numpy.array( [
     [5, 2],  #9  #11
     ], dtype='uint16' )
 
-octahedron_triangles = numpy.array( [ 
+#each triangle is a set of three edges, because these triangles and edges
+#follow the cycle rule you can get the three vertices of a triangle by using
+#octahedron_edges[octahedron_triangles, 0]. For more on the cycle rule see
+#divide_all
+octahedron_triangles = np.array( [
     [ 0,  2,  4],
     [ 1,  3,  5],
     [ 2,  6,  8],
@@ -145,84 +152,100 @@ octahedron_triangles = numpy.array( [
     [ 1, 11,  6],
     ], dtype='uint16')
 
-def normalize_v3(arr):
-    ''' Normalize a numpy array of 3 component vectors shape=(n,3) '''
-    lens = numpy.sqrt( arr[:,0]**2 + arr[:,1]**2 + arr[:,2]**2 )
-    arr /= lens[:,None]
-
 def divide_all( vertices, edges, triangles ):
-    r""" Subdivides a triangle
+    r""" Subdivides triangles into smaller triangles
 
     Parameters
     ------------
     vertices : ndarray
-        A Vx3 array with the x, y, and z coordinates of of each vertex
+        A Vx3 array with the x, y, and z coordinates of of each vertex.
     edges : ndarray
-        An Ex2 array were each pair of values is an index 
+        An Ex2 array of edges where each edge is a pair of neighboring
+        vertices.
+    triangles : ndarray
+        A Tx3 array of triangles, where each triangle is a set of three edges.
 
     Returns
     ---------
-    vertices : array
-        A 2d array with the x, y, and z coordinates of vertices
-    edges : array
-        A 2d array of vertex pairs for every set of neighboring vertexes
-    triangles : array
-        A 2d array of edge triplets representing triangles
+    vertices : ndarray
+        like above
+    edges : ndarray
+        like above
+    triangles : ndarray
+        like above
 
-    Notes
-    -------
-    Subdivide each triangle in the old approximation and normalize the new
-    points thus generated to lie on the surface of the unit sphere.
+    Important Note on Cycle Rule:
+    -----------------------------
+    The edges and triangles that are passed to this function must follow the
+    cycle rule. If they do not the result will not be correct. The cycle
+    rule states that the second vertex of each edge of each triangle must be
+    the first vertex in the next edge of that triangle. For example take the
+    triangle drawn below:
+              1
+             /\
+          B /  \ C
+           /____\
+          0   A  2
+    If the triangle is [A, B, C] the edges must be:
+        A: [2, 0]
+        B: [0, 1]
+        C: [1, 2]
+    If the triangle is [C, B, A] the edges must be:
+        C: [2, 1]
+        B: [1, 0]
+        A: [0, 2]
 
-    Each input triangle with vertices labelled [0,1,2], as shown below, is
-    represented by a set of edges. The edges are written in such a way so that
-    the second vertex in each edge is the first vertex in the next edge. For
-    example::
+    This must be true for ALL of the triangles. Such an arrangement of edges
+    and triangles is not possible in general but is possible for the
+    octahedron.
 
-         [0, 1]
-         [1, 2]
-         [2, 0]
-
-    Make new points::
-
-         b = (0+1)/2
-         c = (1+2)/2
-         a = (2+0)/2
-
-    Construct new triangles::
-
-        t1 [0b,ba,a0]
-        t2 [1c,cb,b1]
-        t3 [2a,ac,c2]
-        t4 [ba,ac,cb]
-
-    Like this::
-
+    Implementation Details
+    ------------------------
+    Using the triangle drawn above, we segment the triangle into four smaller
+    triangles.
                   1
                  /\
                 /  \
-              b/____\ c
+              b/____\c
               /\    /\
              /  \  /  \
             /____\/____\
            0      a     2
 
-    Normalize a, b, c.
+    Make new vertices at the center of each edge::
+         b = (0+1)/2
+         c = (1+2)/2
+         a = (2+0)/2
 
-    When constructed this way edges[triangles,0] or edges[triangles,1] will both
-    return the three vertices that make up each triangle (in a different order):
-    
+    Normalize a, b, c, and replace each old edge with two new edges:
+        [0, b]
+        [1, c]
+        [2, a]
+        [b, 1]
+        [c, 2]
+        [a, 0]
+    Make a new edge connecting each pair of new vertices in the triangle:
+        [b, a]
+        [a, c]
+        [c, b]
+
+    Construct new triangles, notice that each edge was created in such a way
+    so that our new triangles follow the cycle rule:
+        t1 [0b,ba,a0]
+        t2 [1c,cb,b1]
+        t3 [2a,ac,c2]
+        t4 [ba,ac,cb]
+
     Code was adjusted from dlampetest website
     http://sites.google.com/site/dlampetest/python/triangulating-a-sphere-recursively
-    
-    
     """
     num_vertices = len(vertices)
     num_edges = len(edges)
     num_triangles = len(triangles)
 
     new_vertices = vertices[edges].sum(1)
-    normalize_v3(new_vertices)
+    norms_new_vertices = np.sqrt((new_vertices*new_vertices).sum(-1))
+    new_vertices /= norms_new_vertices[:, None]
     vertices = np.vstack((vertices, new_vertices))
     new_v_ind = np.arange(num_vertices, num_vertices+num_edges, dtype='uint16')
 
@@ -241,9 +264,10 @@ def divide_all( vertices, edges, triangles ):
     E_c2 = triangles[:,1] + num_edges
     E_2a = triangles[:,2]
     E_a0 = triangles[:,2] + num_edges
-    E_ba = np.arange(3*num_triangles, 4*num_triangles, dtype='uint16')
-    E_ac = np.arange(4*num_triangles, 5*num_triangles, dtype='uint16')
-    E_cb = np.arange(5*num_triangles, 6*num_triangles, dtype='uint16')
+    S = 2*num_edges
+    E_ba = np.arange(S+0*num_triangles, S+1*num_triangles, dtype='uint16')
+    E_ac = np.arange(S+1*num_triangles, S+2*num_triangles, dtype='uint16')
+    E_cb = np.arange(S+2*num_triangles, S+3*num_triangles, dtype='uint16')
     triangles = np.vstack((np.c_[E_0b, E_ba, E_a0],
                            np.c_[E_1c, E_cb, E_b1],
                            np.c_[E_2a, E_ac, E_c2],
@@ -259,39 +283,32 @@ def create_unit_sphere( recursion_level=2 ):
 
     Parameters
     ------------
-    
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere.
 
     Returns
     ---------
-    vertices : array
-        A 2d array with the x, y, and z coordinates of vertices on a unit
-        sphere.
-    edges : array
-        A 2d array of vertex pairs for every set of neighboring vertexes
-        on a unit sphere.
-    triangles : array
-        A 2d array of edge triplets representing triangles on the surface of a
-        unit sphere. 
+    vertices : ndarray
+        A Vx3 array with the x, y, and z coordinates of of each vertex.
+    edges : ndarray
+        An Ex2 array of edges where each edge is a pair of neighboring
+        vertices.
+    triangles : ndarray
+        A Tx3 array of triangles, where each triangle is a set of three edges.
 
     See Also
     ----------
     create_half_sphere, divide_all
-
     """
-    
-    
-    
-    vertex_array, edge_array, triangle_array = octahedron_vertices, \
-                                               octahedron_edges, \
-                                               octahedron_triangles
+    if recursion_level > 7 or recursion_level < 1:
+        raise ValueError("recursion_level must be between 1 and 7")
+    vertices = octahedron_vertices
+    edges = octahedron_edges
+    triangles = octahedron_triangles
     for i in range( recursion_level - 1 ):
-        vertex_array, edge_array, triangle_array = divide_all(vertex_array,
-                                                              edge_array,
-                                                              triangle_array)
-    return vertex_array, edge_array, triangle_array
+        vertices, edges, triangles = divide_all(vertices, edges, triangles)
+    return vertices, edges, triangles
 
 def create_half_unit_sphere( recursion_level=2 ):
     """ Creates a unit sphere and returns the top half
@@ -307,34 +324,78 @@ def create_half_unit_sphere( recursion_level=2 ):
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
         anything bigger will return a more subdivided sphere.
-
     Returns
     ---------
-    vertices : array
-        A 2d array with the x, y, and z coordinates of vertices on a unit
-        sphere.
-    edges : array
-        A 2d array of vertex pairs for every set of neighboring vertexes
-        on a unit sphere.
-    triangles : array
-        A 2d array of edge triplets representing triangles on the surface of a
-        unit sphere. 
-
+    vertices : ndarray
+        A Vx3 array with the x, y, and z coordinates of of each vertex.
+    edges : ndarray
+        An Ex2 array of edges where each edge is a pair of neighboring
+        vertices.
+    triangles : ndarray
+        A Tx3 array of triangles, where each triangle is a set of three edges.
     See Also
     ----------
     create_half_sphere, divide_all
-
     """
-    
     v, e, t = create_unit_sphere( recursion_level )
-    return remove_half_sphere(v, e, t)
+    v = v[::2]
+    e = e[::2] // 2
+    t = t[::2] // 2
+    return v, e, t
     
-def remove_half_sphere(v, e, t):
-    """ Returns a triangulated half sphere
-
-    Removes half the vertices, edges, and triangles from a unit sphere created
-    by create_unit_sphere
-    
+def _get_forces(charges):
+    """Given a set of charges on the surface of the sphere gets total force
+    those charges exert on each other.
     """
-    return v[::2], e[::2]/2, t[::2]/2
 
+    all_charges = np.concatenate((charges, -charges))
+    all_charges = all_charges[:, None]
+    r = charges - all_charges
+    r_mag = np.sqrt((r*r).sum(-1))[:, :, None]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        force = r / r_mag**3
+        potential = 1. / r_mag
+
+    d = np.arange(len(charges))
+    force[d,d] = 0
+    force = force.sum(0)
+    force_r_comp = (charges*force).sum(-1)[:, None]
+    f_theta = force - force_r_comp*charges
+    potential[d,d] = 0
+    potential = 2*potential.sum()
+    return f_theta, potential
+
+def disperse_charges(charges, iters, const=.05):
+    """Models electrostatic repulsion on the unit sphere
+
+    Places charges on a sphere and simulates the repulsive forces felt by each
+    one. Allows the charges to move for some number of iterations and returns
+    their final location as well as the total potential of the system at each
+    step.
+
+    Using a smaller const could provide a more accurate result, but will need
+    more iterations to converge.
+
+    Note:
+    -----
+    This function is meant to be used with diffusion imaging so antipodal
+    symmetry is assumed. Therefor each charge must not only be unique, but if
+    there is a charge at +x, there cannot be a charge at -x. These are treated
+    as the same location and because the distance between the two charges will
+    be zero, the result will be unstable.
+    """
+    charges = charges.copy()
+    forces, v = _get_forces(charges)
+    force_mag = np.sqrt((forces*forces).sum())
+    max_force = force_mag.max()
+    if max_force > 1:
+        const = const/max_force
+    v = np.empty(iters)
+
+    for ii in xrange(iters):
+        forces, v[ii] = _get_forces(charges)
+        charges += forces * const
+        norms = np.sqrt((charges*charges).sum(-1))
+        charges /= norms[:, None]
+    return charges, v
