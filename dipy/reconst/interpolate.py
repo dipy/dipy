@@ -1,3 +1,12 @@
+"""Interpolators wrap arrays to allow the array to be indexed in continuous coordinates
+
+This module uses the trackvis coordinate system, for more information about
+this coordinate system please see dipy.tracking.utils
+The following modules also use this coordinate system:
+dipy.tracking.utils
+dipy.tracking.integration
+dipy.reconst.interpolate
+"""
 from numpy import asarray
 from dipy.reconst.recspeed import trilinear_interp
 

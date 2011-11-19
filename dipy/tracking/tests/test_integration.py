@@ -1,24 +1,24 @@
 import numpy as np
-from dipy.tracking.integration import FactIntegrator, FixedStepIntegrator, \
+from dipy.tracking.integration import BoundryIntegrator, FixedStepIntegrator, \
     generate_streamlines
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 
-def test_FactIntegrator():
+def test_BoundryIntegrator():
     os = 1
-    fi = FactIntegrator(overstep=os)
+    bi = BoundryIntegrator(overstep=os)
     loc = np.array([.5,.5,.5])
     step = np.array([1,1,1])/np.sqrt(3)
-    assert_array_almost_equal(fi.integrate(loc, step), os*step + [1,1,1])
-    assert_array_almost_equal(fi.integrate(loc, -step), -os*step)
+    assert_array_almost_equal(bi.integrate(loc, step), os*step + [1,1,1])
+    assert_array_almost_equal(bi.integrate(loc, -step), -os*step)
 
     os = 2
-    fi = FactIntegrator((2,3,4), overstep=2)
-    assert_array_almost_equal(fi.integrate(loc, step), os*step + [2,2,2])
-    assert_array_almost_equal(fi.integrate(loc, -step), -os*step)
+    bi = BoundryIntegrator((2,3,4), overstep=2)
+    assert_array_almost_equal(bi.integrate(loc, step), os*step + [2,2,2])
+    assert_array_almost_equal(bi.integrate(loc, -step), -os*step)
 
     loc = np.array([7.5,7.5,7.5])
-    assert_array_almost_equal(fi.integrate(loc, step), os*step + [8,8,8])
-    assert_array_almost_equal(fi.integrate(loc, -step), [6,6,6] - os*step)
+    assert_array_almost_equal(bi.integrate(loc, step), os*step + [8,8,8])
+    assert_array_almost_equal(bi.integrate(loc, -step), [6,6,6] - os*step)
 
 def test_FixedStepIntegrator():
     fsi = FixedStepIntegrator(step_size=2.)

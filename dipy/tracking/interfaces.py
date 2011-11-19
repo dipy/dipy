@@ -1,3 +1,7 @@
+from warnings import warn
+warn("The interfaces module is very new and not well tested, please use it" +
+"with care and help us make it better")
+
 import pickle
 import string
 import os.path as path
@@ -15,10 +19,10 @@ from dipy.reconst.interpolate import TriLinearInterpolator, \
         NearestNeighborInterpolator
 from dipy.core.triangle_subdivide import create_half_unit_sphere, \
         disperse_charges
-from dipy.tracking.integration import FactIntegrator, FixedStepIntegrator, \
+from dipy.tracking.integration import BoundryIntegrator, FixedStepIntegrator, \
         generate_streamlines
 from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
-        streamline_counts
+        density_map
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
         reorient_bvec
 
@@ -90,7 +94,7 @@ all_interpolators = {'NearestNeighbor':NearestNeighborInterpolator,
                      'TriLinear':TriLinearInterpolator}
 all_shmodels = {'QballOdf':QballOdfModel, 'SlowAdcOpdf':SlowAdcOpdfModel,
                 'MonoExpOpdf':MonoExpOpdfModel}
-all_integrators = {'Fact':FactIntegrator, 'FixedStep':FixedStepIntegrator}
+all_integrators = {'Boundry':BoundryIntegrator, 'FixedStep':FixedStepIntegrator}
 
 def _hack(mask):
     mask[0] = 0
@@ -126,7 +130,7 @@ class ShmTrackingInterface(T.HasStrictTraits):
     probabilistic = T.Bool(False, label='Probabilistic (Residual Bootstrap)')
     bootstrap_input = T.Bool(False)
 
-    #integrator = Enum('Fact', all_integrators.keys())
+    #integrator = Enum('Boundry', all_integrators.keys())
     start_direction = T.Array(dtype='float', shape=(3,), value=[0,0,1],
                               desc="prefered direction from seeds when " +
                                  "multiple directions are available",
@@ -160,7 +164,7 @@ class ShmTrackingInterface(T.HasStrictTraits):
         pickle.dump(self, open(save_streamlines_to + '.p', 'wb'))
 
     def save_counts(self, streamlines, save_counts_to):
-        counts = streamline_counts(streamlines, self.shape, self.voxel_size)
+        counts = density_map(streamlines, self.shape, self.voxel_size)
         if counts.max() < 2**15:
             counts = counts.astype('int16')
         nib.save(nib.Nifti1Image(counts, self.affine), save_counts_to)
@@ -213,7 +217,6 @@ class ShmTrackingInterface(T.HasStrictTraits):
         best_start = self.start_direction[ind]
         best_start *= data_ornt[:,1]
         best_start /= np.sqrt((best_start*best_start).sum())
-        print best_start
         for ii in seeds:
             try:
                 step = peak_finder.next_step(ii, best_start)
@@ -226,7 +229,7 @@ class ShmTrackingInterface(T.HasStrictTraits):
         peak_finder = ClosestPeakSelector(model, interpolator,
                             self.min_relative_peak, self.min_peak_spacing)
         peak_finder.angle_limit = self.max_turn_angle
-        integrator = FactIntegrator(voxel_size, overstep=.1)
+        integrator = BoundryIntegrator(voxel_size, overstep=.1)
         streamlines = generate_streamlines(peak_finder, integrator, seeds,
                                            start_steps)
         if self.track_two_directions:

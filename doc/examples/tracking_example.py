@@ -1,6 +1,6 @@
 from nibabel import load
 from nibabel.trackvis import empty_header, write
-from dipy.tracking.integration import FactIntegrator, generate_streamlines
+from dipy.tracking.integration import BoundryIntegrator, generate_streamlines
 from dipy.tracking.utils import seeds_from_mask, target
 from dipy.reconst.shm import SlowAdcOpdfModel, ClosestPeakSelector, \
     normalize_data, ResidualBootstrapWrapper
@@ -15,7 +15,7 @@ def simple_tracking_function(data, fa, bval, bvec, seed_mask, start_steps,
 
     This tracking function uses the SlowAdcOpdfModel to fit diffusion data. By
     using the ClosestPeakSelector, the function tracks along the peak of Opdf
-    closest to the incoming direction. It also uses the FactPropogator to
+    closest to the incoming direction. It also uses the BoundryIntegrator to
     integrate the streamlines and NearestNeighborInterpolator to interpolate
     the data. The ResidualBootstrap means the tracks are probabilistic, not
     deterministic.
@@ -48,7 +48,7 @@ def simple_tracking_function(data, fa, bval, bvec, seed_mask, start_steps,
     seeds = seeds_from_mask(seed_mask, density, voxel_size)
 
     #the propagator is used to integrate the streamlines
-    propogator = FactIntegrator(voxel_size)
+    propogator = BoundryIntegrator(voxel_size)
     tracks = generate_streamlines(peak_finder, propogator, seeds, start_steps)
 
     return tracks

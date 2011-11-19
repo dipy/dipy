@@ -1,11 +1,52 @@
 from __future__ import division
+"""Various tools related to creating and working with streamlines
+
+Important Note:
+---------------
+At this time all the tools in this module are using the "trackvis coordinate
+system." This coordinate system places the origin at the corner of the first
+voxel of an image. The diagonal corner of the image is [x*i, j*y, k*z] where
+[x, y, z] is the voxel size and [i, j, k] is the dimention of the image. A
+2d example is shown below where the dimention is [3, 3] and the voxel size is
+[1, 3]:
+
+Trackvis:
+A------------
+|   |   |   |
+| C |   |   |
+|   |   |   |
+----B--------
+|   |   |   |
+|   |   |   |
+|   |   |   |
+-------------
+|   |   |   |
+|   |   |   |
+|   |   |   |
+------------D
+
+A = [0, 0]
+B = [1, 3]
+C = [.5, 1.5]
+D = [3, 9]
+
+Any streamlines created using a differnt coordinate system should be moved to
+this coordinate system before any of the functions from this module are used.
+"""
+"""
+This module uses the trackvis coordinate system, for more information about
+this coordinate system please see dipy.tracking.utils
+The following modules also use this coordinate system:
+dipy.tracking.utils
+dipy.tracking.integration
+dipy.reconst.interpolate
+"""
 from numpy import asarray, array, atleast_3d, ceil, concatenate, empty, \
         eye, mgrid, sqrt, zeros, linalg, diag, dot
 from collections import defaultdict
 from dipy.io.bvectxt import ornt_mapping
 
-
-def streamline_counts(streamlines, vol_dims, voxel_size):
+def density_map(streamlines, vol_dims, voxel_size):
     """Counts the number of unique streamlines that pass though each voxel
 
     Counts the number of points in each streamline that lie inside each voxel.
@@ -39,7 +80,6 @@ def streamline_counts(streamlines, vol_dims, voxel_size):
     streamline does not lie in the voxel. For example a step from [0,0,0] to
     [0,0,2] passes though [0,0,1]. Consider subsegmenting the streamlines when
     the edges of the voxels are smaller than the steps of the streamlines.
-
     """
     counts = zeros(vol_dims, 'int')
     for sl in streamlines:
@@ -217,7 +257,7 @@ def target(streamlines, target_mask, voxel_size):
     See Also:from numpy import linalg as LA
 
     ---------
-    streamline_counts
+    density_map
 
     """
     voxel_size = asarray(voxel_size, 'float')
@@ -239,8 +279,7 @@ def target(streamlines, target_mask, voxel_size):
 def merge_streamlines(backward, forward):
     """Merges two sets of streamlines seeded at the same points
 
-   
- Because the first point of each streamline pair should be the same, only
+    Because the first point of each streamline pair should be the same, only
     one is kept
 
     Parameters:
@@ -277,8 +316,6 @@ def merge_streamlines(backward, forward):
     F = iter(forward)
     while True:
         yield concatenate((B.next()[:0:-1], F.next()))
-
-
 
 def move_streamlines(streamlines, affine):
     """Applies a linear transformation, given by affine, to streamlines

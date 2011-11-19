@@ -1,3 +1,7 @@
+from warnings import warn
+warn("The gui_tools module is very new and not well tested, please use it" +
+"with care and help us make it better")
+
 from dipy.tracking.interfaces import ShmTrackingInterface, InputData
 from traitsui.api import Item, Group, View, ArrayEditor
 from traits.api import File

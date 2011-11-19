@@ -390,26 +390,6 @@ def gfa(samples):
     denom = (n-1)*(samples*samples).sum(-1)
     return sqrt(numer/denom)
 
-def _py_robust_peaks(peak_points, peak_values, min_relative_value,
-                        closest_neighbor):
-    """Removes peaks that are too small and child peaks too close to a parent
-    peak
-    """
-    if peak_points.ndim == 1 or len(peak_points) == 1:
-        return peak_points
-    min_value = peak_values[0] * min_relative_value
-    good_peaks = peak_points[0:1]
-    for ii in xrange(1, len(peak_values)):
-        if peak_values[ii] < min_value:
-            break
-        inst = peak_points[ii]
-        dist = dot(good_peaks, inst)
-        if abs(dist).max() < closest_neighbor:
-            inst.shape = (1, 3)
-            good_peaks = concatenate((good_peaks, inst))
-
-    return good_peaks
-
 def _closest_peak(peak_points, prev_step, dot_limit):
     """Returns peak form peak_points closest to prev_step
 
@@ -452,6 +432,20 @@ def bootstrap_data_array(data, H, R, permute=None):
     """Applies the Residual Bootstraps to the data given H and R
 
     data must be normalized, ie 0 < data <= 1
+
+    This function, and the bootstrap_data_voxel function, calculat
+    residual-bootsrap samples given a Hat matrix and a Residual matrix. These
+    samples can be used for non-parametric statistics or for bootstrap
+    probabilistic tractography:
+
+    References:
+    -----------
+    J. I. Berman, et al., "Probabilistic streamline q-ball tractography using
+        the residual bootstrap" 2008
+    HA Haroon, et al., "Using the model-based residual bootstrap to quantify
+        uncertainty in fiber orientations from Q-ball analysis" 2009
+    B. Jeurissen, et al., "Probabilistic Fiber Tracking Using the Residual
+        Bootstrap with Constrained Spherical Deconvolution" 2011
     """
 
     if permute is None:

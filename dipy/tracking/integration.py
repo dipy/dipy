@@ -1,12 +1,22 @@
+"""Implemention of various Tractography metods
+
+these tools are ment to be paired with diffusion reconstruction methods from
+dipy.reconst
+
+This module uses the trackvis coordinate system, for more information about
+this coordinate system please see dipy.tracking.utils
+The following modules also use this coordinate system:
+dipy.tracking.utils
+dipy.tracking.integration
+dipy.reconst.interpolate
+"""
 from __future__ import division
 from numpy import array, asarray, broadcast_arrays, signbit, sqrt
 
-class FactIntegrator(object):
-    """This is the integration method used for  for FACT fiber tracking, but it
-    can also be used as a component of other fiber tracking methods
-    """
+class BoundryIntegrator(object):
+    """Integrates along step until the closest voxel boundry"""
     def __init__(self, voxel_size=(1, 1, 1), overstep=1e-1):
-        """Creates a FactIntegrator instance
+        """Creates a BoundryIntegrator instance
 
         Parameters:
         -----------
