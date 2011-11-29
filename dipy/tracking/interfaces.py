@@ -14,7 +14,8 @@ from nibabel.trackvis import write, empty_header
 
 from dipy.reconst.shm import SlowAdcOpdfModel, MonoExpOpdfModel, \
         QballOdfModel, normalize_data, ClosestPeakSelector, \
-        ResidualBootstrapWrapper, hat, lcr_matrix, bootstrap_data_array
+        ResidualBootstrapWrapper, hat, lcr_matrix, bootstrap_data_array, \
+        NND_ClosestPeakSelector
 from dipy.reconst.interpolate import TriLinearInterpolator, \
         NearestNeighborInterpolator
 from dipy.core.triangle_subdivide import create_half_unit_sphere, \
@@ -129,6 +130,7 @@ class ShmTrackingInterface(T.HasStrictTraits):
 
     probabilistic = T.Bool(False, label='Probabilistic (Residual Bootstrap)')
     bootstrap_input = T.Bool(False)
+    bootstrap_vector = T.Array(dtype='int', value=[])
 
     #integrator = Enum('Boundry', all_integrators.keys())
     start_direction = T.Array(dtype='float', shape=(3,), value=[0,0,1],
@@ -170,7 +172,11 @@ class ShmTrackingInterface(T.HasStrictTraits):
         nib.save(nib.Nifti1Image(counts, self.affine), save_counts_to)
 
     #tracking methods
-    def track_shm(self):
+    def track_shm(self, debug=False):
+        if self.sphere_coverage > 7 or self.sphere_coverage < 1:
+            raise ValueError("sphere coverage must be between 1 and 7")
+        verts, edges, faces = create_half_unit_sphere(self.sphere_coverage)
+        verts, pot = disperse_charges(verts, 10, .3)
 
         data, voxel_size, affine, fa, bvec, bval = self.all_inputs.read_data()
         self.voxel_size = voxel_size
@@ -179,8 +185,6 @@ class ShmTrackingInterface(T.HasStrictTraits):
 
         model_type = all_shmodels[self.model_type]
         model = model_type(self.sh_order, bval, bvec, self.Lambda)
-        verts, edges, faces = create_half_unit_sphere(self.sphere_coverage)
-        verts, pot = disperse_charges(verts, 40)
         model.set_sampling_points(verts, edges)
 
         if self.smoothing_kernel is not None:
@@ -190,10 +194,13 @@ class ShmTrackingInterface(T.HasStrictTraits):
 
         data = normalize_data(data, bval, self.min_signal)
         if self.bootstrap_input:
+            if self.bootstrap_vector.size == 0:
+                n = data.shape[-1]
+                self.bootstrap_vector = np.random.randint(n, size=n)
             H = hat(model.B)
             R = lcr_matrix(H)
             dmin = data.min()
-            data = bootstrap_data_array(data, H, R)
+            data = bootstrap_data_array(data, H, R, self.bootstrap_vector)
             data.clip(dmin, 1., data)
 
         mask = fa > self.fa_threshold
@@ -202,14 +209,19 @@ class ShmTrackingInterface(T.HasStrictTraits):
         if self.stop_on_target:
             for target_mask in targets:
                 mask = mask & ~target_mask
-        interpolator_type = all_interpolators[self.interpolator]
-        interpolator = interpolator_type(data, voxel_size, mask)
 
         seed_mask = read_roi(self.seed_roi, shape=self.shape)
         seeds = seeds_from_mask(seed_mask, self.seed_density, voxel_size)
 
-        peak_finder = ClosestPeakSelector(model, interpolator,
-                            self.min_relative_peak, self.min_peak_spacing)
+        if self.interpolator == 'NearestNeighbor' and not self.probabilistic and not debug:
+            peak_finder = NND_ClosestPeakSelector(model, data, mask, voxel_size,
+                                self.min_relative_peak, self.min_peak_spacing)
+        else:
+            interpolator_type = all_interpolators[self.interpolator]
+            interpolator = interpolator_type(data, voxel_size, mask)
+            peak_finder = ClosestPeakSelector(model, interpolator,
+                                self.min_relative_peak, self.min_peak_spacing)
+
         peak_finder.angle_limit = 90
         start_steps = []
         data_ornt = nib.io_orientation(self.affine)
@@ -226,8 +238,8 @@ class ShmTrackingInterface(T.HasStrictTraits):
         if self.probabilistic:
             interpolator = ResidualBootstrapWrapper(interpolator, model.B,
                                                     data.min())
-        peak_finder = ClosestPeakSelector(model, interpolator,
-                            self.min_relative_peak, self.min_peak_spacing)
+            peak_finder = ClosestPeakSelector(model, interpolator,
+                                self.min_relative_peak, self.min_peak_spacing)
         peak_finder.angle_limit = self.max_turn_angle
         integrator = BoundryIntegrator(voxel_size, overstep=.1)
         streamlines = generate_streamlines(peak_finder, integrator, seeds,

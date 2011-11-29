@@ -594,3 +594,59 @@ class ClosestPeakSelector(object):
                                     self.min_relative_peak, self.peak_spacing)
         step = _closest_peak(peak_points, prev_step, self.dot_limit)
         return step
+
+import numpy as np
+
+class NND_ClosestPeakSelector(ClosestPeakSelector):
+
+    def __init__(self, model, data, mask, voxel_size, angle_limit=None,
+                 dot_limit=0, min_relative_peak=.5, peak_spacing=.75):
+        print 'lets start the fun'
+
+        self.voxel_size = np.asarray(voxel_size)
+        if angle_limit is not None:
+            self.angle_limit = angle_limit
+        else:
+            self.dot_limit = dot_limit
+        self.mask = np.asarray(mask, 'bool')
+        dims = data.shape[:-1]
+        assert mask.shape == dims
+        self._data = data
+        lookup = np.empty(dims, 'int')
+        lookup.fill(-2)
+        lookup[mask] = -1
+        self._lookup = lookup
+        self._peaks = []
+        self._model = model
+        self.min_relative_peak = min_relative_peak
+        self.peak_spacing = peak_spacing
+
+    def _compute_peaks(self, data_index):
+        voxel = self._data[data_index]
+        sampling_points = self._model.sampling_points
+        sampling_edges = self._model.sampling_edges
+        samples = self._model.evaluate(voxel)
+        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
+        peak_points = sampling_points[peak_inds]
+        peak_points = _robust_peaks(peak_points, peak_values,
+                                    self.min_relative_peak, self.peak_spacing)
+        assert peak_points.ndim == 2
+        self._lookup[data_index] = len(self._peaks)
+        self._peaks.append(peak_points)
+        return peak_points
+
+    def next_step(self, location, prev_step):
+        vox_loc = location // self.voxel_size
+        if vox_loc.min() < 0:
+            raise IndexError('negative index')
+        vox_loc = tuple(int(ii) for ii in vox_loc)
+        hash = self._lookup[vox_loc]
+        if hash >= 0:
+            peak_points = self._peaks[hash]
+        elif hash == -1:
+            peak_points = self._compute_peaks(vox_loc)
+        else:
+            raise StopIteration("outside mask")
+        step = _closest_peak(peak_points, prev_step, self.dot_limit)
+        return step
+
