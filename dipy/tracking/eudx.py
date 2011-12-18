@@ -63,9 +63,11 @@ class EuDX(object):
             resampling sphere
         seeds : int or sequence, optional
             number of random seeds or list of seeds
-        odf_vertices : None or ndarray, optional
+        odf_vertices : None or ndarray, shape (N,3) , optional
             sphere points which define a discrete representation of orientations
-            for the peaks, the same for all voxels. None results in 
+            for the peaks, the same for all voxels. Usually the same sphere is
+            used as an input for a reconstruction algorithm e.g. DSI. 
+            None results in loading the vertices from a default sphere with 362 points.
         a_low : float, optional
             low threshold for QA(typical 0.023)  or FA(typical 0.2) or any other
             anisotropic function
@@ -121,7 +123,7 @@ class EuDX(object):
             vertices, faces = get_sphere('symmetric362')
             self.odf_vertices = vertices
         else:
-            self.odf_vertices = odf_vertices
+            self.odf_vertices = np.asarray(odf_vertices,dtype='f8')
         try:
             if len(seeds)>0:
                 self.seed_list=seeds
