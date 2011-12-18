@@ -120,6 +120,8 @@ class EuDX(object):
         if odf_vertices==None:
             vertices, faces = get_sphere('symmetric362')
             self.odf_vertices = vertices
+        else:
+            self.odf_vertices = odf_vertices
         try:
             if len(seeds)>0:
                 self.seed_list=seeds
