@@ -45,6 +45,9 @@ class DiffusionSpectrum(object):
         
         #read the vertices and faces for the odf sphere
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
+        odf_vertices=np.ascontiguousarray(odf_vertices,odf_vertices.dtype)
+        odf_faces=np.ascontiguousarray(odf_faces,odf_faces.dtype)
+        
         self.odf_vertices=odf_vertices
         self.odf_faces=odf_faces
         self.odfn=len(self.odf_vertices)
