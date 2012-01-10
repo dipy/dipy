@@ -101,8 +101,8 @@ class GeneralizedQSampling(object):
         dipy.data.__init__.get_sphere
         """
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
-        self.odf_vertices=odf_vertices
-        self.odf_faces=odf_faces
+        self.odf_vertices=np.ascontiguousarray(odf_vertices)
+        self.odf_faces=np.ascontiguousarray(odf_faces)
         self.odfn=len(self.odf_vertices)
         self.mask=mask
         self.data=data

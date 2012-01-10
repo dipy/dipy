@@ -383,7 +383,7 @@ def normalize_data(data, bval, min_signal=1e-5, mask=None):
     return dwi
 
 def gfa(samples):
-    """gfa of some function from a set of samples os that function"""
+    """gfa of some function from a set of samples of that function"""
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
     numer = n*(diff*diff).sum(-1)
