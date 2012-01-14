@@ -94,7 +94,7 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     '''
     return offset(<long*>indices.data,<long*>strides.data,lenind, typesize)
 
-cdef  void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
+cdef  void _trilinear_interpolation_cube(double *X, double *W, long *IN) nogil:
 
     ''' interpolate in 3d volumes given point X
     Returns
@@ -232,7 +232,7 @@ cdef long _propagation_direction(double *point,double* dx,double* qa,\
     #calculate qa & ind of each of the 8 neighboring voxels
     #to do that we use trilinear interpolation and return the weights 
     #and the indices for the weights i.e. xyz in qa[x,y,z]
-    _trilinear_interpolation(point,<double *>w,<long *>index)
+    _trilinear_interpolation_cube(point,<double *>w,<long *>index)
     #check if you are outside of the volume
     for i from 0<=i<3:
         new_direction[i]=0
