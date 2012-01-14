@@ -77,7 +77,7 @@ class DiffusionNabla(NonParametricCartesian):
         super(DiffusionNabla, self).__init__(data,bvals,gradients,odf_sphere,mask,half_sphere_grads,auto,save_odfs)
         
         #odf sampling radius  
-        self.radius=np.arange(0,6,.2)
+        self.radius=np.arange(0,5,.2)
         #self.radiusn=len(self.radius)
         #self.create_qspace(bvals,gradients,16,8)
         #peak threshold
@@ -92,7 +92,7 @@ class DiffusionNabla(NonParametricCartesian):
         #self.precompute_equator_indices(self.zone)
         #precompute botox weighting
         #self.precompute_botox(0.05,.3)
-        self.gaussian_weight=0.1
+        self.gaussian_weight=0.05
         #self.precompute_angular(self.gaussian_weight)               
         self.fast=fast
         if fast==True:            
@@ -192,11 +192,11 @@ class DiffusionNabla(NonParametricCartesian):
     def fast_odf(self,s):
         odf = np.zeros(self.odfn)        
         Eq=np.zeros((self.sz,self.sz,self.sz))
-        for i in range(self.dn):            
+        for i in xrange(self.dn):            
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
         LEq=laplace(Eq)
-        self.Eq=Eq
-        self.LEq=LEq       
+        #self.Eq=Eq
+        #self.LEq=LEq       
         LEs=map_coordinates(LEq,self.Ys,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
@@ -302,5 +302,5 @@ class EquatorialInversion(DiffusionNabla):
         LES=LEsum[self.eqinds_com]        
         sum_on_blocks_1d(LES,self.eqinds_len,odf,self.odfn)
         odf=odf/self.eqinds_len        
-        return sign*odf
+        return self.angular_weighting(sign*odf)
 

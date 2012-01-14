@@ -111,13 +111,16 @@ class NonParametricCartesian(object):
         #find the global normalization parameter 
         #useful for quantitative anisotropy
         glob_norm_param = 0.
+        
+        odf_func=self.odf
+        
         #loop over all voxels
         for (i,s) in enumerate(S):
             if msk[i]>0:
                 #calculate the orientation distribution function        
                 #odf=self.odf(s)
-                odf=self.odf(s)                
-                odf=self.angular_weighting(odf)                                
+                odf=odf_func(s)#self.odf(s)
+                                                
                 if self.save_odfs:
                     ODF[i]=odf                
                 #normalization for QA

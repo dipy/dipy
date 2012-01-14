@@ -85,8 +85,8 @@ class DiffusionSpectrum(NonParametricCartesian):
         self.q=qtable+self.origin
         self.q=self.q.astype('i8')
         #peak threshold
-        self.peak_thr=.4
-        self.iso_thr=.7        
+        self.peak_thr=.7
+        self.iso_thr=.4        
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()    
     
@@ -102,7 +102,7 @@ class DiffusionSpectrum(NonParametricCartesian):
         Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq),(self.sz,self.sz,self.sz)))))
         return Pr
     
-    def odf(self,):
+    def odf(self,s):
         Pr=self.pdf(s)       
         #calculate the orientation distribution function        
         odf=self.pdf_odf(Pr)

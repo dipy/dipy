@@ -1,12 +1,11 @@
 """ Classes and functions for generalized q-sampling """
 import numpy as np
-
 import dipy.reconst.recspeed as rp
-
 from dipy.utils.spheremakers import sphere_vf_from
+from dipy.reconst.qgrid import NonParametricCartesian
 
 
-class GeneralizedQSampling(object):
+class GeneralizedQSampling(NonParametricCartesian):
     """ Implements Generalized Q-Sampling
 
     Generates a model-free description for every voxel that can
@@ -100,6 +99,8 @@ class GeneralizedQSampling(object):
         dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor,
         dipy.data.__init__.get_sphere
         """
+        
+        '''
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.odf_vertices=np.ascontiguousarray(odf_vertices)
         self.odf_faces=np.ascontiguousarray(odf_faces)
@@ -107,6 +108,15 @@ class GeneralizedQSampling(object):
         self.mask=mask
         self.data=data
         self.save_odfs=save_odfs
+        '''
+        super(GeneralizedQSampling, self).__init__(data,
+                                                bvals,
+                                                gradients,
+                                                odf_sphere,
+                                                mask,
+                                                half_sphere_grads=False,
+                                                auto=auto,save_odfs=save_odfs)
+        
         self.squared=squared
         
         # 0.01506 = 6*D where D is the free water diffusion coefficient 
@@ -120,8 +130,7 @@ class GeneralizedQSampling(object):
         gradsT = gradients.T
         b_vector=gradsT*tmp # element-wise also known as the Hadamard product
         #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
-        
-        
+                
         if squared==True:
             vf=np.vectorize(self.squared_radial_component)
             #def H(x):
@@ -129,24 +138,24 @@ class GeneralizedQSampling(object):
             #    res[np.isnan(res)]=1/3.
             #    return res
             
-            self.input=np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi
-            self.q2odf_params=np.real(vf(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+            self.input=np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi
+            self.q2odf_params=np.real(vf(np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi))
             #self.q2odf_params=np.real(H(1*np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
         else:
-            self.q2odf_params=np.real(np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
+            self.q2odf_params=np.real(np.sinc(np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi))
                 
         #q2odf_params[np.isnan(q2odf_params)]= 1.
         #define total mask 
         #tot_mask = (mask > 0) & (data[...,0] > thresh)
-        self.peak_thr=.3
-        self.iso_thr=.9        
+        self.peak_thr=.7
+        self.iso_thr=.4        
         
         if auto:
             self.fit()
-    
+    """
     def fit(self):
-        """ process all voxels
-        """    
+        ''' process all voxels
+        '''    
         S=self.data
         datashape=S.shape #initial shape       
         #memory allocations for 4D volumes
@@ -217,9 +226,9 @@ class GeneralizedQSampling(object):
         self.glob_norm_param = glob_norm_param
     
     def reduce_peaks(self,peaks,odf_min):
-        """ helping peak_finding when too many peaks are available 
+        ''' helping peak_finding when too many peaks are available 
         
-        """
+        '''
         if len(peaks)==0:
             return -1 
         if odf_min<self.iso_thr*peaks[0]:
@@ -232,6 +241,7 @@ class GeneralizedQSampling(object):
         else:
             return -1
         return l
+    """
 
     def squared_radial_component(self,x):
         """ implementing equation (8) in the referenced paper by Yeh et al. 2010
@@ -267,6 +277,7 @@ class GeneralizedQSampling(object):
             spin density orientation distribution function        
 
         """
+        
         return np.dot(s,self.q2odf_params)
 
     def odfs(self):
