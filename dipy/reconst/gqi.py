@@ -152,96 +152,7 @@ class GeneralizedQSampling(NonParametricCartesian):
         
         if auto:
             self.fit()
-    """
-    def fit(self):
-        ''' process all voxels
-        '''    
-        S=self.data
-        datashape=S.shape #initial shape       
-        #memory allocations for 4D volumes
-        if len(datashape)==4:
-            x,y,z,g=S.shape        
-            S=S.reshape(x*y*z,g)
-            QA = np.zeros((x*y*z,5))
-            IN = np.zeros((x*y*z,5))
-            if self.save_odfs:
-                ODF=np.zeros((x*y*z,self.odfn))  
-            if self.mask != None:
-                if self.mask.shape[:3]==datashape[:3]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(datashape[:3])
-                msk=self.mask.ravel().copy()
-        #memory allocations for a series of voxels
-        if len(datashape)==2:
-            x,g= S.shape
-            QA = np.zeros((x,5))
-            IN = np.zeros((x,5))
-            if self.save_odfs:
-                ODF=np.zeros((x,self.odfn))            
-            if self.mask != None:
-                if self.mask.shape[0]==datashape[0]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(datashape[:1])
-                msk=self.mask.ravel().copy()
-        glob_norm_param = 0        
-        #Calculate Quantitative Anisotropy and 
-        #find the peaks and the indices
-        #for every voxel        
-        for (i,s) in enumerate(S):                            
-            if msk[i]>0:
-                #Q to ODF
-                odf=np.dot(s,self.q2odf_params)
-                min_odf=np.min(odf)
-                if self.save_odfs:
-                    ODF[i]=odf#-min_odf            
-                peaks,inds=rp.peak_finding(odf,self.odf_faces)            
-                glob_norm_param=max(np.max(odf),glob_norm_param)                
-                #print peaks,min_odf
-                #remove the isotropic part
-                l=self.reduce_peaks(peaks,min_odf)
-                if l==0:
-                    QA[i][0] = peaks[0]-min_odf
-                    IN[i][0] = inds[0]
-                if l>0 and l<5:
-                    QA[i][:l] = peaks[:l]-min_odf
-                    IN[i][:l] = inds[:l]
 
-
-        #normalize QA
-        QA/=glob_norm_param
-        if len(datashape) == 4:
-            self.QA=QA.reshape(x,y,z,5)    
-            self.IN=IN.reshape(x,y,z,5)  
-            if self.save_odfs:
-                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])
-            self.QA_norm= glob_norm_param         
-        if len(datashape) == 2:
-            self.QA=QA
-            self.IN=IN 
-            if self.save_odfs:
-                self.ODF=ODF
-            self.QA_norm=None           
-        self.glob_norm_param = glob_norm_param
-    
-    def reduce_peaks(self,peaks,odf_min):
-        ''' helping peak_finding when too many peaks are available 
-        
-        '''
-        if len(peaks)==0:
-            return -1 
-        if odf_min<self.iso_thr*peaks[0]:
-            #remove small peaks
-            ismallp=np.where(peaks<self.peak_thr*peaks[0])
-            if len(ismallp[0])>0:
-                l=ismallp[0][0]
-            else:
-                l=len(peaks)
-        else:
-            return -1
-        return l
-    """
 
     def squared_radial_component(self,x):
         """ implementing equation (8) in the referenced paper by Yeh et al. 2010
@@ -332,13 +243,13 @@ def equatorial_maximum(vertices, odf, pole, width):
 
     return eqvertmax, eqvalmax
 
-#"""
+
 def patch_vertices(vertices,pole, width):
     """
     find 'vertices' within the cone of 'width' degrees around 'pole'
     """
     return [i for i,v in enumerate(vertices) if np.abs(np.dot(v,pole)) > np.abs(np.cos(np.pi*width/180))]
-#"""
+
 
 def patch_maximum(vertices, odf, pole, width):
     eqvert = patch_vertices(vertices, pole, width)    

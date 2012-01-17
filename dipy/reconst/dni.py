@@ -8,7 +8,7 @@ from scipy.ndimage.filters import laplace,gaussian_laplace
 from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
 from dipy.reconst.qgrid import NonParametricCartesian
-
+from dipy.tracking.propspeed import map_coordinates_trilinear_iso
 
 import warnings
 warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
@@ -82,18 +82,9 @@ class DiffusionNabla(NonParametricCartesian):
         #self.create_qspace(bvals,gradients,16,8)
         #peak threshold
         self.peak_thr=.7
-        #!!!!!!!self.iso_thr=.7
-        #calculate coordinates of equators
-        #self.radon_params()
-        #precompute coordinates for pdf interpolation
-        #self.precompute_interp_coords()        
-        #self.precompute_fast_coords()
+        #equatorial zone
         self.zone=5.
-        #self.precompute_equator_indices(self.zone)
-        #precompute botox weighting
-        #self.precompute_botox(0.05,.3)
         self.gaussian_weight=0.05
-        #self.precompute_angular(self.gaussian_weight)               
         self.fast=fast
         if fast==True:            
             self.odf=self.fast_odf
@@ -152,25 +143,6 @@ class DiffusionNabla(NonParametricCartesian):
             planarsR.append(np.dot(R,planars.T).T)        
         self.equators=planarsR
         self.equatorn=len(phis)        
-    
-    
-    def reduce_peaks(self,peaks,odf_min):
-        """ helping peak_finding when too many peaks are available        
-        """
-        if len(peaks)==0:
-            return -1 
-        if odf_min<self.iso_thr*peaks[0]:
-            #remove small peaks
-            pks=peaks-np.abs(odf_min)
-            ismallp=np.where(pks<self.peak_thr*pks[0])
-            if len(ismallp[0])>0:
-                l=ismallp[0][0]
-            else:
-                l=len(peaks)
-        else:
-            return -1
-        return l
-        
         
     def slow_odf(self,s):
         """ Calculate the orientation distribution function 
@@ -195,24 +167,14 @@ class DiffusionNabla(NonParametricCartesian):
         for i in xrange(self.dn):            
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
         LEq=laplace(Eq)
-        #self.Eq=Eq
-        #self.LEq=LEq       
-        LEs=map_coordinates(LEq,self.Ys,order=1)        
+        LEs=map_coordinates(LEq,self.Ys.T,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
         LEsum=np.sum(LEs,axis=1)        
         for i in xrange(self.odfn):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        #print np.sum(np.isnan(odf))
         return -odf
-    
-    """        
-    def angular_weighting(self,odf):
-        if self.E==None:
-            return odf
-        else:
-            return np.dot(odf[None,:],self.E).ravel()
-    """ 
+
     def precompute_equator_indices(self,thr=5):        
         eq_inds=[]
         eq_inds_complete=[]        
@@ -228,7 +190,6 @@ class DiffusionNabla(NonParametricCartesian):
         self.eqinds=eq_inds
         self.eqinds_com=np.array(eq_inds_complete)
         self.eqinds_len=np.array(eq_inds_len,dtype='i8')
-            
         
     def precompute_fast_coords(self):
         Ys=[]
@@ -239,7 +200,8 @@ class DiffusionNabla(NonParametricCartesian):
                 yi=self.origin + q*self.odf_vertices[m,1]
                 zi=self.origin + q*self.odf_vertices[m,2]        
                 Ys.append(np.vstack((xi,yi,zi)).T)
-        self.Ys=np.concatenate(Ys).T
+        self.Ys=np.ascontiguousarray(np.concatenate(Ys))
+        self.Ysn=self.Ys.shape[0]
     
     
     def precompute_interp_coords(self):        
@@ -277,8 +239,7 @@ class EquatorialInversion(DiffusionNabla):
         #for i in range(self.dn):
         #    Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
         Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/s[0]
-        #self.Eqs.append(Eq)
-            
+        #self.Eqs.append(Eq)            
         if  self.operator=='laplacian':
             LEq=laplace(Eq)
             sign=-1
@@ -287,9 +248,14 @@ class EquatorialInversion(DiffusionNabla):
             sign=1
         if  self.operator=='signal':
             LEq=Eq
-            sign=1
-        
-        LEs=map_coordinates(LEq,self.Ys,order=1)
+            sign=1        
+        #LEs=map_coordinates(LEq,self.Ys.T,order=1)        
+        #"""        
+        LEs=np.zeros(self.Ysn)
+        strides=np.array(LEq.strides,'i8')
+        map_coordinates_trilinear_iso(LEq,self.Ys,
+                                      strides,self.Ysn, LEs)
+        #"""
         #LEs=map_coordinates(LEq,self.zoom*self.Ys,order=1)                
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
@@ -303,4 +269,13 @@ class EquatorialInversion(DiffusionNabla):
         sum_on_blocks_1d(LES,self.eqinds_len,odf,self.odfn)
         odf=odf/self.eqinds_len        
         return self.angular_weighting(sign*odf)
+        #if self.E==None:
+        #    return odf
+        #return angular_weighting(self.E,odf)
+
+from numpy import ravel
+def angular_weighting(E,odf):    
+    return ravel(np.dot(odf[None,:],E))
+
+
 

@@ -146,7 +146,6 @@ class DiffusionSpectrum(NonParametricCartesian):
             zi=self.origin+self.radius*self.odf_vertices[m,2]
             Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T
-    
 
 
 def project_hemisph_bvecs(bvals,bvecs):
@@ -154,7 +153,8 @@ def project_hemisph_bvecs(bvals,bvecs):
     
     Notes
     -------
-    Useful when working with dsi data because the full q-space needs to be mapped.
+    Useful when working with dsi data because the full q-space needs to be mapped
+    in both hemi-spheres.
     """
     bvs=bvals[1:]
     bvcs=bvecs[1:]
