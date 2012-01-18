@@ -1,34 +1,38 @@
 from warnings import warn
-warn("The interfaces module is very new and not well tested, please use it" +
-"with care and help us make it better")
+
+warn("The interfaces module is very new and not well tested, please use it "
+     "with care and help us make it better")
 
 import pickle
 import string
 import os.path as path
-import numpy as np
-import nibabel as nib
 
+import numpy as np
 from scipy.ndimage import convolve
-import traits.api as T
+
+# Import traits as optional package
+from ..utils.optional_traits import tapi as T, setup_module
+
+import nibabel as nib
 from nibabel.trackvis import write, empty_header
 
-from dipy.reconst.shm import SlowAdcOpdfModel, MonoExpOpdfModel, \
-        QballOdfModel, normalize_data, ClosestPeakSelector, \
-        ResidualBootstrapWrapper, hat, lcr_matrix, bootstrap_data_array
-from dipy.reconst.interpolate import TriLinearInterpolator, \
-        NearestNeighborInterpolator
-from dipy.core.triangle_subdivide import create_half_unit_sphere, \
-        disperse_charges
-from dipy.tracking.integration import BoundryIntegrator, FixedStepIntegrator, \
-        generate_streamlines
-from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
-        density_map
-from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
-        reorient_bvec
+from ..reconst.shm import (SlowAdcOpdfModel, MonoExpOpdfModel, QballOdfModel,
+                          normalize_data, ClosestPeakSelector,
+                          ResidualBootstrapWrapper, hat, lcr_matrix,
+                          bootstrap_data_array)
+from ..reconst.interpolate import (TriLinearInterpolator,
+                                  NearestNeighborInterpolator)
+from ..core.triangle_subdivide import (create_half_unit_sphere, disperse_charges)
+from ..tracking.integration import (BoundryIntegrator, FixedStepIntegrator,
+                                   generate_streamlines)
+from ..tracking.utils import (seeds_from_mask, target, merge_streamlines,
+                             density_map)
+from ..io.bvectxt import (read_bvec_file, orientation_to_string, reorient_bvec)
 
 nifti_file = T.File(filter=['Nifti Files', '*.nii.gz',
                             'Nifti Pair or Analyze Files', '*.img.gz',
                             'All Files', '*'])
+
 def read_roi(file, threshold=0, shape=None):
     img = nib.load(file)
     if shape is not None:
