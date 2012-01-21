@@ -150,7 +150,7 @@ class DiffusionNabla(NonParametricCartesian):
         odf = np.zeros(self.odfn)
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/s[0]
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/np.float(s[0])
         LEq=laplace(Eq)
         self.Eq=Eq
         self.LEq=LEq
