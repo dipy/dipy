@@ -203,7 +203,6 @@ class DiffusionNabla(NonParametricCartesian):
         self.Ys=np.ascontiguousarray(np.concatenate(Ys))
         self.Ysn=self.Ys.shape[0]
     
-    
     def precompute_interp_coords(self):        
         Xs=[]        
         for m in range(self.odfn):
@@ -238,7 +237,7 @@ class EquatorialInversion(DiffusionNabla):
         Eq=np.zeros((self.sz,self.sz,self.sz))
         #for i in range(self.dn):
         #    Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/s[0]
+        Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/np.float(s[0])
         #self.Eqs.append(Eq)            
         if  self.operator=='laplacian':
             LEq=laplace(Eq)
