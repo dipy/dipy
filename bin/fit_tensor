@@ -14,7 +14,8 @@ usage = """fit_tenor [options] dwi_images"""
 parser = OptionParser(usage)
 parser.add_option("-b","--bvec",help="text file with gradient directions")
 parser.add_option("-r","--root",help="root for files to be saved")
-parser.add_option("-m","--mask",help="use BET by default",default="BET")
+parser.add_option("-m","--mask",default="BET",
+                  help="use BET by default, --mask=none to not use mask")
 parser.add_option("--threshold",help="threshold passed to BET", default='.2')
 parser.add_option("--min_signal",help="minimum valid singal value",
                   type='float', default=1.)
@@ -61,6 +62,8 @@ if mask == 'BET':
 
 if mask.lower() != 'none':
     mask = nib.load(mask).get_data() > 0
+else:
+    mask = data[..., bval == 0].max(-1) > 0
 ten = Tensor(data, bval, bvec.T, mask, min_signal=opts.min_signal)
 
 L1, L2, L3 = np.rollaxis(ten.evals, -1)
@@ -83,19 +86,18 @@ dfa = np.abs(fa[..., None] * ten.evecs[..., 0])
 dfa *= 256*(1.-np.finfo(float).eps)
 assert dfa.max() < 256
 assert dfa.min() >= 0
-dtype = np.dtype([('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')])
-dfaU = np.zeros(dfa.shape[:-1], dtype)
-dfaU['R'] = dfa[..., 0]
-dfaU['G'] = dfa[..., 1]
-dfaU['B'] = dfa[..., 2]
-nib.save(nib.Nifti1Image(dfaU, affine), root+'_dirFA.nii.gz')
-del fa, dfaU, dfa
+dfa = dfa.astype('uint8')
+dtype = [('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')]
+dfa = dfa.view(dtype)
+dfa.shape = dfa.shape[:-1]
+nib.save(nib.Nifti1Image(dfa, affine), root+'_dirFA.nii.gz')
+del fa, dfa
 
 trk_hdr = empty_header()
 trk_hdr['voxel_order'] = orientation_to_string(nib.io_orientation(affine))
 trk_hdr['dim'] = ten.shape
 trk_hdr['voxel_size'] = voxel_size
-trk_hdr['vox_to_ras'] = affine 
+trk_hdr['vox_to_ras'] = affine
 tracks = [(np.array([[0,0,0],
                      [0,0,0]]), None, None)]
 write(root+'_dummy.trk', tracks, trk_hdr)
