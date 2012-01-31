@@ -37,7 +37,7 @@ def optional_package(name, trip_msg=None):
     Typical use would be something like this at the top of a module using an
     optional package:
 
-    >>> from nibabel.optpkg import optional_package
+    >>> from dipy.utils.optpkg import optional_package
     >>> pkg, have_pkg, setup_module = optional_package('not_a_package')
 
     Of course in this case the package doesn't exist, and so, in the module:
