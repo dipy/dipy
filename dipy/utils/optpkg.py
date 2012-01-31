@@ -7,7 +7,7 @@ except ImportError:
 else:
     have_nose = True
 
-from .tripwire import TripWire, is_tripwire
+from .tripwire import TripWire
 
 def optional_package(name, trip_msg=None):
     """ Return package-like thing and module setup for package `name`
@@ -27,7 +27,7 @@ def optional_package(name, trip_msg=None):
         If we can import the package, return it.  Otherwise return an object
         raising an error when accessed
     have_pkg : bool
-        True if import for package was succesful, false otherwise
+        True if import for package was successful, false otherwise
     module_setup : function
         callable usually set as ``setup_module`` in calling namespace, to allow
         skipping tests.
@@ -37,7 +37,7 @@ def optional_package(name, trip_msg=None):
     Typical use would be something like this at the top of a module using an
     optional package:
 
-    >>> from dipy.utils.optpkg import optional_package
+    >>> from nibabel.optpkg import optional_package
     >>> pkg, have_pkg, setup_module = optional_package('not_a_package')
 
     Of course in this case the package doesn't exist, and so, in the module:
@@ -47,16 +47,31 @@ def optional_package(name, trip_msg=None):
 
     and
 
-    >>> pkg.some_function()
+    >>> pkg.some_function() #doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     TripWireError: We need package not_a_package for these functions, but ``import not_a_package`` raised an ImportError
+
+    If the module does exist - we get the module
+
+    >>> pkg, _, _ = optional_package('os')
+    >>> hasattr(pkg, 'path')
+    True
+
+    Or a submodule if that's what we asked for
+
+    >>> subpkg, _, _ = optional_package('os.path')
+    >>> hasattr(subpkg, 'dirname')
+    True
     """
+    # fromlist=[''] results in submodule being returned, rather than the top
+    # level module.  See help(__import__)
     try:
-        pkg = __import__(name)
+        pkg = __import__(name, fromlist=[''])
     except ImportError:
         pass
     else: # import worked
+        # top level module
         return pkg, True, lambda : None
     if trip_msg is None:
         trip_msg = ('We need package %s for these functions, but '

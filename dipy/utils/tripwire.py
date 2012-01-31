@@ -35,7 +35,7 @@ class TripWire(object):
     ...     import silly_module_name
     ... except ImportError:
     ...    silly_module_name = TripWire('We do not have silly_module_name')
-    >>> silly_module_name.do_silly_thing('with silly string')
+    >>> silly_module_name.do_silly_thing('with silly string') #doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     TripWireError: We do not have silly_module_name
