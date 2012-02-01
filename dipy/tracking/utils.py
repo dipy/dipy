@@ -93,6 +93,20 @@ def density_map(streamlines, vol_dims, voxel_size):
         counts[i, j, k] += 1
     return counts
 
+def length(streamlines):
+    """Calculates the lenth of each streamline in a sequence of streamlines
+
+    Sums the lenths of each segment in a streamline to get the length of the
+    streamline. Returns a generator.
+    """
+    for sl in streamlines:
+        if len(sl) == 1:
+            yield 0.
+        else:
+            diff = sl[1:] - sl[:-1]
+            seglen = sqrt((diff * diff).sum(-1))
+            yield seglen.sum()
+
 def streamline_mapping(streamlines, voxel_size):
     holder = defaultdict(list)
     for ii in xrange(len(streamlines)):
