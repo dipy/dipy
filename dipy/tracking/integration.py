@@ -45,7 +45,7 @@ class BoundryIntegrator(object):
         space = location % self.voxel_size
         dist = self.voxel_size*(~signbit(step)) - space
         step_sizes = dist/step
-        smallest_step = step_sizes.min()
+        smallest_step = min(step_sizes)
         assert smallest_step >= 0
         smallest_step += self.overstep
         new_location = location + smallest_step*step

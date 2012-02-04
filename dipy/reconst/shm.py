@@ -636,10 +636,9 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         return peak_points
 
     def next_step(self, location, prev_step):
-        vox_loc = location // self.voxel_size
-        if vox_loc.min() < 0:
+        vox_loc = tuple(location // self.voxel_size)
+        if min(vox_loc) < 0:
             raise IndexError('negative index')
-        vox_loc = tuple(int(ii) for ii in vox_loc)
         hash = self._lookup[vox_loc]
         if hash >= 0:
             peak_points = self._peaks[hash]
