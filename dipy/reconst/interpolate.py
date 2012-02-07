@@ -30,7 +30,7 @@ class NearestNeighborInterpolator(Interpolator):
         if min(index) < 0:
             raise IndexError('Negative Index')
         if self._mask is not None:
-            if self._mask[index] == False:
+            if not self._mask[index]:
                 raise StopIteration('outside mask')
         return self._data[index]
 

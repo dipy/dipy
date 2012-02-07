@@ -398,12 +398,12 @@ def _closest_peak(peak_points, prev_step, dot_limit):
     peak_dots = dot(peak_points, prev_step)
     closest_peak = abs(peak_dots).argmax()
     dot_closest_peak = peak_dots[closest_peak]
-    if abs(dot_closest_peak) < dot_limit:
-        raise StopIteration("angle between peaks too large")
-    if dot_closest_peak > 0:
+    if dot_closest_peak > dot_limit:
         return peak_points[closest_peak]
-    else:
+    elif -dot_closest_peak > dot_limit:
         return -peak_points[closest_peak]
+    else:
+        raise StopIteration("angle between peaks too large")
 
 def hat(B):
     """Returns the hat matrix for the design matrix B
