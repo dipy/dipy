@@ -15,7 +15,7 @@ from numpy import array, asarray, broadcast_arrays, signbit, sqrt
 
 class BoundryIntegrator(object):
     """Integrates along step until the closest voxel boundry"""
-    def __init__(self, voxel_size=(1, 1, 1), overstep=1e-1):
+    def __init__(self, voxel_size=(1, 1, 1), overstep=.1):
         """Creates a BoundryIntegrator instance
 
         Parameters:
@@ -58,7 +58,7 @@ class FixedStepIntegrator(object):
         new_location = self.step_size*step + location
         return new_location
 
-def generate_streamlines(stepper, integrator, seeds, start_steps):
+def generate_streamlines(stepper, integrator, seeds, start_steps, maxlen=500):
     """Creates streamlines using a stepper and integrator
 
     Creates streamlines starting at each of the seeds, and integrates them
@@ -98,7 +98,7 @@ def generate_streamlines(stepper, integrator, seeds, start_steps):
         step = start_steps[ii]
         streamline = []
         try:
-            while True:
+            for i in xrange(maxlen):
                 step = next_step(location, step)
                 streamline.append(location)
                 location = integrate(location, step)
