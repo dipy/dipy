@@ -25,7 +25,7 @@ from dipy.tracking.integration import BoundryIntegrator, FixedStepIntegrator, \
 from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
         density_map
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
-        reorient_bvec
+        reorient_bvec, reorient_on_axis
 
 nifti_file = T.File(filter=['Nifti Files', '*.nii.gz',
                             'Nifti Pair or Analyze Files', '*.img.gz',
@@ -90,17 +90,23 @@ class BoxKernel(T.HasTraits):
         kernel.shape += (1,)
         return kernel
 
+def closest_start(seeds, peak_finder, best_start):
+    starts = zeros_like(seeds)
+    best_start = np.asarray(best_start, 'float')
+    best_start /= sqrt((best_start*best_start).sum())
+    for i in xrange(len(seeds)):
+        try:
+            starts[i] = peak_finder.nexstep(seeds[i], best_start)
+        except StopIteration:
+            starts[i] = best_start
+    return starts
+
 all_kernels = {None:None,'Box':BoxKernel,'Gausian':GausianKernel}
 all_interpolators = {'NearestNeighbor':NearestNeighborInterpolator,
                      'TriLinear':TriLinearInterpolator}
 all_shmodels = {'QballOdf':QballOdfModel, 'SlowAdcOpdf':SlowAdcOpdfModel,
                 'MonoExpOpdf':MonoExpOpdfModel}
 all_integrators = {'Boundry':BoundryIntegrator, 'FixedStep':FixedStepIntegrator}
-
-def _hack(mask):
-    mask[0] = 0
-    mask[:, 0] = 0
-    mask[:, :, 0] = 0
 
 class ShmTrackingInterface(T.HasStrictTraits):
 
@@ -133,10 +139,15 @@ class ShmTrackingInterface(T.HasStrictTraits):
     bootstrap_vector = T.Array(dtype='int', value=[])
 
     #integrator = Enum('Boundry', all_integrators.keys())
+    seed_largest_peak = T.Bool(False, desc="Ignore sub-peaks and start follow "
+                                           "the largest peak at each seed")
     start_direction = T.Array(dtype='float', shape=(3,), value=[0,0,1],
-                              desc="prefered direction from seeds when " +
-                                 "multiple directions are available",
-                            label="Start direction (RAS)")
+                              desc="Prefered direction from seeds when "
+                                   "multiple directions are available. "
+                                   "(Mostly) doesn't matter when 'seed "
+                                   "largest peak' and 'track two directions' "
+                                   "are both True",
+                              label="Start direction (RAS)")
     track_two_directions = T.Bool(False)
     fa_threshold = T.Float(1.0)
     max_turn_angle = T.Range(0.,90,0)
@@ -204,7 +215,6 @@ class ShmTrackingInterface(T.HasStrictTraits):
             data.clip(dmin, 1., data)
 
         mask = fa > self.fa_threshold
-        _hack(mask)
         targets = [read_roi(tgt, shape=self.shape) for tgt in self.targets]
         if self.stop_on_target:
             for target_mask in targets:
@@ -214,38 +224,43 @@ class ShmTrackingInterface(T.HasStrictTraits):
         seeds = seeds_from_mask(seed_mask, self.seed_density, voxel_size)
 
         if self.interpolator == 'NearestNeighbor' and not self.probabilistic and not debug:
-            peak_finder = NND_ClosestPeakSelector(model, data, mask, voxel_size,
-                                self.min_relative_peak, self.min_peak_spacing)
+            using_optimze = True
+            peak_finder = NND_ClosestPeakSelector(model, data, mask, voxel_size)
         else:
+            using_optimze = False
             interpolator_type = all_interpolators[self.interpolator]
             interpolator = interpolator_type(data, voxel_size, mask)
-            peak_finder = ClosestPeakSelector(model, interpolator,
-                                self.min_relative_peak, self.min_peak_spacing)
+            peak_finder = ClosestPeakSelector(model, interpolator)
 
+        #Set peak_finder parameters for start steps
         peak_finder.angle_limit = 90
-        start_steps = []
+        peak_finder.peak_spacing = self.min_peak_spacing
+        if self.seed_largest_peak:
+            peak_finder.min_relative_peak = 1
+        else:
+            peak_finder.min_relative_peak = self.min_relative_peak
+
         data_ornt = nib.io_orientation(self.affine)
-        ind = np.asarray(data_ornt[:,0], 'int')
-        best_start = self.start_direction[ind]
-        best_start *= data_ornt[:,1]
-        best_start /= np.sqrt((best_start*best_start).sum())
-        for ii in seeds:
-            try:
-                step = peak_finder.next_step(ii, best_start)
-                start_steps.append(step)
-            except StopIteration:
-                start_steps.append(best_start)
+        best_start = reorient_on_axis(best_start, 'ras', data_ornt)
+        start_steps = closest_start(seeds, peak_finder, best_start)
+
         if self.probabilistic:
             interpolator = ResidualBootstrapWrapper(interpolator, model.B,
                                                     data.min())
-            peak_finder = ClosestPeakSelector(model, interpolator,
-                                self.min_relative_peak, self.min_peak_spacing)
+            peak_finder = ClosestPeakSelector(model, interpolator)
+        elif using_optimze and self.seed_largest_peak:
+            peak_finder.reset_cache()
+
+        #Reset peak_finder parameters for tracking
         peak_finder.angle_limit = self.max_turn_angle
+        peak_finder.peak_spacing = self.min_peak_spacing
+        peak_finder.min_relative_peak = self.min_relative_peak
+
         integrator = BoundryIntegrator(voxel_size, overstep=.1)
         streamlines = generate_streamlines(peak_finder, integrator, seeds,
                                            start_steps)
         if self.track_two_directions:
-            start_steps = [-ii for ii in start_steps]
+            start_steps = -start_steps
             streamlinesB = generate_streamlines(peak_finder, integrator, seeds,
                                                  start_steps)
             streamlines = merge_streamlines(streamlines, streamlinesB)

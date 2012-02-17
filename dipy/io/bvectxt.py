@@ -82,6 +82,27 @@ def reorient_bvec(bvec, current_ornt, new_ornt):
     new_bvec = bvec[mapping[:, 0]]*mapping[:, 1:]
     return new_bvec
 
+def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
+    if isinstance(current_ornt, str):
+        current_ornt = orientation_from_string(current_ornt)
+    if isinstance(new_ornt, str):
+        new_ornt = orientation_from_string(new_ornt)
+    
+    n = input.shape[axis]
+    if current_ornt.shape != (n,2) or new_ornt.shape != (n,2):
+        raise ValueError("orientations do not match")
+
+    mapping = ornt_mapping(current_ornt, new_ornt)
+    order = [slice(None)] * input.ndim
+    order[axis] = mapping[:, 0]
+    shape = [1] * input.ndim
+    shape[axis] = -1
+    sign = mapping[:, 1]
+    sign.shape = shape
+    output = input[order]
+    output *= sign
+    return output
+
 def orientation_from_string(string_ornt):
     orientation_dict = dict(r=(0,1), l=(0,-1), a=(1,1), 
                             p=(1,-1), s=(2,1), i=(2,-1))

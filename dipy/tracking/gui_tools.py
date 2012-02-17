@@ -37,8 +37,11 @@ main_view = View(Group(Group(
                              show_border=True),
                        Group(
                              #Item( 'integrator' ),
-                             Item( 'start_direction', editor=ArrayEditor()),
-                             Item( 'track_two_directions'),
+                             Item( 'seed_largest_peak', ),
+                             Item( 'track_two_directions' ),
+                             Item( 'start_direction', editor=ArrayEditor(),
+                                   enabled_when='not (seed_largest_peak and '
+                                                'track_two_directions)'),
                              Item( 'fa_threshold' ),
                              Item( 'max_turn_angle' ),
                              show_border=True),
@@ -51,15 +54,17 @@ main_view = View(Group(Group(
                              Item( 'save_counts_to' ),
                              show_border=True),
                        orientation = 'vertical'),
-                buttons=['OK', 'Cancel'], resizable=True, width=600)
+                buttons=['OK', 'Cancel'], close_result=False, resizable=True,
+                width=600)
 
 def gui_track(interface=None):
     if interface is None:
-        interface = EZTrackingInterface()
+        interface = ShmTrackingInterface()
     if not interface.configure_traits(view=main_view):
-        return
+        return False
     if interface.save_streamlines_to == '' and interface.save_counts_to == '':
-        raiseIOError('must provide filename where to save results')
+        raise ValueError('must provide filename where to save either tracks '
+                         'or the density map')
     streamlines = list(interface.track_shm())
     if interface.save_streamlines_to != '':
         interface.save_streamlines(streamlines, interface.save_streamlines_to)

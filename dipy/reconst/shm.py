@@ -390,21 +390,6 @@ def gfa(samples):
     denom = (n-1)*(samples*samples).sum(-1)
     return sqrt(numer/denom)
 
-def _closest_peak(peak_points, prev_step, dot_limit):
-    """Returns peak form peak_points closest to prev_step
-
-    Returns either the closest peak or None if dot(prev, closets) < dot_limit
-    """
-    peak_dots = dot(peak_points, prev_step)
-    closest_peak = abs(peak_dots).argmax()
-    dot_closest_peak = peak_dots[closest_peak]
-    if dot_closest_peak > dot_limit:
-        return peak_points[closest_peak]
-    elif -dot_closest_peak > dot_limit:
-        return -peak_points[closest_peak]
-    else:
-        raise StopIteration("angle between peaks too large")
-
 def hat(B):
     """Returns the hat matrix for the design matrix B
     """
@@ -516,7 +501,7 @@ class ClosestPeakSelector(object):
     angle_limit : float, 0 <= angle_limit <= 90
         angle_limit is used when next_step is called, see also dot_limit.
     dot_limit : float, 0 <= dot_limit <= 1
-        Same as cos(angle_limit), chaning dot_limit will change angle_limit
+        Same as cos(angle_limit), changing dot_limit will change angle_limit
         and vice versa
     min_relative_peak : float, 0 <= min_relative_peak < 1
         Peaks smaller than min_relative_peak of the largest peak are assumed to
@@ -567,6 +552,20 @@ class ClosestPeakSelector(object):
         else:
             self.dot_limit = dot_limit
 
+    def compute_peaks(self, location):
+        """Returns all peaks at location"""
+        vox_data = self._interpolator[location]
+
+        sampling_points = self._model.sampling_points
+        sampling_edges = self._model.sampling_edges
+        samples = self._model.evaluate(vox_data)
+
+        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
+        peak_points = sampling_points[peak_inds]
+        peak_points = _robust_peaks(peak_points, peak_values,
+                                    self.min_relative_peak, self.peak_spacing)
+        return peak_points
+
     def next_step(self, location, prev_step):
         """Returns the peak closest to prev_step at location
 
@@ -582,60 +581,47 @@ class ClosestPeakSelector(object):
             the direction of the previous tracking step
 
         """
-        vox_data = self._interpolator[location]
+        peak_points = self.compute_peaks(location)
+        return _closest_peak(peak_points, prev_step, self.dot_limit)
 
-        sampling_points = self._model.sampling_points
-        sampling_edges = self._model.sampling_edges
-        samples = self._model.evaluate(vox_data)
-
-        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
-        peak_points = sampling_points[peak_inds]
-        peak_points = _robust_peaks(peak_points, peak_values,
-                                    self.min_relative_peak, self.peak_spacing)
-        step = _closest_peak(peak_points, prev_step, self.dot_limit)
-        return step
-
-import numpy as np
+def _closest_peak(peak_points, prev_step, dot_limit):
+    peak_dots = dot(peak_points, prev_step)
+    closest_peak = abs(peak_dots).argmax()
+    dot_closest_peak = peak_dots[closest_peak]
+    if dot_closest_peak >= dot_limit:
+        return peak_points[closest_peak]
+    elif -dot_closest_peak >= dot_limit:
+        return -peak_points[closest_peak]
+    else:
+        raise StopIteration("angle between peaks too large")
 
 class NND_ClosestPeakSelector(ClosestPeakSelector):
 
     def __init__(self, model, data, mask, voxel_size, angle_limit=None,
                  dot_limit=0, min_relative_peak=.5, peak_spacing=.75):
-        print 'lets start the fun'
-
-        self.voxel_size = np.asarray(voxel_size)
+        """Create a new peak_finder"""
+        self.voxel_size = asarray(voxel_size, 'float')
         if angle_limit is not None:
             self.angle_limit = angle_limit
         else:
             self.dot_limit = dot_limit
-        self.mask = np.asarray(mask, 'bool')
-        dims = data.shape[:-1]
-        assert mask.shape == dims
-        self._data = data
-        lookup = np.empty(dims, 'int')
-        lookup.fill(-2)
-        lookup[mask] = -1
-        self._lookup = lookup
-        self._peaks = []
+        self.mask = asarray(mask, 'bool')
+        assert self.mask.shape == data.shape[:-1]
+        self._interpolator = data
         self._model = model
         self.min_relative_peak = min_relative_peak
         self.peak_spacing = peak_spacing
+        self.reset_cache()
 
-    def _compute_peaks(self, data_index):
-        voxel = self._data[data_index]
-        sampling_points = self._model.sampling_points
-        sampling_edges = self._model.sampling_edges
-        samples = self._model.evaluate(voxel)
-        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
-        peak_points = sampling_points[peak_inds]
-        peak_points = _robust_peaks(peak_points, peak_values,
-                                    self.min_relative_peak, self.peak_spacing)
-        assert peak_points.ndim == 2
-        self._lookup[data_index] = len(self._peaks)
-        self._peaks.append(peak_points)
-        return peak_points
+    def reset_cache(self):
+        lookup = empty(self.mask.shape, 'int')
+        lookup.fill(-2)
+        lookup[self.mask] = -1
+        self._lookup = lookup
+        self._peaks = []
 
-    def next_step(self, location, prev_step):
+    _super_compute_peaks = ClosestPeakSelector.compute_peaks
+    def compute_peaks(self, location):
         vox_loc = tuple(location // self.voxel_size)
         if min(vox_loc) < 0:
             raise IndexError('negative index')
@@ -643,9 +629,10 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         if hash >= 0:
             peak_points = self._peaks[hash]
         elif hash == -1:
-            peak_points = self._compute_peaks(vox_loc)
+            peak_points = self._super_compute_peaks(vox_loc)
+            self._lookup[vox_loc] = len(self._peaks)
+            self._peaks.append(peak_points)
         else:
             raise StopIteration("outside mask")
-        step = _closest_peak(peak_points, prev_step, self.dot_limit)
-        return step
+        return peak_points
 
