@@ -62,12 +62,14 @@ def gui_track(interface=None):
         interface = ShmTrackingInterface()
     if not interface.configure_traits(view=main_view):
         return False
-    if interface.save_streamlines_to == '' and interface.save_counts_to == '':
+    if not (interface.save_streamlines_to or interface.save_counts_to):
         raise ValueError('must provide filename where to save either tracks '
                          'or the density map')
-    streamlines = list(interface.track_shm())
-    if interface.save_streamlines_to != '':
+    streamlines = interface.track_shm()
+    if interface.save_streamlines_to and interface.save_counts_to:
+        streamlines = list(streamlines)
+    if interface.save_streamlines_to:
         interface.save_streamlines(streamlines, interface.save_streamlines_to)
-    if interface.save_counts_to != '':
+    if interface.save_counts_to:
         interface.save_counts(streamlines, interface.save_counts_to)
 

@@ -91,12 +91,12 @@ class BoxKernel(T.HasTraits):
         return kernel
 
 def closest_start(seeds, peak_finder, best_start):
-    starts = zeros_like(seeds)
+    starts = np.empty(seeds.shape)
     best_start = np.asarray(best_start, 'float')
-    best_start /= sqrt((best_start*best_start).sum())
+    best_start /= np.sqrt((best_start*best_start).sum())
     for i in xrange(len(seeds)):
         try:
-            starts[i] = peak_finder.nexstep(seeds[i], best_start)
+            starts[i] = peak_finder.next_step(seeds[i], best_start)
         except StopIteration:
             starts[i] = best_start
     return starts
@@ -241,7 +241,7 @@ class ShmTrackingInterface(T.HasStrictTraits):
             peak_finder.min_relative_peak = self.min_relative_peak
 
         data_ornt = nib.io_orientation(self.affine)
-        best_start = reorient_on_axis(best_start, 'ras', data_ornt)
+        best_start = reorient_on_axis(self.start_direction, 'ras', data_ornt)
         start_steps = closest_start(seeds, peak_finder, best_start)
 
         if self.probabilistic:
