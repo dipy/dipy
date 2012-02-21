@@ -201,6 +201,16 @@ class SphHarmModel(object):
         self._sampling_points = sampling_points
         self._sampling_edges = sampling_edges
 
+    def compute_peaks(self, data, min_relative_peak=.25, peak_spacing=.75):
+        """Returns all peaks at location"""
+        samples = self.evaluate(data)
+        peak_values, peak_inds = peak_finding_onedge(samples,
+                                                     self.sampling_edges)
+        peak_points = self.sampling_points[peak_inds]
+        peak_points = _robust_peaks(peak_points, peak_values,
+                                    min_relative_peak, peak_spacing)
+        return peak_points
+
     def _set_fit_matrix(self, *args):
         """Should be set in a sublcass and is called by __init__"""
         msg = "User must implement this method in a subclass"
@@ -552,20 +562,6 @@ class ClosestPeakSelector(object):
         else:
             self.dot_limit = dot_limit
 
-    def compute_peaks(self, location):
-        """Returns all peaks at location"""
-        vox_data = self._interpolator[location]
-
-        sampling_points = self._model.sampling_points
-        sampling_edges = self._model.sampling_edges
-        samples = self._model.evaluate(vox_data)
-
-        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
-        peak_points = sampling_points[peak_inds]
-        peak_points = _robust_peaks(peak_points, peak_values,
-                                    self.min_relative_peak, self.peak_spacing)
-        return peak_points
-
     def next_step(self, location, prev_step):
         """Returns the peak closest to prev_step at location
 
@@ -581,7 +577,9 @@ class ClosestPeakSelector(object):
             the direction of the previous tracking step
 
         """
-        peak_points = self.compute_peaks(location)
+        vox_data = self._interpolator[location]
+        peak_points = self._model.compute_peaks(vox_data,
+                self.min_relative_peak, self.peak_spacing)
         return _closest_peak(peak_points, prev_step, self.dot_limit)
 
 def _closest_peak(peak_points, prev_step, dot_limit):
@@ -620,8 +618,7 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         self._lookup = lookup
         self._peaks = []
 
-    _super_compute_peaks = ClosestPeakSelector.compute_peaks
-    def compute_peaks(self, location):
+    def next_step(self, location):
         vox_loc = tuple(location // self.voxel_size)
         if min(vox_loc) < 0:
             raise IndexError('negative index')
@@ -629,10 +626,12 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         if hash >= 0:
             peak_points = self._peaks[hash]
         elif hash == -1:
-            peak_points = self._super_compute_peaks(vox_loc)
+            vox_data = self._interpolator[location]
+            peak_points = self._model.compute_peaks(vox_data,
+                    self.min_relative_peak, self.peak_spacing)
             self._lookup[vox_loc] = len(self._peaks)
             self._peaks.append(peak_points)
         else:
             raise StopIteration("outside mask")
-        return peak_points
+        return _closest_peak(peak_points, prev_step, self.dot_limit)
 
