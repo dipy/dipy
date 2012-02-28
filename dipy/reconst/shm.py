@@ -132,13 +132,17 @@ def smooth_pinv(B, L):
     return inv[:, :len(B)]
 
 class SphHarmModel(object):
+    """The base class to subclassed by spacific spherical harmonic models of
+    diffusion data"""
     @property
     def sampling_points(self):
         return self._sampling_points
-
     @property
     def sampling_edges(self):
         return self._sampling_edges
+
+    min_relative_peak=.25
+    peak_spacing=.75
 
     def __init__(self, sh_order, bval, bvec, smooth=0, sampling_points=None,
                  sampling_edges=None):
@@ -201,14 +205,30 @@ class SphHarmModel(object):
         self._sampling_points = sampling_points
         self._sampling_edges = sampling_edges
 
-    def compute_peaks(self, data, min_relative_peak=.25, peak_spacing=.75):
-        """Returns all peaks at location"""
+    def compute_peaks(self, data):
+        """Fits the model to data and returns all peaks of the fit
+
+        Evaluates the model using data and returns the subset of sample_points
+        which are greater than all their neighbors. sample_edges is used to
+        determine which sample_points are neighbors. min_relative_peak and
+        peak_spacing are used to elminate peaks which are either too small or
+        too close together.
+
+        min_relative_peak : float, 0 <= min_relative_peak < 1
+            Peaks smaller than min_relative_peak of the largest peak are
+            assumed to be artifacts and ignored
+        peak_spacing : float, 0 <= peak_spacing <= 1
+            The minimum spacing between neighboring peaks, spacing_angle is
+            arccos(peak_spacing). If two peaks are less than spacing_angle
+            appart it is assumed to be an artifact and only the greater of the
+            two peaks is treated as a true peak.
+        """
         samples = self.evaluate(data)
         peak_values, peak_inds = peak_finding_onedge(samples,
                                                      self.sampling_edges)
         peak_points = self.sampling_points[peak_inds]
         peak_points = _robust_peaks(peak_points, peak_values,
-                                    min_relative_peak, peak_spacing)
+                                    self.min_relative_peak, self.peak_spacing)
         return peak_points
 
     def _set_fit_matrix(self, *args):
@@ -513,15 +533,6 @@ class ClosestPeakSelector(object):
     dot_limit : float, 0 <= dot_limit <= 1
         Same as cos(angle_limit), changing dot_limit will change angle_limit
         and vice versa
-    min_relative_peak : float, 0 <= min_relative_peak < 1
-        Peaks smaller than min_relative_peak of the largest peak are assumed to
-        be artifacts and ignored
-    peak_spacing : float, 0 <= peak_spacing <= 1
-        The minimum spacing between neighboring peaks, spacing_angle is
-        arccos(peak_spacing). If two peaks are less than spacing_angle appart
-        it is assumed to be an artifact and only the greater of the two peaks
-        is treated as a true peak.
-
     """
     def _get_angle_limit(self):
         return 180/pi * arccos(self.dot_limit)
@@ -533,8 +544,7 @@ class ClosestPeakSelector(object):
 
     angle_limit = property(_get_angle_limit, _set_angle_limit)
 
-    def __init__(self, model, interpolator, angle_limit=None, dot_limit=0, \
-                 min_relative_peak=.5, peak_spacing=.75):
+    def __init__(self, model, interpolator, angle_limit=None, dot_limit=0):
         """Creates a peakfinder which can be used to get next_step
 
         Parameters:
@@ -547,16 +557,10 @@ class ClosestPeakSelector(object):
             see angle_limit attribute
         dot_limit : float
             see dot_limit attribute
-        min_relative_peak : float
-            see min_relative_peak attritube
-        peak_spacing : float
-            see peak_spacing attribute
         """
 
         self._interpolator = interpolator
         self._model = model
-        self.min_relative_peak = min_relative_peak
-        self.peak_spacing = peak_spacing
         if angle_limit is not None:
             self.angle_limit = angle_limit
         else:
@@ -578,8 +582,7 @@ class ClosestPeakSelector(object):
 
         """
         vox_data = self._interpolator[location]
-        peak_points = self._model.compute_peaks(vox_data,
-                self.min_relative_peak, self.peak_spacing)
+        peak_points = self._model.compute_peaks(vox_data)
         return _closest_peak(peak_points, prev_step, self.dot_limit)
 
 def _closest_peak(peak_points, prev_step, dot_limit):
@@ -596,7 +599,7 @@ def _closest_peak(peak_points, prev_step, dot_limit):
 class NND_ClosestPeakSelector(ClosestPeakSelector):
 
     def __init__(self, model, data, mask, voxel_size, angle_limit=None,
-                 dot_limit=0, min_relative_peak=.5, peak_spacing=.75):
+                 dot_limit=0):
         """Create a new peak_finder"""
         self.voxel_size = asarray(voxel_size, 'float')
         if angle_limit is not None:
@@ -605,10 +608,8 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
             self.dot_limit = dot_limit
         self.mask = asarray(mask, 'bool')
         assert self.mask.shape == data.shape[:-1]
-        self._interpolator = data
+        self._data = data
         self._model = model
-        self.min_relative_peak = min_relative_peak
-        self.peak_spacing = peak_spacing
         self.reset_cache()
 
     def reset_cache(self):
@@ -618,7 +619,7 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         self._lookup = lookup
         self._peaks = []
 
-    def next_step(self, location):
+    def next_step(self, location, prev_step):
         vox_loc = tuple(location // self.voxel_size)
         if min(vox_loc) < 0:
             raise IndexError('negative index')
@@ -626,9 +627,8 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         if hash >= 0:
             peak_points = self._peaks[hash]
         elif hash == -1:
-            vox_data = self._interpolator[location]
-            peak_points = self._model.compute_peaks(vox_data,
-                    self.min_relative_peak, self.peak_spacing)
+            vox_data = self._data[vox_loc]
+            peak_points = self._model.compute_peaks(vox_data)
             self._lookup[vox_loc] = len(self._peaks)
             self._peaks.append(peak_points)
         else:

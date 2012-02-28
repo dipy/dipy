@@ -234,11 +234,11 @@ class ShmTrackingInterface(T.HasStrictTraits):
 
         #Set peak_finder parameters for start steps
         peak_finder.angle_limit = 90
-        peak_finder.peak_spacing = self.min_peak_spacing
+        model.peak_spacing = self.min_peak_spacing
         if self.seed_largest_peak:
-            peak_finder.min_relative_peak = 1
+            model.min_relative_peak = 1
         else:
-            peak_finder.min_relative_peak = self.min_relative_peak
+            model.min_relative_peak = self.min_relative_peak
 
         data_ornt = nib.io_orientation(self.affine)
         best_start = reorient_on_axis(self.start_direction, 'ras', data_ornt)
@@ -253,8 +253,8 @@ class ShmTrackingInterface(T.HasStrictTraits):
 
         #Reset peak_finder parameters for tracking
         peak_finder.angle_limit = self.max_turn_angle
-        peak_finder.peak_spacing = self.min_peak_spacing
-        peak_finder.min_relative_peak = self.min_relative_peak
+        model.peak_spacing = self.min_peak_spacing
+        model.min_relative_peak = self.min_relative_peak
 
         integrator = BoundryIntegrator(voxel_size, overstep=.1)
         streamlines = generate_streamlines(peak_finder, integrator, seeds,
