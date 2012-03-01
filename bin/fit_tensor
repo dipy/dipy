@@ -23,6 +23,8 @@ parser.add_option("--min_signal",help="minimum valid singal value",
                   type='float', default=1.)
 parser.add_option("--save_tensor", action='store_true', help="Save tensor in "
                         "nifti symmat format")
+parser.add_option("--scale", type='float', default=1., help="used to scale "
+                        "tensor file when --save-tensor is used")
 opts, args = parser.parse_args()
 
 if len(args) != 1:
@@ -72,6 +74,7 @@ ten = Tensor(data, bval, bvec.T, mask, min_signal=opts.min_signal)
 
 if opts.save_tensor:
     lower_triangular = ten.lower_triangular()
+    lower_triangular *= opts.scale
     lower_triangular = lower_triangular.astype('float32')
     tensor_img = nifti1_symmat(lower_triangular, affine)
     nib.save(tensor_img, root+'_tensor.nii.gz')
