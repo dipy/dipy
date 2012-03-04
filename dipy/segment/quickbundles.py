@@ -28,7 +28,7 @@ class QuickBundles(object):
         Citation
         ---------
         
-        E.Garyfallidis, "Towards an accurate brain tractography", PhD thesis, 2011 
+        E.Garyfallidis, "Towards an accurate brain tractography", PhD thesis, 2012 
         
         """
         self.dist_thr = dist_thr
@@ -67,6 +67,10 @@ class QuickBundles(object):
     
     def clusters(self):
         return self.clustering
+
+    def clusters_sizes(self):
+        C=self.clustering
+        return [C[c]['N'] for c in C] 
     
     def label2cluster(self,id):
         return self.clustering[id]
@@ -82,6 +86,25 @@ class QuickBundles(object):
         
     def downsampled_tracks(self):
         return self.tracksd
+
+    def remove_small_clusters(self,size):
+        """ Remove clusters with small size
+
+        Parameters
+        -----------
+        size : int, threshold for minimum number of tracks allowed
+
+        """
+        C=self.clustering
+        for c in range(len(C)):
+            if C[c]['N']<=size:
+                del C[c]        
+        C2={}
+        keys=C.keys()
+        for c in range(len(C)):
+            C2[c]=C[keys[c]]
+        self.clustering=C2
+        #self.tracksd=[downsample(track,self.pts) for track in tracks]
     
     def remove_cluster(self,id):
         print('Not implemented yet')
