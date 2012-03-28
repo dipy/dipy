@@ -155,8 +155,10 @@ class Tensor(ModelArray):
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
-        evals, wrap = _makearray(self.model_params[..., :3])
-        evecs, wrap = _makearray(self.model_params[..., 3:])
+        """Calculates the 3x3 diffusion tensor for each voxel"""
+        params, wrap = _makearray(self.model_params)
+        evals = params[..., :3]
+        evecs = params[..., 3:]
         evals_flat = evals.reshape((-1, 3))
         evecs_flat = evecs.reshape((-1, 3, 3))
         D_flat = np.empty(evecs_flat.shape)
