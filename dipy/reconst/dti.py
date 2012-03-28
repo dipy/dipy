@@ -485,13 +485,13 @@ def lower_triangular(tensor, b0=None):
         If b0 is none, then the shape will be (..., 6) otherwise (..., 7)
 
     """
-    assert tensor.shape[-2:] == (3, 3)
-
+    if tensor.shape[-2:] != (3, 3):
+        raise ValueError("Diffusion tensors should be (..., 3, 3)")
     if b0 is None:
         return tensor[..., _lt_rows, _lt_cols]
     else:
         D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
-        D[..., 6] = np.log(b0)
+        D[..., 6] = -np.log(b0)
         D[..., :6] = tensor[..., _lt_rows, _lt_cols]
         return D
 
