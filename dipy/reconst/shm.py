@@ -385,7 +385,7 @@ class QballOdfModel(SphHarmModel):
         """
         return dot(data, self._sampling_matrix.T)
 
-def normalize_data(data, bval, min_signal=1e-5, mask=None):
+def normalize_data(data, bval, min_signal=1e-5, out=None):
     """Normalizes the data with respect to the mean b0
     """
     if min_signal <= 0:
@@ -397,20 +397,18 @@ def normalize_data(data, bval, min_signal=1e-5, mask=None):
     if not where_b0.any():
         raise ValueError("data must contain at least one image set with no "+
                          "diffusion weighting")
-    elif where_b0.all():
-        raise ValueError("data must contain at least one dwi set")
+    if out is None:
+        out = array(data, dtype='float', copy=True)
+    else:
+        if out.dtype.kind != 'f':
+            raise ValueError("out must be floating point")
+        out[:] = data                         
 
-    dwi = data[..., ~where_b0]
-    dwi = asarray(dwi, 'float')
-    b0 = data[..., where_b0].mean(-1)
-    b0 = b0[..., None]
-    b0 = asarray(b0, 'float')
-
-    maximum(dwi, min_signal, dwi)
-    maximum(b0, min_signal, b0)
-    dwi /= b0
-    minimum(dwi, 1, dwi)
-    return dwi
+    out.clip(min_signal, out=out)
+    b0 = out[..., where_b0].mean(-1)
+    b0 = b0.reshape(b0.shape + (1,))
+    out /= b0 
+    return out
 
 def gfa(samples):
     """gfa of some function from a set of samples os that function"""

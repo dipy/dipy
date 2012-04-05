@@ -129,25 +129,23 @@ def test_normalize_data():
 
     sig = np.arange(1, 66)[::-1]
 
-    bval = np.zeros(64)
+    bval = np.repeat([0, 1000], [2, 20])
     assert_raises(ValueError, normalize_data, sig, bval)
-    bval = np.zeros(65)
+    bval = np.ones(65)*1000
     assert_raises(ValueError, normalize_data, sig, bval)
-    bval = np.ones(65)
-    assert_raises(ValueError, normalize_data, sig, bval)
-    bval[0] = 0
+    bval = np.repeat([0, 1], [1, 64])
     d = normalize_data(sig, bval, 1)
     assert_raises(ValueError, normalize_data, None, bval, 0)
 
     bval[[0, 1]] = [0, 1]
     norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig[..., 1:]/65.)
+    assert_array_equal(norm_sig, sig/65.)
     norm_sig = normalize_data(sig, bval, min_signal=5)
     assert_array_equal(norm_sig[-5:], 5/65.)
 
     bval[[0, 1]] = [0, 0]
     norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig[..., 2:]/64.5)
+    assert_array_equal(norm_sig, sig/64.5)
     norm_sig = normalize_data(sig, bval, min_signal=5)
     assert_array_equal(norm_sig[-5:], 5/64.5)
 
@@ -155,20 +153,15 @@ def test_normalize_data():
 
     bval[[0, 1]] = [0, 1]
     norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig[..., 1:]/65.)
+    assert_array_equal(norm_sig, sig/65.)
     norm_sig = normalize_data(sig, bval, min_signal=5)
     assert_array_equal(norm_sig[..., -5:], 5/65.)
 
     bval[[0, 1]] = [0, 0]
     norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig[..., 2:]/64.5)
+    assert_array_equal(norm_sig, sig/64.5)
     norm_sig = normalize_data(sig, bval, min_signal=5)
     assert_array_equal(norm_sig[..., -5:], 5/64.5)
-
-    sig[..., -1] = 100.
-    norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig[...,:-1], sig[..., 2:-1]/64.5)
-    assert_array_equal(norm_sig[..., -1], 1)
 
 def make_fake_signal():
     v, e, f = create_half_unit_sphere(4)

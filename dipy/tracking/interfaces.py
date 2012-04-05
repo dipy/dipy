@@ -25,7 +25,7 @@ from dipy.tracking.integration import BoundryIntegrator, FixedStepIntegrator, \
 from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
         density_map
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
-        reorient_bvec, reorient_on_axis
+        reorient_vectors
 
 nifti_file = T.File(filter=['Nifti Files', '*.nii.gz',
                             'Nifti Pair or Analyze Files', '*.img.gz',
@@ -41,6 +41,7 @@ def read_roi(file, threshold=0, shape=None):
         raise ValueError('this does not seem to be a mask')
     mask = img_data > threshold
     return mask
+
 
 class InputData(T.HasTraits):
     dwi_images = nifti_file
@@ -68,7 +69,7 @@ class InputData(T.HasTraits):
         bvec, bval = read_bvec_file(self.bvec_file)
         data_ornt = nib.io_orientation(affine)
         if self.bvec_orientation != 'IMG':
-            bvec = reorient_bvec(bvec, self.bvec_orientation, data_ornt)
+            bvec = reorient_vectors(bvec, self.bvec_orientation, data_ornt)
         fa = fa_img.get_data()
         data = data_img.get_data()
         return data, voxel_size, affine, fa, bvec, bval
@@ -89,6 +90,24 @@ class BoxKernel(T.HasTraits):
         kernel = np.ones(self.shape)/self.shape.prod()
         kernel.shape += (1,)
         return kernel
+
+def lazy_index(index):
+    """Produces a lazy index
+
+    Returns a slice that can be used for indexing an array, if no slice can be
+    made index is returned as is.
+    """
+    index = np.asarray(index)
+    assert index.ndim == 1
+    if index.dtype == np.bool:
+        index = index.nonzero()[0]
+    if len(index) == 1:
+        return slice(index[0], index[0] + 1)
+    step = np.unique(np.diff(index))
+    if len(step) != 1 or step[0] == 0:
+        return index
+    else:
+        return slice(index[0], index[-1] + 1, step[0])
 
 def closest_start(seeds, peak_finder, best_start):
     starts = np.empty(seeds.shape)
@@ -198,21 +217,22 @@ class ShmTrackingInterface(T.HasStrictTraits):
         model = model_type(self.sh_order, bval, bvec, self.Lambda)
         model.set_sampling_points(verts, edges)
 
+        data = np.asarray(data, dtype='float', order='C')
         if self.smoothing_kernel is not None:
             kernel = self.smoothing_kernel.get_kernel()
-            data = np.asarray(data, 'float')
-            convolve(data, kernel, data)
+            convolve(data, kernel, out=data)
 
-        data = normalize_data(data, bval, self.min_signal)
+        normalize_data(data, bval, self.min_signal, out=data)
+        dmin = data.min()
+        data = data[..., lazy_index(bval > 0)]
         if self.bootstrap_input:
             if self.bootstrap_vector.size == 0:
                 n = data.shape[-1]
                 self.bootstrap_vector = np.random.randint(n, size=n)
             H = hat(model.B)
             R = lcr_matrix(H)
-            dmin = data.min()
             data = bootstrap_data_array(data, H, R, self.bootstrap_vector)
-            data.clip(dmin, 1., data)
+            data.clip(dmin, out=data)
 
         mask = fa > self.fa_threshold
         targets = [read_roi(tgt, shape=self.shape) for tgt in self.targets]
@@ -241,12 +261,12 @@ class ShmTrackingInterface(T.HasStrictTraits):
             model.min_relative_peak = self.min_relative_peak
 
         data_ornt = nib.io_orientation(self.affine)
-        best_start = reorient_on_axis(self.start_direction, 'ras', data_ornt)
+        best_start = reorient_vectors(self.start_direction, 'ras', data_ornt)
         start_steps = closest_start(seeds, peak_finder, best_start)
 
         if self.probabilistic:
             interpolator = ResidualBootstrapWrapper(interpolator, model.B,
-                                                    data.min())
+                                                    min_signal=dmin)
             peak_finder = ClosestPeakSelector(model, interpolator)
         elif using_optimze and self.seed_largest_peak:
             peak_finder.reset_cache()
