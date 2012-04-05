@@ -63,24 +63,46 @@ def ornt_mapping(ornt1, ornt2):
     mapping[:, 1] = sign
     return mapping
 
-def reorient_bvec(bvec, current_ornt, new_ornt):
-    """Changes the orientation of a gradient table
+def reorient_vectors(input, current_ornt, new_ornt, axis=0):
+    """Changes the orientation of a gradients or other vectors
 
-    After the axis of a dwi data set are flipped or transposed one may need to
-    apply the orientation change to the gradient table. Moves the gradient
-    table from current_ornt to new_orient
+    Moves vectors, storted along axis, from current_ornt to new_ornt. For
+    example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
+
+    Examples:
+    ---------
+    >>> gtab = np.array([[1, 1, 1], [1, 2, 3]])
+    >>> reorient_vectors(gtab, 'ras', 'asr', axis=1)
+    array([[1, 1, 1],
+           [2, 3, 1]])
+    >>> reorient_vectors(gtab, 'ras', 'lps', axis=1)
+    array([[-1, -1,  1],
+           [-1, -2,  3]])
+    >>> bvec = gtab.T
+    >>> reorient_vectors(bvec, 'ras', 'lps', axis=0)
+    array([[-1, -1],
+           [-1, -2],
+           [ 1,  3]])
+    >>> reorient_vectors(bvec, 'ras', 'lsp')
+    array([[-1, -1],
+           [ 1,  3],
+           [-1, -2]])
     """
     if isinstance(current_ornt, str):
         current_ornt = orientation_from_string(current_ornt)
     if isinstance(new_ornt, str):
         new_ornt = orientation_from_string(new_ornt)
-        
-    if current_ornt.shape != (3,2) or new_ornt.shape != (3,2):
-        raise ValueError("ornt must from from 3-space to 3-space")
 
+    n = input.shape[axis]
+    if current_ornt.shape != (n,2) or new_ornt.shape != (n,2):
+        raise ValueError("orientations do not match")
+
+    input = np.asarray(input)
     mapping = ornt_mapping(current_ornt, new_ornt)
-    new_bvec = bvec[mapping[:, 0]]*mapping[:, 1:]
-    return new_bvec
+    output = input.take(mapping[:, 0], axis)
+    out_view = np.rollaxis(output, axis, output.ndim)
+    out_view *= mapping[:, 1]
+    return output
 
 def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
     if isinstance(current_ornt, str):
@@ -104,20 +126,34 @@ def reorient_on_axis(input, current_ornt, new_ornt, axis=0):
     return output
 
 def orientation_from_string(string_ornt):
+    """Returns an array representation of an ornt string"""
     orientation_dict = dict(r=(0,1), l=(0,-1), a=(1,1), 
                             p=(1,-1), s=(2,1), i=(2,-1))
     ornt = tuple(orientation_dict[ii] for ii in string_ornt.lower())
     ornt = np.array(ornt)
-    check = np.sort(ornt[:,0])
-    if (check != np.arange(len(string_ornt))).any():
+    if _check_ornt(ornt):
         msg = string_ornt + " does not seem to be a valid orientation string"
         raise ValueError(msg)
     return ornt
 
 def orientation_to_string(ornt):
+    """Returns a string representation of a 3d ornt"""
+    if _check_ornt(ornt):
+        msg = repr(ornt) + " does not seem to be a valid orientation"
+        raise ValueError(msg)
     orientation_dict = {(0,1):'r', (0,-1):'l', (1,1):'a',
                         (1,-1):'p', (2,1):'s', (2,-1):'i'}
     ornt_string = ''
     for ii in ornt:
         ornt_string += orientation_dict[(ii[0], ii[1])]
     return ornt_string
+
+def _check_ornt(ornt):
+    uniq = np.unique(ornt[:, 0])
+    if len(uniq) != len(ornt):
+        print len(uniq)
+        return True
+    uniq = np.unique(ornt[:, 1])
+    if tuple(uniq) not in set([(-1, 1), (-1,), (1,)]):
+        print tuple(uniq)
+        return True
