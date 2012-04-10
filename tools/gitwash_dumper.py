@@ -120,7 +120,7 @@ def make_link_targets(proj_name,
     have_gh_url = None
     for line in link_contents:
         if not have_url:
-            match = re.match(r'..\s+_%s:\s+' % proj_name, line)
+            match = re.match(r'..\s+_`%s`:\s+' % proj_name, line)
             if match:
                 have_url = True
         if not have_ml_url:
@@ -136,7 +136,7 @@ def make_link_targets(proj_name,
                            'and / or mailing list URLs')
     lines = []
     if not url is None:
-        lines.append('.. _%s: %s\n' % (proj_name, url))
+        lines.append('.. _`%s`: %s\n' % (proj_name, url))
     if not have_gh_url:
         gh_url = 'http://github.com/%s/%s\n' % (user_name, repo_name)
         lines.append('.. _`%s github`: %s\n' % (proj_name, gh_url))
