@@ -41,9 +41,9 @@ dipy.tracking.utils
 dipy.tracking.integration
 dipy.reconst.interpolate
 """
+import numpy as np
 from numpy import asarray, array, atleast_3d, ceil, concatenate, empty, \
         eye, mgrid, sqrt, zeros, linalg, diag, dot
-from collections import defaultdict
 from dipy.io.bvectxt import ornt_mapping
 
 def density_map(streamlines, vol_dims, voxel_size):
@@ -93,11 +93,101 @@ def density_map(streamlines, vol_dims, voxel_size):
         counts[i, j, k] += 1
     return counts
 
+def connectivity_matrix(streamlines, label_volume, voxel_size,
+                        symmetric=False, return_mapping=False,
+                        mapping_as_streamlines=False):
+    """Counts the streamlines that start and end at each label pair
+
+    symmetric means we don't distiguish between start and end
+    """
+    assert label_volume.dtype.kind == 'i'
+    assert label_volume.ndim == 3
+    assert label_volume.min() >= 0
+    voxel_size = np.asarray(voxel_size)
+    # If streamlines is an iterators
+    if return_mapping and mapping_as_streamlines:
+        streamlines = list(streamlines)
+    #take the first and last point of each streamline
+    endpoints = [sl[0::len(sl)-1] for sl in streamlines]
+    #devide by voxel_size to get get voxel indices
+    endpoints = (endpoints // voxel_size).astype('int')
+    if endpoints.min() < 0:
+        raise IndexError('streamline has negative values, these values ' +
+                         'are outside the image volume')
+    i, j, k = endpoints.T
+    #get labels for label_volume
+    endlabels = label_volume[i, j, k]
+    if symmetric:
+        endlabels.sort(0)
+    mx = endlabels.max() + 1
+    matrix = ndbincount(endlabels, shape=(mx, mx))
+    if symmetric:
+        np.maximum(matrix, matrix.T, out=matrix)
+    if return_mapping:
+        mapping = {}
+        for i, (a, b) in enumerate(endlabels.T):
+            mapping.setdefault((a, b), []).append(i)
+        if mapping_as_streamlines:
+            mapping = {k: [streamlines[i] for i in indices]
+                       for k, indices in mapping.items()}
+        return matrix, mapping
+    else:
+        return matrix
+
+def ndbincount(x, weights=None, shape=None):
+    """Like bincount, but for nd-indicies
+
+    Parameters:
+    x : array_like (N, M)
+        M indices to a an Nd-array
+    weights : array_like (M,), optional
+        Weights associated with indices
+    shape : optional
+        the shape of the output
+    """
+    x = np.asarray(x)
+    if shape is None:
+        shape = x.max(1) + 1
+    x = np.ravel_multi_index(x, shape)
+    out = np.bincount(x, weights, minlength=np.prod(shape))
+    out.shape = shape
+    return out
+
+def reduce_labels(label_volume):
+    """Reduces an array of labels to the integers from 0 to n with smallest
+    possible n
+
+    Example:
+    >>> labels = np.array([[1, 3, 9],
+    ...                    [1, 3, 8],
+    ...                    [1, 3, 7]])
+    >>> new_labels, lookup = reduce_labels(labels)
+    >>> lookup
+    array([1, 3, 7, 8, 9])
+    >>> new_labels
+    array([[0, 1, 4],
+           [0, 1, 3],
+           [0, 1, 2]])
+    >>> (lookup[new_labels] == labels).all()
+    True
+    """
+    lookup_table = np.unique(label_volume)
+    label_volume = lookup_table.searchsorted(label_volume)
+    return label_volume, lookup_table
+
 def length(streamlines):
     """Calculates the lenth of each streamline in a sequence of streamlines
 
     Sums the lenths of each segment in a streamline to get the length of the
     streamline. Returns a generator.
+
+    Example:
+    >>> streamlines = [np.array([[0., 0., 0.],
+    ...                          [0., 0., 1.],
+    ...                          [3., 4., 1.]]),
+    ...                np.array([[0., 0., 0.]])]
+    >>> list(length(streamlines))
+    [6.0, 0.0]
     """
     for sl in streamlines:
         if len(sl) == 1:
@@ -107,17 +197,46 @@ def length(streamlines):
             seglen = sqrt((diff * diff).sum(-1))
             yield seglen.sum()
 
-def streamline_mapping(streamlines, voxel_size):
-    holder = defaultdict(list)
-    for ii in xrange(len(streamlines)):
-        sl = (streamlines[ii] // voxel_size).astype('int')
-        for point in sl:
-            point = tuple(point)
-            inst = holder[point]
-            if len(inst) < 1 or ii != inst[-1]:
-                inst.append(ii)
-    holder = dict(holder)
-    return holder
+def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
+    """Creates a mapping from voxel indices to streamlines
+
+    Returns a dictionary where each key is a 3d voxel index and the associated
+    value is a list of the streamlines that pass through that voxel.
+
+    Examples:
+    --------
+    >>> streamlines = [np.array([[0., 0., 0.],
+    ...                          [1., 1., 1.],
+    ...                          [2., 3., 4.]]),
+    ...                np.array([[0., 0., 0.],
+    ...                          [1., 2., 3.]])]
+    >>> mapping = streamline_mapping(streamlines, (1, 1, 1))
+    >>> mapping[0, 0, 0]
+    [0, 1]
+    >>> mapping[1, 1, 1]
+    [0]
+    >>> mapping[1, 2, 3]
+    [1]
+    >>> mapping.get((3, 2, 1), 'no streamlines')
+    'no streamlines'
+    >>> mapping = streamline_mapping(streamlines, (1, 1, 1),
+    ...                              mapping_as_streamlines=True)
+    >>> mapping[1, 2, 3][0] is streamlines[1]
+    True
+    """
+    voxel_size = np.asarray(voxel_size)
+    mapping = {}
+    if mapping_as_streamlines:
+        streamlines = list(streamlines)
+    for i, sl in enumerate(streamlines):
+        voxel_indices = (sl // voxel_size).astype('int')
+        uniq_points = set(tuple(point) for point in voxel_indices)
+        for point in uniq_points:
+            mapping.setdefault(point, []).append(i)
+    if mapping_as_streamlines:
+        mapping = {k: [streamlines[i] for i in indices]
+                   for k, indices in mapping.iteritems()}
+    return mapping
 
 def subsegment(streamlines, max_segment_length):
     """Splits the segments of the streamlines into small segments
