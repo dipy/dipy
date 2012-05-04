@@ -3,8 +3,12 @@ warn("The gui_tools module is very new and not well tested, please use it" +
 "with care and help us make it better")
 
 from dipy.tracking.interfaces import ShmTrackingInterface, InputData
-from traitsui.api import Item, Group, View, ArrayEditor
-from traits.api import File
+try:
+    from traitsui.api import Item, Group, View, ArrayEditor
+    from traits.api import File
+except ImportError:
+    from enthought.traits.ui.api import Item, Group, View, ArrayEditor
+    from enthought.traits.api import File
 
 I = InputData()
 iview = I.trait_view()

@@ -9,7 +9,10 @@ import numpy as np
 import nibabel as nib
 
 from scipy.ndimage import convolve
-import traits.api as T
+try:
+    import traits.api as T
+except ImportError:
+    import enthought.traits.api as T
 from nibabel.trackvis import write, empty_header
 
 from dipy.reconst.shm import SlowAdcOpdfModel, MonoExpOpdfModel, \
