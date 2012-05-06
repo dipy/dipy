@@ -19,7 +19,7 @@ from nibabel.trackvis import write, empty_header
 from ..reconst.shm import (SlowAdcOpdfModel, MonoExpOpdfModel, QballOdfModel,
                           normalize_data, ClosestPeakSelector,
                           ResidualBootstrapWrapper, hat, lcr_matrix,
-                          bootstrap_data_array)
+                          bootstrap_data_array, NND_ClosestPeakSelector)
 from ..reconst.interpolate import (TriLinearInterpolator,
                                   NearestNeighborInterpolator)
 from ..core.triangle_subdivide import (create_half_unit_sphere,
