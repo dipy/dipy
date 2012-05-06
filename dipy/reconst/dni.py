@@ -5,7 +5,7 @@ from dipy.reconst.recspeed import peak_finding, le_to_odf, sum_on_blocks_1d
 from dipy.utils.spheremakers import sphere_vf_from
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.reconst.dsi import project_hemisph_bvecs
-from scipy.ndimage.filters import laplace
+from scipy.ndimage.filters import laplace,gaussian_laplace
 from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
 
@@ -39,7 +39,7 @@ class DiffusionNabla(object):
             If tuple, gives (vertices, faces) for sphere.
         filter : array, shape(len(vertices),) 
             default is None (using standard hanning filter for DSI)
-        half_sphere_grad : boolean Default(False) 
+        half_sphere_grads : boolean Default(False) 
             in order to create the q-space we use the bvals and gradients. 
             If the gradients are only one hemisphere then 
         auto : boolean, default True 
@@ -108,7 +108,7 @@ class DiffusionNabla(object):
             
     def update(self):        
         self.radiusn=len(self.radius)
-        self.create_qspace(self.bvals,self.gradients,16,8)
+        self.create_qspace(self.bvals,self.gradients,17,8)
         if self.fast==False: 
             self.radon_params()        
             self.precompute_interp_coords()
@@ -387,23 +387,36 @@ class EquatorialInversion(DiffusionNabla):
     
     def set_operator(self,name):
         self.operator=name
-        self.Eqs=[]
-        self.LEqs=[]
+
+    def set_mode(self,order=1,zoom=1,mode='constant'):
+        self.order=order
+        self.mode=mode
+        self.zoom=zoom
+        #self.Eqs=[]    
     
     def fast_odf(self,s):
         odf = np.zeros(self.odfn)        
         Eq=np.zeros((self.sz,self.sz,self.sz))
-        #for i in range(self.dn):            
+        #for i in range(self.dn):
         #    Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
         Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/s[0]
-        self.Eqs.append(Eq)
+        #self.Eqs.append(Eq)
             
         if  self.operator=='2laplacian':       
-            LEq=self.eit_operator(Eq,2)
+            LEq=self.eit_operator(Eq,2)            
             sign=-1
         if  self.operator=='laplacian':
+            #ZEq=zoom(Eq,zoom=5,order=self.order,mode=self.mode,cval=0.0,prefilter=True)
+            #self.ZEqs.append(ZEq)
+            #ZLEq=laplace(ZEq)
+            #self.ZLEqs.append(ZLEq)
+            #LEq=zoom(ZLEq,zoom=.2,order=self.order,mode=self.mode,cval=0.0,prefilter=True)         
+            #LEq=laplace(Eq)
+            #if self.zoom>1:
+            #    ZEq=zoom(Eq,zoom=self.zoom,order=self.order,mode=self.mode)
+            #    LEq=laplace(ZEq)
+            #else:
             LEq=laplace(Eq)
-            self.LEqs.append(LEq)
             sign=-1
         if self.operator=='laplap':
             LEq=laplace(laplace(Eq))
@@ -411,10 +424,12 @@ class EquatorialInversion(DiffusionNabla):
         if  self.operator=='signal':
             LEq=Eq
             sign=1
-                           
-        LEs=map_coordinates(LEq,self.Ys,order=1)        
+        
+        LEs=map_coordinates(LEq,self.Ys,order=1)
+        #LEs=map_coordinates(LEq,self.zoom*self.Ys,order=1)                
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
+        #LEs=LEs*self.radius*self.zoom
         LEsum=np.sum(LEs,axis=1)
         #This is what the following code is doing        
         #for i in xrange(self.odfn):

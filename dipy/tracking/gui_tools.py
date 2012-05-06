@@ -1,20 +1,21 @@
 from warnings import warn
-warn("The gui_tools module is very new and not well tested, please use it" +
-"with care and help us make it better")
 
-from dipy.tracking.interfaces import ShmTrackingInterface, InputData
-try:
-    from traitsui.api import Item, Group, View, ArrayEditor
-    from traits.api import File
-except ImportError:
-    from enthought.traits.ui.api import Item, Group, View, ArrayEditor
-    from enthought.traits.api import File
+# Import traits as optional package
+from ..utils.optional_traits import tapi, tuapi, have_traits, setup_module
+# Import names to top level; done here in case we don't have actual traits but
+# only the traits shell from the optional_traits module
+File = tapi.File
+Item, Group, View, ArrayEditor = (tuapi.Item, tuapi.Group, tuapi.View,
+                                  tuapi.ArrayEditor)
 
-I = InputData()
-iview = I.trait_view()
-iview.resizable = True
-iview.width = 600
-I.trait_view('traits_view', iview)
+from ..tracking.interfaces import InputData, ShmTrackingInterface
+
+if have_traits:
+    I = InputData()
+    iview = I.trait_view()
+    iview.resizable = True
+    iview.width = 600
+    I.trait_view('traits_view', iview)
 
 main_view = View(Group(Group(
                              Item( 'dwi_images' ),
@@ -65,10 +66,9 @@ def gui_track(interface=None):
     if interface is None:
         interface = ShmTrackingInterface()
     if not interface.configure_traits(view=main_view):
-        return False
-    if not (interface.save_streamlines_to or interface.save_counts_to):
-        raise ValueError('must provide filename where to save either tracks '
-                         'or the density map')
+        return
+    if interface.save_streamlines_to == '' and interface.save_counts_to == '':
+        raise IOError('must provide filename where to save results')
     streamlines = interface.track_shm()
     if interface.save_streamlines_to and interface.save_counts_to:
         streamlines = list(streamlines)
