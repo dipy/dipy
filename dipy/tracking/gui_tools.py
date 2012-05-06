@@ -59,8 +59,8 @@ main_view = View(Group(Group(
                              Item( 'save_counts_to' ),
                              show_border=True),
                        orientation = 'vertical'),
-                buttons=['OK', 'Cancel'], close_result=False, resizable=True,
-                width=600)
+                buttons=['OK', 'Cancel'], width=600, close_result=False,
+                resizable=True, scrollable=True)
 
 def gui_track(interface=None):
     if interface is None:
