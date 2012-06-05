@@ -349,7 +349,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
                     cnp.ndarray[double,ndim=4] qa,\
                     cnp.ndarray[double,ndim=4] ind,\
                     cnp.ndarray[double,ndim=2] odf_vertices,\
-                    double qa_thr,double ang_thr,double step_sz,double total_weight):
+                    double qa_thr,double ang_thr,double step_sz,double total_weight,long max_points):
     '''
     Parameters
     ------------
@@ -395,7 +395,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
                                    ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
             break            
-        if cnt>1000:
+        if cnt>max_points:
             break       
         #update the track
         for i from 0<=i<3:
@@ -425,7 +425,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
                                    ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
             break
-        if cnt>1000:
+        if cnt>max_points:
             break
         #update the track
         for i from 0<=i<3:

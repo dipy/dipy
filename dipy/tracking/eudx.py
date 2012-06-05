@@ -49,8 +49,11 @@ class EuDX(object):
                  step_sz=0.5,
                  ang_thr=60.,
                  length_thr=0.,
-                 total_weight=.5):
-        ''' Euler integration with multiple stopping criteria and supporting multiple peaks
+                 total_weight=.5,
+                 max_points=1000):
+        ''' Euler integration with multiple stopping criteria and supporting multiple multiple fibres in crossings [1].
+
+        [1] E. Garyfallidis (2012), "Towards an accurate brain tractography", PhD thesis, University of Cambridge, UK.
 
         Parameters
         ------------
@@ -75,9 +78,11 @@ class EuDX(object):
             euler propagation step size
         ang_thr : float, optional
             if turning angle is bigger than this threshold then tracking stops.
-        length_thr: float, optional
         total_weight : float, optional
             total weighting threshold
+        max_points : int, optional
+            maximum number of points in a track. Used to stop tracks from looping for ever
+
 
         Examples
         --------
@@ -107,13 +112,8 @@ class EuDX(object):
         self.step_sz=step_sz
         self.length_thr=length_thr
         self.total_weight=total_weight
+        self.max_points=max_points
         if len(self.a.shape)==3:
-            #tmpa=np.zeros(self.a.shape+(2,))
-            #tmpi=np.zeros(self.ind.shape+(2,))
-            #self.a=tmpa.copy()
-            #self.ind=tmpi.copy()
-            #self.a[...,0]=a.copy()
-            #self.ind[...,0]=ind.copy()                        
             self.a.shape=self.a.shape+(1,)
             self.ind.shape=self.ind.shape+(1,)
         #store number of maximum peacks
@@ -137,7 +137,6 @@ class EuDX(object):
         ''' This is were all the fun starts '''
         
         x,y,z,g=self.a.shape
-            
         #for all seeds
         for i in range(self.seed_no):            
             if self.seed_list==None:
@@ -149,10 +148,6 @@ class EuDX(object):
                 seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)                            
             #for all peaks
             for ref in range(g): 
-                #propagate up and down                
-                #print g,self.a.shape
-                #"""
-                #print i,seed    
                 track =eudx_both_directions(seed.copy(),
                                             ref,
                                             self.a,
@@ -161,17 +156,12 @@ class EuDX(object):
                                             self.a_low,
                                             self.ang_thr,
                                             self.step_sz,
-                                            self.total_weight)                  
-                #"""
-                #track =None
+                                            self.total_weight,
+                                            self.max_points)                  
                 if track == None:
-                    #print 'None'
                     pass
                 else:        
-                    #return a track from that seed                                        
-                    if length(track)>self.length_thr:
-                        #print 'track'                        
-                        yield track
+                    yield track
                         
                         
 

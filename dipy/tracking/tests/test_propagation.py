@@ -4,7 +4,7 @@ import numpy as np
 from dipy.data import get_data
 from dipy.reconst.gqi import GeneralizedQSampling
 from dipy.reconst.dti import Tensor
-from dipy.tracking.propagation import EuDX
+from dipy.tracking.eudx import EuDX
 from dipy.tracking.propspeed import ndarray_offset
 from dipy.tracking.metrics import length
 from dipy.tracking.propspeed import map_coordinates_trilinear_iso
@@ -22,7 +22,7 @@ def test_trilinear_interp_cubic_voxels():
     strides=np.array(A.strides,'i8')
     A[7,7,7]=2
     points=np.array([[0,0,0],[7.,7.5,7.],[3.5,3.5,3.5]])
-    map_coordinates_3d_trilinear_cube(A,points,strides,3,B)
+    map_coordinates_trilinear_iso(A,points,strides,3,B)
     assert_array_almost_equal(B,np.array([ 1. ,  1.5,  1. ]))
 
 def test_eudx():
