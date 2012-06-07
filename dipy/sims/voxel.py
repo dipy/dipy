@@ -1,5 +1,6 @@
 import numpy as np
 from dipy.core.geometry import sphere2cart, cart2sphere
+from dipy.reconst.dti import design_matrix, lower_triangular
 
 def SticksAndBall(bvals,gradients,d=0.0015,S0=100,angles=[(0,0),(90,0)],fractions=[35,35],snr=20):
     """ Simulating the signal for a Sticks & Ball model 
@@ -68,6 +69,10 @@ def SingleTensor(bvals,gradients,S0,evals,evecs,snr=None):
     S=np.zeros(len(gradients))
     D=np.dot(np.dot(evecs,np.diag(evals)),evecs.T)    
     #print D.shape
+    """ Alternative suggestion which works with multiple b0s
+    design = design_matrix(bval, gradients.T)
+    S = np.exp(np.dot(design, lower_triangular(D)))
+    """
     for (i,g) in enumerate(gradients[1:]):
         S[i+1]=S0*np.exp(-bvals[i+1]*np.dot(np.dot(g.T,D),g))
     S[0]=S0
