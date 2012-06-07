@@ -43,6 +43,9 @@ class NonParametricCartesian(object):
         self.odf_faces=np.ascontiguousarray(odf_faces)
         self.odfn=len(self.odf_vertices)
         self.save_odfs=save_odfs
+
+        #make the shape of any data array to a 2D array
+        self.data=data.reshape(-1,2)
         
         #if bvectors are provided only on a hemisphere
         #then create the full q-space
@@ -74,41 +77,22 @@ class NonParametricCartesian(object):
         self.E=E/np.sum(E,axis=1)[:,None]            
         
     def fit(self):
-        #memory allocations for 4D volumes 
-        if len(self.datashape)==4:
-            x,y,z,g=self.datashape        
-            S=self.data.reshape(x*y*z,g)
-            GFA=np.zeros((x*y*z))
-            IN=np.zeros((x*y*z,5))
-            NFA=np.zeros((x*y*z,5))
-            QA=np.zeros((x*y*z,5))
-            PK=np.zeros((x*y*z,5))
-            if self.save_odfs:
-                ODF=np.zeros((x*y*z,self.odfn))
-            if self.mask != None:
-                if self.mask.shape[:3]==self.datashape[:3]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(self.datashape[:3])
+        x,g= self.datashape
+        S=self.data
+        GFA=np.zeros(x)
+        IN=np.zeros((x,5))
+        NFA=np.zeros((x,5))
+        QA=np.zeros((x,5))
+        PK=np.zeros((x,5))
+        if self.save_odfs:
+            ODF=np.zeros((x,self.odfn))                
+        if self.mask != None:
+            if self.mask.shape[0]==self.datashape[0]:
                 msk=self.mask.ravel().copy()
-        #memory allocations for a series of voxels 
-        if len(self.datashape)==2:
-            x,g= self.datashape
-            S=self.data
-            GFA=np.zeros(x)
-            IN=np.zeros((x,5))
-            NFA=np.zeros((x,5))
-            QA=np.zeros((x,5))
-            PK=np.zeros((x,5))
-            if self.save_odfs:
-                ODF=np.zeros((x,self.odfn))                
-            if self.mask != None:
-                if self.mask.shape[0]==self.datashape[0]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(self.datashape[:1])
-                msk=self.mask.ravel().copy()
-        #find the global normalization parameter 
+        if self.mask == None:
+            self.mask=np.ones(self.datashape[:1])
+            msk=self.mask.ravel().copy()
+    #find the global normalization parameter 
         #useful for quantitative anisotropy
         glob_norm_param = 0.
         
