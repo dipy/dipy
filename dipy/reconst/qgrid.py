@@ -45,7 +45,7 @@ class NonParametricCartesian(object):
         self.save_odfs=save_odfs
 
         #make the shape of any data array to a 2D array
-        self.data=data.reshape(-1,2)
+        self.data=data.reshape(-1,data.shape[-1])
         
         #if bvectors are provided only on a hemisphere
         #then create the full q-space
@@ -58,9 +58,11 @@ class NonParametricCartesian(object):
         self.bvals=bvals
         gradients[np.isnan(gradients)] = 0.
         self.gradients=gradients
-        #save number of total diffusion volumes
+
+
+        #make the shape of any data array to a 2D array
+        self.data=data.reshape(-1,data.shape[-1]) 
         self.dn=data.shape[-1]        
-        self.data=data
         self.datashape=data.shape #initial shape  
         self.mask=mask
            
