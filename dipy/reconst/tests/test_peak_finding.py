@@ -51,7 +51,6 @@ def test_peak_finding():
     e1=np.array([0.,1,0])
     mevecs=[all_evecs(e0),all_evecs(e1)]
     odf = ODF(vertices,[0.5,0.5],mevals,mevecs)
-    print odf.shape, gradients.shape, mevals[0].shape, mevals[1].shape
     peaks,inds=peak_finding(odf,faces)
     print peaks, inds
     peaks2, inds2 = peak_finding_onedge(odf[:n], edges_half)
