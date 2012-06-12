@@ -79,6 +79,37 @@ def test_robust_peaks():
     good_peaks = _robust_peaks(peak_points, peak_values, .5, .9)
     assert_array_equal(good_peaks, peak_points[[0,1,4]])
 
+from dipy.reconst.recspeed import _filter_peaks
+def test_filter_peaks():
+    copy_peak_values = peak_values.copy()
+    ind = np.arange(len(peak_values), dtype='int16')
+    sep_mat = np.dot(peak_points, peak_points.T)
+    fvalues, find = _filter_peaks(peak_values, ind, sep_mat, .5, .9)
+    assert_array_equal(find, [0,1,4])
+    assert_array_equal(fvalues, [1., .9, .6])
+    assert_array_equal(ind, np.arange(len(peak_values), dtype='int16'))
+    assert_array_equal(peak_values, copy_peak_values)
+
+    v, e, f = create_half_unit_sphere(3)
+    sep_mat = np.dot(v, v.T)
+    values = np.arange(len(v), 0., -1.)
+    ind = np.arange(len(values), dtype='int16')
+    fvalues, find = _filter_peaks(values, ind, sep_mat, 0., 1.)
+    assert_array_equal(find, ind)
+    assert_array_equal(fvalues, values)
+    fvalues, find = _filter_peaks(values, ind, sep_mat, 0., 0.)
+    assert_array_equal(find, [0])
+    assert_array_equal(fvalues, [len(values)])
+    fvalues, find = _filter_peaks(values, ind, sep_mat, .5, 1.)
+    assert_array_equal(fvalues, values[values >= .5*values[0]])
+    assert_array_equal(find, ind[values >= .5*values[0]])
+    values = values[1:]
+    ind = ind[1:]
+    sep_mat = sep_mat[1:, 1:]
+    fvalues, find = _filter_peaks(values, ind, sep_mat, .5, 1.)
+    assert_array_equal(fvalues, values[values >= .5*values[0]])
+    assert_array_equal(find, ind[values >= .5*values[0]])
+
 def test_closest_peak():
     prev = np.array([1, -.9, 0])
     prev = prev/np.sqrt(np.dot(prev, prev))

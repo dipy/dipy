@@ -74,6 +74,40 @@ cdef float wght(int i, float r) nogil:
     else:
         return 1.-r
 
+@cython.wraparound(False)
+def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1] odf_value,
+                  cnp.ndarray[cnp.int16_t, ndim=1] odf_ind,
+                  cnp.ndarray[cnp.float_t, ndim=2] sep_matrix,
+                  float relative_threshold, float isolation):
+    """Filters peaks based on odf_value and angular distance
+    
+    Assumes that odf_value is sorted in descending order. Looks up odf_ind in
+    sep_matrix to determine the angular separation between two points. Returns
+    a subset of the peaks that pass the relative_threshold and isolation
+    criterion.
+    """
+    cdef:
+        int i, j, pass_all
+        int count = 1
+        float threshold = relative_threshold * odf_value[0]
+        cnp.ndarray[cnp.int16_t, ndim=1] find = odf_ind.copy()
+        cnp.ndarray[cnp.float_t, ndim=1] fvalue = odf_value.copy()
+
+    for i from 1 <= i < len(odf_value):
+        if odf_value[i] < threshold:
+            break
+        pass_all = 1
+        for j from 0 <= j < count:
+            if sep_matrix[i, j] >= isolation:
+                pass_all = 0
+                break
+        if pass_all:
+            find[count] = odf_ind[i]
+            fvalue[count] = odf_value[i]
+            count += 1
+
+    return fvalue[:count].copy(), find[:count].copy()
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
