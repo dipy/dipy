@@ -1,6 +1,9 @@
 import numpy as np
 from dipy.core.geometry import sphere2cart, cart2sphere
 from dipy.reconst.dti import design_matrix, lower_triangular
+from dipy.core.geometry import vec2vec_rotmat
+
+
 
 def SticksAndBall(bvals,gradients,d=0.0015,S0=100,angles=[(0,0),(90,0)],fractions=[35,35],snr=20):
     """ Simulating the signal for a Sticks & Ball model 
@@ -81,4 +84,67 @@ def SingleTensor(bvals,gradients,S0,evals,evecs,snr=None):
         S=S+np.random.randn(len(S))*std
     return S
     
+
+def all_tensor_evecs(e0):
+    ''' Principal axis to all tensor axes
+    '''
+    axes=np.array([[1.,0,0],[0,1.,0],[0,0,1.]])
+    mat=vec2vec_rotmat(axes[2],e0)
+    e1=np.dot(mat,axes[0])
+    e2=np.dot(mat,axes[1])
+    return np.array([e0,e1,e2])
+
+
+def multi_tensor_odf(odf_verts,mf,mevals,mevecs):
+    r''' Simulating a Multi-Tensor ODF
+
+    Parameters:
+    -----------
+    
+    odf_verts : array, shape (N,3), 
+        vertices of the reconstruction sphere 
+    mf : sequence of floats, bounded [0,1]
+        percentages of the fractions for each Tensor
+    mevals : sequence of 1D arrays,
+        eigen-values for each Tensor
+    mevecs : sequence of 3D arrays,
+        eigen-vectors for each Tensor
+
+    Returns:
+    ---------
+    ODF : array, shape (N,),
+        orientation distribution function
+
+    Examples:
+    ----------
+    Simulate a MultiTensor with two peaks and calcute its exact ODF.
+
+    >>> import numpy as np
+    >>> from dipy.sims.voxel import multi_tensor_odf, all_tensor_evecs
+    >>> from dipy.data import get_sphere
+    >>> vertices, faces = get_sphere('symmetric724')
+    >>> mevals=np.array(([0.0015,0.0003,0.0003],
+                    [0.0015,0.0003,0.0003]))
+    >>> e0=np.array([1,0,0.])
+    >>> e1=np.array([0.,1,0])
+    >>> mevecs=[all_evecs(e0),all_evecs(e1)]
+    >>> odf = multi_tensor_odf(vertices,[0.5,0.5],mevals,mevecs)
+
+
+    '''
+
+    odf=np.zeros(len(odf_verts))
+    m=len(mf)
+    for (i,v) in enumerate(odf_verts):
+        for (j,f) in enumerate(mf):
+            evals=mevals[j]
+            evecs=mevecs[j]
+            D=np.dot(np.dot(evecs,np.diag(evals)),evecs.T)
+            iD=np.linalg.inv(D)
+            nD=np.linalg.det(D)
+            upper=(np.dot(np.dot(v.T,iD),v))**(-3/2.)
+            lower=4*np.pi*np.sqrt(nD)
+            odf[i]+=f*upper/lower
+    return odf
+
 
