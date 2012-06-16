@@ -1,6 +1,6 @@
 import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
-from dipy.reconst.recspeed import peak_finding, peak_finding_onedge
+from dipy.reconst.recspeed import peak_finding, peaks
 from dipy.data import get_sphere
 
 

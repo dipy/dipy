@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from .recspeed import peak_finding, _filter_peaks
+from .recspeed import peaks, _filter_peaks
 
 class OdfFit(object):
     pass
@@ -60,17 +60,15 @@ class OdfModel(object):
                              "neighboring vertices")
         self._odf_vertices = vertices
         self._odf_edges = edges
-        self._distance_matrix = vertices.dot(vertices.T)
+        self._distance_matrix = abs(vertices.dot(vertices.T))
 
     def evaluate_odf():
+        """To be implemented by subclasses"""
         raise NotImplementedError()
-
-
-        return odffit_from_model(self, data, mask, return_odf, normalize_peaks)
 
     def get_peaks(self, sig):
         odf = self.evaluate_odf(sig)
-        pk, ind = peak_finding(odf, self._odf_edges)
+        pk, ind = peaks(odf, self._odf_edges)
         pk, ind = _filter_peaks(pk, ind, self._distance_matrix,
                                 self.relative_peak_threshold,
                                 self._cos_distance_threshold)
@@ -109,7 +107,7 @@ class OdfModel(object):
                 odf_array[i] = odf
 
             gfa_array[i] = gfa(odf)
-            pk, ind = peak_finding(odf, self.odf_edges)
+            pk, ind = peaks(odf, self.odf_edges)
             pk, ind = _filter_peaks(pk, ind,
                                     self._distance_matrix,
                                     self.relative_peak_threshold,

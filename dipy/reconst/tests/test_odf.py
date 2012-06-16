@@ -76,7 +76,7 @@ class TestOdfModel():
         model.set_odf_vertices(v, e)
         assert_array_equal(v, model.odf_vertices)
         assert_array_equal(e, model.odf_edges)
-        assert_array_equal(v.dot(v.T), model._distance_matrix)
+        assert_array_equal(abs(v.dot(v.T)), model._distance_matrix)
         assert_raises(ValueError, model.set_odf_vertices, v[:, :2], e)
         assert_raises(ValueError, model.set_odf_vertices, v/2, e)
 

@@ -9,7 +9,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.core.geometry import cart2sphere
 from dipy.reconst.shm import real_sph_harm, \
-    sph_harm_ind_list, _robust_peaks, _closest_peak, SlowAdcOpdfModel, \
+    sph_harm_ind_list, _closest_peak, SlowAdcOpdfModel, \
     normalize_data, ClosestPeakSelector, QballOdfModel, hat, lcr_matrix, \
     smooth_pinv, bootstrap_data_array, bootstrap_data_voxel, \
     ResidualBootstrapWrapper
@@ -75,25 +75,27 @@ peak_points = np.array([[1., 0., 0.],
 norms = np.sqrt((peak_points*peak_points).sum(-1))
 peak_points = peak_points/norms[:, None]
 
+"""
 def test_robust_peaks():
     good_peaks = _robust_peaks(peak_points, peak_values, .5, .9)
     assert_array_equal(good_peaks, peak_points[[0,1,4]])
+"""
 
 from dipy.reconst.recspeed import _filter_peaks
 def test_filter_peaks():
     copy_peak_values = peak_values.copy()
-    ind = np.arange(len(peak_values), dtype='int16')
+    ind = np.arange(len(peak_values), dtype='int')
     sep_mat = np.dot(peak_points, peak_points.T)
     fvalues, find = _filter_peaks(peak_values, ind, sep_mat, .5, .9)
     assert_array_equal(find, [0,1,4])
     assert_array_equal(fvalues, [1., .9, .6])
-    assert_array_equal(ind, np.arange(len(peak_values), dtype='int16'))
+    assert_array_equal(ind, np.arange(len(peak_values), dtype='int'))
     assert_array_equal(peak_values, copy_peak_values)
 
     v, e, f = create_half_unit_sphere(3)
-    sep_mat = np.dot(v, v.T)
+    sep_mat = np.abs(np.dot(v, v.T))
     values = np.arange(len(v), 0., -1.)
-    ind = np.arange(len(values), dtype='int16')
+    ind = np.arange(len(values), dtype='int')
     fvalues, find = _filter_peaks(values, ind, sep_mat, 0., 1.)
     assert_array_equal(find, ind)
     assert_array_equal(fvalues, values)
@@ -124,9 +126,10 @@ def test_set_angle_limit():
     bval[0] = 0
     bvec = np.ones((3, 100))
     sig = np.zeros(100)
-    v = np.ones((200, 3))
+    v = np.ones((200, 3)) / np.sqrt(3)
     e = None
-    opdf_fitter = SlowAdcOpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
+    opdf_fitter = SlowAdcOpdfModel(bval, bvec.T, 6, odf_vertices=v,
+                                   odf_edges=e)
     norm_sig = sig[..., 1:]
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=55)
     assert_raises(ValueError, stepper._set_angle_limit, 99)
@@ -230,11 +233,11 @@ def make_fake_signal():
 
 def test_ClosestPeakSelector():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
-    opdf_fitter = SlowAdcOpdfModel(6, bval, bvec, sampling_points=v, sampling_edges=e)
+    opdf_fitter = SlowAdcOpdfModel(bval, bvec.T, 6, odf_vertices=v, odf_edges=e)
     norm_sig = sig[..., 1:]
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
     C = opdf_fitter.fit_data(norm_sig)
-    S = opdf_fitter.evaluate(norm_sig)
+    S = opdf_fitter.evaluate_odf(norm_sig)
     for ii in xrange(len(vecs_xy)):
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .56:
             assert_raises(StopIteration, stepper.next_step, ii, [0, 1., 0])
@@ -252,12 +255,12 @@ def test_ClosestPeakSelector():
 
 def testQballOdfModel():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
-    qball_fitter = QballOdfModel(6, bval, bvec, sampling_points=v,
-                                 sampling_edges=e)
+    qball_fitter = QballOdfModel(bval, bvec.T, 6, odf_vertices=v,
+                                 odf_edges=e)
 
     norm_sig = sig[..., 1:]
     C = qball_fitter.fit_data(norm_sig)
-    S = qball_fitter.evaluate(norm_sig)
+    S = qball_fitter.evaluate_odf(norm_sig)
     stepper = ClosestPeakSelector(qball_fitter, norm_sig, angle_limit=39)
     for ii in xrange(len(vecs_xy)):
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .84:
