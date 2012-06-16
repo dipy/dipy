@@ -15,7 +15,7 @@ from numpy import array, asarray, broadcast_arrays, signbit, sqrt
 
 class BoundryIntegrator(object):
     """Integrates along step until the closest voxel boundry"""
-    def __init__(self, voxel_size=(1, 1, 1), overstep=1e-1):
+    def __init__(self, voxel_size=(1, 1, 1), overstep=.1):
         """Creates a BoundryIntegrator instance
 
         Parameters:
@@ -27,7 +27,7 @@ class BoundryIntegrator(object):
             edge of a voxel.
         """
         self.overstep = overstep
-        self.voxel_size = asarray(voxel_size)
+        self.voxel_size = asarray(voxel_size, 'float')
 
     def integrate(self, location, step):
         """takes a step just past the edge of the next voxel along step
@@ -42,14 +42,11 @@ class BoundryIntegrator(object):
         step : ndarray, (3,)
             direction in 3 space to integrate along
         """
-        space = location % self.voxel_size
-        dist = self.voxel_size*(~signbit(step)) - space
-        step_sizes = dist/step
-        smallest_step = step_sizes.min()
-        assert smallest_step >= 0
-        smallest_step += self.overstep
-        new_location = location + smallest_step*step
-        return new_location
+        step_sizes = self.voxel_size*(~signbit(step))
+        step_sizes -= location % self.voxel_size
+        step_sizes /= step
+        smallest_step = min(step_sizes) + self.overstep
+        return location + smallest_step*step
 
 class FixedStepIntegrator(object):
     """An Intigrator that uses a fixed step size"""
@@ -61,7 +58,7 @@ class FixedStepIntegrator(object):
         new_location = self.step_size*step + location
         return new_location
 
-def generate_streamlines(stepper, integrator, seeds, start_steps):
+def generate_streamlines(stepper, integrator, seeds, start_steps, maxlen=500):
     """Creates streamlines using a stepper and integrator
 
     Creates streamlines starting at each of the seeds, and integrates them
@@ -101,7 +98,7 @@ def generate_streamlines(stepper, integrator, seeds, start_steps):
         step = start_steps[ii]
         streamline = []
         try:
-            while True:
+            for i in xrange(maxlen):
                 step = next_step(location, step)
                 streamline.append(location)
                 location = integrate(location, step)

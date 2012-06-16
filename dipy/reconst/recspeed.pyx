@@ -203,7 +203,6 @@ def peak_finding_onedge(odf, edges):
 
         find0 = cedges[i,0]
         find1 = cedges[i,1]
-
         odf0 = codf[find0]
         odf1 = codf[find1]
 
@@ -213,16 +212,10 @@ def peak_finding_onedge(odf, edges):
             cpeak[find0] = 0
 
     cpeak = np.array(cpeak)
-
-    #find local maxima and give fiber orientation (inds) and magnitude
-    #peaks in a descending order
-
-    inds = cpeak.nonzero()[0]
-    pinds = odf[inds].argsort()
-    inds = inds[pinds][::-1]
-    peaks = odf[inds]
-
-    return peaks, inds
+    peakidx = cpeak.nonzero()[0]
+    peakvalues = odf[peakidx]
+    order = peakvalues.argsort()[::-1]
+    return peakvalues[order], peakidx[order]
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

@@ -49,7 +49,7 @@ Linking your repository to the upstream repo
    git remote add upstream git://github.com/nipy/dipy.git
 
 ``upstream`` here is just the arbitrary name we're using to refer to the
-main dipy_ repository at `dipy github`_.
+main `dipy`_ repository at `dipy github`_.
 
 Note that we've used ``git://`` for the URL rather than ``git@``.  The
 ``git://`` URL is read only.  This means we that we can't accidentally

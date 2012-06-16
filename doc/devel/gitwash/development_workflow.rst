@@ -4,7 +4,7 @@
 Development workflow
 ####################
 
-You already have your own forked copy of the dipy_ repository, by
+You already have your own forked copy of the `dipy`_ repository, by
 following :ref:`forking`. You have :ref:`set-up-fork`. You have configured
 git by following :ref:`configure-git`.  Now you are ready for some real work.
 
@@ -81,7 +81,7 @@ what the changes in the branch are for.  For example ``add-ability-to-fly``, or
     git checkout my-new-feature
 
 Generally, you will want to keep your feature branches on your public github_
-fork of dipy_.  To do this, you `git push`_ this new branch up to your
+fork of `dipy`_.  To do this, you `git push`_ this new branch up to your
 github repo.  Generally (if you followed the instructions in these pages, and by
 default), git will have a link to your github repo, called ``origin``.  You push
 up to your own repo on github with::
