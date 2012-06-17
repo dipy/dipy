@@ -35,7 +35,7 @@ def test_peak_finding():
     print peaks2, inds2
     assert_equal(len(peaks),2)
     assert_equal(len(peaks2),2)
-        
+
  
 if __name__ == '__main__':
     test_peak_finding()
