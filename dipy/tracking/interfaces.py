@@ -1,34 +1,40 @@
 from warnings import warn
-warn("The interfaces module is very new and not well tested, please use it" +
-"with care and help us make it better")
+
+warn("The interfaces module is very new and not well tested, please use it "
+     "with care and help us make it better")
 
 import pickle
 import string
 import os.path as path
-import numpy as np
-import nibabel as nib
 
+import numpy as np
 from scipy.ndimage import convolve
-import traits.api as T
+
+# Import traits as optional package
+from ..utils.optional_traits import tapi as T, setup_module
+
+import nibabel as nib
 from nibabel.trackvis import write, empty_header
 
-from dipy.reconst.shm import SlowAdcOpdfModel, MonoExpOpdfModel, \
-        QballOdfModel, normalize_data, ClosestPeakSelector, \
-        ResidualBootstrapWrapper, hat, lcr_matrix, bootstrap_data_array
-from dipy.reconst.interpolate import TriLinearInterpolator, \
-        NearestNeighborInterpolator
-from dipy.core.triangle_subdivide import create_half_unit_sphere, \
-        disperse_charges
-from dipy.tracking.integration import BoundryIntegrator, FixedStepIntegrator, \
-        generate_streamlines
-from dipy.tracking.utils import seeds_from_mask, target, merge_streamlines, \
-        density_map
-from dipy.io.bvectxt import read_bvec_file, orientation_to_string, \
-        reorient_bvec
+from ..reconst.shm import (SlowAdcOpdfModel, MonoExpOpdfModel, QballOdfModel,
+                          normalize_data, ClosestPeakSelector,
+                          ResidualBootstrapWrapper, hat, lcr_matrix,
+                          bootstrap_data_array, NND_ClosestPeakSelector)
+from ..reconst.interpolate import (TriLinearInterpolator,
+                                  NearestNeighborInterpolator)
+from ..core.triangle_subdivide import (create_half_unit_sphere,
+                                      disperse_charges)
+from ..tracking.integration import (BoundryIntegrator, FixedStepIntegrator,
+                                   generate_streamlines)
+from ..tracking.utils import (seeds_from_mask, target, merge_streamlines,
+                             density_map)
+from ..io.bvectxt import (read_bvec_file, orientation_to_string,
+                         reorient_vectors)
 
 nifti_file = T.File(filter=['Nifti Files', '*.nii.gz',
                             'Nifti Pair or Analyze Files', '*.img.gz',
                             'All Files', '*'])
+
 def read_roi(file, threshold=0, shape=None):
     img = nib.load(file)
     if shape is not None:
@@ -40,6 +46,7 @@ def read_roi(file, threshold=0, shape=None):
         raise ValueError('this does not seem to be a mask')
     mask = img_data > threshold
     return mask
+
 
 class InputData(T.HasTraits):
     dwi_images = nifti_file
@@ -67,7 +74,7 @@ class InputData(T.HasTraits):
         bvec, bval = read_bvec_file(self.bvec_file)
         data_ornt = nib.io_orientation(affine)
         if self.bvec_orientation != 'IMG':
-            bvec = reorient_bvec(bvec, self.bvec_orientation, data_ornt)
+            bvec = reorient_vectors(bvec, self.bvec_orientation, data_ornt)
         fa = fa_img.get_data()
         data = data_img.get_data()
         return data, voxel_size, affine, fa, bvec, bval
@@ -89,17 +96,41 @@ class BoxKernel(T.HasTraits):
         kernel.shape += (1,)
         return kernel
 
+def lazy_index(index):
+    """Produces a lazy index
+
+    Returns a slice that can be used for indexing an array, if no slice can be
+    made index is returned as is.
+    """
+    index = np.asarray(index)
+    assert index.ndim == 1
+    if index.dtype == np.bool:
+        index = index.nonzero()[0]
+    if len(index) == 1:
+        return slice(index[0], index[0] + 1)
+    step = np.unique(np.diff(index))
+    if len(step) != 1 or step[0] == 0:
+        return index
+    else:
+        return slice(index[0], index[-1] + 1, step[0])
+
+def closest_start(seeds, peak_finder, best_start):
+    starts = np.empty(seeds.shape)
+    best_start = np.asarray(best_start, 'float')
+    best_start /= np.sqrt((best_start*best_start).sum())
+    for i in xrange(len(seeds)):
+        try:
+            starts[i] = peak_finder.next_step(seeds[i], best_start)
+        except StopIteration:
+            starts[i] = best_start
+    return starts
+
 all_kernels = {None:None,'Box':BoxKernel,'Gausian':GausianKernel}
 all_interpolators = {'NearestNeighbor':NearestNeighborInterpolator,
                      'TriLinear':TriLinearInterpolator}
 all_shmodels = {'QballOdf':QballOdfModel, 'SlowAdcOpdf':SlowAdcOpdfModel,
                 'MonoExpOpdf':MonoExpOpdfModel}
 all_integrators = {'Boundry':BoundryIntegrator, 'FixedStep':FixedStepIntegrator}
-
-def _hack(mask):
-    mask[0] = 0
-    mask[:, 0] = 0
-    mask[:, :, 0] = 0
 
 class ShmTrackingInterface(T.HasStrictTraits):
 
@@ -129,12 +160,18 @@ class ShmTrackingInterface(T.HasStrictTraits):
 
     probabilistic = T.Bool(False, label='Probabilistic (Residual Bootstrap)')
     bootstrap_input = T.Bool(False)
+    bootstrap_vector = T.Array(dtype='int', value=[])
 
     #integrator = Enum('Boundry', all_integrators.keys())
+    seed_largest_peak = T.Bool(False, desc="Ignore sub-peaks and start follow "
+                                           "the largest peak at each seed")
     start_direction = T.Array(dtype='float', shape=(3,), value=[0,0,1],
-                              desc="prefered direction from seeds when " +
-                                 "multiple directions are available",
-                            label="Start direction (RAS)")
+                              desc="Prefered direction from seeds when "
+                                   "multiple directions are available. "
+                                   "(Mostly) doesn't matter when 'seed "
+                                   "largest peak' and 'track two directions' "
+                                   "are both True",
+                              label="Start direction (RAS)")
     track_two_directions = T.Bool(False)
     fa_threshold = T.Float(1.0)
     max_turn_angle = T.Range(0.,90,0)
@@ -170,7 +207,11 @@ class ShmTrackingInterface(T.HasStrictTraits):
         nib.save(nib.Nifti1Image(counts, self.affine), save_counts_to)
 
     #tracking methods
-    def track_shm(self):
+    def track_shm(self, debug=False):
+        if self.sphere_coverage > 7 or self.sphere_coverage < 1:
+            raise ValueError("sphere coverage must be between 1 and 7")
+        verts, edges, faces = create_half_unit_sphere(self.sphere_coverage)
+        verts, pot = disperse_charges(verts, 10, .3)
 
         data, voxel_size, affine, fa, bvec, bval = self.all_inputs.read_data()
         self.voxel_size = voxel_size
@@ -179,61 +220,72 @@ class ShmTrackingInterface(T.HasStrictTraits):
 
         model_type = all_shmodels[self.model_type]
         model = model_type(self.sh_order, bval, bvec, self.Lambda)
-        verts, edges, faces = create_half_unit_sphere(self.sphere_coverage)
-        verts, pot = disperse_charges(verts, 40)
         model.set_sampling_points(verts, edges)
 
+        data = np.asarray(data, dtype='float', order='C')
         if self.smoothing_kernel is not None:
             kernel = self.smoothing_kernel.get_kernel()
-            data = np.asarray(data, 'float')
-            convolve(data, kernel, data)
+            convolve(data, kernel, out=data)
 
-        data = normalize_data(data, bval, self.min_signal)
+        normalize_data(data, bval, self.min_signal, out=data)
+        dmin = data.min()
+        data = data[..., lazy_index(bval > 0)]
         if self.bootstrap_input:
+            if self.bootstrap_vector.size == 0:
+                n = data.shape[-1]
+                self.bootstrap_vector = np.random.randint(n, size=n)
             H = hat(model.B)
             R = lcr_matrix(H)
-            dmin = data.min()
-            data = bootstrap_data_array(data, H, R)
-            data.clip(dmin, 1., data)
+            data = bootstrap_data_array(data, H, R, self.bootstrap_vector)
+            data.clip(dmin, out=data)
 
         mask = fa > self.fa_threshold
-        _hack(mask)
         targets = [read_roi(tgt, shape=self.shape) for tgt in self.targets]
         if self.stop_on_target:
             for target_mask in targets:
                 mask = mask & ~target_mask
-        interpolator_type = all_interpolators[self.interpolator]
-        interpolator = interpolator_type(data, voxel_size, mask)
 
         seed_mask = read_roi(self.seed_roi, shape=self.shape)
         seeds = seeds_from_mask(seed_mask, self.seed_density, voxel_size)
 
-        peak_finder = ClosestPeakSelector(model, interpolator,
-                            self.min_relative_peak, self.min_peak_spacing)
+        if self.interpolator == 'NearestNeighbor' and not self.probabilistic and not debug:
+            using_optimze = True
+            peak_finder = NND_ClosestPeakSelector(model, data, mask, voxel_size)
+        else:
+            using_optimze = False
+            interpolator_type = all_interpolators[self.interpolator]
+            interpolator = interpolator_type(data, voxel_size, mask)
+            peak_finder = ClosestPeakSelector(model, interpolator)
+
+        #Set peak_finder parameters for start steps
         peak_finder.angle_limit = 90
-        start_steps = []
+        model.peak_spacing = self.min_peak_spacing
+        if self.seed_largest_peak:
+            model.min_relative_peak = 1
+        else:
+            model.min_relative_peak = self.min_relative_peak
+
         data_ornt = nib.io_orientation(self.affine)
-        ind = np.asarray(data_ornt[:,0], 'int')
-        best_start = self.start_direction[ind]
-        best_start *= data_ornt[:,1]
-        best_start /= np.sqrt((best_start*best_start).sum())
-        for ii in seeds:
-            try:
-                step = peak_finder.next_step(ii, best_start)
-                start_steps.append(step)
-            except StopIteration:
-                start_steps.append(best_start)
+        best_start = reorient_vectors(self.start_direction, 'ras', data_ornt)
+        start_steps = closest_start(seeds, peak_finder, best_start)
+
         if self.probabilistic:
             interpolator = ResidualBootstrapWrapper(interpolator, model.B,
-                                                    data.min())
-        peak_finder = ClosestPeakSelector(model, interpolator,
-                            self.min_relative_peak, self.min_peak_spacing)
+                                                    min_signal=dmin)
+            peak_finder = ClosestPeakSelector(model, interpolator)
+        elif using_optimze and self.seed_largest_peak:
+            peak_finder.reset_cache()
+
+        #Reset peak_finder parameters for tracking
         peak_finder.angle_limit = self.max_turn_angle
+        model.peak_spacing = self.min_peak_spacing
+        model.min_relative_peak = self.min_relative_peak
+
         integrator = BoundryIntegrator(voxel_size, overstep=.1)
         streamlines = generate_streamlines(peak_finder, integrator, seeds,
                                            start_steps)
         if self.track_two_directions:
-            start_steps = [-ii for ii in start_steps]
+            start_steps = -start_steps
             streamlinesB = generate_streamlines(peak_finder, integrator, seeds,
                                                  start_steps)
             streamlines = merge_streamlines(streamlines, streamlinesB)

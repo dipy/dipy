@@ -3,7 +3,7 @@
 ================
 
 You've discovered a bug or something else you want to change
-in dipy_ .. |emdash| excellent!
+in `dipy`_ .. |emdash| excellent!
 
 You've worked out a way to fix it |emdash| even better!
 
@@ -57,7 +57,7 @@ In detail
       git config --global user.name "Your Name Comes Here"
 
 #. If you don't already have one, clone a copy of the
-   dipy_ repository::
+   `dipy`_ repository::
 
       git clone git://github.com/nipy/dipy.git
       cd dipy
@@ -115,7 +115,7 @@ more feature branches, you will probably want to switch to
 development mode.  You can do this with the repository you
 have.
 
-Fork the dipy_ repository on github |emdash| :ref:`forking`.
+Fork the `dipy`_ repository on github |emdash| :ref:`forking`.
 Then::
 
    # checkout and refresh master branch from main repo

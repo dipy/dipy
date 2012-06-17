@@ -1,16 +1,21 @@
 from warnings import warn
-warn("The gui_tools module is very new and not well tested, please use it" +
-"with care and help us make it better")
 
-from dipy.tracking.interfaces import ShmTrackingInterface, InputData
-from traitsui.api import Item, Group, View, ArrayEditor
-from traits.api import File
+# Import traits as optional package
+from ..utils.optional_traits import tapi, tuapi, have_traits, setup_module
+# Import names to top level; done here in case we don't have actual traits but
+# only the traits shell from the optional_traits module
+File = tapi.File
+Item, Group, View, ArrayEditor = (tuapi.Item, tuapi.Group, tuapi.View,
+                                  tuapi.ArrayEditor)
 
-I = InputData()
-iview = I.trait_view()
-iview.resizable = True
-iview.width = 600
-I.trait_view('traits_view', iview)
+from ..tracking.interfaces import InputData, ShmTrackingInterface
+
+if have_traits:
+    I = InputData()
+    iview = I.trait_view()
+    iview.resizable = True
+    iview.width = 600
+    I.trait_view('traits_view', iview)
 
 main_view = View(Group(Group(
                              Item( 'dwi_images' ),
@@ -37,8 +42,11 @@ main_view = View(Group(Group(
                              show_border=True),
                        Group(
                              #Item( 'integrator' ),
-                             Item( 'start_direction', editor=ArrayEditor()),
-                             Item( 'track_two_directions'),
+                             Item( 'seed_largest_peak', ),
+                             Item( 'track_two_directions' ),
+                             Item( 'start_direction', editor=ArrayEditor(),
+                                   enabled_when='not (seed_largest_peak and '
+                                                'track_two_directions)'),
                              Item( 'fa_threshold' ),
                              Item( 'max_turn_angle' ),
                              show_border=True),
@@ -51,18 +59,21 @@ main_view = View(Group(Group(
                              Item( 'save_counts_to' ),
                              show_border=True),
                        orientation = 'vertical'),
-                buttons=['OK', 'Cancel'], resizable=True, width=600)
+                buttons=['OK', 'Cancel'], width=600, close_result=False,
+                resizable=True, scrollable=True)
 
 def gui_track(interface=None):
     if interface is None:
-        interface = EZTrackingInterface()
+        interface = ShmTrackingInterface()
     if not interface.configure_traits(view=main_view):
         return
     if interface.save_streamlines_to == '' and interface.save_counts_to == '':
-        raiseIOError('must provide filename where to save results')
-    streamlines = list(interface.track_shm())
-    if interface.save_streamlines_to != '':
+        raise IOError('must provide filename where to save results')
+    streamlines = interface.track_shm()
+    if interface.save_streamlines_to and interface.save_counts_to:
+        streamlines = list(streamlines)
+    if interface.save_streamlines_to:
         interface.save_streamlines(streamlines, interface.save_streamlines_to)
-    if interface.save_counts_to != '':
+    if interface.save_counts_to:
         interface.save_counts(streamlines, interface.save_counts_to)
 

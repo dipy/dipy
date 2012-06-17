@@ -4,6 +4,7 @@ from dipy.reconst.recspeed import peak_finding, peak_finding_onedge
 from dipy.data import get_sphere, get_data
 from dipy.core.geometry import reduce_antipodal, unique_edges
 
+
 def test_peak_finding():
 
     vertices,faces=get_sphere('symmetric724')
