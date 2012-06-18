@@ -2,6 +2,8 @@ from __future__ import division
 import numpy as np
 from .recspeed import peaks, _filter_peaks
 
+#Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
+
 class OdfFit(object):
     pass
 
@@ -66,7 +68,7 @@ class OdfModel(object):
         """To be implemented by subclasses"""
         raise NotImplementedError()
 
-    def get_peaks(self, sig):
+    def get_directions(self, sig):
         odf = self.evaluate_odf(sig)
         pk, ind = peaks(odf, self._odf_edges)
         pk, ind = _filter_peaks(pk, ind, self._distance_matrix,
@@ -97,7 +99,6 @@ class OdfModel(object):
         if return_odf:
             odf_array = np.zeros((size, len(self.odf_vertices)))
 
-        angdistances = abs(np.dot(self.odf_vertices, self.odf_vertices.T))
         global_max = -np.inf
         for i, sig in enumerate(data_flat):
             if not mask[i]:
