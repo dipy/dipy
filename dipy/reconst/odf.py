@@ -83,7 +83,8 @@ class OdfModel(object):
         return self._odf_vertices[ind]
 
 
-    def fit(self, data, mask=None, return_odf=False, normalize_peaks=False):
+    def fit(self, data, mask=None, return_odf=False, gfa_thr=0.1, 
+            normalize_peaks=False):
         """Fits the model to data and returns an OdfFit"""
 
         data_flat = data.reshape((-1, data.shape[-1]))
@@ -114,6 +115,9 @@ class OdfModel(object):
                 odf_array[i] = odf
 
             gfa_array[i] = gfa(odf)
+            if gfa_array[i] < gfa_thr:
+                global_max = max(global_max, odf.max())
+                continue
             pk, ind = local_maxima(odf, self.odf_edges)
             pk, ind = _filter_peaks(pk, ind,
                                     self._distance_matrix,

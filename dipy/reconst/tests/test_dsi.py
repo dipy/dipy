@@ -85,7 +85,7 @@ def test_dsi():
     bvals=btable[:,0]
     bvecs=btable[:,1:]        
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)    
-    pdf0,odf0,peaks0=standard_dsi_algorithm(S,bvals,bvecs)    
+    #pdf0,odf0,peaks0=standard_dsi_algorithm(S,bvals,bvecs)    
     S2=S.copy()
     S2=S2.reshape(1,len(S)) 
     
@@ -93,66 +93,49 @@ def test_dsi():
     ds=DiffusionSpectrumModel( bvals, bvecs, odf_sphere)    
     dsfit=ds.fit(S)
     assert_equal((dsfit.peak_values>0).sum(),3)
+
+    #change thresholds
     ds.relative_peak_threshold = 0.5
     ds.angular_distance_threshold = 30
     dsfit = ds.fit(S)
     assert_equal((dsfit.peak_values>0).sum(),2)
 
-    #return dsfit
     #assert_almost_equal(np.sum(ds.pdf(S)-pdf0),0)
     #assert_almost_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
-    #print peaks0
-    #1./0
 
-    #    return ds,dsfit
-
-    """
-    #compare gfa
-    psi=odf0/odf0.max()
-    numer=len(psi)*np.sum((psi-np.mean(psi))**2)
-    denom=(len(psi)-1)*np.sum(psi**2) 
-    GFA=np.sqrt(numer/denom)    
-    assert_almost_equal(ds.gfa()[0],GFA)
-    
-    #compare indices
-    #print ds.ind()    
-    #print peak_finding(odf0,odf_faces)
-    #print peaks0
-    data=np.zeros((3,3,3,515))
-    data[:,:,:]=S    
-    ds=DiffusionSpectrum(data,bvals,bvecs)
-    
-    ds2=DiffusionSpectrum(data,bvals,bvecs,auto=False)
-    r = np.sqrt(ds2.qtable[:,0]**2+ds2.qtable[:,1]**2+ds2.qtable[:,2]**2)    
-    ds2.filter=.5*np.cos(2*np.pi*r/32)
-    ds2.fit()
-    assert_almost_equal(np.sum(ds2.qa()-ds.qa()),0)
+    assert_almost_equal(dsfit.gfa,np.array([0.5749720469955439]))
     
     #1 fiber
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[100,0,0], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
+    ds=DiffusionSpectrumModel(bvals,bvecs,odf_sphere)
+    dsfit=ds.fit(S)
+    QA=dsfit.qa
     assert_equal(np.sum(QA>0),1)
     
     #2 fibers
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
+    ds=DiffusionSpectrumModel(bvals,bvecs,odf_sphere)
+    ds.relative_peak_threshold = 0.5
+    ds.angular_distance_threshold = 20
+    dsfit=ds.fit(S)
+    QA=dsfit.qa
     assert_equal(np.sum(QA>0),2)
     
     #3 fibers
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
+    ds=DiffusionSpectrumModel(bvals,bvecs,odf_sphere)
+    ds.relative_peak_threshold = 0.5
+    dsfit=ds.fit(S)
+    QA=dsfit.qa
     assert_equal(np.sum(QA>0),3)
     
     #isotropic
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[0,0,0], snr=None)   
-    ds=DiffusionSpectrum(S.reshape(1,len(S)),bvals,bvecs)
-    QA=ds.qa()
+    ds=DiffusionSpectrumModel(bvals,bvecs,odf_sphere)
+    dsfit=ds.fit(S)
+    QA=dsfit.qa
     assert_equal(np.sum(QA>0),0)
     
-    """
 
 if __name__ == '__main__':
 
