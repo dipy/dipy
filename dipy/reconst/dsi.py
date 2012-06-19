@@ -3,6 +3,7 @@ from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import peak_finding, pdf_to_odf
 from scipy.fftpack import fftn, fftshift
 from .odf import OdfModel, OdfFit
+from dipy.utils.spheremakers import sphere_vf_from
 
 class DiffusionSpectrumModel(OdfModel):
     ''' Calculate the PDF and ODF using Diffusion Spectrum Imaging
@@ -27,6 +28,7 @@ class DiffusionSpectrumModel(OdfModel):
         ----------
         dipy.reconst.dti.Tensor, dipy.reconst.gqi.GeneralizedQSampling
         '''
+        b0 = 0
         self.bvals=bvals
         self.gradients=gradients
         #3d volume for Sq
@@ -39,7 +41,11 @@ class DiffusionSpectrumModel(OdfModel):
         self.radius=np.arange(2.1,6,.2)
         #odf sphere
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
- 
+        self.set_odf_vertices(odf_vertices,None,odf_faces)
+        self.odfn=len(self._odf_vertices)
+        #number of single sampling points
+        self.dn = (bvals > b0).sum()
+        self.num_b0 = len(bvals) - self.dn
         self.create_qspace()
     
     def create_qspace(self):
@@ -62,7 +68,8 @@ class DiffusionSpectrumModel(OdfModel):
         self.q=self.q.astype('i8')
         #peak threshold
         self.peak_thr=.7
-        self.iso_thr=.4        
+        self.iso_thr=.4  
+
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()    
    

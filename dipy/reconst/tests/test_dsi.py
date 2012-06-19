@@ -89,13 +89,17 @@ def test_dsi():
     S2=S.copy()
     S2=S2.reshape(1,len(S)) 
     
-    odf_sphere=(vertices,edges,faces)
+    odf_sphere=(vertices,faces)
     ds=DiffusionSpectrumModel( bvals, bvecs, odf_sphere)    
-    dsfit=ds.fit(data)
+    dsfit=ds.fit(S)
+
+    #return dsfit
+    #assert_almost_equal(np.sum(ds.pdf(S)-pdf0),0)
+    #assert_almost_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
+    print peaks0
+    1./0
 
     return dsfit
-    assert_almost_equal(np.sum(ds.pdf(S)-pdf0),0)
-    assert_almost_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
 
     """
     #compare gfa
