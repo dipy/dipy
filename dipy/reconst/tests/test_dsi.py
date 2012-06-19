@@ -94,6 +94,7 @@ def test_dsi():
     dsfit=ds.fit(S)
     assert_equal((dsfit.peak_values>0).sum(),3)
     ds.relative_peak_threshold = 0.5
+    ds.angular_distance_threshold = 30
     dsfit = ds.fit(S)
     assert_equal((dsfit.peak_values>0).sum(),2)
 
