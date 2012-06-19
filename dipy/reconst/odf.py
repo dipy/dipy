@@ -42,7 +42,7 @@ class OdfModel(object):
             raise ValueError("angle must be between 0 and 90")
         self._cos_distance_threshold = np.cos(np.pi/180 * angle)
 
-    def set_odf_vertices(self, vertices, edges=None):
+    def set_odf_vertices(self, vertices, edges=None, faces=None):
         """Sets the vertices used to evaluate the odf or get odf peaks
 
         Parameters
@@ -62,7 +62,9 @@ class OdfModel(object):
                              "neighboring vertices")
         self._odf_vertices = vertices
         self._odf_edges = edges
+        self._odf_faces = faces
         self._distance_matrix = abs(vertices.dot(vertices.T))
+
 
     def evaluate_odf():
         """To be implemented by subclasses"""
