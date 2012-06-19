@@ -1,58 +1,34 @@
-import warnings
 import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import peak_finding, pdf_to_odf
-from dipy.utils.spheremakers import sphere_vf_from
-from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
-from dipy.reconst.qgrid import NonParametricCartesian
+from scipy.fftpack import fftn, fftshift
+from .odf import OdfModel, OdfFit
 
-
-class DiffusionSpectrum(NonParametricCartesian):
+class DiffusionSpectrumModel(OdfModel):
     ''' Calculate the PDF and ODF using Diffusion Spectrum Imaging
     
     Based on the paper "Mapping Complex Tissue Architecture With Diffusion Spectrum Magnetic Resonance Imaging"
     by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM 2005
         
     '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362',
-                mask=None,
-                half_sphere_grads=False,
-                auto=True,
-                save_odfs=False):
+    def __init__(self, bvals, gradients, odf_sphere='symmetric362',
+                 deconv=False, half_sphere_grads=False):
         '''
         Parameters
         -----------
-        data : array, shape(X,Y,Z,D), or (X,D)
         bvals : array, shape (N,)
         gradients : array, shape (N,3) also known as bvecs        
-        odf_sphere : str or tuple, optional
-            If str, then load sphere of given name using ``get_sphere``.
-            If tuple, gives (vertices, faces) for sphere.
-        filter : array, shape(len(vertices),) 
-            default is None (using standard hanning filter for DSI)
+        odf_sphere : tuple, (verts, faces, edges)
+        deconv : bool, use deconvolution
         half_sphere_grad : boolean Default(False) 
             in order to create the q-space we use the bvals and gradients. 
             If the gradients are only one hemisphere then 
-        auto : boolean, default True 
-            if True then the processing of all voxels will start automatically 
-            with the class constructor,if False then you will have to call .fit()
-            in order to do the heavy duty processing for every voxel
-        save_odfs : boolean, default False
-            save odfs, which is memory expensive  
-
         See also
         ----------
         dipy.reconst.dti.Tensor, dipy.reconst.gqi.GeneralizedQSampling
         '''
-        
-        super(DiffusionSpectrum, self).__init__(data,
-                                                bvals,
-                                                gradients,
-                                                odf_sphere,
-                                                mask,
-                                                half_sphere_grads,
-                                                auto,save_odfs)
-        
+        self.bvals=bvals
+        self.gradients=gradients
         #3d volume for Sq
         self.sz=16
         #necessary shifting for centering
@@ -61,12 +37,12 @@ class DiffusionSpectrum(NonParametricCartesian):
         self.filter_width=32.                     
         #odf collecting radius
         self.radius=np.arange(2.1,6,.2)
-        self.update()
-            
-        if auto:
-            self.fit()        
+        #odf sphere
+        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
+ 
+        self.create_qspace()
     
-    def update(self):
+    def create_qspace(self):
         
         #create the q-table from bvecs and bvals        
         bv=self.bvals
@@ -89,7 +65,10 @@ class DiffusionSpectrum(NonParametricCartesian):
         self.iso_thr=.4        
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()    
-    
+   
+    def evaluate_odf(self,s):
+        return self.pdf_odf(self.pdf(s))
+
     def pdf(self,s):
         values=s*self.filter
         #create the signal volume    
@@ -135,8 +114,6 @@ class DiffusionSpectrum(NonParametricCartesian):
         pdf_to_odf(odf,PrIs, self.radius,self.odfn,self.radiusn) 
         return odf
     
-    def odfs(self):
-        return self.ODF
     
     def precompute_interp_coords(self):
         Xs=[]
@@ -149,7 +126,7 @@ class DiffusionSpectrum(NonParametricCartesian):
 
 
 def project_hemisph_bvecs(bvals,bvecs):
-    """ project any near identical bvecs to the other hemisphere
+    """ Project any near identical bvecs to the other hemisphere
     
     Notes
     -------
@@ -177,3 +154,6 @@ def project_hemisph_bvecs(bvals,bvecs):
         bvecs2[1+j]=-bvecs2[1+j]    
     return bvecs2,pairs
 
+if __name__ == '__main__':
+
+    pass

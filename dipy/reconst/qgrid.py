@@ -1,6 +1,9 @@
 import numpy as np
 from dipy.reconst.recspeed import peak_finding
 from dipy.utils.spheremakers import sphere_vf_from
+from .odf import OdfModel, OdfFit
+
+
 
 
 class NonParametricCartesian(object):

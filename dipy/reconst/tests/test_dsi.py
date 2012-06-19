@@ -2,16 +2,13 @@ import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-import nibabel as nib
-from dipy.viz import fvtk
-from dipy.data import get_data, get_sphere
+from dipy.data import get_data
 from dipy.reconst.recspeed import peak_finding
-from dipy.reconst.gqi import GeneralizedQSampling
-from dipy.reconst.dsi import DiffusionSpectrum
+from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.sims.voxel import SticksAndBall
-from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
-from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sphere 
+from scipy.fftpack import fftn, fftshift
 from scipy.ndimage import map_coordinates
+from dipy.core.geometry import reduce_antipodal, unique_edges
 from dipy.utils.spheremakers import sphere_vf_from
 
 
@@ -58,7 +55,8 @@ def standard_dsi_algorithm(S,bvals,bvecs):
     Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq),(sz,sz,sz)))))
 
     #vertices, edges, faces  = create_unit_sphere(5)    
-    vertices, faces = sphere_vf_from('symmetric362')           
+    #vertices, faces = sphere_vf_from('symmetric362')           
+    vertices, faces = sphere_vf_from('symmetric724')           
     odf = np.zeros(len(vertices))
         
     for m in range(len(vertices)):
@@ -76,18 +74,30 @@ def standard_dsi_algorithm(S,bvals,bvecs):
     return Pr,odf,peaks
 
 def test_dsi():
- 
+
+    #load odf sphere
+    vertices,faces = sphere_vf_from('symmetric724')
+    edges = unique_edges(faces)
+    half_vertices,half_edges,half_faces=reduce_antipodal(vertices,faces)
+
+    #load bvals and gradients
     btable=np.loadtxt(get_data('dsi515btable'))    
     bvals=btable[:,0]
     bvecs=btable[:,1:]        
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)    
     pdf0,odf0,peaks0=standard_dsi_algorithm(S,bvals,bvecs)    
     S2=S.copy()
-    S2=S2.reshape(1,len(S))    
-    ds=DiffusionSpectrum(S2,bvals,bvecs)    
+    S2=S2.reshape(1,len(S)) 
+    
+    odf_sphere=(vertices,edges,faces)
+    ds=DiffusionSpectrumModel( bvals, bvecs, odf_sphere)    
+    dsfit=ds.fit(data)
+
+    return dsfit
     assert_almost_equal(np.sum(ds.pdf(S)-pdf0),0)
     assert_almost_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
-    
+
+    """
     #compare gfa
     psi=odf0/odf0.max()
     numer=len(psi)*np.sum((psi-np.mean(psi))**2)
@@ -133,72 +143,8 @@ def test_dsi():
     QA=ds.qa()
     assert_equal(np.sum(QA>0),0)
     
-    
+    """
 
-    
 if __name__ == '__main__':
 
-    #fname='/home/eg309/Data/project01_dsi/connectome_0001/tp1/RAWDATA/OUT/mr000001.nii.gz'
-    #fname='/home/eg309/Data/project02_dsi/PH0005/tp1/RAWDATA/OUT/PH0005_1.MR.5_100.ima.nii.gz'
-    fname='/home/eg309/Data/project03_dsi/tp2/RAWDATA/OUT/mr000001.nii.gz'
-    
-    
-    import nibabel as nib
-    from dipy.reconst.dsi import DiffusionSpectrum
-    from dipy.reconst.dti import Tensor
-    from dipy.data import get_data
-    
-    btable=np.loadtxt(get_data('dsi515btable'))
-    bvals=btable[:,0]
-    bvecs=btable[:,1:]
-    img=nib.load(fname)
-    data=img.get_data()
-    print data.shape   
-    
-    mask=data[:,:,:,0]>50
-    #D=data[20:90,20:90,18:22]
-    #D=data[40:44,40:44,18:22]    
-    #del data
-    D=data
-    
-    from time import time
-    
-    t0=time()    
-    ds=DiffusionSpectrum(D,bvals,bvecs,mask=mask)
-    t1=time()
-    print t1-t0,' secs'
-    
-    GFA=ds.gfa()
-    
-    t2=time()
-    ten=Tensor(D,bvals,bvecs,mask=mask)
-    t3=time()
-    print t3-t2,' secs'
-    
-    FA=ten.fa()
-    
-    from dipy.tracking.propagation import EuDX
-    
-    IN=ds.ind()
-    
-    eu=EuDX(ten.fa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
-    tracks=[e for e in eu]
-    
-    #FAX=np.zeros(IN.shape)
-    #for i in range(FAX.shape[-1]):
-    #    FAX[:,:,:,i]=GFA
-    
-    eu2=EuDX(ds.gfa(),IN[:,:,:,0],seeds=10000,a_low=0.2)
-    tracks2=[e for e in eu2]
-    
-    """
-    from dipy.viz import fvtk
-    r=fvtk.ren()
-    fvtk.add(r,fvtk.line(tracks,fvtk.red))
-    fvtk.add(r,fvtk.line(tracks2,fvtk.green))
-    fvtk.show(r)
-    """
-
-
-
-
+    dsfit=test_dsi()

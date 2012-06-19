@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 from .recspeed import local_maxima, _filter_peaks
-
+from dipy.core.geometry import unique_edges
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
 
 class OdfFit(object):
@@ -61,8 +61,11 @@ class OdfModel(object):
             raise ValueError("Edges should be an (m, 2) array with a list of "
                              "neighboring vertices")
         self._odf_vertices = vertices
-        self._odf_edges = edges
-        self._odf_faces = faces
+        if edges is None and faces is not None:
+            self._odf_edges = unique_edges(faces)
+        else:
+            self._odf_edges = edges
+            self._odf_faces = faces
         self._distance_matrix = abs(vertices.dot(vertices.T))
 
 
