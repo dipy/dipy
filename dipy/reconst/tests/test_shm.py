@@ -64,54 +64,6 @@ def test_real_sph_harm():
     dd = np.ones((1,1,1,6))
     assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 
-peak_values = np.array([1, .9, .8, .7, .6, .2, .1])
-peak_points = np.array([[1., 0., 0.],
-                        [0., .9, .1],
-                        [0., 1., 0.],
-                        [.9, .1, 0.],
-                        [0., 0., 1.],
-                        [1., 1., 0.],
-                        [0., 1., 1.]])
-norms = np.sqrt((peak_points*peak_points).sum(-1))
-peak_points = peak_points/norms[:, None]
-
-"""
-def test_robust_peaks():
-    good_peaks = _robust_peaks(peak_points, peak_values, .5, .9)
-    assert_array_equal(good_peaks, peak_points[[0,1,4]])
-"""
-
-from dipy.reconst.recspeed import _filter_peaks
-def test_filter_peaks():
-    copy_peak_values = peak_values.copy()
-    ind = np.arange(len(peak_values), dtype='int')
-    sep_mat = np.dot(peak_points, peak_points.T)
-    fvalues, find = _filter_peaks(peak_values, ind, sep_mat, .5, .9)
-    assert_array_equal(find, [0,1,4])
-    assert_array_equal(fvalues, [1., .9, .6])
-    assert_array_equal(ind, np.arange(len(peak_values), dtype='int'))
-    assert_array_equal(peak_values, copy_peak_values)
-
-    v, e, f = create_half_unit_sphere(3)
-    sep_mat = np.abs(np.dot(v, v.T))
-    values = np.arange(len(v), 0., -1.)
-    ind = np.arange(len(values), dtype='int')
-    fvalues, find = _filter_peaks(values, ind, sep_mat, 0., 1.)
-    assert_array_equal(find, ind)
-    assert_array_equal(fvalues, values)
-    fvalues, find = _filter_peaks(values, ind, sep_mat, 0., 0.)
-    assert_array_equal(find, [0])
-    assert_array_equal(fvalues, [len(values)])
-    fvalues, find = _filter_peaks(values, ind, sep_mat, .5, 1.)
-    assert_array_equal(fvalues, values[values >= .5*values[0]])
-    assert_array_equal(find, ind[values >= .5*values[0]])
-    values = values[1:]
-    ind = ind[1:]
-    sep_mat = sep_mat[1:, 1:]
-    fvalues, find = _filter_peaks(values, ind, sep_mat, .5, 1.)
-    assert_array_equal(fvalues, values[values >= .5*values[0]])
-    assert_array_equal(find, ind[values >= .5*values[0]])
-
 def test_closest_peak():
     prev = np.array([1, -.9, 0])
     prev = prev/np.sqrt(np.dot(prev, prev))

@@ -75,9 +75,9 @@ cdef float wght(int i, float r) nogil:
         return 1.-r
 
 @cython.wraparound(False)
-def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1] odf_value,
-                  cnp.ndarray[cnp.int_t, ndim=1] odf_ind,
-                  cnp.ndarray[cnp.float_t, ndim=2] sep_matrix,
+def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] odf_value,
+                  cnp.ndarray[cnp.int_t, ndim=1, mode='c'] odf_ind,
+                  cnp.ndarray[cnp.float_t, ndim=2, mode='c'] sep_matrix,
                   float relative_threshold, float isolation):
     """Filters peaks based on odf_value and angular distance
 
@@ -90,8 +90,8 @@ def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1] odf_value,
         int i, j, pass_all
         int count = 1
         float threshold = relative_threshold * odf_value[0]
-        cnp.ndarray[cnp.int_t, ndim=1] find = odf_ind.copy()
-        cnp.ndarray[cnp.float_t, ndim=1] fvalue = odf_value.copy()
+        cnp.ndarray[cnp.int_t, ndim=1, mode='c'] find = odf_ind.copy()
+        cnp.ndarray[cnp.float_t, ndim=1, mode='c'] fvalue = odf_value.copy()
 
     for i from 1 <= i < len(odf_value):
         if odf_value[i] < threshold:
@@ -152,7 +152,8 @@ def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
-def peaks(odf, edges):
+def local_maxima(cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] codf,
+                 cnp.ndarray[cnp.uint16_t, ndim=2, mode='c'] cedges):
     """Given a function, odf, and neighbor pairs, edges, finds the local maxima
 
     If a function is evaluated on some set of points where each pair of
@@ -191,9 +192,8 @@ def peaks(odf, edges):
     """
 
     cdef:
-        cnp.ndarray[cnp.uint16_t, ndim=2] cedges = np.ascontiguousarray(edges)
-        cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
-        cnp.ndarray[cnp.uint8_t, ndim=1] cpeak = np.ones(len(odf), 'uint8')
+        cnp.ndarray[cnp.uint8_t, ndim=1, mode='c'] cpeak = np.ones(len(codf),
+                                                                   'uint8')
         int i=0
         int lenedges = len(cedges)
         int find0, find1
@@ -210,10 +210,11 @@ def peaks(odf, edges):
             cpeak[find1] = 0
         elif odf0 < odf1:
             cpeak[find0] = 0
+        elif (odf0 != odf0) or (odf1 != odf1):
+            raise ValueError("odf cannot have nans")
 
-    cpeak = np.array(cpeak)
     peakidx = cpeak.nonzero()[0]
-    peakvalues = odf[peakidx]
+    peakvalues = codf[peakidx]
     order = peakvalues.argsort()[::-1]
     return peakvalues[order], peakidx[order]
 

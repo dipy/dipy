@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from .recspeed import peaks, _filter_peaks
+from .recspeed import local_maxima, _filter_peaks
 
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
 
@@ -69,8 +69,9 @@ class OdfModel(object):
         raise NotImplementedError()
 
     def get_directions(self, sig):
+        """Estimate of fiber directions using model"""
         odf = self.evaluate_odf(sig)
-        pk, ind = peaks(odf, self._odf_edges)
+        pk, ind = local_maxima(odf, self._odf_edges)
         pk, ind = _filter_peaks(pk, ind, self._distance_matrix,
                                 self.relative_peak_threshold,
                                 self._cos_distance_threshold)
