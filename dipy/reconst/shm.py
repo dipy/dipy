@@ -519,7 +519,7 @@ class ClosestPeakSelector(object):
 
         """
         vox_data = self._interpolator[location]
-        peak_points = self._model.get_peaks(vox_data)
+        peak_points = self._model.get_directions(vox_data)
         return _closest_peak(peak_points, prev_step, self.dot_limit)
 
 def _closest_peak(peak_points, prev_step, dot_limit):
@@ -565,7 +565,7 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
             peak_points = self._peaks[hash]
         elif hash == -1:
             vox_data = self._data[vox_loc]
-            peak_points = self._model.get_peaks(vox_data)
+            peak_points = self._model.get_directions(vox_data)
             self._lookup[vox_loc] = len(self._peaks)
             self._peaks.append(peak_points)
         else:

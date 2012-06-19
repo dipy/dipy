@@ -65,6 +65,17 @@ def test_real_sph_harm():
     assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 
 def test_closest_peak():
+    peak_values = np.array([1, .9, .8, .7, .6, .2, .1])
+    peak_points = np.array([[1., 0., 0.],
+                            [0., .9, .1],
+                            [0., 1., 0.],
+                            [.9, .1, 0.],
+                            [0., 0., 1.],
+                            [1., 1., 0.],
+                            [0., 1., 1.]])
+    norms = np.sqrt((peak_points*peak_points).sum(-1))
+    peak_points = peak_points/norms[:, None]
+
     prev = np.array([1, -.9, 0])
     prev = prev/np.sqrt(np.dot(prev, prev))
     cp = _closest_peak(peak_points, prev, .5)
