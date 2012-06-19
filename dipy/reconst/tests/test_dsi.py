@@ -92,14 +92,18 @@ def test_dsi():
     odf_sphere=(vertices,faces)
     ds=DiffusionSpectrumModel( bvals, bvecs, odf_sphere)    
     dsfit=ds.fit(S)
+    assert_equal((dsfit.peak_values>0).sum(),3)
+    ds.relative_peak_threshold = 0.5
+    dsfit = ds.fit(S)
+    assert_equal((dsfit.peak_values>0).sum(),2)
 
     #return dsfit
     #assert_almost_equal(np.sum(ds.pdf(S)-pdf0),0)
     #assert_almost_equal(np.sum(ds.odf(ds.pdf(S))-odf0),0)
-    print peaks0
-    1./0
+    #print peaks0
+    #1./0
 
-    return dsfit
+    #    return ds,dsfit
 
     """
     #compare gfa
@@ -151,4 +155,5 @@ def test_dsi():
 
 if __name__ == '__main__':
 
-    dsfit=test_dsi()
+    #ds,dsfit=test_dsi()
+    pass
