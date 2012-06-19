@@ -109,7 +109,7 @@ class OdfModel(object):
                 odf_array[i] = odf
 
             gfa_array[i] = gfa(odf)
-            pk, ind = peaks(odf, self.odf_edges)
+            pk, ind = local_maxima(odf, self.odf_edges)
             pk, ind = _filter_peaks(pk, ind,
                                     self._distance_matrix,
                                     self.relative_peak_threshold,

@@ -57,7 +57,7 @@ def test_OdfModelfit():
 
 def test_OdfModelgetpeaks():
     model = SimpleOdfModel()
-    peaks = model.get_peaks(None)
+    peaks = model.get_directions(None)
     assert_array_equal(peaks, model.odf_vertices[[53]])
 
 
