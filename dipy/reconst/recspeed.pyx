@@ -98,7 +98,7 @@ def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] odf_value,
             break
         pass_all = 1
         for j from 0 <= j < count:
-            if sep_matrix[i, j] >= isolation:
+            if sep_matrix[odf_ind[i], find[j]] >= isolation:
                 pass_all = 0
                 break
         if pass_all:
