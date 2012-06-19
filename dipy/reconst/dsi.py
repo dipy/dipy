@@ -1,8 +1,8 @@
 import numpy as np
 from scipy.ndimage import map_coordinates
-from dipy.reconst.recspeed import peak_finding, pdf_to_odf
+from dipy.reconst.recspeed import pdf_to_odf
 from scipy.fftpack import fftn, fftshift
-from .odf import OdfModel, OdfFit
+from .odf import OdfModel
 from dipy.utils.spheremakers import sphere_vf_from
 
 class DiffusionSpectrumModel(OdfModel):
@@ -12,7 +12,7 @@ class DiffusionSpectrumModel(OdfModel):
     by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM 2005
         
     '''
-    def __init__(self, bvals, gradients, odf_sphere='symmetric362',
+    def __init__(self, bvals, gradients, odf_sphere='symmetric642',
                  deconv=False, half_sphere_grads=False):
         '''
         Parameters
@@ -112,7 +112,6 @@ class DiffusionSpectrumModel(OdfModel):
                 odf[m]=odf[m]+PrI[i]*self.radius[i]**2
         """
         PrIs=map_coordinates(Pr,self.Xs,order=1)        
-        #print PrIs.shape
         """ in pdf_to_odf an optimized version of the function below
         for m in range(self.odfn):
             for i in range(self.radiusn):
@@ -137,8 +136,7 @@ def project_hemisph_bvecs(bvals,bvecs):
     
     Notes
     -------
-    Useful when working with dsi data because the full q-space needs to be mapped
-    in both hemi-spheres.
+    Useful when working with dsi data because the full q-space needs to be mapped in both hemi-spheres.
     """
     bvs=bvals[1:]
     bvcs=bvecs[1:]

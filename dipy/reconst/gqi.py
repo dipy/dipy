@@ -2,19 +2,10 @@
 import numpy as np
 import dipy.reconst.recspeed as rp
 from dipy.utils.spheremakers import sphere_vf_from
-from dipy.reconst.qgrid import NonParametricCartesian
+from .odf import OdfModel
 
-
-class GeneralizedQSampling(NonParametricCartesian):
+class GeneralizedQSampling(OdfModel):
     """ Implements Generalized Q-Sampling
-
-    Generates a model-free description for every voxel that can
-    be used from simple to very complicated configurations like
-    quintuple crossings if your datasets support them.
-
-    You can use this class for every kind of DWI image but it will
-    perform much better when you have a balanced sampling scheme.
-
     Implements equation [9] from Generalized Q-Sampling as
     described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
     Generalized Q-Sampling Imaging. IEEE TMI, 2010.
@@ -39,19 +30,18 @@ class GeneralizedQSampling(NonParametricCartesian):
     Notes
     -----
     In order to reconstruct the spin distribution function a nice symmetric
-    evenly distributed sphere is provided using 362 or 642 points. This is
+    evenly distributed sphere is provided using 400+ points. This is
     usually sufficient for most of the datasets.
     
-    GQI is performing better with specific grid-like acquisition schemes. The table
-    used in the scanner for 101 directions + 1 b0 volume is provided in 
+    GQI is performing better with specific grid-like acquisition schemes. The table used in the scanner for 101 directions + 1 b0 volume is provided in 
     dipy.data.get_data('gqi_vectors').
 
     See also
     --------
     dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
     """
-    def __init__(self, data, bvals, gradients,
-                 Lambda=1.2, odf_sphere='symmetric362', mask=None,squared=False,auto=True,save_odfs=False):
+    def __init__(self, bvals, gradients, Lambda=1.2, 
+                 odf_sphere='symmetric642',squared=False):
         r""" Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
         quintuple crossings if your datasets support them.
@@ -63,24 +53,21 @@ class GeneralizedQSampling(NonParametricCartesian):
         described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
         Generalized Q-Sampling Imaging. IEEE TMI, 2010.
 
+        It also implement the radially squared version knowna as GQI2 as
+        described in Garyfallidis et al. "Towards an accurate brain
+        tractography", PhD thesis, Cambridge University, 2012.
+
         Parameters
         -----------
-        data: array, shape(X,Y,Z,D)
         bvals: array, shape (N,)
         gradients: array, shape (N,3) also known as bvecs
         Lambda: float, optional
             smoothing parameter - diffusion sampling length
         odf_sphere : None or str or tuple, optional
             input that will result in vertex, face arrays for a sphere.
-        mask : None or ndarray, optional
         squared : boolean, True or False
-            If True it will calculate the odf using the $L^2$ weighting.
-        auto : boolean, default True 
-            if True then the processing of all voxels will start automatically 
-            with the class constructor,if False then you will have to call .fit()
-            in order to do the heavy duty processing for every voxel
-        save_odfs : boolean, default False
-            save odfs, which is memory expensive
+            If True it will calculate the odf using the $L^2$ weighting. Which
+            provides higher angular accuracy.
 
         Key Properties
         ---------------
@@ -109,13 +96,6 @@ class GeneralizedQSampling(NonParametricCartesian):
         self.data=data
         self.save_odfs=save_odfs
         '''
-        super(GeneralizedQSampling, self).__init__(data,
-                                                bvals,
-                                                gradients,
-                                                odf_sphere,
-                                                mask,
-                                                half_sphere_grads=False,
-                                                auto=auto,save_odfs=save_odfs)
         
         self.squared=squared
         
@@ -129,31 +109,19 @@ class GeneralizedQSampling(NonParametricCartesian):
         gradients[np.isnan(gradients)]= 0.
         gradsT = gradients.T
         b_vector=gradsT*tmp # element-wise also known as the Hadamard product
-        #q2odf_params=np.sinc(np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi)
                 
         if squared==True:
             vf=np.vectorize(self.squared_radial_component)
+            #which implements
             #def H(x):
             #    res=(2*x*np.cos(x) + (x**2-2)*np.sin(x))/x**3
             #    res[np.isnan(res)]=1/3.
-            #    return res
-            
+            #    return res            
             self.input=np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi
             self.q2odf_params=np.real(vf(np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi))
-            #self.q2odf_params=np.real(H(1*np.dot(b_vector.T, odf_vertices.T) * Lambda/np.pi))
         else:
             self.q2odf_params=np.real(np.sinc(np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi))
                 
-        #q2odf_params[np.isnan(q2odf_params)]= 1.
-        #define total mask 
-        #tot_mask = (mask > 0) & (data[...,0] > thresh)
-        self.peak_thr=.7
-        self.iso_thr=.4        
-        
-        if auto:
-            self.fit()
-
-
     def squared_radial_component(self,x):
         """ implementing equation (8) in the referenced paper by Yeh et al. 2010
         """
@@ -174,7 +142,7 @@ class GeneralizedQSampling(NonParametricCartesian):
         """
         return self.IN
 
-    def odf(self,s):
+    def evaluate_odf(self,s):
         """ spin density orientation distribution function
          
         Parameters
@@ -188,11 +156,7 @@ class GeneralizedQSampling(NonParametricCartesian):
             spin density orientation distribution function        
 
         """
-        
         return np.dot(s,self.q2odf_params)
-
-    def odfs(self):
-        return self.ODF
 
     def npa(self,s,width=5):
         """ non-parametric anisotropy
