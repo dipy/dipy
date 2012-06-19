@@ -66,26 +66,33 @@ def test_filter_peaks():
     # The setup
     peak_values = np.array([1, .9, .8, .7, .6, .2, .1])
     peak_points = np.array([[1., 0., 0.],
+                            [0., 0., 1.],
                             [0., .9, .1],
+                            [0., 0., 1.],
                             [0., 1., 0.],
+                            [0., 0., 1.],
                             [.9, .1, 0.],
                             [0., 0., 1.],
+                            [0., 0., 1.],
+                            [0., 0., 1.],
                             [1., 1., 0.],
+                            [0., 0., 1.],
                             [0., 1., 1.]])
     norms = np.sqrt((peak_points*peak_points).sum(-1))
     peak_points = peak_points/norms[:, None]
 
     # Filter above peaks down to thre peaks
     copy_peak_values = peak_values.copy()
-    ind = np.arange(len(peak_values), dtype='int')
+    ind = np.arange(0, len(peak_points), 2, dtype='int')
+    copy_ind = ind.copy()
+    print ind
     sep_mat = abs(np.dot(peak_points, peak_points.T))
     fvalues, find = _filter_peaks(peak_values, ind, sep_mat, .5, .9)
-    assert_array_equal(find, [0,1,4])
+    assert_array_equal(find, [0,2,8])
     assert_array_equal(fvalues, [1., .9, .6])
     # Check that the arguments have not been modified by _filter_peaks
-    assert_array_equal(ind, np.arange(len(peak_values), dtype='int'))
+    assert_array_equal(ind, copy_ind)
     assert_array_equal(peak_values, copy_peak_values)
-
     # Test on a larger set of peaks
     v, faces=get_sphere('symmetric724')
     sep_mat = np.dot(v, v.T)
