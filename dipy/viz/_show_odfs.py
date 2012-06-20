@@ -61,6 +61,10 @@ def show_odfs(odfs, vertices_faces, image=None, colormap='jet',
     vertices, faces = sphere_vf_from(vertices_faces)
 
     odfs = np.asarray(odfs)
+    if odfs.ndim != 4:
+        raise ValueError("ODFs must by an (X,Y,Z,M) array. " +
+                         "Has shape " + str(odfs.shape))
+
     grid_shape = np.array(odfs.shape[:3])
     faces = np.asarray(faces, dtype=int)
 
@@ -74,9 +78,9 @@ def show_odfs(odfs, vertices_faces, image=None, colormap='jet',
             m /= abs(m).max()
 
         if radial_scale:
-            xyz = verts.T * m
+            xyz = vertices.T * m
         else:
-            xyz = verts.T.copy()
+            xyz = vertices.T.copy()
 
         xyz += scale * (ijk - grid_shape / 2.)[:, None]
 
