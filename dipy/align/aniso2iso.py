@@ -25,6 +25,8 @@ def resample(data,affine,zooms,new_zooms,order=1):
     --------
     data2 : array, shape (I,J,K) or (I,J,K,N) 
         datasets resampled into isotropic voxel size
+    affine2 : array, shape (4,4)
+        new affine for the resampled image
         
     Notes
     ------

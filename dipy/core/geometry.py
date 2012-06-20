@@ -856,5 +856,27 @@ def vec2vec_rotmat(u,v):
         return np.eye(3)
     return Rp
    
-    
+def unique_edges(faces):
+    edges = set()
+    for a, b, c in faces:
+        edges.add(frozenset((a, b)))
+        edges.add(frozenset((a, c)))
+        edges.add(frozenset((b, c)))
+    edges = [tuple(e) for e in edges]
+    return np.array(edges)
+
+def unique_faces(faces):
+    faces = set(frozenset(f) for f in faces)
+    faces = [tuple(f) for f in faces]
+    return np.array(faces)
+
+def reduce_antipodal(points, faces, tol=0):
+    # Check that points have expected symmetry
+    n = len(points) // 2
+    if not np.allclose(points[:n], -points[n:], tol):
+        raise ValueError("points don't have the expected symmetry")
+    new_points = points[:n]
+    new_faces = unique_faces(faces % n)
+    new_edges = unique_edges(new_faces)
+    return new_points, new_edges, new_faces
     

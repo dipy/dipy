@@ -14,6 +14,7 @@ THIS_DIR = dirname(__file__)
 SPHERE_FILES = {
     'symmetric362': pjoin(THIS_DIR, 'evenly_distributed_sphere_362.npz'),
     'symmetric642': pjoin(THIS_DIR, 'evenly_distributed_sphere_642.npz'),
+    'symmetric724': pjoin(THIS_DIR, 'evenly_distributed_sphere_724.npz')
 }
 
 class DataError(Exception):

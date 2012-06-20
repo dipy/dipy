@@ -94,7 +94,50 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
     '''
     return offset(<long*>indices.data,<long*>strides.data,lenind, typesize)
 
-cdef  void _trilinear_interpolation(double *X, double *W, long *IN) nogil:
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,\
+                                   cnp.ndarray[double, ndim=2] points,\
+                                   cnp.ndarray[long, ndim=1] data_strides,\
+                                   long len_points,\
+                                   cnp.ndarray[double, ndim=1] result):
+    ''' trilinear interpolation (isotropic voxel size)
+    
+    Has similar behavior with map_coordinates from scipy.ndimage
+    
+    Parameters
+    ----------
+    data: array, shape (X,Y,Z), numpy.float
+    points: array, shape(N,3), numpy.float
+    strides: data.strides as one-dimensional array of dtype i8
+    len_points: long, number of points to interpolate
+    result: array, shape(N), numpy.float of interpolated values from A at points 
+        
+    Returns
+    --------
+    result: feeds the result, therefore the result parameter should be initialized before
+        this function is called        
+    '''
+    cdef:
+        double w[8],values[24]
+        long index[24],off,i,j
+        double *ds=<double *>data.data       
+        double *ps=<double *>points.data
+        double *rs=<double *>result.data
+        long *strides=<long *>data_strides.data                
+    
+    with nogil:        
+        for i in range(len_points):                        
+            _trilinear_interpolation_iso(&ps[i*3],<double *>w,<long *>index)
+            rs[i]=0
+            for j in range(8):
+                weight=w[j]   
+                off=offset(&index[j*3],<long *>strides,3,8)                
+                value=ds[off]
+                rs[i]+=weight*value                    
+    return
+
+cdef  void _trilinear_interpolation_iso(double *X, double *W, long *IN) nogil:
 
     ''' interpolate in 3d volumes given point X
     Returns
@@ -232,7 +275,7 @@ cdef long _propagation_direction(double *point,double* dx,double* qa,\
     #calculate qa & ind of each of the 8 neighboring voxels
     #to do that we use trilinear interpolation and return the weights 
     #and the indices for the weights i.e. xyz in qa[x,y,z]
-    _trilinear_interpolation(point,<double *>w,<long *>index)
+    _trilinear_interpolation_iso(point,<double *>w,<long *>index)
     #check if you are outside of the volume
     for i from 0<=i<3:
         new_direction[i]=0
@@ -306,7 +349,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
                     cnp.ndarray[double,ndim=4] qa,\
                     cnp.ndarray[double,ndim=4] ind,\
                     cnp.ndarray[double,ndim=2] odf_vertices,\
-                    double qa_thr,double ang_thr,double step_sz,double total_weight):
+                    double qa_thr,double ang_thr,double step_sz,double total_weight,long max_points):
     '''
     Parameters
     ------------
@@ -352,7 +395,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
                                    ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
             break            
-        if cnt>1000:
+        if cnt>max_points:
             break       
         #update the track
         for i from 0<=i<3:
@@ -382,7 +425,7 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
                                    ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
             break
-        if cnt>1000:
+        if cnt>max_points:
             break
         #update the track
         for i from 0<=i<3:

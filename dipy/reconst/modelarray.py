@@ -22,7 +22,6 @@ class ModelArray(object):
         Gives the shape of the ModelArray
 
         """
-
         return self.model_params.shape[:-1]
 
     def _setshape(self, shape):
@@ -56,7 +55,7 @@ class ModelArray(object):
     def __getitem__(self, index):
         """
         Returns part of the model array
-
+        
         """
         if type(index) is not tuple:
             index = (index,)

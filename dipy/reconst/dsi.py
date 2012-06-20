@@ -4,8 +4,10 @@ from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import peak_finding, pdf_to_odf
 from dipy.utils.spheremakers import sphere_vf_from
 from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
+from dipy.reconst.qgrid import NonParametricCartesian
 
-class DiffusionSpectrum(object):
+
+class DiffusionSpectrum(NonParametricCartesian):
     ''' Calculate the PDF and ODF using Diffusion Spectrum Imaging
     
     Based on the paper "Mapping Complex Tissue Architecture With Diffusion Spectrum Magnetic Resonance Imaging"
@@ -43,35 +45,20 @@ class DiffusionSpectrum(object):
         dipy.reconst.dti.Tensor, dipy.reconst.gqi.GeneralizedQSampling
         '''
         
-        #read the vertices and faces for the odf sphere
-        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
-        self.odf_vertices=odf_vertices
-        self.odf_faces=odf_faces
-        self.odfn=len(self.odf_vertices)
-        self.save_odfs=save_odfs
+        super(DiffusionSpectrum, self).__init__(data,
+                                                bvals,
+                                                gradients,
+                                                odf_sphere,
+                                                mask,
+                                                half_sphere_grads,
+                                                auto,save_odfs)
         
-        #check if bvectors are provided only on a hemisphere
-        if half_sphere_grads==True:
-            bvals=np.append(bvals.copy(),bvals[1:].copy())
-            gradients=np.append(gradients.copy(),-gradients[1:].copy(),axis=0)
-            data=np.append(data.copy(),data[...,1:].copy(),axis=-1)
-        
-        #load bvals and bvecs
-        self.bvals=bvals
-        gradients[np.isnan(gradients)] = 0.
-        self.gradients=gradients
-        #save number of total diffusion volumes
-        self.dn=data.shape[-1]        
-        self.data=data
-        self.datashape=data.shape #initial shape  
-        self.mask=mask                     
         #3d volume for Sq
         self.sz=16
         #necessary shifting for centering
         self.origin=8
         #hanning filter width
-        self.filter_width=32.
-                     
+        self.filter_width=32.                     
         #odf collecting radius
         self.radius=np.arange(2.1,6,.2)
         self.update()
@@ -98,131 +85,10 @@ class DiffusionSpectrum(object):
         self.q=qtable+self.origin
         self.q=self.q.astype('i8')
         #peak threshold
-        self.peak_thr=.4
-        self.iso_thr=.7        
+        self.peak_thr=.7
+        self.iso_thr=.4        
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()    
-        
-        
-    def fit(self):
-        #memory allocations for 4D volumes 
-        if len(self.datashape)==4:
-            x,y,z,g=self.datashape        
-            S=self.data.reshape(x*y*z,g)
-            GFA=np.zeros((x*y*z))
-            IN=np.zeros((x*y*z,5))
-            NFA=np.zeros((x*y*z,5))
-            QA=np.zeros((x*y*z,5))
-            PK=np.zeros((x*y*z,5))
-            if self.save_odfs:
-                ODF=np.zeros((x*y*z,self.odfn))            
-            if self.mask != None:
-                if self.mask.shape[:3]==self.datashape[:3]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(self.datashape[:3])
-                msk=self.mask.ravel().copy()
-        #memory allocations for a series of voxels       
-        if len(self.datashape)==2:
-            x,g= self.datashape
-            S=self.data
-            GFA=np.zeros(x)
-            IN=np.zeros((x,5))
-            NFA=np.zeros((x,5))
-            QA=np.zeros((x,5))
-            PK=np.zeros((x,5))
-            if self.save_odfs:
-                ODF=np.zeros((x,self.odfn))
-            if self.mask != None:
-                if mask.shape[0]==self.datashape[0]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(self.datashape[:1])
-                msk=self.mask.ravel().copy()
-        #find the global normalization parameter 
-        #useful for quantitative anisotropy
-        glob_norm_param = 0.
-        #loop over all voxels
-        for (i,s) in enumerate(S):
-            if msk[i]>0:
-                #calculate the diffusion propagator or spectrum                   
-                Pr=self.pdf(s)           
-                #calculate the orientation distribution function        
-                odf=self.odf(Pr)
-                if self.save_odfs:
-                    ODF[i]=odf
-                #normalization for QA
-                glob_norm_param=max(np.max(odf),glob_norm_param)
-                #calculate the generalized fractional anisotropy
-                GFA[i]=self.std_over_rms(odf)
-                #find peaks
-                peaks,inds=peak_finding(odf,self.odf_faces)
-                #remove small peaks
-                l=self.reduce_peaks(peaks,odf.min())
-                #print '#',l,peaks[:l]         
-                if l==0:
-                    IN[i][l] = inds[l]
-                    NFA[i][l] = GFA[i]
-                    QA[i][l] = peaks[l]-np.min(odf)
-                    PK[i][l] = peaks[l]                         
-                if l>0 and l<5:
-                    IN[i][:l] = inds[:l]
-                    NFA[i][:l] = GFA[i]
-                    QA[i][:l] = peaks[:l]-np.min(odf)
-                    PK[i][:l] = peaks[:l]
-                
-                
-                """
-                if len(peaks)>0:
-                    ismallp=np.where(peaks/peaks.min()<self.peak_thr)                                                                        
-                    l=ismallp[0][0]
-                    
-                    if l<5 and l>0:                                        
-                        IN[i][:l] = inds[:l]
-                        NFA[i][:l] = GFA[i]
-                        QA[i][:l] = peaks[:l]-np.min(odf)
-                    if l==0:
-                        IN[i][l] = inds[l]
-                        NFA[i][l] = GFA[i]
-                        QA[i][l] = peaks[l]-np.min(odf)
-                """
-
-                        
-        if len(self.datashape) == 4:
-            self.GFA=GFA.reshape(x,y,z)
-            self.NFA=NFA.reshape(x,y,z,5)
-            self.QA=QA.reshape(x,y,z,5)/glob_norm_param
-            self.IN=IN.reshape(x,y,z,5)
-            self.PK=PK.reshape(x,y,z,5)
-            if self.save_odfs:
-                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])
-            self.QA_norm=glob_norm_param            
-        if len(self.datashape) == 2:
-            self.GFA=GFA
-            self.NFA=NFA
-            self.QA=QA
-            self.IN=IN
-            self.PK=PK
-            if self.save_odfs:
-                self.ODF=ODF
-            self.QA_norm=None
-    
-    def reduce_peaks(self,peaks,odf_min):
-        """ helping peak_finding when too many peaks are available 
-        
-        """
-        if len(peaks)==0:
-            return -1 
-        if odf_min<self.iso_thr*peaks[0]:
-            #remove small peaks
-            ismallp=np.where(peaks<self.peak_thr*peaks[0])
-            if len(ismallp[0])>0:
-                l=ismallp[0][0]
-            else:
-                l=len(peaks)
-        else:
-            return -1
-        return l    
     
     def pdf(self,s):
         values=s*self.filter
@@ -235,8 +101,14 @@ class DiffusionSpectrum(object):
         #apply fourier transform
         Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq),(self.sz,self.sz,self.sz)))))
         return Pr
+    
+    def odf(self,s):
+        Pr=self.pdf(s)       
+        #calculate the orientation distribution function        
+        odf=self.pdf_odf(Pr)
+        return odf        
         
-    def odf(self,Pr):
+    def pdf_odf(self,Pr):
         """ fill the odf by sampling radially on the pdf
         
         crucial parameter here is self.radius
@@ -274,25 +146,6 @@ class DiffusionSpectrum(object):
             zi=self.origin+self.radius*self.odf_vertices[m,2]
             Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T
-    
-    def std_over_rms(self,odf):
-        numer=len(odf)*np.sum((odf-np.mean(odf))**2)
-        denom=(len(odf)-1)*np.sum(odf**2)        
-        return np.sqrt(numer/denom)
-    
-    def gfa(self):
-        """ Generalized Fractional Anisotropy
-        Defined as the std/rms of the odf values.
-        """
-        return self.GFA
-    def nfa(self):
-        return self.NFA
-    def qa(self):
-        return self.QA
-    def ind(self):
-        """ peak indices
-        """
-        return self.IN
 
 
 def project_hemisph_bvecs(bvals,bvecs):
@@ -300,7 +153,8 @@ def project_hemisph_bvecs(bvals,bvecs):
     
     Notes
     -------
-    Very useful when working with dsi data because the full q-space needs to be mapped.
+    Useful when working with dsi data because the full q-space needs to be mapped
+    in both hemi-spheres.
     """
     bvs=bvals[1:]
     bvcs=bvecs[1:]

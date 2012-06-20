@@ -3,21 +3,17 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import peak_finding, le_to_odf, sum_on_blocks_1d
 from dipy.utils.spheremakers import sphere_vf_from
-from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
 from dipy.reconst.dsi import project_hemisph_bvecs
 from scipy.ndimage.filters import laplace,gaussian_laplace
 from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
-
-
+from dipy.reconst.qgrid import NonParametricCartesian
+from dipy.tracking.propspeed import map_coordinates_trilinear_iso
 
 import warnings
 warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
 
-
-
-
-class DiffusionNabla(object):
+class DiffusionNabla(NonParametricCartesian):
     ''' Reconstruct the signal using Diffusion Nabla Imaging  
     
     As described in E.Garyfallidis PhD thesis, 2011.           
@@ -54,10 +50,11 @@ class DiffusionNabla(object):
         dipy.reconst.dti.Tensor, dipy.reconst.dsi.DiffusionSpectrum
         '''
         
+        """
         #read the vertices and faces for the odf sphere
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
-        self.odf_vertices=odf_vertices
-        self.odf_faces=odf_faces
+        self.odf_vertices=np.ascontiguousarray(odf_vertices)
+        self.odf_faces=np.ascontiguousarray(odf_faces)
         self.odfn=len(self.odf_vertices)
         self.save_odfs=save_odfs
         
@@ -72,37 +69,28 @@ class DiffusionNabla(object):
         gradients[np.isnan(gradients)] = 0.
         self.gradients=gradients
         #save number of total diffusion volumes
-        self.dn=data.shape[-1]        
+        self.dn=data.shape[-1]
         self.data=data
         self.datashape=data.shape #initial shape  
         self.mask=mask
+        """
+        super(DiffusionNabla, self).__init__(data,bvals,gradients,odf_sphere,mask,half_sphere_grads,auto,save_odfs)
+        
         #odf sampling radius  
-        self.radius=np.arange(0,6,.2)
+        self.radius=np.arange(0,5,.2)
         #self.radiusn=len(self.radius)
         #self.create_qspace(bvals,gradients,16,8)
         #peak threshold
-        self.peak_thr=.4
-        self.iso_thr=.7
-        #calculate coordinates of equators
-        #self.radon_params()
-        #precompute coordinates for pdf interpolation
-        #self.precompute_interp_coords()        
-        #self.precompute_fast_coords()
+        self.peak_thr=.7
+        #equatorial zone
         self.zone=5.
-        #self.precompute_equator_indices(self.zone)
-        #precompute botox weighting
-        #self.precompute_botox(0.05,.3)
-        self.gaussian_weight=0.1
-        #self.precompute_angular(self.gaussian_weight)
-               
-        self.fast=fast        
+        self.gaussian_weight=0.05
+        self.fast=fast
         if fast==True:            
             self.odf=self.fast_odf
         else:
-            self.odf=self.slow_odf
-            
-        self.update()
-                    
+            self.odf=self.slow_odf            
+        self.update()       
         if auto:
             self.fit()
             
@@ -115,8 +103,7 @@ class DiffusionNabla(object):
         if self.fast==True:        
             self.precompute_fast_coords()        
             self.precompute_equator_indices(self.zone)        
-        self.precompute_angular(self.gaussian_weight)
-        
+        self.precompute_angular(self.gaussian_weight)        
     
     def precompute_botox(self,smooth,level):
         self.botox_smooth=.05
@@ -129,8 +116,7 @@ class DiffusionNabla(object):
         self.W=np.dot(self.odf_vertices,self.odf_vertices.T)
         self.W=self.W.astype('f8')
         E=np.exp(self.W/smooth)
-        self.E=E/np.sum(E,axis=1)[:,None]
-        
+        self.E=E/np.sum(E,axis=1)[:,None]        
     
     def create_qspace(self,bvals,gradients,size,origin):
         bv=bvals
@@ -158,129 +144,13 @@ class DiffusionNabla(object):
         self.equators=planarsR
         self.equatorn=len(phis)        
         
-    def fit(self):
-        #memory allocations for 4D volumes 
-        if len(self.datashape)==4:
-            x,y,z,g=self.datashape        
-            S=self.data.reshape(x*y*z,g)
-            GFA=np.zeros((x*y*z))
-            IN=np.zeros((x*y*z,5))
-            NFA=np.zeros((x*y*z,5))
-            QA=np.zeros((x*y*z,5))
-            PK=np.zeros((x*y*z,5))
-            if self.save_odfs:
-                ODF=np.zeros((x*y*z,self.odfn))
-                #BODF=np.zeros((x*y*z,self.odfn))        
-            if self.mask != None:
-                if self.mask.shape[:3]==self.datashape[:3]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(self.datashape[:3])
-                msk=self.mask.ravel().copy()
-        #memory allocations for a series of voxels       
-        if len(self.datashape)==2:
-            x,g= self.datashape
-            S=self.data
-            GFA=np.zeros(x)
-            IN=np.zeros((x,5))
-            NFA=np.zeros((x,5))
-            QA=np.zeros((x,5))
-            PK=np.zeros((x,5))
-            if self.save_odfs:
-                ODF=np.zeros((x,self.odfn))
-                #BODF=np.zeros((x,self.odfn))                
-            if self.mask != None:
-                if self.mask.shape[0]==self.datashape[0]:
-                    msk=self.mask.ravel().copy()
-            if self.mask == None:
-                self.mask=np.ones(self.datashape[:1])
-                msk=self.mask.ravel().copy()
-        #find the global normalization parameter 
-        #useful for quantitative anisotropy
-        glob_norm_param = 0.
-        #loop over all voxels
-        for (i,s) in enumerate(S):
-            if msk[i]>0:
-                #calculate the orientation distribution function        
-                #odf=self.odf(s)
-                odf=self.odf(s)                
-                odf=self.angular_weighting(odf)                                
-                if self.save_odfs:
-                    ODF[i]=odf                
-                #normalization for QA
-                glob_norm_param=max(np.max(odf),glob_norm_param)
-                #calculate the generalized fractional anisotropy
-                GFA[i]=self.std_over_rms(odf)                
-                odf_max=odf.max()
-                #if not in isotropic case
-                #if odf.min()<self.iso_thr*odf_max:
-                if np.std(odf)/np.mean(odf) > self.iso_thr:                                                                                                        
-                    #find peaks
-                    peaks,inds=peak_finding(odf,self.odf_faces)                
-                    ismallp=np.where(peaks/peaks[0]<self.peak_thr)      
-                    if len(ismallp[0])>0:
-                        l=ismallp[0][0]
-                        #do not allow more that three peaks
-                        if l>3:
-                            l=3
-                    else:
-                        l=len(peaks)
-                    if l==0:
-                        IN[i][l] = inds[l]
-                        NFA[i][l] = GFA[i]
-                        QA[i][l] = peaks[l]-np.min(odf)
-                        PK[i][l] = peaks[l]                         
-                    if l>0 and l<=3:                    
-                        IN[i][:l] = inds[:l]
-                        NFA[i][:l] = GFA[i]
-                        QA[i][:l] = peaks[:l]-np.min(odf)
-                        PK[i][:l] = peaks[:l]                    
-
-        if len(self.datashape) == 4:
-            self.GFA=GFA.reshape(x,y,z)
-            self.NFA=NFA.reshape(x,y,z,5)
-            self.QA=QA.reshape(x,y,z,5)/glob_norm_param
-            self.PK=PK.reshape(x,y,z,5)
-            self.IN=IN.reshape(x,y,z,5)
-            if self.save_odfs:
-                self.ODF=ODF.reshape(x,y,z,ODF.shape[-1])                            
-            self.QA_norm=glob_norm_param            
-        if len(self.datashape) == 2:
-            self.GFA=GFA
-            self.NFA=NFA
-            self.QA=QA
-            self.PK=PK
-            self.IN=IN
-            if self.save_odfs:
-                self.ODF=ODF
-                #self.BODF=BODF
-            self.QA_norm=None
-        
-    def reduce_peaks(self,peaks,odf_min):
-        """ helping peak_finding when too many peaks are available        
-        """
-        if len(peaks)==0:
-            return -1 
-        if odf_min<self.iso_thr*peaks[0]:
-            #remove small peaks
-            pks=peaks-np.abs(odf_min)
-            ismallp=np.where(pks<self.peak_thr*pks[0])
-            if len(ismallp[0])>0:
-                l=ismallp[0][0]
-            else:
-                l=len(peaks)
-        else:
-            return -1
-        return l
-        
-        
     def slow_odf(self,s):
         """ Calculate the orientation distribution function 
         """        
         odf = np.zeros(self.odfn)
         Eq=np.zeros((self.sz,self.sz,self.sz))
         for i in range(self.dn):
-            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/s[0]
+            Eq[self.q[i][0],self.q[i][1],self.q[i][2]]=s[i]/np.float(s[0])
         LEq=laplace(Eq)
         self.Eq=Eq
         self.LEq=LEq
@@ -294,26 +164,17 @@ class DiffusionNabla(object):
     def fast_odf(self,s):
         odf = np.zeros(self.odfn)        
         Eq=np.zeros((self.sz,self.sz,self.sz))
-        for i in range(self.dn):            
+        for i in xrange(self.dn):            
             Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]       
         LEq=laplace(Eq)
-        self.Eq=Eq
-        self.LEq=LEq       
-        LEs=map_coordinates(LEq,self.Ys,order=1)        
+        LEs=map_coordinates(LEq,self.Ys.T,order=1)        
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
         LEsum=np.sum(LEs,axis=1)        
         for i in xrange(self.odfn):
             odf[i]=np.sum(LEsum[self.eqinds[i]])/self.eqinds_len[i]
-        #print np.sum(np.isnan(odf))
         return -odf
-            
-    def angular_weighting(self,odf):
-        if self.E==None:
-            return odf
-        else:
-            return np.dot(odf[None,:],self.E).ravel()
-        
+
     def precompute_equator_indices(self,thr=5):        
         eq_inds=[]
         eq_inds_complete=[]        
@@ -329,7 +190,6 @@ class DiffusionNabla(object):
         self.eqinds=eq_inds
         self.eqinds_com=np.array(eq_inds_complete)
         self.eqinds_len=np.array(eq_inds_len,dtype='i8')
-            
         
     def precompute_fast_coords(self):
         Ys=[]
@@ -340,8 +200,8 @@ class DiffusionNabla(object):
                 yi=self.origin + q*self.odf_vertices[m,1]
                 zi=self.origin + q*self.odf_vertices[m,2]        
                 Ys.append(np.vstack((xi,yi,zi)).T)
-        self.Ys=np.concatenate(Ys).T
-    
+        self.Ys=np.ascontiguousarray(np.concatenate(Ys))
+        self.Ysn=self.Ys.shape[0]
     
     def precompute_interp_coords(self):        
         Xs=[]        
@@ -354,28 +214,6 @@ class DiffusionNabla(object):
                 Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T        
     
-    def std_over_rms(self,odf):
-        numer=len(odf)*np.sum((odf-np.mean(odf))**2)
-        denom=(len(odf)-1)*np.sum(odf**2)
-        return np.sqrt(numer/denom)
-    
-    def gfa(self):
-        """ Generalized Fractional Anisotropy
-        Defined as the std/rms of the odf values.
-        """
-        return self.GFA
-    def nfa(self):
-        return self.NFA
-    def qa(self):
-        return self.QA
-    def pk(self):
-        return self.PK
-    def ind(self):
-        """ peak indices
-        """
-        return self.IN
-
-
 class EquatorialInversion(DiffusionNabla):    
     def eit_operator(self,input, scale, output = None, mode = "reflect", cval = 0.0):
         """Calculate a multidimensional laplace filter using an estimation
@@ -399,23 +237,9 @@ class EquatorialInversion(DiffusionNabla):
         Eq=np.zeros((self.sz,self.sz,self.sz))
         #for i in range(self.dn):
         #    Eq[self.q[i][0],self.q[i][1],self.q[i][2]]+=s[i]/s[0]
-        Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/s[0]
-        #self.Eqs.append(Eq)
-            
-        if  self.operator=='2laplacian':       
-            LEq=self.eit_operator(Eq,2)            
-            sign=-1
+        Eq[self.q[:,0],self.q[:,1],self.q[:,2]]=s[:]/np.float(s[0])
+        #self.Eqs.append(Eq)            
         if  self.operator=='laplacian':
-            #ZEq=zoom(Eq,zoom=5,order=self.order,mode=self.mode,cval=0.0,prefilter=True)
-            #self.ZEqs.append(ZEq)
-            #ZLEq=laplace(ZEq)
-            #self.ZLEqs.append(ZLEq)
-            #LEq=zoom(ZLEq,zoom=.2,order=self.order,mode=self.mode,cval=0.0,prefilter=True)         
-            #LEq=laplace(Eq)
-            #if self.zoom>1:
-            #    ZEq=zoom(Eq,zoom=self.zoom,order=self.order,mode=self.mode)
-            #    LEq=laplace(ZEq)
-            #else:
             LEq=laplace(Eq)
             sign=-1
         if self.operator=='laplap':
@@ -423,9 +247,14 @@ class EquatorialInversion(DiffusionNabla):
             sign=1
         if  self.operator=='signal':
             LEq=Eq
-            sign=1
-        
-        LEs=map_coordinates(LEq,self.Ys,order=1)
+            sign=1        
+        #LEs=map_coordinates(LEq,self.Ys.T,order=1)        
+        #"""        
+        LEs=np.zeros(self.Ysn)
+        strides=np.array(LEq.strides,'i8')
+        map_coordinates_trilinear_iso(LEq,self.Ys,
+                                      strides,self.Ysn, LEs)
+        #"""
         #LEs=map_coordinates(LEq,self.zoom*self.Ys,order=1)                
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
@@ -437,7 +266,15 @@ class EquatorialInversion(DiffusionNabla):
         #odf2=odf.copy()
         LES=LEsum[self.eqinds_com]        
         sum_on_blocks_1d(LES,self.eqinds_len,odf,self.odfn)
-        odf=odf/self.eqinds_len       
-        
-        return sign*odf
+        odf=odf/self.eqinds_len        
+        return self.angular_weighting(sign*odf)
+        #if self.E==None:
+        #    return odf
+        #return angular_weighting(self.E,odf)
+
+from numpy import ravel
+def angular_weighting(E,odf):    
+    return ravel(np.dot(odf[None,:],E))
+
+
 

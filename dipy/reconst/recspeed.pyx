@@ -42,8 +42,8 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
                      cnp.ndarray[cnp.float_t, ndim=1] voxel_size):
     """Interpolates data at index
 
-    Interpolates data from a 4d volume, first 3 dimenssions are x, y, z the
-    last dimenssion holds data.
+    Interpolates data from a 4d volume, first 3 dimensions are x, y, z the
+    last dimension holds data.
     """
     cdef:
         float x = index[0] / voxel_size[0] - .5
@@ -68,7 +68,7 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
                     result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
     return result
 
-cdef float wght(int i, float r):
+cdef float wght(int i, float r) nogil:
     if i:
         return r
     else:
