@@ -77,7 +77,16 @@ def test_gqi():
     dsfit=ds.fit(S)
     QA=dsfit.qa
     assert_equal(np.sum(QA>0),0)
+
+    #3 fibers DSI2
+    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
+    ds=GeneralizedQSamplingModel(bvals,bvecs,odf_sphere,squared=True)
+    ds.relative_peak_threshold = 0.5
+    dsfit=ds.fit(S,gfa_thr=0.05)
+    QA=dsfit.qa
     
+    assert_equal(np.sum(QA>0),3)
+ 
 
 def upper_hemi_map(v):
     '''

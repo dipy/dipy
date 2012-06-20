@@ -83,7 +83,7 @@ class OdfModel(object):
         return self._odf_vertices[ind]
 
 
-    def fit(self, data, mask=None, return_odf=False, gfa_thr=0.1, 
+    def fit(self, data, mask=None, return_odf=False, gfa_thr=0.02, 
             normalize_peaks=False):
         """Fits the model to data and returns an OdfFit"""
 
