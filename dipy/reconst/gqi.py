@@ -4,44 +4,9 @@ import dipy.reconst.recspeed as rp
 from dipy.utils.spheremakers import sphere_vf_from
 from .odf import OdfModel
 
-class GeneralizedQSampling(OdfModel):
-    """ Implements Generalized Q-Sampling
-    Implements equation [9] from Generalized Q-Sampling as
-    described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
-    Generalized Q-Sampling Imaging. IEEE TMI, 2010.
-
-    Parameters
-    -----------
-    data : array,
-        shape(X,Y,Z,D) or shape(X,D)
-    bvals : array,
-        shape (N,)
-    gradients : array,
-        shape (N,3) also known as bvecs
-    Lambda : float,
-        smoothing parameter - diffusion sampling length
-
-    Properties
-    ----------
-    QA : array, shape(X,Y,Z,5), quantitative anisotropy
-    IN : array, shape(X,Y,Z,5), indices of QA, qa unit directions
-    fwd : float, normalization parameter
-
-    Notes
-    -----
-    In order to reconstruct the spin distribution function a nice symmetric
-    evenly distributed sphere is provided using 400+ points. This is
-    usually sufficient for most of the datasets.
-    
-    GQI is performing better with specific grid-like acquisition schemes. The table used in the scanner for 101 directions + 1 b0 volume is provided in 
-    dipy.data.get_data('gqi_vectors').
-
-    See also
-    --------
-    dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor, dipy.data.get_sphere
-    """
-    def __init__(self, bvals, gradients, Lambda=1.2, 
-                 odf_sphere='symmetric642',squared=False):
+class GeneralizedQSamplingModel(OdfModel):
+    def __init__(self, bvals, gradients, 
+                 odf_sphere='symmetric642', Lambda=1.2, squared=False):
         r""" Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
         quintuple crossings if your datasets support them.
@@ -53,7 +18,7 @@ class GeneralizedQSampling(OdfModel):
         described in Fang-Cheng Yeh, Van J. Wedeen, Wen-Yih Isaac Tseng.
         Generalized Q-Sampling Imaging. IEEE TMI, 2010.
 
-        It also implement the radially squared version knowna as GQI2 as
+        It also implement the radially squared version known as GQI2 as
         described in Garyfallidis et al. "Towards an accurate brain
         tractography", PhD thesis, Cambridge University, 2012.
 
@@ -78,17 +43,16 @@ class GeneralizedQSampling(OdfModel):
         Notes
         -------
         In order to reconstruct the spin distribution function  a nice symmetric
-        evenly distributed sphere is provided using 362 points. This is usually
-        sufficient for most of the datasets.
+        evenly distributed sphere is provided using 642+ points. This is usually
+        sufficient for most of the datasets. 
 
         See also
         --------
-        dipy.tracking.propagation.EuDX, dipy.reconst.dti.Tensor,
-        dipy.data.__init__.get_sphere
+        dipy.reconst.dsi.DiffusionSpectrumModel, dipy.data.get_sphere
+
         """
         
         '''
-        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.odf_vertices=np.ascontiguousarray(odf_vertices)
         self.odf_faces=np.ascontiguousarray(odf_faces)
         self.odfn=len(self.odf_vertices)
@@ -97,6 +61,8 @@ class GeneralizedQSampling(OdfModel):
         self.save_odfs=save_odfs
         '''
         
+        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
+        self.set_odf_vertices(odf_vertices,None,odf_faces)
         self.squared=squared
         
         # 0.01506 = 6*D where D is the free water diffusion coefficient 
@@ -157,6 +123,7 @@ class GeneralizedQSampling(OdfModel):
 
         """
         return np.dot(s,self.q2odf_params)
+
 
     def npa(self,s,width=5):
         """ non-parametric anisotropy
