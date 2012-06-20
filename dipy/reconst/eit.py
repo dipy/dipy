@@ -13,7 +13,7 @@ from dipy.tracking.propspeed import map_coordinates_trilinear_iso
 import warnings
 warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
 
-class DiffusionNabla(NonParametricCartesian):
+class DiffusionNablaModel(NonParametricCartesian):
     ''' Reconstruct the signal using Diffusion Nabla Imaging  
     
     As described in E.Garyfallidis PhD thesis, 2011.           
@@ -214,7 +214,7 @@ class DiffusionNabla(NonParametricCartesian):
                 Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T        
     
-class EquatorialInversion(DiffusionNabla):    
+class EquatorialInversionModel(DiffusionNabla):    
     def eit_operator(self,input, scale, output = None, mode = "reflect", cval = 0.0):
         """Calculate a multidimensional laplace filter using an estimation
         for the second derivative based on differences.

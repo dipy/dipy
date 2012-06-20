@@ -84,8 +84,13 @@ def test_gqi():
     ds.relative_peak_threshold = 0.5
     dsfit=ds.fit(S,gfa_thr=0.05)
     QA=dsfit.qa
-    
-    assert_equal(np.sum(QA>0),3)
+
+    #3 fibers DSI2 with a 3D volume
+    data=np.zeros((3,3,3,len(S)))
+    data[...,:]= S.copy()
+    dsfit=ds.fit(data,gfa_thr=0.05)
+    #1/0
+    assert_array_almost_equal(np.sum(dsfit.peak_values>0,axis=-1),3*np.ones((3,3,3)))
  
 
 def upper_hemi_map(v):
