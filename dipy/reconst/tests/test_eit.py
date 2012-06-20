@@ -2,17 +2,11 @@ import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-import nibabel as nib
-from dipy.viz import fvtk
-from dipy.data import get_data, get_sphere
-from dipy.reconst.recspeed import peak_finding
-from dipy.reconst.gqi import GeneralizedQSampling
-from dipy.reconst.dni import DiffusionNabla
+from dipy.reconst.eit import DiffusionNablaModel
 from dipy.sims.voxel import SticksAndBall
-from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
-from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sphere 
-from scipy.ndimage import map_coordinates
 from dipy.utils.spheremakers import sphere_vf_from
+from dipy.data import get_data
+from dipy.core.geometry import reduce_antipodal, unique_edges
 
 def sim_data(bvals,bvecs,d=0.0015,S0=100,snr=None):
     
@@ -96,26 +90,23 @@ def sim_data(bvals,bvecs,d=0.0015,S0=100,snr=None):
     
     return data
 
-if __name__ == '__main__':
-#def test_dni():
+def test_dni():
  
     btable=np.loadtxt(get_data('dsi515btable'))    
     bvals=btable[:,0]
     bvecs=btable[:,1:]
-    data=sim_data(bvals,bvecs)
+    data=sim_data(bvals,bvecs)   
+    #load odf sphere
+    vertices,faces = sphere_vf_from('symmetric724')
+    edges = unique_edges(faces)
+    half_vertices,half_edges,half_faces=reduce_antipodal(vertices,faces)
+    #create the sphere
+    odf_sphere=(vertices,faces)
+    dn=DiffusionNablaModel(bvals,bvecs,odf_sphere)
+    dnfit=dn.fit(data)
+    pks=dnfit.peak_values
     
-    dn=DiffusionNabla(data,bvals,bvecs,save_odfs=True)
-    pks=dn.pk()
     #assert_array_equal(np.sum(pks>0,axis=1),
     #                   np.array([0, 1, 2, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1, 0]))
-    
-    odfs=dn.odfs()
-    peaks,inds=peak_finding(odfs[10],dn.odf_faces)
-    
-
-    
-
-
-
 
 

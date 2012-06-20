@@ -37,7 +37,7 @@ Just some of our **state-of-the-art** applications are:
 An Example
 ~~~~~~~~~~
 
-Here is a tiny usage example for dipy::
+Here is a tiny dipy code snippet::
 
   >>> import numpy as np
   >>> import nibabel as nib
@@ -58,19 +58,7 @@ b-vectors and b-values, calculated the Tensors and fractional anisotropy (FA)
 and then created a mask to remove the regions with low anisotropy.
 :ref:`Download <installation>` dipy and try it for yourself.
 
-
-A skeleton
-~~~~~~~~~~
-
-.. figure:: _static/simplified_tractography.png
-   :align: center
-
-   **This is a depiction of a tractography skeleton created using dipy**. 
-
-   Using skeletal tracks we can very easily have a fast visual description of our
-   datasets. If you want to learn more how you can create these with your datasets 
-   read the examples in our :ref:`documentation` .
-
+If you want to learn more how you can create these with your datasets read the examples in our :ref:`documentation` .
 
 .. We need the following toctree directive to include the documentation
 .. in the document hierarchy - see http://sphinx.pocoo.org/concepts.html

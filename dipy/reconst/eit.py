@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 from scipy.ndimage import map_coordinates
-from dipy.reconst.recspeed import peak_finding, le_to_odf, sum_on_blocks_1d
+from dipy.reconst.recspeed import le_to_odf, sum_on_blocks_1d
 from dipy.utils.spheremakers import sphere_vf_from
 from dipy.reconst.dsi import project_hemisph_bvecs
 from scipy.ndimage.filters import laplace,gaussian_laplace
@@ -9,25 +9,18 @@ from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
 from dipy.reconst.qgrid import NonParametricCartesian
 from dipy.tracking.propspeed import map_coordinates_trilinear_iso
+from dipy.reconst.odf import OdfModel
 
-import warnings
-warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
-
-class DiffusionNablaModel(NonParametricCartesian):
-    ''' Reconstruct the signal using Diffusion Nabla Imaging  
+class DiffusionNablaModel(OdfModel):
+    def __init__(self, bvals, gradients, odf_sphere='symmetric362', 
+                 half_sphere_grads=False, fast=True):
+        ''' Reconstruct the signal using Diffusion Nabla Imaging  
     
-    As described in E.Garyfallidis PhD thesis, 2011.           
-    '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', 
-                 mask=None,
-                 half_sphere_grads=False,
-                 auto=True,
-                 save_odfs=False,
-                 fast=True):
-        '''
+        As described in E.Garyfallidis, "Towards an accurate brain
+        tractograph"tractograph, PhD thesis, 2011.
+        
         Parameters
         -----------
-        data : array, shape(X,Y,Z,D), or (X,D)
         bvals : array, shape (N,)
         gradients : array, shape (N,3) also known as bvecs        
         odf_sphere : str or tuple, optional
@@ -38,12 +31,6 @@ class DiffusionNablaModel(NonParametricCartesian):
         half_sphere_grads : boolean Default(False) 
             in order to create the q-space we use the bvals and gradients. 
             If the gradients are only one hemisphere then 
-        auto : boolean, default True 
-            if True then the processing of all voxels will start automatically 
-            with the class constructor,if False then you will have to call .fit()
-            in order to do the heavy duty processing for every voxel
-        save_odfs : boolean, default False
-            save odfs, which is memory expensive
 
         See also
         ----------
@@ -57,7 +44,7 @@ class DiffusionNablaModel(NonParametricCartesian):
         self.odf_faces=np.ascontiguousarray(odf_faces)
         self.odfn=len(self.odf_vertices)
         self.save_odfs=save_odfs
-        
+        """ 
         #check if bvectors are provided only on a hemisphere
         if half_sphere_grads==True:
             bvals=np.append(bvals.copy(),bvals[1:].copy())
@@ -70,12 +57,9 @@ class DiffusionNablaModel(NonParametricCartesian):
         self.gradients=gradients
         #save number of total diffusion volumes
         self.dn=data.shape[-1]
-        self.data=data
-        self.datashape=data.shape #initial shape  
-        self.mask=mask
-        """
-        super(DiffusionNabla, self).__init__(data,bvals,gradients,odf_sphere,mask,half_sphere_grads,auto,save_odfs)
-        
+        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)        
+        self.set_odf_vertices(odf_vertices,None,odf_faces)
+
         #odf sampling radius  
         self.radius=np.arange(0,5,.2)
         #self.radiusn=len(self.radius)
@@ -90,11 +74,10 @@ class DiffusionNablaModel(NonParametricCartesian):
             self.odf=self.fast_odf
         else:
             self.odf=self.slow_odf            
-        self.update()       
-        if auto:
-            self.fit()
-            
-    def update(self):        
+        self.precompute()
+
+    def precompute(self):
+
         self.radiusn=len(self.radius)
         self.create_qspace(self.bvals,self.gradients,17,8)
         if self.fast==False: 
@@ -214,7 +197,7 @@ class DiffusionNablaModel(NonParametricCartesian):
                 Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T        
     
-class EquatorialInversionModel(DiffusionNabla):    
+class EquatorialInversionModel(DiffusionNablaModel):    
     def eit_operator(self,input, scale, output = None, mode = "reflect", cval = 0.0):
         """Calculate a multidimensional laplace filter using an estimation
         for the second derivative based on differences.
@@ -254,7 +237,6 @@ class EquatorialInversionModel(DiffusionNabla):
         strides=np.array(LEq.strides,'i8')
         map_coordinates_trilinear_iso(LEq,self.Ys,
                                       strides,self.Ysn, LEs)
-        #"""
         #LEs=map_coordinates(LEq,self.zoom*self.Ys,order=1)                
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
@@ -268,13 +250,12 @@ class EquatorialInversionModel(DiffusionNabla):
         sum_on_blocks_1d(LES,self.eqinds_len,odf,self.odfn)
         odf=odf/self.eqinds_len        
         return self.angular_weighting(sign*odf)
-        #if self.E==None:
-        #    return odf
-        #return angular_weighting(self.E,odf)
 
-from numpy import ravel
-def angular_weighting(E,odf):    
-    return ravel(np.dot(odf[None,:],E))
+    def angular_weighting(self,odf):
+        if self.E==None:
+            return odf
+        else:
+            return np.dot(odf[None,:],self.E).ravel() 
 
 
 
