@@ -102,7 +102,7 @@ def sym_hemisphere(vertices,
     return np.nonzero(inds)[0]
 
 
-def faces_from_vertices_sphere(vertices):
+def faces_from_sphere_vertices(vertices):
     """
     Triangulate a set of vertices on the sphere.
 
