@@ -102,6 +102,26 @@ def sym_hemisphere(vertices,
     return np.nonzero(inds)[0]
 
 
+def faces_from_vertices(vertices):
+    """
+    Triangulate a set of vertices on the sphere.
+
+    Parameters
+    ----------
+    vertices : (M, 3) ndarray
+        XYZ coordinates of vertices on the sphere.
+
+    Returns
+    -------
+    faces : (N, 3) ndarray
+        Indices into vertices; forms triangular faces.
+
+    """
+    from scipy.spatial import Delaunay
+    return Delaunay(vertices).convex_hull
+
+
+
 def vertinds_to_neighbors(vertex_inds, faces):
     """ Return indices of neighbors of vertices given `faces`
 
