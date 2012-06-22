@@ -197,7 +197,8 @@ def make_fake_signal():
 def test_ClosestPeakSelector():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     opdf_fitter = SlowAdcOpdfModel(bval, bvec.T, 6, odf_vertices=v, odf_edges=e)
-    norm_sig = sig[..., 1:]
+    opdf_fitter.angular_distance_threshold = 0.
+    norm_sig = sig
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
     C = opdf_fitter.fit_data(norm_sig)
     S = opdf_fitter.evaluate_odf(norm_sig)
@@ -220,8 +221,9 @@ def testQballOdfModel():
     v, e, vecs_xy, bval, bvec, sig = make_fake_signal()
     qball_fitter = QballOdfModel(bval, bvec.T, 6, odf_vertices=v,
                                  odf_edges=e)
+    qball_fitter.angular_distance_threshold = 0.
 
-    norm_sig = sig[..., 1:]
+    norm_sig = sig
     C = qball_fitter.fit_data(norm_sig)
     S = qball_fitter.evaluate_odf(norm_sig)
     stepper = ClosestPeakSelector(qball_fitter, norm_sig, angle_limit=39)

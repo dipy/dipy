@@ -13,8 +13,8 @@ following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
 from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
-                  broadcast_arrays, concatenate, cos, diag, dot, empty, \
-                  eye, log, minimum, maximum, pi, repeat, sqrt, eye
+                  broadcast_arrays, concatenate, cos, diag, diff, dot, empty, \
+                  eye, log, minimum, maximum, pi, repeat, sqrt, unique, eye
 from numpy.linalg import pinv, svd
 from numpy.random import randint
 from .odf import OdfModel
@@ -137,6 +137,24 @@ def smooth_pinv(B, L):
     inv = pinv(concatenate((B, L)))
     return inv[:, :len(B)]
 
+def lazy_index(index):
+    """Produces a lazy index
+
+    Returns a slice that can be used for indexing an array, if no slice can be
+    made index is returned as is.
+    """
+    index = asarray(index)
+    assert index.ndim == 1
+    if index.dtype.kind == 'b':
+        index = index.nonzero()[0]
+    if len(index) == 1:
+        return slice(index[0], index[0] + 1)
+    step = unique(diff(index))
+    if len(step) != 1 or step[0] == 0:
+        return index
+    else:
+        return slice(index[0], index[-1] + 1, step[0])
+
 class SphHarmModel(OdfModel):
     """The base class to subclassed by spacific spherical harmonic models of
     diffusion data"""
@@ -163,6 +181,7 @@ class SphHarmModel(OdfModel):
         """
         m, n = sph_harm_ind_list(sh_order)
         where_dwi = bval > 0
+        self._index = (Ellipsis, lazy_index(where_dwi))
         x, y, z = gradients[where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         B = real_sph_harm(m, n, azi[:, None], pol[:, None])
@@ -216,6 +235,7 @@ class MonoExpOpdfModel(SphHarmModel):
     def fit_coefficents(self, data):
         """Fits the model to diffusion data and returns the coefficients of the
         odf"""
+        data = data[self._index]
         d = log(-log(data.clip(self.min, self.max)))
         return dot(d, self._fit_matrix.T)
 
@@ -232,6 +252,7 @@ class MonoExpOpdfModel(SphHarmModel):
             normilzed before it is fit.
 
         """
+        data = data[self._index]
         d = log(-log(data.clip(self.min, self.max)))
         return dot(d, self._sampling_matrix.T)
 
@@ -273,6 +294,7 @@ class SlowAdcOpdfModel(SphHarmModel):
     def fit_data(self, data):
         """The fit matrix, is used by fit_data to return the coefficients of
         the model"""
+        data = data[self._index]
         delta_b, delta_q = self._fit_matrix
         return _slowadc_formula(data, delta_b, delta_q)
 
@@ -290,6 +312,7 @@ class SlowAdcOpdfModel(SphHarmModel):
             normalized before it is fit.
 
         """
+        data = data[self._index]
         delta_b, delta_q = self._sampling_matrix
         return _slowadc_formula(data, delta_b, delta_q)
 
@@ -310,6 +333,7 @@ class QballOdfModel(SphHarmModel):
     def fit_data(self, data):
         """Fits the model to diffusion data and returns the coefficients
         """
+        data = data[self._index]
         return dot(data, self._fit_matrix.T)
 
     def evaluate_odf(self, data):
@@ -322,6 +346,7 @@ class QballOdfModel(SphHarmModel):
             diffusion weighed signals along the last dimension
 
         """
+        data = data[self._index]
         return dot(data, self._sampling_matrix.T)
 
 def normalize_data(data, bval, min_signal=1e-5, out=None):
@@ -520,7 +545,10 @@ class ClosestPeakSelector(object):
         """
         vox_data = self._interpolator[location]
         peak_points = self._model.get_directions(vox_data)
-        return _closest_peak(peak_points, prev_step, self.dot_limit)
+        if prev_step is not None:
+            return _closest_peak(peak_points, prev_step, self.dot_limit)
+        else:
+            return peak_points
 
 def _closest_peak(peak_points, prev_step, dot_limit):
     peak_dots = dot(peak_points, prev_step)
@@ -570,5 +598,8 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
             self._peaks.append(peak_points)
         else:
             raise StopIteration("outside mask")
-        return _closest_peak(peak_points, prev_step, self.dot_limit)
+        if prev_step is not None:
+            return _closest_peak(peak_points, prev_step, self.dot_limit)
+        else:
+            return peak_points
 
