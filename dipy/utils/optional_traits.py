@@ -1,12 +1,13 @@
 """ Classes to provide and API like traits, even if traits is absent """
 
-from ..utils.optpkg import optional_package
+from ..utils.optpkg import optional_package, TripWire
 
 # Import traits as optional package
 tapi, have_traits, setup_module = optional_package('traits.api')
-
-# Import traitsui as optional package
 tuapi, _, _ = optional_package('traitsui.api')
+if not have_traits:
+    tapi, have_traits, setup_module = optional_package('enthought.traits.api')
+    tuapi, _, _ = optional_package('enthought.traits.ui.api')
 
 if not have_traits:
     class FlexiTrip(object):

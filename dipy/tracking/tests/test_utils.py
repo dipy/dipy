@@ -1,7 +1,9 @@
 import numpy as np
 from dipy.io.bvectxt import orientation_from_string
-from dipy.tracking.utils import reorder_voxels_affine, move_streamlines
+from dipy.tracking.utils import connectivity_matrix, density_map, \
+        move_streamlines, ndbincount, reduce_labels, reorder_voxels_affine
 from numpy.testing import assert_array_almost_equal, assert_array_equal
+from nose.tools import assert_equal, assert_raises, assert_true
 
 def make_streamlines():
     streamlines = [ np.array([[0, 0, 0],
@@ -13,6 +15,102 @@ def make_streamlines():
                               [5, 20, 33],
                               [40, 80, 120]], 'float') ]
     return streamlines
+
+def test_density_map():
+    #One streamline diagonal in volume
+    streamlines = [np.array([np.arange(10)]*3).T]
+    shape = (10, 10, 10)
+    x = np.arange(10)
+    expected = np.zeros(shape)
+    expected[x, x, x] = 1.
+    dm = density_map(streamlines, vol_dims=shape, voxel_size=(1, 1, 1))
+    assert_array_equal(dm, expected)
+
+    #add streamline, make voxel_size smaller. Each streamline should only be
+    #counted once, even if multiple points lie in a voxel
+    streamlines.append(np.ones((5, 3)))
+    shape = (5, 5, 5)
+    x = np.arange(5)
+    expected = np.zeros(shape)
+    expected[x, x, x] = 1.
+    expected[0, 0, 0] += 1
+    dm = density_map(streamlines, vol_dims=shape, voxel_size=(2, 2, 2))
+    assert_array_equal(dm, expected)
+    #should work with a generator
+    streamlines = iter(streamlines)
+    dm = density_map(streamlines, vol_dims=shape, voxel_size=(2, 2, 2))
+    assert_array_equal(dm, expected)
+
+def test_connectivity_matrix():
+    label_volume = np.array([[[3, 0, 0],
+                              [0, 0, 0],
+                              [0, 0, 4]]])
+    streamlines = [np.array([[0,0,0],[0,0,0],[0,2,2]], 'float'),
+                   np.array([[0,0,0],[0,1,1],[0,2,2]], 'float'),
+                   np.array([[0,2,2],[0,1,1],[0,0,0]], 'float')]
+    expected = np.zeros((5, 5), 'int')
+    expected[3, 4] = 2
+    expected[4, 3] = 1
+    # Check basic Case
+    matrix = connectivity_matrix(streamlines, label_volume, (1, 1, 1))
+    assert_array_equal(matrix, expected)
+    # Test mapping
+    matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+                                          return_mapping=True)
+    assert_array_equal(matrix, expected)
+    assert_equal(mapping[3, 4], [0, 1])
+    assert_equal(mapping[4, 3], [2])
+    assert_raises(KeyError, mapping.__getitem__, (0, 0))
+    # Test mapping and symmetric
+    matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+                                          True, return_mapping=True)
+    assert_equal(mapping[3, 4], [0, 1, 2])
+    # When symmetric only (3,4) is a key, not (4, 3)
+    assert_raises(KeyError, mapping.__getitem__, (4, 3))
+    # expected output matrix is symmetric version of expected
+    expected += expected.T
+    assert_array_equal(matrix, expected)
+    # Test mapping_as_streamlines, mapping dict has lists of streamlines
+    matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+                                          return_mapping=True,
+                                          mapping_as_streamlines=True)
+    assert_true(mapping[3, 4][0] is streamlines[0])
+    assert_true(mapping[3, 4][1] is streamlines[1])
+    assert_true(mapping[4, 3][0] is streamlines[2])
+
+def test_ndbincount():
+    def check(expected):
+        assert_equal(bc[0, 0], expected[0])
+        assert_equal(bc[0, 1], expected[1])
+        assert_equal(bc[1, 0], expected[2])
+        assert_equal(bc[2, 2], expected[3])
+    x = np.array([[0, 0], [0, 0], [0, 1], [0, 1], [1, 0], [2, 2]]).T
+    expected = [2, 2, 1, 1]
+    #count occurrences in x
+    bc = ndbincount(x)
+    assert_equal(bc.shape, (3, 3))
+    check(expected)
+    #pass in shape
+    bc = ndbincount(x, shape=(4, 5))
+    assert_equal(bc.shape, (4, 5))
+    check(expected)
+    #pass in weights
+    weights = np.arange(6.)
+    weights[-1] = 1.23
+    expeceted = [1., 5., 4., 1.23]
+    bc = ndbincount(x, weights=weights)
+    check(expeceted)
+    #raises an error if shape is too small
+    assert_raises(ValueError, ndbincount, x, None, (2, 2))
+
+def test_reduce_labels():
+    shape = (4, 5, 6)
+    #labels from 100 to 220
+    labels = np.arange(100, np.prod(shape)+100).reshape(shape)
+    #new labels form 0 to 120, and lookup maps range(0,120) to range(100, 220)
+    new_labels, lookup = reduce_labels(labels)
+    assert_array_equal(new_labels, labels-100)
+    assert_array_equal(lookup, labels.ravel())
 
 def test_move_streamlines():
     streamlines = make_streamlines()

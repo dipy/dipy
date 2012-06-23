@@ -10,6 +10,7 @@
 *.hdr
 *.mat
 *.pkl
+*.orig
 build
 *~
 doc/_build

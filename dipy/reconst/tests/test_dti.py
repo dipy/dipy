@@ -75,15 +75,19 @@ def test_WLS_and_LS_fit():
     ### Defining Test Voxel (avoid nibabel dependency) ###
 
     #Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
-    D = np.array([1., 1., 1., 0., 0., 1., np.log(1000) * 10.**4]) * 10.**-4
-    evals = np.array([2., 1., 0.]) * 10.**-4
+    b0 = 1000.
+    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    B = bval[1]
+    #Scale the eigenvalues and tensor by the B value so the units match
+    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+    evals = np.array([2., 1., 0.]) / B
     md = evals.mean()
     tensor = from_lower_triangular(D)
     #Design Matrix
-    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     X = dti.design_matrix(gtab, bval)
     #Signals
     Y = np.exp(np.dot(X,D))
+    assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
     ### Testing WLS Fit on Single Voxel ###
@@ -101,14 +105,14 @@ def test_WLS_and_LS_fit():
     assert_array_almost_equal(tensor_est.evals, evals)
     assert_array_almost_equal(tensor_est.D, tensor)
     assert_almost_equal(tensor_est.md(), md)
-    assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
+    assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
     tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8, fit_method='LS')
     assert_equal(tensor_est.shape, tuple())
     assert_array_almost_equal(tensor_est.evals, evals)
     assert_array_almost_equal(tensor_est.D, tensor)
     assert_almost_equal(tensor_est.md(), md)
-    assert_array_almost_equal(tensor_est.lower_triangular(1000), D)
+    assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
 def test_masked_array_with_Tensor():
     data = np.ones((2,4,56))
@@ -195,7 +199,7 @@ def test_lower_triangular():
     assert_array_equal(D, [0, 3, 4, 6, 7, 8])
     D = lower_triangular(tensor, 1)
     assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
-    assert_raises(AssertionError, lower_triangular, np.zeros((2, 3)))
+    assert_raises(ValueError, lower_triangular, np.zeros((2, 3)))
     shape = (4,5,6)
     many_tensors = np.empty(shape + (3,3))
     many_tensors[:] = tensor

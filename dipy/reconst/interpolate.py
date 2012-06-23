@@ -26,12 +26,11 @@ class NearestNeighborInterpolator(Interpolator):
     """Interpolates data using nearest neighbor interpolation"""
 
     def __getitem__(self, index):
-        index = index // self._voxel_size
-        if index.min() < 0:
+        index = tuple(index // self._voxel_size)
+        if min(index) < 0:
             raise IndexError('Negative Index')
-        index = tuple(int(ii) for ii in index)
         if self._mask is not None:
-            if self._mask[index] == False:
+            if not self._mask[index]:
                 raise StopIteration('outside mask')
         return self._data[index]
 
