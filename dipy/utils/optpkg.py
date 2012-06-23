@@ -9,6 +9,13 @@ else:
 
 from .tripwire import TripWire
 
+if have_nose:
+    class OptionalImportError(ImportError, nose.SkipTest):
+        pass
+else:
+    class OptionalImportError(ImportError):
+        pass
+
 def optional_package(name, trip_msg=None):
     """ Return package-like thing and module setup for package `name`
 
