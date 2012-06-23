@@ -4,21 +4,18 @@ warn("The gui_tools module is very new and not well tested, please use it "
      "with care and help us make it better")
 
 # Import traits as optional package
-from ..utils.optional_traits import tapi, tuapi, have_traits, setup_module
-# Import names to top level; done here in case we don't have actual traits but
-# only the traits shell from the optional_traits module
-File = tapi.File
-Item, Group, View, ArrayEditor = (tuapi.Item, tuapi.Group, tuapi.View,
-                                  tuapi.ArrayEditor)
+try:
+    from traitsui.api import Item, Group, View, ArrayEditor
+except ImportError:
+    from ..utils.optpkg import OptionalImportError
+    raise OptionalImportError("You must have traits to use this module")
+from .interfaces import InputData
 
-from ..tracking.interfaces import InputData
-
-if have_traits:
-    I = InputData()
-    iview = I.trait_view()
-    iview.resizable = True
-    iview.width = 600
-    I.trait_view('traits_view', iview)
+I = InputData()
+iview = I.trait_view()
+iview.resizable = True
+iview.width = 600
+I.trait_view('traits_view', iview)
 
 main_view = View(Group(Group(
                              Item( 'dwi_images' ),
