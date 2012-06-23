@@ -25,7 +25,7 @@ def sph2latlon(theta, phi):
     """
     return np.rad2deg(theta - np.pi/2), np.rad2deg(phi - np.pi)
 
-def project(bvecs, val, ax=None, vmin=None, vmax=None,
+def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
             cmap=matplotlib.cm.hot, cbar=True, tri=False,
             boundary=True, **basemap_args):
 
@@ -33,6 +33,9 @@ def project(bvecs, val, ax=None, vmin=None, vmax=None,
 
     Parameters
     ----------
+
+    vertices : (N,3) ndarray
+                unit vector points of the sphere
 
     r : (M, N) ndarray
         Function values.
@@ -57,8 +60,18 @@ def project(bvecs, val, ax=None, vmin=None, vmax=None,
     -------
     m : basemap
         The newly created matplotlib basemap.
+    fig : figure
+        Matplotlib figure
+
+    Examples
+    --------
+    >>> from dipy.data import get_sphere
+    >>> verts,faces=get_sphere('symmetric724')
+    >>> sph_project(verts,np.random.rand(len(verts)))
 
     """
+    bvecs=bvecs.T
+
     if ax is None:
         fig, ax = plt.subplots(1)
 
