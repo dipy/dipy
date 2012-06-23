@@ -1,10 +1,17 @@
 import numpy as np
 
-try:
-    from enthought.mayavi import mlab
+try: 
+    # Mayavi appears in many guises:
+    try:
+        from enthought.mayavi import mlab
+    except ImportError:
+        from mayavi import mlab
+# But if you don't have it, we're not going to give you too much of a hard time:
 except ImportError:
-    from mayavi import mlab
-
+    e_s = "You do not have Mayavi installed. Some visualization functions"
+    e_s += " might not work."
+    print(e_s)
+    
 from dipy.utils.spheremakers import sphere_vf_from
 
 
