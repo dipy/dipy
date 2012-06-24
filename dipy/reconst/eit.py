@@ -1,7 +1,7 @@
 import warnings
 import numpy as np
 from scipy.ndimage import map_coordinates
-from dipy.reconst.recspeed import peak_finding, le_to_odf, sum_on_blocks_1d
+from dipy.reconst.recspeed import le_to_odf, sum_on_blocks_1d
 from dipy.utils.spheremakers import sphere_vf_from
 from dipy.reconst.dsi import project_hemisph_bvecs
 from scipy.ndimage.filters import laplace,gaussian_laplace
@@ -9,25 +9,18 @@ from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
 from dipy.reconst.qgrid import NonParametricCartesian
 from dipy.tracking.propspeed import map_coordinates_trilinear_iso
+from dipy.reconst.odf import OdfModel
 
-import warnings
-warnings.warn("This module is most likely to change both as a name and in structure in the future",FutureWarning)
-
-class DiffusionNabla(NonParametricCartesian):
-    ''' Reconstruct the signal using Diffusion Nabla Imaging  
+class DiffusionNablaModel(OdfModel):
+    def __init__(self, bvals, gradients, odf_sphere='symmetric362', 
+                 half_sphere_grads=False, fast=True):
+        ''' Reconstruct the signal using Diffusion Nabla Imaging  
     
-    As described in E.Garyfallidis PhD thesis, 2011.           
-    '''
-    def __init__(self, data, bvals, gradients,odf_sphere='symmetric362', 
-                 mask=None,
-                 half_sphere_grads=False,
-                 auto=True,
-                 save_odfs=False,
-                 fast=True):
-        '''
+        As described in E.Garyfallidis, "Towards an accurate brain
+        tractograph"tractograph, PhD thesis, 2011.
+        
         Parameters
         -----------
-        data : array, shape(X,Y,Z,D), or (X,D)
         bvals : array, shape (N,)
         gradients : array, shape (N,3) also known as bvecs        
         odf_sphere : str or tuple, optional
@@ -38,63 +31,47 @@ class DiffusionNabla(NonParametricCartesian):
         half_sphere_grads : boolean Default(False) 
             in order to create the q-space we use the bvals and gradients. 
             If the gradients are only one hemisphere then 
-        auto : boolean, default True 
-            if True then the processing of all voxels will start automatically 
-            with the class constructor,if False then you will have to call .fit()
-            in order to do the heavy duty processing for every voxel
-        save_odfs : boolean, default False
-            save odfs, which is memory expensive
 
         See also
         ----------
-        dipy.reconst.dti.Tensor, dipy.reconst.dsi.DiffusionSpectrum
+        dipy.reconst.eit.EquatorialInversionModel, dipy.reconst.dti.TensorModel, dipy.reconst.dsi.DiffusionSpectrumModel
         '''
-        
-        """
-        #read the vertices and faces for the odf sphere
-        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
-        self.odf_vertices=np.ascontiguousarray(odf_vertices)
-        self.odf_faces=np.ascontiguousarray(odf_faces)
-        self.odfn=len(self.odf_vertices)
-        self.save_odfs=save_odfs
         
         #check if bvectors are provided only on a hemisphere
         if half_sphere_grads==True:
-            bvals=np.append(bvals.copy(),bvals[1:].copy())
-            gradients=np.append(gradients.copy(),-gradients[1:].copy(),axis=0)
-            data=np.append(data.copy(),data[...,1:].copy(),axis=-1)
+            pass
+            #bvals=np.append(bvals.copy(),bvals[1:].copy())
+            #gradients=np.append(gradients.copy(),-gradients[1:].copy(),axis=0)
+            #data=np.append(data.copy(),data[...,1:].copy(),axis=-1)
         
         #load bvals and bvecs
         self.bvals=bvals
         gradients[np.isnan(gradients)] = 0.
         self.gradients=gradients
         #save number of total diffusion volumes
-        self.dn=data.shape[-1]
-        self.data=data
-        self.datashape=data.shape #initial shape  
-        self.mask=mask
-        """
-        super(DiffusionNabla, self).__init__(data,bvals,gradients,odf_sphere,mask,half_sphere_grads,auto,save_odfs)
-        
+        self.dn=self.gradients.shape[0] #data.shape[-1]
+        odf_vertices, odf_faces = sphere_vf_from(odf_sphere)        
+        self.set_odf_vertices(odf_vertices,None,odf_faces)
+        self.odfn=odf_vertices.shape[0]
+
         #odf sampling radius  
         self.radius=np.arange(0,5,.2)
         #self.radiusn=len(self.radius)
         #self.create_qspace(bvals,gradients,16,8)
         #peak threshold
-        self.peak_thr=.7
+        #self.peak_thr=.7
         #equatorial zone
         self.zone=5.
         self.gaussian_weight=0.05
         self.fast=fast
         if fast==True:            
-            self.odf=self.fast_odf
+            self.evaluate_odf=self.fast_odf
         else:
-            self.odf=self.slow_odf            
-        self.update()       
-        if auto:
-            self.fit()
-            
-    def update(self):        
+            self.evaluate_odf=self.slow_odf            
+        self.precompute()
+
+    def precompute(self):
+
         self.radiusn=len(self.radius)
         self.create_qspace(self.bvals,self.gradients,17,8)
         if self.fast==False: 
@@ -182,7 +159,8 @@ class DiffusionNabla(NonParametricCartesian):
         for (i,v) in enumerate(self.odf_vertices):
             eq_inds.append([])                    
             for (j,k) in enumerate(self.odf_vertices):
-                angle=np.rad2deg(np.arccos(np.dot(v,k)))
+                vk=np.clip(np.dot(v,k),-1,1)                
+                angle=np.rad2deg(np.arccos(vk))
                 if  angle < 90 + thr and angle > 90 - thr:
                     eq_inds[i].append(j)
                     eq_inds_complete.append(j)                    
@@ -214,15 +192,30 @@ class DiffusionNabla(NonParametricCartesian):
                 Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T        
     
-class EquatorialInversion(DiffusionNabla):    
-    def eit_operator(self,input, scale, output = None, mode = "reflect", cval = 0.0):
-        """Calculate a multidimensional laplace filter using an estimation
-        for the second derivative based on differences.
-        """
-        def derivative2(input, axis, output, mode, cval):
-            return correlate1d(input, scale*np.array([1, -2, 1]), axis, output, mode, cval, 0)
-        return generic_laplace(input, derivative2, output, mode, cval)
+class EquatorialInversionModel(DiffusionNablaModel):    
+    ''' Reconstruct the signal using Equatorial Inversion Transform 
     
+        As described in E.Garyfallidis, "Towards an accurate brain
+        tractograph"tractograph, PhD thesis, 2011.
+        
+        Parameters
+        -----------
+        bvals : array, shape (N,)
+        gradients : array, shape (N,3) also known as bvecs        
+        odf_sphere : str or tuple, optional
+            If str, then load sphere of given name using ``get_sphere``.
+            If tuple, gives (vertices, faces) for sphere.
+        filter : array, shape(len(vertices),) 
+            default is None (using standard hanning filter for DSI)
+        half_sphere_grads : boolean Default(False) 
+            in order to create the q-space we use the bvals and gradients. 
+            If the gradients are only one hemisphere then 
+
+        See also
+        ----------
+        dipy.reconst.eit.EquatorialInversionModel, dipy.reconst.dti.TensorModel, dipy.reconst.dsi.DiffusionSpectrumModel
+        '''
+
     def set_operator(self,name):
         self.operator=name
 
@@ -254,7 +247,6 @@ class EquatorialInversion(DiffusionNabla):
         strides=np.array(LEq.strides,'i8')
         map_coordinates_trilinear_iso(LEq,self.Ys,
                                       strides,self.Ysn, LEs)
-        #"""
         #LEs=map_coordinates(LEq,self.zoom*self.Ys,order=1)                
         LEs=LEs.reshape(self.odfn,self.radiusn)
         LEs=LEs*self.radius
@@ -268,13 +260,12 @@ class EquatorialInversion(DiffusionNabla):
         sum_on_blocks_1d(LES,self.eqinds_len,odf,self.odfn)
         odf=odf/self.eqinds_len        
         return self.angular_weighting(sign*odf)
-        #if self.E==None:
-        #    return odf
-        #return angular_weighting(self.E,odf)
 
-from numpy import ravel
-def angular_weighting(E,odf):    
-    return ravel(np.dot(odf[None,:],E))
+    def angular_weighting(self,odf):
+        if self.E==None:
+            return odf
+        else:
+            return np.dot(odf[None,:],self.E).ravel() 
 
 
 

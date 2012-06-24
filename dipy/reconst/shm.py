@@ -13,13 +13,19 @@ following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
 from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
-                  broadcast_arrays, concatenate, cos, diag, dot, empty, \
-                  eye, log, minimum, maximum, pi, repeat, sqrt, eye
+                  broadcast_arrays, concatenate, cos, diag, diff, dot, empty, \
+                  eye, log, minimum, maximum, pi, repeat, sqrt, unique, eye
 from numpy.linalg import pinv, svd
 from numpy.random import randint
+from .odf import OdfModel
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
-from .recspeed import peak_finding_onedge, _robust_peaks
+
+def _copydoc(obj):
+    def bandit(f):
+        f.__doc__ = obj.__doc__
+        return f
+    return bandit
 
 def real_sph_harm(m, n, theta, phi):
     """
@@ -131,41 +137,52 @@ def smooth_pinv(B, L):
     inv = pinv(concatenate((B, L)))
     return inv[:, :len(B)]
 
-class SphHarmModel(object):
-    @property
-    def sampling_points(self):
-        return self._sampling_points
+def lazy_index(index):
+    """Produces a lazy index
 
-    @property
-    def sampling_edges(self):
-        return self._sampling_edges
+    Returns a slice that can be used for indexing an array, if no slice can be
+    made index is returned as is.
+    """
+    index = asarray(index)
+    assert index.ndim == 1
+    if index.dtype.kind == 'b':
+        index = index.nonzero()[0]
+    if len(index) == 1:
+        return slice(index[0], index[0] + 1)
+    step = unique(diff(index))
+    if len(step) != 1 or step[0] == 0:
+        return index
+    else:
+        return slice(index[0], index[-1] + 1, step[0])
 
-    def __init__(self, sh_order, bval, bvec, smooth=0, sampling_points=None,
-                 sampling_edges=None):
+class SphHarmModel(OdfModel):
+    """The base class to subclassed by spacific spherical harmonic models of
+    diffusion data"""
+    def __init__(self, bval, gradients, sh_order, smooth=0,
+                 odf_vertices=None, odf_edges=None):
         """Creates a model that can be used to fit or sample diffusion data
 
         Arguments
         ---------
-        sh_order : even int >= 0
-            the spherical harmonic order of the model
         bval : ndarray (n,)
             the b values for the data, where n is the number of volumes in data
-        bvec : ndarray (3, n)
+        gradient : ndarray (n, 3)
             the diffusing weighting gradient directions for the data, n is the
             number of volumes in the data
+        sh_order : even int >= 0
+            the spherical harmonic order of the model
         smoothness : float between 0 and 1
             The regulization peramater of the model
-        sampling_points : ndarray (3, m), optional
-            points for sampling the model, these points are used when the
-            sample method is called
-        sampling_edges : ndarray (e, 2), dtype=int, optional
-            Indices to sampling_points so that every unique pair of neighbors
-            in sampling_points is one of the m edges.
+        odf_vertices : ndarray (v, 3), optional
+            Points on a unit sphere, used to evaluate odf
+        odf_edges : ndarray (e, 2), dtype=int16, optional
+            A list of Neighboring vertices
 
         """
-        bvec = bvec[:, bval > 0]
         m, n = sph_harm_ind_list(sh_order)
-        x, y, z = bvec
+        where_dwi = bval > 0
+        self._index = (Ellipsis, lazy_index(where_dwi))
+        x, y, z = gradients[where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         B = real_sph_harm(m, n, azi[:, None], pol[:, None])
         L = -n*(n+1)
@@ -175,31 +192,17 @@ class SphHarmModel(object):
         self._m = m
         self._n = n
         self._set_fit_matrix(B, L, F, smooth)
-        if sampling_points is not None:
-            self.set_sampling_points(sampling_points, sampling_edges)
+        if odf_vertices is not None:
+            self.set_odf_vertices(odf_vertices, odf_edges)
 
-    def set_sampling_points(self, sampling_points, sampling_edges=None):
-        """Sets the sampling points
-
-        The sampling points are the points at which the modle is sampled when
-        the sample method is called.
-
-        Parameters
-        ----------
-        sampling_points : ndarray (n, 3), dtype=float
-            The x, y, z coordinates of n points on a unit sphere.
-        sampling_edges : ndarray (m, 2), dtype=int, optional
-            Indices to sampling_points so that every unique pair of neighbors
-            in sampling_points is one of the m edges.
-
-        """
-        x, y, z = sampling_points.T
+    @_copydoc(OdfModel.set_odf_vertices)
+    def set_odf_vertices(self, odf_vertices, odf_edges=None):
+        """Also sets sampling_matrix"""
+        OdfModel.set_odf_vertices(self, odf_vertices, odf_edges)
+        x, y, z = odf_vertices.T
         r, pol, azi = cart2sphere(x, y, z)
         S = real_sph_harm(self._m, self._n, azi[:, None], pol[:, None])
-
         self._sampling_matrix = dot(S, self._fit_matrix)
-        self._sampling_points = sampling_points
-        self._sampling_edges = sampling_edges
 
     def _set_fit_matrix(self, *args):
         """Should be set in a sublcass and is called by __init__"""
@@ -218,24 +221,26 @@ class MonoExpOpdfModel(SphHarmModel):
     Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
     Q-ball imaging.
     """
+    min = .01
+    max = .99
 
     def _set_fit_matrix(self, B, L, F, smooth):
-        """The fit matrix, is used by fit_data to return the coefficients of
-        the model"""
+        """The fit matrix, is used by fit_coefficients to return the
+        coefficients of the odf"""
         invB = smooth_pinv(B, sqrt(smooth)*L)
         L = L[:, None]
         F = F[:, None]
         self._fit_matrix = F*L*invB
 
-    def fit_data(self, data):
-        """Fits the model to diffusion data and returns the coefficients
-        """
-        d = log(-log(data))
+    def fit_coefficents(self, data):
+        """Fits the model to diffusion data and returns the coefficients of the
+        odf"""
+        data = data[self._index]
+        d = log(-log(data.clip(self.min, self.max)))
         return dot(d, self._fit_matrix.T)
 
-    def evaluate(self, data):
-        """Fits the model to diffusion data and evaluates the model at
-        sampling_points
+    def evaluate_odf(self, data):
+        """Fits the model to diffusion data returns the odf
 
         The points used to sample the model can be set using the
         set_sampling_points method
@@ -247,7 +252,8 @@ class MonoExpOpdfModel(SphHarmModel):
             normilzed before it is fit.
 
         """
-        d = log(-log(data))
+        data = data[self._index]
+        d = log(-log(data.clip(self.min, self.max)))
         return dot(d, self._sampling_matrix.T)
 
 class SlowAdcOpdfModel(SphHarmModel):
@@ -272,22 +278,11 @@ class SlowAdcOpdfModel(SphHarmModel):
         delta_q = 4*F*invB
         self._fit_matrix = delta_b, delta_q
 
-    def set_sampling_points(self, sampling_points, sampling_edges=None):
-        """Sets the sampling points
-
-        The sampling points are the points at which the modle is sampled when
-        the sample method is called.
-
-        Parameters
-        ----------
-        sampling_points : ndarray (n, 3), dtype=float
-            The x, y, z coordinates of n points on a unit sphere.
-        sampling_edges : ndarray (m, 2), dtype=int, optional
-            Indices to sampling_points so that every unique pair of neighbors
-            in sampling_points is one of the m edges.
-
-        """
-        x, y, z = sampling_points.T
+    @_copydoc(OdfModel.set_odf_vertices)
+    def set_odf_vertices(self, odf_vertices, odf_edges=None):
+        """Also sets sampling_matrix"""
+        OdfModel.set_odf_vertices(self, odf_vertices, odf_edges)
+        x, y, z = odf_vertices.T
         r, pol, azi = cart2sphere(x, y, z)
         S = real_sph_harm(self._m, self._n, azi[:, None], pol[:, None])
 
@@ -295,29 +290,29 @@ class SlowAdcOpdfModel(SphHarmModel):
         delta_b = dot(S, delta_b)
         delta_q = dot(S, delta_q)
         self._sampling_matrix = delta_b, delta_q
-        self._sampling_points = sampling_points
-        self._sampling_edges = sampling_edges
 
     def fit_data(self, data):
         """The fit matrix, is used by fit_data to return the coefficients of
         the model"""
+        data = data[self._index]
         delta_b, delta_q = self._fit_matrix
         return _slowadc_formula(data, delta_b, delta_q)
 
-    def evaluate(self, data):
+    def evaluate_odf(self, data):
         """Fits the model to diffusion data and evaluates the model at
-        sampling_points
+        odf_vertices
 
         The points used to sample the model can be set using the
-        set_sampling_points method
+        set_odf_vertices method
 
         Parameters
         ----------
         data : ndarray (..., n)
             Diffusion data to be fit using the model. The data should be
-            normilzed before it is fit.
+            normalized before it is fit.
 
         """
+        data = data[self._index]
         delta_b, delta_q = self._sampling_matrix
         return _slowadc_formula(data, delta_b, delta_q)
 
@@ -338,24 +333,23 @@ class QballOdfModel(SphHarmModel):
     def fit_data(self, data):
         """Fits the model to diffusion data and returns the coefficients
         """
+        data = data[self._index]
         return dot(data, self._fit_matrix.T)
 
-    def evaluate(self, data):
-        """Fits the model to diffusion data and returns samples
-
-        The points used to sample the model can be set using the
-        set_sampling_points method
+    def evaluate_odf(self, data):
+        """Fits the model to diffusion data and returns the odf
 
         Parameters
         ----------
         data : array_like, shape (..., n)
             Diffusion data to be fit using the model. The data should have n
-            diffusion weighed signals along the last dimenssion
+            diffusion weighed signals along the last dimension
 
         """
+        data = data[self._index]
         return dot(data, self._sampling_matrix.T)
 
-def normalize_data(data, bval, min_signal=1e-5, mask=None):
+def normalize_data(data, bval, min_signal=1e-5, out=None):
     """Normalizes the data with respect to the mean b0
     """
     if min_signal <= 0:
@@ -367,20 +361,18 @@ def normalize_data(data, bval, min_signal=1e-5, mask=None):
     if not where_b0.any():
         raise ValueError("data must contain at least one image set with no "+
                          "diffusion weighting")
-    elif where_b0.all():
-        raise ValueError("data must contain at least one dwi set")
+    if out is None:
+        out = array(data, dtype='float', copy=True)
+    else:
+        if out.dtype.kind != 'f':
+            raise ValueError("out must be floating point")
+        out[:] = data                         
 
-    dwi = data[..., ~where_b0]
-    dwi = asarray(dwi, 'float')
-    b0 = data[..., where_b0].mean(-1)
-    b0 = b0[..., None]
-    b0 = asarray(b0, 'float')
-
-    maximum(dwi, min_signal, dwi)
-    maximum(b0, min_signal, b0)
-    dwi /= b0
-    minimum(dwi, 1, dwi)
-    return dwi
+    out.clip(min_signal, out=out)
+    b0 = out[..., where_b0].mean(-1)
+    b0 = b0.reshape(b0.shape + (1,))
+    out /= b0 
+    return out
 
 def gfa(samples):
     """gfa of some function from a set of samples of that function"""
@@ -389,21 +381,6 @@ def gfa(samples):
     numer = n*(diff*diff).sum(-1)
     denom = (n-1)*(samples*samples).sum(-1)
     return sqrt(numer/denom)
-
-def _closest_peak(peak_points, prev_step, dot_limit):
-    """Returns peak form peak_points closest to prev_step
-
-    Returns either the closest peak or None if dot(prev, closets) < dot_limit
-    """
-    peak_dots = dot(peak_points, prev_step)
-    closest_peak = abs(peak_dots).argmax()
-    dot_closest_peak = peak_dots[closest_peak]
-    if abs(dot_closest_peak) < dot_limit:
-        raise StopIteration("angle between peaks too large")
-    if dot_closest_peak > 0:
-        return peak_points[closest_peak]
-    else:
-        return -peak_points[closest_peak]
 
 def hat(B):
     """Returns the hat matrix for the design matrix B
@@ -516,17 +493,8 @@ class ClosestPeakSelector(object):
     angle_limit : float, 0 <= angle_limit <= 90
         angle_limit is used when next_step is called, see also dot_limit.
     dot_limit : float, 0 <= dot_limit <= 1
-        Same as cos(angle_limit), chaning dot_limit will change angle_limit
+        Same as cos(angle_limit), changing dot_limit will change angle_limit
         and vice versa
-    min_relative_peak : float, 0 <= min_relative_peak < 1
-        Peaks smaller than min_relative_peak of the largest peak are assumed to
-        be artifacts and ignored
-    peak_spacing : float, 0 <= peak_spacing <= 1
-        The minimum spacing between neighboring peaks, spacing_angle is
-        arccos(peak_spacing). If two peaks are less than spacing_angle appart
-        it is assumed to be an artifact and only the greater of the two peaks
-        is treated as a true peak.
-
     """
     def _get_angle_limit(self):
         return 180/pi * arccos(self.dot_limit)
@@ -538,8 +506,7 @@ class ClosestPeakSelector(object):
 
     angle_limit = property(_get_angle_limit, _set_angle_limit)
 
-    def __init__(self, model, interpolator, angle_limit=None, dot_limit=0, \
-                 min_relative_peak=.5, peak_spacing=.75):
+    def __init__(self, model, interpolator, angle_limit=None, dot_limit=0):
         """Creates a peakfinder which can be used to get next_step
 
         Parameters:
@@ -552,16 +519,10 @@ class ClosestPeakSelector(object):
             see angle_limit attribute
         dot_limit : float
             see dot_limit attribute
-        min_relative_peak : float
-            see min_relative_peak attritube
-        peak_spacing : float
-            see peak_spacing attribute
         """
 
         self._interpolator = interpolator
         self._model = model
-        self.min_relative_peak = min_relative_peak
-        self.peak_spacing = peak_spacing
         if angle_limit is not None:
             self.angle_limit = angle_limit
         else:
@@ -583,14 +544,62 @@ class ClosestPeakSelector(object):
 
         """
         vox_data = self._interpolator[location]
+        peak_points = self._model.get_directions(vox_data)
+        if prev_step is not None:
+            return _closest_peak(peak_points, prev_step, self.dot_limit)
+        else:
+            return peak_points
 
-        sampling_points = self._model.sampling_points
-        sampling_edges = self._model.sampling_edges
-        samples = self._model.evaluate(vox_data)
+def _closest_peak(peak_points, prev_step, dot_limit):
+    peak_dots = dot(peak_points, prev_step)
+    closest_peak = abs(peak_dots).argmax()
+    dot_closest_peak = peak_dots[closest_peak]
+    if dot_closest_peak >= dot_limit:
+        return peak_points[closest_peak]
+    elif -dot_closest_peak >= dot_limit:
+        return -peak_points[closest_peak]
+    else:
+        raise StopIteration("angle between peaks too large")
 
-        peak_values, peak_inds = peak_finding_onedge(samples, sampling_edges)
-        peak_points = sampling_points[peak_inds]
-        peak_points = _robust_peaks(peak_points, peak_values,
-                                    self.min_relative_peak, self.peak_spacing)
-        step = _closest_peak(peak_points, prev_step, self.dot_limit)
-        return step
+class NND_ClosestPeakSelector(ClosestPeakSelector):
+
+    def __init__(self, model, data, mask, voxel_size, angle_limit=None,
+                 dot_limit=0):
+        """Create a new peak_finder"""
+        self.voxel_size = asarray(voxel_size, 'float')
+        if angle_limit is not None:
+            self.angle_limit = angle_limit
+        else:
+            self.dot_limit = dot_limit
+        self.mask = asarray(mask, 'bool')
+        assert self.mask.shape == data.shape[:-1]
+        self._data = data
+        self._model = model
+        self.reset_cache()
+
+    def reset_cache(self):
+        lookup = empty(self.mask.shape, 'int')
+        lookup.fill(-2)
+        lookup[self.mask] = -1
+        self._lookup = lookup
+        self._peaks = []
+
+    def next_step(self, location, prev_step):
+        vox_loc = tuple(location // self.voxel_size)
+        if min(vox_loc) < 0:
+            raise IndexError('negative index')
+        hash = self._lookup[vox_loc]
+        if hash >= 0:
+            peak_points = self._peaks[hash]
+        elif hash == -1:
+            vox_data = self._data[vox_loc]
+            peak_points = self._model.get_directions(vox_data)
+            self._lookup[vox_loc] = len(self._peaks)
+            self._peaks.append(peak_points)
+        else:
+            raise StopIteration("outside mask")
+        if prev_step is not None:
+            return _closest_peak(peak_points, prev_step, self.dot_limit)
+        else:
+            return peak_points
+

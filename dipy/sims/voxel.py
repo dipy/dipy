@@ -10,7 +10,7 @@ diffusion_evals = np.array([1700e-6, 300e-6, 300e-6])
 
 def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
                     fractions=[35,35], snr=20):
-    """Simulate the signal for a Sticks & Ball model.
+    """ Simulate the signal for a Sticks & Ball model.
 
     Parameters
     -----------
@@ -76,7 +76,7 @@ def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
 
 
 def single_tensor(bvals, gradients, S0=1, evals=None, evecs=None, snr=None):
-    """Simulated Q-space signal with a single tensor.
+    """ Simulated Q-space signal with a single tensor.
 
     Parameters
     -----------

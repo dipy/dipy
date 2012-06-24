@@ -155,8 +155,10 @@ class Tensor(ModelArray):
 
     ### Self Diffusion Tensor Property ###
     def _getD(self):
-        evals = self.evals
-        evecs = self.evecs
+        """Calculates the 3x3 diffusion tensor for each voxel"""
+        params, wrap = _makearray(self.model_params)
+        evals = params[..., :3]
+        evecs = params[..., 3:]
         evals_flat = evals.reshape((-1, 3))
         evecs_flat = evecs.reshape((-1, 3, 3))
         D_flat = np.empty(evecs_flat.shape)
@@ -164,7 +166,9 @@ class Tensor(ModelArray):
             Q = evecs_flat[ii]
             L = evals_flat[ii]
             D_flat[ii] = np.dot(Q*L, Q.T)
-        return D_flat.reshape(evecs.shape)
+        D = _filled(wrap(D_flat))
+        D.shape = self.shape + (3, 3)
+        return D
 
     D = property(_getD, doc = "Self diffusion tensor")
 
@@ -463,6 +467,8 @@ def from_lower_triangular(D):
     """
     return D[..., _lt_indices]
 
+_lt_rows = np.array([0, 1, 1, 2, 2, 2])
+_lt_cols = np.array([0, 0, 1, 0, 1, 2])
 def lower_triangular(tensor, b0=None):
     """
     Returns the six lower triangular values of the tensor and a dummy variable
@@ -473,7 +479,7 @@ def lower_triangular(tensor, b0=None):
     tensor - array_like (..., 3, 3)
         a collection of 3, 3 diffusion tensors
     b0 - float
-        if b0 is not none lob(b0) is returned as the dummy variable
+        if b0 is not none log(b0) is returned as the dummy variable
 
     Returns:
     -------
@@ -481,16 +487,15 @@ def lower_triangular(tensor, b0=None):
         If b0 is none, then the shape will be (..., 6) otherwise (..., 7)
 
     """
-    assert tensor.shape[-2:] == (3, 3)
+    if tensor.shape[-2:] != (3, 3):
+        raise ValueError("Diffusion tensors should be (..., 3, 3)")
     if b0 is None:
-        D = np.empty(tensor.shape[:-2] + (6,), dtype=tensor.dtype)
+        return tensor[..., _lt_rows, _lt_cols]
     else:
         D = np.empty(tensor.shape[:-2] + (7,), dtype=tensor.dtype)
-        D[..., 6] = np.log(b0)
-    row = [0, 1, 1, 2, 2, 2]
-    colm = [0, 0, 1, 0, 1, 2]
-    D[..., :6] = tensor[..., row, colm]
-    return D
+        D[..., 6] = -np.log(b0)
+        D[..., :6] = tensor[..., _lt_rows, _lt_cols]
+        return D
 
 def tensor_eig_from_lo_tri(B, data):
     """Calculates parameters for creating a Tensor instance

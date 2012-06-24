@@ -2,120 +2,115 @@ import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-import nibabel as nib
-from dipy.viz import fvtk
-from dipy.data import get_data, get_sphere
-from dipy.reconst.recspeed import peak_finding
-from dipy.reconst.gqi import GeneralizedQSampling
-from dipy.reconst.dni import DiffusionNabla
+from dipy.reconst.eit import DiffusionNablaModel, EquatorialInversionModel
 from dipy.sims.voxel import SticksAndBall
-from scipy.fftpack import fftn, fftshift, ifftn,ifftshift
-from dipy.core.triangle_subdivide import create_unit_sphere, create_half_unit_sphere 
-from scipy.ndimage import map_coordinates
 from dipy.utils.spheremakers import sphere_vf_from
+from dipy.data import get_data
+from dipy.core.geometry import reduce_antipodal, unique_edges
 
 def sim_data(bvals,bvecs,d=0.0015,S0=100,snr=None):
-    
-    data=np.zeros((14,len(bvals)))
-    #isotropic
+
+    descr=np.zeros(13).tolist()
+    data=np.zeros((13,len(bvals)))
+
+    descr[0]=('isotropic',0)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(90,0),(90,90)], 
                           fractions=[0,0,0], snr=snr)
     data[0]=S.copy()
-    #one fiber    
+    descr[1]=('one fiber',1)    
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(30, 0),(90,0),(90,90)], 
                           fractions=[100,0,0], snr=snr)
     data[1]=S.copy()
-    #two fibers
+    descr[2]=('two fibers',2)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(90,0),(90,90)], 
                           fractions=[50,50,0], snr=snr)
     data[2]=S.copy()
-    #three fibers
+    descr[3]=('three fibers',3)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(90,0),(90,90)], 
                           fractions=[33,33,33], snr=snr)
     data[3]=S.copy()
-    #three fibers iso
+    descr[4]=('three fibers iso',3)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(90,0),(90,90)], 
                           fractions=[23,23,23], snr=snr)
     data[4]=S.copy()
-    #three fibers more iso
+    descr[5]=('three fibers more iso',3)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(90,0),(90,90)], 
                           fractions=[13,13,13], snr=snr)
     data[5]=S.copy()
-    #three fibers one at 60
+    descr[6]=('three fibers one at 60',3)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(60,0),(90,90)], 
                           fractions=[33,33,33], snr=snr)
-    data[6]=S.copy()    
-    
-    #three fibers one at 90,90 one smaller
+    data[6]=S.copy()        
+    descr[7]=('three fibers one at 90,90 one smaller',3)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(60,0),(90,90)], 
                           fractions=[33,33,23], snr=snr)
-    data[7]=S.copy()
-    
-    #three fibers one at 90,90 one even smaller
+    data[7]=S.copy()    
+    descr[8]=('three fibers one at 60, one at 90 and one smaller',3)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(60,0),(90,90)], 
                           fractions=[33,33,13], snr=snr)
-    data[8]=S.copy()
-    
-    #two fibers one at 60 one even smaller
+    data[8]=S.copy()    
+    descr[9]=('two fibers at 60 one smaller',2)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(60,0),(90,90)], 
                           fractions=[50,30,0], snr=snr)
-    data[9]=S.copy()
-    
-    #two fibers one at 30 one at 60 even smaller
+    data[9]=S.copy()    
+    descr[10]=('two fibers one at 30',2)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
-                          angles=[(0, 0),(20,0),(90,90)], 
-                          fractions=[50,50,0], snr=snr)
-    data[10]=S.copy()
-    
-    #one fiber one at 30 but small
+                          angles=[(0, 0),(45,0)], 
+                          fractions=[50,50], snr=snr)
+    data[10]=S.copy()    
+    descr[11]=('one fiber one at 30 but small iso',1)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(30, 0),(60,0),(90,90)], 
                           fractions=[60,0,0], snr=snr)
-    data[11]=S.copy()
-    
-    #one fiber one at 30 but even smaller
+    data[11]=S.copy()    
+    descr[12]=('one fiber one at 30 but even smaller iso',1)
     S,stics=SticksAndBall(bvals, bvecs, d, S0, 
                           angles=[(0, 0),(60,0),(90,90)], 
                           fractions=[30,0,0], snr=snr)
     data[12]=S.copy()
-    
-    S,stics=SticksAndBall(bvals, bvecs, d, S0, 
-                          angles=[(30, 0),(60,0),(90,90)], 
-                          fractions=[0,0,0], snr=snr)
-    data[13]=S.copy()
-    
-    return data
+        
+    return data, descr
 
-if __name__ == '__main__':
-#def test_dni():
+def test_dni_eit():
  
     btable=np.loadtxt(get_data('dsi515btable'))    
     bvals=btable[:,0]
     bvecs=btable[:,1:]
-    data=sim_data(bvals,bvecs)
+    data,descr=sim_data(bvals,bvecs)   
+    #load odf sphere
+    vertices,faces = sphere_vf_from('symmetric724')
+    edges = unique_edges(faces)
+    half_vertices,half_edges,half_faces=reduce_antipodal(vertices,faces)
+    #create the sphere
+    odf_sphere=(vertices,faces)
+    dn=DiffusionNablaModel(bvals,bvecs,odf_sphere)
+    dn.relative_peak_threshold = 0.5
+    dn.angular_distance_threshold = 20
+    dnfit=dn.fit(data)
+    print('DiffusionNablaModel')
+    for i,d in enumerate(data):
+        print descr[i], np.sum(dnfit.peak_values[i]>0)
     
-    dn=DiffusionNabla(data,bvals,bvecs,save_odfs=True)
-    pks=dn.pk()
-    #assert_array_equal(np.sum(pks>0,axis=1),
-    #                   np.array([0, 1, 2, 3, 3, 3, 3, 3, 3, 2, 2, 1, 1, 0]))
+    ei=EquatorialInversionModel(bvals,bvecs,odf_sphere)
+    ei.relative_peak_threshold = 0.3
+    ei.angular_distance_threshold = 15
+    ei.set_operator('laplacian')
+    eifit = ei.fit(data,return_odf=True)
+    print('EquatorialInversionModel')
+    for i,d in enumerate(data):
+        print descr[i], np.sum(eifit.peak_values[i]>0)
+        assert_equal(descr[i][1], np.sum(eifit.peak_values[i]>0))
+
+    from dipy.viz import show_odfs
+    show_odfs(eifit.odf[None,None,:,:], (vertices,faces), scale=2)
     
-    odfs=dn.odfs()
-    peaks,inds=peak_finding(odfs[10],dn.odf_faces)
-    
-
-    
-
-
-
-
-
