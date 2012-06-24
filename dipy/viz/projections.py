@@ -104,4 +104,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
         cax = fig.add_axes([l+w+0.075, b, 0.05, h], frameon=False)
         fig.colorbar(mappable, cax=cax) # draw colorbar
 
+    ax.set_xlim([-1.1, 1.1])
+    ax.set_ylim([-1.1, 1.1])
+
     return fig
