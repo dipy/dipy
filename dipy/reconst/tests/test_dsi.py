@@ -120,21 +120,42 @@ def test_dsi():
     dsfit=ds.fit(S)
     QA=dsfit.qa
     assert_equal(np.sum(QA>0),2)
-    
+     
+    #Give me 2 directions
+    assert_equal(len(dsfit.get_directions()),2)
+   
     #3 fibers
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
     ds=DiffusionSpectrumModel(bvals,bvecs,odf_sphere)
     ds.relative_peak_threshold = 0.5
-    dsfit=ds.fit(S)
+    dsfit=ds.fit(S,return_odf=True)
     QA=dsfit.qa
     assert_equal(np.sum(QA>0),3)
+
+    #Give me 3 directions
+    assert_equal(len(dsfit.get_directions()),3)
+
+    #Recalculate the odf with a different sphere.
+
+    vertices, faces = sphere_vf_from('symmetric724') 
     
+    odf1=dsfit.odf()
+    print len(odf1)
+    
+    odf2=dsfit.odf((vertices,faces))
+    print len(odf2)
+
+    assert_array_almost_equal(odf1,odf2)
+
     #isotropic
     S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[0,0,0], snr=None)   
     ds=DiffusionSpectrumModel(bvals,bvecs,odf_sphere)
     dsfit=ds.fit(S)
     QA=dsfit.qa
     assert_equal(np.sum(QA>0),0)
+
+    #
+
     
 
 if __name__ == '__main__':

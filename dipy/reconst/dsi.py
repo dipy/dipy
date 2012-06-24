@@ -2,9 +2,26 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import pdf_to_odf
 from scipy.fftpack import fftn, fftshift
-from .odf import OdfModel
 from dipy.utils.spheremakers import sphere_vf_from
+from .odf import OdfModel, OdfFit, gfa
+from .recspeed import local_maxima, _filter_peaks
 
+class DiffusionSpectrumFit(OdfFit):
+    def odf(self,sphere=None,gfa_thr=0.02,normalize_peaks=False):
+        if sphere==None:
+            return self._odf
+        else:
+            self.model.sphere=sphere
+            self.recfit=self.model.fit(self.data,self.mask,
+                           return_odf=True,gfa_thr=gfa_thr,
+                           normalize_peaks=normalize_peaks)
+            return self.recfit._odf
+
+    def get_directions(self):
+        return self.model.odf_vertices[self.peak_indices[self.peak_indices>-1]]
+    
+
+    
 class DiffusionSpectrumModel(OdfModel):
     ''' Calculate the PDF and ODF using Diffusion Spectrum Imaging
     
@@ -48,6 +65,7 @@ class DiffusionSpectrumModel(OdfModel):
         self.num_b0 = len(bvals) - self.dn
         self.create_qspace()
     
+    
     def create_qspace(self):
         
         #create the q-table from bvecs and bvals        
@@ -73,8 +91,6 @@ class DiffusionSpectrumModel(OdfModel):
         #precompute coordinates for pdf interpolation
         self.precompute_interp_coords()    
    
-    def evaluate_odf(self,s):
-        return self.pdf_odf(self.pdf(s))
 
     def pdf(self,s):
         values=s*self.filter
@@ -130,6 +146,77 @@ class DiffusionSpectrumModel(OdfModel):
             Xs.append(np.vstack((xi,yi,zi)).T)
         self.Xs=np.concatenate(Xs).T
 
+    def fit(self, data, mask=None, return_odf=False, gfa_thr=0.02, 
+                normalize_peaks=False):
+            """Fits the model to data and returns an OdfFit"""
+
+            data_flat = data.reshape((-1, data.shape[-1]))
+            size = len(data_flat)
+            if mask is None:
+                mask = np.ones(size, dtype='bool')
+            else:
+                mask = mask.ravel()
+                if len(mask) != size:
+                    raise ValueError("mask is not the same size as data")
+
+            npeaks = 5
+            gfa_array = np.zeros(size)
+            qa_array = np.zeros((size, npeaks))
+            peak_values = np.zeros((size, npeaks))
+            peak_indices = np.zeros((size, npeaks), dtype='int')
+            peak_indices.fill(-1)
+
+            if return_odf:
+                odf_array = np.zeros((size, len(self.odf_vertices)))
+
+            global_max = -np.inf
+            for i, sig in enumerate(data_flat):
+                if not mask[i]:
+                    continue
+                odf = self.odf(sig)
+                if return_odf:
+                    odf_array[i] = odf
+
+                gfa_array[i] = gfa(odf)
+                if gfa_array[i] < gfa_thr:
+                    global_max = max(global_max, odf.max())
+                    continue
+                pk, ind = local_maxima(odf, self.odf_edges)
+                pk, ind = _filter_peaks(pk, ind,
+                                        self._distance_matrix,
+                                        self.relative_peak_threshold,
+                                        self._cos_distance_threshold)
+
+                global_max = max(global_max, pk[0])
+                n = min(npeaks, len(pk))
+                qa_array[i, :n] = pk[:n] - odf.min()
+                if normalize_peaks:
+                    peak_values[i, :n] = pk[:n] / pk[0]
+                else:
+                    peak_values[i, :n] = pk[:n]
+                peak_indices[i, :n] = ind[:n]
+
+            shape = data.shape[:-1]
+            gfa_array = gfa_array.reshape(shape)
+            qa_array = qa_array.reshape(shape + (npeaks,)) / global_max
+            peak_values = peak_values.reshape(shape + (npeaks,))
+            peak_indices = peak_indices.reshape(shape + (npeaks,))
+
+            dsfit = DiffusionSpectrumFit()
+            dsfit.peak_values = peak_values
+            dsfit.peak_indices = peak_indices
+            dsfit.gfa = gfa_array
+            dsfit.qa = qa_array
+            dsfit.data = data
+            dsfit.mask = mask
+            dsfit.model = self
+       
+            if return_odf:
+                dsfit._odf = odf_array.reshape(shape + odf_array.shape[-1:])
+
+            return dsfit
+
+
 
 def project_hemisph_bvecs(bvals,bvecs):
     """ Project any near identical bvecs to the other hemisphere
@@ -158,6 +245,9 @@ def project_hemisph_bvecs(bvals,bvecs):
     for (i,j) in pairs:
         bvecs2[1+j]=-bvecs2[1+j]    
     return bvecs2,pairs
+
+
+
 
 if __name__ == '__main__':
 

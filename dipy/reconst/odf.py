@@ -68,7 +68,6 @@ class OdfModel(object):
             self._odf_faces = faces
         self._distance_matrix = abs(vertices.dot(vertices.T))
 
-
     def evaluate_odf():
         """To be implemented by subclasses"""
         raise NotImplementedError()
@@ -151,7 +150,7 @@ class OdfModel(object):
 
 
 def gfa(samples):
-    """The gfa of a function evaluated on the unit sphere"""
+    """The general fractional anisotropy of a function evaluated on the unit sphere"""
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
     numer = n*(diff*diff).sum(-1)
