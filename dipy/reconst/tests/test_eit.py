@@ -8,6 +8,16 @@ from dipy.utils.spheremakers import sphere_vf_from
 from dipy.data import get_data
 from dipy.core.geometry import reduce_antipodal, unique_edges
 
+# Mayavi is an optional dependency 
+try: 
+    try:
+        from enthought.mayavi import mlab
+    except ImportError:
+        from mayavi import mlab
+    has_mayavi = True
+except ImportError:
+    has_mayavi = False
+
 def sim_data(bvals,bvecs,d=0.0015,S0=100,snr=None):
 
     descr=np.zeros(13).tolist()
@@ -111,6 +121,7 @@ def test_dni_eit():
         print descr[i], np.sum(eifit.peak_values[i]>0)
         assert_equal(descr[i][1], np.sum(eifit.peak_values[i]>0))
 
-    from dipy.viz import show_odfs
-    show_odfs(eifit.odf[None,None,:,:], (vertices,faces), scale=2)
+    if has_mayavi:
+        from dipy.viz import show_odfs
+        show_odfs(eifit.odf[None,None,:,:], (vertices,faces), scale=2)
     
