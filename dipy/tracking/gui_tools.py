@@ -1,12 +1,12 @@
 from warnings import warn
 
 # Import traits as optional package
-from ..utils.optional_traits import tapi, tuapi, have_traits, setup_module
-# Import names to top level; done here in case we don't have actual traits but
-# only the traits shell from the optional_traits module
-File = tapi.File
-Item, Group, View, ArrayEditor = (tuapi.Item, tuapi.Group, tuapi.View,
-                                  tuapi.ArrayEditor)
+try:
+    from traitsui.api import Item, Group, View, ArrayEditor
+except ImportError:
+    from ..utils.optpkg import OptionalImportError
+    raise OptionalImportError("You must have traits to use this module")
+from .interfaces import InputData
 
 from ..tracking.interfaces import InputData, ShmTrackingInterface
 

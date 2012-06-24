@@ -11,7 +11,11 @@ import numpy as np
 from scipy.ndimage import convolve
 
 # Import traits as optional package
-from ..utils.optional_traits import tapi as T, setup_module
+try:
+    import traits.api as T
+except ImportError:
+    from ..utils.optpkg import OptionalImportError
+    raise OptionalImportError("You must have traits to use this module")
 
 import nibabel as nib
 from nibabel.trackvis import write, empty_header

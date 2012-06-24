@@ -197,11 +197,11 @@ def angular_similarity(S,T):
     -----------
     S: array, shape (m,d)
     T: array, shape (n,d)
-        
+
     Returns
     --------
     max_cosine_distance:float
-    
+
     Examples
     ---------
     >>> import numpy as np
@@ -236,19 +236,21 @@ def angular_similarity(S,T):
     0.0
     >>> S=np.array([[0,1,0],[1,0,0]])
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
-    >>> angular_similarity(S,T)
-    0.70710678118654757
+
+    Now we use ``print`` to reduce the precision of of the printed output
+    (so the doctests don't detect unimportant differences)
+
+    >>> print angular_similarity(S,T)
+    0.707106781187
     >>> S=np.array([[0,1,0]])
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
-    >>> angular_similarity(S,T)
-    0.70710678118654757
+    >>> print angular_similarity(S,T)
+    0.707106781187
     >>> S=np.array([[0,1,0],[0,0,1]])
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
-    >>> angular_similarity(S,T)
-    0.70710678118654757
-
+    >>> print angular_similarity(S,T)
+    0.707106781187
     '''
-    
     m = len(S)
     n = len(T)
     if m < n:
