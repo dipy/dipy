@@ -75,6 +75,10 @@ def standard_dsi_algorithm(S,bvals,bvecs):
 
 def test_dsi():
 
+
+
+
+
     #load odf sphere
     vertices,faces = sphere_vf_from('symmetric724')
     edges = unique_edges(faces)
