@@ -7,6 +7,7 @@ class ReconstModel(object):
         """ returns Nx3 array of unit vectors
         """
         raise NotImplementedError()
+
     def fit(self, data, mask=None,**kargs):
         raise NotImplementedError()
 
