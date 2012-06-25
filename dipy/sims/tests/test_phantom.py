@@ -5,7 +5,6 @@ from nose.tools import assert_true, assert_false, assert_equal, assert_almost_eq
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data    
-from dipy.viz import fvtk
 from dipy.reconst.dti import Tensor
 from dipy.sims.phantom import orbital_phantom
 
@@ -39,15 +38,12 @@ def test_phantom():
     FA[np.isnan(FA)]=0
     
     assert_equal(np.round(FA.max()*1000),707)
-    
-    
-        
+
     
     
 if __name__ == "__main__":    
     test_phantom()
 
-    
     
     
     
