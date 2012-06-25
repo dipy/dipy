@@ -167,6 +167,12 @@ def add_noise(vol, snr=20, noise_type='gaussian'):
 
         A_x = \sqrt{\bar{(x - \bar{x})^2}} = <x>^2
 
+    References
+    ----------
+
+    Gudbjartsson, H and Patz, S (2008). The Rician Distribution of Noisy MRI
+    Data. Magnetic Resonance in Medicine 34: 910-914
+
     Examples
     --------
     >>> signal = np.arange(800).reshape(2,2,2,100)
