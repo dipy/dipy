@@ -133,70 +133,77 @@ def orbital_phantom(bvals=None,
     #vol[np.isnan(vol)]=0
     return vol
 
-def add_rician_noise(vol,snr=20):
-    """ add rician noise in 4D diffusion data   
-    
-    Parameters
-    -----------
-    vol : array, shape (X,Y,Z,W)
-    snr : float, 
-        signal to noise ratio
-    
-    Returns
-    --------
-    voln : array, same shape as vol
-        vol with additional rician noise
-        
-    Reference
-    ----------
-    http://my.fit.edu/~kozaitis/Matlab/MatNoiseIm.html   
-    """ 
-    
-    if len(vol.shape)==4:        
-        def gaussian_noise(vol):
-            voln=np.random.randn(*vol.shape[:3])
-            pvol=np.sum(vol[...,0]**2) #power of initial volume
-            pnoise=np.sum(np.random.randn(*voln.shape[:3])**2) #power of noise volume    
-            K=pvol/pnoise
-            #print pvol,pnoise,K
-            return np.sqrt(K/np.float(snr))*np.random.randn(*vol.shape)                
-        noise1=gaussian_noise(vol)
-        noise2=gaussian_noise(vol)
-    return np.sqrt((vol+noise1)**2+noise2**2)
-
-def add_gaussian_noise(vol,snr=20):
-    """ add gaussian noise in a 4D array with a specific snr
+def add_noise(vol, snr=20, noise_type='gaussian'):
+    r""" add gaussian noise in a 4D array with a specific snr
     
     Parameters
     -----------
     vol : array, shape (X,Y,Z,W) 
     snr : float, 
         signal to noise ratio
-    
+
+    noise: string
+        The distribution of noise added. Can be either 'gaussian' for Gaussian
+        distributed noise (default), or 'rician' for Rice-distributed noise.
+
     Returns
     --------
     voln : array, same shape as vol
         vol with additional rician noise    
-        
-    Reference
-    ----------
-    http://my.fit.edu/~kozaitis/Matlab/MatNoiseIm.html
-    """
-    
-    if len(vol.shape)==4:        
-        voln=np.random.randn(*vol.shape[:3])
-        pvol=np.sum(vol[...,0]**2) #power of initial volume
-        pnoise=np.sum((np.random.randn(*voln.shape)-.5)**2) #power of noise volume    
-        K=pvol/pnoise
-        print pvol,pnoise,K
-        noise=np.sqrt(K/np.float(snr))*(np.random.randn(*vol.shape))    
-    return vol+noise
-    
-    
-            
-    
-    
 
+    Notes
+    -----
+    Following: http://en.wikipedia.org/wiki/Signal-to-noise_ratio
+
+    We use the following definition of SNR:
+
+    .. math ::
+
+        SNR = \frac{P_{signal}}{P_{noise}} = (\frac{A_{signal}}{A_{noise}})^2
+
+    Where:
+
+    .. math ::
+
+        A_x = \sqrt{\bar{(x - \bar{x})^2}} = <x>^2
+
+    Examples
+    --------
+    >>> signal = np.arange(800).reshape(2,2,2,100)
+    >>> signal_w_noise = sp.add_noise(signal,snr=10,noise_type='rician')
+    
+    """
+
+    # We estimate the power in the signal as the variance across the last
+    # dimension:
+    p_signal = np.var(vol, -1)
+
+    # SNR = var(signal)/var(noise) => var(noise) = var(signal)/SNR:
+    p_noise = np.mean(p_signal/snr)
+
+    if noise_type == 'gaussian':
+        # Generate the noise with the correct standard deviation, averaged over
+        # all the voxels and with the right shape:
+        noise = np.random.randn(*vol.shape) * (np.sqrt(p_noise))
+    elif noise_type == 'rician':
+        # To generate rician noise, we add two IID Gaussian noise sources in
+        # the complex domain and combine them together:
+        noise1 = np.random.randn(*vol.shape)
+        noise2 = np.random.randn(*vol.shape)
+        noise_initial = np.sqrt(noise1**2 + noise2**2)
+        # Now let's get control of the variance, to make sure that we have the
+        # right power:
+        var_initial = np.var(noise_initial, -1)
+
+        # We will scale a demeaned version of the noise
+        mean_initial = np.mean(noise_initial,-1)[...,np.newaxis]
+        demeaned = noise_initial - mean_initial[...,np.newaxis]
+        # By our goal for the variance:
+        demeaned *= np.sqrt(p_noise/np.mean(var_initial))
+        # And then add back the mean:
+        noise = demeaned + mean_initial[...,np.newaxis]
+
+    return vol + noise
 
 
 if __name__ == "__main__":
