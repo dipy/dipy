@@ -213,7 +213,7 @@ def all_tensor_evecs(e0):
     return np.array([e0, e1, e2])
 
 
-def multi_tensor_odf(odf_verts, mf, mevals, mevecs):
+def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
     r'''Simulate a Multi-Tensor ODF.
 
     Parameters
@@ -223,7 +223,8 @@ def multi_tensor_odf(odf_verts, mf, mevals, mevecs):
     mf : sequence of floats, bounded [0,1]
         Percentages of the fractions for each tensor.
     mevals : sequence of 1D arrays,
-        Eigen-values for each tensor.
+        Eigen-values for each tensor.  By default, values typical for prolate
+        white matter are used.
     mevecs : sequence of 3D arrays,
         Eigenvectors for each tensor.  You can also think of these
         as the rotation matrices that align the different tensors.
@@ -250,6 +251,13 @@ def multi_tensor_odf(odf_verts, mf, mevals, mevecs):
 
     '''
     odf = np.zeros(len(odf_verts))
+
+    if mevals is None:
+        mevals = [None,] * len(mf)
+
+    if mevecs is None:
+        mevecs = [np.eye(3) for i in range(len(mf))]
+
     for j, f in enumerate(mf):
         odf += f * single_tensor_odf(odf_verts,
                                      evals=mevals[j], evecs=mevecs[j])
