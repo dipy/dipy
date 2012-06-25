@@ -176,44 +176,30 @@ def add_noise(vol, snr=20, noise_type='gaussian'):
     Examples
     --------
     >>> signal = np.arange(800).reshape(2,2,2,100)
-    >>> signal_w_noise = sp.add_noise(signal,snr=10,noise_type='rician')
-    
+    >>> signal_w_noise = add_noise(signal,snr=10,noise_type='rician')
+
     """
 
-    # We estimate the power in the signal as the variance across the last
-    # dimension:
-    p_signal = np.var(vol, -1)
+    # We estimate the power in the signal as the mean of signal
+    p_signal = np.mean(vol)
 
-    # SNR = var(signal)/var(noise) => var(noise) = var(signal)/SNR:
-    p_noise = np.mean(p_signal/snr)
+    # SNR = mean(signal)/std(noise) => mean(noise) = std(signal)/SNR:
+    sigma = p_signal / snr
 
     if noise_type == 'gaussian':
         # Generate the noise with the correct standard deviation, averaged over
         # all the voxels and with the right shape:
-        noise = np.random.randn(*vol.shape) * (np.sqrt(p_noise))
+        return vol + np.random.normal(0, sigma, size=vol.shape)
     elif noise_type == 'rician':
         # To generate rician noise, we add two IID Gaussian noise sources in
         # the complex domain and combine them together:
-        noise1 = np.random.randn(*vol.shape)
-        noise2 = np.random.randn(*vol.shape)
-        noise_initial = np.sqrt(noise1**2 + noise2**2)
-        # Now let's get control of the variance, to make sure that we have the
-        # right power:
-        var_initial = np.var(noise_initial, -1)
-
-        # We will scale a demeaned version of the noise
-        mean_initial = np.mean(noise_initial,-1)[...,np.newaxis]
-        demeaned = noise_initial - mean_initial
-        # By our goal for the variance:
-        demeaned *= np.sqrt(p_noise/np.mean(var_initial))
-        # And then add back the mean:
-        noise = demeaned + mean_initial
-
-    return vol + noise
-
+        noise1 = np.random.normal(0, sigma, size=vol.shape)
+        noise2 = np.random.normal(0, sigma, size=vol.shape)
+        # This is the same as abs(vol + complex(noise1, noise2))
+        return np.sqrt((vol + noise1)**2 + noise2**2)
 
 if __name__ == "__main__":
-    
+
     ##TODO: this can become a nice tutorial for generating phantoms
     
     def f(t):
