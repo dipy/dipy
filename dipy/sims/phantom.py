@@ -197,11 +197,11 @@ def add_noise(vol, snr=20, noise_type='gaussian'):
 
         # We will scale a demeaned version of the noise
         mean_initial = np.mean(noise_initial,-1)[...,np.newaxis]
-        demeaned = noise_initial - mean_initial[...,np.newaxis]
+        demeaned = noise_initial - mean_initial
         # By our goal for the variance:
         demeaned *= np.sqrt(p_noise/np.mean(var_initial))
         # And then add back the mean:
-        noise = demeaned + mean_initial[...,np.newaxis]
+        noise = demeaned + mean_initial
 
     return vol + noise
 
