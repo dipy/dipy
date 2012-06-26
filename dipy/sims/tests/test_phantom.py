@@ -48,22 +48,28 @@ def test_noise():
     Test that the noise added to the volume has the right SNR
     """
 
-    # np.random.seed(1977)
+    for a in [0.1, 100]:
+        for b in [0.1, 100]:
+            # Make a uniformly-distributed signal in a 4D volume. For this to
+            # work, the last dimension of the volume needs to be rather large:
+            vol = np.random.rand(10,10,10,100) * a + b
+            sig_power = np.var(vol,axis=-1)
 
-    # Make a uniformly-distributed signal in a 4D volume. For this to work, the
-    # last dimension of the volume needs to be rather long:
-    vol = np.random.rand(4,4,4,10e4) * 100 + 100
-    sig_power = np.var(vol,axis=-1)
 
+            for SNR in [0.1, 1, 10, 50]:
+                for noise_type in ['gaussian', 'rician', 'rayleigh']:
+                    for tol in [0.1, 0.01, 0.001]:
+                        print noise_type
+                        vol_w_noise = add_noise(vol,
+                                                SNR,
+                                                noise_type=noise_type,
+                                                tol=tol)
 
-    for SNR in [0.1, 1, 10, 100]:
-        for noise_type in ['gaussian', 'rician']:
-            vol_w_noise = add_noise(vol, SNR, noise_type=noise_type)
-            noise = vol_w_noise - vol
-            est_SNR = np.mean(vol)/np.std(noise)
-            # And tolerance needs to be pretty lax...
-            assert_array_almost_equal(est_SNR, SNR, decimal=1)
-
+                        noise = vol_w_noise - vol
+                        est_SNR = np.mean(vol)/np.std(noise)
+                        # And tolerance needs to be pretty lax...
+                        assert_array_almost_equal(est_SNR, SNR,
+                                                  decimal=int(np.log10(tol)))
 
 if __name__ == "__main__":
     test_phantom()

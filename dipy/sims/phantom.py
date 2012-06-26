@@ -133,7 +133,7 @@ def orbital_phantom(bvals=None,
     #vol[np.isnan(vol)]=0
     return vol
 
-def add_noise(vol, snr=20, noise_type='gaussian'):
+def add_noise(vol, snr=20, noise_type='gaussian', tol=10e-4):
     r""" add gaussian noise in a 4D array with a specific snr
     
     Parameters
@@ -187,16 +187,68 @@ def add_noise(vol, snr=20, noise_type='gaussian'):
     sigma = p_signal / snr
 
     if noise_type == 'gaussian':
+        noise_adder = _add_gaussian
         # Generate the noise with the correct standard deviation, averaged over
         # all the voxels and with the right shape:
-        return vol + np.random.normal(0, sigma, size=vol.shape)
-    elif noise_type == 'rician':
-        # To generate rician noise, we add two IID Gaussian noise sources in
-        # the complex domain and combine them together:
+        noise1 = np.random.normal(0, sigma, size=vol.shape)
+        # In this case, we don't need another source of noise:
+        noise2 = np.nan
+    elif noise_type in['rician', 'rayleigh']:
+        if noise_type == 'rician':
+            noise_adder = _add_rician
+        elif noise_type == 'rayleigh':
+            noise_adder = _add_rayleigh
+        # To generate rician and rayleigh noises, we combine two IID Gaussian
+        # noise sources in the complex domain (see below _add_rician and
+        # _add_rayleigh for the details):
         noise1 = np.random.normal(0, sigma, size=vol.shape)
         noise2 = np.random.normal(0, sigma, size=vol.shape)
-        # This is the same as abs(vol + complex(noise1, noise2))
-        return vol + np.sqrt(7/3.) * np.sqrt(noise1**2 + noise2**2)
+
+    sig_w_noise = noise_adder(vol, noise1, noise2)
+    est_noise = sig_w_noise - vol
+    est_snr = np.mean(vol)/np.std(est_noise)
+    # The resulting distribution may have variance that doesn't give us the
+    # requested SNR (seems to depend on the SNR. Larger deviations for
+    # smaller SNR). We adjust the variance of the underlying Gaussians
+    # until the noise-level approximately reaches the desired SNR:
+    while np.abs(est_snr - snr) > tol:
+        if  est_snr > snr:
+            noise1 = noise1 * 1.01
+            noise2 = noise2 * 1.01
+        elif est_snr < snr:
+            noise1 = noise1 * 0.9
+            noise2 = noise2 * 0.9
+        sig_w_noise = noise_adder(vol, noise1, noise2)
+        est_noise = sig_w_noise - vol
+        est_snr = np.mean(vol)/np.std(est_noise)
+    return sig_w_noise
+
+def _add_gaussian(vol, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    This one simply adds one of the Gaussians to the vol and ignores the other
+    one.
+    """
+    return vol + noise1
+
+def _add_rician(vol, noise1, noise2):
+    """
+    Helper function to add_noise.
+
+    This does the same as abs(vol + complex(noise1, noise2))
+
+    """
+    return np.sqrt((vol + noise1)**2 + noise2**2)
+
+def _add_rayleigh(vol, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
+
+    """
+    return vol + np.sqrt(noise1**2 + noise2**2)
 
 
 if __name__ == "__main__":
