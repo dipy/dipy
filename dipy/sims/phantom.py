@@ -198,6 +198,7 @@ def add_noise(vol, snr=20, noise_type='gaussian'):
         # This is the same as abs(vol + complex(noise1, noise2))
         return np.sqrt((vol + noise1)**2 + noise2**2)
 
+
 if __name__ == "__main__":
 
     ##TODO: this can become a nice tutorial for generating phantoms

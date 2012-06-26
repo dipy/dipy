@@ -45,10 +45,10 @@ def test_phantom():
 
 def test_noise():
     """
-    Test that the Gaussian noise added to the volume has the right SNR
+    Test that the noise added to the volume has the right SNR
     """
 
-    np.random.seed(1977)
+    # np.random.seed(1977)
 
     # Make a uniformly-distributed signal in a 4D volume. For this to work, the
     # last dimension of the volume needs to be rather long:
@@ -58,22 +58,20 @@ def test_noise():
 
     for SNR in [0.1, 1, 10, 100]:
         for noise_type in ['gaussian', 'rician']:
-            vol_w_noise = add_noise(vol,SNR,noise_type=noise_type)
+            print noise_type
+            vol_w_noise = add_noise(vol, SNR, noise_type=noise_type)
             noise = vol_w_noise - vol
-            noise_power = np.var(noise, axis=-1)
-            est_SNR = sig_power/noise_power
+            est_SNR = np.mean(vol)/np.std(noise)
             # And tolerance needs to be pretty lax...
-            assert_array_almost_equal(est_SNR, SNR * np.ones(est_SNR.shape),
-                                      decimal=0)
-    
-    
+            assert_array_almost_equal(est_SNR, SNR, decimal=2)
 
-if __name__ == "__main__":    
+
+if __name__ == "__main__":
     test_phantom()
+    test_noise()
 
-    
-    
-    
+
+
     
     
     
