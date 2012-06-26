@@ -138,13 +138,17 @@ def add_noise(vol, snr=20, noise_type='gaussian', tol=10e-4):
     
     Parameters
     -----------
-    vol : array, shape (X,Y,Z,W) 
+    vol : array, shape (X,Y,Z,W)
+
     snr : float,
         signal to noise ratio
 
     noise_type: string
         The distribution of noise added. Can be either 'gaussian' for Gaussian
-        distributed noise (default), or 'rician' for Rice-distributed noise.
+        distributed noise (default), 'rician' for Rice-distributed noise or
+        'rayleigh' for a Rayleigh distribution.
+
+    tol: SNR will be equal to the requested SNR up to this tolerance.
 
     Returns
     --------
