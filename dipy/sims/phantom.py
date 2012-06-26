@@ -196,7 +196,7 @@ def add_noise(vol, snr=20, noise_type='gaussian'):
         noise1 = np.random.normal(0, sigma, size=vol.shape)
         noise2 = np.random.normal(0, sigma, size=vol.shape)
         # This is the same as abs(vol + complex(noise1, noise2))
-        return np.sqrt((vol + noise1)**2 + noise2**2)
+        return vol + np.sqrt(7/3.) * np.sqrt(noise1**2 + noise2**2)
 
 
 if __name__ == "__main__":

@@ -58,12 +58,11 @@ def test_noise():
 
     for SNR in [0.1, 1, 10, 100]:
         for noise_type in ['gaussian', 'rician']:
-            print noise_type
             vol_w_noise = add_noise(vol, SNR, noise_type=noise_type)
             noise = vol_w_noise - vol
             est_SNR = np.mean(vol)/np.std(noise)
             # And tolerance needs to be pretty lax...
-            assert_array_almost_equal(est_SNR, SNR, decimal=2)
+            assert_array_almost_equal(est_SNR, SNR, decimal=1)
 
 
 if __name__ == "__main__":
