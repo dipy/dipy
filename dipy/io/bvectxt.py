@@ -69,6 +69,13 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     Moves vectors, storted along axis, from current_ornt to new_ornt. For
     example the vector [x, y, z] in "RAS" will be [-x, -y, z] in "LPS".
 
+    R: Right
+    A: Anterior
+    S: Superior
+    L: Left
+    P: Posterior
+    I: Inferior
+
     Examples:
     ---------
     >>> gtab = np.array([[1, 1, 1], [1, 2, 3]])
