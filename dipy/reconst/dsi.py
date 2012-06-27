@@ -202,6 +202,12 @@ class DiffusionSpectrumModel(OdfModel):
             peak_values = peak_values.reshape(shape + (npeaks,))
             peak_indices = peak_indices.reshape(shape + (npeaks,))
 
+
+            #Call peak metrics from odf.py
+
+            odffit =
+
+            #Unpack values to dsfit
             dsfit = DiffusionSpectrumFit()
             dsfit.peak_values = peak_values
             dsfit.peak_indices = peak_indices
