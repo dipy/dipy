@@ -152,7 +152,7 @@ octahedron_triangles = np.array( [
     [ 1, 11,  6],
     ], dtype='uint16')
 
-def divide_all( vertices, edges, triangles ):
+def _divide_all( vertices, edges, triangles ):
     r""" Subdivides triangles into smaller triangles
 
     Parameters
@@ -288,7 +288,7 @@ def create_unit_sphere( recursion_level=2 ):
         anything bigger will return a more subdivided sphere.
 
     Returns
-    ---------
+    ----------
     vertices : ndarray
         A Vx3 array with the x, y, and z coordinates of of each vertex.
     edges : ndarray
@@ -299,7 +299,7 @@ def create_unit_sphere( recursion_level=2 ):
 
     See Also
     ----------
-    create_half_sphere, divide_all
+    create_half_sphere
     """
     if recursion_level > 7 or recursion_level < 1:
         raise ValueError("recursion_level must be between 1 and 7")
@@ -307,8 +307,12 @@ def create_unit_sphere( recursion_level=2 ):
     edges = octahedron_edges
     triangles = octahedron_triangles
     for i in range( recursion_level - 1 ):
-        vertices, edges, triangles = divide_all(vertices, edges, triangles)
-    return vertices, edges, triangles
+        vertices, edges, triangles = _divide_all(vertices, edges, triangles)
+    sphere = Sphere()
+    sphere.vertices = vertices
+    sphere.edges = edges
+    sphere.faces = edges[triangles, 0]
+    return sphere
 
 def create_half_unit_sphere( recursion_level=2 ):
     """ Creates a unit sphere and returns the top half
@@ -335,14 +339,18 @@ def create_half_unit_sphere( recursion_level=2 ):
         A Tx3 array of triangles, where each triangle is a set of three edges.
     See Also
     ----------
-    create_half_sphere, divide_all
+    create_half_sphere
     """
-    v, e, t = create_unit_sphere( recursion_level )
-    v = v[::2]
-    e = e[::2] // 2
-    t = t[::2] // 2
-    return v, e, t
-    
+    sphere = create_unit_sphere( recursion_level )
+    half_sphere = Sphere()
+    half_sphere.vertices = sphere.vertices[::2].copy()
+    half_sphere.edges = sphere.edges[::2] // 2
+    half_sphere.faces = sphere.faces[::2] // 2
+    return half_sphere
+
+class Sphere(object):
+    pass
+
 def _get_forces(charges):
     """Given a set of charges on the surface of the sphere gets total force
     those charges exert on each other.

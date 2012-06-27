@@ -6,7 +6,7 @@ from nose.tools import assert_true, assert_false, \
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.core.triangle_subdivide import _get_forces, disperse_charges, \
-    divide_all, create_unit_sphere
+    _divide_all, create_unit_sphere
 
 def test_divide_all():
     vertices = np.array([[1., 0, 0],
@@ -16,23 +16,24 @@ def test_divide_all():
                       [1, 2],
                       [2, 0]])
     triangles = np.array([[0, 1, 2]])
-    v, e, t = divide_all(vertices, edges, triangles)
+    v, e, t = _divide_all(vertices, edges, triangles)
     assert_array_equal((vertices*vertices).sum(1), 1)
     assert_array_almost_equal((v*v).sum(1), 1)
     assert_array_equal(e[t,0], np.roll(e[t, 1], 1, 1))
 
 def test_create_unit_sphere():
-    v, e, t = create_unit_sphere(7)
+    sphere = create_unit_sphere(7)
+    v = sphere.vertices
+    e = sphere.edges
+    f = sphere.faces
     assert_array_equal(v[::2], -v[1::2])
     assert_array_equal(v[e[::2]], -v[e[1::2]])
-    assert_array_equal(v[e[t[::2]]], -v[e[t[1::2]]])
+    assert_array_equal(v[f[::2]], -v[f[1::2]])
     assert_array_almost_equal((v*v).sum(1), 1)
-    assert_array_equal(e[t,0], np.roll(e[t, 1], 1, 1))
 
 def create_half_unit_sphere():
     v, e, t = create_unit_sphere(7)
     assert_array_almost_equal((v*v).sum(1), 1)
-    assert_array_equal(e[t,0], np.roll(e[t, 1], 1, 1))
 
 def test_get_force():
     charges = np.array([[1., 0, 0],
