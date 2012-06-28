@@ -7,7 +7,6 @@ from dipy.reconst.dsi import project_hemisph_bvecs
 from scipy.ndimage.filters import laplace,gaussian_laplace
 from scipy.ndimage import zoom,generic_laplace,correlate1d
 from dipy.core.geometry import sphere2cart,cart2sphere,vec2vec_rotmat
-from dipy.reconst.qgrid import NonParametricCartesian
 from dipy.tracking.propspeed import map_coordinates_trilinear_iso
 from dipy.reconst.odf import OdfModel
 
