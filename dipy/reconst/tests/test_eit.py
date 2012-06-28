@@ -110,7 +110,4 @@ def test_dni_eit():
     for i,d in enumerate(data):
         print descr[i], np.sum(eifit.peak_values[i]>0)
         assert_equal(descr[i][1], np.sum(eifit.peak_values[i]>0))
-
-    from dipy.viz import show_odfs
-    show_odfs(eifit.odf[None,None,:,:], (vertices,faces), scale=2)
     
