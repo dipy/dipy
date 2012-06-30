@@ -1,6 +1,11 @@
+__all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges',
+           'unique_faces']
+
 import numpy as np
 import warnings
+
 from dipy.core.geometry import cart2sphere, sphere2cart
+from dipy.core.auto_attr import auto_attr
 
 
 def _all_specified(*args):
@@ -15,6 +20,67 @@ def _some_specified(*args):
         if a is not None:
             return True
     return False
+
+
+def faces_from_sphere_vertices(vertices):
+    """
+    Triangulate a set of vertices on the sphere.
+
+    Parameters
+    ----------
+    vertices : (M, 3) ndarray
+        XYZ coordinates of vertices on the sphere.
+
+    Returns
+    -------
+    faces : (N, 3) ndarray
+        Indices into vertices; forms triangular faces.
+
+    """
+    from scipy.spatial import Delaunay
+    return Delaunay(vertices).convex_hull
+
+
+def unique_edges(faces):
+    """Extract all unique edges from given triangular faces.
+
+    Parameters
+    ----------
+    faces : (N, 3) ndarray
+        Vertex indices forming triangular faces.
+
+    Returns
+    -------
+    edges : (N, 2) ndarray
+        Unique edges.
+
+    """
+    edges = set()
+    for a, b, c in faces:
+        edges.add(frozenset((a, b)))
+        edges.add(frozenset((a, c)))
+        edges.add(frozenset((b, c)))
+    edges = [tuple(e) for e in edges]
+    return np.array(edges)
+
+
+def unique_faces(faces):
+    """Remove duplicate faces.
+
+    Parameters
+    ----------
+    faces : (N, 3) ndarray
+        Vertex indices forming triangular faces.
+
+    Returns
+    -------
+    faces : (N, 3) ndarray
+        Unique faces.
+
+    """
+    faces = set(frozenset(f) for f in faces)
+    faces = [tuple(f) for f in faces]
+    return np.array(faces)
 
 
 class Sphere(object):
@@ -81,9 +147,11 @@ class Sphere(object):
             warnings.warn("Vertices are not on the unit sphere.")
 
 
+    @auto_attr
     def faces(self):
         pass
 
+    @auto_attr
     def edges(self):
         pass
 

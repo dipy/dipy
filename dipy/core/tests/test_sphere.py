@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as nt
 import warnings
 
-from dipy.core.sphere import Sphere, HemiSphere
+from dipy.core.sphere import Sphere, HemiSphere, unique_edges, unique_faces
 from dipy.core.triangle_subdivide import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart
 
@@ -47,6 +47,28 @@ def test_sphere_construct():
     nt.assert_array_almost_equal(s0.phi, s1.phi)
     nt.assert_array_almost_equal(s0.phi, s2.phi)
     nt.assert_array_almost_equal(s0.phi, phi)
+
+
+def test_unique_edges():
+    u = unique_edges([[0, 1, 2],
+                      [1, 2, 0]])
+
+    u = np.sort(u, axis=1)
+    nt.assert_([1, 2] in u)
+    nt.assert_([0, 1] in u)
+    nt.assert_([0, 2] in u)
+
+
+def test_unique_faces():
+    u = unique_faces([[0, 1, 2],
+                      [1, 2, 0],
+                      [0, 2, 1],
+                      [1, 2, 3]])
+
+    nt.assert_equal(len(u), 2)
+    u = np.sort(u, axis=1)
+    nt.assert_([0, 1, 2] in u)
+    nt.assert_([1, 2, 3] in u)
 
 
 if __name__ == "__main__":
