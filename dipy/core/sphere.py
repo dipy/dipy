@@ -114,7 +114,7 @@ class Sphere(object):
     def __init__(self, x=None, y=None, z=None,
                  theta=None, phi=None,
                  xyz=None,
-                 edges=None, faces=None):
+                 faces=None, edges=None):
 
         all_specified = _all_specified(x, y, z) + _all_specified(xyz) + \
                         _all_specified(theta, phi)
