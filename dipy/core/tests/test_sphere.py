@@ -2,8 +2,12 @@ import numpy as np
 import numpy.testing as nt
 import warnings
 
-from dipy.core.sphere import Sphere, HemiSphere, unique_edges, unique_faces
-from dipy.core.triangle_subdivide import create_unit_sphere
+from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_faces,
+                              faces_from_sphere_vertices)
+from dipy.core.triangle_subdivide import (create_unit_sphere,
+                                          octahedron_vertices,
+                                          octahedron_edges,
+                                          octahedron_triangles)
 from dipy.core.geometry import cart2sphere, sphere2cart
 
 verts, edges, sides = create_unit_sphere(5)
@@ -49,14 +53,19 @@ def test_sphere_construct():
     nt.assert_array_almost_equal(s0.phi, phi)
 
 
+def freeze_array(a):
+    return set(frozenset(i) for i in a)
+
 def test_unique_edges():
     u = unique_edges([[0, 1, 2],
                       [1, 2, 0]])
+    u = freeze_array(u)
 
-    u = np.sort(u, axis=1)
-    nt.assert_([1, 2] in u)
-    nt.assert_([0, 1] in u)
-    nt.assert_([0, 2] in u)
+    e = freeze_array([[1, 2],
+                      [0, 1],
+                      [0, 2]])
+
+    nt.assert_equal(e, u)
 
 
 def test_unique_faces():
@@ -64,11 +73,19 @@ def test_unique_faces():
                       [1, 2, 0],
                       [0, 2, 1],
                       [1, 2, 3]])
+    u = freeze_array(u)
 
-    nt.assert_equal(len(u), 2)
-    u = np.sort(u, axis=1)
-    nt.assert_([0, 1, 2] in u)
-    nt.assert_([1, 2, 3] in u)
+    e = freeze_array([[0, 1, 2],
+                      [1, 2, 3]])
+
+    nt.assert_equal(e, u)
+
+
+def test_faces_from_sphere_vertices():
+    faces = faces_from_sphere_vertices(octahedron_vertices)
+    faces = set(frozenset(i) for i in faces)
+    expected = set(frozenset(i) for i in octahedron_edges[octahedron_triangles, 0])
+    nt.assert_equal(faces, expected)
 
 
 if __name__ == "__main__":
