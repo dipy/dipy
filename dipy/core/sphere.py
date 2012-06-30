@@ -129,8 +129,10 @@ class Sphere(object):
             raise ValueError("Either specify both faces and "
                              "edges, only faces, or neither.")
 
-        self._edges = edges
-        self._faces = faces
+        if edges is not None:
+            self.edges = edges
+        if faces is not None:
+            self.faces = faces
 
         if theta is not None:
             self.theta, self.phi = np.asarray(theta), np.asarray(phi)
@@ -146,14 +148,29 @@ class Sphere(object):
         if not np.allclose(r, 1):
             warnings.warn("Vertices are not on the unit sphere.")
 
+    @auto_attr
+    def vertices(self):
+        return np.column_stack(sphere2cart(1, self.theta, self.phi))
+
+    @property
+    def x(self):
+        return self.vertices[:, 0]
+
+    @property
+    def y(self):
+        return self.vertices[:, 1]
+
+    @property
+    def z(self):
+        return self.vertices[:, 2]
 
     @auto_attr
     def faces(self):
-        pass
+        return faces_from_sphere_vertices(self.vertices)
 
     @auto_attr
     def edges(self):
-        pass
+        return unique_edges(self.faces)
 
 
 class HemiSphere(Sphere):

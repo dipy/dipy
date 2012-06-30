@@ -10,7 +10,7 @@ from dipy.core.triangle_subdivide import (create_unit_sphere,
                                           octahedron_triangles)
 from dipy.core.geometry import cart2sphere, sphere2cart
 
-verts, edges, sides = create_unit_sphere(5)
+verts, edges, sides = octahedron_vertices, octahedron_edges, octahedron_triangles
 r, theta, phi = cart2sphere(*verts.T)
 
 
@@ -39,6 +39,10 @@ def test_sphere_not_unit():
         nt.assert_raises(UserWarning, Sphere, xyz=[0, 0, 1.5])
 
 
+def test_bad_edges_faces():
+    nt.assert_raises(ValueError, Sphere, xyz=[0, 0, 1.5], edges=[[1, 2]])
+
+
 def test_sphere_construct():
     s0 = Sphere(xyz=verts)
     s1 = Sphere(theta=theta, phi=phi)
@@ -53,15 +57,16 @@ def test_sphere_construct():
     nt.assert_array_almost_equal(s0.phi, phi)
 
 
-def freeze_array(a):
+def array_to_set(a):
     return set(frozenset(i) for i in a)
+
 
 def test_unique_edges():
     u = unique_edges([[0, 1, 2],
                       [1, 2, 0]])
-    u = freeze_array(u)
+    u = array_to_set(u)
 
-    e = freeze_array([[1, 2],
+    e = array_to_set([[1, 2],
                       [0, 1],
                       [0, 2]])
 
@@ -73,19 +78,44 @@ def test_unique_faces():
                       [1, 2, 0],
                       [0, 2, 1],
                       [1, 2, 3]])
-    u = freeze_array(u)
+    u = array_to_set(u)
 
-    e = freeze_array([[0, 1, 2],
+    e = array_to_set([[0, 1, 2],
                       [1, 2, 3]])
 
     nt.assert_equal(e, u)
 
 
 def test_faces_from_sphere_vertices():
-    faces = faces_from_sphere_vertices(octahedron_vertices)
-    faces = set(frozenset(i) for i in faces)
-    expected = set(frozenset(i) for i in octahedron_edges[octahedron_triangles, 0])
+    faces = faces_from_sphere_vertices(verts)
+    faces = array_to_set(faces)
+    expected = array_to_set(edges[sides, 0])
     nt.assert_equal(faces, expected)
+
+
+def test_sphere_attrs():
+    s = Sphere(xyz=verts)
+    nt.assert_array_almost_equal(s.vertices, verts)
+    nt.assert_array_almost_equal(s.x, verts[:, 0])
+    nt.assert_array_almost_equal(s.y, verts[:, 1])
+    nt.assert_array_almost_equal(s.z, verts[:, 2])
+
+
+def test_edges_faces():
+    s = Sphere(xyz=verts)
+    faces = edges[sides, 0]
+    nt.assert_equal(array_to_set(s.faces), array_to_set(faces))
+    nt.assert_equal(array_to_set(s.edges), array_to_set(edges))
+
+    s = Sphere(xyz=verts, faces=[[0, 1, 2]])
+    nt.assert_equal(array_to_set(s.faces), array_to_set([[0, 1, 2]]))
+    nt.assert_equal(array_to_set(s.edges),
+                    array_to_set([[0, 1], [1, 2], [0, 2]]))
+
+    s = Sphere(xyz=verts, faces=[[0, 1, 2]], edges=[[0, 1]])
+    nt.assert_equal(array_to_set(s.faces), array_to_set([[0, 1, 2]]))
+    nt.assert_equal(array_to_set(s.edges),
+                    array_to_set([[0, 1]]))
 
 
 if __name__ == "__main__":
