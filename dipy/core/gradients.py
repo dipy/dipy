@@ -3,7 +3,7 @@ from os.path import splitext
 
 class DiffusionGradients(object):
     def __init__(self, bvals, bvecs=None, b0_thr=20, atol=1e-2):
-        """ A general class for handling diffusion MRI gradients' info.
+        """ A general class for handling information about diffusion MR gradients .
 
         This class is especially useful as an input for signal reconstruction methods. 
         It reads, loads and prepares scanner parameters like the b-values and b-vectors 
