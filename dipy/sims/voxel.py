@@ -5,7 +5,15 @@ from dipy.core.geometry import sphere2cart
 from dipy.reconst.dti import design_matrix, lower_triangular
 from dipy.core.geometry import vec2vec_rotmat
 
-diffusion_evals = np.array([1700e-6, 300e-6, 300e-6])
+
+# Diffusion coefficients for white matter tracts, in mm^2/s
+#
+# Based roughly on values from:
+#
+#   Pierpaoli, Basser, "Towards a Quantitative Assessment of Diffusion
+#   Anisotropy", Magnetic Resonance in Medicine, 1996; 36(6):893-906.
+#
+diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
 
 def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
@@ -213,7 +221,7 @@ def all_tensor_evecs(e0):
     return np.array([e0, e1, e2])
 
 
-def multi_tensor_odf(odf_verts, mf, mevals, mevecs):
+def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
     r'''Simulate a Multi-Tensor ODF.
 
     Parameters
@@ -223,7 +231,8 @@ def multi_tensor_odf(odf_verts, mf, mevals, mevecs):
     mf : sequence of floats, bounded [0,1]
         Percentages of the fractions for each tensor.
     mevals : sequence of 1D arrays,
-        Eigen-values for each tensor.
+        Eigen-values for each tensor.  By default, values typical for prolate
+        white matter are used.
     mevecs : sequence of 3D arrays,
         Eigenvectors for each tensor.  You can also think of these
         as the rotation matrices that align the different tensors.
@@ -250,6 +259,13 @@ def multi_tensor_odf(odf_verts, mf, mevals, mevecs):
 
     '''
     odf = np.zeros(len(odf_verts))
+
+    if mevals is None:
+        mevals = [None,] * len(mf)
+
+    if mevecs is None:
+        mevecs = [np.eye(3) for i in range(len(mf))]
+
     for j, f in enumerate(mf):
         odf += f * single_tensor_odf(odf_verts,
                                      evals=mevals[j], evecs=mevecs[j])
