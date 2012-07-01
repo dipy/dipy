@@ -55,17 +55,17 @@ class DiffusionGradients(object):
         >>> bvals=1500*np.ones(7)
         >>> bvals[0]=0
         >>> sq2=np.sqrt(2)/2
-        >>> bvecs=np.array([[0, 0, 0],
-                            [1, 0, 0],
-                            [0, 1, 0],
-                            [0, 0, 1],
-                            [sq2, sq2, 0],
-                            [sq2, 0, sq2],
+        >>> bvecs=np.array([[0, 0, 0],\
+                            [1, 0, 0],\
+                            [0, 1, 0],\
+                            [0, 0, 1],\
+                            [sq2, sq2, 0],\
+                            [sq2, 0, sq2],\
                             [0, sq2, sq2]])
-        >>> gt = DiffusionGradients((bvals, bvecs))
+        >>> gt = DiffusionGradients(bvals, bvecs)
         >>> gt.bvecs.shape == bvecs.shape
         True
-        >>> gt = DiffusionGradients((bvals, bvecs.T))
+        >>> gt = DiffusionGradients(bvals, bvecs.T)
         >>> gt.bvecs.shape == bvecs.T.shape
         False
 
