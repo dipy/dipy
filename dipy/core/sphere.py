@@ -5,7 +5,7 @@ import numpy as np
 import warnings
 
 from dipy.core.geometry import cart2sphere, sphere2cart
-from dipy.core.auto_attr import auto_attr
+from dipy.core.onetime import auto_attr
 
 
 def _all_specified(*args):
