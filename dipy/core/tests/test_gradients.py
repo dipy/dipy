@@ -47,7 +47,7 @@ def test_b0s():
     sq2=np.sqrt(2)/2.
     bvals=1500*np.ones(8)
     bvals[0]=0
-    bvals[-1]=0
+    bvals[7]=0
     bvecs=np.array([[0, 0, 0],\
                     [1, 0, 0],\
                     [0, 1, 0],\
@@ -55,7 +55,8 @@ def test_b0s():
                     [sq2, sq2, 0],\
                     [sq2, 0, sq2],\
                     [0, sq2, sq2],\
-                    [np.nan, np.nan, np.nan]])
+                    [0, 0, 0]])
     bt = BTable(bvals,bvecs)
-    print bt.b0s_indices
+    assert_array_equal(bt.b0s_indices,np.array([0,7]))
+    assert_array_equal(bt.nonb0s_indices,np.arange(1,7))
 
