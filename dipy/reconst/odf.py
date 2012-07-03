@@ -32,10 +32,9 @@ def peak_directions(odf, sphere, relative_peak_threshold,
 class PeaksAndMetrics(object):
     pass
 
-def peaksFromModel(model, data, mask=None, return_odf=False, gfa_thr=0.02, 
-        normalize_peaks=False):
-    """this doesn't work right now"""
-    """Fits the model to data and returns an pam"""
+def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02, 
+                     normalize_peaks=False):
+    """Fits the model to data and computes peaks and metrics"""
 
     data_flat = data.reshape((-1, data.shape[-1]))
     size = len(data_flat)
