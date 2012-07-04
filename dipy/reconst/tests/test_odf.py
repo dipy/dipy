@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_array_equal
-from ..odf import OdfFit, OdfModel, gfa, peaksFromModel
+from ..odf import OdfFit, OdfModel, gfa, peaksFromModel, peak_directions
 from dipy.core.triangle_subdivide import (create_half_unit_sphere,
     disperse_charges)
 from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
@@ -20,6 +20,37 @@ class SimpleOdfFit(object):
         if sphere is None:
             sphere = self.model.sphere
         return (sphere.vertices * [1, 2, 3]).sum(-1)
+
+def test_peak_directions():
+    model = SimpleOdfModel()
+    fit = model.fit(None)
+    odf = fit.odf()
+    
+    argmax = odf.argmax()
+    mx = odf.max()
+    sphere = fit.model.sphere
+
+    # Only one peak
+    dir = peak_directions(odf, sphere, .5, 45)
+    dir_e = sphere.vertices[[argmax]]
+    assert_array_equal(dir, dir_e)
+
+    odf[0] = mx * .9
+    # Two peaks, relative_threshold
+    dir = peak_directions(odf, sphere, 1., 0)
+    dir_e = sphere.vertices[[argmax]]
+    assert_array_equal(dir, dir_e)
+    dir = peak_directions(odf, sphere, .8, 0)
+    dir_e = sphere.vertices[[argmax, 0]]
+    assert_array_equal(dir, dir_e)
+
+    # Two peaks, angle_sep
+    dir = peak_directions(odf, sphere, 0., 90)
+    dir_e = sphere.vertices[[argmax]]
+    assert_array_equal(dir, dir_e)
+    dir = peak_directions(odf, sphere, 0., 0)
+    dir_e = sphere.vertices[[argmax, 0]]
+    assert_array_equal(dir, dir_e)
 
 def test_peaksFromModel():
     data = np.zeros((10,2))

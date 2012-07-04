@@ -458,16 +458,7 @@ class ClosestPeakSelector(object):
 
     angle_limit = property(_get_angle_limit, _set_angle_limit)
     relative_peak_threshold = .25
-    _cos_distance_threshold = sqrt(2) / 2
-
-    @property
-    def angular_spacing_threshould(self):
-        return 180/pi * arccos(self._cos_distance_threshold)
-    @angular_spacing_threshould.setter
-    def angular_spacing_threshould(self, angle):
-        if angle < 0 or angle > 90:
-            raise ValueError("angle must be between 0 and 90")
-        self._cos_distance_threshold = cos(angle * pi/180)
+    peak_separation_angle = 45
 
     def __init__(self, model, interpolator, angle_limit=90):
         """Creates a peakfinder which can be used to get next_step
@@ -485,8 +476,6 @@ class ClosestPeakSelector(object):
         self._interpolator = interpolator
         self._model = model
         self.angle_limit = angle_limit
-        vertices = model.sphere.vertices
-        self.cos_distance_matrix = vertices.dot(vertices.T)
 
     def next_step(self, location, prev_step):
         """Returns the peak closest to prev_step at location
@@ -507,8 +496,7 @@ class ClosestPeakSelector(object):
         odf = self._model.fit(vox_data).odf()
         peak_points = peak_directions(odf, self._model.sphere,
                                       self.relative_peak_threshold,
-                                      self._cos_distance_threshold,
-                                      self.cos_distance_matrix)
+                                      self.peak_separation_angle)
         if prev_step is not None:
             return _closest_peak(peak_points, prev_step, self._cos_limit)
         else:
@@ -535,8 +523,6 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         assert self.mask.shape == data.shape[:-1]
         self._data = data
         self._model = model
-        vertices = model.sphere.vertices
-        self.cos_distance_matrix = vertices.dot(vertices.T)
         self.reset_cache()
 
     def reset_cache(self):
@@ -556,10 +542,10 @@ class NND_ClosestPeakSelector(ClosestPeakSelector):
         elif hash == -1:
             vox_data = self._data[vox_loc]
             odf = self._model.fit(vox_data).odf()
-            peak_points = get_directions(odf, self._model.sphere,
-                                         self.relative_peak_threshold,
-                                         self._cos_distance_threshold,
-                                         self.cos_distance_matrix)
+            peak_points = peak_directions(odf, self._model.sphere,
+                                          self.relative_peak_threshold,
+                                          self.peak_separation_angle)
+
             self._lookup[vox_loc] = len(self._peaks)
             self._peaks.append(peak_points)
         else:

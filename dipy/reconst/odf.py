@@ -1,6 +1,6 @@
 from __future__ import division
 import numpy as np
-from .recspeed import local_maxima, _filter_peaks
+from .recspeed import local_maxima, remove_similar_vertices
 from dipy.core.sphere import unique_edges
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
 
@@ -21,13 +21,44 @@ class OdfFit(object):
         raise NotImplementedError("To be implemented in sub classes")
 
 def peak_directions(odf, sphere, relative_peak_threshold,
-                    cos_distance_threshold, cos_distance_matrix):
-    """This function will likely change in the near future"""
-    pk, ind = local_maxima(odf, sphere.edges)
-    pk, ind = _filter_peaks(pk, ind, cos_distance_matrix,
-                            relative_peak_threshold,
-                            cos_distance_threshold)
-    return sphere.vertices[ind]
+                    peak_separation_angle):
+    """Get the directions of odf peaks
+
+    Parameters
+    ----------
+    odf : 1d ndarray
+        The odf function evaluated on the vertices of `sphere`
+    sphere :
+        The sphere on which odf was evaluated
+    relative_peak_threshold : float
+        A relative threshold for excluding small peaks
+    peak_separation_angle : float
+        An angle threshold in degrees. Peaks too close to a larger peak are
+        excluded.
+
+    Returns
+    -------
+    directions : (N, 3) ndarray
+        N vertices for sphere, one for each peak
+
+    """
+    values, indices = local_maxima(odf, sphere.edges)
+    # If there is only one peak return
+    if len(indices) == 1:
+        return sphere.vertices[indices]
+
+    # Here we use the fact that we know values is sorted descending
+    # This is like indices = indices[values > threshold] but faster
+    threshold = values[0] * relative_peak_threshold
+    too_small = values < threshold
+    first_too_small = too_small.argmax()
+    if first_too_small > 0:
+        indices = indices[:first_too_small]
+
+    directions = sphere.vertices[indices]
+    directions, mappiing = remove_similar_vertices(directions,
+                                                   peak_separation_angle)
+    return directions
 
 class PeaksAndMetrics(object):
     pass
