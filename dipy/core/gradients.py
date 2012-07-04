@@ -1,8 +1,8 @@
 import numpy as np
 from dipy.io.bvalues import read_bvals_bvecs_files, read_btable_file
 
-class BTable(object):
-    def __init__(self, bvals, bvecs=None, b0_threshold=20, atol=1e-2):
+class GradientTable(object):
+    def __init__(self, bvals, bvecs=None, big_delta=None, small_delta=None, b0_threshold=20, atol=1e-2):
         """ A general class for handling information about diffusion MR gradients .
 
         This class is especially useful as an input for signal reconstruction methods. 
@@ -24,12 +24,19 @@ class BTable(object):
             1. an array of shape (N, 3) or (3, N) with the b-vectors.
             2. a path for the file wich contains an array like the previous.
 
+        big_delta: float
+            acquisition timing duration (default None)
+
+        small_delta: float
+            acquisition timing duration (default None)           
+        
         b0_threshold: float 
             all b-values with values lower than this threshold
             are considered as b0s i.e. without diffusion weighting
             (See notes).
         atol: float
             all b-vectors need to be unit vectors up to a tolerance. 
+
 
         Attributes
         ----------
@@ -38,19 +45,16 @@ class BTable(object):
         bvecs: array, shape (N,3)
                 b-vectors
 
-        b0s_indices: show which b-values are smaller or equal
-                    than a low diffusion signal threshold (default 20)
+        b0s_mask: show which b-values are smaller or equal
+                    than a low diffusion signal value threshold (default 20)
 
-        nonb0s_indices: show which b-values are smaller 
-                    than a low diffusion signal threshold (default 20)
-        
         Methods
         -------
         transform: align the b-vectors to a different coordinate system
 
         Examples
         --------
-        >>> from dipy.core.gradients import BTable
+        >>> from dipy.core.gradients import GradientTable
         >>> bvals=1500*np.ones(7)
         >>> bvals[0]=0
         >>> sq2=np.sqrt(2)/2
@@ -61,10 +65,10 @@ class BTable(object):
                             [sq2, sq2, 0],\
                             [sq2, 0, sq2],\
                             [0, sq2, sq2]])
-        >>> gt = BTable(bvals, bvecs)
+        >>> gt = GradientTable(bvals, bvecs)
         >>> gt.bvecs.shape == bvecs.shape
         True
-        >>> gt = BTable(bvals, bvecs.T)
+        >>> gt = GradientTable(bvals, bvecs.T)
         >>> gt.bvecs.shape == bvecs.T.shape
         False
 
@@ -85,10 +89,6 @@ class BTable(object):
 
         """
         self.b0_threshold=b0_threshold
-        if isinstance(bvals,str) and isinstance(bvecs,str):
-            self.bvals, self.bvecs=read_bvals_bvecs_files(bvals, bvecs)
-        if isinstance(bvals,str) and bvecs is None:
-            self.bvals, self.bvecs=read_btable_file(bvals)
         if hasattr(bvals,'shape') and hasattr(bvals,'shape'):
             self.bvals, self.bvecs=bvals, bvecs 
         if hasattr(bvals,'shape') and bvecs is None:
@@ -104,32 +104,17 @@ class BTable(object):
             self.bvecs=self.bvecs.T      
         #check if bvecs are unit vectors
         sqrtb=np.sqrt(self.bvecs[:,0]**2+self.bvecs[:,1]**2+self.bvecs[:,2]**2)
-        sqrtb=sqrtb[self.nonb0s_indices]
+        sqrtb=sqrtb[~self.b0s_mask]
         if not np.allclose(sqrtb,np.ones(len(sqrtb)),atol=atol):
             raise ValueError('B-vectors should be unit vectors')
-
-
-    def norm_q_vectors(self, b0_threshold=None):
-        ''' normalized q_vectors from bvals and bvecs
-        '''
-        if b0_threshold is None:
-            b0_threshold=self.b0_threshold
-        bv=self.bvals[self.bvals>b0_threshold]
-        bmin=np.sort(bv)[1]
-        bv=np.sqrt(bv/bmin)
-        return np.vstack((bv, bv, bv)).T*self.bvecs
+        self.big_delta=None
+        self.small_delta=None
 
     @property
-    def b0s_indices(self):
+    def b0s_mask(self):
         """ find where b0s are held
         """
-        return np.where(self.bvals<=self.b0_threshold)[0]
-
-    @property
-    def nonb0s_indices(self):
-        """ find where b0s are held
-        """
-        return np.where(self.bvals>self.b0_threshold)[0]
+        return self.bvals<=self.b0_threshold
 
     def transform(self):
         """ reorient gradients to a different coordinate system
