@@ -54,3 +54,7 @@ def test_b0s():
     assert_array_equal(np.where(bt.b0s_mask==0)[0], np.arange(1,7))
 
 
+if __name__ == "__main__":
+    from numpy.testing import run_module_suite
+    run_module_suite()
+
