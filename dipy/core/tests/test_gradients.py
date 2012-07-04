@@ -2,7 +2,7 @@ import numpy as np
 from nose.tools import assert_true
 from numpy.testing import assert_array_equal
 from dipy.data import get_data
-from dipy.core.gradients import BTable
+from dipy.core.gradients import GradientTable
 
 
 def test_btable_prepare():
@@ -17,28 +17,21 @@ def test_btable_prepare():
                     [sq2, sq2, 0],
                     [sq2, 0, sq2],
                     [0, sq2, sq2]])
-    bt = BTable(bvals,bvecs)
+    bt = GradientTable(bvals,bvecs)
     assert_array_equal(bt.bvecs,bvecs)
     bt.info
     fimg,fbvals,fbvecs = get_data('small_64D')
     bvals=np.load(fbvals)
     bvecs=np.load(fbvecs)
-    bt = BTable(bvals,bvecs)
+    bt = GradientTable(bvals,bvecs)
     assert_array_equal(bt.bvecs,bvecs)
-    bt2 = BTable(bvals,bvecs.T)
+    bt2 = GradientTable(bvals,bvecs.T)
     assert_array_equal(bt2.bvecs, bvecs)
     btab = np.concatenate((bvals[:,None], bvecs),axis=1)
-    bt3 = BTable(btab)
+    bt3 = GradientTable(btab)
     assert_array_equal(bt3.bvecs, bvecs)
     assert_array_equal(bt3.bvals, bvals)
-    bt4 = BTable(btab.T)
-    assert_array_equal(bt4.bvecs, bvecs)
-    assert_array_equal(bt4.bvals, bvals)
-    bt5 = BTable(fbvals,fbvecs)
-    assert_array_equal(bt4.bvecs, bvecs)
-    assert_array_equal(bt4.bvals, bvals)
-    fimg,fbvals,fbvecs = get_data('small_101D')
-    bt5 = BTable(fbvals,fbvecs)
+    bt4 = GradientTable(btab.T)
     assert_array_equal(bt4.bvecs, bvecs)
     assert_array_equal(bt4.bvals, bvals)
 
@@ -56,7 +49,8 @@ def test_b0s():
                     [sq2, 0, sq2],\
                     [0, sq2, sq2],\
                     [0, 0, 0]])
-    bt = BTable(bvals,bvecs)
-    assert_array_equal(bt.b0s_indices,np.array([0,7]))
-    assert_array_equal(bt.nonb0s_indices,np.arange(1,7))
+    bt = GradientTable(bvals,bvecs)
+    assert_array_equal(np.where(bt.b0s_mask>0)[0], np.array([0,7]))
+    assert_array_equal(np.where(bt.b0s_mask==0)[0], np.arange(1,7))
+
 
