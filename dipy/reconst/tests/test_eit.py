@@ -6,7 +6,7 @@ from dipy.reconst.eit import DiffusionNablaModel, EquatorialInversionModel
 from dipy.sims.voxel import SticksAndBall
 from dipy.utils.spheremakers import sphere_vf_from
 from dipy.data import get_data
-from dipy.core.geometry import reduce_antipodal, unique_edges
+from dipy.core.sphere import reduce_antipodal, unique_edges
 
 def sim_data(bvals,bvecs,d=0.0015,S0=100,snr=None):
 

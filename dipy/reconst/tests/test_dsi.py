@@ -8,7 +8,7 @@ from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.sims.voxel import SticksAndBall
 from scipy.fftpack import fftn, fftshift
 from scipy.ndimage import map_coordinates
-from dipy.core.geometry import reduce_antipodal, unique_edges
+from dipy.core.sphere import reduce_antipodal, unique_edges
 from dipy.utils.spheremakers import sphere_vf_from
 
 
