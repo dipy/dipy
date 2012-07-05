@@ -1,5 +1,4 @@
 import numpy as np
-from dipy.io.bvalues import read_bvals_bvecs_files, read_btable_file
 
 class GradientTable(object):
     def __init__(self, bvals, bvecs=None, big_delta=None, small_delta=None, b0_threshold=20, atol=1e-2):
