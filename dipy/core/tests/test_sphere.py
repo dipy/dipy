@@ -2,8 +2,8 @@ import numpy as np
 import numpy.testing as nt
 import warnings
 
-from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_faces,
-                              faces_from_sphere_vertices)
+from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
+                              faces_from_sphere_vertices, HemiSphere)
 from dipy.core.triangle_subdivide import (create_unit_sphere,
                                           octahedron_vertices,
                                           octahedron_edges,
@@ -73,17 +73,17 @@ def test_unique_edges():
     nt.assert_equal(e, u)
 
 
-def test_unique_faces():
-    u = unique_faces([[0, 1, 2],
-                      [1, 2, 0],
-                      [0, 2, 1],
-                      [1, 2, 3]])
-    u = array_to_set(u)
+def test_unique_sets():
+    u = unique_sets([[0, 1, 2],
+                     [1, 2, 0],
+                     [0, 2, 1],
+                     [1, 2, 3]])
 
     e = array_to_set([[0, 1, 2],
                       [1, 2, 3]])
 
-    nt.assert_equal(e, u)
+    nt.assert_equal(len(u), len(e))
+    nt.assert_equal(array_to_set(u), e)
 
 
 def test_faces_from_sphere_vertices():
@@ -116,6 +116,61 @@ def test_edges_faces():
     nt.assert_equal(array_to_set(s.faces), array_to_set([[0, 1, 2]]))
     nt.assert_equal(array_to_set(s.edges),
                     array_to_set([[0, 1]]))
+
+
+def test_hemisphere_constructor():
+    s0 = HemiSphere(xyz=verts)
+    s1 = HemiSphere(theta=theta, phi=phi)
+    s2 = HemiSphere(*verts.T)
+
+    uniq_verts = verts[::2].T
+    rU, thetaU, phiU = cart2sphere(*uniq_verts)
+
+    nt.assert_array_almost_equal(s0.theta, s1.theta)
+    nt.assert_array_almost_equal(s0.theta, s2.theta)
+    nt.assert_array_almost_equal(s0.theta, thetaU)
+
+    nt.assert_array_almost_equal(s0.phi, s1.phi)
+    nt.assert_array_almost_equal(s0.phi, s2.phi)
+    nt.assert_array_almost_equal(s0.phi, phiU)
+
+
+def test_mirror():
+    verts = [[0, 0, 1],
+             [0, 1, 0],
+             [1, 0, 0],
+             [-1, -1, -1]]
+    verts = np.array(verts, 'float')
+    verts /= (verts * verts).sum(-1)[:, None]
+    faces = [[0, 1, 3],
+             [0, 2, 3],
+             [1, 2, 3]]
+
+    h = HemiSphere(xyz=verts, faces=faces)
+    s = h.mirror()
+
+    nt.assert_equal(len(s.vertices), 8)
+    nt.assert_equal(len(s.faces), 6)
+    verts = s.vertices
+
+    def _angle(a, b):
+        return np.arccos(a.dot(b))
+
+    for triangle in s.faces:
+        a, b, c = triangle
+        nt.assert_(_angle(verts[a], verts[b]) <= np.pi/2)
+        nt.assert_(_angle(verts[a], verts[c]) <= np.pi/2)
+        nt.assert_(_angle(verts[b], verts[c]) <= np.pi/2)
+
+
+def test_hemisphere_faces():
+    sphere = create_unit_sphere(2)
+    faces = sphere.faces[::2] // 2
+    h = HemiSphere(xyz=sphere.vertices)
+
+    nt.assert_equal(len(h.faces), len(faces))
+    nt.assert_equal(len(h.faces), len(array_to_set(h.faces)))
+    nt.assert_equal(array_to_set(h.faces), array_to_set(faces))
 
 
 if __name__ == "__main__":
