@@ -1,7 +1,8 @@
 import numpy as np
 from os.path import splitext
 
-def read_bvals_bvecs_files(fbvals,fbvecs):
+
+def read_bvals_bvecs(fbvals, fbvecs):
     """ Read b-values and b-vectors from the disk
 
     Parameters
@@ -17,7 +18,7 @@ def read_bvals_bvecs_files(fbvals,fbvecs):
     bvecs: array, (N, 3)
 
     """
-    if isinstance(fbvals,str) and isinstance(fbvecs,str):
+    if isinstance(fbvals, basestring) and isinstance(fbvecs, basestring):
         base, ext = splitext(fbvals)
         if ext in ['.bvals', '.bval', '.txt', '']:
             bvals=np.squeeze(np.loadtxt(fbvals))
@@ -35,10 +36,10 @@ def read_bvals_bvecs_files(fbvals,fbvecs):
             raise IOError('b-values and b-vectors shapes do not correspond')
     else:
         raise ValueError('Two strings with the full filepaths are required')
-
     return bvals, bvecs
 
-def read_btable_file(fbtab):
+
+def read_btable(fbtab):
     """ Read b-table from the disk
 
     B-table is a 2D array which contains b-values in the
@@ -55,7 +56,7 @@ def read_btable_file(fbtab):
     bvecs: array, (N, 3)
 
     """
-    if isinstance(fbtab,str):
+    if isinstance(fbtab, basestring):
         base, ext = splitext(fbvals)
         if ext in ['.txt', '']:
             btable=np.loadtxt(fbtab)
@@ -65,11 +66,12 @@ def read_btable_file(fbtab):
             btable=btable.T
         if min(bvecs.shape) != 4:
             raise IOError('btable file should have 4 rows')
-        bvals=np.squeeze(btable[:,0])
-        bvecs=btable[:,1:]
-        if bvals.ndim!=1 and bvecs.ndim != 2:
+        bvals=np.squeeze(btable[:, 0])
+        bvecs=btable[:, 1:]
+        if bvals.ndim!=1 and bvecs.ndim!=2:
             raise IOError('b-table was not loaded correctly')
         if max(bvals.shape)!=max(bvecs.shape):
             raise IOError('b-values and b-vectors shapes do not correspond')
     else:
         raise ValueError('A string with the full filepath is required')
+    return bvals, bvecs
