@@ -10,7 +10,7 @@ from ...data import get_data, get_sphere
 
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.core.geometry import reduce_antipodal, unique_edges
+from dipy.core.sphere import reduce_antipodal, unique_edges
 from dipy.utils.spheremakers import sphere_vf_from
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises

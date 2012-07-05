@@ -1,7 +1,7 @@
 from __future__ import division
 import numpy as np
 from .recspeed import local_maxima, _filter_peaks
-from dipy.core.geometry import unique_edges
+from dipy.core.sphere import unique_edges
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
 
 class OdfFit(object):

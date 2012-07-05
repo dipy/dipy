@@ -3,7 +3,7 @@ from nose.tools import assert_true, assert_false, assert_equal, assert_almost_eq
 from numpy.testing import assert_array_equal
 from dipy.reconst.recspeed import peak_finding, local_maxima, _filter_peaks
 from dipy.data import get_sphere, get_data
-from dipy.core.geometry import reduce_antipodal, unique_edges
+from dipy.core.sphere import reduce_antipodal, unique_edges
 from dipy.sims.voxel import all_tensor_evecs, multi_tensor_odf
 
 def test_local_maxima():
