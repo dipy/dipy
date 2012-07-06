@@ -4,7 +4,7 @@ from numpy.testing import assert_array_equal
 from dipy.reconst.recspeed import (peak_finding, local_maxima,
                                    remove_similar_vertices)
 from dipy.data import get_sphere, get_data
-from dipy.core.sphere import reduce_antipodal, unique_edges
+from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs, multi_tensor_odf
 
 def test_local_maxima():
@@ -19,7 +19,8 @@ def test_local_maxima():
     assert_array_equal(peak_values, [505, 143, 10])
     assert_array_equal(peak_index, [505, 143, 1])
 
-    vertices_half, edges_half, faces_half = reduce_antipodal(vertices, faces)
+    hemisphere = HemiSphere(xyz=vertices, faces=faces)
+    vertices_half, edges_half = hemisphere.vertices, hemisphere.edges
     odf = abs(vertices_half.sum(-1))
     odf[1] = 10.
     odf[143] = 143.
@@ -46,7 +47,9 @@ def test_peak_finding():
     edges = unique_edges(faces)
     peaks, inds = local_maxima(odf, edges)
     print peaks, inds
-    vertices_half, edges_half, faces_half = reduce_antipodal(vertices, faces)
+
+    hemisphere = HemiSphere(xyz=vertices, faces=faces)
+    vertices_half, edges_half = hemisphere.vertices, hemisphere.edges
     n = len(vertices_half)
     peaks, inds = local_maxima(odf[:n], edges_half)
     print peaks, inds
