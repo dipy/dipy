@@ -14,7 +14,7 @@ cimport numpy as cnp
 
 cdef extern from "math.h" nogil:
     double floor(double x)
-    float fabs(float x)
+    double fabs(double x)
     double log2(double x)
     double cos(double x)
     double sin(double x)
@@ -46,10 +46,10 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
     last dimension holds data.
     """
     cdef:
-        float x = index[0] / voxel_size[0] - .5
-        float y = index[1] / voxel_size[1] - .5
-        float z = index[2] / voxel_size[2] - .5
-        float weight
+        double x = index[0] / voxel_size[0] - .5
+        double y = index[1] / voxel_size[1] - .5
+        double z = index[2] / voxel_size[2] - .5
+        double weight
         int x_ind = <int> floor(x)
         int y_ind = <int> floor(y)
         int z_ind = <int> floor(z)
@@ -68,87 +68,72 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
                     result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
     return result
 
-cdef float wght(int i, float r) nogil:
+cdef double wght(int i, double r) nogil:
     if i:
         return r
     else:
         return 1.-r
 
-@cython.wraparound(False)
-def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] odf_value,
-                  cnp.ndarray[cnp.int_t, ndim=1, mode='c'] odf_ind,
-                  cnp.ndarray[cnp.float_t, ndim=2, mode='c'] sep_matrix,
-                  float relative_threshold, float isolation):
-    """Filters peaks based on odf_value and angular distance
-
-    Assumes that odf_value is sorted in descending order. Looks up odf_ind in
-    sep_matrix to determine the angular separation between two points. Returns
-    a subset of the peaks that pass the relative_threshold and isolation
-    criterion.
-    """
-    cdef:
-        int i, j, pass_all
-        int count = 1
-        float threshold = relative_threshold * odf_value[0]
-        cnp.ndarray[cnp.int_t, ndim=1, mode='c'] find = odf_ind.copy()
-        cnp.ndarray[cnp.float_t, ndim=1, mode='c'] fvalue = odf_value.copy()
-
-    for i from 1 <= i < len(odf_value):
-        if odf_value[i] < threshold:
-            break
-        pass_all = 1
-        for j from 0 <= j < count:
-            if sep_matrix[odf_ind[i], find[j]] >= isolation:
-                pass_all = 0
-                break
-        if pass_all:
-            find[count] = odf_ind[i]
-            fvalue[count] = odf_value[i]
-            count += 1
-
-    return fvalue[:count].copy(), find[:count].copy()
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def _robust_peaks(cnp.ndarray[cnp.float_t, ndim=2] peak_vertices,
-                  cnp.ndarray[cnp.float_t, ndim=1] peak_values,
-                  float min_relative_value, float closest_neighbor):
-    """Faster version of shm._robust_peaks
+def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
+                            double theta):
+    """remove_similar_vertices(vertices, theta)
+
+    Returns vertices that are separated by at least theta degrees from all
+    other vertices. Vertex v and -v are considered the same so if v and -v are
+    both in `vertices` only one is kept. Also if v and w are both in vertices,
+    w must be separated by theta degrees from both v and -v to be unique.
+
+    Parameters
+    ----------
+    vertices : (N, 3) ndarray
+        N unit vectors
+    theta : float
+        The minimum separation between vertices in degrees.
+
+    Returns
+    -------
+    unique_vertices : (M, 3) ndarray
+        Vertices sufficiently separated from one another.
+    mapping : (N,) ndarray
+        Indices into unique_vertices. For each vertex in `vertices` the index
+        of a vertex in `unique_vertices` that is less than theta degrees away.
     """
-    """some assumptions,
-    1)  peak_values are sorted largest to smallest
-    2)  peak_vetices are unit vectors
-    3)  closest neighbor is cos(angle) where angle is smallest permiisible
-        angle between between two robust peaks
-    """
-    if peak_vertices.shape[1] != 3:
+    if vertices.shape[1] != 3:
         raise ValueError()
     cdef:
-        cnp.ndarray[cnp.float_t, ndim=1] inst
-        float min_value = peak_values[0] * min_relative_value
-        float a, b, c
-        int ii
-    if len(peak_vertices) == 1:
-        return peak_vertices
+        cnp.ndarray[cnp.float_t, ndim=2, mode='c'] unique_vertices = vertices.copy()
+        cnp.ndarray[cnp.uint_t, ndim=1, mode='c'] mapping = np.zeros(len(vertices),
+                                                                     dtype=np.uint)
+        char pass_all
+        size_t i, j
+        size_t count = 1
+        size_t n = vertices.shape[0]
+        double a, b, c, sim
+        double cos_similarity = cos(PI/180 * theta)
 
-    good_peak_vertices = [peak_vertices[0]]
-    for ii from 1 <= ii < len(peak_values):
-        if peak_values[ii] < min_value:
-            break
-        a = peak_vertices[ii,0]
-        b = peak_vertices[ii,1]
-        c = peak_vertices[ii,2]
-        t = 1
-        for inst in good_peak_vertices:
-            dist = a*inst[0] + b*inst[1] + c*inst[2]
-            if fabs(dist) > closest_neighbor:
-                t = 0
+    for i in range(1, n):
+        pass_all = 1
+        a = vertices[i,0]
+        b = vertices[i,1]
+        c = vertices[i,2]
+        for j in range(count):
+            sim = fabs(a * unique_vertices[j,0] + 
+                       b * unique_vertices[j,1] + 
+                       c * unique_vertices[j,2])
+            if sim > cos_similarity:
+                pass_all = 0
+                mapping[i] = j
                 break
-        if t:
-            good_peak_vertices.append(peak_vertices[ii])
+        if pass_all:
+            unique_vertices[count, 0] = vertices[i, 0]
+            unique_vertices[count, 1] = vertices[i, 1]
+            unique_vertices[count, 2] = vertices[i, 2]
+            mapping[i] = count
+            count += 1
 
-    good_peak_vertices = np.array(good_peak_vertices)
-    return good_peak_vertices
+    return unique_vertices[:count].copy(), mapping
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
