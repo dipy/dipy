@@ -104,14 +104,16 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
         raise ValueError()
     cdef:
         cnp.ndarray[cnp.float_t, ndim=2, mode='c'] unique_vertices = vertices.copy()
-        cnp.ndarray[cnp.uint_t, ndim=1, mode='c'] mapping = np.zeros(len(vertices),
-                                                                     dtype=np.uint)
+        cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] mapping
         char pass_all
         size_t i, j
         size_t count = 1
         size_t n = vertices.shape[0]
         double a, b, c, sim
         double cos_similarity = cos(PI/180 * theta)
+    if n > 2**16:
+        raise ValueError("too many vertices")
+    mapping = np.zeros(len(vertices), dtype=np.uint16)
 
     for i in range(1, n):
         pass_all = 1
