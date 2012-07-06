@@ -6,6 +6,7 @@ import warnings
 
 from dipy.core.geometry import cart2sphere, sphere2cart
 from dipy.core.onetime import auto_attr
+from dipy.reconst.recspeed import remove_similar_vertices
 
 
 def _all_specified(*args):
@@ -64,23 +65,23 @@ def unique_edges(faces):
     return np.array(edges)
 
 
-def unique_faces(faces):
-    """Remove duplicate faces.
+def unique_sets(sets):
+    """Remove duplicate sets.
 
     Parameters
     ----------
-    faces : (N, 3) ndarray
-        Vertex indices forming triangular faces.
+    sets : array (N, k)
+        N sets of size k.
 
-    Returns
-    -------
-    faces : (N, 3) ndarray
-        Unique faces.
+    Return
+    ------
+    sets : array
+        Unique sets.
 
     """
-    faces = set(frozenset(f) for f in faces)
-    faces = [tuple(f) for f in faces]
-    return np.array(faces)
+    sets = set(frozenset(s) for s in sets)
+    sets = [tuple(s) for s in sets]
+    return np.array(sets)
 
 
 def reduce_antipodal(points, faces, tol=0):
@@ -141,9 +142,9 @@ class Sphere(object):
                              "edges, only faces, or neither.")
 
         if edges is not None:
-            self.edges = edges
+            self.edges = np.asarray(edges)
         if faces is not None:
-            self.faces = faces
+            self.faces = np.asarray(faces)
 
         if theta is not None:
             self.theta, self.phi = np.asarray(theta), np.asarray(phi)
@@ -185,5 +186,96 @@ class Sphere(object):
 
 
 class HemiSphere(Sphere):
-    pass
+    """Points on the unit sphere.
+
+    A HemiSphere is similar to a Sphere but it takes antipodal symmetry into
+    account. Antipodal symmetry means that point v on a HemiSphere is the same
+    as the point -v. Duplicate points are discarded when constructing a
+    HemiSphere (including antipodal duplicates). `edges` and `faces` are
+    remapped to the remaining points as closely as possible.
+
+    The HemiSphere can be constructed using one of three conventions::
+
+      HemiSphere(x, y, z)
+      HemiSphere(xyz=xyz)
+      HemiSphere(theta=theta, phi=phi)
+
+    Parameters
+    ----------
+    x, y, z : 1-D array_like
+        Vertices as x-y-z coordinates.
+    theta, phi : 1-D array_like
+        Vertices as spherical coordinates.  Theta and phi are the inclination
+        and azimuth angles respectively.
+    xyz : (N, 3) ndarray
+        Vertices as x-y-z coordinates.
+
+    faces : (N, 3) ndarray
+        Indices into vertices that form triangular faces.  If unspecified,
+        the faces are computed using a Delaunay triangulation.
+    edges : (N, 2) ndarray
+        Edges between vertices.  If unspecified, the edges are
+        derived from the faces.
+    tol : float
+        Angle in degrees. Vertices that are less than tol degrees apart are
+        treated as duplicates.
+
+    See Also
+    --------
+    Sphere
+
+    """
+    def __init__(self, x=None, y=None, z=None,
+                 theta=None, phi=None,
+                 xyz=None,
+                 faces=None, edges=None, tol=1e-5):
+        """Create a HemiSphere from points"""
+
+        sphere = Sphere(x=x, y=y, z=z, theta=theta, phi=phi, xyz=xyz)
+        uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol)
+        if faces is not None:
+            faces = np.asarray(faces)
+            faces = unique_sets(mapping[faces])
+        if edges is not None:
+            edges = np.asarray(edges)
+            edges = unique_sets(mapping[edges])
+        Sphere.__init__(self, xyz=uniq_vertices, edges=edges, faces=faces)
+
+    @classmethod
+    def from_sphere(klass, sphere, tol=1e-5):
+        """Create instance from a Sphere"""
+        return klass(theta=sphere.theta, phi=shere.phi,
+                     edges=sphere.edges, faces=sphere.faces, tol=tol)
+
+    def mirror(self):
+        """Create a full Sphere from a HemiSphere"""
+        n = len(self.vertices)
+        vertices = np.vstack([self.vertices, -self.vertices])
+
+        edges = np.vstack([self.edges, n + self.edges])
+        _switch_vertex(edges[:,0], edges[:,1], vertices)
+
+        faces = np.vstack([self.faces, n + self.faces])
+        _switch_vertex(faces[:,0], faces[:,1], vertices)
+        _switch_vertex(faces[:,0], faces[:,2], vertices)
+        return Sphere(xyz=vertices, edges=edges, faces=faces)
+
+    @auto_attr
+    def faces(self):
+        vertices = np.vstack([self.vertices, -self.vertices])
+        faces = faces_from_sphere_vertices(vertices)
+        return unique_sets(faces % len(self.vertices))
+
+def _switch_vertex(index1, index2, vertices):
+    """When we mirror an edge (a, b). We can either create (a, b) and (a', b')
+    OR (a, b') and (a', b). The angles of edges (a, b) and (a, b') are
+    supplementary, so we choose the two new edges such that their angles are
+    less than 90 degrees.
+    """
+    n = len(vertices)
+    A = vertices[index1]
+    B = vertices[index2]
+    is_far = (A * B).sum(-1) < 0
+    index2 += n/2 * (is_far)
+    index2 %= n
 
