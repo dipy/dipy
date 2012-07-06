@@ -188,7 +188,7 @@ class Sphere(object):
 class HemiSphere(Sphere):
     """Points on the unit sphere.
 
-    A HemiSphere is similar to a Sphere but it takes anitpodal symmetry into
+    A HemiSphere is similar to a Sphere but it takes antipodal symmetry into
     account. Antipodal symmetry means that point v on a HemiSphere is the same
     as the point -v. Duplicate points are discarded when constructing a
     HemiSphere (including antipodal duplicates). `edges` and `faces` are
@@ -240,6 +240,12 @@ class HemiSphere(Sphere):
             edges = np.asarray(edges)
             edges = unique_sets(mapping[edges])
         Sphere.__init__(self, xyz=uniq_vertices, edges=edges, faces=faces)
+
+    @classmethod
+    def from_sphere(klass, sphere, tol=1e-5):
+        """Create instance from a Sphere"""
+        return klass(theta=sphere.theta, phi=shere.phi,
+                     edges=sphere.edges, faces=sphere.faces, tol=tol)
 
     def mirror(self):
         """Create a full Sphere from a HemiSphere"""
