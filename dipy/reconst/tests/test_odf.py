@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_array_equal
-from ..odf import OdfFit, OdfModel, gfa, peaksFromModel, peak_directions
+from ..odf import OdfFit, OdfModel, gfa, peaks_from_model, peak_directions
 from dipy.core.triangle_subdivide import (create_half_unit_sphere,
     disperse_charges)
 from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
@@ -57,7 +57,7 @@ def test_peaksFromModel():
 
     # Test basic case
     model = SimpleOdfModel()
-    pam = peaksFromModel(model, data, normalize_peaks=True)
+    pam = peaks_from_model(model, data, normalize_peaks=True)
 
     assert_array_equal(pam.gfa, gfa(_odf))
     assert_array_equal(pam.peak_values[:, 0], 1.)
@@ -69,7 +69,7 @@ def test_peaksFromModel():
     assert_array_equal(pam.peak_indices[:, 1:], -1)
 
     # Test that odf array matches and is right shape
-    pam = peaksFromModel(model, data, return_odf=True)
+    pam = peaks_from_model(model, data, return_odf=True)
     expected_shape = (len(data), len(_odf))
     assert_equal(pam.odf.shape, expected_shape)
     assert_true((_odf == pam.odf).all())
@@ -78,7 +78,7 @@ def test_peaksFromModel():
     # Test mask
     mask = (np.arange(10) % 2) == 1
 
-    pam = peaksFromModel(model, data, mask=mask, normalize_peaks=True)
+    pam = peaks_from_model(model, data, mask=mask, normalize_peaks=True)
     assert_array_equal(pam.gfa[~mask], 0)
     assert_array_equal(pam.qa[~mask], 0)
     assert_array_equal(pam.peak_values[~mask], 0)
