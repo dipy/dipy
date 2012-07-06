@@ -1,7 +1,7 @@
 
 import numpy as np
 import numpy.linalg as npl
-from dipy.core.triangle_subdivide import create_half_unit_sphere
+from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.reconst.dti import design_matrix, lower_triangular
 
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
@@ -102,7 +102,8 @@ def test_set_angle_limit():
     assert_raises(ValueError, stepper._set_angle_limit, -1.1)
 
 def test_smooth_pinv():
-    sphere = create_half_unit_sphere(3)
+    hemi = create_unit_hemisphere(3)
+    v, e = hemi.vertices, hemi.edges
     m, n = sph_harm_ind_list(4)
     r, pol, azi = cart2sphere(*sphere.vertices.T)
     B = real_sph_harm(m, n, azi[:, None], pol[:, None])
@@ -164,9 +165,9 @@ def test_normalize_data():
     assert_array_equal(norm_sig[..., -5:], 5/64.5)
 
 def make_fake_signal():
-    sphere = create_half_unit_sphere(4)
-    v = sphere.vertices
-    vecs_xy = v[np.flatnonzero(v[:, 2] == 0)]
+    hemi = create_unit_hemisphere(4)
+    v, e = hemi.vertices, hemi.edges
+    vecs_xy = v[np.flatnonzero(v[:, 2] < .001)]
     evals = np.array([1.8, .2, .2])*10**-3*1.5
     evecs_moveing = np.empty((len(vecs_xy), 3, 3))
     evecs_moveing[:, :, 0] = vecs_xy
@@ -194,6 +195,7 @@ def make_fake_signal():
     D_fixed = lower_triangular(tensor_fixed, 1)
 
     sig = .45*np.exp(np.dot(D_moveing, B.T)) + .55*np.exp(np.dot(B, D_fixed))
+    print sig
     assert sig.max() <= 1
     assert sig.min() > 0
     return sphere, vecs_xy, bval, bvec, sig
@@ -241,7 +243,8 @@ def testQballOdfModel():
             assert_array_equal([1., 0, 0.], step)
 
 def test_hat_and_lcr():
-    sphere = create_half_unit_sphere(6)
+    hemi = create_unit_hemisphere(6)
+    v, e = hemi.vertices, hemi.edges
     m, n = sph_harm_ind_list(8)
     r, pol, azi = cart2sphere(*sphere.vertices.T)
     B = real_sph_harm(m, n, azi[:, None], pol[:, None])
