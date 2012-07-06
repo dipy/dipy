@@ -76,9 +76,9 @@ cdef double wght(int i, double r) nogil:
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def unique_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
-                    double theta):
-    """unique_vertices(vertices, theta)
+def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
+                            double theta):
+    """remove_similar_vertices(vertices, theta)
 
     Returns vertices that are separated by at least theta degrees from all
     other vertices. Vertex v and -v are considered the same so if v and -v are

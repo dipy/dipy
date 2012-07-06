@@ -1,7 +1,8 @@
 import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal
-from dipy.reconst.recspeed import peak_finding, local_maxima, unique_vertices 
+from dipy.reconst.recspeed import (peak_finding, local_maxima,
+                                   remove_similar_vertices)
 from dipy.data import get_sphere, get_data
 from dipy.core.geometry import reduce_antipodal, unique_edges
 from dipy.sims.voxel import all_tensor_evecs, multi_tensor_odf
@@ -73,16 +74,16 @@ def test_filter_peaks():
     norms = np.sqrt((vertices*vertices).sum(-1))
     vertices = vertices/norms[:, None]
 
-    uv, mapping = unique_vertices(vertices, .01)
+    uv, mapping = remove_similar_vertices(vertices, .01)
     assert_array_equal(uv, vertices[:6])
     assert_array_equal(mapping, range(6) + [0])
-    uv, mapping = unique_vertices(vertices, 30)
+    uv, mapping = remove_similar_vertices(vertices, 30)
     assert_array_equal(uv, vertices[:4])
     assert_array_equal(mapping, range(4) + [1, 0, 0])
-    uv, mapping = unique_vertices(vertices, 60)
+    uv, mapping = remove_similar_vertices(vertices, 60)
     assert_array_equal(uv, vertices[:3])
     assert_array_equal(mapping, range(3) + [0, 1, 0, 0])
- 
+
 if __name__ == '__main__':
     test_peak_finding()
 
