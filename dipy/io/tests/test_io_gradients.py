@@ -16,9 +16,15 @@ def test_read_bvals_bvecs():
     npt.assert_array_equal(bvals, gt.bvals)
     npt.assert_array_equal(bvecs, gt.bvecs)
 
+    # None should also work as an input:
+    bvals_none, bvecs_none = read_bvals_bvecs(None, fbvecs)
+    npt.assert_array_equal(bvecs_none, gt.bvecs)
+    bvals_none, bvecs_none = read_bvals_bvecs(fbvals, None)
+    npt.assert_array_equal(bvals_none, gt.bvals)
+
+
     # Test for error raising with unknown file formats:
     nan_fbvecs = osp.splitext(fbvecs)[0] + '.nan'  # Nonsense extension
-
     npt.assert_raises(ValueError, read_bvals_bvecs, fbvals, nan_fbvecs)
 
     # Test for error raising with incorrect file-contents:

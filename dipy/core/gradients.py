@@ -1,4 +1,5 @@
 import numpy as np
+import dipy.io.gradients as io
 
 class GradientTable(object):
     def __init__(self, bvals, bvecs=None, big_delta=None, small_delta=None,
@@ -96,11 +97,19 @@ class GradientTable(object):
         # This will be used to determine which b-values should be treated as 0:
         self.b0_threshold = b0_threshold
 
-        if hasattr(bvals,'shape') and hasattr(bvals,'shape'):
-            self.bvals, self.bvecs = bvals, bvecs
+        # If you provided strings with full paths, we go and load those from
+        # the files:
+        if isinstance(bvals, basestring):
+              bvals, _ = io.read_bvals_bvecs(bvals, None)
+        if isinstance(bvecs, basestring):
+              _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
-        if hasattr(bvals,'shape') and bvecs is None:
+        if isinstance(bvals, np.ndarray):
+            self.bvals = bvals
+        if isinstance(bvecs, np.ndarray):
+            self.bvecs = bvecs
 
+        if isinstance(bvals, np.ndarray) and bvecs is None:
             if bvals.shape[-1] == 4:
                 self.bvals = np.squeeze(bvals[:, 0])
                 self.bvecs = bvals[:, 1:]
