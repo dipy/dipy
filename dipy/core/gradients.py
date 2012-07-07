@@ -2,10 +2,13 @@ import numpy as np
 
 class GradientTable(object):
     def __init__(self, bvals, bvecs=None, big_delta=None, small_delta=None, b0_threshold=20, atol=1e-2):
-        """ A general class for handling information about diffusion MR gradients .
+        """
+        A general class for handling information about diffusion MR gradients.
 
-        This class is especially useful as an input for signal reconstruction methods.
-        It reads, loads and prepares scanner parameters like the b-values and b-vectors
+        This class is especially useful as an input for signal reconstruction
+        methods.
+        It reads, loads and prepares scanner parameters like the b-values and
+        b-vectors
         so that they can be useful during the reconstruction process.
 
         Parameters
@@ -14,9 +17,9 @@ class GradientTable(object):
         bvals: can be any of the four options
             1. an array of shape (N,) or (1, N) or (N, 1) with the b-values.
             2. a path for the file which contains an array like the above (1).
-            3. an array of shape (N, 4) or (4, N). Then this parameter is considered
-            to be a b-table which contains both bvals and bvecs. In this case
-            the next parameter is skipped.
+            3. an array of shape (N, 4) or (4, N). Then this parameter is
+            considered to be a b-table which contains both bvals and bvecs. In
+            this case the next parameter is skipped.
             4. a path for the file which contains an array like the one at (3).
 
         bvecs: can be any of two options
@@ -33,6 +36,7 @@ class GradientTable(object):
             all b-values with values lower than this threshold
             are considered as b0s i.e. without diffusion weighting
             (See notes).
+
         atol: float
             all b-vectors need to be unit vectors up to a tolerance.
 
@@ -41,6 +45,7 @@ class GradientTable(object):
         ----------
         bvals: array, shape (N,)
                 b-values
+
         bvecs: array, shape (N,3)
                 b-vectors
 
@@ -87,38 +92,39 @@ class GradientTable(object):
         dipy.reconst.dti.Tensor
 
         """
-        self.b0_threshold=b0_threshold
+        self.b0_threshold = b0_threshold
         if hasattr(bvals,'shape') and hasattr(bvals,'shape'):
-            self.bvals, self.bvecs=bvals, bvecs
+            self.bvals, self.bvecs = bvals, bvecs
         if hasattr(bvals,'shape') and bvecs is None:
-            if bvals.shape[-1]==4:
-                self.bvals=np.squeeze(bvals[:, 0])
-                self.bvecs=bvals[:, 1:]
-            if bvals.shape[0]==4:
-                self.bvals=np.squeeze(bvals[0, :])
-                self.bvecs=bvals[1:, :].T
-        if max(self.bvals.shape)!=max(self.bvecs.shape):
+            if bvals.shape[-1] == 4:
+                self.bvals = np.squeeze(bvals[:, 0])
+                self.bvecs = bvals[:, 1:]
+            if bvals.shape[0] == 4:
+                self.bvals = np.squeeze(bvals[0, :])
+                self.bvecs = bvals[1:, :].T
+        if max(self.bvals.shape) != max(self.bvecs.shape):
             raise ValueError('b-values and b-vectors shapes do not correspond')
-        if self.bvecs.shape[1]>self.bvecs.shape[0]:
-            self.bvecs=self.bvecs.T
+        if self.bvecs.shape[1] > self.bvecs.shape[0]:
+            self.bvecs = self.bvecs.T
         #check if bvecs are unit vectors
-        sqrtb=np.sqrt(self.bvecs[:,0]**2+self.bvecs[:,1]**2+self.bvecs[:,2]**2)
-        sqrtb=sqrtb[~self.b0s_mask]
-        if not np.allclose(sqrtb,np.ones(len(sqrtb)),atol=atol):
+        sqrtb = np.sqrt(self.bvecs[:,0]**2+self.bvecs[:,1]**2+self.bvecs[:,2]**2)
+        sqrtb = sqrtb[~self.b0s_mask]
+        if not np.allclose(sqrtb,np.ones(len(sqrtb)), atol = atol):
             raise ValueError('B-vectors should be unit vectors')
-        self.big_delta=None
-        self.small_delta=None
+        self.big_delta = None
+        self.small_delta = None
 
     @property
     def b0s_mask(self):
         """ find where b0s are held
         """
-        return self.bvals<=self.b0_threshold
+        return self.bvals <= self.b0_threshold
 
     def transform(self):
         """ reorient gradients to a different coordinate system
         """
-        raise NotImplementedError('Transformation of Gradients not implemented yet')
+        e_s = 'Transformation of Gradients not implemented yet'
+        raise NotImplementedError(e_s)
 
     @property
     def info(self):
