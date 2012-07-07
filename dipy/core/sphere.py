@@ -84,16 +84,9 @@ def unique_sets(sets):
     return np.array(sets)
 
 
-def reduce_antipodal(points, faces, tol=0):
-    # Check that points have expected symmetry
-    n = len(points) // 2
-    if not np.allclose(points[:n], -points[n:], tol):
-        raise ValueError("points don't have the expected symmetry")
-    new_points = points[:n]
-    new_faces = unique_faces(faces % n)
-    new_edges = unique_edges(new_faces)
-    return new_points, new_edges, new_faces
-
+def reduce_antipodal(points, faces, tol=1e-5):
+    hs = HemiSphere(xyz=points, faces=faces, tol=tol)
+    return hs.vertices, hs.edges, hs.faces
 
 class Sphere(object):
     """Points on the unit sphere.

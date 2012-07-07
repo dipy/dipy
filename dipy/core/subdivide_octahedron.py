@@ -59,7 +59,7 @@ octahedron_triangles = np.array( [
     [ 1, 11,  6],
     ], dtype='uint16')
 
-def divide_all( vertices, edges, triangles ):
+def _divide_all( vertices, edges, triangles ):
     r""" Subdivides triangles into smaller triangles
 
     Parameters
@@ -210,7 +210,7 @@ def create_unit_sphere( recursion_level=2 ):
     edges = octahedron_edges
     triangles = octahedron_triangles
     for i in range( recursion_level - 1 ):
-        vertices, edges, triangles = divide_all(vertices, edges, triangles)
+        vertices, edges, triangles = _divide_all(vertices, edges, triangles)
     faces = edges[triangles, 0]
     return Sphere(xyz=vertices, edges=edges, faces=faces)
 

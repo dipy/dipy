@@ -3,8 +3,7 @@ from nose.tools import assert_true, assert_false, \
      assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.core.triangle_subdivide import _get_forces, disperse_charges, \
-    _divide_all, create_unit_sphere
+from dipy.core.subdivide_octahedron import _divide_all, create_unit_sphere
 
 def test_divide_all():
     vertices = np.array([[1., 0, 0],

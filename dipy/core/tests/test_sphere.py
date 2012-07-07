@@ -5,10 +5,10 @@ import warnings
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               faces_from_sphere_vertices, HemiSphere,
                               disperse_charges, _get_forces)
-from dipy.core.triangle_subdivide import (create_unit_sphere,
-                                          octahedron_vertices,
-                                          octahedron_edges,
-                                          octahedron_triangles)
+from dipy.core.subdivide_octahedron import (create_unit_sphere,
+                                            octahedron_vertices,
+                                            octahedron_edges,
+                                            octahedron_triangles)
 from dipy.core.geometry import cart2sphere, sphere2cart
 
 verts, edges, sides = octahedron_vertices, octahedron_edges, octahedron_triangles
