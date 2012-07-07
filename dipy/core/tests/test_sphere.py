@@ -219,5 +219,23 @@ def test_disperse_charges():
     norms = np.sqrt((d_charges*d_charges).sum(-1))
     nt.assert_array_almost_equal(norms, 1)
 
+def test_interp_rbf():
+    from dipy.core.sphere import Sphere, interp_rbf
+    from dipy.core.triangle_subdivide import create_half_unit_sphere
+    import numpy as np
+
+    v0, e0, f0 = create_half_unit_sphere(2)
+    v1, e1, f1 = create_half_unit_sphere(3)
+
+    s0 = Sphere(xyz=v0)
+    s1 = Sphere(xyz=v1)
+
+    data = np.cos(s0.theta) + np.sin(s0.phi)
+    expected = np.cos(s1.theta) + np.sin(s1.phi)
+    interp_data = interp_rbf(data, s0, s1)
+
+    nt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+
+
 if __name__ == "__main__":
     nt.run_module_suite()
