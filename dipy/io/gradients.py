@@ -3,7 +3,8 @@ from os.path import splitext
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
-    """ Read b-values and b-vectors from the disk
+    """
+    Read b-values and b-vectors from the disk
 
     Parameters
     ----------
@@ -17,25 +18,41 @@ def read_bvals_bvecs(fbvals, fbvecs):
     bvals: array, (N,)
     bvecs: array, (N, 3)
 
+    Notes
+    -----
+    Files can be either '.bvals'/'.bvecs' or '.txt' or '.npy' (containing arrays
+    stored with the appropriate values).
+
     """
-    if isinstance(fbvals, basestring) and isinstance(fbvecs, basestring):
-        base, ext = splitext(fbvals)
-        if ext in ['.bvals', '.bval', '.txt', '']:
-            bvals = np.squeeze(np.loadtxt(fbvals))
-            bvecs = np.loadtxt(fbvecs)
-        if ext == '.npy':
-            bvals = np.squeeze(np.load(fbvals))
-            bvecs = np.load(fbvecs)
-        if bvecs.shape[1] > bvecs.shape[0]:
-            bvecs = bvecs.T
-        if min(bvecs.shape) != 3:
-            raise IOError('bvec file should have three rows')
-        if bvecs.ndim != 2:
-            raise IOError('bvec file should be saved as a two dimensional array')
-        if max(bvals.shape) != max(bvecs.shape):
+
+    # Loop over the provided inputs, reading each one in turn and adding them
+    # to this list:
+    vals = []
+    for this_fname in [fbvals, fbvecs]:
+        if isinstance(this_fname, basestring):
+            base, ext = splitext(this_fname)
+            if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '']:
+                vals.append(np.squeeze(np.loadtxt(this_fname)))
+            elif ext == '.npy':
+                vals.append(np.squeeze(np.load(this_fname)))
+            else:
+                e_s = "File type %s is not recognized"%ext
+                raise ValueError(e_s)
+        else:
+            raise ValueError('String with full path to file is required')
+
+    # Once out of the loop, unpack them:
+    bvals, bvecs = vals[0], vals[1]
+
+    if bvecs.shape[1] > bvecs.shape[0]:
+        bvecs = bvecs.T
+    if min(bvecs.shape) != 3:
+        raise IOError('bvec file should have three rows')
+    if bvecs.ndim != 2:
+        raise IOError('bvec file should be saved as a two dimensional array')
+    if max(bvals.shape) != max(bvecs.shape):
             raise IOError('b-values and b-vectors shapes do not correspond')
-    else:
-        raise ValueError('Two strings with the full filepaths are required')
+
     return bvals, bvecs
 
 
