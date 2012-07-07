@@ -26,3 +26,6 @@ script:
     - mkdir for_test
     - cd for_test
     - nosetests --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+notifications:
+  email: false
+
