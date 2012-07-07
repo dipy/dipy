@@ -1,7 +1,8 @@
 import numpy as np
 
 class GradientTable(object):
-    def __init__(self, bvals, bvecs=None, big_delta=None, small_delta=None, b0_threshold=20, atol=1e-2):
+    def __init__(self, bvals, bvecs=None, big_delta=None, small_delta=None,
+                 b0_threshold=20, atol=1e-2):
         """
         A general class for handling information about diffusion MR gradients.
 
@@ -92,36 +93,53 @@ class GradientTable(object):
         dipy.reconst.dti.Tensor
 
         """
+        # This will be used to determine which b-values should be treated as 0:
         self.b0_threshold = b0_threshold
+
         if hasattr(bvals,'shape') and hasattr(bvals,'shape'):
             self.bvals, self.bvecs = bvals, bvecs
+
         if hasattr(bvals,'shape') and bvecs is None:
+
             if bvals.shape[-1] == 4:
                 self.bvals = np.squeeze(bvals[:, 0])
                 self.bvecs = bvals[:, 1:]
+
             if bvals.shape[0] == 4:
                 self.bvals = np.squeeze(bvals[0, :])
                 self.bvecs = bvals[1:, :].T
+
         if max(self.bvals.shape) != max(self.bvecs.shape):
             raise ValueError('b-values and b-vectors shapes do not correspond')
+
         if self.bvecs.shape[1] > self.bvecs.shape[0]:
             self.bvecs = self.bvecs.T
+
         #check if bvecs are unit vectors
-        sqrtb = np.sqrt(self.bvecs[:,0]**2+self.bvecs[:,1]**2+self.bvecs[:,2]**2)
+        sqrtb = np.sqrt(self.bvecs[:,0] ** 2 +
+                        self.bvecs[:,1] ** 2 +
+                        self.bvecs[:,2] ** 2)
+
         sqrtb = sqrtb[~self.b0s_mask]
-        if not np.allclose(sqrtb,np.ones(len(sqrtb)), atol = atol):
+        if not np.allclose(sqrtb, 1, atol=atol):
             raise ValueError('B-vectors should be unit vectors')
+
+        # These are other properties of the gradients: the time differences
+        # between application of diffusion weighted gradients and their
+        # duration:
         self.big_delta = None
         self.small_delta = None
 
     @property
     def b0s_mask(self):
-        """ find where b0s are held
+        """
+        Find where b0s are held
         """
         return self.bvals <= self.b0_threshold
 
     def transform(self):
-        """ reorient gradients to a different coordinate system
+        """
+        Reorient gradients to a different coordinate system
         """
         e_s = 'Transformation of Gradients not implemented yet'
         raise NotImplementedError(e_s)

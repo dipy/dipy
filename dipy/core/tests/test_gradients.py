@@ -17,12 +17,12 @@ def test_btable_prepare():
                     [sq2, sq2, 0],
                     [sq2, 0, sq2],
                     [0, sq2, sq2]])
-    bt = GradientTable(bvals,bvecs)
-    assert_array_equal(bt.bvecs,bvecs)
+    bt = GradientTable(bvals, bvecs)
+    assert_array_equal(bt.bvecs, bvecs)
     bt.info
-    fimg,fbvals,fbvecs = get_data('small_64D')
-    bvals=np.load(fbvals)
-    bvecs=np.load(fbvecs)
+    fimg, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
     bt = GradientTable(bvals,bvecs)
     assert_array_equal(bt.bvecs,bvecs)
     bt2 = GradientTable(bvals,bvecs.T)
@@ -34,6 +34,10 @@ def test_btable_prepare():
     bt4 = GradientTable(btab.T)
     assert_array_equal(bt4.bvecs, bvecs)
     assert_array_equal(bt4.bvals, bvals)
+
+
+
+
 
 def test_b0s():
 
