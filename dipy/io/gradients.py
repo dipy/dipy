@@ -21,18 +21,18 @@ def read_bvals_bvecs(fbvals, fbvecs):
     if isinstance(fbvals, basestring) and isinstance(fbvecs, basestring):
         base, ext = splitext(fbvals)
         if ext in ['.bvals', '.bval', '.txt', '']:
-            bvals=np.squeeze(np.loadtxt(fbvals))
-            bvecs=np.loadtxt(fbvecs)
-        if ext=='.npy':
-            bvals=np.squeeze(np.load(fbvals))
-            bvecs=np.load(fbvecs)
-        if bvecs.shape[1]>bvecs.shape[0]:
-            bvecs=bvecs.T
+            bvals = np.squeeze(np.loadtxt(fbvals))
+            bvecs = np.loadtxt(fbvecs)
+        if ext == '.npy':
+            bvals = np.squeeze(np.load(fbvals))
+            bvecs = np.load(fbvecs)
+        if bvecs.shape[1] > bvecs.shape[0]:
+            bvecs = bvecs.T
         if min(bvecs.shape) != 3:
             raise IOError('bvec file should have three rows')
         if bvecs.ndim != 2:
             raise IOError('bvec file should be saved as a two dimensional array')
-        if max(bvals.shape)!=max(bvecs.shape):
+        if max(bvals.shape) != max(bvecs.shape):
             raise IOError('b-values and b-vectors shapes do not correspond')
     else:
         raise ValueError('Two strings with the full filepaths are required')
@@ -60,17 +60,17 @@ def read_btable(fbtab):
         base, ext = splitext(fbvals)
         if ext in ['.txt', '']:
             btable=np.loadtxt(fbtab)
-        if ext=='.npy':
-            btable=np.load(fbvecs)
-        if bvecs.shape[1]>bvecs.shape[0]:
-            btable=btable.T
+        if ext == '.npy':
+            btable = np.load(fbvecs)
+        if bvecs.shape[1] > bvecs.shape[0]:
+            btable = btable.T
         if min(bvecs.shape) != 4:
             raise IOError('btable file should have 4 rows')
-        bvals=np.squeeze(btable[:, 0])
-        bvecs=btable[:, 1:]
-        if bvals.ndim!=1 and bvecs.ndim!=2:
+        bvals = np.squeeze(btable[:, 0])
+        bvecs = btable[:, 1:]
+        if bvals.ndim != 1 and bvecs.ndim != 2:
             raise IOError('b-table was not loaded correctly')
-        if max(bvals.shape)!=max(bvecs.shape):
+        if max(bvals.shape) != max(bvecs.shape):
             raise IOError('b-values and b-vectors shapes do not correspond')
     else:
         raise ValueError('A string with the full filepath is required')
