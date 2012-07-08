@@ -53,7 +53,8 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
 
     """
     if ax is None:
-        fig, ax = plt.subplots(1)
+        _, ax = plt.subplots(1)
+    fig = ax.get_figure()
 
     x = vertices[:, 0]
     y = vertices[:, 1]
@@ -75,7 +76,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
 
     if triang:
 	triang = tri.Triangulation(x, y)
-	plt.tripcolor(triang, r, cmap=cmap)
+	ax.tripcolor(triang, r, cmap=cmap)
     else:
 	cmap_data = cmap._segmentdata
 	red_interp, blue_interp, green_interp = (
@@ -92,8 +93,8 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
 		    c=[red.item(), green.item(), blue.item()])
 
 
-    plt.axis('equal')
-    plt.axis('off')
+    ax.set_aspect('equal')
+    ax.set_axis_off()
     if cbar:
         mappable = matplotlib.cm.ScalarMappable(cmap=cmap)
         mappable.set_array([my_min, my_max])
@@ -107,4 +108,4 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
     ax.set_xlim([-1.1, 1.1])
     ax.set_ylim([-1.1, 1.1])
 
-    return fig
+    return ax
