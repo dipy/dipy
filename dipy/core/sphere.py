@@ -273,8 +273,17 @@ def _switch_vertex(index1, index2, vertices):
     index2 %= n
 
 def _get_forces(charges):
-    """Given a set of charges on the surface of the sphere gets total force
+    r"""Given a set of charges on the surface of the sphere gets total force
     those charges exert on each other.
+
+    The force exerted by one charge on another is given by Coulomb's law. For
+    this simulation we use charges of equal magnitude so this force can be
+    written as $\vec{r}/r^3$, up to a constant factor, where $\vec{r}$ is the
+    separation of the two charges and $r$ is the magnitude of $\vec{r}$. Forces
+    are additive so the total force on each of the charges is the sum of the
+    force exerted by each other charge in the system. Charges do not exert a
+    force on themselves. The electric potential can similarly be written as
+    $1/r$ and is also additive.
     """
 
     all_charges = np.concatenate((charges, -charges))
