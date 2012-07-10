@@ -221,14 +221,11 @@ def test_disperse_charges():
 
 def test_interp_rbf():
     from dipy.core.sphere import Sphere, interp_rbf
-    from dipy.core.triangle_subdivide import create_half_unit_sphere
+    from dipy.core.subdivide_octahedron import create_unit_hemisphere
     import numpy as np
 
-    v0, e0, f0 = create_half_unit_sphere(2)
-    v1, e1, f1 = create_half_unit_sphere(3)
-
-    s0 = Sphere(xyz=v0)
-    s1 = Sphere(xyz=v1)
+    s0 = create_unit_hemisphere(2)
+    s1 = create_unit_hemisphere(3)
 
     data = np.cos(s0.theta) + np.sin(s0.phi)
     expected = np.cos(s1.theta) + np.sin(s1.phi)
