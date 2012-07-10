@@ -1,12 +1,11 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 from ..odf import OdfFit, OdfModel, gfa, peaks_from_model, peak_directions
-from dipy.core.triangle_subdivide import (create_half_unit_sphere,
-    disperse_charges)
+from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
                         assert_true)
 
-_sphere = create_half_unit_sphere(4)
+_sphere = create_unit_hemisphere(4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
 class SimpleOdfModel(object):
     sphere = _sphere
@@ -25,7 +24,7 @@ def test_peak_directions():
     model = SimpleOdfModel()
     fit = model.fit(None)
     odf = fit.odf()
-    
+
     argmax = odf.argmax()
     mx = odf.max()
     sphere = fit.model.sphere

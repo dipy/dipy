@@ -1,7 +1,7 @@
 
 import numpy as np
 import numpy.linalg as npl
-from dipy.core.triangle_subdivide import create_half_unit_sphere
+from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.reconst.dti import design_matrix, lower_triangular
 
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
@@ -102,10 +102,9 @@ def test_set_angle_limit():
     assert_raises(ValueError, stepper._set_angle_limit, -1.1)
 
 def test_smooth_pinv():
-    sphere = create_half_unit_sphere(3)
+    hemi = create_unit_hemisphere(3)
     m, n = sph_harm_ind_list(4)
-    r, pol, azi = cart2sphere(*sphere.vertices.T)
-    B = real_sph_harm(m, n, azi[:, None], pol[:, None])
+    B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
 
     L = np.zeros(len(m))
     C = smooth_pinv(B, L)
@@ -164,9 +163,9 @@ def test_normalize_data():
     assert_array_equal(norm_sig[..., -5:], 5/64.5)
 
 def make_fake_signal():
-    sphere = create_half_unit_sphere(4)
-    v = sphere.vertices
-    vecs_xy = v[np.flatnonzero(v[:, 2] == 0)]
+    hemisphere = create_unit_hemisphere(4)
+    v, e = hemisphere.vertices, hemisphere.edges
+    vecs_xy = v[np.flatnonzero(v[:, 2] < .001)]
     evals = np.array([1.8, .2, .2])*10**-3*1.5
     evecs_moveing = np.empty((len(vecs_xy), 3, 3))
     evecs_moveing[:, :, 0] = vecs_xy
@@ -196,7 +195,7 @@ def make_fake_signal():
     sig = .45*np.exp(np.dot(D_moveing, B.T)) + .55*np.exp(np.dot(B, D_fixed))
     assert sig.max() <= 1
     assert sig.min() > 0
-    return sphere, vecs_xy, bval, bvec, sig
+    return hemisphere, vecs_xy, bval, bvec, sig
 
 def test_ClosestPeakSelector():
     sphere, vecs_xy, bval, bvec, sig = make_fake_signal()
@@ -214,12 +213,12 @@ def test_ClosestPeakSelector():
             s2 = stepper.next_step(ii, vecs_xy[ii])
             assert_array_equal(vecs_xy[ii], step)
             step = stepper.next_step(ii, [1., 0, 0.])
-            assert_array_equal([1., 0, 0.], step)
+            assert_array_almost_equal([1., 0, 0.], step)
 
     norm_sig.shape = (2, 2, 4, -1)
     stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
     step = stepper.next_step((0, 0, 0), [1, 0, 0])
-    assert_array_equal(step, [1, 0, 0])
+    assert_array_almost_equal(step, [1, 0, 0])
 
 def testQballOdfModel():
     sphere, vecs_xy, bval, bvec, sig = make_fake_signal()
@@ -238,19 +237,18 @@ def testQballOdfModel():
             assert step is not None
             assert np.dot(vecs_xy[ii], step) > .98
             step = stepper.next_step(ii, [1., 0, 0.])
-            assert_array_equal([1., 0, 0.], step)
+            assert_array_almost_equal([1., 0, 0.], step)
 
 def test_hat_and_lcr():
-    sphere = create_half_unit_sphere(6)
+    hemi = create_unit_hemisphere(6)
     m, n = sph_harm_ind_list(8)
-    r, pol, azi = cart2sphere(*sphere.vertices.T)
-    B = real_sph_harm(m, n, azi[:, None], pol[:, None])
+    B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
     H = hat(B)
     B_hat = np.dot(H, B)
     assert_array_almost_equal(B, B_hat)
 
     R = lcr_matrix(H)
-    d = np.arange(len(azi))
+    d = np.arange(len(hemi.theta))
     r = d - np.dot(H, d)
     lev = np.sqrt(1-H.diagonal())
     r /= lev
