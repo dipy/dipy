@@ -75,6 +75,10 @@ def standard_dsi_algorithm(S,bvals,bvecs):
 
 def test_dsi():
 
+
+
+
+
     #load odf sphere
     vertices,faces = sphere_vf_from('symmetric724')
     edges = unique_edges(faces)
@@ -153,8 +157,6 @@ def test_dsi():
     dsfit=ds.fit(S)
     QA=dsfit.qa
     assert_equal(np.sum(QA>0),0)
-
-    #
 
     
 
