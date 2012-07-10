@@ -26,9 +26,9 @@ class DiffusionSpectrumModel(OdfModel):
     ''' Calculate the PDF and ODF using Diffusion Spectrum Imaging
     
     Based on the paper "Mapping Complex Tissue Architecture With Diffusion
-    Spectrum Magnetic Resonance Imaging"
-    by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and
-    Robert M. Weisskoff, MRM 2005
+    Spectrum Magnetic Resonance Imaging" by Van J. Wedeen, Patric
+    Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and Robert M. Weisskoff, MRM
+    2005
         
     '''
     def __init__(self, bvals, gradients, odf_sphere='symmetric642',
@@ -60,13 +60,13 @@ class DiffusionSpectrumModel(OdfModel):
         self.radius = np.arange(2.1,6,.2)
         #odf sphere
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
-        self.set_odf_vertices(odf_vertices,None,odf_faces)
-        self.odfn = len(self._odf_vertices)
+        self.set_odf_vertices(odf_vertices, None, odf_faces)
+        self.odfn=len(self._odf_vertices)
         #number of single sampling points
         self.dn = (bvals > b0).sum()
         self.num_b0 = len(bvals) - self.dn
         self.create_qspace()
-    
+
     
     def create_qspace(self):
         
