@@ -269,7 +269,7 @@ def _switch_vertex(index1, index2, vertices):
     A = vertices[index1]
     B = vertices[index2]
     is_far = (A * B).sum(-1) < 0
-    index2 += n/2 * (is_far)
+    index2[is_far] += n/2
     index2 %= n
 
 def _get_forces(charges):

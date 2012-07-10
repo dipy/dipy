@@ -193,7 +193,6 @@ def make_fake_signal():
     D_fixed = lower_triangular(tensor_fixed, 1)
 
     sig = .45*np.exp(np.dot(D_moveing, B.T)) + .55*np.exp(np.dot(B, D_fixed))
-    print sig
     assert sig.max() <= 1
     assert sig.min() > 0
     return hemisphere, vecs_xy, bval, bvec, sig
