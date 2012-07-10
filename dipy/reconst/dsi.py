@@ -4,7 +4,7 @@ from dipy.reconst.recspeed import pdf_to_odf
 from scipy.fftpack import fftn, fftshift
 from dipy.utils.spheremakers import sphere_vf_from
 from .odf import OdfModel, OdfFit, gfa
-from .recspeed import local_maxima, _filter_peaks
+from .recspeed import local_maxima, remove_similar_vertices
 
 class DiffusionSpectrumFit(OdfFit):
     def odf(self,sphere=None,gfa_thr=0.02,normalize_peaks=False):
@@ -185,7 +185,7 @@ class DiffusionSpectrumModel(OdfModel):
                     global_max = max(global_max, odf.max())
                     continue
                 pk, ind = local_maxima(odf, self.odf_edges)
-                pk, ind = _filter_peaks(pk, ind,
+                pk, ind = remove_similar_vertices(pk, ind,
                                         self._distance_matrix,
                                         self.relative_peak_threshold,
                                         self._cos_distance_threshold)
