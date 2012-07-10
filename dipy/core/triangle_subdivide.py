@@ -16,6 +16,8 @@ equal to unit normal array" property)
 import numpy as np
 import warnings
 
+from .sphere import Sphere
+
 t = (1+np.sqrt(5))/2
 
 icosahedron_vertices = np.array( [
@@ -303,16 +305,16 @@ def create_unit_sphere( recursion_level=2 ):
     """
     if recursion_level > 7 or recursion_level < 1:
         raise ValueError("recursion_level must be between 1 and 7")
+
     vertices = octahedron_vertices
     edges = octahedron_edges
     triangles = octahedron_triangles
+
     for i in range( recursion_level - 1 ):
         vertices, edges, triangles = _divide_all(vertices, edges, triangles)
-    sphere = Sphere()
-    sphere.vertices = vertices
-    sphere.edges = edges
-    sphere.faces = edges[triangles, 0]
-    return sphere
+
+    return Sphere(xyz=vertices, edges=edges, faces=edges[triangles, 0])
+
 
 def create_half_unit_sphere( recursion_level=2 ):
     """ Creates a unit sphere and returns the top half
@@ -341,15 +343,12 @@ def create_half_unit_sphere( recursion_level=2 ):
     ----------
     create_half_sphere
     """
-    sphere = create_unit_sphere( recursion_level )
-    half_sphere = Sphere()
-    half_sphere.vertices = sphere.vertices[::2].copy()
-    half_sphere.edges = sphere.edges[::2] // 2
-    half_sphere.faces = sphere.faces[::2] // 2
+    sphere = create_unit_sphere(recursion_level)
+    half_sphere = Sphere(xyz=sphere.vertices[::2].copy(),
+                         edges=sphere.edges[::2] // 2,
+                         faces=sphere.faces[::2] // 2)
     return half_sphere
 
-class Sphere(object):
-    pass
 
 def _get_forces(charges):
     """Given a set of charges on the surface of the sphere gets total force

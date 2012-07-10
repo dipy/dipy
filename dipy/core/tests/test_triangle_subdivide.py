@@ -1,12 +1,13 @@
 
 
 import numpy as np
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_almost_equal, assert_raises
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from nose.tools import (assert_true, assert_false, assert_equal,
+                        assert_almost_equal, assert_raises)
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           run_module_suite)
 
-from dipy.core.triangle_subdivide import _get_forces, disperse_charges, \
-    _divide_all, create_unit_sphere
+from dipy.core.triangle_subdivide import (_get_forces, disperse_charges,
+                                          _divide_all, create_unit_sphere)
 
 def test_divide_all():
     vertices = np.array([[1., 0, 0],
@@ -26,9 +27,9 @@ def test_create_unit_sphere():
     v = sphere.vertices
     e = sphere.edges
     f = sphere.faces
-    assert_array_equal(v[::2], -v[1::2])
-    assert_array_equal(v[e[::2]], -v[e[1::2]])
-    assert_array_equal(v[f[::2]], -v[f[1::2]])
+    assert_array_almost_equal(v[::2], -v[1::2])
+    assert_array_almost_equal(v[e[::2]], -v[e[1::2]])
+    assert_array_almost_equal(v[f[::2]], -v[f[1::2]])
     assert_array_almost_equal((v*v).sum(1), 1)
 
 def create_half_unit_sphere():
@@ -79,3 +80,6 @@ def test_disperse_charges():
     #check that the resulting charges all lie on the unit sphere
     norms = np.sqrt((d_charges*d_charges).sum(-1))
     assert_array_almost_equal(norms, 1)
+
+if __name__ == "__main__":
+    run_module_suite()
