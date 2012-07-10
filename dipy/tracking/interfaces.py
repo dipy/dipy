@@ -26,8 +26,6 @@ from ..reconst.shm import (SlowAdcOpdfModel, MonoExpOpdfModel, QballOdfModel,
                           bootstrap_data_array, NND_ClosestPeakSelector)
 from ..reconst.interpolate import (TriLinearInterpolator,
                                   NearestNeighborInterpolator)
-from ..core.triangle_subdivide import (create_half_unit_sphere,
-                                      disperse_charges)
 from ..tracking.integration import (BoundryIntegrator, FixedStepIntegrator,
                                    generate_streamlines)
 from ..tracking.utils import (seeds_from_mask, target, merge_streamlines,

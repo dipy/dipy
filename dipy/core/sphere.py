@@ -84,16 +84,9 @@ def unique_sets(sets):
     return np.array(sets)
 
 
-def reduce_antipodal(points, faces, tol=0):
-    # Check that points have expected symmetry
-    n = len(points) // 2
-    if not np.allclose(points[:n], -points[n:], tol):
-        raise ValueError("points don't have the expected symmetry")
-    new_points = points[:n]
-    new_faces = unique_faces(faces % n)
-    new_edges = unique_edges(new_faces)
-    return new_points, new_edges, new_faces
-
+def reduce_antipodal(points, faces, tol=1e-5):
+    hs = HemiSphere(xyz=points, faces=faces, tol=tol)
+    return hs.vertices, hs.edges, hs.faces
 
 class Sphere(object):
     """Points on the unit sphere.
@@ -276,6 +269,89 @@ def _switch_vertex(index1, index2, vertices):
     A = vertices[index1]
     B = vertices[index2]
     is_far = (A * B).sum(-1) < 0
-    index2 += n/2 * (is_far)
+    index2[is_far] += n/2
     index2 %= n
+
+def _get_forces(charges):
+    r"""Given a set of charges on the surface of the sphere gets total force
+    those charges exert on each other.
+
+    The force exerted by one charge on another is given by Coulomb's law. For
+    this simulation we use charges of equal magnitude so this force can be
+    written as $\vec{r}/r^3$, up to a constant factor, where $\vec{r}$ is the
+    separation of the two charges and $r$ is the magnitude of $\vec{r}$. Forces
+    are additive so the total force on each of the charges is the sum of the
+    force exerted by each other charge in the system. Charges do not exert a
+    force on themselves. The electric potential can similarly be written as
+    $1/r$ and is also additive.
+    """
+
+    all_charges = np.concatenate((charges, -charges))
+    all_charges = all_charges[:, None]
+    r = charges - all_charges
+    r_mag = np.sqrt((r*r).sum(-1))[:, :, None]
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        force = r / r_mag**3
+        potential = 1. / r_mag
+
+    d = np.arange(len(charges))
+    force[d,d] = 0
+    force = force.sum(0)
+    force_r_comp = (charges*force).sum(-1)[:, None]
+    f_theta = force - force_r_comp*charges
+    potential[d,d] = 0
+    potential = 2*potential.sum()
+    return f_theta, potential
+
+def disperse_charges(hemi, iters, const=.05):
+    """Models electrostatic repulsion on the unit sphere
+
+    Places charges on a sphere and simulates the repulsive forces felt by each
+    one. Allows the charges to move for some number of iterations and returns
+    their final location as well as the total potential of the system at each
+    step.
+
+    Parameters
+    ----------
+    hemi : HemiSphere
+        Points on a unit sphere
+    iters : int
+        Number of iterations to run
+    const : float
+        Using a smaller const could provide a more accurate result, but will
+        need more iterations to converge.
+
+    Returns
+    -------
+    hemi : HemiSphere
+        distributed points on a unit sphere
+    potential : ndarray
+        The electrostatic potential at each iteration. This can be useful to
+        check if the repulsion converged to a minimum.
+
+    Note:
+    -----
+    This function is meant to be used with diffusion imaging so antipodal
+    symmetry is assumed. Therefor each charge must not only be unique, but if
+    there is a charge at +x, there cannot be a charge at -x. These are treated
+    as the same location and because the distance between the two charges will
+    be zero, the result will be unstable.
+    """
+    if not isinstance(hemi, HemiSphere):
+        raise ValueError("expecting HemiSphere")
+    charges = hemi.vertices.copy()
+    forces, v = _get_forces(charges)
+    force_mag = np.sqrt((forces*forces).sum())
+    max_force = force_mag.max()
+    if max_force > 1:
+        const = const/max_force
+    potential = np.empty(iters)
+
+    for ii in xrange(iters):
+        forces, potential[ii] = _get_forces(charges)
+        charges += forces * const
+        norms = np.sqrt((charges*charges).sum(-1))
+        charges /= norms[:, None]
+    return HemiSphere(xyz=charges), potential
 

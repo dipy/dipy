@@ -14,101 +14,8 @@ the vertex array by this new radius (although this will break the "vertex array
 equal to unit normal array" property)
 """
 import numpy as np
+from .sphere import Sphere, HemiSphere
 import warnings
-
-t = (1+np.sqrt(5))/2
-
-icosahedron_vertices = np.array( [
-    [  t,  1,  0], #  0 
-    [ -t,  1,  0], #  1
-    [  t, -1,  0], #  2 
-    [ -t, -1,  0], #  3
-    [  1,  0,  t], #  4 
-    [  1,  0, -t], #  5                                
-    [ -1,  0,  t], #  6 
-    [ -1,  0, -t], #  7
-    [  0,  t,  1], #  8
-    [  0, -t,  1], #  9
-    [  0,  t, -1], # 10
-    [  0, -t, -1]  # 11                             
-    ] )
-
-icosahedron_edges = np.array( [
-    #[ 0, 8, 4], # 0
-    [0,8], [8,4],[4,0], #0,1,2
-    #[ 0, 5,10], # 1
-    [0,5],[5,10],[10,0], #3,4,5
-    #[ 2, 4, 9], # 2 
-    [2,4],[4,9],[9,2], #6,7,8
-    #[ 2,11, 5], # 3
-    [2,11],[11,5],[5,2], #9,10,11
-    #[ 1, 6, 8], # 4
-    [1,6],[6,8],[8,1], #12,13,14
-    #[ 1,10, 7], # 5
-    [1,10],[10,7],[7,1], #15,16,17
-    #[ 3, 9, 6], # 6
-    [3,9],[9,6],[9,3], #18,19,20
-    #[ 3, 7,11], # 7
-    [3,7],[7,11],[11,3], #21,22,23
-    #[ 0,10, 8], # 8
-    [0,10],[10,8],[8,0], #24,25,26
-    #[ 11, 9, 2], #10
-    [11,9], #27
-    #[ 10, 8,1], # 9
-    [10,8], #28
-    #[ 3, 9,11], #11
-    [3,9],[9,11],[11,3],
-    #[ 4, 2, 0], #12
-    [4,2],[2,0],[0,4],
-    #[ 5, 0, 2], #13
-    [5,0],[0,2],[2,5],
-    #[ 6, 1, 3], #14
-    [6,1],[1,3],[3,6],
-    #[ 7, 3, 1], #15
-    [7,3],[3,1],[1,7],
-    #[ 8, 6, 4], #16
-    [8,6],[6,4],[4,8],
-    #[ 9, 4, 6], #17
-    [9,4],[4,6],[6,9],
-    #[10, 5, 7], #18
-    [10,5],[5,7],[7,10],
-    #[11, 7, 5]  #19
-    [11,7],[7,5],[5,11]
-    ], dtype='uint16' )
-
-icosahedron_triangles = np.array( [
-    #[ 0, 8, 4], # 0
-    [0,1,2],
-    #[ 0, 5,10], # 1
-    [3,4,5],
-    #[ 2, 4, 9], # 2 
-    [6,7,8],
-    #[ 2,11, 5], # 3
-    [9,10,11],
-    #[ 1, 6, 8], # 4
-    [12,13,14],
-    #[ 1,10, 7], # 5
-    [15,16,17],
-    #[ 3, 9, 6], # 6
-    [18,19,20],
-    #[ 3, 7,11], # 7
-    [21,22,23],
-    #[ 0,10, 8], # 8
-    [24,25,26],
-    #[11, 9, 2], #10
-    [27,8,9],
-    #[ 10, 8,1], # 9
-    [28,14,15],
-    #[ 3, 9,11], #11
-    [ 4, 2, 0], #12
-    [ 5, 0, 2], #13
-    [ 6, 1, 3], #14
-    [ 7, 3, 1], #15
-    [ 8, 6, 4], #16
-    [ 9, 4, 6], #17
-    [10, 5, 7], #18
-    [11, 7, 5]  #19
-    ], dtype='uint16')
 
 #the vertices of an octahedron
 octahedron_vertices = np.array( [
@@ -285,21 +192,17 @@ def create_unit_sphere( recursion_level=2 ):
     ------------
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
-        anything bigger will return a more subdivided sphere.
+        anything bigger will return a more subdivided sphere. The sphere will
+        have $4^recursion_level+2$ vertices.
 
     Returns
-    ----------
-    vertices : ndarray
-        A Vx3 array with the x, y, and z coordinates of of each vertex.
-    edges : ndarray
-        An Ex2 array of edges where each edge is a pair of neighboring
-        vertices.
-    triangles : ndarray
-        A Tx3 array of triangles, where each triangle is a set of three edges.
+    ---------
+    Sphere :
+        The unit sphere.
 
     See Also
     ----------
-    create_half_sphere
+    create_unit_hemisphere, Sphere
     """
     if recursion_level > 7 or recursion_level < 1:
         raise ValueError("recursion_level must be between 1 and 7")
@@ -308,102 +211,33 @@ def create_unit_sphere( recursion_level=2 ):
     triangles = octahedron_triangles
     for i in range( recursion_level - 1 ):
         vertices, edges, triangles = _divide_all(vertices, edges, triangles)
-    sphere = Sphere()
-    sphere.vertices = vertices
-    sphere.edges = edges
-    sphere.faces = edges[triangles, 0]
-    return sphere
+    faces = edges[triangles, 0]
+    return Sphere(xyz=vertices, edges=edges, faces=faces)
 
-def create_half_unit_sphere( recursion_level=2 ):
-    """ Creates a unit sphere and returns the top half
+def create_unit_hemisphere( recursion_level=2 ):
+    """Creates a unit sphere by subdividing a unit octahedron, returns half
+    the sphere.
 
-    Starting with a symmetric sphere of points, removes half the points so that
-    for any pair of points a, -a only one is kept. Removes half the edges so
-    for any pair of edges [a, b]; [-a, -b] only one is kept. The new edges are
-    constructed in a way so that references to any removed point, r, is
-    replaced by a reference to -r. Removes half the triangles in the same way.
-    
     Parameters
     -------------
     recursion_level : int
         Level of subdivision, recursion_level=1 will return an octahedron,
-        anything bigger will return a more subdivided sphere.
+        anything bigger will return a more subdivided sphere. The sphere will
+        have $(4^recursion_level+2)/2$ vertices.
+
     Returns
     ---------
-    vertices : ndarray
-        A Vx3 array with the x, y, and z coordinates of of each vertex.
-    edges : ndarray
-        An Ex2 array of edges where each edge is a pair of neighboring
-        vertices.
-    triangles : ndarray
-        A Tx3 array of triangles, where each triangle is a set of three edges.
+    HemiSphere :
+        Half of a unit sphere.
+
     See Also
     ----------
-    create_half_sphere
+    create_unit_sphere, Sphere, HemiSphere
     """
     sphere = create_unit_sphere( recursion_level )
-    half_sphere = Sphere()
-    half_sphere.vertices = sphere.vertices[::2].copy()
-    half_sphere.edges = sphere.edges[::2] // 2
-    half_sphere.faces = sphere.faces[::2] // 2
-    return half_sphere
+    vertices = sphere.vertices[::2]
+    edges = sphere.edges[::2] // 2
+    faces = sphere.faces[::2] // 2
+    return HemiSphere(xyz=vertices, edges=edges, faces=faces)
 
-class Sphere(object):
-    pass
 
-def _get_forces(charges):
-    """Given a set of charges on the surface of the sphere gets total force
-    those charges exert on each other.
-    """
-
-    all_charges = np.concatenate((charges, -charges))
-    all_charges = all_charges[:, None]
-    r = charges - all_charges
-    r_mag = np.sqrt((r*r).sum(-1))[:, :, None]
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        force = r / r_mag**3
-        potential = 1. / r_mag
-
-    d = np.arange(len(charges))
-    force[d,d] = 0
-    force = force.sum(0)
-    force_r_comp = (charges*force).sum(-1)[:, None]
-    f_theta = force - force_r_comp*charges
-    potential[d,d] = 0
-    potential = 2*potential.sum()
-    return f_theta, potential
-
-def disperse_charges(charges, iters, const=.05):
-    """Models electrostatic repulsion on the unit sphere
-
-    Places charges on a sphere and simulates the repulsive forces felt by each
-    one. Allows the charges to move for some number of iterations and returns
-    their final location as well as the total potential of the system at each
-    step.
-
-    Using a smaller const could provide a more accurate result, but will need
-    more iterations to converge.
-
-    Note:
-    -----
-    This function is meant to be used with diffusion imaging so antipodal
-    symmetry is assumed. Therefor each charge must not only be unique, but if
-    there is a charge at +x, there cannot be a charge at -x. These are treated
-    as the same location and because the distance between the two charges will
-    be zero, the result will be unstable.
-    """
-    charges = charges.copy()
-    forces, v = _get_forces(charges)
-    force_mag = np.sqrt((forces*forces).sum())
-    max_force = force_mag.max()
-    if max_force > 1:
-        const = const/max_force
-    v = np.empty(iters)
-
-    for ii in xrange(iters):
-        forces, v[ii] = _get_forces(charges)
-        charges += forces * const
-        norms = np.sqrt((charges*charges).sum(-1))
-        charges /= norms[:, None]
-    return charges, v
