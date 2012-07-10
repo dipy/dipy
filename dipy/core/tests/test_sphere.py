@@ -142,7 +142,7 @@ def test_mirror():
              [1, 0, 0],
              [-1, -1, -1]]
     verts = np.array(verts, 'float')
-    verts /= (verts * verts).sum(-1)[:, None]
+    verts = verts / np.sqrt((verts * verts).sum(-1)[:, None])
     faces = [[0, 1, 3],
              [0, 2, 3],
              [1, 2, 3]]
