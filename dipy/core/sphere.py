@@ -259,6 +259,7 @@ class HemiSphere(Sphere):
         faces = faces_from_sphere_vertices(vertices)
         return unique_sets(faces % len(self.vertices))
 
+
 def _switch_vertex(index1, index2, vertices):
     """When we mirror an edge (a, b). We can either create (a, b) and (a', b')
     OR (a, b') and (a', b). The angles of edges (a, b) and (a, b') are
@@ -271,6 +272,7 @@ def _switch_vertex(index1, index2, vertices):
     is_far = (A * B).sum(-1) < 0
     index2[is_far] += n/2
     index2 %= n
+
 
 def _get_forces(charges):
     r"""Given a set of charges on the surface of the sphere gets total force
@@ -355,3 +357,45 @@ def disperse_charges(hemi, iters, const=.05):
         charges /= norms[:, None]
     return HemiSphere(xyz=charges), potential
 
+
+def interp_rbf(data, sphere_origin, sphere_target,
+               rbf='multiquadric', epsilon=None):
+    """Interpolate data on the sphere, using radial basis functions.
+
+    Parameters
+    ----------
+    data : (N,) ndarray
+        Function values on the unit sphere.
+    sphere_origin : Sphere
+        Positions of data values.
+    sphere_target : Sphere
+        M target positions for which to interpolate.
+
+    family : {'multiquadric', 'inverse', 'gaussian'}
+        Radial basis function.
+    epsilon : float
+        Radial basis function spread parameter.
+
+    Returns
+    -------
+    v : (M,) ndarray
+        Interpolated values.
+
+    See Also
+    --------
+    scipy.interpolate.Rbf
+
+    """
+    from scipy.interpolate import Rbf
+
+    # Workaround for bug in SciPy that doesn't allow
+    # specification of epsilon None
+    if epsilon is not None:
+        kwargs = {'function': rbf,
+                  'epsilon': epsilon}
+    else:
+        kwargs = {'function': rbf}
+
+    rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
+               **kwargs)
+    return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
