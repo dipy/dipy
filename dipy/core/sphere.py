@@ -1,5 +1,5 @@
 __all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges',
-           'unique_faces', 'reduce_antipodal']
+           'unique_faces']
 
 import numpy as np
 import warnings
@@ -83,10 +83,6 @@ def unique_sets(sets):
     sets = [tuple(s) for s in sets]
     return np.array(sets)
 
-
-def reduce_antipodal(points, faces, tol=1e-5):
-    hs = HemiSphere(xyz=points, faces=faces, tol=tol)
-    return hs.vertices, hs.edges, hs.faces
 
 class Sphere(object):
     """Points on the unit sphere.

@@ -10,7 +10,7 @@ from ...data import get_data, get_sphere
 
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.core.sphere import reduce_antipodal, unique_edges
+from dipy.core.sphere import unique_edges
 from dipy.utils.spheremakers import sphere_vf_from
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_raises
@@ -22,7 +22,6 @@ def test_gqi():
     #load odf sphere
     vertices,faces = sphere_vf_from('symmetric724')
     edges = unique_edges(faces)
-    half_vertices,half_edges,half_faces=reduce_antipodal(vertices,faces)
 
     #load bvals and gradients
     btable=np.loadtxt(get_data('dsi515btable'))    

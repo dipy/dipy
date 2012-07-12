@@ -6,7 +6,7 @@ from dipy.reconst.eit import DiffusionNablaModel, EquatorialInversionModel
 from dipy.sims.voxel import SticksAndBall
 from dipy.utils.spheremakers import sphere_vf_from
 from dipy.data import get_data
-from dipy.core.sphere import reduce_antipodal, unique_edges
+from dipy.core.sphere import unique_edges
 
 def sim_data(bvals,bvecs,d=0.0015,S0=100,snr=None):
 
@@ -90,7 +90,6 @@ def test_dni_eit():
     #load odf sphere
     vertices,faces = sphere_vf_from('symmetric724')
     edges = unique_edges(faces)
-    half_vertices,half_edges,half_faces=reduce_antipodal(vertices,faces)
     #create the sphere
     odf_sphere=(vertices,faces)
     dn=DiffusionNablaModel(bvals,bvecs,odf_sphere)
