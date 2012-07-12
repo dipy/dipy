@@ -10,12 +10,11 @@ from .interfaces import InputData
 
 from ..tracking.interfaces import InputData, ShmTrackingInterface
 
-if have_traits:
-    I = InputData()
-    iview = I.trait_view()
-    iview.resizable = True
-    iview.width = 600
-    I.trait_view('traits_view', iview)
+I = InputData()
+iview = I.trait_view()
+iview.resizable = True
+iview.width = 600
+I.trait_view('traits_view', iview)
 
 main_view = View(Group(Group(
                              Item( 'dwi_images' ),

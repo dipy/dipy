@@ -74,6 +74,42 @@ cdef double wght(int i, double r) nogil:
     else:
         return 1.-r
 
+
+@cython.wraparound(False)
+def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] odf_value,
+                  cnp.ndarray[cnp.int_t, ndim=1, mode='c'] odf_ind,
+                  cnp.ndarray[cnp.float_t, ndim=2, mode='c'] sep_matrix,
+                  float relative_threshold, float isolation):
+    """Filters peaks based on odf_value and angular distance
+
+    Assumes that odf_value is sorted in descending order. Looks up odf_ind in
+    sep_matrix to determine the angular separation between two points. Returns
+    a subset of the peaks that pass the relative_threshold and isolation
+    criterion.
+    """
+    cdef:
+        int i, j, pass_all
+        int count = 1
+        float threshold = relative_threshold * odf_value[0]
+        cnp.ndarray[cnp.int_t, ndim=1, mode='c'] find = odf_ind.copy()
+        cnp.ndarray[cnp.float_t, ndim=1, mode='c'] fvalue = odf_value.copy()
+
+    for i in range(odf_value.shape[0]):
+        if odf_value[i] < threshold:
+            break
+        pass_all = 1
+        for j in range(count):
+            if sep_matrix[odf_ind[i], find[j]] >= isolation:
+                pass_all = 0
+                break
+        if pass_all:
+            find[count] = odf_ind[i]
+            fvalue[count] = odf_value[i]
+            count += 1
+
+    return fvalue[:count].copy(), find[:count].copy()
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
@@ -103,35 +139,36 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
     if vertices.shape[1] != 3:
         raise ValueError()
     cdef:
-        cnp.ndarray[cnp.float_t, ndim=2, mode='c'] unique_vertices = vertices.copy()
+        cnp.ndarray[cnp.float_t, ndim=2, mode='c'] unique_vertices
         cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] mapping
         char pass_all
         size_t i, j
-        size_t count = 1
+        size_t count = 0
         size_t n = vertices.shape[0]
         double a, b, c, sim
         double cos_similarity = cos(PI/180 * theta)
     if n > 2**16:
         raise ValueError("too many vertices")
-    mapping = np.zeros(len(vertices), dtype=np.uint16)
+    unique_vertices = np.empty((n, 3), dtype=np.float)
+    mapping = np.empty(n, dtype=np.uint16)
 
-    for i in range(1, n):
+    for i in range(n):
         pass_all = 1
-        a = vertices[i,0]
-        b = vertices[i,1]
-        c = vertices[i,2]
+        a = vertices[i, 0]
+        b = vertices[i, 1]
+        c = vertices[i, 2]
         for j in range(count):
-            sim = fabs(a * unique_vertices[j,0] + 
-                       b * unique_vertices[j,1] + 
-                       c * unique_vertices[j,2])
+            sim = fabs(a * unique_vertices[j, 0] +
+                       b * unique_vertices[j, 1] +
+                       c * unique_vertices[j, 2])
             if sim > cos_similarity:
                 pass_all = 0
                 mapping[i] = j
                 break
         if pass_all:
-            unique_vertices[count, 0] = vertices[i, 0]
-            unique_vertices[count, 1] = vertices[i, 1]
-            unique_vertices[count, 2] = vertices[i, 2]
+            unique_vertices[count, 0] = a
+            unique_vertices[count, 1] = b
+            unique_vertices[count, 2] = c
             mapping[i] = count
             count += 1
 
