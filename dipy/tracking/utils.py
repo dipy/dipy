@@ -128,8 +128,8 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
         for i, (a, b) in enumerate(endlabels.T):
             mapping.setdefault((a, b), []).append(i)
         if mapping_as_streamlines:
-            mapping = {k: [streamlines[i] for i in indices]
-                       for k, indices in mapping.items()}
+            mapping = dict((k, [streamlines[i] for i in indices])
+                           for k, indices in mapping.iteritems())
         return matrix, mapping
     else:
         return matrix
@@ -234,8 +234,8 @@ def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
         for point in uniq_points:
             mapping.setdefault(point, []).append(i)
     if mapping_as_streamlines:
-        mapping = {k: [streamlines[i] for i in indices]
-                   for k, indices in mapping.iteritems()}
+        mapping = dict((k, [streamlines[i] for i in indices])
+                       for k, indices in mapping.iteritems())
     return mapping
 
 def subsegment(streamlines, max_segment_length):
