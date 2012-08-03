@@ -1,7 +1,8 @@
 import numpy as np
 from dipy.io.bvectxt import orientation_from_string
-from dipy.tracking.utils import connectivity_matrix, density_map, \
-        move_streamlines, ndbincount, reduce_labels, reorder_voxels_affine
+from dipy.tracking.utils import (connectivity_matrix, density_map,
+        move_streamlines, ndbincount, reduce_labels, reorder_voxels_affine,
+        streamline_mapping)
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
 
@@ -179,3 +180,15 @@ def test_voxel_ornt():
     for ii in xrange(len(streamlines)):
         assert_array_equal(test_sl.next(), expected_sl.next())
 
+def test_streamline_mapping():
+    streamlines = [np.array([[0,0,0],[0,0,0],[0,2,2]], 'float'),
+                   np.array([[0,0,0],[0,1,1],[0,2,2]], 'float'),
+                   np.array([[0,2,2],[0,1,1],[0,0,0]], 'float')]
+    mapping = streamline_mapping(streamlines, (1,1,1))
+    expected = {(0,0,0):[0,1,2], (0,2,2):[0,1,2], (0,1,1):[1,2]}
+    assert_equal(mapping, expected)
+
+    mapping = streamline_mapping(streamlines, (1,1,1), True)
+    expected = dict((k, [streamlines[i] for i in indices])
+                    for k, indices in expected.iteritems())
+    assert_equal(mapping, expected)
