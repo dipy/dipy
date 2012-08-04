@@ -8,9 +8,14 @@ ODFs.
 import numpy as np
 import scipy.interpolate as interp
 
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.tri as tri
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import matplotlib.tri as tri
+except ImportError:
+    e_s = "You do not have Matplotlib installed. Some visualization functions"
+    e_s += " might not work for you."
+    print(e_s)
 
 import dipy.core.geometry as geo
 
