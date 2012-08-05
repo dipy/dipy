@@ -3,17 +3,16 @@ import numpy.testing as nt
 import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
-                              faces_from_sphere_vertices, HemiSphere,
-                              disperse_charges, _get_forces)
-from dipy.core.subdivide_octahedron import (create_unit_sphere,
-                                            octahedron_vertices,
-                                            octahedron_edges,
-                                            octahedron_triangles)
+                              faces_from_sphere_vertices, HemiSphere, L2norm,
+                              disperse_charges, _get_forces, unit_octahedron,
+                              unit_icosahedron)
+from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart
 
-verts, edges, sides = octahedron_vertices, octahedron_edges, octahedron_triangles
+verts = unit_octahedron.vertices
+edges = unit_octahedron.edges
+oct_faces = unit_octahedron.faces
 r, theta, phi = cart2sphere(*verts.T)
-
 
 def test_sphere_construct_args():
     nt.assert_raises(ValueError, Sphere)
@@ -32,6 +31,17 @@ def test_edges_faces():
                   [1, 2],
                   [2, 0]],
            faces=[0, 1, 2])
+
+
+def test_L2norm():
+    A = np.array([[1, 0, 0],
+                  [3, 4, 0],
+                  [0, 5, 12],
+                  [1, 2, 3]])
+    expected = np.array([1, 5, 13, np.sqrt(14)])
+    expected.shape = (4, 1)
+    nt.assert_array_almost_equal(L2norm(A), expected)
+    nt.assert_array_almost_equal(L2norm(A.T, axis=0), expected.T)
 
 
 def test_sphere_not_unit():
@@ -63,34 +73,46 @@ def array_to_set(a):
 
 
 def test_unique_edges():
-    u = unique_edges([[0, 1, 2],
+    faces = np.array([[0, 1, 2],
                       [1, 2, 0]])
-    u = array_to_set(u)
-
     e = array_to_set([[1, 2],
                       [0, 1],
                       [0, 2]])
 
-    nt.assert_equal(e, u)
+    u = unique_edges(faces)
+    nt.assert_equal(e, array_to_set(u))
+
+    u, m = unique_edges(faces, return_mapping=True)
+    nt.assert_equal(e, array_to_set(u))
+    edges = [[[0, 1], [1, 2], [2, 0]],
+             [[1, 2], [2, 0], [0, 1]]]
+    nt.assert_equal(np.sort(u[m], -1), np.sort(edges, -1))
 
 
 def test_unique_sets():
-    u = unique_sets([[0, 1, 2],
+    sets = np.array([[0, 1, 2],
                      [1, 2, 0],
                      [0, 2, 1],
                      [1, 2, 3]])
-
     e = array_to_set([[0, 1, 2],
                       [1, 2, 3]])
 
+    # Run without inverse
+    u = unique_sets(sets)
     nt.assert_equal(len(u), len(e))
     nt.assert_equal(array_to_set(u), e)
+
+    # Run with inverse
+    u, m = unique_sets(sets, return_inverse=True)
+    nt.assert_equal(len(u), len(e))
+    nt.assert_equal(array_to_set(u), e)
+    nt.assert_equal(np.sort(u[m], -1), np.sort(sets, -1))
 
 
 def test_faces_from_sphere_vertices():
     faces = faces_from_sphere_vertices(verts)
     faces = array_to_set(faces)
-    expected = array_to_set(edges[sides, 0])
+    expected = array_to_set(oct_faces)
     nt.assert_equal(faces, expected)
 
 
@@ -104,7 +126,7 @@ def test_sphere_attrs():
 
 def test_edges_faces():
     s = Sphere(xyz=verts)
-    faces = edges[sides, 0]
+    faces = oct_faces
     nt.assert_equal(array_to_set(s.faces), array_to_set(faces))
     nt.assert_equal(array_to_set(s.edges), array_to_set(edges))
 
@@ -117,6 +139,54 @@ def test_edges_faces():
     nt.assert_equal(array_to_set(s.faces), array_to_set([[0, 1, 2]]))
     nt.assert_equal(array_to_set(s.edges),
                     array_to_set([[0, 1]]))
+
+
+def test_sphere_subdivide():
+    sphere1 = unit_octahedron.subdivide(4)
+    sphere2 = Sphere(xyz=sphere1.vertices)
+    nt.assert_equal(sphere1.faces.shape, sphere2.faces.shape)
+    nt.assert_equal(array_to_set(sphere1.faces), array_to_set(sphere2.faces))
+
+    sphere1 = unit_icosahedron.subdivide(4)
+    sphere2 = Sphere(xyz=sphere1.vertices)
+    nt.assert_equal(sphere1.faces.shape, sphere2.faces.shape)
+    nt.assert_equal(array_to_set(sphere1.faces), array_to_set(sphere2.faces))
+
+    # It might be good to also test the vertices somehow if we can think of a
+    # good test for them.
+
+
+def test_hemisphere_subdivide():
+
+    def flip(vertices):
+        x, y, z = vertices.T
+        f = (z < 0) | ((z == 0) & (y < 0)) | ((z == 0) & (y == 0) & (x < 0))
+        return 1 - 2*f[:, None]
+
+    decimals = 6
+    # Test HemiSphere.subdivide
+    # Create a hemisphere by dividing a hemi-icosahedron
+    hemi1 = HemiSphere.from_sphere(unit_icosahedron).subdivide(4)
+    vertices1 = np.round(hemi1.vertices, decimals)
+    vertices1 *= flip(vertices1)
+    order = np.lexsort(vertices1.T)
+    vertices1 = vertices1[order]
+
+    # Create a hemisphere from a subdivided sphere
+    sphere = unit_icosahedron.subdivide(4)
+    hemi2 = HemiSphere.from_sphere(sphere)
+    vertices2 = np.round(hemi2.vertices, decimals)
+    vertices2 *= flip(vertices2)
+    order = np.lexsort(vertices2.T)
+    vertices2 = vertices2[order]
+
+    # The two hemispheres should have the same vertices up to their order
+    nt.assert_array_equal(vertices1, vertices2)
+
+    # Create a hemisphere from vertices
+    hemi3 = HemiSphere(xyz=hemi1.vertices)
+    nt.assert_array_equal(hemi1.faces, hemi3.faces)
+    nt.assert_array_equal(hemi1.edges, hemi3.edges)
 
 
 def test_hemisphere_constructor():
@@ -165,12 +235,51 @@ def test_mirror():
 
 
 def test_hemisphere_faces():
-    sphere = create_unit_sphere(2)
-    faces = sphere.faces[::2] // 2
-    h = HemiSphere(xyz=sphere.vertices)
 
+    t = (1 + np.sqrt(5)) / 2
+    vertices = np.array(
+        [[ -t, -1,  0],
+         [ -t,  1,  0],
+         [  1,  0,  t],
+         [ -1,  0,  t],
+         [  0,  t,  1],
+         [  0, -t,  1],
+        ])
+    vertices /= L2norm(vertices)
+    faces = np.array(
+        [[0, 1, 2],
+         [0, 1, 3],
+         [0, 2, 4],
+         [1, 3, 4],
+         [2, 3, 4],
+         [1, 2, 5],
+         [0, 3, 5],
+         [2, 3, 5],
+         [0, 4, 5],
+         [1, 4, 5],
+        ])
+    edges = np.array(
+        [(0, 1),
+         (0, 2),
+         (0, 3),
+         (0, 4),
+         (0, 5),
+         (1, 2),
+         (1, 3),
+         (1, 4),
+         (1, 5),
+         (2, 3),
+         (2, 4),
+         (2, 5),
+         (3, 4),
+         (3, 5),
+         (4, 5),
+        ])
+
+    h = HemiSphere(xyz=vertices)
+    nt.assert_equal(len(h.edges), len(edges))
+    nt.assert_equal(array_to_set(h.edges), array_to_set(edges))
     nt.assert_equal(len(h.faces), len(faces))
-    nt.assert_equal(len(h.faces), len(array_to_set(h.faces)))
     nt.assert_equal(array_to_set(h.faces), array_to_set(faces))
 
 def test_get_force():
