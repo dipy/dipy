@@ -56,6 +56,7 @@ def test_peaksFromModel():
 
     # Test basic case
     model = SimpleOdfModel()
+    odf_argmax = _odf.argmax()
     pam = peaks_from_model(model, data, normalize_peaks=True)
 
     assert_array_equal(pam.gfa, gfa(_odf))
@@ -64,7 +65,7 @@ def test_peaksFromModel():
     mn, mx = _odf.min(), _odf.max()
     assert_array_equal(pam.qa[:, 0], (mx - mn) / mx)
     assert_array_equal(pam.qa[:, 1:], 0.)
-    assert_array_equal(pam.peak_indices[:, 0], 53)
+    assert_array_equal(pam.peak_indices[:, 0], odf_argmax)
     assert_array_equal(pam.peak_indices[:, 1:], -1)
 
     # Test that odf array matches and is right shape
@@ -89,6 +90,6 @@ def test_peaksFromModel():
     mn, mx = _odf.min(), _odf.max()
     assert_array_equal(pam.qa[mask, 0], (mx - mn) / mx)
     assert_array_equal(pam.qa[mask, 1:], 0.)
-    assert_array_equal(pam.peak_indices[mask, 0], 53)
+    assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
 

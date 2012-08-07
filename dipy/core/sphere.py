@@ -22,6 +22,12 @@ def _some_specified(*args):
             return True
     return False
 
+def L2norm(x, axis=-1):
+    """The L2 norm of x along `axis`"""
+    x_norm = np.sqrt((x * x).sum(axis))
+    shape = list(x.shape)
+    shape[axis] = 1
+    return x_norm.reshape(shape)
 
 def faces_from_sphere_vertices(vertices):
     """
@@ -42,46 +48,74 @@ def faces_from_sphere_vertices(vertices):
     return Delaunay(vertices).convex_hull
 
 
-def unique_edges(faces):
+def unique_edges(faces, return_mapping=False):
     """Extract all unique edges from given triangular faces.
 
     Parameters
     ----------
     faces : (N, 3) ndarray
         Vertex indices forming triangular faces.
+    return_mapping : bool
+        If true, a mapping to the edges of each face is returned.
 
     Returns
     -------
     edges : (N, 2) ndarray
         Unique edges.
+    mapping : (N, 3)
+        For each face, [x, y, z], a mapping to it's edges [a, b, c].
+              y
+              /\
+             /  \
+           a/    \b
+           /      \
+          /        \
+         /__________\
+        x      c     z
 
     """
-    edges = set()
-    for a, b, c in faces:
-        edges.add(frozenset((a, b)))
-        edges.add(frozenset((a, c)))
-        edges.add(frozenset((b, c)))
-    edges = [tuple(e) for e in edges]
-    return np.array(edges)
+    faces = np.asarray(faces)
+    edges = np.concatenate([faces[:, 0:2], faces[:, 1:3], faces[:, ::2]])
+    if return_mapping:
+        ue, inverse = unique_sets(edges, return_inverse=True)
+        return ue, inverse.reshape((3, -1)).T
+    else:
+        return unique_sets(edges)
 
 
-def unique_sets(sets):
+def unique_sets(sets, return_inverse=False):
     """Remove duplicate sets.
 
     Parameters
     ----------
     sets : array (N, k)
         N sets of size k.
+    return_inverse : bool
+        If True, also returns the indices of unique_sets that can be used
+        to reconstruct `sets` (the original ordering of each set may not be
+        preserved).
 
     Return
     ------
-    sets : array
+    unique_sets : array
         Unique sets.
+    inverse : array (N,)
+        The indices to reconstruct `sets` from `unique_sets`.
 
     """
-    sets = set(frozenset(s) for s in sets)
-    sets = [tuple(s) for s in sets]
-    return np.array(sets)
+    sets = np.sort(sets, 1)
+    order = np.lexsort(sets.T)
+    sets = sets[order]
+    flag = np.ones(len(sets), 'bool')
+    flag[1:] = (sets[1:] != sets[:-1]).any(-1)
+    uniqsets = sets[flag]
+    if return_inverse:
+        inverse = np.empty_like(order)
+        inverse[order] = np.arange(len(order))
+        index = flag.cumsum() - 1
+        return uniqsets, index[inverse]
+    else:
+        return uniqsets
 
 
 class Sphere(object):
@@ -167,11 +201,61 @@ class Sphere(object):
 
     @auto_attr
     def faces(self):
-        return faces_from_sphere_vertices(self.vertices)
+        faces = faces_from_sphere_vertices(self.vertices)
+        if len(self.theta) < 2**16:
+            faces = np.asarray(faces, dtype='uint16')
+        return faces
 
     @auto_attr
     def edges(self):
         return unique_edges(self.faces)
+
+    def subdivide(self, n=1):
+        """Subdivides each face of the sphere into four new faces.
+
+        New vertices are created at a, b, and c. Then each face [x, y, z] is
+        divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].
+
+              y
+              /\
+             /  \
+           a/____\b
+           /\    /\
+          /  \  /  \
+         /____\/____\
+        x      c     z
+
+        Parameters
+        ----------
+        n : int, optional
+            The number of subdivisions to preform.
+
+        Returns
+        -------
+        new_sphere :
+            The subdivided sphere.
+
+        """
+        vertices = self.vertices
+        faces = self.faces
+        for i in xrange(n):
+            edges, mapping = unique_edges(faces, return_mapping=True)
+            new_vertices = vertices[edges].sum(1)
+            new_vertices /= L2norm(new_vertices)
+            mapping += len(vertices)
+            vertices = np.vstack([vertices, new_vertices])
+
+            x, y, z = faces.T
+            a, b, c = mapping.T
+            face1 = np.column_stack([x, a, c])
+            face2 = np.column_stack([y, b, a])
+            face3 = np.column_stack([z, c, b])
+            face4 = mapping
+            faces = np.concatenate([face1, face2, face3, face4])
+
+        if len(vertices) < 2**16:
+            faces = np.asarray(faces, dtype='uint16')
+        return Sphere(xyz=vertices, faces=faces)
 
 
 class HemiSphere(Sphere):
@@ -222,6 +306,7 @@ class HemiSphere(Sphere):
 
         sphere = Sphere(x=x, y=y, z=z, theta=theta, phi=phi, xyz=xyz)
         uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol)
+        uniq_vertices *= 1 - 2*(uniq_vertices[:, -1:] < 0)
         if faces is not None:
             faces = np.asarray(faces)
             faces = unique_sets(mapping[faces])
@@ -233,7 +318,7 @@ class HemiSphere(Sphere):
     @classmethod
     def from_sphere(klass, sphere, tol=1e-5):
         """Create instance from a Sphere"""
-        return klass(theta=sphere.theta, phi=shere.phi,
+        return klass(theta=sphere.theta, phi=sphere.phi,
                      edges=sphere.edges, faces=sphere.faces, tol=tol)
 
     def mirror(self):
@@ -254,6 +339,16 @@ class HemiSphere(Sphere):
         vertices = np.vstack([self.vertices, -self.vertices])
         faces = faces_from_sphere_vertices(vertices)
         return unique_sets(faces % len(self.vertices))
+
+    def subdivide(self, n=1):
+        """Create a more subdivided HemiSphere
+
+        See Sphere.subdivide for full documentation.
+
+        """
+        sphere = self.mirror()
+        sphere = sphere.subdivide(n)
+        return HemiSphere.from_sphere(sphere)
 
 
 def _switch_vertex(index1, index2, vertices):
@@ -395,3 +490,65 @@ def interp_rbf(data, sphere_origin, sphere_target,
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
     return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
+
+
+octahedron_vertices = np.array(
+    [[ 1.0 , 0.0,  0.0],
+     [-1.0,  0.0,  0.0],
+     [ 0.0,  1.0,  0.0],
+     [ 0.0, -1.0,  0.0],
+     [ 0.0,  0.0,  1.0],
+     [ 0.0,  0.0, -1.0],
+    ])
+octahedron_faces = np.array(
+    [[0, 4, 2],
+     [1, 5, 3],
+     [4, 2, 1],
+     [5, 3, 0],
+     [1, 4, 3],
+     [0, 5, 2],
+     [0, 4, 3],
+     [1, 5, 2],
+    ], dtype='uint16')
+
+t = (1 + np.sqrt(5)) / 2
+icosahedron_vertices = np.array(
+    [[  t,  1,  0], #  0
+     [ -t,  1,  0], #  1
+     [  t, -1,  0], #  2
+     [ -t, -1,  0], #  3
+     [  1,  0,  t], #  4
+     [  1,  0, -t], #  5
+     [ -1,  0,  t], #  6
+     [ -1,  0, -t], #  7
+     [  0,  t,  1], #  8
+     [  0, -t,  1], #  9
+     [  0,  t, -1], # 10
+     [  0, -t, -1], # 11
+    ])
+icosahedron_vertices /= L2norm(icosahedron_vertices)
+icosahedron_faces = np.array(
+    [[ 8,  4,  0],
+     [ 2,  5,  0],
+     [ 2,  5, 11],
+     [ 9,  2, 11],
+     [ 2,  4,  0],
+     [ 9,  2,  4],
+     [10,  8,  1],
+     [10,  8,  0],
+     [10,  5,  0],
+     [ 6,  3,  1],
+     [ 9,  6,  3],
+     [ 6,  8,  1],
+     [ 6,  8,  4],
+     [ 9,  6,  4],
+     [ 7, 10,  1],
+     [ 7, 10,  5],
+     [ 7,  3,  1],
+     [ 7,  3, 11],
+     [ 9,  3, 11],
+     [ 7,  5, 11],
+    ], dtype='uint16')
+
+unit_octahedron = Sphere(xyz=octahedron_vertices, faces=octahedron_faces)
+unit_icosahedron = Sphere(xyz=icosahedron_vertices, faces=icosahedron_faces)
