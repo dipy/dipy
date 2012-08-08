@@ -1066,16 +1066,16 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
 
     """
     data, wrap = _makearray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
+    # Flatten for the iteration over voxels:
+    flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
     inv_design = np.linalg.pinv(design_matrix)
-    sig = np.maximum(data_flat, min_signal)
+    sig = np.maximum(flat_data, min_signal)
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s.T).T
 
     # Flatten for the iteration over voxels:
     ols_params = np.reshape(D, (-1, D.shape[-1]))
-    flat_data = data.reshape((-1, data.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
     for vox in xrange(flat_data.shape[0]):
@@ -1128,12 +1128,16 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
 
     # Start by doing nlls:
     data, wrap = _makearray(data)
-    data_flat = data.reshape((-1, data.shape[-1]))
+    # Flatten for the iteration over voxels:
+    flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
     inv_design = np.linalg.pinv(design_matrix)
-    sig = np.maximum(data_flat, min_signal)
+    sig = np.maximum(flat_data, min_signal)
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s.T).T
+    ols_params = np.reshape(D, (-1, D.shape[-1]))
+    # 12 parameters per voxel (evals + evecs):
+    dti_params = np.empty((flat_data.shape[0], 12))
     for vox in xrange(flat_data.shape[0]):
         start_params = ols_params[vox]
         # Do nlls using sigma weighting in this voxel:
@@ -1190,17 +1194,8 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     signal: The voxel signal in all gradient directions
 
     weighting: str (optional).
-         Whether to use the Geman McClure (see
-
-
-    Returns
-    -------
-
-
-    Note
-    ----
-
-    This is based on [Chang2005]_
+         Whether to use the Geman McClure weighting criterion (see [Chang2005]_
+         for details)
 
     """
     # This is the predicted signal given the params:

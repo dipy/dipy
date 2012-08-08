@@ -417,8 +417,9 @@ def test_restore_nlls_fit_tensor():
      assert_almost_equal(tensor_est.md()[0], md)
 
      # Using RESTORE:
-     #tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='restore')
-     #assert_equal(tensor_est.shape, Y.shape[:-1])
-     #assert_array_almost_equal(tensor_est.evals[0], evals)
-     #assert_array_almost_equal(tensor_est.D[0], tensor)
-     #assert_almost_equal(tensor_est.md()[0], md)
+     tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='restore',
+                             sigma=1)
+     assert_equal(tensor_est.shape, Y.shape[:-1])
+     assert_array_almost_equal(tensor_est.evals[0], evals)
+     assert_array_almost_equal(tensor_est.D[0], tensor)
+     assert_almost_equal(tensor_est.md()[0], md)
