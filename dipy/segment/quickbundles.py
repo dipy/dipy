@@ -44,7 +44,11 @@ class QuickBundles(object):
     def virtuals(self):
         if self.virts==None:
             self.virts=[self.clustering[c]['hidden']/np.float(self.clustering[c]['N']) for c in self.clustering]
-        return self.virts       
+        return self.virts      
+
+    @property
+    def centroids(self):
+        return self.virtuals()
     
     def exemplars(self,tracks=None):
         if self.exemps==None:            
@@ -80,7 +84,7 @@ class QuickBundles(object):
     
     def label2tracks(self,tracks,id):
         return [tracks[i] for i in self.clustering[id]['indices']]
-       
+    @property       
     def total_clusters(self):
         return len(self.clustering)
         
@@ -105,6 +109,7 @@ class QuickBundles(object):
             C2[c]=C[keys[c]]
         self.clustering=C2
         #self.tracksd=[downsample(track,self.pts) for track in tracks]
+        self.virts=None
     
     def remove_cluster(self,id):
         print('Not implemented yet')
@@ -121,11 +126,4 @@ class QuickBundles(object):
     def points_per_track(self):
         print('Not implemented yet')
         pass
-        
-        
-    
-class pQuickBundles():
-    
-    def __init__(self):
-        pass
-            
+

@@ -23,8 +23,8 @@ import time
 from nibabel import trackvis as tv
 
 from dipy.tracking import metrics as tm
-from dipy.tracking import distances as td
-from dipy.io import pickles as pkl
+from dipy.segment.quickbundles import QuickBundles
+from dipy.io.pickles import save_pickle
 from dipy.viz import fvtk
 
 
@@ -47,13 +47,11 @@ Copy tracks:
 
 T=[i[0] for i in streams]
 
-#T=T[:1000]
-
 """
-Downsample tracks to just 3 points:
+Downsample tracks to 12 points:
 """
 
-tracks=[tm.downsample(t,3) for t in T]
+tracks=[tm.downsample(t, 12) for t in T]
 
 """
 Delete unnecessary data:
@@ -62,29 +60,20 @@ Delete unnecessary data:
 del streams,hdr
 
 """
-Perform Local Skeleton Clustering (LSC) with a 5mm threshold:
+Perform QuickBundles clustering with a 10mm threshold:
 """
 
-now=time.clock()
-C=td.local_skeleton_clustering(tracks,d_thr=5)
-print('Done in %.2f s'  % (time.clock()-now,))
-
-
-"""
-Reduce the number of points for faster visualization using the ``approx_polygon_track`` algorithm which retains points depending on how much they are need to define the shape of the track:
-"""
-
-T=[td.approx_polygon_track(t) for t in T]
+qb=QuickBundles(tracks, dist_thr=10., pts=None)
 
 """
 Show the initial *Fornix* dataset:
 """
 
 r=fvtk.ren()
-fvtk.add(r,fvtk.line(T,fvtk.white,opacity=1))
+fvtk.add(r,fvtk.line(T, fvtk.white, opacity=1, linewidth=3))
 #fvtk.show(r)
 fvtk.record(r,n_frames=1,out_path='fornix_initial',size=(600,600))
-
+fvtk.clear(r)
 """
 .. figure:: fornix_initial1000000.png
    :align: center
@@ -93,16 +82,40 @@ fvtk.record(r,n_frames=1,out_path='fornix_initial',size=(600,600))
 """
 
 """
-Show the *Fornix* after clustering (with random bundle colors):
+Show the centroids of the *Fornix* after clustering (with random colors):
 """
 
+
+centroids=qb.centroids
+colormap = np.ones((len(centroids), 3))
+for i, centroid in enumerate(centroids):
+    colormap[i] = np.random.rand(3)
+    fvtk.add(r, fvtk.line(centroids, colormap, opacity=1., linewidth=5))
+#hack for auto camera
+fvtk.add(r,fvtk.line(T,fvtk.white,opacity=0))
+#fvtk.show(r)
+fvtk.record(r,n_frames=1,out_path='fornix_centroids',size=(600,600))
 fvtk.clear(r)
-colors=np.zeros((len(T),3))
-for c in C:
-    color=np.random.rand(1,3)
-    for i in C[c]['indices']:
-        colors[i]=color
-fvtk.add(r,fvtk.line(T,colors,opacity=1))
+
+"""
+.. figure:: fornix_centroids1000000.png
+   :align: center
+
+   **Showing the different clusters with random colors**.
+
+"""
+
+"""
+Show the labeled *Fornix* (colors from centroids):
+"""
+
+colormap_full = np.ones((len(tracks), 3))
+for i, centroid in enumerate(centroids):
+    inds=qb.label2tracksids(i)
+    colormap_full[inds]=colormap[i]
+fvtk.add(r, fvtk.line(tracks, colormap_full, opacity=1., linewidth=3))
+
+
 #fvtk.show(r)
 fvtk.record(r,n_frames=1,out_path='fornix_clust',size=(600,600))
 
@@ -115,61 +128,8 @@ fvtk.record(r,n_frames=1,out_path='fornix_clust',size=(600,600))
 """
 
 """
-Calculate some statistics about the clusters
+It is also possible to save the QuickBundles object with pickling.
 """
-
-lens=[len(C[c]['indices']) for c in C]
-print('max %d min %d' %(max(lens), min(lens)))
-print('singletons %d ' % lens.count(1))
-print('doubletons %d' % lens.count(2))
-print('tripletons %d' % lens.count(3))
-
-"""
-Find and display the skeleton of most representative tracks in each cluster:
-"""
-
-skeleton=[]
-
-fvtk.clear(r)
-
-for c in C:
-    
-    bundle=[T[i] for i in C[c]['indices']]
-    si,s=td.most_similar_track_mam(bundle,'avg')    
-    skeleton.append(bundle[si])
-    fvtk.label(r,text=str(len(bundle)),pos=(bundle[si][-1]),scale=(2,2,2))
-
-fvtk.add(r,fvtk.line(skeleton,colors,opacity=1))
-#fvtk.show(r)
-fvtk.record(r,n_frames=1,out_path='fornix_most',size=(600,600))
-
-"""
-.. figure:: fornix_most1000000.png
-   :align: center
-
-   **Showing skeleton with the most representative tracks as the skeletal representation**.
-   
-   The numbers are depicting the number of tracks in each cluster. This is a very compact way to see the underlying
-   structures an alternative would be to draw the representative tracks with different widths.
-   
-"""
-
-"""
-Save the skeleton information in the dictionary. Now try to play with different thresholds LSC and check the different results.
-Try it with your datasets and gives us some feedback.
-
-"""
-
-for (i,c) in enumerate(C):    
-    C[c]['most']=skeleton[i]
-    
-for c in C:    
-    print('Keys in bundle %d' % c)
-    print(C[c].keys())
-    print('Shape of skeletal track (%d, %d) ' % C[c]['most'].shape)
-
-pkl.save_pickle('skeleton_fornix.pkl',C)
-
-
+save_pickle('QB.pkl',qb)
 
 
