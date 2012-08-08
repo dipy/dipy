@@ -1,7 +1,13 @@
 #!/usr/bin/python
 import warnings
 import numpy as np
+
 from ..data import get_sphere
+import scipy.optimize as opt
+
+from dipy.reconst.maskedview import MaskedView, _makearray, _filled
+from dipy.reconst.modelarray import ModelArray
+from dipy.data import get_sphere
 from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
@@ -1022,6 +1028,158 @@ def _ols_fit_matrix(design_matrix):
     return np.dot(U, U.T)
 
 
+def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
+                    sigma=None):
+    """
+    Fit the tensor params using non-linear least-squares.
+
+    Parameters
+    ----------
+    design_matrix : array (g, 7)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients. Use design_matrix to build a valid design matrix from
+        bvalues and a gradient table.
+
+    data : array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+
+    min_signal : default = 1
+        All values below min_signal are repalced with min_signal. This is done
+        in order to avaid taking log(0) durring the tensor fitting.
+
+    weighting: str
+           the weighting scheme to use in considering the
+           squared-error. Default behavior is to use uniform weighting. Other
+           options: 'sigma' 'gmm'
+
+    sigma: float
+        If the 'sigma' weighting scheme is used, a value of sigma needs to be
+        provided here. According to [Chang2005]_, a good value to use is
+        1.5267 * std(background_noise), where background_noise is estimated
+        from some part of the image known to contain no signal (only noise).
+
+
+    Returns
+    -------
+    nlls_params: the eigen-values and eigen-vectors of the tensor in each voxel.
+
+    """
+    data, wrap = _makearray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    # Use the OLS method parameters as the starting point for the optimization:
+    inv_design = np.linalg.pinv(design_matrix)
+    sig = np.maximum(data_flat, min_signal)
+    log_s = np.log(sig)
+    D = np.dot(inv_design, log_s.T).T
+
+    # Flatten for the iteration over voxels:
+    ols_params = np.reshape(D, (-1, D.shape[-1]))
+    flat_data = data.reshape((-1, data.shape[-1]))
+    # 12 parameters per voxel (evals + evecs):
+    dti_params = np.empty((flat_data.shape[0], 12))
+    for vox in xrange(flat_data.shape[0]):
+        start_params = ols_params[vox]
+        # Do the optimization in this voxel:
+        this_tensor = opt.fmin(_nlls_err_func, start_params,
+                               args=(design_matrix, flat_data[vox],
+                                     weighting, sigma),
+                               disp=False)
+
+        this_dti = np.concatenate([np.ravel(x) for x in
+                                   decompose_tensor(
+                        from_lower_triangular(this_tensor[:6]).reshape(3,3))])
+        dti_params[vox] = this_dti
+
+    nlls_params = wrap(dti_params)
+    return nlls_params
+
+
+def restore_fit_tensor(design_matrix, data):
+    """
+    Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
+
+    Parameters
+    ----------
+
+    design_matrix : array (g, 7)
+        Design matrix holding the covariants used to solve for the regression
+        coefficients. Use design_matrix to build a valid design matrix from
+        bvalues and a gradient table.
+    data : array ([X, Y, Z, ...], g)
+        Data or response variables holding the data. Note that the last
+        dimension should contain the data. It makes no copies of data.
+
+    data:
+
+    Returns
+    -------
+
+    Note
+    ----
+    Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
+    of tensors by outlier rejection. MRM, 53: 1088-95.
+    """
+    raise NotImplementedError
+
+def _nlls_err_func(tensor, design_matrix, data, weighting=None,
+                   sigma=None):
+    """
+    Error function for the non-linear least-squares fit of the tensor.
+
+    Parameters
+    ----------
+    tensor: 3 by 3 tensor
+
+    signal: The voxel signal in all gradient directions
+
+    weighting: str (optional).
+         Whether to use the Geman McClure (see
+
+
+    Returns
+    -------
+
+
+    Note
+    ----
+
+    This is based on [Chang2005]_
+
+    """
+    # This is the predicted signal given the params:
+    y = np.exp(np.dot(design_matrix, tensor))
+
+    # Compute the residuals
+    residuals = data - y
+    se = residuals ** 2
+
+    # If we don't want to weight the residuals, we are basically done:
+    if weighting is None:
+       # And we return the SSE:
+       return np.sum(se)
+
+    # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
+    # suggested by Chang et al.) we will use it:
+    elif weighting == 'sigma':
+        if sigma is None:
+             e_s = "Must provide sigma value as input to use this weighting"
+             e_s += "method"
+             raise ValueError(e_s)
+        w = 1/(sigma**2)
+
+    elif weighting == 'gmm':
+        # We use the Geman McClure M-estimator to compute the weights on the
+        # residuals:
+        C = 1.4826 * np.median(residuals - np.median(residuals))
+        w = 1/(se + C**2)
+
+    # Return the weighted residuals:
+    return np.sum(w * se)
+
+
+
+
 _lt_indices = np.array([[0, 1, 3],
                         [1, 2, 4],
                         [3, 4, 5]])
@@ -1213,4 +1371,7 @@ def quantize_evecs(evecs, odf_vertices=None):
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
                       'OLS': ols_fit_tensor,
+                      'NLLS': nlls_fit_tensor,
+                      'RT': restore_fit_tensor,
+                      'restore':restore_fit_tensor,
                      }

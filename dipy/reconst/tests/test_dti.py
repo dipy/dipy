@@ -376,3 +376,49 @@ def test_mask():
     assert_array_equal(dtifit_w_mask.fa[~mask], 0)
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+
+
+def test_restore_nlls_fit_tensor():
+     """
+     Test the implementation of NLLS and RESTORE
+     """
+
+     b0 = 1000.
+     gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+     B = bval[1]
+
+     #Scale the eigenvalues and tensor by the B value so the units match
+     D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+     evals = np.array([2., 1., 0.]) / B
+     md = evals.mean()
+     tensor = from_lower_triangular(D)
+
+     #Design Matrix
+     X = dti.design_matrix(gtab, bval)
+
+     #Signals
+     Y = np.exp(np.dot(X,D))
+     Y.shape = (-1,) + Y.shape
+
+     #Estimate tensor from test signals and compare against expected result
+     #using non-linear least squares:
+     tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='NLLS')
+     assert_equal(tensor_est.shape, Y.shape[:-1])
+     assert_array_almost_equal(tensor_est.evals[0], evals)
+     assert_array_almost_equal(tensor_est.D[0], tensor)
+     assert_almost_equal(tensor_est.md()[0], md)
+
+     # Using the gmm weighting scheme:
+     tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='NLLS',
+     weighting='gmm')
+     assert_equal(tensor_est.shape, Y.shape[:-1])
+     assert_array_almost_equal(tensor_est.evals[0], evals)
+     assert_array_almost_equal(tensor_est.D[0], tensor)
+     assert_almost_equal(tensor_est.md()[0], md)
+
+     # Using RESTORE:
+     #tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='restore')
+     #assert_equal(tensor_est.shape, Y.shape[:-1])
+     #assert_array_almost_equal(tensor_est.evals[0], evals)
+     #assert_array_almost_equal(tensor_est.D[0], tensor)
+     #assert_almost_equal(tensor_est.md()[0], md)
