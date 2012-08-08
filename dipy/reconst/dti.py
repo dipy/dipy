@@ -1095,32 +1095,88 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     return nlls_params
 
 
-def restore_fit_tensor(design_matrix, data):
+def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
 
     Parameters
     ----------
 
-    design_matrix : array (g, 7)
+    design_matrix: array (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients. Use design_matrix to build a valid design matrix from
         bvalues and a gradient table.
-    data : array ([X, Y, Z, ...], g)
+
+    data: array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
-    data:
+    sigma: an estimate of the variance. [Chang2005]_ recommend to use
+           1.5267 * std(background_noise), where background_noise is estimated
+           from some part of the image known to contain no signal (only noise).
 
     Returns
     -------
+
 
     Note
     ----
     Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
     of tensors by outlier rejection. MRM, 53: 1088-95.
+
     """
-    raise NotImplementedError
+
+    # Start by doing nlls:
+    data, wrap = _makearray(data)
+    data_flat = data.reshape((-1, data.shape[-1]))
+    # Use the OLS method parameters as the starting point for the optimization:
+    inv_design = np.linalg.pinv(design_matrix)
+    sig = np.maximum(data_flat, min_signal)
+    log_s = np.log(sig)
+    D = np.dot(inv_design, log_s.T).T
+    for vox in xrange(flat_data.shape[0]):
+        start_params = ols_params[vox]
+        # Do nlls using sigma weighting in this voxel:
+        this_tensor = opt.fmin(_nlls_err_func, start_params,
+                               args=(design_matrix, flat_data[vox],
+                                     'sigma', sigma),
+                               disp=False)
+
+        # Get the residuals:
+        pred_sig = np.exp(np.dot(design_matrix, this_tensor))
+        residuals = flat_data[vox] - pred_sig
+        # If any of the residuals are outliers:
+        if np.any(residuals>3*sigma):
+            # Do nlls with GMM-weighting:
+            this_tensor = opt.fmin(_nlls_err_func, start_params,
+                                   args=(design_matrix, flat_data[vox], 'gmm'),
+                                   disp=False)
+
+            # How are you doin' on those residuals?
+            pred_sig = np.exp(np.dot(design_matrix, this_tensor))
+            residuals = flat_data[vox] - pred_sig
+            if np.any(residuals > 3*sigma):
+                # If you still have outliers, refit without those outliers:
+                non_outlier_idx = np.where(residuals <= 3 * sigma)
+                clean_design = design_matrix[non_outlier_idx]
+                clean_sig = flat_data[vox][non_outlier_idx]
+                this_tensor = opt.fmin(_nlls_err_func, start_params,
+                                       args=(clean_design, clean_sig,
+                                             'sigma', sigma),
+                                       disp=False)
+
+        # Finally, converge on some solution and use it:
+        this_dti = np.concatenate([np.ravel(x) for x in
+                                   decompose_tensor(
+                        from_lower_triangular(this_tensor[:6]).reshape(3,3))])
+
+        dti_params[vox] = this_dti
+
+    restore_params = wrap(dti_params)
+    return restore_params
+
+
+
 
 def _nlls_err_func(tensor, design_matrix, data, weighting=None,
                    sigma=None):
