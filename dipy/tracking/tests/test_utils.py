@@ -70,7 +70,7 @@ def test_connectivity_matrix():
     # When symmetric only (3,4) is a key, not (4, 3)
     assert_raises(KeyError, mapping.__getitem__, (4, 3))
     # expected output matrix is symmetric version of expected
-    expected += expected.T
+    expected += expected.T.copy()
     assert_array_equal(matrix, expected)
     # Test mapping_as_streamlines, mapping dict has lists of streamlines
     matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
