@@ -49,12 +49,16 @@ from dipy.io.bvectxt import ornt_mapping
 def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
     older versions of numpy"""
-    index = np.array(index, copy=False, ndmin=2)
-    dims = np.array(dims, copy=False)
-    if (index.T >= dims).any():
+    index = np.asarray(index)
+    dims = np.asarray(dims)
+    if index.ndim > 2:
+        raise ValueError("bad index")
+    elif index.ndim == 2:
+        index = index.T
+    if (index >= dims).any():
         raise ValueError("bad index")
     M = np.r_[dims[:0:-1].cumprod()[::-1], 1]
-    return (M*index.T).sum(1)
+    return (M*index).sum(-1)
 
 try:
     from numpy import ravel_multi_index

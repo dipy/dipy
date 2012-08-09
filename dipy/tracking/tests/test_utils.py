@@ -196,8 +196,10 @@ def test_streamline_mapping():
 
 def test_rmi():
 
+    I1 = _rmi([3, 4], [10, 10])
+    assert_equal(I1, 34)
     I1 = _rmi([0, 0], [10, 10])
-    assert_array_equal(I1, 0)
+    assert_equal(I1, 0)
     assert_raises(ValueError, _rmi, [10, 0], [10, 10])
 
     try:
