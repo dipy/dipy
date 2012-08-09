@@ -1,8 +1,9 @@
 import numpy as np
+import nose
 from dipy.io.bvectxt import orientation_from_string
-from dipy.tracking.utils import (connectivity_matrix, density_map,
-        move_streamlines, ndbincount, reduce_labels, reorder_voxels_affine,
-        streamline_mapping)
+from dipy.tracking.utils import (_rmi, connectivity_matrix, density_map,
+                                 move_streamlines, ndbincount, reduce_labels,
+                                 reorder_voxels_affine, streamline_mapping)
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
 
@@ -192,3 +193,25 @@ def test_streamline_mapping():
     expected = dict((k, [streamlines[i] for i in indices])
                     for k, indices in expected.iteritems())
     assert_equal(mapping, expected)
+
+def test_rmi():
+
+    I1 = _rmi([0, 0], [10, 10])
+    assert_array_equal(I1, 0)
+    assert_raises(ValueError, _rmi, [10, 0], [10, 10])
+
+    try:
+        from numpy import ravel_multi_index
+    except ImportError:
+        raise nose.SkipTest()
+
+    A, B, C, D = np.random.randint(0, 1000, size=[4, 100])
+
+    I1 = _rmi([A, B], dims=[1000, 1000])
+    I2 = ravel_multi_index([A, B], dims=[1000, 1000])
+    assert_array_equal(I1, I2)
+
+    I1 = _rmi([A, B, C, D], dims=[1000]*4)
+    I2 = ravel_multi_index([A, B, C, D], dims=[1000]*4)
+    assert_array_equal(I1, I2)
+

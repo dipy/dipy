@@ -46,6 +46,21 @@ from numpy import asarray, array, atleast_3d, ceil, concatenate, empty, \
         eye, mgrid, sqrt, zeros, linalg, diag, dot
 from dipy.io.bvectxt import ornt_mapping
 
+def _rmi(index, dims):
+    """An alternate implementation of numpy.ravel_multi_index for older
+    older versions of numpy"""
+    index = np.array(index, copy=False, ndmin=2)
+    dims = np.array(dims, copy=False)
+    if (index.T >= dims).any():
+        raise ValueError("bad index")
+    M = np.r_[dims[:0:-1].cumprod()[::-1], 1]
+    return (M*index.T).sum(1)
+
+try:
+    from numpy import ravel_multi_index
+except ImportError:
+    ravel_multi_index = _rmi
+
 def density_map(streamlines, vol_dims, voxel_size):
     """Counts the number of unique streamlines that pass though each voxel
 
@@ -134,6 +149,8 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
     else:
         return matrix
 
+
+
 def ndbincount(x, weights=None, shape=None):
     """Like bincount, but for nd-indicies
 
@@ -148,7 +165,7 @@ def ndbincount(x, weights=None, shape=None):
     x = np.asarray(x)
     if shape is None:
         shape = x.max(1) + 1
-    x = np.ravel_multi_index(x, shape)
+    x = ravel_multi_index(x, shape)
     out = np.bincount(x, weights, minlength=np.prod(shape))
     out.shape = shape
     return out
