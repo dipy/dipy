@@ -1086,10 +1086,10 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
                                      weighting, sigma),
                                disp=False)
 
-        this_dti = np.concatenate([np.ravel(x) for x in
-                                   decompose_tensor(
-                        from_lower_triangular(this_tensor[:6]).reshape(3,3))])
-        dti_params[vox] = this_dti
+        # The parameters are the evals and the evecs:
+        evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
+        dti_params[vox, :3] = evals
+        dti_params[vox, 3:] = evecs.ravel()
 
     nlls_params = wrap(dti_params)
     return nlls_params
