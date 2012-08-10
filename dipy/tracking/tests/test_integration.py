@@ -31,39 +31,6 @@ def test_FixedStepIntegrator():
     assert_array_almost_equal(fsi.take_step(loc, step), loc + 2.*step)
     assert_array_almost_equal(fsi.take_step(loc, -step), loc - 2.*step)
 
-def test_generate_streamlines():
-    steps = np.array([[1,0,0],
-                      [1,0,0],
-                      [1,0,0],
-                      [0,1,0],
-                      [0,0,1]])
-    class TestStepper(object):
-        state = -1
-        error = StopIteration
-        def next_step(self, loc, prev_step):
-            self.state += 1
-            if self.state >= len(steps):
-                raise self.error()
-            return steps[self.state]
-
-    stepper = TestStepper()
-    ss = 2.
-    integrator = FixedStepIntegrator(step_size=ss)
-    seeds = [[2,3,4],[5,6,7]]
-    slgen = generate_streamlines(stepper, integrator, seeds, [1,0,0])
-    for ii, streamline in enumerate(slgen):
-        stepper.state = -1
-        assert_array_equal(streamline[0], seeds[ii])
-        expected_streamline = (steps*ss).cumsum(0)+seeds[ii]
-        assert_array_almost_equal(streamline[1:], expected_streamline)
-
-    stepper.error = IndexError
-    slgen = generate_streamlines(stepper, integrator, seeds, [1,0,0])
-    for ii, streamline in enumerate(slgen):
-        stepper.state = -1
-        assert_array_equal(streamline[0], seeds[ii])
-        expected_streamline = (steps*ss).cumsum(0)+seeds[ii]
-        assert_array_almost_equal(streamline[1:], expected_streamline[:-1])
 
 def test_trackstopper():
     class Mask(object):
