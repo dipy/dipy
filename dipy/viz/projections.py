@@ -8,14 +8,25 @@ ODFs.
 import numpy as np
 import scipy.interpolate as interp
 
-import matplotlib
-import matplotlib.pyplot as plt
-import matplotlib.tri as tri
+try:
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import matplotlib.tri as tri
+    has_mpl = True
+    hot = matplotlib.cm.hot
+except ImportError:
+    e_s = "You do not have Matplotlib installed. Some visualization functions"
+    e_s += " might not work for you."
+    print(e_s)
+    has_mpl=False
+    hot = None
+    plt = None
 
 import dipy.core.geometry as geo
 
+
 def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
-		cmap=matplotlib.cm.hot, cbar=True, triang=False):
+                cmap=hot, cbar=True, triang=False):
 
     """Draw a signal on a 2D projection of the sphere.
 
@@ -49,11 +60,11 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
     --------
     >>> from dipy.data import get_sphere
     >>> verts,faces=get_sphere('symmetric724')
-    >>> sph_project(verts,np.random.rand(len(verts)))
+    >>> ax = sph_project(verts,np.random.rand(len(verts)))
 
     """
-    if ax is None:
-        _, ax = plt.subplots(1)
+    if ax is None and plt is not None:
+            _, ax = plt.subplots(1)
     fig = ax.get_figure()
 
     x = vertices[:, 0]
@@ -75,22 +86,22 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
     r[r>1]=1
 
     if triang:
-	triang = tri.Triangulation(x, y)
-	ax.tripcolor(triang, r, cmap=cmap)
+        triang = tri.Triangulation(x, y)
+        ax.tripcolor(triang, r, cmap=cmap)
     else:
-	cmap_data = cmap._segmentdata
-	red_interp, blue_interp, green_interp = (
-		interp.interp1d(np.array(cmap_data[gun])[:,0],
-				np.array(cmap_data[gun])[:,1]) for gun in
-		                ['red', 'blue','green'])
+        cmap_data = cmap._segmentdata
+        red_interp, blue_interp, green_interp = (
+                interp.interp1d(np.array(cmap_data[gun])[:,0],
+                                np.array(cmap_data[gun])[:,1]) for gun in
+                                ['red', 'blue','green'])
 
 
-	for this_x, this_y, this_r in zip(x,y,r):
-	    red = red_interp(this_r)
-	    blue = blue_interp(this_r)
-	    green = green_interp(this_r)
-	    ax.plot(this_x, this_y, 'o',
-		    c=[red.item(), green.item(), blue.item()])
+        for this_x, this_y, this_r in zip(x,y,r):
+            red = red_interp(this_r)
+            blue = blue_interp(this_r)
+            green = green_interp(this_r)
+            ax.plot(this_x, this_y, 'o',
+                    c=[red.item(), green.item(), blue.item()])
 
 
     ax.set_aspect('equal')

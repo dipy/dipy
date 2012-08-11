@@ -250,8 +250,7 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
     >>> from dipy.sims.voxel import multi_tensor_odf, all_tensor_evecs
     >>> from dipy.data import get_sphere
     >>> vertices, faces = get_sphere('symmetric724')
-    >>> mevals=np.array(([0.0015, 0.0003, 0.0003],
-                         [0.0015, 0.0003, 0.0003]))
+    >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
     >>> e0 = np.array([1, 0, 0.])
     >>> e1 = np.array([0., 1, 0])
     >>> mevecs=[all_tensor_evecs(e0), all_tensor_evecs(e1)]
