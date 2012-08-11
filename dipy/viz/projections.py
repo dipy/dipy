@@ -63,8 +63,8 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
     >>> ax = sph_project(verts,np.random.rand(len(verts)))
 
     """
-    if ax is None:
-        _, ax = plt.subplots(1)
+    if ax is None and plt is not None:
+            _, ax = plt.subplots(1)
     fig = ax.get_figure()
 
     x = vertices[:, 0]
