@@ -58,9 +58,9 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
 
     Examples
     --------
-    >> from dipy.data import get_sphere
-    >> verts,faces=get_sphere('symmetric724')
-    >> sph_project(verts,np.random.rand(len(verts)))
+    >>> from dipy.data import get_sphere
+    >>> verts,faces=get_sphere('symmetric724')
+    >>> ax = sph_project(verts,np.random.rand(len(verts)))
 
     """
     if ax is None:
