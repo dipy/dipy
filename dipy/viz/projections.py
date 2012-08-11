@@ -20,6 +20,7 @@ except ImportError:
     print(e_s)
     has_mpl=False
     hot = None
+    plt = None
 
 import dipy.core.geometry as geo
 
@@ -57,9 +58,9 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
 
     Examples
     --------
-    >>> from dipy.data import get_sphere
-    >>> verts,faces=get_sphere('symmetric724')
-    >>> sph_project(verts,np.random.rand(len(verts)))
+    >> from dipy.data import get_sphere
+    >> verts,faces=get_sphere('symmetric724')
+    >> sph_project(verts,np.random.rand(len(verts)))
 
     """
     if ax is None:
