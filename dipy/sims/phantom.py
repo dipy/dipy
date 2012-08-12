@@ -32,7 +32,8 @@ def orbital_phantom(bvals=None,
                      scale=(25,25,25),
                      angles=np.linspace(0,2*np.pi,32),
                      radii=np.linspace(0.2,2,6),
-                     S0=100.):
+                     S0=100.,
+                     snr=None):
     """ Create a phantom based on a 3d orbit f(t)->(x,y,z)
     
     Parameters
@@ -63,9 +64,8 @@ def orbital_phantom(bvals=None,
     S0 : double, simulated signal without diffusion gradients applied
         Default 100.
     snr : signal to noise ratio
-        Used for applying rician noise to the data.
-        Default 200. Common is 20. 
-    background_noise : boolean, Default False
+        Used to apply Rician noise to the data.  Default is to not add noise at
+        all.
     
     Returns
     ---------
@@ -74,7 +74,16 @@ def orbital_phantom(bvals=None,
     Notes 
     --------
     Crossings can be created by adding multiple orbitual_phantom outputs.
+
+    In these simulations, we can ask for Rician noise to be added. In
+    that case, the definition of SNR is as follows:
+
+        SNR = mean(true signal)/RMS(true added noise).
     
+    Gudbjartsson, H and Patz, S (2008). The Rician Distribution of Noisy MRI
+    Data. Magnetic Resonance in Medicine 34: 910-914
+
+
     Examples
     ---------
     
@@ -84,7 +93,7 @@ def orbital_phantom(bvals=None,
         z=np.linspace(-1,1,len(x))
         return x,y,z
     
-    data=orbitual_phantom(func=f)
+    data=orbital_phantom(func=f)
         
     """
     
@@ -131,64 +140,52 @@ def orbital_phantom(bvals=None,
     #FA=ten.fa()
     #FA[np.isnan(FA)]=0
     #vol[np.isnan(vol)]=0
+
+    if snr is not None:
+        # snr = mean_sig/sigma => sigma = mean_sig/snr
+        sigma = np.mean(vol)/snr
+        vol = add_noise(vol, sigma, noise_type='rician')
+
     return vol
 
-def add_noise(vol, snr=20, noise_type='gaussian', tol=10e-4):
-    r""" add gaussian noise in a 4D array with a specific snr
+
+
+def add_noise(vol, sigma=1.0, noise_type='gaussian'):
+    r""" Add noise of specified distribution to a 4D array.
     
     Parameters
     -----------
     vol : array, shape (X,Y,Z,W)
 
-    snr : float,
-        signal to noise ratio
+    sigma: float
+        The parameter defining the width of the distribution of the noise. For
+        the Gaussian case, this is the standard deviation of the
+        distribution. For the other distributions, this is approximately the
+        standard deviation for the high signal cases.
 
     noise_type: string
         The distribution of noise added. Can be either 'gaussian' for Gaussian
         distributed noise (default), 'rician' for Rice-distributed noise or
         'rayleigh' for a Rayleigh distribution.
 
-    tol: SNR will be equal to the requested SNR up to this tolerance.
-
     Returns
     --------
     voln : array, same shape as vol
         vol with additional rician noise    
 
-    Notes
-    -----
-    Following: http://en.wikipedia.org/wiki/Signal-to-noise_ratio
-
-    We use the following definition of SNR:
-
-    .. math ::
-
-        SNR = \frac{P_{signal}}{P_{noise}} = (\frac{A_{signal}}{A_{noise}})^2
-
-    Where:
-
-    .. math ::
-
-        A_x = \sqrt{\bar{(x - \bar{x})^2}} = <x>^2
-
     References
     ----------
 
-    Gudbjartsson, H and Patz, S (2008). The Rician Distribution of Noisy MRI
-    Data. Magnetic Resonance in Medicine 34: 910-914
 
     Examples
     --------
     >>> signal = np.arange(800).reshape(2,2,2,100)
-    >>> signal_w_noise = add_noise(signal,snr=10,noise_type='rician')
+    >>> signal_w_noise = add_noise(signal,sigma=10,noise_type='rician')
 
     """
 
     # We estimate the power in the signal as the mean of signal
     p_signal = np.mean(vol)
-
-    # SNR = mean(signal)/std(noise) => mean(noise) = std(signal)/SNR:
-    sigma = p_signal / snr
 
     if noise_type == 'gaussian':
         noise_adder = _add_gaussian
@@ -208,24 +205,7 @@ def add_noise(vol, snr=20, noise_type='gaussian', tol=10e-4):
         noise1 = np.random.normal(0, sigma, size=vol.shape)
         noise2 = np.random.normal(0, sigma, size=vol.shape)
 
-    sig_w_noise = noise_adder(vol, noise1, noise2)
-    est_noise = sig_w_noise - vol
-    est_snr = np.mean(vol)/np.std(est_noise)
-    # The resulting distribution may have variance that doesn't give us the
-    # requested SNR (seems to depend on the SNR. Larger deviations for
-    # smaller SNR). We adjust the variance of the underlying Gaussians
-    # until the noise-level approximately reaches the desired SNR:
-    while np.abs(est_snr - snr) > tol:
-        if  est_snr > snr:
-            noise1 = noise1 * 1.01
-            noise2 = noise2 * 1.01
-        elif est_snr < snr:
-            noise1 = noise1 * 0.9
-            noise2 = noise2 * 0.9
-        sig_w_noise = noise_adder(vol, noise1, noise2)
-        est_noise = sig_w_noise - vol
-        est_snr = np.mean(vol)/np.std(est_noise)
-    return sig_w_noise
+    return noise_adder(vol, noise1, noise2)
 
 def _add_gaussian(vol, noise1, noise2):
     """
