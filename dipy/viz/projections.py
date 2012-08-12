@@ -118,3 +118,6 @@ if has_mpl:
         ax.set_ylim([-1.1, 1.1])
 
         return ax
+else:
+    def sph_project():
+        raise ImportError("sph_project requires matplotlib")
