@@ -156,20 +156,23 @@ def orbital_phantom(bvals=None,
         # Because we are using the Rician case, we are bound to miss the
         # desired SNR in the cases in which the signal is low, so we adjust:
         while np.abs(est_snr - snr) > snr_tol:
-            print("EST: %4.4f, DESIRED: %4.4f"%(est_snr, snr))
+            # dbg:
+            # print("EST: %4.4f, DESIRED: %4.4f"%(est_snr, snr))
             if est_snr > snr:
                 sigma = sigma * 1.01
             if est_snr < snr:
                 sigma = sigma * 0.999
+
             vol_w_noise = add_noise(vol, sigma, noise_type='rician')
             noise = vol - vol_w_noise
-            rms_noise = np.mean(np.sqrt(noise**2))
+            rms_noise = np.sqrt(np.mean((noise**2)))
             est_snr = mean_sig/rms_noise
 
 
         # When we're done, we can replace the original volume with this noisy
         # one:
         vol = vol_w_noise
+
     return vol
 
 

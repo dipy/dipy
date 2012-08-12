@@ -1,6 +1,7 @@
 import numpy as np
 import nose
 import nibabel as nib
+import numpy.testing.decorators as dec
 
 from nose.tools import (assert_true, assert_false, assert_equal,
                         assert_almost_equal)
@@ -58,15 +59,14 @@ def test_noise():
     # work, we probably need the last dimension to be rather large.
     vol = np.random.rand(10,10,10,100) * a + b
     for sigma in [0.1, 1, 10]:
-        print sigma
         for noise_type in ['gaussian', 'rician']:
-            print noise_type
             vol_w_noise = add_noise(vol,
                                     sigma,
                                     noise_type=noise_type)
             noise = vol_w_noise - vol
             assert_array_almost_equal(np.std(noise), sigma, decimal=1)
 
+@dec.slow
 def test_snr():
     """
     Test the addition of noise to a phantom.
@@ -79,23 +79,42 @@ def test_snr():
     bvecs[np.isnan(bvecs)]=0
 
     N=50 #timepoints
-    for snr in [1, 20, 200]:
-        vol=orbital_phantom(bvals=bvals,
-                            bvecs=bvecs,
-                            func=f,
-                            t=np.linspace(0,2*np.pi,N),
-                            datashape=(10,10,10,len(bvals)),
-                            origin=(5,5,5),
-                            scale=(3,3,3),
-                            angles=np.linspace(0,2*np.pi,16),
-                            radii=np.linspace(0.2,2,6),
-                            snr=snr)
+
+    # We make one with no noise, so that we can estimate SNR relative to it:
+    vol = orbital_phantom(bvals=bvals,
+                          bvecs=bvecs,
+                          func=f,
+                          t=np.linspace(0,2*np.pi,N),
+                          datashape=(10,10,10,len(bvals)),
+                          origin=(5,5,5),
+                          scale=(3,3,3),
+                          angles=np.linspace(0,2*np.pi,16),
+                          radii=np.linspace(0.2,2,6))
+
+    mean_sig = np.mean(vol)
+
+    for snr in [20, 200]:
+        vol_w_noise=orbital_phantom(bvals=bvals,
+                                    bvecs=bvecs,
+                                    func=f,
+                                    t=np.linspace(0,2*np.pi,N),
+                                    datashape=(10,10,10,len(bvals)),
+                                    origin=(5,5,5),
+                                    scale=(3,3,3),
+                                    angles=np.linspace(0,2*np.pi,16),
+                                    radii=np.linspace(0.2,2,6),
+                                    snr=snr)
+
+        noise = vol - vol_w_noise
+        rms_noise = np.sqrt(np.mean(noise**2))
+        snr_est = mean_sig/rms_noise
+        assert_array_almost_equal(snr_est, snr, decimal=3)
 
 
 
 if __name__ == "__main__":
-    test_phantom()
-    test_noise()
+    #test_phantom()
+    #test_noise()
     test_snr()
 
 

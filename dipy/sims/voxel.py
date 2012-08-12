@@ -144,6 +144,7 @@ def single_tensor(bvals, gradients, S0=1, evals=None, evecs=None, snr=None):
     S = np.exp(np.dot(design, lower_triangular(D)))
     """
 
+    # XXX Refactor to calculate the Rician SNR:
     if snr is not None:
         std = S0 / snr
         S = S + np.random.randn(len(S)) * std
