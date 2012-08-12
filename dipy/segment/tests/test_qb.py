@@ -14,4 +14,4 @@ def test_qbundles():
     Tqb=qb.virtuals()    
     #Tqbe,Tqbei=qb.exemplars(T)
     Tqbe,Tqbei=qb.exemplars()    
-    assert_equal(4,qb.total_clusters())
+    assert_equal(4,qb.total_clusters)
