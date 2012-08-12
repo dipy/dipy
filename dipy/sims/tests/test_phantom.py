@@ -79,17 +79,18 @@ def test_snr():
     bvecs[np.isnan(bvecs)]=0
 
     N=50 #timepoints
+    for snr in [1, 20, 200]:
+        vol=orbital_phantom(bvals=bvals,
+                            bvecs=bvecs,
+                            func=f,
+                            t=np.linspace(0,2*np.pi,N),
+                            datashape=(10,10,10,len(bvals)),
+                            origin=(5,5,5),
+                            scale=(3,3,3),
+                            angles=np.linspace(0,2*np.pi,16),
+                            radii=np.linspace(0.2,2,6),
+                            snr=snr)
 
-    vol=orbital_phantom(bvals=bvals,
-                         bvecs=bvecs,
-                         func=f,
-                         t=np.linspace(0,2*np.pi,N),
-                         datashape=(10,10,10,len(bvals)),
-                         origin=(5,5,5),
-                         scale=(3,3,3),
-                         angles=np.linspace(0,2*np.pi,16),
-                         radii=np.linspace(0.2,2,6),
-                         snr=20.)
 
 
 if __name__ == "__main__":

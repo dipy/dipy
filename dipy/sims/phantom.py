@@ -33,7 +33,8 @@ def orbital_phantom(bvals=None,
                      angles=np.linspace(0,2*np.pi,32),
                      radii=np.linspace(0.2,2,6),
                      S0=100.,
-                     snr=None):
+                     snr=None,
+                     snr_tol=10e-4):
     """ Create a phantom based on a 3d orbit f(t)->(x,y,z)
     
     Parameters
@@ -63,10 +64,12 @@ def orbital_phantom(bvals=None,
         angles and radii define the total thickness options 
     S0 : double, simulated signal without diffusion gradients applied
         Default 100.
-    snr : signal to noise ratio
-        Used to apply Rician noise to the data.  Default is to not add noise at
-        all.
-    
+    snr : float, optional
+        The signal to noise ratio sed to apply Rician noise to the data.
+        Default is to not add noise at all.
+    snr_tol: float, optional
+        How close to the requested SNR do we have to get. Default 10e-4
+
     Returns
     ---------
     data : array, shape (datashape)
@@ -142,10 +145,31 @@ def orbital_phantom(bvals=None,
     #vol[np.isnan(vol)]=0
 
     if snr is not None:
-        # snr = mean_sig/sigma => sigma = mean_sig/snr
-        sigma = np.mean(vol)/snr
-        vol = add_noise(vol, sigma, noise_type='rician')
+        # We start by guessing that sigma should be approximately such that the
+        # snr is right and using: snr = mean_sig/rms => rms = mean_sig/snr
+        mean_sig = np.mean(vol)
+        sigma = mean_sig/snr
+        vol_w_noise = add_noise(vol, sigma, noise_type='rician')
+        noise = vol - vol_w_noise
+        rms_noise = np.mean(np.sqrt(noise**2))
+        est_snr = mean_sig/rms_noise
+        # Because we are using the Rician case, we are bound to miss the
+        # desired SNR in the cases in which the signal is low, so we adjust:
+        while np.abs(est_snr - snr) > snr_tol:
+            print("EST: %4.4f, DESIRED: %4.4f"%(est_snr, snr))
+            if est_snr > snr:
+                sigma = sigma * 1.01
+            if est_snr < snr:
+                sigma = sigma * 0.999
+            vol_w_noise = add_noise(vol, sigma, noise_type='rician')
+            noise = vol - vol_w_noise
+            rms_noise = np.mean(np.sqrt(noise**2))
+            est_snr = mean_sig/rms_noise
 
+
+        # When we're done, we can replace the original volume with this noisy
+        # one:
+        vol = vol_w_noise
     return vol
 
 
