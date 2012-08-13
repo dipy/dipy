@@ -7,26 +7,17 @@ ODFs.
 
 import numpy as np
 import scipy.interpolate as interp
+from ..utils.optpkg import optional_package
 
-try:
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import matplotlib.tri as tri
-    has_mpl = True
-    hot = matplotlib.cm.hot
-except ImportError:
-    e_s = "You do not have Matplotlib installed. Some visualization functions"
-    e_s += " might not work for you."
-    print(e_s)
-    has_mpl=False
-    hot = None
-    plt = None
+matplotlib, has_mpl, setup_module = optional_package("matplotlib")
+plt, _, _ = optional_package("matplotlib.pyplot")
+tri, _, _ = optional_package("matplotlib.tri")
 
 import dipy.core.geometry as geo
 
 
 def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
-                cmap=hot, cbar=True, triang=False):
+                cmap=None, cbar=True, triang=False):
 
     """Draw a signal on a 2D projection of the sphere.
 
@@ -63,8 +54,10 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None,
     >>> ax = sph_project(verts,np.random.rand(len(verts)))
 
     """
-    if ax is None and plt is not None:
-            _, ax = plt.subplots(1)
+    if cmap is None:
+        cmap = matplotlib.cm.hot
+    if ax is None:
+        _, ax = plt.subplots(1)
     fig = ax.get_figure()
 
     x = vertices[:, 0]
