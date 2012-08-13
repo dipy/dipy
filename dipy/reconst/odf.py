@@ -2,7 +2,8 @@ from __future__ import division
 import numpy as np
 from .recspeed import local_maxima, remove_similar_vertices
 from dipy.core.sphere import unique_edges
-#Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
+# Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
+# .base
 
 class OdfModel(object):
     """An abstract class to be sub-classed by specific odf models
@@ -15,10 +16,12 @@ class OdfModel(object):
         """To be implemented but specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
 
+
 class OdfFit(object):
     def odf(self):
         """To be implemented but specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
+
 
 def peak_directions(odf, sphere, relative_peak_threshold,
                     peak_separation_angle):
@@ -101,10 +104,10 @@ def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02,
         pk, ind = local_maxima(odf, model.sphere.edges)
         """
         # Will update this later when filter_peaks is nailed down
-        pk, ind = _filter_peaks(pk, ind,
-                                model._distance_matrix,
-                                model.relative_peak_threshold,
-                                model._cos_distance_threshold)
+        pk, ind = remove_similar_vertices(pk, ind,
+                                          model._distance_matrix,
+                                          model.relative_peak_threshold,
+                                          model._cos_distance_threshold)
         """
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
