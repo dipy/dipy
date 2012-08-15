@@ -1,24 +1,52 @@
 import numpy as np
-from numpy.testing import assert_array_equal
-from ..odf import OdfFit, OdfModel, gfa, peaks_from_model, peak_directions
+from numpy.testing import assert_array_equal, assert_array_almost_equal
+from ..odf import (DiscreteDirectionFinder, OdfFit, OdfModel, gfa,
+                   peaks_from_model, peak_directions)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
                         assert_true)
 
+def test_DiscreteDirectionFinder():
+    def discrete_eval(sphere):
+        X = np.zeros(len(sphere.phi))
+        X[0] = 1.
+        X[1] = .3
+        return X
+
+    sphere = create_unit_hemisphere(3)
+
+    ddf = DiscreteDirectionFinder()
+    ddf.config(sphere=sphere, relative_peak_threshold=.5, min_separation_angle=45)
+    direction = ddf(discrete_eval)
+    assert_array_almost_equal(direction, sphere.vertices[:1])
+
+    ddf.config(relative_peak_threshold=.2)
+    direction = ddf(discrete_eval)
+    assert_array_almost_equal(direction, sphere.vertices[:2])
+
 _sphere = create_unit_hemisphere(4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
-class SimpleOdfModel(object):
+class SimpleOdfModel(OdfModel):
     sphere = _sphere
     def fit(self, data):
         fit = SimpleOdfFit()
         fit.model = self
         return fit
 
-class SimpleOdfFit(object):
+class SimpleOdfFit(OdfFit):
     def odf(self, sphere=None):
         if sphere is None:
             sphere = self.model.sphere
-        return (sphere.vertices * [1, 2, 3]).sum(-1)
+
+        # Use ascontiguousarray to work around a bug in NumPy
+        return np.ascontiguousarray((sphere.vertices * [1, 2, 3]).sum(-1))
+
+def test_OdfFit():
+    m = SimpleOdfModel()
+    m.direction_finder.config(sphere=_sphere)
+    f = m.fit(None)
+    argmax = _odf.argmax()
+    assert_array_almost_equal(f.directions, _sphere.vertices[argmax:argmax+1])
 
 def test_peak_directions():
     model = SimpleOdfModel()

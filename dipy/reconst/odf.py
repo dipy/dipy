@@ -1,8 +1,66 @@
 from __future__ import division
+from warnings import warn
 import numpy as np
 from .recspeed import local_maxima, remove_similar_vertices
-from dipy.core.sphere import unique_edges
+from ..core.onetime import auto_attr
+from dipy.core.sphere import unique_edges, unit_icosahedron, HemiSphere
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
+
+default_sphere = HemiSphere.from_sphere(unit_icosahedron.subdivide(3))
+
+class DirectionFinder(object):
+    """Abstract class for direction finding"""
+
+    def __init__(self):
+        self._config = {}
+
+    def __call__(self, sphere_eval):
+        """To be impemented by subclasses"""
+        raise NotImplementedError()
+
+    def config(self, **kwargs):
+        """Update direction finding parameters"""
+        for i in kwargs:
+            if i not in self._config:
+                warn("{} is not a known parameter".format(i))
+        self._config.update(kwargs)
+
+
+class DiscreteDirectionFinder(DirectionFinder):
+    """Discrete Direction Finder
+
+    Parameters
+    ----------
+    sphere : Sphere
+        The Sphere providing discrete directions for evaluation.
+    relative_peak_threshold : float
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90]
+        The minimum distance between directions. If two peaks are too close only
+        the larger of the two is returned.
+
+    Returns
+    -------
+    directions : ndarray (N, 3)
+        The directions of the N peaks.
+    """
+
+    def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
+                 min_separation_angle=45):
+        self._config = {"sphere": sphere,
+                        "relative_peak_threshold": relative_peak_threshold,
+                        "min_separation_angle": min_separation_angle}
+
+    def __call__(self, sphere_eval):
+        """Find directions of a function evaluated on a discrete sphere"""
+        sphere = self._config["sphere"]
+        relative_peak_threshold = self._config["relative_peak_threshold"]
+        min_separation_angle = self._config["min_separation_angle"]
+
+        discrete_values = sphere_eval(sphere)
+        return peak_directions(discrete_values, sphere, relative_peak_threshold,
+                               min_separation_angle)
 
 class OdfModel(object):
     """An abstract class to be sub-classed by specific odf models
@@ -10,18 +68,23 @@ class OdfModel(object):
     All odf models should provide a fit method which may take data as it's
     first and only argument.
     """
-    sphere = None
+    direction_finder = DiscreteDirectionFinder()
     def fit(self, data):
-        """To be implemented but specific odf models"""
+        """To be implemented by specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
 
 class OdfFit(object):
-    def odf(self):
+    def odf(self, sphere):
         """To be implemented but specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
 
+    @auto_attr
+    def directions(self):
+        return self.model.direction_finder(self.odf)
+
+
 def peak_directions(odf, sphere, relative_peak_threshold,
-                    peak_separation_angle):
+                    min_separation_angle):
     """Get the directions of odf peaks
 
     Parameters
@@ -32,7 +95,7 @@ def peak_directions(odf, sphere, relative_peak_threshold,
         The sphere on which odf was evaluated
     relative_peak_threshold : float
         A relative threshold for excluding small peaks
-    peak_separation_angle : float
+    min_separation_angle : float
         An angle threshold in degrees. Peaks too close to a larger peak are
         excluded.
 
@@ -57,7 +120,7 @@ def peak_directions(odf, sphere, relative_peak_threshold,
 
     directions = sphere.vertices[indices]
     directions, mappiing = remove_similar_vertices(directions,
-                                                   peak_separation_angle)
+                                                   min_separation_angle)
     return directions
 
 class PeaksAndMetrics(object):
