@@ -62,21 +62,6 @@ class FixedStepIntegrator(object):
         return new_location
 
 
-def closest_direction(directions, reference):
-    """Track the peak closest to reference"""
-    closest = abs(np.dot(directions, reference)).argmax()
-    return directions[closest:closest+1]
-def first_direction(directions, reference):
-    """Track the first, ie biggest, peak at each seed"""
-    return directions[0:1]
-def all_directions(directions, reference):
-    """Track all directions at a seed"""
-    return directions
-first_step_choosers = {'closest' : closest_direction,
-                       'first' : first_direction,
-                       'all' : all_directions}
-
-
 class TrackStopper(object):
     """Stops a streamline if it leaves the mask or tries makes a turn larger
     than max_turn_angle degrees"""
@@ -138,15 +123,14 @@ def markov_streamline(get_direction, take_step, terminate,
                 break
     except OutsideImage:
         pass
-    
+
     return np.vstack(streamline)
 
 
-def generate_streamlines(get_direction, take_step, terminate,
-                         seeds, get_first_step, reference=(0, 0, 1),
-                         track_two_directions=False, maxlen=500):
+def generate_streamlines(get_direction, take_step, terminate, seeds,
+                         max_cross=None, maxlen=500):
     """A streamline generator
-    
+
     Parameters
     ----------
     get_direction : callable
@@ -160,38 +144,25 @@ def generate_streamlines(get_direction, take_step, terminate,
         a stopping criteria. It should return False otherwise.
     seeds : array, (N, 3)
         points in space to track from.
-    get_first_step : callable
-        Method for choosing starting direction when multiple directions are
-        available.
-    reference : array (3,)
-        Unit vector used to help pick starting direction when
-        `track_to_directions` is False and possibly by `get_first_step`
-    track_two_directions : bool
-        If True, each seed is tracked in two antipodal directions.
+    max_cross : int or None
+        The maximum number of direction to track from each seed in crossing
+        voxels. Track all directions by default.
     maxlen : int
-        The maximum number of segments allowed in a streamline to prevent
-        infinite loops.
-    
+        The maximum number of steps from seed allowed in a streamline. Meant
+        primarily to prevent infinite loops.
+
     Returns
     -------
     streamlines : generator
         A streamline generator
     """
     for s in seeds:
-        directions = get_direction(s, None)
-        directions = get_first_step(directions, reference)
+        directions = get_direction(s, prev_dir=None)
+        directions = directions[:max_cross]
         for first_step in directions:
-            # Align first_step with reference
-            if np.dot(first_step, reference) < 0:
-                first_step = -first_step
-            # If track two_directions, track forward and backward
-            if track_two_directions:
-                F = markov_streamline(get_direction, take_step, terminate, s,
-                                      first_step, maxlen)
-                first_step = -first_step
-                B = markov_streamline(get_direction, take_step, terminate, s,
-                                      first_step, maxlen)
-                yield np.concatenate([B[:0:-1], F], axis=0)
-            else:
-                yield markov_streamline(get_direction, take_step, terminate, s,
-                                        first_step, maxlen)
+            F = markov_streamline(get_direction, take_step, terminate, s,
+                                  first_step, maxlen)
+            first_step = -first_step
+            B = markov_streamline(get_direction, take_step, terminate, s,
+                                  first_step, maxlen)
+            yield np.concatenate([B[:0:-1], F], axis=0)
