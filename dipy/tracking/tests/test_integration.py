@@ -131,12 +131,11 @@ def test_generate_streamlines():
 
     # Track only the first (largest) peak for each seed
     gen = generate_streamlines(nav.get_direction, stepper.take_step,
-                               stopper.terminate, seeds, 1)
+                               stopper.terminate, seeds, max_cross=1)
     streamlines = list(gen)
-    assert_equal(len(streamlines), 3)
+    assert_equal(len(streamlines), 1)
     expected = np.zeros((21, 3))
-    for i in range(3):
-        expected[:] = 5.2
-        expected[:, i] = np.linspace(10.2, .2, 21)
-        assert_array_almost_equal(streamlines[i], expected)
+    expected[:] = 5.2
+    expected[:, 0] = np.linspace(.2, 10.2, 21)
+    assert_array_almost_equal(streamlines[0], expected)
 
