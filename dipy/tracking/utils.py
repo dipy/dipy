@@ -41,29 +41,35 @@ dipy.tracking.utils
 dipy.tracking.integration
 dipy.reconst.interpolate
 """
+
 import numpy as np
-from numpy import asarray, array, atleast_3d, ceil, concatenate, empty, \
-        eye, mgrid, sqrt, zeros, linalg, diag, dot
+from numpy import (asarray, array, atleast_3d, ceil, concatenate, empty,
+                   eye, mgrid, sqrt, zeros, linalg, diag, dot)
 from dipy.io.bvectxt import ornt_mapping
+
 
 def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
-    older versions of numpy"""
+    versions of numpy.
+
+    """
     index = np.asarray(index)
     dims = np.asarray(dims)
     if index.ndim > 2:
-        raise ValueError("bad index")
+        raise ValueError("Index should be 1 or 2-D")
     elif index.ndim == 2:
         index = index.T
     if (index >= dims).any():
-        raise ValueError("bad index")
-    M = np.r_[dims[:0:-1].cumprod()[::-1], 1]
-    return (M*index).sum(-1)
+        raise ValueError("Index exceeds dimensions")
+    strides = np.r_[dims[:0:-1].cumprod()[::-1], 1]
+    return (strides * index).sum(-1)
+
 
 try:
     from numpy import ravel_multi_index
 except ImportError:
     ravel_multi_index = _rmi
+
 
 def density_map(streamlines, vol_dims, voxel_size):
     """Counts the number of unique streamlines that pass though each voxel
@@ -154,7 +160,6 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
         return matrix
 
 
-
 def ndbincount(x, weights=None, shape=None):
     """Like bincount, but for nd-indicies
 
@@ -169,13 +174,16 @@ def ndbincount(x, weights=None, shape=None):
     x = np.asarray(x)
     if shape is None:
         shape = x.max(1) + 1
+
     x = ravel_multi_index(x, shape)
     # out = np.bincount(x, weights, minlength=np.prod(shape))
     # out.shape = shape
     # Use resize to be compatible with numpy < 1.6, minlength new in 1.6
     out = np.bincount(x, weights)
     out.resize(shape)
+
     return out
+
 
 def reduce_labels(label_volume):
     """Reduces an array of labels to the integers from 0 to n with smallest
