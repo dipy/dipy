@@ -4,8 +4,22 @@ import dipy.reconst.recspeed as rp
 from dipy.utils.spheremakers import sphere_vf_from
 from .odf import OdfModel
 
+
+###############################################
+# MODULE TEMPORARILY DISABLED FOR REFACTORING #
+###############################################
+
+import nose
+class UnderConstruction(nose.SkipTest):
+    pass
+
+raise UnderConstruction()
+
+###############################################
+
+
 class GeneralizedQSamplingModel(OdfModel):
-    def __init__(self, bvals, gradients, 
+    def __init__(self, bvals, gradients,
                  odf_sphere='symmetric642', Lambda=1.2, squared=False):
         r""" Generates a model-free description for every voxel that can
         be used from simple to very complicated configurations like
@@ -44,14 +58,14 @@ class GeneralizedQSamplingModel(OdfModel):
         -------
         In order to reconstruct the spin distribution function  a nice symmetric
         evenly distributed sphere is provided using 642+ points. This is usually
-        sufficient for most of the datasets. 
+        sufficient for most of the datasets.
 
         See also
         --------
         dipy.reconst.dsi.DiffusionSpectrumModel, dipy.data.get_sphere
 
         """
-        
+
         '''
         self.odf_vertices=np.ascontiguousarray(odf_vertices)
         self.odf_faces=np.ascontiguousarray(odf_faces)
@@ -60,12 +74,12 @@ class GeneralizedQSamplingModel(OdfModel):
         self.data=data
         self.save_odfs=save_odfs
         '''
-        
+
         odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
         self.set_odf_vertices(odf_vertices,None,odf_faces)
         self.squared=squared
-        
-        # 0.01506 = 6*D where D is the free water diffusion coefficient 
+
+        # 0.01506 = 6*D where D is the free water diffusion coefficient
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
         scaling = np.sqrt(bvals*0.01506)
@@ -75,19 +89,19 @@ class GeneralizedQSamplingModel(OdfModel):
         gradients[np.isnan(gradients)]= 0.
         gradsT = gradients.T
         b_vector=gradsT*tmp # element-wise also known as the Hadamard product
-                
+
         if squared==True:
             vf=np.vectorize(self.squared_radial_component)
             #which implements
             #def H(x):
             #    res=(2*x*np.cos(x) + (x**2-2)*np.sin(x))/x**3
             #    res[np.isnan(res)]=1/3.
-            #    return res            
+            #    return res
             self.input=np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi
             self.q2odf_params=np.real(vf(np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi))
         else:
             self.q2odf_params=np.real(np.sinc(np.dot(b_vector.T, self.odf_vertices.T) * Lambda/np.pi))
-                
+
     def squared_radial_component(self,x):
         """ implementing equation (8) in the referenced paper by Yeh et al. 2010
         """
@@ -96,30 +110,30 @@ class GeneralizedQSamplingModel(OdfModel):
             #print 'small'
             return 1/3.
         return (2*x*np.cos(x) + (x**2-2)*np.sin(x))/x**3
-    
+
     def qa(self):
         """ quantitative anisotropy
         """
         return self.QA
-    
+
     def ind(self):
-        """ 
+        """
         indices on the sampling sphere
         """
         return self.IN
 
     def evaluate_odf(self,s):
         """ spin density orientation distribution function
-         
+
         Parameters
-        -----------        
+        -----------
         s : array, shape(D),
             diffusion signal for one point in the dataset
-        
+
         Returns
         ---------
-        odf : array, shape(len(odf_vertices)), 
-            spin density orientation distribution function        
+        odf : array, shape(len(odf_vertices)),
+            spin density orientation distribution function
 
         """
         return np.dot(s,self.q2odf_params)
@@ -127,9 +141,9 @@ class GeneralizedQSamplingModel(OdfModel):
 
     def npa(self,s,width=5):
         """ non-parametric anisotropy
-        
+
         Nimmo-Smith et. al  ISMRM 2011
-        """   
+        """
         odf=self.odf(s)
         t0,t1,t2=triple_odf_maxima(self.odf_vertices, odf, width)
         psi0 = t0[1]**2
@@ -183,8 +197,8 @@ def patch_vertices(vertices,pole, width):
 
 
 def patch_maximum(vertices, odf, pole, width):
-    eqvert = patch_vertices(vertices, pole, width)    
-    #need to test for whether eqvert is empty or not    
+    eqvert = patch_vertices(vertices, pole, width)
+    #need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
         print('empty cone around pole %s with with width %f' % (np.array_str(pole), width))
         return np.Null, np.Null
@@ -199,8 +213,8 @@ def odf_sum(odf):
 
 
 def patch_sum(vertices, odf, pole, width):
-    eqvert = patch_vertices(vertices, pole, width)    
-    #need to test for whether eqvert is empty or not    
+    eqvert = patch_vertices(vertices, pole, width)
+    #need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
         print('empty cone around pole %s with with width %f' % (np.array_str(pole), width))
         return np.Null
@@ -218,9 +232,7 @@ def triple_odf_maxima(vertices, odf, width):
     odfmax3 = odf[indmax3]
     """
     cross12 = np.cross(vertices[indmax1],vertices[indmax2])
-    cross12 = cross12/np.sqrt(np.sum(cross12**2))    
+    cross12 = cross12/np.sqrt(np.sum(cross12**2))
     indmax3, odfmax3 = patch_maximum(vertices, odf, cross12, 2*width)
     """
     return [(indmax1, odfmax1),(indmax2, odfmax2),(indmax3, odfmax3)]
-
-
