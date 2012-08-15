@@ -1,8 +1,7 @@
 import numpy as np
 from dipy.tracking.integration import (BoundryIntegrator, FixedStepIntegrator,
                                        generate_streamlines, markov_streamline,
-                                       OutsideImage, first_step_choosers,
-                                       TrackStopper)
+                                       OutsideImage, TrackStopper)
 
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_equal, assert_)
@@ -120,11 +119,8 @@ def test_generate_streamlines():
     stepper = FixedStepIntegrator(.5)
     nav = KeepGoing()
     stopper = StopAtTen()
-    R = np.array([1., 1., 1.]) / np.sqrt(3)
-    get_first_step = first_step_choosers['all']
     gen = generate_streamlines(nav.get_direction, stepper.take_step,
-                               stopper.terminate, seeds, get_first_step,
-                               reference=R, track_two_directions=True)
+                               stopper.terminate, seeds)
     streamlines = list(gen)
     assert_equal(len(streamlines), 3)
     expected = np.zeros((21, 3))
@@ -133,28 +129,13 @@ def test_generate_streamlines():
         expected[:, i] = np.linspace(.2, 10.2, 21)
         assert_array_almost_equal(streamlines[i], expected)
 
-    # Test track_two_directions set to False
+    # Track only the first (largest) peak for each seed
     gen = generate_streamlines(nav.get_direction, stepper.take_step,
-                               stopper.terminate, seeds, get_first_step,
-                               reference=R, track_two_directions=False)
+                               stopper.terminate, seeds, max_cross=1)
     streamlines = list(gen)
-    assert_equal(len(streamlines), 3)
-    expected = np.zeros((11, 3))
-    for i in range(3):
-        expected[:] = 5.2
-        expected[:, i] = np.linspace(5.2, 10.2, 11)
-        assert_array_almost_equal(streamlines[i], expected)
-
-    # Test reference
-    R = -R
-    gen = generate_streamlines(nav.get_direction, stepper.take_step,
-                               stopper.terminate, seeds, get_first_step,
-                               reference=R, track_two_directions=True)
-    streamlines = list(gen)
-    assert_equal(len(streamlines), 3)
+    assert_equal(len(streamlines), 1)
     expected = np.zeros((21, 3))
-    for i in range(3):
-        expected[:] = 5.2
-        expected[:, i] = np.linspace(10.2, .2, 21)
-        assert_array_almost_equal(streamlines[i], expected)
+    expected[:] = 5.2
+    expected[:, 0] = np.linspace(.2, 10.2, 21)
+    assert_array_almost_equal(streamlines[0], expected)
 
