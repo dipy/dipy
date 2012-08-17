@@ -1,21 +1,21 @@
 import numpy as np
-from dipy.tracking.integration import (BoundryIntegrator, FixedStepIntegrator,
+from dipy.tracking.integration import (BoundaryStepper, FixedStepStepper,
                                        generate_streamlines, markov_streamline,
                                        OutsideImage, TrackStopper)
 
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_equal, assert_)
 
-def test_BoundryIntegrator():
+def test_BoundaryStepper():
     os = 1
-    bi = BoundryIntegrator(overstep=os)
+    bi = BoundaryStepper(overstep=os)
     loc = np.array([.5,.5,.5])
     step = np.array([1,1,1])/np.sqrt(3)
     assert_array_almost_equal(bi.take_step(loc, step), os*step + [1,1,1])
     assert_array_almost_equal(bi.take_step(loc, -step), -os*step)
 
     os = 2
-    bi = BoundryIntegrator((2,3,4), overstep=2)
+    bi = BoundaryStepper((2,3,4), overstep=2)
     assert_array_almost_equal(bi.take_step(loc, step), os*step + [2,2,2])
     assert_array_almost_equal(bi.take_step(loc, -step), -os*step)
 
@@ -23,8 +23,8 @@ def test_BoundryIntegrator():
     assert_array_almost_equal(bi.take_step(loc, step), os*step + [8,8,8])
     assert_array_almost_equal(bi.take_step(loc, -step), [6,6,6] - os*step)
 
-def test_FixedStepIntegrator():
-    fsi = FixedStepIntegrator(step_size=2.)
+def test_FixedStepStepper():
+    fsi = FixedStepStepper(step_size=2.)
     loc = np.array([2,3,12])
     step = np.array([3,2,4])/np.sqrt(3)
     assert_array_almost_equal(fsi.take_step(loc, step), loc + 2.*step)
@@ -74,7 +74,7 @@ def test_markov_streamline():
     seed = np.array([5.2, 0, 0])
     first_step = east
     dir_getter = MoveEastWest()
-    stepper = FixedStepIntegrator(.5)
+    stepper = FixedStepStepper(.5)
     stopper = StopAtTen()
 
     # The streamline terminates when it goes past (10, 0, 0). (10.2, 0, 0) 
@@ -116,7 +116,7 @@ def test_generate_streamlines():
                 return False
 
     seeds = [np.array([5.2, 5.2, 5.2])]
-    stepper = FixedStepIntegrator(.5)
+    stepper = FixedStepStepper(.5)
     nav = KeepGoing()
     stopper = StopAtTen()
     gen = generate_streamlines(nav.get_direction, stepper.take_step,

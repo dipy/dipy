@@ -15,18 +15,21 @@ import numpy as np
 from ..reconst.interpolate import OutsideImage
 
 
-class BoundryIntegrator(object):
-    """Integrates along step until the closest voxel boundry"""
-    def __init__(self, voxel_size=(1, 1, 1), overstep=.1):
-        """Creates a BoundryIntegrator instance
+class BoundaryStepper(object):
+    """Steps along a direction past the closest voxel boundary
 
-        Parameters:
-        -----------
-        voxel_size : array-like
-            Size of voxels in data volume
-        overstep : float
-            A small number used to prevent the track from getting stuck at the
-            edge of a voxel.
+    Parameters:
+    -----------
+    voxel_size : array-like
+        Size of voxels in data volume
+    overstep : float
+        A small number used to prevent the track from getting stuck at the
+        edge of a voxel.
+
+    """
+    def __init__(self, voxel_size=(1, 1, 1), overstep=.1):
+        """Creates a BoundaryStepper instance
+
         """
         self.overstep = overstep
         self.voxel_size = np.array(voxel_size, 'float')
@@ -51,7 +54,7 @@ class BoundryIntegrator(object):
         return location + smallest_step*step
 
 
-class FixedStepIntegrator(object):
+class FixedStepStepper(object):
     """An Intigrator that uses a fixed step size"""
     def __init__(self, step_size=.5):
         """Creates an Intigrator"""
