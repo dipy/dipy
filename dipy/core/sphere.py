@@ -450,7 +450,7 @@ def disperse_charges(hemi, iters, const=.05):
 
 
 def interp_rbf(data, sphere_origin, sphere_target,
-               rbf='multiquadric', epsilon=None):
+               function='multiquadric', epsilon=None):
     """Interpolate data on the sphere, using radial basis functions.
 
     Parameters
@@ -462,7 +462,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
     sphere_target : Sphere
         M target positions for which to interpolate.
 
-    family : {'multiquadric', 'inverse', 'gaussian'}
+    function : {'multiquadric', 'inverse', 'gaussian'}
         Radial basis function.
     epsilon : float
         Radial basis function spread parameter.
@@ -482,10 +482,10 @@ def interp_rbf(data, sphere_origin, sphere_target,
     # Workaround for bug in SciPy that doesn't allow
     # specification of epsilon None
     if epsilon is not None:
-        kwargs = {'function': rbf,
+        kwargs = {'function': function,
                   'epsilon': epsilon}
     else:
-        kwargs = {'function': rbf}
+        kwargs = {'function': function}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
