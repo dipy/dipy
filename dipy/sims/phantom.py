@@ -65,18 +65,18 @@ def orbital_phantom(bvals=None,
     S0 : double, simulated signal without diffusion gradients applied
         Default 100.
     snr : float, optional
-        The signal to noise ratio sed to apply Rician noise to the data.
+        The signal to noise ratio set to apply Rician noise to the data.
         Default is to not add noise at all.
     snr_tol: float, optional
         How close to the requested SNR do we have to get. Default 10e-4
 
     Returns
-    ---------
+    -------
     data : array, shape (datashape)
     
     Notes 
-    --------
-    Crossings can be created by adding multiple orbitual_phantom outputs.
+    -----
+    Crossings can be created by adding multiple orbital_phantom outputs.
 
     In these simulations, we can ask for Rician noise to be added. In
     that case, the definition of SNR is as follows:
