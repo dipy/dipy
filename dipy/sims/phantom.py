@@ -1,4 +1,6 @@
 import numpy as np
+import scipy.stats as stats
+
 from dipy.sims.voxel import SingleTensor
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data    
@@ -145,33 +147,43 @@ def orbital_phantom(bvals=None,
     #vol[np.isnan(vol)]=0
 
     if snr is not None:
-        # We start by guessing that sigma should be approximately such that the
-        # snr is right and using: snr = mean_sig/rms => rms = mean_sig/snr
+        if snr > 37.5:
+            scale = 1
+        elif snr == 0:
+            scale = np.sqrt((4 - np.pi)/2)
+        else:
+            scale = stats.rice(snr).std()
         mean_sig = np.mean(vol)
-        sigma = mean_sig/snr
-        vol_w_noise = add_noise(vol, sigma, noise_type='rician')
-        noise = vol - vol_w_noise
-        rms_noise = np.mean(np.sqrt(noise**2))
-        est_snr = mean_sig/rms_noise
-        # Because we are using the Rician case, we are bound to miss the
-        # desired SNR in the cases in which the signal is low, so we adjust:
-        while np.abs(est_snr - snr) > snr_tol:
-            # dbg:
-            # print("EST: %4.4f, DESIRED: %4.4f"%(est_snr, snr))
-            if est_snr > snr:
-                sigma = sigma * 1.01
-            if est_snr < snr:
-                sigma = sigma * 0.999
+        sigma = mean_sig / snr / scale
 
-            vol_w_noise = add_noise(vol, sigma, noise_type='rician')
-            noise = vol - vol_w_noise
-            rms_noise = np.sqrt(np.mean((noise**2)))
-            est_snr = mean_sig/rms_noise
+        ## # We start by guessing that sigma should be approximately such that the
+        ## # snr is right and using: snr = mean_sig/rms => rms = mean_sig/snr
+        ## mean_sig = np.mean(vol)
+        ## sigma = mean_sig/snr
+        ## vol_w_noise = add_noise(vol, sigma, noise_type='rician')
+        ## noise = vol - vol_w_noise
+        ## rms_noise = np.mean(np.sqrt(noise**2))
+        ## est_snr = mean_sig/rms_noise
+        ## # Because we are using the Rician case, we are bound to miss the
+        ## # desired SNR in the cases in which the signal is low, so we adjust:
+        ## while np.abs(est_snr - snr) > snr_tol:
+        ##     # dbg:
+        ##     # print("EST: %4.4f, DESIRED: %4.4f"%(est_snr, snr))
+        ##     if est_snr > snr:
+        ##         sigma = sigma * 1.01
+        ##     if est_snr < snr:
+        ##         sigma = sigma * 0.999
+
+        ##     vol_w_noise = add_noise(vol, sigma, noise_type='rician')
+        ##     noise = vol - vol_w_noise
+        ##     rms_noise = np.sqrt(np.mean((noise**2)))
+        ##     est_snr = mean_sig/rms_noise
 
 
-        # When we're done, we can replace the original volume with this noisy
-        # one:
-        vol = vol_w_noise
+        ## # When we're done, we can replace the original volume with this noisy
+        ## # one:
+        ## vol = vol_w_noise
+        vol = add_noise(vol, sigma, noise_type='rician')
 
     return vol
 
