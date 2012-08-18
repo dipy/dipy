@@ -1126,7 +1126,7 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
 
     """
 
-    # Start by doing nlls:
+    # Start by doing ols:
     data, wrap = _makearray(data)
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
