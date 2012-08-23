@@ -1,4 +1,16 @@
-""" Tools for using spherical homonic models to fit diffussion data
+""" Tools for using spherical harmonic models to fit diffusion data
+
+References
+----------
+Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
+    Angle Consideration.
+Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+    Q-ball imaging.
+Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
+    populations in white matter of the brain with Funk-Radon transform.
+Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
+    density functions in high angular resolution diffusion imaging.
+
 """
 """
 Note about the Transpose:
@@ -20,6 +32,7 @@ from numpy.random import randint
 from .odf import OdfModel, OdfFit, peak_directions
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
+from .cache import Cache
 
 def _copydoc(obj):
     def bandit(f):
@@ -155,7 +168,7 @@ def lazy_index(index):
     else:
         return slice(index[0], index[-1] + 1, step[0])
 
-class SphHarmModel(OdfModel):
+class SphHarmModel(OdfModel, Cache):
     """The base class to subclassed by spacific spherical harmonic models of
     diffusion data"""
     def __init__(self, bval, gradients, sh_order, smooth=0):
@@ -217,25 +230,23 @@ class SphHarmFit(OdfFit):
             The value of the odf on each point of `sphere`.
 
         """
-        sampling_matrix = None
+        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
         if sampling_matrix is None:
             phi = sphere.phi.reshape((-1, 1))
             theta = sphere.theta.reshape((-1, 1))
             sampling_matrix = real_sph_harm(self.model.m, self.model.n,
                                             phi, theta)
+            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return self._shm_coef.dot(sampling_matrix.T)
 
-class MonoExpOpdfModel(SphHarmModel):
-    """Implementaion of Solid Angle method with mono-exponential assumption
+
+class CsaOdfModel(SphHarmModel):
+    """Implementation of Constant Solid Angle reconstruction method.
 
     References
     ----------
     Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-    Angle Consideration.
-    Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
-    populations in white matter of the brain with Funk-Radon transform.
-    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
-    Q-ball imaging.
+        Angle Consideration.
     """
     min = .001
     max = .999
@@ -251,23 +262,21 @@ class MonoExpOpdfModel(SphHarmModel):
         """Fits the model to diffusion data and returns the coefficients of the
         odf"""
         data = data[self._index]
-        d = log(-log(data.clip(self.min, self.max)))
-        shm_coef = d.dot(self._fit_matrix.T)
+        data = data.clip(self.min, self.max)
+        data = log(-log(data))
+        shm_coef = data.dot(self._fit_matrix.T)
         return SphHarmFit(self, shm_coef)
 
-class SlowAdcOpdfModel(SphHarmModel):
-    """Implementaion of Tristen-Vega 2009 method with slow varying ADC
-    assumption
+class OpdtModel(SphHarmModel):
+    """Implementation of Orientation Probability Density Transform
+    reconstruction method.
 
     References
     ----------
-    Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-    Angle Consideration.
     Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
-    populations in white matter of the brain with Funk-Radon transform.
-    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
-    Q-ball imaging.
-
+        populations in white matter of the brain with Funk-Radon transform.
+    Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
+        density functions in high angular resolution diffusion imaging.
     """
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, sqrt(smooth)*L)
@@ -290,8 +299,13 @@ def _slowadc_formula(data, delta_b, delta_q):
     logd = -log(data)
     return dot(logd*(1.5-logd)*data, delta_q.T) - dot(data, delta_b.T)
 
-class QballOdfModel(SphHarmModel):
-    """Implementaion Qball Odf Model
+class QballModel(SphHarmModel):
+    """Implementation of regularized Qball reconstruction method.
+
+    References
+    ----------
+    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+        Q-ball imaging.
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
