@@ -20,6 +20,7 @@ from numpy.random import randint
 from .odf import OdfModel, OdfFit, peak_directions
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
+from .cache import Cache
 
 def _copydoc(obj):
     def bandit(f):
@@ -155,7 +156,7 @@ def lazy_index(index):
     else:
         return slice(index[0], index[-1] + 1, step[0])
 
-class SphHarmModel(OdfModel):
+class SphHarmModel(OdfModel, Cache):
     """The base class to subclassed by spacific spherical harmonic models of
     diffusion data"""
     def __init__(self, bval, gradients, sh_order, smooth=0):
@@ -217,12 +218,13 @@ class SphHarmFit(OdfFit):
             The value of the odf on each point of `sphere`.
 
         """
-        sampling_matrix = None
+        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
         if sampling_matrix is None:
             phi = sphere.phi.reshape((-1, 1))
             theta = sphere.theta.reshape((-1, 1))
             sampling_matrix = real_sph_harm(self.model.m, self.model.n,
                                             phi, theta)
+            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return self._shm_coef.dot(sampling_matrix.T)
 
 class MonoExpOpdfModel(SphHarmModel):
