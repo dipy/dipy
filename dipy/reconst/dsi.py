@@ -73,10 +73,10 @@ class DiffusionSpectrumFit(OdfFit):
     def odf(self, sphere):
         self.odfn = len(sphere.vertices)
         self.interp_coords = self.model.cache_get('interpolated coords',
-                                             key='interp_coords')
+                                             key=sphere)
         if self.interp_coords is None:
             self.interp_coords = self.precompute_interp_coords(sphere.vertices)
-            self.model.cache_set('interpolated coords', 'interp_coords', self.interp_coords)
+            self.model.cache_set('interpolated coords', sphere, self.interp_coords)
         Pr = self.pdf(self.data)
         #calculate the orientation distribution function
         odf = self.pdf_odf(Pr)
