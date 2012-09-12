@@ -2,11 +2,11 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import pdf_to_odf
 from scipy.fftpack import fftn, fftshift
-from dipy.utils.spheremakers import sphere_vf_from
-from .odf import OdfModel, OdfFit, gfa
-from .recspeed import local_maxima, _filter_peaks
+from .odf import OdfModel, OdfFit
+from .cache import Cache
 
 
+"""
 ###############################################
 # MODULE TEMPORARILY DISABLED FOR REFACTORING #
 ###############################################
@@ -17,9 +17,126 @@ class UnderConstruction(nose.SkipTest):
 
 raise UnderConstruction()
 
-###############################################
+"""
+
+class DiffusionSpectrumFit(OdfFit):
+    """ DSI directions and ODF class 
+    """ 
+
+    def __init__(self, model, data):
+        self.model = model
+        self.data = data
+        self.qgrid_sz = self.model.qgrid_size
+        self.dn = self.model.dn 
+    def precompute_interp_coords(self, vertices):
+        interp_coords = []
+        for m in range(self.odfn):
+            xi = self.model.origin + self.model.qradius * vertices[m, 0]
+            yi = self.model.origin + self.model.qradius * vertices[m, 1]
+            zi = self.model.origin + self.model.qradius * vertices[m, 2]
+            interp_coords.append(np.vstack((xi, yi, zi)).T)
+        return np.concatenate(interp_coords).T
+
+    def pdf(self, data):
+        values = data * self.model.filter
+        #create the signal volume
+        Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
+        #fill q-space
+        for i in range(self.dn):
+            qx, qy, qz = self.model.qgrid[i]
+            Sq[qx, qy, qz] += values[i]
+        #apply fourier transform
+        Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq),
+                                        (self.qgrid_sz, self.qgrid_sz, self.qgrid_sz)))))
+        return Pr
+
+    def pdf_odf(self, Pr):
+        odf = np.zeros(self.odfn)
+        ''' 
+        for m in range(self.odfn):
+            xi=self.origin+self.radius*self.odf_vertices[m,0]
+            yi=self.origin+self.radius*self.odf_vertices[m,1]
+            zi=self.origin+self.radius*self.odf_vertices[m,2]
+            PrI=map_coordinates(Pr,np.vstack((xi,yi,zi)),order=1)
+            for i in range(self.radiusn):
+                odf[m]=odf[m]+PrI[i]*self.radius[i]**2
+        '''
+        PrIs = map_coordinates(Pr, self.interp_coords, order=1)
+        ''' 
+        for m in range(self.odfn):
+            for i in range(self.radiusn):
+                odf[m]=odf[m]+PrIs[m*self.radiusn+i]*self.radius[i]**2
+        '''
+        pdf_to_odf(odf, PrIs, self.model.qradius, self.odfn, self.model.qradiusn)
+        return odf
+
+    def odf(self, sphere):
+        self.odfn = len(sphere.vertices)
+        self.interp_coords = self.model.cache_get('interpolated coords',
+                                             key='interp_coords')
+        if self.interp_coords is None:
+            self.interp_coords = self.precompute_interp_coords(sphere.vertices)
+            self.model.cache_set('interpolated coords', 'interp_coords', self.interp_coords)
+        Pr = self.pdf(self.data)
+        #calculate the orientation distribution function
+        odf = self.pdf_odf(Pr)
+        return odf
 
 
+class DiffusionSpectrumModel(OdfModel, Cache):
+    """ DSI Assumptions """
+
+    def __init__(self, gtab):
+        self.bvals = gtab.bvals
+        self.bvecs = gtab.bvecs
+        
+        #3d volume for Sq
+        self.qgrid_size = 16
+        #necessary shifting for centering
+        self.origin = 8
+        #hanning filter width
+        self.filter_width = 32.
+        #odf collecting radius
+        self.qradius = np.arange(2.1,6,.2)
+        #odf sphere
+        #odf_vertices, odf_faces = sphere_vf_from(odf_sphere)
+        #self.set_odf_vertices(odf_vertices,None,odf_faces)
+        #self.odfn = len(self._odf_vertices)
+        #number of single sampling points
+        #b0 = np.mean(self.bvals[gtab.b0_mask])
+        b0 = 0
+        self.dn = (self.bvals > b0).sum()
+        self.num_b0 = len(self.bvals) - self.dn
+        self.create_qspace()    
+
+    def create_qspace(self):
+        #create the q-table from bvecs and bvals
+        bv = self.bvals
+        bmin = np.sort(bv)[1]
+        bv = np.sqrt(bv/bmin)
+        qtable = np.vstack((bv,bv,bv)).T*self.bvecs
+        qtable = np.floor(qtable+.5)
+        self.qtable = qtable
+        self.qradiusn = len(self.qradius)
+        #calculate r - hanning filter free parameter
+        r = np.sqrt(qtable[:,0]**2+qtable[:,1]**2+qtable[:,2]**2)
+        #setting hanning filter width and hanning
+        self.filter = .5*np.cos(2*np.pi*r/self.filter_width)
+        #center and index in qspace volume
+        self.qgrid = qtable + self.origin
+        self.qgrid = self.qgrid.astype('i8')
+        #peak threshold
+        #self.peak_thr = .7
+        #self.iso_thr = .4
+        #precompute coordinates for pdf interpolation
+        #self.precompute_interp_coords()
+
+    def fit(self, data):
+        return DiffusionSpectrumFit(self, data)
+
+
+
+"""
 class DiffusionSpectrumFit(OdfFit):
     def odf(self,sphere=None,gfa_thr=0.02,normalize_peaks=False):
         if sphere==None:
@@ -33,21 +150,21 @@ class DiffusionSpectrumFit(OdfFit):
 
     def get_directions(self):
         return self.model.odf_vertices[self.peak_indices[self.peak_indices>-1]]
+"""
 
-
-
+'''
 class DiffusionSpectrumModel(OdfModel):
-    ''' Calculate the PDF and ODF using Diffusion Spectrum Imaging
+    """ Calculate the PDF and ODF using Diffusion Spectrum Imaging
 
     Based on the paper "Mapping Complex Tissue Architecture With Diffusion
     Spectrum Magnetic Resonance Imaging"
     by Van J. Wedeen,Patric Hagmann,Wen-Yih Isaac Tseng,Timothy G. Reese, and
     Robert M. Weisskoff, MRM 2005
 
-    '''
+    """
     def __init__(self, bvals, gradients, odf_sphere='symmetric642',
                  deconv=False, half_sphere_grads=False):
-        '''
+        """
         Parameters
         -----------
         bvals : array, shape (N,)
@@ -60,7 +177,7 @@ class DiffusionSpectrumModel(OdfModel):
         See also
         ----------
         dipy.reconst.dti.Tensor, dipy.reconst.gqi.GeneralizedQSampling
-        '''
+        """
         b0 = 0
         self.bvals = bvals
         self.gradients = gradients
@@ -233,7 +350,7 @@ class DiffusionSpectrumModel(OdfModel):
                 dsfit._odf = odf_array.reshape(shape + odf_array.shape[-1:])
 
             return dsfit
-
+'''
 
 
 def project_hemisph_bvecs(bvals,bvecs):

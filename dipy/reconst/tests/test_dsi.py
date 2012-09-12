@@ -8,9 +8,9 @@ from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.sims.voxel import SticksAndBall
 from scipy.fftpack import fftn, fftshift
 from scipy.ndimage import map_coordinates
-from dipy.core.sphere import unique_edges
+from dipy.core.sphere import unique_edges, Sphere
 from dipy.utils.spheremakers import sphere_vf_from
-
+from dipy.core.gradients import GradientTable
 
 def standard_dsi_algorithm(S,bvals,bvecs):
     #volume size
@@ -73,11 +73,27 @@ def standard_dsi_algorithm(S,bvals,bvecs):
 
     return Pr,odf,peaks
 
+
+def test_dsi_rf():
+    vertices, faces = sphere_vf_from('symmetric724')
+    edges = unique_edges(faces)
+    sphere = Sphere(xyz=vertices, faces=faces, edges=edges)
+    btable = np.loadtxt(get_data('dsi515btable'))    
+    bvals = btable[:,0]
+    bvecs = btable[:,1:]        
+    data,stics = SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None) 
+    gtab = GradientTable(bvals, bvecs) 
+    ds = DiffusionSpectrumModel(gtab)
+    dsfit = ds.fit(data)
+    odf = dsfit.odf(sphere)
+    directions = dsfit.directions
+    #from dipy.viz._show_odfs import show_odfs
+    #show_odfs(odf[None,None,None,:], (vertices, faces))
+    #1/0
+
+
+"""    
 def test_dsi():
-
-
-
-
 
     #load odf sphere
     vertices,faces = sphere_vf_from('symmetric724')
@@ -156,7 +172,7 @@ def test_dsi():
     dsfit=ds.fit(S)
     QA=dsfit.qa
     assert_equal(np.sum(QA>0),0)
-
+"""
     
 
 if __name__ == '__main__':
