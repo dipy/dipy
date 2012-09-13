@@ -52,7 +52,7 @@ class DiffusionSpectrumFit(OdfFit):
 
     def pdf_odf(self, Pr):
         odf = np.zeros(self.odfn)
-        ''' 
+        '''
         for m in range(self.odfn):
             xi=self.origin+self.radius*self.odf_vertices[m,0]
             yi=self.origin+self.radius*self.odf_vertices[m,1]
@@ -60,12 +60,14 @@ class DiffusionSpectrumFit(OdfFit):
             PrI=map_coordinates(Pr,np.vstack((xi,yi,zi)),order=1)
             for i in range(self.radiusn):
                 odf[m]=odf[m]+PrI[i]*self.radius[i]**2
+        This snippet is doing the same as the line below.
         '''
         PrIs = map_coordinates(Pr, self.interp_coords, order=1)
         ''' 
         for m in range(self.odfn):
             for i in range(self.radiusn):
                 odf[m]=odf[m]+PrIs[m*self.radiusn+i]*self.radius[i]**2
+        Same here.
         '''
         pdf_to_odf(odf, PrIs, self.model.qradius, self.odfn, self.model.qradiusn)
         return odf

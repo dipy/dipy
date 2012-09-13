@@ -11,6 +11,10 @@ from scipy.ndimage import map_coordinates
 from dipy.core.sphere import unique_edges, Sphere
 from dipy.utils.spheremakers import sphere_vf_from
 from dipy.core.gradients import GradientTable
+from numpy.testing import assert_equal
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.core.sphere_stats import angular_similarity
+
 
 def standard_dsi_algorithm(S,bvals,bvecs):
     #volume size
@@ -75,21 +79,40 @@ def standard_dsi_algorithm(S,bvals,bvecs):
 
 
 def test_dsi_rf():
+    #load symmetric 724 sphere
     vertices, faces = sphere_vf_from('symmetric724')
-    edges = unique_edges(faces)
-    sphere = Sphere(xyz=vertices, faces=faces, edges=edges)
+    sphere = Sphere(xyz=vertices)
+    #load icosahedron sphere
+    sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_data('dsi515btable'))    
     bvals = btable[:,0]
     bvecs = btable[:,1:]        
-    data,stics = SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None) 
+    data, golden_directions = SticksAndBall(bvals, bvecs, d=0.0015, 
+                               S0=100, angles=[(0, 0), (90, 0)], 
+                               fractions=[50, 50], snr=None) 
     gtab = GradientTable(bvals, bvecs) 
     ds = DiffusionSpectrumModel(gtab)
+    #symmetric724
+    ds.direction_finder.config(sphere=sphere, min_separation_angle=25)
     dsfit = ds.fit(data)
     odf = dsfit.odf(sphere)
     directions = dsfit.directions
+    assert_equal(len(directions), 2)
+    print directions
+    print golden_directions
+    print angular_similarity(directions, golden_directions)
+    #5 subdivisions
+    ds.direction_finder.config(sphere=sphere2, min_separation_angle=25)
+    dsfit = ds.fit(data)
+    odf = dsfit.odf(sphere2)
+    directions = dsfit.directions
+    assert_equal(len(directions), 2)
+    print directions
+    print golden_directions
+    print angular_similarity(directions, golden_directions)
     #from dipy.viz._show_odfs import show_odfs
-    #show_odfs(odf[None,None,None,:], (vertices, faces))
-    #1/0
+    #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
+    1/0
 
 
 """    
@@ -171,11 +194,11 @@ def test_dsi():
     ds=DiffusionSpectrumModel(bvals,bvecs,odf_sphere)
     dsfit=ds.fit(S)
     QA=dsfit.qa
-    assert_equal(np.sum(QA>0),0)
+    assert_equal(np.sum(QA>0),0)za
 """
     
 
 if __name__ == '__main__':
 
-    #ds,dsfit=test_dsi()
+    test_dsi_rf()
     pass
