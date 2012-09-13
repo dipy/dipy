@@ -93,23 +93,21 @@ def test_dsi_rf():
     gtab = GradientTable(bvals, bvecs) 
     ds = DiffusionSpectrumModel(gtab)
     #symmetric724
-    ds.direction_finder.config(sphere=sphere, min_separation_angle=25)
+    ds.direction_finder.config(sphere=sphere, min_separation_angle=25,
+                               relative_peak_threshold=.35)
     dsfit = ds.fit(data)
     odf = dsfit.odf(sphere)
     directions = dsfit.directions
     assert_equal(len(directions), 2)
-    print directions
-    print golden_directions
-    print angular_similarity(directions, golden_directions)
+    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
     #5 subdivisions
-    ds.direction_finder.config(sphere=sphere2, min_separation_angle=25)
+    ds.direction_finder.config(sphere=sphere2, min_separation_angle=25,
+                              relative_peak_threshold=.35)
     dsfit = ds.fit(data)
-    odf = dsfit.odf(sphere2)
+    odf2 = dsfit.odf(sphere2)
     directions = dsfit.directions
     assert_equal(len(directions), 2)
-    print directions
-    print golden_directions
-    print angular_similarity(directions, golden_directions)
+    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
     #from dipy.viz._show_odfs import show_odfs
     #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
     1/0
