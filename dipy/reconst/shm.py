@@ -263,8 +263,8 @@ class CsaOdfModel(SphHarmModel):
         odf"""
         data = data[self._index]
         data = data.clip(self.min, self.max)
-        data = log(-log(data))
-        shm_coef = data.dot(self._fit_matrix.T)
+        loglog_data = log(-log(data))
+        shm_coef = loglog_data.dot(self._fit_matrix.T)
         return SphHarmFit(self, shm_coef)
 
 class OpdtModel(SphHarmModel):
@@ -345,13 +345,6 @@ def normalize_data(data, bval, min_signal=1e-5, out=None):
     out /= b0
     return out
 
-def gfa(samples):
-    """gfa of some function from a set of samples of that function"""
-    diff = samples - samples.mean(-1)[..., None]
-    n = samples.shape[-1]
-    numer = n*(diff*diff).sum(-1)
-    denom = (n-1)*(samples*samples).sum(-1)
-    return sqrt(numer/denom)
 
 def hat(B):
     """Returns the hat matrix for the design matrix B
@@ -455,116 +448,4 @@ class ResidualBootstrapWrapper(object):
         d = bootstrap_data_voxel(d, self._H, self._R)
         d.clip(self._min_signal, 1., d)
         return d
-
-
-def _closest_peak(peak_directions, prev_step):
-    """Return the closest direction to prev_step from peak_directions.
-
-    All directions should be unit vectors. Antipodal symmetry is assumed, ie
-    direction x is the same as -x.
-
-    Parameters
-    ----------
-    peak_directions : array (N, 3)
-        N unit vectors.
-    prev_step : array (3,) or None
-        Previous direction.
-
-    Returns
-    -------
-    direction : array (3,) or (N,3)
-        The closest direction to prev_step or all directions if prev_step is
-        None.
-    """
-    if prev_step is None:
-        return peak_directions
-
-    peak_dots = dot(peak_directions, prev_step)
-    closest_peak = abs(peak_dots).argmax()
-    dot_closest_peak = peak_dots[closest_peak]
-    if dot_closest_peak >= 0:
-        return peak_directions[closest_peak]
-    else:
-        return -peak_directions[closest_peak]
-
-
-class ClosestPeakSelector(object):
-    """Finds the closest direc
-
-    Parameters:
-    -----------
-    model :
-        A model used to fit data. Should return a some fit object with
-        directions.
-    interpolator :
-        We get the data from the interpolator.
-    """
-
-    def __init__(self, model, interpolator):
-        self._interpolator = interpolator
-        self._model = model
-
-    def next_step(self, location, prev_step):
-        """Returns the direction closest to prev_step at location
-
-        Fits the data from location using model and returns the tracking
-        direction closest to prev_step. If prev_step is None, all the
-        directions are returned.
-
-        Parameters
-        ----------
-        location : point in space
-            location is passed to the interpolator in order to get data
-        prev_step: array_like (3,)
-            the direction of the previous tracking step
-
-        """
-        vox_data = self._interpolator[location]
-        fit = self._model.fit(vox_data)
-        return _closest_peak(fit.directions, prev_step)
-
-
-class ClosestPeakSelector_NNoptimized(ClosestPeakSelector):
-    """ClosestPeakSelector which caching optimization
-
-    For use with Nearest Neighbor interpolation, directions at each voxel are
-    remembered to avoid recalculating.
-
-    Parameters:
-    -----------
-    model :
-        A model used to fit data. Should return a some fit object with
-        directions.
-    interpolator :
-        We get the data from the interpolator.
-
-    """
-    def __init__(self, model, interpolator):
-        ClosestPeakSelector.__init__(model, interpolator)
-        self._data = self._interpolator.data
-        self._voxel_size = self._interpolator._voxel_size
-        self.reset_cache()
-
-    def reset_cache(self):
-        """Clear saved directions"""
-        lookup = empty(self._data.shape[:-1], 'int')
-        lookup.fill(-1)
-        self._lookup = lookup
-        self._peaks = []
-
-    def next_step(self, location, prev_step):
-        """Returns the direction closest to prev_step at location"""
-        vox_loc = tuple(location // self._voxel_size)
-
-        hash = self._lookup[vox_loc]
-        if hash >= 0:
-            directions = self._peaks[hash]
-        else:
-            vox_data = self._data[vox_loc]
-            fit = self._model.fit(vox_data)
-            directions = fit.directions
-            self._lookup[vox_loc] = len(self._peaks)
-            self._peaks.append(directions)
-
-        return _closest_peak(directions, prev_step)
 

@@ -1,3 +1,9 @@
+from nose import SkipTest
+class ThisIsBroken(SkipTest):
+    pass
+raise ThisIsBroken("this module is undergoing a major overhaul as therefor "
+                   "does not currently work")
+
 from warnings import warn
 
 warn("The interfaces module is very new and not well tested, please use it "
