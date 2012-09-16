@@ -174,7 +174,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
             self.qradius = np.arange(2.1, 6, .2)
             self.create_qspace()
             self.hanning_filter()
-        if type == 'deconv':
+        if method == 'deconv':
             raise NotImplementedError()
         #b0 = np.mean(self.bvals[gtab.b0_mask])
         b0 = 0
@@ -228,8 +228,8 @@ def project_hemisph_bvecs(bvals,bvecs):
     pairs = []
     for (i, vec) in enumerate(b):
         for (j, vec2) in enumerate(b):
-            bb[i, j]=np.sqrt(np.sum((vec - vec2) ** 2))
-        I=np.argsort(bb[i])
+            bb[i, j] = np.sqrt(np.sum((vec - vec2) ** 2))
+        I = np.argsort(bb[i])
         for j in I:
             if j != i:
                 break
