@@ -12,7 +12,7 @@ from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 
 
-def test_dsi_rf():
+def test_dsi():
     #load symmetric 724 sphere
     vertices, faces = sphere_vf_from('symmetric724')
     sphere = Sphere(xyz=vertices)
@@ -30,7 +30,7 @@ def test_dsi_rf():
     ds.direction_finder.config(sphere=sphere, min_separation_angle=25,
                                relative_peak_threshold=.35)
     dsfit = ds.fit(data)
-    odf = dsfit.odf(sphere)
+    odf = dsfit.odf()
     directions = dsfit.directions
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 
