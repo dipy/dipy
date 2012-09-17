@@ -150,9 +150,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Examples
         --------
-        Here we create an example where we provide the data, a gradient table and a
-        reconstruction sphere and calculate generalized FA for the first voxel in 
-        the data.
+        Here we create an example where we provide the data, a gradient table 
+        and a reconstruction sphere and calculate generalized FA for the first 
+        voxel in the data.
 
         >>> from dipy.data import dsi_voxels
         >>> data, gtab = dsi_voxels()
@@ -185,10 +185,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
             self.hanning_filter()
         if method == 'deconv':
             raise NotImplementedError()
-        #b0 = np.mean(self.bvals[gtab.b0_mask])
-        b0 = 0
+        b0 = np.min(self.bvals)
         self.dn = (self.bvals > b0).sum()
-        self.num_b0 = len(self.bvals) - self.dn          
 
     def create_qspace(self):
         """ create the 3D grid which will hold the signal values
