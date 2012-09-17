@@ -91,7 +91,8 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         >>> gq = GeneralizedQSamplingModel(gtab, 'gqi2', 1.4)
         >>> voxel_signal = data[0, 0, 0]
         >>> odf = gq.fit(voxel_signal).odf(sphere)
-        >>> directions =gq.fit(data[
+        >>> directions =gq.fit(voxel_signal).directions
+        >>> gfa_voxel = gfa(odf)
 
         See Also
         --------
