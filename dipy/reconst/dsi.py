@@ -126,7 +126,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         The standard method is based on [1]_ and the deconvolution method is based
         on [2]_.
 
-        The main assumption for this model is fast gradient switching.
+        The main assumptions for this model is fast gradient switching and that
+        the acquisition gradients will sit on a keyhole Cartesian grid in
+        q_space [3]_.
         
         Parameters
         ----------
@@ -143,6 +145,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         .. [2] Canales-Rodriguez E.J et a., "Deconvolution in Diffusion Spectrum
         Imaging", Neuroimage, 2010.
 
+        .. [3] Garyfallidis E, "Towards an accurate brain tractography", PhD
+        thesis, University of Cambridge, 2012.
+
         Examples
         --------
         Here we create an example where we provide the data, a gradient table and a
@@ -158,6 +163,10 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         >>> ds = DiffusionSpectrumModel(gtab)
         >>> np.round(gfa(ds.fit(data[0, 0, 0]).odf(sphere)), 2)
         0.12
+
+        See Also
+        --------
+        dipy.reconst.gqi.GeneralizedQSampling
 
         """
 
