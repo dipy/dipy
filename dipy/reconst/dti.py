@@ -1,5 +1,9 @@
 #!/usr/bin/python
+""" Classes and functions for fitting tensors """
+# 5/17/2010
+
 import warnings
+
 import numpy as np
 
 from ..data import get_sphere
@@ -1223,10 +1227,14 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         # We use the Geman McClure M-estimator to compute the weights on the
         # residuals:
         C = 1.4826 * np.median(residuals - np.median(residuals))
-        w = 1/(se + C**2)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            w = 1/(se + C**2)
 
     # Return the weighted residuals:
-    return np.sum(w * se)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return np.sum(w * se)
 
 
 
