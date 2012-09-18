@@ -423,3 +423,14 @@ def test_restore_nlls_fit_tensor():
      assert_array_almost_equal(tensor_est.evals[0], evals)
      assert_array_almost_equal(tensor_est.D[0], tensor)
      assert_almost_equal(tensor_est.md()[0], md)
+
+if __name__ == "__main__":
+     test_tensor_scalar_attributes()
+     test_fa_of_zero()
+     test_WLS_and_LS_fit()
+     test_masked_array_with_Tensor()
+     test_passing_maskedview()
+     test_init()
+     test_lower_triangular()
+     test_from_lower_triangular()
+     test_restore_nlls_fit_tensor()
