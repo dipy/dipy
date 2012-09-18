@@ -19,7 +19,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 def test_trilinear_interp_cubic_voxels():
     A=np.ones((17,17,17))
     B=np.zeros(3)
-    strides=np.array(A.strides,'i8')
+    strides=np.array(A.strides, np.intp)
     A[7,7,7]=2
     points=np.array([[0,0,0],[7.,7.5,7.],[3.5,3.5,3.5]])
     map_coordinates_trilinear_iso(A,points,strides,3,B)

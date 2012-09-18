@@ -98,8 +98,8 @@ def ndarray_offset(cnp.ndarray[long, ndim=1] indices, \
 @cython.wraparound(False)
 def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,\
                                    cnp.ndarray[double, ndim=2] points,\
-                                   cnp.ndarray[long, ndim=1] data_strides,\
-                                   long len_points,\
+                                   cnp.ndarray[cnp.npy_intp, ndim=1] data_strides,\
+                                   cnp.npy_intp len_points,\
                                    cnp.ndarray[double, ndim=1] result):
     ''' trilinear interpolation (isotropic voxel size)
     
@@ -120,24 +120,24 @@ def map_coordinates_trilinear_iso(cnp.ndarray[double, ndim=3] data,\
     '''
     cdef:
         double w[8],values[24]
-        long index[24],off,i,j
+        cnp.npy_intp index[24],off,i,j
         double *ds=<double *>data.data       
         double *ps=<double *>points.data
         double *rs=<double *>result.data
-        long *strides=<long *>data_strides.data                
+        cnp.npy_intp *strides=<cnp.npy_intp *>data_strides.data                
     
     with nogil:        
         for i in range(len_points):                        
-            _trilinear_interpolation_iso(&ps[i*3],<double *>w,<long *>index)
+            _trilinear_interpolation_iso(&ps[i*3],<double *>w,<cnp.npy_intp *>index)
             rs[i]=0
             for j in range(8):
                 weight=w[j]   
-                off=offset(&index[j*3],<long *>strides,3,8)                
+                off=offset(&index[j*3],<cnp.npy_intp *>strides,3,8)                
                 value=ds[off]
                 rs[i]+=weight*value                    
     return
 
-cdef  void _trilinear_interpolation_iso(double *X, double *W, long *IN) nogil:
+cdef  void _trilinear_interpolation_iso(double *X, double *W, cnp.npy_intp *IN) nogil:
 
     ''' interpolate in 3d volumes given point X
     Returns
@@ -146,7 +146,7 @@ cdef  void _trilinear_interpolation_iso(double *X, double *W, long *IN) nogil:
     IN : indices of the volume
     '''
     cdef double Xf[3],d[3],nd[3]
-    cdef long i
+    cdef cnp.npy_intp i
     #define the rectangular box where every corner is a neighboring voxel (assuming center)
     #!!! this needs to change for the affine case
     for i from 0<=i<3:        
