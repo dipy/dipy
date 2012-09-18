@@ -30,7 +30,7 @@ def test_dsi():
     ds.direction_finder.config(sphere=sphere, min_separation_angle=25,
                                relative_peak_threshold=.35)
     dsfit = ds.fit(data)
-    odf = dsfit.odf()
+    odf = dsfit.odf(sphere)
     directions = dsfit.directions
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 

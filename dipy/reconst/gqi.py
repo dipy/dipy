@@ -3,52 +3,6 @@ import numpy as np
 from .odf import OdfModel, OdfFit
 from .cache import Cache
 
-class GeneralizedQSamplingFit(OdfFit):
-
-    def __init__(self, model, data):
-        """ Calculates PDF and ODF for a single voxel
-
-        Parameters:
-        -----------
-        model: object,
-            DiffusionSpectrumModel
-        data: 1d ndarray,
-            signal values
-
-        """
-        self.model = model
-        self.data = data
-        
-    def squared_radial_component(self, x):
-        """ Part of (8) in the referenced paper by Yeh et al. 2010
-        """
-        #if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
-        if x < 0.01 and x > -0.01:
-            return 1/3.
-        return (2 * x * np.cos(x) + (x ** 2 - 2) * np.sin(x)) / x ** 3
-
-    def odf(self, sphere=None):
-        r""" Calculates the discrete ODF for a given discrete sphere.
-        """
-        if sphere is None:
-            sphere=self.model.direction_finder._config["sphere"]
-        self.gqi_vector = self.model.cache_get('gqi_vector', key=sphere)
-        if self.gqi_vector is None:
-            if self.model.method == 'gqi2':
-                H=np.vectorize(self.squared_radial_component)
-                #which implements
-                #def H(x):
-                #    res=(2 * x * np.cos(x) + (x ** 2 - 2) * np.sin(x)) / x ** 3
-                #    res[np.isnan(res)] = 1/3.
-                #    return res
-                self.gqi_vector = np.real(H(np.dot(self.model.b_vector, 
-                                        sphere.vertices.T) * self.model.Lambda / np.pi))
-            if self.model.method == 'standard':
-                self.gqi_vector = np.real(np.sinc(np.dot(self.model.b_vector, 
-                                        sphere.vertices.T) * self.model.Lambda / np.pi))
-            self.model.cache_set('gqi_vector', sphere, self.gqi_vector) 
-        return np.dot(self.data, self.gqi_vector)
-
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
 
@@ -119,6 +73,53 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         return GeneralizedQSamplingFit(self, data)
 
 
+class GeneralizedQSamplingFit(OdfFit):
+
+    def __init__(self, model, data):
+        """ Calculates PDF and ODF for a single voxel
+
+        Parameters:
+        -----------
+        model: object,
+            DiffusionSpectrumModel
+        data: 1d ndarray,
+            signal values
+
+        """
+        self.model = model
+        self.data = data
+        
+    def squared_radial_component(self, x):
+        """ Part of (8) in the referenced paper by Yeh et al. 2010
+        """
+        #if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
+        if x < 0.01 and x > -0.01:
+            return 1/3.
+        return (2 * x * np.cos(x) + (x ** 2 - 2) * np.sin(x)) / x ** 3
+
+    def odf(self, sphere=None):
+        r""" Calculates the discrete ODF for a given discrete sphere.
+        """
+        if sphere is None:
+            sphere=self.model.direction_finder._config["sphere"]
+        self.gqi_vector = self.model.cache_get('gqi_vector', key=sphere)
+        if self.gqi_vector is None:
+            if self.model.method == 'gqi2':
+                H=np.vectorize(self.squared_radial_component)
+                #which implements
+                #def H(x):
+                #    res=(2 * x * np.cos(x) + (x ** 2 - 2) * np.sin(x)) / x ** 3
+                #    res[np.isnan(res)] = 1/3.
+                #    return res
+                self.gqi_vector = np.real(H(np.dot(self.model.b_vector, 
+                                        sphere.vertices.T) * self.model.Lambda / np.pi))
+            if self.model.method == 'standard':
+                self.gqi_vector = np.real(np.sinc(np.dot(self.model.b_vector, 
+                                        sphere.vertices.T) * self.model.Lambda / np.pi))
+            self.model.cache_set('gqi_vector', sphere, self.gqi_vector) 
+        return np.dot(self.data, self.gqi_vector)
+
+
 def npa(self, odf, width=5):
     """ non-parametric anisotropy
 
@@ -133,6 +134,7 @@ def npa(self, odf, width=5):
     #print 'tom >>>> ',t0,t1,t2,npa
 
     return t0,t1,t2,npa
+
 
 def equatorial_zone_vertices(vertices, pole, width=5):
     """

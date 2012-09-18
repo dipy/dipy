@@ -31,7 +31,7 @@ def test_gqi():
     gq.direction_finder.config(sphere=sphere, min_separation_angle=25,
                                relative_peak_threshold=.35)
     gqfit = gq.fit(data)
-    odf = gqfit.odf()
+    odf = gqfit.odf(sphere)
     #from dipy.viz._show_odfs import show_odfs
     #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
     directions = gqfit.directions

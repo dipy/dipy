@@ -6,105 +6,6 @@ from .odf import OdfModel, OdfFit
 from .cache import Cache
 
 
-class DiffusionSpectrumFit(OdfFit):
-
-    def __init__(self, model, data):
-        """ Calculates PDF and ODF for a single voxel
-
-        Parameters:
-        -----------
-        model: object,
-            DiffusionSpectrumModel
-        data: 1d ndarray,
-            signal values
-
-        """
-        self.model = model
-        self.data = data
-        self.qgrid_sz = self.model.qgrid_size
-        self.dn = self.model.dn 
-
-    def precompute_interp_coords(self, vertices):
-        """ Precompute coordinates for ODF calculation from the PDF
-
-        Parameters:
-        -----------
-        vertices : (N, 3) array,
-                sphere vertices
-        """
-        interp_coords = []
-        for m in range(self.odfn):
-            xi = self.model.origin + self.model.qradius * vertices[m, 0]
-            yi = self.model.origin + self.model.qradius * vertices[m, 1]
-            zi = self.model.origin + self.model.qradius * vertices[m, 2]
-            interp_coords.append(np.vstack((xi, yi, zi)).T)
-        return np.concatenate(interp_coords).T
-
-    def pdf(self):
-        """ Applies the 3D FFT in the q-space grid to generate 
-        the diffusion propagator
-        """
-        values = self.data * self.model.filter
-        #create the signal volume
-        Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
-        #fill q-space
-        for i in range(self.dn):
-            qx, qy, qz = self.model.qgrid[i]
-            Sq[qx, qy, qz] += values[i]
-        #apply fourier transform
-        Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq), 3 * (self.qgrid_sz, )))))
-        return Pr
-
-    def pdf_odf(self, Pr):
-        r""" Calculates the real ODF from the diffusion propagator(PDF) Pr
-        """
-        odf = np.zeros(self.odfn)
-        '''
-        for m in range(self.odfn):
-            xi=self.origin+self.radius*self.odf_vertices[m,0]
-            yi=self.origin+self.radius*self.odf_vertices[m,1]
-            zi=self.origin+self.radius*self.odf_vertices[m,2]
-            PrI=map_coordinates(Pr,np.vstack((xi,yi,zi)),order=1)
-            for i in range(self.radiusn):
-                odf[m]=odf[m]+PrI[i]*self.radius[i]**2
-        This snippet is doing the same as the line below.
-        '''
-        PrIs = map_coordinates(Pr, self.interp_coords, order=1)
-        ''' 
-        for m in range(self.odfn):
-            for i in range(self.radiusn):
-                odf[m]=odf[m]+PrIs[m*self.radiusn+i]*self.radius[i]**2
-        '''
-        pdf_to_odf(odf, PrIs, self.model.qradius, 
-                   self.odfn, self.model.qradiusn)
-        return odf
-
-    def odf(self, sphere=None):
-        r""" Calculates the real discrete odf for a given discrete sphere
-        
-        ..math::
-            :nowrap:
-                \begin{equation}
-                    \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
-                \end{equation}
-
-        where $\hat{\mathbf{u}}$ is the unit vector which corresponds to a
-        sphere point.
-        """
-        if sphere is None:
-            sphere=self.model.direction_finder._config["sphere"]
-        self.odfn = sphere.vertices.shape[0]
-        self.interp_coords = self.model.cache_get('interpolated coords',
-                                             key=sphere)
-        if self.interp_coords is None:
-            self.interp_coords = self.precompute_interp_coords(sphere.vertices)
-            self.model.cache_set('interpolated coords', sphere, self.interp_coords)
-        Pr = self.pdf()
-        #calculate the orientation distribution function
-        odf = self.pdf_odf(Pr)
-        return odf
-
-
 class DiffusionSpectrumModel(OdfModel, Cache):
 
     def __init__(self, gtab, method='standard'):
@@ -221,6 +122,103 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         return DiffusionSpectrumFit(self, data)
 
 
+class DiffusionSpectrumFit(OdfFit):
+
+    def __init__(self, model, data):
+        """ Calculates PDF and ODF for a single voxel
+
+        Parameters:
+        -----------
+        model: object,
+            DiffusionSpectrumModel
+        data: 1d ndarray,
+            signal values
+
+        """
+        self.model = model
+        self.data = data
+        self.qgrid_sz = self.model.qgrid_size
+        self.dn = self.model.dn 
+
+    def precompute_interp_coords(self, vertices):
+        """ Precompute coordinates for ODF calculation from the PDF
+
+        Parameters:
+        -----------
+        vertices : (N, 3) array,
+                sphere vertices
+        """
+        interp_coords = []
+        for m in range(self.odfn):
+            xi = self.model.origin + self.model.qradius * vertices[m, 0]
+            yi = self.model.origin + self.model.qradius * vertices[m, 1]
+            zi = self.model.origin + self.model.qradius * vertices[m, 2]
+            interp_coords.append(np.vstack((xi, yi, zi)).T)
+        return np.concatenate(interp_coords).T
+
+    def pdf(self):
+        """ Applies the 3D FFT in the q-space grid to generate 
+        the diffusion propagator
+        """
+        values = self.data * self.model.filter
+        #create the signal volume
+        Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
+        #fill q-space
+        for i in range(self.dn):
+            qx, qy, qz = self.model.qgrid[i]
+            Sq[qx, qy, qz] += values[i]
+        #apply fourier transform
+        Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq), 3 * (self.qgrid_sz, )))))
+        return Pr
+
+    def pdf_odf(self, Pr):
+        r""" Calculates the real ODF from the diffusion propagator(PDF) Pr
+        """
+        odf = np.zeros(self.odfn)
+        '''
+        for m in range(self.odfn):
+            xi=self.origin+self.radius*self.odf_vertices[m,0]
+            yi=self.origin+self.radius*self.odf_vertices[m,1]
+            zi=self.origin+self.radius*self.odf_vertices[m,2]
+            PrI=map_coordinates(Pr,np.vstack((xi,yi,zi)),order=1)
+            for i in range(self.radiusn):
+                odf[m]=odf[m]+PrI[i]*self.radius[i]**2
+        This snippet is doing the same as the line below.
+        '''
+        PrIs = map_coordinates(Pr, self.interp_coords, order=1)
+        ''' 
+        for m in range(self.odfn):
+            for i in range(self.radiusn):
+                odf[m]=odf[m]+PrIs[m*self.radiusn+i]*self.radius[i]**2
+        '''
+        pdf_to_odf(odf, PrIs, self.model.qradius, 
+                   self.odfn, self.model.qradiusn)
+        return odf
+
+    def odf(self, sphere):
+        r""" Calculates the real discrete odf for a given discrete sphere
+        
+        ..math::
+            :nowrap:
+                \begin{equation}
+                    \psi_{DSI}(\hat{\mathbf{u}})=\int_{0}^{\infty}P(r\hat{\mathbf{u}})r^{2}dr
+                \end{equation}
+
+        where $\hat{\mathbf{u}}$ is the unit vector which corresponds to a
+        sphere point.
+        """
+        self.odfn = sphere.vertices.shape[0]
+        self.interp_coords = self.model.cache_get('interpolated coords',
+                                             key=sphere)
+        if self.interp_coords is None:
+            self.interp_coords = self.precompute_interp_coords(sphere.vertices)
+            self.model.cache_set('interpolated coords', sphere, self.interp_coords)
+        Pr = self.pdf()
+        #calculate the orientation distribution function
+        odf = self.pdf_odf(Pr)
+        return odf
+
+
 def project_hemisph_bvecs(bvals,bvecs):
     """ Project any near identical bvecs to the other hemisphere
 
@@ -248,6 +246,7 @@ def project_hemisph_bvecs(bvals,bvecs):
     for (i, j) in pairs:
         bvecs2[1 + j] =- bvecs2[1 + j]
     return bvecs2, pairs
+
 
 if __name__ == '__main__':
     pass
