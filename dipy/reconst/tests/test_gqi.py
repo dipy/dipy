@@ -36,8 +36,7 @@ def test_gqi():
     #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
     directions = gqfit.directions
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 
-                            2, 1)
+    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
     #5 subdivisions
     gq.direction_finder.config(sphere=sphere2, min_separation_angle=25,
                               relative_peak_threshold=.35)
@@ -45,8 +44,7 @@ def test_gqi():
     odf2 = gqfit.odf(sphere2)
     directions = gqfit.directions
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 
-                            2, 1)
+    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
     #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
     sb_dummies=sticks_and_ball_dummies(gtab)
     for sbd in sb_dummies:
@@ -62,7 +60,6 @@ def test_gqi():
 
 if __name__ == "__main__":
     run_module_suite()
-    pass
 
 
 

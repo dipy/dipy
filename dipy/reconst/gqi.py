@@ -100,17 +100,10 @@ class GeneralizedQSamplingFit(OdfFit):
     def odf(self, sphere=None):
         r""" Calculates the discrete ODF for a given discrete sphere.
         """
-        if sphere is None:
-            sphere=self.model.direction_finder._config["sphere"]
         self.gqi_vector = self.model.cache_get('gqi_vector', key=sphere)
         if self.gqi_vector is None:
             if self.model.method == 'gqi2':
                 H=np.vectorize(self.squared_radial_component)
-                #which implements
-                #def H(x):
-                #    res=(2 * x * np.cos(x) + (x ** 2 - 2) * np.sin(x)) / x ** 3
-                #    res[np.isnan(res)] = 1/3.
-                #    return res
                 self.gqi_vector = np.real(H(np.dot(self.model.b_vector, 
                                         sphere.vertices.T) * self.model.Lambda / np.pi))
             if self.model.method == 'standard':

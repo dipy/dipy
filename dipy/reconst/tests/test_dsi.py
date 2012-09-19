@@ -47,7 +47,7 @@ def test_dsi():
     #from dipy.viz._show_odfs import show_odfs
     #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
     #show_odfs(odf2[None,None,None,:], (sphere2.vertices, sphere2.faces))
-    assert_equal(dsfit.pdf().shape, 3 * (ds.qgrid_size, ))
+    assert_equal(dsfit.pdf.shape, 3 * (ds.qgrid_size, ))
     sb_dummies=sticks_and_ball_dummies(gtab)
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
