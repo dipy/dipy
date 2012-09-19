@@ -1,5 +1,5 @@
 import numpy as np
-from ...data import get_data
+from dipy.data import get_data
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import GradientTable
 from dipy.sims.voxel import SticksAndBall
@@ -12,6 +12,7 @@ from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.odf import gfa
+
 
 def test_gqi():
     #load symmetric 724 sphere
