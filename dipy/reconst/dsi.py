@@ -174,19 +174,16 @@ class DiffusionSpectrumFit(OdfFit):
         where $\hat{\mathbf{u}}$ is the unit vector which corresponds to a
         sphere point.
         """
-        self.odfn = sphere.vertices.shape[0]
-        self.interp_coords = self.model.cache_get('interp_coords',
+        interp_coords = self.model.cache_get('interp_coords',
                                              key=sphere)
-        if self.interp_coords is None:
-            self.interp_coords = pdf_interp_coords(sphere, 
+        if interp_coords is None:
+            interp_coords = pdf_interp_coords(sphere, 
                                                     self.model.qradius, 
                                                     self.model.origin)
-            self.model.cache_set('interp_coords', sphere, self.interp_coords)
+            self.model.cache_set('interp_coords', sphere, interp_coords)
         Pr = self.pdf
         #calculate the orientation distribution function
-        #odf = self.pdf_odf(Pr)
-        odf = pdf_odf(Pr, sphere, self.model.qradius, self.interp_coords)
-        return odf
+        return pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
 
 
 def pdf_interp_coords(sphere, rradius, origin):

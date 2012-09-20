@@ -2,7 +2,8 @@
 import numpy as np
 from .odf import OdfModel, OdfFit
 from .cache import Cache
-from time import time
+import warnings
+
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
 
@@ -95,7 +96,7 @@ class GeneralizedQSamplingFit(OdfFit):
         self.gqi_vector = self.model.cache_get('gqi_vector', key=sphere)
         if self.gqi_vector is None:
             if self.model.method == 'gqi2':
-                H=np.vectorize(squared_radial_component) 
+                H=squared_radial_component
                 #print self.gqi_vector.shape
                 self.gqi_vector = np.real(H(np.dot(self.model.b_vector, 
                                         sphere.vertices.T) * self.model.Lambda / np.pi))
@@ -106,13 +107,16 @@ class GeneralizedQSamplingFit(OdfFit):
         return np.dot(self.data, self.gqi_vector)
 
 
-def squared_radial_component(x):
-    """ Part of eq.8 in the referenced paper by Yeh et al. 2010
+def squared_radial_component(x, tol=0.01):
+    """ Part of the GQI2 integral
+
+    Eq.8 in the referenced paper by Yeh et al. 2010
     """
-    #if x < np.finfo('f4').tiny and  x > - np.finfo('f4').tiny:
-    if x < 0.01 and x > -0.01:
-        return 1/3.
-    return (2 * x * np.cos(x) + (x ** 2 - 2) * np.sin(x)) / x ** 3
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        result = (2 * x * np.cos(x) + (x * x - 2) * np.sin(x)) / (x ** 3)
+    x_near_zero = (x < tol) & (x > -tol)
+    return np.where(x_near_zero, 1./3, result)
 
 
 def npa(self, odf, width=5):
