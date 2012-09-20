@@ -57,10 +57,9 @@ class DiscreteDirectionFinder(DirectionFinder):
         sphere = self._config["sphere"]
         relative_peak_threshold = self._config["relative_peak_threshold"]
         min_separation_angle = self._config["min_separation_angle"]
-
         discrete_values = sphere_eval(sphere)
-        return peak_directions(discrete_values, sphere, relative_peak_threshold,
-                               min_separation_angle)
+        return peak_directions(discrete_values, sphere, 
+                               relative_peak_threshold, min_separation_angle)
 
 class OdfModel(object):
     """An abstract class to be sub-classed by specific odf models

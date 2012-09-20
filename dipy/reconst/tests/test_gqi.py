@@ -1,171 +1,66 @@
-import time
 import numpy as np
-import nibabel as nib
-
-from .. import recspeed as rp
-from .. import gqi as gq
-from .. import dti as dt
-from ...core import meshes
-from ...data import get_data, get_sphere
-
+from dipy.data import get_data
+from dipy.core.sphere import Sphere
+from dipy.core.gradients import GradientTable
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.core.sphere import unique_edges
 from dipy.utils.spheremakers import sphere_vf_from
-
-from nose.tools import assert_true, assert_false, assert_equal, assert_raises
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import (assert_equal, 
+                           assert_almost_equal, 
+                           run_module_suite)
+from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.core.sphere_stats import angular_similarity
+from dipy.reconst.odf import gfa
 
 
 def test_gqi():
-
-    #load odf sphere
-    vertices,faces = sphere_vf_from('symmetric724')
-    edges = unique_edges(faces)
-
-    #load bvals and gradients
-    btable=np.loadtxt(get_data('dsi515btable'))    
-    bvals=btable[:,0]
-    bvecs=btable[:,1:]        
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)    
-    #pdf0,odf0,peaks0=standard_dsi_algorithm(S,bvals,bvecs)    
-    S2=S.copy()
-    S2=S2.reshape(1,len(S)) 
-    
-    odf_sphere=(vertices,faces)
-    ds=GeneralizedQSamplingModel( bvals, bvecs, odf_sphere)    
-    dsfit=ds.fit(S)
-    assert_equal((dsfit.peak_values>0).sum(),3)
-
-    #change thresholds
-    ds.relative_peak_threshold = 0.5
-    ds.angular_distance_threshold = 30
-    dsfit = ds.fit(S)
-    assert_equal((dsfit.peak_values>0).sum(),2)
-    
-    #1 fiber
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[100,0,0], snr=None)   
-    ds=GeneralizedQSamplingModel(bvals,bvecs,odf_sphere)
-    ds.relative_peak_threshold = 0.5
-    ds.angular_distance_threshold = 20
-    dsfit=ds.fit(S)
-    QA=dsfit.qa
-    #1/0
-    assert_equal(np.sum(QA>0),1)
-    
-    #2 fibers
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[50,50,0], snr=None)   
-    ds=GeneralizedQSamplingModel(bvals,bvecs,odf_sphere)
-    ds.relative_peak_threshold = 0.5
-    ds.angular_distance_threshold = 20
-    dsfit=ds.fit(S)
-    QA=dsfit.qa
-    assert_equal(np.sum(QA>0),2)
-    
-    #3 fibers
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
-    ds=GeneralizedQSamplingModel(bvals,bvecs,odf_sphere)
-    ds.relative_peak_threshold = 0.5
-    dsfit=ds.fit(S)
-    QA=dsfit.qa
-    assert_equal(np.sum(QA>0),3)
-    
-    #isotropic
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[0,0,0], snr=None)   
-    ds=GeneralizedQSamplingModel(bvals,bvecs,odf_sphere)
-    dsfit=ds.fit(S)
-    QA=dsfit.qa
-    assert_equal(np.sum(QA>0),0)
-
-    #3 fibers DSI2
-    S,stics=SticksAndBall(bvals, bvecs, d=0.0015, S0=100, angles=[(0, 0),(90,0),(90,90)], fractions=[33,33,33], snr=None)   
-    ds=GeneralizedQSamplingModel(bvals,bvecs,odf_sphere,squared=True)
-    ds.relative_peak_threshold = 0.5
-    dsfit=ds.fit(S,gfa_thr=0.05)
-    QA=dsfit.qa
-
-    #3 fibers DSI2 with a 3D volume
-    data=np.zeros((3,3,3,len(S)))
-    data[...,:]= S.copy()
-    dsfit=ds.fit(data,gfa_thr=0.05)
-    #1/0
-    assert_array_almost_equal(np.sum(dsfit.peak_values>0,axis=-1),3*np.ones((3,3,3)))
- 
-
-def upper_hemi_map(v):
-    '''
-    maps a 3-vector into the z-upper hemisphere
-    '''
-    return np.sign(v[2])*v
-
-
-def equatorial_maximum(vertices, odf, pole, width):
-    eqvert = meshes.equatorial_vertices(vertices, pole, width)
-    '''
-    need to test for whether eqvert is empty or not
-    '''
-    if len(eqvert) == 0:
-        print 'empty equatorial band at pole', pole, 'with width', width
-        return Null, Null
-
-    eqvals = [odf[i] for i in eqvert]
-    eqargmax = np.argmax(eqvals)
-    eqvertmax = eqvert[eqargmax]
-    eqvalmax = eqvals[eqargmax]
-    return eqvertmax, eqvalmax
-
-
-def patch_vertices(vertices,pole, width):
-    '''
-    find 'vertices' within the cone of 'width' around 'pole'
-    '''
-    return [i for i,v in enumerate(vertices) if np.dot(v,pole) > 1- width]
-
-
-def patch_maximum(vertices, odf, pole, width):
-    eqvert = patch_vertices(vertices, pole, width)
-    '''
-    need to test for whether eqvert is empty or not
-    '''
-    if len(eqvert) == 0:
-        print 'empty cone around pole', pole, 'with width', width
-        return Null, Null
-
-    eqvals = [odf[i] for i in eqvert]
-    eqargmax = np.argmax(eqvals)
-    eqvertmax = eqvert[eqargmax]
-    eqvalmax = eqvals[eqargmax]
-    return eqvertmax, eqvalmax
-
-
-def triple_odf_maxima(vertices, odf, width):
-    #proton density already include from the scaling b_table[0][0] and s[0]
-    #find local maxima
-    peak=odf.copy()
-    # where the smallest odf values in the vertices of a face remove the
-    # two smallest vertices 
-
-    for face in odf_faces:
-        i, j, k = face
-        check=np.array([odf[i],odf[j],odf[k]])
-        zeroing=check.argsort()
-        peak[face[zeroing[0]]]=0
-        peak[face[zeroing[1]]]=0
-
-    #for later testing expecting peak.max 794595.94774980657 and
-    #np.where(peak>0) (array([166, 347]),)
-    #we just need the first half of peak
-    peak=peak[0:len(peak)/2]
-    #find local maxima and give fiber orientation (inds) and magnitute
-    #peaks in a descending order
-    inds=np.where(peak>0)[0]
-    pinds=np.argsort(peak[inds])
-    peaks=peak[inds[pinds]][::-1]
-    return peaks, inds[pinds][::-1]
+    #load symmetric 724 sphere
+    vertices, faces = sphere_vf_from('symmetric724')
+    sphere = Sphere(xyz=vertices)
+    #load icosahedron sphere
+    sphere2 = create_unit_sphere(5)
+    btable = np.loadtxt(get_data('dsi515btable'))    
+    bvals = btable[:,0]
+    bvecs = btable[:,1:]        
+    data, golden_directions = SticksAndBall(bvals, bvecs, d=0.0015, 
+                               S0=100, angles=[(0, 0), (90, 0)], 
+                               fractions=[50, 50], snr=None) 
+    gtab = GradientTable(bvals, bvecs) 
+    gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.4)
+    #symmetric724
+    gq.direction_finder.config(sphere=sphere, min_separation_angle=25,
+                               relative_peak_threshold=.35)
+    gqfit = gq.fit(data)
+    odf = gqfit.odf(sphere)
+    #from dipy.viz._show_odfs import show_odfs
+    #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
+    directions = gqfit.directions
+    assert_equal(len(directions), 2)
+    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    #5 subdivisions
+    gq.direction_finder.config(sphere=sphere2, min_separation_angle=25,
+                              relative_peak_threshold=.35)
+    gqfit = gq.fit(data)
+    odf2 = gqfit.odf(sphere2)
+    directions = gqfit.directions
+    assert_equal(len(directions), 2)
+    assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
+    #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
+    sb_dummies=sticks_and_ball_dummies(gtab)
+    for sbd in sb_dummies:
+        data, golden_directions = sb_dummies[sbd]
+        odf = gq.fit(data).odf(sphere2)
+        directions = gq.fit(data).directions
+        #show_odfs(odf[None, None, None, :], (sphere2.vertices, sphere2.faces))
+        if len(directions) <= 3:
+            assert_equal(len(gq.fit(data).directions), len(golden_directions))
+        if len(directions) > 3:
+            assert_equal(gfa(gq.fit(data).odf(sphere2)) < 0.1, True)
 
 
 if __name__ == "__main__":
-    pass
+    run_module_suite()
 
 
 
