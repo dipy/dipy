@@ -5,7 +5,7 @@ from dipy.io.bvectxt import read_bvec_file
 from os.path import join as pjoin, dirname
 import cPickle
 import gzip
-
+from dipy.core.gradients import GradientTable
 import numpy as np
 
 from ..utils.arrfuncs import as_native_array
@@ -136,7 +136,7 @@ def get_sphere(name='symmetric362'):
 
 
 def get_data(name='small_64D'):
-    ''' provides filenames of some test datasets or other useful parametrisations
+    """ provides filenames of some test datasets or other useful parametrisations
 
     Parameters
     ----------
@@ -169,7 +169,8 @@ def get_data(name='small_64D'):
     (102,)
     >>> bvecs.shape
     (102, 3)
-    '''
+    """
+
     if name=='small_64D':
         fbvals=pjoin(THIS_DIR,'small_64D.bvals.npy')
         fbvecs=pjoin(THIS_DIR,'small_64D.gradients.npy')
@@ -192,4 +193,15 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR,'dsi515_b_table.txt')
     if name=='grad514':
         return pjoin(THIS_DIR,'grad_514.txt')
+
+def dsi_voxels():
+    fimg,fbvals,fbvecs = get_data('small_101D')
+    bvals = np.loadtxt(fbvals)
+    bvecs = np.loadtxt(fbvecs).T
+    img = load(fimg)
+    data = img.get_data()
+    gtab = GradientTable(bvals, bvecs)
+    return data, gtab
+    
+
 
