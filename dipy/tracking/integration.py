@@ -11,7 +11,9 @@ dipy.tracking.integration
 dipy.reconst.interpolate
 """
 from __future__ import division
-from numpy import array, asarray, broadcast_arrays, signbit, sqrt
+import numpy as np
+from ..reconst.interpolate import OutsideImage
+
 
 class BoundryIntegrator(object):
     """Integrates along step until the closest voxel boundry"""
@@ -27,9 +29,9 @@ class BoundryIntegrator(object):
             edge of a voxel.
         """
         self.overstep = overstep
-        self.voxel_size = asarray(voxel_size, 'float')
+        self.voxel_size = np.array(voxel_size, 'float')
 
-    def integrate(self, location, step):
+    def take_step(self, location, step):
         """takes a step just past the edge of the next voxel along step
 
         given a location and a step, finds the smallest step needed to move
@@ -42,70 +44,125 @@ class BoundryIntegrator(object):
         step : ndarray, (3,)
             direction in 3 space to integrate along
         """
-        step_sizes = self.voxel_size*(~signbit(step))
+        step_sizes = self.voxel_size*(~np.signbit(step))
         step_sizes -= location % self.voxel_size
         step_sizes /= step
         smallest_step = min(step_sizes) + self.overstep
         return location + smallest_step*step
+
 
 class FixedStepIntegrator(object):
     """An Intigrator that uses a fixed step size"""
     def __init__(self, step_size=.5):
         """Creates an Intigrator"""
         self.step_size = step_size
-    def integrate(self, location, step):
+    def take_step(self, location, step):
         """Takes a step of step_size from location"""
         new_location = self.step_size*step + location
         return new_location
 
-def generate_streamlines(stepper, integrator, seeds, start_steps, maxlen=500):
-    """Creates streamlines using a stepper and integrator
 
-    Creates streamlines starting at each of the seeds, and integrates them
-    using the integrator, getting the direction of each step from stepper.
+class TrackStopper(object):
+    """Stops a streamline if it leaves the mask or tries makes a turn larger
+    than max_turn_angle degrees"""
+    def __init__(self, mask_interpolator, max_turn_angle):
+        if max_turn_angle < 0 or max_turn_angle > 90:
+            raise ValueError("max_turn_angle must be between 0 and 90")
+        self._cos_similarity = np.cos(np.deg2rad(max_turn_angle))
+        self._mask = mask_interpolator
 
-    Parameters:
-    -----------
-    stepper : object with next_step method
-        The next_step method should take a location, (x, y, z) cordinates in
-        3-space, and the previous step, a unit vector in 3-space, and return a
-        new step
-    integrator : object with a integrate method
-        The integrate method should take a location and a step, as defined
-        above and return a new location.
-    seeds : array-like (N, 3)
-        Locations where to start tracking.
-    start_steps : array-like
-        start_steps should be broadcastable with seeds and is used in place of
-        prev_step when determining the initial step for each seed.
+    def terminate(self, location, prev_dir, next_dir):
+        """Check to see if streamline should end
+        Returns True when streamline should end """
+        if np.dot(prev_dir, next_dir) < self._cos_similarity:
+            return True
+        return not self._mask[location]
 
-    Returns:
-    --------
-    streamlines : generator
-        A generator of streamlines, each streamline is an (M, 3) array of
-        points in 3-space.
+
+def markov_streamline(get_direction, take_step, terminate,
+                      seed, first_step, maxlen):
+    """Creates a streamline from seed
+
+    Parameters
+    ----------
+    get_direction : callable
+        This function should return a direction for the streamline given a 
+        location and the previous direction.
+    take_step : callable
+        Take step should take a step from a location given a direction.
+    terminate : callable
+        Terminate should take three arguments a location, previous direction,
+        and new direction; and should return True if the streamline has reached
+        a stopping criteria. It should return False otherwise.
+    seed : array (3,)
+        The seed point of the streamline
+    first_step : array (3,)
+        A unit vector giving the direction of the first step
+    maxlen : int
+        The maximum number of segments allowed in the streamline. This is good
+        for preventing infinite loops.
+
+    Returns
+    -------
+    streamline : array (N, 3)
+        A streamline.
+
     """
-    start_steps = asarray(start_steps)
-    norm_start_steps = sqrt((start_steps*start_steps).sum(-1))
-    norm_start_steps = norm_start_steps.reshape((-1,1))
-    start_steps = start_steps/norm_start_steps
-    seeds, start_steps = broadcast_arrays(seeds, start_steps)
+    streamline = []
+    location = seed
+    new_dir = first_step
 
-    next_step = stepper.next_step
-    integrate = integrator.integrate
-    for ii in xrange(len(seeds)):
-        location = seeds[ii]
-        step = start_steps[ii]
-        streamline = []
-        try:
-            for i in xrange(maxlen):
-                step = next_step(location, step)
-                streamline.append(location)
-                location = integrate(location, step)
-        except IndexError:
-            pass
-        except StopIteration:
+    try:
+        for i in xrange(maxlen):
             streamline.append(location)
-        streamline = array(streamline)
-        yield streamline
+            location = take_step(location, new_dir)
+            prev_dir = new_dir
+            new_dir = get_direction(location, prev_dir)
+            if terminate(location, prev_dir, new_dir):
+                streamline.append(location)
+                break
+    except OutsideImage:
+        pass
 
+    return np.vstack(streamline)
+
+
+def generate_streamlines(get_direction, take_step, terminate, seeds,
+                         max_cross=None, maxlen=500):
+    """A streamline generator
+
+    Parameters
+    ----------
+    get_direction : callable
+        This function should return a direction for the streamline given a 
+        location and the previous direction.
+    take_step : callable
+        Take step should take a step from a location given a direction.
+    terminate : callable
+        Terminate should take three arguments a location, previous direction,
+        and new direction; and should return True if the streamline has reached
+        a stopping criteria. It should return False otherwise.
+    seeds : array, (N, 3)
+        points in space to track from.
+    max_cross : int or None
+        The maximum number of direction to track from each seed in crossing
+        voxels. Track all directions by default.
+    maxlen : int
+        The maximum number of steps from seed allowed in a streamline. Meant
+        primarily to prevent infinite loops.
+
+    Returns
+    -------
+    streamlines : generator
+        A streamline generator
+    """
+    for s in seeds:
+        directions = get_direction(s, prev_dir=None)
+        directions = directions[:max_cross]
+        for first_step in directions:
+            F = markov_streamline(get_direction, take_step, terminate, s,
+                                  first_step, maxlen)
+            first_step = -first_step
+            B = markov_streamline(get_direction, take_step, terminate, s,
+                                  first_step, maxlen)
+            yield np.concatenate([B[:0:-1], F], axis=0)
