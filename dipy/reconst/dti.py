@@ -8,8 +8,39 @@ from dipy.reconst.maskedview import MaskedView, _makearray, _filled
 from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
 
-class Tensor(ModelArray):
-    """ Fits a diffusion tensor given diffusion-weighted signals and gradient info
+
+
+class TensorModel(object):
+    """
+
+    """
+    def __init__(self, bval, bvec, fit_method="WLS", *args, **kwargs):
+        """
+
+        """
+        if not callable(fit_method):
+            try:
+                self.fit_method = common_fit_methods[fit_method]
+            except KeyError:
+                raise ValueError('"'+str(fit_method)+'" is not a known fit '
+                                 'method, the fit method should either be a '
+                                 'function or one of the common fit methods')
+        self.bvec = bvec
+        self.bval = bval
+        #64 bit design matrix makes for faster pinv
+        self.design_matrix = design_matrix(bvec.T, bval)
+
+
+    def fit(self, data):
+        """
+        """
+        dti_params = self.fit_method(self.design_matrix, data, *args, **kargs)
+        return TensorFit(self, dti_params)
+
+
+class TensorFit(ModelArray):
+    """ Fits a diffusion tensor given diffusion-weighted signals and gradient
+    info
 
     Tensor object that when initialized calculates single self diffusion
     tensor [1]_ in each voxel using selected fitting algorithm
@@ -89,8 +120,21 @@ class Tensor(ModelArray):
     ----------
     For a complete example have a look at the main dipy/examples folder
     """
+    def __init__(self, model, model_params):
+        """
+        Initialize a TensorFit class instance.
+        """
+        self.model_params = model_params
 
-    ### Eigenvalues Property ###
+
+    @property
+    def directions(self):
+        """
+        For tracking - return the PDD in each voxel
+        """
+        return self.evecs[..., np.newaxis, :, 0]
+
+
     @property
     def evals(self):
         """
@@ -98,7 +142,6 @@ class Tensor(ModelArray):
         """
         return _filled(self.model_params[..., :3])
 
-    ### Eigenvectors Property ###
     @property
     def evecs(self):
         """
@@ -108,53 +151,9 @@ class Tensor(ModelArray):
         evecs = _filled(self.model_params[..., 3:])
         return evecs.reshape(self.shape + (3, 3))
 
-    def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
-                 fit_method='WLS', verbose=False, *args, **kargs):
-        """
-        Fits a tensors to diffusion weighted data.
-
-        """
-
-        if not callable(fit_method):
-            try:
-                fit_method = common_fit_methods[fit_method]
-            except KeyError:
-                raise ValueError('"'+str(fit_method)+'" is not a known fit '+
-                                 'method, the fit method should either be a '+
-                                 'function or one of the common fit methods')
-
-        #64 bit design matrix makes for faster pinv
-        B = design_matrix(grad_table.T, b_values)
-        self.B = B
-
-        mask = np.atleast_1d(mask)
-        if thresh is not None:
-            #Define total mask from thresh and mask
-            #mask = mask & (np.min(data[..., b_values == 0], -1) >
-            #thresh)
-            #the assumption that the lowest b_value is always 0 is
-            #incorrect the lowest b_value could also be higher than 0
-            #this is common with grid q-spaces
-            min_b0_sig = np.min(data[..., b_values == b_values.min()], -1)
-            mask = mask & (min_b0_sig > thresh)
-
-        #if mask is all False
-        if not mask.any():
-            raise ValueError('between mask and thresh, there is no data to '+
-            'fit')
-
-        #and the mask is not all True
-        if not mask.all():
-            #leave only data[mask is True]
-            data = data[mask]
-            data = MaskedView(mask, data, fill_value=0)
-
-        #Perform WLS fit on masked data
-        dti_params = fit_method(B, data, *args, **kargs)
-        self.model_params = dti_params
-
     ### Self Diffusion Tensor Property ###
-    def _getD(self):
+    @property
+    def quadratic_form(self):
         """Calculates the 3x3 diffusion tensor for each voxel"""
         params, wrap = _makearray(self.model_params)
         evals = params[..., :3]
@@ -170,11 +169,8 @@ class Tensor(ModelArray):
         D.shape = self.shape + (3, 3)
         return D
 
-    D = property(_getD, doc = "Self diffusion tensor")
-
     def lower_triangular(self, b0=None):
-        D = self._getD()
-        return lower_triangular(D, b0)
+        return lower_triangular(self.quadratic_form, b0)
 
     def fa(self, fill_value=0, nonans=True):
         r"""
@@ -184,6 +180,7 @@ class Tensor(ModelArray):
         ----------
         fill_value : float
             value of fa where self.mask == True.
+
         nonans : Bool
             When True, fa is 0 when all eigenvalues are 0, otherwise fa is nan
 
@@ -212,10 +209,13 @@ class Tensor(ModelArray):
             all_zero = (ev1 == 0) & (ev2 == 0) & (ev3 == 0)
         else:
             all_zero = 0.
+
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
+
         fa = wrap(np.asarray(fa))
         return _filled(fa, fill_value)
+
 
     def md(self):
         r"""
@@ -232,24 +232,10 @@ class Tensor(ModelArray):
 
         .. math::
 
-            ADC = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
+            MD = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
-        #adc/md = (ev1+ev2+ev3)/3
         return self.evals.mean(-1)
-
-        
-    def ind(self):
-        ''' Quantizes eigenvectors with maximum eigenvalues  on an
-        evenly distributed sphere so that the can be used for tractography.
-
-        Returns
-        ---------
-        IN : array, shape(x,y,z) integer indices for the points of the
-        evenly distributed sphere representing tensor  eigenvectors of
-        maximum eigenvalue
     
-        '''
-        return quantize_evecs(self.evecs,odf_vertices=None)
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""
@@ -691,3 +677,69 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'from lower triangular': tensor_eig_from_lo_tri,
                      }
 
+
+# For backwards compatibility:
+class Tensor(TensorFit):
+    """
+
+    """
+    def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
+                 fit_method='WLS', verbose=False, *args, **kargs):
+        """
+        Fits a tensors to diffusion weighted data.
+
+        """
+
+        if not callable(fit_method):
+            try:
+                fit_method = common_fit_methods[fit_method]
+            except KeyError:
+                raise ValueError('"'+str(fit_method)+'" is not a known fit '+
+                                 'method, the fit method should either be a '+
+                                 'function or one of the common fit methods')
+
+        #64 bit design matrix makes for faster pinv
+        B = design_matrix(grad_table.T, b_values)
+        self.B = B
+
+        mask = np.atleast_1d(mask)
+        if thresh is not None:
+            #Define total mask from thresh and mask
+            #mask = mask & (np.min(data[..., b_values == 0], -1) >
+            #thresh)
+            #the assumption that the lowest b_value is always 0 is
+            #incorrect the lowest b_value could also be higher than 0
+            #this is common with grid q-spaces
+            min_b0_sig = np.min(data[..., b_values == b_values.min()], -1)
+            mask = mask & (min_b0_sig > thresh)
+
+        #if mask is all False
+        if not mask.any():
+            raise ValueError('between mask and thresh, there is no data to '+
+            'fit')
+
+        #and the mask is not all True
+        if not mask.all():
+            #leave only data[mask is True]
+            data = data[mask]
+            data = MaskedView(mask, data, fill_value=0)
+
+        #Perform WLS fit on masked data
+        dti_params = fit_method(B, data, *args, **kargs)
+        self.model_params = dti_params
+
+    D = property(TensorFit.quadratic_form, doc = "Self diffusion tensor")
+
+    def ind(self):
+        """
+        Quantizes eigenvectors with maximum eigenvalues  on an
+        evenly distributed sphere so that the can be used for tractography.
+
+        Returns
+        ---------
+        IN : array, shape(x,y,z) integer indices for the points of the
+        evenly distributed sphere representing tensor  eigenvectors of
+        maximum eigenvalue
+
+        """
+        return quantize_evecs(self.evecs, odf_vertices=None)
