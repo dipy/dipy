@@ -9,7 +9,6 @@ from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
 
 
-
 class TensorModel(object):
     """
 
@@ -38,7 +37,7 @@ class TensorModel(object):
         return TensorFit(self, dti_params)
 
 
-class TensorFit(ModelArray):
+class TensorFit(object):
     """ Fits a diffusion tensor given diffusion-weighted signals and gradient
     info
 
@@ -679,9 +678,10 @@ common_fit_methods = {'WLS': wls_fit_tensor,
 
 
 # For backwards compatibility:
-class Tensor(TensorFit):
+class Tensor(TensorFit, ModelArray):
     """
-
+    For backwards compatibility, we continue to support this form of the Tensor
+    fitting.
     """
     def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
                  fit_method='WLS', verbose=False, *args, **kargs):
@@ -728,7 +728,8 @@ class Tensor(TensorFit):
         dti_params = fit_method(B, data, *args, **kargs)
         self.model_params = dti_params
 
-    D = property(TensorFit.quadratic_form, doc = "Self diffusion tensor")
+    # For backwards compatibility:
+    D = TensorFit.quadratic_form
 
     def ind(self):
         """
