@@ -7,12 +7,12 @@ from nose.tools import assert_raises
 
 from dipy.data import get_data
 from dipy.io.gradients import read_bvals_bvecs
-from dipy.core.gradients import GradientTable
+from dipy.core.gradients import gradient_table
 
 def test_read_bvals_bvecs():
     fimg, fbvals, fbvecs = get_data('small_101D')
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    gt = GradientTable(bvals, bvecs)
+    gt = gradient_table(bvals, bvecs)
     npt.assert_array_equal(bvals, gt.bvals)
     npt.assert_array_equal(bvecs, gt.bvecs)
 
