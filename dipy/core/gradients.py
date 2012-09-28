@@ -27,7 +27,7 @@ class GradientTable(object):
     bvecs: array, shape (N,3)
         b-vectors
     b0s_mask: array, shape (N,)
-        Boolean array indicating which gradients have not diffusion
+        Boolean array indicating which gradients have no diffusion
         weighting.
     b0_threshold: float
         Gradients with b-value less than or equal to `bo_threshold` are
