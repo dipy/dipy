@@ -23,17 +23,17 @@ class GradientTable(object):
     gradients: array, shape(N, 3)
         diffusion gradients
     bvals: array, shape (N,)
-        b-values
+        The b-value, or magnitude, of each gradient direction.
     bvecs: array, shape (N,3)
-        b-vectors
+        The direction, represented as a unit vector, of each gradient.
     b0s_mask: array, shape (N,)
         Boolean array indicating which gradients have no diffusion
-        weighting.
+        weighting, ie b-value is close to 0.
     b0_threshold: float
         Gradients with b-value less than or equal to `bo_threshold` are
-        considered as b0s i.e. without diffusion weighting.
+        considered to not have diffusion weighting.
 
-    SeeAlso
+    See Also
     -------
     gradient_table
 
@@ -81,16 +81,16 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
     Parameters
     ----------
     bvals : array_like (N,)
-        The values of each of N gradients.
+        The b-value, or magnitude, of each gradient direction.
     bvecs : array_like (N, 3)
-        The direction of each of N gradients as a unit vector.
+        The direction, represented as a unit vector, of each gradient.
     b0_threshold: float
-        All b-values with values less than or equal to `bo_threshold` are
-        considered as b0s i.e. without diffusion weighting.
+        Gradients with b-value less than or equal to `bo_threshold` are
+        considered to not have diffusion weighting.
     atol: float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
-    All other inputs are passed to GradientTable
+    Other keyword inputs are passed to GradientTable
 
     Return
     ------
@@ -143,7 +143,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
     bvecs: can be any of two options
         1. an array of shape (N, 3) or (3, N) with the b-vectors.
-        2. a path for the file wich contains an array like the previous.
+        2. a path for the file which contains an array like the previous.
 
     big_delta: float
         acquisition timing duration (default None)
