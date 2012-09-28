@@ -112,15 +112,19 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
                          "respectively, where N is the number of diffusion "
                          "gradients")
 
-    bvec_norms = L2norm(bvecs[dwi_mask])
-    if bvecs.shape[1] != 3 or not np.allclose(bvec_norms, 1., atol=atol):
+    bvecs_close_to_1 = abs(L2norm(bvecs) - 1) <= atol
+    if bvecs.shape[1] != 3 or not np.all(bvecs_close_to_1[dwi_mask]):
         raise ValueError("bvecs should be (N, 3), a set of N unit vectors")
 
-    gradients = bvals[:, None] * dwi_mask[:, None] * bvecs
+    bvecs = np.where(bvecs_close_to_1[:, None], bvecs, 0)
+    bvals = bvals * bvecs_close_to_1
+    gradients = bvals[:, None] * bvecs
+
     grad_table = GradientTable(gradients, b0_threshold=b0_threshold, **kwargs)
     grad_table.bvals = bvals
     grad_table.bvecs = bvecs
     grad_table.b0s_mask = ~dwi_mask
+
     return grad_table
 
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,

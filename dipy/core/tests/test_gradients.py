@@ -26,6 +26,7 @@ def test_btable_prepare():
     fimg, fbvals, fbvecs = get_data('small_64D')
     bvals = np.load(fbvals)
     bvecs = np.load(fbvecs)
+    bvecs = np.where(np.isnan(bvecs), 0, bvecs)
     bt = gradient_table(bvals,bvecs)
     npt.assert_array_equal(bt.bvecs,bvecs)
     bt2 = gradient_table(bvals,bvecs.T)
@@ -81,6 +82,12 @@ def test_gradient_table_from_bvals_bvecs():
     npt.assert_array_equal(gt.bvals, bvals)
     npt.assert_array_equal(gt.gradients, np.reshape(bvals, (-1, 1)) * bvecs)
     npt.assert_array_equal(gt.b0s_mask, [1, 0, 0, 0, 0, 0, 0, 1])
+
+    # Test nans are replaced by 0
+    new_bvecs = bvecs.copy()
+    new_bvecs[[0, -1]] = np.nan
+    gt = gradient_table_from_bvals_bvecs(bvals, new_bvecs, b0_threshold=0)
+    npt.assert_array_equal(gt.bvecs, bvecs)
 
     # Bvalue > 0 for non-unit vector
     bad_bvals =  [2, 1, 2, 3, 4, 5, 6, 0]
