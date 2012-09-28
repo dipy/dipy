@@ -4,7 +4,7 @@ __all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges',
 import numpy as np
 import warnings
 
-from dipy.core.geometry import cart2sphere, sphere2cart
+from dipy.core.geometry import cart2sphere, sphere2cart, L2norm
 from dipy.core.onetime import auto_attr
 from dipy.reconst.recspeed import remove_similar_vertices
 
@@ -22,12 +22,6 @@ def _some_specified(*args):
             return True
     return False
 
-def L2norm(x, axis=-1):
-    """The L2 norm of x along `axis`"""
-    x_norm = np.sqrt((x * x).sum(axis))
-    shape = list(x.shape)
-    shape[axis] = 1
-    return x_norm.reshape(shape)
 
 def faces_from_sphere_vertices(vertices):
     """
@@ -241,7 +235,7 @@ class Sphere(object):
         for i in xrange(n):
             edges, mapping = unique_edges(faces, return_mapping=True)
             new_vertices = vertices[edges].sum(1)
-            new_vertices /= L2norm(new_vertices)
+            new_vertices /= L2norm(new_vertices, keepdims=True)
             mapping += len(vertices)
             vertices = np.vstack([vertices, new_vertices])
 
@@ -526,7 +520,7 @@ icosahedron_vertices = np.array(
      [  0,  t, -1], # 10
      [  0, -t, -1], # 11
     ])
-icosahedron_vertices /= L2norm(icosahedron_vertices)
+icosahedron_vertices /= L2norm(icosahedron_vertices, keepdims=True)
 icosahedron_faces = np.array(
     [[ 8,  4,  0],
      [ 2,  5,  0],
