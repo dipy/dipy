@@ -75,7 +75,7 @@ class GradientTable(object):
         print('         max %f ' % self.bvecs.max())
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
-                                  *args, **kwargs):
+                                  **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
     Parameters
@@ -117,7 +117,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
         raise ValueError("bvecs should be (N, 3), a set of N unit vectors")
 
     gradients = bvals[:, None] * dwi_mask[:, None] * bvecs
-    grad_table = GradientTable(gradients, b0_threshold=20, *args, **kwargs)
+    grad_table = GradientTable(gradients, b0_threshold=b0_threshold, **kwargs)
     grad_table.bvals = bvals
     grad_table.bvecs = bvecs
     grad_table.b0s_mask = ~dwi_mask
@@ -221,5 +221,6 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
         if bvecs.shape[1] > bvecs.shape[0]:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=None,
-                                           small_delta=None, b0_threshold=20,
+                                           small_delta=None,
+                                           b0_threshold=b0_threshold,
                                            atol=1e-2)

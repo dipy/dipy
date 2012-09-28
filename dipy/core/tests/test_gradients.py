@@ -107,6 +107,12 @@ def test_gradient_table_from_bvals_bvecs():
     npt.assert_raises(ValueError, gradient_table_from_bvals_bvecs, bvals,
                       bad_bvecs, b0_threshold=0.)
 
+    # Test **kargs get passed along
+    gt = gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0,
+                                        big_delta=5, small_delta=2)
+    npt.assert_equal(gt.big_delta, 5)
+    npt.assert_equal(gt.small_delta, 2)
+
 
 def test_b0s():
 
