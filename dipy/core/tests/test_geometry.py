@@ -10,8 +10,11 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 cart_distance,
                                 vector_cosine,
                                 lambert_equal_area_projection_polar,
-                                circumradius
+                                circumradius,
+                                L2norm
                                 )
+
+
 
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises
@@ -19,6 +22,19 @@ from nose.tools import assert_true, assert_false, \
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.testing import parametric, sphere_points
+
+
+def test_L2norm():
+    A = np.array([[1, 0, 0],
+                  [3, 4, 0],
+                  [0, 5, 12],
+                  [1, 2, 3]])
+    expected = np.array([1, 5, 13, np.sqrt(14)])
+    assert_array_almost_equal(L2norm(A), expected)
+    expected.shape = (4, 1)
+    assert_array_almost_equal(L2norm(A, keepdims=True), expected)
+    assert_array_almost_equal(L2norm(A.T, axis=0, keepdims=True), expected.T)
+
 
 def test_sphere_cart():
     # test arrays of points

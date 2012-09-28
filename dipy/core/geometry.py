@@ -129,7 +129,8 @@ def cart2sphere(x, y, z):
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
     return r, theta, phi
 
-def normalized_vector(vec):
+
+def normalized_vector(vec, axis=-1):
     ''' Return vector divided by its Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
@@ -154,13 +155,12 @@ def normalized_vector(vec):
     >>> vec.shape
     (1, 3)
     >>> normalized_vector(vec).shape
-    (3,)
+    (1, 3)
     '''
-    vec = np.asarray(vec).squeeze()
-    return vec / math.sqrt((vec**2).sum())
+    return vec / L2norm(vec, axis, keepdims=True)
 
 
-def vector_norm(vec):
+def L2norm(vec, axis=-1, keepdims=False):
     ''' Return vector Euclidaan (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
@@ -178,12 +178,18 @@ def vector_norm(vec):
     >>> import numpy as np
     >>> vec = [1, 2, 3]
     >>> l2n = np.sqrt(np.dot(vec, vec))
-    >>> nvec = vector_norm(vec)
+    >>> nvec = L2norm(vec)
     >>> np.allclose(nvec, np.sqrt(np.dot(vec, vec)))
     True
     '''
     vec = np.asarray(vec)
-    return math.sqrt((vec**2).sum())
+    vec_norm = np.sqrt((vec * vec).sum(axis))
+    if keepdims:
+        shape = list(vec.shape)
+        shape[axis] = 1
+        vec_norm = vec_norm.reshape(shape)
+    return vec_norm
+
 
 def rodriguez_axis_rotation(r,theta):
     """ Rodriguez formula    
@@ -698,18 +704,18 @@ def decompose_matrix(matrix):
     M[3, :3] = 0
 
     row = M[:3, :3].copy()
-    scale[0] = vector_norm(row[0])
+    scale[0] = L2norm(row[0])
     row[0] /= scale[0]
     shear[0] = np.dot(row[0], row[1])
     row[1] -= row[0] * shear[0]
-    scale[1] = vector_norm(row[1])
+    scale[1] = L2norm(row[1])
     row[1] /= scale[1]
     shear[0] /= scale[1]
     shear[1] = np.dot(row[0], row[2])
     row[2] -= row[0] * shear[1]
     shear[2] = np.dot(row[1], row[2])
     row[2] -= row[1] * shear[2]
-    scale[2] = vector_norm(row[2])
+    scale[2] = L2norm(row[2])
     row[2] /= scale[2]
     shear[1:] /= scale[2]
 
@@ -728,50 +734,7 @@ def decompose_matrix(matrix):
 
     return scale, shear, angles, translate, perspective
 
-def vector_norm(data, axis=None, out=None):
-    """Return length, i.e. euclidean norm, of ndarray along axis.
 
-    Examples
-    ----------
-    
-    >>> import numpy
-    >>> v = numpy.random.random(3)
-    >>> n = vector_norm(v)
-    >>> numpy.allclose(n, numpy.linalg.norm(v))
-    True
-    >>> v = numpy.random.rand(6, 5, 3)
-    >>> n = vector_norm(v, axis=-1)
-    >>> numpy.allclose(n, numpy.sqrt(numpy.sum(v*v, axis=2)))
-    True
-    >>> n = vector_norm(v, axis=1)
-    >>> numpy.allclose(n, numpy.sqrt(numpy.sum(v*v, axis=1)))
-    True
-    >>> v = numpy.random.rand(5, 4, 3)
-    >>> n = numpy.empty((5, 3), dtype=numpy.float64)
-    >>> vector_norm(v, axis=1, out=n)
-    >>> numpy.allclose(n, numpy.sqrt(numpy.sum(v*v, axis=1)))
-    True
-    >>> vector_norm([])
-    0.0
-    >>> vector_norm([1.0])
-    1.0
-
-    """
-    data = np.array(data, dtype=np.float64, copy=True)
-    if out is None:
-        if data.ndim == 1:
-            return math.sqrt(np.dot(data, data))
-        data *= data
-        out = np.atleast_1d(np.sum(data, axis=axis))
-        np.sqrt(out, out)
-        return out
-    else:
-        data *= data
-        np.sum(data, axis=axis, out=out)
-        np.sqrt(out, out)
-
-
-        
 def circumradius(a, b, c):
     ''' a, b and c are 3-dimensional vectors which are the vertices of a
     triangle. The function returns the circumradius of the triangle, i.e
