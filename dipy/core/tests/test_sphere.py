@@ -3,11 +3,11 @@ import numpy.testing as nt
 import warnings
 
 from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
-                              faces_from_sphere_vertices, HemiSphere, L2norm,
-                              disperse_charges, _get_forces, unit_octahedron,
-                              unit_icosahedron)
+                              faces_from_sphere_vertices, HemiSphere,
+                              disperse_charges, _get_forces,
+                              unit_octahedron, unit_icosahedron)
 from dipy.core.subdivide_octahedron import create_unit_sphere
-from dipy.core.geometry import cart2sphere, sphere2cart
+from dipy.core.geometry import cart2sphere, sphere2cart, L2norm
 
 verts = unit_octahedron.vertices
 edges = unit_octahedron.edges
@@ -31,17 +31,6 @@ def test_edges_faces():
                   [1, 2],
                   [2, 0]],
            faces=[0, 1, 2])
-
-
-def test_L2norm():
-    A = np.array([[1, 0, 0],
-                  [3, 4, 0],
-                  [0, 5, 12],
-                  [1, 2, 3]])
-    expected = np.array([1, 5, 13, np.sqrt(14)])
-    expected.shape = (4, 1)
-    nt.assert_array_almost_equal(L2norm(A), expected)
-    nt.assert_array_almost_equal(L2norm(A.T, axis=0), expected.T)
 
 
 def test_sphere_not_unit():
@@ -245,7 +234,7 @@ def test_hemisphere_faces():
          [  0,  t,  1],
          [  0, -t,  1],
         ])
-    vertices /= L2norm(vertices)
+    vertices /= L2norm(vertices, keepdims=True)
     faces = np.array(
         [[0, 1, 2],
          [0, 1, 3],
