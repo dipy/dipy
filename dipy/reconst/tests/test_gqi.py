@@ -1,7 +1,7 @@
 import numpy as np
 from dipy.data import get_data
 from dipy.core.sphere import Sphere
-from dipy.core.gradients import GradientTable
+from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.utils.spheremakers import sphere_vf_from
@@ -26,7 +26,7 @@ def test_gqi():
     data, golden_directions = SticksAndBall(bvals, bvecs, d=0.0015, 
                                S0=100, angles=[(0, 0), (90, 0)], 
                                fractions=[50, 50], snr=None) 
-    gtab = GradientTable(bvals, bvecs) 
+    gtab = gradient_table(bvals, bvecs) 
     gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.4)
     #symmetric724
     gq.direction_finder.config(sphere=sphere, min_separation_angle=25,
