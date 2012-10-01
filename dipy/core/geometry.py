@@ -157,10 +157,10 @@ def normalized_vector(vec, axis=-1):
     >>> normalized_vector(vec).shape
     (1, 3)
     '''
-    return vec / L2norm(vec, axis, keepdims=True)
+    return vec / vector_norm(vec, axis, keepdims=True)
 
 
-def L2norm(vec, axis=-1, keepdims=False):
+def vector_norm(vec, axis=-1, keepdims=False):
     ''' Return vector Euclidaan (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
@@ -178,7 +178,7 @@ def L2norm(vec, axis=-1, keepdims=False):
     >>> import numpy as np
     >>> vec = [1, 2, 3]
     >>> l2n = np.sqrt(np.dot(vec, vec))
-    >>> nvec = L2norm(vec)
+    >>> nvec = vector_norm(vec)
     >>> np.allclose(nvec, np.sqrt(np.dot(vec, vec)))
     True
     '''
@@ -704,18 +704,18 @@ def decompose_matrix(matrix):
     M[3, :3] = 0
 
     row = M[:3, :3].copy()
-    scale[0] = L2norm(row[0])
+    scale[0] = vector_norm(row[0])
     row[0] /= scale[0]
     shear[0] = np.dot(row[0], row[1])
     row[1] -= row[0] * shear[0]
-    scale[1] = L2norm(row[1])
+    scale[1] = vector_norm(row[1])
     row[1] /= scale[1]
     shear[0] /= scale[1]
     shear[1] = np.dot(row[0], row[2])
     row[2] -= row[0] * shear[1]
     shear[2] = np.dot(row[1], row[2])
     row[2] -= row[1] * shear[2]
-    scale[2] = L2norm(row[2])
+    scale[2] = vector_norm(row[2])
     row[2] /= scale[2]
     shear[1:] /= scale[2]
 

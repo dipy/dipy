@@ -8,7 +8,7 @@ import dicom
 
 import nibabel.dicom.dicomreaders as didr
 
-from dipy.io.vectors import L2norm
+from dipy.io.vectors import vector_norm
 
 data_dir = os.path.expanduser(
     "~/data/20100114_195840/Series_012_CBU_DTI_64D_1A")
@@ -39,7 +39,7 @@ for (i,d) in enumerate(datae):
 
 #    data.append(d_data)
 #    q = didr.get_q_vector(data_file)
-#    b = L2norm(q)
+#    b = vector_norm(q)
 #    g = q / b
 #    gs.append(g)
 #    bs.append(b)

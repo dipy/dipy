@@ -7,7 +7,7 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
                               disperse_charges, _get_forces,
                               unit_octahedron, unit_icosahedron)
 from dipy.core.subdivide_octahedron import create_unit_sphere
-from dipy.core.geometry import cart2sphere, sphere2cart, L2norm
+from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 
 verts = unit_octahedron.vertices
 edges = unit_octahedron.edges
@@ -234,7 +234,7 @@ def test_hemisphere_faces():
          [  0,  t,  1],
          [  0, -t,  1],
         ])
-    vertices /= L2norm(vertices, keepdims=True)
+    vertices /= vector_norm(vertices, keepdims=True)
     faces = np.array(
         [[0, 1, 2],
          [0, 1, 3],
