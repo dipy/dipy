@@ -1,10 +1,7 @@
 import numpy as np
 import dipy.io.gradients as io
 from .onetime import auto_attr
-
-
-def L2norm(x):
-    return np.sqrt((x * x).sum(-1))
+from .geometry import vector_norm
 
 
 class GradientTable(object):
@@ -51,7 +48,7 @@ class GradientTable(object):
 
     @auto_attr
     def bvals(self):
-        return L2norm(self.gradients)
+        return vector_norm(self.gradients)
 
     @auto_attr
     def b0s_mask(self):
@@ -112,7 +109,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
                          "respectively, where N is the number of diffusion "
                          "gradients")
 
-    bvecs_close_to_1 = abs(L2norm(bvecs) - 1) <= atol
+    bvecs_close_to_1 = abs(vector_norm(bvecs) - 1) <= atol
     if bvecs.shape[1] != 3 or not np.all(bvecs_close_to_1[dwi_mask]):
         raise ValueError("bvecs should be (N, 3), a set of N unit vectors")
 
