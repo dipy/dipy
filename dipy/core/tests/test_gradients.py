@@ -60,6 +60,8 @@ def test_GradientTable():
 
     gt = GradientTable(gradients, b0_threshold=1)
     npt.assert_array_equal(gt.b0s_mask, [1, 1, 1, 0, 0])
+    npt.assert_array_equal(gt.bvals, expected_bvals)
+    npt.assert_array_equal(gt.bvecs, expected_bvecs)
 
     npt.assert_raises(ValueError, GradientTable, np.ones((6, 2)))
     npt.assert_raises(ValueError, GradientTable, np.ones((6,)))

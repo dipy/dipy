@@ -58,7 +58,7 @@ class GradientTable(object):
     def bvecs(self):
         # To get unit vectors we divide by bvals, where bvals is 0 we divide by
         # 1 to avoid making nans
-        denom = self.b0s_mask + self.bvals
+        denom = self.bvals + (self.bvals == 0)
         denom = denom.reshape((-1, 1))
         return self.gradients / denom
 
