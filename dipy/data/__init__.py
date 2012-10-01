@@ -5,7 +5,7 @@ from dipy.io.bvectxt import read_bvec_file
 from os.path import join as pjoin, dirname
 import cPickle
 import gzip
-from dipy.core.gradients import GradientTable
+from dipy.core.gradients import gradient_table
 import numpy as np
 
 from ..utils.arrfuncs import as_native_array
@@ -200,8 +200,5 @@ def dsi_voxels():
     bvecs = np.loadtxt(fbvecs).T
     img = load(fimg)
     data = img.get_data()
-    gtab = GradientTable(bvals, bvecs)
+    gtab = gradient_table(bvals, bvecs)
     return data, gtab
-    
-
-

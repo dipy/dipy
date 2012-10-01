@@ -6,7 +6,7 @@ from dipy.reconst.odf import gfa
 from dipy.sims.voxel import SticksAndBall
 from dipy.core.sphere import Sphere
 from dipy.utils.spheremakers import sphere_vf_from
-from dipy.core.gradients import GradientTable
+from dipy.core.gradients import gradient_table
 from numpy.testing import assert_equal
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
@@ -24,7 +24,7 @@ def test_dsi():
     data, golden_directions = SticksAndBall(bvals, bvecs, d=0.0015, 
                                S0=100, angles=[(0, 0), (90, 0)], 
                                fractions=[50, 50], snr=None) 
-    gtab = GradientTable(bvals, bvecs) 
+    gtab = gradient_table(bvals, bvecs) 
     ds = DiffusionSpectrumModel(gtab)
     #symmetric724
     ds.direction_finder.config(sphere=sphere, min_separation_angle=25,
