@@ -109,13 +109,13 @@ class MarkovIntegrator(object):
 
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
                  seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
-        """Creates streamlines by using a Markov chain approach.
+        """Creates streamlines by using a Markov approach.
 
         Parameters
         ----------
-        model :
+        model : model
             The model used to fit diffusion data.
-        interpolator :
+        interpolator : interpolator
             Diffusion weighted data wrapped in an interpolator. Data should be
             normalized.
         mask : array, 3D
@@ -127,9 +127,6 @@ class MarkovIntegrator(object):
             Maximum angle allowed between successive steps of the streamline.
         seeds : array (N, 3)
             Points to seed the tracking.
-        sphere :
-            sphere used to evaluate the likelihood. A Sphere is ok, a
-            HemiSphere is better.
         max_cross : int or None
             The maximum number of direction to track from each seed in crossing
             voxels.  By default track all peaks of the odf, otherwise track the
@@ -251,9 +248,9 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
 
     Parameters
     ----------
-    model :
+    model : model
         The model used to fit diffusion data.
-    interpolator :
+    interpolator : interpolator
         Diffusion weighted data wrapped in an interpolator. Data should be
         normalized.
     mask : array, 3D
@@ -265,7 +262,7 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
         than `angle_limit` degrees.
     seeds : array (N, 3)
         Points to seed the tracking.
-    sphere :
+    sphere : Sphere
         sphere used to evaluate the likelihood. A Sphere is ok, a HemiSphere is
         better.
     max_cross : int or None
@@ -343,20 +340,28 @@ class CDT_NNO(ClosestDirectionTracker):
 
     Parameters:
     -----------
-    model :
+    model : model
         A model used to fit data. Should return a some fit object with
         directions.
-    interpolator :
+    interpolator : interpolator
         A NearestNeighbor interpolator, for other interpolators do not use this
         class.
     angle_limit : float [0, 90]
         Maximum angle allowed between prev_step and next_step.
 
     """
-    def __init__(self, model, interpolator, take_step, angle_limit=90,
-                 mask=None):
-        ClosestDirectionTracker.__init__(self, model, interpolator, take_step,
-                                         angle_limit, mask)
+    def __init__(self, model, interpolator, mask, take_step, angle_limit,
+                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
+        if not isinstance(interpolator, NearestNeighborInterpolator):
+            msg = ("CDT_NNO is an optimized version of "
+                   "ClosestDirectionTracker that requires a "
+                   "NearestNeighborInterpolator")
+            raise ValueError(msg)
+
+        ClosestDirectionTracker.__init__(self, model, interpolator, mask,
+                                         take_step, angle_limit, seeds,
+                                         max_cross=max_cross, maxlen=maxlen,
+                                         mask_voxel_size=mask_voxel_size)
         self._data = self.interpolator.data
         self._voxel_size = self.interpolator.voxel_size
         self.reset_cache()
