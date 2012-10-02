@@ -1,20 +1,34 @@
 #!/usr/bin/python
-""" Classes and functions for fitting tensors """
-# 5/17/2010
-
 import numpy as np
-
 from dipy.reconst.maskedview import MaskedView, _makearray, _filled
 from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
 
 
 class TensorModel(object):
+    """ Diffusion Tensor
     """
+    def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
+        """ A Diffusion Tensor Model [1]_, [2]_.
 
-    """
-    def __init__(self, bval, bvec, fit_method="WLS", *args, **kwargs):
-        """
+        Parameters
+        ----------
+        gtab : GradientTable
+        fit_method : str,
+            'WLS' for weighted least squares
+                dti.wls_fit_tensor
+            'LS' for ordinary least squares
+                dti.ols_fit_tensor
+            'LowTri' for lower triangular
+
+        References
+        ----------
+        .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
+           the effective self-diffusion tensor from the NMR spin echo. J Magn
+           Reson B 103, 247-254.
+        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
+           features of tissues elucidated by quantitative diffusion-tensor MRI.
+           Journal of Magnetic Resonance 111, 209-219.
 
         """
         if not callable(fit_method):
@@ -24,11 +38,10 @@ class TensorModel(object):
                 raise ValueError('"'+str(fit_method)+'" is not a known fit '
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
-        self.bvec = bvec
-        self.bval = bval
+        self.bvec = gtab.bvec
+        self.bval = gtab.bval
         #64 bit design matrix makes for faster pinv
-        self.design_matrix = design_matrix(bvec.T, bval)
-
+        self.design_matrix = design_matrix(self.bvec.T, self.bval)
 
     def fit(self, data):
         """
@@ -93,7 +106,6 @@ class TensorFit(object):
         Cached associated eigenvectors of self diffusion tensor for given 
         index. Note: evals[..., j] is associated with evecs[..., :, j]
 
-
     Methods
     -------
     fa : array
@@ -101,19 +113,6 @@ class TensorFit(object):
     md : array
         Calculates the mean diffusivity [2]_.
         Note: [units ADC] ~ [units b value]*10**-1
-
-    See Also
-    --------
-    dipy.io.bvectxt.read_bvec_file, dipy.core.qball.ODF
-
-    References
-    ----------
-    .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
-       the effective self-diffusion tensor from the NMR spin echo. J Magn
-       Reson B 103, 247-254.
-    .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
-       features of tissues elucidated by quantitative diffusion-tensor MRI.
-       Journal of Magnetic Resonance 111, 209-219.
 
     Examples
     ----------
@@ -125,14 +124,12 @@ class TensorFit(object):
         """
         self.model_params = model_params
 
-
     @property
     def directions(self):
         """
-        For tracking - return the PDD in each voxel
+        For tracking - return the primary direction in each voxel
         """
         return self.evecs[..., np.newaxis, :, 0]
-
 
     @property
     def evals(self):
@@ -150,7 +147,6 @@ class TensorFit(object):
         evecs = _filled(self.model_params[..., 3:])
         return evecs.reshape(self.shape + (3, 3))
 
-    ### Self Diffusion Tensor Property ###
     @property
     def quadratic_form(self):
         """Calculates the 3x3 diffusion tensor for each voxel"""
@@ -234,6 +230,9 @@ class TensorFit(object):
             MD = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
         return self.evals.mean(-1)
+
+    def odf(self, sphere):
+        pass
     
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
@@ -317,6 +316,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     dti_params = wrap(dti_params)
     return dti_params
 
+
 def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     '''
     Function used by wls_fit_tensor for later optimization.
@@ -327,6 +327,7 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
     tensor = from_lower_triangular(D)
     return decompose_tensor(tensor)
+
 
 def _ols_iter(inv_design, sig, min_signal=1):
     '''
@@ -410,6 +411,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     dti_params = wrap(dti_params)
     return dti_params
 
+
 def _ols_fit_matrix(design_matrix):
     """
     Helper function to calculate the ordinary least squares (OLS)
@@ -429,9 +431,11 @@ def _ols_fit_matrix(design_matrix):
     U,S,V = np.linalg.svd(design_matrix, False)
     return np.dot(U, U.T)
 
+
 _lt_indices = np.array([[0, 1, 3],
                         [1, 2, 4],
                         [3, 4, 5]])
+
 def from_lower_triangular(D):
     """
     Returns a tensor given the six unique tensor elements
@@ -452,8 +456,11 @@ def from_lower_triangular(D):
     """
     return D[..., _lt_indices]
 
+
 _lt_rows = np.array([0, 1, 1, 2, 2, 2])
 _lt_cols = np.array([0, 0, 1, 0, 1, 2])
+
+
 def lower_triangular(tensor, b0=None):
     """
     Returns the six lower triangular values of the tensor and a dummy variable
@@ -481,6 +488,7 @@ def lower_triangular(tensor, b0=None):
         D[..., 6] = -np.log(b0)
         D[..., :6] = tensor[..., _lt_rows, _lt_cols]
         return D
+
 
 def tensor_eig_from_lo_tri(B, data):
     """Calculates parameters for creating a Tensor instance
@@ -515,6 +523,7 @@ def tensor_eig_from_lo_tri(B, data):
     dti_params.shape = data.shape[:-1]+(12,)
     dti_params = wrap(dti_params)
     return dti_params
+
 
 def decompose_tensor(tensor):
     """
@@ -559,6 +568,7 @@ def decompose_tensor(tensor):
 
     return eigenvals, eigenvecs
 
+
 def design_matrix(gtab, bval, dtype=None):
     """
     Constructs design matrix for DTI weighted least squares or least squares 
@@ -593,6 +603,7 @@ def design_matrix(gtab, bval, dtype=None):
     B[:, 6] = np.ones(bval.size)
     return -B
 
+
 def quantize_evecs(evecs, odf_vertices=None):
     ''' Find the closest orientation of an evenly distributed sphere
 
@@ -615,6 +626,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
     IN=IN.reshape(tup)
     return IN
+
 
 class TensorStepper(object):
     """Used for tracking diffusion tensors, has a next_step method"""
@@ -663,6 +675,7 @@ class TensorStepper(object):
         else:
             return -step
 
+
 def stepper_from_tensor(tensor, *args, **kargs):
     """stepper_from_tensor(tensor, fa_vol, evec1_vol, voxel_size, interpolator)
     """
@@ -671,9 +684,10 @@ def stepper_from_tensor(tensor, *args, **kargs):
     stepper = TensorStepper(fa_vol, evec1_vol, *args, **kargs)
     return stepper
 
+
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
-                      'from lower triangular': tensor_eig_from_lo_tri,
+                      'LowTri': tensor_eig_from_lo_tri,
                      }
 
 
