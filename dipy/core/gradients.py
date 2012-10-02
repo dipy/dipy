@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 import dipy.io.gradients as io
 from .onetime import auto_attr
@@ -11,22 +12,22 @@ class GradientTable(object):
     ----------
     gradients : array_like (N, 3)
         N diffusion gradients
-    b0_threshold: float
+    b0_threshold : float
         Gradients with b-value less than or equal to `bo_threshold` are
         considered as b0s i.e. without diffusion weighting.
 
     Attributes
     ----------
-    gradients: array, shape(N, 3)
+    gradients : array, shape(N, 3)
         diffusion gradients
-    bvals: array, shape (N,)
+    bvals : array, shape (N,)
         The b-value, or magnitude, of each gradient direction.
-    bvecs: array, shape (N,3)
+    bvecs : array, shape (N,3)
         The direction, represented as a unit vector, of each gradient.
-    b0s_mask: array, shape (N,)
+    b0s_mask : array, shape (N,)
         Boolean array indicating which gradients have no diffusion
         weighting, ie b-value is close to 0.
-    b0_threshold: float
+    b0_threshold : float
         Gradients with b-value less than or equal to `bo_threshold` are
         considered to not have diffusion weighting.
 
@@ -36,7 +37,7 @@ class GradientTable(object):
 
     """
     def __init__(self, gradients, big_delta=None, small_delta=None,
-                 b0_threshold=20):
+                 b0_threshold=0):
         """Constructor for GradientTable class"""
         gradients = np.asarray(gradients)
         if gradients.ndim != 2 or gradients.shape[1] != 3:
@@ -71,7 +72,7 @@ class GradientTable(object):
         print('         min %f ' % self.bvecs.min())
         print('         max %f ' % self.bvecs.max())
 
-def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
+def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
                                   **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
@@ -81,10 +82,10 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
         The b-value, or magnitude, of each gradient direction.
     bvecs : array_like (N, 3)
         The direction, represented as a unit vector, of each gradient.
-    b0_threshold: float
+    b0_threshold : float
         Gradients with b-value less than or equal to `bo_threshold` are
         considered to not have diffusion weighting.
-    atol: float
+    atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
     Other keyword inputs are passed to GradientTable
@@ -99,8 +100,8 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
     GradientTable, gradient_table
 
     """
-    bvals = np.asarray(bvals)
-    bvecs = np.asarray(bvecs)
+    bvals = np.asarray(bvals, np.float)
+    bvecs = np.asarray(bvecs, np.float)
     dwi_mask = bvals > b0_threshold
 
     # check that bvals is (N,) array and bvecs is (N, 3) unit vectors
@@ -125,7 +126,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=20, atol=1e-2,
     return grad_table
 
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
-                   b0_threshold=20, atol=1e-2):
+                   b0_threshold=0, atol=1e-2):
     """A general function for creating diffusion MR gradients.
 
     It reads, loads and prepares scanner parameters like the b-values and
@@ -134,7 +135,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     Parameters
     ----------
 
-    bvals: can be any of the four options
+    bvals : can be any of the four options
         1. an array of shape (N,) or (1, N) or (N, 1) with the b-values.
         2. a path for the file which contains an array like the above (1).
         3. an array of shape (N, 4) or (4, N). Then this parameter is
@@ -142,21 +143,21 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
         this case the next parameter is skipped.
         4. a path for the file which contains an array like the one at (3).
 
-    bvecs: can be any of two options
+    bvecs : can be any of two options
         1. an array of shape (N, 3) or (3, N) with the b-vectors.
         2. a path for the file which contains an array like the previous.
 
-    big_delta: float
+    big_delta : float
         acquisition timing duration (default None)
 
-    small_delta: float
+    small_delta : float
         acquisition timing duration (default None)
 
-    b0_threshold: float
+    b0_threshold : float
         All b-values with values less than or equal to `bo_threshold` are
         considered as b0s i.e. without diffusion weighting.
 
-    atol: float
+    atol : float
         All b-vectors need to be unit vectors up to a tolerance.
 
 
