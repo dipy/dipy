@@ -8,11 +8,12 @@ from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
 from dipy.core.geometry import cart2sphere
-from dipy.reconst.shm import real_sph_harm, \
-    sph_harm_ind_list, _closest_peak, SlowAdcOpdfModel, \
-    normalize_data, ClosestPeakSelector, QballOdfModel, hat, lcr_matrix, \
-    smooth_pinv, bootstrap_data_array, bootstrap_data_voxel, \
-    ResidualBootstrapWrapper
+from dipy.reconst.interpolate import NearestNeighborInterpolator
+from dipy.reconst.shm import (real_sph_harm, sph_harm_ind_list, OpdtModel,
+                              normalize_data, QballModel, hat, lcr_matrix,
+                              smooth_pinv, bootstrap_data_array,
+                              bootstrap_data_voxel, ResidualBootstrapWrapper)
+from dipy.tracking.markov import ClosestDirectionTracker
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -64,42 +65,6 @@ def test_real_sph_harm():
     dd = np.ones((1,1,1,6))
     assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 
-def test_closest_peak():
-    peak_values = np.array([1, .9, .8, .7, .6, .2, .1])
-    peak_points = np.array([[1., 0., 0.],
-                            [0., .9, .1],
-                            [0., 1., 0.],
-                            [.9, .1, 0.],
-                            [0., 0., 1.],
-                            [1., 1., 0.],
-                            [0., 1., 1.]])
-    norms = np.sqrt((peak_points*peak_points).sum(-1))
-    peak_points = peak_points/norms[:, None]
-
-    prev = np.array([1, -.9, 0])
-    prev = prev/np.sqrt(np.dot(prev, prev))
-    cp = _closest_peak(peak_points, prev, .5)
-    assert_array_equal(cp, peak_points[0])
-    cp = _closest_peak(peak_points, -prev, .5)
-    assert_array_equal(cp, -peak_points[0])
-    assert_raises(StopIteration, _closest_peak, peak_points, prev, .75)
-
-class Sph(object):
-    pass
-
-def test_set_angle_limit():
-    bval = np.ones(100)
-    bval[0] = 0
-    bvec = np.ones((3, 100))
-    sig = np.zeros(100)
-    v = np.ones((200, 3)) / np.sqrt(3)
-    sphere = Sph()
-    sphere.vertices = v
-    opdf_fitter = SlowAdcOpdfModel(bval, bvec.T, 6, sphere=sphere)
-    norm_sig = sig[..., 1:]
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=55)
-    assert_raises(ValueError, stepper._set_angle_limit, 99)
-    assert_raises(ValueError, stepper._set_angle_limit, -1.1)
 
 def test_smooth_pinv():
     hemi = create_unit_hemisphere(3)
@@ -193,51 +158,79 @@ def make_fake_signal():
     D_fixed = lower_triangular(tensor_fixed, 1)
 
     sig = .45*np.exp(np.dot(D_moveing, B.T)) + .55*np.exp(np.dot(B, D_fixed))
-    print sig
     assert sig.max() <= 1
     assert sig.min() > 0
     return hemisphere, vecs_xy, bval, bvec, sig
 
-def test_ClosestPeakSelector():
+
+class SimpleModel(object):
+    def fit(data):
+        return SimpleFit(object)
+
+class SimpleFit(object):
+    directions = np.array([[ 1.,  0.,  0.],
+                           [ 0.,  1.,  0.],
+                           [ 0.,  0.,  1.],
+                          ])
+
+def test_opdt_model():
     sphere, vecs_xy, bval, bvec, sig = make_fake_signal()
-    opdf_fitter = SlowAdcOpdfModel(bval, bvec.T, 6, sphere=sphere)
-    opdf_fitter.angular_distance_threshold = 0.
+    opdt_fitter = OpdtModel(bval, bvec.T, 6)
+    opdt_fitter.direction_finder.config(sphere=sphere,
+                                        min_separation_angle=0.)
     norm_sig = sig
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
-    stepper.angular_spacing_threshould = 0.
-    S = opdf_fitter.fit(norm_sig).odf()
+    voxel_size = np.ones(norm_sig.ndim - 1)
+    wrapped_norm_sig = NearestNeighborInterpolator(norm_sig, voxel_size)
+    mask = np.ones(norm_sig.shape[:-1], 'bool')
+    # angle_limit=49
+    stepper = ClosestDirectionTracker(opdt_fitter, wrapped_norm_sig, mask,
+                                      None, 56, seeds=[])
+
+    S = opdt_fitter.fit(norm_sig).odf(sphere)
     for ii in xrange(len(vecs_xy)):
+        step = stepper._next_step(ii, [0, 1., 0])
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .56:
-            assert_raises(StopIteration, stepper.next_step, ii, [0, 1., 0])
+            assert_true(step is None)
         else:
-            step = stepper.next_step(ii, [0, 1., 0])
-            s2 = stepper.next_step(ii, vecs_xy[ii])
-            assert_array_equal(vecs_xy[ii], step)
-            step = stepper.next_step(ii, [1., 0, 0.])
+            s2 = stepper._next_step(ii, vecs_xy[ii])
+            assert_array_almost_equal(vecs_xy[ii], step)
+            step = stepper._next_step(ii, [1., 0, 0.])
             assert_array_almost_equal([1., 0, 0.], step)
 
     norm_sig.shape = (2, 2, 4, -1)
-    stepper = ClosestPeakSelector(opdf_fitter, norm_sig, angle_limit=49)
-    step = stepper.next_step((0, 0, 0), [1, 0, 0])
+    voxel_size = np.ones(norm_sig.ndim - 1)
+    wrapped_norm_sig = NearestNeighborInterpolator(norm_sig, voxel_size)
+    mask = np.ones(norm_sig.shape[:-1], 'bool')
+
+    stepper = ClosestDirectionTracker(opdt_fitter, wrapped_norm_sig, mask,
+                                      None, 56, seeds=[])
+    step = stepper._next_step((0, 0, 0), [1, 0, 0])
     assert_array_almost_equal(step, [1, 0, 0])
 
-def testQballOdfModel():
+def testQballModel():
     sphere, vecs_xy, bval, bvec, sig = make_fake_signal()
-    qball_fitter = QballOdfModel(bval, bvec.T, 6, sphere=sphere)
-    qball_fitter.angular_spacing_threshould = 0.
+    qball_fitter = QballModel(bval, bvec.T, 6)
+    qball_fitter.direction_finder.config(sphere=sphere,
+                                         min_separation_angle=0.)
 
     norm_sig = sig
-    S = qball_fitter.fit(norm_sig).odf()
-    stepper = ClosestPeakSelector(qball_fitter, norm_sig, angle_limit=39)
+    voxel_size = np.ones(norm_sig.ndim - 1)
+    wrapped_norm_sig = NearestNeighborInterpolator(norm_sig, voxel_size)
+    mask = np.ones(norm_sig.shape[:-1], 'bool')
+
+    S = qball_fitter.fit(norm_sig).odf(sphere)
+    # angle_limit=39
+    stepper = ClosestDirectionTracker(qball_fitter, wrapped_norm_sig, mask,
+                                      None, 33, seeds=[])
     for ii in xrange(len(vecs_xy)):
+        step = stepper._next_step(ii, [0, 1., 0])
         if np.dot(vecs_xy[ii], [0, 1., 0]) < .84:
-            assert_raises(StopIteration, stepper.next_step, ii, [0, 1., 0])
+            assert_true(step is None)
         else:
-            step = stepper.next_step(ii, [0, 1., 0])
-            s2 = stepper.next_step(ii, vecs_xy[ii])
+            s2 = stepper._next_step(ii, vecs_xy[ii])
             assert step is not None
             assert np.dot(vecs_xy[ii], step) > .98
-            step = stepper.next_step(ii, [1., 0, 0.])
+            step = stepper._next_step(ii, [1., 0, 0.])
             assert_array_almost_equal([1., 0, 0.], step)
 
 def test_hat_and_lcr():

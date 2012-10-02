@@ -36,10 +36,11 @@ cdef inline float* asfp(cnp.ndarray pt):
 cdef inline double* asdp(cnp.ndarray pt):
     return <double *>pt.data
 
+@cython.boundscheck(False)
 @cython.wraparound(False)
-def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data, 
-                     cnp.ndarray[cnp.float_t, ndim=1] index,
-                     cnp.ndarray[cnp.float_t, ndim=1] voxel_size):
+def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4, mode='strided'] data,
+                     cnp.ndarray[cnp.float_t, ndim=1, mode='c'] index,
+                     cnp.ndarray[cnp.float_t, ndim=1, mode='c'] voxel_size):
     """Interpolates data at index
 
     Interpolates data from a 4d volume, first 3 dimensions are x, y, z the
@@ -55,7 +56,15 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4] data,
         int z_ind = <int> floor(z)
         int ii, jj, kk, LL
         int last_d = data.shape[3]
-        cnp.ndarray[cnp.float_t, ndim=1] result=np.zeros(last_d)
+        char bounds_check
+        cnp.ndarray[cnp.float_t, ndim=1, mode='c'] result=np.zeros(last_d)
+    bounds_check = (x_ind < 0 or y_ind < 0 or z_ind < 0 or
+                    x_ind >= data.shape[0] - 1 or
+                    y_ind >= data.shape[1] - 1 or
+                    z_ind >= data.shape[2] - 1)
+    if bounds_check:
+        raise IndexError
+
     x = x % 1
     y = y % 1
     z = z % 1

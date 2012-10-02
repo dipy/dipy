@@ -1,4 +1,16 @@
-""" Tools for using spherical homonic models to fit diffussion data
+""" Tools for using spherical harmonic models to fit diffusion data
+
+References
+----------
+Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
+    Angle Consideration.
+Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+    Q-ball imaging.
+Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
+    populations in white matter of the brain with Funk-Radon transform.
+Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
+    density functions in high angular resolution diffusion imaging.
+
 """
 """
 Note about the Transpose:
@@ -12,14 +24,15 @@ keep the data as is and implement the relevant equations rewritten in the
 following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
-from numpy import arange, arccos, arctan2, array, asarray, atleast_1d, \
-                  broadcast_arrays, concatenate, cos, diag, diff, dot, empty, \
-                  eye, log, minimum, maximum, pi, repeat, sqrt, unique, eye
+from numpy import (arange, arccos, arctan2, array, asarray, atleast_1d,
+                   broadcast_arrays, concatenate, cos, diag, diff, dot, empty,
+                   eye, log, minimum, maximum, pi, repeat, sqrt, unique)
 from numpy.linalg import pinv, svd
 from numpy.random import randint
 from .odf import OdfModel, OdfFit, peak_directions
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
+from .cache import Cache
 
 def _copydoc(obj):
     def bandit(f):
@@ -155,10 +168,10 @@ def lazy_index(index):
     else:
         return slice(index[0], index[-1] + 1, step[0])
 
-class SphHarmModel(OdfModel):
+class SphHarmModel(OdfModel, Cache):
     """The base class to subclassed by spacific spherical harmonic models of
     diffusion data"""
-    def __init__(self, bval, gradients, sh_order, smooth=0, sphere=None):
+    def __init__(self, bval, gradients, sh_order, smooth=0):
         """Creates a model that can be used to fit or sample diffusion data
 
         Arguments
@@ -188,20 +201,9 @@ class SphHarmModel(OdfModel):
         legendre0 = lpn(sh_order, 0)[0]
         F = legendre0[n]
         self.B = B
-        self._m = m
-        self._n = n
+        self.m = m
+        self.n = n
         self._set_fit_matrix(B, L, F, smooth)
-        if sphere is not None:
-            self.sphere = sphere
-            self._sampling_matrix = self.sampling_matrix(sphere)
-
-    def sampling_matrix(self, sphere):
-        """Returns a matrix that can be used to sample the function from
-        coefficients"""
-        x, y, z = sphere.vertices.T
-        r, pol, azi = cart2sphere(x, y, z)
-        S = real_sph_harm(self._m, self._n, azi[:, None], pol[:, None])
-        return S
 
     def _set_fit_matrix(self, *args):
         """Should be set in a subclass and is called by __init__"""
@@ -213,26 +215,38 @@ class SphHarmFit(OdfFit):
     def __init__(self, model, shm_coef):
         self.model = model
         self._shm_coef = shm_coef
-    
-    def odf(self, sphere=None):
-        """Samples the odf function on the points of a sphere"""
-        if sphere is None:
-            M = self.model._sampling_matrix
-        else:
-            M = self.model.sampling_matrix(sphere)
-        return self._shm_coef.dot(M.T)
 
-class MonoExpOpdfModel(SphHarmModel):
-    """Implementaion of Solid Angle method with mono-exponential assumption
+    def odf(self, sphere):
+        """Samples the odf function on the points of a sphere
+
+        Parameters
+        ----------
+        sphere : Sphere
+            The points on which to sample the odf.
+
+        Returns
+        -------
+        values : ndarray
+            The value of the odf on each point of `sphere`.
+
+        """
+        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
+        if sampling_matrix is None:
+            phi = sphere.phi.reshape((-1, 1))
+            theta = sphere.theta.reshape((-1, 1))
+            sampling_matrix = real_sph_harm(self.model.m, self.model.n,
+                                            phi, theta)
+            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
+        return self._shm_coef.dot(sampling_matrix.T)
+
+
+class CsaOdfModel(SphHarmModel):
+    """Implementation of Constant Solid Angle reconstruction method.
 
     References
     ----------
     Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-    Angle Consideration.
-    Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
-    populations in white matter of the brain with Funk-Radon transform.
-    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
-    Q-ball imaging.
+        Angle Consideration.
     """
     min = .001
     max = .999
@@ -248,23 +262,21 @@ class MonoExpOpdfModel(SphHarmModel):
         """Fits the model to diffusion data and returns the coefficients of the
         odf"""
         data = data[self._index]
-        d = log(-log(data.clip(self.min, self.max)))
-        shm_coef = d.dot(self._fit_matrix.T)
+        data = data.clip(self.min, self.max)
+        loglog_data = log(-log(data))
+        shm_coef = loglog_data.dot(self._fit_matrix.T)
         return SphHarmFit(self, shm_coef)
 
-class SlowAdcOpdfModel(SphHarmModel):
-    """Implementaion of Tristen-Vega 2009 method with slow varying ADC
-    assumption
+class OpdtModel(SphHarmModel):
+    """Implementation of Orientation Probability Density Transform
+    reconstruction method.
 
     References
     ----------
-    Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-    Angle Consideration.
     Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
-    populations in white matter of the brain with Funk-Radon transform.
-    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
-    Q-ball imaging.
-
+        populations in white matter of the brain with Funk-Radon transform.
+    Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
+        density functions in high angular resolution diffusion imaging.
     """
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, sqrt(smooth)*L)
@@ -287,8 +299,13 @@ def _slowadc_formula(data, delta_b, delta_q):
     logd = -log(data)
     return dot(logd*(1.5-logd)*data, delta_q.T) - dot(data, delta_b.T)
 
-class QballOdfModel(SphHarmModel):
-    """Implementaion Qball Odf Model
+class QballModel(SphHarmModel):
+    """Implementation of regularized Qball reconstruction method.
+
+    References
+    ----------
+    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+        Q-ball imaging.
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
@@ -320,21 +337,14 @@ def normalize_data(data, bval, min_signal=1e-5, out=None):
     else:
         if out.dtype.kind != 'f':
             raise ValueError("out must be floating point")
-        out[:] = data                         
+        out[:] = data
 
     out.clip(min_signal, out=out)
     b0 = out[..., where_b0].mean(-1)
     b0 = b0.reshape(b0.shape + (1,))
-    out /= b0 
+    out /= b0
     return out
 
-def gfa(samples):
-    """gfa of some function from a set of samples of that function"""
-    diff = samples - samples.mean(-1)[..., None]
-    n = samples.shape[-1]
-    numer = n*(diff*diff).sum(-1)
-    denom = (n-1)*(samples*samples).sum(-1)
-    return sqrt(numer/denom)
 
 def hat(B):
     """Returns the hat matrix for the design matrix B
@@ -438,120 +448,4 @@ class ResidualBootstrapWrapper(object):
         d = bootstrap_data_voxel(d, self._H, self._R)
         d.clip(self._min_signal, 1., d)
         return d
-
-class ClosestPeakSelector(object):
-    """Step selector with next_step method to be used for fiber tracking
-
-    Attributes:
-    -----------
-    angle_limit : float, 0 <= angle_limit <= 90
-        End track if the angle between prev_step and next_step is greater than
-        angle_limit
-    """
-    def _get_angle_limit(self):
-        return 180/pi * arccos(self._cos_limit)
-
-    def _set_angle_limit(self, angle_limit):
-        if angle_limit < 0 or angle_limit > 90:
-            raise ValueError("angle_limit must be between 0 and 90")
-        self._cos_limit = cos(angle_limit*pi/180)
-
-    angle_limit = property(_get_angle_limit, _set_angle_limit)
-    relative_peak_threshold = .25
-    peak_separation_angle = 45
-
-    def __init__(self, model, interpolator, angle_limit=90):
-        """Creates a peakfinder which can be used to get next_step
-
-        Parameters:
-        -----------
-        model : must have evaluate method
-            A model used to fit data
-        interpolator : must be indexable
-            An object which returns diffusion weighted data when indexed
-        angle_limit : float
-            see angle_limit attribute
-        """
-
-        self._interpolator = interpolator
-        self._model = model
-        self.angle_limit = angle_limit
-
-    def next_step(self, location, prev_step):
-        """Returns the peak closest to prev_step at location
-
-        Fits the data from location using model and evaluates that model on the
-        surface of a sphere. Then the point on the sphere which is both a
-        local maxima and closest to prev_step is returned.
-
-        Parameters
-        ----------
-        location : point in space
-            location is passed to the interpolator in order to get data
-        prev_step: array_like (3,)
-            the direction of the previous tracking step
-
-        """
-        vox_data = self._interpolator[location]
-        odf = self._model.fit(vox_data).odf()
-        peak_points = peak_directions(odf, self._model.sphere,
-                                      self.relative_peak_threshold,
-                                      self.peak_separation_angle)
-        if prev_step is not None:
-            return _closest_peak(peak_points, prev_step, self._cos_limit)
-        else:
-            return peak_points
-
-def _closest_peak(peak_points, prev_step, cos_limit):
-    peak_dots = dot(peak_points, prev_step)
-    closest_peak = abs(peak_dots).argmax()
-    dot_closest_peak = peak_dots[closest_peak]
-    if dot_closest_peak >= cos_limit:
-        return peak_points[closest_peak]
-    elif -dot_closest_peak >= cos_limit:
-        return -peak_points[closest_peak]
-    else:
-        raise StopIteration("angle between peaks too large")
-
-class NND_ClosestPeakSelector(ClosestPeakSelector):
-
-    def __init__(self, model, data, mask, voxel_size, angle_limit=90):
-        """Create a new peak_finder"""
-        self.voxel_size = asarray(voxel_size, 'float')
-        self.angle_limit = angle_limit
-        self.mask = asarray(mask, 'bool')
-        assert self.mask.shape == data.shape[:-1]
-        self._data = data
-        self._model = model
-        self.reset_cache()
-
-    def reset_cache(self):
-        lookup = empty(self.mask.shape, 'int')
-        lookup.fill(-2)
-        lookup[self.mask] = -1
-        self._lookup = lookup
-        self._peaks = []
-
-    def next_step(self, location, prev_step):
-        vox_loc = tuple(location // self.voxel_size)
-        if min(vox_loc) < 0:
-            raise IndexError('negative index')
-        hash = self._lookup[vox_loc]
-        if hash >= 0:
-            peak_points = self._peaks[hash]
-        elif hash == -1:
-            vox_data = self._data[vox_loc]
-            odf = self._model.fit(vox_data).odf()
-            peak_points = peak_directions(odf, self._model.sphere,
-                                          self.relative_peak_threshold,
-                                          self.peak_separation_angle)
-
-            self._lookup[vox_loc] = len(self._peaks)
-            self._peaks.append(peak_points)
-        else:
-            raise StopIteration("outside mask")
-        if prev_step is not None:
-            return _closest_peak(peak_points, prev_step, self._cos_limit)
-        else:
-            return peak_points
 
