@@ -223,3 +223,4 @@ def test_from_lower_triangular():
     D = D * np.ones((5, 4, 1))
     tensor = from_lower_triangular(D)
     assert_array_equal(tensor, result)
+     
