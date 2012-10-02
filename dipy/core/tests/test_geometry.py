@@ -11,7 +11,7 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 vector_cosine,
                                 lambert_equal_area_projection_polar,
                                 circumradius,
-                                L2norm
+                                vector_norm
                                 )
 
 
@@ -24,16 +24,17 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.testing import parametric, sphere_points
 
 
-def test_L2norm():
+def test_vector_norm():
     A = np.array([[1, 0, 0],
                   [3, 4, 0],
                   [0, 5, 12],
                   [1, 2, 3]])
     expected = np.array([1, 5, 13, np.sqrt(14)])
-    assert_array_almost_equal(L2norm(A), expected)
+    assert_array_almost_equal(vector_norm(A), expected)
     expected.shape = (4, 1)
-    assert_array_almost_equal(L2norm(A, keepdims=True), expected)
-    assert_array_almost_equal(L2norm(A.T, axis=0, keepdims=True), expected.T)
+    assert_array_almost_equal(vector_norm(A, keepdims=True), expected)
+    assert_array_almost_equal(vector_norm(A.T, axis=0, keepdims=True),
+                              expected.T)
 
 
 def test_sphere_cart():
