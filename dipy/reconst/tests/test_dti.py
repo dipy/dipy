@@ -3,18 +3,15 @@
 """
 
 import numpy as np
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_almost_equal, assert_raises
+from nose.tools import (assert_true, assert_equal, 
+                        assert_almost_equal, assert_raises)
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-from dipy.testing import parametric
-import os
-
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import lower_triangular, from_lower_triangular
 from dipy.reconst.maskedview import MaskedView
-import nibabel as nib
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data
+
 
 def test_tensor_scalar_attributes():
     """
@@ -54,6 +51,7 @@ def test_tensor_scalar_attributes():
     #assert_array_equal(n_list % 2, 0)
     #assert_raises(ValueError, qball.sph_harm_ind_list, 1)
 
+
 def test_fa_of_zero():
     dummy_gtab = np.zeros((10,3))
     dummy_bval = np.zeros((10,))
@@ -61,6 +59,7 @@ def test_fa_of_zero():
     ten.model_params = np.zeros(12)
     assert_equal(ten.fa(), 0)
     assert_true(np.isnan(ten.fa(nonans=False)))
+
 
 def test_WLS_and_LS_fit():
     """
@@ -114,6 +113,7 @@ def test_WLS_and_LS_fit():
     assert_almost_equal(tensor_est.md(), md)
     assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
+
 def test_masked_array_with_Tensor():
     data = np.ones((2,4,56))
     mask = np.array([[True, False, False, True],
@@ -143,6 +143,7 @@ def test_masked_array_with_Tensor():
     assert_equal(tensor.evals.shape, (3,))
     assert_equal(tensor.evecs.shape, (3,3))
     assert_equal(type(tensor.model_params), np.ndarray)
+
 
 def test_passing_maskedview():
     data = np.ones((2,4,56))
@@ -177,6 +178,7 @@ def test_passing_maskedview():
     assert_equal(tensor.evecs.shape, (3,3))
     assert_equal(type(tensor.model_params), np.ndarray)
 
+
 def test_init():
     data = np.ones((2,4,56))
     mask = np.ones((2,4),'bool')
@@ -192,6 +194,7 @@ def test_init():
                         fit_method='s')
     assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
                         fit_method=0)
+
 
 def test_lower_triangular():
     tensor = np.arange(9).reshape((3,3))
@@ -211,6 +214,7 @@ def test_lower_triangular():
     result = np.empty(shape + (7,))
     result[:] = [0, 3, 4, 6, 7, 8, 0]
     assert_array_equal(D, result)
+
 
 def test_from_lower_triangular():
     result = np.array([[0, 1, 3],
