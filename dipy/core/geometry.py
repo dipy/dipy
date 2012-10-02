@@ -1,5 +1,5 @@
 ''' Utility functions for algebra etc '''
-
+from __future__ import division
 import math
 import numpy as np
 import numpy.linalg as npl
@@ -161,32 +161,46 @@ def normalized_vector(vec, axis=-1):
 
 
 def vector_norm(vec, axis=-1, keepdims=False):
-    ''' Return vector Euclidaan (L2) norm
+    ''' Return vector Euclidean (L2) norm
 
     See :term:`unit vector` and :term:`Euclidean norm`
 
     Parameters
     -------------
-    vec : array-like shape (3,)
+    vec : array-like
+        Vectors to norm.
+    axis : int
+        Axis over which to norm. By default norm over last axis. If `axis` is
+        None, `vec` if flattened then normed.
+    keepdims : bool
+        If True, the output will have the same number of dimensions as `vec`,
+        with shape 1 on `axis`.
 
     Returns
     ---------
-    norm : scalar
+    norm : array
+        Euclidean norms of vectors.
 
     Examples
     --------
     >>> import numpy as np
-    >>> vec = [1, 2, 3]
-    >>> l2n = np.sqrt(np.dot(vec, vec))
-    >>> nvec = vector_norm(vec)
-    >>> np.allclose(nvec, np.sqrt(np.dot(vec, vec)))
-    True
+    >>> vec = [[8, 15, 0], [0, 36, 77]]
+    >>> vector_norm(vec)
+    array([ 17.,  85.])
+    >>> vector_norm(vec, keepdims=True)
+    array([[ 17.],
+           [ 85.]])
+    >>> vector_norm(vec, axis=0)
+    array([  8.,  39.,  77.])
     '''
     vec = np.asarray(vec)
     vec_norm = np.sqrt((vec * vec).sum(axis))
     if keepdims:
-        shape = list(vec.shape)
-        shape[axis] = 1
+        if axis is None:
+            shape = [1]*vec.ndim
+        else:
+            shape = list(vec.shape)
+            shape[axis] = 1
         vec_norm = vec_norm.reshape(shape)
     return vec_norm
 
