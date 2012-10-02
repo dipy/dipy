@@ -1,7 +1,6 @@
 import numpy as np
 
 from dipy.tracking.propspeed import eudx_both_directions
-from dipy.tracking.metrics import length
 from dipy.data import get_sphere
 
 class EuDX(object):
@@ -105,8 +104,8 @@ class EuDX(object):
         Something very common as you can easily generate millions of tracks if you have many seeds.
 
         '''
-        self.a=a.copy()
-        self.ind=ind.copy()
+        self.a=np.ascontiguousarray(a.copy())
+        self.ind=np.ascontiguousarray(ind.copy())
         self.a_low=a_low
         self.ang_thr=ang_thr
         self.step_sz=step_sz
@@ -121,9 +120,9 @@ class EuDX(object):
         self.Np=g
         if odf_vertices==None:
             vertices, faces = get_sphere('symmetric362')
-            self.odf_vertices = vertices
+            self.odf_vertices = np.ascontiguousarray(vertices, dtype='f8')
         else:
-            self.odf_vertices = np.asarray(odf_vertices,dtype='f8')
+            self.odf_vertices = np.ascontiguousarray(odf_vertices, dtype='f8')
         try:
             if len(seeds)>0:
                 self.seed_list=seeds
