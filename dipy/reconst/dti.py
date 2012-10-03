@@ -1,8 +1,10 @@
 #!/usr/bin/python
+import warnings
 import numpy as np
 from dipy.reconst.maskedview import MaskedView, _makearray, _filled
 from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
+from ..core.geometry import vector_norm
 
 
 class TensorModel(object):
@@ -26,9 +28,9 @@ class TensorModel(object):
         .. [1] Basser, P.J., Mattiello, J., LeBihan, D., 1994. Estimation of
            the effective self-diffusion tensor from the NMR spin echo. J Magn
            Reson B 103, 247-254.
-        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and physiological
-           features of tissues elucidated by quantitative diffusion-tensor MRI.
-           Journal of Magnetic Resonance 111, 209-219.
+        .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
+           physiological features of tissues elucidated by quantitative
+           diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
 
         """
         if not callable(fit_method):
@@ -61,6 +63,10 @@ class TensorFit(object):
         self.model_params = model_params
 
     @property
+    def shape(self):
+        return self.model_params.shape[:-1]
+
+    @property
     def directions(self):
         """
         For tracking - return the primary direction in each voxel
@@ -81,10 +87,7 @@ class TensorFit(object):
 
         """
         evecs = _filled(self.model_params[..., 3:])
-        try:
-            return evecs.reshape(self.shape + (3, 3))
-        except AttributeError:
-            return evecs.reshape((3,3))
+        return evecs.reshape(self.shape + (3, 3))
 
     @property
     def quadratic_form(self):
@@ -170,7 +173,7 @@ class TensorFit(object):
         """
         return self.evals.mean(-1)
 
-    def odf(self, sphere):
+    def _odf_old(self, sphere):
         odf = np.zeros(sphere.vertices.shape[0])
         D = np.dot(np.dot(self.evecs,
                             np.diag(self.evals)),
@@ -182,7 +185,21 @@ class TensorFit(object):
             upper = (np.dot(np.dot(v.T, iD), v)) ** (-3 / 2.)
             odf[i] = upper / lower
         return odf
-    
+
+    def odf(self, sphere):
+        lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
+        projection = np.dot(sphere.vertices, self.evecs)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            projection /=  np.sqrt(self.evals)
+            odf = vector_norm(projection) ** -3 / lower
+        # Zero evals are non-physical, we replace nans with zeros
+        any_zero = (self.evals == 0).any(-1)
+        odf = np.where(any_zero, 0, odf)
+        # Move odf to be on the last dimension
+        odf = np.rollaxis(odf, 0, odf.ndim)
+        return odf
+
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""
