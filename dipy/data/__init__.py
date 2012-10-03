@@ -21,6 +21,7 @@ SPHERE_FILES = {
 class DataError(Exception):
     pass
 
+
 def get_sim_voxels(name='fib1'):
     """ provide some simulated voxel data
 
@@ -192,8 +193,9 @@ def get_data(name='small_64D'):
     if name=='grad514':
         return pjoin(THIS_DIR,'grad_514.txt')
 
+
 def dsi_voxels():
-    fimg,fbvals,fbvecs = get_data('small_101D')
+    fimg, fbvals, fbvecs = get_data('small_101D')
     bvals = np.loadtxt(fbvals)
     bvecs = np.loadtxt(fbvecs).T
     img = load(fimg)
