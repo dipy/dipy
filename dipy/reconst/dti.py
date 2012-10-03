@@ -54,73 +54,6 @@ class TensorModel(object):
 
 
 class TensorFit(object):
-    """ Fits a diffusion tensor given diffusion-weighted signals and gradient
-    info
-
-    Tensor object that when initialized calculates single self diffusion
-    tensor [1]_ in each voxel using selected fitting algorithm
-    (DEFAULT: weighted least squares [2]_)
-    Requires a given gradient table, b value for each diffusion-weighted
-    gradient vector, and image data given all as arrays.
-
-    Parameters
-    ----------
-    data : array ([X, Y, Z, ...], g)
-        Diffusion-weighted signals. The dimension corresponding to the
-        diffusion weighting must be the last dimenssion
-    bval : array (g,)
-        Diffusion weighting factor b for each vector in gtab.
-    gtab : array (g, 3)
-        Diffusion gradient table found in DICOM header as a array.
-    mask : array, optional
-        The tensor will only be fit where mask is True. Mask must must
-        broadcast to the shape of data and must have fewer dimensions than data
-    thresh : float, default = None
-        The tensor will not be fit where data[bval == 0] < thresh. If multiple
-        b0 volumes are given, the minimum b0 signal is used.
-    fit_method : funciton or string, default = 'WLS'
-        The method to be used to fit the given data to a tensor. Any function
-        that takes the B matrix and the data and returns eigen values and eigen
-        vectors can be passed as the fit method. Any of the common fit methods
-        can be passed as a string.
-    *args, **kargs :
-        Any other arguments or keywards will be passed to fit_method.
-
-    common fit methods:
-        'WLS' : weighted least squares
-            dti.wls_fit_tensor
-        'LS' : ordinary least squares
-            dti.ols_fit_tensor
-
-    Attributes
-    ----------
-    D : array (..., 3, 3)
-        Self diffusion tensor calculated from cached eigenvalues and 
-        eigenvectors.
-    mask : array
-        True in voxels where a tensor was fit, false if the voxel was skipped
-    B : array (g, 7)
-        Design matrix or B matrix constructed from given gradient table and
-        b-value vector.
-    evals : array (..., 3) 
-        Cached eigenvalues of self diffusion tensor for given index. 
-        (eval1, eval2, eval3)
-    evecs : array (..., 3, 3)
-        Cached associated eigenvectors of self diffusion tensor for given 
-        index. Note: evals[..., j] is associated with evecs[..., :, j]
-
-    Methods
-    -------
-    fa : array
-        Calculates fractional anisotropy [2]_.
-    md : array
-        Calculates the mean diffusivity [2]_.
-        Note: [units ADC] ~ [units b value]*10**-1
-
-    Examples
-    ----------
-    For a complete example have a look at the main dipy/examples folder
-    """
     def __init__(self, model, model_params):
         """
         Initialize a TensorFit class instance.
@@ -713,11 +646,76 @@ class Tensor(TensorFit, ModelArray):
     """
     For backwards compatibility, we continue to support this form of the Tensor
     fitting.
+
+
+
     """
-    def __init__(self, data, b_values, grad_table, mask=True, thresh=None,
+    def __init__(self, data, b_values, b_vectors, mask=True, thresh=None,
                  fit_method='WLS', verbose=False, *args, **kargs):
-        """
-        Fits a tensors to diffusion weighted data.
+        """ Fits tensors to diffusion weighted data.
+
+        Fits a diffusion tensor given diffusion-weighted signals and gradient
+        info. Tensor object that when initialized calculates single self
+        diffusion tensor [1]_ in each voxel using selected fitting algorithm
+        (DEFAULT: weighted least squares [2]_) Requires a given b-vector table, b value for each diffusion-weighted gradient vector, and image data given all as arrays.
+
+        Parameters
+        ----------
+        data : array ([X, Y, Z, ...], g)
+            Diffusion-weighted signals. The dimension corresponding to the
+            diffusion weighting must be the last dimenssion
+        bval : array (g,)
+            Diffusion weighting factor b for each vector in gtab.
+        bvec : array (g, 3)
+            Diffusion gradient table found in DICOM header as a array.
+        mask : array, optional
+            The tensor will only be fit where mask is True. Mask must must
+            broadcast to the shape of data and must have fewer dimensions than data
+        thresh : float, default = None
+            The tensor will not be fit where data[bval == 0] < thresh. If multiple
+            b0 volumes are given, the minimum b0 signal is used.
+        fit_method : funciton or string, default = 'WLS'
+            The method to be used to fit the given data to a tensor. Any function
+            that takes the B matrix and the data and returns eigen values and eigen
+            vectors can be passed as the fit method. Any of the common fit methods
+            can be passed as a string.
+        *args, **kargs :
+            Any other arguments or keywards will be passed to fit_method.
+
+        common fit methods:
+            'WLS' : weighted least squares
+                dti.wls_fit_tensor
+            'LS' : ordinary least squares
+                dti.ols_fit_tensor
+
+        Attributes
+        ----------
+        D : array (..., 3, 3)
+            Self diffusion tensor calculated from cached eigenvalues and
+            eigenvectors.
+        mask : array
+            True in voxels where a tensor was fit, false if the voxel was skipped
+        B : array (g, 7)
+            Design matrix or B matrix constructed from given gradient table and
+            b-value vector.
+        evals : array (..., 3)
+            Cached eigenvalues of self diffusion tensor for given index.
+            (eval1, eval2, eval3)
+        evecs : array (..., 3, 3)
+            Cached associated eigenvectors of self diffusion tensor for given
+            index. Note: evals[..., j] is associated with evecs[..., :, j]
+
+        Methods
+        -------
+        fa : array
+            Calculates fractional anisotropy [2]_.
+        md : array
+            Calculates the mean diffusivity [2]_.
+            Note: [units ADC] ~ [units b value]*10**-1
+
+        Examples
+        ----------
+        For a complete example have a look at the main dipy/examples folder
 
         """
 
@@ -730,7 +728,7 @@ class Tensor(TensorFit, ModelArray):
                                  'function or one of the common fit methods')
 
         #64 bit design matrix makes for faster pinv
-        B = design_matrix(grad_table.T, b_values)
+        B = design_matrix(b_vectors.T, b_values)
         self.B = B
 
         mask = np.atleast_1d(mask)
