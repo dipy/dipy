@@ -38,15 +38,18 @@ class TensorModel(object):
                 raise ValueError('"'+str(fit_method)+'" is not a known fit '
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
-        self.bvec = gtab.bvec
-        self.bval = gtab.bval
+        self.bvec = gtab.bvecs
+        self.bval = gtab.bvals
         #64 bit design matrix makes for faster pinv
         self.design_matrix = design_matrix(self.bvec.T, self.bval)
+        self.args = args
+        self.kwargs = kwargs
 
     def fit(self, data):
         """
         """
-        dti_params = self.fit_method(self.design_matrix, data, *args, **kargs)
+        dti_params = self.fit_method(self.design_matrix, data, 
+                                     *self.args, **self.kwargs)
         return TensorFit(self, dti_params)
 
     
@@ -145,7 +148,10 @@ class TensorFit(object):
 
         """
         evecs = _filled(self.model_params[..., 3:])
-        return evecs.reshape(self.shape + (3, 3))
+        try:
+            return evecs.reshape(self.shape + (3, 3))
+        except AttributeError:
+            return evecs.reshape((3,3))
 
     @property
     def quadratic_form(self):
@@ -232,7 +238,17 @@ class TensorFit(object):
         return self.evals.mean(-1)
 
     def odf(self, sphere):
-        pass
+        odf = np.zeros(sphere.vertices.shape[0])
+        D = np.dot(np.dot(self.evecs, 
+                            np.diag(self.evals)), 
+                            self.evecs.T)
+        iD = np.linalg.inv(D)
+        nD = np.linalg.det(D)
+        lower = 4 * np.pi * np.sqrt(nD)
+        for (i, v) in enumerate(sphere.vertices):
+            upper = (np.dot(np.dot(v.T, iD), v)) ** (-3 / 2.)
+            odf[i] = upper / lower
+        return odf
     
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
@@ -435,6 +451,7 @@ def _ols_fit_matrix(design_matrix):
 _lt_indices = np.array([[0, 1, 3],
                         [1, 2, 4],
                         [3, 4, 5]])
+
 
 def from_lower_triangular(D):
     """
