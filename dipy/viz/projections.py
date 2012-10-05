@@ -83,7 +83,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     verts_rot[:, neg_idx] *= -1
 
     _, theta, phi = geo.cart2sphere(verts_rot[0], verts_rot[1], verts_rot[2])
-    lat, lon = sph2latlon(theta, phi)
+    lat, lon = geo.sph2latlon(theta, phi)
     x, y = m(lon, lat)
 
     my_min = np.nanmin(val)
@@ -130,13 +130,3 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
 
     return ax
 
-def sph2latlon(theta, phi):
-    """Convert spherical coordinates to latitude and longitude.
-
-    Returns
-    -------
-    lat, lon : ndarray
-        Latitude and longitude.
-
-    """
-    return np.rad2deg(theta - np.pi/2), np.rad2deg(phi - np.pi)
