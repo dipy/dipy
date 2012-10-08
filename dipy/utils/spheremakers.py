@@ -1,6 +1,8 @@
 """ Factory function(s) for spheres """
 
 from dipy.data import get_sphere
+from dipy.core.sphere import Sphere
+
 
 def sphere_vf_from(input):
     """ Return sphere vertices and faces from a variety of inputs
@@ -20,7 +22,7 @@ def sphere_vf_from(input):
         Indices into `vertices`
     """
     if hasattr(input, 'keys'):
-        return input['vertices'], input['faces']
+        return Sphere(xyz=input['vertices'])
     if isinstance(input, basestring):
         return get_sphere(input)
     return input

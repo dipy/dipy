@@ -30,4 +30,4 @@ if has_mayavi:
     from ._show_odfs import show_odfs
 
 if has_mpl:
-    from projections import *
+    import projections
