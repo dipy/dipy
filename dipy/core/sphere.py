@@ -487,14 +487,12 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
 
 def euler_characteristic_check(sphere, chi=2):
-    r'''
+    r"""Checks the euler characteristic of a sphere
+
     If $f$ = number of faces, $e$ = number_of_edges and $v$ = number of
-    vertices, the Euler formula says $f-e+v = 2$ for a mesh on a sphere. Here,
-    assuming we have a healthy triangulation every face is a triangle, all 3 of
-    whose edges should belong to exactly two faces. So $2*e = 3*f$. To avoid
-    integer division and consequential integer rounding we test whether
-    $2*f - 3*f + 2*v == 4$ or, more generally, whether $2*v - f == 2*\chi$
-    where $\chi$ is the Euler characteristic of the mesh.
+    vertices, the Euler formula says $f-e+v = 2$ for a mesh on a sphere. More
+    generally, whether $f -e + v == \chi$ where $\chi$ is the Euler
+    characteristic of the mesh.
 
     - Open chain (track) has $\chi=1$
     - Closed chain (loop) has $\chi=0$
@@ -504,22 +502,29 @@ def euler_characteristic_check(sphere, chi=2):
 
     Parameters
     ----------
-    vertices : (N,3) array-like
-       (x, y, z) Point coordinates of N vertices
-    faces : (M,3) array-like of type int
-       (i1, i2, i3) Integer indices of the vertices of the (triangular) faces
-    chi : int, or None
+    sphere : Sphere
+        A Sphere instance with vertices, edges and faces attributes.
+    chi : int, optional
        The Euler characteristic of the mesh to be checked
 
     Returns
     -------
     check : bool
-       True if the mesh has Euler characteristic chi
-    '''
+       True if the mesh has Euler characteristic $\chi$
 
+    Examples
+    --------
+    >>> euler_characteristic_check(unit_octahedron)
+    True
+    >>> hemisphere = HemiSphere.from_sphere(unit_icosahedron)
+    >>> euler_characteristic_check(hemisphere, chi=1)
+    True
+
+    """
     v = sphere.vertices.shape[0]
+    e = sphere.edges.shape[0]
     f = sphere.faces.shape[0]
-    return (2 * v - f) == (2 * chi)
+    return (f - e + v) == chi
 
 
 octahedron_vertices = np.array(
