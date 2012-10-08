@@ -624,7 +624,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     '''
     max_evecs=evecs[...,:,0]
     if odf_vertices==None:
-        odf_vertices, _ = get_sphere('symmetric362')
+        odf_vertices = get_sphere('symmetric362').vertices
     tup=max_evecs.shape[:-1]
     mec=max_evecs.reshape(np.prod(np.array(tup)),3)
     IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])

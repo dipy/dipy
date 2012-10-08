@@ -46,7 +46,8 @@ def test_single_tensor():
 
 
 def test_multi_tensor():
-    vertices, faces = get_sphere('symmetric724')
+    sphere = get_sphere('symmetric724')
+    vertices, faces = sphere.vertices, sphere.faces
     mevals=np.array(([0.0015, 0.0003, 0.0003],
                      [0.0015, 0.0003, 0.0003]))
     e0 = np.array([1, 0, 0.])

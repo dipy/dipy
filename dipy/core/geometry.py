@@ -24,7 +24,6 @@ _AXES2TUPLE = {
 _TUPLE2AXES = dict((v, k) for k, v in _AXES2TUPLE.items())
 
 
-
 def sphere2cart(r, theta, phi):
     ''' Spherical to Cartesian coordinates
 
@@ -128,6 +127,18 @@ def cart2sphere(x, y, z):
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
     return r, theta, phi
+
+
+def sph2latlon(theta, phi):
+    """Convert spherical coordinates to latitude and longitude.
+
+    Returns
+    -------
+    lat, lon : ndarray
+        Latitude and longitude.
+
+    """
+    return np.rad2deg(theta - np.pi/2), np.rad2deg(phi - np.pi)
 
 
 def normalized_vector(vec, axis=-1):

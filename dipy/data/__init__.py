@@ -6,6 +6,7 @@ from os.path import join as pjoin, dirname
 import cPickle
 import gzip
 from dipy.core.gradients import gradient_table
+from dipy.core.sphere import Sphere
 import numpy as np
 
 from ..utils.arrfuncs import as_native_array
@@ -106,16 +107,14 @@ def get_sphere(name='symmetric362'):
 
     Returns
     -------
-    vertices : ndarray
-        vertices for sphere
-    faces : ndarray
-        faces
+    sphere : a dipy.core.sphere.Sphere class instance
 
     Examples
     --------
     >>> import numpy as np
     >>> from dipy.data import get_sphere
-    >>> verts, faces = get_sphere('symmetric362')
+    >>> sphere = get_sphere('symmetric362')
+    >>> verts, faces = sphere.vertices, sphere.faces
     >>> verts.shape
     (362, 3)
     >>> faces.shape
@@ -131,8 +130,7 @@ def get_sphere(name='symmetric362'):
     res = np.load(fname)
     # Set to native byte order to avoid errors in compiled routines for
     # big-endian platforms, when using these spheres.
-    return (as_native_array(res['vertices']),
-            as_native_array(res['faces']))
+    return Sphere(xyz=as_native_array(res['vertices']))
 
 
 def get_data(name='small_64D'):

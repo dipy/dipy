@@ -119,8 +119,9 @@ class EuDX(object):
         x,y,z,g=self.a.shape
         self.Np=g
         if odf_vertices==None:
-            vertices, faces = get_sphere('symmetric362')
-            self.odf_vertices = np.ascontiguousarray(vertices, dtype='f8')
+            sphere = get_sphere('symmetric362')
+            vertices, faces = sphere.vertices, sphere.faces
+            self.odf_vertices = vertices
         else:
             self.odf_vertices = np.ascontiguousarray(odf_vertices, dtype='f8')
         try:
