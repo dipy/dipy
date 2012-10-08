@@ -486,6 +486,47 @@ def interp_rbf(data, sphere_origin, sphere_target,
     return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
 
 
+def euler_characteristic_check(sphere, chi=2):
+    r"""Checks the euler characteristic of a sphere
+
+    If $f$ = number of faces, $e$ = number_of_edges and $v$ = number of
+    vertices, the Euler formula says $f-e+v = 2$ for a mesh on a sphere. More
+    generally, whether $f -e + v == \chi$ where $\chi$ is the Euler
+    characteristic of the mesh.
+
+    - Open chain (track) has $\chi=1$
+    - Closed chain (loop) has $\chi=0$
+    - Disk has $\chi=1$
+    - Sphere has $\chi=2$
+    - HemiSphere has $\chi=1$
+
+    Parameters
+    ----------
+    sphere : Sphere
+        A Sphere instance with vertices, edges and faces attributes.
+    chi : int, optional
+       The Euler characteristic of the mesh to be checked
+
+    Returns
+    -------
+    check : bool
+       True if the mesh has Euler characteristic $\chi$
+
+    Examples
+    --------
+    >>> euler_characteristic_check(unit_octahedron)
+    True
+    >>> hemisphere = HemiSphere.from_sphere(unit_icosahedron)
+    >>> euler_characteristic_check(hemisphere, chi=1)
+    True
+
+    """
+    v = sphere.vertices.shape[0]
+    e = sphere.edges.shape[0]
+    f = sphere.faces.shape[0]
+    return (f - e + v) == chi
+
+
 octahedron_vertices = np.array(
     [[ 1.0 , 0.0,  0.0],
      [-1.0,  0.0,  0.0],
