@@ -39,8 +39,11 @@ def faces_from_sphere_vertices(vertices):
 
     """
     from scipy.spatial import Delaunay
-    return Delaunay(vertices).convex_hull
-
+    faces = Delaunay(vertices).convex_hull
+    if len(vertices) < 2**16:
+        return np.asarray(faces, np.uint16)
+    else:
+        return faces
 
 def unique_edges(faces, return_mapping=False):
     """Extract all unique edges from given triangular faces.
@@ -196,8 +199,6 @@ class Sphere(object):
     @auto_attr
     def faces(self):
         faces = faces_from_sphere_vertices(self.vertices)
-        if len(self.theta) < 2**16:
-            faces = np.asarray(faces, dtype='uint16')
         return faces
 
     @auto_attr
@@ -299,7 +300,8 @@ class HemiSphere(Sphere):
         """Create a HemiSphere from points"""
 
         sphere = Sphere(x=x, y=y, z=z, theta=theta, phi=phi, xyz=xyz)
-        uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol)
+        uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol,
+                                                         return_mapping=True)
         uniq_vertices *= 1 - 2*(uniq_vertices[:, -1:] < 0)
         if faces is not None:
             faces = np.asarray(faces)
