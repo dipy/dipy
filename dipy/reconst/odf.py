@@ -1,7 +1,7 @@
 from __future__ import division
 from warnings import warn
 import numpy as np
-from .recspeed import local_maxima, remove_similar_vertices
+from .recspeed import local_maxima, remove_similar_vertices, _filter_peaks
 from ..core.onetime import auto_attr
 from dipy.core.sphere import unique_edges, unit_icosahedron, HemiSphere
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
@@ -57,9 +57,10 @@ class DiscreteDirectionFinder(DirectionFinder):
         sphere = self._config["sphere"]
         relative_peak_threshold = self._config["relative_peak_threshold"]
         min_separation_angle = self._config["min_separation_angle"]
+
         discrete_values = sphere_eval(sphere)
-        return peak_directions(discrete_values, sphere, 
-                               relative_peak_threshold, min_separation_angle)
+        return peak_directions(discrete_values, sphere, relative_peak_threshold,
+                               min_separation_angle)
 
 class OdfModel(object):
     """An abstract class to be sub-classed by specific odf models
@@ -125,8 +126,9 @@ def peak_directions(odf, sphere, relative_peak_threshold,
 class PeaksAndMetrics(object):
     pass
 
-def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02, 
-                     normalize_peaks=False):
+def peaks_from_model(model, data, sphere, rel_thresh, min_sep,
+                     mask=None, return_odf=False,
+                     gfa_thr=0.02, normalize_peaks=False):
     """Fits the model to data and computes peaks and metrics"""
 
     data_flat = data.reshape((-1, data.shape[-1]))
@@ -146,13 +148,15 @@ def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02,
     peak_indices.fill(-1)
 
     if return_odf:
-        odf_array = np.zeros((size, len(model.sphere.vertices)))
+        odf_array = np.zeros((size, len(sphere.vertices)))
 
     global_max = -np.inf
+    cos_sim = np.cos(np.deg2rad(min_sep))
+    dist_mat = abs(np.dot(sphere.vertices, sphere.vertices.T))
     for i, sig in enumerate(data_flat):
         if not mask[i]:
             continue
-        odf = model.fit(sig).odf()
+        odf = model.fit(sig).odf(sphere)
         if return_odf:
             odf_array[i] = odf
 
@@ -160,14 +164,8 @@ def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02,
         if gfa_array[i] < gfa_thr:
             global_max = max(global_max, odf.max())
             continue
-        pk, ind = local_maxima(odf, model.sphere.edges)
-        """
-        # Will update this later when filter_peaks is nailed down
-        pk, ind = _filter_peaks(pk, ind,
-                                model._distance_matrix,
-                                model.relative_peak_threshold,
-                                model._cos_distance_threshold)
-        """
+        pk, ind = local_maxima(odf, sphere.edges)
+        pk, ind = _filter_peaks(pk, ind, dist_mat, rel_thresh, cos_sim)
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
         qa_array[i, :n] = pk[:n] - odf.min()
