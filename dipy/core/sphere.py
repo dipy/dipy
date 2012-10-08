@@ -486,6 +486,42 @@ def interp_rbf(data, sphere_origin, sphere_target,
     return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
 
 
+def euler_characteristic_check(sphere, chi=2):
+    r'''
+    If $f$ = number of faces, $e$ = number_of_edges and $v$ = number of
+    vertices, the Euler formula says $f-e+v = 2$ for a mesh on a sphere. Here,
+    assuming we have a healthy triangulation every face is a triangle, all 3 of
+    whose edges should belong to exactly two faces. So $2*e = 3*f$. To avoid
+    integer division and consequential integer rounding we test whether
+    $2*f - 3*f + 2*v == 4$ or, more generally, whether $2*v - f == 2*\chi$
+    where $\chi$ is the Euler characteristic of the mesh.
+
+    - Open chain (track) has $\chi=1$
+    - Closed chain (loop) has $\chi=0$
+    - Disk has $\chi=1$
+    - Sphere has $\chi=2$
+    - HemiSphere has $\chi=1$
+
+    Parameters
+    ----------
+    vertices : (N,3) array-like
+       (x, y, z) Point coordinates of N vertices
+    faces : (M,3) array-like of type int
+       (i1, i2, i3) Integer indices of the vertices of the (triangular) faces
+    chi : int, or None
+       The Euler characteristic of the mesh to be checked
+
+    Returns
+    -------
+    check : bool
+       True if the mesh has Euler characteristic chi
+    '''
+
+    v = sphere.vertices.shape[0]
+    f = sphere.faces.shape[0]
+    return (2 * v - f) == (2 * chi)
+
+
 octahedron_vertices = np.array(
     [[ 1.0 , 0.0,  0.0],
      [-1.0,  0.0,  0.0],
