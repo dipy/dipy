@@ -52,7 +52,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     Examples
     --------
     >>> from dipy.data import get_sphere
-    >>> verts,faces=get_sphere('symmetric724')
+    >>> verts = get_sphere('symmetric724').vertices
     >>> ax = sph_project(verts.T, np.random.rand(len(verts.T)))
 
     """
