@@ -18,13 +18,13 @@ def test_TensorModel():
     data, gtab = dsi_voxels()
     dm = dti.TensorModel(gtab, 'LS')
     dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa > 0.5, True)
+    assert_equal(dtifit.fa < 0.5, True)
     dm = dti.TensorModel(gtab, 'WLS')
     dtifit = dm.fit(data[0, 0, 0])
-    assert_equal(dtifit.fa() < 0.5, True)
+    assert_equal(dtifit.fa < 0.5, True)
     sphere = create_unit_sphere(4)
     assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
-    assert_almost_equal(dtifit.fa(), gfa(dtifit.odf(sphere)), 1)
+    assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
 
 
 def test_tensor_scalar_attributes():
