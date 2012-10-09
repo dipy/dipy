@@ -90,13 +90,14 @@ def peak_directions(odf, sphere, relative_peak_threshold,
     ----------
     odf : 1d ndarray
         The odf function evaluated on the vertices of `sphere`
-    sphere :
-        The sphere on which odf was evaluated
+    sphere : Sphere
+        The Sphere providing discrete directions for evaluation.
     relative_peak_threshold : float
-        A relative threshold for excluding small peaks
-    min_separation_angle : float
-        An angle threshold in degrees. Peaks too close to a larger peak are
-        excluded.
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90] The minimum distance between
+        directions. If two peaks are too close only the larger of the two is
+        returned.
 
     Returns
     -------
@@ -134,13 +135,13 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     model : a model instance
         `model` will be used to fit the data.
     sphere : Sphere
-        A discrete sphere used to evaluate the odf.
+        The Sphere providing discrete directions for evaluation.
     relative_peak_threshold : float
-        Peaks smaller than this threshold, relative to the largest peak, are
-        considered noise.
-    min_separation_angle : float
-        An angle threshold in degrees. Peaks too close to a larger peak are
-        excluded.
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90] The minimum distance between
+        directions. If two peaks are too close only the larger of the two is
+        returned.
     mask : array, optional
         If `mask` is provided, voxels that are False in `mask` are skipped and
         no peaks are returned.
@@ -185,7 +186,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             global_max = max(global_max, odf.max())
             continue
         pk, ind = local_maxima(odf, sphere.edges)
-        
+
         # Remove small peaks.
         gt_threshold = pk >= (relative_peak_threshold * pk[0])
         pk = pk[gt_threshold]
@@ -198,7 +199,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                                 return_index=True)
         pk = pk[where_uniq]
         ind = ind[where_uniq]
-        
+
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
