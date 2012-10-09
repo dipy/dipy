@@ -108,11 +108,11 @@ class NonLinearDirectionFinder(DirectionFinder):
 
     """
     def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
-                 min_separation_angle=45):
+                 min_separation_angle=45, fmin=opt.fmin_bfgs, gtol=1e-6):
         self._config = {"sphere": sphere,
                         "relative_peak_threshold": relative_peak_threshold,
                         "min_separation_angle": min_separation_angle,
-                        "fmin": opt.fmin_bfgs, "gtol": 1e-6}
+                        "fmin":fmin, "gtol":gtol}
 
     def __call__(self, sphere_eval):
         """Find directions of a function evaluated on a discrete sphere
