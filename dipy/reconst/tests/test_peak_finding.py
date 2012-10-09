@@ -2,7 +2,7 @@ import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal
 from dipy.reconst.recspeed import (local_maxima, _filter_peaks,
-                                   remove_similar_vertices, peak_finding)
+                                   remove_similar_vertices)
 from dipy.data import get_sphere, get_data
 from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs, multi_tensor_odf
@@ -33,40 +33,6 @@ def test_local_maxima():
     odf[20] = np.nan
     assert_raises(ValueError, local_maxima, odf, edges_half)
 
-
-def test_peak_finding():
-    sphere = get_sphere('symmetric724')
-    vertices, faces= sphere.vertices, sphere.faces
-    odf=np.zeros(len(vertices))
-    odf = np.abs(vertices.sum(-1))
-
-    odf[1] = 10.
-    odf[505] = 505.
-    odf[143] = 143.
-
-    peaks, inds = peak_finding(odf.astype('f8'), faces.astype('uint16'))
-    print peaks, inds
-    edges = unique_edges(faces)
-    peaks, inds = local_maxima(odf, edges)
-    print peaks, inds
-
-    hemisphere = HemiSphere(xyz=vertices, faces=faces)
-    vertices_half, edges_half = hemisphere.vertices, hemisphere.edges
-    n = len(vertices_half)
-    peaks, inds = local_maxima(odf[:n], edges_half)
-    print peaks, inds
-    mevals=np.array(([0.0015,0.0003,0.0003],
-                    [0.0015,0.0003,0.0003]))
-    e0=np.array([1,0,0.])
-    e1=np.array([0.,1,0])
-    mevecs=[all_tensor_evecs(e0),all_tensor_evecs(e1)]
-    odf = multi_tensor_odf(vertices, [0.5,0.5], mevals, mevecs)
-    peaks, inds=peak_finding(odf, faces)
-    print peaks, inds
-    peaks2, inds2 = local_maxima(odf[:n], edges_half)
-    print peaks2, inds2
-    assert_equal(len(peaks), 2)
-    assert_equal(len(peaks2), 2)
 
 def test_remove_similar_peaks():
     vertices = np.array([[1., 0., 0.],
