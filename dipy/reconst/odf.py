@@ -41,12 +41,7 @@ class DiscreteDirectionFinder(DirectionFinder):
         The minimum distance between directions. If two peaks are too close only
         the larger of the two is returned.
 
-    Returns
-    -------
-    directions : ndarray (N, 3)
-        The directions of the N peaks.
     """
-
     def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
                  min_separation_angle=45):
         self._config = {"sphere": sphere,
@@ -54,7 +49,19 @@ class DiscreteDirectionFinder(DirectionFinder):
                         "min_separation_angle": min_separation_angle}
 
     def __call__(self, sphere_eval):
-        """Find directions of a function evaluated on a discrete sphere"""
+        """Find directions of a function evaluated on a discrete sphere
+
+        Parameters
+        ----------
+        sphere_eval : callable
+            The function to maximize, should evaluate over a sphere.
+
+        Returns
+        -------
+        directions : ndarray (N, 3)
+            The directions of the N peaks.
+
+        """
         sphere = self._config["sphere"]
         relative_peak_threshold = self._config["relative_peak_threshold"]
         min_separation_angle = self._config["min_separation_angle"]
@@ -75,23 +82,52 @@ def _nl_peak_finder(sphere_eval, seeds, fmin, gtol):
     theta = np.zeros(len(seeds))
     phi = np.zeros(len(seeds))
     for i in xrange(len(seeds)):
-        peak = fmin(_helper, seeds[i], gtol=gtol)
+        peak = fmin(_helper, seeds[i], gtol=gtol, disp=False)
         theta[i], phi[i] = peak
     # Return one peak for each seed
     return theta, phi
 
 
 class NonLinearDirectionFinder(DirectionFinder):
+    """Non Linear Direction Finder
 
+    Parameters
+    ----------
+    sphere : Sphere
+        The Sphere providing discrete directions for evaluation.
+    relative_peak_threshold : float
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90]
+        The minimum distance between directions. If two peaks are too close only
+        the larger of the two is returned.
+    fmin : optimization function, optional
+        By default use scipy.optimize.fmin_bfgs.
+    gtol : float
+        Optimize up to gradient tolerance.
+
+    """
     def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
                  min_separation_angle=45):
         self._config = {"sphere": sphere,
                         "relative_peak_threshold": relative_peak_threshold,
                         "min_separation_angle": min_separation_angle,
-                        "fmin": opt.fmin_cg, "gtol": 1e-6}
+                        "fmin": opt.fmin_bfgs, "gtol": 1e-6}
 
     def __call__(self, sphere_eval):
+        """Find directions of a function evaluated on a discrete sphere
 
+        Parameters
+        ----------
+        sphere_eval : callable
+            The function to maximize, should evaluate over a sphere.
+
+        Returns
+        -------
+        directions : ndarray (N, 3)
+            The directions of the N peaks.
+
+        """
         # Get parameters from _config
         sphere = self._config["sphere"]
         relative_peak_threshold = self._config["relative_peak_threshold"]
