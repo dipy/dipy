@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-from ..odf import (DiscreteDirectionFinder, OdfFit, OdfModel, gfa,
-                   peaks_from_model, peak_directions)
+from ..odf import (DiscreteDirectionFinder, NonLinearDirectionFinder,
+                   OdfFit, OdfModel, gfa, peaks_from_model, peak_directions)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
                         assert_true)
@@ -23,6 +23,15 @@ def test_DiscreteDirectionFinder():
     ddf.config(relative_peak_threshold=.2)
     direction = ddf(discrete_eval)
     assert_array_almost_equal(direction, sphere.vertices[:2])
+
+def test_NonLinearDirectionFinder():
+    def discrete_eval(sphere):
+        return abs(sphere.vertices).sum(-1)
+
+    ddf = NonLinearDirectionFinder()
+    directions = ddf(discrete_eval)
+    assert_equal(directions.shape, (4, 3))
+    assert_array_almost_equal(abs(directions), 1/np.sqrt(3))
 
 _sphere = create_unit_hemisphere(4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
