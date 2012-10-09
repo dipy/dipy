@@ -83,9 +83,7 @@ def test_search_descending():
     a = np.linspace(10., 1., 10)
 
     npt.assert_equal(search_descending(a, 1.), 1)
-    npt.assert_equal(search_descending(a, .9), 2)
-    npt.assert_equal(search_descending(a, .8), 3)
-    npt.assert_equal(search_descending(a, .81), 2)
+    npt.assert_equal(search_descending(a, .89), 2)
     npt.assert_equal(search_descending(a, .79), 3)
 
     # Test small array
