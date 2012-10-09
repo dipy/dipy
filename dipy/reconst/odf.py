@@ -90,13 +90,14 @@ def peak_directions(odf, sphere, relative_peak_threshold,
     ----------
     odf : 1d ndarray
         The odf function evaluated on the vertices of `sphere`
-    sphere :
-        The sphere on which odf was evaluated
+    sphere : Sphere
+        The Sphere providing discrete directions for evaluation.
     relative_peak_threshold : float
-        A relative threshold for excluding small peaks
-    min_separation_angle : float
-        An angle threshold in degrees. Peaks too close to a larger peak are
-        excluded.
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90] The minimum distance between
+        directions. If two peaks are too close only the larger of the two is
+        returned.
 
     Returns
     -------
@@ -118,16 +119,40 @@ def peak_directions(odf, sphere, relative_peak_threshold,
         indices = indices[:first_too_small]
 
     directions = sphere.vertices[indices]
-    directions, mappiing = remove_similar_vertices(directions,
-                                                   min_separation_angle)
+    directions = remove_similar_vertices(directions, min_separation_angle)
     return directions
 
 class PeaksAndMetrics(object):
     pass
 
-def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02, 
-                     normalize_peaks=False):
-    """Fits the model to data and computes peaks and metrics"""
+def peaks_from_model(model, data, sphere, relative_peak_threshold,
+                     min_separation_angle, mask=None, return_odf=False,
+                     gfa_thr=0.02, normalize_peaks=False):
+    """Fits the model to data and computes peaks and metrics
+
+    Parameters
+    ----------
+    model : a model instance
+        `model` will be used to fit the data.
+    sphere : Sphere
+        The Sphere providing discrete directions for evaluation.
+    relative_peak_threshold : float
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90] The minimum distance between
+        directions. If two peaks are too close only the larger of the two is
+        returned.
+    mask : array, optional
+        If `mask` is provided, voxels that are False in `mask` are skipped and
+        no peaks are returned.
+    return_odf : bool
+        If True, the odfs are returned.
+    gfa_thr : float
+        Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
+    normalize_peaks : bool
+        If true, all peak values are calculated relative to `max(odf)`.
+
+    """
 
     data_flat = data.reshape((-1, data.shape[-1]))
     size = len(data_flat)
@@ -146,13 +171,13 @@ def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02,
     peak_indices.fill(-1)
 
     if return_odf:
-        odf_array = np.zeros((size, len(model.sphere.vertices)))
+        odf_array = np.zeros((size, len(sphere.vertices)))
 
     global_max = -np.inf
     for i, sig in enumerate(data_flat):
         if not mask[i]:
             continue
-        odf = model.fit(sig).odf()
+        odf = model.fit(sig).odf(sphere)
         if return_odf:
             odf_array[i] = odf
 
@@ -160,14 +185,22 @@ def peaks_from_model(model, data, mask=None, return_odf=False, gfa_thr=0.02,
         if gfa_array[i] < gfa_thr:
             global_max = max(global_max, odf.max())
             continue
-        pk, ind = local_maxima(odf, model.sphere.edges)
-        """
-        # Will update this later when filter_peaks is nailed down
-        pk, ind = _filter_peaks(pk, ind,
-                                model._distance_matrix,
-                                model.relative_peak_threshold,
-                                model._cos_distance_threshold)
-        """
+        pk, ind = local_maxima(odf, sphere.edges)
+
+        # Remove small peaks.
+        gt_threshold = pk >= (relative_peak_threshold * pk[0])
+        pk = pk[gt_threshold]
+        ind = ind[gt_threshold]
+
+        # Keep peaks which are unique, which means remove peaks that are too
+        # close to a larger peak.
+        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
+                                                min_separation_angle,
+                                                return_index=True)
+        pk = pk[where_uniq]
+        ind = ind[where_uniq]
+
+        # Calculate peak metrics
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
         qa_array[i, :n] = pk[:n] - odf.min()
