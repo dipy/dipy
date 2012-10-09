@@ -4,7 +4,7 @@ from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.utils.spheremakers import sphere_vf_from
+from dipy.data import get_sphere
 from numpy.testing import (assert_equal, 
                            assert_almost_equal, 
                            run_module_suite)
@@ -16,8 +16,7 @@ from dipy.reconst.odf import gfa
 
 def test_gqi():
     #load symmetric 724 sphere
-    vertices, faces = sphere_vf_from('symmetric724')
-    sphere = Sphere(xyz=vertices)
+    sphere = get_sphere('symmetric724')
     #load icosahedron sphere
     sphere2 = create_unit_sphere(5)
     btable = np.loadtxt(get_data('dsi515btable'))    

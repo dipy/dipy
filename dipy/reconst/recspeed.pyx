@@ -75,45 +75,12 @@ cdef double wght(int i, double r) nogil:
         return 1.-r
 
 
-@cython.wraparound(False)
-def _filter_peaks(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] odf_value,
-                  cnp.ndarray[cnp.int_t, ndim=1, mode='c'] odf_ind,
-                  cnp.ndarray[cnp.float_t, ndim=2, mode='c'] sep_matrix,
-                  float relative_threshold, float isolation):
-    """Filters peaks based on odf_value and angular distance
-
-    Assumes that odf_value is sorted in descending order. Looks up odf_ind in
-    sep_matrix to determine the angular separation between two points. Returns
-    a subset of the peaks that pass the relative_threshold and isolation
-    criterion.
-    """
-    cdef:
-        int i, j, pass_all
-        int count = 1
-        float threshold = relative_threshold * odf_value[0]
-        cnp.ndarray[cnp.int_t, ndim=1, mode='c'] find = odf_ind.copy()
-        cnp.ndarray[cnp.float_t, ndim=1, mode='c'] fvalue = odf_value.copy()
-
-    for i in range(odf_value.shape[0]):
-        if odf_value[i] < threshold:
-            break
-        pass_all = 1
-        for j in range(count):
-            if sep_matrix[odf_ind[i], find[j]] >= isolation:
-                pass_all = 0
-                break
-        if pass_all:
-            find[count] = odf_ind[i]
-            fvalue[count] = odf_value[i]
-            count += 1
-
-    return fvalue[:count].copy(), find[:count].copy()
-
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] vertices,
-                            double theta):
+                            double theta,
+                            bint return_mapping=False,
+                            bint return_index=False):
     """remove_similar_vertices(vertices, theta)
 
     Returns vertices that are separated by at least theta degrees from all
@@ -135,12 +102,14 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
     mapping : (N,) ndarray
         Indices into unique_vertices. For each vertex in `vertices` the index
         of a vertex in `unique_vertices` that is less than theta degrees away.
+
     """
     if vertices.shape[1] != 3:
         raise ValueError()
     cdef:
         cnp.ndarray[cnp.float_t, ndim=2, mode='c'] unique_vertices
         cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] mapping
+        cnp.ndarray[cnp.uint16_t, ndim=1, mode='c'] index
         char pass_all
         size_t i, j
         size_t count = 0
@@ -150,7 +119,14 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
     if n > 2**16:
         raise ValueError("too many vertices")
     unique_vertices = np.empty((n, 3), dtype=np.float)
-    mapping = np.empty(n, dtype=np.uint16)
+    if return_mapping:
+        mapping = np.empty(n, dtype=np.uint16)
+    else:
+        mapping = None
+    if return_index:
+        index = np.empty(n, dtype=np.uint16)
+    else:
+        index = None
 
     for i in range(n):
         pass_all = 1
@@ -163,16 +139,28 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
                        c * unique_vertices[j, 2])
             if sim > cos_similarity:
                 pass_all = 0
-                mapping[i] = j
+                if return_mapping:
+                    mapping[i] = j
                 break
         if pass_all:
             unique_vertices[count, 0] = a
             unique_vertices[count, 1] = b
             unique_vertices[count, 2] = c
-            mapping[i] = count
+            if return_mapping:
+                mapping[i] = count
+            if return_index:
+                index[count] = i
             count += 1
 
-    return unique_vertices[:count].copy(), mapping
+    if return_mapping and return_index:
+        return unique_vertices[:count].copy(), mapping, index[:count].copy()
+    elif return_mapping:
+        return unique_vertices[:count].copy(), mapping
+    elif return_index:
+        return unique_vertices[:count].copy(), index[:count].copy()
+    else:
+        return unique_vertices[:count].copy()
+
 
 #@cython.boundscheck(False)
 @cython.wraparound(False)
@@ -242,103 +230,6 @@ def local_maxima(cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] codf,
     order = peakvalues.argsort()[::-1]
     return peakvalues[order], peakidx[order]
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def peak_finding(odf, odf_faces):
-    ''' Hemisphere local maxima from sphere values and faces
-
-    Return local maximum values and indices. Local maxima (peaks) are
-    given in descending order.
-
-    The sphere mesh, as defined by the vertex coordinates ``vertices``
-    and the face indices ``odf_faces``, has to conform to the check in
-    ``dipy.core.meshes.peak_finding_compatible``.  If it does not, then
-    the results from peak finding routine will be unpredictable.
-
-    Parameters
-    ------------
-    odf : (N,) array of dtype np.float64
-       function values on the sphere, where N is the number of vertices
-       on the sphere
-    odf_faces : (M,3) array of dtype np.uint16
-       faces of the triangulation on the sphere, where M is the number
-       of faces on the sphere
-
-    Returns
-    ---------
-    peaks : (L,) array, dtype np.float64
-       peak values, shape (L,) where L can vary and is the number of
-       local moximae (peaks).  Values are sorted, largest first
-    inds : (L,) array, dtype np.uint16
-       indices of the peak values on the `odf` array corresponding to
-       the maxima in `peaks`
-    
-    Notes
-    -----
-    In summary this function does the following:
-
-    Where the smallest odf values in the vertices of a face put
-    zeros on them. By doing that for the vertices of all faces at the
-    end you only have the peak points with nonzero values.
-
-    For precalculated odf_faces look under
-    dipy/data/evenly*.npz to use them try numpy.load()['faces']
-    
-    Examples
-    ----------
-    This is called from GeneralizedQSampling or QBall and other models with orientation
-    distribution functions.
-
-    See also
-    -----------
-    dipy.core.meshes
-    '''
-    cdef:
-        cnp.ndarray[cnp.uint16_t, ndim=2] cfaces = np.ascontiguousarray(odf_faces)
-        cnp.ndarray[cnp.float64_t, ndim=1] codf = np.ascontiguousarray(odf)
-        cnp.ndarray[cnp.float64_t, ndim=1] cpeak = odf.copy()
-        int i=0
-        int test=0
-        int lenfaces = len(cfaces)
-        double odf0,odf1,odf2
-        int find0,find1,find2
-    
-    for i in range(lenfaces):
-
-        find0 = cfaces[i,0]
-        find1 = cfaces[i,1]
-        find2 = cfaces[i,2]        
-        
-        odf0=codf[find0]
-        odf1=codf[find1]
-        odf2=codf[find2]       
-
-        if odf0 >= odf1 and odf0 >= odf2:
-            cpeak[find1] = 0
-            cpeak[find2] = 0
-            continue
-
-        if odf1 >= odf0 and odf1 >= odf2:
-            cpeak[find0] = 0
-            cpeak[find2] = 0
-            continue
-
-        if odf2 >= odf0 and odf2 >= odf1:
-            cpeak[find0] = 0
-            cpeak[find1] = 0
-            continue
-
-    peak=np.array(cpeak)
-    peak=peak[0:len(peak)/2]
-
-    #find local maxima and give fiber orientation (inds) and magnitude
-    #peaks in a descending order
-
-    inds=np.where(peak>0)[0]
-    pinds=np.argsort(peak[inds])
-    peaks=peak[inds[pinds]][::-1]
-
-    return peaks, inds[pinds][::-1]
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

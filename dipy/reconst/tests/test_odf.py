@@ -85,7 +85,7 @@ def test_peaksFromModel():
     # Test basic case
     model = SimpleOdfModel()
     odf_argmax = _odf.argmax()
-    pam = peaks_from_model(model, data, normalize_peaks=True)
+    pam = peaks_from_model(model, data, _sphere, .5, 45, normalize_peaks=True)
 
     assert_array_equal(pam.gfa, gfa(_odf))
     assert_array_equal(pam.peak_values[:, 0], 1.)
@@ -97,21 +97,22 @@ def test_peaksFromModel():
     assert_array_equal(pam.peak_indices[:, 1:], -1)
 
     # Test that odf array matches and is right shape
-    pam = peaks_from_model(model, data, return_odf=True)
+    pam = peaks_from_model(model, data, _sphere, .5, 45, return_odf=True)
     expected_shape = (len(data), len(_odf))
     assert_equal(pam.odf.shape, expected_shape)
     assert_true((_odf == pam.odf).all())
     assert_array_equal(pam.peak_values[:, 0], _odf.max())
-   
+
     # Test mask
     mask = (np.arange(10) % 2) == 1
 
-    pam = peaks_from_model(model, data, mask=mask, normalize_peaks=True)
+    pam = peaks_from_model(model, data, _sphere, .5, 45, mask=mask,
+                           normalize_peaks=True)
     assert_array_equal(pam.gfa[~mask], 0)
     assert_array_equal(pam.qa[~mask], 0)
     assert_array_equal(pam.peak_values[~mask], 0)
     assert_array_equal(pam.peak_indices[~mask], -1)
-    
+
     assert_array_equal(pam.gfa[mask], gfa(_odf))
     assert_array_equal(pam.peak_values[mask, 0], 1.)
     assert_array_equal(pam.peak_values[mask, 1:], 0.)

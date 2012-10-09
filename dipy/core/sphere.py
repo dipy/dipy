@@ -39,8 +39,11 @@ def faces_from_sphere_vertices(vertices):
 
     """
     from scipy.spatial import Delaunay
-    return Delaunay(vertices).convex_hull
-
+    faces = Delaunay(vertices).convex_hull
+    if len(vertices) < 2**16:
+        return np.asarray(faces, np.uint16)
+    else:
+        return faces
 
 def unique_edges(faces, return_mapping=False):
     """Extract all unique edges from given triangular faces.
@@ -196,8 +199,6 @@ class Sphere(object):
     @auto_attr
     def faces(self):
         faces = faces_from_sphere_vertices(self.vertices)
-        if len(self.theta) < 2**16:
-            faces = np.asarray(faces, dtype='uint16')
         return faces
 
     @auto_attr
@@ -299,7 +300,8 @@ class HemiSphere(Sphere):
         """Create a HemiSphere from points"""
 
         sphere = Sphere(x=x, y=y, z=z, theta=theta, phi=phi, xyz=xyz)
-        uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol)
+        uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol,
+                                                         return_mapping=True)
         uniq_vertices *= 1 - 2*(uniq_vertices[:, -1:] < 0)
         if faces is not None:
             faces = np.asarray(faces)
@@ -484,6 +486,47 @@ def interp_rbf(data, sphere_origin, sphere_target,
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
     return rbfi(sphere_target.x, sphere_target.y, sphere_target.z)
+
+
+def euler_characteristic_check(sphere, chi=2):
+    r"""Checks the euler characteristic of a sphere
+
+    If $f$ = number of faces, $e$ = number_of_edges and $v$ = number of
+    vertices, the Euler formula says $f-e+v = 2$ for a mesh on a sphere. More
+    generally, whether $f -e + v == \chi$ where $\chi$ is the Euler
+    characteristic of the mesh.
+
+    - Open chain (track) has $\chi=1$
+    - Closed chain (loop) has $\chi=0$
+    - Disk has $\chi=1$
+    - Sphere has $\chi=2$
+    - HemiSphere has $\chi=1$
+
+    Parameters
+    ----------
+    sphere : Sphere
+        A Sphere instance with vertices, edges and faces attributes.
+    chi : int, optional
+       The Euler characteristic of the mesh to be checked
+
+    Returns
+    -------
+    check : bool
+       True if the mesh has Euler characteristic $\chi$
+
+    Examples
+    --------
+    >>> euler_characteristic_check(unit_octahedron)
+    True
+    >>> hemisphere = HemiSphere.from_sphere(unit_icosahedron)
+    >>> euler_characteristic_check(hemisphere, chi=1)
+    True
+
+    """
+    v = sphere.vertices.shape[0]
+    e = sphere.edges.shape[0]
+    f = sphere.faces.shape[0]
+    return (f - e + v) == chi
 
 
 octahedron_vertices = np.array(
