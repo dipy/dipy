@@ -2,7 +2,7 @@ import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal, assert_raises
 from numpy.testing import assert_array_equal
 from dipy.reconst.recspeed import (local_maxima, _filter_peaks,
-                                   remove_similar_vertices)
+                                   remove_similar_vertices, peak_finding)
 from dipy.data import get_sphere, get_data
 from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs, multi_tensor_odf
@@ -44,7 +44,7 @@ def test_peak_finding():
     odf[505] = 505.
     odf[143] = 143.
 
-    peaks, inds=peak_finding(odf.astype('f8'), faces.astype('uint16'))
+    peaks, inds = peak_finding(odf.astype('f8'), faces.astype('uint16'))
     print peaks, inds
     edges = unique_edges(faces)
     peaks, inds = local_maxima(odf, edges)
@@ -67,7 +67,6 @@ def test_peak_finding():
     print peaks2, inds2
     assert_equal(len(peaks), 2)
     assert_equal(len(peaks2), 2)
->>>>>>> RF: get_sphere now returns a Sphere class instance.
 
 def test_remove_similar_peaks():
     vertices = np.array([[1., 0., 0.],
