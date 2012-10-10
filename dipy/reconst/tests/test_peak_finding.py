@@ -91,6 +91,9 @@ def test_search_descending():
     npt.assert_equal(search_descending(a[:1], 0.), 1)
     npt.assert_equal(search_descending(a[:1], .5), 1)
 
+    # Test very small array
+    npt.assert_equal(search_descending(a[:0], 1.), 1)
+
 
 if __name__ == '__main__':
     import nose

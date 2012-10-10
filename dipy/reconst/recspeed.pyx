@@ -162,7 +162,6 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
         return unique_vertices[:count].copy()
 
 
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
@@ -175,14 +174,23 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
     a : ndarray, ndim=1, c-contiguous
         Array to be searched.
     relative_threshold : float
-        Threshold relative to `a[0]`, should be in [0, 1].
+        Threshold relative to `a[0]`.
 
     Returns
     -------
     i : int
-        An index such that `all(a[:i] >= relative_threshold * a[0])`
+        The greatest index such that ``all(a[:i] >= relative_threshold *
+        a[0])``.
+
+    Note
+    ----
+    This function will never return 0, 1 is returned if ``a[0] <
+    relative_threshold * a[0]`` or if ``len(a) == 0``.
 
     """
+    if a.shape[0] == 0:
+        return 1
+
     cdef:
         size_t left = 1
         size_t right = a.shape[0]
