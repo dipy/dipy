@@ -16,7 +16,8 @@ class ndindex(object):
 
     Examples
     --------
-    >>> for index in np.ndindex(3, 2, 1):
+    >>> from dipy.core.ndindex import ndindex
+    >>> for index in ndindex(3, 2, 1):
     ...     print index
     (0, 0, 0)
     (0, 1, 0)
