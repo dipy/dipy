@@ -20,7 +20,7 @@ class Cache(object):
 
             if M is None:
                 M = self._compute_basis_matrix(sphere)
-                self.model.cache_set('odf_basis_matrix', key=sphere, M)
+                self.model.cache_set('odf_basis_matrix', key=sphere, value=M)
 
     """
 
