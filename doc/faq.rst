@@ -108,7 +108,7 @@ Theoretical
   
 10. **Why are nonisotropic voxel sizes a bad idea in diffusion?**
   
-  If for example you have $2 \times 2 \times 4\ \textrm{mm}^3$ voxels, the 
+  If, for example, you have $2 \times 2 \times 4\ \textrm{mm}^3$ voxels, the 
   last dimension will be averaged over the double distance and less detail 
   will be captured compared to the other two dimensions. Furthermore, with 
   very nonisotropic voxels the uncertainty on orientation estimates will 
@@ -123,7 +123,7 @@ Practical
   Python is free, batteries included, very well-designed, painless to read 
   and easy to use. 
   There is nothing else like it. Give it a go. 
-  Once with Python always with Python. 
+  Once with Python, always with Python. 
   
 2. **Isn't Python slow?**
 
@@ -149,8 +149,7 @@ Practical
 
   There is already interaction in the ``fvtk`` module, but we have started a 
   new project only for visualization which we plan to integrate in ``dipy`` 
-  in the near future.  For more information, 
-  have a look at http://fos.me
+  in the near future.  For more information, have a look at http://fos.me
 
 5. **Which file formats do you support?**
 
