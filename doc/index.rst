@@ -4,7 +4,7 @@
 Dipy
 ####
 
-Dipy_ is an *international*, **free** and **open soure** software project for
+Dipy_ is an *international*, **free** and **open source** software project for
 **diffusion** *magnetic resonance imaging* **analysis**.
 
 Depends on a few standard libraries: python_ (the core language), numpy_ (for
