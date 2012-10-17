@@ -62,7 +62,7 @@ Theoretical
   Registration can be tricky. But this is what usually works for us for normal 
   healthy adult subjects. We register the FA (fractional anisotropy) images 
   to the FMRIB_FA_1mm template which is in MNI space using ``flirt`` and 
-  ``fnirth`` from FSL. Then we can apply the warping displacements in any 
+  ``fnirt`` from FSL. Then we can apply the warping displacements in any 
   other scalar volumes that we have to register that scalar volume into the 
   MNI space. We need the corresponding inverse displacements 
   to map a tractography into MNI space.
