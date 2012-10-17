@@ -167,7 +167,8 @@ class Sphere(object):
             self.faces = np.asarray(faces)
 
         if theta is not None:
-            self.theta, self.phi = np.asarray(theta), np.asarray(phi)
+            self.theta = np.array(theta, copy=False, ndmin=1)
+            self.phi = np.array(phi, copy=False, ndmin=1)
             return
 
         if xyz is not None:
