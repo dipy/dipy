@@ -7,17 +7,18 @@ class ndindex(object):
 
     Given the shape of an array, an `ndindex` instance iterates over
     the N-dimensional index of the array. At each iteration a tuple
-    of indices is returned, the last dimension is iterated over first.
+    of indices is returned; the last dimension is iterated over first.
 
     Parameters
     ----------
-    `*args` : ints
-      The size of each dimension of the array.
+    shape : tuple of ints
+      The dimensions of the array.
 
     Examples
     --------
     >>> from dipy.core.ndindex import ndindex
-    >>> for index in ndindex(3, 2, 1):
+    >>> shape = (3, 2, 1)
+    >>> for index in ndindex(shape):
     ...     print index
     (0, 0, 0)
     (0, 1, 0)
