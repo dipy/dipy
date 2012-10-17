@@ -6,8 +6,7 @@ from pyglet.gl import *
 
 class Guillotine(Slicer):
     """ Head slicer actor
-
-
+    
     """
 
     def draw(self):

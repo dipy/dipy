@@ -117,6 +117,7 @@ class TrackLabeler(Actor):
         if self.vol_shape !=None:
             #self.tracks_shifted =[t+np.array(vol_shape)/2. for t in self.tracks]
             self.virtuals_shifted =[downsample(t+np.array(self.vol_shape)/2.,30) for t in self.virtuals]
+
         else:
             #self.tracks_shifted=None
             self.virtuals_shifted=None
@@ -350,8 +351,6 @@ class TrackLabeler(Actor):
             ids = self.maskout_tracks()
             self.select_track(ids)
 
-
-
     def freeze(self):
         print("Freezing current expanded real tracks, then doing QB on them, then restarting.")
         print("Selected virtuals: %s" % self.selected)
@@ -432,7 +431,6 @@ class TrackLabeler(Actor):
                 return closest_to_line_idx[0]
         else: # simpler and apparently more effective algorithm:
             return np.argmin(line_distance + screen_distance)
-            
     
     def set_state(self): # , line_width):
         """Tell hardware what to do with the scene.
@@ -443,7 +441,6 @@ class TrackLabeler(Actor):
         glEnable(GL_LINE_SMOOTH)        
         glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
         # glLineWidth(line_width)
-        
 
     def unset_state(self):
         """Close communication with hardware.
@@ -516,16 +513,27 @@ if __name__ == '__main__':
     fdpyw = dname+'data/subj_05/101_32/DTI/tracks_gqi_1M_linear.dpy'    
     dpr = Dpy(fdpyw, 'r')
     T = dpr.read_tracks()
-    dpr.close()    
+    dpr.close() 
+    
+    T = T[:10000]
+    
+    from dipy.tracking.metrics import downsample
+    #T = [downsample(t, 12) - np.array(data.shape[:3])/2. for t in T]
+    T = [np.dot(downsample(t, 12), affine[:3, :3].T) + affine[:3, 3] for t in T]
+
+    #Rotate tractography
+
     #load initial QuickBundles with threshold 30mm
-    fpkl = dname+'data/subj_05/101_32/DTI/qb_gqi_1M_linear_30.pkl'
-    #qb=QuickBundles(T,30.,12)    
+    #fpkl = dname+'data/subj_05/101_32/DTI/qb_gqi_1M_linear_30.pkl'
+    qb=QuickBundles(T,30.,12)
     #save_pickle(fpkl,qb)
-    qb=load_pickle(fpkl)
+    #qb=load_pickle(fpkl)
+
     #create the interaction system for tracks 
-    tl = TrackLabeler('Bundle Picker',
-                        qb,qb.downsampled_tracks(),
-                        vol_shape=data.shape,tracks_alpha=1)   
+    tl = TrackLabeler('Bundle Picker', 
+                        qb,qb.downsampled_tracks(), 
+                        vol_shape=None, 
+                        tracks_alpha=1)   
     #add a interactive slicing/masking tool
     #sl = Slicer(affine,data)    
     #add one way communication between tl and sl
@@ -535,7 +543,7 @@ if __name__ == '__main__':
     w = Window(caption = title, 
                 width = 1200, 
                 height = 800, 
-                bgcolor = (0.,0.,0.2) )
+                bgcolor = (.3, .3, 0.9) )
 
     #region = Region( regionname = 'Main',
     #                    extent_min = np.array([-5.0, -5, -5]),
@@ -545,7 +553,7 @@ if __name__ == '__main__':
                         extent_max = np.array([5, 5 ,5]),
                         activate_aabb = False)
     
-    ax = Axes(name = "3 axes", scale= 10, linewidth=2.0)
+    ax = Axes(name = "3 axes", scale= 200, linewidth=2.0)
 
     vert = np.array( [[2.0,3.0,0.0]], dtype = np.float32 )
     ptr = np.array( [[.2,.2,.2]], dtype = np.float32 )
