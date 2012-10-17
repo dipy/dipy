@@ -27,7 +27,7 @@ class ndindex(object):
     (2, 1, 0)
 
     """
-    def __init__(self, *shape):
+    def __init__(self, shape):
         x = as_strided(np.zeros(1), shape=shape, strides=np.zeros_like(shape))
         self._it = np.nditer(x, flags=['multi_index'], order='C')
 
