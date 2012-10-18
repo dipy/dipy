@@ -1,5 +1,5 @@
 import numpy as np
-from fos import Window, Region
+from fos import Window, Scene
 from fos.actor.slicer import Slicer
 from pyglet.gl import *
 
@@ -117,9 +117,9 @@ if __name__ == '__main__':
     data = np.interp(data, [data.min(), data.max()], [0, 255])
 
     window = Window(caption="[F]OS", bgcolor=(0.4, 0.4, 0.9))
-    region = Region(activate_aabb=False)
+    scene = Scene(activate_aabb=False)
     guil = Guillotine('VolumeSlicer', data)
-    region.add_actor(guil)
-    window.add_region(region)
+    scene.add_actor(guil)
+    window.add_scene(scene)
     window.refocus_camera()
 

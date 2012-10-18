@@ -2,7 +2,7 @@ import numpy as np
 import nibabel as nib
 #fos modules
 from fos import Actor
-from fos import Window, Region
+from fos import Window, Scene
 from fos.actor import Axes, Text3D
 from fos.modelmat import screen_to_model
 import fos.interact.collision as cll
@@ -13,17 +13,17 @@ from dipy.segment.quickbundles import QuickBundles
 from dipy.io.dpy import Dpy
 from dipy.io.pickles import load_pickle
 from dipy.viz.colormap import orient2rgb
-from dipy.tracking.metrics import downsample
 from dipy.viz.fos.guillotine import Guillotine
+from dipy.tracking.metrics import downsample
+from dipy.tracking.vox2track import track_counts
 #other
 import copy 
 import cPickle as pickle
-
+#trick for the bug of pyglet multiarrays
 glib=load_library('GL')
-
-from dipy.tracking.vox2track import track_counts
+#Tk dialogs
 import Tkinter, tkFileDialog
-
+#Pyside for windowing
 from PySide.QtCore import Qt
 
 question_message="""
@@ -51,6 +51,14 @@ ESC: Exit.
 """
 
 
+def rotation_matrix(axis,theta_degree):
+    theta = 1.*theta_degree*np.pi/180.
+    axis = 1.*axis/np.sqrt(np.dot(axis,axis))
+    a = np.cos(theta/2)
+    b,c,d = -axis*np.sin(theta/2)
+    return np.array([[a*a+b*b-c*c-d*d, 2*(b*c-a*d), 2*(b*d+a*c)],
+                     [2*(b*c+a*d), a*a+c*c-b*b-d*d, 2*(c*d-a*b)],
+                     [2*(b*d-a*c), 2*(c*d+a*b), a*a+d*d-b*b-c*c]])
 
 
 def track2rgb(track):
@@ -515,17 +523,21 @@ if __name__ == '__main__':
     T = dpr.read_tracks()
     dpr.close() 
     
-    T = T[:10000]
+    T = T[:2000]
     
-    from dipy.tracking.metrics import downsample
-    #T = [downsample(t, 12) - np.array(data.shape[:3])/2. for t in T]
-    T = [np.dot(downsample(t, 12), affine[:3, :3].T) + affine[:3, 3] for t in T]
-
+    T = [downsample(t, 12) - np.array(data.shape[:3])/2. for t in T]
+    
+    axis = np.array([1, 0, 0])
+    theta = - 90. 
+    T = np.dot(T,rotation_matrix(axis, theta))
+    axis = np.array([0, 1, 0])
+    theta = 180. 
+    T = np.dot(T,rotation_matrix(axis, theta))
+    
     #Rotate tractography
-
     #load initial QuickBundles with threshold 30mm
     #fpkl = dname+'data/subj_05/101_32/DTI/qb_gqi_1M_linear_30.pkl'
-    qb=QuickBundles(T,30.,12)
+    qb=QuickBundles(T, 30., 12)
     #save_pickle(fpkl,qb)
     #qb=load_pickle(fpkl)
 
@@ -545,10 +557,10 @@ if __name__ == '__main__':
                 height = 800, 
                 bgcolor = (.3, .3, 0.9) )
 
-    #region = Region( regionname = 'Main',
+    #scene = Scene( scenename = 'Main',
     #                    extent_min = np.array([-5.0, -5, -5]),
     #                    extent_max = np.array([5, 5 ,5]))
-    region = Region( regionname = 'Main',
+    scene = Scene( scenename = 'Main',
                         extent_min = np.array([-5.0, -5, -5]),
                         extent_max = np.array([5, 5 ,5]),
                         activate_aabb = False)
@@ -562,13 +574,13 @@ if __name__ == '__main__':
     data = np.interp(data, [data.min(), data.max()], [0, 255])    
     guil = Guillotine('Volume Slicer', data)
 
-    region.add_actor(ax)
-    region.add_actor(tex)
-    region.add_actor(tl)
-    region.add_actor(guil)
+    scene.add_actor(ax)
+    scene.add_actor(tex)
+    scene.add_actor(tl)
+    scene.add_actor(guil)
 
-    #region.add_actor(streamlines)
+    #scene.add_actor(streamlines)
     #w.screenshot( 'red.png' )
-    w.add_region(region)
+    w.add_scene(scene)
     w.refocus_camera()
 
