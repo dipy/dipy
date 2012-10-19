@@ -165,6 +165,7 @@ class TrackLabeler(Actor):
 
         This is done at every frame and therefore must be real fast.
         """
+        glDisable(GL_LIGHTING)
         # virtuals
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_BLEND)
@@ -439,29 +440,6 @@ class TrackLabeler(Actor):
                 return closest_to_line_idx[0]
         else: # simpler and apparently more effective algorithm:
             return np.argmin(line_distance + screen_distance)
-    
-    def set_state(self): # , line_width):
-        """Tell hardware what to do with the scene.
-        """
-        glEnable(GL_DEPTH_TEST)
-        glEnable(GL_BLEND)
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
-        glEnable(GL_LINE_SMOOTH)        
-        glHint(GL_LINE_SMOOTH_HINT, GL_NICEST)
-        # glLineWidth(line_width)
-
-    def unset_state(self):
-        """Close communication with hardware.
-
-        Disable what was enabled during set_state().
-        """
-        glDisable(GL_DEPTH_TEST)
-        glDisable(GL_BLEND)
-        glDisable(GL_LINE_SMOOTH)
-        # glLineWidth(1.)
-
-    def delete(self):
-        pass
 
     def maskout_tracks(self):
         """ retrieve ids of virtuals which go through the mask
@@ -504,8 +482,6 @@ class ThresholdSelector(object):
     def ok(self):
         self.value = self.s.get()
         self.parent.destroy()
-
-
 
 
 if __name__ == '__main__':
@@ -555,7 +531,7 @@ if __name__ == '__main__':
     w = Window(caption = title, 
                 width = 1200, 
                 height = 800, 
-                bgcolor = (.3, .3, 0.9) )
+                bgcolor = (.5, .5, 0.9) )
 
     #scene = Scene( scenename = 'Main',
     #                    extent_min = np.array([-5.0, -5, -5]),
@@ -569,15 +545,15 @@ if __name__ == '__main__':
 
     vert = np.array( [[2.0,3.0,0.0]], dtype = np.float32 )
     ptr = np.array( [[.2,.2,.2]], dtype = np.float32 )
-    tex = Text3D( "Text3D", vert, "(0,0,0)", 10*2.5, 10*.5, ptr)
+    tex = Text3D( "Text3D", vert, "(0,0,0)", 10 * 2.5, 10 * .5, ptr)
 
     data = np.interp(data, [data.min(), data.max()], [0, 255])    
     guil = Guillotine('Volume Slicer', data)
 
-    scene.add_actor(ax)
-    scene.add_actor(tex)
-    scene.add_actor(tl)
+    #scene.add_actor(ax)
+    #scene.add_actor(tex)
     scene.add_actor(guil)
+    scene.add_actor(tl)
 
     #scene.add_actor(streamlines)
     #w.screenshot( 'red.png' )
