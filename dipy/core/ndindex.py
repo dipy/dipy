@@ -29,6 +29,9 @@ class ndindex(object):
 
     """
     def __init__(self, shape):
+        if len(shape) == 0:
+            self._it = _ZeroDIter()
+            return
         x = as_strided(np.zeros(1), shape=shape, strides=np.zeros_like(shape))
         self._it = np.nditer(x, flags=['multi_index'], order='C')
 
@@ -47,3 +50,15 @@ class ndindex(object):
         """
         self._it.next()
         return self._it.multi_index
+
+
+class _ZeroDIter(object):
+    """To help handle the 0d case in ndindex"""
+    multi_index = ()
+    done = False
+
+    def next(self):
+        if self.done:
+            raise StopIteration
+        else:
+            self.done = True
