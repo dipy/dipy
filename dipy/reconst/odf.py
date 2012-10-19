@@ -138,6 +138,8 @@ class NonLinearDirectionFinder(DirectionFinder):
         # Find discrete peaks for use as seeds in lon-linear search
         discrete_values = sphere_eval(sphere)
         values, indices = local_maxima(discrete_values, sphere.edges)
+        n = search_descending(values, relative_peak_threshold)
+        indices = indices[:n]
         seeds = np.column_stack([sphere.theta[indices], sphere.phi[indices]])
 
         # Non-linear search
@@ -149,10 +151,7 @@ class NonLinearDirectionFinder(DirectionFinder):
         # Sort in descending order
         order = values.argsort()[::-1]
         values = values[order]
-        vertices = small_sphere.vertices[order]
-        # Remove small peaks
-        n = search_descending(values, relative_peak_threshold)
-        directions = vertices[:n]
+        directions = small_sphere.vertices[order]
         # Remove peaks too close to each-other
         directions = remove_similar_vertices(directions, min_separation_angle,)
         return directions
