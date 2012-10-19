@@ -1,8 +1,7 @@
 import numpy as np
 import nibabel as nib
 #fos modules
-from fos import Actor
-from fos import Window, Scene
+from fos import Actor, Scene
 from fos.actor import Axes, Text3D
 from fos.modelmat import screen_to_model
 import fos.interact.collision as cll
@@ -25,6 +24,8 @@ glib=load_library('GL')
 import Tkinter, tkFileDialog
 #Pyside for windowing
 from PySide.QtCore import Qt
+from dipy.viz.fos.streamwindow import Window
+
 
 question_message="""
 >>>>Track Labeler
