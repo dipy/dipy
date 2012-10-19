@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
-class ndindex(object):
+def ndindex(shape):
     """
     An N-dimensional iterator object to index arrays.
 
@@ -28,22 +28,10 @@ class ndindex(object):
     (2, 1, 0)
 
     """
-    def __init__(self, shape):
+    if len(shape) == 0:
+        yield ()
+    else:
         x = as_strided(np.zeros(1), shape=shape, strides=np.zeros_like(shape))
-        self._it = np.nditer(x, flags=['multi_index'], order='C')
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        """
-        Standard iterator method, updates the index and returns the index tuple.
-
-        Returns
-        -------
-        val : tuple of ints
-            Returns a tuple containing the indices of the current iteration.
-
-        """
-        self._it.next()
-        return self._it.multi_index
+        ndi = np.nditer(x, flags=['multi_index', 'zerosize_ok'], order='C')
+        for e in ndi:
+            yield ndi.multi_index
