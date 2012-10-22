@@ -24,7 +24,6 @@ glib=load_library('GL')
 import Tkinter, tkFileDialog
 #Pyside for windowing
 from PySide.QtCore import Qt
-from dipy.viz.fos.streamwindow import Window
 
 
 question_message="""
@@ -52,16 +51,6 @@ ESC: Exit.
 """
 
 
-def rotation_matrix(axis,theta_degree):
-    theta = 1.*theta_degree*np.pi/180.
-    axis = 1.*axis/np.sqrt(np.dot(axis,axis))
-    a = np.cos(theta/2)
-    b,c,d = -axis*np.sin(theta/2)
-    return np.array([[a*a+b*b-c*c-d*d, 2*(b*c-a*d), 2*(b*d+a*c)],
-                     [2*(b*c+a*d), a*a+c*c-b*b-d*d, 2*(c*d-a*b)],
-                     [2*(b*d-a*c), 2*(c*d+a*b), a*a+d*d-b*b-c*c]])
-
-
 def track2rgb(track):
     """Compute orientation of a track and retrieve and appropriate RGB
     color to represent it.
@@ -70,14 +59,14 @@ def track2rgb(track):
     return orient2rgb(track[0] - track[-1])
 
 
-class TrackLabeler(Actor):   
+class StreamlineLabeler(Actor):   
     
     def __init__(self, name,qb, tracks, reps='exemplars',colors=None, vol_shape=None, virtuals_line_width=5.0, tracks_line_width=2.0, virtuals_alpha=1.0, tracks_alpha=0.6, affine=None, verbose=False):
         """TrackLabeler is meant to explore and select subsets of the
         tracks. The exploration occurs through QuickBundles (qb) in
         order to simplify the scene.
         """
-        super(TrackLabeler, self).__init__(name)
+        super(StreamlineLabeler, self).__init__(name)
 
         if affine is None: self.affine = np.eye(4, dtype = np.float32)
         else: self.affine = affine      
@@ -131,7 +120,6 @@ class TrackLabeler(Actor):
             #self.tracks_shifted=None
             self.virtuals_shifted=None
 
-
     def compute_buffers(self, tracks, alpha):
         """Compute buffers for GL compilation.
         """
@@ -144,7 +132,6 @@ class TrackLabeler(Actor):
         if isinstance(tracks_first,tuple): print '== first'
 
         return tracks_buffer, tracks_colors, tracks_first, tracks_count
-
 
     def compute_colors(self, tracks, alpha):
         """Compute colors for a list of tracks.
@@ -159,7 +146,6 @@ class TrackLabeler(Actor):
 
         color[:,3] = alpha
         return color
-        
 
     def draw(self):
         """Draw virtual and real tracks.
@@ -205,7 +191,6 @@ class TrackLabeler(Actor):
         glDisable(GL_BLEND)
         glDisable(GL_LINE_SMOOTH)
 
-
     def process_mouse_position(self,x,y):
         self.mouse_x=x
         self.mouse_y=y
@@ -232,7 +217,6 @@ class TrackLabeler(Actor):
                 if self.verbose: print("Storing old color: %s" % self.old_color[id][0])
                 self.virtuals_colors[self.virtuals_first[id]:self.virtuals_first[id]+self.virtuals_count[id],:] = new_color
                 self.selected.append(id)
-
 
     def unselect_track(self, ids):
         """Do visual un-selection of given virtuals.
@@ -377,15 +361,13 @@ class TrackLabeler(Actor):
         print "Computing quick bundles...",
         self.unselect_track('all')
         self.tracks = tracks_frozen
-        self.tracks_ids = self.tracks_ids[tracks_frozen_ids] # range(len(self.tracks))
+        self.tracks_ids = self.tracks_ids[tracks_frozen_ids] 
         
         root = Tkinter.Tk()
         root.wm_title('QuickBundles threshold')
         ts = ThresholdSelector(root, default_value=self.qb.dist_thr/2.0)
         root.wait_window()
         
-        #print "Threshold value ",ts.value
-        #self.qb = QuickBundles(self.tracks, dist_thr=qb.dist_thr/2., pts=self.qb.pts)
         self.qb = QuickBundles(self.tracks, dist_thr=ts.value, pts=self.qb.pts)
         #self.qb.dist_thr = qb.dist_thr/2.
         self.qb.dist_thr = ts.value
@@ -485,79 +467,4 @@ class ThresholdSelector(object):
         self.parent.destroy()
 
 
-if __name__ == '__main__':
-
-    
-    #load T1 volume registered in MNI space 
-    dname='/home/eg309/Devel/fos_legacy/applications/'
-    img = nib.load(dname+'data/subj_05/MPRAGE_32/T1_flirt_out.nii.gz')
-    data = img.get_data()
-    affine = img.get_affine()
-
-    #load the tracks registered in MNI space 
-    fdpyw = dname+'data/subj_05/101_32/DTI/tracks_gqi_1M_linear.dpy'    
-    dpr = Dpy(fdpyw, 'r')
-    T = dpr.read_tracks()
-    dpr.close() 
-    
-    T = T[:2000]
-    
-    T = [downsample(t, 12) - np.array(data.shape[:3])/2. for t in T]
-    
-    axis = np.array([1, 0, 0])
-    theta = - 90. 
-    T = np.dot(T,rotation_matrix(axis, theta))
-    axis = np.array([0, 1, 0])
-    theta = 180. 
-    T = np.dot(T,rotation_matrix(axis, theta))
-    
-    #Rotate tractography
-    #load initial QuickBundles with threshold 30mm
-    #fpkl = dname+'data/subj_05/101_32/DTI/qb_gqi_1M_linear_30.pkl'
-    qb=QuickBundles(T, 30., 12)
-    #save_pickle(fpkl,qb)
-    #qb=load_pickle(fpkl)
-
-    #create the interaction system for tracks 
-    tl = TrackLabeler('Bundle Picker', 
-                        qb,qb.downsampled_tracks(), 
-                        vol_shape=None, 
-                        tracks_alpha=1)   
-    #add a interactive slicing/masking tool
-    #sl = Slicer(affine,data)    
-    #add one way communication between tl and sl
-    #tl.slicer=sl
-
-    title = 'Bundle Picking'
-    w = Window(caption = title, 
-                width = 1200, 
-                height = 800, 
-                bgcolor = (.5, .5, 0.9) )
-
-    #scene = Scene( scenename = 'Main',
-    #                    extent_min = np.array([-5.0, -5, -5]),
-    #                    extent_max = np.array([5, 5 ,5]))
-    scene = Scene( scenename = 'Main',
-                        extent_min = np.array([-5.0, -5, -5]),
-                        extent_max = np.array([5, 5 ,5]),
-                        activate_aabb = False)
-    
-    ax = Axes(name = "3 axes", scale= 200, linewidth=2.0)
-
-    vert = np.array( [[2.0,3.0,0.0]], dtype = np.float32 )
-    ptr = np.array( [[.2,.2,.2]], dtype = np.float32 )
-    tex = Text3D( "Text3D", vert, "(0,0,0)", 10 * 2.5, 10 * .5, ptr)
-
-    data = np.interp(data, [data.min(), data.max()], [0, 255])    
-    guil = Guillotine('Volume Slicer', data)
-
-    #scene.add_actor(ax)
-    #scene.add_actor(tex)
-    scene.add_actor(guil)
-    scene.add_actor(tl)
-
-    #scene.add_actor(streamlines)
-    #w.screenshot( 'red.png' )
-    w.add_scene(scene)
-    w.refocus_camera()
 
