@@ -50,23 +50,47 @@ class Window(QtGui.QWidget):
                                     bgcolor = bgcolor, 
                                     enable_light = enable_light)
         
-        self.SpinBox = QtGui.QSpinBox()
-        self.SpinBox.setRange(0, 255)
-        self.SpinBox.setSingleStep(1)
+        self.SpinBoxi = QtGui.QSpinBox()
+        self.SpinBoxi.setRange(0, 255)
+        self.SpinBoxi.setSingleStep(1)
 
-        self.SpinBox2 = QtGui.QSpinBox()
-        self.SpinBox2.setRange(0, 255)
-        self.SpinBox2.setSingleStep(1)
+        self.SpinBoxj = QtGui.QSpinBox()
+        self.SpinBoxj.setRange(0, 255)
+        self.SpinBoxj.setSingleStep(1)
 
-        self.SpinBox3 = QtGui.QSpinBox()
-        self.SpinBox3.setRange(0, 255)
-        self.SpinBox3.setSingleStep(1)
+        self.SpinBoxk = QtGui.QSpinBox()
+        self.SpinBoxk.setRange(0, 255)
+        self.SpinBoxk.setSingleStep(1)
 
+        spinLayoutijk = QtGui.QHBoxLayout()
+        spinLayoutijk.addWidget(self.SpinBoxi)
+        spinLayoutijk.addWidget(self.SpinBoxj)
+        spinLayoutijk.addWidget(self.SpinBoxk)
+
+        showi = QtGui.QPushButton("Slice i")
+        showi.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
+        showj = QtGui.QPushButton("Slice j")
+        showj.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
+        showk = QtGui.QPushButton("Slice k")
+        showk.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
+
+        self.connect(showi, QtCore.SIGNAL("clicked()"), 
+                        self, QtCore.SLOT("show_all()"))
+                        
+
+        pushLayout = QtGui.QHBoxLayout()
+        pushLayout.addWidget(showi)
+        pushLayout.addWidget(showj)
+        pushLayout.addWidget(showk)
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addLayout(spinLayoutijk)
+        vbox.addLayout(pushLayout)
+        
+        
         mainLayout = QtGui.QHBoxLayout()
         mainLayout.addWidget(self.glWidget)
-        #mainLayout.addWidget(self.SpinBox)
-        #mainLayout.addWidget(self.SpinBox2)
-        #mainLayout.addWidget(self.SpinBox3)
+        mainLayout.addLayout(vbox)
 
         self.setLayout(mainLayout)
         self.setWindowTitle(self.tr(caption))
@@ -88,6 +112,11 @@ class Window(QtGui.QWidget):
         else:
             self.show()
             self.fullscreen = False
+
+    def show_all(self):
+        vol = self.glWidget.world.scenes['Main Scene'].actors['Volume Slicer']
+        vol.show_all(False)
+        self.glWidget.updateGL()
 
     def initSpincamera(self, angle = 0.007 ):
 
@@ -112,20 +141,6 @@ class Window(QtGui.QWidget):
         timer.setInterval( interval )
         return timer
 
-    """
-    def test_actor(self):
-        ''' Dummy test function
-        '''
-        scene = Scene( scenename = 'Main',
-                         extent_min = np.array( [-5.0, -5, -5] ),
-                         extent_max = np.array( [5, 5, 5] ) )
-        sphere = Sphere( 'MySphere', radius = 2, iterations = 2 )
-        scene.add_actor( sphere )
-        self.add_scene( scene )
-        self.refocus_camera()
-        self.glWidget.updateGL()
-    """
-
     def add_scene(self, scene):
         self.glWidget.world.add_scene( scene )
 
@@ -145,14 +160,15 @@ class Window(QtGui.QWidget):
         self.glWidget.updateGL()
         self.glWidget.grabFrameBuffer().save( filename )
 
+    
     def keyPressEvent(self, event):
         """ Handle all key press events
         """
         print 'key pressed', event.key()   
         key = event.key()
-        self.messages=empty_messages.copy()
-        self.messages['key_pressed']=key
-        self.glWidget.world.send_all_messages(self.messages)       
+        #self.messages=empty_messages.copy()
+        #self.messages['key_pressed']=key
+        #self.glWidget.world.send_all_messages(self.messages)       
         # F1: fullscreen
         # F2: next frame
         # F3: previous frame
@@ -208,6 +224,9 @@ class GLWidget(QtOpenGL.QGLWidget):
         self.setMouseTracking(True)
         # camera rotation speed
         self.ang_step = 0.02
+        # necessary to grab key events
+        self.setFocusPolicy(QtCore.Qt.StrongFocus)
+        self.parent = parent
 
     def minimumSizeHint(self):
         return QtCore.QSize(50, 50)
@@ -276,11 +295,11 @@ class GLWidget(QtOpenGL.QGLWidget):
         self.lastPos = QtCore.QPoint(event.pos())
         if (event.modifiers() & QtCore.Qt.ControlModifier):
             x, y = event.x(), event.y()
-            self.world.pick_all( x, self.height - y)
+            self.world.pick_all(x, self.height - y)
 
     def mouseMoveEvent(self, event):
         self.messages=empty_messages.copy()
-        self.messages['mouse_position']=(event.x(),self.height-event.y())
+        self.messages['mouse_position']=(event.x(),self.height - event.y())
         self.world.send_all_messages(self.messages)
         self.messages=empty_messages
         dx = event.x() - self.lastPos.x()
@@ -301,13 +320,13 @@ class GLWidget(QtOpenGL.QGLWidget):
                     if dx > 0: angle = -self.ang_step #0.01
                     else: angle = self.ang_step #0.01
                     if shift: angle *= 2
-                    self.world.camera.rotate_around_focal( angle, "yup" )
+                    self.world.camera.rotate_around_focal(angle, "yup")
                 if dy != 0:
                     # rotate around right
                     if dy > 0: angle = -self.ang_step #0.01
                     else: angle = self.ang_step #0.01
                     if shift: angle *= 2
-                    self.world.camera.rotate_around_focal( angle, "right" )
+                    self.world.camera.rotate_around_focal(angle, "right")
                 self.updateGL()
             else:
                 # with control, do many selects!
@@ -329,7 +348,6 @@ class GLWidget(QtOpenGL.QGLWidget):
             self.updateGL()
             
         self.lastPos = QtCore.QPoint(event.pos())
-
 
     def wheelEvent(self, e):
         numSteps = e.delta() / 15 / 8
@@ -359,3 +377,16 @@ class GLWidget(QtOpenGL.QGLWidget):
             else:
                 self.world.camera.move_forward( numSteps )
         self.updateGL()
+
+
+    def keyPressEvent(self, event):
+        """ Handle all key press events
+        """
+        #print 'key pressed GLWidget', event.key()   
+        key = event.key()
+        self.messages=empty_messages.copy()
+        self.messages['key_pressed']=key
+        self.world.send_all_messages(self.messages)       
+        self.updateGL()
+        self.parent.keyPressEvent(event)
+        
