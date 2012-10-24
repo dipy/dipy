@@ -16,6 +16,80 @@ empty_messages={ 'key_pressed':None,
                     'mod_key_pressed':None}
 
 
+class RightPanel(QtGui.QWidget):
+    def __init__(self, parent):
+        QtGui.QWidget.__init__(self, parent)
+       
+        self.parent = parent
+        
+        self.SpinBoxi = QtGui.QSpinBox()
+        self.SpinBoxi.setRange(0, 255)
+        self.SpinBoxi.setSingleStep(1)
+
+        self.SpinBoxj = QtGui.QSpinBox()
+        self.SpinBoxj.setRange(0, 255)
+        self.SpinBoxj.setSingleStep(1)
+
+        self.SpinBoxk = QtGui.QSpinBox()
+        self.SpinBoxk.setRange(0, 255)
+        self.SpinBoxk.setSingleStep(1)
+
+        spinLayoutijk = QtGui.QHBoxLayout()
+        spinLayoutijk.addWidget(self.SpinBoxi)
+        spinLayoutijk.addWidget(self.SpinBoxj)
+        spinLayoutijk.addWidget(self.SpinBoxk)
+
+        showi = QtGui.QPushButton("Saggital")
+        showi.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
+        showj = QtGui.QPushButton("Axial")
+        showj.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
+        showk = QtGui.QPushButton("Coronal")
+        showk.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
+
+        self.connect(showi, QtCore.SIGNAL("clicked()"), 
+                        self, QtCore.SLOT("show_i()"))
+        
+        self.connect(showj, QtCore.SIGNAL("clicked()"), 
+                        self, QtCore.SLOT("show_j()"))
+
+        self.connect(showk, QtCore.SIGNAL("clicked()"), 
+                        self, QtCore.SLOT("show_k()"))
+
+        pushLayout = QtGui.QHBoxLayout()
+        pushLayout.addWidget(showi)
+        pushLayout.addWidget(showj)
+        pushLayout.addWidget(showk)
+
+
+
+        vbox = QtGui.QVBoxLayout()
+        vbox.addLayout(spinLayoutijk)
+        vbox.addLayout(pushLayout)
+
+        self.setLayout(vbox)
+
+    def access_vol(self):
+        self.vol = self.parent.glWidget.world.scenes['Main Scene'].actors['Volume Slicer']
+
+    def show_i(self):
+        self.access_vol()
+        self.vol.show_i = not self.vol.show_i
+        self.parent.glWidget.updateGL()
+        self.parent.glWidget.setFocus()
+
+    def show_j(self):
+        self.access_vol()
+        self.vol.show_j = not self.vol.show_j
+        self.parent.glWidget.updateGL()
+        self.parent.glWidget.setFocus()
+    
+    def show_k(self):
+        self.access_vol()
+        self.vol.show_k = not self.vol.show_k
+        self.parent.glWidget.updateGL()
+        self.parent.glWidget.setFocus()
+
+
 class Window(QtGui.QWidget):
 
     def __init__(self, parent = None, 
@@ -50,47 +124,12 @@ class Window(QtGui.QWidget):
                                     bgcolor = bgcolor, 
                                     enable_light = enable_light)
         
-        self.SpinBoxi = QtGui.QSpinBox()
-        self.SpinBoxi.setRange(0, 255)
-        self.SpinBoxi.setSingleStep(1)
-
-        self.SpinBoxj = QtGui.QSpinBox()
-        self.SpinBoxj.setRange(0, 255)
-        self.SpinBoxj.setSingleStep(1)
-
-        self.SpinBoxk = QtGui.QSpinBox()
-        self.SpinBoxk.setRange(0, 255)
-        self.SpinBoxk.setSingleStep(1)
-
-        spinLayoutijk = QtGui.QHBoxLayout()
-        spinLayoutijk.addWidget(self.SpinBoxi)
-        spinLayoutijk.addWidget(self.SpinBoxj)
-        spinLayoutijk.addWidget(self.SpinBoxk)
-
-        showi = QtGui.QPushButton("Slice i")
-        showi.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
-        showj = QtGui.QPushButton("Slice j")
-        showj.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
-        showk = QtGui.QPushButton("Slice k")
-        showk.setFont(QtGui.QFont("Times", 11, QtGui.QFont.Normal))
-
-        self.connect(showi, QtCore.SIGNAL("clicked()"), 
-                        self, QtCore.SLOT("show_all()"))
-                        
-
-        pushLayout = QtGui.QHBoxLayout()
-        pushLayout.addWidget(showi)
-        pushLayout.addWidget(showj)
-        pushLayout.addWidget(showk)
-
-        vbox = QtGui.QVBoxLayout()
-        vbox.addLayout(spinLayoutijk)
-        vbox.addLayout(pushLayout)
         
-        
+        rightPanel = RightPanel(self)
         mainLayout = QtGui.QHBoxLayout()
         mainLayout.addWidget(self.glWidget)
-        mainLayout.addLayout(vbox)
+        #mainLayout.addLayout(vbox)
+        mainLayout.addWidget(rightPanel)
 
         self.setLayout(mainLayout)
         self.setWindowTitle(self.tr(caption))
@@ -112,11 +151,6 @@ class Window(QtGui.QWidget):
         else:
             self.show()
             self.fullscreen = False
-
-    def show_all(self):
-        vol = self.glWidget.world.scenes['Main Scene'].actors['Volume Slicer']
-        vol.show_all(False)
-        self.glWidget.updateGL()
 
     def initSpincamera(self, angle = 0.007 ):
 
@@ -164,7 +198,7 @@ class Window(QtGui.QWidget):
     def keyPressEvent(self, event):
         """ Handle all key press events
         """
-        print 'key pressed', event.key()   
+        #print 'key pressed', event.key()   
         key = event.key()
         #self.messages=empty_messages.copy()
         #self.messages['key_pressed']=key
