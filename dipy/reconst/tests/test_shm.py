@@ -1,18 +1,21 @@
 
 import numpy as np
 import numpy.linalg as npl
-from dipy.core.subdivide_octahedron import create_unit_hemisphere
-from dipy.reconst.dti import design_matrix, lower_triangular
+
 
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.core.geometry import cart2sphere
+from dipy.core.sphere import unit_icosahedron, HemiSphere
+from dipy.core.gradients import gradient_table
+from dipy.sims.voxel import single_tensor
+
 from dipy.reconst.shm import (real_sph_harm, sph_harm_ind_list, OpdtModel,
                               normalize_data, QballModel, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
-                              bootstrap_data_voxel, ResidualBootstrapWrapper)
-from dipy.tracking.integration import ClosestDirectionTracker
+                              bootstrap_data_voxel, ResidualBootstrapWrapper,
+                              OpdtModel, CsaOdfModel, QballModel)
+
 
 def test_sph_harm_ind_list():
     m_list, n_list = sph_harm_ind_list(8)
@@ -66,7 +69,7 @@ def test_real_sph_harm():
 
 
 def test_smooth_pinv():
-    hemi = create_unit_hemisphere(3)
+    hemi = HemiSphere.from_sphere(unit_icosahedron.subdivide(2))
     m, n = sph_harm_ind_list(4)
     B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
 
@@ -92,141 +95,117 @@ def test_normalize_data():
 
     sig = np.arange(1, 66)[::-1]
 
-    bval = np.repeat([0, 1000], [2, 20])
-    assert_raises(ValueError, normalize_data, sig, bval)
-    bval = np.ones(65)*1000
-    assert_raises(ValueError, normalize_data, sig, bval)
-    bval = np.repeat([0, 1], [1, 64])
-    d = normalize_data(sig, bval, 1)
-    assert_raises(ValueError, normalize_data, None, bval, 0)
+    where_b0 = np.zeros(65, 'bool')
+    where_b0[0] = True
+    d = normalize_data(sig, where_b0, 1)
+    assert_raises(ValueError, normalize_data, sig, where_b0, out=sig)
 
-    bval[[0, 1]] = [0, 1]
-    norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig/65.)
-    norm_sig = normalize_data(sig, bval, min_signal=5)
-    assert_array_equal(norm_sig[-5:], 5/65.)
+    norm_sig = normalize_data(sig, where_b0, min_signal=1)
+    assert_array_almost_equal(norm_sig, sig/65.)
+    norm_sig = normalize_data(sig, where_b0, min_signal=5)
+    assert_array_almost_equal(norm_sig[-5:], 5/65.)
 
-    bval[[0, 1]] = [0, 0]
-    norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig/64.5)
-    norm_sig = normalize_data(sig, bval, min_signal=5)
-    assert_array_equal(norm_sig[-5:], 5/64.5)
+    where_b0[[0, 1]] = [True, True]
+    norm_sig = normalize_data(sig, where_b0, min_signal=1)
+    assert_array_almost_equal(norm_sig, sig/64.5)
+    norm_sig = normalize_data(sig, where_b0, min_signal=5)
+    assert_array_almost_equal(norm_sig[-5:], 5/64.5)
 
     sig = sig*np.ones((2,3,1))
 
-    bval[[0, 1]] = [0, 1]
-    norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig/65.)
-    norm_sig = normalize_data(sig, bval, min_signal=5)
-    assert_array_equal(norm_sig[..., -5:], 5/65.)
+    where_b0[[0, 1]] = [True, False]
+    norm_sig = normalize_data(sig, where_b0, min_signal=1)
+    assert_array_almost_equal(norm_sig, sig/65.)
+    norm_sig = normalize_data(sig, where_b0, min_signal=5)
+    assert_array_almost_equal(norm_sig[..., -5:], 5/65.)
 
-    bval[[0, 1]] = [0, 0]
-    norm_sig = normalize_data(sig, bval, min_signal=1)
-    assert_array_equal(norm_sig, sig/64.5)
-    norm_sig = normalize_data(sig, bval, min_signal=5)
-    assert_array_equal(norm_sig[..., -5:], 5/64.5)
+    where_b0[[0, 1]] = [True, True]
+    norm_sig = normalize_data(sig, where_b0, min_signal=1)
+    assert_array_almost_equal(norm_sig, sig/64.5)
+    norm_sig = normalize_data(sig, where_b0, min_signal=5)
+    assert_array_almost_equal(norm_sig[..., -5:], 5/64.5)
+
 
 def make_fake_signal():
-    hemisphere = create_unit_hemisphere(4)
-    v, e = hemisphere.vertices, hemisphere.edges
-    vecs_xy = v[np.flatnonzero(v[:, 2] < .001)]
-    evals = np.array([1.8, .2, .2])*10**-3*1.5
-    evecs_moveing = np.empty((len(vecs_xy), 3, 3))
-    evecs_moveing[:, :, 0] = vecs_xy
-    evecs_moveing[:, :, 1] = [0, 0, 1]
-    evecs_moveing[:, :, 2] = np.cross(evecs_moveing[:, :, 0],
-                                      evecs_moveing[:, :, 1])
-    assert ((evecs_moveing * evecs_moveing).sum(1) - 1 < .001).all()
-    assert ((evecs_moveing * evecs_moveing).sum(2) - 1 < .001).all()
+    hemisphere = HemiSphere.from_sphere(unit_icosahedron.subdivide(2))
+    bvecs = np.concatenate(([[0, 0, 0]], hemisphere.vertices))
+    bvals = np.zeros(len(bvecs)) + 2000
+    bvals[0] = 0
+    gtab = gradient_table(bvals, bvecs)
 
-    gtab = np.empty((len(v) + 1, 3))
-    bval = np.empty(len(v) + 1)
-    bval[0] = 0
-    bval[1:] = 2000
-    gtab[0] = [0, 0, 0]
-    gtab[1:] = v
-    bvec = gtab.T
-    B = design_matrix(bvec, bval)
+    evals = np.array([[2.1, .2, .2], [.2, 2.1, .2]]) * 10**-3
+    evecs0 = np.eye(3)
+    sq3 = np.sqrt(3) / 2.
+    evecs1 = np.array([[sq3, .5, 0],
+                       [.5, sq3, 0],
+                       [0, 0, 1.]])
+    evecs1 = evecs0
+    a = evecs0[0]
+    b = evecs1[1]
+    S1 = single_tensor(gtab.bvals, gtab.bvecs, .55, evals[0], evecs0)
+    S2 = single_tensor(gtab.bvals, gtab.bvecs, .45, evals[1], evecs1)
+    return S1 + S2, gtab, np.vstack([a, b])
 
-    tensor_moveing = np.empty_like(evecs_moveing)
-    for ii in xrange(len(vecs_xy)):
-        tensor_moveing[ii] = np.dot(evecs_moveing[ii]*evals,
-                                    evecs_moveing[ii].T)
-    D_moveing = lower_triangular(tensor_moveing, 1)
-    tensor_fixed = np.diag(evals)
-    D_fixed = lower_triangular(tensor_fixed, 1)
 
-    sig = .45*np.exp(np.dot(D_moveing, B.T)) + .55*np.exp(np.dot(B, D_fixed))
-    assert sig.max() <= 1
-    assert sig.min() > 0
-    return hemisphere, vecs_xy, bval, bvec, sig
+class TestQballModel(object):
+    
+    model = QballModel
 
-class SimpleInterpolator(object):
-    data = np.ones((10, 10, 10))
-    voxel_size = np.ones(3)
-    def __getitem__(index):
-        return 1.
+    def test_single_voxel_fit(self):
+        signal, gtab, expected = make_fake_signal()
+        sphere = unit_icosahedron
 
-class SimpleModel(object):
-    def fit(data):
-        return SimpleFit(object)
+        model = self.model(gtab, sh_order=4, min_signal=1e-5,
+                           assume_normed=True)
+        fit = model.fit(signal)
+        odf = fit.odf(sphere)
+        assert_equal(odf.shape, sphere.phi.shape)
+        directions = fit.directions
+        assert_array_almost_equal(directions, expected)
 
-class SimpleFit(object):
-    directions = np.array([[ 1.,  0.,  0.],
-                           [ 0.,  1.,  0.],
-                           [ 0.,  0.,  1.],
-                          ])
+        # Test normalize data
+        model = self.model(gtab, sh_order=4, min_signal=1e-5,
+                           assume_normed=False)
+        fit = model.fit(signal*5)
+        odf_with_norm = fit.odf(sphere)
+        assert_array_almost_equal(odf, odf_with_norm)
 
-def test_ClosestDirectionTracker():
-    sphere, vecs_xy, bval, bvec, sig = make_fake_signal()
-    opdt_fitter = OpdtModel(bval, bvec.T, 6)
-    opdt_fitter.direction_finder.config(sphere=sphere,
-                                        min_separation_angle=0.)
-    norm_sig = sig
-    # angle_limit=49
-    stepper = ClosestDirectionTracker(opdt_fitter, norm_sig, None, 56)
+    def test_mulit_voxel_fit(self):
+        signal, gtab, expected = make_fake_signal()
+        sphere = unit_icosahedron
+        nd_signal = np.vstack([signal, signal])
 
-    S = opdt_fitter.fit(norm_sig).odf(sphere)
-    for ii in xrange(len(vecs_xy)):
-        step = stepper._next_step(ii, [0, 1., 0])
-        if np.dot(vecs_xy[ii], [0, 1., 0]) < .56:
-            assert_true(step is None)
-        else:
-            s2 = stepper._next_step(ii, vecs_xy[ii])
-            assert_array_almost_equal(vecs_xy[ii], step)
-            step = stepper._next_step(ii, [1., 0, 0.])
-            assert_array_almost_equal([1., 0, 0.], step)
+        model = self.model(gtab, sh_order=4, min_signal=1e-5,
+                           assume_normed=True)
+        fit = model.fit(nd_signal)
+        odf = fit.odf(sphere)
+        assert_equal(odf.shape, (2,) + sphere.phi.shape)
 
-    norm_sig.shape = (2, 2, 4, -1)
-    # angle_limit=49
-    stepper = ClosestDirectionTracker(opdt_fitter, norm_sig, None, 49)
-    step = stepper._next_step((0, 0, 0), [1, 0, 0])
-    assert_array_almost_equal(step, [1, 0, 0])
+        # Test fitting with mask, where mask is False odf should be 0
+        fit = model.fit(nd_signal, mask=[False, True])
+        odf = fit.odf(sphere)
+        assert_array_equal(odf[0], 0.)
 
-def testQballModel():
-    sphere, vecs_xy, bval, bvec, sig = make_fake_signal()
-    qball_fitter = QballModel(bval, bvec.T, 6)
-    qball_fitter.direction_finder.config(sphere=sphere,
-                                         min_separation_angle=0.)
+    def test_sh_order(self):
+        signal, gtab, expected = make_fake_signal()
+        model = self.model(gtab, sh_order=4, min_signal=1e-5)
+        assert_equal(model.B.shape[1], 15)
+        assert_equal(max(model.n), 4)
+        model = self.model(gtab, sh_order=6, min_signal=1e-5)
+        assert_equal(model.B.shape[1], 28)
+        assert_equal(max(model.n), 6)
 
-    norm_sig = sig
-    S = qball_fitter.fit(norm_sig).odf(sphere)
-    # angle_limit=39
-    stepper = ClosestDirectionTracker(qball_fitter, norm_sig, None, 33)
-    for ii in xrange(len(vecs_xy)):
-        step = stepper._next_step(ii, [0, 1., 0])
-        if np.dot(vecs_xy[ii], [0, 1., 0]) < .84:
-            assert_true(step is None)
-        else:
-            s2 = stepper._next_step(ii, vecs_xy[ii])
-            assert step is not None
-            assert np.dot(vecs_xy[ii], step) > .98
-            print ii
-            step = stepper._next_step(ii, [1., 0, 0.])
-            assert_array_almost_equal([1., 0, 0.], step)
+
+class TestOpdtModel(TestQballModel):
+    model = OpdtModel
+
+
+class TestCsaOdfModel(TestQballModel):
+    model = CsaOdfModel
+
 
 def test_hat_and_lcr():
-    hemi = create_unit_hemisphere(6)
+    hemi = HemiSphere.from_sphere(unit_icosahedron.subdivide(3))
     m, n = sph_harm_ind_list(8)
     B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
     H = hat(B)
@@ -269,7 +248,19 @@ def test_ResidualBootstrapWrapper():
     d.shape = (2,5)
     dhat = np.dot(d, H)
     ms = .2
+    where_dwi = np.ones(len(H), dtype=bool)
 
-    boot_obj = ResidualBootstrapWrapper(dhat, B, ms)
+    boot_obj = ResidualBootstrapWrapper(dhat, B, where_dwi, ms)
     assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
     assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))
+
+    dhat = np.column_stack([[.6, .7], dhat])
+    where_dwi = np.concatenate([[False], where_dwi])
+    boot_obj = ResidualBootstrapWrapper(dhat, B, where_dwi, ms)
+    assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
+    assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))
+
+
+if __name__ == "__main__":
+    import nose
+    nose.run_module()
