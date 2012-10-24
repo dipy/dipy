@@ -60,12 +60,23 @@ class RightPanel(QtGui.QWidget):
         pushLayout.addWidget(showj)
         pushLayout.addWidget(showk)
 
-        dial = QtGui.QDial()
-        dial.setMinimum(0)
-        dial.setMaximum(90)
+        dial1 = QtGui.QDial()
+        dial1.setMinimum(0)
+        dial1.setMaximum(90)
+
+        dial2 = QtGui.QDial()
+        dial2.setMinimum(0)
+        dial2.setMaximum(90)
+        
+        dial3 = QtGui.QDial()
+        dial3.setMinimum(0)
+        dial3.setMaximum(90)
+
 
         dialLayout = QtGui.QHBoxLayout()
-        dialLayout.addWidget(dial)
+        dialLayout.addWidget(dial1)
+        dialLayout.addWidget(dial2)
+        dialLayout.addWidget(dial3)
 
         vbox = QtGui.QVBoxLayout()
         vbox.addLayout(spinLayoutijk)
@@ -73,6 +84,11 @@ class RightPanel(QtGui.QWidget):
         vbox.addLayout(dialLayout)
 
         self.setLayout(vbox)
+
+        #groupBox = QtGui.QGroupBox("Volume Slicer")
+        #groupBox.setLayout(vbox)
+
+        #self.groupBox = groupBox
 
     def access_vol(self):
         self.vol = self.parent.glWidget.world.scenes['Main Scene'].actors['Volume Slicer']
@@ -134,7 +150,6 @@ class Window(QtGui.QWidget):
         rightPanel = RightPanel(self)
         mainLayout = QtGui.QHBoxLayout()
         mainLayout.addWidget(self.glWidget)
-        #mainLayout.addLayout(vbox)
         mainLayout.addWidget(rightPanel)
 
         self.setLayout(mainLayout)

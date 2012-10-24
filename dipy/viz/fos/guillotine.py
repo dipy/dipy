@@ -6,7 +6,6 @@ from pyglet.gl import *
 
 class Guillotine(Slicer):
     """ Head slicer actor
-    
     """
 
     def draw(self):
@@ -112,9 +111,15 @@ if __name__ == '__main__':
     
     dname = '/usr/share/fsl/data/standard/'
     fname = dname + 'FMRIB58_FA_1mm.nii.gz'
+
+    #fname = '/home/eg309/Data/trento_processed/subj_01/MPRAGE_32/rawbet.nii.gz'
     img=nib.load(fname)
     data = img.get_data()
     data = np.interp(data, [data.min(), data.max()], [0, 255])
+
+    from fos import Init, Run
+
+    Init()
 
     window = Window(caption="[F]OS", bgcolor=(0.4, 0.4, 0.9))
     scene = Scene(activate_aabb=False)
@@ -123,3 +128,8 @@ if __name__ == '__main__':
     window.add_scene(scene)
     window.refocus_camera()
 
+    #window = Window()
+    window.show()
+    #print get_ipython()
+
+    Run()
