@@ -60,11 +60,17 @@ class RightPanel(QtGui.QWidget):
         pushLayout.addWidget(showj)
         pushLayout.addWidget(showk)
 
+        dial = QtGui.QDial()
+        dial.setMinimum(0)
+        dial.setMaximum(90)
 
+        dialLayout = QtGui.QHBoxLayout()
+        dialLayout.addWidget(dial)
 
         vbox = QtGui.QVBoxLayout()
         vbox.addLayout(spinLayoutijk)
         vbox.addLayout(pushLayout)
+        vbox.addLayout(dialLayout)
 
         self.setLayout(vbox)
 
