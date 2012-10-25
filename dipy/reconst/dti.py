@@ -8,6 +8,13 @@ from ..core.geometry import vector_norm
 from dipy.core.onetime import auto_attr
 
 
+common_fit_methods = {'WLS': wls_fit_tensor,
+                      'LS': ols_fit_tensor,
+                      'OLS': ols_fit_tensor,
+                      'LowTri': tensor_eig_from_lo_tri,
+                     }
+
+
 class TensorModel(object):
     """ Diffusion Tensor
     """
@@ -660,11 +667,6 @@ def stepper_from_tensor(tensor, *args, **kargs):
     return stepper
 
 
-common_fit_methods = {'WLS': wls_fit_tensor,
-                      'LS': ols_fit_tensor,
-                      'OLS': ols_fit_tensor,
-                      'LowTri': tensor_eig_from_lo_tri,
-                     }
 
 
 # For backwards compatibility:
