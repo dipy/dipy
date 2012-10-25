@@ -14,7 +14,7 @@ from dipy.reconst.shm import (real_sph_harm, sph_harm_ind_list, OpdtModel,
                               normalize_data, QballModel, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
-                              OpdtModel, CsaOdfModel, QballModel)
+                              OpdtModel, CsaOdfModel, QballModel, SphHarmFit)
 
 
 def test_sph_harm_ind_list():
@@ -194,6 +194,19 @@ class TestQballModel(object):
         model = self.model(gtab, sh_order=6, min_signal=1e-5)
         assert_equal(model.B.shape[1], 28)
         assert_equal(max(model.n), 6)
+
+
+def test_SphHarmFit():
+    coef = np.zeros((3, 4, 5, 45))
+    mask = np.zeros((3, 4, 5), dtype=bool)
+
+    fit = SphHarmFit(None, coef, mask)
+    item = fit[0, 0, 0]
+    assert_equal(item.shape, ())
+    slice = fit[0]
+    assert_equal(slice.shape, (4, 5))
+    slice = fit[..., 0]
+    assert_equal(slice.shape, (3, 4))
 
 
 class TestOpdtModel(TestQballModel):

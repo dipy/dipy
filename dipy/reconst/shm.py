@@ -238,6 +238,28 @@ class SphHarmFit(OdfFit):
         self._shm_coef = shm_coef
         self.mask = mask
 
+    @property
+    def shape(self):
+        return self._shm_coef.shape[:-1]
+
+    def __getitem__(self, index):
+        """Allowing indexing into fit"""
+        # Index shm_coefficients
+        if isinstance(index, tuple):
+            coef_index = index + (Ellipsis,)
+        else:
+            coef_index = index
+        new_coef = self._shm_coef[coef_index]
+
+        # Index mask
+        if self.mask is not None:
+            new_mask = self.mask[index]
+            assert new_mask.shape == new_coef.shape[:-1]
+        else:
+            new_mask = None
+
+        return SphHarmFit(self.model, new_coef, new_mask)
+
     def odf(self, sphere):
         """Samples the odf function on the points of a sphere
 
