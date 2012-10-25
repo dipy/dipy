@@ -49,7 +49,6 @@ def test_TensorModel():
     # Test fitting with different methods: #XXX Add NNLS methods! 
     for fit_method in ['OLS', 'WLS']:
         tensor_model = dti.TensorModel(gtab,
-                                       min_signal=1e-8,
                                        fit_method=fit_method)
         
         tensor_fit = tensor_model.fit(Y)

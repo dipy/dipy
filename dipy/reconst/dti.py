@@ -17,12 +17,20 @@ class TensorModel(object):
         Parameters
         ----------
         gtab : GradientTable
-        fit_method : str,
+        fit_method : str or callable 
+            str can be one of the following: 
             'WLS' for weighted least squares
                 dti.wls_fit_tensor
             'LS' for ordinary least squares
                 dti.ols_fit_tensor
-            'LowTri' for lower triangular
+            'LowTri' for lower triangular (where the data are lower triangular
+                     form of the tensor in each voxel)
+
+            callable has to have the signature:
+              fit_method(design_matrix, data, *args, **kwargs)
+
+        args, kwargs : arguments and key-word arguments passed to the
+           fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details 
 
         References
         ----------
@@ -43,13 +51,19 @@ class TensorModel(object):
                                  'function or one of the common fit methods')
         self.bvec = gtab.bvecs
         self.bval = gtab.bvals
-        #64 bit design matrix makes for faster pinv
         self.design_matrix = design_matrix(self.bvec.T, self.bval)
         self.args = args
         self.kwargs = kwargs
 
     def fit(self, data):
         """
+        Fit method of the DTI model class
+
+        Parameters
+        ----------
+        data : array
+            The measured signal from one voxel.
+
         """
         dti_params = self.fit_method(self.design_matrix, data,
                                      *self.args, **self.kwargs)
