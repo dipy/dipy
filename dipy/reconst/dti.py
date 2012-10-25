@@ -8,12 +8,6 @@ from ..core.geometry import vector_norm
 from dipy.core.onetime import auto_attr
 
 
-common_fit_methods = {'WLS': wls_fit_tensor,
-                      'LS': ols_fit_tensor,
-                      'OLS': ols_fit_tensor,
-                      'LowTri': tensor_eig_from_lo_tri,
-                     }
-
 class TensorModel(object):
     """ Diffusion Tensor
     """
@@ -593,6 +587,12 @@ def quantize_evecs(evecs, odf_vertices=None):
     IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
     IN=IN.reshape(tup)
     return IN
+
+common_fit_methods = {'WLS': wls_fit_tensor,
+                      'LS': ols_fit_tensor,
+                      'OLS': ols_fit_tensor,
+                      'LowTri': tensor_eig_from_lo_tri,
+                     }
 
 
 
