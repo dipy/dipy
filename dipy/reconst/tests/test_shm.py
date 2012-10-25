@@ -276,4 +276,4 @@ def test_ResidualBootstrapWrapper():
 
 if __name__ == "__main__":
     import nose
-    nose.run_module()
+    nose.runmodule()
