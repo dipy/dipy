@@ -72,7 +72,7 @@ class TensorFit(object):
         """
         For tracking - return the primary direction in each voxel
         """
-        return self.evecs[..., np.newaxis, :, 0]
+        return self.evecs[0,0]
 
     @property
     def evals(self):
@@ -648,6 +648,7 @@ def stepper_from_tensor(tensor, *args, **kargs):
 
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
+                      'OLS': ols_fit_tensor,
                       'LowTri': tensor_eig_from_lo_tri,
                      }
 

@@ -13,6 +13,7 @@ from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
+import dipy.core.gradients as grad
 
 def test_TensorModel():
     data, gtab = dsi_voxels()
@@ -26,7 +27,50 @@ def test_TensorModel():
     assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
     assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
 
+    # Make some synthetic data
+    b0 = 1000.
+    bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    # The first b value is 0., so we take the second one:
+    B = bvals[1]
+    #Scale the eigenvalues and tensor by the B value so the units match
+    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+    evals = np.array([2., 1., 0.]) / B
+    md = evals.mean()
+    tensor = from_lower_triangular(D)
+    evecs = np.linalg.eigh(tensor)[1]
+    #Design Matrix
+    X = dti.design_matrix(bvecs, bvals)
+    #Signals
+    Y = np.exp(np.dot(X,D))
+    assert_almost_equal(Y[0], b0)
+    Y.shape = (-1,) + Y.shape
 
+    # Test fitting with different methods: #XXX Add NNLS methods! 
+    for fit_method in ['OLS', 'WLS']:
+        tensor_model = dti.TensorModel(gtab,
+                                       min_signal=1e-8,
+                                       fit_method=fit_method)
+        
+        tensor_fit = tensor_model.fit(Y)
+        assert_equal(tensor_fit.shape, Y.shape[:-1])
+        assert_array_almost_equal(tensor_fit.evals[0], evals)
+
+        assert_array_almost_equal(tensor_fit.quadratic_form[0], tensor,
+                                  err_msg =\
+        "Calculation of tensor from Y does not compare to analytical solution")
+
+        assert_almost_equal(tensor_fit.md[0], md)
+
+        assert_array_almost_equal(tensor_fit.directions.shape[0], 3)
+        
+    # Test error-handling:
+    assert_raises(ValueError,
+                  dti.TensorModel,
+                  gtab,
+                  fit_method='crazy_method')
+                  
+        
 def test_tensor_scalar_attributes():
     """
     Tests that the tensor class scalar attributes (FA, ADC, etc...) are
