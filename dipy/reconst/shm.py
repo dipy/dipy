@@ -4,7 +4,7 @@ References
 ----------
 Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
     Angle Consideration.
-Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+Descoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
     Q-ball imaging.
 Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
     populations in white matter of the brain with Funk-Radon transform.
@@ -221,7 +221,7 @@ class SphHarmModel(OdfModel, Cache):
             data = normalize_data(data, self._where_b0s, self.min_signal)
 
         # Compute coefficients using abstract method
-        coef = self._get_shm_ceof(data)
+        coef = self._get_shm_coef(data)
 
         # Apply the mask to the coefficients
         if mask is not None:
@@ -302,7 +302,7 @@ class CsaOdfModel(SphHarmModel):
         F = F[:, None]
         self._fit_matrix = F*L*invB
 
-    def _get_shm_ceof(self, data, mask=None):
+    def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
         data = data[..., self._where_dwi]
         data = data.clip(self.min, self.max)
@@ -329,7 +329,7 @@ class OpdtModel(SphHarmModel):
         delta_q = 4*F*invB
         self._fit_matrix = delta_b, delta_q
 
-    def _get_shm_ceof(self, data, mask=None):
+    def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
         delta_b, delta_q = self._fit_matrix
         return _slowadc_formula(data[..., self._where_dwi], delta_b, delta_q)
@@ -346,7 +346,7 @@ class QballModel(SphHarmModel):
 
     References
     ----------
-    Decoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
+    Descoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
         Q-ball imaging.
     """
 
@@ -355,7 +355,7 @@ class QballModel(SphHarmModel):
         F = F[:, None]
         self._fit_matrix = F*invB
 
-    def _get_shm_ceof(self, data, mask=None):
+    def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
         return dot(data[..., self._where_dwi], self._fit_matrix.T)
 
