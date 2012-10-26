@@ -118,19 +118,10 @@ class TensorFit(object):
     @property
     def quadratic_form(self):
         """Calculates the 3x3 diffusion tensor for each voxel"""
-        params, wrap = _makearray(self.model_params)
-        evals = params[..., :3]
-        evecs = params[..., 3:]
-        evals_flat = evals.reshape((-1, 3))
-        evecs_flat = evecs.reshape((-1, 3, 3))
-        D_flat = np.empty(evecs_flat.shape)
-        for ii in xrange(len(D_flat)):
-            Q = evecs_flat[ii]
-            L = evals_flat[ii]
-            D_flat[ii] = np.dot(Q*L, Q.T)
-        D = _filled(wrap(D_flat))
-        D.shape = self.shape + (3, 3)
-        return D
+        evecs = self.evecs
+        evals = self.evals
+        # use einsum to do `evecs * evals * evecs.T` where * is matrix multiply
+        return np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
 
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
