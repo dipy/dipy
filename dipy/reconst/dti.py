@@ -23,9 +23,12 @@ class TensorModel(object):
                 dti.wls_fit_tensor
             'LS' for ordinary least squares
                 dti.ols_fit_tensor
-            'LowTri' for lower triangular (where the data are lower triangular
-                     form of the tensor in each voxel)
-
+            'LowTri' This is a special case, which uses
+                dti.tensor_eig_from_lo_tri. In this case, the data input should
+                be the lower triangle 6 parameters of a previously fit tensor
+                quadratic form. This will recover for you the 12 
+                eigenvalue/eigenvector parameters in each voxel.   
+        
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
 
@@ -65,6 +68,14 @@ class TensorModel(object):
             The measured signal from one voxel.
 
         """
+        if self.fit_method == tensor_eig_from_lo_tri and data.shape[-1]!=6:
+            e_s = "The TriLo fit method is used to recover"
+            e_s += " eigen-values/-vectors from the 6 paramters of the lower"
+            e_s += " triangle of a tensor quadratic form. Input data must have 6"
+            e_s += " entries."  
+            
+            raise ValueError(e_s)
+         
         dti_params = self.fit_method(self.design_matrix, data,
                                      *self.args, **self.kwargs)
         return TensorFit(self, dti_params)
@@ -186,7 +197,7 @@ class TensorFit(object):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             projection /=  np.sqrt(self.evals)
-            odf = vector_norm(projection) ** -3 / lower
+            odf = (vector_norm(projection) ** -3) / lower
         # Zero evals are non-physical, we replace nans with zeros
         any_zero = (self.evals == 0).any(-1)
         odf = np.where(any_zero, 0, odf)
@@ -460,8 +471,12 @@ def tensor_eig_from_lo_tri(B, data):
 
     Parameters:
     -----------
-    B :
-        not currently used
+    B : np.array
+ 
+        This is not used in the function, but is here so that the function
+    signature agrees with the other fit methods, which do use the design
+    matrix.
+
     data : array_like (..., 6)
         diffusion tensors elements stored in lower triangular order
 
@@ -602,8 +617,6 @@ class Tensor(TensorFit, ModelArray):
     For backwards compatibility, we continue to support this form of the Tensor
     fitting.
 
-
-
     """
     def __init__(self, data, b_values, b_vectors, mask=True, thresh=None,
                  fit_method='WLS', verbose=False, *args, **kargs):
@@ -686,7 +699,7 @@ class Tensor(TensorFit, ModelArray):
         For a complete example have a look at the main dipy/examples folder
 
         """
-        warnings.warn("This implementation of DTI will be deprecated in a future release, consider using TensorModel")
+        warnings.warn("This implementation of DTI will be deprecated in a future release, consider using TensorModel", DeprecationWarning)
         if not callable(fit_method):
             try:
                 fit_method = common_fit_methods[fit_method]
