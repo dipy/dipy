@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.testing as npt
 from dipy.reconst.multi_voxel import _squash, multi_voxel_model, CallableArray
-from dipy.reconst.shm import QballOdfModel
 from dipy.core.sphere import unit_icosahedron
 
 
