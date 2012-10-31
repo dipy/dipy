@@ -3,19 +3,78 @@
 """
 
 import numpy as np
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_almost_equal, assert_raises
+from nose.tools import (assert_true, assert_equal,
+                        assert_almost_equal, assert_raises)
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-from dipy.testing import parametric
-import os
-
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import lower_triangular, from_lower_triangular
 from dipy.reconst.maskedview import MaskedView
-import nibabel as nib
 from dipy.io.bvectxt import read_bvec_file
-from dipy.data import get_data
+from dipy.data import get_data, dsi_voxels
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.reconst.odf import gfa
+import dipy.core.gradients as grad
 
+def test_TensorModel():
+    data, gtab = dsi_voxels()
+    dm = dti.TensorModel(gtab, 'LS')
+    dtifit = dm.fit(data[0, 0, 0])
+    assert_equal(dtifit.fa < 0.5, True)
+    dm = dti.TensorModel(gtab, 'WLS')
+    dtifit = dm.fit(data[0, 0, 0])
+    assert_equal(dtifit.fa < 0.5, True)
+    sphere = create_unit_sphere(4)
+    assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
+    assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
+
+    # Check that the multivoxel case works: 
+    dtifit = dm.fit(data)
+    assert_equal(dtifit.fa.shape, data.shape[:3])
+                 
+    # Make some synthetic data
+    b0 = 1000.
+    bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    # The first b value is 0., so we take the second one:
+    B = bvals[1]
+    #Scale the eigenvalues and tensor by the B value so the units match
+    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+    evals = np.array([2., 1., 0.]) / B
+    md = evals.mean()
+    tensor = from_lower_triangular(D)
+    evecs = np.linalg.eigh(tensor)[1]
+    #Design Matrix
+    X = dti.design_matrix(bvecs, bvals)
+    #Signals
+    Y = np.exp(np.dot(X,D))
+    assert_almost_equal(Y[0], b0)
+    Y.shape = (-1,) + Y.shape
+
+    # Test fitting with different methods: #XXX Add NNLS methods! 
+    for fit_method in ['OLS', 'WLS']:
+        tensor_model = dti.TensorModel(gtab,
+                                       fit_method=fit_method)
+        
+        tensor_fit = tensor_model.fit(Y)
+        assert_equal(tensor_fit.shape, Y.shape[:-1])
+        assert_array_almost_equal(tensor_fit.evals[0], evals)
+
+        assert_array_almost_equal(tensor_fit.quadratic_form[0], tensor,
+                                  err_msg =\
+        "Calculation of tensor from Y does not compare to analytical solution")
+
+        assert_almost_equal(tensor_fit.md[0], md)
+
+        assert_array_almost_equal(tensor_fit.directions.shape[0], 3)
+        
+    # Test error-handling:
+    assert_raises(ValueError,
+                  dti.TensorModel,
+                  gtab,
+                  fit_method='crazy_method')
+
+    
+    
 def test_tensor_scalar_attributes():
     """
     Tests that the tensor class scalar attributes (FA, ADC, etc...) are
@@ -54,6 +113,7 @@ def test_tensor_scalar_attributes():
     #assert_array_equal(n_list % 2, 0)
     #assert_raises(ValueError, qball.sph_harm_ind_list, 1)
 
+
 def test_fa_of_zero():
     dummy_gtab = np.zeros((10,3))
     dummy_bval = np.zeros((10,))
@@ -61,6 +121,7 @@ def test_fa_of_zero():
     ten.model_params = np.zeros(12)
     assert_equal(ten.fa(), 0)
     assert_true(np.isnan(ten.fa(nonans=False)))
+
 
 def test_WLS_and_LS_fit():
     """
@@ -114,6 +175,7 @@ def test_WLS_and_LS_fit():
     assert_almost_equal(tensor_est.md(), md)
     assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
+
 def test_masked_array_with_Tensor():
     data = np.ones((2,4,56))
     mask = np.array([[True, False, False, True],
@@ -143,6 +205,7 @@ def test_masked_array_with_Tensor():
     assert_equal(tensor.evals.shape, (3,))
     assert_equal(tensor.evecs.shape, (3,3))
     assert_equal(type(tensor.model_params), np.ndarray)
+
 
 def test_passing_maskedview():
     data = np.ones((2,4,56))
@@ -177,6 +240,7 @@ def test_passing_maskedview():
     assert_equal(tensor.evecs.shape, (3,3))
     assert_equal(type(tensor.model_params), np.ndarray)
 
+
 def test_init():
     data = np.ones((2,4,56))
     mask = np.ones((2,4),'bool')
@@ -192,6 +256,7 @@ def test_init():
                         fit_method='s')
     assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
                         fit_method=0)
+
 
 def test_lower_triangular():
     tensor = np.arange(9).reshape((3,3))
@@ -211,6 +276,7 @@ def test_lower_triangular():
     result = np.empty(shape + (7,))
     result[:] = [0, 3, 4, 6, 7, 8, 0]
     assert_array_equal(D, result)
+
 
 def test_from_lower_triangular():
     result = np.array([[0, 1, 3],

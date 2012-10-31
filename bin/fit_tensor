@@ -11,7 +11,7 @@ from dipy.io.utils import nifti1_symmat
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string
 from nibabel.trackvis import empty_header, write
 
-usage = """fit_tenor [options] dwi_images"""
+usage = """fit_tensor [options] dwi_images"""
 parser = OptionParser(usage)
 parser.add_option("-b","--bvec",help="text file with gradient directions")
 parser.add_option("-r","--root",help="root for files to be saved")
