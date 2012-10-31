@@ -69,26 +69,6 @@ def test_TensorModel():
                   gtab,
                   fit_method='crazy_method')
 
-
-def test_fit_LowTri():
-    """
-    Test the LowTri fit_method of the TensorModel/TensorFit objects
-    """
-
-    b0 = 1000.
-    bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
-    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
-    # The first b value is 0., so we take the second one:
-    B = bvals[1]
-    #Scale the eigenvalues and tensor by the B value so the units match
-    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
-    evals = np.array([2., 1., 0.]) / B
-
-    tensor = from_lower_triangular(D)
-    tensor_model = dti.TensorModel(gtab, fit_method='LowTri')
-    # Take only the lower triangle 6 params: 
-    tensor_fit = tensor_model.fit(D[:-1])
-    assert_array_almost_equal(tensor_fit.evals, evals)
     
     
 def test_tensor_scalar_attributes():

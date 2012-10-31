@@ -23,11 +23,6 @@ class TensorModel(object):
                 dti.wls_fit_tensor
             'LS' for ordinary least squares
                 dti.ols_fit_tensor
-            'LowTri' This is a special case, which uses
-                dti.tensor_eig_from_lo_tri. In this case, the data input should
-                be the lower triangle 6 parameters of a previously fit tensor
-                quadratic form. This will recover for you the 12 
-                eigenvalue/eigenvector parameters in each voxel.   
         
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
@@ -68,14 +63,6 @@ class TensorModel(object):
             The measured signal from one voxel.
 
         """
-        if self.fit_method == tensor_eig_from_lo_tri and data.shape[-1]!=6:
-            e_s = "The TriLo fit method is used to recover"
-            e_s += " eigen-values/-vectors from the 6 paramters of the lower"
-            e_s += " triangle of a tensor quadratic form. Input data must have 6"
-            e_s += " entries."  
-            
-            raise ValueError(e_s)
-         
         dti_params = self.fit_method(self.design_matrix, data,
                                      *self.args, **self.kwargs)
         return TensorFit(self, dti_params)
@@ -453,7 +440,7 @@ def lower_triangular(tensor, b0=None):
         return D
 
 
-def tensor_eig_from_lo_tri(B, data):
+def tensor_eig_from_lo_tri(data):
     """Calculates parameters for creating a Tensor instance
 
     Calculates tensor parameters from the six unique tensor elements. This
@@ -462,12 +449,6 @@ def tensor_eig_from_lo_tri(B, data):
 
     Parameters:
     -----------
-    B : np.array
- 
-        This is not used in the function, but is here so that the function
-    signature agrees with the other fit methods, which do use the design
-    matrix.
-
     data : array_like (..., 6)
         diffusion tensors elements stored in lower triangular order
 
@@ -597,7 +578,6 @@ def quantize_evecs(evecs, odf_vertices=None):
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
                       'OLS': ols_fit_tensor,
-                      'LowTri': tensor_eig_from_lo_tri,
                      }
 
 
