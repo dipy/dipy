@@ -27,6 +27,10 @@ def test_TensorModel():
     assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
     assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
 
+    # Check that the multivoxel case works: 
+    dtifit = dm.fit(data)
+    assert_equal(dtifit.fa.shape, data.shape[:3])
+                 
     # Make some synthetic data
     b0 = 1000.
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
