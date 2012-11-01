@@ -2,7 +2,6 @@ from __future__ import division
 
 import numpy as np
 from dipy.core.geometry import sphere2cart
-from dipy.reconst.dti import design_matrix, lower_triangular
 from dipy.core.geometry import vec2vec_rotmat
 
 
