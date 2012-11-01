@@ -70,7 +70,7 @@ class DiscreteDirectionFinder(DirectionFinder):
                                relative_peak_threshold, min_separation_angle)
 
 
-def _nl_peak_finder(sphere_eval, seeds, fmin, gtol):
+def _nl_peak_finder(sphere_eval, seeds, xtol):
     """Non-linear search for peaks from each seed
     """
     # Helper function
@@ -82,7 +82,7 @@ def _nl_peak_finder(sphere_eval, seeds, fmin, gtol):
     theta = np.zeros(len(seeds))
     phi = np.zeros(len(seeds))
     for i in xrange(len(seeds)):
-        peak = fmin(_helper, seeds[i], gtol=gtol, disp=False)
+        peak = opt.fmin(_helper, seeds[i], xtol=xtol, disp=False)
         theta[i], phi[i] = peak
     # Return one peak for each seed
     return theta, phi
@@ -101,18 +101,15 @@ class NonLinearDirectionFinder(DirectionFinder):
     min_separation_angle : float in [0, 90]
         The minimum distance between directions. If two peaks are too close only
         the larger of the two is returned.
-    fmin : optimization function, optional
-        By default use scipy.optimize.fmin_bfgs.
-    gtol : float
-        Optimize up to gradient tolerance.
+    xtol : float
+        Relative tolerance for optimization.
 
     """
     def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
-                 min_separation_angle=45, fmin=opt.fmin_bfgs, gtol=1e-6):
-        self._config = {"sphere": sphere,
+                 min_separation_angle=45, xtol=1e-7):
+        self._config = {"sphere": sphere, "xtol":xtol,
                         "relative_peak_threshold": relative_peak_threshold,
-                        "min_separation_angle": min_separation_angle,
-                        "fmin":fmin, "gtol":gtol}
+                        "min_separation_angle": min_separation_angle}
 
     def __call__(self, sphere_eval):
         """Find directions of a function evaluated on a discrete sphere
@@ -132,8 +129,7 @@ class NonLinearDirectionFinder(DirectionFinder):
         sphere = self._config["sphere"]
         relative_peak_threshold = self._config["relative_peak_threshold"]
         min_separation_angle = self._config["min_separation_angle"]
-        fmin = self._config["fmin"]
-        gtol = self._config["gtol"]
+        xtol = self._config["xtol"]
 
         # Find discrete peaks for use as seeds in lon-linear search
         discrete_values = sphere_eval(sphere)
@@ -143,7 +139,7 @@ class NonLinearDirectionFinder(DirectionFinder):
         seeds = np.column_stack([sphere.theta[indices], sphere.phi[indices]])
 
         # Non-linear search
-        peak_theta, peak_phi = _nl_peak_finder(sphere_eval, seeds, fmin, gtol)
+        peak_theta, peak_phi = _nl_peak_finder(sphere_eval, seeds, xtol)
 
         # Evaluate on new-found peaks
         small_sphere = Sphere(theta=peak_theta, phi=peak_phi)
