@@ -1085,10 +1085,11 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     for vox in xrange(flat_data.shape[0]):
         start_params = ols_params[vox]
         # Do the optimization in this voxel:
-        this_tensor = opt.fmin(_nlls_err_func, start_params,
+        this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
                                args=(design_matrix, flat_data[vox],
                                      weighting, sigma),
-                               disp=False)
+                                     #disp=False
+                                  )
 
         # The parameters are the evals and the evecs:
         evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
@@ -1145,10 +1146,11 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
     for vox in xrange(flat_data.shape[0]):
         start_params = ols_params[vox]
         # Do nlls using sigma weighting in this voxel:
-        this_tensor = opt.fmin(_nlls_err_func, start_params,
+        this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
                                args=(design_matrix, flat_data[vox],
                                      'sigma', sigma),
-                               disp=False)
+                                     #disp=False
+                                  )
 
         # Get the residuals:
         pred_sig = np.exp(np.dot(design_matrix, this_tensor))
@@ -1156,9 +1158,10 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
         # If any of the residuals are outliers:
         if np.any(residuals>3*sigma):
             # Do nlls with GMM-weighting:
-            this_tensor = opt.fmin(_nlls_err_func, start_params,
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
                                    args=(design_matrix, flat_data[vox], 'gmm'),
-                                   disp=False)
+                                   #disp=False
+                                     )
 
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
@@ -1168,10 +1171,11 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
                 non_outlier_idx = np.where(residuals <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
-                this_tensor = opt.fmin(_nlls_err_func, start_params,
+                this_tensor, status= opt.leastsq(_nlls_err_func, start_params,
                                        args=(clean_design, clean_sig,
                                              'sigma', sigma),
-                                       disp=False)
+                                             #disp=False
+                                            )
 
         # Finally, converge on some solution and use it:
         this_dti = np.concatenate([np.ravel(x) for x in
@@ -1212,7 +1216,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     # If we don't want to weight the residuals, we are basically done:
     if weighting is None:
        # And we return the SSE:
-       return np.sum(se)
+       return residuals
 
     # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
     # suggested by Chang et al.) we will use it:
@@ -1234,7 +1238,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     # Return the weighted residuals:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        return np.sum(w * se)
+        return np.sqrt(w * se)
 
 
 
