@@ -162,6 +162,50 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
         return unique_vertices[:count].copy()
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
+                       double relative_threshould):
+    """Searches a descending array for the first element smaller than some
+    threshold
+
+    Parameters
+    ----------
+    a : ndarray, ndim=1, c-contiguous
+        Array to be searched.
+    relative_threshold : float
+        Threshold relative to `a[0]`.
+
+    Returns
+    -------
+    i : int
+        The greatest index such that ``all(a[:i] >= relative_threshold *
+        a[0])``.
+
+    Note
+    ----
+    This function will never return 0, 1 is returned if ``a[0] <
+    relative_threshold * a[0]`` or if ``len(a) == 0``.
+
+    """
+    if a.shape[0] == 0:
+        return 1
+
+    cdef:
+        size_t left = 1
+        size_t right = a.shape[0]
+        size_t mid
+        double threshold = relative_threshould * a[0]
+
+    while left != right:
+        mid = (left + right) // 2
+        if a[mid] >= threshold:
+            left = mid + 1
+        else:
+            right = mid
+    return left
+
+
 #@cython.boundscheck(False)
 @cython.wraparound(False)
 def local_maxima(cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] codf,

@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.testing as npt
-from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
+from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,
+                                   search_descending)
 from dipy.data import get_sphere, get_data
 from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs, multi_tensor_odf
@@ -76,6 +77,22 @@ def test_remove_similar_peaks():
     uv, index = remove_similar_vertices(vertices, 60, return_index=True)
     npt.assert_array_equal(uv, vertices[:3])
     npt.assert_array_equal(index, range(3))
+
+
+def test_search_descending():
+    a = np.linspace(10., 1., 10)
+
+    npt.assert_equal(search_descending(a, 1.), 1)
+    npt.assert_equal(search_descending(a, .89), 2)
+    npt.assert_equal(search_descending(a, .79), 3)
+
+    # Test small array
+    npt.assert_equal(search_descending(a[:1], 1.), 1)
+    npt.assert_equal(search_descending(a[:1], 0.), 1)
+    npt.assert_equal(search_descending(a[:1], .5), 1)
+
+    # Test very small array
+    npt.assert_equal(search_descending(a[:0], 1.), 1)
 
 
 if __name__ == '__main__':

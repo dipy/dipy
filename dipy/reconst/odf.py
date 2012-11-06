@@ -1,9 +1,10 @@
 from __future__ import division
 from warnings import warn
 import numpy as np
-from .recspeed import local_maxima, remove_similar_vertices
+import scipy.optimize as opt
+from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
-from dipy.core.sphere import unique_edges, unit_icosahedron, HemiSphere
+from dipy.core.sphere import HemiSphere, Sphere, unique_edges, unit_icosahedron
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
 
 default_sphere = HemiSphere.from_sphere(unit_icosahedron.subdivide(3))
@@ -40,12 +41,7 @@ class DiscreteDirectionFinder(DirectionFinder):
         The minimum distance between directions. If two peaks are too close only
         the larger of the two is returned.
 
-    Returns
-    -------
-    directions : ndarray (N, 3)
-        The directions of the N peaks.
     """
-
     def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
                  min_separation_angle=45):
         self._config = {"sphere": sphere,
@@ -53,13 +49,108 @@ class DiscreteDirectionFinder(DirectionFinder):
                         "min_separation_angle": min_separation_angle}
 
     def __call__(self, sphere_eval):
-        """Find directions of a function evaluated on a discrete sphere"""
+        """Find directions of a function evaluated on a discrete sphere
+
+        Parameters
+        ----------
+        sphere_eval : callable
+            The function to maximize, should evaluate over a sphere.
+
+        Returns
+        -------
+        directions : ndarray (N, 3)
+            The directions of the N peaks.
+
+        """
         sphere = self._config["sphere"]
         relative_peak_threshold = self._config["relative_peak_threshold"]
         min_separation_angle = self._config["min_separation_angle"]
         discrete_values = sphere_eval(sphere)
-        return peak_directions(discrete_values, sphere, 
+        return peak_directions(discrete_values, sphere,
                                relative_peak_threshold, min_separation_angle)
+
+
+def _nl_peak_finder(sphere_eval, seeds, xtol):
+    """Non-linear search for peaks from each seed
+    """
+    # Helper function
+    def _helper(x):
+        sphere = Sphere(theta=x[0], phi=x[1])
+        return -sphere_eval(sphere)
+
+    # Non-linear search
+    theta = np.zeros(len(seeds))
+    phi = np.zeros(len(seeds))
+    for i in xrange(len(seeds)):
+        peak = opt.fmin(_helper, seeds[i], xtol=xtol, disp=False)
+        theta[i], phi[i] = peak
+    # Return one peak for each seed
+    return theta, phi
+
+
+class NonLinearDirectionFinder(DirectionFinder):
+    """Non Linear Direction Finder
+
+    Parameters
+    ----------
+    sphere : Sphere
+        The Sphere providing discrete directions for evaluation.
+    relative_peak_threshold : float
+        Only return peaks greater than ``relative_peak_threshold * m`` where m
+        is the largest peak.
+    min_separation_angle : float in [0, 90]
+        The minimum distance between directions. If two peaks are too close only
+        the larger of the two is returned.
+    xtol : float
+        Relative tolerance for optimization.
+
+    """
+    def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
+                 min_separation_angle=45, xtol=1e-7):
+        self._config = {"sphere": sphere, "xtol":xtol,
+                        "relative_peak_threshold": relative_peak_threshold,
+                        "min_separation_angle": min_separation_angle}
+
+    def __call__(self, sphere_eval):
+        """Find directions of a function evaluated on a discrete sphere
+
+        Parameters
+        ----------
+        sphere_eval : callable
+            The function to maximize, should evaluate over a sphere.
+
+        Returns
+        -------
+        directions : ndarray (N, 3)
+            The directions of the N peaks.
+
+        """
+        # Get parameters from _config
+        sphere = self._config["sphere"]
+        relative_peak_threshold = self._config["relative_peak_threshold"]
+        min_separation_angle = self._config["min_separation_angle"]
+        xtol = self._config["xtol"]
+
+        # Find discrete peaks for use as seeds in lon-linear search
+        discrete_values = sphere_eval(sphere)
+        values, indices = local_maxima(discrete_values, sphere.edges)
+        n = search_descending(values, relative_peak_threshold)
+        indices = indices[:n]
+        seeds = np.column_stack([sphere.theta[indices], sphere.phi[indices]])
+
+        # Non-linear search
+        peak_theta, peak_phi = _nl_peak_finder(sphere_eval, seeds, xtol)
+
+        # Evaluate on new-found peaks
+        small_sphere = Sphere(theta=peak_theta, phi=peak_phi)
+        values = sphere_eval(small_sphere)
+        # Sort in descending order
+        order = values.argsort()[::-1]
+        values = values[order]
+        directions = small_sphere.vertices[order]
+        # Remove peaks too close to each-other
+        directions = remove_similar_vertices(directions, min_separation_angle,)
+        return directions
 
 class OdfModel(object):
     """An abstract class to be sub-classed by specific odf models
@@ -110,14 +201,8 @@ def peak_directions(odf, sphere, relative_peak_threshold,
     if len(indices) == 1:
         return sphere.vertices[indices]
 
-    # Here we use the fact that we know values is sorted descending
-    # This is like indices = indices[values > threshold] but faster
-    threshold = values[0] * relative_peak_threshold
-    too_small = values < threshold
-    first_too_small = too_small.argmax()
-    if first_too_small > 0:
-        indices = indices[:first_too_small]
-
+    n = search_descending(values, relative_peak_threshold)
+    indices = indices[:n]
     directions = sphere.vertices[indices]
     directions = remove_similar_vertices(directions, min_separation_angle)
     return directions
