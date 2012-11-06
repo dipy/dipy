@@ -17,7 +17,7 @@ class Interpolator(object):
     """Class to be subclassed by different interpolator types"""
     def __init__(self, data, voxel_size):
         self.data = data
-        self.voxel_size = array(voxel_size, 'float')
+        self.voxel_size = array(voxel_size, dtype=float, copy=True)
 
 class NearestNeighborInterpolator(Interpolator):
     """Interpolates data using nearest neighbor interpolation"""
@@ -32,7 +32,17 @@ class NearestNeighborInterpolator(Interpolator):
             raise OutsideImage
 
 class TriLinearInterpolator(Interpolator):
-    """Interpolates data using trilinear interpolation"""
+    """Interpolates data using trilinear interpolation
+
+    interpolate 4d diffusion volume using 3 indices, ie data[x, y, z]
+    """
+    def __init__(self, data, voxel_size):
+        super(TriLinearInterpolator, self).__init__(data, voxel_size)
+        if self.voxel_size.shape != (3,) or self.data.ndim != 4:
+            raise ValueError("Data should be 4d volume of diffusion data and "
+                             "voxel_size should have 3 values, ie the size "
+                             "of a 3d voxel")
+
     def __getitem__(self, index):
         index = array(index, copy=False, dtype="float")
         try:

@@ -52,7 +52,7 @@ cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
 @cython.wraparound(False)
 @cython.cdivision(True)
 def trilinear_interp(cnp.ndarray[cnp.float32_t, ndim=4, mode='strided'] data,
-                     cnp.ndarray[cnp.float_t, ndim=1, mode='c'] index,
+                     cnp.ndarray[cnp.float_t, ndim=1, mode='strided'] index,
                      cnp.ndarray[cnp.float_t, ndim=1, mode='c'] voxel_size):
     """Interpolates data at index
 
