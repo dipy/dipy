@@ -33,9 +33,25 @@ cdef inline float* asfp(cnp.ndarray pt):
 cdef inline double* asdp(cnp.ndarray pt):
     return <double *>pt.data
 
+
+cdef void splitoffset(float *offset, size_t *index, size_t shape) nogil:
+    """Splits a global offset into an integer index and a relative offset"""
+    offset[0] -= .5
+    if offset[0] <= 0:
+        index[0] = 0
+        offset[0] = 0.
+    elif offset[0] >= (shape - 1):
+        index[0] = shape - 2
+        offset[0] = 1.
+    else:
+        index[0] = <size_t> offset[0]
+        offset[0] = offset[0] - index[0]
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4, mode='strided'] data,
+@cython.cdivision(True)
+def trilinear_interp(cnp.ndarray[cnp.float32_t, ndim=4, mode='strided'] data,
                      cnp.ndarray[cnp.float_t, ndim=1, mode='c'] index,
                      cnp.ndarray[cnp.float_t, ndim=1, mode='c'] voxel_size):
     """Interpolates data at index
@@ -44,28 +60,26 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4, mode='strided'] data,
     last dimension holds data.
     """
     cdef:
-        double x = index[0] / voxel_size[0] - .5
-        double y = index[1] / voxel_size[1] - .5
-        double z = index[2] / voxel_size[2] - .5
-        double weight
-        int x_ind = <int> floor(x)
-        int y_ind = <int> floor(y)
-        int z_ind = <int> floor(z)
-        int ii, jj, kk, LL
-        int last_d = data.shape[3]
-        char bounds_check
-        cnp.ndarray[cnp.float_t, ndim=1, mode='c'] result=np.zeros(last_d)
-    bounds_check = (x_ind < 0 or y_ind < 0 or z_ind < 0 or
-                    x_ind >= data.shape[0] - 1 or
-                    y_ind >= data.shape[1] - 1 or
-                    z_ind >= data.shape[2] - 1)
+        float x = index[0] / voxel_size[0]
+        float y = index[1] / voxel_size[1]
+        float z = index[2] / voxel_size[2]
+        float weight
+        size_t x_ind, y_ind, z_ind, ii, jj, kk, LL
+        size_t last_d = data.shape[3]
+        bint bounds_check
+        cnp.ndarray[cnp.float32_t, ndim=1, mode='c'] result
+    bounds_check = (x < 0 or y < 0 or z < 0 or
+                    x > data.shape[0] or
+                    y > data.shape[1] or
+                    z > data.shape[2])
     if bounds_check:
         raise IndexError
 
-    x = x % 1
-    y = y % 1
-    z = z % 1
+    splitoffset(&x, &x_ind, data.shape[0])
+    splitoffset(&y, &y_ind, data.shape[1])
+    splitoffset(&z, &z_ind, data.shape[2])
 
+    result = np.zeros(last_d, dtype='float32')
     for ii from 0 <= ii <= 1:
         for jj from 0 <= jj <= 1:
             for kk from 0 <= kk <= 1:
@@ -74,7 +88,9 @@ def trilinear_interp(cnp.ndarray[cnp.float_t, ndim=4, mode='strided'] data,
                     result[LL] += data[x_ind+ii,y_ind+jj,z_ind+kk,LL]*weight
     return result
 
-cdef double wght(int i, double r) nogil:
+
+@cython.profile(False)
+cdef float wght(int i, float r) nogil:
     if i:
         return r
     else:

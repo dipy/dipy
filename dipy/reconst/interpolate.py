@@ -34,7 +34,7 @@ class NearestNeighborInterpolator(Interpolator):
 class TriLinearInterpolator(Interpolator):
     """Interpolates data using trilinear interpolation"""
     def __getitem__(self, index):
-        index = array(index, copy=False)
+        index = array(index, copy=False, dtype="float")
         try:
             return trilinear_interp(self.data, index, self.voxel_size)
         except IndexError:
