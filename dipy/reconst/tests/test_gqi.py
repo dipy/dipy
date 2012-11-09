@@ -22,10 +22,10 @@ def test_gqi():
     btable = np.loadtxt(get_data('dsi515btable'))    
     bvals = btable[:,0]
     bvecs = btable[:,1:]        
-    data, golden_directions = SticksAndBall(bvals, bvecs, d=0.0015, 
+    gtab = gradient_table(bvals, bvecs) 
+    data, golden_directions = SticksAndBall(gtab, d=0.0015, 
                                S0=100, angles=[(0, 0), (90, 0)], 
                                fractions=[50, 50], snr=None) 
-    gtab = gradient_table(bvals, bvecs) 
     gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=1.4)
     #symmetric724
     gq.direction_finder.config(sphere=sphere, min_separation_angle=25,

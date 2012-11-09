@@ -15,16 +15,13 @@ from dipy.core.geometry import vec2vec_rotmat
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
 
-def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
+def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
                     fractions=[35,35], snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
     Parameters
     -----------
-    bvals : (N,) ndarray
-        B-values for measurements.
-    gradients : (N,3) ndarray
-        Also known as b-vectors.
+    gtab : GradientTable class instance
     d : float
         Diffusivity value.
     S0 : float
@@ -55,7 +52,7 @@ def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
 
     fractions = [f / 100. for f in fractions]
     f0 = 1 - np.sum(fractions)
-    S = np.zeros(len(gradients))
+    S = np.zeros(len(gtab.bvals))
 
     angles=np.array(angles)
     if angles.shape[-1] == 3:
@@ -65,10 +62,10 @@ def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
                   for pair in angles]
         sticks = np.array(sticks)
 
-    for (i, g) in enumerate(gradients[1:]):
-        S[i + 1] = f0 * np.exp(-bvals[i+1] * d) + \
+    for (i, g) in enumerate(gtab.bvecs[1:]):
+        S[i + 1] = f0 * np.exp(-gtab.bvals[i+1] * d) + \
                    np.sum([
-            fractions[j] * np.exp(-bvals[i + 1] * d * np.dot(s, g)**2)
+            fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g)**2)
             for (j,s) in enumerate(sticks)
                           ])
 
@@ -82,20 +79,12 @@ def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
     return S, sticks
 
 
-def single_tensor(bvals, gradients, S0=1, evals=None, evecs=None, snr=None):
+def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     """ Simulated Q-space signal with a single tensor.
 
     Parameters
     -----------
-    bvals : (N,) array
-        B-values for measurements.  The b-value is also ``b = \tau |q|^2``,
-        where ``\tau`` is the time allowed for attenuation and ``q`` is the
-        measurement position vector in Q-space (signal-space or Fourier-space).
-        If b is too low, there is not enough attenuation to measure.  With b
-        too high, the signal to noise ratio increases.
-    gradients : (N, 3) or (M, N, 3) ndarray
-        Measurement gradients / directions, also known as b-vectors, as 3D unit
-        vectors (either in a list or on a grid).
+    gtab : GradientTable class instance
     S0 : double,
         Strength of signal in the presence of no diffusion gradient (also
         called the ``b=0`` value).
@@ -129,15 +118,15 @@ def single_tensor(bvals, gradients, S0=1, evals=None, evecs=None, snr=None):
     if evecs is None:
         evecs = np.eye(3)
 
-    out_shape = gradients.shape[:gradients.ndim - 1]
+    out_shape = gtab.bvecs.shape[:gtab.bvecs.ndim - 1]
+    gradients = gtab.bvecs.reshape(-1, 3)
 
-    gradients = gradients.reshape(-1, 3)
     R = np.asarray(evecs)
     S = np.zeros(len(gradients))
     D = R.dot(np.diag(evals)).dot(R.T)
 
     for (i, g) in enumerate(gradients):
-        S[i] = S0 * np.exp(-bvals[i] * g.T.dot(D).dot(g))
+        S[i] = S0 * np.exp(-gtab.bvals[i] * g.T.dot(D).dot(g))
 
     """ Alternative suggestion which works with multiple b0s
     design = design_matrix(bval, gradients.T)

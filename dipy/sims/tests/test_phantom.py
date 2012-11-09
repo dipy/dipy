@@ -11,6 +11,8 @@ from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data    
 from dipy.reconst.dti import Tensor
 from dipy.sims.phantom import orbital_phantom, add_noise
+from dipy.core.gradients import gradient_table
+
 
 def f(t):
     """
@@ -28,18 +30,19 @@ def test_phantom():
     bvals=np.load(fbvals)
     bvecs=np.load(fbvecs)
     bvecs[np.isnan(bvecs)]=0
+
+    gtab = gradient_table(bvals, bvecs)
     
     N=50 #timepoints
     
-    vol=orbital_phantom(bvals=bvals,
-                         bvecs=bvecs,
-                         func=f,
-                         t=np.linspace(0,2*np.pi,N),
-                         datashape=(10,10,10,len(bvals)),
-                         origin=(5,5,5),
-                         scale=(3,3,3),
-                         angles=np.linspace(0,2*np.pi,16),
-                         radii=np.linspace(0.2,2,6))
+    vol=orbital_phantom(gtab,
+                        func=f,
+                        t=np.linspace(0,2*np.pi,N),
+                        datashape=(10,10,10,len(bvals)),
+                        origin=(5,5,5),
+                        scale=(3,3,3),
+                        angles=np.linspace(0,2*np.pi,16),
+                        radii=np.linspace(0.2,2,6))
     
     ten=Tensor(vol,bvals,bvecs)
     FA=ten.fa()
@@ -77,12 +80,11 @@ def test_snr():
     bvals=np.load(fbvals)
     bvecs=np.load(fbvecs)
     bvecs[np.isnan(bvecs)]=0
-
+    gtab = gradient_table(bvals, bvecs)
     N=50 #timepoints
 
     # We make one with no noise, so that we can estimate SNR relative to it:
-    vol = orbital_phantom(bvals=bvals,
-                          bvecs=bvecs,
+    vol = orbital_phantom(gtab,
                           func=f,
                           t=np.linspace(0,2*np.pi,N),
                           datashape=(10,10,10,len(bvals)),
@@ -94,8 +96,7 @@ def test_snr():
     mean_sig = np.mean(vol)
 
     for snr in [20, 200]:
-        vol_w_noise=orbital_phantom(bvals=bvals,
-                                    bvecs=bvecs,
+        vol_w_noise=orbital_phantom(gtab,
                                     func=f,
                                     t=np.linspace(0,2*np.pi,N),
                                     datashape=(10,10,10,len(bvals)),

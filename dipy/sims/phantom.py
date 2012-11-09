@@ -4,6 +4,8 @@ import scipy.stats as stats
 from dipy.sims.voxel import SingleTensor
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data    
+from dipy.core.gradients import gradient_table
+
 #from dipy.viz import fvtk
 #from dipy.reconst.dti import Tensor
 
@@ -24,25 +26,23 @@ def diff2eigenvectors(dx,dy,dz):
     return eigs, R
 
 
-def orbital_phantom(bvals=None,
-                     bvecs=None,
-                     evals=np.array([1.4,.35,.35])*10**(-3),
-                     func=None,
-                     t=np.linspace(0,2*np.pi,1000),
-                     datashape=(64,64,64,65),
-                     origin=(32,32,32),
-                     scale=(25,25,25),
-                     angles=np.linspace(0,2*np.pi,32),
-                     radii=np.linspace(0.2,2,6),
-                     S0=100.,
-                     snr=None,
-                     snr_tol=10e-4):
+def orbital_phantom(gtab=None,
+                    evals=np.array([1.4,.35,.35])*10**(-3),
+                    func=None,
+                    t=np.linspace(0,2*np.pi,1000),
+                    datashape=(64,64,64,65),
+                    origin=(32,32,32),
+                    scale=(25,25,25),
+                    angles=np.linspace(0,2*np.pi,32),
+                    radii=np.linspace(0.2,2,6),
+                    S0=100.,
+                    snr=None,
+                    snr_tol=10e-4):
     """ Create a phantom based on a 3d orbit f(t)->(x,y,z)
     
     Parameters
     -----------
-    bvals : array, shape (N,)
-    bvecs : array, shape (N,3)
+    gtab : GradientTable
     evals : array, shape (3,)
         tensor eigenvalues
     func : user defined function f(t)->(x,y,z) 
@@ -102,11 +102,9 @@ def orbital_phantom(bvals=None,
         
     """
     
-    if bvals==None:
-        fimg,fbvals,fbvecs=get_data('small_64D')
-        bvals=np.load(fbvals)
-        bvecs=np.load(fbvecs)
-        bvecs[np.isnan(bvecs)]=0
+    if gtab.bvals==None:
+        fimg, fbvals, fbvecs=get_data('small_64D')
+        gtab = gradient_table(fbvals, fbvecs)
         
     if func==None:
         x=np.sin(t)
@@ -133,7 +131,7 @@ def orbital_phantom(bvals=None,
     
     for i in range(len(dx)):
         evecs,R=diff2eigenvectors(dx[i],dy[i],dz[i])        
-        S=SingleTensor(bvals,bvecs,S0,evals,evecs,snr=None)
+        S=SingleTensor(gtab,S0,evals,evecs,snr=None)
         #print sigma, S0/snr, S0, snr
         vol[x[i],y[i],z[i],:]+=S
         for r in radii:
