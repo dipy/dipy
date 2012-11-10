@@ -6,8 +6,122 @@ from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data    
 from dipy.core.gradients import gradient_table
 
-#from dipy.viz import fvtk
-#from dipy.reconst.dti import Tensor
+
+def _add_gaussian(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    This one simply adds one of the Gaussians to the sig and ignores the other
+    one.
+    """
+    return sig + noise1
+
+
+def _add_rician(sig, noise1, noise2):
+    """
+    Helper function to add_noise.
+
+    This does the same as abs(sig + complex(noise1, noise2))
+
+    """
+    return np.sqrt((sig + noise1)**2 + noise2**2)
+
+
+def _add_rayleigh(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
+
+    """
+    return sig + np.sqrt(noise1**2 + noise2**2)
+
+
+def add_noise(vol, snr=1.0, noise_type='gaussian', snr_type='mean'):
+    r""" Add noise of specified distribution to a 4D array.
+    
+    Parameters
+    -----------
+    vol : array, shape (X,Y,Z,W)
+
+    snr : float
+        The desired signal-to-noise ratio
+    
+    noise_type : string
+        The distribution of noise added. Can be either 'gaussian' for Gaussian
+        distributed noise (default), 'rician' for Rice-distributed noise or
+        'rayleigh' for a Rayleigh distribution.
+    snr_type : string
+        Whether to calculate SNR relative to the mean signal in each voxel
+        ('mean'; default), or relative to the peak signal ('peak').
+        
+    Returns
+    --------
+    vol : array, same shape as vol
+        vol with added noise    
+
+    References
+    ----------
+
+    Henkelman (1985) Measurement of signal intensities in the presence of noise
+    in MR images. Medical Physics 12: 232-233
+
+    Gudbjartson and Patz (2008). The Rician distribution of noisy MRI data. MRM
+    34: 910-914.
+
+    Examples
+    --------
+    >>> signal = np.arange(800).reshape(2, 2, 2, 100)
+    >>> signal_w_noise = add_noise(signal, snr=10, noise_type='rician')
+
+    """
+    orig_shape = vol.shape
+    vol_flat = np.reshape(vol.copy(), (-1, vol.shape[-1]))
+
+    for vox_idx, signal in enumerate(vol_flat):
+        if snr_type=='peak':
+            noise_var = (np.max(signal) / snr) ** 2
+        elif snr_type == 'mean':
+            noise_var = (np.mean(signal) / snr) **2
+        else:
+            e_s = "%s is not a known SNR type"%noise_var
+            raise ValueError(e_s)
+
+        # We estimate the power in the signal as the mean of signal
+        p_signal = np.mean(vol)
+
+        if noise_var == 0:
+            continue
+        
+        if noise_type == 'gaussian':
+            sigma = np.sqrt(noise_var)
+            noise_adder = _add_gaussian
+            # Generate the noise with the correct standard deviation, averaged
+            # over all the voxels and with the right shape:
+            noise1 = np.random.normal(0, sigma, size=signal.shape)
+            # In this case, we don't need another source of noise:
+            noise2 = np.nan
+        elif noise_type in['rician', 'rayleigh']:
+            if noise_type == 'rician':
+                noise_adder = _add_rician
+            elif noise_type == 'rayleigh':
+                noise_adder = _add_rayleigh
+            # To generate rician and rayleigh noises, we combine two IID Gaussian
+            # noise sources in the complex domain (see below _add_rician and
+            # _add_rayleigh for the details):
+
+            # Given a certain variance of the Rician distribution, we need to
+            # calculate the sigma that we would pass to the normal
+            # distribution:
+            sigma = np.sqrt(noise_var / 2) * np.sqrt(2) # Why sqrt(2)?
+             
+            noise1 = np.random.normal(0, sigma, size=signal.shape)
+            noise2 = np.random.normal(0, sigma, size=signal.shape)
+
+        vol_flat[vox_idx] = noise_adder(signal, noise1, noise2)
+
+    return np.reshape(vol_flat, orig_shape)
+
 
 def diff2eigenvectors(dx,dy,dz):
     """ numerical derivatives 2 eigenvectors 
@@ -145,131 +259,9 @@ def orbital_phantom(gtab=None,
     #vol[np.isnan(vol)]=0
 
     if snr is not None:
-        if snr > 37.5:
-            scale = 1
-        elif snr == 0:
-            scale = np.sqrt((4 - np.pi)/2)
-        else:
-            scale = stats.rice(snr).std()
-        mean_sig = np.mean(vol)
-        sigma = mean_sig / snr / scale
-
-        ## # We start by guessing that sigma should be approximately such that the
-        ## # snr is right and using: snr = mean_sig/rms => rms = mean_sig/snr
-        ## mean_sig = np.mean(vol)
-        ## sigma = mean_sig/snr
-        ## vol_w_noise = add_noise(vol, sigma, noise_type='rician')
-        ## noise = vol - vol_w_noise
-        ## rms_noise = np.mean(np.sqrt(noise**2))
-        ## est_snr = mean_sig/rms_noise
-        ## # Because we are using the Rician case, we are bound to miss the
-        ## # desired SNR in the cases in which the signal is low, so we adjust:
-        ## while np.abs(est_snr - snr) > snr_tol:
-        ##     # dbg:
-        ##     # print("EST: %4.4f, DESIRED: %4.4f"%(est_snr, snr))
-        ##     if est_snr > snr:
-        ##         sigma = sigma * 1.01
-        ##     if est_snr < snr:
-        ##         sigma = sigma * 0.999
-
-        ##     vol_w_noise = add_noise(vol, sigma, noise_type='rician')
-        ##     noise = vol - vol_w_noise
-        ##     rms_noise = np.sqrt(np.mean((noise**2)))
-        ##     est_snr = mean_sig/rms_noise
-
-
-        ## # When we're done, we can replace the original volume with this noisy
-        ## # one:
-        ## vol = vol_w_noise
-        vol = add_noise(vol, sigma, noise_type='rician')
+        vol = add_noise(vol, snr, noise_type='rician')
 
     return vol
-
-
-
-def add_noise(vol, sigma=1.0, noise_type='gaussian'):
-    r""" Add noise of specified distribution to a 4D array.
-    
-    Parameters
-    -----------
-    vol : array, shape (X,Y,Z,W)
-
-    sigma: float
-        The parameter defining the width of the distribution of the noise. For
-        the Gaussian case, this is the standard deviation of the
-        distribution. For the other distributions, this is approximately the
-        standard deviation for the high signal cases.
-
-    noise_type: string
-        The distribution of noise added. Can be either 'gaussian' for Gaussian
-        distributed noise (default), 'rician' for Rice-distributed noise or
-        'rayleigh' for a Rayleigh distribution.
-
-    Returns
-    --------
-    voln : array, same shape as vol
-        vol with additional rician noise    
-
-    References
-    ----------
-
-
-    Examples
-    --------
-    >>> signal = np.arange(800).reshape(2,2,2,100)
-    >>> signal_w_noise = add_noise(signal,sigma=10,noise_type='rician')
-
-    """
-
-    # We estimate the power in the signal as the mean of signal
-    p_signal = np.mean(vol)
-
-    if noise_type == 'gaussian':
-        noise_adder = _add_gaussian
-        # Generate the noise with the correct standard deviation, averaged over
-        # all the voxels and with the right shape:
-        noise1 = np.random.normal(0, sigma, size=vol.shape)
-        # In this case, we don't need another source of noise:
-        noise2 = np.nan
-    elif noise_type in['rician', 'rayleigh']:
-        if noise_type == 'rician':
-            noise_adder = _add_rician
-        elif noise_type == 'rayleigh':
-            noise_adder = _add_rayleigh
-        # To generate rician and rayleigh noises, we combine two IID Gaussian
-        # noise sources in the complex domain (see below _add_rician and
-        # _add_rayleigh for the details):
-        noise1 = np.random.normal(0, sigma, size=vol.shape)
-        noise2 = np.random.normal(0, sigma, size=vol.shape)
-
-    return noise_adder(vol, noise1, noise2)
-
-def _add_gaussian(vol, noise1, noise2):
-    """
-    Helper function to add_noise
-
-    This one simply adds one of the Gaussians to the vol and ignores the other
-    one.
-    """
-    return vol + noise1
-
-def _add_rician(vol, noise1, noise2):
-    """
-    Helper function to add_noise.
-
-    This does the same as abs(vol + complex(noise1, noise2))
-
-    """
-    return np.sqrt((vol + noise1)**2 + noise2**2)
-
-def _add_rayleigh(vol, noise1, noise2):
-    """
-    Helper function to add_noise
-
-    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
-
-    """
-    return vol + np.sqrt(noise1**2 + noise2**2)
 
 
 if __name__ == "__main__":

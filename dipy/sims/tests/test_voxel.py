@@ -6,6 +6,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.sims.voxel import SingleTensor, multi_tensor_odf, all_tensor_evecs
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data, get_sphere
+from dipy.core.gradients import gradient_table
 
 def diff2eigenvectors(dx,dy,dz):
     """ numerical derivatives 2 eigenvectors
@@ -28,6 +29,7 @@ def test_single_tensor():
     fimg,fbvals,fbvecs=get_data('small_64D')
     bvals=np.load(fbvals)
     bvecs=np.load(fbvecs)
+    gtab = gradient_table(bvals, bvecs)
     #bvals=np.loadtxt(fbvals)
     #bvecs=np.loadtxt(fbvecs).T
     img=nib.load(fimg)
@@ -35,7 +37,7 @@ def test_single_tensor():
 
     evals=np.array([1.4,.35,.35])*10**(-3)
     evecs=np.eye(3)
-    S=SingleTensor(bvals,bvecs,100,evals,evecs,snr=None)
+    S=SingleTensor(gtab, 100,evals,evecs,snr=None)
 
 
 def test_multi_tensor():
