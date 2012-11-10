@@ -7,37 +7,7 @@ from dipy.data import get_data
 from dipy.core.gradients import gradient_table
 
 
-def _add_gaussian(sig, noise1, noise2):
-    """
-    Helper function to add_noise
-
-    This one simply adds one of the Gaussians to the sig and ignores the other
-    one.
-    """
-    return sig + noise1
-
-
-def _add_rician(sig, noise1, noise2):
-    """
-    Helper function to add_noise.
-
-    This does the same as abs(sig + complex(noise1, noise2))
-
-    """
-    return np.sqrt((sig + noise1)**2 + noise2**2)
-
-
-def _add_rayleigh(sig, noise1, noise2):
-    """
-    Helper function to add_noise
-
-    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
-
-    """
-    return sig + np.sqrt(noise1**2 + noise2**2)
-
-
-def add_noise(vol, snr=1.0, noise_type='gaussian', snr_type='mean'):
+def add_noise(vol, snr=1.0, noise_type='rician'):
     r""" Add noise of specified distribution to a 4D array.
     
     Parameters
@@ -45,15 +15,18 @@ def add_noise(vol, snr=1.0, noise_type='gaussian', snr_type='mean'):
     vol : array, shape (X,Y,Z,W)
 
     snr : float
-        The desired signal-to-noise ratio
+        The desired signal-to-noise ratio.
+
+        SNR is defined here following Descoteaux et al. (2007) as S0/sigma,
+        where sigma is the standard deviation of the complex noise. That is, it
+        is the standard deviation of the Gaussian distributions on the
+        imaginary and on the real part that are combined to derive the Rician
+        distribution of the noise (see also Gudbjartson and Patz, 2008).
     
     noise_type : string
         The distribution of noise added. Can be either 'gaussian' for Gaussian
         distributed noise (default), 'rician' for Rice-distributed noise or
         'rayleigh' for a Rayleigh distribution.
-    snr_type : string
-        Whether to calculate SNR relative to the mean signal in each voxel
-        ('mean'; default), or relative to the peak signal ('peak').
         
     Returns
     --------
@@ -63,12 +36,12 @@ def add_noise(vol, snr=1.0, noise_type='gaussian', snr_type='mean'):
     References
     ----------
 
-    Henkelman (1985) Measurement of signal intensities in the presence of noise
-    in MR images. Medical Physics 12: 232-233
-
     Gudbjartson and Patz (2008). The Rician distribution of noisy MRI data. MRM
     34: 910-914.
 
+    Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized, fast and
+    robust q-ball imaging. MRM, 58: 497-510 
+    
     Examples
     --------
     >>> signal = np.arange(800).reshape(2, 2, 2, 100)
@@ -79,46 +52,7 @@ def add_noise(vol, snr=1.0, noise_type='gaussian', snr_type='mean'):
     vol_flat = np.reshape(vol.copy(), (-1, vol.shape[-1]))
 
     for vox_idx, signal in enumerate(vol_flat):
-        if snr_type=='peak':
-            noise_var = (np.max(signal) / snr) ** 2
-        elif snr_type == 'mean':
-            noise_var = (np.mean(signal) / snr) **2
-        else:
-            e_s = "%s is not a known SNR type"%noise_var
-            raise ValueError(e_s)
-
-        # We estimate the power in the signal as the mean of signal
-        p_signal = np.mean(vol)
-
-        if noise_var == 0:
-            continue
-        
-        if noise_type == 'gaussian':
-            sigma = np.sqrt(noise_var)
-            noise_adder = _add_gaussian
-            # Generate the noise with the correct standard deviation, averaged
-            # over all the voxels and with the right shape:
-            noise1 = np.random.normal(0, sigma, size=signal.shape)
-            # In this case, we don't need another source of noise:
-            noise2 = np.nan
-        elif noise_type in['rician', 'rayleigh']:
-            if noise_type == 'rician':
-                noise_adder = _add_rician
-            elif noise_type == 'rayleigh':
-                noise_adder = _add_rayleigh
-            # To generate rician and rayleigh noises, we combine two IID Gaussian
-            # noise sources in the complex domain (see below _add_rician and
-            # _add_rayleigh for the details):
-
-            # Given a certain variance of the Rician distribution, we need to
-            # calculate the sigma that we would pass to the normal
-            # distribution:
-            sigma = np.sqrt(noise_var / 2) * np.sqrt(2) # Why sqrt(2)?
-             
-            noise1 = np.random.normal(0, sigma, size=signal.shape)
-            noise2 = np.random.normal(0, sigma, size=signal.shape)
-
-        vol_flat[vox_idx] = noise_adder(signal, noise1, noise2)
+        vol_flat[vox_idx] = add_noise(signal, snr=snr, noise_type=noise_type)
 
     return np.reshape(vol_flat, orig_shape)
 

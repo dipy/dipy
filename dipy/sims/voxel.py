@@ -265,3 +265,61 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
 # for backward compatibility
 SticksAndBall = sticks_and_ball
 SingleTensor = single_tensor
+
+# Noise adding functions: 
+def _add_gaussian(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    This one simply adds one of the Gaussians to the sig and ignores the other
+    one.
+    """
+    return sig + noise1
+
+
+def _add_rician(sig, noise1, noise2):
+    """
+    Helper function to add_noise.
+
+    This does the same as abs(sig + complex(noise1, noise2))
+
+    """
+    return np.sqrt((sig + noise1)**2 + noise2**2)
+
+
+def _add_rayleigh(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
+
+    """
+    return sig + np.sqrt(noise1**2 + noise2**2)
+
+
+def add_noise(signal, snr=1.0, s0=1.0, noise_type='rician'):
+    """
+    Add noise to the signal from a single voxel
+    """
+    
+    # Following Descoteaux et al. 2007: SNR = s0/sigma => sigma = s0/SNR:
+    sigma = s0 / snr
+        
+    if noise_type == 'gaussian':
+        noise_adder = _add_gaussian
+        noise1 = np.random.normal(0, sigma, size=signal.shape)
+        # In this case, we don't need another source of noise:
+        noise2 = np.nan
+    elif noise_type in['rician', 'rayleigh']:
+        if noise_type == 'rician':
+            noise_adder = _add_rician
+        elif noise_type == 'rayleigh':
+            noise_adder = _add_rayleigh
+            # To generate rician and rayleigh noises, we combine two IID Gaussian
+            # noise sources in the complex domain (see _add_rician and
+            # _add_rayleigh for the details):
+            
+        noise1 = np.random.normal(0, sigma, size=signal.shape)
+        noise2 = np.random.normal(0, sigma, size=signal.shape)
+
+    return noise_adder(signal, noise1, noise2)
