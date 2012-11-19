@@ -2,12 +2,13 @@ import numpy as np
 import scipy.stats as stats
 
 from dipy.sims.voxel import SingleTensor
+import dipy.sims.voxel as vox
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data    
 from dipy.core.gradients import gradient_table
 
 
-def add_noise(vol, snr=1.0, noise_type='rician'):
+def add_noise(vol, snr=1.0, S0=1.0, noise_type='rician'):
     r""" Add noise of specified distribution to a 4D array.
     
     Parameters
@@ -52,7 +53,10 @@ def add_noise(vol, snr=1.0, noise_type='rician'):
     vol_flat = np.reshape(vol.copy(), (-1, vol.shape[-1]))
 
     for vox_idx, signal in enumerate(vol_flat):
-        vol_flat[vox_idx] = add_noise(signal, snr=snr, noise_type=noise_type)
+        max_sig = np.max(signal)
+        # We assume that the S0 is the maximal signal:
+        vol_flat[vox_idx] = vox.add_noise(signal, snr=snr, S0=max_sig,
+                                          noise_type=noise_type)
 
     return np.reshape(vol_flat, orig_shape)
 
@@ -193,7 +197,8 @@ def orbital_phantom(gtab=None,
     #vol[np.isnan(vol)]=0
 
     if snr is not None:
-        vol = add_noise(vol, snr, noise_type='rician')
+        vol = add_noise(vol, snr, S0=S0*len(angles)/2,
+                        noise_type='rician')
 
     return vol
 

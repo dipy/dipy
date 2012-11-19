@@ -297,13 +297,56 @@ def _add_rayleigh(sig, noise1, noise2):
     return sig + np.sqrt(noise1**2 + noise2**2)
 
 
-def add_noise(signal, snr=1.0, s0=1.0, noise_type='rician'):
-    """
-    Add noise to the signal from a single voxel
+def add_noise(signal, snr=1.0, S0=1.0, noise_type='rician'):
+    r""" Add noise of specified distribution to the signal from a single voxel.
+    
+    Parameters
+    -----------
+    signal : 1-d array
+        The signal in the voxel
+
+    snr : float
+        The desired signal-to-noise ratio.
+
+        SNR is defined here following Descoteaux et al. (2007) as S0/sigma,
+        where sigma is the standard deviation of the complex noise. That is, it
+        is the standard deviation of the Gaussian distributions on the
+        imaginary and on the real part that are combined to derive the Rician
+        distribution of the noise (see also Gudbjartson and Patz, 2008).
+
+    S0 : float
+       The signal in the non-diffusion-weighted images. Default: 1.0
+    
+    noise_type : string
+        The distribution of noise added. Can be either 'gaussian' for Gaussian
+        distributed noise (default), 'rician' for Rice-distributed noise or
+        'rayleigh' for a Rayleigh distribution.
+        
+    Returns
+    --------
+    signal : array, same shape as the input
+        signal with added noise    
+
+    References
+    ----------
+
+    Gudbjartson and Patz (2008). The Rician distribution of noisy MRI data. MRM
+    34: 910-914.
+
+    Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized, fast and
+    robust q-ball imaging. MRM, 58: 497-510 
+    
+    Examples
+    --------
+    >>> signal = np.arange(800).reshape(2, 2, 2, 100)
+    >>> signal_w_noise = add_noise(signal, snr=10, noise_type='rician')
+
     """
     
     # Following Descoteaux et al. 2007: SNR = s0/sigma => sigma = s0/SNR:
-    sigma = s0 / snr
+    sigma = S0 / snr
+    if sigma == 0:
+        sigma = 1.0/snr
         
     if noise_type == 'gaussian':
         noise_adder = _add_gaussian

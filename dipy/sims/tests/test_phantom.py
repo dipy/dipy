@@ -27,7 +27,6 @@ def f(t):
 
 def test_phantom():
     
-
     fimg,fbvals,fbvecs=get_data('small_64D')    
     bvals=np.load(fbvals)
     bvecs=np.load(fbvecs)
@@ -51,6 +50,7 @@ def test_phantom():
     FA[np.isnan(FA)]=0
     
     assert_equal(np.round(FA.max()*1000),707)
+
 
 if __name__ == "__main__":
     #test_phantom()
