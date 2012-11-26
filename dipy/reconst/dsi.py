@@ -149,7 +149,6 @@ class DiffusionSpectrumFit(OdfFit):
         self.qgrid_sz = self.model.qgrid_size
         self.dn = self.model.dn 
     
-    @auto_attr
     def pdf(self):
         """ Applies the 3D FFT in the q-space grid to generate 
         the diffusion propagator
@@ -185,7 +184,7 @@ class DiffusionSpectrumFit(OdfFit):
                                                     self.model.qradius, 
                                                     self.model.origin)
             self.model.cache_set('interp_coords', sphere, interp_coords)
-        Pr = self.pdf
+        Pr = self.pdf()
         #calculate the orientation distribution function
         return pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
 
