@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import (assert_equal, assert_almost_equal, run_module_suite)
-from dipy.data import get_data
+from dipy.data import get_data, dsi_voxels
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.reconst.odf import gfa
 from dipy.sims.voxel import SticksAndBall
@@ -59,6 +59,17 @@ def test_dsi():
             assert_equal(gfa(ds.fit(data).odf(sphere2)) < 0.1, True)
 
 
+def test_multivox_dsi():
+
+    data, gtab = dsi_voxels()
+    DS = DiffusionSpectrumModel(gtab)
+    sphere = get_sphere('symmetric724')
+    DS.direction_finder.config(sphere=sphere, 
+                                min_separation_angle=25,
+                                relative_peak_threshold=.35)
+    DSfit = DS.fit(data)
+
+
 def sticks_and_ball_dummies(gtab):
     bvals=gtab.bvals
     bvecs=gtab.bvecs
@@ -84,4 +95,3 @@ def sticks_and_ball_dummies(gtab):
 
 if __name__ == '__main__':
     run_module_suite()
-    #test_dsi_rf()

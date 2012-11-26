@@ -5,8 +5,10 @@ from scipy.fftpack import fftn, fftshift
 from .odf import OdfModel, OdfFit
 from .cache import Cache
 from dipy.core.onetime import auto_attr
+from .multi_voxel import multi_voxel_model
 
 
+@multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
     def __init__(self, gtab, method='standard'):
@@ -79,6 +81,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
+        
+
         if method == 'standard':
             #3d volume for Sq
             self.qgrid_size = 16
@@ -218,7 +222,6 @@ def pdf_odf(Pr, sphere, rradius, interp_coords):
     interp_coords: array, shape (N, 3)
             coordinates in the pdf for interpolating the odf
     """
-
     verts_no = sphere.vertices.shape[0]
     odf = np.zeros(verts_no)
     rradius_no = len(rradius)
@@ -228,22 +231,54 @@ def pdf_odf(Pr, sphere, rradius, interp_coords):
     return odf
 
 
-def project_hemisph_bvecs(bvals, bvecs):
+def half_to_full_qspace(data, gtab):
+    """ Half to full Cartesian grid mapping
+
+    Useful when data are provided in one qspace hemisphere as DiffusionSpectrum
+    expects data to be in full qspace.
+
+    Parameters
+    ----------
+    data : array, shape (X, Y, Z, W)
+    gtab : object, 
+            GradientTable
+
+    Returns
+    -------
+    new_data : array, shape (X, Y, Z, 2 * W -1)
+    new_gtab : object,
+                GradientTable
+
+    Notes
+    -----
+    We assume here that only on b0 is provided with the initial data. If that
+    is not the case then you will need to write your own preparation function
+    before providing the gradients and the data to the DiffusionSpectrumModel class.
+    """
+    bvals = gtab.bvals
+    bvecs = gtab.bvecs
+    bvals = np.append(bvals.copy(), bvals[1:].copy())
+    bvecs = np.append(bvecs.copy(), - bvecs[1:].copy(), axis=0)
+    data = np.append(data.copy(), data[...,1:].copy(), axis=-1)
+    gtab.bvals = bvals.copy()
+    gtab.bvecs = bvecs.copy()
+    return data, gtab
+
+
+def project_hemisph_bvecs(gtab):
     """ Project any near identical bvecs to the other hemisphere
 
     Parameters:
     -----------
-    bvals: array, shape (N,)
-            b-values
-    bvecs: array, shape (N, 3)
-            b-vectors
+    gtab : object,
+            GradientTable
 
     Notes
     -------
-    Useful when working with dsi data because the full q-space needs to be
-    mapped in both hemispheres and perhaps only b-values and b-vectors are
-    provided for the one hemisphere.
+    Useful when working with some types of dsi data.
     """
+    bvals = gtab.bvals
+    bvecs = gtab.bvecs
     bvs = bvals[1:]
     bvcs = bvecs[1:]
     b = bvs[:,None] * bvcs
