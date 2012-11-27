@@ -2,7 +2,7 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import pdf_to_odf
 from scipy.fftpack import fftn, fftshift
-from .odf import OdfModel, OdfFit
+from .odf import OdfModel, OdfFit, gfa
 from .cache import Cache
 from dipy.core.onetime import auto_attr
 from .multi_voxel import multi_voxel_model
@@ -147,8 +147,9 @@ class DiffusionSpectrumFit(OdfFit):
         self.model = model
         self.data = data
         self.qgrid_sz = self.model.qgrid_size
-        self.dn = self.model.dn 
-    
+        self.dn = self.model.dn
+        self._gfa = None
+
     def pdf(self):
         """ Applies the 3D FFT in the q-space grid to generate 
         the diffusion propagator
@@ -164,10 +165,9 @@ class DiffusionSpectrumFit(OdfFit):
         Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq), 3 * (self.qgrid_sz, )))))
         return Pr
 
-
     def odf(self, sphere):
         r""" Calculates the real discrete odf for a given discrete sphere
-        
+
         ..math::
             :nowrap:
                 \begin{equation}
@@ -180,13 +180,29 @@ class DiffusionSpectrumFit(OdfFit):
         interp_coords = self.model.cache_get('interp_coords',
                                              key=sphere)
         if interp_coords is None:
-            interp_coords = pdf_interp_coords(sphere, 
-                                                    self.model.qradius, 
-                                                    self.model.origin)
+            interp_coords = pdf_interp_coords(sphere,
+                                              self.model.qradius,
+                                              self.model.origin)
             self.model.cache_set('interp_coords', sphere, interp_coords)
+
         Pr = self.pdf()
+
         #calculate the orientation distribution function
-        return pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
+        odf = pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
+
+        # We compute the gfa here, since we have the ODF available and
+        # the storage requirements are minimal.  Otherwise, we'd need to
+        # recompute the ODF at significant computational expense.
+        self._gfa = gfa(odf)
+
+        return odf
+
+    @property
+    def gfa(self):
+        if self._gfa is None:
+            # Borrow default sphere from direction finder
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._gfa
 
 
 def pdf_interp_coords(sphere, rradius, origin):
