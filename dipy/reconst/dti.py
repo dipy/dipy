@@ -140,12 +140,13 @@ class TensorFit(object):
         ev3 = evals[..., 2]
 
         # Make sure not to get nans:
-        all_zero = (ev1 == 0) & (ev2 == 0) & (ev3 == 0)
+        all_zero = (np.isclose(ev1, 0) & np.isclose(ev2, 0) & np.isclose(ev3, 0))
 
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
 
         fa = wrap(np.asarray(fa))
+
         # Fill with zeros outside of the mask
         return _filled(fa, 0)
 

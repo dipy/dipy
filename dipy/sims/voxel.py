@@ -15,13 +15,104 @@ from dipy.core.geometry import vec2vec_rotmat
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
 
+def _add_gaussian(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    This one simply adds one of the Gaussians to the sig and ignores the other
+    one.
+    """
+    return sig + noise1
+
+
+def _add_rician(sig, noise1, noise2):
+    """
+    Helper function to add_noise.
+
+    This does the same as abs(sig + complex(noise1, noise2))
+
+    """
+    return np.sqrt((sig + noise1)**2 + noise2**2)
+
+
+def _add_rayleigh(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
+
+    """
+    return sig + np.sqrt(noise1**2 + noise2**2)
+
+
+def add_noise(signal, snr, S0, noise_type='rician'):
+    r""" Add noise of specified distribution to the signal from a single voxel.
+
+    Parameters
+    -----------
+    signal : 1-d ndarray
+        The signal in the voxel.
+    snr : float
+        The desired signal-to-noise ratio. (See notes below.)
+        If `snr` is None, return the signal as-is.
+    S0 : float
+        Reference signal for specifying `snr`.
+    noise_type : string, optional
+        The distribution of noise added. Can be either 'gaussian' for Gaussian
+        distributed noise, 'rician' for Rice-distributed noise (default) or
+        'rayleigh' for a Rayleigh distribution.
+
+    Returns
+    --------
+    signal : array, same shape as the input
+        Signal with added noise.
+
+    Notes
+    -----
+    SNR is defined here, following [1]_, as ``S0 / sigma``, where ``sigma`` is
+    the standard deviation of the two Gaussian distributions forming the real
+    and imaginary components of the Rician noise distribution (see [2]_).
+
+    References
+    ----------
+    .. [1] Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
+           fast and robust q-ball imaging. MRM, 58: 497-510
+    .. [2] Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
+           data. MRM 34: 910-914.
+
+    Examples
+    --------
+    >>> signal = np.arange(800).reshape(2, 2, 2, 100)
+    >>> signal_w_noise = add_noise(signal, snr=10, noise_type='rician')
+
+    """
+    if snr is None:
+        return signal
+
+    sigma = S0 / snr
+
+    noise_adder = {'gaussian': _add_gaussian,
+                   'rician': _add_rician,
+                   'rayleigh': _add_rayleigh}
+
+    noise1 = np.random.normal(0, sigma, size=signal.shape)
+
+    if noise_type == 'gaussian':
+        noise2 = None
+    else:
+        noise2 = np.random.normal(0, sigma, size=signal.shape)
+
+    return noise_adder[noise_type](signal, noise1, noise2)
+
+
 def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
                     fractions=[35,35], snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
     Parameters
     -----------
-    gtab : GradientTable class instance
+    gtab : GradientTable
+        Signal measurement directions.
     d : float
         Diffusivity value.
     S0 : float
@@ -30,9 +121,10 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
         List of K polar angles (in degrees) for the sticks or array of M
         sticks as Cartesian unit vectors.
     fractions : float
-        Percentage of each stick.
+        Percentage of each stick.  Remainder to 100 specifies isotropic
+        component.
     snr : float
-        Signal to noise ratio, assuming gaussian noise.  If set to None, no
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
     Returns
@@ -49,7 +141,6 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
            Neuroimage, 2007.
 
     """
-
     fractions = [f / 100. for f in fractions]
     f0 = 1 - np.sum(fractions)
     S = np.zeros(len(gtab.bvals))
@@ -71,10 +162,8 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
 
         S[i + 1] = S0 * S[i + 1]
 
-    S[0] = S0
-    if snr is not None:
-        std = S0 / snr
-        S = S + np.random.randn(len(S)) * std
+    S[gtab.b0s_mask] = S0
+    S = add_noise(S, snr, S0)
 
     return S, sticks
 
@@ -84,7 +173,8 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
 
     Parameters
     -----------
-    gtab : GradientTable class instance
+    gtab : GradientTable
+        Measurement directions.
     S0 : double,
         Strength of signal in the presence of no diffusion gradient (also
         called the ``b=0`` value).
@@ -95,7 +185,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
         Eigenvectors of the tensor.  You can also think of this as a rotation
         matrix that transforms the direction of the tensor.
     snr : float
-        Signal to noise ratio, assuming gaussian noise.  None implies no noise.
+        Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
     --------
@@ -128,15 +218,7 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     for (i, g) in enumerate(gradients):
         S[i] = S0 * np.exp(-gtab.bvals[i] * g.T.dot(D).dot(g))
 
-    """ Alternative suggestion which works with multiple b0s
-    design = design_matrix(bval, gradients.T)
-    S = np.exp(np.dot(design, lower_triangular(D)))
-    """
-
-    # XXX Refactor to calculate the Rician SNR:
-    if snr is not None:
-        std = S0 / snr
-        S = S + np.random.randn(len(S)) * std
+    S = add_noise(S, snr, S0)
 
     return S.reshape(out_shape)
 
@@ -265,104 +347,3 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
 # for backward compatibility
 SticksAndBall = sticks_and_ball
 SingleTensor = single_tensor
-
-# Noise adding functions: 
-def _add_gaussian(sig, noise1, noise2):
-    """
-    Helper function to add_noise
-
-    This one simply adds one of the Gaussians to the sig and ignores the other
-    one.
-    """
-    return sig + noise1
-
-
-def _add_rician(sig, noise1, noise2):
-    """
-    Helper function to add_noise.
-
-    This does the same as abs(sig + complex(noise1, noise2))
-
-    """
-    return np.sqrt((sig + noise1)**2 + noise2**2)
-
-
-def _add_rayleigh(sig, noise1, noise2):
-    """
-    Helper function to add_noise
-
-    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
-
-    """
-    return sig + np.sqrt(noise1**2 + noise2**2)
-
-
-def add_noise(signal, snr=1.0, S0=1.0, noise_type='rician'):
-    r""" Add noise of specified distribution to the signal from a single voxel.
-    
-    Parameters
-    -----------
-    signal : 1-d array
-        The signal in the voxel
-
-    snr : float
-        The desired signal-to-noise ratio.
-
-        SNR is defined here following Descoteaux et al. (2007) as S0/sigma,
-        where sigma is the standard deviation of the complex noise. That is, it
-        is the standard deviation of the Gaussian distributions on the
-        imaginary and on the real part that are combined to derive the Rician
-        distribution of the noise (see also Gudbjartson and Patz, 2008).
-
-    S0 : float
-       The signal in the non-diffusion-weighted images. Default: 1.0
-    
-    noise_type : string
-        The distribution of noise added. Can be either 'gaussian' for Gaussian
-        distributed noise (default), 'rician' for Rice-distributed noise or
-        'rayleigh' for a Rayleigh distribution.
-        
-    Returns
-    --------
-    signal : array, same shape as the input
-        signal with added noise    
-
-    References
-    ----------
-
-    Gudbjartson and Patz (2008). The Rician distribution of noisy MRI data. MRM
-    34: 910-914.
-
-    Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized, fast and
-    robust q-ball imaging. MRM, 58: 497-510 
-    
-    Examples
-    --------
-    >>> signal = np.arange(800).reshape(2, 2, 2, 100)
-    >>> signal_w_noise = add_noise(signal, snr=10, noise_type='rician')
-
-    """
-    
-    # Following Descoteaux et al. 2007: SNR = s0/sigma => sigma = s0/SNR:
-    sigma = S0 / snr
-    if sigma == 0:
-        sigma = 1.0/snr
-        
-    if noise_type == 'gaussian':
-        noise_adder = _add_gaussian
-        noise1 = np.random.normal(0, sigma, size=signal.shape)
-        # In this case, we don't need another source of noise:
-        noise2 = np.nan
-    elif noise_type in['rician', 'rayleigh']:
-        if noise_type == 'rician':
-            noise_adder = _add_rician
-        elif noise_type == 'rayleigh':
-            noise_adder = _add_rayleigh
-            # To generate rician and rayleigh noises, we combine two IID Gaussian
-            # noise sources in the complex domain (see _add_rician and
-            # _add_rayleigh for the details):
-            
-        noise1 = np.random.normal(0, sigma, size=signal.shape)
-        noise2 = np.random.normal(0, sigma, size=signal.shape)
-
-    return noise_adder(signal, noise1, noise2)
