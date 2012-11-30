@@ -182,8 +182,8 @@ class DiffusionSpectrumFit(OdfFit):
         self.dn = self.model.dn
         self._gfa = None
         self.npeaks = 5
-        self._peak_values = np.zeros((self.npeaks))
-        self._peak_indices = np.zeros((self.npeaks))
+        self._peak_values = None
+        self._peak_indices = None
 
     def pdf(self):
         """ Applies the 3D FFT in the q-space grid to generate 
@@ -251,6 +251,8 @@ class DiffusionSpectrumFit(OdfFit):
         #global_max = max(global_max, pk[0])
         n = min(self.npeaks, len(pk))
         #qa_array[i, :n] = pk[:n] - odf.min()
+        self._peak_values = np.zeros(self.npeaks)
+        self._peak_indices = np.zeros(self.npeaks)
         if self.model.normalize_peaks:
             self._peak_values[:n] = pk[:n] / pk[0]
         else:
