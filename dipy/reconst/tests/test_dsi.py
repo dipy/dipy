@@ -69,7 +69,7 @@ def test_multivox_dsi():
                                 relative_peak_threshold=.35)
     DSfit = DS.fit(data)
     PDF=DSfit.pdf()
-    print PDF.shape
+    assert_equal(data.shape[:-1] + (16, 16, 16), PDF.shape)
 
 def sticks_and_ball_dummies(gtab):
     bvals=gtab.bvals

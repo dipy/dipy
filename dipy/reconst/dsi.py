@@ -20,7 +20,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
                     sampl_end=6., 
                     sampl_step=0.2, 
                     filter_width=32, 
-                    normalize_peaks=True):
+                    normalize_peaks=False):
         r""" Diffusion Spectrum Imaging
 
         The main idea here is that you can create the diffusion propagator
@@ -102,6 +102,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         most likely also need to update the sampl_* parameters. This is because
         the added zero padding from the increase of gqrid_size also introduces
         a scaling of the PDF.
+
+        C. We assume that data have only one b0 volume.
 
         See Also
         --------
