@@ -1,5 +1,5 @@
 from __future__ import division
-from warnings import warn
+from warnings import warn, catch_warnings, simplefilter
 import numpy as np
 import scipy.optimize as opt
 from .recspeed import local_maxima, remove_similar_vertices, search_descending
@@ -312,6 +312,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         pam.odf = None
 
     return pam
+
 
 def gfa(samples):
     """The general fractional anisotropy of a function evaluated on the unit sphere"""

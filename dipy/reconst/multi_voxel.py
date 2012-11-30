@@ -1,6 +1,7 @@
 """Tools to easily make multi voxel models"""
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
+#from dipy.core.ndindex import ndindex
 from numpy import ndindex
 
 
