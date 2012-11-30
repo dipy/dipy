@@ -106,6 +106,31 @@ class GeneralizedQSamplingFit(OdfFit):
             self.model.cache_set('gqi_vector', sphere, self.gqi_vector) 
         return np.dot(self.data, self.gqi_vector)
 
+    @property
+    def gfa(self):
+        if self._gfa is None:
+            # Borrow default sphere from direction finder
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._gfa
+
+    @property
+    def peak_values(self):
+        if self._peak_values is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._peak_values
+
+    @property
+    def peak_indices(self):
+        if self._peak_indices is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._peak_indices
+
+    @property
+    def qa(self):
+        if self._qa is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._qa
+
 
 def squared_radial_component(x, tol=0.01):
     """ Part of the GQI2 integral
