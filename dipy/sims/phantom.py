@@ -143,7 +143,7 @@ def orbital_phantom(gtab=None,
 
     """
 
-    if gtab.bvals is None:
+    if gtab is None:
         fimg, fbvals, fbvecs = get_data('small_64D')
         gtab = gradient_table(fbvals, fbvecs)
 

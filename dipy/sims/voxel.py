@@ -83,7 +83,7 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     Examples
     --------
     >>> signal = np.arange(800).reshape(2, 2, 2, 100)
-    >>> signal_w_noise = add_noise(signal, snr=10, noise_type='rician')
+    >>> signal_w_noise = add_noise(signal, 10., 100., noise_type='rician')
 
     """
     if snr is None:
