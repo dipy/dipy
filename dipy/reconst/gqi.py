@@ -52,16 +52,14 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         >>> from dipy.core.subdivide_octahedron import create_unit_sphere 
         >>> sphere = create_unit_sphere(5)
         >>> from dipy.reconst.gqi import GeneralizedQSamplingModel
-        >>> from dipy.reconst.odf import gfa
         >>> gq = GeneralizedQSamplingModel(gtab, 'gqi2', 1.4)
         >>> voxel_signal = data[0, 0, 0]
         >>> odf = gq.fit(voxel_signal).odf(sphere)
         >>> directions =gq.fit(voxel_signal).directions
-        >>> gfa_voxel = gfa(odf)
 
         See Also
         --------
-        dipy.reconst.gqi.GeneralizedQSampling
+        dipy.reconst.gqi.DiffusionSpectrumModel
 
         """
         bvals = gtab.bvals
@@ -73,12 +71,12 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
         scaling = np.sqrt(bvals * 0.01506)
-        tmp = np.tile(scaling, (3,1))
+        tmp = np.tile(scaling, (3, 1))
         #the b vectors might have nan values where they correspond to b
         #value equals with 0
         gradients[np.isnan(gradients)] = 0.
         gradsT = gradients.T
-        b_vector = gradsT * tmp # element-wise (Hadamard) product
+        b_vector = gradsT * tmp # element-wise product
         self.b_vector = b_vector.T
 
     def fit(self, data):
@@ -183,6 +181,32 @@ class GeneralizedQSamplingFit(OdfFit):
         return self._qa
 
 
+def normalize_qa(qa, max_qa=None):
+    """ Normalize quantitative anisotropy. 
+
+    Used mostly with GQI rather than GQI2.
+
+    Parameters
+    ----------
+    qa: array, shape (X, Y, Z, N)
+    max_qa: float,
+            maximum qa value. Usually found at the CSF.
+
+    Returns
+    -------
+    nqa: array, shape (x, Y, Z, N)
+            normalized quantitative anisotropy
+
+    Notes
+    -----
+    Normalized quantitative anisotropy has the very useful property
+    to be very small near gray matter and background areas. Therefore, 
+    it can be used to mask out white matter areas. 
+
+    """
+    if max_qa is None:
+        return qa/qa.max()
+    return qa/max_qa
 
 
 def squared_radial_component(x, tol=0.01):

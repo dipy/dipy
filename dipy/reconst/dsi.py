@@ -39,7 +39,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         The standard method is based on [1]_ and the deconvolution method is based
         on [2]_.
 
-        The main assumptions for this model is fast gradient switching and that
+        The main assumption for this model is fast gradient switching and that
         the acquisition gradients will sit on a keyhole Cartesian grid in
         q_space [3]_.
 
@@ -79,15 +79,16 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         and a reconstruction sphere and calculate generalized FA for the first 
         voxel in the data.
 
-
-        >>> from dipy.data import dsi_voxels
+        >>> from dipy.data import dsi_voxels, get_sphere
         >>> data, gtab = dsi_voxels()
-        >>> from dipy.core.subdivide_octahedron import create_unit_sphere 
-        >>> sphere = create_unit_sphere(5)
+        >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
-        >>> from dipy.reconst.odf import gfa
         >>> ds = DiffusionSpectrumModel(gtab)
-        >>> np.round(gfa(ds.fit(data[0, 0, 0]).odf(sphere)), 2)
+        >>> ds.direction_finder.config(sphere=sphere, 
+                        min_separation_angle=25, 
+                        relative_peak_threshold=.35)
+        >>> dsfit = ds.fit(data)
+        >>> np.round(dsfit.gfa[0, 0, 0], 2)
         0.12
 
         Notes
