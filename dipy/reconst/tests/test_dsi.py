@@ -59,9 +59,8 @@ def test_dsi():
 
 
 def test_multivox_dsi():
-
     data, gtab = dsi_voxels()
-    DS = DiffusionSpectrumModel(gtab)
+    DS = DiffusionSpectrumModel(gtab, 'standard')
     sphere = get_sphere('symmetric724')
     DS.direction_finder.config(sphere=sphere, 
                                 min_separation_angle=25,
@@ -69,6 +68,8 @@ def test_multivox_dsi():
     DSfit = DS.fit(data)
     PDF=DSfit.pdf()
     assert_equal(data.shape[:-1] + (16, 16, 16), PDF.shape)
+    assert_equal(np.alltrue(np.isreal(PDF)), True)
+
 
 def sticks_and_ball_dummies(gtab):
     sb_dummies={}
