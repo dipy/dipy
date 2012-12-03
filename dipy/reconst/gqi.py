@@ -20,10 +20,9 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         This model has the same assumptions as the DSI method i.e. Cartesian
         grid sampling in q-space and fast gradient switching.
 
-        You can think of it as an analytical solution of the DSI ODF.
-
         Implements equations 2.14 from [2]_ for standard GQI and equation 2.16
-        from [2]_ for GQI2.
+        from [2]_ for GQI2. You can think of GQI2 as an analytical solution of
+        the DSI ODF.            
 
         Parameters
         ----------
