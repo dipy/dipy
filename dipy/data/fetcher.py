@@ -20,7 +20,7 @@ def fetch_beijing_dti():
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
-        print('Downloading raw DTI data ...')
+        print('Downloading raw DTI data (51MB)...')
         opener = urllib2.urlopen(uraw)
         open(pjoin(folder, 'DTI64.nii.gz'), 'wb').write(opener.read())
 
