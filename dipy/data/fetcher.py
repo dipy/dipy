@@ -6,12 +6,10 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
 
-DIPY_HOME = pjoin(os.getenv('HOME'), '.dipy')
-
-
 def fetch_beijing_dti():
     """ Download a DTI dataset with 64 gradient directions
     """
+    DIPY_HOME = pjoin(os.getenv('HOME'), '.dipy')
     url = 'https://www.dropbox.com/sh/ybl8vquht8pdc3s/'
     uraw = url + 'NfhK5WsYRO/DTI64.nii.gz?dl=1'
     ubval = url + 'HyX6GEQSSV/DTI64.bval?dl=1'
@@ -49,6 +47,7 @@ def fetch_beijing_dti():
 def read_beijing_dti():
     """ Load Beijing dataset
     """ 
+    DIPY_HOME = pjoin(os.getenv('HOME'), '.dipy')
     folder = pjoin(DIPY_HOME, 'beijing_dti')
     fraw = pjoin(folder, 'DTI64.nii.gz')
     fbval = pjoin(folder, 'DTI64.bval')
@@ -62,7 +61,7 @@ def read_beijing_dti():
 def fetch_taiwan_ntu_dsi():
     """ Download a DSI dataset with 203 gradient directions
     """
-
+    DIPY_HOME = pjoin(os.getenv('HOME'), '.dipy')
     uraw = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.nii.gz'
     ubval = 'http://dl.dropbox.com/u/2481924/tawian_ntu_dsi.bval'
     ubvec = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.bvec'
@@ -96,7 +95,8 @@ def fetch_taiwan_ntu_dsi():
 
 def read_taiwan_ntu_dsi():
     """ Load Tawian NTU dataset
-    """ 
+    """
+    DIPY_HOME = pjoin(os.getenv('HOME'), '.dipy')
     folder = pjoin(DIPY_HOME, 'taiwan_ntu_dsi')
     fraw = pjoin(folder, 'DSI203.nii.gz')
     fbval = pjoin(folder, 'DSI203.bval')
