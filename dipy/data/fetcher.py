@@ -89,7 +89,7 @@ def fetch_taiwan_ntu_dsi():
         opener = urllib2.urlopen(ubvec)
         open(pjoin(folder, 'DSI203.bvec'), 'w').write(opener.read())
 
-        opener = urllib2.urlopen(ubvec)
+        opener = urllib2.urlopen(ureadme)
         open(pjoin(folder, 'DSI203_license.txt'), 'w').write(opener.read())
 
         print('Done.')
