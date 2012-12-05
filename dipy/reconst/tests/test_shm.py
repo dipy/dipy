@@ -142,8 +142,8 @@ def make_fake_signal():
     evecs1 = evecs0
     a = evecs0[0]
     b = evecs1[1]
-    S1 = single_tensor(gtab.bvals, gtab.bvecs, .55, evals[0], evecs0)
-    S2 = single_tensor(gtab.bvals, gtab.bvecs, .45, evals[1], evecs1)
+    S1 = single_tensor(gtab, .55, evals[0], evecs0)
+    S2 = single_tensor(gtab, .45, evals[1], evecs1)
     return S1 + S2, gtab, np.vstack([a, b])
 
 

@@ -15,16 +15,104 @@ from dipy.core.geometry import vec2vec_rotmat
 diffusion_evals = np.array([1500e-6, 400e-6, 400e-6])
 
 
-def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
+def _add_gaussian(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    This one simply adds one of the Gaussians to the sig and ignores the other
+    one.
+    """
+    return sig + noise1
+
+
+def _add_rician(sig, noise1, noise2):
+    """
+    Helper function to add_noise.
+
+    This does the same as abs(sig + complex(noise1, noise2))
+
+    """
+    return np.sqrt((sig + noise1)**2 + noise2**2)
+
+
+def _add_rayleigh(sig, noise1, noise2):
+    """
+    Helper function to add_noise
+
+    The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
+
+    """
+    return sig + np.sqrt(noise1**2 + noise2**2)
+
+
+def add_noise(signal, snr, S0, noise_type='rician'):
+    r""" Add noise of specified distribution to the signal from a single voxel.
+
+    Parameters
+    -----------
+    signal : 1-d ndarray
+        The signal in the voxel.
+    snr : float
+        The desired signal-to-noise ratio. (See notes below.)
+        If `snr` is None, return the signal as-is.
+    S0 : float
+        Reference signal for specifying `snr`.
+    noise_type : string, optional
+        The distribution of noise added. Can be either 'gaussian' for Gaussian
+        distributed noise, 'rician' for Rice-distributed noise (default) or
+        'rayleigh' for a Rayleigh distribution.
+
+    Returns
+    --------
+    signal : array, same shape as the input
+        Signal with added noise.
+
+    Notes
+    -----
+    SNR is defined here, following [1]_, as ``S0 / sigma``, where ``sigma`` is
+    the standard deviation of the two Gaussian distributions forming the real
+    and imaginary components of the Rician noise distribution (see [2]_).
+
+    References
+    ----------
+    .. [1] Descoteaux, Angelino, Fitzgibbons and Deriche (2007) Regularized,
+           fast and robust q-ball imaging. MRM, 58: 497-510
+    .. [2] Gudbjartson and Patz (2008). The Rician distribution of noisy MRI
+           data. MRM 34: 910-914.
+
+    Examples
+    --------
+    >>> signal = np.arange(800).reshape(2, 2, 2, 100)
+    >>> signal_w_noise = add_noise(signal, 10., 100., noise_type='rician')
+
+    """
+    if snr is None:
+        return signal
+
+    sigma = S0 / snr
+
+    noise_adder = {'gaussian': _add_gaussian,
+                   'rician': _add_rician,
+                   'rayleigh': _add_rayleigh}
+
+    noise1 = np.random.normal(0, sigma, size=signal.shape)
+
+    if noise_type == 'gaussian':
+        noise2 = None
+    else:
+        noise2 = np.random.normal(0, sigma, size=signal.shape)
+
+    return noise_adder[noise_type](signal, noise1, noise2)
+
+
+def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
                     fractions=[35,35], snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
     Parameters
     -----------
-    bvals : (N,) ndarray
-        B-values for measurements.
-    gradients : (N,3) ndarray
-        Also known as b-vectors.
+    gtab : GradientTable
+        Signal measurement directions.
     d : float
         Diffusivity value.
     S0 : float
@@ -33,9 +121,10 @@ def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
         List of K polar angles (in degrees) for the sticks or array of M
         sticks as Cartesian unit vectors.
     fractions : float
-        Percentage of each stick.
+        Percentage of each stick.  Remainder to 100 specifies isotropic
+        component.
     snr : float
-        Signal to noise ratio, assuming gaussian noise.  If set to None, no
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
         noise is added.
 
     Returns
@@ -52,10 +141,9 @@ def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
            Neuroimage, 2007.
 
     """
-
     fractions = [f / 100. for f in fractions]
     f0 = 1 - np.sum(fractions)
-    S = np.zeros(len(gradients))
+    S = np.zeros(len(gtab.bvals))
 
     angles=np.array(angles)
     if angles.shape[-1] == 3:
@@ -65,37 +153,28 @@ def sticks_and_ball(bvals, gradients, d=0.0015, S0=100, angles=[(0,0), (90,0)],
                   for pair in angles]
         sticks = np.array(sticks)
 
-    for (i, g) in enumerate(gradients[1:]):
-        S[i + 1] = f0 * np.exp(-bvals[i+1] * d) + \
+    for (i, g) in enumerate(gtab.bvecs[1:]):
+        S[i + 1] = f0 * np.exp(-gtab.bvals[i+1] * d) + \
                    np.sum([
-            fractions[j] * np.exp(-bvals[i + 1] * d * np.dot(s, g)**2)
+            fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g)**2)
             for (j,s) in enumerate(sticks)
                           ])
 
         S[i + 1] = S0 * S[i + 1]
 
-    S[0] = S0
-    if snr is not None:
-        std = S0 / snr
-        S = S + np.random.randn(len(S)) * std
+    S[gtab.b0s_mask] = S0
+    S = add_noise(S, snr, S0)
 
     return S, sticks
 
 
-def single_tensor(bvals, gradients, S0=1, evals=None, evecs=None, snr=None):
+def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     """ Simulated Q-space signal with a single tensor.
 
     Parameters
     -----------
-    bvals : (N,) array
-        B-values for measurements.  The b-value is also ``b = \tau |q|^2``,
-        where ``\tau`` is the time allowed for attenuation and ``q`` is the
-        measurement position vector in Q-space (signal-space or Fourier-space).
-        If b is too low, there is not enough attenuation to measure.  With b
-        too high, the signal to noise ratio increases.
-    gradients : (N, 3) or (M, N, 3) ndarray
-        Measurement gradients / directions, also known as b-vectors, as 3D unit
-        vectors (either in a list or on a grid).
+    gtab : GradientTable
+        Measurement directions.
     S0 : double,
         Strength of signal in the presence of no diffusion gradient (also
         called the ``b=0`` value).
@@ -106,7 +185,7 @@ def single_tensor(bvals, gradients, S0=1, evals=None, evecs=None, snr=None):
         Eigenvectors of the tensor.  You can also think of this as a rotation
         matrix that transforms the direction of the tensor.
     snr : float
-        Signal to noise ratio, assuming gaussian noise.  None implies no noise.
+        Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
     Returns
     --------
@@ -129,24 +208,17 @@ def single_tensor(bvals, gradients, S0=1, evals=None, evecs=None, snr=None):
     if evecs is None:
         evecs = np.eye(3)
 
-    out_shape = gradients.shape[:gradients.ndim - 1]
+    out_shape = gtab.bvecs.shape[:gtab.bvecs.ndim - 1]
+    gradients = gtab.bvecs.reshape(-1, 3)
 
-    gradients = gradients.reshape(-1, 3)
     R = np.asarray(evecs)
     S = np.zeros(len(gradients))
     D = R.dot(np.diag(evals)).dot(R.T)
 
     for (i, g) in enumerate(gradients):
-        S[i] = S0 * np.exp(-bvals[i] * g.T.dot(D).dot(g))
+        S[i] = S0 * np.exp(-gtab.bvals[i] * g.T.dot(D).dot(g))
 
-    """ Alternative suggestion which works with multiple b0s
-    design = design_matrix(bval, gradients.T)
-    S = np.exp(np.dot(design, lower_triangular(D)))
-    """
-
-    if snr is not None:
-        std = S0 / snr
-        S = S + np.random.randn(len(S)) * std
+    S = add_noise(S, snr, S0)
 
     return S.reshape(out_shape)
 

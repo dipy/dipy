@@ -289,3 +289,15 @@ def test_from_lower_triangular():
     D = D * np.ones((5, 4, 1))
     tensor = from_lower_triangular(D)
     assert_array_equal(tensor, result)
+
+def test_all_constant():
+    """
+    
+    """
+    bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
+    fit_methods = ['LS', 'OLS', 'NNLS']
+    for fit_method in fit_methods:
+        dm = dti.TensorModel(gtab, )
+        assert_almost_equal(dm.fit(np.zeros(bvals.shape[0])).fa, 0)
+        assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
