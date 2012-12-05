@@ -69,7 +69,7 @@ class TensorModel(object):
         # If a mask is provided, we will use it to access the data
         if mask is not None:
             # Make sure it's boolean, so that it can be used to mask
-            mask = np.array(mask, dtype=bool)
+            mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = data[mask]
         else:
             data_in_mask = data
