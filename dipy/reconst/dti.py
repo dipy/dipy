@@ -66,7 +66,6 @@ class TensorModel(object):
             A boolean array used to mark the coordinates in the data that
             should be analyzed that has the shape data.shape[-1]
         """
-
         # If a mask is provided, we will use it to access the data
         if mask is not None:
             # Make sure it's boolean, so that it can be used to mask
