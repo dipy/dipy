@@ -65,6 +65,7 @@ class TensorModel(object):
         """
         dti_params = self.fit_method(self.design_matrix, data,
                                      *self.args, **self.kwargs)
+        
         return TensorFit(self, dti_params)
 
 
@@ -140,7 +141,7 @@ class TensorFit(object):
         ev3 = evals[..., 2]
 
         # Make sure not to get nans:
-        all_zero = (ev1 == 0) & (ev2 == 0) & (ev3 == 0)
+        all_zero = np.allclose([ev1, ev2, ev3], 0)
 
         fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                       / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
@@ -273,9 +274,10 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     sig = np.maximum(sig, min_signal) #throw out zero signals
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
-    D = np.dot(np.linalg.pinv(design_matrix*w[:,None]), w*log_s)
+    D = np.dot(np.linalg.pinv(design_matrix * w[:,None]), w*log_s)
+    # D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], log_s)
     tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor)
+    return decompose_tensor(tensor, minimum_eval=np.finfo(float).eps)
 
 
 def _ols_iter(inv_design, sig, min_signal=1):
@@ -286,7 +288,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
     tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor)
+    return decompose_tensor(tensor, minimum_eval=np.finfo(float).eps)
 
 
 def ols_fit_tensor(design_matrix, data, min_signal=1):
@@ -473,7 +475,7 @@ def tensor_eig_from_lo_tri(data):
     return dti_params
 
 
-def decompose_tensor(tensor):
+def decompose_tensor(tensor, minimum_eval=0):
     """
     Returns eigenvalues and eigenvectors given a diffusion tensor
 
@@ -499,6 +501,7 @@ def decompose_tensor(tensor):
     See Also
     --------
     numpy.linalg.eig
+
     """
 
     #outputs multiplicity as well so need to unique
@@ -510,7 +513,7 @@ def decompose_tensor(tensor):
     eigenvals = eigenvals[order]
 
     #Forcing negative eigenvalues to 0
-    eigenvals = np.maximum(eigenvals, 0)
+    eigenvals = np.maximum(eigenvals, minimum_eval)
     # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
     # eigenvecs: each vector is columnar
 
