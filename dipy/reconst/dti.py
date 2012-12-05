@@ -53,7 +53,7 @@ class TensorModel(object):
         self.args = args
         self.kwargs = kwargs
 
-    def fit(self, data):
+    def fit(self, data, mask=None):
         """
         Fit method of the DTI model class
 
@@ -62,12 +62,26 @@ class TensorModel(object):
         data : array
             The measured signal from one voxel.
 
+        mask : array
+            A boolean array used to mark the coordinates in the data that
+            should be analyzed that has the shape data.shape[-1]
         """
-        dti_params = self.fit_method(self.design_matrix, data,
-                                     *self.args, **self.kwargs)
-        
-        return TensorFit(self, dti_params)
+        # If a mask is provided, we will use it to access the data
+        if mask is not None:
+            # Make sure it's boolean, so that it can be used to mask
+            mask = np.array(mask, dtype=bool, copy=False)
+            data_in_mask = data[mask]
+        else:
+            data_in_mask = data
 
+        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
+                                         *self.args, **self.kwargs)
+
+        dti_params = np.zeros(data.shape[:-1] + (12,))
+
+        dti_params[mask,:] = params_in_mask
+
+        return TensorFit(self, dti_params)
 
 class TensorFit(object):
     def __init__(self, model, model_params):
@@ -616,7 +630,7 @@ class Tensor(TensorFit, ModelArray):
             Diffusion gradient table found in DICOM header as a array.
 
         mask : array, optional
-            The tensor will only be fit where mask is True. Mask must must
+            The tensor will only be fit where mask is True. Mask must
             broadcast to the shape of data and must have fewer dimensions than
             data
 
