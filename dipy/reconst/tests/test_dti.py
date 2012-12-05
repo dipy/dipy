@@ -5,7 +5,7 @@
 import numpy as np
 from nose.tools import (assert_true, assert_equal,
                         assert_almost_equal, assert_raises)
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import lower_triangular, from_lower_triangular
 from dipy.reconst.maskedview import MaskedView
@@ -301,3 +301,17 @@ def test_all_constant():
         dm = dti.TensorModel(gtab, )
         assert_almost_equal(dm.fit(np.zeros(bvals.shape[0])).fa, 0)
         assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
+
+def test_mask():
+    data, gtab = dsi_voxels()
+    dm = dti.TensorModel(gtab, 'LS')
+    mask = np.zeros(data.shape[:-1], dtype=bool)
+    mask[0, 0, 0] = True
+    dtifit = dm.fit(data)
+    dtifit_w_mask = dm.fit(data,mask=mask)
+    # Without a mask it has some value
+    assert_(dtifit.fa[0,0, 0] != 0)
+    # But with the mask, it's zero:
+    assert_(dtifit_w_mask.fa[0,0, 1] == 0)
+    # Except for the one voxel that was selected by the mask:
+    assert_(dtifit_w_mask.fa[0,0,0] == dtifit.fa[0,0,0])
