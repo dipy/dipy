@@ -196,7 +196,7 @@ def orbital_phantom(gtab=None,
 
 if __name__ == "__main__":
 
-    ##TODO: this can become a nice tutorial for generating phantoms
+    ## TODO: this can become a nice tutorial for generating phantoms
 
     def f(t):
         x=np.sin(t)

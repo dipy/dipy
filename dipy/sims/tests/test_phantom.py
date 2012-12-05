@@ -29,9 +29,9 @@ def f(t):
     """
     Helper function used to define a mapping time => xyz
     """
-    x=np.sin(t)
-    y=np.cos(t)
-    z=np.linspace(-1,1,len(x))
+    x = np.linspace(-1,1,len(t)) 
+    y = np.linspace(-1,1,len(t))
+    z = np.linspace(-1,1,len(t))
     return x,y,z
 
 
@@ -45,16 +45,19 @@ def test_phantom():
                           origin=(5, 5, 5),
                           scale=(3, 3, 3),
                           angles=np.linspace(0, 2 * np.pi, 16),
-                          radii=np.linspace(0.2, 2, 6))
+                          radii=np.linspace(0.2, 2, 6),
+                          S0=100)
 
     m = TensorModel(gtab)
     t = m.fit(vol)
-
     FA = t.fa
+    # print vol
     FA[np.isnan(FA)] = 0
-
     # 686 -> expected FA given diffusivities of [1500, 400, 400]
-    assert_equal(np.round(FA.max() * 1000), 686)
+    l1, l2, l3 = 1500e-6, 400e-6, 400e-6
+    expected_fa =  (np.sqrt(0.5) * np.sqrt((l1 - l2)**2 + (l2-l3)**2 + (l3-l1)**2 )/np.sqrt(l1**2 + l2**2 + l3**2))
+
+    assert_array_almost_equal(FA.max(), expected_fa, decimal=2)
 
 
 def test_add_noise():
