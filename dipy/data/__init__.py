@@ -8,7 +8,10 @@ import gzip
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import Sphere
 import numpy as np
-
+from dipy.data.fetcher import (fetch_beijing_dti, 
+                                read_beijing_dti, 
+                                fetch_taiwan_ntu_dsi, 
+                                read_taiwan_ntu_dsi)
 from ..utils.arrfuncs import as_native_array
 
 THIS_DIR = dirname(__file__)
