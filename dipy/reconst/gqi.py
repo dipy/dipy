@@ -119,6 +119,13 @@ class GeneralizedQSamplingFit(OdfFit):
             self.model.cache_set('gqi_vector', sphere, self.gqi_vector)
 
         odf = np.dot(self.data, self.gqi_vector)
+        return odf
+
+    def _update_cached_values(sphere=None):
+
+        if sphere is None:
+            sphere = self.model.direction_finder._config["sphere"]
+        odf = self.odf(sphere)
 
         self._gfa = gfa(odf)
         pk, ind = local_maxima(odf, sphere.edges)
@@ -152,31 +159,29 @@ class GeneralizedQSamplingFit(OdfFit):
             self._peak_values[:n] = pk[:n]
         self._peak_indices[:n] = ind[:n]
 
-        return odf
 
     @property
     def gfa(self):
         if self._gfa is None:
-            # Borrow default sphere from direction finder
-            self.odf(self.model.direction_finder._config["sphere"])
+            self._update_cached_values()
         return self._gfa
 
     @property
     def peak_values(self):
         if self._peak_values is None:
-            self.odf(self.model.direction_finder._config["sphere"])
+            self._update_cached_values()
         return self._peak_values
 
     @property
     def peak_indices(self):
         if self._peak_indices is None:
-            self.odf(self.model.direction_finder._config["sphere"])
+            self._update_cached_values()
         return self._peak_indices
 
     @property
     def qa(self):
         if self._qa is None:
-            self.odf(self.model.direction_finder._config["sphere"])
+            self._update_cached_values()
         return self._qa
 
 
