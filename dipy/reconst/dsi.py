@@ -1,15 +1,26 @@
 import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import pdf_to_odf
-from scipy.fftpack import fftn, fftshift
-from .odf import OdfModel, OdfFit
+from scipy.fftpack import fftn, fftshift, ifftshift
+from .odf import OdfModel, OdfFit, gfa
 from .cache import Cache
 from dipy.core.onetime import auto_attr
+from .multi_voxel import multi_voxel_model
+from .recspeed import local_maxima, remove_similar_vertices
 
 
+@multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
-    def __init__(self, gtab, method='standard'):
+    def __init__(self, 
+                    gtab, 
+                    method='standard', 
+                    qgrid_size=16, 
+                    sampl_start=2.1, 
+                    sampl_end=6., 
+                    sampl_step=0.2, 
+                    filter_width=32, 
+                    normalize_peaks=False):
         r""" Diffusion Spectrum Imaging
 
         The main idea here is that you can create the diffusion propagator
@@ -20,24 +31,36 @@ class DiffusionSpectrumModel(OdfModel, Cache):
             :nowrap:
                 \begin{eqnarray}
                     P(\mathbf{r}) & = & S_{0}^{-1}\int S(\mathbf{q})\exp(-i2\pi\mathbf{q}\cdot\mathbf{r})d\mathbf{r}
-                \end{eqnarray}    
-        
+                \end{eqnarray}
+
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wavector which corresponds to different gradient directions. 
 
         The standard method is based on [1]_ and the deconvolution method is based
         on [2]_.
 
-        The main assumptions for this model is fast gradient switching and that
+        The main assumption for this model is fast gradient switching and that
         the acquisition gradients will sit on a keyhole Cartesian grid in
         q_space [3]_.
-        
+
         Parameters
         ----------
-        gtab: object, 
+        gtab : object, 
             GradientTable
-        method: str, 
+        method : str, 
             'standard' or 'deconv'
+        qgrid_size : int,
+            sets the size of the q_space grid. For example if qgrid_size is 16
+            then the shape of the grid will be (16, 16, 16).
+        sampl_start : float,
+            ODF is sampled radially in the PDF. This parameters shows where the
+            sampling should start.
+        sampl_end : float,
+            Radial endpoint of ODF sampling
+        sampl_step : float,
+            Step size of the ODf sampling from sample_start to sample_end.
+        filter_width : float,
+            Strenght of the hanning filter
 
         References
         ----------
@@ -56,20 +79,32 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         and a reconstruction sphere and calculate generalized FA for the first 
         voxel in the data.
 
-        >>> from dipy.data import dsi_voxels
+        >>> from dipy.data import dsi_voxels, get_sphere
         >>> data, gtab = dsi_voxels()
-        >>> from dipy.core.subdivide_octahedron import create_unit_sphere 
-        >>> sphere = create_unit_sphere(5)
+        >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
-        >>> from dipy.reconst.odf import gfa
         >>> ds = DiffusionSpectrumModel(gtab)
-        >>> np.round(gfa(ds.fit(data[0, 0, 0]).odf(sphere)), 2)
+        >>> ds.direction_finder.config(sphere=sphere, 
+                        min_separation_angle=25, 
+                        relative_peak_threshold=.35)
+        >>> dsfit = ds.fit(data)
+        >>> np.round(dsfit.gfa[0, 0, 0], 2)
         0.12
 
         Notes
         ------
-        Have in mind that DSI expects gradients on both hemispheres.
-        If your gradients span only one hemisphere you need to duplicate        them and project them to the other hemisphere too.
+        A. Have in mind that DSI expects gradients on both hemispheres. If your
+        gradients span only one hemisphere you need to duplicate the data and
+        project them to the other hemisphere before calling this class. The
+        function dipy.reconst.dsi.half_to_full_qspace can be used for this
+        purpose.
+
+        B. If you increase the size of the grid (parameter qgrid_size) you will
+        most likely also need to update the sampl_* parameters. This is because
+        the added zero padding from the increase of gqrid_size also introduces
+        a scaling of the PDF.
+
+        C. We assume that data have only one b0 volume.
 
         See Also
         --------
@@ -79,15 +114,17 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
+        self.normalize_peaks = normalize_peaks
+
         if method == 'standard':
             #3d volume for Sq
-            self.qgrid_size = 16
+            self.qgrid_size = qgrid_size
             #necessary shifting for centering
-            self.origin = 8
+            self.origin = self.qgrid_size//2
             #hanning filter width
-            self.filter_width = 32.
+            self.filter_width = filter_width
             #odf collecting radius
-            self.qradius = np.arange(2.1, 6, .2)
+            self.qradius = np.arange(sampl_start, sampl_end, sampl_step)
             self.create_qspace()
             self.hanning_filter()
         if method == 'deconv':
@@ -112,7 +149,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
     def hanning_filter(self):
         """ create a hanning window
-        
+
         The signal is premultiplied by a Hanning window before 
         Fourier transform in order to ensure a smooth attenuation 
         of the signal at high q values.
@@ -131,7 +168,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 class DiffusionSpectrumFit(OdfFit):
 
     def __init__(self, model, data):
-        """ Calculates PDF and ODF for a single voxel
+        """ Calculates PDF and ODF and other properties for a single voxel
 
         Parameters:
         -----------
@@ -143,9 +180,12 @@ class DiffusionSpectrumFit(OdfFit):
         self.model = model
         self.data = data
         self.qgrid_sz = self.model.qgrid_size
-        self.dn = self.model.dn 
-    
-    @auto_attr
+        self.dn = self.model.dn
+        self._gfa = None
+        self.npeaks = 5
+        self._peak_values = None
+        self._peak_indices = None
+
     def pdf(self):
         """ Applies the 3D FFT in the q-space grid to generate 
         the diffusion propagator
@@ -158,13 +198,12 @@ class DiffusionSpectrumFit(OdfFit):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         #apply fourier transform
-        Pr=fftshift(np.abs(np.real(fftn(fftshift(Sq), 3 * (self.qgrid_sz, )))))
+        Pr=fftshift(np.abs(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz, )))))
         return Pr
-
 
     def odf(self, sphere):
         r""" Calculates the real discrete odf for a given discrete sphere
-        
+
         ..math::
             :nowrap:
                 \begin{equation}
@@ -177,13 +216,70 @@ class DiffusionSpectrumFit(OdfFit):
         interp_coords = self.model.cache_get('interp_coords',
                                              key=sphere)
         if interp_coords is None:
-            interp_coords = pdf_interp_coords(sphere, 
-                                                    self.model.qradius, 
-                                                    self.model.origin)
+            interp_coords = pdf_interp_coords(sphere,
+                                              self.model.qradius,
+                                              self.model.origin)
             self.model.cache_set('interp_coords', sphere, interp_coords)
-        Pr = self.pdf
+
+        Pr = self.pdf()
+
         #calculate the orientation distribution function
-        return pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
+        odf = pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
+
+        # We compute the gfa here, since we have the ODF available and
+        # the storage requirements are minimal.  Otherwise, we'd need to
+        # recompute the ODF at significant computational expense.
+        self._gfa = gfa(odf)
+        pk, ind = local_maxima(odf, sphere.edges)
+
+        relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
+        min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
+
+        # Remove small peaks.
+        gt_threshold = pk >= (relative_peak_threshold * pk[0])
+        pk = pk[gt_threshold]
+        ind = ind[gt_threshold]
+
+        # Keep peaks which are unique, which means remove peaks that are too
+        # close to a larger peak.
+        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
+                                                min_separation_angle,
+                                                return_index=True)
+        pk = pk[where_uniq]
+        ind = ind[where_uniq]
+
+        # Calculate peak metrics
+        #global_max = max(global_max, pk[0])
+        n = min(self.npeaks, len(pk))
+        #qa_array[i, :n] = pk[:n] - odf.min()
+        self._peak_values = np.zeros(self.npeaks)
+        self._peak_indices = np.zeros(self.npeaks)
+        if self.model.normalize_peaks:
+            self._peak_values[:n] = pk[:n] / pk[0]
+        else:
+            self._peak_values[:n] = pk[:n]
+        self._peak_indices[:n] = ind[:n]
+
+        return odf
+
+    @property
+    def gfa(self):
+        if self._gfa is None:
+            # Borrow default sphere from direction finder
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._gfa
+
+    @property
+    def peak_values(self):
+        if self._peak_values is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._peak_values
+
+    @property
+    def peak_indices(self):
+        if self._peak_indices is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._peak_indices
 
 
 def pdf_interp_coords(sphere, rradius, origin):
@@ -193,10 +289,10 @@ def pdf_interp_coords(sphere, rradius, origin):
     -----------
     sphere : object,
             Sphere
-    rradius : array, shape (M,) 
+    rradius : array, shape (M,)
             line interpolation points
     origin : array, shape (3,)
-            center of the grid            
+            center of the grid
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T
     interp_coords = interp_coords.reshape((3, -1))
@@ -209,16 +305,15 @@ def pdf_odf(Pr, sphere, rradius, interp_coords):
 
     Parameters
     ----------
-    Pr: array, shape (X, X, X)
+    Pr : array, shape (X, X, X)
             probability density function
-    sphere: object,
+    sphere : object,
             Sphere
-    rradius: array, shape (N,)
+    rradius : array, shape (N,)
             interpolation range on the radius
-    interp_coords: array, shape (N, 3)
+    interp_coords : array, shape (N, 3)
             coordinates in the pdf for interpolating the odf
     """
-
     verts_no = sphere.vertices.shape[0]
     odf = np.zeros(verts_no)
     rradius_no = len(rradius)
@@ -228,22 +323,54 @@ def pdf_odf(Pr, sphere, rradius, interp_coords):
     return odf
 
 
-def project_hemisph_bvecs(bvals, bvecs):
+def half_to_full_qspace(data, gtab):
+    """ Half to full Cartesian grid mapping
+
+    Useful when data are provided in one qspace hemisphere as DiffusionSpectrum
+    expects data to be in full qspace.
+
+    Parameters
+    ----------
+    data : array, shape (X, Y, Z, W)
+    gtab : object, 
+            GradientTable
+
+    Returns
+    -------
+    new_data : array, shape (X, Y, Z, 2 * W -1)
+    new_gtab : object,
+                GradientTable
+
+    Notes
+    -----
+    We assume here that only on b0 is provided with the initial data. If that
+    is not the case then you will need to write your own preparation function
+    before providing the gradients and the data to the DiffusionSpectrumModel class.
+    """
+    bvals = gtab.bvals
+    bvecs = gtab.bvecs
+    bvals = np.append(bvals.copy(), bvals[1:].copy())
+    bvecs = np.append(bvecs.copy(), - bvecs[1:].copy(), axis=0)
+    data = np.append(data.copy(), data[...,1:].copy(), axis=-1)
+    gtab.bvals = bvals.copy()
+    gtab.bvecs = bvecs.copy()
+    return data, gtab
+
+
+def project_hemisph_bvecs(gtab):
     """ Project any near identical bvecs to the other hemisphere
 
     Parameters:
     -----------
-    bvals: array, shape (N,)
-            b-values
-    bvecs: array, shape (N, 3)
-            b-vectors
+    gtab : object,
+            GradientTable
 
     Notes
     -------
-    Useful when working with dsi data because the full q-space needs to be
-    mapped in both hemispheres and perhaps only b-values and b-vectors are
-    provided for the one hemisphere.
+    Useful only when working with some types of dsi data.
     """
+    bvals = gtab.bvals
+    bvecs = gtab.bvecs
     bvs = bvals[1:]
     bvcs = bvecs[1:]
     b = bvs[:,None] * bvcs

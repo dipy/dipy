@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import (assert_equal, assert_almost_equal, run_module_suite)
-from dipy.data import get_data
+from dipy.data import get_data, dsi_voxels
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.reconst.odf import gfa
 from dipy.sims.voxel import SticksAndBall
@@ -45,7 +45,7 @@ def test_dsi():
     #from dipy.viz._show_odfs import show_odfs
     #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
     #show_odfs(odf2[None,None,None,:], (sphere2.vertices, sphere2.faces))
-    assert_equal(dsfit.pdf.shape, 3 * (ds.qgrid_size, ))
+    assert_equal(dsfit.pdf().shape, 3 * (ds.qgrid_size, ))
     sb_dummies=sticks_and_ball_dummies(gtab)
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
@@ -56,6 +56,19 @@ def test_dsi():
             assert_equal(len(ds.fit(data).directions), len(golden_directions))
         if len(directions) > 3:
             assert_equal(gfa(ds.fit(data).odf(sphere2)) < 0.1, True)
+
+
+def test_multivox_dsi():
+    data, gtab = dsi_voxels()
+    DS = DiffusionSpectrumModel(gtab, 'standard')
+    sphere = get_sphere('symmetric724')
+    DS.direction_finder.config(sphere=sphere, 
+                                min_separation_angle=25,
+                                relative_peak_threshold=.35)
+    DSfit = DS.fit(data)
+    PDF=DSfit.pdf()
+    assert_equal(data.shape[:-1] + (16, 16, 16), PDF.shape)
+    assert_equal(np.alltrue(np.isreal(PDF)), True)
 
 
 def sticks_and_ball_dummies(gtab):
@@ -81,4 +94,3 @@ def sticks_and_ball_dummies(gtab):
 
 if __name__ == '__main__':
     run_module_suite()
-    #test_dsi_rf()
