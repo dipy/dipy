@@ -26,11 +26,11 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
         Parameters
         ----------
-        gtab: object, 
+        gtab : object, 
             GradientTable
-        method: str, 
+        method : str, 
             'standard' or 'gqi2'
-        sampling_length: float,
+        sampling_length : float,
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
 
         References
@@ -87,11 +87,11 @@ class GeneralizedQSamplingFit(OdfFit):
     def __init__(self, model, data):
         """ Calculates PDF and ODF for a single voxel
 
-        Parameters:
-        -----------
-        model: object,
+        Parameters
+        ----------
+        model : object,
             DiffusionSpectrumModel
-        data: 1d ndarray,
+        data : 1d ndarray,
             signal values
 
         """
@@ -187,13 +187,13 @@ def normalize_qa(qa, max_qa=None):
 
     Parameters
     ----------
-    qa: array, shape (X, Y, Z, N)
-    max_qa: float,
-            maximum qa value. Usually found at the CSF.
+    qa : array, shape (X, Y, Z, N)
+    max_qa : float,
+            maximum qa value. Usually found in the CSF.
 
     Returns
     -------
-    nqa: array, shape (x, Y, Z, N)
+    nqa : array, shape (x, Y, Z, N)
             normalized quantitative anisotropy
 
     Notes
