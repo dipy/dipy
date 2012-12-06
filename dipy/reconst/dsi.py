@@ -45,21 +45,21 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Parameters
         ----------
-        gtab: object, 
+        gtab : object, 
             GradientTable
-        method: str, 
+        method : str, 
             'standard' or 'deconv'
-        qgrid_size: int,
+        qgrid_size : int,
             sets the size of the q_space grid. For example if qgrid_size is 16
             then the shape of the grid will be (16, 16, 16).
-        sampl_start: float,
+        sampl_start : float,
             ODF is sampled radially in the PDF. This parameters shows where the
             sampling should start.
-        sampl_end: float,
+        sampl_end : float,
             Radial endpoint of ODF sampling
-        sampl_step: float,
+        sampl_step : float,
             Step size of the ODf sampling from sample_start to sample_end.
-        filter_width: float,
+        filter_width : float,
             Strenght of the hanning filter
 
         References
@@ -305,13 +305,13 @@ def pdf_odf(Pr, sphere, rradius, interp_coords):
 
     Parameters
     ----------
-    Pr: array, shape (X, X, X)
+    Pr : array, shape (X, X, X)
             probability density function
-    sphere: object,
+    sphere : object,
             Sphere
-    rradius: array, shape (N,)
+    rradius : array, shape (N,)
             interpolation range on the radius
-    interp_coords: array, shape (N, 3)
+    interp_coords : array, shape (N, 3)
             coordinates in the pdf for interpolating the odf
     """
     verts_no = sphere.vertices.shape[0]
