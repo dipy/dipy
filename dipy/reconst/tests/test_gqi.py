@@ -1,5 +1,5 @@
 import numpy as np
-from dipy.data import get_data
+from dipy.data import get_data, dsi_voxels
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import SticksAndBall
@@ -56,6 +56,19 @@ def test_gqi():
             assert_equal(len(gq.fit(data).directions), len(golden_directions))
         if len(directions) > 3:
             assert_equal(gfa(gq.fit(data).odf(sphere2)) < 0.1, True)
+
+
+def test_mvoxel_gqi():
+    data, gtab = dsi_voxels()
+    gq = GeneralizedQSamplingModel(gtab, 'standard')
+    sphere = get_sphere('symmetric724')
+    gq.direction_finder.config(sphere=sphere, 
+                                min_separation_angle=25,
+                                relative_peak_threshold=.35)
+    gqfit = gq.fit(data)
+    directions = gqfit.directions
+    assert_equal(directions[0, 0, 0].shape[0], 2)
+    assert_equal(directions[-1, -1, -1].shape[0], 2)
 
 
 if __name__ == "__main__":
