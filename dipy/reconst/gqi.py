@@ -1,28 +1,36 @@
 """ Classes and functions for generalized q-sampling """
 import numpy as np
-from .odf import OdfModel, OdfFit
+from .odf import OdfModel, OdfFit, gfa
 from .cache import Cache
 import warnings
+from .multi_voxel import multi_voxel_model
+from .recspeed import local_maxima, remove_similar_vertices
 
 
+@multi_voxel_model
 class GeneralizedQSamplingModel(OdfModel, Cache):
 
-    def __init__(self, gtab, method='gqi2', sampling_length=1.2):
+    def __init__(self, 
+                    gtab, 
+                    method='gqi2', 
+                    sampling_length=1.2, 
+                    normalize_peaks=False):
         r""" Generalized Q-Sampling Imaging [1]_
-        
+
         This model has the same assumptions as the DSI method i.e. Cartesian
         grid sampling in q-space and fast gradient switching.
 
         Implements equations 2.14 from [2]_ for standard GQI and equation 2.16
-        from [2]_ for GQI2.       
-        
+        from [2]_ for GQI2. You can think of GQI2 as an analytical solution of
+        the DSI ODF.            
+
         Parameters
         ----------
-        gtab: object, 
+        gtab : object, 
             GradientTable
-        method: str, 
+        method : str, 
             'standard' or 'gqi2'
-        sampling_length: float,
+        sampling_length : float,
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
 
         References
@@ -30,45 +38,45 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         ..[1] Yeh F-C et. al, "Generalized Q-Sampling Imaging", IEEE TMI, 2010.
 
         ..[2] Garyfallidis E, "Towards an accurate brain tractography", PhD
-        thesis, University of Cambridge, 2012. 
- 
+        thesis, University of Cambridge, 2012.
+
         Examples
         --------
-        Here we create an example where we provide the data, a gradient table 
-        and a reconstruction sphere and calculate generalized FA for the first voxel in the data.
+        Here we create an example where we provide the data, a gradient table
+        and a reconstruction sphere and calculate generalized FA for the first
+        voxel in the data.
 
         >>> from dipy.data import dsi_voxels
         >>> data, gtab = dsi_voxels()
         >>> from dipy.core.subdivide_octahedron import create_unit_sphere 
         >>> sphere = create_unit_sphere(5)
         >>> from dipy.reconst.gqi import GeneralizedQSamplingModel
-        >>> from dipy.reconst.odf import gfa
         >>> gq = GeneralizedQSamplingModel(gtab, 'gqi2', 1.4)
         >>> voxel_signal = data[0, 0, 0]
         >>> odf = gq.fit(voxel_signal).odf(sphere)
         >>> directions =gq.fit(voxel_signal).directions
-        >>> gfa_voxel = gfa(odf)
 
         See Also
         --------
-        dipy.reconst.gqi.GeneralizedQSampling
+        dipy.reconst.gqi.DiffusionSpectrumModel
 
         """
         bvals = gtab.bvals
         gradients = gtab.bvecs
         self.method = method
         self.Lambda = sampling_length
+        self.normalize_peaks = normalize_peaks
         # 0.01506 = 6*D where D is the free water diffusion coefficient
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
         scaling = np.sqrt(bvals * 0.01506)
-        tmp = np.tile(scaling, (3,1))
+        tmp = np.tile(scaling, (3, 1))
         #the b vectors might have nan values where they correspond to b
         #value equals with 0
         gradients[np.isnan(gradients)] = 0.
         gradsT = gradients.T
-        b_vector = gradsT * tmp # element-wise (Hadamard) product
-        self.b_vector = b_vector.T        
+        b_vector = gradsT * tmp # element-wise product
+        self.b_vector = b_vector.T
 
     def fit(self, data):
         return GeneralizedQSamplingFit(self, data)
@@ -79,19 +87,24 @@ class GeneralizedQSamplingFit(OdfFit):
     def __init__(self, model, data):
         """ Calculates PDF and ODF for a single voxel
 
-        Parameters:
-        -----------
-        model: object,
+        Parameters
+        ----------
+        model : object,
             DiffusionSpectrumModel
-        data: 1d ndarray,
+        data : 1d ndarray,
             signal values
 
         """
         self.model = model
         self.data = data
+        self._gfa = None
+        self.npeaks = 5
+        self._peak_values = None
+        self._peak_indices = None
+        self._qa = None
 
     def odf(self, sphere):
-        r""" Calculates the discrete ODF for a given discrete sphere.
+        """ Calculates the discrete ODF for a given discrete sphere.
         """
         self.gqi_vector = self.model.cache_get('gqi_vector', key=sphere)
         if self.gqi_vector is None:
@@ -103,8 +116,96 @@ class GeneralizedQSamplingFit(OdfFit):
             if self.model.method == 'standard':
                 self.gqi_vector = np.real(np.sinc(np.dot(self.model.b_vector, 
                                         sphere.vertices.T) * self.model.Lambda / np.pi))
-            self.model.cache_set('gqi_vector', sphere, self.gqi_vector) 
-        return np.dot(self.data, self.gqi_vector)
+            self.model.cache_set('gqi_vector', sphere, self.gqi_vector)
+
+        odf = np.dot(self.data, self.gqi_vector)
+
+        self._gfa = gfa(odf)
+        pk, ind = local_maxima(odf, sphere.edges)
+
+        relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
+        min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
+
+        # Remove small peaks.
+        gt_threshold = pk >= (relative_peak_threshold * pk[0])
+        pk = pk[gt_threshold]
+        ind = ind[gt_threshold]
+
+        # Keep peaks which are unique, which means remove peaks that are too
+        # close to a larger peak.
+        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
+                                                min_separation_angle,
+                                                return_index=True)
+        pk = pk[where_uniq]
+        ind = ind[where_uniq]
+
+        # Calculate peak metrics
+        #global_max = max(global_max, pk[0])
+        n = min(self.npeaks, len(pk))
+        self._qa = np.zeros(self.npeaks)
+        self._qa[:n] = pk[:n] - odf.min()
+        self._peak_values = np.zeros(self.npeaks)
+        self._peak_indices = np.zeros(self.npeaks)
+        if self.model.normalize_peaks:
+            self._peak_values[:n] = pk[:n] / pk[0]
+        else:
+            self._peak_values[:n] = pk[:n]
+        self._peak_indices[:n] = ind[:n]
+
+        return odf
+
+    @property
+    def gfa(self):
+        if self._gfa is None:
+            # Borrow default sphere from direction finder
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._gfa
+
+    @property
+    def peak_values(self):
+        if self._peak_values is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._peak_values
+
+    @property
+    def peak_indices(self):
+        if self._peak_indices is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._peak_indices
+
+    @property
+    def qa(self):
+        if self._qa is None:
+            self.odf(self.model.direction_finder._config["sphere"])
+        return self._qa
+
+
+def normalize_qa(qa, max_qa=None):
+    """ Normalize quantitative anisotropy. 
+
+    Used mostly with GQI rather than GQI2.
+
+    Parameters
+    ----------
+    qa : array, shape (X, Y, Z, N)
+    max_qa : float,
+            maximum qa value. Usually found in the CSF.
+
+    Returns
+    -------
+    nqa : array, shape (x, Y, Z, N)
+            normalized quantitative anisotropy
+
+    Notes
+    -----
+    Normalized quantitative anisotropy has the very useful property
+    to be very small near gray matter and background areas. Therefore, 
+    it can be used to mask out white matter areas. 
+
+    """
+    if max_qa is None:
+        return qa/qa.max()
+    return qa/max_qa
 
 
 def squared_radial_component(x, tol=0.01):
