@@ -1,10 +1,17 @@
 import numpy as np
-from numpy.testing import assert_array_equal, assert_array_almost_equal
-from ..odf import (DiscreteDirectionFinder, NonLinearDirectionFinder,
-                   OdfFit, OdfModel, gfa, peaks_from_model, peak_directions)
+from numpy.testing import (assert_, assert_equal, assert_array_equal,
+                           assert_array_almost_equal)
+
+from ..peaks import (DiscreteDirectionFinder, NonLinearDirectionFinder,
+                     peaks_from_model, peak_directions)
+from ..odf import OdfFit, OdfModel, gfa
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
-from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
-                        assert_true)
+
+
+_sphere = create_unit_hemisphere(4)
+_direction = np.array([1, 2, 3]) / np.sqrt(14)
+_odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
+
 
 def test_DiscreteDirectionFinder():
     def discrete_eval(sphere):
@@ -13,34 +20,41 @@ def test_DiscreteDirectionFinder():
         X[1] = .3
         return X
 
-    sphere = create_unit_hemisphere(3)
+    ddf = DiscreteDirectionFinder(
+        sphere=_sphere,
+        relative_peak_threshold=0.5,
+        min_separation_angle=45)
 
-    ddf = DiscreteDirectionFinder()
-    ddf.config(sphere=sphere, relative_peak_threshold=.5, min_separation_angle=45)
-    direction = ddf(discrete_eval)
-    assert_array_almost_equal(direction, sphere.vertices[:1])
+    direction = ddf._directions_from_sphere(discrete_eval)
+    assert_array_almost_equal(direction, _sphere.vertices[:1])
 
-    ddf.config(relative_peak_threshold=.2)
-    direction = ddf(discrete_eval)
-    assert_array_almost_equal(direction, sphere.vertices[:2])
+    ddf = DiscreteDirectionFinder(
+        sphere=_sphere,
+        relative_peak_threshold=0.2,
+        min_separation_angle=45)
+
+    direction = ddf._directions_from_sphere(discrete_eval)
+    assert_array_almost_equal(direction, _sphere.vertices[:2])
+
 
 def test_NonLinearDirectionFinder():
     def discrete_eval(sphere):
         return abs(sphere.vertices).sum(-1)
 
-    ddf = NonLinearDirectionFinder()
-    directions = ddf(discrete_eval)
+    df = NonLinearDirectionFinder()
+    directions = df._directions_from_sphere(discrete_eval)
     assert_equal(directions.shape, (4, 3))
-    assert_array_almost_equal(abs(directions), 1/np.sqrt(3))
+    assert_array_almost_equal(abs(directions), 1 / np.sqrt(3))
 
-_sphere = create_unit_hemisphere(4)
-_odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
+
 class SimpleOdfModel(OdfModel):
     sphere = _sphere
+
     def fit(self, data):
         fit = SimpleOdfFit()
         fit.model = self
         return fit
+
 
 class SimpleOdfFit(OdfFit):
     def odf(self, sphere=None):
@@ -50,12 +64,20 @@ class SimpleOdfFit(OdfFit):
         # Use ascontiguousarray to work around a bug in NumPy
         return np.ascontiguousarray((sphere.vertices * [1, 2, 3]).sum(-1))
 
-def test_OdfFit():
+
+def test_odffit_peak():
     m = SimpleOdfModel()
-    m.direction_finder.config(sphere=_sphere)
     f = m.fit(None)
+
+    ddf = DiscreteDirectionFinder(sphere=_sphere)
+    nldf = NonLinearDirectionFinder(sphere=create_unit_hemisphere(1))
+
     argmax = _odf.argmax()
-    assert_array_almost_equal(f.directions, _sphere.vertices[argmax:argmax+1])
+    assert_array_almost_equal(ddf(f),
+                              _sphere.vertices[argmax:argmax + 1])
+
+    assert_array_almost_equal(nldf(f), _direction[None, :])
+
 
 def test_peak_directions():
     model = SimpleOdfModel()
@@ -88,8 +110,9 @@ def test_peak_directions():
     dir_e = sphere.vertices[[argmax, 0]]
     assert_array_equal(dir, dir_e)
 
+
 def test_peaksFromModel():
-    data = np.zeros((10,2))
+    data = np.zeros((10, 2))
 
     # Test basic case
     model = SimpleOdfModel()
@@ -109,7 +132,7 @@ def test_peaksFromModel():
     pam = peaks_from_model(model, data, _sphere, .5, 45, return_odf=True)
     expected_shape = (len(data), len(_odf))
     assert_equal(pam.odf.shape, expected_shape)
-    assert_true((_odf == pam.odf).all())
+    assert_((_odf == pam.odf).all())
     assert_array_equal(pam.peak_values[:, 0], _odf.max())
 
     # Test mask
@@ -130,4 +153,3 @@ def test_peaksFromModel():
     assert_array_equal(pam.qa[mask, 1:], 0.)
     assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
-
