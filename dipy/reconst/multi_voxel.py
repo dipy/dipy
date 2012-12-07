@@ -1,8 +1,7 @@
 """Tools to easily make multi voxel models"""
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
-#from dipy.core.ndindex import ndindex
-from numpy import ndindex
+from dipy.core.ndindex import ndindex
 
 
 def multi_voxel_model(SingleVoxelModel):
@@ -33,7 +32,7 @@ def multi_voxel_model(SingleVoxelModel):
 
             # Fit data where mask is True
             fit_array = np.empty(data.shape[:-1], dtype=object)
-            for ijk in ndindex(*data.shape[:-1]):
+            for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
                     fit_array[ijk] = SingleVoxelModel.fit(self, data[ijk])
             return MultiVoxelFit(self, fit_array, mask)
@@ -58,7 +57,7 @@ class MultiVoxelFit(object):
             return object.__getattribute__(self, attr)
         except AttributeError:
             result = CallableArray(self.fit_array.shape, dtype=object)
-            for ijk in ndindex(*result.shape):
+            for ijk in ndindex(result.shape):
                 if self.mask[ijk]:
                     result[ijk] = getattr(self.fit_array[ijk], attr)
             return _squash(result, self.mask)
@@ -77,7 +76,7 @@ class CallableArray(np.ndarray):
     """An array which can be called like a function"""
     def __call__(self, *args, **kwargs):
         result = np.empty(self.shape, dtype=object)
-        for ijk in ndindex(*self.shape):
+        for ijk in ndindex(self.shape):
             item = self[ijk]
             if item is not None:
                 result[ijk] = item(*args, **kwargs)
