@@ -82,7 +82,48 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         return GeneralizedQSamplingFit(self, data)
 
 
+def _odf_character(odf, sphere, npeaks, relative_peak_threshold,
+                   min_separation_angle, normalize_peaks):
+
+    pk, ind = local_maxima(odf, sphere.edges)
+
+    # Remove small peaks.
+    gt_threshold = pk >= (relative_peak_threshold * pk[0])
+    pk = pk[gt_threshold]
+    ind = ind[gt_threshold]
+
+    # Keep peaks which are unique, which means remove peaks that are too
+    # close to a larger peak.
+    _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
+                                            min_separation_angle,
+                                            return_index=True)
+    pk = pk[where_uniq]
+    ind = ind[where_uniq]
+
+    # Calculate peak metrics
+    #global_max = max(global_max, pk[0])
+    n = min(npeaks, len(pk))
+    qa = np.zeros(npeaks)
+    qa[:n] = pk[:n] - odf.min()
+    peak_values = np.zeros(npeaks)
+    peak_indices = np.zeros(npeaks, dtype=int)
+    if normalize_peaks:
+        peak_values[:n] = pk[:n] / pk[0]
+    else:
+        peak_values[:n] = pk[:n]
+    peak_indices[:n] = ind[:n]
+
+    return gfa(odf), qa, peak_values, peak_indices, n
+
+
 class GeneralizedQSamplingFit(OdfFit):
+
+    _gfa = None
+    npeaks = 5
+    _peak_values = None
+    _peak_indices = None
+    _qa = None
+    _directions = None
 
     def __init__(self, model, data):
         """ Calculates PDF and ODF for a single voxel
@@ -97,11 +138,6 @@ class GeneralizedQSamplingFit(OdfFit):
         """
         self.model = model
         self.data = data
-        self._gfa = None
-        self.npeaks = 5
-        self._peak_values = None
-        self._peak_indices = None
-        self._qa = None
 
     def odf(self, sphere):
         """ Calculates the discrete ODF for a given discrete sphere.
@@ -121,44 +157,32 @@ class GeneralizedQSamplingFit(OdfFit):
         odf = np.dot(self.data, self.gqi_vector)
         return odf
 
-    def _update_cached_values(sphere=None):
+    def _update_cached_values(self):
 
-        if sphere is None:
-            sphere = self.model.direction_finder._config["sphere"]
-        odf = self.odf(sphere)
-
-        self._gfa = gfa(odf)
-        pk, ind = local_maxima(odf, sphere.edges)
-
+        # Get info from model
+        sphere = self.model.direction_finder._config["sphere"]
         relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
         min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
+        normalize_peaks = self.model.normalize_peaks
 
-        # Remove small peaks.
-        gt_threshold = pk >= (relative_peak_threshold * pk[0])
-        pk = pk[gt_threshold]
-        ind = ind[gt_threshold]
+        # Compute odf peaks and other params
+        odf = self.odf(sphere)
+        gfa, qa, values, indices, n = _odf_character(odf, sphere, self.npeaks,
+                                                     relative_peak_threshold,
+                                                     min_separation_angle,
+                                                     normalize_peaks)
+        # Update stored values
+        self._peak_values = values
+        self._peak_indices = indices
+        self._gfa = gfa
+        self._qa = qa
+        self._directions = sphere.vertices[self._peak_indices[:n]]
 
-        # Keep peaks which are unique, which means remove peaks that are too
-        # close to a larger peak.
-        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
-                                                min_separation_angle,
-                                                return_index=True)
-        pk = pk[where_uniq]
-        ind = ind[where_uniq]
-
-        # Calculate peak metrics
-        #global_max = max(global_max, pk[0])
-        n = min(self.npeaks, len(pk))
-        self._qa = np.zeros(self.npeaks)
-        self._qa[:n] = pk[:n] - odf.min()
-        self._peak_values = np.zeros(self.npeaks)
-        self._peak_indices = np.zeros(self.npeaks)
-        if self.model.normalize_peaks:
-            self._peak_values[:n] = pk[:n] / pk[0]
-        else:
-            self._peak_values[:n] = pk[:n]
-        self._peak_indices[:n] = ind[:n]
-
+    @property
+    def directions(self):
+        if self._directions is None:
+            self._update_cached_values()
+        return self._directions
 
     @property
     def gfa(self):
