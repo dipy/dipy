@@ -35,9 +35,9 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
         References
         ----------
-        ..[1] Yeh F-C et. al, "Generalized Q-Sampling Imaging", IEEE TMI, 2010.
+        .. [1] Yeh F-C et. al, "Generalized Q-Sampling Imaging", IEEE TMI, 2010.
 
-        ..[2] Garyfallidis E, "Towards an accurate brain tractography", PhD
+        .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
         thesis, University of Cambridge, 2012.
 
         Examples
@@ -188,13 +188,14 @@ def normalize_qa(qa, max_qa=None):
     Parameters
     ----------
     qa : array, shape (X, Y, Z, N)
+        where N is the maximum number of peaks stored
     max_qa : float,
-            maximum qa value. Usually found in the CSF.
+        maximum qa value. Usually found in the CSF (corticospinal fluid).
 
     Returns
     -------
     nqa : array, shape (x, Y, Z, N)
-            normalized quantitative anisotropy
+        normalized quantitative anisotropy
 
     Notes
     -----
@@ -204,8 +205,8 @@ def normalize_qa(qa, max_qa=None):
 
     """
     if max_qa is None:
-        return qa/qa.max()
-    return qa/max_qa
+        return qa / qa.max()
+    return qa / max_qa
 
 
 def squared_radial_component(x, tol=0.01):
