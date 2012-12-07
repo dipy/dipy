@@ -15,6 +15,7 @@ from dipy.reconst.shm import (real_sph_harm, sph_harm_ind_list, OpdtModel,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               OpdtModel, CsaOdfModel, QballModel, SphHarmFit)
+from dipy.reconst.peaks import DiscreteDirectionFinder
 
 
 def test_sph_harm_ind_list():
@@ -148,7 +149,7 @@ def make_fake_signal():
 
 
 class TestQballModel(object):
-    
+
     model = QballModel
 
     def test_single_voxel_fit(self):
@@ -159,8 +160,9 @@ class TestQballModel(object):
                            assume_normed=True)
         fit = model.fit(signal)
         odf = fit.odf(sphere)
+        df = DiscreteDirectionFinder()
         assert_equal(odf.shape, sphere.phi.shape)
-        directions = fit.directions
+        directions = df(fit)
         assert_array_almost_equal(directions, expected)
 
         # Test normalize data

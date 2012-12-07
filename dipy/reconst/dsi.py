@@ -12,15 +12,15 @@ from .recspeed import local_maxima, remove_similar_vertices
 @multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
-    def __init__(self, 
-                    gtab, 
-                    method='standard', 
-                    qgrid_size=16, 
-                    sampl_start=2.1, 
-                    sampl_end=6., 
-                    sampl_step=0.2, 
-                    filter_width=32, 
-                    normalize_peaks=False):
+    def __init__(self,
+                 gtab,
+                 method='standard',
+                 qgrid_size=16,
+                 sampl_start=2.1,
+                 sampl_end=6.,
+                 sampl_step=0.2,
+                 filter_width=32,
+                 normalize_peaks=False):
         r""" Diffusion Spectrum Imaging
 
         The main idea here is that you can create the diffusion propagator
@@ -34,7 +34,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
                 \end{eqnarray}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
-        wavector which corresponds to different gradient directions. 
+        wavector which corresponds to different gradient directions.
 
         The standard method is based on [1]_ and the deconvolution method is based
         on [2]_.
@@ -45,9 +45,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Parameters
         ----------
-        gtab : object, 
+        gtab : object,
             GradientTable
-        method : str, 
+        method : str,
             'standard' or 'deconv'
         qgrid_size : int,
             sets the size of the q_space grid. For example if qgrid_size is 16
@@ -75,8 +75,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Examples
         --------
-        Here we create an example where we provide the data, a gradient table 
-        and a reconstruction sphere and calculate generalized FA for the first 
+        Here we create an example where we provide the data, a gradient table
+        and a reconstruction sphere and calculate generalized FA for the first
         voxel in the data.
 
         >>> from dipy.data import dsi_voxels, get_sphere
@@ -84,8 +84,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
-        >>> ds.direction_finder.config(sphere=sphere, 
-                        min_separation_angle=25, 
+        >>> ds.direction_finder.config(sphere=sphere,
+                        min_separation_angle=25,
                         relative_peak_threshold=.35)
         >>> dsfit = ds.fit(data)
         >>> np.round(dsfit.gfa[0, 0, 0], 2)
@@ -150,13 +150,13 @@ class DiffusionSpectrumModel(OdfModel, Cache):
     def hanning_filter(self):
         """ create a hanning window
 
-        The signal is premultiplied by a Hanning window before 
-        Fourier transform in order to ensure a smooth attenuation 
+        The signal is premultiplied by a Hanning window before
+        Fourier transform in order to ensure a smooth attenuation
         of the signal at high q values.
 
         """
         #calculate r - hanning filter free parameter
-        r = np.sqrt(self.qtable[:, 0] ** 2 + 
+        r = np.sqrt(self.qtable[:, 0] ** 2 +
                     self.qtable[:, 1] ** 2 + self.qtable[:, 2] ** 2)
         #setting hanning filter width and hanning
         self.filter = .5*np.cos(2*np.pi*r/self.filter_width)
@@ -187,7 +187,7 @@ class DiffusionSpectrumFit(OdfFit):
         self._peak_indices = None
 
     def pdf(self):
-        """ Applies the 3D FFT in the q-space grid to generate 
+        """ Applies the 3D FFT in the q-space grid to generate
         the diffusion propagator
         """
         values = self.data * self.model.filter
@@ -232,54 +232,54 @@ class DiffusionSpectrumFit(OdfFit):
         self._gfa = gfa(odf)
         pk, ind = local_maxima(odf, sphere.edges)
 
-        relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
-        min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
+        ## relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
+        ## min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
 
-        # Remove small peaks.
-        gt_threshold = pk >= (relative_peak_threshold * pk[0])
-        pk = pk[gt_threshold]
-        ind = ind[gt_threshold]
+        ## # Remove small peaks.
+        ## gt_threshold = pk >= (relative_peak_threshold * pk[0])
+        ## pk = pk[gt_threshold]
+        ## ind = ind[gt_threshold]
 
-        # Keep peaks which are unique, which means remove peaks that are too
-        # close to a larger peak.
-        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
-                                                min_separation_angle,
-                                                return_index=True)
-        pk = pk[where_uniq]
-        ind = ind[where_uniq]
+        ## # Keep peaks which are unique, which means remove peaks that are too
+        ## # close to a larger peak.
+        ## _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
+        ##                                         min_separation_angle,
+        ##                                         return_index=True)
+        ## pk = pk[where_uniq]
+        ## ind = ind[where_uniq]
 
-        # Calculate peak metrics
-        #global_max = max(global_max, pk[0])
-        n = min(self.npeaks, len(pk))
-        #qa_array[i, :n] = pk[:n] - odf.min()
-        self._peak_values = np.zeros(self.npeaks)
-        self._peak_indices = np.zeros(self.npeaks)
-        if self.model.normalize_peaks:
-            self._peak_values[:n] = pk[:n] / pk[0]
-        else:
-            self._peak_values[:n] = pk[:n]
-        self._peak_indices[:n] = ind[:n]
+        ## # Calculate peak metrics
+        ## #global_max = max(global_max, pk[0])
+        ## n = min(self.npeaks, len(pk))
+        ## #qa_array[i, :n] = pk[:n] - odf.min()
+        ## self._peak_values = np.zeros(self.npeaks)
+        ## self._peak_indices = np.zeros(self.npeaks)
+        ## if self.model.normalize_peaks:
+        ##     self._peak_values[:n] = pk[:n] / pk[0]
+        ## else:
+        ##     self._peak_values[:n] = pk[:n]
+        ## self._peak_indices[:n] = ind[:n]
 
         return odf
 
-    @property
-    def gfa(self):
-        if self._gfa is None:
-            # Borrow default sphere from direction finder
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._gfa
+    ## @property
+    ## def gfa(self):
+    ##     if self._gfa is None:
+    ##         # Borrow default sphere from direction finder
+    ##         self.odf(self.model.direction_finder._config["sphere"])
+    ##     return self._gfa
 
-    @property
-    def peak_values(self):
-        if self._peak_values is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_values
+    ## @property
+    ## def peak_values(self):
+    ##     if self._peak_values is None:
+    ##         self.odf(self.model.direction_finder._config["sphere"])
+    ##     return self._peak_values
 
-    @property
-    def peak_indices(self):
-        if self._peak_indices is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_indices
+    ## @property
+    ## def peak_indices(self):
+    ##     if self._peak_indices is None:
+    ##         self.odf(self.model.direction_finder._config["sphere"])
+    ##     return self._peak_indices
 
 
 def pdf_interp_coords(sphere, rradius, origin):
@@ -332,7 +332,7 @@ def half_to_full_qspace(data, gtab):
     Parameters
     ----------
     data : array, shape (X, Y, Z, W)
-    gtab : object, 
+    gtab : object,
             GradientTable
 
     Returns

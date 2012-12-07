@@ -121,63 +121,63 @@ class GeneralizedQSamplingFit(OdfFit):
         odf = np.dot(self.data, self.gqi_vector)
 
         self._gfa = gfa(odf)
-        pk, ind = local_maxima(odf, sphere.edges)
+        ## pk, ind = local_maxima(odf, sphere.edges)
 
-        relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
-        min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
+        ## relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
+        ## min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
 
-        # Remove small peaks.
-        gt_threshold = pk >= (relative_peak_threshold * pk[0])
-        pk = pk[gt_threshold]
-        ind = ind[gt_threshold]
+        ## # Remove small peaks.
+        ## gt_threshold = pk >= (relative_peak_threshold * pk[0])
+        ## pk = pk[gt_threshold]
+        ## ind = ind[gt_threshold]
 
-        # Keep peaks which are unique, which means remove peaks that are too
-        # close to a larger peak.
-        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
-                                                min_separation_angle,
-                                                return_index=True)
-        pk = pk[where_uniq]
-        ind = ind[where_uniq]
+        ## # Keep peaks which are unique, which means remove peaks that are too
+        ## # close to a larger peak.
+        ## _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
+        ##                                         min_separation_angle,
+        ##                                         return_index=True)
+        ## pk = pk[where_uniq]
+        ## ind = ind[where_uniq]
 
-        # Calculate peak metrics
-        #global_max = max(global_max, pk[0])
-        n = min(self.npeaks, len(pk))
-        self._qa = np.zeros(self.npeaks)
-        self._qa[:n] = pk[:n] - odf.min()
-        self._peak_values = np.zeros(self.npeaks)
-        self._peak_indices = np.zeros(self.npeaks)
-        if self.model.normalize_peaks:
-            self._peak_values[:n] = pk[:n] / pk[0]
-        else:
-            self._peak_values[:n] = pk[:n]
-        self._peak_indices[:n] = ind[:n]
+        ## # Calculate peak metrics
+        ## #global_max = max(global_max, pk[0])
+        ## n = min(self.npeaks, len(pk))
+        ## self._qa = np.zeros(self.npeaks)
+        ## self._qa[:n] = pk[:n] - odf.min()
+        ## self._peak_values = np.zeros(self.npeaks)
+        ## self._peak_indices = np.zeros(self.npeaks)
+        ## if self.model.normalize_peaks:
+        ##     self._peak_values[:n] = pk[:n] / pk[0]
+        ## else:
+        ##     self._peak_values[:n] = pk[:n]
+        ## self._peak_indices[:n] = ind[:n]
 
         return odf
 
-    @property
-    def gfa(self):
-        if self._gfa is None:
-            # Borrow default sphere from direction finder
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._gfa
+    ## @property
+    ## def gfa(self):
+    ##     if self._gfa is None:
+    ##         # Borrow default sphere from direction finder
+    ##         self.odf(self.model.direction_finder._config["sphere"])
+    ##     return self._gfa
 
-    @property
-    def peak_values(self):
-        if self._peak_values is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_values
+    ## @property
+    ## def peak_values(self):
+    ##     if self._peak_values is None:
+    ##         self.odf(self.model.direction_finder._config["sphere"])
+    ##     return self._peak_values
 
-    @property
-    def peak_indices(self):
-        if self._peak_indices is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_indices
+    ## @property
+    ## def peak_indices(self):
+    ##     if self._peak_indices is None:
+    ##         self.odf(self.model.direction_finder._config["sphere"])
+    ##     return self._peak_indices
 
-    @property
-    def qa(self):
-        if self._qa is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._qa
+    ## @property
+    ## def qa(self):
+    ##     if self._qa is None:
+    ##         self.odf(self.model.direction_finder._config["sphere"])
+    ##     return self._qa
 
 
 def normalize_qa(qa, max_qa=None):
