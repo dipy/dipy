@@ -4,33 +4,12 @@
 Dipy
 ####
 
-Dipy_ is an *international*, **free** and **open source** software project for
-**diffusion** *magnetic resonance imaging* **analysis**.
+Dipy_ is an **free** and **open source** software project for
+**diffusion** *magnetic resonance imaging* **analysis**. 
 
-Depends on a few standard libraries: python_ (the core language), numpy_ (for
-numerical computation), scipy_ (for more specific mathematical operations),
-cython_ (for extra speed) and nibabel_ (for file formats). Optionally, it can
-use python-vtk_ (for visualisation), pytables_ (for handling large datasets),
-matplotlib_ (for scientific plotting), and ipython_ (for interaction with the
-code and its results).
 
-Dipy is multiplatform and will run under any standard operating systems such as
-*Windows*, *Linux*, *Mac OS X*.
+Dipy is multiplatform and will run under any standard operating systems such as *Windows*, *Linux* and  *Mac OS X*.
 
-Just some of our **state-of-the-art** applications are:
-
-- Reconstruction algorithms e.g. GQI, DTI  
-- Tractography generation algorithms e.g. EuDX
-- Intelligent downsampling of tracks
-- Ultra fast tractography clustering
-- Resampling datasets with anisotropic voxels to isotropic
-- Visualizing multiple brains simultaneously
-- Finding track correspondence between different brains
-- Warping tractographies into another space e.g. MNI space
-- Reading many different file formats e.g. Trackvis or Nifti
-- Dealing with huge tractographies without memory restrictions
-- Playing with datasets interactively without storing
-- And much more and even more to come in next releases 
 
 **Join in the fun** and enjoy the `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we made for the Summer Exhibition in London for the celebration of the 350 years of the Royal Society.
 
@@ -41,21 +20,25 @@ Here is a tiny dipy code snippet::
 
   >>> import numpy as np
   >>> import nibabel as nib
-  >>> from dipy.reconst.dti import Tensor
+  
+  >>> from dipy.reconst.dti import TensorModel
   >>> from dipy.data import get_data
+  >>> from dipy.io import read_bvals_bvecs
+  >>> from dipy.core.gradients import gradient_table
 
   >>> fimg, fbval, fbvec = get_data('small_101D')
   >>> img = nib.load(fimg)
   >>> data = img.get_data()
-  >>> bvals = np.loadtxt(fbval)
-  >>> gradients = np.loadtxt(fbvec).T
-  >>> ten = Tensor(data, bvals, gradients, thresh=50)
-  >>> FA = ten.fa()
-  >>> MASK = (FA < 0.2)
 
-In this code snippet we loaded a small diffusion dataset with their data,
-b-vectors and b-values, calculated the Tensors and fractional anisotropy (FA)
-and then created a mask to remove the regions with low anisotropy.
+  >>> bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+  >>> gtab = gradient_table(bvals, bvecs)
+  
+  >>> ten = TensorModel(gtab)
+  >>> tenfit = ten.fit(data)
+  
+  >>> FA = tenfit.fa
+
+
 :ref:`Download <installation>` dipy and try it for yourself.
 
 If you want to learn more how you can create these with your datasets read the examples in our :ref:`documentation` .
@@ -66,5 +49,6 @@ If you want to learn more how you can create these with your datasets read the e
    :hidden:
 
    documentation
+   stateoftheart
 
 .. include:: links_names.inc
