@@ -15,6 +15,6 @@ Examples
    examples_built/nii_2_tracks
    examples_built/find_correspondence
    examples_build/visualize_crossings
-   examples_built/aniso_vox_2_isotropic
+   examples_built/reslice_datasets
    examples_built/tractography_clustering
    examples_built/file_formats
