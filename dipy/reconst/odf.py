@@ -66,8 +66,10 @@ class DiscreteDirectionFinder(DirectionFinder):
         relative_peak_threshold = self._config["relative_peak_threshold"]
         min_separation_angle = self._config["min_separation_angle"]
         discrete_values = sphere_eval(sphere)
-        return peak_directions(discrete_values, sphere,
-                               relative_peak_threshold, min_separation_angle)
+        directions, _, _ = peak_directions(discrete_values, sphere,
+                                      relative_peak_threshold,
+                                      min_separation_angle)
+        return directions
 
 
 def _nl_peak_finder(sphere_eval, seeds, xtol):
@@ -199,16 +201,22 @@ def peak_directions(odf, sphere, relative_peak_threshold,
     values, indices = local_maxima(odf, sphere.edges)
     # If there is only one peak return
     if len(indices) == 1:
-        return sphere.vertices[indices]
+        return sphere.vertices[indices], values, indices
 
     n = search_descending(values, relative_peak_threshold)
     indices = indices[:n]
     directions = sphere.vertices[indices]
-    directions = remove_similar_vertices(directions, min_separation_angle)
-    return directions
+    directions, uniq = remove_similar_vertices(directions,
+                                               min_separation_angle,
+                                               return_index=True)
+    values = values[uniq]
+    indices = indices[uniq]
+    return directions, values, indices
+
 
 class PeaksAndMetrics(object):
     pass
+
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
