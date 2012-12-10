@@ -37,7 +37,7 @@ cdef  cnp.npy_intp offset(cnp.npy_intp *indices,cnp.npy_intp *strides,int lenind
 
     ''' Very general way to access any element of any ndimensional numpy array
     using cython.
-    
+
     Parameters
     ------------
     indices : cnp.npy_intp * (int64 *), indices of the array which we want to
@@ -56,7 +56,7 @@ cdef  cnp.npy_intp offset(cnp.npy_intp *indices,cnp.npy_intp *strides,int lenind
     cdef cnp.npy_intp summ=0
     for i from 0<=i<lenind:
         #print('st',strides[i],indices[i])
-        summ+=strides[i]*indices[i]        
+        summ+=strides[i]*indices[i]
     summ/=<cnp.npy_intp>typesize
     return summ
 
@@ -72,11 +72,11 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices, \
     lenind : int, len(indices)
     typesize : int, number of bytes for data type e.g. if double is 8 if
     int32 is 4
-    
+
     Returns
     -------
     offset : integer, offset from 0 pointer in memory normalized by dtype
-    
+
     Examples
     --------
     >>> import numpy as np
@@ -90,6 +90,7 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices, \
     True
     '''
     return offset(<cnp.npy_intp*>indices.data,<cnp.npy_intp*>strides.data,lenind, typesize)
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -372,17 +373,16 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
         cnp.npy_intp *pvstr=<cnp.npy_intp *>odf_vertices.strides
         cnp.npy_intp d,i,j,cnt
         double direction[3],dx[3],idirection[3],ps2[3],tmp,ftmp
-    
 
     cnt=0
-    d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)    
+    d=_initial_direction(ps,pqa,pin,pverts,qa_thr,pstr,ref,idirection)
     if d==0:
-        return None    
+        return None
     for i from 0<=i<3:
         #store the initial direction
         dx[i]=idirection[i]
         #ps2 is for downwards and ps for upwards propagation
-        ps2[i]=ps[i]    
+        ps2[i]=ps[i]
     point=seed.copy()
     track = []
     track.append(point.copy()) 
@@ -391,30 +391,30 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
         d= _propagation_direction(ps,dx,pqa,pin,pverts,qa_thr,\
                                    ang_thr,qa_shape,pstr,direction,total_weight)
         if d==0:
-            break            
+            break
         if cnt>max_points:
-            break       
+            break
         #update the track
         for i from 0<=i<3:
-            dx[i]=direction[i]            
+            dx[i]=direction[i]
             #check for boundaries
             tmp=ps[i]+step_sz*dx[i]
-            #ftmp=floor(tmp+.5)            
+            #ftmp=floor(tmp+.5)
             if ftmp > qa_shape[i]-1 or tmp < 0.:
                  d=0
-                 break     
+                 break
             #propagate
-            ps[i]=tmp           
-            point[i]=ps[i]        
+            ps[i]=tmp
+            point[i]=ps[i]
         #print('point up',point)
-                
-        if d==1:  	
+
+        if d==1:
             track.append(point.copy())
             cnt+=1
-    d=1        
+    d=1
     for i from 0<=i<3:
         dx[i]=-idirection[i]
-    
+
     cnt=0
     #track towards the opposite direction 
     while d:
@@ -426,18 +426,18 @@ def eudx_both_directions(cnp.ndarray[double,ndim=1] seed,\
             break
         #update the track
         for i from 0<=i<3:
-            dx[i]=direction[i]            
+            dx[i]=direction[i]
             #check for boundaries
-            tmp=ps2[i]+step_sz*dx[i]            
-            #ftmp=floor(tmp+.5)            
+            tmp=ps2[i]+step_sz*dx[i]
+            #ftmp=floor(tmp+.5)
             if tmp > qa_shape[i]-1 or tmp < 0.:
                  d=0
                  break
             #propagate
-            ps2[i]=tmp        
+            ps2[i]=tmp
             point[i]=ps2[i] #to be changed
         #add track point
-        if d==1:               
+        if d==1:
             track.insert(0,point.copy())
             cnt+=1
     #prepare to return final track for the current seed
