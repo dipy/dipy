@@ -145,4 +145,4 @@ from dipy.viz.colormap import line_colors
 fvtk.add(r, fvtk.line(streamlines, line_colors(streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
-fvtk.record(r, n_frames=1, out_path='tensor_tracks', size=(600, 600))
+fvtk.record(r, n_frames=1, out_path='tensor_tracks.png', size=(600, 600))

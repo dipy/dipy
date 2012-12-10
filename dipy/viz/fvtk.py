@@ -1617,7 +1617,8 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,path
                 filename=str(1000000+i)+'.png'
             else:
                 filename=out_path+str(1000000+i)+'.png'
-            
+        else:
+            filename = out_path
         writer.SetFileName(filename)
         writer.Write()               
         
