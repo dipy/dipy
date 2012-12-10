@@ -41,7 +41,7 @@ def fetch_beijing_dti():
         print('http://fcon_1000.projects.nitrc.org/indi/retro/BeijingEnhanced.html')
 
     else:
-        raise IOError('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
 
 
 def read_beijing_dti():
@@ -97,7 +97,7 @@ def fetch_taiwan_ntu_dsi():
         print('See DSI203_license.txt for LICENSE.')
 
     else:
-        raise IOError('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
 
 
 def read_taiwan_ntu_dsi():
