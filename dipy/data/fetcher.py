@@ -95,6 +95,8 @@ def fetch_taiwan_ntu_dsi():
         print('Done.')
         print('Files copied in folder %s' % folder)
         print('See DSI203_license.txt for LICENSE.')
+        print('For the complete datasets please visit :')
+        print('http://dsi-studio.labsolver.org')
 
     else:
         print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
