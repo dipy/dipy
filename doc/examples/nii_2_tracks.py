@@ -44,6 +44,7 @@ from dipy.data import fetch_beijing_dti, read_beijing_dti
 
 """
 Fetch will download the raw dMRI dataset of a single subject. The size of the dataset is 51 MBytes.
+You only need to fetch once.
 """
 
 fetch_beijing_dti()
@@ -124,6 +125,10 @@ from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
 peak_indices = quantize_evecs(tenfit.evecs, sphere.vertices)
+
+"""
+EuDX is the fiber tracking algorithm that we use in this example
+"""
 
 from dipy.tracking.eudx import EuDX
 

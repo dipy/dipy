@@ -1519,8 +1519,7 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
 
 
 
-def
-record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,path_numbering=False, n_frames=10, az_ang=10, magnification=1,size=(300,300),bgr_color=(0,0,0)):
+def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,path_numbering=False, n_frames=10, az_ang=10, magnification=1,size=(300,300),bgr_color=(0,0,0)):
     ''' This will record a video of your scene
 
     Records a video as a series of .png files of your scene by rotating the
