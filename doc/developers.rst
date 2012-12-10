@@ -13,8 +13,7 @@ The core development team consists of the following individuals:
 - **Ariel Rokem**, Stanford University, CA 
 - **Stefan Van der Walt**, University of California, Berkeley, CA
 
-
-The following people also help us with bits and pieces.
+The following people have also contributed to the project:
 
 - **Christopher Nguyen**, University of California, Los Angeles, CA
 - **Emanuele Olivetti**, NeuroInformatics Laboratory (NILab), Trento, Italy

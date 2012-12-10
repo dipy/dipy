@@ -1,8 +1,8 @@
 .. _stateoftheart:
 
-==========================
-A short list of algorithms 
-==========================
+============================
+A quick overview of features
+============================
 
 Here are just a few of the state-of-the-art technologies and algorithms which are provided in Dipy_:
 
@@ -16,6 +16,12 @@ Here are just a few of the state-of-the-art technologies and algorithms which ar
 - Reade many different file formats e.g. Trackvis or Nifti
 - Deal with huge tractographies without memory restrictions (.dpy)
 - Play and examine your datasets interactively (with ipython)
+
+=================
+Systems supported
+=================
+
+Dipy_ is multiplatform and will run under any standard operating systems such as *Windows*, *Linux* and  *Mac OS X*.
 
 
 .. include:: links_names.inc
