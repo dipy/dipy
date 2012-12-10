@@ -14,7 +14,7 @@ class EuDX(object):
     calculate an orientation distribution function and find the local peaks of
     that function. For example a single tensor model can give you only
     one peak a dual tensor model 2 peaks and quantitative anisotropy
-    method as used in GQI can give you 3,4,5 or even more peaks.    
+    method as used in GQI can give you 3,4,5 or even more peaks.
 
     The parameters of the delta function are checking thresholds for the
     direction propagation magnitude and the angle of propagation.
@@ -27,7 +27,9 @@ class EuDX(object):
 
     References
     ------------
-    .. [1] Yeh. et al. Generalized Q-Sampling Imaging, TMI 2010.
+
+    .. [1] Garyfallidis, Towards an accurate brain tractography, PhD thesis,
+    Unviersity of Cambridge, 2012.
 
     .. [2] Mori et al. Three-dimensional tracking of axonal projections
     in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
@@ -119,7 +121,7 @@ class EuDX(object):
         x,y,z,g=self.a.shape
         self.Np=g
         if odf_vertices==None:
-            sphere = get_sphere('symmetric362')
+            sphere = get_sphere('symmetric724')
             vertices, faces = sphere.vertices, sphere.faces
             self.odf_vertices = vertices
         else:
@@ -135,17 +137,16 @@ class EuDX(object):
 
     def __iter__(self):
         ''' This is were all the fun starts '''
-        
         x,y,z,g=self.a.shape
         #for all seeds
-        for i in range(self.seed_no):            
+        for i in range(self.seed_no):
             if self.seed_list==None:
                 rx=(x-1)*np.random.rand()
                 ry=(y-1)*np.random.rand()
-                rz=(z-1)*np.random.rand()            
+                rz=(z-1)*np.random.rand()
                 seed=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
             else:
-                seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)                            
+                seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)
             #for all peaks
             for ref in range(g): 
                 track =eudx_both_directions(seed.copy(),
@@ -157,13 +158,14 @@ class EuDX(object):
                                             self.ang_thr,
                                             self.step_sz,
                                             self.total_weight,
-                                            self.max_points)                  
+                                            self.max_points)
                 if track == None:
                     pass
-                else:        
-                    yield track
-                        
-                        
+                else:
+                    if track.shape[0] > 1:
+                        yield track
+
+
 
 
 
