@@ -1519,7 +1519,8 @@ def show(ren,title='dipy.viz.fvtk',size=(300,300),png_magnify=1):
 
 
 
-def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_frames=10, az_ang=10, magnification=1,size=(300,300),bgr_color=(0,0,0)):
+def
+record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,path_numbering=False, n_frames=10, az_ang=10, magnification=1,size=(300,300),bgr_color=(0,0,0)):
     ''' This will record a video of your scene
 
     Records a video as a series of .png files of your scene by rotating the
@@ -1537,6 +1538,8 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_fr
         camera view up
     out_path : str, optional
         output directory for the frames
+    path_numbering : bool
+        when recording it changes out_path ot out_path + str(frame number)
     n_frames : int, optional
         number of frames to save, default 10
     az_ang : float, optional
@@ -1610,10 +1613,12 @@ def record(ren=None,cam_pos=None,cam_focal=None,cam_view=None,out_path=None,n_fr
         renderLarge.Update()        
         writer.SetInputConnection(renderLarge.GetOutputPort())
         #filename='/tmp/'+str(3000000+i)+'.png'
-        if out_path==None:
-            filename=str(1000000+i)+'.png'
-        else:
-            filename=out_path+str(1000000+i)+'.png'
+        if path_numbering:
+            if out_path==None:
+                filename=str(1000000+i)+'.png'
+            else:
+                filename=out_path+str(1000000+i)+'.png'
+            
         writer.SetFileName(filename)
         writer.Write()               
         
