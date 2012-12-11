@@ -10,19 +10,16 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-cdef extern from "math.h" nogil:
+cdef extern from "dpy_math.h" nogil:
     double floor(double x)
-    float sqrt(float x)
     float fabs(float x)
-    double log2(double x)
     double cos(double x)
     double sin(double x)
-    float acos(float x )   
-    bint isnan(double x)
+    float acos(float x )
     double sqrt(double x)
-    
-    
-DEF PI=3.1415926535897931
+    double DPY_PI
+
+
 DEF PEAK_NO=5
 
 # initialize numpy runtime
@@ -219,7 +216,7 @@ cdef  cnp.npy_intp _nearest_direction(double* dx,double* qa,\
         cnp.npy_intp i,j,max_doti=0
 
     #calculate the cos with radians 
-    angl=cos((PI*ang_thr)/180.)    
+    angl=cos((DPY_PI*ang_thr)/180.)    
     #if the maximum peak is lower than the threshold then there is no point continuing tracking
     if qa[0] <= qa_thr:
         return 0

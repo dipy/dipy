@@ -5,7 +5,7 @@
 import numpy as np
 cimport numpy as cnp
 
-cdef extern from "math.h":
+cdef extern from "dpy_math.h":
     double floor(double x)
 
 def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
