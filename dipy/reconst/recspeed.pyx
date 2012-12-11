@@ -11,19 +11,16 @@ import numpy as np
 cimport numpy as cnp
 
 
-
-cdef extern from "math.h" nogil:
+cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     double fabs(double x)
-    double log2(double x)
     double cos(double x)
     double sin(double x)
     float acos(float x )
-    bint isnan(double x)
     double sqrt(double x)
 
 
-DEF PI=3.1415926535897931
+DEF PI=3.141592653589793238462643383279502884
 
 
 # initialize numpy runtime

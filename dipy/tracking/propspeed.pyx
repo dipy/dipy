@@ -10,18 +10,16 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
-cdef extern from "math.h" nogil:
+cdef extern from "dpy_math.h" nogil:
     double floor(double x)
     float sqrt(float x)
     float fabs(float x)
-    double log2(double x)
     double cos(double x)
     double sin(double x)
-    float acos(float x )   
-    bint isnan(double x)
+    float acos(float x )
     double sqrt(double x)
-    
-    
+
+
 DEF PI=3.1415926535897931
 DEF PEAK_NO=5
 
