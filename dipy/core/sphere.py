@@ -590,3 +590,4 @@ icosahedron_faces = np.array(
 
 unit_octahedron = Sphere(xyz=octahedron_vertices, faces=octahedron_faces)
 unit_icosahedron = Sphere(xyz=icosahedron_vertices, faces=icosahedron_faces)
+hemi_icosahedron = HemiSphere.from_sphere(unit_icosahedron)

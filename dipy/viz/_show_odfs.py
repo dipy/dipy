@@ -11,11 +11,9 @@ except ImportError:
     e_s = "You do not have Mayavi installed. Some visualization functions"
     e_s += " might not work."
     print(e_s)
-    
-from dipy.utils.spheremakers import sphere_vf_from
 
 
-def show_odfs(odfs, vertices_faces, image=None, colormap='jet',
+def show_odfs(odfs, sphere, image=None, colormap='jet',
               scale=2.2, norm=True, radial_scale=True):
     """
     Display a grid of ODFs.
@@ -26,9 +24,8 @@ def show_odfs(odfs, vertices_faces, image=None, colormap='jet',
         A 3-D arrangement of orientation distribution functions (ODFs).  At
         each ``(x, y, z)`` position, it contains the the values of the
         corresponding ODF evaluated on the M vertices.
-    vertices_faces : str or tuple of (vertices, faces)
-        A named sphere from `dipy.data.get_sphere`, or a combination of
-        `(vertices, faces)`.
+    sphere : Sphere
+        A sphere, with vertices and faces, used for displaying the odfs.
     image : (X, Y) ndarray
         Background image (e.g., fractional anisotropy) do display behind the
         ODFs.
@@ -65,21 +62,20 @@ def show_odfs(odfs, vertices_faces, image=None, colormap='jet',
     >>> show_odfs(odfs, (verts, faces), scale=5)
 
     """
-    vertices, faces = sphere_vf_from(vertices_faces)
-
     odfs = np.asarray(odfs)
     if odfs.ndim != 4:
         raise ValueError("ODFs must by an (X,Y,Z,M) array. " +
                          "Has shape " + str(odfs.shape))
 
     grid_shape = np.array(odfs.shape[:3])
-    faces = np.asarray(faces, dtype=int)
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
 
     xx, yy, zz, ff, mm = [], [], [], [], []
     count = 0
 
     for ijk in np.ndindex(*grid_shape):
-        m = odfs[ijk]
+        m = odfs[ijk].copy()
 
         if norm:
             m /= abs(m).max()

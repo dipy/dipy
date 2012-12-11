@@ -2,7 +2,6 @@ import warnings
 import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import le_to_odf, sum_on_blocks_1d
-from dipy.utils.spheremakers import sphere_vf_from
 from dipy.reconst.dsi import project_hemisph_bvecs
 from scipy.ndimage.filters import laplace,gaussian_laplace
 from scipy.ndimage import zoom,generic_laplace,correlate1d
