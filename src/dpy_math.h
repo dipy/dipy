@@ -14,6 +14,6 @@
 #ifndef HAVE_LOG2
 double dpy_log2(double x)
 {
-    return NPY_LOG2E*npy_log(x);
+    return NPY_LOG2E*log(x);
 }
 #endif
