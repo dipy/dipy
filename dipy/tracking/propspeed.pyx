@@ -12,7 +12,6 @@ cimport numpy as cnp
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
-    float sqrt(float x)
     float fabs(float x)
     double cos(double x)
     double sin(double x)
