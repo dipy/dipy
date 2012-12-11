@@ -4,10 +4,12 @@ import numpy as np
 import scipy.optimize as opt
 from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
-from dipy.core.sphere import HemiSphere, Sphere, unique_edges, unit_icosahedron
+from dipy.core.sphere import HemiSphere, Sphere
+from dipy.data import get_sphere
 #Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
 
-default_sphere = HemiSphere.from_sphere(unit_icosahedron.subdivide(3))
+default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
+
 
 class DirectionFinder(object):
     """Abstract class for direction finding"""
