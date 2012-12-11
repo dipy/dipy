@@ -18,9 +18,7 @@ cdef extern from "dpy_math.h" nogil:
     double sin(double x)
     float acos(float x )
     double sqrt(double x)
-
-
-DEF PI=3.141592653589793238462643383279502884
+    double DPY_PI
 
 
 # initialize numpy runtime
@@ -112,7 +110,7 @@ def remove_similar_vertices(cnp.ndarray[cnp.float_t, ndim=2, mode='strided'] ver
         size_t count = 0
         size_t n = vertices.shape[0]
         double a, b, c, sim
-        double cos_similarity = cos(PI/180 * theta)
+        double cos_similarity = cos(DPY_PI/180 * theta)
     if n > 2**16:
         raise ValueError("too many vertices")
     unique_vertices = np.empty((n, 3), dtype=np.float)

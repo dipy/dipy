@@ -8,6 +8,7 @@
 
 #define dpy_isnan npy_isnan
 #define dpy_log2 npy_log2
+#define DPY_PI NPY_PI
 
 /* From numpy npy_math.c.src */
 #ifndef HAVE_LOG2
