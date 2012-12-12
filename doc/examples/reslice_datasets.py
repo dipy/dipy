@@ -6,7 +6,7 @@ Reslice diffusion datasets
 ==========================
 
 Overview
-========
+--------
 Often in imaging it is common to reslice images in different resolutions.
 Especially in dMRI we usually want images with isotropic voxel size as they
 facilitate most tractography algorithms. In this example we show how you 

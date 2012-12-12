@@ -5,7 +5,7 @@ Supported File Formats
 ======================
 
 Overview
-========
+--------
 
 Read :ref:`faq`
 
