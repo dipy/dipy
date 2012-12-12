@@ -6,6 +6,7 @@ IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
 
 from .spherepoints import sphere_points
+from .decorators import doctest_skip_parser
 
 # Allow failed import of nose if not now running tests
 try:
