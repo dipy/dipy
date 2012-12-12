@@ -9,12 +9,10 @@ from os.path import join as opj
 import nibabel as ni
 #import dipy.core.generalized_q_sampling as gq
 import dipy.reconst.gqi as gq
-from dipy.testing import parametric
 #import dipy.core.track_propagation as tp
 import dipy.core.dti as dt
 import dipy.core.meshes as meshes 
 
-@parametric
 def test_gqiodf():
 
     #read bvals,gradients and data
@@ -109,8 +107,8 @@ def test_gqiodf():
     or equivalently 2*v - f == 4
     '''
 
-    yield assert_equal(2*v-f, 4,'Direct Euler test fails')
-    yield assert_true(meshes.euler_characteristic_check(odf_vertices, odf_faces,chi=2),'euler_characteristic_check fails')
+    assert_equal(2*v-f, 4,'Direct Euler test fails')
+    assert_true(meshes.euler_characteristic_check(odf_vertices, odf_faces,chi=2),'euler_characteristic_check fails')
     
     coarse = meshes.coarseness(odf_faces)
     print 'coarseness: ', coarse
@@ -142,11 +140,11 @@ def test_gqiodf():
     IN=IN.reshape(x,y,z,5)
     
     #print('Old %d secs' %(time.clock() - t2))
-    #yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than our QA')
+    # assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than our QA')
 
-    #yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
+    # assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')
        
-    #yield assert_equal((gqs.QA-QA).max(), 0.)
+    # assert_equal((gqs.QA-QA).max(), 0.)
 
     #import dipy.core.track_propagation as tp
 
@@ -159,21 +157,21 @@ def test_gqiodf():
     peaks_3 = [i for i in range(1000) if len(summary[str(i)]['inds'])==3]
 
     # correct numbers of voxels with respectively 1,2,3 ODF/QA peaks
-    yield assert_array_equal((len(peaks_1),len(peaks_2),len(peaks_3)), (790,196,14),
-                             'error in numbers of QA/ODF peaks')
+    assert_array_equal((len(peaks_1),len(peaks_2),len(peaks_3)), (790,196,14),
+                       'error in numbers of QA/ODF peaks')
 
     # correct indices of odf directions for voxels 0,10,44
     # with respectively 1,2,3 ODF/QA peaks
-    yield assert_array_equal(summary['0']['inds'],[116],
-                             'wrong peak indices for voxel 0')
-    yield assert_array_equal(summary['10']['inds'],[105, 78],
-                             'wrong peak indices for voxel 10')
-    yield assert_array_equal(summary['44']['inds'],[95, 84, 108],
-                             'wrong peak indices for voxel 44')
+    assert_array_equal(summary['0']['inds'],[116],
+                       'wrong peak indices for voxel 0')
+    assert_array_equal(summary['10']['inds'],[105, 78],
+                       'wrong peak indices for voxel 10')
+    assert_array_equal(summary['44']['inds'],[95, 84, 108],
+                       'wrong peak indices for voxel 44')
 
-    yield assert_equal(np.argmax(summary['0']['odf']), 116)
-    yield assert_equal(np.argmax(summary['10']['odf']), 105)
-    yield assert_equal(np.argmax(summary['44']['odf']), 95)
+    assert_equal(np.argmax(summary['0']['odf']), 116)
+    assert_equal(np.argmax(summary['10']['odf']), 105)
+    assert_equal(np.argmax(summary['44']['odf']), 95)
 
     pole_1 = summary['vertices'][116]
     #print 'pole_1', pole_1
@@ -313,7 +311,6 @@ def triple_odf_maxima(vertices, odf, width):
     indmax3, odfmax3 = patch_maximum(vertices, odf, cross12, width)
     return [(indmax1, odfmax1),(indmax2, odfmax2),(indmax3, odfmax3)]
     
-@parametric
 def test_gqi_small():
 
     #read bvals,gradients and data
@@ -388,10 +385,12 @@ def test_gqi_small():
     
     print('Old %d secs' %(time.clock() - t2))
     
-    yield assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than dipy QA')
-    yield assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')  
+    assert_equal((gqs.QA-QA).max(),0.,'Frank QA different than dipy QA')
+    assert_equal((gqs.QA.shape),QA.shape, 'Frank QA shape is different')  
 
-    yield assert_equal(len(tp.FACT_Delta(QA,IN,seeds_no=100).tracks),100,'FACT_Delta is not generating the right number of tracks for this dataset')
+    assert_equal(len(tp.FACT_Delta(QA,IN,seeds_no=100).tracks),100,
+                 'FACT_Delta is not generating the right number of '
+                 'tracks for this dataset')
 
 
 

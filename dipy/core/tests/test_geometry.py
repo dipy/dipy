@@ -21,7 +21,7 @@ from nose.tools import assert_true, assert_false, \
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.testing import parametric, sphere_points
+from dipy.testing import sphere_points
 
 
 def test_vector_norm():
