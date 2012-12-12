@@ -32,6 +32,11 @@ def ndindex(shape):
         yield ()
     else:
         x = as_strided(np.zeros(1), shape=shape, strides=np.zeros_like(shape))
-        ndi = np.nditer(x, flags=['multi_index', 'zerosize_ok'], order='C')
-        for e in ndi:
-            yield ndi.multi_index
+        try:
+            ndi = np.nditer(x, flags=['multi_index', 'zerosize_ok'], order='C')
+        except AttributeError:
+            for ix in np.ndindex(*shape):
+                yield ix
+        else:
+            for e in ndi:
+                yield ndi.multi_index
