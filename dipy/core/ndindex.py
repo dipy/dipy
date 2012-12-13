@@ -35,6 +35,7 @@ def ndindex(shape):
         try:
             ndi = np.nditer(x, flags=['multi_index', 'zerosize_ok'], order='C')
         except AttributeError:
+            # nditer only available in numpy >= 1.6
             for ix in np.ndindex(*shape):
                 yield ix
         else:
