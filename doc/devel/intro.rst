@@ -2,8 +2,8 @@
  Introduction
 ==============
 
-dipy_ is always seeking for courageous scientists who want to take dMRI
-analysis forward. Please do join in the fun.
+Dipy_ is always seeking courageous scientists who want to take dMRI
+analysis at the next level. If you share the same vision and you are willing to share your code please let us know we will be happy to help.
 
 The lead developer is Eleftherios Garyfallidis, with support from Ian
 Nimmo-Smith, Matthew Brett, Bago Amirbekian, Ariel Rokem, Stefan van der Walt and (your name here). See the main documentation for the full list of dipy developers and contributors.
@@ -21,10 +21,10 @@ for example tests.  If you can please use our :ref:`commit-codes`.
 But - just pitch in - send us some code - we'll give you feedback if you
 want it - that way we learn from each other.
 
-Here is a priliminary `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we
-made for the Summer Exhibition in London, UK for the celebration of the 350
-years of the Royal Society in order to explain the main goals of our work. I hope you enjoyed it. 
-
 And - welcome...
+
+If you are new to diffusion MRI and you want to learn more here is a simple `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we
+made for the general public. I hope you enjoy it and apologies for the low resolution. 
+
 
 .. include:: ../links_names.inc
