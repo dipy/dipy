@@ -3,7 +3,7 @@
 ==============
 
 Dipy_ is always seeking courageous scientists who want to take dMRI
-analysis at the next level. If you share the same vision and you are willing to share your code please let us know we will be happy to help.
+analysis to the next level. If you share the same vision and you are willing to share your code please let us know we will be happy to help.
 
 The lead developer is Eleftherios Garyfallidis, with support from Ian
 Nimmo-Smith, Matthew Brett, Bago Amirbekian, Ariel Rokem, Stefan van der Walt and (your name here). See the main documentation for the full list of dipy developers and contributors.
