@@ -7,7 +7,7 @@ Lets make some streamlines
 Overview
 --------
 
-We will show how to generete streamlines with Dipy. First we will reconstruct
+We will show how to generate streamlines with Dipy. First we will reconstruct
 the datasets using a single Tensor model and next we will use a Constant Solid
 Angle (QBall) model. EuDX will be used for the fiber tracking bits.
 
