@@ -99,7 +99,7 @@
 .. _FSL: http://www.fmrib.ox.ac.uk/fsl
 .. _FreeSurfer: http://surfer.nmr.mgh.harvard.edu
 .. _voxbo: http://www.voxbo.org
-.. _mricron: http://www.cabiatl.com/mricro/mricron
+.. _mricron: http://www.mccauslandcenter.sc.edu/mricro/mricron/index.html
 .. _slicer: http://www.slicer.org/
 
 .. File formats

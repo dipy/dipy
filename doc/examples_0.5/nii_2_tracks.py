@@ -71,7 +71,8 @@ except:
     print('nicom for dicom is not installed')
 
 """
-or to convert the dicom files to nii, bvec and bval files using ``dcm2nii``. 
+or convert the dicom files to nii, bvec and bval files using ``dcm2nii`` which
+is available with _mricron .
 """
 
 fimg,fbvals,fbvecs=get_data('small_101D')
@@ -308,4 +309,9 @@ To record a video of 50 frames of png, something like::
 # Here's how we make the figure.
 print('Saving illustration as nii_2_tracks1000000.png')
 fvtk.record(r,n_frames=1,out_path='nii_2_tracks',size=(600,600))
+
+
+"""
+.. include:: ../links_names.inc
+"""
 
