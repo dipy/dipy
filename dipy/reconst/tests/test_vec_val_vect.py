@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.random import randn
-from numpy.testing import assert_array_equal, dec
+from numpy.testing import assert_almost_equal, dec
 
 from ..vec_val_sum import vec_val_vect
 
@@ -21,7 +21,7 @@ def test_vec_val_vect():
     for shape in ((10,), (100,), (10, 12), (12, 10, 5)):
         evecs, evals = make_vecs_vals(shape)
         res1 = np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
-        assert_array_equal(res1, vec_val_vect(evecs, evals))
+        assert_almost_equal(res1, vec_val_vect(evecs, evals))
 
 
 def dumb_sum(vecs, vals):
@@ -38,4 +38,4 @@ def test_vec_val_vect_dumber():
     for shape in ((10,), (100,)):
         evecs, evals = make_vecs_vals(shape)
         res1 = dumb_sum(evecs, evals)
-        assert_array_equal(res1, vec_val_vect(evecs, evals))
+        assert_almost_equal(res1, vec_val_vect(evecs, evals))
