@@ -24,7 +24,7 @@ Here is a simple example for the calculation of fractional anisotropy (FA)::
   >>> tenfit = ten.fit(data)
   >>> FA = tenfit.fa
 
-:ref:`Download <installation>` dipy and try it for yourself.
+:ref:`Download <installation>` Dipy_ and try it for yourself.
 
 If you want to learn more how you can create these with your datasets read the examples in our :ref:`documentation`.
 
