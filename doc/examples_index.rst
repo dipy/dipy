@@ -9,7 +9,7 @@ Examples
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    note_about_examples
    examples_built/nii_2_tracks
