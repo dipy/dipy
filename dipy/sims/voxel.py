@@ -1,6 +1,7 @@
 from __future__ import division
 
 import numpy as np
+from numpy import dot
 from dipy.core.geometry import sphere2cart
 from dipy.core.geometry import vec2vec_rotmat
 
@@ -213,10 +214,10 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
 
     R = np.asarray(evecs)
     S = np.zeros(len(gradients))
-    D = R.dot(np.diag(evals)).dot(R.T)
+    D = dot(dot(R, np.diag(evals)), R.T)
 
     for (i, g) in enumerate(gradients):
-        S[i] = S0 * np.exp(-gtab.bvals[i] * g.T.dot(D).dot(g))
+        S[i] = S0 * np.exp(-gtab.bvals[i] * dot(dot(g.T, D), g))
 
     S = add_noise(S, snr, S0)
 
@@ -260,12 +261,12 @@ def single_tensor_odf(r, evals=None, evecs=None):
     out_shape = r.shape[:r.ndim - 1]
 
     R = np.asarray(evecs)
-    D = R.dot(np.diag(evals)).dot(R.T)
+    D = dot(dot(R, np.diag(evals)), R.T)
     Di = np.linalg.inv(D)
     r = r.reshape(-1, 3)
     P = np.zeros(len(r))
     for (i, u) in enumerate(r):
-        P[i] = (u.T.dot(Di).dot(u))**(3 / 2)
+        P[i] = (dot(dot(u.T, Di), u))**(3 / 2)
 
     return (1 / (4 * np.pi * np.prod(evals)**(1/2) * P)).reshape(out_shape)
 

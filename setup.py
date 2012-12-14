@@ -73,7 +73,8 @@ for modulename, other_sources in (
     ('dipy.tracking.propspeed', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
-                          include_dirs = [np.get_include()]))
+                          include_dirs = [np.get_include(),
+                                         "src"]))
 
 
 # Do our own build and install time dependency checking. setup.py gets called in

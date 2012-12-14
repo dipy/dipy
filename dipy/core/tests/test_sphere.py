@@ -9,6 +9,15 @@ from dipy.core.sphere import (Sphere, HemiSphere, unique_edges, unique_sets,
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 
+from numpy.testing.decorators import skipif
+
+try:
+    from scipy.spatial import Delaunay
+except ImportError:
+    needs_delaunay = skipif(True, "Need scipy.spatial.Delaunay")
+else:
+    needs_delaunay = skipif(False)
+
 verts = unit_octahedron.vertices
 edges = unit_octahedron.edges
 oct_faces = unit_octahedron.faces
@@ -21,7 +30,7 @@ def test_sphere_construct_args():
     nt.assert_raises(ValueError, Sphere, xyz=1, theta=1, phi=1)
 
 
-def test_edges_faces():
+def test_sphere_edges_faces():
     nt.assert_raises(ValueError, Sphere, xyz=1, edges=1, faces=None)
     Sphere(xyz=[0, 0, 1], faces=[0, 0, 0])
     Sphere(xyz=[[0, 0, 1],
@@ -98,6 +107,7 @@ def test_unique_sets():
     nt.assert_equal(np.sort(u[m], -1), np.sort(sets, -1))
 
 
+@needs_delaunay
 def test_faces_from_sphere_vertices():
     faces = faces_from_sphere_vertices(verts)
     faces = array_to_set(faces)
@@ -113,6 +123,7 @@ def test_sphere_attrs():
     nt.assert_array_almost_equal(s.z, verts[:, 2])
 
 
+@needs_delaunay
 def test_edges_faces():
     s = Sphere(xyz=verts)
     faces = oct_faces
@@ -130,6 +141,7 @@ def test_edges_faces():
                     array_to_set([[0, 1]]))
 
 
+@needs_delaunay
 def test_sphere_subdivide():
     sphere1 = unit_octahedron.subdivide(4)
     sphere2 = Sphere(xyz=sphere1.vertices)
@@ -145,6 +157,7 @@ def test_sphere_subdivide():
     # good test for them.
 
 
+@needs_delaunay
 def test_hemisphere_subdivide():
 
     def flip(vertices):
@@ -195,6 +208,7 @@ def test_hemisphere_constructor():
     nt.assert_array_almost_equal(s0.phi, phiU)
 
 
+@needs_delaunay
 def test_mirror():
     verts = [[0, 0, 1],
              [0, 1, 0],
@@ -214,7 +228,7 @@ def test_mirror():
     verts = s.vertices
 
     def _angle(a, b):
-        return np.arccos(a.dot(b))
+        return np.arccos(np.dot(a, b))
 
     for triangle in s.faces:
         a, b, c = triangle
@@ -223,6 +237,7 @@ def test_mirror():
         nt.assert_(_angle(verts[b], verts[c]) <= np.pi/2)
 
 
+@needs_delaunay
 def test_hemisphere_faces():
 
     t = (1 + np.sqrt(5)) / 2
@@ -270,6 +285,7 @@ def test_hemisphere_faces():
     nt.assert_equal(array_to_set(h.edges), array_to_set(edges))
     nt.assert_equal(len(h.faces), len(faces))
     nt.assert_equal(array_to_set(h.faces), array_to_set(faces))
+
 
 def test_get_force():
     charges = np.array([[1., 0, 0],

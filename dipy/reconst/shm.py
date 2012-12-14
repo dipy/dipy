@@ -26,7 +26,7 @@ where data is Y.T and sh_coef is x.T.
 """
 import numpy as np
 from numpy import (atleast_1d, concatenate, diag, diff, dot, empty, eye, sqrt,
-                   unique)
+                   unique, dot)
 from numpy.linalg import pinv, svd
 from numpy.random import randint
 from .odf import OdfModel, OdfFit
@@ -281,7 +281,7 @@ class SphHarmFit(OdfFit):
             sampling_matrix = real_sph_harm(self.model.m, self.model.n,
                                             phi, theta)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
-        return self._shm_coef.dot(sampling_matrix.T)
+        return dot(self._shm_coef, sampling_matrix.T)
 
 
 class CsaOdfModel(SphHarmModel):
@@ -307,7 +307,7 @@ class CsaOdfModel(SphHarmModel):
         data = data[..., self._where_dwi]
         data = data.clip(self.min, self.max)
         loglog_data = np.log(-np.log(data))
-        return loglog_data.dot(self._fit_matrix.T)
+        return dot(loglog_data, self._fit_matrix.T)
 
 
 class OpdtModel(SphHarmModel):

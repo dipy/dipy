@@ -6,6 +6,7 @@ IO_DATA_PATH = abspath(pjoin(dirname(__file__),
                              '..', 'io', 'tests', 'data'))
 
 from .spherepoints import sphere_points
+from .decorators import doctest_skip_parser
 
 # Allow failed import of nose if not now running tests
 try:
@@ -13,8 +14,5 @@ try:
 except ImportError:
     pass
 else:
-    from lightunit import ParametricTestCase, parametric
     from nose.tools import (assert_equal, assert_not_equal,
                             assert_true, assert_false, assert_raises)
-    
-
