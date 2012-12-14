@@ -66,8 +66,8 @@ def vec_val_vect(vecs, vals):
     if cols != rows:
         raise ValueError('Must have same number of rows, cols')
     N = np.prod(common_shape)
-    vecr = (vecs.reshape((N, rows, cols))).astype(float)
-    valr = (vals.reshape((N, cols))).astype(float)
+    vecr = np.array(vecs.reshape((N, rows, cols)), dtype=float)
+    valr = np.array(vals.reshape((N, cols)), dtype=float)
     out = np.zeros((N, rows, cols))
     with nogil:
         for t in range(N): # loop over tensors
