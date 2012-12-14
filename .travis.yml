@@ -15,9 +15,9 @@ install:
     - sudo apt-get install $PYTHON-scipy
     - sudo apt-get install $PYTHON-tables
     # - sudo apt-get install $PYTHON-pyvtk
-    - sudo apt-get install cython
     - sudo apt-get install $PYTHON-setuptools
     - sudo easy_install$PYSUF nibabel # Latest pypi
+    - sudo easy_install$PYSUF cython # Latest pypi
     - sudo apt-get install $PYTHON-nose
     - $PYTHON setup.py build
     - sudo $PYTHON setup.py install
