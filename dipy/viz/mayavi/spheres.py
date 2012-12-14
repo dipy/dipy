@@ -109,9 +109,8 @@ def show_odfs(odfs, sphere, image=None, colormap='jet',
 
 if __name__ == "__main__":
     from dipy.data import get_sphere
-    verts, faces = get_sphere('symmetric724')
-
-    angle = np.linspace(0, 2*np.pi, len(verts))
+    sphere = get_sphere('symmetric724')
+    angle = np.linspace(0, 2*np.pi, len(sphere.vertices))
     odf1 = np.sin(angle)
     odf2 = np.cos(angle)
     odf3 = odf1**2 * odf2
@@ -120,4 +119,4 @@ if __name__ == "__main__":
     odfs = [[[odf1, odf2],
              [odf3, odf4]]]
 
-    show_odfs(odfs, (verts, faces), scale=5, radial_scale=True)
+    show_odfs(odfs, sphere, scale=5, radial_scale=True)
