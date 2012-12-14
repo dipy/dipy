@@ -20,8 +20,8 @@ def test_dsi():
     btable = np.loadtxt(get_data('dsi515btable'))    
     gtab = gradient_table(btable[:,0], btable[:,1:])
     data, golden_directions = SticksAndBall(gtab, d=0.0015, 
-                               S0=100, angles=[(0, 0), (90, 0)], 
-                               fractions=[50, 50], snr=None) 
+                                            S0=100, angles=[(0, 0), (90, 0)], 
+                                            fractions=[50, 50], snr=None) 
 
     ds = DiffusionSpectrumModel(gtab)
     #symmetric724
@@ -32,7 +32,7 @@ def test_dsi():
     directions = dsfit.directions
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 
-                            2, 1)
+                        2, 1)
     #5 subdivisions
     ds.direction_finder.config(sphere=sphere2, min_separation_angle=25,
                               relative_peak_threshold=.35)
@@ -41,7 +41,7 @@ def test_dsi():
     directions = dsfit.directions
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 
-                            2, 1)
+                        2, 1)
     #from dipy.viz._show_odfs import show_odfs
     #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
     #show_odfs(odf2[None,None,None,:], (sphere2.vertices, sphere2.faces))
@@ -63,8 +63,8 @@ def test_multivox_dsi():
     DS = DiffusionSpectrumModel(gtab, 'standard')
     sphere = get_sphere('symmetric724')
     DS.direction_finder.config(sphere=sphere, 
-                                min_separation_angle=25,
-                                relative_peak_threshold=.35)
+                               min_separation_angle=25,
+                               relative_peak_threshold=.35)
     DSfit = DS.fit(data)
     PDF=DSfit.pdf()
     assert_equal(data.shape[:-1] + (16, 16, 16), PDF.shape)
@@ -78,16 +78,16 @@ def sticks_and_ball_dummies(gtab):
                               fractions=[100], snr=None)   
     sb_dummies['1fiber'] = (S, sticks)
     S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
-                             angles=[(0, 0), (90, 0)], 
-                             fractions=[50, 50], snr=None)   
+                              angles=[(0, 0), (90, 0)], 
+                              fractions=[50, 50], snr=None)   
     sb_dummies['2fiber'] = (S, sticks)
     S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
-                           angles=[(0, 0), (90, 0), (90, 90)], 
-                           fractions=[33, 33, 33], snr=None)   
+                              angles=[(0, 0), (90, 0), (90, 90)], 
+                              fractions=[33, 33, 33], snr=None)   
     sb_dummies['3fiber'] = (S, sticks)
     S, sticks = SticksAndBall(gtab, d=0.0015, S0=100, 
-                             angles=[(0, 0), (90, 0), (90, 90)], 
-                             fractions=[0, 0, 0], snr=None)
+                              angles=[(0, 0), (90, 0), (90, 90)], 
+                              fractions=[0, 0, 0], snr=None)
     sb_dummies['isotropic'] = (S, sticks)
     return sb_dummies
 
