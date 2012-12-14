@@ -314,4 +314,4 @@ def test_mask():
     # But with the mask, it's a nan:
     assert_(np.isnan(dtifit_w_mask.fa[0, 0, 1]))
     # Except for the one voxel that was selected by the mask:
-    assert_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
+    assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
