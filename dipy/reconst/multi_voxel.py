@@ -52,18 +52,13 @@ class MultiVoxelFit(object):
     def shape(self):
         return self.fit_array.shape
 
-    def __getattribute__(self, attr):
-        try:
-            return object.__getattribute__(self, attr)
-        except AttributeError:
-            result = CallableArray(self.fit_array.shape, dtype=object)
-            for ijk in ndindex(result.shape):
-                if self.mask[ijk]:
-                    result[ijk] = getattr(self.fit_array[ijk], attr)
-            return _squash(result, self.mask)
+    def __getattr__(self, attr):
+        result = CallableArray(self.fit_array.shape, dtype=object)
+        for ijk in ndindex(result.shape):
+            if self.mask[ijk]:
+                result[ijk] = getattr(self.fit_array[ijk], attr)
+        return _squash(result, self.mask)
 
-    # I leave this in hesitantly, I'm not sure this will be be easy to support
-    # for all models
     def __getitem__(self, index):
         item = self.fit_array[index]
         if isinstance(item, np.ndarray):
@@ -83,16 +78,87 @@ class CallableArray(np.ndarray):
         return _squash(result)
 
 
-def _squash(arr, mask=None):
-    """Makes a prettier array"""
+def _squash(arr, mask=None, fill=0):
+    """Try and make a standard array from an object array
+
+    This function takes an object array and attempts to convert it to a more
+    useful dtype. If array can be converted to a better dtype, Nones are
+    replaced by fill. To make the behaviour of this function more clear, here
+    are the most common cases:
+
+    1.  `arr` is an array of scalers of type `T`. Returns an array like
+        `arr.astype(T)`
+    2.  `arr` is an array of arrays. All items in `arr` have the same shape
+        `S`. Returns an array with shape `arr.shape + S`.
+    3.  `arr` is an array of arrays of different shapes. Returns `arr`.
+    4.  Items in `arr` are not ndarrys or scalers. Returns `arr`.
+
+    Parameters
+    ----------
+    arr : array, dtype=object
+        The array to be converted.
+    mask : array, dtype=bool, optional
+        Where arr has Nones.
+    fill : number
+        Nones are replaced by fill.
+
+    Returns
+    -------
+    result : array
+
+    Examples
+    --------
+    >>> arr = np.empty(3, dtype=object)
+    >>> arr.fill(2)
+    >>> _squash(arr)
+    array([2, 2, 2])
+    >>> arr[0] = None
+    >>> _squash(arr)
+    array([0, 2, 2])
+    >>> arr.fill(np.ones(2))
+    >>> r = _squash(arr)
+    >>> r.shape
+    (3, 2)
+    >>> r.dtype
+    dtype('float64')
+
+    """
     if mask is None:
         mask = arr != np.array(None)
     not_none = arr[mask]
-    not_none = not_none.tolist()
-    tmp = np.array(not_none)
-    if tmp.dtype == object:
+    # all None, just return arr
+    if not_none.size == 0:
         return arr
-    shape = arr.shape + tmp.shape[1:]
-    result = np.zeros(shape, tmp.dtype)
-    result[mask] = tmp
-    return result
+    first = not_none[0]
+    # If the first item is an ndarray
+    if type(first) is np.ndarray:
+        shape = first.shape
+        try:
+            # Check the shapes of all items
+            all_same_shape = all(item.shape == shape for item in not_none)
+        except AttributeError:
+            return arr
+        # If items have different shapes just return arr
+        if not all_same_shape:
+            return arr
+        dtype = reduce(np.result_type, not_none)
+        result = np.empty(arr.shape + shape, dtype=dtype)
+        result.fill(fill)
+        for ijk in ndindex(arr.shape):
+            if arr[ijk] is not None:
+                result[ijk] = arr[ijk]
+        return result
+
+    # If the first item is a scalar
+    elif np.isscalar(first):
+        "first is not an ndarray"
+        all_scalars = all(np.isscalar(item) for item in not_none)
+        if not all_scalars:
+            return
+        dtype = reduce(np.result_type, not_none)
+        temp = arr.copy()
+        temp[~mask] = fill
+        return temp.astype(dtype)
+    else:
+        return arr
+
