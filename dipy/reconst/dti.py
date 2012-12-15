@@ -1,11 +1,12 @@
 #!/usr/bin/python
 import warnings
 import numpy as np
-from dipy.reconst.maskedview import MaskedView, _makearray, _filled
-from dipy.reconst.modelarray import ModelArray
-from dipy.data import get_sphere
+from .maskedview import MaskedView, _makearray, _filled
+from .modelarray import ModelArray
+from ..data import get_sphere
 from ..core.geometry import vector_norm
-from dipy.core.onetime import auto_attr
+from .vec_val_sum import vec_val_vect
+from ..core.onetime import auto_attr
 
 
 class TensorModel(object):
@@ -122,8 +123,10 @@ class TensorFit(object):
         """Calculates the 3x3 diffusion tensor for each voxel"""
         evecs = self.evecs
         evals = self.evals
-        # use einsum to do `evecs * evals * evecs.T` where * is matrix multiply
-        return np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
+        # do `evecs * evals * evecs.T` where * is matrix multiply
+        # einsum does this with:
+        # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
+        return vec_val_vect(evecs, evals)
 
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
