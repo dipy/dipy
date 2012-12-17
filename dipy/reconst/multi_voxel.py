@@ -83,15 +83,15 @@ def _squash(arr, mask=None, fill=0):
 
     This function takes an object array and attempts to convert it to a more
     useful dtype. If array can be converted to a better dtype, Nones are
-    replaced by fill. To make the behaviour of this function more clear, here
+    replaced by `fill`. To make the behaviour of this function more clear, here
     are the most common cases:
 
-    1.  `arr` is an array of scalers of type `T`. Returns an array like
+    1.  `arr` is an array of scalars of type `T`. Returns an array like
         `arr.astype(T)`
     2.  `arr` is an array of arrays. All items in `arr` have the same shape
         `S`. Returns an array with shape `arr.shape + S`.
     3.  `arr` is an array of arrays of different shapes. Returns `arr`.
-    4.  Items in `arr` are not ndarrys or scalers. Returns `arr`.
+    4.  Items in `arr` are not ndarrys or scalars. Returns `arr`.
 
     Parameters
     ----------
@@ -99,7 +99,7 @@ def _squash(arr, mask=None, fill=0):
         The array to be converted.
     mask : array, dtype=bool, optional
         Where arr has Nones.
-    fill : number
+    fill : number, optional
         Nones are replaced by fill.
 
     Returns
