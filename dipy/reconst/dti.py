@@ -262,6 +262,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
+    tol = 1e-6
     if min_signal <= 0:
         raise ValueError('min_signal must be > 0')
 
@@ -275,16 +276,17 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     #math: ols_fit = X*beta_ols*inv(y)
     #ols_fit = np.dot(U, U.T)
     ols_fit = _ols_fit_matrix(design_matrix)
+    min_diffusivity = tol / -design_matrix.min()
 
     for param, sig in zip(dti_params, data_flat):
         param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
-                                        min_signal=min_signal)
+                                        min_signal, min_diffusivity)
     dti_params.shape = data.shape[:-1]+(12,)
     dti_params = wrap(dti_params)
     return dti_params
 
 
-def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
+def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     '''
     Function used by wls_fit_tensor for later optimization.
     '''
@@ -294,10 +296,10 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     D = np.dot(np.linalg.pinv(design_matrix * w[:,None]), w*log_s)
     # D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], log_s)
     tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, minimum_eval=np.finfo(float).eps)
+    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def _ols_iter(inv_design, sig, min_signal=1):
+def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     '''
     Function used by ols_fit_tensor for later optimization.
     '''
@@ -305,7 +307,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
     tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, minimum_eval=np.finfo(float).eps)
+    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
 def ols_fit_tensor(design_matrix, data, min_signal=1):
@@ -357,6 +359,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
+    tol = 1e-6
 
     data, wrap = _makearray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
@@ -370,10 +373,11 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     #math: ols_fit = X*beta_ols*inv(y)
     #ols_fit =  np.dot(U, U.T)
 
+    min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
     for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _ols_iter(inv_design, sig, min_signal)
+        param[0], param[1:] = _ols_iter(inv_design, sig, min_signal, min_diffusivity)
 
     dti_params.shape = data.shape[:-1]+(12,)
     dti_params = wrap(dti_params)
@@ -492,7 +496,7 @@ def tensor_eig_from_lo_tri(data):
     return dti_params
 
 
-def decompose_tensor(tensor, minimum_eval=0):
+def decompose_tensor(tensor, min_diffusivity=0):
     """
     Returns eigenvalues and eigenvectors given a diffusion tensor
 
@@ -502,8 +506,12 @@ def decompose_tensor(tensor, minimum_eval=0):
     Parameters
     ----------
     D : array (3,3)
-        array holding a tensor. Assumes D has units on order of
-        ~ 10^-4 mm^2/s
+        Hermitian matrix representing a diffusion tensor.
+    min_diffusivity : float
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
 
     Returns
     -------
@@ -517,21 +525,18 @@ def decompose_tensor(tensor, minimum_eval=0):
 
     See Also
     --------
-    numpy.linalg.eig
+    numpy.linalg.eigh
 
     """
-
     #outputs multiplicity as well so need to unique
-    eigenvals, eigenvecs = np.linalg.eig(tensor)
+    eigenvals, eigenvecs = np.linalg.eigh(tensor)
 
     #need to sort the eigenvalues and associated eigenvectors
     order = eigenvals.argsort()[::-1]
     eigenvecs = eigenvecs[:, order]
     eigenvals = eigenvals[order]
 
-    #Forcing negative eigenvalues to 0
-    eigenvals = np.maximum(eigenvals, minimum_eval)
-    # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
+    eigenvals = eigenvals.clip(min=min_diffusivity)
     # eigenvecs: each vector is columnar
 
     return eigenvals, eigenvecs
