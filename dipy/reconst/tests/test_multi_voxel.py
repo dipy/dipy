@@ -26,6 +26,10 @@ def test_squash():
     npt.assert_array_equal(A, _squash(B))
     npt.assert_equal(_squash(B).dtype, A.dtype)
 
+    # sub-arrays have different shapes ( (3,) and (2,) )
+    B[0, 0] = np.ones((3,))
+    npt.assert_(_squash(B) is B)
+
 
 def test_CallableArray():
     callarray = CallableArray((2, 3), dtype=object)
