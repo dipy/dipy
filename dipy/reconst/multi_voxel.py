@@ -160,8 +160,11 @@ def _squash(arr, mask=None, fill=0):
         all_scalars = all(np.isscalar(item) for item in not_none)
         if not all_scalars:
             return
-        # See comment about np.result_type above
-        dtype = reduce(np.add, not_none).dtype
+        # See comment about np.result_type above. We sum against the smallest
+        # possible type, bool, and let numpy type promotion find the best common
+        # type. The values might all be Python scalars so we need to cast to
+        # numpy type at the end to be sure of having a dtype.
+        dtype = np.asarray(sum(not_none, False)).dtype
         temp = arr.copy()
         temp[~mask] = fill
         return temp.astype(dtype)
