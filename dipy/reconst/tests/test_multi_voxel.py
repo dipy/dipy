@@ -8,26 +8,34 @@ def test_squash():
     A = np.ones((3, 3), dtype=float)
     B = np.asarray(A, object)
     npt.assert_array_equal(A, _squash(B))
+    npt.assert_equal(_squash(B).dtype, A.dtype)
 
     B[2, 2] = None
     A[2, 2] = 0
     npt.assert_array_equal(A, _squash(B))
+    npt.assert_equal(_squash(B).dtype, A.dtype)
 
     for ijk in np.ndindex(*B.shape):
         B[ijk] = np.ones((2,))
     A = np.ones((3, 3, 2))
     npt.assert_array_equal(A, _squash(B))
+    npt.assert_equal(_squash(B).dtype, A.dtype)
 
     B[2, 2] = None
     A[2, 2] = 0
     npt.assert_array_equal(A, _squash(B))
+    npt.assert_equal(_squash(B).dtype, A.dtype)
+
+    # sub-arrays have different shapes ( (3,) and (2,) )
+    B[0, 0] = np.ones((3,))
+    npt.assert_(_squash(B) is B)
 
 
 def test_CallableArray():
     callarray = CallableArray((2, 3), dtype=object)
 
     # Test without Nones
-    callarray[:] = range
+    callarray[:] = np.arange
     expected = np.empty([2, 3, 4])
     expected[:] = range(4)
     npt.assert_array_equal(callarray(4), expected)
