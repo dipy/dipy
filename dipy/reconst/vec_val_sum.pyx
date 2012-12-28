@@ -6,27 +6,27 @@ cimport cython
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def vec_val_vect(vecs, vals):
-    """ Vectorize `vecs` . diag(`vals`) . `vecs`.T over N-2 dimensions of vecs
+    """ Vectorize `vecs`.diag(`vals`).`vecs`.T for last 2 dimensions of `vecs`
 
     Parameters
     ----------
-    vecs : shape (..., P, P) array
-        containing tensor in last two dimensions, P usually equal to 3
-    vals : shape (..., P) array
+    vecs : shape (..., M, N) array
+        containing tensor in last two dimensions; M, N usually equal to (3, 3)
+    vals : shape (..., N) array
         diagonal values carried in last dimension, ``...`` shape above must
         match that for `vecs`
 
     Returns
     -------
-    res : shape (..., P, P) array
-        For all the dimensions ellided by ``...`` loops to get (P, P) ``vec``
-        matrix, and (P,) ``vals`` vector, and calculates
+    res : shape (..., M, M) array
+        For all the dimensions ellided by ``...``, loops to get (M, N) ``vec``
+        matrix, and (N,) ``vals`` vector, and calculates
         ``vec.dot(np.diag(val).dot(vec.T)``.
 
     Raises
     ------
     ValueError : non-matching ``...`` dimensions of `vecs`, `vals`
-    ValueError : non-matching ``P`` dimensions of `vecs`, `vals`
+    ValueError : non-matching ``N`` dimensions of `vecs`, `vals`
 
     Examples
     --------
@@ -51,7 +51,7 @@ def vec_val_vect(vecs, vals):
     vecs = np.asarray(vecs)
     vals = np.asarray(vals)
     cdef:
-        cnp.npy_intp t, N, rows, cols, r, c, out_c
+        cnp.npy_intp t, N, rows, cols, r, c, in_r_out_c
         double [:, :, :] vecr
         double [:, :] valr
         double [:, :] vec
@@ -63,20 +63,18 @@ def vec_val_vect(vecs, vals):
     rows, cols = vecs.shape[-2], vecs.shape[-1]
     if vals.shape != common_shape + (cols,):
         raise ValueError('dimensions do not match')
-    if cols != rows:
-        raise ValueError('Must have same number of rows, cols')
     N = np.prod(common_shape)
     vecr = np.array(vecs.reshape((N, rows, cols)), dtype=float)
     valr = np.array(vals.reshape((N, cols)), dtype=float)
-    out = np.zeros((N, rows, cols))
+    out = np.zeros((N, rows, rows))
     with nogil:
-        for t in range(N): # loop over tensors
+        for t in range(N): # loop over the early dimensions
             vec = vecr[t]
             val = valr[t]
             out_vec = out[t]
             for r in range(rows):
                 for c in range(cols):
                     row_c = vec[r, c] * val[c]
-                    for out_c in range(cols):
-                        out_vec[r, out_c] += row_c * vec[out_c, c]
-    return np.reshape(out, (common_shape + (rows, cols)))
+                    for in_r_out_c in range(rows):
+                        out_vec[r, in_r_out_c] += row_c * vec[in_r_out_c, c]
+    return np.reshape(out, (common_shape + (rows, rows)))
