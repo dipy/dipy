@@ -141,7 +141,12 @@ def _squash(arr, mask=None, fill=0):
         # If items have different shapes just return arr
         if not all_same_shape:
             return arr
-        dtype = reduce(np.result_type, not_none)
+        # Find common dtype.  np.result_type can do this more simply, but it is
+        # only available for numpy 1.6.0
+        dtypes = set(a.dtype for a in not_none)
+        tiny_arrs = [np.zeros((1,), dtype=dt) for dt in dtypes]
+        dtype = reduce(np.add, tiny_arrs).dtype
+        # Create output array and fill
         result = np.empty(arr.shape + shape, dtype=dtype)
         result.fill(fill)
         for ijk in ndindex(arr.shape):
@@ -155,10 +160,10 @@ def _squash(arr, mask=None, fill=0):
         all_scalars = all(np.isscalar(item) for item in not_none)
         if not all_scalars:
             return
-        dtype = reduce(np.result_type, not_none)
+        # See comment about np.result_type above
+        dtype = reduce(np.add, not_none).dtype
         temp = arr.copy()
         temp[~mask] = fill
         return temp.astype(dtype)
     else:
         return arr
-

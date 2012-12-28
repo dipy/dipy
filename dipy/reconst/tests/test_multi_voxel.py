@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+
 from dipy.reconst.multi_voxel import _squash, multi_voxel_model, CallableArray
 from dipy.core.sphere import unit_icosahedron
 
@@ -29,6 +30,23 @@ def test_squash():
     # sub-arrays have different shapes ( (3,) and (2,) )
     B[0, 0] = np.ones((3,))
     npt.assert_(_squash(B) is B)
+
+    # Check dtypes for arrays and scalars
+    arr_arr = np.zeros((2,), dtype=object)
+    scalar_arr = np.zeros((2,), dtype=object)
+    numeric_types = sum(
+        [np.sctypes[t] for t in ('int', 'uint', 'float', 'complex')],
+        [np.bool_])
+    for dt0 in numeric_types:
+        arr_arr[0] = np.zeros((3,), dtype=dt0)
+        scalar_arr[0] = dt0(0)
+        for dt1 in numeric_types:
+            arr_arr[1] = np.zeros((3,), dtype=dt1)
+            npt.assert_equal(_squash(arr_arr).dtype,
+                             reduce(np.add, arr_arr).dtype)
+            scalar_arr[1] = dt0(1)
+            npt.assert_equal(_squash(scalar_arr).dtype,
+                             reduce(np.add, scalar_arr).dtype)
 
 
 def test_CallableArray():
