@@ -1,7 +1,9 @@
 """Tools to easily make multi voxel models"""
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
-from dipy.core.ndindex import ndindex
+
+from ..core.ndindex import ndindex
+from .quick_squash import quick_squash as _squash
 
 
 def multi_voxel_model(SingleVoxelModel):
@@ -76,97 +78,3 @@ class CallableArray(np.ndarray):
             if item is not None:
                 result[ijk] = item(*args, **kwargs)
         return _squash(result)
-
-
-def _squash(arr, mask=None, fill=0):
-    """Try and make a standard array from an object array
-
-    This function takes an object array and attempts to convert it to a more
-    useful dtype. If array can be converted to a better dtype, Nones are
-    replaced by `fill`. To make the behaviour of this function more clear, here
-    are the most common cases:
-
-    1.  `arr` is an array of scalars of type `T`. Returns an array like
-        `arr.astype(T)`
-    2.  `arr` is an array of arrays. All items in `arr` have the same shape
-        `S`. Returns an array with shape `arr.shape + S`.
-    3.  `arr` is an array of arrays of different shapes. Returns `arr`.
-    4.  Items in `arr` are not ndarrys or scalars. Returns `arr`.
-
-    Parameters
-    ----------
-    arr : array, dtype=object
-        The array to be converted.
-    mask : array, dtype=bool, optional
-        Where arr has Nones.
-    fill : number, optional
-        Nones are replaced by fill.
-
-    Returns
-    -------
-    result : array
-
-    Examples
-    --------
-    >>> arr = np.empty(3, dtype=object)
-    >>> arr.fill(2)
-    >>> _squash(arr)
-    array([2, 2, 2])
-    >>> arr[0] = None
-    >>> _squash(arr)
-    array([0, 2, 2])
-    >>> arr.fill(np.ones(2))
-    >>> r = _squash(arr)
-    >>> r.shape
-    (3, 2)
-    >>> r.dtype
-    dtype('float64')
-
-    """
-    if mask is None:
-        mask = arr != np.array(None)
-    not_none = arr[mask]
-    # all None, just return arr
-    if not_none.size == 0:
-        return arr
-    first = not_none[0]
-    # If the first item is an ndarray
-    if type(first) is np.ndarray:
-        shape = first.shape
-        try:
-            # Check the shapes of all items
-            all_same_shape = all(item.shape == shape for item in not_none)
-        except AttributeError:
-            return arr
-        # If items have different shapes just return arr
-        if not all_same_shape:
-            return arr
-        # Find common dtype.  np.result_type can do this more simply, but it is
-        # only available for numpy 1.6.0
-        dtypes = set(a.dtype for a in not_none)
-        tiny_arrs = [np.zeros((1,), dtype=dt) for dt in dtypes]
-        dtype = reduce(np.add, tiny_arrs).dtype
-        # Create output array and fill
-        result = np.empty(arr.shape + shape, dtype=dtype)
-        result.fill(fill)
-        for ijk in ndindex(arr.shape):
-            if mask[ijk]:
-                result[ijk] = arr[ijk]
-        return result
-
-    # If the first item is a scalar
-    elif np.isscalar(first):
-        "first is not an ndarray"
-        all_scalars = all(np.isscalar(item) for item in not_none)
-        if not all_scalars:
-            return arr
-        # See comment about np.result_type above. We sum against the smallest
-        # possible type, bool, and let numpy type promotion find the best common
-        # type. The values might all be Python scalars so we need to cast to
-        # numpy type at the end to be sure of having a dtype.
-        dtype = np.asarray(sum(not_none, False)).dtype
-        temp = arr.copy()
-        temp[~mask] = fill
-        return temp.astype(dtype)
-    else:
-        return arr
