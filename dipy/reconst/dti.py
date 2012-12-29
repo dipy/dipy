@@ -89,6 +89,7 @@ class TensorFit(object):
         """
         Initialize a TensorFit class instance.
         """
+        self.model = model
         self.model_params = model_params
 
     @property

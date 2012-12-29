@@ -56,6 +56,7 @@ def test_TensorModel():
                                        fit_method=fit_method)
         
         tensor_fit = tensor_model.fit(Y)
+        assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
 
