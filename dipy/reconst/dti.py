@@ -100,7 +100,7 @@ class TensorFit(object):
         """
         For tracking - return the primary direction in each voxel
         """
-        return self.evecs[0,0]
+        return self.evecs[..., None, :, 0]
 
     @property
     def evals(self):

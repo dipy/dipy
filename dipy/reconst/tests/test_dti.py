@@ -64,8 +64,8 @@ def test_TensorModel():
         "Calculation of tensor from Y does not compare to analytical solution")
 
         assert_almost_equal(tensor_fit.md[0], md)
-
-        assert_array_almost_equal(tensor_fit.directions.shape[0], 3)
+        assert_equal(tensor_fit.directions.shape[-2], 1)
+        assert_equal(tensor_fit.directions.shape[-1], 3)
         
     # Test error-handling:
     assert_raises(ValueError,
