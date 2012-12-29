@@ -311,7 +311,9 @@ def test_mask():
     dtifit_w_mask = dm.fit(data, mask=mask)
     # Without a mask it has some value
     assert_(not np.isnan(dtifit.fa[0, 0, 0]))
-    # But with the mask, it's a nan:
-    assert_(np.isnan(dtifit_w_mask.fa[0, 0, 1]))
+    # Where mask is False, evals, evecs and fa should all be 0
+    assert_array_equal(dtifit_w_mask.evals[~mask], 0)
+    assert_array_equal(dtifit_w_mask.evecs[~mask], 0)
+    assert_array_equal(dtifit_w_mask.fa[~mask], 0)
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
