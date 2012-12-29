@@ -31,6 +31,12 @@ Utilities
  __version__   -- Dipy version
 
 """
+import sys
+if sys.version[0:3] < '2.6':
+    raise ImportError('Dipy needs Python version 2.6 or above')
+if sys.version[0] == '3':
+    raise ImportError('Dipy does not yet work with Python 3, feel free to '
+                      'remind us about this')
 
 from .info import __version__
 
@@ -43,4 +49,4 @@ del Tester
 import os
 from .pkg_info import get_pkg_info as _get_pkg_info
 get_info = lambda : _get_pkg_info(os.path.dirname(__file__))
-del os
+del os, sys
