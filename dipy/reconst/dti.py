@@ -8,6 +8,45 @@ from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
+def fractional_anisotropy(evals, axis=-1):
+    r"""
+    Fractional anisotropy (FA) of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    fa : array
+        Calculated FA. Note: range is 0 <= FA <= 1.
+
+    Notes
+    --------
+    FA is calculated with the following equation:
+
+    .. math::
+
+        FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
+                    \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
+                    \lambda_2^2+\lambda_3^2} }
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    # Make sure not to get nans
+    all_zero = (evals == 0).all(axis=0)
+    ev1, ev2, ev3 = evals
+    fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
+                  / ((evals*evals).sum(0) + all_zero))
+
+    return fa
 
 class TensorModel(object):
     """ Diffusion Tensor
@@ -121,51 +160,18 @@ class TensorFit(object):
     @property
     def quadratic_form(self):
         """Calculates the 3x3 diffusion tensor for each voxel"""
-        evecs = self.evecs
-        evals = self.evals
         # do `evecs * evals * evecs.T` where * is matrix multiply
         # einsum does this with:
         # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
-        return vec_val_vect(evecs, evals)
+        return vec_val_vect(self.evecs, self.evals)
 
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
 
     @auto_attr
     def fa(self):
-        r"""
-        Fractional anisotropy (FA) calculated from cached eigenvalues.
-
-        Returns
-        ---------
-        fa : array (V, 1)
-            Calculated FA. Note: range is 0 <= FA <= 1.
-
-        Notes
-        --------
-        FA is calculated with the following equation:
-
-        .. math::
-
-            FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                        \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
-                        \lambda_2^2+\lambda_3^2} }
-
-        """
-        evals, wrap = _makearray(self.model_params[..., :3])
-        ev1 = evals[..., 0]
-        ev2 = evals[..., 1]
-        ev3 = evals[..., 2]
-
-        # Make sure not to get nans:
-        all_zero = np.allclose([ev1, ev2, ev3], 0)
-
-        fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
-
-        fa = wrap(np.asarray(fa))
-        # Fill with zeros outside of the mask
-        return _filled(fa, 0)
+        """Fractional anisotropy (FA) calculated from cached eigenvalues."""
+        return fractional_anisotropy(self.evals)
 
     @auto_attr
     def md(self):
