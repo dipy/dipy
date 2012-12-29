@@ -150,7 +150,7 @@ def _squash(arr, mask=None, fill=0):
         result = np.empty(arr.shape + shape, dtype=dtype)
         result.fill(fill)
         for ijk in ndindex(arr.shape):
-            if arr[ijk] is not None:
+            if mask[ijk]:
                 result[ijk] = arr[ijk]
         return result
 
@@ -159,7 +159,7 @@ def _squash(arr, mask=None, fill=0):
         "first is not an ndarray"
         all_scalars = all(np.isscalar(item) for item in not_none)
         if not all_scalars:
-            return
+            return arr
         # See comment about np.result_type above. We sum against the smallest
         # possible type, bool, and let numpy type promotion find the best common
         # type. The values might all be Python scalars so we need to cast to
