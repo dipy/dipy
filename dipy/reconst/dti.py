@@ -92,6 +92,16 @@ class TensorFit(object):
         self.model = model
         self.model_params = model_params
 
+    def __getitem__(self, index):
+        model_params = self.model_params
+        N = model_params.ndim 
+        if type(index) is not tuple:
+            index = (index,)
+        elif len(index) >= model_params.ndim:
+            raise IndexError("IndexError: invalid index")
+        index = index + (slice(None),) * (N - len(index))
+        return type(self)(self.model, model_params[index])
+
     @property
     def shape(self):
         return self.model_params.shape[:-1]
@@ -609,7 +619,7 @@ common_fit_methods = {'WLS': wls_fit_tensor,
 
 
 # For backwards compatibility:
-class Tensor(TensorFit, ModelArray):
+class Tensor(ModelArray, TensorFit):
     """
     For backwards compatibility, we continue to support this form of the Tensor
     fitting.

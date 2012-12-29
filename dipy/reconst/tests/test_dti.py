@@ -74,8 +74,26 @@ def test_TensorModel():
                   gtab,
                   fit_method='crazy_method')
 
-    
-    
+
+def test_indexing_on_TensorFit():
+    params = np.zeros([2, 3, 4, 12])
+    fit = dti.TensorFit(None, params)
+
+    # Should return a TensorFit of appropriate shape
+    assert_equal(fit.shape, (2, 3, 4))
+    fit1 = fit[0]
+    assert_equal(fit1.shape, (3, 4))
+    assert_equal(type(fit1), dti.TensorFit)
+    fit1 = fit[0, 0, 0]
+    assert_equal(fit1.shape, ())
+    assert_equal(type(fit1), dti.TensorFit)
+    fit1 = fit[[0], slice(None)]
+    assert_equal(fit1.shape, (1, 3, 4))
+    assert_equal(type(fit1), dti.TensorFit)
+
+    # Should raise an index error if too many indices are passed
+    assert_raises(IndexError, fit.__getitem__, (0, 0, 0, 0))
+
 def test_tensor_scalar_attributes():
     """
     Tests that the tensor class scalar attributes (FA, ADC, etc...) are
