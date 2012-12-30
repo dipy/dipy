@@ -14,13 +14,14 @@ development - at least - we hope so - if we're developing fast enough!
 Note on python versions
 ***********************
 
-Sorry, but dipy_ does not yet work with python 3 - so all the instructions
-following instructions apply to python 2.5 or python 2.6 or python 2.7.
+Dipy needs python 2.6 or above.  Sorry to say, but dipy_ does not yet work with
+python 3 - so all the instructions following instructions apply to python 2.6 or
+python 2.7.
 
 On OSX we always use the python binaries available from the python.org
 downloads, and not the python that comes with the OSX system.  If you don't have
 the python.org python you need to go to http://python.org/downloads, then
-download and install the python version you want (2.7 or 2.6 or 2.5).  Check
+download and install the python version you want (2.7 or 2.6).  Check
 that you have this version on your path (perhaps after ``. ~/.bash_profile``)
 with ``which python``.  This should show something like::
 
