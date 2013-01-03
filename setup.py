@@ -69,6 +69,7 @@ EXTS = []
 for modulename, other_sources in (
     ('dipy.reconst.recspeed', []),
     ('dipy.reconst.vec_val_sum', []),
+    ('dipy.reconst.quick_squash', []),
     ('dipy.tracking.distances', []),
     ('dipy.tracking.vox2track', []),
     ('dipy.tracking.propspeed', [])):
