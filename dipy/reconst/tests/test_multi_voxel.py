@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.testing as npt
+
 from dipy.reconst.multi_voxel import _squash, multi_voxel_model, CallableArray
 from dipy.core.sphere import unit_icosahedron
 
@@ -29,6 +30,60 @@ def test_squash():
     # sub-arrays have different shapes ( (3,) and (2,) )
     B[0, 0] = np.ones((3,))
     npt.assert_(_squash(B) is B)
+
+    # Check dtypes for arrays and scalars
+    arr_arr = np.zeros((2,), dtype=object)
+    scalar_arr = np.zeros((2,), dtype=object)
+    numeric_types = sum(
+        [np.sctypes[t] for t in ('int', 'uint', 'float', 'complex')],
+        [np.bool_])
+    for dt0 in numeric_types:
+        arr_arr[0] = np.zeros((3,), dtype=dt0)
+        scalar_arr[0] = dt0(0)
+        for dt1 in numeric_types:
+            arr_arr[1] = np.zeros((3,), dtype=dt1)
+            npt.assert_equal(_squash(arr_arr).dtype,
+                             reduce(np.add, arr_arr).dtype)
+            scalar_arr[1] = dt0(1)
+            npt.assert_equal(_squash(scalar_arr).dtype,
+                             reduce(np.add, scalar_arr).dtype)
+
+    # Check masks and Nones
+    arr = np.ones((3, 4), dtype=float)
+    obj_arr = arr.astype(object)
+    arr[1, 1] = 99
+    obj_arr[1, 1] = None
+    npt.assert_array_equal(_squash(obj_arr, mask=None, fill=99), arr)
+    msk = arr == 1
+    npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), arr)
+    msk[1, 1] = 1 # unmask None - object array back
+    npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), obj_arr)
+    msk[1, 1] = 0 # remask, back to fill again
+    npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), arr)
+    obj_arr[2, 3] = None # add another unmasked None, object again
+    npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), obj_arr)
+
+    # Check array of arrays
+    obj_arrs = np.zeros((3,), dtype=object)
+    for i in range(3):
+        obj_arrs[i] = np.ones((4, 5))
+    arr_arrs = np.ones((3, 4, 5))
+    # No Nones
+    npt.assert_array_equal(_squash(obj_arrs, mask=None, fill=99), arr_arrs)
+    # None, implicit masking
+    obj_masked = obj_arrs.copy()
+    obj_masked[1] = None
+    arr_masked = arr_arrs.copy()
+    arr_masked[1] = 99
+    npt.assert_array_equal(_squash(obj_masked, mask=None, fill=99),
+                           arr_masked)
+    msk = np.array([1, 0, 1], dtype=np.bool_) # explicit mask
+    npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
+                           arr_masked)
+    msk[1] = True # unmask None, object array back
+    npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
+                           obj_masked)
+
 
 
 def test_CallableArray():
