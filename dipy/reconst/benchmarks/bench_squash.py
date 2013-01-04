@@ -54,13 +54,13 @@ def old_squash(arr, mask=None, fill=0):
     --------
     >>> arr = np.empty(3, dtype=object)
     >>> arr.fill(2)
-    >>> _squash(arr)
+    >>> old_squash(arr)
     array([2, 2, 2])
     >>> arr[0] = None
-    >>> _squash(arr)
+    >>> old_squash(arr)
     array([0, 2, 2])
     >>> arr.fill(np.ones(2))
-    >>> r = _squash(arr)
+    >>> r = old_squash(arr)
     >>> r.shape
     (3, 2)
     >>> r.dtype
