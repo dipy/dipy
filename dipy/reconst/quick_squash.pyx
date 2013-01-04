@@ -60,7 +60,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
     cdef:
         cnp.npy_intp i, j, N, dtypes_i
         object [:] flat_obj
-        int [:] flat_mask
+        char [:] flat_mask
         object [:] dtypes
         int have_mask = not mask is None
         int search_for
@@ -68,7 +68,7 @@ def quick_squash(obj_arr, mask=None, fill=0):
         cnp.dtype dtype, last_dtype
         object common_shape
     if have_mask:
-        flat_mask = np.array(mask.reshape(-1), dtype=int)
+        flat_mask = np.array(mask.reshape(-1), dtype=np.int8)
     N = obj_arr.size
     dtypes = np.empty((N,), dtype=object)
     flat_obj = obj_arr.reshape((-1))
