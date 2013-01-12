@@ -68,6 +68,7 @@ from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
 EXTS = []
 for modulename, other_sources in (
     ('dipy.reconst.recspeed', []),
+    ('dipy.reconst.vec_val_sum', []),
     ('dipy.tracking.distances', []),
     ('dipy.tracking.vox2track', []),
     ('dipy.tracking.propspeed', [])):
