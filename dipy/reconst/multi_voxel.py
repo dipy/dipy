@@ -1,8 +1,9 @@
 """Tools to easily make multi voxel models"""
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
-#from dipy.core.ndindex import ndindex
-from numpy import ndindex
+
+from ..core.ndindex import ndindex
+from .quick_squash import quick_squash as _squash
 
 
 def multi_voxel_model(SingleVoxelModel):
@@ -33,7 +34,7 @@ def multi_voxel_model(SingleVoxelModel):
 
             # Fit data where mask is True
             fit_array = np.empty(data.shape[:-1], dtype=object)
-            for ijk in ndindex(*data.shape[:-1]):
+            for ijk in ndindex(data.shape[:-1]):
                 if mask[ijk]:
                     fit_array[ijk] = SingleVoxelModel.fit(self, data[ijk])
             return MultiVoxelFit(self, fit_array, mask)
@@ -53,18 +54,13 @@ class MultiVoxelFit(object):
     def shape(self):
         return self.fit_array.shape
 
-    def __getattribute__(self, attr):
-        try:
-            return object.__getattribute__(self, attr)
-        except AttributeError:
-            result = CallableArray(self.fit_array.shape, dtype=object)
-            for ijk in ndindex(*result.shape):
-                if self.mask[ijk]:
-                    result[ijk] = getattr(self.fit_array[ijk], attr)
-            return _squash(result, self.mask)
+    def __getattr__(self, attr):
+        result = CallableArray(self.fit_array.shape, dtype=object)
+        for ijk in ndindex(result.shape):
+            if self.mask[ijk]:
+                result[ijk] = getattr(self.fit_array[ijk], attr)
+        return _squash(result, self.mask)
 
-    # I leave this in hesitantly, I'm not sure this will be be easy to support
-    # for all models
     def __getitem__(self, index):
         item = self.fit_array[index]
         if isinstance(item, np.ndarray):
@@ -77,23 +73,8 @@ class CallableArray(np.ndarray):
     """An array which can be called like a function"""
     def __call__(self, *args, **kwargs):
         result = np.empty(self.shape, dtype=object)
-        for ijk in ndindex(*self.shape):
+        for ijk in ndindex(self.shape):
             item = self[ijk]
             if item is not None:
                 result[ijk] = item(*args, **kwargs)
         return _squash(result)
-
-
-def _squash(arr, mask=None):
-    """Makes a prettier array"""
-    if mask is None:
-        mask = arr != np.array(None)
-    not_none = arr[mask]
-    not_none = not_none.tolist()
-    tmp = np.array(not_none)
-    if tmp.dtype == object:
-        return arr
-    shape = arr.shape + tmp.shape[1:]
-    result = np.zeros(shape, tmp.dtype)
-    result[mask] = tmp
-    return result

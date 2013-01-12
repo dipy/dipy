@@ -76,9 +76,9 @@ dipy distribution.
 """
 
 # versions for dependencies
-NUMPY_MIN_VERSION='1.2'
-SCIPY_MIN_VERSION='0.6' # Guessed
-CYTHON_MIN_VERSION='0.13'
+NUMPY_MIN_VERSION='1.3'
+SCIPY_MIN_VERSION='0.7.2'
+CYTHON_MIN_VERSION='0.17'
 NIBABEL_MIN_VERSION='1.0.0'
 
 # Main setup parameters

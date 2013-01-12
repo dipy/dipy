@@ -2,25 +2,24 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 from dipy.reconst.recspeed import pdf_to_odf
 from scipy.fftpack import fftn, fftshift, ifftshift
-from .odf import OdfModel, OdfFit, gfa
-from .cache import Cache
-from dipy.core.onetime import auto_attr
-from .multi_voxel import multi_voxel_model
-from .recspeed import local_maxima, remove_similar_vertices
+from dipy.reconst.odf import OdfModel, OdfFit, gfa
+from dipy.reconst.cache import Cache
+from dipy.reconst.multi_voxel import multi_voxel_model
+from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
 @multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
     def __init__(self, 
-                    gtab, 
-                    method='standard', 
-                    qgrid_size=16, 
-                    sampl_start=2.1, 
-                    sampl_end=6., 
-                    sampl_step=0.2, 
-                    filter_width=32, 
-                    normalize_peaks=False):
+                 gtab,
+                 method='standard',
+                 qgrid_size=16,
+                 r_start=2.1,
+                 r_end=6.,
+                 r_step=0.2,
+                 filter_width=32,
+                 normalize_peaks=False):
         r""" Diffusion Spectrum Imaging
 
         The main idea here is that you can create the diffusion propagator
@@ -45,29 +44,31 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Parameters
         ----------
-        gtab : object, 
-            GradientTable
-        method : str, 
-            'standard' or 'deconv'
+        gtab : GradientTable,
+            Gradient directions and bvalues container class
+        method : ('standard' or 'deconv')
+            Method used to calculate the ODFs. 'standard' is the method
+            proposed by Wedeen et. al [1]_ and 'deconv' is the method proposed
+            by Canales-Rodriguez et al. [2]_
         qgrid_size : int,
             sets the size of the q_space grid. For example if qgrid_size is 16
-            then the shape of the grid will be (16, 16, 16).
-        sampl_start : float,
+            then the shape of the grid will be ``(16, 16, 16)``.
+        r_start : float,
             ODF is sampled radially in the PDF. This parameters shows where the
             sampling should start.
-        sampl_end : float,
+        r_end : float,
             Radial endpoint of ODF sampling
-        sampl_step : float,
-            Step size of the ODf sampling from sample_start to sample_end.
+        r_step : float,
+            Step size of the ODf sampling from r_start to r_end
         filter_width : float,
-            Strenght of the hanning filter
+            Strength of the hanning filter
 
         References
         ----------
         .. [1]  Wedeen V.J et. al, "Mapping Complex Tissue Architecture With
         Diffusion Spectrum Magnetic Resonance Imaging", MRM 2005.
 
-        .. [2] Canales-Rodriguez E.J et a., "Deconvolution in Diffusion Spectrum
+        .. [2] Canales-Rodriguez E.J et. al, "Deconvolution in Diffusion Spectrum
         Imaging", Neuroimage, 2010.
 
         .. [3] Garyfallidis E, "Towards an accurate brain tractography", PhD
@@ -85,8 +86,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
         >>> ds.direction_finder.config(sphere=sphere, 
-                        min_separation_angle=25, 
-                        relative_peak_threshold=.35)
+                                       min_separation_angle=25,
+                                       relative_peak_threshold=.35)
         >>> dsfit = ds.fit(data)
         >>> np.round(dsfit.gfa[0, 0, 0], 2)
         0.12
@@ -100,7 +101,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         purpose.
 
         B. If you increase the size of the grid (parameter qgrid_size) you will
-        most likely also need to update the sampl_* parameters. This is because
+        most likely also need to update the r_* parameters. This is because
         the added zero padding from the increase of gqrid_size also introduces
         a scaling of the PDF.
 
@@ -120,11 +121,11 @@ class DiffusionSpectrumModel(OdfModel, Cache):
             #3d volume for Sq
             self.qgrid_size = qgrid_size
             #necessary shifting for centering
-            self.origin = self.qgrid_size//2
+            self.origin = self.qgrid_size // 2
             #hanning filter width
             self.filter_width = filter_width
             #odf collecting radius
-            self.qradius = np.arange(sampl_start, sampl_end, sampl_step)
+            self.qradius = np.arange(r_start, r_end, r_step)
             self.create_qspace()
             self.hanning_filter()
         if method == 'deconv':
@@ -306,13 +307,13 @@ def pdf_odf(Pr, sphere, rradius, interp_coords):
     Parameters
     ----------
     Pr : array, shape (X, X, X)
-            probability density function
-    sphere : object,
-            Sphere
+        probability density function
+    sphere : Sphere
+        reconstruction sphere
     rradius : array, shape (N,)
-            interpolation range on the radius
+        interpolation range on the radius
     interp_coords : array, shape (N, 3)
-            coordinates in the pdf for interpolating the odf
+        coordinates in the pdf for interpolating the odf
     """
     verts_no = sphere.vertices.shape[0]
     odf = np.zeros(verts_no)
@@ -326,20 +327,20 @@ def pdf_odf(Pr, sphere, rradius, interp_coords):
 def half_to_full_qspace(data, gtab):
     """ Half to full Cartesian grid mapping
 
-    Useful when data are provided in one qspace hemisphere as DiffusionSpectrum
+    Useful when dMRI data are provided in one qspace hemisphere as DiffusionSpectrum
     expects data to be in full qspace.
 
     Parameters
     ----------
     data : array, shape (X, Y, Z, W)
-    gtab : object, 
-            GradientTable
+        where (X, Y, Z) volume size and W number of gradient directions
+    gtab : GradientTable
+        container for b-values and b-vectors (gradient directions)
 
     Returns
     -------
     new_data : array, shape (X, Y, Z, 2 * W -1)
-    new_gtab : object,
-                GradientTable
+    new_gtab : GradientTable
 
     Notes
     -----
@@ -349,9 +350,9 @@ def half_to_full_qspace(data, gtab):
     """
     bvals = gtab.bvals
     bvecs = gtab.bvecs
-    bvals = np.append(bvals.copy(), bvals[1:].copy())
-    bvecs = np.append(bvecs.copy(), - bvecs[1:].copy(), axis=0)
-    data = np.append(data.copy(), data[...,1:].copy(), axis=-1)
+    bvals = np.append(bvals, bvals[1:])
+    bvecs = np.append(bvecs, - bvecs[1:], axis=0)
+    data = np.append(data, data[..., 1:], axis=-1)
     gtab.bvals = bvals.copy()
     gtab.bvecs = bvecs.copy()
     return data, gtab

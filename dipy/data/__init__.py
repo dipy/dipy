@@ -134,7 +134,8 @@ def get_sphere(name='symmetric362'):
     res = np.load(fname)
     # Set to native byte order to avoid errors in compiled routines for
     # big-endian platforms, when using these spheres.
-    return Sphere(xyz=as_native_array(res['vertices']), faces=res['faces'])
+    return Sphere(xyz=as_native_array(res['vertices']),
+                  faces=as_native_array(res['faces']))
 
 
 def get_data(name='small_64D'):

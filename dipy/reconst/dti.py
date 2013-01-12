@@ -1,12 +1,52 @@
 #!/usr/bin/python
 import warnings
 import numpy as np
-from dipy.reconst.maskedview import MaskedView, _makearray, _filled
-from dipy.reconst.modelarray import ModelArray
-from dipy.data import get_sphere
+from .maskedview import MaskedView, _makearray, _filled
+from .modelarray import ModelArray
+from ..data import get_sphere
 from ..core.geometry import vector_norm
-from dipy.core.onetime import auto_attr
+from .vec_val_sum import vec_val_vect
+from ..core.onetime import auto_attr
 
+def fractional_anisotropy(evals, axis=-1):
+    r"""
+    Fractional anisotropy (FA) of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    fa : array
+        Calculated FA. Note: range is 0 <= FA <= 1.
+
+    Notes
+    --------
+    FA is calculated with the following equation:
+
+    .. math::
+
+        FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
+                    \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
+                    \lambda_2^2+\lambda_3^2} }
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    # Make sure not to get nans
+    all_zero = (evals == 0).all(axis=0)
+    ev1, ev2, ev3 = evals
+    fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
+                  / ((evals*evals).sum(0) + all_zero))
+
+    return fa
 
 class TensorModel(object):
     """ Diffusion Tensor
@@ -88,7 +128,18 @@ class TensorFit(object):
         """
         Initialize a TensorFit class instance.
         """
+        self.model = model
         self.model_params = model_params
+
+    def __getitem__(self, index):
+        model_params = self.model_params
+        N = model_params.ndim 
+        if type(index) is not tuple:
+            index = (index,)
+        elif len(index) >= model_params.ndim:
+            raise IndexError("IndexError: invalid index")
+        index = index + (slice(None),) * (N - len(index))
+        return type(self)(self.model, model_params[index])
 
     @property
     def shape(self):
@@ -99,7 +150,7 @@ class TensorFit(object):
         """
         For tracking - return the primary direction in each voxel
         """
-        return self.evecs[0,0]
+        return self.evecs[..., None, :, 0]
 
     @property
     def evals(self):
@@ -120,49 +171,18 @@ class TensorFit(object):
     @property
     def quadratic_form(self):
         """Calculates the 3x3 diffusion tensor for each voxel"""
-        evecs = self.evecs
-        evals = self.evals
-        # use einsum to do `evecs * evals * evecs.T` where * is matrix multiply
-        return np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
+        # do `evecs * evals * evecs.T` where * is matrix multiply
+        # einsum does this with:
+        # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
+        return vec_val_vect(self.evecs, self.evals)
 
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
 
     @auto_attr
     def fa(self):
-        r"""
-        Fractional anisotropy (FA) calculated from cached eigenvalues.
-
-        Returns
-        ---------
-        fa : array (V, 1)
-            Calculated FA. Note: range is 0 <= FA <= 1.
-
-        Notes
-        --------
-        FA is calculated with the following equation:
-
-        .. math::
-
-            FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                        \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
-                        \lambda_2^2+\lambda_3^2} }
-
-        """
-        evals, wrap = _makearray(self.model_params[..., :3])
-        ev1 = evals[..., 0]
-        ev2 = evals[..., 1]
-        ev3 = evals[..., 2]
-
-        # Make sure not to get nans:
-        all_zero = np.allclose([ev1, ev2, ev3], 0)
-
-        fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
-
-        fa = wrap(np.asarray(fa))
-        # Fill with zeros outside of the mask
-        return _filled(fa, 0)
+        """Fractional anisotropy (FA) calculated from cached eigenvalues."""
+        return fractional_anisotropy(self.evals)
 
     @auto_attr
     def md(self):
@@ -259,6 +279,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
+    tol = 1e-6
     if min_signal <= 0:
         raise ValueError('min_signal must be > 0')
 
@@ -272,16 +293,17 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     #math: ols_fit = X*beta_ols*inv(y)
     #ols_fit = np.dot(U, U.T)
     ols_fit = _ols_fit_matrix(design_matrix)
+    min_diffusivity = tol / -design_matrix.min()
 
     for param, sig in zip(dti_params, data_flat):
         param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
-                                        min_signal=min_signal)
+                                        min_signal, min_diffusivity)
     dti_params.shape = data.shape[:-1]+(12,)
     dti_params = wrap(dti_params)
     return dti_params
 
 
-def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
+def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     '''
     Function used by wls_fit_tensor for later optimization.
     '''
@@ -291,10 +313,10 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal=1):
     D = np.dot(np.linalg.pinv(design_matrix * w[:,None]), w*log_s)
     # D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], log_s)
     tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, minimum_eval=np.finfo(float).eps)
+    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
-def _ols_iter(inv_design, sig, min_signal=1):
+def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     '''
     Function used by ols_fit_tensor for later optimization.
     '''
@@ -302,7 +324,7 @@ def _ols_iter(inv_design, sig, min_signal=1):
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
     tensor = from_lower_triangular(D)
-    return decompose_tensor(tensor, minimum_eval=np.finfo(float).eps)
+    return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
 
 
 def ols_fit_tensor(design_matrix, data, min_signal=1):
@@ -354,6 +376,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
         approaches for estimation of uncertainties of DTI parameters.
         NeuroImage 33, 531-541.
     """
+    tol = 1e-6
 
     data, wrap = _makearray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
@@ -367,10 +390,11 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     #math: ols_fit = X*beta_ols*inv(y)
     #ols_fit =  np.dot(U, U.T)
 
+    min_diffusivity = tol / -design_matrix.min()
     inv_design = np.linalg.pinv(design_matrix)
 
     for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _ols_iter(inv_design, sig, min_signal)
+        param[0], param[1:] = _ols_iter(inv_design, sig, min_signal, min_diffusivity)
 
     dti_params.shape = data.shape[:-1]+(12,)
     dti_params = wrap(dti_params)
@@ -489,7 +513,7 @@ def tensor_eig_from_lo_tri(data):
     return dti_params
 
 
-def decompose_tensor(tensor, minimum_eval=0):
+def decompose_tensor(tensor, min_diffusivity=0):
     """
     Returns eigenvalues and eigenvectors given a diffusion tensor
 
@@ -499,8 +523,12 @@ def decompose_tensor(tensor, minimum_eval=0):
     Parameters
     ----------
     D : array (3,3)
-        array holding a tensor. Assumes D has units on order of
-        ~ 10^-4 mm^2/s
+        Hermitian matrix representing a diffusion tensor.
+    min_diffusivity : float
+        Because negative eigenvalues are not physical and small eigenvalues,
+        much smaller than the diffusion weighting, cause quite a lot of noise
+        in metrics such as fa, diffusivity values smaller than
+        `min_diffusivity` are replaced with `min_diffusivity`.
 
     Returns
     -------
@@ -514,21 +542,18 @@ def decompose_tensor(tensor, minimum_eval=0):
 
     See Also
     --------
-    numpy.linalg.eig
+    numpy.linalg.eigh
 
     """
-
     #outputs multiplicity as well so need to unique
-    eigenvals, eigenvecs = np.linalg.eig(tensor)
+    eigenvals, eigenvecs = np.linalg.eigh(tensor)
 
     #need to sort the eigenvalues and associated eigenvectors
     order = eigenvals.argsort()[::-1]
     eigenvecs = eigenvecs[:, order]
     eigenvals = eigenvals[order]
 
-    #Forcing negative eigenvalues to 0
-    eigenvals = np.maximum(eigenvals, minimum_eval)
-    # b ~ 10^3 s/mm^2 and D ~ 10^-4 mm^2/s
+    eigenvals = eigenvals.clip(min=min_diffusivity)
     # eigenvecs: each vector is columnar
 
     return eigenvals, eigenvecs
@@ -600,7 +625,7 @@ common_fit_methods = {'WLS': wls_fit_tensor,
 
 
 # For backwards compatibility:
-class Tensor(TensorFit, ModelArray):
+class Tensor(ModelArray, TensorFit):
     """
     For backwards compatibility, we continue to support this form of the Tensor
     fitting.
