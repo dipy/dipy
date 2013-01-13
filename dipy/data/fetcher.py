@@ -41,7 +41,7 @@ def fetch_beijing_dti():
         print('http://fcon_1000.projects.nitrc.org/indi/retro/BeijingEnhanced.html')
 
     else:
-        raise IOError('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
 
 
 def read_beijing_dti():
@@ -95,9 +95,11 @@ def fetch_taiwan_ntu_dsi():
         print('Done.')
         print('Files copied in folder %s' % folder)
         print('See DSI203_license.txt for LICENSE.')
+        print('For the complete datasets please visit :')
+        print('http://dsi-studio.labsolver.org')
 
     else:
-        raise IOError('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
 
 
 def read_taiwan_ntu_dsi():
