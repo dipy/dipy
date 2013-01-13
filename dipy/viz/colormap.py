@@ -250,3 +250,26 @@ def orient2rgb(v):
     return orient
 
 
+def line_colors(streamlines, cmap='rgb_standard'):
+    """ Create colors for streamlines to be used in fvtk.line
+
+    Parameters
+    ----------
+    streamlines : sequence of ndarrays
+    cmap : ('rgb_standard', 'boys_standard')
+
+    Returns
+    -------
+    colors : ndarray
+    """
+
+    if cmap=='rgb_standard':
+        col_list = [orient2rgb(streamline[-1] - streamline[0]) \
+                    for streamline in streamlines]
+
+    if cmap=='boys_standard':
+        col_list = [boys2rgb(streamline[-1] - streamline[0]) \
+                    for streamline in streamlines]
+
+    return np.vstack(col_list)
+

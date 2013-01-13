@@ -1,16 +1,14 @@
 """ 
 
-===============================
-From raw data to tractographies
-===============================
+==========================
+Lets make some streamlines
+==========================
 
-Overview
-========
+This example shows how to generate streamlines with Dipy_. First we will reconstruct
+the datasets using a single Tensor model and next will use a Constant Solid
+Angle ODF (Q-Ball) model. EuDX is the algorithm that we will use for fiber tracking.
 
-**This example gives a tour of some simple features of dipy.**
-
-First import the necessary modules
-----------------------------------
+First import the necessary modules:
 
 ``numpy`` is for numerical computation
 
@@ -19,293 +17,282 @@ First import the necessary modules
 import numpy as np
 
 """
-``nibabel`` is for data formats
+``nibabel`` is for loading imaging datasets
 """
 
 import nibabel as nib
 
 """
-``dipy.reconst`` is for the reconstruction algorithms which we use to create directionality models 
-for a voxel from the raw data. 
+``dipy.reconst`` is for the reconstruction algorithms which we use to create voxel models from the raw data. 
 """
 
-import dipy.reconst.gqi as gqi
-import dipy.reconst.dti as dti
+from dipy.reconst.dti import TensorModel
 
 """
-``dipy.tracking`` is for tractography algorithms which create sets of tracks by integrating 
-  directionality models across voxels.
+``dipy.tracking`` is for fiber tracking.
 """
 
-from dipy.tracking.propagation import EuDX
+from dipy.tracking.eudx import EuDX
 
 """
-``dipy.data`` is for small datasets we use in tests and examples.
+``dipy.data`` is used for small datasets that we use in tests and examples.
 """
 
-from dipy.data import get_data
+from dipy.data import fetch_beijing_dti
 
-
-""" 
-Isotropic voxel sizes required
-------------------------------
-``dipy`` requires its datasets to have isotropic voxel size. If you have datasets with anisotropic voxel size 
-then you need to resample with isotropic voxel size. We have provided an algorithm for this. 
-You can have a look at the example ``resample_aniso_2_iso.py``
-
-Accessing the necessary datasets
---------------------------------
-``get_data`` provides data for a small region of interest from a real
-diffusion weighted MR dataset acquired with 102 gradients (including one for b=0). 
-
-In order to make this work with your data you should comment out the line below and add the paths 
-for your nifti file (``*.nii`` or ``*.nii.gz``) and your ``*.bvec`` and ``*.bval files``. 
-
-If you are not using nifti files or you don't know how to create the ``*.bvec`` and ``*.bval`` files 
-from your raw dicom (``*.dcm``) data then you can either try recent module nibabel.nicom 
-"""
-
-try:
-    from nibabel.nicom.dicomreaders import read_mosaic_dir
-except:
-    print('nicom for dicom is not installed')
 
 """
-or to convert the dicom files to nii, bvec and bval files using ``dcm2nii``. 
+Fetch will download the raw dMRI dataset of a single subject. The size of the dataset is 51 MBytes.
+You only need to fetch once.
 """
 
-fimg,fbvals,fbvecs=get_data('small_101D')
-
-""" 
-**Load the nifti file found at path fimg as an Nifti1Image.**
-"""
-
-img=nib.load(fimg)
-
-""" 
-**Read the datasets from the Nifti1Image.**
-"""
-
-data=img.get_data()
-print('data.shape (%d,%d,%d,%d)' % data.shape)
-
-""" 
-This produces the output::
-
-  data.shape (6,10,10,102)
-
-As you would expect, the raw diffusion weighted MR data is 4-dimensional as 
-we have one 3-d volume (6 by 10 by 10) for each gradient direction.
-
-**Read the affine matrix**
-  which gives the mapping between volume indices (voxel coordinates) and world coordinates.
-"""
-
-affine=img.get_affine()
-
-""" 
-**Read the b-values** which are a function of the strength, duration, temporal spacing 
-and timing parameters of the specific paradigm used in the scanner, one per gradient direction.
-"""
-
-bvals=np.loadtxt(fbvals)
-
-""" 
-**Read the b-vectors**, the unit gradient directions.
-"""
-
-gradients=np.loadtxt(fbvecs).T
-
-""" 
-Calculating models and parameters of directionality
----------------------------------------------------
-We are now set up with all the data and parameters to start calculating directional models 
-for voxels and their associated parameters, e.g. anisotropy.
-
-**Calculate the Single Tensor Model (STM).**  
-"""
-
-ten=dti.Tensor(data,bvals,gradients,thresh=50)
-
-""" 
-**Calculate Fractional Anisotropy (FA) from STM**
-"""
-
-FA=ten.fa()
-print('FA.shape (%d,%d,%d)' % FA.shape)
+fetch_beijing_dti()
 
 """
-As expected the FA is a 3-d array with one value per voxel::
-
-  FA.shape (6,10,10)
-  
-Generate a tractography 
------------------------
-Here we use the Euler Delta Crossings (EuDX) algorithm.
-The main input parameters of ``EuDX`` are 
-
-  * an anisotropic scalar metric e.g. FA
-  * the indices for the peaks on the sampling sphere. 
-  
-Other important options are 
-
-  * the number of random seeds where the track propagation is initiated, 
-  * a stopping criterion, for example a low threshold for anisotropy. For instance 
-    if we are using *Fractional Anisotropy (FA)* a typical threshold value might be ``a_low=.2``
-    
+Next, we read the saved dataset
 """
 
-eu=EuDX(a=FA,ind=ten.ind(),seeds=10000,a_low=.2)
+from dipy.data import read_beijing_dti
 
-""" 
-EuDX returns a generator class which yields a further track each time this class is called. 
-In this way we can generate millions of tracks without using a substantial amount of memory. 
-For an example of what to do when you want to generate millions of tracks with minimum memory usage have a look at 
-``save_dpy.py`` in the ``examples`` directory. However, in the current example that we only have 10000 seeds, and we can load all tracks 
-in a list using list comprehension([]) without having to worry about memory.  
-"""
-
-ten_tracks=[track for track in eu]
-
-""" 
-In dipy we usually represent tractography as a list of tracks. Every track is a numpy array of shape (N,3) 
-where N is the number of points in the track. 
-"""
-
-print ('The number of FA tracks is %d' % len(ten_tracks))
-print ('The number of points in ten_tracks[130] is %d' % len(ten_tracks[130]))
-print ('The points in ten_tracks[130] are:')
-print ten_tracks[130]
+img, gtab = read_beijing_dti()
 
 """
-As we use random seeding for the tractography the results will differ when repeated, however
-one run gave us the following information::
-
-  The number of FA tracks is 8280
-  The number of points in ten_track[130] is 7
-  The points in ten_tracks[130] are:
-  [[ 1.73680878  5.08249903  4.48492956]
-   [ 1.45797026  4.76981783  4.21201992]
-   [ 1.14244306  4.46308756  3.97461915]
-   [ 0.84001541  4.14648438  3.73316503]
-   [ 0.53758776  3.82988143  3.49171114]
-   [ 0.22055824  3.52935386  3.24845099]
-   [ 0.22055824  3.52935386  3.24845099]]
-
-Another way to represent tractography is as a numpy array of numpy objects. 
-This way has an additional advantage that it can be saved very easily using numpy utilities. 
-In theory, in a list it is faster to append an element, and in an array is faster to access. 
-In other words both representations have different pros and cons. 
-Other representations are possible too e.g. graphtheoretic etc.
+img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
+object (gradient information e.g. b-values).
 """
 
-ten_tracks_asobj=np.array(ten_tracks,dtype=np.object)
-np.save('ten_tracks.npy',ten_tracks_asobj)
-print('FA tracks saved in ten_tracks.npy')
-
-""" 
-Crossings and Generalized Q-Sampling
-------------------------------------
-You probably have heard about the problem of crossings in diffusion MRI. 
-The single tensor model cannot detect a simple crossing of two fibres. 
-However with *Generalized Q-Sampling (GQS)* this is possible even up to a quadruple crossing 
-or higher depending on the resolution of your datasets. Resolution will 
-typically depend on signal-to-noise ratio and voxel-size.
-"""
-
-gqs=gqi.GeneralizedQSampling(data,bvals,gradients)
+data = img.get_data()
+print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-A useful metric derived from GQS is *Quantitative Anisotropy* (QA). 
+This dataset has anisotropic voxel sizes, therefore reslicing is necessary
 """
 
-QA=gqs.qa()
-print('QA.shape (%d,%d,%d,%d)' % QA.shape)
+affine = img.get_affine()
 
 """
-QA is a 4-d array with up to 5 peak QA values for each voxel::
-
-  QA.shape (6,10,10,5)
-  
-QA array is 
-significantly different in shape from the FA array, 
-however it too can be directly input to the EuDX class:
+Load and show the zooms which hold the voxel size.
 """
 
-eu2=EuDX(a=QA,ind=gqs.ind(),seeds=10000,a_low=.0239)
+zooms = img.get_header().get_zooms()[:3]
 
 """
-This shows one of the advantages of our EuDX algorithm: it can be used with a wide range of model-based methods, such as 
-  - Single Tensor
-  - Multiple Tensor 
-  - Stick & Ball
-  - Higher Order Tensor 
+The voxel size here is ``(1.79, 1.79, 2.5)``.
 
-and model-free methods such as 
-  - DSI
-  - QBall
-  - GQI *etc.*
-
-We designed the algorithm this way so we that we can compare directly tractographies generated
-from the same dataset 
-with very different models and/or choices of threshold.  
-
-Now we look at the QA tractography:
+We now set the required new voxel size.
 """
 
-gqs_tracks=[track for track in eu2]
-print('The number of QA tracks is %d' % len(gqs_tracks))
-
-""" 
-with output::
-
-  The number of QA tracks is 14022
-
-Note the difference between the number of gqs_tracks and ten_tracks. There are more with
-QA than with FA. This is because of the 
-presence of crossings which GQI can detect but STM cannot. When the underlying directionality model supports crossings then 
-distinct tracks will be propagated from a seed towards the different directions in equal abundance.
-  
-In ``dipy`` it is very easy to count the number of crossings in a voxel, volume or region of interest
+new_zooms = (2., 2., 2.)
 
 """
+Which is ``(2.0, 2.0, 2.0)``
 
-gqs_tracks_asobj=np.array(gqs_tracks,dtype=np.object)
-np.save('gqs_tracks.npy',gqs_tracks_asobj)
-print('QA tracks saved in gqs_tracks.npy')
+Start reslicing. Trilinear interpolation is used by default.
+"""
+
+from dipy.align.aniso2iso import resample
+
+data2, affine2 = resample(data, affine, zooms, new_zooms)
+
+print('data2.shape (%d, %d, %d, %d)' % data2.shape)
 
 """
-**This is the end of this very simple example** You can reload the saved tracks using 
-``np.load`` from your current directory. You can optionaly install ``python-vtk``
-and visualize the tracks using ``fvtk``:
+Lets also create a simple mask.
+"""
+
+mask = data2[..., 0] > 50
+
+"""
+Now that we have prepared the datasets we can go forward with the voxel
+reconstruction. First, we instantiate the Tensor model in the following way.
+"""
+
+tenmodel = TensorModel(gtab)
+
+"""
+Fitting the data is very simple. We just need to calling the fit method of the
+TensorModel in the followin way:
+"""
+
+tenfit = tenmodel.fit(data2, mask)
+
+"""
+The fit method creates a TensorFit object which contains the fitting parameters
+and other attributes of the model. For example we can generate fractional
+anisotropy.
+"""
+
+FA = tenfit.fa
+
+"""
+In the background of the image the fitting will not be accurate there is no
+signal and possibly we will find FA values with nans (not a number). We can
+easily remove these in the following way.
+"""
+
+FA[np.isnan(FA)] = 0
+
+"""
+EuDX takes as input discretized voxel directions on a unit sphere. Therefore,
+it is necessary to discretize the eigen vectors before feeding them in EuDX.
+
+For the discretization procedure we use an evenly distributed sphere of 724
+points which we can access using the get_sphere function.
+"""
+
+from dipy.data import get_sphere
+
+sphere = get_sphere('symmetric724')
+
+"""
+We use quantize_evecs (evecs here stands for eigen vectors) to apply the
+discretization.
+"""
+
+from dipy.reconst.dti import quantize_evecs
+
+peak_indices = quantize_evecs(tenfit.evecs, sphere.vertices)
+
+"""
+EuDX is the fiber tracking algorithm that we use in this example.
+The most important parameters are the first one which represents the
+magnitude of the peak of a scalar anisotropic function, the 
+second which represents the indices of the discretized directions of 
+the peaks and odf_vertices are the vertices of the input sphere.
+"""
+
+from dipy.tracking.eudx import EuDX
+
+eu = EuDX(FA, peak_indices, odf_vertices = sphere.vertices, a_low=0.2)
+
+tensor_streamlines = [streamline for streamline in eu]
+
+"""
+We use here a python vtk module to show the streamlines
 """
 
 from dipy.viz import fvtk
+
+"""
+Create a scene
+"""
+
 r=fvtk.ren()
-fvtk.add(r,fvtk.line(ten_tracks,fvtk.red,opacity=0.05))
-gqs_tracks2=[t+np.array([10,0,0]) for t in gqs_tracks]
-fvtk.add(r,fvtk.line(gqs_tracks2,fvtk.green,opacity=0.05))
 
 """
-Press 's' to save this screenshot when you have displayed it with ``fvtk.show``.
-Or you can even record a video using ``fvtk.record``.
+Every streamline will be coloured according to its orientation
+"""
 
-You would show the figure with something like::
+from dipy.viz.colormap import line_colors
 
-    fvtk.show(r,png_magnify=1,size=(600,600))
+"""
+fvtk.line adds a streamline actor for streamline visualization
+and fvtk.add adds this actor in the scene
+"""
 
-To record a video of 50 frames of png, something like::
+fvtk.add(r, fvtk.line(tensor_streamlines, line_colors(tensor_streamlines)))
 
-    fvtk.record(r,cam_pos=(0,40,-40),cam_focal=(5,0,0),n_frames=50,magnification=1,out_path='nii_2_tracks',size=(600,600),bgr_color=(0,0,0))
+print('Saving illustration as tensor_tracks.png')
+fvtk.record(r, n_frames=1, out_path='tensor_tracking.png', size=(600, 600))
 
-.. figure:: nii_2_tracks1000000.png
-   :align: center
+"""
+Lets now repeat the same procedure with a CSA ODF model
+"""
 
-   **Same region of interest with different underlying voxel representations generates different tractographies**.
+from dipy.reconst.shm import CsaOdfModel, normalize_data
+
+#data2 = data2.astype('f8')
+
+"""
+We instantiate our CSA model with sperical harmonic order of 4
+"""
+
+csamodel = CsaOdfModel(gtab, 4)
+
+"""
+Peaks from model is used to calculate properties of the ODFs and return for
+example the peaks and their indices, or GFA which is similar to FA but for ODF
+based models.
+"""
+
+from dipy.reconst.odf import peaks_from_model
+
+peaks = peaks_from_model(model=csamodel, 
+                         data=data2, 
+                         sphere=sphere, 
+                         relative_peak_threshold=.8, 
+                         min_separation_angle=45, 
+                         mask=mask, 
+                         normalize_peaks=True)
+
+"""
+This time we will not use FA as input to EuDX but we will use directly
+the maximum peaks of the ODF. The a_low threshold is the 
+"""
+
+eu = EuDX(peaks.peak_values, 
+          peaks.peak_indices, 
+          odf_vertices = sphere.vertices, 
+          a_low=0.2)
+
+csa_streamlines = [streamline for streamline in eu]
+
+"""
+Clear the scene
+"""
+
+fvtk.clear(r)
+
+fvtk.add(r, fvtk.line(csa_streamlines, line_colors(csa_streamlines)))
+
+fvtk.record(r, n_frames=1, out_path='csa_tracking.png', size=(600, 600))
+
+"""
+In the previous example we show that in the Tensor case we discretized the
+eigen_vectors and for the CSA case we used peaks_from_model as the CSA is a
+model that creates ODFs. However, the Tensor creates ODFs too which are always
+ellipsoids. So, we could have used the Tensor with peaks_from_model.
+"""
+
+"""
+We can now save the results in the disk. For this purpose we can use the
+TrackVis format (*.trk). First, we need to create a header.
+"""
+
+hdr = nib.trackvis.empty_header()
+hdr['voxel_size'] = new_zooms
+hdr['voxel_order'] = 'LAS'
+hdr['dim'] = data2.shape[:3]
+
+"""
+Then we need to fill the streamlines.
+"""
+
+tensor_streamlines = ((sl, None, None) for sl in tensor_streamlines)
+
+ten_sl_fname = 'tensor_streamline.trk'
+
+"""
+Save the streamlines.
+"""
+
+nib.trackvis.write(ten_sl_fname, tensor_streamlines, hdr)
+
+"""
+Lets repeat the same steps for the csa_streamlines.
+"""
+
+csa_streamlines = ((sl, None, None) for sl in csa_streamlines)
+
+csa_sl_fname = 'csa_streamline.trk'
+
+nib.trackvis.write(csa_sl_fname, csa_streamlines, hdr)
+
+
+"""
+.. include:: ../links_names.inc
 
 """
 
-# Here's how we make the figure.
-print('Saving illustration as nii_2_tracks1000000.png')
-fvtk.record(r,n_frames=1,out_path='nii_2_tracks',size=(600,600))
+
 
