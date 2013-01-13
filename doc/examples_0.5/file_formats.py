@@ -1,20 +1,11 @@
-"""
+""" 
 
-======================
-Supported File Formats
-======================
-
-================
-Reading Datasets
-================
+=====================
+File Format Friendly 
+=====================
 
 Overview
---------
-In _Dipy we make an effort to support as many file formats as possible. These
-days life is easier with _Nibabel being around.
-
-_Nibabel provides us with readers for Nifti, Analyze and Dicom images
-(experimental).  It also has readers/writesrs 
+========
 
 Read :ref:`faq`
 
@@ -98,9 +89,8 @@ Number of tracks in before and after
 print(len(tracks))
 print(len(some_tracks))
 
-"""
-.. include:: ../links_names.inc
 
-"""
+
+
 
 

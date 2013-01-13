@@ -2,14 +2,13 @@
  Introduction
 ==============
 
-dipy_ is in development mode at the moment. 
-
-Please do join in the fun.
+Dipy_ is always seeking courageous scientists who want to take dMRI
+analysis to the next level. If you share the same vision and you are willing to share your code please let us know we will be happy to help.
 
 The lead developer is Eleftherios Garyfallidis, with support from Ian
-Nimmo-Smith, Matthew Brett, Bago Amirbekian, Frank Yeh, Christopher Nguyen and (your name here). See the main documentation for the full list of dipy developers and contributors.
+Nimmo-Smith, Matthew Brett, Bago Amirbekian, Ariel Rokem, Stefan van der Walt and (your name here). See the main documentation for the full list of dipy developers and contributors.
 
-The primary develpoment repository is `dipy github`_ 
+The primary development repository is `dipy github`_ 
 
 Please do contribute.  Have a look at :ref:`using-git` for some ideas on
 how to get going.
@@ -23,5 +22,9 @@ But - just pitch in - send us some code - we'll give you feedback if you
 want it - that way we learn from each other.
 
 And - welcome...
+
+If you are new to diffusion MRI and you want to learn more here is a simple `video <http://www.youtube.com/watch?v=tNB0sM7JJqg>`_  we
+made for the general public. I hope you enjoy it and apologies for the low resolution. 
+
 
 .. include:: ../links_names.inc

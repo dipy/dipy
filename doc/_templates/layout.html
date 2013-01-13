@@ -2,13 +2,20 @@
 {% set title = 'Dipy' %}
 
 {% block rootrellink %}
-  <li><a href="{{pathto('index')}}">Dipy Home</a> |&nbsp;</li>
+  <li><a href="{{pathto('index')}}">Home</a> |&nbsp;</li>
+  <li><a href="{{pathto('stateoftheart')}}">Overview</a> |&nbsp;</li>
+  <li><a href="{{pathto('examples_index')}}">Gallery</a> |&nbsp;</li>
+  <li><a href="{{pathto('installation')}}">Download</a> |&nbsp;</li>
+  <li><a href="{{pathto('subscribe')}}">Subscribe</a> |&nbsp;</li>
+  <li><a href="{{pathto('developers')}}">Developers</a> |&nbsp;</li>
+  <li><a href="{{pathto('cite')}}">Cite</a> &nbsp;</li>
 {% endblock %}
 
 
 {% block extrahead %}
-  <meta name="keywords" content="nipy, neuroimaging, python, neuroscience, time
-				 series">
+  <meta name="keywords" content="dipy, dMRI, DTI, DSI, diffusion MRI, Tensor,
+  neuroimaging, python, neuroscience, Eleftherios, Garyfallidis, tractography,
+  streamlines, fiber tracking">
 {% endblock %}
 
 {% block header %}
