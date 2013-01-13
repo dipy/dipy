@@ -447,7 +447,7 @@ def disperse_charges(hemi, iters, const=.05):
 
 
 def interp_rbf(data, sphere_origin, sphere_target,
-               function='multiquadric', epsilon=None):
+               function='multiquadric', epsilon=None, smooth=0):
     """Interpolate data on the sphere, using radial basis functions.
 
     Parameters
@@ -463,6 +463,9 @@ def interp_rbf(data, sphere_origin, sphere_target,
         Radial basis function.
     epsilon : float
         Radial basis function spread parameter.
+    smooth : float
+        values greater than zero increase the smoothness of the
+        approximation with 0 (the default) as pure interpolation. 
 
     Returns
     -------
@@ -480,9 +483,11 @@ def interp_rbf(data, sphere_origin, sphere_target,
     # specification of epsilon None
     if epsilon is not None:
         kwargs = {'function': function,
-                  'epsilon': epsilon}
+                  'epsilon': epsilon,
+                  'smooth' : smooth}
     else:
-        kwargs = {'function': function}
+        kwargs = {'function': function,
+                  'smooth': smooth}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
