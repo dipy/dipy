@@ -11,9 +11,8 @@ from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 @multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
-    def __init__(self, 
+    def __init__(self,
                  gtab,
-                 method='standard',
                  qgrid_size=17,
                  r_start=2.1,
                  r_end=6.,
@@ -33,10 +32,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
                 \end{eqnarray}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
-        wavector which corresponds to different gradient directions. 
-
-        The standard method is based on [1]_ and the deconvolution method is based
-        on [2]_.
+        wavector which corresponds to different gradient directions. Method used to
+        calculate the ODFs. Here we implement the method proposed by Wedeen et.
+        al [1]_.
 
         The main assumption for this model is fast gradient switching and that
         the acquisition gradients will sit on a keyhole Cartesian grid in
@@ -47,12 +45,10 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         gtab : GradientTable,
             Gradient directions and bvalues container class
         method : ('standard' or 'deconv')
-            Method used to calculate the ODFs. 'standard' is the method
-            proposed by Wedeen et. al [1]_ and 'deconv' is the method proposed
-            by Canales-Rodriguez et al. [2]_
-        qgrid_size : int,
-            sets the size of the q_space grid. For example if qgrid_size is 16
-            then the shape of the grid will be ``(16, 16, 16)``.
+                    qgrid_size : int,
+            has to be an odd number. Sets the size of the q_space grid. 
+            For example if qgrid_size is 17 then the shape of the grid will be 
+            ``(17, 17, 17)``.
         r_start : float,
             ODF is sampled radially in the PDF. This parameters shows where the
             sampling should start.
@@ -76,21 +72,22 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Examples
         --------
-        Here we create an example where we provide the data, a gradient table 
-        and a reconstruction sphere and calculate generalized FA for the first 
-        voxel in the data.
+        In this example where we provide the data, a gradient table 
+        and a reconstruction sphere we calculate generalized FA for the first 
+        voxel in the data with the reconstruction performed using DSI.
 
         >>> from dipy.data import dsi_voxels, get_sphere
         >>> data, gtab = dsi_voxels()
         >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
-        >>> ds.direction_finder.config(sphere=sphere, 
+        >>> ds.direction_finder.config(sphere=sphere,
                                        min_separation_angle=25,
                                        relative_peak_threshold=.35)
         >>> dsfit = ds.fit(data)
-        >>> np.round(dsfit.gfa[0, 0, 0], 2)
-        0.12
+        >>> from dipy.reconst.odf import gfa
+        >>> np.round(gfa(dsfit.odf(sphere))[0, 0, 0], 2)
+        0.11
 
         Notes
         ------
@@ -105,7 +102,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         the added zero padding from the increase of gqrid_size also introduces
         a scaling of the PDF.
 
-        C. We assume that data have only one b0 volume.
+        C. We assume that data only one b0 volume is provided.
 
         See Also
         --------
@@ -116,20 +113,16 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.normalize_peaks = normalize_peaks
-
-        if method == 'standard':
-            #3d volume for Sq
-            self.qgrid_size = qgrid_size
-            #necessary shifting for centering
-            self.origin = self.qgrid_size // 2
-            #hanning filter width
-            self.filter_width = filter_width
-            #odf collecting radius
-            self.qradius = np.arange(r_start, r_end, r_step)
-            self.create_qspace()
-            self.hanning_filter()
-        if method == 'deconv':
-            raise NotImplementedError()
+        #3d volume for Sq
+        self.qgrid_size = qgrid_size
+        #necessary shifting for centering
+        self.origin = self.qgrid_size // 2
+        #hanning filter width
+        self.filter_width = filter_width
+        #odf collecting radius
+        self.qradius = np.arange(r_start, r_end, r_step)
+        self.create_qspace()
+        self.hanning_filter()
         b0 = np.min(self.bvals)
         self.dn = (self.bvals > b0).sum()
 
@@ -140,7 +133,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         bv = self.bvals
         bmin = np.sort(bv)[1]
         bv = np.sqrt(bv/bmin)
-        qtable = np.vstack((bv,bv,bv)).T*self.bvecs
+        qtable = np.vstack((bv,bv,bv)).T * self.bvecs
         qtable = np.floor(qtable+.5)
         self.qtable = qtable
         self.qradiusn = len(self.qradius)
