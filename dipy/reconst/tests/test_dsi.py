@@ -1,8 +1,11 @@
 import numpy as np
-from numpy.testing import (assert_equal, assert_almost_equal, run_module_suite)
+from numpy.testing import (assert_equal, 
+                            assert_almost_equal, 
+                            run_module_suite, 
+                            assert_array_equal)
 from dipy.data import get_data, dsi_voxels
 from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.reconst.odf import gfa
+from dipy.reconst.odf import gfa, peak_directions
 from dipy.sims.voxel import SticksAndBall
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
@@ -17,7 +20,7 @@ def test_dsi():
     sphere = get_sphere('symmetric724')
     #load icosahedron sphere
     sphere2 = create_unit_sphere(5)
-    btable = np.loadtxt(get_data('dsi515btable'))    
+    btable = np.loadtxt(get_data('dsi515btable'))
     gtab = gradient_table(btable[:,0], btable[:,1:])
     data, golden_directions = SticksAndBall(gtab, d=0.0015, 
                                             S0=100, angles=[(0, 0), (90, 0)],
@@ -33,6 +36,13 @@ def test_dsi():
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 
                         2, 1)
+
+    #use peak_directions instead
+    dsnod = DiffusionSpectrumModel(gtab)
+    dsnodfit = dsnod.fit(data)
+    directionsnod, _, _ = peak_directions(dsnodfit.odf(sphere), sphere, .35, 25)
+    assert_array_equal(directions, directionsnod)
+
     #5 subdivisions
     ds.direction_finder.config(sphere=sphere2, min_separation_angle=25,
                               relative_peak_threshold=.35)
@@ -60,14 +70,14 @@ def test_dsi():
 
 def test_multivox_dsi():
     data, gtab = dsi_voxels()
-    DS = DiffusionSpectrumModel(gtab, 'standard')
+    DS = DiffusionSpectrumModel(gtab)
     sphere = get_sphere('symmetric724')
     DS.direction_finder.config(sphere=sphere, 
                                min_separation_angle=25,
                                relative_peak_threshold=.35)
     DSfit = DS.fit(data)
-    PDF=DSfit.pdf()
-    assert_equal(data.shape[:-1] + (16, 16, 16), PDF.shape)
+    PDF = DSfit.pdf()
+    assert_equal(data.shape[:-1] + (17, 17, 17), PDF.shape)
     assert_equal(np.alltrue(np.isreal(PDF)), True)
 
 
