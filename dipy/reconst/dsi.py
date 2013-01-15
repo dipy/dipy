@@ -11,12 +11,12 @@ from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 @multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
-    def __init__(self,
-                 gtab,
-                 qgrid_size=17,
-                 r_start=2.1,
-                 r_end=6.,
-                 r_step=0.2,
+    def __init__(self, 
+                 gtab, 
+                 qgrid_size=17, 
+                 r_start=2.1, 
+                 r_end=6., 
+                 r_step=0.2, 
                  filter_width=32,
                  normalize_peaks=False):
         r""" Diffusion Spectrum Imaging
