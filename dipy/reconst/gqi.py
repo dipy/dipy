@@ -43,7 +43,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         Examples
         --------
         Here we create an example where we provide the data, a gradient table
-        and a reconstruction sphere and calculate generalized FA for the first
+        and a reconstruction sphere and calculate the ODF for the first
         voxel in the data.
 
         >>> from dipy.data import dsi_voxels
