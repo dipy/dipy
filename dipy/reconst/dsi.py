@@ -14,7 +14,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
     def __init__(self, 
                  gtab,
                  method='standard',
-                 qgrid_size=16,
+                 qgrid_size=17,
                  r_start=2.1,
                  r_end=6.,
                  r_step=0.2,
@@ -225,62 +225,7 @@ class DiffusionSpectrumFit(OdfFit):
         Pr = self.pdf()
 
         #calculate the orientation distribution function
-        odf = pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
-
-        # We compute the gfa here, since we have the ODF available and
-        # the storage requirements are minimal.  Otherwise, we'd need to
-        # recompute the ODF at significant computational expense.
-        self._gfa = gfa(odf)
-        pk, ind = local_maxima(odf, sphere.edges)
-
-        relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
-        min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
-
-        # Remove small peaks.
-        gt_threshold = pk >= (relative_peak_threshold * pk[0])
-        pk = pk[gt_threshold]
-        ind = ind[gt_threshold]
-
-        # Keep peaks which are unique, which means remove peaks that are too
-        # close to a larger peak.
-        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
-                                                min_separation_angle,
-                                                return_index=True)
-        pk = pk[where_uniq]
-        ind = ind[where_uniq]
-
-        # Calculate peak metrics
-        #global_max = max(global_max, pk[0])
-        n = min(self.npeaks, len(pk))
-        #qa_array[i, :n] = pk[:n] - odf.min()
-        self._peak_values = np.zeros(self.npeaks)
-        self._peak_indices = np.zeros(self.npeaks)
-        if self.model.normalize_peaks:
-            self._peak_values[:n] = pk[:n] / pk[0]
-        else:
-            self._peak_values[:n] = pk[:n]
-        self._peak_indices[:n] = ind[:n]
-
-        return odf
-
-    @property
-    def gfa(self):
-        if self._gfa is None:
-            # Borrow default sphere from direction finder
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._gfa
-
-    @property
-    def peak_values(self):
-        if self._peak_values is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_values
-
-    @property
-    def peak_indices(self):
-        if self._peak_indices is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_indices
+        return  pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
 
 
 def pdf_interp_coords(sphere, rradius, origin):
