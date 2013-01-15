@@ -5,8 +5,8 @@ from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import SticksAndBall
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.data import get_sphere
-from numpy.testing import (assert_equal, 
-                           assert_almost_equal, 
+from numpy.testing import (assert_equal,
+                           assert_almost_equal,
                            run_module_suite)
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
@@ -19,9 +19,9 @@ def test_gqi():
     sphere = get_sphere('symmetric724')
     #load icosahedron sphere
     sphere2 = create_unit_sphere(5)
-    btable = np.loadtxt(get_data('dsi515btable'))    
+    btable = np.loadtxt(get_data('dsi515btable'))
     bvals = btable[:,0]
-    bvecs = btable[:,1:]        
+    bvecs = btable[:,1:]
     gtab = gradient_table(bvals, bvecs) 
     data, golden_directions = SticksAndBall(gtab, d=0.0015, 
                                S0=100, angles=[(0, 0), (90, 0)], 
