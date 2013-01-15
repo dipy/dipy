@@ -10,11 +10,11 @@ from .recspeed import local_maxima, remove_similar_vertices
 @multi_voxel_model
 class GeneralizedQSamplingModel(OdfModel, Cache):
 
-    def __init__(self, 
-                    gtab, 
-                    method='gqi2', 
-                    sampling_length=1.2, 
-                    normalize_peaks=False):
+    def __init__(self,
+                 gtab,
+                 method='gqi2',
+                 sampling_length=1.2,
+                 normalize_peaks=False):
         r""" Generalized Q-Sampling Imaging [1]_
 
         This model has the same assumptions as the DSI method i.e. Cartesian
@@ -22,20 +22,20 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
         Implements equations 2.14 from [2]_ for standard GQI and equation 2.16
         from [2]_ for GQI2. You can think of GQI2 as an analytical solution of
-        the DSI ODF.            
+        the DSI ODF.
 
         Parameters
         ----------
-        gtab : object, 
+        gtab : object,
             GradientTable
-        method : str, 
+        method : str,
             'standard' or 'gqi2'
         sampling_length : float,
             diffusion sampling length (lambda in eq. 2.14 and 2.16)
 
         References
         ----------
-        .. [1] Yeh F-C et. al, "Generalized Q-Sampling Imaging", IEEE TMI, 2010.
+        .. [1] Yeh F-C et. al, "Generalized Q-Sampling Imaging", IEEE TMI, 2010
 
         .. [2] Garyfallidis E, "Towards an accurate brain tractography", PhD
         thesis, University of Cambridge, 2012.
@@ -118,66 +118,7 @@ class GeneralizedQSamplingFit(OdfFit):
                                         sphere.vertices.T) * self.model.Lambda / np.pi))
             self.model.cache_set('gqi_vector', sphere, self.gqi_vector)
 
-        odf = np.dot(self.data, self.gqi_vector)
-
-        self._gfa = gfa(odf)
-        pk, ind = local_maxima(odf, sphere.edges)
-
-        relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
-        min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
-
-        # Remove small peaks.
-        gt_threshold = pk >= (relative_peak_threshold * pk[0])
-        pk = pk[gt_threshold]
-        ind = ind[gt_threshold]
-
-        # Keep peaks which are unique, which means remove peaks that are too
-        # close to a larger peak.
-        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
-                                                min_separation_angle,
-                                                return_index=True)
-        pk = pk[where_uniq]
-        ind = ind[where_uniq]
-
-        # Calculate peak metrics
-        #global_max = max(global_max, pk[0])
-        n = min(self.npeaks, len(pk))
-        self._qa = np.zeros(self.npeaks)
-        self._qa[:n] = pk[:n] - odf.min()
-        self._peak_values = np.zeros(self.npeaks)
-        self._peak_indices = np.zeros(self.npeaks)
-        if self.model.normalize_peaks:
-            self._peak_values[:n] = pk[:n] / pk[0]
-        else:
-            self._peak_values[:n] = pk[:n]
-        self._peak_indices[:n] = ind[:n]
-
-        return odf
-
-    @property
-    def gfa(self):
-        if self._gfa is None:
-            # Borrow default sphere from direction finder
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._gfa
-
-    @property
-    def peak_values(self):
-        if self._peak_values is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_values
-
-    @property
-    def peak_indices(self):
-        if self._peak_indices is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_indices
-
-    @property
-    def qa(self):
-        if self._qa is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._qa
+        return np.dot(self.data, self.gqi_vector)
 
 
 def normalize_qa(qa, max_qa=None):
@@ -227,7 +168,7 @@ def npa(self, odf, width=5):
     Nimmo-Smith et. al  ISMRM 2011
     """
     #odf = self.odf(s)
-    t0,t1,t2 = triple_odf_maxima(self.odf_vertices, odf, width)
+    t0, t1, t2 = triple_odf_maxima(self.odf_vertices, odf, width)
     psi0 = t0[1] ** 2
     psi1 = t1[1] ** 2
     psi2 = t2[1] ** 2
