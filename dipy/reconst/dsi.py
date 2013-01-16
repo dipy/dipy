@@ -73,7 +73,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         Examples
         --------
         In this example where we provide the data, a gradient table 
-        and a reconstruction sphere we calculate generalized FA for the first 
+        and a reconstruction sphere, we calculate generalized FA for the first 
         voxel in the data with the reconstruction performed using DSI.
 
         >>> from dipy.data import dsi_voxels, get_sphere
@@ -118,42 +118,14 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         #necessary shifting for centering
         self.origin = self.qgrid_size // 2
         #hanning filter width
-        self.filter_width = filter_width
-        #odf collecting radius
+        self.filter = hanning_filter(gtab, filter_width)
+        #odf sampling radius
         self.qradius = np.arange(r_start, r_end, r_step)
-        self.create_qspace()
-        self.hanning_filter()
+        self.qradiusn = len(self.qradius)
+        #create qspace grid
+        self.qgrid = create_qspace(gtab, self.origin)
         b0 = np.min(self.bvals)
         self.dn = (self.bvals > b0).sum()
-
-    def create_qspace(self):
-        """ create the 3D grid which will hold the signal values
-        """
-        #create the q-table from bvecs and bvals
-        bv = self.bvals
-        bmin = np.sort(bv)[1]
-        bv = np.sqrt(bv/bmin)
-        qtable = np.vstack((bv,bv,bv)).T * self.bvecs
-        qtable = np.floor(qtable+.5)
-        self.qtable = qtable
-        self.qradiusn = len(self.qradius)
-        #center and index in qspace volume
-        self.qgrid = qtable + self.origin
-        self.qgrid = self.qgrid.astype('i8')
-
-    def hanning_filter(self):
-        """ create a hanning window
-
-        The signal is premultiplied by a Hanning window before 
-        Fourier transform in order to ensure a smooth attenuation 
-        of the signal at high q values.
-
-        """
-        #calculate r - hanning filter free parameter
-        r = np.sqrt(self.qtable[:, 0] ** 2 + 
-                    self.qtable[:, 1] ** 2 + self.qtable[:, 2] ** 2)
-        #setting hanning filter width and hanning
-        self.filter = .5*np.cos(2*np.pi*r/self.filter_width)
 
     def fit(self, data):
         return DiffusionSpectrumFit(self, data)
@@ -221,6 +193,62 @@ class DiffusionSpectrumFit(OdfFit):
         return  pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
 
 
+def create_qspace(gtab, origin):
+    """ create the 3D grid which holds the signal values (q-space)
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    origin : (3,) ndarray
+        center of the qspace
+
+    Returns
+    -------
+    qgrid : ndarray
+        qspace coordinates
+    """
+    #create the q-table from bvecs and bvals
+    qtable = create_qtable(gtab)
+    #center and index in qspace volume
+    qgrid = qtable + origin
+    return qgrid.astype('i8')
+
+
+def create_qtable(gtab):
+    """ create a normalized version of gradients
+    """
+    bv = gtab.bvals
+    bmin = np.sort(bv)[1]
+    bv = np.sqrt(bv / bmin)
+    qtable = np.vstack((bv, bv, bv)).T * gtab.bvecs
+    return np.floor(qtable + .5)
+
+
+def hanning_filter(gtab, filter_width):
+    """ create a hanning window
+
+    The signal is premultiplied by a Hanning window before
+    Fourier transform in order to ensure a smooth attenuation
+    of the signal at high q values.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    filter_width : int
+
+    Returns
+    -------
+    filter : (N,) ndarray
+        where N is the number of non-b0 gradient directions
+
+    """
+    qtable = create_qtable(gtab)
+    #calculate r - hanning filter free parameter
+    r = np.sqrt(qtable[:, 0] ** 2 + qtable[:, 1] ** 2 + qtable[:, 2] ** 2)
+    #setting hanning filter width and hanning
+    return .5 * np.cos(2 * np.pi * r / filter_width)
+
+
 def pdf_interp_coords(sphere, rradius, origin):
     """ Precompute coordinates for ODF calculation from the PDF
 
@@ -232,6 +260,7 @@ def pdf_interp_coords(sphere, rradius, origin):
             line interpolation points
     origin : array, shape (3,)
             center of the grid
+
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T
     interp_coords = interp_coords.reshape((3, -1))
