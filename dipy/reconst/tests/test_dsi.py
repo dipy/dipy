@@ -1,8 +1,9 @@
 import numpy as np
-from numpy.testing import (assert_equal, 
-                            assert_almost_equal, 
-                            run_module_suite, 
-                            assert_array_equal)
+from numpy.testing import (assert_equal,
+                           assert_almost_equal,
+                           run_module_suite,
+                           assert_array_equal,
+                           assert_raises)
 from dipy.data import get_data, dsi_voxels
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.reconst.odf import gfa, peak_directions
@@ -66,6 +67,8 @@ def test_dsi():
             assert_equal(len(ds.fit(data).directions), len(golden_directions))
         if len(directions) > 3:
             assert_equal(gfa(ds.fit(data).odf(sphere2)) < 0.1, True)
+
+    assert_raises(ValueError, DiffusionSpectrumModel, gtab, qgrid_size=16)
 
 
 def test_multivox_dsi():

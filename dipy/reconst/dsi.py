@@ -44,8 +44,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         ----------
         gtab : GradientTable,
             Gradient directions and bvalues container class
-        method : ('standard' or 'deconv')
-                    qgrid_size : int,
+        qgrid_size : int,
             has to be an odd number. Sets the size of the q_space grid. 
             For example if qgrid_size is 17 then the shape of the grid will be 
             ``(17, 17, 17)``.
@@ -114,6 +113,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.bvecs = gtab.bvecs
         self.normalize_peaks = normalize_peaks
         #3d volume for Sq
+        if qgrid_size % 2 == 0:
+            raise ValueError('qgrid_size needs to be an odd integer')
         self.qgrid_size = qgrid_size
         #necessary shifting for centering
         self.origin = self.qgrid_size // 2
