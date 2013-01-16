@@ -198,6 +198,10 @@ def peak_directions(odf, sphere, relative_peak_threshold,
     -------
     directions : (N, 3) ndarray
         N vertices for sphere, one for each peak
+    values : (N,) ndarray
+        peak values
+    indices : (N,) ndarray
+        peak indices of the directions on the sphere
 
     """
     values, indices = local_maxima(odf, sphere.edges)

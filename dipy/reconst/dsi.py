@@ -11,10 +11,9 @@ from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 @multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
-    def __init__(self, 
+    def __init__(self,
                  gtab,
-                 method='standard',
-                 qgrid_size=16,
+                 qgrid_size=17,
                  r_start=2.1,
                  r_end=6.,
                  r_step=0.2,
@@ -33,10 +32,9 @@ class DiffusionSpectrumModel(OdfModel, Cache):
                 \end{eqnarray}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
-        wavector which corresponds to different gradient directions. 
-
-        The standard method is based on [1]_ and the deconvolution method is based
-        on [2]_.
+        wavector which corresponds to different gradient directions. Method used to
+        calculate the ODFs. Here we implement the method proposed by Wedeen et.
+        al [1]_.
 
         The main assumption for this model is fast gradient switching and that
         the acquisition gradients will sit on a keyhole Cartesian grid in
@@ -46,13 +44,10 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         ----------
         gtab : GradientTable,
             Gradient directions and bvalues container class
-        method : ('standard' or 'deconv')
-            Method used to calculate the ODFs. 'standard' is the method
-            proposed by Wedeen et. al [1]_ and 'deconv' is the method proposed
-            by Canales-Rodriguez et al. [2]_
         qgrid_size : int,
-            sets the size of the q_space grid. For example if qgrid_size is 16
-            then the shape of the grid will be ``(16, 16, 16)``.
+            has to be an odd number. Sets the size of the q_space grid. 
+            For example if qgrid_size is 17 then the shape of the grid will be 
+            ``(17, 17, 17)``.
         r_start : float,
             ODF is sampled radially in the PDF. This parameters shows where the
             sampling should start.
@@ -76,21 +71,22 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Examples
         --------
-        Here we create an example where we provide the data, a gradient table 
-        and a reconstruction sphere and calculate generalized FA for the first 
-        voxel in the data.
+        In this example where we provide the data, a gradient table 
+        and a reconstruction sphere, we calculate generalized FA for the first 
+        voxel in the data with the reconstruction performed using DSI.
 
         >>> from dipy.data import dsi_voxels, get_sphere
         >>> data, gtab = dsi_voxels()
         >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
-        >>> ds.direction_finder.config(sphere=sphere, 
+        >>> ds.direction_finder.config(sphere=sphere,
                                        min_separation_angle=25,
                                        relative_peak_threshold=.35)
         >>> dsfit = ds.fit(data)
-        >>> np.round(dsfit.gfa[0, 0, 0], 2)
-        0.12
+        >>> from dipy.reconst.odf import gfa
+        >>> np.round(gfa(dsfit.odf(sphere))[0, 0, 0], 2)
+        0.11
 
         Notes
         ------
@@ -105,7 +101,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         the added zero padding from the increase of gqrid_size also introduces
         a scaling of the PDF.
 
-        C. We assume that data have only one b0 volume.
+        C. We assume that data only one b0 volume is provided.
 
         See Also
         --------
@@ -116,51 +112,21 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.normalize_peaks = normalize_peaks
-
-        if method == 'standard':
-            #3d volume for Sq
-            self.qgrid_size = qgrid_size
-            #necessary shifting for centering
-            self.origin = self.qgrid_size // 2
-            #hanning filter width
-            self.filter_width = filter_width
-            #odf collecting radius
-            self.qradius = np.arange(r_start, r_end, r_step)
-            self.create_qspace()
-            self.hanning_filter()
-        if method == 'deconv':
-            raise NotImplementedError()
+        #3d volume for Sq
+        if qgrid_size % 2 == 0:
+            raise ValueError('qgrid_size needs to be an odd integer')
+        self.qgrid_size = qgrid_size
+        #necessary shifting for centering
+        self.origin = self.qgrid_size // 2
+        #hanning filter width
+        self.filter = hanning_filter(gtab, filter_width)
+        #odf sampling radius
+        self.qradius = np.arange(r_start, r_end, r_step)
+        self.qradiusn = len(self.qradius)
+        #create qspace grid
+        self.qgrid = create_qspace(gtab, self.origin)
         b0 = np.min(self.bvals)
         self.dn = (self.bvals > b0).sum()
-
-    def create_qspace(self):
-        """ create the 3D grid which will hold the signal values
-        """
-        #create the q-table from bvecs and bvals
-        bv = self.bvals
-        bmin = np.sort(bv)[1]
-        bv = np.sqrt(bv/bmin)
-        qtable = np.vstack((bv,bv,bv)).T*self.bvecs
-        qtable = np.floor(qtable+.5)
-        self.qtable = qtable
-        self.qradiusn = len(self.qradius)
-        #center and index in qspace volume
-        self.qgrid = qtable + self.origin
-        self.qgrid = self.qgrid.astype('i8')
-
-    def hanning_filter(self):
-        """ create a hanning window
-
-        The signal is premultiplied by a Hanning window before 
-        Fourier transform in order to ensure a smooth attenuation 
-        of the signal at high q values.
-
-        """
-        #calculate r - hanning filter free parameter
-        r = np.sqrt(self.qtable[:, 0] ** 2 + 
-                    self.qtable[:, 1] ** 2 + self.qtable[:, 2] ** 2)
-        #setting hanning filter width and hanning
-        self.filter = .5*np.cos(2*np.pi*r/self.filter_width)
 
     def fit(self, data):
         return DiffusionSpectrumFit(self, data)
@@ -225,62 +191,63 @@ class DiffusionSpectrumFit(OdfFit):
         Pr = self.pdf()
 
         #calculate the orientation distribution function
-        odf = pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
+        return  pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
 
-        # We compute the gfa here, since we have the ODF available and
-        # the storage requirements are minimal.  Otherwise, we'd need to
-        # recompute the ODF at significant computational expense.
-        self._gfa = gfa(odf)
-        pk, ind = local_maxima(odf, sphere.edges)
 
-        relative_peak_threshold = self.model.direction_finder._config["relative_peak_threshold"]
-        min_separation_angle = self.model.direction_finder._config["min_separation_angle"]
+def create_qspace(gtab, origin):
+    """ create the 3D grid which holds the signal values (q-space)
 
-        # Remove small peaks.
-        gt_threshold = pk >= (relative_peak_threshold * pk[0])
-        pk = pk[gt_threshold]
-        ind = ind[gt_threshold]
+    Parameters
+    ----------
+    gtab : GradientTable
+    origin : (3,) ndarray
+        center of the qspace
 
-        # Keep peaks which are unique, which means remove peaks that are too
-        # close to a larger peak.
-        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
-                                                min_separation_angle,
-                                                return_index=True)
-        pk = pk[where_uniq]
-        ind = ind[where_uniq]
+    Returns
+    -------
+    qgrid : ndarray
+        qspace coordinates
+    """
+    #create the q-table from bvecs and bvals
+    qtable = create_qtable(gtab)
+    #center and index in qspace volume
+    qgrid = qtable + origin
+    return qgrid.astype('i8')
 
-        # Calculate peak metrics
-        #global_max = max(global_max, pk[0])
-        n = min(self.npeaks, len(pk))
-        #qa_array[i, :n] = pk[:n] - odf.min()
-        self._peak_values = np.zeros(self.npeaks)
-        self._peak_indices = np.zeros(self.npeaks)
-        if self.model.normalize_peaks:
-            self._peak_values[:n] = pk[:n] / pk[0]
-        else:
-            self._peak_values[:n] = pk[:n]
-        self._peak_indices[:n] = ind[:n]
 
-        return odf
+def create_qtable(gtab):
+    """ create a normalized version of gradients
+    """
+    bv = gtab.bvals
+    bmin = np.sort(bv)[1]
+    bv = np.sqrt(bv / bmin)
+    qtable = np.vstack((bv, bv, bv)).T * gtab.bvecs
+    return np.floor(qtable + .5)
 
-    @property
-    def gfa(self):
-        if self._gfa is None:
-            # Borrow default sphere from direction finder
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._gfa
 
-    @property
-    def peak_values(self):
-        if self._peak_values is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_values
+def hanning_filter(gtab, filter_width):
+    """ create a hanning window
 
-    @property
-    def peak_indices(self):
-        if self._peak_indices is None:
-            self.odf(self.model.direction_finder._config["sphere"])
-        return self._peak_indices
+    The signal is premultiplied by a Hanning window before
+    Fourier transform in order to ensure a smooth attenuation
+    of the signal at high q values.
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    filter_width : int
+
+    Returns
+    -------
+    filter : (N,) ndarray
+        where N is the number of non-b0 gradient directions
+
+    """
+    qtable = create_qtable(gtab)
+    #calculate r - hanning filter free parameter
+    r = np.sqrt(qtable[:, 0] ** 2 + qtable[:, 1] ** 2 + qtable[:, 2] ** 2)
+    #setting hanning filter width and hanning
+    return .5 * np.cos(2 * np.pi * r / filter_width)
 
 
 def pdf_interp_coords(sphere, rradius, origin):
@@ -294,6 +261,7 @@ def pdf_interp_coords(sphere, rradius, origin):
             line interpolation points
     origin : array, shape (3,)
             center of the grid
+
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T
     interp_coords = interp_coords.reshape((3, -1))
