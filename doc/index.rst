@@ -8,6 +8,21 @@ Dipy_ is a **free** and **open source** software project for
 **diffusion** *magnetic resonance imaging* (dMRI) **analysis**. 
 
 
+**********
+Highlights
+**********
+
+In Dipy_ we care about methods which can solve complex problems efficiently and
+robustly. Here is QuickBundles one of the state-of-the art applications found
+in Dipy_ which can be used to simplify large datasets of streamlines. See our
+examples and try QuickBundles with your data :ref:`examples_index`.
+
+.. raw:: html
+
+    <iframe width="420" height="315" src="http://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
+
+
+
 ***************
 Getting Started
 ***************
@@ -28,6 +43,8 @@ Here is a simple example for the calculation of fractional anisotropy (FA)::
   ten = TensorModel(gtab)
   tenfit = ten.fit(data)
   FA = tenfit.fa
+
+
 
 :ref:`Download <installation>` Dipy_ and try it for yourself.
 
