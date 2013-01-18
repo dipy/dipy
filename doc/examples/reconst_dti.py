@@ -4,7 +4,7 @@
 Reconstruct with a Tensor
 =========================
 
-This example shows how to reconstruct the datasets using a single Tensor model.
+This example shows how to reconstruct your diffusion datasets using a single Tensor model.
 
 First import the necessary modules:
 

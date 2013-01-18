@@ -22,3 +22,4 @@ The following people have also contributed to the project:
 
 Collaboration is the heart of Dipy_ philosophy. We encourage everyone from anywhere in the world who wants to be involved in the project to contact us.
 
+.. include:: links_names.inc
