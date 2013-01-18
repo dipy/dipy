@@ -1,8 +1,8 @@
 
-""" 
+"""
 
 ==========================
-Reslice diffusion datasets 
+Reslice diffusion datasets
 ==========================
 
 Overview
