@@ -47,6 +47,55 @@ def fractional_anisotropy(evals, axis=-1):
 
     return fa
 
+def calculate_tensor_mode(array):
+    aniso = array - 1.0/3 * np.trace(array) * np.eye(np.shape(array)[0])
+    mode = 3 * np.sqrt(6) * np.linalg.det(aniso / np.linalg.norm(aniso))
+    return mode
+
+def calculate_mode(evals, D, axis=-1):
+    r"""
+    Mode (MO) of a diffusion tensor.
+    
+    See:
+
+    http://lmi.bwh.harvard.edu/papers/papers/ennisMRM06.html
+
+    Daniel B. Ennis, G. Kindlmann 
+    Magnetic Resonance in Medicine 
+    Volume 55, Number 1, Pages 136-146
+    2006 
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+
+    mode : array
+        Calculated Mode. Note: range is -1 <= Mode <= 1.
+
+    Notes
+    --------
+    Mode is calculated with the following equation:
+
+    .. math::
+
+        Mode = 3*\sqrt{6}*det((Asq)/norm(Asq))
+    """
+
+    dimx = D.shape[0]
+    dimy = D.shape[1]
+    dimz = D.shape[2]
+    tensor_mode = np.zeros((dimx, dimy, dimz))
+    for x in xrange(dimx):
+        for y in xrange(dimy):
+            for z in xrange(dimz):
+                tensor_mode[x, y, z] = calculate_tensor_mode(D[x,y,z])
+    return tensor_mode
 
 def mean_diffusivity(evals, axis=-1):
     r"""
@@ -363,6 +412,12 @@ class TensorFit(object):
     def fa(self):
         """Fractional anisotropy (FA) calculated from cached eigenvalues."""
         return fractional_anisotropy(self.evals)
+
+
+    @auto_attr
+    def mode(self):
+        """Mode (MO) calculated from cached eigenvalues."""
+        return calculate_mode(self.evals, self.D)
 
 
     @auto_attr
@@ -810,11 +865,11 @@ def design_matrix(gtab, bval, dtype=None):
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
-	Returns
-	-------
-	design_matrix : array (g,7)
-		Design matrix or B matrix assuming Gaussian distributed tensor model
-		design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
+    Returns
+    -------
+    design_matrix : array (g,7)
+        Design matrix or B matrix assuming Gaussian distributed tensor model
+        design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
     """
     G = gtab
     B = np.zeros((bval.size, 7), dtype = G.dtype)
@@ -858,4 +913,3 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
                       'OLS': ols_fit_tensor,
                      }
-
