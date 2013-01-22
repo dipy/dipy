@@ -18,7 +18,7 @@ With the help of some external tools you can also:
 
 - Warp/Register tractographies into another space e.g. MNI space.
 - Read many different file formats e.g. Trackvis or Nifti.
-- Play and examine your datasets interactively (with ipython).
+- Examine your datasets interactively (with ipython).
 
 =================
 Systems supported
