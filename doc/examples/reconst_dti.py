@@ -86,7 +86,10 @@ data2, affine2 = resample(data, affine, zooms, new_zooms)
 print('data2.shape (%d, %d, %d, %d)' % data2.shape)
 
 """
-Lets also create a simple mask.
+Lets also create a simple mask. This is a quick way to avoid calculating
+Tensors on the background of the image. This is because the signal is very low in
+these region. A better way would be to extract the brain region using a brain
+extraction method. But will skip that for now.
 """
 
 mask = data2[..., 0] > 50
@@ -99,8 +102,8 @@ reconstruction. First, we instantiate the Tensor model in the following way.
 tenmodel = TensorModel(gtab)
 
 """
-Fitting the data is very simple. We just need to calling the fit method of the
-TensorModel in the followin way:
+Fitting the data is very simple. We just need to call the fit method of the
+TensorModel in the following way:
 """
 
 tenfit = tenmodel.fit(data2, mask)
