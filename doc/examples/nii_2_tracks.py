@@ -276,7 +276,7 @@ ten_sl_fname = 'tensor_streamline.trk'
 Save the streamlines.
 """
 
-nib.trackvis.write(ten_sl_fname, tensor_streamlines, hdr)
+nib.trackvis.write(ten_sl_fname, tensor_streamlines, hdr, points_space='voxel')
 
 """
 Lets repeat the same steps for the csa_streamlines.
@@ -286,7 +286,8 @@ csa_streamlines = ((sl, None, None) for sl in csa_streamlines)
 
 csa_sl_fname = 'csa_streamline.trk'
 
-nib.trackvis.write(csa_sl_fname, csa_streamlines, hdr)
+
+nib.trackvis.write(csa_sl_fname, csa_streamlines, hdr, points_space='voxel')
 
 
 """
