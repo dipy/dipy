@@ -1,6 +1,7 @@
 import os
 import urllib2
 from os.path import join as pjoin
+import numpy as np
 import nibabel as nib
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
@@ -59,7 +60,9 @@ def read_beijing_dti():
     fraw = pjoin(folder, 'DTI64.nii.gz')
     fbval = pjoin(folder, 'DTI64.bval')
     fbvec = pjoin(folder, 'DTI64.bvec')
+
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
@@ -117,9 +120,10 @@ def read_taiwan_ntu_dsi():
     fraw = pjoin(folder, 'DSI203.nii.gz')
     fbval = pjoin(folder, 'DSI203.bval')
     fbvec = pjoin(folder, 'DSI203.bvec')
+
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+    bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
+
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
