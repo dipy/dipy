@@ -13,6 +13,7 @@ Examples
 
    note_about_examples
    examples_built/reconst_dti
+   examples_built/reconst_csa
    examples_built/nii_2_tracks
    examples_built/find_correspondence
    examples_build/visualize_crossings
