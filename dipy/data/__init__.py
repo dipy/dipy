@@ -110,6 +110,7 @@ def get_sphere(name='symmetric362'):
         which sphere - one of:
         * 'symmetric362'
         * 'symmetric642'
+        * 'symmetric724'
 
     Returns
     -------
