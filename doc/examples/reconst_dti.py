@@ -56,6 +56,8 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
+data.shape (128, 128, 49, 65)
+
 This dataset has anisotropic voxel sizes, therefore reslicing is necessary
 """
 
@@ -86,6 +88,8 @@ data2, affine2 = resample(data, affine, zooms, new_zooms)
 print('data2.shape (%d, %d, %d, %d)' % data2.shape)
 
 """
+data2.shape (115, 115, 61, 65)
+
 Lets also create a simple mask. This is a quick way to avoid calculating
 Tensors on the background of the image. This is because the signal is very low in
 these region. A better way would be to extract the brain region using a brain

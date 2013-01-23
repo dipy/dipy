@@ -4,7 +4,8 @@
 Reconstruction using Constant Solid Angle (QBall)
 =================================================
 
-Constant Solid Angle ODF (Q-Ball) model.
+We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et.
+al to your datasets.
 
 First import the necessary modules:
 """
@@ -15,10 +16,10 @@ from dipy.align.aniso2iso import resample
 from dipy.reconst.shm import CsaOdfModel, normalize_data
 from dipy.reconst.odf import peaks_from_model
 
-
 """
 Download and read the data for this tutorial.
 """
+
 fetch_beijing_dti()
 img, gtab = read_beijing_dti()
 
@@ -31,6 +32,8 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
+data.shape (128, 128, 49, 65)
+
 This dataset has anisotropic voxel sizes, therefore reslicing is necessary
 """
 
@@ -60,8 +63,9 @@ data2, affine2 = resample(data, affine, zooms, new_zooms)
 
 print('data2.shape (%d, %d, %d, %d)' % data2.shape)
 
-
 """
+data2.shape (115, 115, 61, 65)
+
 Mask out most of the background.
 """
 mask = data2[..., 0] > 50
@@ -96,6 +100,8 @@ GFA = peaks.gfa
 print('GFA.shape (%d, %d, %d)' % GFA.shape)
 
 """
+GFA.shape (115, 115, 61)
+
 .. include:: ../links_names.inc
 
 """
