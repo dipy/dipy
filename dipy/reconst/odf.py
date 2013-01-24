@@ -202,20 +202,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         if gfa_array[i] < gfa_thr:
             global_max = max(global_max, odf.max())
             continue
-        pk, ind = local_maxima(odf, sphere.edges)
 
-        # Remove small peaks.
-        gt_threshold = pk >= (relative_peak_threshold * pk[0])
-        pk = pk[gt_threshold]
-        ind = ind[gt_threshold]
-
-        # Keep peaks which are unique, which means remove peaks that are too
-        # close to a larger peak.
-        _, where_uniq = remove_similar_vertices(sphere.vertices[ind],
-                                                min_separation_angle,
-                                                return_index=True)
-        pk = pk[where_uniq]
-        ind = ind[where_uniq]
+        # Get peaks of odf
+        _, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
+                                     min_separation_angle)
 
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
