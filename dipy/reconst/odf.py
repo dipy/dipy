@@ -6,155 +6,77 @@ from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import get_sphere
-#Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from .base 
+# Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
+# .base
 
 default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
 
 
-class DirectionFinder(object):
-    """Abstract class for direction finding"""
-
-    def __init__(self):
-        self._config = {}
-
-    def __call__(self, sphere_eval):
-        """To be impemented by subclasses"""
-        raise NotImplementedError()
-
-    def config(self, **kwargs):
-        """Update direction finding parameters"""
-        for i in kwargs:
-            if i not in self._config:
-                warn("{} is not a known parameter".format(i))
-        self._config.update(kwargs)
-
-
-class DiscreteDirectionFinder(DirectionFinder):
-    """Discrete Direction Finder
+def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
+                       min_separation_angle=45, sphere=default_sphere,
+                       xtol=1e-7):
+    """Non Linear Direction Finder
 
     Parameters
     ----------
-    sphere : Sphere
-        The Sphere providing discrete directions for evaluation.
+    sphere_eval : callable
+        A function which can be evaluated on a sphere.
     relative_peak_threshold : float
         Only return peaks greater than ``relative_peak_threshold * m`` where m
         is the largest peak.
     min_separation_angle : float in [0, 90]
         The minimum distance between directions. If two peaks are too close only
         the larger of the two is returned.
+    sphere : Sphere
+        A discrete Sphere. The points on the sphere will be used for initial
+        estimate of maximums.
+    xtol : float
+        Relative tolerance for optimization.
+
+    Returns
+    -------
+    directions : array (N, 3)
+        Points on the sphere corresponding to N local maxima on the sphere.
+    values : array (N,)
+        Value of sphere_eval at each point on directions.
 
     """
-    def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
-                 min_separation_angle=45):
-        self._config = {"sphere": sphere,
-                        "relative_peak_threshold": relative_peak_threshold,
-                        "min_separation_angle": min_separation_angle}
+    # Find discrete peaks for use as seeds in non-linear search
+    discrete_values = sphere_eval(sphere)
+    values, indices = local_maxima(discrete_values, sphere.edges)
+    n = search_descending(values, relative_peak_threshold)
+    indices = indices[:n]
+    seeds = np.column_stack([sphere.theta[indices], sphere.phi[indices]])
 
-    def __call__(self, sphere_eval):
-        """Find directions of a function evaluated on a discrete sphere
-
-        Parameters
-        ----------
-        sphere_eval : callable
-            The function to maximize, should evaluate over a sphere.
-
-        Returns
-        -------
-        directions : ndarray (N, 3)
-            The directions of the N peaks.
-
-        """
-        sphere = self._config["sphere"]
-        relative_peak_threshold = self._config["relative_peak_threshold"]
-        min_separation_angle = self._config["min_separation_angle"]
-        discrete_values = sphere_eval(sphere)
-        directions, _, _ = peak_directions(discrete_values, sphere,
-                                      relative_peak_threshold,
-                                      min_separation_angle)
-        return directions
-
-
-def _nl_peak_finder(sphere_eval, seeds, xtol):
-    """Non-linear search for peaks from each seed
-    """
     # Helper function
     def _helper(x):
         sphere = Sphere(theta=x[0], phi=x[1])
         return -sphere_eval(sphere)
 
     # Non-linear search
-    theta = np.zeros(len(seeds))
-    phi = np.zeros(len(seeds))
-    for i in xrange(len(seeds)):
+    num_seeds = len(seeds)
+    theta = np.empty(num_seeds)
+    phi = np.empty(num_seeds)
+    for i in xrange(num_seeds):
         peak = opt.fmin(_helper, seeds[i], xtol=xtol, disp=False)
         theta[i], phi[i] = peak
-    # Return one peak for each seed
-    return theta, phi
 
+    # Evaluate on new-found peaks
+    small_sphere = Sphere(theta=theta, phi=phi)
+    values = sphere_eval(small_sphere)
+    directions = small_sphere.vertices
 
-class NonLinearDirectionFinder(DirectionFinder):
-    """Non Linear Direction Finder
+    # Remove peaks too close to each-other
+    directions, idx = remove_similar_vertices(directions, min_separation_angle,
+                                              return_index=True)
+    values = values[idx]
 
-    Parameters
-    ----------
-    sphere : Sphere
-        The Sphere providing discrete directions for evaluation.
-    relative_peak_threshold : float
-        Only return peaks greater than ``relative_peak_threshold * m`` where m
-        is the largest peak.
-    min_separation_angle : float in [0, 90]
-        The minimum distance between directions. If two peaks are too close only
-        the larger of the two is returned.
-    xtol : float
-        Relative tolerance for optimization.
+    # Sort in descending order
+    order = values.argsort()[::-1]
+    values = values[order]
+    directions = directions[order]
+    return directions, values
 
-    """
-    def __init__(self, sphere=default_sphere, relative_peak_threshold=.25,
-                 min_separation_angle=45, xtol=1e-7):
-        self._config = {"sphere": sphere, "xtol":xtol,
-                        "relative_peak_threshold": relative_peak_threshold,
-                        "min_separation_angle": min_separation_angle}
-
-    def __call__(self, sphere_eval):
-        """Find directions of a function evaluated on a discrete sphere
-
-        Parameters
-        ----------
-        sphere_eval : callable
-            The function to maximize, should evaluate over a sphere.
-
-        Returns
-        -------
-        directions : ndarray (N, 3)
-            The directions of the N peaks.
-
-        """
-        # Get parameters from _config
-        sphere = self._config["sphere"]
-        relative_peak_threshold = self._config["relative_peak_threshold"]
-        min_separation_angle = self._config["min_separation_angle"]
-        xtol = self._config["xtol"]
-
-        # Find discrete peaks for use as seeds in lon-linear search
-        discrete_values = sphere_eval(sphere)
-        values, indices = local_maxima(discrete_values, sphere.edges)
-        n = search_descending(values, relative_peak_threshold)
-        indices = indices[:n]
-        seeds = np.column_stack([sphere.theta[indices], sphere.phi[indices]])
-
-        # Non-linear search
-        peak_theta, peak_phi = _nl_peak_finder(sphere_eval, seeds, xtol)
-
-        # Evaluate on new-found peaks
-        small_sphere = Sphere(theta=peak_theta, phi=peak_phi)
-        values = sphere_eval(small_sphere)
-        # Sort in descending order
-        order = values.argsort()[::-1]
-        values = values[order]
-        directions = small_sphere.vertices[order]
-        # Remove peaks too close to each-other
-        directions = remove_similar_vertices(directions, min_separation_angle,)
-        return directions
 
 class OdfModel(object):
     """An abstract class to be sub-classed by specific odf models
@@ -162,23 +84,19 @@ class OdfModel(object):
     All odf models should provide a fit method which may take data as it's
     first and only argument.
     """
-    direction_finder = DiscreteDirectionFinder()
     def fit(self, data):
         """To be implemented by specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
+
 
 class OdfFit(object):
     def odf(self, sphere):
         """To be implemented but specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
 
-    @auto_attr
-    def directions(self):
-        return self.model.direction_finder(self.odf)
 
-
-def peak_directions(odf, sphere, relative_peak_threshold,
-                    min_separation_angle):
+def peak_directions(odf, sphere, relative_peak_threshold=.25,
+                    min_separation_angle=45):
     """Get the directions of odf peaks
 
     Parameters
