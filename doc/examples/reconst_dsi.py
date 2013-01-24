@@ -34,6 +34,8 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
+data.shape ``(96, 96, 60, 203)``
+
 This dataset has anisotropic voxel sizes, therefore reslicing is necessary.
 """
 
@@ -50,13 +52,53 @@ Instantiate the Model and apply it to the data.
 """
 
 dsmodel = DiffusionSpectrumModel(gtab)
-dsfit = dsmodel.fit(data)
+
+"""
+Lets just use one slice only from the data.
+"""
+
+dataslice = data[:, :, data.shape[2] / 2]
+
+dsfit = dsmodel.fit(dataslice)
 
 """
 Load an odf reconstruction sphere
 """
+
 sphere = get_sphere('symmetric724')
+
+"""
+Calculate the ODFs with this specific sphere
+"""
+
 ODF = dsfit.odf(sphere)
+
+print('ODF.shape (%d, %d, %d)' % ODF.shape)
+
+"""
+ODF.shape ``(96, 96, 724)``
+
+In a similar fashion it is possible to calculate the PDFs
+"""
+
+PDF = dsfit.pdf()
+
+print('PDF.shape (%d, %d, %d, %d, %d)' % PDF.shape)
+
+"""
+PDF.shape ``(96, 96, 17, 17, 17)``
+
+For a single slice this PDF array is close to 345 MBytes so we really have to
+be careful with memory usage when use this function with a full dataset.
+
+The simple solution is to generate/analyze the ODFs/PDFs by iterating through
+each voxel and not store them in memory if that is not necessary.
+"""
+
+from dipy.core.ndindex import ndindex
+
+for index in ndindex(dataslice.shape):
+    pdf = dsmodel.fit(dataslice[index]).pdf()
 
 """
 .. include:: ../links_names.inc
