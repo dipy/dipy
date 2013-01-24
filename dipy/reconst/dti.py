@@ -48,6 +48,10 @@ def fractional_anisotropy(evals, axis=-1):
 
     return fa
 
+def color_fa():
+    pass
+
+
 class TensorModel(object):
     """ Diffusion Tensor
     """
