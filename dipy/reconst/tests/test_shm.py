@@ -6,9 +6,10 @@ import numpy.linalg as npl
 from nose.tools import assert_equal, assert_raises, assert_true, assert_false
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.core.sphere import unit_icosahedron, HemiSphere
+from dipy.core.sphere import hemi_icosahedron, HemiSphere
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
+from ..odf import peak_directions
 
 from dipy.reconst.shm import (real_sph_harm, sph_harm_ind_list, OpdtModel,
                               normalize_data, QballModel, hat, lcr_matrix,
@@ -69,7 +70,7 @@ def test_real_sph_harm():
 
 
 def test_smooth_pinv():
-    hemi = HemiSphere.from_sphere(unit_icosahedron.subdivide(2))
+    hemi = hemi_icosahedron.subdivide(2)
     m, n = sph_harm_ind_list(4)
     B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
 
@@ -127,7 +128,7 @@ def test_normalize_data():
 
 
 def make_fake_signal():
-    hemisphere = HemiSphere.from_sphere(unit_icosahedron.subdivide(2))
+    hemisphere = hemi_icosahedron.subdivide(2)
     bvecs = np.concatenate(([[0, 0, 0]], hemisphere.vertices))
     bvals = np.zeros(len(bvecs)) + 2000
     bvals[0] = 0
@@ -148,19 +149,19 @@ def make_fake_signal():
 
 
 class TestQballModel(object):
-    
+
     model = QballModel
 
     def test_single_voxel_fit(self):
         signal, gtab, expected = make_fake_signal()
-        sphere = unit_icosahedron
+        sphere = hemi_icosahedron.subdivide(4)
 
         model = self.model(gtab, sh_order=4, min_signal=1e-5,
                            assume_normed=True)
         fit = model.fit(signal)
         odf = fit.odf(sphere)
         assert_equal(odf.shape, sphere.phi.shape)
-        directions = fit.directions
+        directions, _, _ = peak_directions(odf, sphere)
         assert_array_almost_equal(directions, expected)
 
         # Test normalize data
@@ -172,7 +173,7 @@ class TestQballModel(object):
 
     def test_mulit_voxel_fit(self):
         signal, gtab, expected = make_fake_signal()
-        sphere = unit_icosahedron
+        sphere = hemi_icosahedron
         nd_signal = np.vstack([signal, signal])
 
         model = self.model(gtab, sh_order=4, min_signal=1e-5,
@@ -218,7 +219,7 @@ class TestCsaOdfModel(TestQballModel):
 
 
 def test_hat_and_lcr():
-    hemi = HemiSphere.from_sphere(unit_icosahedron.subdivide(3))
+    hemi = hemi_icosahedron.subdivide(3)
     m, n = sph_harm_ind_list(8)
     B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
     H = hat(B)
