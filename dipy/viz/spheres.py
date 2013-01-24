@@ -1,6 +1,6 @@
 import numpy as np
 
-try: 
+try:
     # Mayavi appears in many guises:
     try:
         from enthought.mayavi import mlab
