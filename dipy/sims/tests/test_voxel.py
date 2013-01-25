@@ -10,6 +10,7 @@ from dipy.sims.voxel import (SingleTensor, MultiTensor, multi_tensor_odf, all_te
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
+from dipy.io.gradients import read_bvals_bvecs
 
 
 fimg, fbvals, fbvecs = get_data('small_64D')
@@ -72,11 +73,8 @@ def test_multi_tensor():
     assert_(odf.shape == (len(vertices),))
     assert_(np.all(odf <= 1) & np.all(odf >= 0))
 
-    from dipy.data import get_data
     fimg, fbvals, fbvecs = get_data('small_101D')
-    from dipy.io.gradients import read_bvals_bvecs
     bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
-    from dipy.core.gradients import gradient_table
     gtab = gradient_table(bvals, bvecs)
 
     s1 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
@@ -84,21 +82,18 @@ def test_multi_tensor():
 
     Ssingle = 0.5*s1 + 0.5*s2
 
-
     S = MultiTensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
                     fractions=[50, 50], snr=None)
 
-    #assert_array_almost_equal(S, Ssingle)
+    assert_array_almost_equal(S, Ssingle)
 
-    from dipy.reconst.gqi import GeneralizedQSamplingModel
+    #from dipy.reconst.gqi import GeneralizedQSamplingModel
+    #gqmodel = GeneralizedQSamplingModel(gtab, sampling_length=3)
+    #gqfit = gqmodel.fit(S)
+    #odf = gqfit.odf(sphere)        
+    #from dipy.viz.mayavi.spheres import show_odfs
+    #show_odfs(odf[None, None, None], sphere)
     
-    gqmodel = GeneralizedQSamplingModel(gtab, sampling_length=3)
-    gqfit = gqmodel.fit(S)
-    odf = gqfit.odf(sphere)
-        
-    from dipy.viz.mayavi.spheres import show_odfs
-    show_odfs(odf[None, None, None], sphere)
-
 
 def test_snr():
     np.random.seed(1978)
