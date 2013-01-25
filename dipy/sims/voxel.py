@@ -257,7 +257,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
                                                  evecs=all_tensor_evecs(sticks[i]),
                                                  snr=None)
     
-    return S + add_noise(S, snr, S0)
+    return add_noise(S, snr, S0)
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
