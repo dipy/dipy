@@ -10,27 +10,49 @@ def test_local_maxima():
     sphere = get_sphere('symmetric724')
     vertices, faces = sphere.vertices, sphere.faces
     edges = unique_edges(faces)
-    odf = abs(vertices.sum(-1))
-    odf[1] = 10.
-    odf[143] = 143.
-    odf[505] = 505
 
+    # Check that the first peak is == max(odf)
+    odf = abs(vertices.sum(-1))
     peak_values, peak_index = local_maxima(odf, edges)
-    npt.assert_array_equal(peak_values, [505, 143, 10])
+    npt.assert_equal(max(odf), peak_values[0])
+    npt.assert_equal(max(odf), odf[peak_index[0]])
+
+    # Create an artificial odf with a few peaks
+    odf = np.zeros(len(vertices))
+    odf[1] = 1.
+    odf[143] = 143.
+    odf[505] = 505.
+    peak_values, peak_index = local_maxima(odf, edges)
+    npt.assert_array_equal(peak_values, [505, 143, 1])
     npt.assert_array_equal(peak_index, [505, 143, 1])
 
+    # Repeat with a hemisphere
     hemisphere = HemiSphere(xyz=vertices, faces=faces)
-    vertices_half, edges_half = hemisphere.vertices, hemisphere.edges
-    odf = abs(vertices_half.sum(-1))
-    odf[1] = 10.
+    vertices, edges = hemisphere.vertices, hemisphere.edges
+
+    # Check that the first peak is == max(odf)
+    odf = abs(vertices.sum(-1))
+    peak_values, peak_index = local_maxima(odf, edges)
+    npt.assert_equal(max(odf), peak_values[0])
+    npt.assert_equal(max(odf), odf[peak_index[0]])
+
+    # Create an artificial odf with a few peaks
+    odf = np.zeros(len(vertices))
+    odf[1] = 1.
     odf[143] = 143.
+    odf[300] = 300.
+    peak_value, peak_index = local_maxima(odf, edges)
+    npt.assert_array_equal(peak_value, [300, 143, 1])
+    npt.assert_array_equal(peak_index, [300, 143, 1])
 
-    peak_value, peak_index = local_maxima(odf, edges_half)
-    npt.assert_array_equal(peak_value, [143, 10])
-    npt.assert_array_equal(peak_index, [143, 1])
-
+    # Should raise an error if odf has nans
     odf[20] = np.nan
-    npt.assert_raises(ValueError, local_maxima, odf, edges_half)
+    npt.assert_raises(ValueError, local_maxima, odf, edges)
+
+    # Should raise an error if edge values are too large to index odf
+    edges[0, 0] = 9999
+    odf[20] = 0
+    npt.assert_raises(IndexError, local_maxima, odf, edges)
 
 
 def test_remove_similar_peaks():
