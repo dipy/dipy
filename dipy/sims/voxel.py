@@ -33,7 +33,7 @@ def _add_rician(sig, noise1, noise2):
     This does the same as abs(sig + complex(noise1, noise2))
 
     """
-    return np.sqrt((sig + noise1)**2 + noise2**2)
+    return np.sqrt((sig + noise1) ** 2 + noise2 ** 2)
 
 
 def _add_rayleigh(sig, noise1, noise2):
@@ -43,7 +43,7 @@ def _add_rayleigh(sig, noise1, noise2):
     The Rayleigh distribution is $\sqrt\{Gauss_1^2 + Gauss_2^2}$.
 
     """
-    return sig + np.sqrt(noise1**2 + noise2**2)
+    return sig + np.sqrt(noise1 ** 2 + noise2 ** 2)
 
 
 def add_noise(signal, snr, S0, noise_type='rician'):
@@ -106,8 +106,8 @@ def add_noise(signal, snr, S0, noise_type='rician'):
     return noise_adder[noise_type](signal, noise1, noise2)
 
 
-def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
-                    fractions=[35,35], snr=20):
+def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
+                    fractions=[35, 35], snr=20):
     """ Simulate the signal for a Sticks & Ball model.
 
     Parameters
@@ -146,7 +146,7 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
     f0 = 1 - np.sum(fractions)
     S = np.zeros(len(gtab.bvals))
 
-    angles=np.array(angles)
+    angles = np.array(angles)
     if angles.shape[-1] == 3:
         sticks = angles
     else:
@@ -155,11 +155,11 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0,0), (90,0)],
         sticks = np.array(sticks)
 
     for (i, g) in enumerate(gtab.bvecs[1:]):
-        S[i + 1] = f0 * np.exp(-gtab.bvals[i+1] * d) + \
-                   np.sum([
-            fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g)**2)
-            for (j,s) in enumerate(sticks)
-                          ])
+        S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + \
+            np.sum([
+                   fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+                   for (j, s) in enumerate(sticks)
+                   ])
 
         S[i + 1] = S0 * S[i + 1]
 
@@ -224,6 +224,42 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
     return S.reshape(out_shape)
 
 
+def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
+                 fractions=[50, 50], snr=20):
+    r"""Simulate a Multi-Tensor signal.
+    """
+    if np.sum(fractions) != 100:
+        raise ValueError('Fraction should sum to 100')
+
+    fractions = [f / 100. for f in fractions]
+    print fractions
+
+    S = np.zeros(len(gtab.bvals))
+
+    angles = np.array(angles)
+    if angles.shape[-1] == 3:
+        sticks = angles
+    else:
+        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
+                  for pair in angles]
+        sticks = np.array(sticks)
+
+    print sticks
+
+    for i in range(len(fractions)):
+            print i
+            print mevals[i]
+            print sticks[i]
+            print all_tensor_evecs(sticks[i])
+            S = S + fractions[i] * single_tensor(gtab,
+                                                 S0=S0,
+                                                 evals=mevals[i],
+                                                 evecs=all_tensor_evecs(sticks[i]),
+                                                 snr=None)
+    
+    return S + add_noise(S, snr, S0)
+
+
 def single_tensor_odf(r, evals=None, evecs=None):
     """Simulated ODF with a single tensor.
 
@@ -266,9 +302,9 @@ def single_tensor_odf(r, evals=None, evecs=None):
     r = r.reshape(-1, 3)
     P = np.zeros(len(r))
     for (i, u) in enumerate(r):
-        P[i] = (dot(dot(u.T, Di), u))**(3 / 2)
+        P[i] = (dot(dot(u.T, Di), u)) ** (3 / 2)
 
-    return (1 / (4 * np.pi * np.prod(evals)**(1/2) * P)).reshape(out_shape)
+    return (1 / (4 * np.pi * np.prod(evals) ** (1 / 2) * P)).reshape(out_shape)
 
 
 def all_tensor_evecs(e0):
@@ -333,7 +369,7 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
     odf = np.zeros(len(odf_verts))
 
     if mevals is None:
-        mevals = [None,] * len(mf)
+        mevals = [None, ] * len(mf)
 
     if mevecs is None:
         mevecs = [np.eye(3) for i in range(len(mf))]
@@ -348,3 +384,4 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
 # for backward compatibility
 SticksAndBall = sticks_and_ball
 SingleTensor = single_tensor
+MultiTensor  = multi_tensor

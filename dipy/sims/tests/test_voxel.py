@@ -5,7 +5,7 @@ from nose.tools import (assert_true, assert_false, assert_equal,
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_)
 
-from dipy.sims.voxel import (SingleTensor, multi_tensor_odf, all_tensor_evecs,
+from dipy.sims.voxel import (SingleTensor, MultiTensor, multi_tensor_odf, all_tensor_evecs,
                              add_noise, single_tensor, sticks_and_ball)
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data, get_sphere
@@ -64,13 +64,40 @@ def test_multi_tensor():
     vertices = sphere.vertices
     mevals=np.array(([0.0015, 0.0003, 0.0003],
                      [0.0015, 0.0003, 0.0003]))
-    e0 = np.array([1, 0, 0.])
-    e1 = np.array([0., 1, 0])
+    e0 = np.array([0, 0, 1.])
+    e1 = np.array([1., 0., 0])
     mevecs=[all_tensor_evecs(e0), all_tensor_evecs(e1)]
     odf = multi_tensor_odf(vertices, [0.5, 0.5], mevals, mevecs)
 
     assert_(odf.shape == (len(vertices),))
     assert_(np.all(odf <= 1) & np.all(odf >= 0))
+
+    from dipy.data import get_data
+    fimg, fbvals, fbvecs = get_data('small_101D')
+    from dipy.io.gradients import read_bvals_bvecs
+    bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    from dipy.core.gradients import gradient_table
+    gtab = gradient_table(bvals, bvecs)
+
+    s1 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
+    s2 = single_tensor(gtab, 100, mevals[1], mevecs[1], snr=None)
+
+    Ssingle = 0.5*s1 + 0.5*s2
+
+
+    S = MultiTensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
+                    fractions=[50, 50], snr=None)
+
+    #assert_array_almost_equal(S, Ssingle)
+
+    from dipy.reconst.gqi import GeneralizedQSamplingModel
+    
+    gqmodel = GeneralizedQSamplingModel(gtab, sampling_length=3)
+    gqfit = gqmodel.fit(S)
+    odf = gqfit.odf(sphere)
+        
+    from dipy.viz.mayavi.spheres import show_odfs
+    show_odfs(odf[None, None, None], sphere)
 
 
 def test_snr():
@@ -90,4 +117,4 @@ def test_snr():
 
 if __name__ == "__main__":
 
-    test_single_tensor()
+    test_multi_tensor()
