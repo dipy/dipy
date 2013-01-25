@@ -825,6 +825,10 @@ def vec2vec_rotmat(u,v):
     
     """
 
+    # return eye when u is the same with v
+    if np.linalg.norm(u-v) < np.finfo(float).eps:
+        return np.eye(3)
+
     w=np.cross(u,v)
     w=w/np.linalg.norm(w)
 
@@ -839,8 +843,11 @@ def vec2vec_rotmat(u,v):
     sina=np.sqrt(1-cosa**2)
     R=np.array([[cosa,-sina,0],[sina,cosa,0],[0,0,1]])
     Rp=np.dot(Pt,np.dot(R,P))
-    #NaNs can be produced if u is the same with v
+    
+    #make sure that you don't return any Nones
     if np.sum(np.isnan(Rp))>0:
         return np.eye(3)
+
+
     return Rp
 
