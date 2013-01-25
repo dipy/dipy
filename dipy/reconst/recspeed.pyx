@@ -10,6 +10,8 @@ cimport cython
 import numpy as np
 cimport numpy as cnp
 
+from libc.stdlib cimport malloc, free
+from libc.string cimport memcpy
 
 cdef extern from "dpy_math.h" nogil:
     double floor(double x)
@@ -200,74 +202,184 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
             right = mid
     return left
 
-
-#@cython.boundscheck(False)
 @cython.wraparound(False)
-def local_maxima(cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] codf,
-                 cnp.ndarray[cnp.uint16_t, ndim=2, mode='c'] cedges):
-    """Given a function, odf, and neighbor pairs, edges, finds the local maxima
+@cython.boundscheck(False)
+@cython.profile(True)
+def local_maxima(odf, edges):
+    """local_maxima(odf, edges)
+    Finds the local maxima of a function evaluated on a discrete set of points.
 
     If a function is evaluated on some set of points where each pair of
-    neighboring points is in edges, the function compares each pair of
-    neighbors and returns the value and location of each point that is >= all
-    its neighbors.
+    neighboring points is an edge in edges, find the local maxima.
 
     Parameters
     ----------
-    odf : array_like
-        The odf of some function evaluated at some set of points
-    edges : array_like (N, 2)
-        every edges(i,:) is a pair of neighboring points
+    odf : array, 1d, dtype=double
+        The function evaluated on a set of discrete points.
+    edges : array (N, 2)
+        The set of neighbor relations between the points. Every edge, ie
+        `edges[i, :]`, is a pair of neighboring points.
 
     Returns
     -------
-    peaks : ndarray
-        odf at local maximums, orders the peaks in descending order
-    inds : ndarray
-        location of local maximums, indexes to odf array so that
-        odf[inds[i]] == peaks[i]
+    peak_values : ndarray
+        Value of odf at a maximum point. Peak values is sorted in descending
+        order.
+    peak_indices : ndarray
+        Indices of maximum points. Sorted in the same order as `peak_values` so
+        `odf[peak_indices[i]] == peak_values[i]`.
 
     Note
     ----
-    Comparing on edges might be faster then comparing on faces if edges does
-    not contain repeated entries. Additionally in the event that some function
-    is symmetric in some way, that symmetry can be exploited to further reduce
-    the domain of the search and the number of input edges. This is done in the
-    create_half_unit_sphere function of dipy.core.triangle_subdivide for
-    functions with antipodal symmetry.
+    A point is a local maximum if it is > at least one neighbor and >= all
+    neighbors. If no points meets the above criteria, 1 maximum is returned
+    such that `odf[maximum] == max(odf)`.
 
     See Also
     --------
-    create_half_unit_sphere
+    dipy.core.sphere
 
     """
+    cdef :
+        long *wpeak = <long *>malloc(odf.shape[0] * sizeof(long))
+        size_t count
 
+    if not wpeak:
+        raise MemoryError()
+
+    count = _compare_neighbors(odf, edges, wpeak)
+    if count == -1:
+        free(wpeak)
+        raise IndexError("Values in edges must be < len(odf)")
+    elif count == -2:
+        free(wpeak)
+        raise ValueError("odf can not have nans")
+
+    # Copy peak indices to an nd-array for return
+    cdef cnp.ndarray indices = np.empty(count, dtype=long, order="C")
+    memcpy(indices.data, wpeak, count*sizeof(long))
+    free(wpeak)
+
+    # Get peak values return
+    values = odf[indices]
+    # Sort both values and indices
+    _cosort(values, indices)
+    return values, indices
+
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cdef void _cosort(double[::1] A, long[::1] B) nogil:
+    """Sorts A inplace and applies the same reording to B"""
     cdef:
-        cnp.ndarray[cnp.uint8_t, ndim=1, mode='c'] cpeak = np.ones(len(codf),
-                                                                   'uint8')
-        int i=0
-        int lenedges = len(cedges)
-        int find0, find1
+        size_t n = A.shape[0]
+        size_t hole
+        double insert_A
+        long insert_B
+
+    for i in range(1, n):
+        insert_A = A[i]
+        insert_B = B[i]
+        hole = i
+        while hole > 0 and insert_A > A[hole -1]:
+            A[hole] = A[hole - 1]
+            B[hole] = B[hole - 1]
+            hole -= 1
+        A[hole] = insert_A
+        B[hole] = insert_B
+
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
+                             long *wpeak) nogil:
+    """Compares every pair of points in edges
+
+    Parameters
+    ----------
+    odf :
+        values of points on sphere.
+    edges :
+        neighbor relationships on sphere. Every set of neighbors on the sphere
+        should be an edge.
+    wpeak : pointer
+        pointer to a block of memory which will be updated with the result of
+        the comparisons. This block of memory must be large enough to hold
+        len(odf) longs. The first `count` elements of wpeak will be updated
+        with the indices of the peaks.
+
+    Returns
+    -------
+    count : long
+        Number of maxima in odf. A value < 0 indicates an error:
+            -1 : value in edges too large, >= than len(odf)
+            -2 : odf contains nans
+
+    """
+    cdef:
+        size_t lenedges = edges.shape[0]
+        size_t lenodf = odf.shape[0]
+        size_t i
+        cnp.uint16_t find0, find1
         double odf0, odf1
+        long count = 0
 
-    for i from 0 <= i < lenedges:
+    for i in range(lenodf):
+        wpeak[i] = 0
 
-        find0 = cedges[i,0]
-        find1 = cedges[i,1]
-        odf0 = codf[find0]
-        odf1 = codf[find1]
+    for i in range(lenedges):
 
-        if odf0 > odf1:
-            cpeak[find1] = 0
-        elif odf0 < odf1:
-            cpeak[find0] = 0
+        find0 = edges[i, 0]
+        find1 = edges[i, 1]
+        if find0 >= lenodf or find1 >= lenodf:
+            count = -1
+            break
+        odf0 = odf[find0]
+        odf1 = odf[find1]
+
+        """
+        Here `wpeak` is used as an indicator array that can take one of three
+        values.  If `wpeak[i]` is :
+            -1 : point i of the sphere is smaller than at least one neighbor.
+            0 : point i is equal to all it's neighbors.
+            1 : point i is > at least one neighbor and >= all it's neighbors.
+
+        Each iteration of the loop is a comparison between neighboring points
+        (the two point of an edge). At each iteration we update wpeak in the
+        following way:
+            wpeak[smaller_point] = -1
+            if wpeak[larger_point] == 0:
+                wpeak[larger_point] = 1
+
+        If the two points are equal, wpeak is left unchanged.
+        """
+        if odf0 < odf1:
+            wpeak[find0] = -1
+            wpeak[find1] |= 1
+        elif odf0 > odf1:
+            wpeak[find0] |= 1
+            wpeak[find1] = -1
         elif (odf0 != odf0) or (odf1 != odf1):
-            raise ValueError("odf cannot have nans")
+            count = -2
+            break
 
-    peakidx = cpeak.nonzero()[0]
-    peakvalues = codf[peakidx]
-    order = peakvalues.argsort()[::-1]
-    return peakvalues[order], peakidx[order]
+    if count < 0:
+        return count
+
+    # Count the number of peaks and use first count elements of wpeak to hold
+    # indices of those peaks
+    for i in range(lenodf):
+        if wpeak[i] > 0:
+            wpeak[count] = i
+            count += 1
+
+    # If count == 0, all values of odf are equal, and point 0 is returned as a
+    # peak to satisfy the requirement that peak_values[0] == max(odf).
+    if count == 0:
+        count = 1
+        wpeak[0] = 0
+
+    return count
 
 
 @cython.boundscheck(False)
@@ -277,9 +389,9 @@ def pdf_to_odf(cnp.ndarray[double, ndim=1] odf, \
                  cnp.ndarray[double, ndim=1] radius,\
                  int odfn,int radiusn):
     """ Expecting interpolated pdf then calculates the odf for that pdf
-    """    
+    """
     cdef int m,i
-    
+
     with nogil:
         for m in range(odfn):
             for i in range(radiusn):
