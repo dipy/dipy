@@ -227,12 +227,51 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
 def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
                  fractions=[50, 50], snr=20):
     r"""Simulate a Multi-Tensor signal.
+
+    Parameters
+    -----------
+    gtab : GradientTable
+    mevals : array (N, 3)
+        each tensor's eigenvalues in each row
+    S0 : float
+        Unweighted signal value (b0 signal).
+    angles : array (K,2) or (M,3)
+        List of K polar angles (in degrees) for the sticks or array of M
+        sticks as Cartesian unit vectors.
+    fractions : float
+        Percentage of the contribution of each tensor. The sum of factions 
+        should be equal to 100%.
+    snr : float
+        Signal to noise ratio, assuming Rician noise.  If set to None, no
+        noise is added.
+
+    Returns
+    --------
+    S : (N,) ndarray
+        Simulated signal.
+    sticks : (M,3)
+        Sticks in cartesian coordinates.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> from dipy.sims.voxel import multi_tensor
+    >>> from dipy.data import get_data
+    >>> from dipy.core.gradients import gradient_table
+    >>> from dipy.io.gradients import read_bvals_bvecs
+    >>> fimg, fbvals, fbvecs = get_data('small_101D')
+    >>> bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+    >>> gtab = gradient_table(bvals, bvecs)
+    >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
+    >>> e0 = np.array([1, 0, 0.])
+    >>> e1 = np.array([0., 1, 0])
+    >>> S = multi_tensor(gtab, mevals)
+
     """
-    if np.sum(fractions) != 100:
-        raise ValueError('Fraction should sum to 100')
+    if np.round(np.sum(fractions), 2) != 100.0:
+        raise ValueError('Fractions should sum to 100')
 
     fractions = [f / 100. for f in fractions]
-    print fractions
 
     S = np.zeros(len(gtab.bvals))
 
@@ -244,16 +283,8 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
                   for pair in angles]
         sticks = np.array(sticks)
 
-    print sticks
-
     for i in range(len(fractions)):
-            print i
-            print mevals[i]
-            print sticks[i]
-            print all_tensor_evecs(sticks[i])
-            S = S + fractions[i] * single_tensor(gtab,
-                                                 S0=S0,
-                                                 evals=mevals[i],
+            S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
                                                  evecs=all_tensor_evecs(sticks[i]),
                                                  snr=None)
     
@@ -352,7 +383,7 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
 
     Examples
     --------
-    Simulate a MultiTensor with two peaks and calculate its exact ODF.
+    Simulate a MultiTensor ODF with two peaks and calculate its exact ODF.
 
     >>> import numpy as np
     >>> from dipy.sims.voxel import multi_tensor_odf, all_tensor_evecs
