@@ -82,7 +82,7 @@ csamodel = CsaOdfModel(gtab, 4)
 `Peaks_from_model` is used to calculate properties of the ODFs (Orientation
 Distribution Function) and return for
 example the peaks and their indices, or GFA which is similar to FA but for ODF
-based models. This function mainly needs a reconstruction model, the data and a 
+based models. This function mainly needs a reconstruction model, the data and a
 sphere as input. The sphere is an object that represents the spherical discrete
 grid where the ODF values will be evaluated.
 """
@@ -90,13 +90,13 @@ grid where the ODF values will be evaluated.
 sphere = get_sphere('symmetric724')
 
 csapeaks = peaks_from_model(model=csamodel,
-                         data=data2,
-                         sphere=sphere,
-                         relative_peak_threshold=.8,
-                         min_separation_angle=45,
-                         mask=mask,
-                         return_odf=False,
-                         normalize_peaks=True)
+                            data=data2,
+                            sphere=sphere,
+                            relative_peak_threshold=.8,
+                            min_separation_angle=45,
+                            mask=mask,
+                            return_odf=False,
+                            normalize_peaks=True)
 
 GFA = csapeaks.gfa
 
@@ -115,7 +115,3 @@ obtain the full ODF return_odf should be True. Before enabling this option make 
 .. include:: ../links_names.inc
 
 """
-
-
-
-
