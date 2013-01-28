@@ -1,7 +1,7 @@
 """
-===============================================
+===========================================
 Reconstruct with Diffusion Spectrum Imaging
-===============================================
+===========================================
 
 We show how to apply Diffusion Spectrum Imaging (Wedeen et al. Science 2012) to
 diffusion MRI datasets of Cartesian keyhole diffusion gradients.
@@ -13,7 +13,6 @@ import nibabel as nib
 from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
 from dipy.align.aniso2iso import resample
 from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.reconst.odf import peaks_from_model
 
 """
 Download and read the data for this tutorial.
