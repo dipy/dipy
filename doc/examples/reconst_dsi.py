@@ -4,7 +4,7 @@ Reconstruction using Diffusion Spectrum Imaging
 ===============================================
 
 We show how to apply Diffusion Spectrum Imaging (Wedeen et al. Science 2012) to
-diffusion MRI datasets of Cartesian keyhole gradients.
+diffusion MRI datasets of Cartesian keyhole diffusion gradients.
 
 First import the necessary modules:
 """
@@ -78,7 +78,8 @@ print('ODF.shape (%d, %d, %d)' % ODF.shape)
 """
 ODF.shape ``(96, 96, 724)``
 
-In a similar fashion it is possible to calculate the PDFs
+In a similar fashion it is possible to calculate the PDFs of all voxels
+in one call with the following way
 """
 
 PDF = dsfit.pdf()
@@ -88,8 +89,9 @@ print('PDF.shape (%d, %d, %d, %d, %d)' % PDF.shape)
 """
 PDF.shape ``(96, 96, 17, 17, 17)``
 
-For a single slice this PDF array is close to 345 MBytes so we really have to
-be careful with memory usage when use this function with a full dataset.
+We see that even for a single slice this PDF array is close to 345 MBytes so we
+really have to be careful with memory usage when use this function with a full
+dataset.
 
 The simple solution is to generate/analyze the ODFs/PDFs by iterating through
 each voxel and not store them in memory if that is not necessary.
@@ -97,8 +99,16 @@ each voxel and not store them in memory if that is not necessary.
 
 from dipy.core.ndindex import ndindex
 
-for index in ndindex(dataslice.shape):
+for index in ndindex(dataslice.shape[:2]):
     pdf = dsmodel.fit(dataslice[index]).pdf()
+
+"""
+If you really want to save the PDFs of a full dataset on the disc we recommend
+using memory maps (numpy.memmap) but still have in mind that if you do that for
+example for a dataset of volume size ``(96, 96, 60)`` you will need about 20
+GBytes on disk for a single subject. On a side note, we recommend saving the ODFs,
+which can take less space when reasonable spheres (with < 1000 vertices) are.
+"""
 
 """
 .. include:: ../links_names.inc
