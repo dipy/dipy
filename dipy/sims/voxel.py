@@ -118,9 +118,9 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
         Diffusivity value.
     S0 : float
         Unweighted signal value.
-    angles : array (K,2) or (M,3)
-        List of K polar angles (in degrees) for the sticks or array of M
-        sticks as Cartesian unit vectors.
+    angles : array (K,2) or (K, 3)
+        List of K polar angles (in degrees) for the sticks or array of K
+        sticks as unit vectors.
     fractions : float
         Percentage of each stick.  Remainder to 100 specifies isotropic
         component.
@@ -231,13 +231,12 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     Parameters
     -----------
     gtab : GradientTable
-    mevals : array (N, 3)
+    mevals : array (K, 3)
         each tensor's eigenvalues in each row
     S0 : float
         Unweighted signal value (b0 signal).
-    angles : array (K,2) or (M,3)
-        List of K polar angles (in degrees) for the sticks or array of M
-        sticks as Cartesian unit vectors.
+    angles : array (K,2) or (K,3)
+        List of K tensor directions in polar angles (in degrees) or unit vectors  
     fractions : float
         Percentage of the contribution of each tensor. The sum of factions 
         should be equal to 100%.
