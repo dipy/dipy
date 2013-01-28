@@ -90,13 +90,13 @@ grid where the ODF values will be evaluated.
 sphere = get_sphere('symmetric724')
 
 csapeaks = peaks_from_model(model=csamodel,
-                         data=data2,
-                         sphere=sphere,
-                         relative_peak_threshold=.8,
-                         min_separation_angle=45,
-                         mask=mask,
-                         return_odf=False,
-                         normalize_peaks=True)
+                            data=data2,
+                            sphere=sphere,
+                            relative_peak_threshold=.8,
+                            min_separation_angle=45,
+                            mask=mask,
+                            return_odf=False,
+                            normalize_peaks=True)
 
 GFA = csapeaks.gfa
 
