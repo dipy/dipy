@@ -1,6 +1,6 @@
 """
 ===============================================
-Reconstruction using Diffusion Spectrum Imaging
+Reconstruct with Diffusion Spectrum Imaging
 ===============================================
 
 We show how to apply Diffusion Spectrum Imaging (Wedeen et al. Science 2012) to
