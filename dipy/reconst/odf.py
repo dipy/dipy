@@ -44,8 +44,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
     # Find discrete peaks for use as seeds in non-linear search
     discrete_values = sphere_eval(sphere)
     values, indices = local_maxima(discrete_values, sphere.edges)
-    n = search_descending(values, relative_peak_threshold)
-    indices = indices[:n]
+
     seeds = np.column_stack([sphere.theta[indices], sphere.phi[indices]])
 
     # Helper function
@@ -64,17 +63,20 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
     # Evaluate on new-found peaks
     small_sphere = Sphere(theta=theta, phi=phi)
     values = sphere_eval(small_sphere)
-    directions = small_sphere.vertices
+
+    # Sort in descending order
+    order = values.argsort()[::-1]
+    values = values[order]
+    directions = small_sphere.vertices[order]
+
+    # Remove directions that are too small
+    n = search_descending(values, relative_peak_threshold)
+    directions = directions[:n]
 
     # Remove peaks too close to each-other
     directions, idx = remove_similar_vertices(directions, min_separation_angle,
                                               return_index=True)
     values = values[idx]
-
-    # Sort in descending order
-    order = values.argsort()[::-1]
-    values = values[order]
-    directions = directions[order]
     return directions, values
 
 
