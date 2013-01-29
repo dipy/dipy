@@ -44,8 +44,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         gtab : GradientTable,
             Gradient directions and bvalues container class
         qgrid_size : int,
-            has to be an odd number. Sets the size of the q_space grid. 
-            For example if qgrid_size is 17 then the shape of the grid will be 
+            has to be an odd number. Sets the size of the q_space grid.
+            For example if qgrid_size is 17 then the shape of the grid will be
             ``(17, 17, 17)``.
         r_start : float,
             ODF is sampled radially in the PDF. This parameters shows where the
@@ -70,8 +70,8 @@ class DiffusionSpectrumModel(OdfModel, Cache):
 
         Examples
         --------
-        In this example where we provide the data, a gradient table 
-        and a reconstruction sphere, we calculate generalized FA for the first 
+        In this example where we provide the data, a gradient table
+        and a reconstruction sphere, we calculate generalized FA for the first
         voxel in the data with the reconstruction performed using DSI.
 
         >>> from dipy.data import dsi_voxels, get_sphere
@@ -153,7 +153,7 @@ class DiffusionSpectrumFit(OdfFit):
         self._peak_indices = None
 
     def pdf(self):
-        """ Applies the 3D FFT in the q-space grid to generate 
+        """ Applies the 3D FFT in the q-space grid to generate
         the diffusion propagator
         """
         values = self.data * self.model.filter
@@ -164,7 +164,7 @@ class DiffusionSpectrumFit(OdfFit):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         #apply fourier transform
-        Pr=fftshift(np.abs(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz, )))))
+        Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz, )))))
         return Pr
 
     def odf(self, sphere):
@@ -335,7 +335,7 @@ def project_hemisph_bvecs(gtab):
     bvecs = gtab.bvecs
     bvs = bvals[1:]
     bvcs = bvecs[1:]
-    b = bvs[:,None] * bvcs
+    b = bvs[:, None] * bvcs
     bb = np.zeros((len(bvs), len(bvs)))
     pairs = []
     for (i, vec) in enumerate(b):
@@ -349,10 +349,114 @@ def project_hemisph_bvecs(gtab):
             pass
         else:
             pairs.append((i, j))
-    bvecs2=bvecs.copy()
+    bvecs2 = bvecs.copy()
     for (i, j) in pairs:
-        bvecs2[1 + j] =- bvecs2[1 + j]
+        bvecs2[1 + j] = - bvecs2[1 + j]
     return bvecs2, pairs
+
+
+@multi_voxel_model
+class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
+    def __init__(self, gtab, qgrid_size=35, r_start=4.1, r_end=13.,
+                 r_step=0.4, filter_width=np.inf, normalize_peaks=False):
+
+        super(DiffusionSpectrumDeconvModel).__init__(self, gtab, qgrid_size,
+                                                     r_start, r_end, r_step,
+                                                     filter_width,
+                                                     normalize_peaks)
+
+    def fit(self, data):
+        return DiffusionSpectrumDeconvFit(self, data)
+
+
+class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
+    def pdf(self):
+        """ Applies the 3D FFT in the q-space grid to generate
+        the diffusion propagator
+        """
+        values = self.data
+        #create the signal volume
+        Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
+        #fill q-space
+        for i in range(self.dn):
+            qx, qy, qz = self.model.qgrid[i]
+            Sq[qx, qy, qz] += values[i]
+        #get deconvolution PSF
+        DSID_PSF = self.model.cache_get('psf',
+                                        key=qspace)
+        if DSID_PSF is None:
+            DSID_PSF = gen_PSF(self.model.qgrid, self.qgrid_sz, self.qgrid_sz, self.qgrid_sz)
+            self.model.cache_set('psf', qspace, DSID_PSF)
+
+        #apply fourier transform
+        Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq), 3 * (self.qgrid_sz, )))))
+        #threshold propagator
+        Pr = threshold_propagator(Pr)
+        #apply LR deconvolution
+        LR_deconv(Pr, DSID_PSF, 5, 2)
+        return Pr
+
+
+def threshold_propagator(P, estimated_snr=20.):
+    # Hard threshold the propagator based on SNR
+    # Return normalized propagator
+    P_thresholded = P.copy()
+    threshold = P_thresholded.max() / float(estimated_snr)
+    P_thresholded[P_thresholded < threshold] = 0
+    return P_thresholded / P_thresholded.sum()
+
+
+def gen_PSF(qgrid_sampling, siz_x, siz_y, siz_z):
+    Sq = np.zeros((siz_x, siz_y, siz_z))
+    #fill q-space
+    for i in range(qgrid_sampling.shape[0]):
+    qx, qy, qz = qgrid_sampling[i]
+    Sq[qx, qy, qz] = 1
+    return qspace * np.real(np.fft.fftshift(np.fft.ifftn(np.fft.ifftshift(qspace))))
+
+
+# interp_coords = self.model.cache_get('interp_coords',
+#                                              key=sphere)
+#         if interp_coords is None:
+#             interp_coords = pdf_interp_coords(sphere,
+#                                               self.model.qradius,
+#                                               self.model.origin)
+#             self.model.cache_set('interp_coords', sphere, interp_coords)
+
+
+def LR_deconv(P, PSF, NUMIT=5, acceleration_factor=1):
+    # Perform basic Lucy-Richardson Deconvolution
+    # P is the propagator
+    # PSF is the filter
+    # NUMIT is the number of iteration
+    # acceleration_factor should be in [1, 2]
+
+    eps = 1e-16
+
+    # Create the OTF (H) of the same size as P
+    H = np.zeros_like(P)
+    # I.ndim==3
+    H[H.shape[0] // 2 - PSF.shape[0] // 2:H.shape[0] // 2 + PSF.shape[0] // 2 + 1, H.shape[1] // 2 - PSF.shape[1] // 2:H.shape[1] // 2 + PSF.shape[1] // 2 + 1, H.shape[2] // 2 - PSF.shape[2] // 2:H.shape[2] // 2 + PSF.shape[2] // 2 + 1] = PSF
+    H = np.real(np.fft.fftn(np.fft.ifftshift(H)))
+
+    # Enforce Positivity
+    P[P < 0] = 0
+
+    P_deconv = P.copy()
+
+    for it in range(NUMIT):
+
+        # Blur the estimate
+        reBlurred = np.real(np.fft.ifftn(H * np.fft.fftn(P_deconv)))
+        reBlurred[reBlurred < eps] = eps
+
+        # Update the estimate
+        P_deconv = P_deconv * (np.real(np.fft.ifftn(H * np.fft.fftn((P / reBlurred) + eps)))) ** acceleration_factor
+
+        # Enforce positivity
+        P_deconv[P_deconv < 0] = 0
+
+    return P_deconv / P_deconv.sum()
 
 
 if __name__ == '__main__':
