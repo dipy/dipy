@@ -3,7 +3,9 @@ from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.tracking.markov import (BoundaryStepper, _closest_peak,
                                   FixedSizeStepper, MarkovIntegrator,
                                   markov_streamline, OutsideImage,
-                                  ClosestDirectionTracker)
+                                  ClosestDirectionTracker,
+                                  ProbabilisticOdfWeightedTracker)
+from dipy.core.sphere import HemiSphere, unit_octahedron
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_equal, assert_, assert_raises)
 
@@ -138,9 +140,15 @@ def test_ClosestDirectionTracker():
             return MyFit()
 
     class MyFit(object):
+        pass
+
+    class MyDirectionFinder(object):
+
         directions = np.array([[1., 0, 0],
                                [0, 1., 0],
                                [0, 0., 1]])
+        def __call__(self, fit):
+            return self.directions
 
     data = np.ones((10, 10, 10, 65))
     data_interp = NearestNeighborInterpolator(data, (1, 1, 1))
@@ -151,6 +159,9 @@ def test_ClosestDirectionTracker():
     cdt = ClosestDirectionTracker(model=MyModel(), interpolator=data_interp,
                                   mask=mask, take_step=None,
                                   angle_limit=90., seeds=None)
+
+    # We're going to use a silly set of directions for the test
+    cdt._get_directions = MyDirectionFinder()
 
     prev_step = np.array([[.9, .1, .1],
                           [.1, .9, .1],
@@ -169,6 +180,9 @@ def test_ClosestDirectionTracker():
     cdt = ClosestDirectionTracker(model=MyModel(), interpolator=data_interp,
                                   mask=mask, take_step=None,
                                   angle_limit=45, seeds=None)
+
+    # We're going to use a silly set of directions for the test
+    cdt._get_directions = MyDirectionFinder()
     sq3 = np.sqrt(3)
     a = np.array([sq3/2, 1./2, 0])
     b = np.array([1./2, sq3/2, 0])
@@ -179,3 +193,65 @@ def test_ClosestDirectionTracker():
     assert_array_equal(cdt._next_step([1., 1., 1.], c), None)
 
 
+def test_ProbabilisticOdfWeightedTracker():
+    sphere = HemiSphere.from_sphere(unit_octahedron)
+
+    # A simple image with three possible configurations, a vertical tract,
+    # a horizontal tract and a crossing
+    odf_list = [np.array([0., 0., 0.]),
+                np.array([1., 0., 0.]),
+                np.array([0., 1., 0.]),
+                np.array([1., 1., 0.]),
+               ]
+    simple_image = np.array([[0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 3, 2, 2, 2, 0],
+                             [0, 1, 0, 0, 0, 0],
+                             [0, 1, 0, 0, 0, 0],
+                            ])
+    # Make the image 4d
+    simple_image = simple_image[..., None, None]
+
+    # Simple model and fit for this image
+    class MyModel():
+        def fit(self, data):
+            return MyFit(data)
+
+    class MyFit(object):
+        def __init__(self, n):
+            self.n = n
+        def odf(self, sphere):
+            return odf_list[self.n]
+
+    seeds = [np.array([1.5, 1.5, .5])] * 20
+    model = MyModel()
+    mask = np.ones([5, 6, 1], dtype="bool")
+    stepper = FixedSizeStepper(1.)
+    interpolator = NearestNeighborInterpolator(simple_image, (1,1,1))
+
+    # These are the only two possible paths though the simple_image
+    pwt = ProbabilisticOdfWeightedTracker(model, interpolator, mask,
+                                          stepper.take_step, 90, seeds, sphere)
+    expected = [np.array([[ 0.5,  1.5,  0.5],
+                          [ 1.5,  1.5,  0.5],
+                          [ 2.5,  1.5,  0.5],
+                          [ 2.5,  2.5,  0.5],
+                          [ 2.5,  3.5,  0.5],
+                          [ 2.5,  4.5,  0.5],
+                          [ 2.5,  5.5,  0.5]]),
+                np.array([[ 0.5,  1.5,  0.5],
+                          [ 1.5,  1.5,  0.5],
+                          [ 2.5,  1.5,  0.5],
+                          [ 3.5,  1.5,  0.5],
+                          [ 4.5,  1.5,  0.5]])
+               ]
+
+    for streamline in pwt:
+        assert_(np.allclose(streamline, expected[0]) or
+                np.allclose(streamline, expected[1]))
+
+    # The first path is not possible if 90 degree turns are excluded
+    pwt = ProbabilisticOdfWeightedTracker(model, interpolator, mask,
+                                          stepper.take_step, 80, seeds, sphere)
+    for streamline in pwt:
+        assert_(np.allclose(streamline, expected[1]))
