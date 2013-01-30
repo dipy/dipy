@@ -7,13 +7,17 @@ from nose.tools import (assert_true, assert_equal,
                         assert_almost_equal, assert_raises)
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
 import dipy.reconst.dti as dti
-from dipy.reconst.dti import lower_triangular, from_lower_triangular
+from dipy.reconst.dti import (lower_triangular, 
+                              from_lower_triangular, 
+                              color_fa,
+                              fractional_anisotropy)
 from dipy.reconst.maskedview import MaskedView
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
+
 
 def test_TensorModel():
     data, gtab = dsi_voxels()
@@ -94,6 +98,7 @@ def test_indexing_on_TensorFit():
     # Should raise an index error if too many indices are passed
     assert_raises(IndexError, fit.__getitem__, (0, 0, 0, 0))
 
+
 def test_tensor_scalar_attributes():
     """
     Tests that the tensor class scalar attributes (FA, ADC, etc...) are
@@ -140,6 +145,22 @@ def test_fa_of_zero():
     ten.model_params = np.zeros(12)
     assert_equal(ten.fa(), 0)
     assert_true(np.isnan(ten.fa(nonans=False)))
+
+
+def test_color_fa():
+    data, gtab = dsi_voxels()
+    dm = dti.TensorModel(gtab, 'LS')
+    dmfit = dm.fit(data)
+    fa = fractional_anisotropy(dmfit.evals)
+    cfa = color_fa(fa, dmfit.evecs)
+
+    fa = np.ones((3, 3, 3))
+    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    cfa = color_fa(fa, evecs)
+    cfa_truth = np.array([1, 0, 0])
+    true_cfa = np.reshape(np.tile(cfa_truth, 27), [3, 3, 3, 3])
+
+    assert_array_equal(cfa, true_cfa)
 
 
 def test_WLS_and_LS_fit():
@@ -309,6 +330,7 @@ def test_from_lower_triangular():
     tensor = from_lower_triangular(D)
     assert_array_equal(tensor, result)
 
+
 def test_all_constant():
     """
     
@@ -320,6 +342,7 @@ def test_all_constant():
         dm = dti.TensorModel(gtab, )
         assert_almost_equal(dm.fit(np.zeros(bvals.shape[0])).fa, 0)
         assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
+
 
 def test_mask():
     data, gtab = dsi_voxels()

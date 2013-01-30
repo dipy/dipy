@@ -8,6 +8,7 @@ from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
+
 def fractional_anisotropy(evals, axis=-1):
     r"""
     Fractional anisotropy (FA) of a diffusion tensor.
@@ -48,8 +49,35 @@ def fractional_anisotropy(evals, axis=-1):
 
     return fa
 
-def color_fa():
-    pass
+
+def color_fa(FA, evecs):
+    r""" Color fractional anisotropy of diffusion tensor
+
+    Parameters
+    ----------
+    FA : array-like
+        3D array of the fractional anisotropy
+
+    evecs : array-like
+        eigen vectors from the tensor model
+
+    Returns
+    -------
+    RGB : 3D array with 3 channels for each color as the 4th dimension.
+        Colormap of the FA with red for the x value, y for the green 
+        value and z for the blue value.
+
+    Notes : 
+    -----------------
+    it is computed from the clipped FA between 0 and 1 using the following formula
+    .. math::
+
+        RGB = abs(max(eigen_vector)) \times FA
+    """
+
+    FA = np.clip(FA, 0, 1)
+    RGB = np.abs(evecs[..., 0]) * np.tile(FA[..., None], 3) 
+    return RGB
 
 
 class TensorModel(object):
