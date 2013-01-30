@@ -46,7 +46,7 @@ class BoundaryStepper(object):
         self.overstep = overstep
         self.voxel_size = np.array(voxel_size, 'float')
 
-    def take_step(self, location, step):
+    def __call__(self, location, step):
         """takes a step just past the edge of the next voxel along step
 
         given a location and a step, finds the smallest step needed to move
@@ -71,7 +71,7 @@ class FixedSizeStepper(object):
     def __init__(self, step_size=.5):
         self.step_size = step_size
 
-    def take_step(self, location, step):
+    def __call__(self, location, step):
         """Takes a step of step_size from location"""
         new_location = self.step_size*step + location
         return new_location
@@ -116,7 +116,7 @@ def markov_streamline(get_direction, take_step, seed, first_step, maxlen):
     except OutsideImage:
         pass
 
-    return np.vstack(streamline)
+    return np.array(streamline)
 
 
 class MarkovIntegrator(object):

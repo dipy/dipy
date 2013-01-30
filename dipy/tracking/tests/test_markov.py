@@ -14,24 +14,24 @@ def test_BoundaryStepper():
     bi = BoundaryStepper(overstep=os)
     loc = np.array([.5,.5,.5])
     step = np.array([1,1,1])/np.sqrt(3)
-    assert_array_almost_equal(bi.take_step(loc, step), os*step + [1,1,1])
-    assert_array_almost_equal(bi.take_step(loc, -step), -os*step)
+    assert_array_almost_equal(bi(loc, step), os*step + [1,1,1])
+    assert_array_almost_equal(bi(loc, -step), -os*step)
 
     os = 2
     bi = BoundaryStepper((2,3,4), overstep=2)
-    assert_array_almost_equal(bi.take_step(loc, step), os*step + [2,2,2])
-    assert_array_almost_equal(bi.take_step(loc, -step), -os*step)
+    assert_array_almost_equal(bi(loc, step), os*step + [2,2,2])
+    assert_array_almost_equal(bi(loc, -step), -os*step)
 
     loc = np.array([7.5,7.5,7.5])
-    assert_array_almost_equal(bi.take_step(loc, step), os*step + [8,8,8])
-    assert_array_almost_equal(bi.take_step(loc, -step), [6,6,6] - os*step)
+    assert_array_almost_equal(bi(loc, step), os*step + [8,8,8])
+    assert_array_almost_equal(bi(loc, -step), [6,6,6] - os*step)
 
 def test_FixedSizeStepper():
     fsi = FixedSizeStepper(step_size=2.)
     loc = np.array([2,3,12])
     step = np.array([3,2,4])/np.sqrt(3)
-    assert_array_almost_equal(fsi.take_step(loc, step), loc + 2.*step)
-    assert_array_almost_equal(fsi.take_step(loc, -step), loc - 2.*step)
+    assert_array_almost_equal(fsi(loc, step), loc + 2.*step)
+    assert_array_almost_equal(fsi(loc, -step), loc - 2.*step)
 
 
 def test_markov_streamline():
@@ -55,7 +55,7 @@ def test_markov_streamline():
 
     # The streamline terminates when it goes past (10, 0, 0). (10.2, 0, 0) 
     # should be the last point in the streamline
-    streamline = markov_streamline(dir_getter.get_direction, stepper.take_step,
+    streamline = markov_streamline(dir_getter.get_direction, stepper,
                                    seed, first_step, 100)
     expected = np.zeros((11, 3))
     expected[:, 0] = np.linspace(5.2, 10.2, 11)
@@ -65,7 +65,7 @@ def test_markov_streamline():
     # the streamline should end, and the negative points should not be part
     # of the streamline
     first_step = -east
-    streamline = markov_streamline(dir_getter.get_direction, stepper.take_step,
+    streamline = markov_streamline(dir_getter.get_direction, stepper,
                                    seed, first_step, 100)
     expected = np.zeros((11, 3))
     expected[:, 0] = np.linspace(5.2, 0.2, 11)
@@ -91,7 +91,7 @@ def test_MarkovIntegrator():
     stepper = FixedSizeStepper(.5)
     mask = np.ones((10, 10, 10), 'bool')
     gen = KeepGoing(model=None, interpolator=data_interp, mask=mask,
-                    take_step=stepper.take_step, angle_limit=0., seeds=seeds)
+                    take_step=stepper, angle_limit=0., seeds=seeds)
     streamlines = list(gen)
     assert_equal(len(streamlines), 3)
 
@@ -104,7 +104,7 @@ def test_MarkovIntegrator():
 
     # Track only the first (largest) peak for each seed
     gen = KeepGoing(model=None, interpolator=data_interp, mask=mask,
-                    take_step=stepper.take_step, angle_limit=0., seeds=seeds,
+                    take_step=stepper, angle_limit=0., seeds=seeds,
                     max_cross=1)
     streamlines = list(gen)
     assert_equal(len(streamlines), 1)
@@ -231,7 +231,7 @@ def test_ProbabilisticOdfWeightedTracker():
 
     # These are the only two possible paths though the simple_image
     pwt = ProbabilisticOdfWeightedTracker(model, interpolator, mask,
-                                          stepper.take_step, 90, seeds, sphere)
+                                          stepper, 90, seeds, sphere)
     expected = [np.array([[ 0.5,  1.5,  0.5],
                           [ 1.5,  1.5,  0.5],
                           [ 2.5,  1.5,  0.5],
@@ -252,6 +252,6 @@ def test_ProbabilisticOdfWeightedTracker():
 
     # The first path is not possible if 90 degree turns are excluded
     pwt = ProbabilisticOdfWeightedTracker(model, interpolator, mask,
-                                          stepper.take_step, 80, seeds, sphere)
+                                          stepper, 80, seeds, sphere)
     for streamline in pwt:
         assert_(np.allclose(streamline, expected[1]))
