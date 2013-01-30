@@ -142,7 +142,12 @@ nib.save(fa_img, 'tensor_fa.nii.gz')
 You can now see the result with any nifti viewer or check it slice by slice
 using matplotlib_'s imshow. In the same way you can save the eigen values the
 eigen vectors or any other properties of the Tensor.
+"""
 
+evecs_img = nib.Nifti1Image(tenfit.evecs, img.get_affine())
+nib.save(evecs_img, 'tensor_evecs.nii.gz')
+
+"""
 .. include:: ../links_names.inc
 
 """
