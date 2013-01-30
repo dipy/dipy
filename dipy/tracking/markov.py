@@ -13,6 +13,21 @@ dipy.reconst.interpolate
 from __future__ import division
 import numpy as np
 from ..reconst.interpolate import OutsideImage, NearestNeighborInterpolator
+from ..reconst.odf import default_sphere, peak_directions
+
+
+class DirectionFinder(object):
+
+    sphere = default_sphere
+    relative_peak_threshold = .5
+    min_seperation_angle = 45
+
+    def __call__(self, fit):
+        discrete_odf = fit.odf(self.sphere)
+        directions, _, _ = peak_directions(discrete_odf, self.sphere,
+                                           self.relative_peak_threshold,
+                                           self.min_seperation_angle)
+        return directions
 
 
 class BoundaryStepper(object):
@@ -107,6 +122,8 @@ def markov_streamline(get_direction, take_step, seed, first_step, maxlen):
 class MarkovIntegrator(object):
     """An abstract class for fiber-tracking"""
 
+    _get_directions = DirectionFinder()
+
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
                  seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
         """Creates streamlines by using a Markov approach.
@@ -150,13 +167,17 @@ class MarkovIntegrator(object):
         self._cos_similarity = np.cos(np.deg2rad(angle_limit))
 
         if mask_voxel_size is None:
-            assert mask.shape == interpolator.data.shape[:-1]
+            if mask.shape != interpolator.data.shape[:-1]:
+                raise ValueError("The shape of the mask and the shape of the "
+                                 "data do not match")
             mask_voxel_size = interpolator.voxel_size
         else:
             mask_voxel_size = np.asarray(mask_voxel_size)
             mask_FOV = mask_voxel_size * mask.shape
             data_FOV = interpolator.voxel_size * interpolator.data.shape
-            assert np.allclose(mask_FOV, data_FOV)
+            if not np.allclose(mask_FOV, data_FOV):
+                raise ValueError("The FOV of the data and the FOV of the mask "
+                                 "do not match")
         self._mask = NearestNeighborInterpolator(mask.copy(), mask_voxel_size)
 
     def __iter__(self):
@@ -234,7 +255,8 @@ class ClosestDirectionTracker(MarkovIntegrator):
             return None
         vox_data = self.interpolator[location]
         fit = self.model.fit(vox_data)
-        return _closest_peak(fit.directions, prev_step, self._cos_similarity)
+        directions = self._get_directions(fit)
+        return _closest_peak(directions, prev_step, self._cos_similarity)
 
 
 class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
@@ -280,17 +302,18 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
                  seeds, sphere, max_cross=None, maxlen=500,
                  mask_voxel_size=None):
 
-        MarkovIntegrator.__init__(self, model, interpolator, take_step,
-                                  angle_limit=angle_limit, mask=mask)
+        MarkovIntegrator.__init__(self, model, interpolator, mask, take_step,
+                                  angle_limit, seeds, max_cross, maxlen,
+                                  mask_voxel_size)
         self.sphere = sphere
         self._set_adjacency_matrix(sphere, self._cos_similarity)
-        model.direction_finder.config(sphere=sphere)
+        self._get_directions.sphere = sphere
 
     def _set_adjacency_matrix(self, sphere, cos_similarity):
         """A boolean array of where the angle between vertices i and j of
         sphere is less than `angle_limit` apart."""
         matrix = np.dot(sphere.vertices, sphere.vertices.T)
-        matrix = abs(matrix) > cos_similarity
+        matrix = abs(matrix) >= cos_similarity
         keys = [tuple(v) for v in sphere.vertices]
         adj_matrix = dict(zip(keys, matrix))
         keys = [tuple(-v) for v in sphere.vertices]
@@ -317,9 +340,9 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
         vox_data = self.interpolator[location]
         fit = self.model.fit(vox_data)
         if prev_step is None:
-            return fit.directions
+            return self._get_directions(fit)
         odf = fit.odf(self.sphere)
-        odf = odf.clip(0)
+        odf.clip(0, out=odf)
         cdf = (self._adj_matrix[tuple(prev_step)] * odf).cumsum()
         if cdf[-1] == 0:
             return None
@@ -385,10 +408,8 @@ class CDT_NNO(ClosestDirectionTracker):
         else:
             vox_data = self._data[vox_loc]
             fit = self.model.fit(vox_data)
-            directions = fit.directions
+            directions = self._get_directions(fit)
             self._lookup[vox_loc] = len(self._peaks)
             self._peaks.append(directions)
 
         return _closest_peak(directions, prev_step, self._cos_similarity)
-
-
