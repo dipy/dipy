@@ -1,6 +1,5 @@
 import numpy as np
 from scipy.ndimage import map_coordinates
-from dipy.reconst.recspeed import pdf_to_odf
 from scipy.fftpack import fftn, fftshift, ifftshift
 from dipy.reconst.odf import OdfModel, OdfFit, gfa
 from dipy.reconst.cache import Cache
@@ -191,7 +190,7 @@ class DiffusionSpectrumFit(OdfFit):
         Pr = self.pdf()
 
         #calculate the orientation distribution function
-        return  pdf_odf(Pr, sphere, self.model.qradius, interp_coords)
+        return  pdf_odf(Pr, self.model.qradius, interp_coords)
 
 
 def create_qspace(gtab, origin):
@@ -257,38 +256,32 @@ def pdf_interp_coords(sphere, rradius, origin):
     -----------
     sphere : object,
             Sphere
-    rradius : array, shape (M,)
+    rradius : array, shape (N,)
             line interpolation points
     origin : array, shape (3,)
             center of the grid
 
     """
     interp_coords = rradius * sphere.vertices[np.newaxis].T
-    interp_coords = interp_coords.reshape((3, -1))
+    origin = np.reshape(origin, [-1, 1, 1])
     interp_coords = origin + interp_coords
     return interp_coords
 
 
-def pdf_odf(Pr, sphere, rradius, interp_coords):
+def pdf_odf(Pr, rradius, interp_coords):
     r""" Calculates the real ODF from the diffusion propagator(PDF) Pr
 
     Parameters
     ----------
     Pr : array, shape (X, X, X)
         probability density function
-    sphere : Sphere
-        reconstruction sphere
     rradius : array, shape (N,)
         interpolation range on the radius
-    interp_coords : array, shape (N, 3)
+    interp_coords : array, shape (3, M, N)
         coordinates in the pdf for interpolating the odf
     """
-    verts_no = sphere.vertices.shape[0]
-    odf = np.zeros(verts_no)
-    rradius_no = len(rradius)
-    #interp_coords = pdf_interp_coords(sphere, rradius, origin)
     PrIs = map_coordinates(Pr, interp_coords, order=1)
-    pdf_to_odf(odf, PrIs, rradius, verts_no, rradius_no)
+    odf = (PrIs * rradius**2).sum(-1)
     return odf
 
 
