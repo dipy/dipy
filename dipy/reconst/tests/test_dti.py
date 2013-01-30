@@ -154,6 +154,7 @@ def test_color_fa():
     fa = fractional_anisotropy(dmfit.evals)
     cfa = color_fa(fa, dmfit.evecs)
 
+    # 3D test case
     fa = np.ones((3, 3, 3))
     evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     cfa = color_fa(fa, evecs)
@@ -161,6 +162,27 @@ def test_color_fa():
     true_cfa = np.reshape(np.tile(cfa_truth, 27), [3, 3, 3, 3])
 
     assert_array_equal(cfa, true_cfa)
+
+
+    # 2D test case
+    fa = np.ones((3, 3))
+    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    cfa = color_fa(fa, evecs)
+    cfa_truth = np.array([1, 0, 0])
+    true_cfa = np.reshape(np.tile(cfa_truth, 9), [3, 3, 3])
+
+    assert_array_equal(cfa, true_cfa)
+
+
+    # 1D test case
+    fa = np.ones((3))
+    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    cfa = color_fa(fa, evecs)
+    cfa_truth = np.array([1, 0, 0])
+    true_cfa = np.reshape(np.tile(cfa_truth, 3), [3, 3])
+
+    assert_array_equal(cfa, true_cfa)
+
 
 
 def test_WLS_and_LS_fit():
