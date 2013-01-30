@@ -223,7 +223,7 @@ def test_ProbabilisticOdfWeightedTracker():
         def odf(self, sphere):
             return odf_list[self.n]
 
-    seeds = [np.array([1.5, 1.5, .5])] * 20
+    seeds = [np.array([1.5, 1.5, .5])] * 30
     model = MyModel()
     mask = np.ones([5, 6, 1], dtype="bool")
     stepper = FixedSizeStepper(1.)
@@ -246,9 +246,15 @@ def test_ProbabilisticOdfWeightedTracker():
                           [ 4.5,  1.5,  0.5]])
                ]
 
+    path = [False, False]
     for streamline in pwt:
-        assert_(np.allclose(streamline, expected[0]) or
-                np.allclose(streamline, expected[1]))
+        if np.allclose(streamline, expected[0]):
+            path[0] = True
+        elif np.allclose(streamline, expected[1]):
+            path[1] = True
+        else:
+            raise AssertionError()
+    assert_(all(path))
 
     # The first path is not possible if 90 degree turns are excluded
     pwt = ProbabilisticOdfWeightedTracker(model, interpolator, mask,
