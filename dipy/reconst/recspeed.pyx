@@ -384,23 +384,6 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def pdf_to_odf(cnp.ndarray[double, ndim=1] odf, \
-                 cnp.ndarray[double, ndim=1] PrIs,\
-                 cnp.ndarray[double, ndim=1] radius,\
-                 int odfn,int radiusn):
-    """ Expecting interpolated pdf then calculates the odf for that pdf
-    """
-    cdef int m,i
-
-    with nogil:
-        for m in range(odfn):
-            for i in range(radiusn):
-                odf[m]=odf[m]+PrIs[m*radiusn+i]*radius[i]*radius[i]
-
-    return
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
 def le_to_odf(cnp.ndarray[double, ndim=1] odf, \
                  cnp.ndarray[double, ndim=1] LEs,\
                  cnp.ndarray[double, ndim=1] radius,\
