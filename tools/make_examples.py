@@ -14,6 +14,7 @@ Steps are:
 # Stdlib imports
 import os
 from os.path import join as pjoin, abspath, splitext
+import sys
 import shutil
 from subprocess import check_call
 from glob import glob
@@ -73,12 +74,17 @@ for fname in pyfilelist:
 check_call('../../tools/ex2rst --project dipy --outdir . .',
            shell=True)
 
+#added the path so that scripts can import other scripts on the same directory
+sys.path.insert(0, os.getcwd())
+
 # Execute each python script in the directory.
 if not os.path.isdir('fig'):
     os.mkdir('fig')
 
 for script in glob('*.py'):
     figure_basename = os.path.join('fig', os.path.splitext(script)[0])
+    print script
+
     execfile(script)
     plt.close('all')
 
