@@ -7,7 +7,7 @@ Deterministic Tracking with EuDX on Tensor Fields
 In this example we do deterministic fiber tracking on Tensor fields with EuDX
 (Garyfallidis, PhD thesis, 2012).
 
-This example prerequisites example `reconst_dti.py` in order to run. EuDX was
+This example requires to import example `reconst_dti.py` to run. EuDX was
 primarily made with cpu efficiency in mind.
 
 """
@@ -17,7 +17,6 @@ import sys
 import nibabel as nib
 
 if not os.path.exists('tensor_fa.nii.gz'):
-	sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 	import reconst_dti
 
 """
