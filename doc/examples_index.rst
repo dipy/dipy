@@ -17,7 +17,7 @@ Examples
    examples_built/reconst_dsi
    examples_built/reconst_gqi
    examples_built/tracking_eudx_tensor
-   examples_built/nii_2_tracks
+   examples_built/tracking_eudx_odf
    examples_built/find_correspondence
    examples_build/visualize_crossings
    examples_built/reslice_datasets
