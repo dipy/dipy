@@ -21,5 +21,5 @@ Examples
    examples_built/find_correspondence
    examples_build/visualize_crossings
    examples_built/reslice_datasets
-   examples_built/tractography_clustering
+   examples_built/segment_quickbundles
    examples_built/file_formats
