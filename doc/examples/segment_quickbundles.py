@@ -19,8 +19,8 @@ from dipy.data import get_data
 from dipy.viz import fvtk
 
 """
-For educational principles we will try to cluster a small streamline bundle known
-as the fornix.
+For educational purposes we will try to cluster a small streamline bundle known
+from neuroanatomy as the fornix.
 """
 
 fname = get_data('fornix')
@@ -34,19 +34,14 @@ streams, hdr = tv.read(fname)
 streamlines = [i[0] for i in streams]
 
 """
-Delete unnecessary data.
-"""
-
-del streams, hdr
-
-"""
-Perform QuickBundles clustering with a 10mm threshold.
+Perform QuickBundles clustering with a 10mm distance threshold after having
+downsampled the streamlines to have only 12 points.
 """
 
 qb = QuickBundles(streamlines, dist_thr=10., pts=12)
 
 """
-qb has attributes like `centroids` (cluster representatives), 'total_clusters'
+qb has attributes like `centroids` (cluster representatives), `total_clusters`
 (total number of clusters) and methods like `partitions` (complete description
 of all clusters) and `label2tracksids` (provides the indices of the streamlines
 which belong in a specific cluster).
@@ -58,7 +53,6 @@ r = fvtk.ren()
 fvtk.add(r, fvtk.line(streamlines, fvtk.white, opacity=1, linewidth=3))
 # fvtk.show(r)
 fvtk.record(r, n_frames=1, out_path='fornix_initial.png', size=(600, 600))
-
 
 """
 .. figure:: fornix_initial.png
@@ -79,13 +73,13 @@ for i, centroid in enumerate(centroids):
     fvtk.add(r, fvtk.line(centroids, colormap, opacity=1., linewidth=5))
 
 fvtk.add(r, fvtk.line(streamlines, fvtk.white, opacity=0))
-fvtk.record(r, n_frames=1, out_path='fornix_centroids', size=(600, 600))
+fvtk.record(r, n_frames=1, out_path='fornix_centroids.png', size=(600, 600))
 
 """
 .. figure:: fornix_centroids.png
    :align: center
 
-   **Showing the different clusters with random colors**.
+   **Showing the different QuickBundles clusters with random colors**.
 
 Show the labeled fornix (colors from centroids).
 """
