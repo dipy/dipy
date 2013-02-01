@@ -48,7 +48,8 @@ def show_odfs(odfs, sphere, image=None, colormap='jet',
     Examples
     --------
     >>> from dipy.data import get_sphere
-    >>> verts, faces = get_sphere('symmetric724')
+    >>> sphere = get_sphere('symmetric724')
+    >>> verts, faces = sphere.vertices, sphere.faces
 
     >>> angle = np.linspace(0, 2*np.pi, len(verts))
     >>> odf1 = np.sin(angle)
@@ -59,7 +60,7 @@ def show_odfs(odfs, sphere, image=None, colormap='jet',
     >>> odfs = [[[odf1, odf2],
     ...          [odf3, odf4]]]
 
-    >>> show_odfs(odfs, (verts, faces), scale=5)
+    >>> show_odfs(odfs, sphere, scale=5)
 
     """
     odfs = np.asarray(odfs)
