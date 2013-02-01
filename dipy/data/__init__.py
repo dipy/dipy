@@ -212,9 +212,9 @@ def dsi_voxels():
 
 def dsi_deconv_voxels():
     gtab = gradient_table(np.loadtxt(get_data('dsi515btable')))
-    data = np.zeros((5, 5, 2, 515))
-    for ix in range(5):
-        for iy in range(5):
+    data = np.zeros((2, 2, 2, 515))
+    for ix in range(2):
+        for iy in range(2):
             for iz in range(2):
                 data[ix,iy,iz], dirs = SticksAndBall(gtab, d=0.0015, S0=100, 
                                                      angles=[(0, 0), (90, 0)],
