@@ -22,4 +22,4 @@ Examples
    examples_build/visualize_crossings
    examples_built/reslice_datasets
    examples_built/segment_quickbundles
-   examples_built/file_formats
+   examples_built/streamline_formats
