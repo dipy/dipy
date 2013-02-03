@@ -1,14 +1,14 @@
 """
 
-=================================
-Read/Write different file formats
-=================================
+===========================
+Read/Write streamline files
+===========================
 
 Overview
 ========
 
-Dipy_ can read and write in many different file formats. In this example
-we give a short introduction .
+Dipy_ can read and write many different file formats. In this example
+we give a short introduction on how to use it for loading or saving streamlines.
 
 Read :ref:`faq`
 
