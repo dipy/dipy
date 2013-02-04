@@ -844,7 +844,7 @@ def vec2vec_rotmat(u,v):
     R=np.array([[cosa,-sina,0],[sina,cosa,0],[0,0,1]])
     Rp=np.dot(Pt,np.dot(R,P))
     
-    #make sure that you don't return any Nones
+    #make sure that you don't return any Nans
     if np.sum(np.isnan(Rp))>0:
         return np.eye(3)
 
