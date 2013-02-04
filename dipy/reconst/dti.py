@@ -8,6 +8,7 @@ from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
+
 def fractional_anisotropy(evals, axis=-1):
     r"""
     Fractional anisotropy (FA) of a diffusion tensor.
@@ -48,6 +49,40 @@ def fractional_anisotropy(evals, axis=-1):
 
     return fa
 
+
+def color_fa(fa, evecs):
+    r""" Color fractional anisotropy of diffusion tensor
+
+    Parameters
+    ----------
+    fa : array-like
+        Array of the fractional anisotropy (can be 1D, 2D or 3D)
+
+    evecs : array-like
+        eigen vectors from the tensor model
+
+    Returns
+    -------
+    rgb : Array with 3 channels for each color as the last dimension.
+        Colormap of the FA with red for the x value, y for the green
+        value and z for the blue value.
+
+    Notes :
+    -----------------
+    it is computed from the clipped FA between 0 and 1 using the following formula
+    .. math::
+
+        rgb = abs(max(eigen_vector)) \times fa
+    """
+
+    if (fa.shape != evecs[..., 0, 0].shape) or ((3, 3) != evecs.shape[-2:]):
+        raise ValueError("Wrong number of dimensions for evecs")
+
+    fa = np.clip(fa, 0, 1)
+    rgb = np.abs(evecs[..., 0]) * fa[..., None]
+    return rgb
+
+
 class TensorModel(object):
     """ Diffusion Tensor
     """
@@ -57,18 +92,18 @@ class TensorModel(object):
         Parameters
         ----------
         gtab : GradientTable
-        fit_method : str or callable 
-            str can be one of the following: 
+        fit_method : str or callable
+            str can be one of the following:
             'WLS' for weighted least squares
                 dti.wls_fit_tensor
             'LS' for ordinary least squares
                 dti.ols_fit_tensor
-        
+
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
 
         args, kwargs : arguments and key-word arguments passed to the
-           fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details 
+           fit_method. See dti.wls_fit_tensor, dti.ols_fit_tensor for details
 
         References
         ----------
@@ -133,7 +168,7 @@ class TensorFit(object):
 
     def __getitem__(self, index):
         model_params = self.model_params
-        N = model_params.ndim 
+        N = model_params.ndim
         if type(index) is not tuple:
             index = (index,)
         elif len(index) >= model_params.ndim:
@@ -221,16 +256,16 @@ class TensorFit(object):
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""
-    Computes weighted least squares (WLS) fit to calculate self-diffusion 
+    Computes weighted least squares (WLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
-    
+
     Parameters
     ----------
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients.
     data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last 
+        Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
         All values below min_signal are repalced with min_signal. This is done
@@ -242,7 +277,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
         Eigenvalues from eigen decomposition of the tensor.
     eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
 
 
@@ -253,15 +288,15 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     Notes
     -----
     In Chung, et al. 2006, the regression of the WLS fit needed an unbiased
-    preliminary estimate of the weights and therefore the ordinary least 
+    preliminary estimate of the weights and therefore the ordinary least
     squares (OLS) estimates were used. A "two pass" method was implemented:
-    
+
         1. calculate OLS estimates of the data
-        2. apply the OLS estimates as weights to the WLS fit of the data 
-    
-    This ensured heteroscadasticity could be properly modeled for various 
+        2. apply the OLS estimates as weights to the WLS fit of the data
+
+    This ensured heteroscadasticity could be properly modeled for various
     types of bootstrap resampling (namely residual bootstrap).
-    
+
     .. math::
 
         y = \mathrm{data} \\
@@ -329,17 +364,17 @@ def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
 
 def ols_fit_tensor(design_matrix, data, min_signal=1):
     r"""
-    Computes ordinary least squares (OLS) fit to calculate self-diffusion 
+    Computes ordinary least squares (OLS) fit to calculate self-diffusion
     tensor using a linear regression model [1]_.
-    
+
     Parameters
     ----------
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
-        coefficients. Use design_matrix to build a valid design matrix from 
+        coefficients. Use design_matrix to build a valid design matrix from
         bvalues and a gradient table.
     data : array ([X, Y, Z, ...], g)
-        Data or response variables holding the data. Note that the last 
+        Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
     min_signal : default = 1
         All values below min_signal are repalced with min_signal. This is done
@@ -351,7 +386,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
         Eigenvalues from eigen decomposition of the tensor.
     eigvecs : array (..., 3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
-        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with 
+        Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
 
 
@@ -367,7 +402,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
 
         y = \mathrm{data} \\
         X = \mathrm{design matrix} \\
-    
+
         \hat{\beta}_\mathrm{OLS} = (X^T X)^{-1} X^T y
 
     References
@@ -413,7 +448,7 @@ def _ols_fit_matrix(design_matrix):
 
     Example:
     --------
-    ols_fit = _ols_fit_matrix(design_mat) 
+    ols_fit = _ols_fit_matrix(design_mat)
     ols_data = np.dot(ols_fit, data)
     """
 
@@ -561,7 +596,7 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
 def design_matrix(gtab, bval, dtype=None):
     """
-    Constructs design matrix for DTI weighted least squares or least squares 
+    Constructs design matrix for DTI weighted least squares or least squares
     fitting. (Basser et al., 1994a)
 
     Parameters

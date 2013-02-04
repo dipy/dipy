@@ -7,13 +7,17 @@ from nose.tools import (assert_true, assert_equal,
                         assert_almost_equal, assert_raises)
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
 import dipy.reconst.dti as dti
-from dipy.reconst.dti import lower_triangular, from_lower_triangular
+from dipy.reconst.dti import (lower_triangular,
+                              from_lower_triangular,
+                              color_fa,
+                              fractional_anisotropy)
 from dipy.reconst.maskedview import MaskedView
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
+
 
 def test_TensorModel():
     data, gtab = dsi_voxels()
@@ -27,10 +31,10 @@ def test_TensorModel():
     assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
     assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
 
-    # Check that the multivoxel case works: 
+    # Check that the multivoxel case works:
     dtifit = dm.fit(data)
     assert_equal(dtifit.fa.shape, data.shape[:3])
-                 
+
     # Make some synthetic data
     b0 = 1000.
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
@@ -50,11 +54,11 @@ def test_TensorModel():
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    # Test fitting with different methods: #XXX Add NNLS methods! 
+    # Test fitting with different methods: #XXX Add NNLS methods!
     for fit_method in ['OLS', 'WLS']:
         tensor_model = dti.TensorModel(gtab,
                                        fit_method=fit_method)
-        
+
         tensor_fit = tensor_model.fit(Y)
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
@@ -67,7 +71,7 @@ def test_TensorModel():
         assert_almost_equal(tensor_fit.md[0], md)
         assert_equal(tensor_fit.directions.shape[-2], 1)
         assert_equal(tensor_fit.directions.shape[-1], 3)
-        
+
     # Test error-handling:
     assert_raises(ValueError,
                   dti.TensorModel,
@@ -93,6 +97,7 @@ def test_indexing_on_TensorFit():
 
     # Should raise an index error if too many indices are passed
     assert_raises(IndexError, fit.__getitem__, (0, 0, 0, 0))
+
 
 def test_tensor_scalar_attributes():
     """
@@ -140,6 +145,56 @@ def test_fa_of_zero():
     ten.model_params = np.zeros(12)
     assert_equal(ten.fa(), 0)
     assert_true(np.isnan(ten.fa(nonans=False)))
+
+
+def test_color_fa():
+    data, gtab = dsi_voxels()
+    dm = dti.TensorModel(gtab, 'LS')
+    dmfit = dm.fit(data)
+    fa = fractional_anisotropy(dmfit.evals)
+    cfa = color_fa(fa, dmfit.evecs)
+
+    # evecs should be of shape (fa, 3, 3)
+    fa = np.ones((3, 3, 3))
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+    assert_equal(fa.shape, evecs[..., 0, 0].shape)
+    assert_equal((3, 3), evecs.shape[-2:])
+
+
+    # 3D test case
+    fa = np.ones((3, 3, 3))
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    cfa = color_fa(fa, evecs)
+    cfa_truth = np.array([1, 0, 0])
+    true_cfa = np.reshape(np.tile(cfa_truth, 27), [3, 3, 3, 3])
+
+    assert_array_equal(cfa, true_cfa)
+
+
+    # 2D test case
+    fa = np.ones((3, 3))
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    cfa = color_fa(fa, evecs)
+    cfa_truth = np.array([1, 0, 0])
+    true_cfa = np.reshape(np.tile(cfa_truth, 9), [3, 3, 3])
+
+    assert_array_equal(cfa, true_cfa)
+
+
+    # 1D test case
+    fa = np.ones((3))
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    cfa = color_fa(fa, evecs)
+    cfa_truth = np.array([1, 0, 0])
+    true_cfa = np.reshape(np.tile(cfa_truth, 3), [3, 3])
+
+    assert_array_equal(cfa, true_cfa)
+
 
 
 def test_WLS_and_LS_fit():
@@ -309,9 +364,10 @@ def test_from_lower_triangular():
     tensor = from_lower_triangular(D)
     assert_array_equal(tensor, result)
 
+
 def test_all_constant():
     """
-    
+
     """
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
@@ -320,6 +376,7 @@ def test_all_constant():
         dm = dti.TensorModel(gtab, )
         assert_almost_equal(dm.fit(np.zeros(bvals.shape[0])).fa, 0)
         assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
+
 
 def test_mask():
     data, gtab = dsi_voxels()
