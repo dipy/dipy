@@ -16,8 +16,8 @@ the FA template image in MNI space.
 import os
 from os.path import exists, join
 
-if not (exists('tensor_fa.nii.gz') and exists('tensor_streamlines.trk')):
-	import tracking_eudx_tensor
+#if not (exists('tensor_fa.nii.gz') and exists('tensor_streamlines.trk')):
+from tracking_eudx_tensor import *
 
 from dipy.external.fsl import (create_displacements,
                                warp_displacements,
@@ -71,8 +71,8 @@ from nibabel import trackvis
 
 ftrk = 'tensor_streamlines.trk'
 
-streams, hdr = trackvis.read(ftrk, points_space='voxel')
-streamlines = [s[0] for s in streams]
+#streams, hdr = trackvis.read(ftrk, points_space='voxel')
+#streamlines = [s[0] for s in streams]
 
 from dipy.io.dpy import Dpy
 
@@ -84,7 +84,7 @@ dpw = Dpy(fdpy, 'w')
 Write all streamlines at once.
 """
 
-dpw.write_tracks(streamlines)
+dpw.write_tracks(tensor_streamlines)
 
 dpw.close()
 
