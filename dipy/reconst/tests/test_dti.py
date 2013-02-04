@@ -7,8 +7,8 @@ from nose.tools import (assert_true, assert_equal,
                         assert_almost_equal, assert_raises)
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
 import dipy.reconst.dti as dti
-from dipy.reconst.dti import (lower_triangular, 
-                              from_lower_triangular, 
+from dipy.reconst.dti import (lower_triangular,
+                              from_lower_triangular,
                               color_fa,
                               fractional_anisotropy)
 from dipy.reconst.maskedview import MaskedView
@@ -31,10 +31,10 @@ def test_TensorModel():
     assert_equal(len(dtifit.odf(sphere)), len(sphere.vertices))
     assert_almost_equal(dtifit.fa, gfa(dtifit.odf(sphere)), 1)
 
-    # Check that the multivoxel case works: 
+    # Check that the multivoxel case works:
     dtifit = dm.fit(data)
     assert_equal(dtifit.fa.shape, data.shape[:3])
-                 
+
     # Make some synthetic data
     b0 = 1000.
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
@@ -54,11 +54,11 @@ def test_TensorModel():
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    # Test fitting with different methods: #XXX Add NNLS methods! 
+    # Test fitting with different methods: #XXX Add NNLS methods!
     for fit_method in ['OLS', 'WLS']:
         tensor_model = dti.TensorModel(gtab,
                                        fit_method=fit_method)
-        
+
         tensor_fit = tensor_model.fit(Y)
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
@@ -71,7 +71,7 @@ def test_TensorModel():
         assert_almost_equal(tensor_fit.md[0], md)
         assert_equal(tensor_fit.directions.shape[-2], 1)
         assert_equal(tensor_fit.directions.shape[-1], 3)
-        
+
     # Test error-handling:
     assert_raises(ValueError,
                   dti.TensorModel,
@@ -154,9 +154,19 @@ def test_color_fa():
     fa = fractional_anisotropy(dmfit.evals)
     cfa = color_fa(fa, dmfit.evecs)
 
+    # evecs should be of shape (fa, 3, 3)
+    fa = np.ones((3, 3, 3))
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+
+    assert_equal(fa.shape, evecs[..., 0, 0].shape)
+    assert_equal((3, 3), evecs.shape[-2:])
+
+
     # 3D test case
     fa = np.ones((3, 3, 3))
-    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     cfa = color_fa(fa, evecs)
     cfa_truth = np.array([1, 0, 0])
     true_cfa = np.reshape(np.tile(cfa_truth, 27), [3, 3, 3, 3])
@@ -166,7 +176,8 @@ def test_color_fa():
 
     # 2D test case
     fa = np.ones((3, 3))
-    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     cfa = color_fa(fa, evecs)
     cfa_truth = np.array([1, 0, 0])
     true_cfa = np.reshape(np.tile(cfa_truth, 9), [3, 3, 3])
@@ -176,7 +187,8 @@ def test_color_fa():
 
     # 1D test case
     fa = np.ones((3))
-    evecs = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    evecs = np.zeros(fa.shape + (3, 3))
+    evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
     cfa = color_fa(fa, evecs)
     cfa_truth = np.array([1, 0, 0])
     true_cfa = np.reshape(np.tile(cfa_truth, 3), [3, 3])
@@ -355,7 +367,7 @@ def test_from_lower_triangular():
 
 def test_all_constant():
     """
-    
+
     """
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
