@@ -23,3 +23,4 @@ Examples
    examples_built/reslice_datasets
    examples_built/segment_quickbundles
    examples_built/streamline_formats
+   examples_built/warp_streamlines
