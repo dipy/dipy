@@ -71,7 +71,7 @@ from nibabel import trackvis
 
 ftrk = 'tensor_streamlines.trk'
 
-streams, hdr = trackvis.read(ftrk)
+streams, hdr = trackvis.read(ftrk, points_space='voxel')
 streamlines = [s[0] for s in streams]
 
 from dipy.io.dpy import Dpy
