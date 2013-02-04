@@ -390,8 +390,8 @@ def apply_warp(in_nii, affine_mat, nonlin_nii, out_nii):
     pipe(cmd)
 
 
-def create_displacements(fin, fmat, fnonlin, finvw, fdisp, fdispa, fref='FA1mm'):
-    """ Create displacements using FSL's FLIRT and FNIRT
+def create_displacements(fin, fmat, fnonlin, finvw, fdisp, fdispa, fref):
+    """ Create displacements using FSL's FLIRT and FNIRT tools
 
     Parameters
     ----------
@@ -406,7 +406,7 @@ def create_displacements(fin, fmat, fnonlin, finvw, fdisp, fdispa, fref='FA1mm')
     """
 
     commands = []
-    commands.append('flirt -ref ${FSLDIR}/data/standard/FMRIB58_FA_1mm -in ' + fin + ' -omat ' + fmat)
+    commands.append('flirt -ref ' + fref + ' -in ' + fin + ' -omat ' + fmat)
     commands.append('fnirt --in=' + fin + ' --aff=' + fmat + ' --cout=' + fnonlin + ' --config=FA_2_FMRIB58_1mm')
     commands.append('invwarp --ref=' + fin + ' --warp=' + fnonlin + ' --out=' + finvw)
     commands.append('fnirtfileutils --in=' + fnonlin + ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' + fdisp)
