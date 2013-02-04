@@ -13,7 +13,8 @@ it requires two source files that we created from example `tracking_eudx_tensor.
 the FA template image in MNI space.
 
 """
-from os.path import exists
+import os
+from os.path import exists, join
 
 if not (exists('tensor_fa.nii.gz') and exists('tensor_streamlines.trk')):
 	import tracking_eudx_tensor
@@ -43,7 +44,7 @@ fdisa = 'disa.nii.gz'
 Our reference image is the FA 1mm MNI template.
 """
 
-fref = '/usr/share/fsl/4.1/data/standard/FMRIB58_FA_1mm.nii.gz'
+fref = join(os.environ['FSLDIR'], 'data', 'standard', 'FMRIB58_FA_1mm.nii.gz')
 
 """
 We create the linear and non-linear maps to warp FA from native to FA_1mm.
@@ -94,7 +95,6 @@ Warp the streamlines to MNI space.
 fdpyw = 'tensor_streamlines_warped.dpy'
 
 warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw)
-
 
 """
 .. include:: ../links_names.inc
