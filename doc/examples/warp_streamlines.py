@@ -8,7 +8,7 @@ In this example we show how to apply FSL deformations to FAs and streamlines
 created by Dipy_. This is an example of non-linear registration.
 
 This example requires to have FSL installed and added to your environment. In addition
-it requires two source files that we created from example `tracking_eudx_tensor.py`: 
+it requires two source files that we created from example `tracking_eudx_tensor.py`:
 'tensor_fa.nii.gz', and 'tensor_streamlines.trk' and a reference file which should be
 the FA template image in MNI space.
 
@@ -16,8 +16,8 @@ the FA template image in MNI space.
 import os
 from os.path import exists, join
 
-#if not (exists('tensor_fa.nii.gz') and exists('tensor_streamlines.trk')):
-from tracking_eudx_tensor import *
+if not (exists('tensor_fa.nii.gz') and exists('tensor_streamlines.trk')):
+    import tracking_eudx_tensor
 
 from dipy.external.fsl import (create_displacements,
                                warp_displacements,
@@ -41,7 +41,7 @@ fdis = 'dis.nii.gz'
 fdisa = 'disa.nii.gz'
 
 """
-Our reference image is the FA 1mm MNI template. 
+Our reference image is the FA 1mm MNI template.
 """
 
 fref = join(os.environ['FSLDIR'], 'data', 'standard', 'FMRIB58_FA_1mm.nii.gz')
@@ -71,8 +71,8 @@ from nibabel import trackvis
 
 ftrk = 'tensor_streamlines.trk'
 
-#streams, hdr = trackvis.read(ftrk, points_space='voxel')
-#streamlines = [s[0] for s in streams]
+streams, hdr = trackvis.read(ftrk, points_space='voxel')
+streamlines = [s[0] for s in streams]
 
 from dipy.io.dpy import Dpy
 
