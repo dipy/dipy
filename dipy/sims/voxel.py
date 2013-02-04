@@ -184,7 +184,8 @@ def single_tensor(gtab, S0=1, evals=None, evecs=None, snr=None):
         prolate white matter are used.
     evecs : (3, 3) ndarray
         Eigenvectors of the tensor.  You can also think of this as a rotation
-        matrix that transforms the direction of the tensor.
+        matrix that transforms the direction of the tensor. The eigenvectors
+        needs to be column wise.
     snr : float
         Signal to noise ratio, assuming Rician noise.  None implies no noise.
 
@@ -284,10 +285,10 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 
     for i in range(len(fractions)):
             S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
-                                                 evecs=all_tensor_evecs(sticks[i]),
+                                                 evecs=all_tensor_evecs(sticks[i]).T,
                                                  snr=None)
     
-    return add_noise(S, snr, S0)
+    return add_noise(S, snr, S0), sticks 
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
