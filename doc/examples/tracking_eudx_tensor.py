@@ -8,12 +8,15 @@ In this example we do deterministic fiber tracking on Tensor fields with EuDX
 (Garyfallidis, PhD thesis, 2012).
 
 This example requires to import example `reconst_dti.py` to run. EuDX was
-primarily made with cpu efficiency in mind.
+primarily made with cpu efficiency in mind. Therefore, it should be useful to
+give you a quick overview of your reconstruction results with the help of
+tracking.
 
 """
 
 import os
 import sys
+import numpy as np
 import nibabel as nib
 
 if not os.path.exists('tensor_fa.nii.gz'):
@@ -97,7 +100,8 @@ Save the streamlines.
 nib.trackvis.write(ten_sl_fname, tensor_streamlines_trk, hdr, points_space='voxel')
 
 """
-If you don't want to use Trackvis to read the file you can use our `fvtk` module.
+If you don't want to use Trackvis to visualize the file you can use our
+lightweight `fvtk` module.
 """
 
 try:
