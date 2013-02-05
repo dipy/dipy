@@ -57,6 +57,10 @@ distclean: clean
 %.html : %.pyx
 	cython -a $<
 
+# Check for files not installed
+check-files:
+	$(PYTHON) -c 'from nisext.testers import check_files; check_files("dipy")'
+
 # Print out info for possible install methods
 check-version-info:
 	$(PYTHON) -c 'from nisext.testers import info_from_here; info_from_here("dipy")'
