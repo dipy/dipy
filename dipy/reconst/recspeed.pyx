@@ -205,7 +205,7 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.profile(True)
-def local_maxima(odf, edges):
+def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
     """local_maxima(odf, edges)
     Finds the local maxima of a function evaluated on a discrete set of points.
 
@@ -261,7 +261,7 @@ def local_maxima(odf, edges):
     free(wpeak)
 
     # Get peak values return
-    values = odf[indices]
+    values = odf.take(indices)
     # Sort both values and indices
     _cosort(values, indices)
     return values, indices

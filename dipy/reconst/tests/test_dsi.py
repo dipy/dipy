@@ -28,45 +28,33 @@ def test_dsi():
                                             fractions=[50, 50], snr=None)
 
     ds = DiffusionSpectrumModel(gtab)
+
     #symmetric724
-    ds.direction_finder.config(sphere=sphere, min_separation_angle=25,
-                               relative_peak_threshold=.35)
     dsfit = ds.fit(data)
     odf = dsfit.odf(sphere)
-    directions = dsfit.directions
+    directions, _, _ = peak_directions(odf, sphere, .35, 25)
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 
+    assert_almost_equal(angular_similarity(directions, golden_directions),
                         2, 1)
-
-    #use peak_directions instead
-    dsnod = DiffusionSpectrumModel(gtab)
-    dsnodfit = dsnod.fit(data)
-    directionsnod, _, _ = peak_directions(dsnodfit.odf(sphere), sphere, .35, 25)
-    assert_array_equal(directions, directionsnod)
 
     #5 subdivisions
-    ds.direction_finder.config(sphere=sphere2, min_separation_angle=25,
-                              relative_peak_threshold=.35)
     dsfit = ds.fit(data)
     odf2 = dsfit.odf(sphere2)
-    directions = dsfit.directions
+    directions, _, _ = peak_directions(odf2, sphere2, .35, 25)
     assert_equal(len(directions), 2)
-    assert_almost_equal(angular_similarity(directions, golden_directions), 
+    assert_almost_equal(angular_similarity(directions, golden_directions),
                         2, 1)
-    #from dipy.viz._show_odfs import show_odfs
-    #show_odfs(odf[None,None,None,:], (sphere.vertices, sphere.faces))
-    #show_odfs(odf2[None,None,None,:], (sphere2.vertices, sphere2.faces))
+
     assert_equal(dsfit.pdf().shape, 3 * (ds.qgrid_size, ))
     sb_dummies=sticks_and_ball_dummies(gtab)
     for sbd in sb_dummies:
         data, golden_directions = sb_dummies[sbd]
         odf = ds.fit(data).odf(sphere2)
-        directions = ds.fit(data).directions
-        #show_odfs(odf[None, None, None, :], (sphere2.vertices, sphere2.faces))
+        directions, _, _ = peak_directions(odf, sphere2, .35, 25)
         if len(directions) <= 3:
-            assert_equal(len(ds.fit(data).directions), len(golden_directions))
+            assert_equal(len(directions), len(golden_directions))
         if len(directions) > 3:
-            assert_equal(gfa(ds.fit(data).odf(sphere2)) < 0.1, True)
+            assert_equal(gfa(odf) < 0.1, True)
 
     assert_raises(ValueError, DiffusionSpectrumModel, gtab, qgrid_size=16)
 
@@ -75,9 +63,7 @@ def test_multivox_dsi():
     data, gtab = dsi_voxels()
     DS = DiffusionSpectrumModel(gtab)
     sphere = get_sphere('symmetric724')
-    DS.direction_finder.config(sphere=sphere, 
-                               min_separation_angle=25,
-                               relative_peak_threshold=.35)
+
     DSfit = DS.fit(data)
     PDF = DSfit.pdf()
     assert_equal(data.shape[:-1] + (17, 17, 17), PDF.shape)
