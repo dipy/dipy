@@ -1,11 +1,11 @@
-''' Fvtk module implements simple visualization functions using VTK. Fos means light in Greek.
+''' Fvtk module implements simple visualization functions using VTK.
 
 The main idea is the following:
 A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
 You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
 
 Examples
-----------------
+---------
 >>> from dipy.viz import fvtk
 >>> r=fvtk.ren()
 >>> a=fvtk.axes()
@@ -144,7 +144,7 @@ def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
     return arrowa
 
 
-def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1), 
+def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
          opacity=1):
     ''' Create an actor with the coordinate system axes where  red = x, green = y, blue =z.
     '''
@@ -458,7 +458,7 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=3, phi=3):
     return actor
 
 
-def sphere(position=(0, 0, 0), radius=0.5, thetares=8, phires=8, 
+def sphere(position=(0, 0, 0), radius=0.5, thetares=8, phires=8,
            color=(0, 0, 1), opacity=1, tessel=0):
     ''' Create a sphere actor
     '''
@@ -480,8 +480,8 @@ def sphere(position=(0, 0, 0), radius=0.5, thetares=8, phires=8,
     return spherea
 
 
-def ellipsoid(R=np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]]), 
-              position=(0, 0, 0), thetares=20, phires=20, color=(0, 0, 1), 
+def ellipsoid(R=np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]]),
+              position=(0, 0, 0), thetares=20, phires=20, color=(0, 0, 1),
               opacity=1, tessel=0):
     ''' Create a ellipsoid actor.
     Stretch a unit sphere to make it an ellipsoid under a 3x3 translation matrix R
@@ -539,8 +539,8 @@ def ellipsoid(R=np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]]),
     return spherea
 
 
-def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2), 
-    color=(1, 1, 1)):
+def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
+          color=(1, 1, 1)):
 
     ''' Create a label actor
     This actor will always face the camera
@@ -584,8 +584,8 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     return texta
 
 
-def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1, 
-           info=0, maptype=0, trilinear=1, iso=0, iso_thr=100, 
+def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
+           info=0, maptype=0, trilinear=1, iso=0, iso_thr=100,
            opacitymap=None, colormap=None):
     ''' Create a volume and return a volumetric actor using volumetric rendering.
     This function has many different interesting capabilities. The maptype, opacitymap and colormap are the most crucial parameters here.
@@ -866,7 +866,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     return volum
 
 
-def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50], 
+def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
             colors=[np.array([1.0, 0.0, 0.0])], opacities=[0.5]):
     ''' Take a volume and draw surface contours for any any number of thresholds (levels) where every contour has its own
     color and opacity
@@ -995,13 +995,21 @@ def _cm2colors(colormap='Blues'):
     return red1, red2, green1, green2, blue1, blue2
 
 
-def colors(v, colormap, auto=True):
+def create_colormap(v, name='jet', auto=True):
 
     ''' Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
-    r,g,b value. The colormaps we use are similar with that of pylab.
+    r,g,b value. The colormaps we use are similar with those of pylab.
 
-    Current options for colormaps are 'jet','blues','blue_red', 'accent'
+    Parameters
+    ----------
+    v : (N,) array
+        vector of values to be mapped in RGB colors according to colormap
+    name : str. 'jet', 'blues', 'blue_red', 'accent'
+        name of the colourmap
+    auto : bool,
+        if auto is True then v is interpolated to [0, 10] from v.min()
+        to v.max()
 
     Notes
     -------
@@ -1038,14 +1046,14 @@ def colors(v, colormap, auto=True):
     else:
         v = np.interp(v, [0, 1], [0, 1])
 
-    if colormap == 'jet':
+    if name == 'jet':
         # print 'jet'
 
         red = np.interp(v, [0, 0.35, 0.66, 0.89, 1], [0, 0, 1, 1, 0.5])
         green = np.interp(v, [0, 0.125, 0.375, 0.64, 0.91, 1], [0, 0, 1, 1, 0, 0])
         blue = np.interp(v, [0, 0.11, 0.34, 0.65, 1], [0.5, 1, 1, 0, 0])
 
-    if colormap == 'blues':
+    if name == 'blues':
         # cm.datad['Blues']
         # print 'blues'
 
@@ -1061,7 +1069,7 @@ def colors(v, colormap, auto=True):
             v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.96862745285, 0.937254905701, 0.882352948189,
                                                                          0.839215695858, 0.776470601559, 0.709803938866, 0.611764729023, 0.419607847929])
 
-    if colormap == 'blue_red':
+    if name == 'blue_red':
         # print 'blue_red'
         # red=np.interp(v,[],[])
 
@@ -1073,7 +1081,7 @@ def colors(v, colormap, auto=True):
 
         blue = green
 
-    if colormap == 'accent':
+    if name == 'accent':
         # print 'accent'
         red = np.interp(
             v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
@@ -1089,6 +1097,133 @@ def colors(v, colormap, auto=True):
             [0.49803921580314636, 0.83137255907058716, 0.52549022436141968, 0.60000002384185791, 0.69019609689712524, 0.49803921580314636, 0.090196080505847931, 0.40000000596046448])
 
     return np.vstack((red, green, blue)).T
+
+
+def squeezed_spheres(odfs, sphere, image=None, colormap='jet',
+                     scale=2.2, norm=True, radial_scale=True):
+    """ Plot many morphed spheres simultaneously
+
+    Parameters
+    ----------
+    odfs : (M,) or (X, M) or (X, Y, M) or (X, Y, Z, M) array
+            Values on the sphere. ODF stands for orientation distribution
+            function but this function should work for any function on
+            the sphere.
+    sphere : Sphere
+    image : None,
+            note  yet supported
+    colormap : None or 'jet'
+            if None then no color is used
+    scale : float,
+            distance between spheres
+    norm : bool,
+            normalize odfs values
+    radial_scale : bool,
+            scale sphere points according to odf values.
+
+    Returns
+    -------
+    actor : vtkActor
+
+    Examples
+    --------
+    >>> from dipy.viz import fvtk
+    >>> r = fvtk.ren()
+    >>> odfs = np.ones((5, 5, 724))
+    >>> odfs[..., 0] = 2.
+    >>> from dipy.data import get_sphere
+    >>> sphere = get_sphere('symmetric724')
+    >>> fvtk.add(r, squeezed_spheres(odfs, sphere))
+    >>> #fvtk.show(r)    
+
+    """
+
+    odfs = np.asarray(odfs)
+    if odfs.ndim == 1:
+        odfs = odfs[None, None, None, :]
+    if odfs.ndim == 2:
+        odfs = odfs[None, None, :]
+    if odfs.ndim == 3:
+        odfs = odfs[None, :]
+    if odfs.ndim > 4:
+        raise ValueError("Wrong odfs shape")
+
+    grid_shape = np.array(odfs.shape[:3])
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    if odfs.shape[-1] != sphere.vertices.shape[0]:
+        msg = 'Sphere.vertice.shape[0] should be the same as the'
+        msg += 'last dimensions of odfs i.e. odfs.shape[-1]'
+        raise ValueError(msg)
+
+    list_sq = []
+    list_cols = []
+
+    for ijk in np.ndindex(*grid_shape):
+        m = odfs[ijk].copy()
+
+        if norm:
+            m /= abs(m).max()
+
+        if radial_scale:
+            xyz = vertices.T * m
+        else:
+            xyz = vertices.T.copy()
+
+        xyz += scale * (ijk - grid_shape / 2.)[:, None]
+
+        xyz = xyz.T
+
+        list_sq.append(xyz)
+        if colormap is not None:
+            cols = create_colormap(m, colormap)
+            cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
+            list_cols.append(cols)
+
+    points = vtk.vtkPoints()
+    triangles = vtk.vtkCellArray()
+    if colormap is not None:
+        colors = vtk.vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)
+        colors.SetName("Colors")
+
+    for k in xrange(len(list_sq)):
+
+        xyz = list_sq[k]
+        if colormap is not None:
+            cols = list_cols[k]
+
+        for i in xrange(xyz.shape[0]):
+
+            points.InsertNextPoint(*xyz[i])
+            if colormap is not None:
+                colors.InsertNextTuple3(*cols[i])
+
+        for j in xrange(faces.shape[0]):
+
+            triangle = vtk.vtkTriangle()
+            triangle.GetPointIds().SetId(0, faces[j, 0] + k * xyz.shape[0])
+            triangle.GetPointIds().SetId(1, faces[j, 1] + k * xyz.shape[0])
+            triangle.GetPointIds().SetId(2, faces[j, 2] + k * xyz.shape[0])
+            triangles.InsertNextCell(triangle)
+            del triangle
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(triangles)
+
+    if colormap is not None:
+        polydata.GetPointData().SetScalars(colors)
+    polydata.Modified()
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInput(polydata)
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    return actor
 
 
 def tube(point1=(0, 0, 0), point2=(1, 0, 0), color=(1, 0, 0), opacity=1, radius=0.1, capson=1, specular=1, sides=8):
@@ -1196,7 +1331,7 @@ def crossing(a, ind, sph, scale, orient=False):
     return T
 
 
-def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1, 
+def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
            planes=1, levels=[20, 30, 40], opacities=[0.8, 0.7, 0.3], colors=None, planesx=[20, 30], planesy=[30, 40], planesz=[20, 30]):
     ''' Slicer and contour rendering of 3d volumes
 
@@ -1532,8 +1667,8 @@ def show(ren, title='dipy.viz.fvtk', size=(300, 300), png_magnify=1):
     ren.SetRenderWindow(None)
 
 
-def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None, 
-           out_path=None, path_numbering=False, n_frames=10, az_ang=10, 
+def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
+           out_path=None, path_numbering=False, n_frames=10, az_ang=10,
            magnification=1, size=(300, 300), bgr_color=(0, 0, 0)):
     ''' This will record a video of your scene
 
