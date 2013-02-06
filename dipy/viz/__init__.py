@@ -27,7 +27,7 @@ except ImportError:
     has_mpl = False
 
 if has_mayavi:
-    from .mayavi.spheres import show_odfs
+    from .spheres import show_odfs
 
 if has_mpl:
     import projections
