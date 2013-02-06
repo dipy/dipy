@@ -20,9 +20,3 @@ def _make_pts():
 
 sphere_points = _make_pts()
 
-
-def _show_pts():
-    ''' Show 3D scatter plot of sphere points; requires Mayavi '''
-    from enthought.mayavi import mlab
-    pts = sphere_points
-    mlab.points3d(pts[:,0], pts[:,1], pts[:,2], scale_factor=0.2)
