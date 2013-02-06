@@ -1099,16 +1099,14 @@ def create_colormap(v, name='jet', auto=True):
     return np.vstack((red, green, blue)).T
 
 
-def squeezed_spheres(odfs, sphere, image=None, colormap='jet',
+def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
                      scale=2.2, norm=True, radial_scale=True):
     """ Plot many morphed spheres simultaneously
 
     Parameters
     ----------
-    odfs : (M,) or (X, M) or (X, Y, M) or (X, Y, Z, M) array
-            Values on the sphere. ODF stands for orientation distribution
-            function but this function should work for any function on
-            the sphere.
+    sphere_values : (M,) or (X, M) or (X, Y, M) or (X, Y, Z, M) array
+            Values on the sphere. 
     sphere : Sphere
     image : None,
             note  yet supported
@@ -1117,7 +1115,7 @@ def squeezed_spheres(odfs, sphere, image=None, colormap='jet',
     scale : float,
             distance between spheres
     norm : bool,
-            normalize odfs values
+            normalize sphere_values
     radial_scale : bool,
             scale sphere points according to odf values.
 
@@ -1133,35 +1131,35 @@ def squeezed_spheres(odfs, sphere, image=None, colormap='jet',
     >>> odfs[..., 0] = 2.
     >>> from dipy.data import get_sphere
     >>> sphere = get_sphere('symmetric724')
-    >>> fvtk.add(r, squeezed_spheres(odfs, sphere))
+    >>> fvtk.add(r, sphere_funcs(odfs, sphere))
     >>> #fvtk.show(r)    
 
     """
 
-    odfs = np.asarray(odfs)
-    if odfs.ndim == 1:
-        odfs = odfs[None, None, None, :]
-    if odfs.ndim == 2:
-        odfs = odfs[None, None, :]
-    if odfs.ndim == 3:
-        odfs = odfs[None, :]
-    if odfs.ndim > 4:
-        raise ValueError("Wrong odfs shape")
+    sphere_values = np.asarray(sphere_values)
+    if sphere_values.ndim == 1:
+        sphere_values = sphere_values[None, None, None, :]
+    if sphere_values.ndim == 2:
+        sphere_values = sphere_values[None, None, :]
+    if sphere_values.ndim == 3:
+        sphere_values = sphere_values[None, :]
+    if sphere_values.ndim > 4:
+        raise ValueError("Wrong shape")
 
-    grid_shape = np.array(odfs.shape[:3])
+    grid_shape = np.array(sphere_values.shape[:3])
     faces = np.asarray(sphere.faces, dtype=int)
     vertices = sphere.vertices
 
-    if odfs.shape[-1] != sphere.vertices.shape[0]:
+    if sphere_values.shape[-1] != sphere.vertices.shape[0]:
         msg = 'Sphere.vertice.shape[0] should be the same as the'
-        msg += 'last dimensions of odfs i.e. odfs.shape[-1]'
+        msg += 'last dimensions of sphere_values i.e. sphere_values.shape[-1]'
         raise ValueError(msg)
 
     list_sq = []
     list_cols = []
 
     for ijk in np.ndindex(*grid_shape):
-        m = odfs[ijk].copy()
+        m = sphere_values[ijk].copy()
 
         if norm:
             m /= abs(m).max()
