@@ -1131,7 +1131,7 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     >>> odfs[..., 0] = 2.
     >>> from dipy.data import get_sphere
     >>> sphere = get_sphere('symmetric724')
-    >>> fvtk.add(r, sphere_funcs(odfs, sphere))
+    >>> fvtk.add(r, fvtk.sphere_funcs(odfs, sphere))
     >>> #fvtk.show(r)    
 
     """
