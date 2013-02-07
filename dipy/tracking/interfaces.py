@@ -1,7 +1,14 @@
-from warnings import warn
+from nose import SkipTest
 
-warn("The interfaces module is very new and not well tested, please use it "
-     "with care and help us make it better")
+
+#############################################################################
+# Remove this when the module becomes functional again
+class ThisIsBroken(SkipTest):
+    pass
+raise ThisIsBroken("this module is undergoing a major overhaul as therefore "
+                   "does not currently work")
+#############################################################################
+
 
 import pickle
 import string
