@@ -4,8 +4,6 @@
 Examples
 ========
 
-.. In order to build the examples, you'll need (on Debian)
-    sudo apt-get install python-tables python-matplotib python-vtk
 
 
 .. toctree::
@@ -18,9 +16,14 @@ Examples
    examples_built/reconst_gqi
    examples_built/tracking_eudx_tensor
    examples_built/tracking_eudx_odf
+   examples_built/probabilistic_tracking_odfs
    examples_built/find_correspondence
    examples_build/visualize_crossings
    examples_built/reslice_datasets
    examples_built/segment_quickbundles
    examples_built/streamline_formats
    examples_built/warp_streamlines
+
+
+.. In order to build the examples, you'll need (on Debian)
+    sudo apt-get install python-tables python-matplotib python-vtk
