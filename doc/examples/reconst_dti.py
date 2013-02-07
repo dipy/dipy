@@ -149,7 +149,7 @@ nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
 Finally lets try to visualize the orientation distribution functions of a small
-rectangular around the middle of our datasets.
+rectangular area around the middle of our datasets.
 """
 
 i,j,k,w = np.array(data2.shape) / 2
