@@ -148,6 +148,24 @@ evecs_img = nib.Nifti1Image(tenfit.evecs, img.get_affine())
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
+Finally lets try to visualize the orientation distribution functions of a small
+rectangular around the middle of our datasets.
+"""
+
+i,j,k,w = np.array(data2.shape) / 2
+data_small  = data2[i-5:i+5, j-5:j+5, k-2:k+2]
+from dipy.data import get_sphere
+sphere = get_sphere('symmetric724')
+
+from dipy.viz import fvtk
+r = fvtk.ren()
+fvtk.add(r, fvtk.sphere_funcs(tenmodel.fit(data_small).odf(sphere),
+							  sphere, colormap=None))
+
+print('Saving illustration as tensor_odfs.png')
+fvtk.record(r, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
+
+"""
 .. include:: ../links_names.inc
 
 """
