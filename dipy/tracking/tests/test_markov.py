@@ -9,34 +9,37 @@ from dipy.core.sphere import HemiSphere, unit_octahedron
 from numpy.testing import (assert_array_almost_equal, assert_array_equal,
                            assert_equal, assert_, assert_raises)
 
+
 def test_BoundaryStepper():
     os = 1
     bi = BoundaryStepper(overstep=os)
-    loc = np.array([.5,.5,.5])
-    step = np.array([1,1,1])/np.sqrt(3)
-    assert_array_almost_equal(bi(loc, step), os*step + [1,1,1])
-    assert_array_almost_equal(bi(loc, -step), -os*step)
+    loc = np.array([.5, .5, .5])
+    step = np.array([1, 1, 1]) / np.sqrt(3)
+    assert_array_almost_equal(bi(loc, step), os * step + [1, 1, 1])
+    assert_array_almost_equal(bi(loc, -step), -os * step)
 
     os = 2
-    bi = BoundaryStepper((2,3,4), overstep=2)
-    assert_array_almost_equal(bi(loc, step), os*step + [2,2,2])
-    assert_array_almost_equal(bi(loc, -step), -os*step)
+    bi = BoundaryStepper((2, 3, 4), overstep=2)
+    assert_array_almost_equal(bi(loc, step), os * step + [2, 2, 2])
+    assert_array_almost_equal(bi(loc, -step), -os * step)
 
-    loc = np.array([7.5,7.5,7.5])
-    assert_array_almost_equal(bi(loc, step), os*step + [8,8,8])
-    assert_array_almost_equal(bi(loc, -step), [6,6,6] - os*step)
+    loc = np.array([7.5, 7.5, 7.5])
+    assert_array_almost_equal(bi(loc, step), os * step + [8, 8, 8])
+    assert_array_almost_equal(bi(loc, -step), [6, 6, 6] - os * step)
+
 
 def test_FixedSizeStepper():
     fsi = FixedSizeStepper(step_size=2.)
-    loc = np.array([2,3,12])
-    step = np.array([3,2,4])/np.sqrt(3)
-    assert_array_almost_equal(fsi(loc, step), loc + 2.*step)
-    assert_array_almost_equal(fsi(loc, -step), loc - 2.*step)
+    loc = np.array([2, 3, 12])
+    step = np.array([3, 2, 4]) / np.sqrt(3)
+    assert_array_almost_equal(fsi(loc, step), loc + 2. * step)
+    assert_array_almost_equal(fsi(loc, -step), loc - 2. * step)
 
 
 def test_markov_streamline():
 
     east = np.array([1, 0, 0])
+
     class MoveEastWest(object):
         def get_direction(self, location, prev_step):
             if np.any(location < 0):
@@ -53,7 +56,7 @@ def test_markov_streamline():
     dir_getter = MoveEastWest()
     stepper = FixedSizeStepper(.5)
 
-    # The streamline terminates when it goes past (10, 0, 0). (10.2, 0, 0) 
+    # The streamline terminates when it goes past (10, 0, 0). (10.2, 0, 0)
     # should be the last point in the streamline
     streamline = markov_streamline(dir_getter.get_direction, stepper,
                                    seed, first_step, 100)
@@ -70,6 +73,7 @@ def test_markov_streamline():
     expected = np.zeros((11, 3))
     expected[:, 0] = np.linspace(5.2, 0.2, 11)
     assert_array_almost_equal(streamline, expected)
+
 
 def test_MarkovIntegrator():
 
@@ -101,7 +105,6 @@ def test_MarkovIntegrator():
         expected[:, i] = np.arange(.2, 10, .5)
         assert_array_almost_equal(streamlines[i], expected)
 
-
     # Track only the first (largest) peak for each seed
     gen = KeepGoing(model=None, interpolator=data_interp, mask=mask,
                     take_step=stepper, angle_limit=0., seeds=seeds,
@@ -124,15 +127,16 @@ def test_closest_peak():
                             [0., 0., 1.],
                             [1., 1., 0.],
                             [0., 1., 1.]])
-    norms = np.sqrt((peak_points*peak_points).sum(-1))
-    peak_points = peak_points/norms[:, None]
+    norms = np.sqrt((peak_points * peak_points).sum(-1))
+    peak_points = peak_points / norms[:, None]
 
     prev = np.array([1, -.9, 0])
-    prev = prev/np.sqrt(np.dot(prev, prev))
+    prev = prev / np.sqrt(np.dot(prev, prev))
     cp = _closest_peak(peak_points, prev, 0.)
     assert_array_equal(cp, peak_points[0])
     cp = _closest_peak(peak_points, -prev, 0.)
     assert_array_equal(cp, -peak_points[0])
+
 
 def test_ClosestDirectionTracker():
     class MyModel(object):
@@ -147,12 +151,12 @@ def test_ClosestDirectionTracker():
         directions = np.array([[1., 0, 0],
                                [0, 1., 0],
                                [0, 0., 1]])
+
         def __call__(self, fit):
             return self.directions
 
     data = np.ones((10, 10, 10, 65))
     data_interp = NearestNeighborInterpolator(data, (1, 1, 1))
-
 
     mask = np.ones((10, 10, 10), 'bool')
     mask[0, 0, 0] = False
@@ -166,7 +170,7 @@ def test_ClosestDirectionTracker():
     prev_step = np.array([[.9, .1, .1],
                           [.1, .9, .1],
                           [.1, .1, .9]])
-    prev_step /= np.sqrt((prev_step*prev_step).sum(-1))[:, None]
+    prev_step /= np.sqrt((prev_step * prev_step).sum(-1))[:, None]
     a, b, c = prev_step
     assert_array_equal(cdt._next_step([1., 1., 1.], a), [1, 0, 0])
     assert_array_equal(cdt._next_step([1., 1., 1.], b), [0, 1, 0])
@@ -184,8 +188,8 @@ def test_ClosestDirectionTracker():
     # We're going to use a silly set of directions for the test
     cdt._get_directions = MyDirectionFinder()
     sq3 = np.sqrt(3)
-    a = np.array([sq3/2, 1./2, 0])
-    b = np.array([1./2, sq3/2, 0])
+    a = np.array([sq3 / 2, 1. / 2, 0])
+    b = np.array([1. / 2, sq3 / 2, 0])
     c = np.array([1, 1, 1]) / sq3
 
     assert_array_equal(cdt._next_step([1., 1., 1.], a), [1, 0, 0])
@@ -202,13 +206,13 @@ def test_ProbabilisticOdfWeightedTracker():
                 np.array([1., 0., 0.]),
                 np.array([0., 1., 0.]),
                 np.array([1., 1., 0.]),
-               ]
+                ]
     simple_image = np.array([[0, 1, 0, 0, 0, 0],
                              [0, 1, 0, 0, 0, 0],
                              [0, 3, 2, 2, 2, 0],
                              [0, 1, 0, 0, 0, 0],
                              [0, 1, 0, 0, 0, 0],
-                            ])
+                             ])
     # Make the image 4d
     simple_image = simple_image[..., None, None]
 
@@ -220,6 +224,7 @@ def test_ProbabilisticOdfWeightedTracker():
     class MyFit(object):
         def __init__(self, n):
             self.n = n
+
         def odf(self, sphere):
             return odf_list[self.n]
 
@@ -227,24 +232,24 @@ def test_ProbabilisticOdfWeightedTracker():
     model = MyModel()
     mask = np.ones([5, 6, 1], dtype="bool")
     stepper = FixedSizeStepper(1.)
-    interpolator = NearestNeighborInterpolator(simple_image, (1,1,1))
+    interpolator = NearestNeighborInterpolator(simple_image, (1, 1, 1))
 
     # These are the only two possible paths though the simple_image
     pwt = ProbabilisticOdfWeightedTracker(model, interpolator, mask,
                                           stepper, 90, seeds, sphere)
-    expected = [np.array([[ 0.5,  1.5,  0.5],
-                          [ 1.5,  1.5,  0.5],
-                          [ 2.5,  1.5,  0.5],
-                          [ 2.5,  2.5,  0.5],
-                          [ 2.5,  3.5,  0.5],
-                          [ 2.5,  4.5,  0.5],
-                          [ 2.5,  5.5,  0.5]]),
-                np.array([[ 0.5,  1.5,  0.5],
-                          [ 1.5,  1.5,  0.5],
-                          [ 2.5,  1.5,  0.5],
-                          [ 3.5,  1.5,  0.5],
-                          [ 4.5,  1.5,  0.5]])
-               ]
+    expected = [np.array([[0.5, 1.5, 0.5],
+                          [1.5, 1.5, 0.5],
+                          [2.5, 1.5, 0.5],
+                          [2.5, 2.5, 0.5],
+                          [2.5, 3.5, 0.5],
+                          [2.5, 4.5, 0.5],
+                          [2.5, 5.5, 0.5]]),
+                np.array([[0.5, 1.5, 0.5],
+                          [1.5, 1.5, 0.5],
+                          [2.5, 1.5, 0.5],
+                          [3.5, 1.5, 0.5],
+                          [4.5, 1.5, 0.5]])
+                ]
 
     def allclose(x, y):
         return x.shape == y.shape and np.allclose(x, y)
