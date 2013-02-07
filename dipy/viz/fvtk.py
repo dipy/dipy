@@ -1667,7 +1667,8 @@ def show(ren, title='dipy.viz.fvtk', size=(300, 300), png_magnify=1):
 
 def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
            out_path=None, path_numbering=False, n_frames=10, az_ang=10,
-           magnification=1, size=(300, 300), bgr_color=(0, 0, 0)):
+           magnification=1, size=(300, 300), bgr_color=(0, 0, 0),
+           verbose=False):
     ''' This will record a video of your scene
 
     Records a video as a series of .png files of your scene by rotating the
@@ -1715,16 +1716,6 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     # ren.GetActiveCamera().Azimuth(180)
 
-    '''
-    # We'll set up the view we want.
-    ren.GetActiveCamera().SetPosition(0, 1, 0)
-    ren.GetActiveCamera().SetFocalPoint(0, 0, 0)
-    ren.GetActiveCamera().SetViewUp(0, 0, 1)
-    # Let the renderer compute a good position and focal point.
-    ren.ResetCamera()
-    ren.GetActiveCamera().Dolly(1.4)
-    ren.ResetCameraClippingRange()
-    '''
     ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
@@ -1746,11 +1737,10 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         ren.GetActiveCamera().SetViewUp(ux, uy, uz)
 
     cam = ren.GetActiveCamera()
-    print('------------------------------------')
-    print('Camera Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
-    print('Camera Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
-    print('Camera View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
-    print('------------------------------------')
+    if verbose:
+        print('Camera Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
+        print('Camera Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
+        print('Camera View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
 
     for i in range(n_frames):
         ren.GetActiveCamera().Azimuth(ang)
