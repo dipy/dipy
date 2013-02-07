@@ -9,6 +9,7 @@ al (MRM 2010) to your datasets.
 First import the necessary modules:
 """
 
+import numpy as np
 import nibabel as nib
 from dipy.data import fetch_beijing_dti, read_beijing_dti, get_sphere
 from dipy.align.aniso2iso import resample
@@ -110,6 +111,24 @@ shows the maxima values of the ODF and peak_indices gives us their position on t
 discrete sphere that was used to do the reconstruction of the ODF. In order to
 obtain the full ODF return_odf should be True. Before enabling this option make sure that you have enough memory.
 """
+
+"""
+Finally lets try to visualize the orientation distribution functions of a small
+rectangular area around the middle of our datasets.
+"""
+
+i,j,k,w = np.array(data2.shape) / 2
+data_small  = data2[i-5:i+5, j-5:j+5, k-2:k+2]
+from dipy.data import get_sphere
+sphere = get_sphere('symmetric724')
+
+from dipy.viz import fvtk
+r = fvtk.ren()
+fvtk.add(r, fvtk.sphere_funcs(csamodel.fit(data_small).odf(sphere),
+							  sphere, colormap='jet'))
+print('Saving illustration as csa_odfs.png')
+fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
+
 
 """
 .. include:: ../links_names.inc
