@@ -162,7 +162,15 @@ class TestQballModel(object):
         odf = fit.odf(sphere)
         assert_equal(odf.shape, sphere.phi.shape)
         directions, _, _ = peak_directions(odf, sphere)
-        assert_array_almost_equal(directions, expected)
+        # Check the same number of directions
+        n = len(expected)
+        assert_equal(len(directions), n)
+        # Check directions are unit vectors
+        cos_similarity = (directions * directions).sum(-1)
+        assert_array_almost_equal(cos_similarity, np.ones(n))
+        # Check the directions == expected or -expected
+        cos_similarity = (directions * expected).sum(-1)
+        assert_array_almost_equal(abs(cos_similarity), np.ones(n))
 
         # Test normalize data
         model = self.model(gtab, sh_order=4, min_signal=1e-5,
