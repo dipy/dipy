@@ -263,28 +263,16 @@ def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
     See Also
     --------
     dipy.core.sphere
-
     """
-    cdef :
-        long *wpeak = <long *>malloc(odf.shape[0] * sizeof(long))
-        size_t count
-
-    if not wpeak:
-        raise MemoryError()
-
-    count = _compare_neighbors(odf, edges, wpeak)
+    cdef:
+        cnp.ndarray[cnp.npy_intp] wpeak
+    wpeak = np.zeros((odf.shape[0],), dtype=np.intp)
+    count = _compare_neighbors(odf, edges, &wpeak[0])
     if count == -1:
-        free(wpeak)
         raise IndexError("Values in edges must be < len(odf)")
     elif count == -2:
-        free(wpeak)
         raise ValueError("odf can not have nans")
-
-    # Copy peak indices to an nd-array for return
-    cdef cnp.ndarray indices = np.empty(count, dtype=long, order="C")
-    memcpy(indices.data, wpeak, count*sizeof(long))
-    free(wpeak)
-
+    indices = wpeak[:count].copy()
     # Get peak values return
     values = odf.take(indices)
     # Sort both values and indices
@@ -294,7 +282,7 @@ def local_maxima(cnp.ndarray odf, cnp.ndarray edges):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef void _cosort(double[::1] A, long[::1] B) nogil:
+cdef void _cosort(double[::1] A, cnp.npy_intp[::1] B) nogil:
     """Sorts A inplace and applies the same reording to B"""
     cdef:
         size_t n = A.shape[0]
@@ -317,7 +305,7 @@ cdef void _cosort(double[::1] A, long[::1] B) nogil:
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
-                             long *wpeak) nogil:
+                             cnp.npy_intp *wpeak_ptr) nogil:
     """Compares every pair of points in edges
 
     Parameters
@@ -327,7 +315,7 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
     edges :
         neighbor relationships on sphere. Every set of neighbors on the sphere
         should be an edge.
-    wpeak : pointer
+    wpeak_ptr : pointer
         pointer to a block of memory which will be updated with the result of
         the comparisons. This block of memory must be large enough to hold
         len(odf) longs. The first `count` elements of wpeak will be updated
@@ -339,7 +327,6 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
         Number of maxima in odf. A value < 0 indicates an error:
             -1 : value in edges too large, >= than len(odf)
             -2 : odf contains nans
-
     """
     cdef:
         size_t lenedges = edges.shape[0]
@@ -348,9 +335,6 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
         cnp.uint16_t find0, find1
         double odf0, odf1
         long count = 0
-
-    for i in range(lenodf):
-        wpeak[i] = 0
 
     for i in range(lenedges):
 
@@ -363,27 +347,28 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
         odf1 = odf[find1]
 
         """
-        Here `wpeak` is used as an indicator array that can take one of three
-        values.  If `wpeak[i]` is :
-            -1 : point i of the sphere is smaller than at least one neighbor.
-            0 : point i is equal to all it's neighbors.
-            1 : point i is > at least one neighbor and >= all it's neighbors.
+        Here `wpeak_ptr` is used as an indicator array that can take one of
+        three values.  If `wpeak_ptr[i]` is:
+        * -1 : point i of the sphere is smaller than at least one neighbor.
+        *  0 : point i is equal to all its neighbors.
+        *  1 : point i is > at least one neighbor and >= all its neighbors.
 
         Each iteration of the loop is a comparison between neighboring points
-        (the two point of an edge). At each iteration we update wpeak in the
-        following way:
-            wpeak[smaller_point] = -1
-            if wpeak[larger_point] == 0:
-                wpeak[larger_point] = 1
+        (the two point of an edge). At each iteration we update wpeak_ptr in the
+        following way::
+
+            wpeak_ptr[smaller_point] = -1
+            if wpeak_ptr[larger_point] == 0:
+                wpeak_ptr[larger_point] = 1
 
         If the two points are equal, wpeak is left unchanged.
         """
         if odf0 < odf1:
-            wpeak[find0] = -1
-            wpeak[find1] |= 1
+            wpeak_ptr[find0] = -1
+            wpeak_ptr[find1] |= 1
         elif odf0 > odf1:
-            wpeak[find0] |= 1
-            wpeak[find1] = -1
+            wpeak_ptr[find0] |= 1
+            wpeak_ptr[find1] = -1
         elif (odf0 != odf0) or (odf1 != odf1):
             count = -2
             break
@@ -391,18 +376,18 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
     if count < 0:
         return count
 
-    # Count the number of peaks and use first count elements of wpeak to hold
-    # indices of those peaks
+    # Count the number of peaks and use first count elements of wpeak_ptr to
+    # hold indices of those peaks
     for i in range(lenodf):
-        if wpeak[i] > 0:
-            wpeak[count] = i
+        if wpeak_ptr[i] > 0:
+            wpeak_ptr[count] = i
             count += 1
 
     # If count == 0, all values of odf are equal, and point 0 is returned as a
     # peak to satisfy the requirement that peak_values[0] == max(odf).
     if count == 0:
         count = 1
-        wpeak[0] = 0
+        wpeak_ptr[0] = 0
 
     return count
 
