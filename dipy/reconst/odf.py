@@ -6,6 +6,10 @@ from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import get_sphere
+#from dipy.reconst.shm import sph_harm_ind_list, smooth_pinv
+
+
+
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base
 
@@ -245,3 +249,6 @@ def gfa(samples):
     numer = n*(diff*diff).sum(-1)
     denom = (n-1)*(samples*samples).sum(-1)
     return np.sqrt(numer/denom)
+
+
+

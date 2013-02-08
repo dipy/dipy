@@ -1,11 +1,14 @@
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-from ..odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
-                   peak_directions_nl)
+from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
+                              peak_directions_nl)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
                         assert_true)
+from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.data import get_sphere
+from dipy.sims.voxel import multi_tensor_odf
 
 def test_peak_directions_nl():
     def discrete_eval(sphere):
@@ -167,3 +170,21 @@ def test_peaksFromModel():
     assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
 
+def test_sf_to_sh():
+    sphere = get_sphere('symmetric724')
+    mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003] ))
+    mevecs = [ np.array( [ [1,0,0], [0,1,0], [0,0,1] ] ),
+               np.array( [ [0,1,0], [1,0,0], [0,0,1] ] ) ]
+    
+    odf = multi_tensor_odf( sphere.vertices, [0.5, 0.5], mevals, mevecs )
+    odf_sh = sf_to_sh( odf, sphere, 4 )
+    odf2 = sh_to_sf( odf_sh, 4, sphere )
+    
+#     from dipy.viz import fvtk
+#     r = fvtk.ren()
+#     fvtk.add( r, fvtk.sphere_funcs( odf2, sphere ) )
+#     fvtk.show( r )
+
+# test_sf_to_sh()
+
+    

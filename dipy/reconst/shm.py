@@ -29,10 +29,11 @@ from numpy import (atleast_1d, concatenate, diag, diff, dot, empty, eye, sqrt,
                    unique, dot)
 from numpy.linalg import pinv, svd
 from numpy.random import randint
-from .odf import OdfModel, OdfFit
+from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
-from .cache import Cache
+from dipy.reconst.cache import Cache
+from dipy.core.ndindex import ndindex
 
 
 def _copydoc(obj):
@@ -116,13 +117,13 @@ def real_sph_harm_mrtrix(m, n, theta, phi):
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = broadcast_arrays(m < 0, n, theta, phi)
+    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh = sph_harm(m, n, theta, phi)
     real_sh = empty(sh.shape, 'double')
-    neg_ones = -1*ones(sh.shape)**(m+1)
+    neg_ones = -1*np.ones(sh.shape)**(m+1)
 
     real_sh[m_eq0] = sh[m_eq0].real
     real_sh[m_gt0] = sh[m_gt0].real 
@@ -162,9 +163,9 @@ def real_sph_harm_fibernav(m, n, theta, phi):
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = broadcast_arrays(m < 0, n, theta, phi)
+    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh  = sph_harm(m, n, theta, phi)
     sh2 = sph_harm(abs(m), n, theta, phi)
@@ -574,3 +575,66 @@ class ResidualBootstrapWrapper(object):
         boot_signal.clip(self._min_signal, 1., out=boot_signal)
         signal[self._where_dwi] = boot_signal
         return signal
+
+
+def sf_to_sh(odf, sphere, sh_order=4, basis_type=None, smooth=0):
+    m, n = sph_harm_ind_list(sh_order)
+
+    pol = sphere.theta
+    azi = sphere.phi
+
+    if basis_type is None :
+        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
+    elif basis_type == "mrtrix" :
+        B = real_sph_harm_mrtrix(m, n, azi[:, None], pol[:, None])
+    elif basis_type == "fibernav" :
+        B = real_sph_harm_fibernav(m, n, azi[:, None], pol[:, None])
+    else :
+        raise ValueError(' Wrong basis type name ')
+    
+    L = -n*(n+1)
+    invB = smooth_pinv(B, sqrt(smooth)*L)
+    R = (sh_order + 1)*(sh_order + 2) / 2
+    odf_sh = np.zeros( odf.shape[:-1]+(R,) )
+
+    print odf_sh.shape,invB.shape
+    
+    if odf.ndim == 1 :
+        odf_sh = np.dot(invB, odf)        
+    else :
+        for idx in ndindex( odf_sh.shape[:-1] ) :
+            odf_sh[ idx ] = np.dot( invB, odf[ idx ] )
+
+    return odf_sh
+
+
+def sh_to_sf(odf_sh, sh_order, sphere, basis_type=None):    
+    m, n = sph_harm_ind_list(sh_order)
+
+    pol = sphere.theta
+    azi = sphere.phi
+
+    if basis_type is None :
+        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
+    elif basis_type == "mrtrix" :
+        B = real_sph_harm_mrtrix(m, n, azi[:, None], pol[:, None])
+    elif basis_type == "fibernav" :
+        B = real_sph_harm_fibernav(m, n, azi[:, None], pol[:, None])
+    else :
+        raise ValueError(' Wrong basis type name ')
+    
+    invB = pinv(B)
+
+    odf = np.zeros( sphere.vertices.shape[0] )
+    print odf.shape,invB.shape
+    
+    if odf.ndim == 1 :
+        odf = np.dot(odf_sh, invB)        
+    else :
+        for idx in ndindex( odf_sh.shape[:-1] ) :
+            odf[ idx ] = np.dot( odf_sh[ idx ], invB )
+
+    return odf
+
+
+
