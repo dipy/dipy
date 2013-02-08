@@ -86,6 +86,97 @@ def real_sph_harm(m, n, theta, phi):
     return real_sh
 
 
+def real_sph_harm_mrtrix(m, n, theta, phi):
+    """
+    Compute real spherical harmonics as in mrtrix, where the real harmonic $Y^m_n$ is
+    defined to be:
+        Real($Y^m_n$)            if m > 0
+        $Y^m_n$                  if m == 0
+        (-1)^{m+1}Imag($Y^m_n$)  if m < 0
+
+    This may take scalar or array arguments. The inputs will be broadcasted
+    against each other.
+
+    Parameters
+    -----------
+      - `m` : int |m| <= n
+        The order of the harmonic.
+      - `n` : int >= 0
+        The degree of the harmonic.
+      - `theta` : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+      - `phi` : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    Returns
+    --------
+      - `y_mn` : real float
+        The real harmonic $Y^m_n$ sampled at `theta` and `phi` as implemented in mrtrix.
+        Warning: the basis is Tournier et al 2004 and 2007 is slightly different.
+    """
+    m = atleast_1d(m)
+    # find where m is =,< or > 0 and broadcasts to the size of the output
+    m_eq0,junk,junk,junk = broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0,junk,junk,junk = broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0,junk,junk,junk = broadcast_arrays(m < 0, n, theta, phi)
+
+    sh = sph_harm(m, n, theta, phi)
+    real_sh = empty(sh.shape, 'double')
+    neg_ones = -1*ones(sh.shape)**(m+1)
+
+    real_sh[m_eq0] = sh[m_eq0].real
+    real_sh[m_gt0] = sh[m_gt0].real 
+    real_sh[m_lt0] = neg_ones[m_lt0] * sh[m_lt0].imag
+    
+    return real_sh
+
+
+def real_sph_harm_fibernav(m, n, theta, phi):
+    """
+    Compute real spherical harmonics as in fibernavigator, where the real harmonic $Y^m_n$ is
+    defined to be:
+        sqrt(2)*Imag($Y^m_n$)    if m > 0
+        $Y^m_n$                  if m == 0
+        sqrt(2)*Real($Y^|m|_n$)  if m < 0
+
+    This may take scalar or array arguments. The inputs will be broadcasted
+    against each other.
+
+    Parameters
+    -----------
+      - `m` : int |m| <= n
+        The order of the harmonic.
+      - `n` : int >= 0
+        The degree of the harmonic.
+      - `theta` : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+      - `phi` : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    Returns
+    --------
+      - `y_mn` : real float
+        The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
+        described in M. Descoteaux PhD thesis 2008
+
+    """
+    m = atleast_1d(m)
+    # find where m is =,< or > 0 and broadcasts to the size of the output
+    m_eq0,junk,junk,junk = broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0,junk,junk,junk = broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0,junk,junk,junk = broadcast_arrays(m < 0, n, theta, phi)
+
+    sh  = sph_harm(m, n, theta, phi)
+    sh2 = sph_harm(abs(m), n, theta, phi)
+
+    real_sh = empty(sh.shape, 'double')
+    real_sh[m_eq0] = sh[m_eq0].real
+    real_sh[m_gt0] = sh[m_gt0].imag  * sqrt(2)
+    real_sh[m_lt0] = sh2[m_lt0].real * sqrt(2)
+    
+    return real_sh
+
+
 def sph_harm_ind_list(sh_order):
     """
     Returns the degree (n) and order (m) of all the symmetric spherical
