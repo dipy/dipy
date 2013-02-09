@@ -158,8 +158,9 @@ def real_sph_harm_fibernav(m, n, theta, phi):
     --------
       - `y_mn` : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
-        described in M. Descoteaux PhD thesis 2008
-
+        implemented in the FiberNavigator.
+        http://code.google.com/p/fibernavigator/
+        
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
@@ -636,5 +637,5 @@ def sh_to_sf(odf_sh, sh_order, sphere, basis_type=None):
 
     return odf
 
-
+# sh_estimate.py -i sf.nii -r 4 -dirs grad_x.txt -basisType 1 -o sf_sh_fibernav.nii 
 
