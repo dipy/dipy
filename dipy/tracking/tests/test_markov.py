@@ -246,11 +246,14 @@ def test_ProbabilisticOdfWeightedTracker():
                           [ 4.5,  1.5,  0.5]])
                ]
 
+    def allclose(x, y):
+        return x.shape == y.shape and np.allclose(x, y)
+
     path = [False, False]
     for streamline in pwt:
-        if np.allclose(streamline, expected[0]):
+        if allclose(streamline, expected[0]):
             path[0] = True
-        elif np.allclose(streamline, expected[1]):
+        elif allclose(streamline, expected[1]):
             path[1] = True
         else:
             raise AssertionError()
