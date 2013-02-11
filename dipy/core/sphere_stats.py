@@ -10,14 +10,14 @@ def random_uniform_on_sphere(n=1,coords='xyz'):
     
     Parameters
     -----------
-    n: int, number of random vectors
-    coords: str, 'xyz' in cartesian form
-        'radians' for spherical form in rads
+    n : int, number of random vectors
+    coords : str, 'xyz' in cartesian form
+                    'radians' for spherical form in rads
         'degrees' for spherical form in degrees
         
     Returns
     --------
-    X: array, shape (n,3) if coords='xyz' or shape (n,2) otherwise
+    X : array, shape (n,3) if coords='xyz' or shape (n,2) otherwise
     
     Examples
     ---------
@@ -149,12 +149,12 @@ def compare_orientation_sets(S,T):
     
     Parameters
     -----------
-    S: array, shape (m,d)
-    T: array, shape (n,d)
+    S : array, shape (m,d)
+    T : array, shape (n,d)
         
     Returns
     --------
-    max_mean_cosine: float
+    max_mean_cosine : float
     
     Examples
     ---------
@@ -195,8 +195,8 @@ def angular_similarity(S,T):
 
     Parameters
     -----------
-    S: array, shape (m,d)
-    T: array, shape (n,d)
+    S : array, shape (m,d)
+    T : array, shape (n,d)
 
     Returns
     --------

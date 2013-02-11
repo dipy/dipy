@@ -608,7 +608,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     info : int {0,1}, default 1
             if 1 it prints out some info about the volume, the method and the dataset.
 
-    trilinear: int {0,1}, default 1
+    trilinear : int {0,1}, default 1
             Use trilinear interpolation, default 1, gives smoother rendering. If you want faster interpolation use 0 (Nearest).
 
     maptype : int {0,1}, default 0,
@@ -890,7 +890,7 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
 
     Returns
     -----------
-    ass: assembly of actors
+    ass : assembly of actors
             representing the contour surfaces
 
     Examples

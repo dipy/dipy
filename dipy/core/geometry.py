@@ -546,7 +546,7 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
 
     Returns
     ---------
-    matrix: 4x4 numpy array
+    matrix : ndarray (4, 4)
 
     Code modified from the work of Christoph Gohlke link provided here
     http://www.lfd.uci.edu/~gohlke/code/transformations.py.html
