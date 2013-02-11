@@ -27,7 +27,7 @@ def fractional_anisotropy(evals, axis=-1):
 
     Notes
     --------
-    FA is calculated with the following equation:
+    FA is calculated using the following equation:
 
     .. math::
 
@@ -810,7 +810,7 @@ class Tensor(ModelArray, TensorFit):
         .. math::
 
             FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                        \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
+                        \lambda_3)^2+(\lambda_2-\lambda_3)^2}{\lambda_1^2+
                         \lambda_2^2+\lambda_3^2} }
 
         """
