@@ -8,8 +8,15 @@
     :toctree:
 
     dti
-    gqi    
-    maskedview
-    modelarray
+    gqi
+    dsi
+    shm
+    odf
+    base
+    cache
+    interpolate
+    quick_squash
     recspeed
-    
+    vec_val_sum
+
+

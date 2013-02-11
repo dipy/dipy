@@ -10,6 +10,8 @@
     distances
     learning
     metrics
-    propagation
+    eudx
     propspeed
     vox2track
+    markov
+    utils
