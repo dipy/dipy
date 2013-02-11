@@ -11,6 +11,8 @@
     :toctree:
 
     geometry
+    gradients
+    sphere
     graph
     meshes
     onetime
