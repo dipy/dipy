@@ -32,8 +32,8 @@ def fractional_anisotropy(evals, axis=-1):
     .. math::
 
         FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                    \lambda_3)^2+(\lambda_2-lambda_3)^2}{\lambda_1^2+
-                    \lambda_2^2+\lambda_3^2} }
+                    \lambda_3)^2+(\lambda_2-\lambda_3)^2}{\lambda_1^2+
+                    \lambda_2^2+\lambda_3^2}}
 
     """
     evals = np.rollaxis(evals, axis)
@@ -207,8 +207,8 @@ def color_fa(fa, evecs):
         Colormap of the FA with red for the x value, y for the green
         value and z for the blue value.
 
-    Notes :
-    -----------------
+    Notes
+    -----
 
     it is computed from the clipped FA between 0 and 1 using the following
     formula
@@ -272,8 +272,7 @@ class TensorModel(object):
 
 
     def fit(self, data, mask=None):
-        """
-        Fit method of the DTI model class
+        """ Fit method of the DTI model class
 
         Parameters
         ----------
@@ -304,8 +303,7 @@ class TensorModel(object):
 
 class TensorFit(object):
     def __init__(self, model, model_params):
-        """
-        Initialize a TensorFit class instance.
+        """ Initialize a TensorFit class instance.
         """
         self.model = model
         self.model_params = model_params
@@ -389,6 +387,7 @@ class TensorFit(object):
         .. math::
 
             MD = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
+
         """
         return self.trace/3.0
     
@@ -557,8 +556,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
 
 def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
-    '''
-    Function used by wls_fit_tensor for later optimization.
+    ''' Function used by wls_fit_tensor for later optimization.
     '''
     sig = np.maximum(sig, min_signal) #throw out zero signals
     log_s = np.log(sig)
@@ -570,8 +568,7 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
 
 
 def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
-    '''
-    Function used by ols_fit_tensor for later optimization.
+    ''' Function used by ols_fit_tensor for later optimization.
     '''
     sig = np.maximum(sig, min_signal) #throw out zero signals
     log_s = np.log(sig)
@@ -680,18 +677,17 @@ _lt_indices = np.array([[0, 1, 3],
 
 
 def from_lower_triangular(D):
-    """
-    Returns a tensor given the six unique tensor elements
+    """ Returns a tensor given the six unique tensor elements
 
     Given the six unique tensor elments (in the order: Dxx, Dxy, Dyy, Dxz, Dyz,
     Dzz) returns a 3 by 3 tensor. All elements after the sixth are ignored.
 
-    Parameters:
+    Parameters
     -----------
     D : array_like, (..., >6)
         Unique elements of the tensors
 
-    Returns:
+    Returns
     --------
     tensor : ndarray (..., 3, 3)
         3 by 3 tensors
@@ -709,16 +705,16 @@ def lower_triangular(tensor, b0=None):
     Returns the six lower triangular values of the tensor and a dummy variable
     if b0 is not None
 
-    Parameters:
+    Parameters
     ----------
-    tensor - array_like (..., 3, 3)
+    tensor : array_like (..., 3, 3)
         a collection of 3, 3 diffusion tensors
-    b0 - float
+    b0 : float
         if b0 is not none log(b0) is returned as the dummy variable
 
-    Returns:
+    Returns
     -------
-    D - ndarray
+    D : ndarray
         If b0 is none, then the shape will be (..., 6) otherwise (..., 7)
 
     """
@@ -767,15 +763,14 @@ def tensor_eig_from_lo_tri(data):
 
 
 def decompose_tensor(tensor, min_diffusivity=0):
-    """
-    Returns eigenvalues and eigenvectors given a diffusion tensor
+    """ Returns eigenvalues and eigenvectors given a diffusion tensor
 
     Computes tensor eigen decomposition to calculate eigenvalues and
-    eigenvectors of self-diffusion tensor. (Basser et al., 1994a)
+    eigenvectors (Basser et al., 1994a).
 
     Parameters
     ----------
-    D : array (3,3)
+    tensor : array (3, 3)
         Hermitian matrix representing a diffusion tensor.
     min_diffusivity : float
         Because negative eigenvalues are not physical and small eigenvalues,
@@ -788,14 +783,10 @@ def decompose_tensor(tensor, min_diffusivity=0):
     eigvals : array (3,)
         Eigenvalues from eigen decomposition of the tensor. Negative
         eigenvalues are replaced by zero. Sorted from largest to smallest.
-    eigvecs : array (3,3)
+    eigvecs : array (3, 3)
         Associated eigenvectors from eigen decomposition of the tensor.
         Eigenvectors are columnar (e.g. eigvecs[:,j] is associated with
         eigvals[j])
-
-    See Also
-    --------
-    numpy.linalg.eigh
 
     """
     #outputs multiplicity as well so need to unique
@@ -813,9 +804,8 @@ def decompose_tensor(tensor, min_diffusivity=0):
 
 
 def design_matrix(gtab, bval, dtype=None):
-    """
-    Constructs design matrix for DTI weighted least squares or least squares
-    fitting. (Basser et al., 1994a)
+    """  Constructs design matrix for DTI weighted least squares or
+    least squares fitting. (Basser et al., 1994a)
 
     Parameters
     ----------
@@ -829,8 +819,8 @@ def design_matrix(gtab, bval, dtype=None):
 	Returns
 	-------
 	design_matrix : array (g,7)
-		Design matrix or B matrix assuming Gaussian distributed tensor model.
-		Note: design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
+		Design matrix or B matrix assuming Gaussian distributed tensor model
+		design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
     """
     G = gtab
     B = np.zeros((bval.size, 7), dtype = G.dtype)
@@ -848,7 +838,7 @@ def design_matrix(gtab, bval, dtype=None):
 
 
 def quantize_evecs(evecs, odf_vertices=None):
-    ''' Find the closest orientation of an evenly distributed sphere
+    """ Find the closest orientation of an evenly distributed sphere
 
     Parameters
     ----------
@@ -860,7 +850,7 @@ def quantize_evecs(evecs, odf_vertices=None):
     Returns
     -------
     IN : ndarray
-    '''
+    """
     max_evecs=evecs[...,:,0]
     if odf_vertices==None:
         odf_vertices = get_sphere('symmetric362').vertices
@@ -874,7 +864,6 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
                       'OLS': ols_fit_tensor,
                      }
-
 
 
 # For backwards compatibility:
