@@ -8,15 +8,15 @@ def read_bvals_bvecs(fbvals, fbvecs):
 
     Parameters
     ----------
-    fbvals: str
-            path of file with b-values, or None if you don't want to read bvals
-    fbvecs: str
-            path of file with b-vectorsl, or None if you don't want to read bvecs
+    fbvals : str
+             path of file with b-values, or None if you don't want to read bvals
+    fbvecs : str
+             path of file with b-vectorsl, or None if you don't want to read bvecs
 
     Returns
     -------
-    bvals: array, (N,) or None
-    bvecs: array, (N, 3) or None
+    bvals : array, (N,) or None
+    bvecs : array, (N, 3) or None
 
     Notes
     -----
@@ -77,13 +77,13 @@ def read_btable(fbtab):
 
     Parameters
     ----------
-    fbtab: str,
+    fbtab : str,
         path of file with b-table
 
     Returns
     -------
-    bvals: array, (N,)
-    bvecs: array, (N, 3)
+    bvals : array, (N,)
+    bvecs : array, (N, 3)
 
     """
     if isinstance(fbtab, basestring):

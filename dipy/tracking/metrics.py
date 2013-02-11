@@ -642,11 +642,11 @@ def startpoint(xyz):
     
     Parameters
     -------------
-    xyz: array, shape(N,3) representing the track
+    xyz : array, shape(N,3) representing the track
     
     Returns
     ---------
-    sp: array, shape(3,) first track point
+    sp : array, shape(3,) first track point
     
     Examples
     ----------

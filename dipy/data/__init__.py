@@ -145,7 +145,7 @@ def get_data(name='small_64D'):
 
     Parameters
     ----------
-    name: str
+    name : str
         the filename/s of which dataset to return, one of:
         'small_64D' small region of interest nifti,bvecs,bvals 64 directions
         'small_101D' small region of interest nifti,bvecs,bvals 101 directions
