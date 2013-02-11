@@ -23,7 +23,7 @@ def fractional_anisotropy(evals, axis=-1):
     Returns
     -------
     fa : array
-        Calculated FA. Note: range is 0 <= FA <= 1.
+        Calculated FA. Range is 0 <= FA <= 1.
 
     Notes
     --------
@@ -818,7 +818,7 @@ class Tensor(ModelArray, TensorFit):
         Returns
         ---------
         fa : array (V, 1)
-            Calculated FA. Note: range is 0 <= FA <= 1.
+            Calculated FA. Range is 0 <= FA <= 1.
 
         Notes
         --------

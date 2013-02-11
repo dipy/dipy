@@ -247,7 +247,7 @@ class ClosestDirectionTracker(MarkovIntegrator):
         ----------
         location : point in space
             location is passed to the interpolator in order to get data
-        prev_step: array_like (3,)
+        prev_step : array_like (3,)
             the direction of the previous tracking step
 
         """
@@ -331,7 +331,7 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
         ----------
         location : point in space
             location is passed to the interpolator in order to get data
-        prev_step: array_like (3,)
+        prev_step : array_like (3,)
             the direction of the previous tracking step
 
         """
