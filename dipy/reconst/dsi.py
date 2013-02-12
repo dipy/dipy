@@ -379,7 +379,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
         wavector which corresponds to different gradient directions, 
         $M(\mathbf{q})$ is a mask corresponding to your q-space sampling and
-        $\otimes$ is the convolution operator.
+        $\otimes$ is the convolution operator [1]_.
 
 
         Parameters
@@ -402,11 +402,10 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
 
         References
         ----------
-
-        .. [2] Canales-Rodriguez E.J et. al, "Deconvolution in Diffusion 
+        .. [1] Canales-Rodriguez E.J et. al, "Deconvolution in Diffusion 
         Spectrum Imaging", Neuroimage, 2010.
 
-        .. [4] Biggs David S.C. et. al, "Acceleration of Iterative Image 
+        .. [2] Biggs David S.C. et. al, "Acceleration of Iterative Image 
         Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775, 
         1997.
 
@@ -475,45 +474,51 @@ def gen_PSF(qgrid_sampling, siz_x, siz_y, siz_z):
     return Sq * np.real(np.fft.fftshift(np.fft.ifftn(np.fft.ifftshift(Sq))))
 
 
-def LR_deconv(P, PSF, NUMIT=20, acceleration_factor=1):
-    """
+def LR_deconv(prop, psf, numit=5, acc_factor=1):
+    r"""
     Perform Lucy-Richardson deconvolution algorithm on a 3D array.
 
     Parameters
     ----------
-    P : 3D numpy.array (float),
+    prop : 3-D ndarray of dtype float,
         The 3D volume to be deconvolve
-    PSF : 3D numpy.array (float),
+    psf : 3-D ndarray of dtype float,
         The filter that will be used for the deconvolution.
-    NUMIT : int,
+    numit : int,
         Number of Lucy-Richardson iteration to perform.
-    acceleration_factor : float,
-        Exponential acceleration factor as in [4]_. 
+    acc_factor : float,
+        Exponential acceleration factor as in [1]_.
+
+    References
+    ----------
+    .. [1] Biggs David S.C. et. al, "Acceleration of Iterative Image 
+    Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775, 
+    1997. 
 
     """
 
     eps = 1e-16
-    # Create the OTF (H) of the same size as P
-    H = np.zeros_like(P)
-    # I.ndim==3
-    H[H.shape[0] // 2 - PSF.shape[0] // 2:H.shape[0] // 2 + 
-    PSF.shape[0] // 2 + 1, H.shape[1] // 2 - PSF.shape[1] // 2:
-    H.shape[1] // 2 + PSF.shape[1] // 2 + 1, H.shape[2] // 2 - 
-    PSF.shape[2] // 2:H.shape[2] // 2 + PSF.shape[2] // 2 + 1] = PSF
-    H = np.real(np.fft.fftn(np.fft.ifftshift(H)))
+    # Create the otf of the same size as prop
+    otf = np.zeros_like(prop)
+    # prop.ndim==3
+    otf[otf.shape[0] // 2 - psf.shape[0] // 2:otf.shape[0] // 2 + 
+    psf.shape[0] // 2 + 1, otf.shape[1] // 2 - psf.shape[1] // 2:
+    otf.shape[1] // 2 + psf.shape[1] // 2 + 1, otf.shape[2] // 2 - 
+    psf.shape[2] // 2:otf.shape[2] // 2 + psf.shape[2] // 2 + 1] = psf
+    otf = np.real(np.fft.fftn(np.fft.ifftshift(otf)))
     # Enforce Positivity
-    P[P < 0] = 0
-    P_deconv = P.copy()
-    for it in range(NUMIT):
+    prop = np.clip(prop, 0, np.inf)
+    prop_deconv = prop.copy()
+    for it in range(numit):
         # Blur the estimate
-        reBlurred = np.real(np.fft.ifftn(H * np.fft.fftn(P_deconv)))
+        reBlurred = np.real(np.fft.ifftn(otf * np.fft.fftn(prop_deconv)))
         reBlurred[reBlurred < eps] = eps
         # Update the estimate
-        P_deconv = P_deconv * (np.real(np.fft.ifftn(H * 
-                   np.fft.fftn((P / reBlurred) + eps)))) ** acceleration_factor
+        prop_deconv = prop_deconv * (np.real(np.fft.ifftn(otf * 
+                   np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
         # Enforce positivity
-        P_deconv[P_deconv < 0] = 0
-    return P_deconv / P_deconv.sum()
+        prop_deconv = np.clip(prop_deconv, 0, np.inf)
+    return prop_deconv / prop_deconv.sum()
 
 
 if __name__ == '__main__':
