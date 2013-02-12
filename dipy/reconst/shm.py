@@ -578,7 +578,35 @@ class ResidualBootstrapWrapper(object):
         return signal
 
 
-def sf_to_sh(odf, sphere, sh_order=4, basis_type=None, smooth=0):
+def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
+    """ Spherical function to spherical harmonics (SH)
+
+    Parameters
+    ----------
+    sf : ndarray
+         ndarray of values representing spherical functions on the 'sphere'
+    sphere : Sphere
+          The points on which the sf is defined.
+    sh_order : int, optional
+               Maximum SH order in the SH fit,
+               For `sh_order`, there will be
+               (`sh_order`+1)(`sh_order`_2)/2 SH coefficients
+               (default 4)
+    basis_type : {None, 'mrtrix', 'fibernav'}
+                 None for the default dipy basis,
+                 'mrtrix' for the MRtrix basis, and
+                 'fibernav' for the FiberNavigator basis
+                 (default None)
+   smooth : float, optional
+            Lambda-regularization in the SH fit
+            (default 0.0)
+    
+    Returns
+    _______
+    sh : ndarray
+         SH coefficients representing the input `odf`
+             
+    """
     m, n = sph_harm_ind_list(sh_order)
 
     pol = sphere.theta
@@ -593,23 +621,46 @@ def sf_to_sh(odf, sphere, sh_order=4, basis_type=None, smooth=0):
     else :
         raise ValueError(' Wrong basis type name ')
     
-    L = -n*(n+1)
+    L = -n * (n + 1)
     invB = smooth_pinv(B, sqrt(smooth)*L)
-    R = (sh_order + 1)*(sh_order + 2) / 2
-    odf_sh = np.zeros( odf.shape[:-1]+(R,) )
+    R = (sh_order + 1) * (sh_order + 2) / 2
+    sh = np.zeros(sf.shape[:-1] + (R,))
 
-    print odf_sh.shape,invB.shape
-    
-    if odf.ndim == 1 :
-        odf_sh = np.dot(invB, odf)        
+    #print sh.shape,invB.shape,sf.shape    
+    if sf.ndim == 1 :
+        sh = np.dot(invB, sf)        
     else :
-        for idx in ndindex( odf_sh.shape[:-1] ) :
-            odf_sh[ idx ] = np.dot( invB, odf[ idx ] )
+        for idx in ndindex( sh.shape[:-1] ) :
+            sh[idx] = np.dot( invB, sf[idx] )
 
-    return odf_sh
+    return sh
 
 
-def sh_to_sf(odf_sh, sh_order, sphere, basis_type=None):    
+def sh_to_sf(sh, sphere, sh_order, basis_type=None):    
+    """ Spherical harmonics (SH) to spherical function (SF)
+
+    Parameters
+    ----------
+    sh : ndarray
+         ndarray of SH coefficients representing a spherical function
+    sphere : Sphere
+             The points on which to sample the sf.
+    sh_order : int, optional
+               Maximum SH order in the SH fit,
+               For `sh_order`, there will be (`sh_order`+1)(`sh_order`_2)/2 SH coefficients
+               (default 4)
+    basis_type : {None, 'mrtrix', 'fibernav'}
+                 None for the default dipy basis,
+                 'mrtrix' for the MRtrix basis, and
+                 'fibernav' for the FiberNavigator basis
+                 (default None)
+    
+    Returns
+    _______
+    sf : ndarray
+         Spherical function values on the `sphere`
+             
+    """
     m, n = sph_harm_ind_list(sh_order)
 
     pol = sphere.theta
@@ -624,18 +675,19 @@ def sh_to_sf(odf_sh, sh_order, sphere, basis_type=None):
     else :
         raise ValueError(' Wrong basis type name ')
     
-    invB = pinv(B)
+    N = sphere.vertices.shape[0]
+    sf = np.zeros( sh.shape[:-1] + (N,) )
 
-    odf = np.zeros( sphere.vertices.shape[0] )
-    print odf.shape,invB.shape
+    #print sf.shape,B.shape
     
-    if odf.ndim == 1 :
-        odf = np.dot(odf_sh, invB)        
+    if sh.ndim == 1 :
+        sf = np.dot(B, sh)        
     else :
-        for idx in ndindex( odf_sh.shape[:-1] ) :
-            odf[ idx ] = np.dot( odf_sh[ idx ], invB )
+        for idx in ndindex( sh.shape[:-1] ) :
+            print sh[ idx ].shape
+            sf[idx] = np.dot( B, sh[idx] )
 
-    return odf
+    return sf
 
-# sh_estimate.py -i sf.nii -r 4 -dirs grad_x.txt -basisType 1 -o sf_sh_fibernav.nii 
+
 
