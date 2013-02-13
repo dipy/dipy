@@ -90,7 +90,8 @@ def real_sph_harm(m, n, theta, phi):
 def real_sph_harm_mrtrix(m, n, theta, phi):
     """
     Compute real spherical harmonics as in mrtrix, where the real harmonic $Y^m_n$ is
-    defined to be:
+    defined to be::
+
         Real($Y^m_n$)            if m > 0
         $Y^m_n$                  if m == 0
         (-1)^{m+1}Imag($Y^m_n$)  if m < 0
@@ -100,42 +101,45 @@ def real_sph_harm_mrtrix(m, n, theta, phi):
 
     Parameters
     -----------
-      - `m` : int |m| <= n
+    m : int |m| <= n
         The order of the harmonic.
-      - `n` : int >= 0
+    n : int >= 0
         The degree of the harmonic.
-      - `theta` : float [0, 2*pi]
+    theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
-      - `phi` : float [0, pi]
+    phi : float [0, pi]
         The polar (colatitudinal) coordinate.
 
     Returns
     --------
-      - `y_mn` : real float
-        The real harmonic $Y^m_n$ sampled at `theta` and `phi` as implemented in mrtrix.
-        Warning: the basis is Tournier et al 2004 and 2007 is slightly different.
+    y_mn : real float
+        The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
+        implemented in mrtrix.  Warning: the basis is Tournier et al
+        2004 and 2007 is slightly different.
+
     """
     m = atleast_1d(m)
-    # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
+    # find where m is =, < or > 0 and broadcasts to the size of the output
+    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh = sph_harm(m, n, theta, phi)
-    real_sh = empty(sh.shape, 'double')
-    neg_ones = -1*np.ones(sh.shape)**(m+1)
+    real_sh = empty(sh.shape, np.float64)
+    neg_ones = -1 * np.ones(sh.shape) ** (m+1)
 
     real_sh[m_eq0] = sh[m_eq0].real
-    real_sh[m_gt0] = sh[m_gt0].real 
+    real_sh[m_gt0] = sh[m_gt0].real
     real_sh[m_lt0] = neg_ones[m_lt0] * sh[m_lt0].imag
-    
+
     return real_sh
 
 
 def real_sph_harm_fibernav(m, n, theta, phi):
     """
-    Compute real spherical harmonics as in fibernavigator, where the real harmonic $Y^m_n$ is
-    defined to be:
+    Compute real spherical harmonics as in fibernavigator, where the real
+    harmonic $Y^m_n$ is defined to be::
+
         sqrt(2)*Imag($Y^m_n$)    if m > 0
         $Y^m_n$                  if m == 0
         sqrt(2)*Real($Y^|m|_n$)  if m < 0
@@ -145,38 +149,46 @@ def real_sph_harm_fibernav(m, n, theta, phi):
 
     Parameters
     -----------
-      - `m` : int |m| <= n
+    m : int |m| <= n
         The order of the harmonic.
-      - `n` : int >= 0
+    n : int >= 0
         The degree of the harmonic.
-      - `theta` : float [0, 2*pi]
+    theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
-      - `phi` : float [0, pi]
+    phi : float [0, pi]
         The polar (colatitudinal) coordinate.
 
     Returns
     --------
-      - `y_mn` : real float
+    y_mn : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
-        implemented in the FiberNavigator.
-        http://code.google.com/p/fibernavigator/
-        
+        implemented in the FiberNavigator [1]_.
+
+    References
+    ----------
+    .. [1] http://code.google.com/p/fibernavigator/
+
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
+    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh  = sph_harm(m, n, theta, phi)
     sh2 = sph_harm(abs(m), n, theta, phi)
 
-    real_sh = empty(sh.shape, 'double')
+    real_sh = empty(sh.shape, np.float64)
     real_sh[m_eq0] = sh[m_eq0].real
     real_sh[m_gt0] = sh[m_gt0].imag  * sqrt(2)
     real_sh[m_lt0] = sh2[m_lt0].real * sqrt(2)
-    
+
     return real_sh
+
+
+sph_harm_lookup = {None: real_sph_harm,
+                   "mrtix": real_sph_harm_mrtrix,
+                   "fibernav": real_sph_harm_fibernav}
 
 
 def sph_harm_ind_list(sh_order):
@@ -579,113 +591,83 @@ class ResidualBootstrapWrapper(object):
 
 
 def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
-    """ Spherical function to spherical harmonics (SH)
+    """Spherical function to spherical harmonics (SH).
 
     Parameters
     ----------
     sf : ndarray
-         ndarray of values representing spherical functions on the 'sphere'
+        Values of a function on the given `sphere`.
     sphere : Sphere
-          The points on which the sf is defined.
+        The points on which the sf is defined.
     sh_order : int, optional
-               Maximum SH order in the SH fit,
-               For `sh_order`, there will be
-               (`sh_order`+1)(`sh_order`_2)/2 SH coefficients
-               (default 4)
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
     basis_type : {None, 'mrtrix', 'fibernav'}
-                 None for the default dipy basis,
-                 'mrtrix' for the MRtrix basis, and
-                 'fibernav' for the FiberNavigator basis
-                 (default None)
-   smooth : float, optional
-            Lambda-regularization in the SH fit
-            (default 0.0)
-    
+        ``None`` for the default dipy basis,
+        ``mrtrix`` for the MRtrix basis, and
+        ``fibernav`` for the FiberNavigator basis
+        (default ``None``).
+    smooth : float, optional
+        Lambda-regularization in the SH fit (default 0.0).
+
     Returns
-    _______
+    -------
     sh : ndarray
-         SH coefficients representing the input `odf`
-             
+        SH coefficients representing the input function.
+
     """
     m, n = sph_harm_ind_list(sh_order)
 
     pol = sphere.theta
     azi = sphere.phi
 
-    if basis_type is None :
-        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "mrtrix" :
-        B = real_sph_harm_mrtrix(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "fibernav" :
-        B = real_sph_harm_fibernav(m, n, azi[:, None], pol[:, None])
-    else :
-        raise ValueError(' Wrong basis type name ')
-    
-    L = -n * (n + 1)
-    invB = smooth_pinv(B, sqrt(smooth)*L)
-    R = (sh_order + 1) * (sh_order + 2) / 2
-    sh = np.zeros(sf.shape[:-1] + (R,))
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+    if sph_harm_basis is None:
+        raise ValueError("Invalid basis name.")
+    B = sph_harm_basis(m, n, azi[:, None], pol[:, None])
 
-    #print sh.shape,invB.shape,sf.shape    
-    if sf.ndim == 1 :
-        sh = np.dot(invB, sf)        
-    else :
-        for idx in ndindex( sh.shape[:-1] ) :
-            sh[idx] = np.dot( invB, sf[idx] )
+    L = -n * (n + 1)
+    invB = smooth_pinv(B, sqrt(smooth) * L)
+    sh = np.dot(sf, invB.T)
 
     return sh
 
 
-def sh_to_sf(sh, sphere, sh_order, basis_type=None):    
-    """ Spherical harmonics (SH) to spherical function (SF)
+def sh_to_sf(sh, sphere, sh_order, basis_type=None):
+    """Spherical harmonics (SH) to spherical function (SF).
 
     Parameters
     ----------
     sh : ndarray
-         ndarray of SH coefficients representing a spherical function
+        SH coefficients representing a spherical function.
     sphere : Sphere
-             The points on which to sample the sf.
+        The points on which to sample the spherical function.
     sh_order : int, optional
-               Maximum SH order in the SH fit,
-               For `sh_order`, there will be (`sh_order`+1)(`sh_order`_2)/2 SH coefficients
-               (default 4)
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
     basis_type : {None, 'mrtrix', 'fibernav'}
-                 None for the default dipy basis,
-                 'mrtrix' for the MRtrix basis, and
-                 'fibernav' for the FiberNavigator basis
-                 (default None)
-    
+        ``None`` for the default dipy basis,
+        ``mrtrix`` for the MRtrix basis, and
+        ``fibernav`` for the FiberNavigator basis
+        (default ``None``).
+
     Returns
-    _______
+    -------
     sf : ndarray
-         Spherical function values on the `sphere`
-             
+         Spherical function values on the `sphere`.
+
     """
     m, n = sph_harm_ind_list(sh_order)
 
     pol = sphere.theta
     azi = sphere.phi
 
-    if basis_type is None :
-        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "mrtrix" :
-        B = real_sph_harm_mrtrix(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "fibernav" :
-        B = real_sph_harm_fibernav(m, n, azi[:, None], pol[:, None])
-    else :
-        raise ValueError(' Wrong basis type name ')
-    
-    N = sphere.vertices.shape[0]
-    sf = np.zeros( sh.shape[:-1] + (N,) )
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+    if sph_harm_basis is None:
+        raise ValueError("Invalid basis name.")
+    B = sph_harm_basis(m, n, azi[:, None], pol[:, None])
 
-    #print sf.shape,B.shape
-    
-    if sh.ndim == 1 :
-        sf = np.dot(B, sh)        
-    else :
-        for idx in ndindex( sh.shape[:-1] ) :
-            print sh[ idx ].shape
-            sf[idx] = np.dot( B, sh[idx] )
+    sf = np.dot(sh, B.T)
 
     return sf
 
