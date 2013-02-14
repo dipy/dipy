@@ -25,7 +25,7 @@ following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
 import numpy as np
-from numpy import (atleast_1d, concatenate, diag, diff, dot, empty, eye, sqrt,
+from numpy import (atleast_1d, concatenate, diag, diff, empty, eye, sqrt,
                    unique, dot)
 from numpy.linalg import pinv, svd
 from numpy.random import randint
@@ -33,7 +33,6 @@ from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
 from dipy.reconst.cache import Cache
-from dipy.core.ndindex import ndindex
 
 
 def _copydoc(obj):
@@ -75,9 +74,9 @@ def real_sph_harm(m, n, theta, phi):
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
+    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh = sph_harm(m, n, theta, phi)
     real_sh = empty(sh.shape, 'double')
@@ -89,8 +88,8 @@ def real_sph_harm(m, n, theta, phi):
 
 def real_sph_harm_mrtrix(m, n, theta, phi):
     """
-    Compute real spherical harmonics as in mrtrix, where the real harmonic $Y^m_n$ is
-    defined to be::
+    Compute real spherical harmonics as in mrtrix, where the real harmonic
+    $Y^m_n$ is defined to be::
 
         Real($Y^m_n$)            if m > 0
         $Y^m_n$                  if m == 0
@@ -126,7 +125,7 @@ def real_sph_harm_mrtrix(m, n, theta, phi):
 
     sh = sph_harm(m, n, theta, phi)
     real_sh = empty(sh.shape, np.float64)
-    neg_ones = -1 * np.ones(sh.shape) ** (m+1)
+    neg_ones = -1 * np.ones(sh.shape) ** (m + 1)
 
     real_sh[m_eq0] = sh[m_eq0].real
     real_sh[m_gt0] = sh[m_gt0].real
@@ -175,19 +174,19 @@ def real_sph_harm_fibernav(m, n, theta, phi):
     m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
     m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
 
-    sh  = sph_harm(m, n, theta, phi)
+    sh = sph_harm(m, n, theta, phi)
     sh2 = sph_harm(abs(m), n, theta, phi)
 
     real_sh = empty(sh.shape, np.float64)
     real_sh[m_eq0] = sh[m_eq0].real
-    real_sh[m_gt0] = sh[m_gt0].imag  * sqrt(2)
+    real_sh[m_gt0] = sh[m_gt0].imag * sqrt(2)
     real_sh[m_lt0] = sh2[m_lt0].real * sqrt(2)
 
     return real_sh
 
 
 sph_harm_lookup = {None: real_sph_harm,
-                   "mrtix": real_sph_harm_mrtrix,
+                   "mrtrix": real_sph_harm_mrtrix,
                    "fibernav": real_sph_harm_fibernav}
 
 
@@ -217,15 +216,15 @@ def sph_harm_ind_list(sh_order):
     if sh_order % 2 != 0:
         raise ValueError('sh_order must be an even integer >= 0')
 
-    n_range = np.arange(0, sh_order+1, 2, dtype='int')
-    n_list = np.repeat(n_range, n_range*2+1)
+    n_range = np.arange(0, sh_order + 1, 2, dtype=int)
+    n_list = np.repeat(n_range, n_range * 2 + 1)
 
-    ncoef = (sh_order + 2)*(sh_order + 1)/2
+    ncoef = (sh_order + 2) * (sh_order + 1) / 2
     offset = 0
     m_list = empty(ncoef, 'int')
     for ii in n_range:
-        m_list[offset:offset+2*ii+1] = np.arange(-ii, ii+1)
-        offset = offset + 2*ii + 1
+        m_list[offset:offset + 2 * ii + 1] = np.arange(-ii, ii + 1)
+        offset = offset + 2 * ii + 1
 
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
     return (m_list, n_list)
@@ -306,7 +305,7 @@ class SphHarmModel(OdfModel, Cache):
         x, y, z = gtab.gradients[self._where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         B = real_sph_harm(m, n, azi[:, None], pol[:, None])
-        L = -n*(n+1)
+        L = -n * (n + 1)
         legendre0 = lpn(sh_order, 0)[0]
         F = legendre0[n]
         self.B = B
@@ -399,13 +398,14 @@ class CsaOdfModel(SphHarmModel):
     """
     min = .001
     max = .999
+
     def _set_fit_matrix(self, B, L, F, smooth):
         """The fit matrix, is used by fit_coefficients to return the
         coefficients of the odf"""
-        invB = smooth_pinv(B, sqrt(smooth)*L)
+        invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
-        self._fit_matrix = F*L*invB
+        self._fit_matrix = F * L * invB
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
@@ -427,11 +427,11 @@ class OpdtModel(SphHarmModel):
         density functions in high angular resolution diffusion imaging.
     """
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth)*L)
+        invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
-        delta_b = F*L*invB
-        delta_q = 4*F*invB
+        delta_b = F * L * invB
+        delta_q = 4 * F * invB
         self._fit_matrix = delta_b, delta_q
 
     def _get_shm_coef(self, data, mask=None):
@@ -443,7 +443,7 @@ class OpdtModel(SphHarmModel):
 def _slowadc_formula(data, delta_b, delta_q):
     """formula used in SlowAdcOpdfModel"""
     logd = -np.log(data)
-    return dot(logd*(1.5-logd)*data, delta_q.T) - dot(data, delta_b.T)
+    return dot(logd * (1.5 - logd) * data, delta_q.T) - dot(data, delta_b.T)
 
 
 class QballModel(SphHarmModel):
@@ -456,9 +456,9 @@ class QballModel(SphHarmModel):
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth)*L)
+        invB = smooth_pinv(B, sqrt(smooth) * L)
         F = F[:, None]
-        self._fit_matrix = F*invB
+        self._fit_matrix = F * invB
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
@@ -489,6 +489,7 @@ def hat(B):
     H = dot(U, U.T)
     return H
 
+
 def lcr_matrix(H):
     """Returns a matrix for computing leveraged, centered residuals from data
 
@@ -499,10 +500,11 @@ def lcr_matrix(H):
     if H.ndim != 2 or H.shape[0] != H.shape[1]:
         raise ValueError('H should be a square matrix')
 
-    leverages = sqrt(1-H.diagonal())
+    leverages = sqrt(1 - H.diagonal())
     leverages = leverages[:, None]
     R = (eye(len(H)) - H) / leverages
     return R - R.mean(0)
+
 
 def bootstrap_data_array(data, H, R, permute=None):
     """Applies the Residual Bootstraps to the data given H and R
@@ -529,8 +531,9 @@ def bootstrap_data_array(data, H, R, permute=None):
     assert R.shape == H.shape
     assert len(permute) == R.shape[-1]
     R = R[permute]
-    data = dot(data, (H+R).T)
+    data = dot(data, (H + R).T)
     return data
+
 
 def bootstrap_data_voxel(data, H, R, permute=None):
     """Like bootstrap_data_array but faster when for a single voxel
@@ -543,6 +546,7 @@ def bootstrap_data_voxel(data, H, R, permute=None):
     boot_data = dot(data, H.T)
     boot_data += r[permute]
     return boot_data
+
 
 class ResidualBootstrapWrapper(object):
     """Returns a residual bootstrap sample of the signal_object when indexed
@@ -670,6 +674,3 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     sf = np.dot(sh, B.T)
 
     return sf
-
-
-
