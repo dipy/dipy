@@ -11,7 +11,7 @@ First import the necessary modules:
 
 import numpy as np
 import nibabel as nib
-from dipy.data import fetch_beijing_dti, read_beijing_dti, get_sphere
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.align.aniso2iso import resample
 from dipy.reconst.shm import CsaOdfModel, normalize_data
 from dipy.reconst.odf import peaks_from_model
@@ -20,8 +20,8 @@ from dipy.reconst.odf import peaks_from_model
 Download and read the data for this tutorial.
 """
 
-fetch_beijing_dti()
-img, gtab = read_beijing_dti()
+fetch_stanford_hardi()
+img, gtab = read_stanford_hardi()
 
 """
 img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
@@ -69,8 +69,9 @@ print('data2.shape (%d, %d, %d, %d)' % data2.shape)
 """
 data2.shape ``(115, 115, 61, 65)``
 
-Mask out most of the background in the following simple way.
+Remove most of the background in the following simple way.
 """
+
 mask = data2[..., 0] > 50
 
 """
@@ -129,8 +130,12 @@ fvtk.add(r, fvtk.sphere_funcs(csamodel.fit(data_small).odf(sphere),
 print('Saving illustration as csa_odfs.png')
 fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 
-
 """
+.. figure:: csa_odfs.png
+   :align: center
+
+   **Constant Solid Angle ODFs**.
+
 .. include:: ../links_names.inc
 
 """

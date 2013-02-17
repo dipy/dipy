@@ -7,46 +7,37 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
 
-def fetch_beijing_dti():
-    """ Download a DTI dataset with 64 gradient directions
+def fetch_stanford_hardi():
+    """ Download a HARDI dataset with 160 gradient directions
     """
     dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
-    url = 'https://www.dropbox.com/sh/ybl8vquht8pdc3s/'
-    uraw = url + 'NfhK5WsYRO/DTI64.nii.gz?dl=1'
-    ubval = url + 'HyX6GEQSSV/DTI64.bval?dl=1'
-    ubvec = url + 'Xtrvr5jSOs/DTI64.bvec?dl=1'
-    ureadme = url + 'HoGsocT6hZ/beijingEnhanced.txt?dl=1'
-    folder = pjoin(dipy_home, 'beijing_dti')
+    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
+    uraw = url + 'dwi.nii.gz'
+    ubval = url + 'dwi.bvals'
+    ubvec = url + 'dwi.bvecs'
+    folder = pjoin(dipy_home, 'stanford_hardi')
 
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
-        print('Downloading raw DTI data (51MB)...')
+        print('Downloading raw HARDI data (87MB)...')
         opener = urllib2.urlopen(uraw)
-        open(pjoin(folder, 'DTI64.nii.gz'), 'wb').write(opener.read())
+        open(pjoin(folder, 'HARDI150.nii.gz'), 'wb').write(opener.read())
 
         opener = urllib2.urlopen(ubval)
-        open(pjoin(folder, 'DTI64.bval'), 'w').write(opener.read())
+        open(pjoin(folder, 'HARDI150.bval'), 'w').write(opener.read())
 
         opener = urllib2.urlopen(ubvec)
-        open(pjoin(folder, 'DTI64.bvec'), 'w').write(opener.read())
-
-        opener = urllib2.urlopen(ureadme)
-        open(pjoin(folder, 'beijingEnhanced.txt'), 'w').write(opener.read())
+        open(pjoin(folder, 'HARDI150.bvec'), 'w').write(opener.read())
 
         print('Done.')
         print('Files copied in folder %s' % folder)
-        print('See BeijingEnhanced.txt for DATA AGREEMENT LICENSE.')
-        print('This is only a single brain DTI dataset which we use for some of the dipy tutorials.')
-        print('For the complete datasets please visit :')
-        print('http://fcon_1000.projects.nitrc.org/indi/retro/BeijingEnhanced.html')
-
     else:
         print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
 
 
-def read_beijing_dti():
-    """ Load Beijing dataset
+def read_stanford_hardi():
+    """ Load Stanford HARDI dataset
 
     Returns
     -------
@@ -56,10 +47,10 @@ def read_beijing_dti():
         GradientTable
     """
     dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
-    folder = pjoin(dipy_home, 'beijing_dti')
-    fraw = pjoin(folder, 'DTI64.nii.gz')
-    fbval = pjoin(folder, 'DTI64.bval')
-    fbvec = pjoin(folder, 'DTI64.bvec')
+    folder = pjoin(dipy_home, 'stanford_hardi')
+    fraw = pjoin(folder, 'HARDI150.nii.gz')
+    fbval = pjoin(folder, 'HARDI150.bval')
+    fbvec = pjoin(folder, 'HARDI150.bvec')
 
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 

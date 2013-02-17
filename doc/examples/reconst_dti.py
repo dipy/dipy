@@ -30,22 +30,22 @@ from dipy.reconst.dti import TensorModel
 ``dipy.data`` is used for small datasets that we use in tests and examples.
 """
 
-from dipy.data import fetch_beijing_dti
+from dipy.data import fetch_stanford_hardi
 
 """
 Fetch will download the raw dMRI dataset of a single subject. The size of the dataset is 51 MBytes.
 You only need to fetch once.
 """
 
-fetch_beijing_dti()
+fetch_stanford_hardi()
 
 """
 Next, we read the saved dataset
 """
 
-from dipy.data import read_beijing_dti
+from dipy.data import read_stanford_hardi
 
-img, gtab = read_beijing_dti()
+img, gtab = read_stanford_hardi()
 
 """
 img contains a nibabel Nifti1Image object (with the data) and gtab contains a GradientTable
@@ -166,6 +166,11 @@ print('Saving illustration as tensor_odfs.png')
 fvtk.record(r, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
 
 """
+.. figure:: tensor_odfs.png
+   :align: center
+
+   **Tensor ODFs**.
+
 .. include:: ../links_names.inc
 
 """

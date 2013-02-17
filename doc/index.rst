@@ -46,6 +46,9 @@ For quick execution we use only a few voxels with 101 gradients::
     tenfit = ten.fit(data)
     from dipy.reconst.dti import fractional_anisotropy
     fa = fractional_anisotropy(tenfit.evals)
+    from dipy.reconst.dti import color_fa
+    cfa = color_fa(fa, tenfit.evecs)
+
 
 We recommend to copy a past this example in an IPython_ console. IPython_ helps interacting
 with the datasets easily. For example it is easy to find the size of the
