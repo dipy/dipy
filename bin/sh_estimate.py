@@ -41,9 +41,9 @@ def buildArgsParser():
     p.add_argument('-r', action='store', dest='rank',
                    metavar='int', required = False, default = 8,
                    help='Maximum SH order of estimation (default 8)')    
-    p.add_argument('-lambda', action='store', dest='smoothness',
-                   metavar='float', required = False, default = 0.006,
-                   help='Laplace-Beltrami regularization (default 0)')
+    p.add_argument('-L', action='store', dest='smoothness',
+                   metavar='float', required = False, default = 0,
+                   help='Laplace-Beltrami regularization lambda (default 0)')
     return p
 
 

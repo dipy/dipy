@@ -75,9 +75,9 @@ def real_sph_harm(m, n, theta, phi):
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
+    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh = sph_harm(m, n, theta, phi)
     real_sh = empty(sh.shape, 'double')
@@ -117,9 +117,9 @@ def real_sph_harm_mrtrix(m, n, theta, phi):
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
+    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh = sph_harm(m, n, theta, phi)
     real_sh = empty(sh.shape, 'double')
@@ -164,9 +164,9 @@ def real_sph_harm_fibernav(m, n, theta, phi):
     """
     m = atleast_1d(m)
     # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
+    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
+    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
+    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
 
     sh  = sph_harm(m, n, theta, phi)
     sh2 = sph_harm(abs(m), n, theta, phi)
@@ -178,6 +178,8 @@ def real_sph_harm_fibernav(m, n, theta, phi):
     
     return real_sh
 
+
+sph_harm_lookup = {None:real_sph_harm, "mrtrix":real_sph_harm_mrtrix, "fibernav":real_sph_harm_fibernav}
 
 def sph_harm_ind_list(sh_order):
     """
@@ -612,26 +614,17 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
     pol = sphere.theta
     azi = sphere.phi
 
-    if basis_type is None :
-        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "mrtrix" :
-        B = real_sph_harm_mrtrix(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "fibernav" :
-        B = real_sph_harm_fibernav(m, n, azi[:, None], pol[:, None])
-    else :
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+    if not sph_harm_basis:
         raise ValueError(' Wrong basis type name ')
+    B = sph_harm_basis(m, n, azi[:, None], pol[:, None])
     
     L = -n * (n + 1)
     invB = smooth_pinv(B, sqrt(smooth)*L)
     R = (sh_order + 1) * (sh_order + 2) / 2
     sh = np.zeros(sf.shape[:-1] + (R,))
 
-    #print sh.shape,invB.shape,sf.shape    
-    if sf.ndim == 1 :
-        sh = np.dot(invB, sf)        
-    else :
-        for idx in ndindex( sh.shape[:-1] ) :
-            sh[idx] = np.dot( invB, sf[idx] )
+    sh = np.dot(sf, invB.T)        
 
     return sh
 
@@ -666,26 +659,15 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     pol = sphere.theta
     azi = sphere.phi
 
-    if basis_type is None :
-        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "mrtrix" :
-        B = real_sph_harm_mrtrix(m, n, azi[:, None], pol[:, None])
-    elif basis_type == "fibernav" :
-        B = real_sph_harm_fibernav(m, n, azi[:, None], pol[:, None])
-    else :
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+    if not sph_harm_basis:
         raise ValueError(' Wrong basis type name ')
+    B = sph_harm_basis(m, n, azi[:, None], pol[:, None])
     
     N = sphere.vertices.shape[0]
     sf = np.zeros( sh.shape[:-1] + (N,) )
 
-    #print sf.shape,B.shape
-    
-    if sh.ndim == 1 :
-        sf = np.dot(B, sh)        
-    else :
-        for idx in ndindex( sh.shape[:-1] ) :
-            print sh[ idx ].shape
-            sf[idx] = np.dot( B, sh[idx] )
+    sf = np.dot( sh, B.T) 
 
     return sf
 
