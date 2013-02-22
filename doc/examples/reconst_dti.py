@@ -68,7 +68,7 @@ from dipy.data import fetch_stanford_hardi
 
 """
 Fetch will download the raw dMRI dataset of a single subject. The size of the
-dataset is 51 MBytes.  You only need to fetch once.
+dataset is 87 MBytes.  You only need to fetch once.
 """
 
 fetch_stanford_hardi()
