@@ -4,11 +4,12 @@
 Reconstruction of the diffusion signal with the tensor model
 ============================================================
 
-The diffusion tensor model is a phenomenological model of the diffusion within
-a voxel. First proposed by Basser and colleagues _[Basser1994], it has been
-extremely influential in demonstrating the utility of diffusion MRI in
-characterizing the micro-structure of white matter tissue and of the
-biophysical properties of tissue, inferred from local diffusion properties.
+The diffusion tensor model is a model that describes the diffusion within a
+voxel. First proposed by Basser and colleagues _[Basser1994], it has been very
+influential in demonstrating the utility of diffusion MRI in characterizing the
+micro-structure of white matter tissue and of the biophysical properties of
+tissue, inferred from local diffusion properties and it is still very commonly
+used.
 
 The diffusion tensor models the diffusion signal as:
 
