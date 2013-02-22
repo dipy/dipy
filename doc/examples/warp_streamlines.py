@@ -7,10 +7,10 @@ Warp FA and streamlines to MNI space
 In this example we show how to apply FSL deformations to FAs and streamlines
 created by Dipy_. This is an example of non-linear registration.
 
-This example requires to have FSL installed and added to your environment. In addition
-it requires two source files that we created from example `tracking_eudx_tensor.py`:
-'tensor_fa.nii.gz', and 'tensor_streamlines.trk' and a reference file which should be
-the FA template image in MNI space.
+This example requires to have FSL installed and added to your environment. In
+addition it requires two source files that we created from example
+`tracking_eudx_tensor.py`: 'tensor_fa.nii.gz', and 'tensor_streamlines.trk' and
+a reference file which should be the FA template image in MNI space.
 
 """
 import os
@@ -30,8 +30,8 @@ from dipy.external.fsl import (create_displacements,
 ffa = 'tensor_fa.nii.gz'
 
 """
-We also specify the filenames of the FSL's command which will be called by Dipy_'s
-wrapper functions.
+We also specify the filenames of the FSL's command which will be called by
+Dipy_'s wrapper functions.
 """
 
 fmat = 'flirt.mat'
@@ -62,9 +62,9 @@ warp_displacements(ffa, fmat, fdis, fref, ffaw, order=1)
 
 """
 Now we will try to apply the streamlines in MNI using the previous created
-displacements. For this purpose we will use the function `warp_displacements_tracks`.
-However, this expects input in .dpy format therefore we need to export them from .trk
-to .dpy. We do this here.
+displacements. For this purpose we will use the function
+`warp_displacements_tracks`.  However, this expects input in .dpy format
+therefore we need to export them from .trk to .dpy. We do this here.
 """
 
 from nibabel import trackvis
@@ -84,7 +84,7 @@ dpw = Dpy(fdpy, 'w')
 Write all streamlines at once.
 """
 
-dpw.write_tracks(tensor_streamlines)
+dpw.write_tracks(streamlines)
 
 dpw.close()
 
