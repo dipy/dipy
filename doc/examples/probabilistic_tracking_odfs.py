@@ -21,9 +21,6 @@ from dipy.tracking.markov import (BoundaryStepper,
 from dipy.tracking.utils import seeds_from_mask
 
 
-model = csamodel
-
-# mask = mask_img.get_data() > 0
 mask[[0, -1]] = 0
 mask[:, [0, -1]] = 0
 mask[:, :, [0, -1]] = 0
@@ -35,7 +32,7 @@ seeds = seeds[:2000]
 
 interpolator = NearestNeighborInterpolator(data2, new_zooms)
 
-pwt = ProbabilisticOdfWeightedTracker(model, interpolator, mask,
+pwt = ProbabilisticOdfWeightedTracker(csamodel, interpolator, mask,
                                       stepper, 90, seeds, sphere)
 csa_streamlines = [streamline for streamline in pwt]
 
@@ -78,11 +75,8 @@ print('Saving illustration as csa_prob_tracks.png')
 fvtk.record(r, n_frames=1, out_path='csa_prob_tracks.png', size=(600, 600))
 
 """
-.. figure:: csa_prob_tracking.png
+.. figure:: csa_prob_tracks.png
    :align: center
 
-   **Deterministic streamlines with EuDX on ODF peaks field modulated by GFA**.
-
-It is also possible to use EuDX with multiple ODF peaks. Which is very helpful when
-tracking in crossing areas.
+   **Probabilistic streamlines applied on an ODF field modulated by GFA**.
 """
