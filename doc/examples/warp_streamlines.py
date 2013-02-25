@@ -63,7 +63,7 @@ warp_displacements(ffa, fmat, fdis, fref, ffaw, order=1)
 """
 Now we will try to apply the streamlines in MNI using the previous created
 displacements. For this purpose we will use the function
-`warp_displacements_tracks`.  However, this expects input in .dpy format
+`warp_displacements_tracks`. However, this expects input in .dpy format
 therefore we need to export them from .trk to .dpy. We do this here.
 """
 
@@ -72,7 +72,7 @@ from nibabel import trackvis
 ftrk = 'tensor_streamlines.trk'
 
 streams, hdr = trackvis.read(ftrk, points_space='voxel')
-tensor_streamlines = [s[0] for s in streams]
+streamlines = [s[0] for s in streams]
 
 from dipy.io.dpy import Dpy
 
