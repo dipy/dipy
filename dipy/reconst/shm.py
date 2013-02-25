@@ -45,9 +45,9 @@ def real_sph_harm(m, n, phi, theta):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
     defined to be:
-        Real($Y^m_n$) * sqrt(2)   if m > 0
+        Imag($Y^m_n$) * sqrt(2)   if m > 0
         $Y^m_n$                   if m == 0
-        Imag($Y^|m|_n$) * sqrt(2) if m < 0
+        Real($Y^|m|_n$) * sqrt(2) if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
@@ -61,7 +61,7 @@ def real_sph_harm(m, n, phi, theta):
     phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     theta : float [0, pi]
-        The polar (colatitudinal) coordinate.
+        The polar coordinate (colatitude).
 
     Returns
     --------
@@ -94,7 +94,7 @@ def real_sph_harm_mrtrix(sh_order, theta, phi):
     Parameters
     -----------
     sh_order : int
-        The maximum order or the spherical harmonic basis.
+        The maximum degree or the spherical harmonic basis.
     theta : float [0, pi]
         The polar (colatitudinal) coordinate.
     phi : float [0, 2*pi]
@@ -107,9 +107,9 @@ def real_sph_harm_mrtrix(sh_order, theta, phi):
         implemented in mrtrix.  Warning: the basis is Tournier et al
         2004 and 2007 is slightly different.
     m : array
-        The degree of the harmonics.
-    n : array
         The order of the harmonics.
+    n : array
+        The degree of the harmonics.
 
     """
     m, n = sph_harm_ind_list(sh_order)
@@ -137,7 +137,7 @@ def real_sph_harm_fibernav(sh_order, theta, phi):
     Parameters
     -----------
     sh_order : int
-        even int > 0, max spherical harmonic order
+        even int > 0, max spherical harmonic degree
     theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
@@ -149,9 +149,9 @@ def real_sph_harm_fibernav(sh_order, theta, phi):
         The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
         implemented in the FiberNavigator [1]_.
     m : array
-        The degree of the harmonics.
-    n : array
         The order of the harmonics.
+    n : array
+        The degree of the harmonics.
 
     References
     ----------
@@ -188,7 +188,7 @@ def sph_harm_ind_list(sh_order):
     m_list : array
         orders of even spherical harmonics
     n_list : array
-        degrees of even spherical hormonics
+        degrees of even spherical harmonics
 
     See also
     --------
