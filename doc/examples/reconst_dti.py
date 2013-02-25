@@ -1,7 +1,7 @@
 """
 
 ============================================================
-Reconstruction of the diffusion signal with the tensor model
+Reconstruction of the diffusion signal with the Tensor model
 ============================================================
 
 The diffusion tensor model is a model that describes the diffusion within a
