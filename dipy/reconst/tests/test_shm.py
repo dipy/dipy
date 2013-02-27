@@ -1,18 +1,22 @@
-
+"""Test spherical harmonic models and the tools associated with those models"""
 import numpy as np
 import numpy.linalg as npl
 
-
-from nose.tools import assert_equal, assert_raises, assert_true, assert_false
+from nose.tools import assert_equal, assert_raises, assert_true
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.core.sphere import hemi_icosahedron, HemiSphere
+from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
 from ..odf import peak_directions
+from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.sims.voxel import multi_tensor_odf
+from dipy.data import mrtrix_spherical_functions
 
-from dipy.reconst.shm import (real_sph_harm, sph_harm_ind_list, OpdtModel,
-                              normalize_data, QballModel, hat, lcr_matrix,
+
+from dipy.reconst.shm import (real_sph_harm, real_sph_harm_mrtrix,
+                              real_sph_harm_fibernav, sph_harm_ind_list,
+                              OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               OpdtModel, CsaOdfModel, QballModel, SphHarmFit)
@@ -25,6 +29,7 @@ def test_sph_harm_ind_list():
     assert_true(np.all(np.abs(m_list) <= n_list))
     assert_array_equal(n_list % 2, 0)
     assert_raises(ValueError, sph_harm_ind_list, 1)
+
 
 def test_real_sph_harm():
     # Tests derived from tables in
@@ -40,33 +45,59 @@ def test_real_sph_harm():
     sqrt = np.sqrt
     sin = np.sin
     cos = np.cos
-    assert_array_almost_equal(rsh(0,0,0,0),
-           0.5/sqrt(pi))
-    assert_array_almost_equal(rsh(2,2,pi/3,pi/5),
-           0.25*sqrt(15./(2.*pi))*
-           (sin(pi/5.))**2.*cos(0+2.*pi/3)*sqrt(2))
-    assert_array_almost_equal(rsh(-2,2,pi/3,pi/5),
-           0.25*sqrt(15./(2.*pi))*
-           (sin(pi/5.))**2.*sin(0-2.*pi/3)*sqrt(2))
-    assert_array_almost_equal(rsh(2,2,pi,pi/2),
-           0.25*sqrt(15/(2.*pi))*
-           cos(2.*pi)*sin(pi/2.)**2.*sqrt(2))
-    assert_array_almost_equal(rsh(-2,4,pi/4.,pi/3.),
-           (3./8.)*sqrt(5./(2.*pi))*
-           sin(0-2.*pi/4.)*
-           sin(pi/3.)**2.*
-           (7.*cos(pi/3.)**2.-1)*sqrt(2))
-    assert_array_almost_equal(rsh(4,4,pi/8.,pi/6.),
-           (3./16.)*sqrt(35./(2.*pi))*
-           cos(0+4.*pi/8.)*sin(pi/6.)**4.*sqrt(2))
-    assert_array_almost_equal(rsh(-4,4,pi/8.,pi/6.),
-           (3./16.)*sqrt(35./(2.*pi))*
-           sin(0-4.*pi/8.)*sin(pi/6.)**4.*sqrt(2))
-    aa = np.ones((3,1,1,1))
-    bb = np.ones((1,4,1,1))
-    cc = np.ones((1,1,5,1))
-    dd = np.ones((1,1,1,6))
+    assert_array_almost_equal(rsh(0, 0, 0, 0),
+                              0.5 / sqrt(pi))
+    assert_array_almost_equal(rsh(-2, 2, pi / 3, pi / 5),
+                              0.25 * sqrt(15. / (2. * pi)) *
+                             (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
+                              sqrt(2))
+    assert_array_almost_equal(rsh(2, 2, pi / 3, pi / 5),
+                              -1 * 0.25 * sqrt(15. / (2. * pi)) *
+                              (sin(pi / 5.)) ** 2. * sin(0 - 2. * pi / 3) *
+                              sqrt(2))
+    assert_array_almost_equal(rsh(-2, 2, pi, pi / 2),
+                              0.25 * sqrt(15 / (2. * pi)) *
+                              cos(2. * pi) * sin(pi / 2.) ** 2. * sqrt(2))
+    assert_array_almost_equal(rsh(2, 4, pi / 4., pi / 3.),
+                              -1 * (3. / 8.) * sqrt(5. / (2. * pi)) *
+                              sin(0 - 2. * pi / 4.) *
+                              sin(pi / 3.) ** 2. *
+                              (7. * cos(pi / 3.) ** 2. - 1) * sqrt(2))
+    assert_array_almost_equal(rsh(-4, 4, pi / 8., pi / 6.),
+                              (3. / 16.) * sqrt(35. / (2. * pi)) *
+                              cos(0 + 4. * pi / 8.) * sin(pi / 6.) ** 4. *
+                              sqrt(2))
+    assert_array_almost_equal(rsh(4, 4, pi / 8., pi / 6.),
+                              -1 * (3. / 16.) * sqrt(35. / (2. * pi)) *
+                              sin(0 - 4. * pi / 8.) * sin(pi / 6.) ** 4. *
+                              sqrt(2))
+
+    aa = np.ones((3, 1, 1, 1))
+    bb = np.ones((1, 4, 1, 1))
+    cc = np.ones((1, 1, 5, 1))
+    dd = np.ones((1, 1, 1, 6))
     assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
+
+
+def test_real_sph_harm_mrtrix():
+    coef, expected, sphere = mrtrix_spherical_functions()
+    basis, m, n = real_sph_harm_mrtrix(8, sphere.theta, sphere.phi)
+    func = np.dot(coef, basis.T)
+    assert_array_almost_equal(func, expected, 4)
+
+
+def test_real_sph_harm_fibernav():
+    # This test should do for now
+    # The mrtrix basis should be the same as re-ordering and re-scaling the
+    # fibernav basis
+    new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
+    sphere = hemi_icosahedron.subdivide(2)
+    basis, m, n = real_sph_harm_mrtrix(4, sphere.theta, sphere.phi)
+    expected = basis[:, new_order]
+    expected *= np.where(m == 0, 1., np.sqrt(2))
+
+    fibernav_basis, m, n = real_sph_harm_fibernav(4, sphere.theta, sphere.phi)
+    assert_array_almost_equal(fibernav_basis, expected)
 
 
 def test_smooth_pinv():
@@ -79,18 +110,19 @@ def test_smooth_pinv():
     D = np.dot(npl.inv(np.dot(B.T, B)), B.T)
     assert_array_almost_equal(C, D)
 
-    L = n*(n+1)*.05
+    L = n * (n + 1) * .05
     C = smooth_pinv(B, L)
     L = np.diag(L)
-    D = np.dot(npl.inv(np.dot(B.T, B) + L*L), B.T)
+    D = np.dot(npl.inv(np.dot(B.T, B) + L * L), B.T)
 
     assert_array_almost_equal(C, D)
 
-    L = np.arange(len(n))*.05
+    L = np.arange(len(n)) * .05
     C = smooth_pinv(B, L)
     L = np.diag(L)
-    D = np.dot(npl.inv(np.dot(B.T, B) + L*L), B.T)
+    D = np.dot(npl.inv(np.dot(B.T, B) + L * L), B.T)
     assert_array_almost_equal(C, D)
+
 
 def test_normalize_data():
 
@@ -102,29 +134,29 @@ def test_normalize_data():
     assert_raises(ValueError, normalize_data, sig, where_b0, out=sig)
 
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig/65.)
+    assert_array_almost_equal(norm_sig, sig / 65.)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[-5:], 5/65.)
+    assert_array_almost_equal(norm_sig[-5:], 5 / 65.)
 
     where_b0[[0, 1]] = [True, True]
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig/64.5)
+    assert_array_almost_equal(norm_sig, sig / 64.5)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[-5:], 5/64.5)
+    assert_array_almost_equal(norm_sig[-5:], 5 / 64.5)
 
-    sig = sig*np.ones((2,3,1))
+    sig = sig * np.ones((2, 3, 1))
 
     where_b0[[0, 1]] = [True, False]
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig/65.)
+    assert_array_almost_equal(norm_sig, sig / 65.)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[..., -5:], 5/65.)
+    assert_array_almost_equal(norm_sig[..., -5:], 5 / 65.)
 
     where_b0[[0, 1]] = [True, True]
     norm_sig = normalize_data(sig, where_b0, min_signal=1)
-    assert_array_almost_equal(norm_sig, sig/64.5)
+    assert_array_almost_equal(norm_sig, sig / 64.5)
     norm_sig = normalize_data(sig, where_b0, min_signal=5)
-    assert_array_almost_equal(norm_sig[..., -5:], 5/64.5)
+    assert_array_almost_equal(norm_sig[..., -5:], 5 / 64.5)
 
 
 def make_fake_signal():
@@ -134,7 +166,7 @@ def make_fake_signal():
     bvals[0] = 0
     gtab = gradient_table(bvals, bvecs)
 
-    evals = np.array([[2.1, .2, .2], [.2, 2.1, .2]]) * 10**-3
+    evals = np.array([[2.1, .2, .2], [.2, 2.1, .2]]) * 10 ** -3
     evecs0 = np.eye(3)
     sq3 = np.sqrt(3) / 2.
     evecs1 = np.array([[sq3, .5, 0],
@@ -175,7 +207,7 @@ class TestQballModel(object):
         # Test normalize data
         model = self.model(gtab, sh_order=4, min_signal=1e-5,
                            assume_normed=False)
-        fit = model.fit(signal*5)
+        fit = model.fit(signal * 5)
         odf_with_norm = fit.odf(sphere)
         assert_array_almost_equal(odf, odf_with_norm)
 
@@ -237,7 +269,7 @@ def test_hat_and_lcr():
     R = lcr_matrix(H)
     d = np.arange(len(hemi.theta))
     r = d - np.dot(H, d)
-    lev = np.sqrt(1-H.diagonal())
+    lev = np.sqrt(1 - H.diagonal())
     r /= lev
     r -= r.mean()
 
@@ -247,27 +279,29 @@ def test_hat_and_lcr():
     r3 = np.dot(d, R.T)
     assert_array_almost_equal(r, r3)
 
+
 def test_bootstrap_array():
     B = np.array([[4, 5, 7, 4, 2.],
                   [4, 6, 2, 3, 6.]])
     H = hat(B.T)
 
-    R = np.zeros((5,5))
+    R = np.zeros((5, 5))
     d = np.arange(1, 6)
     dhat = np.dot(H, d)
 
     assert_array_almost_equal(bootstrap_data_voxel(dhat, H, R), dhat)
     assert_array_almost_equal(bootstrap_data_array(dhat, H, R), dhat)
 
-    H = np.zeros((5,5))
+    H = np.zeros((5, 5))
+
 
 def test_ResidualBootstrapWrapper():
     B = np.array([[4, 5, 7, 4, 2.],
                   [4, 6, 2, 3, 6.]])
     B = B.T
     H = hat(B)
-    d = np.arange(10)/8.
-    d.shape = (2,5)
+    d = np.arange(10) / 8.
+    d.shape = (2, 5)
     dhat = np.dot(d, H)
     ms = .2
     where_dwi = np.ones(len(H), dtype=bool)
@@ -281,6 +315,37 @@ def test_ResidualBootstrapWrapper():
     boot_obj = ResidualBootstrapWrapper(dhat, B, where_dwi, ms)
     assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
     assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))
+
+
+def test_sf_to_sh():
+    # Subdividing a hemi_icosahedron twice produces 81 unique points, which
+    # is more than enough to fit a order 8 (45 coefficients) spherical harmonic
+    sphere = hemi_icosahedron.subdivide(2)
+
+    mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
+    mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
+              np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])]
+
+    odf = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
+
+    # 1D case with the 3 bases functions
+    odf_sh = sf_to_sh(odf, sphere, 8)
+    odf2 = sh_to_sf(odf_sh, sphere, 8)
+    assert_array_almost_equal(odf, odf2, 2)
+
+    odf_sh = sf_to_sh(odf, sphere, 8, "mrtrix")
+    odf2 = sh_to_sf(odf_sh, sphere, 8, "mrtrix")
+    assert_array_almost_equal(odf, odf2, 2)
+
+    odf_sh = sf_to_sh(odf, sphere, 8, "fibernav")
+    odf2 = sh_to_sf(odf_sh, sphere, 8, "fibernav")
+    assert_array_almost_equal(odf, odf2, 2)
+
+    # 2D case
+    odf2d = np.vstack((odf2, odf))
+    odf2d_sh = sf_to_sh(odf2d, sphere, 8)
+    odf2d_sf = sh_to_sf(odf2d_sh, sphere, 8)
+    assert_array_almost_equal(odf2d, odf2d_sf, 2)
 
 
 if __name__ == "__main__":

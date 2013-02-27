@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
-from ..odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
-                   peak_directions_nl)
+from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
+                              peak_directions_nl)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from nose.tools import (assert_almost_equal, assert_equal, assert_raises,

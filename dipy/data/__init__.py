@@ -221,3 +221,32 @@ def dsi_deconv_voxels():
                                                      fractions=[50, 50], 
                                                      snr=None)
     return data, gtab
+
+def mrtrix_spherical_functions():
+    """Spherical functions represented by spherical harmonic coefficients and
+    evaluated on a discrete sphere.
+
+    Returns
+    -------
+    func_coef : array (2, 3, 4, 45)
+        Functions represented by the coefficients associated with the
+        mxtrix spherical harmonic basis of order 8.
+    func_discrete : array (2, 3, 4, 81)
+        Functions evaluate on `sphere`.
+    sphere : Sphere
+        The discrete sphere, points on the surface of a unit sphere, used to
+        evaluate the functions.
+
+    Notes
+    -----
+    These coefficients were obtained by using the dwi2SH command of mrtrix.
+
+    """
+    func_discrete = load(pjoin(THIS_DIR, "func_discrete.nii.gz")).get_data()
+    func_coef = load(pjoin(THIS_DIR, "func_coef.nii.gz")).get_data()
+    gradients = np.loadtxt(pjoin(THIS_DIR, "sphere_grad.txt"))
+    # gradients[0] and the first volume of func_discrete, 
+    # func_discrete[..., 0], are associated with the b=0 signal.
+    # gradients[:, 3] are the b-values for each gradient/volume.
+    sphere = Sphere(xyz=gradients[1:, :3])
+    return func_coef, func_discrete[..., 1:], sphere
