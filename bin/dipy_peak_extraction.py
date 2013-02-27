@@ -16,15 +16,18 @@ def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_thr
 
     vertices = np.loadtxt(sphere_vertices_file)
     sphere = Sphere(xyz=vertices)
-    sphere.vertices = np.ascontiguousarray(sphere.vertices)
-    sphere.edges = np.ascontiguousarray(sphere.edges)
 
     peaks = np.zeros(odfs.shape[:-1] + (15,))
 
+    cnt = 0
     for index in ndindex(odfs.shape[:-1]):
         vox_peaks, _, _ = peak_directions(odfs[index], sphere, relative_peak_threshold, min_separation_angle)
-        1/0
-        peaks[index] = vox_peaks.ravel()[:15]
+
+        vox_peaks = vox_peaks.ravel()
+        m = vox_peaks.shape[0]
+        if m > 15:
+            m = 15
+        peaks[index][:m] = vox_peaks[:m]
 
     peaks_img = nib.Nifti1Image(peaks.astype(np.float32), refaff)
     nib.save(peaks_img, out_file)
