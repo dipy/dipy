@@ -25,8 +25,7 @@ following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
 import numpy as np
-from numpy import (atleast_1d, concatenate, diag, diff, empty, eye, sqrt,
-                   unique, dot)
+from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
 from dipy.reconst.odf import OdfModel, OdfFit
@@ -42,13 +41,13 @@ def _copydoc(obj):
     return bandit
 
 
-def real_sph_harm(m, n, theta, phi):
+def real_sph_harm(m, n, phi, theta):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
     defined to be:
-        Real($Y^m_n$) * sqrt(2) if m > 0
-        $Y^m_n$                 if m == 0
-        Imag($Y^m_n$) * sqrt(2) if m < 0
+        Imag($Y^m_n$) * sqrt(2)   if m > 0
+        $Y^m_n$                   if m == 0
+        Real($Y^|m|_n$) * sqrt(2) if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
@@ -59,10 +58,10 @@ def real_sph_harm(m, n, theta, phi):
         The order of the harmonic.
     n : int >= 0
         The degree of the harmonic.
-    theta : float [0, 2*pi]
+    phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
-    phi : float [0, pi]
-        The polar (colatitudinal) coordinate.
+    theta : float [0, pi]
+        The polar coordinate (colatitude).
 
     Returns
     --------
@@ -72,87 +71,73 @@ def real_sph_harm(m, n, theta, phi):
     :See also:
         scipy.special.sph_harm
     """
-    m = atleast_1d(m)
-    # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
-
-    sh = sph_harm(m, n, theta, phi)
-    real_sh = empty(sh.shape, 'double')
-    real_sh[m_eq0] = sh[m_eq0].real
-    real_sh[m_gt0] = sh[m_gt0].real * sqrt(2)
-    real_sh[m_lt0] = sh[m_lt0].imag * sqrt(2)
+    # dipy uses a convention for theta and phi that is reversed with respect to
+    # function signature of scipy.special.sph_harm
+    sh = sph_harm(np.abs(m), n, phi, theta)
+    real_sh = np.where(m > 0, sh.imag, sh.real)
+    real_sh *= np.where(m == 0, 1., np.sqrt(2))
     return real_sh
 
 
-def real_sph_harm_mrtrix(m, n, theta, phi):
+def real_sph_harm_mrtrix(sh_order, theta, phi):
     """
     Compute real spherical harmonics as in mrtrix, where the real harmonic
     $Y^m_n$ is defined to be::
 
-        Real($Y^m_n$)            if m > 0
-        $Y^m_n$                  if m == 0
-        (-1)^{m+1}Imag($Y^m_n$)  if m < 0
+        Real($Y^m_n$)       if m > 0
+        $Y^m_n$             if m == 0
+        Imag($Y^|m|_n$)     if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
 
     Parameters
     -----------
-    m : int |m| <= n
-        The order of the harmonic.
-    n : int >= 0
-        The degree of the harmonic.
-    theta : float [0, 2*pi]
-        The azimuthal (longitudinal) coordinate.
-    phi : float [0, pi]
+    sh_order : int
+        The maximum degree or the spherical harmonic basis.
+    theta : float [0, pi]
         The polar (colatitudinal) coordinate.
+    phi : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
 
     Returns
     --------
     y_mn : real float
-        The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
+        The real harmonic $Y^m_n$ sampled at `phi` and `theta` as
         implemented in mrtrix.  Warning: the basis is Tournier et al
         2004 and 2007 is slightly different.
+    m : array
+        The order of the harmonics.
+    n : array
+        The degree of the harmonics.
 
     """
-    m = atleast_1d(m)
+    m, n = sph_harm_ind_list(sh_order)
+    phi = np.reshape(phi, [-1, 1])
+    theta = np.reshape(theta, [-1, 1])
 
-    # find where m is =, < or > 0 and broadcasts to the size of the output
-    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
-
-    sh = sph_harm(m, n, theta, phi)
-    real_sh = empty(sh.shape, np.float64)
-    neg_ones = -1 * np.ones(sh.shape) ** (m + 1)
-
-    real_sh[m_eq0] = sh[m_eq0].real
-    real_sh[m_gt0] = sh[m_gt0].real
-    real_sh[m_lt0] = neg_ones[m_lt0] * sh[m_lt0].imag
-
-    return real_sh
+    m = -m
+    real_sh = real_sph_harm(m, n, phi, theta)
+    real_sh /= np.where(m == 0, 1., np.sqrt(2))
+    return real_sh, m, n
 
 
-def real_sph_harm_fibernav(m, n, theta, phi):
+def real_sph_harm_fibernav(sh_order, theta, phi):
     """
     Compute real spherical harmonics as in fibernavigator, where the real
     harmonic $Y^m_n$ is defined to be::
 
-        sqrt(2)*Imag($Y^m_n$)    if m > 0
-        $Y^m_n$                  if m == 0
-        sqrt(2)*Real($Y^|m|_n$)  if m < 0
+        Imag($Y^m_n$) * sqrt(2)     if m > 0
+        $Y^m_n$                     if m == 0
+        Real($Y^|m|_n$) * sqrt(2)   if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
 
     Parameters
     -----------
-    m : int |m| <= n
-        The order of the harmonic.
-    n : int >= 0
-        The degree of the harmonic.
+    sh_order : int
+        even int > 0, max spherical harmonic degree
     theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
@@ -163,29 +148,25 @@ def real_sph_harm_fibernav(m, n, theta, phi):
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
         implemented in the FiberNavigator [1]_.
+    m : array
+        The order of the harmonics.
+    n : array
+        The degree of the harmonics.
 
     References
     ----------
     .. [1] http://code.google.com/p/fibernavigator/
 
     """
-    m = atleast_1d(m)
-    # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0, _, _, _ = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0, _, _, _ = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0, _, _, _ = np.broadcast_arrays(m < 0, n, theta, phi)
+    m, n = sph_harm_ind_list(sh_order)
+    phi = np.reshape(phi, [-1, 1])
+    theta = np.reshape(theta, [-1, 1])
 
-    sh = sph_harm(m, n, theta, phi)
-    sh2 = sph_harm(abs(m), n, theta, phi)
+    real_sh = real_sph_harm(m, n, phi, theta)
+    return real_sh, m, n
 
-    real_sh = empty(sh.shape, np.float64)
-    real_sh[m_eq0] = sh[m_eq0].real
-    real_sh[m_gt0] = sh[m_gt0].imag * sqrt(2)
-    real_sh[m_lt0] = sh2[m_lt0].real * sqrt(2)
 
-    return real_sh
-
-sph_harm_lookup = {None: real_sph_harm,
+sph_harm_lookup = {None: real_sph_harm_fibernav,
                    "mrtrix": real_sph_harm_mrtrix,
                    "fibernav": real_sph_harm_fibernav}
 
@@ -207,7 +188,7 @@ def sph_harm_ind_list(sh_order):
     m_list : array
         orders of even spherical harmonics
     n_list : array
-        degrees of even spherical hormonics
+        degrees of even spherical harmonics
 
     See also
     --------
@@ -620,16 +601,11 @@ def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
         SH coefficients representing the input function.
 
     """
-    m, n = sph_harm_ind_list(sh_order)
-
-    pol = sphere.theta
-    azi = sphere.phi
-
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B = sph_harm_basis(m, n, azi[:, None], pol[:, None])
+    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
 
     L = -n * (n + 1)
     invB = smooth_pinv(B, sqrt(smooth) * L)
@@ -662,16 +638,11 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
          Spherical function values on the `sphere`.
 
     """
-    m, n = sph_harm_ind_list(sh_order)
-
-    pol = sphere.theta
-    azi = sphere.phi
-
     sph_harm_basis = sph_harm_lookup.get(basis_type)
 
     if sph_harm_basis is None:
         raise ValueError("Invalid basis name.")
-    B = sph_harm_basis(m, n, azi[:, None], pol[:, None])
+    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
 
     sf = np.dot(sh, B.T)
 

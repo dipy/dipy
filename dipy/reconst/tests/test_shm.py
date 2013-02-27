@@ -1,24 +1,22 @@
-
+"""Test spherical harmonic models and the tools associated with those models"""
 import numpy as np
 import numpy.linalg as npl
 
-
-from nose.tools import assert_equal, assert_raises, assert_true, assert_false
+from nose.tools import assert_equal, assert_raises, assert_true
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
-from dipy.core.sphere import hemi_icosahedron, HemiSphere, unit_octahedron
+from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
 from ..odf import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
-from dipy.data import get_sphere
 from dipy.sims.voxel import multi_tensor_odf
+from dipy.data import mrtrix_spherical_functions
 
 
 from dipy.reconst.shm import (real_sph_harm, real_sph_harm_mrtrix,
-                              real_sph_harm_fibernav,
-                              sph_harm_ind_list, OpdtModel,
-                              normalize_data, QballModel, hat, lcr_matrix,
+                              real_sph_harm_fibernav, sph_harm_ind_list,
+                              OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               OpdtModel, CsaOdfModel, QballModel, SphHarmFit)
@@ -49,28 +47,28 @@ def test_real_sph_harm():
     cos = np.cos
     assert_array_almost_equal(rsh(0, 0, 0, 0),
                               0.5 / sqrt(pi))
-    assert_array_almost_equal(rsh(2, 2, pi / 3, pi / 5),
+    assert_array_almost_equal(rsh(-2, 2, pi / 3, pi / 5),
                               0.25 * sqrt(15. / (2. * pi)) *
                              (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
                               sqrt(2))
-    assert_array_almost_equal(rsh(-2, 2, pi / 3, pi / 5),
-                              0.25 * sqrt(15. / (2. * pi)) *
-                             (sin(pi / 5.)) ** 2. * sin(0 - 2. * pi / 3) *
+    assert_array_almost_equal(rsh(2, 2, pi / 3, pi / 5),
+                              -1 * 0.25 * sqrt(15. / (2. * pi)) *
+                              (sin(pi / 5.)) ** 2. * sin(0 - 2. * pi / 3) *
                               sqrt(2))
-    assert_array_almost_equal(rsh(2, 2, pi, pi / 2),
+    assert_array_almost_equal(rsh(-2, 2, pi, pi / 2),
                               0.25 * sqrt(15 / (2. * pi)) *
                               cos(2. * pi) * sin(pi / 2.) ** 2. * sqrt(2))
-    assert_array_almost_equal(rsh(-2, 4, pi / 4., pi / 3.),
-                             (3. / 8.) * sqrt(5. / (2. * pi)) *
+    assert_array_almost_equal(rsh(2, 4, pi / 4., pi / 3.),
+                              -1 * (3. / 8.) * sqrt(5. / (2. * pi)) *
                               sin(0 - 2. * pi / 4.) *
                               sin(pi / 3.) ** 2. *
-                             (7. * cos(pi / 3.) ** 2. - 1) * sqrt(2))
-    assert_array_almost_equal(rsh(4, 4, pi / 8., pi / 6.),
-                             (3. / 16.) * sqrt(35. / (2. * pi)) *
+                              (7. * cos(pi / 3.) ** 2. - 1) * sqrt(2))
+    assert_array_almost_equal(rsh(-4, 4, pi / 8., pi / 6.),
+                              (3. / 16.) * sqrt(35. / (2. * pi)) *
                               cos(0 + 4. * pi / 8.) * sin(pi / 6.) ** 4. *
                               sqrt(2))
-    assert_array_almost_equal(rsh(-4, 4, pi / 8., pi / 6.),
-                             (3. / 16.) * sqrt(35. / (2. * pi)) *
+    assert_array_almost_equal(rsh(4, 4, pi / 8., pi / 6.),
+                              -1 * (3. / 16.) * sqrt(35. / (2. * pi)) *
                               sin(0 - 4. * pi / 8.) * sin(pi / 6.) ** 4. *
                               sqrt(2))
 
@@ -82,99 +80,24 @@ def test_real_sph_harm():
 
 
 def test_real_sph_harm_mrtrix():
-    # Tests derived from tables in
-    # http://en.wikipedia.org/wiki/Table_of_spherical_harmonics
-    # where real spherical harmonic $Y^m_n$ is defined to be:
-    #    Real($Y^m_n$)            if m > 0
-    #    $Y^m_n$                  if m == 0
-    #    (-1)^{m+1}Imag($Y^m_n$)  if m < 0
-    # This is the current basis implemented in mrtrix
-
-    rsh = real_sph_harm_mrtrix
-    pi = np.pi
-    exp = np.exp
-    sqrt = np.sqrt
-    sin = np.sin
-    cos = np.cos
-    # test is the same as the default real_sph_harm but without the sqrt(2)
-    # an (-1)^{m+1} when m < 0
-    assert_array_almost_equal(rsh(0, 0, 0, 0),
-                              0.5 / sqrt(pi))
-    assert_array_almost_equal(rsh(2, 2, pi / 3, pi / 5),
-                              0.25 * sqrt(15. / (2. * pi)) *
-                              (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3))
-    assert_array_almost_equal(rsh(-2, 2, pi / 3, pi / 5),
-                              0.25 * sqrt(15. / (2. * pi)) *
-                              (sin(pi / 5.)) ** 2. * sin(2. * pi / 3))
-    assert_array_almost_equal(rsh(2, 2, pi, pi / 2),
-                              0.25 * sqrt(15 / (2. * pi)) *
-                              cos(2. * pi) * sin(pi / 2.) ** 2)
-    assert_array_almost_equal(rsh(-2, 4, pi / 4., pi / 3.),
-                              (3. / 8.) * sqrt(5. / (2. * pi)) *
-                              sin(2. * pi / 4.) *
-                              sin(pi / 3.) ** 2. *
-                              (7. * cos(pi / 3.) ** 2. - 1))
-    assert_array_almost_equal(rsh(4, 4, pi / 8., pi / 6.),
-                              (3. / 16.) * sqrt(35. / (2. * pi)) *
-                              cos(4. * pi / 8.) * sin(pi / 6.) ** 4)
-    assert_array_almost_equal(rsh(-4, 4, pi / 8., pi / 6.),
-                              (3. / 16.) * sqrt(35. / (2. * pi)) *
-                              sin(4. * pi / 8.) * sin(pi / 6.) ** 4)
-
-    aa = np.ones((3, 1, 1, 1))
-    bb = np.ones((1, 4, 1, 1))
-    cc = np.ones((1, 1, 5, 1))
-    dd = np.ones((1, 1, 1, 6))
-    assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
+    coef, expected, sphere = mrtrix_spherical_functions()
+    basis, m, n = real_sph_harm_mrtrix(8, sphere.theta, sphere.phi)
+    func = np.dot(coef, basis.T)
+    assert_array_almost_equal(func, expected, 4)
 
 
 def test_real_sph_harm_fibernav():
-    # Tests derived from tables in
-    # http://en.wikipedia.org/wiki/Table_of_spherical_harmonics
-    # where real spherical harmonic $Y^m_n$ is defined to be:
-    #    sqrt(2)*Imag($Y^m_n$)    if m > 0
-    #    $Y^m_n$                  if m == 0
-    #    sqrt(2)*Real($Y^|m|_n$)  if m < 0
+    # This test should do for now
+    # The mrtrix basis should be the same as re-ordering and re-scaling the
+    # fibernav basis
+    new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
+    sphere = hemi_icosahedron.subdivide(2)
+    basis, m, n = real_sph_harm_mrtrix(4, sphere.theta, sphere.phi)
+    expected = basis[:, new_order]
+    expected *= np.where(m == 0, 1., np.sqrt(2))
 
-    rsh = real_sph_harm_fibernav
-    pi = np.pi
-    exp = np.exp
-    sqrt = np.sqrt
-    sin = np.sin
-    cos = np.cos
-    assert_array_almost_equal(rsh(0, 0, 0, 0),
-                              0.5 / sqrt(pi))
-    assert_array_almost_equal(rsh(2, 2, pi / 3, pi / 5),
-                              0.25 * sqrt(15. / (2. * pi)) *
-                              (sin(pi / 5.)) ** 2. *
-                              sin(0 + 2. * pi / 3) * sqrt(2))
-    assert_array_almost_equal(rsh(-2, 2, pi / 3, pi / 5),
-                              0.25 * sqrt(15. / (2. * pi)) *
-                              (sin(pi / 5.)) ** 2. *
-                              cos(2. * pi / 3) * sqrt(2))
-    assert_array_almost_equal(rsh(2, 2, pi, pi / 2),
-                              0.25 * sqrt(15 / (2. * pi)) *
-                              sin(2. * pi) * sin(pi / 2.) ** 2. *
-                              sqrt(2))
-    assert_array_almost_equal(rsh(-2, 4, pi / 4., pi / 3.),
-                              (3. / 8.) * sqrt(5. / (2. * pi)) *
-                              cos(2. * pi / 4.) *
-                              sin(pi / 3.) ** 2. *
-                              (7. * cos(pi / 3.) ** 2. - 1) * sqrt(2))
-    assert_array_almost_equal(rsh(4, 4, pi / 8., pi / 6.),
-                              (3. / 16.) * sqrt(35. / (2. * pi)) *
-                              sin(0 + 4. * pi / 8.) * sin(pi / 6.) ** 4. *
-                              sqrt(2))
-    assert_array_almost_equal(rsh(-4, 4, pi / 8., pi / 6.),
-                              (3. / 16.) * sqrt(35. / (2. * pi)) *
-                              cos(4. * pi / 8.) * sin(pi / 6.) ** 4. *
-                              sqrt(2))
-
-    aa = np.ones((3, 1, 1, 1))
-    bb = np.ones((1, 4, 1, 1))
-    cc = np.ones((1, 1, 5, 1))
-    dd = np.ones((1, 1, 1, 6))
-    assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
+    fibernav_basis, m, n = real_sph_harm_fibernav(4, sphere.theta, sphere.phi)
+    assert_array_almost_equal(fibernav_basis, expected)
 
 
 def test_smooth_pinv():
@@ -395,9 +318,9 @@ def test_ResidualBootstrapWrapper():
 
 
 def test_sf_to_sh():
-    # sphere = get_sphere('symmetric362')
-    sphere = unit_octahedron
-    sphere = sphere.subdivide(2)
+    # Subdividing a hemi_icosahedron twice produces 81 unique points, which
+    # is more than enough to fit a order 8 (45 coefficients) spherical harmonic
+    sphere = hemi_icosahedron.subdivide(2)
 
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
     mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
@@ -423,6 +346,7 @@ def test_sf_to_sh():
     odf2d_sh = sf_to_sh(odf2d, sphere, 8)
     odf2d_sf = sh_to_sf(odf2d_sh, sphere, 8)
     assert_array_almost_equal(odf2d, odf2d_sf, 2)
+
 
 if __name__ == "__main__":
     import nose
