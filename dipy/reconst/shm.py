@@ -25,14 +25,13 @@ following form: Y.T = x.T B.T, or in python syntax data = np.dot(sh_coef, B.T)
 where data is Y.T and sh_coef is x.T.
 """
 import numpy as np
-from numpy import (atleast_1d, concatenate, diag, diff, dot, empty, eye, sqrt,
-                   unique, dot)
+from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
-from .odf import OdfModel, OdfFit
+from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
-from .cache import Cache
+from dipy.reconst.cache import Cache
 
 
 def _copydoc(obj):
@@ -42,48 +41,134 @@ def _copydoc(obj):
     return bandit
 
 
-def real_sph_harm(m, n, theta, phi):
+def real_sph_harm(m, n, phi, theta):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
     defined to be:
-        Real($Y^m_n$) * sqrt(2) if m > 0
-        $Y^m_n$                 if m == 0
-        Imag($Y^m_n$) * sqrt(2) if m < 0
+        Imag($Y^m_n$) * sqrt(2)   if m > 0
+        $Y^m_n$                   if m == 0
+        Real($Y^|m|_n$) * sqrt(2) if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
 
     Parameters
     -----------
-      - `m` : int |m| <= n
+    m : int |m| <= n
         The order of the harmonic.
-      - `n` : int >= 0
+    n : int >= 0
         The degree of the harmonic.
-      - `theta` : float [0, 2*pi]
+    phi : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
-      - `phi` : float [0, pi]
-        The polar (colatitudinal) coordinate.
+    theta : float [0, pi]
+        The polar coordinate (colatitude).
 
     Returns
     --------
-      - `y_mn` : real float
+    y_mn : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
 
     :See also:
         scipy.special.sph_harm
     """
-    m = atleast_1d(m)
-    # find where m is =,< or > 0 and broadcasts to the size of the output
-    m_eq0,junk,junk,junk = np.broadcast_arrays(m == 0, n, theta, phi)
-    m_gt0,junk,junk,junk = np.broadcast_arrays(m > 0, n, theta, phi)
-    m_lt0,junk,junk,junk = np.broadcast_arrays(m < 0, n, theta, phi)
-
-    sh = sph_harm(m, n, theta, phi)
-    real_sh = empty(sh.shape, 'double')
-    real_sh[m_eq0] = sh[m_eq0].real
-    real_sh[m_gt0] = sh[m_gt0].real * sqrt(2)
-    real_sh[m_lt0] = sh[m_lt0].imag * sqrt(2)
+    # dipy uses a convention for theta and phi that is reversed with respect to
+    # function signature of scipy.special.sph_harm
+    sh = sph_harm(np.abs(m), n, phi, theta)
+    real_sh = np.where(m > 0, sh.imag, sh.real)
+    real_sh *= np.where(m == 0, 1., np.sqrt(2))
     return real_sh
+
+
+def real_sph_harm_mrtrix(sh_order, theta, phi):
+    """
+    Compute real spherical harmonics as in mrtrix, where the real harmonic
+    $Y^m_n$ is defined to be::
+
+        Real($Y^m_n$)       if m > 0
+        $Y^m_n$             if m == 0
+        Imag($Y^|m|_n$)     if m < 0
+
+    This may take scalar or array arguments. The inputs will be broadcasted
+    against each other.
+
+    Parameters
+    -----------
+    sh_order : int
+        The maximum degree or the spherical harmonic basis.
+    theta : float [0, pi]
+        The polar (colatitudinal) coordinate.
+    phi : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+
+    Returns
+    --------
+    y_mn : real float
+        The real harmonic $Y^m_n$ sampled at `phi` and `theta` as
+        implemented in mrtrix.  Warning: the basis is Tournier et al
+        2004 and 2007 is slightly different.
+    m : array
+        The order of the harmonics.
+    n : array
+        The degree of the harmonics.
+
+    """
+    m, n = sph_harm_ind_list(sh_order)
+    phi = np.reshape(phi, [-1, 1])
+    theta = np.reshape(theta, [-1, 1])
+
+    m = -m
+    real_sh = real_sph_harm(m, n, phi, theta)
+    real_sh /= np.where(m == 0, 1., np.sqrt(2))
+    return real_sh, m, n
+
+
+def real_sph_harm_fibernav(sh_order, theta, phi):
+    """
+    Compute real spherical harmonics as in fibernavigator, where the real
+    harmonic $Y^m_n$ is defined to be::
+
+        Imag($Y^m_n$) * sqrt(2)     if m > 0
+        $Y^m_n$                     if m == 0
+        Real($Y^|m|_n$) * sqrt(2)   if m < 0
+
+    This may take scalar or array arguments. The inputs will be broadcasted
+    against each other.
+
+    Parameters
+    -----------
+    sh_order : int
+        even int > 0, max spherical harmonic degree
+    theta : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+    phi : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    Returns
+    --------
+    y_mn : real float
+        The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
+        implemented in the FiberNavigator [1]_.
+    m : array
+        The order of the harmonics.
+    n : array
+        The degree of the harmonics.
+
+    References
+    ----------
+    .. [1] http://code.google.com/p/fibernavigator/
+
+    """
+    m, n = sph_harm_ind_list(sh_order)
+    phi = np.reshape(phi, [-1, 1])
+    theta = np.reshape(theta, [-1, 1])
+
+    real_sh = real_sph_harm(m, n, phi, theta)
+    return real_sh, m, n
+
+
+sph_harm_lookup = {None: real_sph_harm_fibernav,
+                   "mrtrix": real_sph_harm_mrtrix,
+                   "fibernav": real_sph_harm_fibernav}
 
 
 def sph_harm_ind_list(sh_order):
@@ -103,7 +188,7 @@ def sph_harm_ind_list(sh_order):
     m_list : array
         orders of even spherical harmonics
     n_list : array
-        degrees of even spherical hormonics
+        degrees of even spherical harmonics
 
     See also
     --------
@@ -112,15 +197,15 @@ def sph_harm_ind_list(sh_order):
     if sh_order % 2 != 0:
         raise ValueError('sh_order must be an even integer >= 0')
 
-    n_range = np.arange(0, sh_order+1, 2, dtype='int')
-    n_list = np.repeat(n_range, n_range*2+1)
+    n_range = np.arange(0, sh_order + 1, 2, dtype=int)
+    n_list = np.repeat(n_range, n_range * 2 + 1)
 
-    ncoef = (sh_order + 2)*(sh_order + 1)/2
+    ncoef = (sh_order + 2) * (sh_order + 1) / 2
     offset = 0
     m_list = empty(ncoef, 'int')
     for ii in n_range:
-        m_list[offset:offset+2*ii+1] = np.arange(-ii, ii+1)
-        offset = offset + 2*ii + 1
+        m_list[offset:offset + 2 * ii + 1] = np.arange(-ii, ii + 1)
+        offset = offset + 2 * ii + 1
 
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
     return (m_list, n_list)
@@ -201,7 +286,7 @@ class SphHarmModel(OdfModel, Cache):
         x, y, z = gtab.gradients[self._where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         B = real_sph_harm(m, n, azi[:, None], pol[:, None])
-        L = -n*(n+1)
+        L = -n * (n + 1)
         legendre0 = lpn(sh_order, 0)[0]
         F = legendre0[n]
         self.B = B
@@ -294,13 +379,14 @@ class CsaOdfModel(SphHarmModel):
     """
     min = .001
     max = .999
+
     def _set_fit_matrix(self, B, L, F, smooth):
         """The fit matrix, is used by fit_coefficients to return the
         coefficients of the odf"""
-        invB = smooth_pinv(B, sqrt(smooth)*L)
+        invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
-        self._fit_matrix = F*L*invB
+        self._fit_matrix = F * L * invB
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
@@ -322,11 +408,11 @@ class OpdtModel(SphHarmModel):
         density functions in high angular resolution diffusion imaging.
     """
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth)*L)
+        invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
-        delta_b = F*L*invB
-        delta_q = 4*F*invB
+        delta_b = F * L * invB
+        delta_q = 4 * F * invB
         self._fit_matrix = delta_b, delta_q
 
     def _get_shm_coef(self, data, mask=None):
@@ -338,7 +424,7 @@ class OpdtModel(SphHarmModel):
 def _slowadc_formula(data, delta_b, delta_q):
     """formula used in SlowAdcOpdfModel"""
     logd = -np.log(data)
-    return dot(logd*(1.5-logd)*data, delta_q.T) - dot(data, delta_b.T)
+    return dot(logd * (1.5 - logd) * data, delta_q.T) - dot(data, delta_b.T)
 
 
 class QballModel(SphHarmModel):
@@ -351,9 +437,9 @@ class QballModel(SphHarmModel):
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
-        invB = smooth_pinv(B, sqrt(smooth)*L)
+        invB = smooth_pinv(B, sqrt(smooth) * L)
         F = F[:, None]
-        self._fit_matrix = F*invB
+        self._fit_matrix = F * invB
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
@@ -384,6 +470,7 @@ def hat(B):
     H = dot(U, U.T)
     return H
 
+
 def lcr_matrix(H):
     """Returns a matrix for computing leveraged, centered residuals from data
 
@@ -394,10 +481,11 @@ def lcr_matrix(H):
     if H.ndim != 2 or H.shape[0] != H.shape[1]:
         raise ValueError('H should be a square matrix')
 
-    leverages = sqrt(1-H.diagonal())
+    leverages = sqrt(1 - H.diagonal())
     leverages = leverages[:, None]
     R = (eye(len(H)) - H) / leverages
     return R - R.mean(0)
+
 
 def bootstrap_data_array(data, H, R, permute=None):
     """Applies the Residual Bootstraps to the data given H and R
@@ -424,8 +512,9 @@ def bootstrap_data_array(data, H, R, permute=None):
     assert R.shape == H.shape
     assert len(permute) == R.shape[-1]
     R = R[permute]
-    data = dot(data, (H+R).T)
+    data = dot(data, (H + R).T)
     return data
+
 
 def bootstrap_data_voxel(data, H, R, permute=None):
     """Like bootstrap_data_array but faster when for a single voxel
@@ -438,6 +527,7 @@ def bootstrap_data_voxel(data, H, R, permute=None):
     boot_data = dot(data, H.T)
     boot_data += r[permute]
     return boot_data
+
 
 class ResidualBootstrapWrapper(object):
     """Returns a residual bootstrap sample of the signal_object when indexed
@@ -483,3 +573,77 @@ class ResidualBootstrapWrapper(object):
         boot_signal.clip(self._min_signal, 1., out=boot_signal)
         signal[self._where_dwi] = boot_signal
         return signal
+
+
+def sf_to_sh(sf, sphere, sh_order=4, basis_type=None, smooth=0.0):
+    """Spherical function to spherical harmonics (SH).
+
+    Parameters
+    ----------
+    sf : ndarray
+        Values of a function on the given `sphere`.
+    sphere : Sphere
+        The points on which the sf is defined.
+    sh_order : int, optional
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
+    basis_type : {None, 'mrtrix', 'fibernav'}
+        ``None`` for the default dipy basis,
+        ``mrtrix`` for the MRtrix basis, and
+        ``fibernav`` for the FiberNavigator basis
+        (default ``None``).
+    smooth : float, optional
+        Lambda-regularization in the SH fit (default 0.0).
+
+    Returns
+    -------
+    sh : ndarray
+        SH coefficients representing the input function.
+
+    """
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+
+    if sph_harm_basis is None:
+        raise ValueError("Invalid basis name.")
+    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
+
+    L = -n * (n + 1)
+    invB = smooth_pinv(B, sqrt(smooth) * L)
+    sh = np.dot(sf, invB.T)
+
+    return sh
+
+
+def sh_to_sf(sh, sphere, sh_order, basis_type=None):
+    """Spherical harmonics (SH) to spherical function (SF).
+
+    Parameters
+    ----------
+    sh : ndarray
+        SH coefficients representing a spherical function.
+    sphere : Sphere
+        The points on which to sample the spherical function.
+    sh_order : int, optional
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
+    basis_type : {None, 'mrtrix', 'fibernav'}
+        ``None`` for the default dipy basis,
+        ``mrtrix`` for the MRtrix basis, and
+        ``fibernav`` for the FiberNavigator basis
+        (default ``None``).
+
+    Returns
+    -------
+    sf : ndarray
+         Spherical function values on the `sphere`.
+
+    """
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+
+    if sph_harm_basis is None:
+        raise ValueError("Invalid basis name.")
+    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
+
+    sf = np.dot(sh, B.T)
+
+    return sf
