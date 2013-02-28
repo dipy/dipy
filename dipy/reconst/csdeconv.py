@@ -2,8 +2,8 @@ import numpy as np
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_model
-from dipy.reconst.shm import (sph_harm_ind_list, 
-                              real_sph_harm, 
+from dipy.reconst.shm import (sph_harm_ind_list,
+                              real_sph_harm,
                               lazy_index,
                               sh_to_sf)
 from dipy.data import get_sphere
@@ -25,6 +25,21 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         sh_order : int
                 spherical harmonics order
 
+        Notes
+        ------
+        The method used here can be described in the following way.
+        0 Estimate single fiber repsonse function
+            From a masked FA get all voxels with FA > 0.7. Estimate eigen-vector,
+            for each one and align it with z-axis.
+        1 Build reconstruction matrices
+            - B_dwi (original signal)
+            - B_regul (regularized)
+            - R (single fiber)
+        2 Call csdeconv for every voxel
+
+        References
+        ----------
+        Tournier, J.D., et. al. NeuroImage 2007.
         """
 
         m, n = sph_harm_ind_list(sh_order)
@@ -48,28 +63,26 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
         # scale lambda to account for differences in the number of
         # SH coefficients and number of mapped directions
-    
+
         self.Lambda = Lambda * self.R.shape[0] * r_rh[0] / self.B_regul.shape[0]
-
         self.tau = 0.1
-
         self.sh_order = sh_order
-        
+
     def fit(self, data):
-
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
-
-        fodf_sh, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_regul, self.Lambda, self.tau)
-        
-        odf = sh_to_sf(fodf_sh, self.sphere, self.sh_order)
-        #odf = None
-        #return ConstrainedSphericalDeconvFit(data) 
-        return fodf_sh, odf 
+        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_regul, self.Lambda, self.tau)
+        return ConstrainedSphericalDeconvFit(self, shm_coeff)
 
 
 class ConstrainedSphericalDeconvFit(OdfFit):
-    def odf(sphere):
-        pass
+
+    def __init__(self, model, fodf_sh):
+        self.shm_coeff = fodf_sh
+        self.model = model
+
+    def odf(self, sphere):
+        # return sh_to_sf(self.shm_coeff, sphere, self.model.sh_order)
+        return np.dot(self.shm_coeff, self.model.B_regul.T)
 
 
 def estimate_response(gtab, S0=100):
@@ -198,11 +211,9 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
     # set threshold on FOD amplitude used to identify 'negative' values
     threshold = tau * np.mean(np.dot(B_regul, fodf_sh))
 
-    
-
     k = []
     convergence = 50
-    for num_it in np.arange(1, convergence + 1):
+    for num_it in xrange(1, convergence + 1):
         A = np.dot(B_regul, fodf_sh)
         k2 = np.nonzero(A < threshold)[0]
 
@@ -217,7 +228,7 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
         k = k2
         M = np.concatenate((R, Lambda * B_regul[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
-        fodf_sh = np.linalg.lstsq(M, S)[0]  # M\S
+        fodf_sh = np.linalg.lstsq(M, S)[0] 
 
     print 'maximum number of iterations exceeded - failed to converge'
     return fodf_sh, num_it
