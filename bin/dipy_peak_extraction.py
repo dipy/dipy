@@ -9,7 +9,9 @@ from dipy.reconst.odf import peak_directions
 from dipy.core.sphere import Sphere
 
 
-def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_threshold=.25, min_separation_angle=45):
+def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_threshold=.5,
+                    peak_normalize=1, min_separation_angle=45):
+
     in_nifti = nib.load(odfs_file)
     refaff = in_nifti.get_affine()
     odfs = in_nifti.get_data()
@@ -17,16 +19,21 @@ def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_thr
     vertices = np.loadtxt(sphere_vertices_file)
     sphere = Sphere(xyz=vertices)
 
-    peaks = np.zeros(odfs.shape[:-1] + (15,))
+    peaks = np.zeros(odfs.shape[:-1] + (9,))
 
     cnt = 0
     for index in ndindex(odfs.shape[:-1]):
-        vox_peaks, _, _ = peak_directions(odfs[index], sphere, relative_peak_threshold, min_separation_angle)
-
+        vox_peaks, values, _ = peak_directions(odfs[index], sphere,
+                                               float(relative_peak_threshold), float(min_separation_angle))
+        
+        if peak_normalize == 1 :
+            values /= values[0]
+            vox_peaks = vox_peaks * values[:, None]
+        
         vox_peaks = vox_peaks.ravel()
         m = vox_peaks.shape[0]
-        if m > 15:
-            m = 15
+        if m > 9:
+            m = 9
         peaks[index][:m] = vox_peaks[:m]
 
     peaks_img = nib.Nifti1Image(peaks.astype(np.float32), refaff)
@@ -47,12 +54,16 @@ def buildArgsParser():
      ...
     xN yN zN""")
     p.add_argument(action='store', dest='out_file', help='Output nifti file with the peak directions.')
-    # p.add_argument('-n', '--order', action='store', dest='rank',
-    #                metavar='int', required=False, default=8,
-    #                help='Maximum SH order of estimation (default 8)')
-    # p.add_argument('-l', '--lambda', action='store', dest='smoothness',
-    #                metavar='float', required=False, default=0.006,
-    #                help='Laplace-Beltrami regularization (default 0.006)')
+    p.add_argument('-t', '--peak_threshold', action='store', dest='peak_thresh',
+                   metavar='float', required=False, default=0.5,
+                   help='Relative peak threshold (default 0.5)')
+    p.add_argument('-n', '--peak_normalize', action='store', dest='peak_norm',
+                   metavar='int', required=False, default=1,
+                   help='Normalize peaks according to spherical function value (default True)')
+    p.add_argument('-a', '--angle', action='store', dest='angle',
+                   metavar='float', required=False, default=45.0,
+                   help='Minimum separation angle (default 45 degrees)')
+
     return p
 
 
@@ -64,8 +75,13 @@ def main():
     sphere_vertices_file = args.sphere_vertices_file
     out_file = args.out_file
 
+    peak_thresh = args.peak_thresh
+    peak_norm = args.peak_norm
+    angle = args.angle
+
     peak_extraction(spherical_functions_file, sphere_vertices_file, out_file,
-                    relative_peak_threshold=.25, min_separation_angle=45)
+                    relative_peak_threshold=peak_thresh, peak_normalize=int(peak_norm),
+                    min_separation_angle=angle)
 
 
 if __name__ == "__main__":
