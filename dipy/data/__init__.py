@@ -232,7 +232,7 @@ def mrtrix_spherical_functions():
         Functions represented by the coefficients associated with the
         mxtrix spherical harmonic basis of order 8.
     func_discrete : array (2, 3, 4, 81)
-        Functions evaluate on `sphere`.
+        Functions evaluated on `sphere`.
     sphere : Sphere
         The discrete sphere, points on the surface of a unit sphere, used to
         evaluate the functions.

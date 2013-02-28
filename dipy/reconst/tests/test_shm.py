@@ -47,27 +47,27 @@ def test_real_sph_harm():
     cos = np.cos
     assert_array_almost_equal(rsh(0, 0, 0, 0),
                               0.5 / sqrt(pi))
-    assert_array_almost_equal(rsh(-2, 2, pi / 3, pi / 5),
+    assert_array_almost_equal(rsh(-2, 2, pi / 5, pi / 3),
                               0.25 * sqrt(15. / (2. * pi)) *
                              (sin(pi / 5.)) ** 2. * cos(0 + 2. * pi / 3) *
                               sqrt(2))
-    assert_array_almost_equal(rsh(2, 2, pi / 3, pi / 5),
+    assert_array_almost_equal(rsh(2, 2, pi / 5, pi / 3),
                               -1 * 0.25 * sqrt(15. / (2. * pi)) *
                               (sin(pi / 5.)) ** 2. * sin(0 - 2. * pi / 3) *
                               sqrt(2))
-    assert_array_almost_equal(rsh(-2, 2, pi, pi / 2),
+    assert_array_almost_equal(rsh(-2, 2, pi / 2, pi),
                               0.25 * sqrt(15 / (2. * pi)) *
                               cos(2. * pi) * sin(pi / 2.) ** 2. * sqrt(2))
-    assert_array_almost_equal(rsh(2, 4, pi / 4., pi / 3.),
+    assert_array_almost_equal(rsh(2, 4, pi / 3., pi / 4.),
                               -1 * (3. / 8.) * sqrt(5. / (2. * pi)) *
                               sin(0 - 2. * pi / 4.) *
                               sin(pi / 3.) ** 2. *
                               (7. * cos(pi / 3.) ** 2. - 1) * sqrt(2))
-    assert_array_almost_equal(rsh(-4, 4, pi / 8., pi / 6.),
+    assert_array_almost_equal(rsh(-4, 4, pi / 6., pi / 8.),
                               (3. / 16.) * sqrt(35. / (2. * pi)) *
                               cos(0 + 4. * pi / 8.) * sin(pi / 6.) ** 4. *
                               sqrt(2))
-    assert_array_almost_equal(rsh(4, 4, pi / 8., pi / 6.),
+    assert_array_almost_equal(rsh(4, 4, pi / 6., pi / 8.),
                               -1 * (3. / 16.) * sqrt(35. / (2. * pi)) *
                               sin(0 - 4. * pi / 8.) * sin(pi / 6.) ** 4. *
                               sqrt(2))
@@ -103,7 +103,7 @@ def test_real_sph_harm_fibernav():
 def test_smooth_pinv():
     hemi = hemi_icosahedron.subdivide(2)
     m, n = sph_harm_ind_list(4)
-    B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
+    B = real_sph_harm(m, n, hemi.theta[:, None], hemi.phi[:, None])
 
     L = np.zeros(len(m))
     C = smooth_pinv(B, L)
@@ -261,7 +261,7 @@ class TestCsaOdfModel(TestQballModel):
 def test_hat_and_lcr():
     hemi = hemi_icosahedron.subdivide(3)
     m, n = sph_harm_ind_list(8)
-    B = real_sph_harm(m, n, hemi.phi[:, None], hemi.theta[:, None])
+    B = real_sph_harm(m, n, hemi.theta[:, None], hemi.phi[:, None])
     H = hat(B)
     B_hat = np.dot(H, B)
     assert_array_almost_equal(B, B_hat)
