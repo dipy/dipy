@@ -32,8 +32,8 @@ csa_streamlines = [streamline for streamline in eu]
 
 """
 Now that we have our streamlines in memory we cab save the results in the disk.
-For this purpose we can use the TrackVis format (*.trk). First, we need to create a
-header.
+For this purpose we can use the TrackVis format (``*.trk``). First, we need to
+create a header.
 """
 
 import nibabel as nib

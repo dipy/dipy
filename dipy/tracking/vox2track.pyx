@@ -17,7 +17,7 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     the line that enters the voxel.
 
     Parameters
-    ------------
+    ----------
     tracks : sequence
        sequence of T tracks.  One track is an ndarray of shape (N, 3), where N
        is the number of points in that track, and ``tracks[t][n]`` is the n-th
@@ -39,7 +39,7 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
        below)
 
     Returns
-    ---------
+    -------
     tcs : ndarray shape `vol_dim`
        An array where entry ``tcs[x, y, z]`` is the number of tracks
        that passed through voxel at voxel coordinate x, y, z
@@ -49,8 +49,8 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
        integers, where the integers are the indices of the track that
        passed through the voxel.
 
-    Example
-    -------
+    Examples
+    --------
     Imagine you have a volume (voxel) space of dimension ``(10,20,30)``.
     Imagine you had voxel coordinate tracks in ``vs``.  To just fill an array
     with the counts of how many tracks pass through each voxel:
@@ -140,5 +140,3 @@ def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     if ret_elf:
         return tcs.reshape(vol_dims), el_inds
     return tcs.reshape(vol_dims)
-
-

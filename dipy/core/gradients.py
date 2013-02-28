@@ -13,26 +13,26 @@ class GradientTable(object):
     gradients : array_like (N, 3)
         N diffusion gradients
     b0_threshold : float
-        Gradients with b-value less than or equal to `bo_threshold` are
+        Gradients with b-value less than or equal to `b0_threshold` are
         considered as b0s i.e. without diffusion weighting.
 
     Attributes
     ----------
-    gradients : array, shape(N, 3)
+    gradients : (N,3) ndarray
         diffusion gradients
-    bvals : array, shape (N,)
+    bvals : (N,) ndarray
         The b-value, or magnitude, of each gradient direction.
-    bvecs : array, shape (N,3)
+    bvecs : (N,3) ndarray
         The direction, represented as a unit vector, of each gradient.
-    b0s_mask : array, shape (N,)
+    b0s_mask : (N,) ndarray
         Boolean array indicating which gradients have no diffusion
         weighting, ie b-value is close to 0.
     b0_threshold : float
-        Gradients with b-value less than or equal to `bo_threshold` are
+        Gradients with b-value less than or equal to `b0_threshold` are
         considered to not have diffusion weighting.
 
     See Also
-    -------
+    --------
     gradient_table
 
     """
@@ -89,10 +89,14 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
     atol : float
         Each vector in `bvecs` must be a unit vectors up to a tolerance of
         `atol`.
-    Other keyword inputs are passed to GradientTable
 
-    Return
-    ------
+    Other Parameters
+    ----------------
+    **kwargs : dict
+        Other keyword inputs are passed to GradientTable.
+
+    Returns
+    -------
     gradients : GradientTable
         A GradientTable with all the gradient information.
 
@@ -137,14 +141,16 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     ----------
 
     bvals : can be any of the four options
+
         1. an array of shape (N,) or (1, N) or (N, 1) with the b-values.
         2. a path for the file which contains an array like the above (1).
         3. an array of shape (N, 4) or (4, N). Then this parameter is
-        considered to be a b-table which contains both bvals and bvecs. In
-        this case the next parameter is skipped.
+           considered to be a b-table which contains both bvals and bvecs. In
+           this case the next parameter is skipped.
         4. a path for the file which contains an array like the one at (3).
 
     bvecs : can be any of two options
+
         1. an array of shape (N, 3) or (3, N) with the b-vectors.
         2. a path for the file which contains an array like the previous.
 
@@ -161,12 +167,10 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     atol : float
         All b-vectors need to be unit vectors up to a tolerance.
 
-
-    Return
-    ------
+    Returns
+    -------
     gradients : GradientTable
         A GradientTable with all the gradient information.
-
 
     Examples
     --------
@@ -174,13 +178,13 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     >>> bvals=1500*np.ones(7)
     >>> bvals[0]=0
     >>> sq2=np.sqrt(2)/2
-    >>> bvecs=np.array([[0, 0, 0],\
-                        [1, 0, 0],\
-                        [0, 1, 0],\
-                        [0, 0, 1],\
-                        [sq2, sq2, 0],\
-                        [sq2, 0, sq2],\
-                        [0, sq2, sq2]])
+    >>> bvecs=np.array([[0, 0, 0],
+    ...                 [1, 0, 0],
+    ...                 [0, 1, 0],
+    ...                 [0, 0, 1],
+    ...                 [sq2, sq2, 0],
+    ...                 [sq2, 0, sq2],
+    ...                 [0, sq2, sq2]])
     >>> gt = gradient_table(bvals, bvecs)
     >>> gt.bvecs.shape == bvecs.shape
     True
@@ -191,13 +195,12 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     Notes
     -----
     1. Often b0s (b-values which correspond to images without diffusion
-    weighting) have 0 values however in some cases the scanner cannot
-    provide b0s of an exact 0 value and it gives a bit higher values
-    e.g. 6 or 12. This is the purpose of the b0_threshold in the __init__.
-
+       weighting) have 0 values however in some cases the scanner cannot
+       provide b0s of an exact 0 value and it gives a bit higher values
+       e.g. 6 or 12. This is the purpose of the b0_threshold in the __init__.
     2. We assume that the minimum number of b-values is 7.
-
     3. B-vectors should be unit vectors.
+
     """
 
     # If you provided strings with full paths, we go and load those from

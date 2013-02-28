@@ -7,7 +7,7 @@ Read/Write streamline files
 Overview
 ========
 
-Dipy_ can read and write many different file formats. In this example
+dipy_ can read and write many different file formats. In this example
 we give a short introduction on how to use it for loading or saving streamlines.
 
 Read :ref:`faq`
@@ -40,8 +40,8 @@ np.save('fornix.npy', streamlines_np)
 streamlines2 = list(np.load('fornix.npy'))
 
 """
-3. We also work on our HDF5 based file format which can read/write massive datasets 
-(as big as the size of you free disk space). With `Dpy` we can support 
+3. We also work on our HDF5 based file format which can read/write massive datasets
+(as big as the size of you free disk space). With `Dpy` we can support
 
 	* direct indexing from the disk
 	* memory usage always low
@@ -76,6 +76,8 @@ dpw.close()
 
 """
 Read streamlines directly from the disk using their indices
+
+.. include:: ../links_names.inc
 """
 
 dpr = Dpy('fornix.dpy', 'r')

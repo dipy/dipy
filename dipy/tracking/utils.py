@@ -76,8 +76,8 @@ def density_map(streamlines, vol_dims, voxel_size):
 
     Counts the number of points in each streamline that lie inside each voxel.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     streamlines : iterable
         A sequence of arrays, each streamline should a list of points in
         3-space, where (0,0,0) is one corner of the first voxel in image
@@ -89,17 +89,17 @@ def density_map(streamlines, vol_dims, voxel_size):
     voxel_size : 3 floats
         The size of the voxels in the image volume
 
-    Returns:
-    --------
+    Returns
+    -------
     image_volume : ndarray, shape=vol_dims
         The number of streamline points in each voxel of volume
 
-    Raises:
-    -------
+    Raises
+    ------
     IndexError
         When the points of the streamlines lie outside of the return volume
 
-    Note:
+    Notes
     -----
     A streamline can pass though a voxel even if one of the points of the
     streamline does not lie in the voxel. For example a step from [0,0,0] to
@@ -163,7 +163,8 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
 def ndbincount(x, weights=None, shape=None):
     """Like bincount, but for nd-indicies
 
-    Parameters:
+    Parameters
+    ----------
     x : array_like (N, M)
         M indices to a an Nd-array
     weights : array_like (M,), optional
@@ -189,7 +190,8 @@ def reduce_labels(label_volume):
     """Reduces an array of labels to the integers from 0 to n with smallest
     possible n
 
-    Example:
+    Examples
+    --------
     >>> labels = np.array([[1, 3, 9],
     ...                    [1, 3, 8],
     ...                    [1, 3, 7]])
@@ -235,7 +237,7 @@ def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
     Returns a dictionary where each key is a 3d voxel index and the associated
     value is a list of the streamlines that pass through that voxel.
 
-    Examples:
+    Examples
     --------
     >>> streamlines = [np.array([[0., 0., 0.],
     ...                          [1., 1., 1.],
@@ -279,24 +281,24 @@ def subsegment(streamlines, max_segment_length):
     streamline counts on a grid that is smaller than the length of the
     streamline segments.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     streamlines : sequence of ndarrays
         The streamlines to be subsegmented.
     max_segment_length : float
         The longest allowable segment length.
 
-    Returns:
-    --------
+    Returns
+    -------
     output_streamlines : generator
         A set of streamlines.
 
-    Notes:
-    ------
+    Notes
+    -----
     Segments of 0 length are removed. If unchanged
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> streamlines = [array([[0,0,0],[2,0,0],[5,0,0]])]
     >>> list(subsegment(streamlines, 3.))
     [array([[ 0.,  0.,  0.],
@@ -353,8 +355,8 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
     points in each voxel, at x=.5, y=[.25, .75] and z=[.166, .5, .833].
     density=a is the same as density = [a, a, a]
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> mask = zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
     >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
@@ -400,8 +402,8 @@ def target(streamlines, target_mask, voxel_size):
     This function loops over the streamlines and returns streamlines that pass
     though target_mask.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     streamlines : iterable
         A squence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
@@ -410,18 +412,18 @@ def target(streamlines, target_mask, voxel_size):
     voxel_size
         Size of the voxels in the target_mask
 
-    Returns:
+    Returns
+    -------
     streamlines : generator
         A sequence of streamlines that pass though target_mask
 
-    Raises:
-    -------
+    Raises
+    ------
     IndexError
         When the points of the streamlines lie outside of the target_mask
 
-    See Also:from numpy import linalg as LA
-
-    ---------
+    See Also
+    --------
     density_map
 
     """
@@ -447,21 +449,21 @@ def merge_streamlines(backward, forward):
     Because the first point of each streamline pair should be the same, only
     one is kept
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     backward : iterable
         a sequence of streamlines, will be returned in reversed order in the
         result
     forward : iterable
         a sequence of streamlines, will be returned in same order in the result
 
-    Returns:
-    --------
+    Returns
+    -------
     streamlines : generator
         generator of merged streamlines
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> A = [array([[0,0,0],[1,1,1],[2,2,2]])]
     >>> B = [array([[0,0,0],[-1,-1,-1],[-2,-2,-2]])]
     >>> list(merge_streamlines(A,B))
@@ -485,16 +487,16 @@ def merge_streamlines(backward, forward):
 def move_streamlines(streamlines, affine):
     """Applies a linear transformation, given by affine, to streamlines
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     streamlines : sequence
         A set of streamlines to be transformed.
     affine : array (4, 4)
         A linear tranformation to be applied to the streamlines. The last row
         of affine should be [0, 0, 0, 1].
 
-    Returns:
-    --------
+    Returns
+    -------
     streamlines : generator
         A sequence of transformed streamlines
     """
@@ -509,26 +511,26 @@ def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     and [a, b, c] is the same point in the coordinate system defined by
     output_ornt.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     input_ornt : array (n, 2)
         A description of the orientation of a point in n-space. See
-        nibabel.orientation or dipy.io.bvectxt for more information.
+        ``nibabel.orientation`` or ``dipy.io.bvectxt`` for more information.
     output_ornt : array (n, 2)
         A description of the orientation of a point in n-space.
-    shape
-        shape of the image in the input orientation. map = ornt_mapping(input_ornt, output_ornt)
+    shape : tuple of int
+        Shape of the image in the input orientation.
+        ``map = ornt_mapping(input_ornt, output_ornt)``
+    voxel_size : int
+        Voxel size of the image in the input orientation.
 
-    voxel_size
-        voxel_size of the image in the input orientation.
-
-    Returns:
-    --------
+    Returns
+    -------
     A : array (n+1, n+1)
         Affine matrix of the transformation between input_ornt and output_ornt.
 
-    See Also:
-    ---------
+    See Also
+    --------
     nibabel.orientation
     dipy.io.bvectxt.orientation_to_string
     dipy.io.bvectxt.orientation_from_string
@@ -546,7 +548,8 @@ def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
 
 def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
     """It takes the affine matrix from flirt (FSLdot) and the voxel size of the
-       input and output images and it returns the adjusted affine matrix for trackvis
+    input and output images and it returns the adjusted affine matrix for
+    trackvis.
     """
     input_voxsz = asarray(input_voxsz)
     output_voxsz = asarray(output_voxsz)

@@ -8,10 +8,10 @@
     :toctree:
 
     distances
-    learning
-    metrics
     eudx
-    propspeed
-    vox2track
+    learning
     markov
+    metrics
+    propspeed
     utils
+    vox2track

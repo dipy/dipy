@@ -1,4 +1,4 @@
-.. _subscribe
+.. _subscribe:
 
 =========
 Subscribe
@@ -15,5 +15,3 @@ Best wishes,
 Dipy developers
 
 .. include:: links_names.inc
-
-

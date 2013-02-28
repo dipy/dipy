@@ -4,10 +4,10 @@ from dipy.tracking.propspeed import eudx_both_directions
 from dipy.data import get_sphere
 
 class EuDX(object):
-    ''' Euler Delta Crossings
+    '''Euler Delta Crossings
 
-    Generates tracks with termination criteria defined by a
-    delta function [1]_ and it has similarities with FACT algorithm [2]_ and Basser's method 
+    Generates tracks with termination criteria defined by a delta function [1]_
+    and it has similarities with FACT algorithm [2]_ and Basser's method
     but uses trilinear interpolation.
 
     Can be used with any reconstruction method as DTI, DSI, QBI, GQI which can
@@ -27,20 +27,19 @@ class EuDX(object):
 
     References
     ------------
-
     .. [1] Garyfallidis, Towards an accurate brain tractography, PhD thesis,
-    Unviersity of Cambridge, 2012.
-
+           University of Cambridge, 2012.
     .. [2] Mori et al. Three-dimensional tracking of axonal projections
-    in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
-    
-    Note
-    ------
-    The coordinate system of the tractography is that of native space of image coordinates not
-    native space world coordinates therefore voxel size is always considered as having size (1,1,1).
-    Therefore, the origin is at the center of the center of the first voxel of the volume and all 
-    i,j,k coordinates start from the center of the voxel they represent. 
-    
+           in the brain by magnetic resonance imaging. Ann. Neurol. 1999.
+
+    Notes
+    -----
+    The coordinate system of the tractography is that of native space of image
+    coordinates not native space world coordinates therefore voxel size is
+    always considered as having size (1,1,1).  Therefore, the origin is at the
+    center of the center of the first voxel of the volume and all i,j,k
+    coordinates start from the center of the voxel they represent.
+
     '''
 
     def __init__(self, a, ind,
@@ -52,9 +51,9 @@ class EuDX(object):
                  length_thr=0.,
                  total_weight=.5,
                  max_points=1000):
-        ''' Euler integration with multiple stopping criteria and supporting multiple multiple fibres in crossings [1].
-
-        [1] E. Garyfallidis (2012), "Towards an accurate brain tractography", PhD thesis, University of Cambridge, UK.
+        '''
+        Euler integration with multiple stopping criteria and supporting
+        multiple multiple fibres in crossings [1]_.
 
         Parameters
         ------------
@@ -70,8 +69,9 @@ class EuDX(object):
         odf_vertices : None or ndarray, shape (N,3) , optional
             sphere points which define a discrete representation of orientations
             for the peaks, the same for all voxels. Usually the same sphere is
-            used as an input for a reconstruction algorithm e.g. DSI. 
-            None results in loading the vertices from a default sphere with 362 points.
+            used as an input for a reconstruction algorithm e.g. DSI.
+            None results in loading the vertices from a default sphere with
+            362 points.
         a_low : float, optional
             low threshold for QA(typical 0.023)  or FA(typical 0.2) or any other
             anisotropic function
@@ -83,7 +83,6 @@ class EuDX(object):
             total weighting threshold
         max_points : int, optional
             maximum number of points in a track. Used to stop tracks from looping for ever
-
 
         Examples
         --------
@@ -102,8 +101,14 @@ class EuDX(object):
 
         Notes
         -------
-        This works as an iterator class because otherwise it could fill your entire memory if you generate many tracks. 
-        Something very common as you can easily generate millions of tracks if you have many seeds.
+        This works as an iterator class because otherwise it could fill your
+        entire memory if you generate many tracks.  Something very common as
+        you can easily generate millions of tracks if you have many seeds.
+
+        References
+        ----------
+        .. [1] E. Garyfallidis (2012), "Towards an accurate brain
+               tractography", PhD thesis, University of Cambridge, UK.
 
         '''
         self.a=np.ascontiguousarray(a.copy())
@@ -148,7 +153,7 @@ class EuDX(object):
             else:
                 seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)
             #for all peaks
-            for ref in range(g): 
+            for ref in range(g):
                 track =eudx_both_directions(seed.copy(),
                                             ref,
                                             self.a,
@@ -164,11 +169,3 @@ class EuDX(object):
                 else:
                     if track.shape[0] > 1:
                         yield track
-
-
-
-
-
-
-
-
