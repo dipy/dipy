@@ -351,7 +351,7 @@ def run_flirt_imgs(in_img, ref_img, dof=6, flags=''):
 
     Parameters
     ----------
-    in_img : `SpatialImage'
+    in_img : `SpatialImage`
         image to register
     ref_img : `SpatialImage`
         image to register to
@@ -363,10 +363,11 @@ def run_flirt_imgs(in_img, ref_img, dof=6, flags=''):
     Returns
     -------
     in_vox2out_vox : (4,4) ndarray
-        affine such that, if [i, j, k] is a coordinate in voxels in the
-        `in_img`, and [p, q, r] are the equivalent voxel coordinates in the
-        reference image, then [p, q, r] = np.dot(in_vox2out_vox[:3,:3]), [i, j,
-        k] + in_vox2out_vox[:3,3])
+        affine such that, if ``[i, j, k]`` is a coordinate in voxels in the
+        `in_img`, and ``[p, q, r]`` are the equivalent voxel coordinates in the
+        reference image, then
+        ``[p, q, r] = np.dot(in_vox2out_vox[:3,:3]), [i, j, k] + in_vox2out_vox[:3,3])``
+
     """
     omat = 'reg.mat'
     with InTemporaryDirectory():

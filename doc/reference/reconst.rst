@@ -7,14 +7,11 @@
 .. autosummary::
     :toctree:
 
+    dsi
     dti
     gqi
-    dsi
-    shm
+    maskedview
+    modelarray
+    multi_voxel
     odf
-    base
-    cache
-    interpolate
-    quick_squash
-    recspeed
-    vec_val_sum
+    shm

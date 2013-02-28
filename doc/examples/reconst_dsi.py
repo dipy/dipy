@@ -105,9 +105,7 @@ for index in ndindex(dataslice.shape[:2]):
 If you really want to save the PDFs of a full dataset on the disc we recommend
 using memory maps (numpy.memmap) but still have in mind that if you do that for
 example for a dataset of volume size ``(96, 96, 60)`` you will need about 20
-GBytes on disk for a single subject. On a side note, we recommend saving the ODFs,
 which can take less space when reasonable spheres (with < 1000 vertices) are.
-"""
 
 """
 .. include:: ../links_names.inc

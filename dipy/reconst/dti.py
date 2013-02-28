@@ -527,9 +527,9 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
     References
     ----------
-    ..  _[1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
-        approaches for estimation of uncertainties of DTI parameters.
-        NeuroImage 33, 531-541.
+    .. [1] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+       approaches for estimation of uncertainties of DTI parameters.
+       NeuroImage 33, 531-541.
     """
     tol = 1e-6
     if min_signal <= 0:
@@ -736,8 +736,8 @@ def tensor_eig_from_lo_tri(data):
     function can be passed to the Tensor class as a fit_method for creating a
     Tensor instance from tensors stored in a nifti file.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     data : array_like (..., 6)
         diffusion tensors elements stored in lower triangular order
 

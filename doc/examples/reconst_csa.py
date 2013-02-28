@@ -107,13 +107,12 @@ print('GFA.shape (%d, %d, %d)' % GFA.shape)
 """
 GFA.shape ``(115, 115, 61)``
 
-Apart from GFA csapeaks has also the attributes peak_values, peak_indices and ODF. peak_values
-shows the maxima values of the ODF and peak_indices gives us their position on the
-discrete sphere that was used to do the reconstruction of the ODF. In order to
-obtain the full ODF return_odf should be True. Before enabling this option make sure that you have enough memory.
-"""
+Apart from GFA csapeaks has also the attributes peak_values, peak_indices and
+ODF. peak_values shows the maxima values of the ODF and peak_indices gives us
+their position on the discrete sphere that was used to do the reconstruction of
+the ODF. In order to obtain the full ODF return_odf should be True. Before
+enabling this option make sure that you have enough memory.
 
-"""
 Finally lets try to visualize the orientation distribution functions of a small
 rectangular area around the middle of our datasets.
 """

@@ -77,7 +77,7 @@ tensor_streamlines = [streamline for streamline in eu]
 
 """
 We can now save the results in the disk. For this purpose we can use the
-TrackVis format (*.trk). First, we need to create a header.
+TrackVis format (``*.trk``). First, we need to create a header.
 """
 
 hdr = nib.trackvis.empty_header()

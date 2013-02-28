@@ -33,8 +33,8 @@ class DirectionFinder(object):
 class BoundaryStepper(object):
     """Steps along a direction past the closest voxel boundary
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     voxel_size : array-like
         Size of voxels in data volume
     overstep : float
@@ -52,8 +52,8 @@ class BoundaryStepper(object):
         given a location and a step, finds the smallest step needed to move
         into the next voxel
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         location : ndarray, (3,)
             location to integrate from
         step : ndarray, (3,)
@@ -361,8 +361,8 @@ class CDT_NNO(ClosestDirectionTracker):
     For use with Nearest Neighbor interpolation, directions at each voxel are
     remembered to avoid recalculating.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     model : model
         A model used to fit data. Should return a some fit object with
         directions.

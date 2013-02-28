@@ -79,14 +79,15 @@ if have_vtk:
 
 
 def ren():
-    ''' Create a renderer
+    '''Create a renderer.
 
     Returns
-    --------
-    a vtkRenderer() object
+    -------
+    v : vtkRenderer() object
+        Renderer.
 
     Examples
-    ---------
+    --------
     >>> from dipy.viz import fvtk
     >>> import numpy as np
     >>> r=fvtk.ren()
@@ -172,15 +173,19 @@ def _lookup(colors):
     ------------
     colors : array, shape (N,3)
             Colormap where every triplet is encoding red, green and blue e.g.
-            r1,g1,b1
-            r2,g2,b2
-            ...
-            rN,gN,bN
+
+            ::
+              r1,g1,b1
+              r2,g2,b2
+              ...
+              rN,gN,bN
 
             where
-            0=<r<=1,
-            0=<g<=1,
-            0=<b<=1,
+
+            ::
+              0=<r<=1,
+              0=<g<=1,
+              0=<b<=1,
 
     Returns
     ----------
@@ -227,25 +232,29 @@ def line(lines, colors, opacity=1, linewidth=1):
             represents 2 lines the first with 10 points and the second with 20 points in x,y,z coordinates.
     colors : array, shape (N,3)
             Colormap where every triplet is encoding red, green and blue e.g.
-            r1,g1,b1
-            r2,g2,b2
-            ...
-            rN,gN,bN
+
+            ::
+              r1,g1,b1
+              r2,g2,b2
+              ...
+              rN,gN,bN
 
             where
-            0=<r<=1,
-            0=<g<=1,
-            0=<b<=1
 
-    opacity : float, default 1
-                    0<=transparency <=1
-    linewidth : float, default is 1
-                    line thickness
+            ::
+              0=<r<=1,
+              0=<g<=1,
+              0=<b<=1
 
+    opacity : float, optional
+        ``0 <= transparency <= 1``
+    linewidth : float, optional
+        Line thickness.
 
     Returns
     ----------
-    vtkActor object
+    v : vtkActor object
+        Line.
 
     Examples
     ----------
@@ -484,11 +493,13 @@ def ellipsoid(R=np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]]),
               position=(0, 0, 0), thetares=20, phires=20, color=(0, 0, 1),
               opacity=1, tessel=0):
     ''' Create a ellipsoid actor.
-    Stretch a unit sphere to make it an ellipsoid under a 3x3 translation matrix R
 
-    R=sp.array([[2, 0, 0],
-                         [0, 1, 0],
-                         [0, 0, 1] ])
+    Stretch a unit sphere to make it an ellipsoid under a 3x3 translation
+    matrix R.
+
+    R = sp.array([[2, 0, 0],
+                  [0, 1, 0],
+                  [0, 0, 1] ])
     '''
 
     Mat = sp.identity(4)
@@ -542,20 +553,27 @@ def ellipsoid(R=np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]]),
 def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
           color=(1, 1, 1)):
 
-    ''' Create a label actor
+    ''' Create a label actor.
+
     This actor will always face the camera
 
     Parameters
-    ------------
-    ren : vtkRenderer() object as returned from ren()
-    text : a text for the label
-    pos : left down position of the label
-    scale : change the size of the label
-    color : (r,g,b) and RGB tuple
+    ----------
+    ren : vtkRenderer() object
+       Renderer as returned by ``ren()``.
+    text : str
+        Text for the label.
+    pos : (3,) array_like, optional
+        Left down position of the label.
+    scale : (3,) array_like
+        Changes the size of the label.
+    color : (3,) array_like
+        Label color as ``(r,g,b)`` tuple.
 
     Returns
     ----------
-    vtkActor object
+    l : vtkActor object
+        Label.
 
     Examples
     ----------
@@ -587,68 +605,73 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
 def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
            info=0, maptype=0, trilinear=1, iso=0, iso_thr=100,
            opacitymap=None, colormap=None):
-    ''' Create a volume and return a volumetric actor using volumetric rendering.
-    This function has many different interesting capabilities. The maptype, opacitymap and colormap are the most crucial parameters here.
+    ''' Create a volume and return a volumetric actor using volumetric
+    rendering.
+
+    This function has many different interesting capabilities. The maptype,
+    opacitymap and colormap are the most crucial parameters here.
 
     Parameters
-    ----------------
+    ----------
     vol : array, shape (N, M, K), dtype uint8
-         an array representing the volumetric dataset that we want to visualize using volumetric rendering
-
-    voxsz : sequence of 3 floats
-            default (1., 1., 1.)
-
-    affine : array, shape (4,4), default None
-            as given by volumeimages
-
-    center_origin : int {0,1}, default 1
-             it considers that the center of the volume is the
-            point (-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)
-
-    info : int {0,1}, default 1
-            if 1 it prints out some info about the volume, the method and the dataset.
-
-    trilinear : int {0,1}, default 1
-            Use trilinear interpolation, default 1, gives smoother rendering. If you want faster interpolation use 0 (Nearest).
-
-    maptype : int {0,1}, default 0,
-            The maptype is a very important parameter which affects the raycasting algorithm in use for the rendering.
-            The options are:
-            If 0 then vtkVolumeTextureMapper2D is used.
-            If 1 then vtkVolumeRayCastFunction is used.
-
-    iso : int {0,1} default 0,
-            If iso is 1 and maptype is 1 then  we use vtkVolumeRayCastIsosurfaceFunction which generates an isosurface at
-            the predefined iso_thr value. If iso is 0 and maptype is 1 vtkVolumeRayCastCompositeFunction is used.
-
-    iso_thr : int, default 100,
-            if iso is 1 then then this threshold in the volume defines the value which will be used to create the isosurface.
-
-    opacitymap : array, shape (N,2), default None.
-            The opacity map assigns a transparency coefficient to every point in the volume.
-            The default value uses the histogram of the volume to calculate the opacitymap.
-    colormap : array, shape (N,4), default None.
-            The color map assigns a color value to every point in the volume.
-            When None from the histogram it uses a red-blue colormap.
+        An array representing the volumetric dataset that we want to visualize
+        using volumetric rendering.
+    voxsz : (3,) array_like
+        Voxel size.
+    affine : (4, 4) ndarray
+        As given by volumeimages.
+    center_origin : int {0,1}
+        It considers that the center of the volume is the
+        point ``(-vol.shape[0]/2.0+0.5,-vol.shape[1]/2.0+0.5,-vol.shape[2]/2.0+0.5)``.
+    info : int {0,1}
+        If 1 it prints out some info about the volume, the method and the
+        dataset.
+    trilinear : int {0,1}
+        Use trilinear interpolation, default 1, gives smoother rendering. If
+        you want faster interpolation use 0 (Nearest).
+    maptype : int {0,1}
+        The maptype is a very important parameter which affects the raycasting algorithm in use for the rendering.
+        The options are:
+        If 0 then vtkVolumeTextureMapper2D is used.
+        If 1 then vtkVolumeRayCastFunction is used.
+    iso : int {0,1}
+        If iso is 1 and maptype is 1 then we use
+        ``vtkVolumeRayCastIsosurfaceFunction`` which generates an isosurface at
+        the predefined iso_thr value. If iso is 0 and maptype is 1
+        ``vtkVolumeRayCastCompositeFunction`` is used.
+    iso_thr : int
+        If iso is 1 then then this threshold in the volume defines the value
+        which will be used to create the isosurface.
+    opacitymap : (2, 2) ndarray
+        The opacity map assigns a transparency coefficient to every point in
+        the volume.  The default value uses the histogram of the volume to
+        calculate the opacitymap.
+    colormap : (4, 4) ndarray
+        The color map assigns a color value to every point in the volume.
+        When None from the histogram it uses a red-blue colormap.
 
     Returns
-    ----------
-    vtkVolume
+    -------
+    v : vtkVolume
+        Volume.
 
     Notes
     --------
-    What is the difference between TextureMapper2D and RayCastFunction?
-    Coming soon... See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
+    What is the difference between TextureMapper2D and RayCastFunction?  Coming
+    soon... See VTK user's guide [book] & The Visualization Toolkit [book] and
+    VTK's online documentation & online docs.
 
-    What is the difference between RayCastIsosurfaceFunction and RayCastCompositeFunction?
-    Coming soon... See VTK user's guide [book] & The Visualization Toolkit [book] and VTK's online documentation & online docs.
+    What is the difference between RayCastIsosurfaceFunction and
+    RayCastCompositeFunction?  Coming soon... See VTK user's guide [book] &
+    The Visualization Toolkit [book] and VTK's online documentation &
+    online docs.
 
     What about trilinear interpolation?
     Coming soon... well when time permits really ... :-)
 
     Examples
-    ------------
-    First example random points
+    --------
+    First example random points.
 
     >>> from dipy.viz import fvtk
     >>> import numpy as np
@@ -673,7 +696,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     >>> #fvtk.show(r)
 
     If you find this function too complicated you can always use mayavi.
-    Please do not forget to use the -wthread switch in ipython if you are running mayavi.
+    Please do not forget to use the -wthread switch in ipython if you are
+    running mayavi.
 
     from enthought.mayavi import mlab
     import numpy as np
@@ -696,7 +720,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     vol = np.interp(vol, [vol.min(), vol.max()], [0, 255])
     vol = vol.astype('uint8')
 
-    if opacitymap == None:
+    if opacitymap is None:
 
         bin, res = np.histogram(vol.ravel())
         res2 = np.interp(res, [vol.min(), vol.max()], [0, 1])
@@ -868,30 +892,30 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
 
 def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
             colors=[np.array([1.0, 0.0, 0.0])], opacities=[0.5]):
-    ''' Take a volume and draw surface contours for any any number of thresholds (levels) where every contour has its own
-    color and opacity
+    ''' Take a volume and draw surface contours for any any number of
+    thresholds (levels) where every contour has its own color and opacity
 
     Parameters
-    ----------------
-    vol : array, shape (N, M, K)
-        an array representing the volumetric dataset for which we will draw some beautiful contours .
-
-    voxsz : sequence of 3 floats
-        default (1., 1., 1.)
-
-    affine : not used here
-
-    levels : sequence of thresholds for the contours taken from image values
-                needs to be same datatype as vol
-    colors : array, shape (N,3) with the rgb values in where r,g,b belong to [0,1]
-
-    opacities : sequence of floats [0,1]
-
+    ----------
+    vol : (N, M, K) ndarray
+        An array representing the volumetric dataset for which we will draw
+        some beautiful contours .
+    voxsz : (3,) array_like
+        Voxel size.
+    affine : None
+        Not used.
+    levels : array_like
+        Sequence of thresholds for the contours taken from image values needs
+        to be same datatype as `vol`.
+    colors : (N, 3) ndarray
+        RGB values in [0,1].
+    opacities : array_like
+        Opacities of contours.
 
     Returns
     -----------
     ass : assembly of actors
-            representing the contour surfaces
+        Representing the contour surfaces.
 
     Examples
     -------------
@@ -996,7 +1020,6 @@ def _cm2colors(colormap='Blues'):
 
 
 def create_colormap(v, name='jet', auto=True):
-
     ''' Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
     r,g,b value. The colormaps we use are similar with those of pylab.
@@ -1012,13 +1035,15 @@ def create_colormap(v, name='jet', auto=True):
         to v.max()
 
     Notes
-    -------
+    -----
     If you want to add more colormaps here is what you could do. Go to
     this website http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
     see which colormap you need and then get in pylab using the cm.datad
     dictionary.
 
-    e.g. cm.datad['jet']
+    e.g.::
+
+          cm.datad['jet']
 
           {'blue': ((0.0, 0.5, 0.5),
                     (0.11, 1, 1),
@@ -1101,27 +1126,28 @@ def create_colormap(v, name='jet', auto=True):
 
 def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
                      scale=2.2, norm=True, radial_scale=True):
-    """ Plot many morphed spheres simultaneously
+    """Plot many morphed spheres simultaneously.
 
     Parameters
     ----------
-    sphere_values : (M,) or (X, M) or (X, Y, M) or (X, Y, Z, M) array
-            Values on the sphere. 
+    sphere_values : (M,) or (X, M) or (X, Y, M) or (X, Y, Z, M) ndarray
+        Values on the sphere.
     sphere : Sphere
     image : None,
-            note  yet supported
+        Not  yet supported.
     colormap : None or 'jet'
-            if None then no color is used
+        If None then no color is used.
     scale : float,
-            distance between spheres
+        Distance between spheres.
     norm : bool,
-            normalize sphere_values
+        Normalize `sphere_values`.
     radial_scale : bool,
-            scale sphere points according to odf values.
+        Scale sphere points according to odf values.
 
     Returns
     -------
     actor : vtkActor
+        Spheres.
 
     Examples
     --------
@@ -1132,7 +1158,7 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     >>> from dipy.data import get_sphere
     >>> sphere = get_sphere('symmetric724')
     >>> fvtk.add(r, fvtk.sphere_funcs(odfs, sphere))
-    >>> #fvtk.show(r)    
+    >>> #fvtk.show(r)
 
     """
 
@@ -1227,7 +1253,9 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
 def tube(point1=(0, 0, 0), point2=(1, 0, 0), color=(1, 0, 0), opacity=1, radius=0.1, capson=1, specular=1, sides=8):
 
     ''' Deprecated
-    Wrap a tube around a line connecting point1 with point2 with a specific radius
+
+    Wrap a tube around a line connecting point1 with point2 with a specific
+    radius.
 
     '''
     points = vtk.vtkPoints()
@@ -1330,36 +1358,35 @@ def crossing(a, ind, sph, scale, orient=False):
 
 
 def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
-           planes=1, levels=[20, 30, 40], opacities=[0.8, 0.7, 0.3], colors=None, planesx=[20, 30], planesy=[30, 40], planesz=[20, 30]):
+           planes=1, levels=[20, 30, 40], opacities=[0.8, 0.7, 0.3],
+           colors=None, planesx=[20, 30], planesy=[30, 40], planesz=[20, 30]):
     ''' Slicer and contour rendering of 3d volumes
 
     Parameters
     ----------------
     vol : array, shape (N, M, K), dtype uint8
-         an array representing the volumetric dataset that we want to visualize using volumetric rendering
-
+        An array representing the volumetric dataset that we want to visualize
+        using volumetric rendering.
     voxsz : sequence of 3 floats
-            default (1., 1., 1.)
-
+        Voxel size.
     affine : array, shape (4,4), default None
-            as given by volumeimages
-
+        As given by ``volumeimages``.
     contours : bool 1 to show contours
-
+        Whether to show contours.
     planes : boolean 1 show planes
-
-    levels : contour levels
-
-    opacities : opacity for every contour level
-
-    colors : None or
-
-    planesx : saggital
-
-    planesy : coronal
-
-    planesz : axial
-
+        Whether to show planes.
+    levels : sequence
+        Contour levels.
+    opacities : sequence
+        Opacity for every contour level.
+    colors : None or sequence of 3-tuples
+        Color for each contour level.
+    planesx : (2,) array_like
+        Saggital.
+    planesy : (2,) array_like
+        Coronal.
+    planesz :
+        Axial (2,) array_like
 
     Examples
     --------------
@@ -1580,23 +1607,23 @@ def show(ren, title='dipy.viz.fvtk', size=(300, 300), png_magnify=1):
     ''' Show window
 
     Notes
-    ------
-    To save a screenshot press 's' and check your current directory for ``fvtk.png``
+    -----
+    To save a screenshot press's' and check your current directory
+    for ``fvtk.png``.
 
     Parameters
     ------------
     ren : vtkRenderer() object
-            as returned from function ren()
+        As returned from function ``ren()``.
     title : string
-            a string for the window title bar
+        A string for the window title bar.
     size : (int, int)
-            (width,height) of the window
-
+        ``(width, height)`` of the window
     png_magnify : int
-            number of times to magnify the screenshot
+        Number of times to magnify the screenshot.
 
     Notes
-    -------
+    -----
     If you want to:
 
     * navigate in the the 3d world use the left - middle - right mouse buttons
@@ -1671,7 +1698,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
            verbose=False):
     ''' This will record a video of your scene
 
-    Records a video as a series of .png files of your scene by rotating the
+    Records a video as a series of ``.png`` files of your scene by rotating the
     azimuth angle az_angle in every frame.
 
     Parameters
@@ -1764,5 +1791,4 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
 
 if __name__ == "__main__":
-
     pass

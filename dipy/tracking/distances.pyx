@@ -1,5 +1,6 @@
  # A type of -*- python -*- file
-""" Optimized track distances, similarities and clustering algorithms using track distances 
+""" Optimized track distances, similarities and clustering algorithms using
+track distances
 """
 
 # cython: profile=True
@@ -52,11 +53,11 @@ def normalized_3vec(vec):
     Vector divided by Euclidean (L2) norm
 
     Parameters
-    ------------
+    ----------
     vec : array-like shape (3,)
 
     Returns
-    ---------
+    -------
     vec_out : array shape (3,)
     '''
     cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_in = as_float_3vec(vec)
@@ -69,11 +70,11 @@ def norm_3vec(vec):
     ''' Euclidean (L2) norm of length 3 vector
 
     Parameters
-    ------------
+    ----------
     vec : array-like shape (3,)
 
     Returns
-    ---------
+    -------
     norm : float
        Euclidean norm
     '''
@@ -85,12 +86,12 @@ cdef inline float cnorm_3vec(float *vec):
     ''' Calculate Euclidean norm of input vector
 
     Parameters
-    ------------
+    ----------
     vec : float *
        length 3 float vector
 
     Returns
-    ---------
+    -------
     norm : float
        Euclidean norm
     '''
@@ -102,24 +103,21 @@ cdef inline float cnorm_3vec(float *vec):
 
 
 cdef inline void cnormalized_3vec(float *vec_in, float *vec_out):
-    ''' Calculate and fill normalized 3D vector 
+    ''' Calculate and fill normalized 3D vector
 
     Parameters
-    ------------
+    ----------
     vec_in : float *
        Length 3 vector to normalize
     vec_out : float *
        Memory into which to write normalized length 3 vector
 
-    Returns
-    ---------
-    void
     '''
     cdef float norm = cnorm_3vec(vec_in)
     cdef int i
     for i in range(3):
         vec_out[i] = vec_in[i] / norm
-        
+
 
 def inner_3vecs(vec1, vec2):
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
@@ -138,7 +136,7 @@ cdef inline float cinner_3vecs(float *vec1, float *vec2) nogil:
 def sub_3vecs(vec1, vec2):
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)
     csub_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
     return vec_out
 
@@ -152,7 +150,7 @@ cdef inline void csub_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
 def add_3vecs(vec1, vec2):
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)
     cadd_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
     return vec_out
 
@@ -165,7 +163,7 @@ cdef inline void cadd_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
 def mul_3vecs(vec1, vec2):
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1 = as_float_3vec(vec1)
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec2 = as_float_3vec(vec2)
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)
     cmul_3vecs(<float *>fvec1.data, <float*>fvec2.data, <float *>vec_out.data)
     return vec_out
 
@@ -175,10 +173,10 @@ cdef inline void cmul_3vecs(float *vec1, float *vec2, float *vec_out) nogil:
         vec_out[i] = vec1[i]*vec2[i]
 
 def mul_3vec(a, vec):
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec = as_float_3vec(vec)    
-    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)    
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec = as_float_3vec(vec)
+    cdef cnp.ndarray[cnp.float32_t, ndim=1] vec_out = np.zeros((3,), np.float32)
     cmul_3vec(a,<float *>fvec.data, <float *>vec_out.data)
-    return vec_out        
+    return vec_out
 
 cdef inline void cmul_3vec(float a, float *vec, float *vec_out) nogil:
     cdef int i
@@ -191,30 +189,30 @@ cdef cnp.dtype f32_dt = np.dtype(np.float32)
 
 
 def cut_plane(tracks,ref):
-    ''' Extract divergence vectors and points of intersection 
+    ''' Extract divergence vectors and points of intersection
     between planes normal to the reference fiber and other tracks
-    
+
     Parameters
-    ------------
+    ----------
     tracks : sequence
         of tracks as arrays, shape (N1,3) .. (Nm,3)
     ref : array, shape (N,3)
         reference track
-        
+
     Returns
-    ---------
+    -------
     hits : sequence
        list of points and rcds (radial coefficient of divergence)``
-    
+
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.distances import cut_plane
     >>> refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     >>> bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
     >>> cut_plane(bundlex,refx)
     [array([[ 1.        ,  1.5       ,  0.        ,  0.70710683, 0,]], dtype=float32),
      array([[ 2.        ,  2.5       ,  0.        ,  0.70710677, 0.]], dtype=float32)]
-        
+
     The orthogonality relationship
     np.inner(hits[p][q][0:3]-ref[p+1],ref[p+2]-ref[r][p+1])
     will hold throughout for every point q in the hits plane
@@ -341,48 +339,48 @@ def cut_plane(tracks,ref):
             hit_arr[hit_no] = hits[hit_no]
         Hit.append(hit_arr)
         #Div.append(divs[1:])
-    return Hit[1:]            
+    return Hit[1:]
 
 
 
 
 
-def most_similar_track_mam(tracks,metric='avg'):    
-    ''' Find the most similar track in a bundle 
-    using distances calculated from Zhang et. al 2008. 
-    
+def most_similar_track_mam(tracks,metric='avg'):
+    ''' Find the most similar track in a bundle
+    using distances calculated from Zhang et. al 2008.
+
     Parameters
-    ------------
-    tracks : sequence 
+    ----------
+    tracks : sequence
        of tracks as arrays, shape (N1,3) .. (Nm,3)
     metric : str
        'avg', 'min', 'max'
-        
+
     Returns
-    ----------
+    -------
     si : int
        index of the most similar track in tracks. This can be used as a
        reference track for a bundle.
     s : array, shape (len(tracks),)
         similarities between tracks[si] and the rest of the tracks in
         the bundle
-    
+
     Notes
     -----
     A vague description of this function is given below:
-    
+
     for (i,j) in tracks_combinations_of_2:
 
-        calculate the mean_closest_distance from i to j  (mcd_i)  
+        calculate the mean_closest_distance from i to j  (mcd_i)
         calculate the mean_closest_distance from j to i  (mcd_j)
-        
+
         if 'avg':
             s holds the average similarities
         if 'min':
             s holds the minimum similarities
         if 'max':
             s holds the maximum similarities
-        
+
     si holds the index of the track with min {avg,min,max} average metric
     '''
     cdef:
@@ -459,21 +457,21 @@ def most_similar_track_mam(tracks,metric='avg'):
 @cython.wraparound(False)
 def bundles_distances_mam(tracksA, tracksB, metric='avg'):
     ''' Calculate distances between list of tracks A and list of tracks B
-    
+
     Parameters
-    ------------
-    tracksA : sequence 
+    ----------
+    tracksA : sequence
        of tracks as arrays, shape (N1,3) .. (Nm,3)
-    tracksB : sequence 
+    tracksB : sequence
        of tracks as arrays, shape (N1,3) .. (Nm,3)
     metric : str
        'avg', 'min', 'max'
-            
+
     Returns
-    ---------
+    -------
     DM : array, shape (len(tracksA), len(tracksB))
         distances between tracksA and tracksB according to metric
-    
+
     '''
     cdef:
         size_t i, j, lentA, lentB
@@ -538,25 +536,25 @@ def bundles_distances_mam(tracksA, tracksB, metric='avg'):
 @cython.wraparound(False)
 def bundles_distances_mdf(tracksA, tracksB):
     ''' Calculate distances between list of tracks A and list of tracks B
-    
+
     All tracks need to have the same number of points
-        
+
     Parameters
-    ------------
-    tracksA : sequence 
+    ----------
+    tracksA : sequence
        of tracks as arrays, [(N,3) .. (N,3)]
-    tracksB : sequence 
+    tracksB : sequence
        of tracks as arrays, [(N,3) .. (N,3)]
-            
+
     Returns
-    ---------
+    -------
     DM : array, shape (len(tracksA), len(tracksB))
         distances between tracksA and tracksB according to metric
-        
-    See also
-    -----------
+
+    See Also
+    ---------
     dipy.metrics.downsample
-    
+
     '''
     cdef:
         size_t i, j, lentA, lentB
@@ -574,19 +572,19 @@ def bundles_distances_mdf(tracksA, tracksB):
     DM = np.zeros((lentA,lentB), dtype=np.double)
     # process tracks to predictable memory layout
     for i in range(lentA):
-        tracksA32[i] = np.ascontiguousarray(tracksA[i], dtype=f32_dt)        
+        tracksA32[i] = np.ascontiguousarray(tracksA[i], dtype=f32_dt)
     for i in range(lentB):
-        tracksB32[i] = np.ascontiguousarray(tracksB[i], dtype=f32_dt)        
+        tracksB32[i] = np.ascontiguousarray(tracksB[i], dtype=f32_dt)
     # preallocate buffer array for track distance calculations
-    cdef:        
-        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer    
+    cdef:
+        cnp.float32_t *t1_ptr, *t2_ptr, *min_buffer
     # cycle over tracks
     cdef:
         cnp.ndarray [cnp.float32_t, ndim=2] t1, t2
         size_t t1_len, t2_len
         float d[2]
     t_len = tracksA32[0].shape[0]
-    
+
     for i from 0 <= i < lentA:
         t1 = tracksA32[i]
         #t1_len = t1.shape[0]
@@ -633,18 +631,18 @@ cdef inline cnp.float32_t czhang(size_t t1_len,
     for t2_pi from 0<= t2_pi < t2_len:
         mean_t2t1+=min_t2t1[t2_pi]
     mean_t2t1=mean_t2t1/t2_len
-    if metric_type == 0:                
+    if metric_type == 0:
         dist_val=(mean_t2t1+mean_t1t2)/2.0
-    elif metric_type == 1:        
+    elif metric_type == 1:
         if mean_t2t1 < mean_t1t2:
             dist_val=mean_t2t1
         else:
             dist_val=mean_t1t2
-    elif metric_type == 2:                
+    elif metric_type == 2:
         if mean_t2t1 > mean_t1t2:
             dist_val=mean_t2t1
         else:
-            dist_val=mean_t1t2                    
+            dist_val=mean_t1t2
     return dist_val
 
 @cython.cdivision(True)
@@ -691,50 +689,50 @@ cdef inline void min_distances(size_t t1_len,
 
 def mam_distances(xyz1,xyz2,metric='all'):
     ''' Min/Max/Mean Average Minimum Distance between tracks xyz1 and xyz2
-    
+
     Based on the metrics in Zhang, Correia, Laidlaw 2008
     http://ieeexplore.ieee.org/xpl/freeabs_all.jsp?arnumber=4479455
     which in turn are based on those of Corouge et al. 2004
-    
+
     Parameters
-    ------------
+    ----------
     xyz1 : array, shape (N1,3), dtype float32
     xyz2 : array, shape (N2,3), dtype float32
        arrays representing x,y,z of the N1 and N2 points of two tracks
     metrics : {'avg','min','max','all'}
        Metric to calculate.  {'avg','min','max'} return a scalar. 'all'
        returns a tuple
-       
+
     Returns
-    ---------
+    -------
     avg_mcd : float
        average_mean_closest_distance
     min_mcd : float
        minimum_mean_closest_distance
     max_mcd : float
        maximum_mean_closest_distance
-                    
+
     Notes
     -----
     Algorithmic description
-    
+
     Lets say we have curves A and B.
-    
+
     For every point in A calculate the minimum distance from every point
     in B stored in minAB
-    
+
     For every point in B calculate the minimum distance from every point
     in A stored in minBA
-    
+
     find average of minAB stored as avg_minAB
     find average of minBA stored as avg_minBA
-    
+
     if metric is 'avg' then return (avg_minAB + avg_minBA)/2.0
     if metric is 'min' then return min(avg_minAB,avg_minBA)
     if metric is 'max' then return max(avg_minAB,avg_minBA)
     '''
     cdef:
-        cnp.ndarray[cnp.float32_t, ndim=2] track1 
+        cnp.ndarray[cnp.float32_t, ndim=2] track1
         cnp.ndarray[cnp.float32_t, ndim=2] track2
         size_t t1_len, t2_len
     track1 = np.ascontiguousarray(xyz1, dtype=f32_dt)
@@ -767,42 +765,42 @@ def mam_distances(xyz1,xyz2,metric='all'):
                 np.max((mean_t2t1,mean_t1t2)))
     elif metric=='avg':
         return (mean_t2t1+mean_t1t2)/2.0
-    elif metric=='min':            
+    elif metric=='min':
         return np.min((mean_t2t1,mean_t1t2))
     elif metric =='max':
         return np.max((mean_t2t1,mean_t1t2))
     else :
         ValueError('Wrong argument for metric')
 
-        
+
 def minimum_closest_distance(xyz1,xyz2):
     ''' Find the minimum distance between two curves xyz1, xyz2
-    
+
     Parameters
-    -------------
+    ----------
     xyz1 : array, shape (N1,3), dtype float32
     xyz2 : array, shape (N2,3), dtype float32
         arrays representing x,y,z of the N1 and N2 points  of two tracks
-    
+
     Returns
-    ---------
+    -------
     md : minimum distance
-    
+
     Notes
-    --------
+    -----
     Algorithmic description
-    
+
     Lets say we have curves A and B
-    
+
     for every point in A calculate the minimum distance from every point in B stored in minAB
     for every point in B calculate the minimum distance from every point in A stored in minBA
     find min of minAB stored in min_minAB
     find min of minBA stored in min_minBA
-    
+
     Then return (min_minAB + min_minBA)/2.0
     '''
     cdef:
-        cnp.ndarray[cnp.float32_t, ndim=2] track1 
+        cnp.ndarray[cnp.float32_t, ndim=2] track1
         cnp.ndarray[cnp.float32_t, ndim=2] track2
         size_t t1_len, t2_len
     track1 = np.ascontiguousarray(xyz1, dtype=f32_dt)
@@ -836,59 +834,59 @@ def minimum_closest_distance(xyz1,xyz2):
 def lee_perpendicular_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
         Calculates perpendicular distance metric for the distance between two line segments
-        
+
     This function assumes that norm(end0-start0)>norm(end1-start1)
     i.e. that the first segment will be bigger than the second one.
     Parameters
-    ------------
-        start0 : float array(3,)
-        end0 : float array(3,)
-        start1 : float array(3,)
-        end1 : float array(3,)
-    
+    ----------
+    start0 : float array(3,)
+    end0 : float array(3,)
+    start1 : float array(3,)
+    end1 : float array(3,)
+
     Returns
-    --------
+    -------
     perpendicular_distance: float
 
     Examples
-    ---------
+    --------
     >>> import dipy.core.performance as pf
     >>> pf.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    5.9380966767403436  
-    
+    5.9380966767403436
+
     Notes
-    -------
+    -----
     l0 = np.inner(end0-start0,end0-start0)
     l1 = np.inner(end1-start1,end1-start1)
-    
+
     k0=end0-start0
-    
+
     u1 = np.inner(start1-start0,k0)/l0
     u2 = np.inner(end1-start0,k0)/l0
 
     ps = start0+u1*k0
     pe = start0+u2*k0
 
-    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))    
+    lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
     lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
 
     if lperp1+lperp2 > 0.:
         return (lperp1**2+lperp2**2)/(lperp1+lperp2)
     else:
         return 0.
-    
+
     '''
-    
+
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
-    
+
     fvec1 = as_float_3vec(start0)
     fvec2 = as_float_3vec(end0)
     fvec3 = as_float_3vec(start1)
     fvec4 = as_float_3vec(end1)
-    
+
     return clee_perpendicular_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data)
-        
-    
+
+
 cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1, float *end1):
     '''
     This function assumes that
@@ -896,38 +894,38 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
     '''
 
     cdef:
-        float l0,l1,ltmp,u1,u2,lperp1,lperp2         
+        float l0,l1,ltmp,u1,u2,lperp1,lperp2
         float *s_tmp,*e_tmp,k0[3],ps[3],pe[3],ps1[3],pe1[3],tmp[3]
-               
-    csub_3vecs(end0,start0,k0)    
+
+    csub_3vecs(end0,start0,k0)
     l0 = cinner_3vecs(k0,k0)
-    
-    csub_3vecs(end1,start1,tmp)    
+
+    csub_3vecs(end1,start1,tmp)
     l1 = cinner_3vecs(tmp, tmp)
-    
-                
+
+
     #csub_3vecs(end0,start0,k0)
-    
+
     #u1 = np.inner(start1-start0,k0)/l0
     #u2 = np.inner(end1-start0,k0)/l0
     csub_3vecs(start1,start0,tmp)
     u1 = cinner_3vecs(tmp,k0)/l0
-    
+
     csub_3vecs(end1,start0,tmp)
     u2 = cinner_3vecs(tmp,k0)/l0
 
     cmul_3vec(u1,k0,tmp)
     cadd_3vecs(start0,tmp,ps)
-    
-    cmul_3vec(u2,k0,tmp)    
+
+    cmul_3vec(u2,k0,tmp)
     cadd_3vecs(start0,tmp,pe)
 
-    #lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))    
+    #lperp1 = np.sqrt(np.inner(ps-start1,ps-start1))
     #lperp2 = np.sqrt(np.inner(pe-end1,pe-end1))
-    
+
     csub_3vecs(ps,start1,ps1)
     csub_3vecs(pe,end1,pe1)
-    
+
     lperp1 = sqrt(cinner_3vecs(ps1,ps1))
     lperp2 = sqrt(cinner_3vecs(pe1,pe1))
 
@@ -939,45 +937,45 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
 def lee_angle_distance(start0, end0, start1, end1):
     ''' Based on Lee , Han & Whang SIGMOD07.
         Calculates angle distance metric for the distance between two line segments
-            
+
     This function assumes that norm(end0-start0)>norm(end1-start1)
     i.e. that the first segment will be bigger than the second one.
-    
+
     Parameters
-    ------------
+    ----------
     start0 : float array(3,)
     end0 : float array(3,)
     start1 : float array(3,)
     end1 : float array(3,)
-    
+
     Returns
-    ---------
+    -------
     angle_distance : float
 
     Examples
-    ---------
-    >>> import dipy.tracking.distances as pf 
+    --------
+    >>> import dipy.tracking.distances as pf
     >>> pf.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    2.0 
-    
+    2.0
+
     Notes
-    -------
-    
+    -----
+
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
-    
+
     cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
     return np.sqrt((1-cos_theta_squared)*l_1)
 
     '''
 
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
-    
+
     fvec1 = as_float_3vec(start0)
     fvec2 = as_float_3vec(end0)
     fvec3 = as_float_3vec(start1)
     fvec4 = as_float_3vec(end1)
-    
+
     return clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data)
 
 cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *end1):
@@ -987,61 +985,61 @@ cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *
     '''
 
     cdef:
-        float l0,l1,ltmp,cos_theta_squared         
+        float l0,l1,ltmp,cos_theta_squared
         float *s_tmp,*e_tmp,k0[3],k1[3],tmp[3]
-               
-    csub_3vecs(end0,start0,k0)    
-    l0 = cinner_3vecs(k0,k0)    
+
+    csub_3vecs(end0,start0,k0)
+    l0 = cinner_3vecs(k0,k0)
     #print l0
-    
-    csub_3vecs(end1,start1,k1)    
+
+    csub_3vecs(end1,start1,k1)
     l1 = cinner_3vecs(k1, k1)
     #print l1
-    
+
     ltmp=cinner_3vecs(k0,k1)
-    
+
     cos_theta_squared = (ltmp*ltmp)/ (l0*l1)
     #print cos_theta_squared
     return sqrt((1-cos_theta_squared)*l1)
 
 
 def approx_polygon_track(xyz,alpha=0.392):
-    ''' Fast and simple trajectory approximation algorithm by Eleftherios and Ian 
-    
+    ''' Fast and simple trajectory approximation algorithm by Eleftherios and Ian
+
     It will reduce the number of points of the track by keeping
     intact the start and endpoints of the track and trying to remove
-    as many points as possible without distorting much the shape of 
+    as many points as possible without distorting much the shape of
     the track
-    
+
     Parameters
-    ------------
-    xyz : array(N,3) 
+    ----------
+    xyz : array(N,3)
         initial trajectory
     alpha : float
         smoothing parameter (<0.392 smoother, >0.392 rougher) if the
         trajectory was a smooth circle then with alpha =0.393
         ~=pi/8. the circle would be approximated with an decahexagon if
         alpha = 0.7853 ~=pi/4. with an octagon.
-    
+
     Returns
-    ---------
+    -------
     characteristic_points: list of M array(3,) points
-    
+
     Examples
-    ----------
+    --------
     >>> from fos.tracking.distances import approx_polygon_track
     >>> #approximating a helix
     >>> t=np.linspace(0,1.75*2*np.pi,100)
     >>> x = np.sin(t)
     >>> y = np.cos(t)
-    >>> z = t        
-    >>> xyz=np.vstack((x,y,z)).T     
-    >>> xyza = approx_polygon_track(xyz)    
+    >>> z = t
+    >>> xyz=np.vstack((x,y,z)).T
+    >>> xyza = approx_polygon_track(xyz)
     >>> len(xyza) < len(xyz)
     True
-    
+
     Notes
-    -------
+    -----
     Assuming that a good approximation for a circle is an octagon then
     that means that the points of the octagon will have angle alpha =
     2*pi/8 = pi/4 . We calculate the angle between every two neighbour
@@ -1051,80 +1049,80 @@ def approx_polygon_track(xyz,alpha=0.392):
     '''
     cdef :
         int mid_index
-        cnp.ndarray[cnp.float32_t, ndim=2] track 
+        cnp.ndarray[cnp.float32_t, ndim=2] track
         float *fvec0,*fvec1,*fvec2
         object characteristic_points
         size_t t_len
         double angle,tmp
         float vec0[3],vec1[3]
-    
-    angle=alpha    
+
+    angle=alpha
     track = np.ascontiguousarray(xyz, dtype=f32_dt)
-    t_len=len(track)    
+    t_len=len(track)
     characteristic_points=[track[0]]
     mid_index = 1
     angle=0
-    
-    while mid_index < t_len-1:        
+
+    while mid_index < t_len-1:
         #fvec0 = as_float_3vec(track[mid_index-1])
-        #<float *>track[0].data        
+        #<float *>track[0].data
         fvec0 = asfp(track[mid_index-1])
         fvec1 = asfp(track[mid_index])
-        fvec2 = asfp(track[mid_index+1])        
+        fvec2 = asfp(track[mid_index+1])
         #csub_3vecs(<float *>fvec1.data,<float *>fvec0.data,vec0)
         csub_3vecs(fvec1,fvec0,vec0)
-        csub_3vecs(fvec2,fvec1,vec1)    
+        csub_3vecs(fvec2,fvec1,vec1)
         tmp=<double>fabs(acos(cinner_3vecs(vec0,vec1)/(cnorm_3vec(vec0)*cnorm_3vec(vec1))))
         if dpy_isnan(tmp) :
             angle+=0.
         else:
-            angle+=tmp        
-        if  angle > alpha:            
+            angle+=tmp
+        if  angle > alpha:
             characteristic_points.append(track[mid_index])
-            angle=0   
+            angle=0
         mid_index+=1
-        
-    characteristic_points.append(track[-1])    
+
+    characteristic_points.append(track[-1])
     return np.array(characteristic_points)
 
 
 def approximate_mdl_trajectory(xyz, alpha=1.):
     ''' Implementation of Lee et al Approximate Trajectory
     Partitioning Algorithm
-    
+
     This is base on the minimum description length principle
-    
+
     Parameters
-    ------------
-    xyz : array(N,3) 
+    ----------
+    xyz : array(N,3)
         initial trajectory
     alpha : float
         smoothing parameter (>1 smoother, <1  rougher)
-    
+
     Returns
-    ------------
+    -------
     characteristic_points : list of M array(3,) points
-        
+
     '''
     cdef :
         int start_index,length,current_index, i
         double cost_par,cost_nopar,alphac
         object characteristic_points
         size_t t_len
-        cnp.ndarray[cnp.float32_t, ndim=2] track 
+        cnp.ndarray[cnp.float32_t, ndim=2] track
         float tmp[3]
         cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
-        
+
     track = np.ascontiguousarray(xyz, dtype=f32_dt)
     t_len=len(track)
-    
+
     alphac=alpha
     characteristic_points=[xyz[0]]
     start_index = 0
     length = 2
     #print t_len
-    
-    while start_index+length < <int>t_len-1:        
+
+    while start_index+length < <int>t_len-1:
         current_index = start_index+length
         fvec1 = as_float_3vec(track[start_index])
         fvec2 = as_float_3vec(track[current_index])
@@ -1135,17 +1133,17 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
         #print start_index,current_index
         # L(D|H)
         #for i in range(start_index+1,current_index):#+1):
-        for i in range(start_index,current_index+1):            
+        for i in range(start_index,current_index+1):
             #print i
             fvec3 = as_float_3vec(track[i])
-            fvec4 = as_float_3vec(track[i+1])                
-            cost_par += dpy_log2(clee_perpendicular_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))        
+            fvec4 = as_float_3vec(track[i+1])
+            cost_par += dpy_log2(clee_perpendicular_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))
             cost_par += dpy_log2(clee_angle_distance(<float *>fvec3.data,<float *>fvec4.data,<float *>fvec1.data,<float *>fvec2.data))
             csub_3vecs(<float *>fvec4.data,<float *>fvec3.data,tmp)
-            cost_nopar += dpy_log2(cinner_3vecs(tmp,tmp))            
+            cost_nopar += dpy_log2(cinner_3vecs(tmp,tmp))
         cost_nopar /= 2
         #print cost_par, cost_nopar, start_index,length
-        if alphac*cost_par>cost_nopar:                        
+        if alphac*cost_par>cost_nopar:
             characteristic_points.append(track[current_index-1])
             start_index = current_index-1
             length = 2
@@ -1153,30 +1151,30 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
             length+=1
     characteristic_points.append(track[-1])
     return np.array(characteristic_points)
-                
+
 
 def intersect_segment_cylinder(sa,sb,p,q,r):
     '''
     Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r
     Look p.197 from Real Time Collision Detection C. Ericson
-    
+
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.distances import intersect_segment_cylinder as isc
-    >>> # Define cylinder using a segment defined by 
+    >>> # Define cylinder using a segment defined by
     >>> p=np.array([0,0,0],dtype=float32)
     >>> q=np.array([1,0,0],dtype=float32)
     >>> r=0.5
     >>> # Define segment
     >>> sa=np.array([0.5,1 ,0],dtype=float32)
-    >>> sb=np.array([0.5,-1,0],dtype=float32)    
+    >>> sb=np.array([0.5,-1,0],dtype=float32)
     >>> isc(sa,sb,p,q,r)
     '''
     cdef:
         float *csa,*csb,*cp,*cq
         float cr
-        float ct[2]        
-                
+        float ct[2]
+
     csa = asfp(sa)
     csb = asfp(sb)
     cp = asfp(p)
@@ -1184,115 +1182,115 @@ def intersect_segment_cylinder(sa,sb,p,q,r):
     cr=r
     ct[0]=-100
     ct[1]=-100
-    
+
     tmp= cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
 
     return tmp,ct[0],ct[1]
 
 cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
-    ''' Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r  
+    ''' Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r
     Look p.197 from Real Time Collision Detection C. Ericson
     0 no intersection
-    1 intersection   
-            
+    1 intersection
+
     '''
     cdef:
         float d[3],m[3],n[3]
         float md,nd,dd, nn, mn, a, k, c,b, discr
-        
+
         float epsilon_float=5.96e-08
-    
+
     csub_3vecs(q,p,d)
     csub_3vecs(sa,p,m)
     csub_3vecs(sb,sa,n)
-    
+
     md=cinner_3vecs(m,d)
     nd=cinner_3vecs(n,d)
     dd=cinner_3vecs(d,d)
-    
+
     #test if segment fully outside either endcap of cylinder
-    if md < 0. and md + nd < 0.:  return 0 #segment outside p side    
+    if md < 0. and md + nd < 0.:  return 0 #segment outside p side
     if md > dd and md + nd > dd:  return 0 #segment outside q side
 
     nn=cinner_3vecs(n,n)
-    mn=cinner_3vecs(m,n)    
+    mn=cinner_3vecs(m,n)
     a=dd*nn-nd*nd
     k=cinner_3vecs(m,m) -r*r
     c=dd*k-md*md
 
     if fabs(a) < epsilon_float:
-        #segment runs parallel to cylinder axis 
-        if c>0.:  return 0. # segment lies outside cylinder        
-        if md < 0.: 
+        #segment runs parallel to cylinder axis
+        if c>0.:  return 0. # segment lies outside cylinder
+        if md < 0.:
             t[0]=-mn/nn # intersect against p endcap
-        elif md > dd : 
+        elif md > dd :
             t[0]=(nd-mn)/nn # intersect against q endcap
-        else: 
+        else:
             t[0]=0. # lies inside cylinder
         return 1
-        
+
     b=dd*mn -nd*md
     discr=b*b-a*c
     if discr < 0.: return 0. # no real roots ; no intersection
-    
+
     t[0]=(-b-sqrt(discr))/a
     t[1]=(-b+sqrt(discr))/a
     if t[0]<0. or t[0] > 1. : return 0. # intersection lies outside segment
-    
+
     if md + t[0]* nd < 0.:
         #intersection outside cylinder on 'p' side
-        if nd <= 0. : return 0. # segment pointing away from endcap        
+        if nd <= 0. : return 0. # segment pointing away from endcap
         t[0]=-md/nd
         #keep intersection if Dot(S(t)-p,S(t)-p) <= r^2
         if k+2*t[0]*(mn+t[0]*nn) <=0.:
             return 1.
-    
+
     elif md+t[0]*nd > dd :
         #intersection outside cylinder on 'q' side
         if nd >= 0.: return 0. # segment pointing away from endcap
         t[0]= (dd-md)/nd
         #keep intersection if Dot(S(t)-q,S(t)-q) <= r^2
         if k+dd-2*md+t[0]*(2*(mn-nd)+t[0]*nn) <= 0.:
-            return 1.    
+            return 1.
     # segment intersects cylinder between the endcaps; t is correct
     return 1.
-    
+
 
 def point_segment_sq_distance(a,b,c):
     ''' Calculate the squared distance from a point c to a finite line segment ab.
- 
+
     Examples
-    ----------
-    >>> from dipy.tracking.distances import point_segment_sq_distance 
+    --------
+    >>> from dipy.tracking.distances import point_segment_sq_distance
     >>> a=np.array([0,0,0],dtype=float32)
     >>> b=np.array([1,0,0],dtype=float32)
-    >>> c=np.array([0,1,0],dtype=float32)    
+    >>> c=np.array([0,1,0],dtype=float32)
     >>> point_segment_sq_distance(a,b,c)
     1.0
     >>> c=np.array([0,3,0],dtype=float32)
     >>> pf.point_segment_sq_distance(a,b,c)
-    9.0 
+    9.0
     >>> c=np.array([-1,1,0],dtype=float32)
     >>> pf.point_segment_sq_distance(a,b,c)
     2.0
-    
+
 
     '''
     cdef:
         float *ca,*cb,*cc
         float cr
-        float ct[2]        
-                
+        float ct[2]
+
     ca = asfp(a)
     cb = asfp(b)
     cc = asfp(c)
-    
+
     return cpoint_segment_sq_dist(ca, cb, cc)
 
-@cython.cdivision(True)    
+@cython.cdivision(True)
 cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
     ''' Calculate the squared distance from a point c to a line segment ab.
-    
+
     '''
     cdef:
         float ab[3],ac[3],bc[3]
@@ -1301,18 +1299,18 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
     csub_3vecs(b,a,ab)
     csub_3vecs(c,a,ac)
     csub_3vecs(c,b,bc)
-    
+
     e = cinner_3vecs(ac, ab)
     #Handle cases where c projects outside ab
-    if e <= 0.:  
+    if e <= 0.:
         return cinner_3vecs(ac, ac)
     f = cinner_3vecs(ab, ab)
-    if e >= f : 
+    if e >= f :
         return cinner_3vecs(bc, bc)
     #Handle case where c projects onto ab
     return cinner_3vecs(ac, ac) - e * e / f
 
-    
+
 
 def track_dist_3pts(tracka,trackb):
 
@@ -1320,36 +1318,36 @@ def track_dist_3pts(tracka,trackb):
     both direct and flip distances are calculated but only the smallest is returned
 
     Parameters
-    ------------
+    ----------
     a : array, shape (3,3)
     a three point track
     b : array, shape (3,3)
     a three point track
 
     Returns
-    ---------
+    -------
     dist :float
 
     Examples
-    ----------
+    --------
     >>> import numpy as np
     >>> from dipy.tracking.distances import track_dist_3pts
-    >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])            
+    >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])
     >>> b=np.array([[3,0,0],[3.5,1,0],[4,2,0]])
     >>> track_dist_3pts(a,b)
-    
+
 
     '''
-    
+
     cdef cnp.ndarray[cnp.float32_t, ndim=2] a,b
     cdef float d[2]
 
     a=np.ascontiguousarray(tracka,dtype=f32_dt)
     b=np.ascontiguousarray(trackb,dtype=f32_dt)
-    
+
     track_direct_flip_3dist(asfp(a[0]),asfp(a[1]),asfp(a[2]),
                             asfp(b[0]),asfp(b[1]),asfp(b[2]),d)
-  
+
     if d[0]<d[1]:
         return d[0]
     else:
@@ -1362,18 +1360,18 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     r''' Direct and flip average distance between two tracks
 
     Parameters
-    ------------
+    ----------
     a : first track
     b : second track
     rows : number of points of the track
         both tracks need to have the same number of points
 
     Returns
-    --------
+    -------
     out : direct and flipped average distance added
 
     Notes
-    ------
+    -----
     The distance calculated between two tracks::
 
         t_1       t_2
@@ -1392,7 +1390,7 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     Also the same with t2 flipped (so t_1[0] compared to t_2[2] etc).
 
     See also
-    ---------
+    --------
     dipy.tracking.distances.local_skeleton_clustering
     '''
     cdef:
@@ -1414,22 +1412,22 @@ cdef void track_direct_flip_dist(float *a,float *b,long rows,float *out) nogil:
     out[1]=distf/<float>rows
 
 
-@cython.cdivision(True)   
+@cython.cdivision(True)
 cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out) nogil:
     ''' Calculate the euclidean distance between two 3pt tracks
     both direct and flip are given as output
-    
+
     Parameters
-    ----------------
+    ----------
     a1,b1,c1 : 3 float[3] arrays representing the first track
     a2,b2,c2 : 3 float[3] arrays representing the second track
-    
+
     Returns
-    -----------
+    -------
     out : a float[2] array having the euclidean distance and the fliped euclidean distance
-    
+
     '''
-    
+
     cdef:
         int i
         float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
@@ -1441,7 +1439,7 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
         tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
         tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
         tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
-                
+
     out[0]=(sqrt(tmp1)+sqrt(tmp2)+sqrt(tmp3))/3.0
     out[1]=(sqrt(tmp1f)+sqrt(tmp2)+sqrt(tmp3f))/3.0
 
@@ -1449,49 +1447,51 @@ cdef inline void track_direct_flip_3dist(float *a1, float *b1,float  *c1,float *
     #out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
-    
+
 
 ctypedef struct LSC_Cluster:
     long *indices
     float *hidden
     long N
-    
 
-    
-    
+
+
+
 @cython.boundscheck(False)
-@cython.wraparound(False)    
+@cython.wraparound(False)
 @cython.cdivision(True)
 def local_skeleton_clustering(tracks, d_thr=10):
-    r""" Efficient tractography clustering
+    r"""Efficient tractography clustering
 
     Every track can needs to have the same number of points.
-    Use dipy.tracking.metrics.downsample to restrict the number of points
+    Use `dipy.tracking.metrics.downsample` to restrict the number of points
 
     Parameters
-    -----------
+    ----------
     tracks : sequence
         of tracks as arrays, shape (N,3) .. (N,3) where N=points
-    d_thr : float, average euclidean distance threshold
+    d_thr : float
+        average euclidean distance threshold
 
     Returns
-    --------
+    -------
     C : dict
+        Clusters.
 
     Examples
-    ----------
+    --------
     >>> from dipy.tracking.distances import local_skeleton_clustering
     >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
-            np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
-            np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
-            np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
-            np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
-            np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
-            np.array([[0,0,0],[0,1,0],[0,2,0]])]
-    >>> C=local_skeleton_clustering(tracks,d_thr=0.5,3)
+    ...         np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
+    ...         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
+    ...         np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
+    ...         np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+    ...         np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
+    ...         np.array([[0,0,0],[0,1,0],[0,2,0]])]
+    >>> C = local_skeleton_clustering(tracks, d_thr=0.5,3)
 
     Notes
-    ------
+    -----
     The distance calculated between two tracks::
 
         t_1       t_2
@@ -1505,12 +1505,12 @@ def local_skeleton_clustering(tracks, d_thr=10):
             2*      \
                 c    *2
 
-    is equal to $(a+b+c)/3$ where $a$ the euclidean distance between t_1[0] and
-    t_2[0], $b$ between t_1[1] and t_2[1] and $c$ between t_1[2] and t_2[2].
-    Also the same with t2 flipped (so t_1[0] compared to t_2[2] etc).
+    is equal to $(a+b+c)/3$ where $a$ the euclidean distance between ``t_1[0]``
+    and ``t_2[0]``, $b$ between ``t_1[1]`` and ``t_2[1]`` and $c$ between
+    ``t_1[2]`` and ``t_2[2]``. Also the same with t2 flipped (so ``t_1[0]``
+    compared to ``t_2[2]`` etc).
 
-    Visualization
-    --------------
+    Visualization:
 
     It is possible to visualize the clustering C from the example
     above using the fvtk module::
@@ -1523,169 +1523,170 @@ def local_skeleton_clustering(tracks, d_thr=10):
                 fvtk.add(r,fvtk.line(tracks[i],color))
         fvtk.show(r)
 
-    See also
-    ---------
+    See Also
+    --------
     dipy.tracking.metrics.downsample
     """
-    cdef :
+    cdef:
         cnp.ndarray[cnp.float32_t, ndim=2] track
         LSC_Cluster *cluster
         long lent = 0,lenC = 0, dim = 0, points=0
         long i=0, j=0, c=0, i_k=0, rows=0 ,cit=0
         float *ptr, *hid, *alld
-        float d[2],m_d,cd_thr        
+        float d[2],m_d,cd_thr
         long *flip
-        
+
     points=len(tracks[0])
     dim = points*3
     rows = points
     cd_thr = d_thr
-    
+
     #Allocate and copy memory for first cluster
     cluster=<LSC_Cluster *>realloc(NULL,sizeof(LSC_Cluster))
     cluster[0].indices=<long *>realloc(NULL,sizeof(long))
-    cluster[0].hidden=<float *>realloc(NULL,dim*sizeof(float))    
+    cluster[0].hidden=<float *>realloc(NULL,dim*sizeof(float))
     cluster[0].indices[0]=0
     track=np.ascontiguousarray(tracks[0],dtype=f32_dt)
-    ptr=<float *>track.data    
-    for i from 0<=i<dim:        
-        cluster[0].hidden[i]=ptr[i]    
+    ptr=<float *>track.data
+    for i from 0<=i<dim:
+        cluster[0].hidden[i]=ptr[i]
     cluster[0].N=1
-    
+
     #holds number of clusters
     lenC = 1
 
     #store memmory for the hid variable
     hid=<float *>realloc(NULL,dim*sizeof(float))
 
-    #Work with the rest of the tracks        
-    lent=len(tracks)    
-    for it in range(1,lent):        
+    #Work with the rest of the tracks
+    lent=len(tracks)
+    for it in range(1,lent):
         track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
         ptr=<float *>track.data
         cit=it
-        
+
         with nogil:
-            
+
             alld=<float *>calloc(lenC,sizeof(float))
             flip=<long *>calloc(lenC,sizeof(long))
             for k from 0<=k<lenC:
                 for i from 0<=i<dim:
-                    hid[i]=cluster[k].hidden[i]/<float>cluster[k].N                
-                
+                    hid[i]=cluster[k].hidden[i]/<float>cluster[k].N
+
                 #track_direct_flip_3dist(&ptr[0],&ptr[3],&ptr[6],&hid[0],&hid[3],&hid[6],d)
-                #track_direct_flip_3dist(ptr,ptr+3,ptr+6,hid,hid+3,hid+6,<float *>d)                
+                #track_direct_flip_3dist(ptr,ptr+3,ptr+6,hid,hid+3,hid+6,<float *>d)
                 track_direct_flip_dist(ptr, hid,rows,<float *>d)
-                
+
                 if d[1]<d[0]:
                     d[0]=d[1]
                     flip[k]=1
                 alld[k]=d[0]
-            
+
             m_d = biggest_float
-            #find minimum distance and index    
+            #find minimum distance and index
             for k from 0<=k<lenC:
                 if alld[k] < m_d:
                     m_d=alld[k]
                     i_k=k
-            
-            if m_d < cd_thr:                
+
+            if m_d < cd_thr:
                 if flip[i_k]==1:#correct if flipping is needed
                     for i from 0<=i<rows:
-                        for j from 0<=j<3:                                                       
+                        for j from 0<=j<3:
                             cluster[i_k].hidden[i*3+j]+=ptr[(rows-1-i)*3+j]
                 else:
                      for i from 0<=i<rows:
-                        for j from 0<=j<3:                                                       
+                        for j from 0<=j<3:
                             cluster[i_k].hidden[i*3+j]+=ptr[i*3+j]
                 cluster[i_k].N+=1
                 cluster[i_k].indices=<long *>realloc(cluster[i_k].indices,cluster[i_k].N*sizeof(long))
                 cluster[i_k].indices[cluster[i_k].N-1]=cit
-                
+
             else:#New cluster added
                 lenC+=1
                 cluster=<LSC_Cluster *>realloc(cluster,lenC*sizeof(LSC_Cluster))
                 cluster[lenC-1].indices=<long *>realloc(NULL,sizeof(long))
-                cluster[lenC-1].hidden=<float *>realloc(NULL,dim*sizeof(float))    
+                cluster[lenC-1].hidden=<float *>realloc(NULL,dim*sizeof(float))
                 cluster[lenC-1].indices[0]=cit
-                for i from 0<=i<dim:        
-                    cluster[lenC-1].hidden[i]=ptr[i]    
+                for i from 0<=i<dim:
+                    cluster[lenC-1].hidden[i]=ptr[i]
                 cluster[lenC-1].N=1
-                            
+
             free(alld)
-            free(flip)    
-    
-            
+            free(flip)
+
+
     #Copy results to a dictionary
-    
+
     C={}
     for k in range(lenC):
-        
+
         C[k]={}
         C[k]['hidden']=np.zeros(points*3,dtype=np.float32)
-        
+
         for j in range(points*3):
-            C[k]['hidden'][j]=cluster[k].hidden[j]            
+            C[k]['hidden'][j]=cluster[k].hidden[j]
         C[k]['hidden'].shape=(points,3)
-            
+
         C[k]['N']=cluster[k].N
         C[k]['indices']=np.zeros(cluster[k].N,dtype=np.int64)
-        
-        for i in range(cluster[k].N):            
-            C[k]['indices'][i]=cluster[k].indices[i]            
-        
+
+        for i in range(cluster[k].N):
+            C[k]['indices'][i]=cluster[k].indices[i]
+
         C[k]['indices']=list(C[k]['indices'])
-    
+
     #Free memory
-    with nogil:   
-        
+    with nogil:
+
         for k from 0<=k<lenC:
             free(cluster[k].indices)
             free(cluster[k].hidden)
         free(cluster)
-    
+
     return C
 
 def local_skeleton_clustering_3pts(tracks, d_thr=10):
     ''' Does a first pass clustering
-    
-    Every track can only have 3 pts neither less or more. 
-    Use dipy.tracking.metrics.downsample to restrict the number of points
 
-           
+    Every track can only have 3 pts neither less or more.
+    Use `dipy.tracking.metrics.downsample` to restrict the number of points
+
     Parameters
-    -----------
+    ----------
     tracks : sequence
         of tracks as arrays, shape (N,3) .. (N,3) where N=3
-    d_thr : float, average euclidean distance threshold
+    d_thr : float
+        Average euclidean distance threshold
 
     Returns
-    --------
+    -------
     C : dict
-        
+       Clusters.
+
     Examples
-    ----------
+    --------
     >>> from dipy.viz import fvtk
-    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),            
-            np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
-            np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
-            np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
-            np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
-            np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
-            np.array([[0,0,0],[0,1,0],[0,2,0]])]
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
+    ...         np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
+    ...         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
+    ...         np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]]),
+    ...         np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
+    ...         np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
+    ...         np.array([[0,0,0],[0,1,0],[0,2,0]])]
     >>> C=local_skeleton_clustering(tracks,d_thr=0.5)
-    
+
     Notes
-    ------
+    -----
     It is possible to visualize the clustering C from the example
-    above using the fvtk module 
-        
-    r=fvtk.ren()
-    for c in C:
-        color=np.random.rand(3)
-        for i in C[c]['indices']:
-            fvtk.add(r,fos.line(tracks[i],color))
-    fvtk.show(r)
+    above using the fvtk module::
+
+        r=fvtk.ren()
+        for c in C:
+            color=np.random.rand(3)
+            for i in C[c]['indices']:
+                fvtk.add(r,fos.line(tracks[i],color))
+        fvtk.show(r)
 
     '''
     cdef :
@@ -1694,71 +1695,73 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
         int lent,k,it
         float d[2]
         #float d_sq=d_thr**2
-    
+
     lent=len(tracks)
 
     #Network C
     C={0:{'indices':[0],'hidden':tracks[0].copy(),'N':1}}
     ts=np.zeros((3,3),dtype=np.float32)
-    
+
     #for (it,t) in enumerate(tracks[1:]):
-    for it in range(1,lent):        
+    for it in range(1,lent):
         track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
-        lenC=len(C.keys())        
+        lenC=len(C.keys())
         #if it%1000==0:
-        #    print it,lenC        
+        #    print it,lenC
         alld=np.zeros(lenC)
         flip=np.zeros(lenC)
-        for k in range(lenC):        
-            h=np.ascontiguousarray(C[k]['hidden']/C[k]['N'],dtype=f32_dt)            
+        for k in range(lenC):
+            h=np.ascontiguousarray(C[k]['hidden']/C[k]['N'],dtype=f32_dt)
             #print track
             #print h
             track_direct_flip_3dist(
-                asfp(track[0]),asfp(track[1]),asfp(track[2]), 
-                asfp(h[0]), asfp(h[1]),asfp(h[2]),<float *>d)                
+                asfp(track[0]),asfp(track[1]),asfp(track[2]),
+                asfp(h[0]), asfp(h[1]),asfp(h[2]),<float *>d)
             #d=np.sum(np.sqrt(np.sum((t-h)**2,axis=1)))/3.0
             #ts[0]=t[-1];ts[1]=t[1];ts[-1]=t[0]
-            #ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0            
+            #ds=np.sum(np.sqrt(np.sum((ts-h)**2,axis=1)))/3.0
             #print d[0],d[1]
             if d[1]<d[0]:
                 d[0]=d[1]
-                flip[k]=1                
+                flip[k]=1
             alld[k]=d[0]
         m_k=np.min(alld)
         i_k=np.argmin(alld)
         if m_k<d_thr:
-            if flip[i_k]==1:                
+            if flip[i_k]==1:
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
                 C[i_k]['hidden']+=ts
-            else:                
+            else:
                 #print(track.shape)
                 #print(track.dtype)
-                C[i_k]['hidden']+=track                
+                C[i_k]['hidden']+=track
             C[i_k]['N']+=1
-            C[i_k]['indices'].append(it)            
+            C[i_k]['indices'].append(it)
         else:
             C[lenC]={}
             C[lenC]['hidden']=track.copy()
             C[lenC]['N']=1
-            C[lenC]['indices']=[it]    
+            C[lenC]['indices']=[it]
     return C
 
 
 cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,float *a2, float *b2, float *c2, float *out):
     ''' Calculate the average squared euclidean distance between two 3pt tracks
     both direct and flip are given as output
-    
+
     Parameters
-    ------------
-    a1,b1,c1 : 3 float[3] arrays representing the first track
-    a2,b2,c2 : 3 float[3] arrays representing the second track
-    
+    ----------
+    a1,b1,c1 : 3 float[3] arrays
+        First track.
+    a2,b2,c2 : 3 float[3] arrays
+        Second track.
+
     Returns
-    --------
-    out : a float[2] array having the euclidean distance and the fliped euclidean distance
-        
+    -------
+    out : float[2] array
+        The euclidean distance and the flipped euclidean distance.
     '''
-    
+
     cdef:
         int i
         float tmp1=0,tmp2=0,tmp3=0,tmp1f=0,tmp3f=0
@@ -1769,38 +1772,35 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
         tmp3=tmp3+(c1[i]-c2[i])*(c1[i]-c2[i])
         tmp1f=tmp1f+(a1[i]-c2[i])*(a1[i]-c2[i])
         tmp3f=tmp3f+(c1[i]-a2[i])*(c1[i]-a2[i])
-        
+
     out[0]=(tmp1+tmp2+tmp3)/3.0
     out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
 def larch_3split(tracks,indices=None,thr=10.):
-
-    ''' Generate a first pass clustering using 3 points (first, mid and last) on the tracks only.
+    '''Generate a first pass clustering using 3 points (first, mid and last) on
+    the tracks only.
 
     Parameters
-    ------------
-
+    ----------
     tracks : sequence
-        of tracks as arrays, shape (N1,3) .. (Nm,3)
-
-    indices : sequence 
-        of integer indices of tracks  
-    
+        of tracks as arrays, shape ``(N1,3) .. (Nm,3)``.
+    indices : sequence
+        of integer indices of tracks
     trh : float
         squared euclidean distance threshold
-    
-    Returns
-    ---------
 
-    C : dict, a tree graph containing the clusters
+    Returns
+    -------
+    C : dict
+        A tree graph containing the clusters.
 
     Examples
-    ----------
+    --------
     >>> import numpy as np
-    >>> from dipy.viz import fvtk        
+    >>> from dipy.viz import fvtk
     >>> from dipy.tracking.distances as pf
-    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]],dtype=np.float32),            
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]],dtype=np.float32),
     >>>         np.array([[3,0,0],[3.5,1,0],[4,2,0]],dtype=np.float32),
     >>>         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]],dtype=np.float32),
     >>>         np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]],dtype=np.float32),
@@ -1813,17 +1813,17 @@ def larch_3split(tracks,indices=None,thr=10.):
 
     Here is an example of how to visualize the clustering above
 
-    r=fvtk.ren()
-    fvtk.add(r,fvtk.line(tracks,fvtk.red))
-    fvtk.show(r)
-    for c in C:
-        color=np.random.rand(3)
-         for i in C[c]['indices']:
-             fos.add(r,fvtk.line(tracks[i],color))
-    fvtk.show(r)
-    for c in C:
-        fvtk.add(r,fos.line(C[c]['rep3']/C[c]['N'],fos.white))
-    fvtk.show(r)
+    >>> r=fvtk.ren()
+    >>> fvtk.add(r,fvtk.line(tracks,fvtk.red))
+    >>> fvtk.show(r)
+    >>> for c in C:
+    ...     color=np.random.rand(3)
+    ...     for i in C[c]['indices']:
+    ...         fos.add(r,fvtk.line(tracks[i],color))
+    >>> fvtk.show(r)
+    >>> for c in C:
+    ...     fvtk.add(r,fos.line(C[c]['rep3']/C[c]['N'],fos.white))
+    >>> fvtk.show(r)
 
     Notes
     -----
@@ -1833,45 +1833,45 @@ def larch_3split(tracks,indices=None,thr=10.):
     the cluster.
     '''
 
-    cdef :
+    cdef:
         cnp.ndarray[cnp.float32_t, ndim=2] track
         cnp.ndarray[cnp.float32_t, ndim=2] h
         int lent,k,it
-        float d[2]        
-    
+        float d[2]
+
     lent=len(tracks)
-    if indices==None: 
+    if indices==None:
         C={0:{'indices':[0],'rep3':tracks[0].copy(),'N':1}}
         itrange=range(1,lent)
-    else: 
+    else:
         C={0:{'indices':[indices[0]],'rep3':tracks[indices[0]].copy(),'N':1}}
         itrange=indices[1:]
 
     ts=np.zeros((3,3),dtype=np.float32)
-    for it in itrange:        
-        track=np.ascontiguousarray(tracks[it],dtype=f32_dt)            
+    for it in itrange:
+        track=np.ascontiguousarray(tracks[it],dtype=f32_dt)
         lenC=len(C.keys())
         alld=np.zeros(lenC)
-        flip=np.zeros(lenC)       
+        flip=np.zeros(lenC)
 
-        for k in range(lenC):        
+        for k in range(lenC):
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
-            track_direct_flip_3dist(asfp(track[0]),asfp(track[1]),asfp(track[2]), 
-                                    asfp(h[0]), asfp(h[1]), asfp(h[2]),d)    
-            if d[1]<d[0]:                
-                d[0]=d[1];flip[k]=1                
+            track_direct_flip_3dist(asfp(track[0]),asfp(track[1]),asfp(track[2]),
+                                    asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
+            if d[1]<d[0]:
+                d[0]=d[1];flip[k]=1
             alld[k]=d[0]
         m_k=np.min(alld)
-        i_k=np.argmin(alld)        
-        if m_k<thr:        
-            if flip[i_k]==1:                
+        i_k=np.argmin(alld)
+        if m_k<thr:
+            if flip[i_k]==1:
                 ts[0]=track[-1];ts[1]=track[1];ts[-1]=track[0]
                 C[i_k]['rep3']+=ts
             else:
-                C[i_k]['rep3']+=track                
+                C[i_k]['rep3']+=track
             C[i_k]['N']+=1
             C[i_k]['indices'].append(it)
-            
+
         else:
             C[lenC]={}
             C[lenC]['rep3']=track.copy()
@@ -1883,16 +1883,22 @@ def larch_3split(tracks,indices=None,thr=10.):
 
 
 def larch_3merge(C,thr=10.):
-    ''' Reassign tracks to existing clusters by merging clusters that their representative tracks are not very distant i.e. less than sqd_thr. Using tracks consisting of 3 points (first, mid and last). This is necessary after running larch_fast_split after multiple split in different levels (squared thresholds) as some of them have created independent clusters.
+    '''
+    Reassign tracks to existing clusters by merging clusters that their
+    representative tracks are not very distant i.e. less than sqd_thr. Using
+    tracks consisting of 3 points (first, mid and last). This is necessary
+    after running larch_fast_split after multiple split in different levels
+    (squared thresholds) as some of them have created independent clusters.
+
     Parameters
-    -----------      
+    ----------
     C : graph with clusters
         of indices 3tracks (tracks consisting of 3 points only)
     sqd_trh: float
         squared euclidean distance threshold
 
     Returns
-    --------
+    -------
     C : dict
        a tree graph containing the clusters
     '''
@@ -1900,13 +1906,13 @@ def larch_3merge(C,thr=10.):
     cdef cnp.ndarray[cnp.float32_t, ndim=2] h=np.zeros((3,3),dtype=np.float32)
     cdef cnp.ndarray[cnp.float32_t, ndim=2] ch=np.zeros((3,3),dtype=np.float32)
     cdef int lenC,k,c
-    cdef float d[2] 
+    cdef float d[2]
 
     ts=np.zeros((3,3),dtype=np.float32)
 
     lenC=len(C)
     C2=C.copy()
-    
+
     for c in range(0,lenC-1):
         ch=np.ascontiguousarray(C[c]['rep3']/C[c]['N'],dtype=f32_dt)
         krange=range(c+1,lenC)
@@ -1916,22 +1922,22 @@ def larch_3merge(C,thr=10.):
         for k in range(c+1,lenC):
             h=np.ascontiguousarray(C[k]['rep3']/C[k]['N'],dtype=f32_dt)
             track_direct_flip_3dist(
-                asfp(ch[0]),asfp(ch[1]),asfp(ch[2]), 
+                asfp(ch[0]),asfp(ch[1]),asfp(ch[2]),
                 asfp(h[0]), asfp(h[1]), asfp(h[2]),d)
-                
+
             if d[1]<d[0]:
                 d[0]=d[1]
-                flip[k-c-1]=1                
+                flip[k-c-1]=1
             alld[k-c-1]=d[0]
 
         m_k=np.min(alld)
         i_k=np.argmin(alld)
-        if m_k<thr:     
-            if flip[i_k]==1:                
+        if m_k<thr:
+            if flip[i_k]==1:
                 ts[0]=ch[-1];ts[1]=ch[1];ts[-1]=ch[0]
                 C2[i_k+c]['rep3']+=ts
             else:
-                C2[i_k+c]['rep3']+=ch                
+                C2[i_k+c]['rep3']+=ch
             C2[i_k+c]['N']+=C2[c]['N']
             C2[i_k+c]['indices']+=C2[c]['indices']
             del C2[c]
@@ -1942,19 +1948,19 @@ def larch_3merge(C,thr=10.):
 
 def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=1] point, double sq_dist_thr):
     ''' Check if square distance of track from point is smaller than threshold
-    
+
     Parameters
     ----------
     track: array,float32, shape (N,3)
     point: array,float32, shape (3,)
     sq_dist_thr: double, threshold
-    
+
     Returns
     -------
-    bool: True, if sq_distance <= sq_dist_thr, otherwise False. 
-    
+    bool: True, if sq_distance <= sq_dist_thr, otherwise False.
+
     Examples
-    --------    
+    --------
     >>> from dipy.tracking.distances import point_track_sq_distance_check
     >>> t=np.random.rand(10,3).astype(np.float32)
     >>> p=np.array([0.5,0.5,0.5],dtype=np.float32)
@@ -1967,7 +1973,7 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[f
     >>> point_track_sq_distance_check(t,p,2**2)
     True
     '''
-        
+
     cdef:
         float *t=<float *>track.data
         float *p=<float *>point.data
@@ -1977,21 +1983,21 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[f
         float dist = 0
         int i
         int intersects = 0
-       
+
     with nogil:
-        for i from 0<=i<tlen-1:            
-            curr=i*3        
+        for i from 0<=i<tlen-1:
+            curr=i*3
             a[0]=t[curr]
             a[1]=t[curr+1]
-            a[2]=t[curr+2]              
+            a[2]=t[curr+2]
             b[0]=t[curr+3]
             b[1]=t[curr+4]
-            b[2]=t[curr+5]                                        
-            dist=cpoint_segment_sq_dist(<float *>a,<float *>b,p)        
+            b[2]=t[curr+5]
+            dist=cpoint_segment_sq_dist(<float *>a,<float *>b,p)
             if dist<=sq_dist_thr:
-                intersects=1            
+                intersects=1
                 break
-            
+
     if intersects==1:
         return True
     else:
@@ -1999,64 +2005,61 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[f
 
 def track_roi_intersection_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=2] roi, double sq_dist_thr):
     ''' Check if a track is intersecting a region of interest
-    
+
     Parameters
     ----------
     track: array,float32, shape (N,3)
     roi: array,float32, shape (M,3)
-    sq_dist_thr: double, threshold, check squared euclidean distance from every roi point 
-    
+    sq_dist_thr: double, threshold, check squared euclidean distance from every roi point
+
     Returns
     -------
-    bool: True, if sq_distance <= sq_dist_thr, otherwise False. 
-    
+    bool: True, if sq_distance <= sq_dist_thr, otherwise False.
+
     Examples
-    --------    
+    --------
     >>> from dipy.tracking.distances import track_roi_intersection_check
-    >>> roi=np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='f4')    
+    >>> roi=np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='f4')
     >>> t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
     >>> track_roi_intersection_check(t,roi,1)
     True
     >>> track_roi_intersection_check(t,np.array([[10,0,0]],dtype='f4'),1)
     False
     '''
-        
+
     cdef:
         float *t=<float *>track.data
         float *r=<float *>roi.data
         float a[3],b[3],p[3]
         int tlen = len(track)
-        int rlen = len(roi) 
+        int rlen = len(roi)
         int curr = 0
         int currp = 0
         float dist = 0
-        int i,j     
+        int i,j
         int intersects=0
-    
-    with nogil:        
-        for i from 0<=i<tlen-1:            
-            curr=i*3        
+
+    with nogil:
+        for i from 0<=i<tlen-1:
+            curr=i*3
             a[0]=t[curr]
             a[1]=t[curr+1]
-            a[2]=t[curr+2]              
+            a[2]=t[curr+2]
             b[0]=t[curr+3]
             b[1]=t[curr+4]
-            b[2]=t[curr+5]                
-            for j from 0<=j<rlen:                
-                currp=j*3                    
+            b[2]=t[curr+5]
+            for j from 0<=j<rlen:
+                currp=j*3
                 p[0]=r[currp]
                 p[1]=r[currp+1]
-                p[2]=r[currp+2]                                                                   
-                dist=cpoint_segment_sq_dist(<float *>a,<float *>b,<float *>p)        
-                if dist<=sq_dist_thr:            
+                p[2]=r[currp+2]
+                dist=cpoint_segment_sq_dist(<float *>a,<float *>b,<float *>p)
+                if dist<=sq_dist_thr:
                     intersects=1
-                    break                
+                    break
             if intersects==1:
-                break    
-    if intersects==1:        
+                break
+    if intersects==1:
         return True
     else:
         return False
-
-
-        

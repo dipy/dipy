@@ -137,12 +137,12 @@ class DiffusionSpectrumFit(OdfFit):
     def __init__(self, model, data):
         """ Calculates PDF and ODF and other properties for a single voxel
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         model : object,
-                DiffusionSpectrumModel
+            DiffusionSpectrumModel
         data : 1d ndarray,
-               signal values
+            signal values
         """
         self.model = model
         self.data = data
@@ -254,8 +254,8 @@ def hanning_filter(gtab, filter_width):
 def pdf_interp_coords(sphere, rradius, origin):
     """ Precompute coordinates for ODF calculation from the PDF
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     sphere : object,
             Sphere
     rradius : array, shape (N,)
@@ -325,8 +325,8 @@ def half_to_full_qspace(data, gtab):
 def project_hemisph_bvecs(gtab):
     """ Project any near identical bvecs to the other hemisphere
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     gtab : object,
             GradientTable
 
@@ -480,20 +480,20 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
 
     Parameters
     ----------
-    prop : 3-D ndarray of dtype float,
+    prop : 3-D ndarray of dtype float
         The 3D volume to be deconvolve
-    psf : 3-D ndarray of dtype float,
+    psf : 3-D ndarray of dtype float
         The filter that will be used for the deconvolution.
-    numit : int,
+    numit : int
         Number of Lucy-Richardson iteration to perform.
-    acc_factor : float,
+    acc_factor : float
         Exponential acceleration factor as in [1]_.
 
     References
     ----------
     .. [1] Biggs David S.C. et. al, "Acceleration of Iterative Image 
-    Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775, 
-    1997. 
+       Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775,
+       1997.
 
     """
 
