@@ -41,7 +41,7 @@ def _copydoc(obj):
     return bandit
 
 
-def real_sph_harm(m, n, phi, theta):
+def real_sph_harm(m, n, theta, phi):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
     defined to be:
@@ -58,10 +58,10 @@ def real_sph_harm(m, n, phi, theta):
         The order of the harmonic.
     n : int >= 0
         The degree of the harmonic.
-    phi : float [0, 2*pi]
-        The azimuthal (longitudinal) coordinate.
     theta : float [0, pi]
         The polar coordinate (colatitude).
+    phi : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
 
     Returns
     --------
@@ -103,7 +103,7 @@ def real_sph_harm_mrtrix(sh_order, theta, phi):
     Returns
     --------
     y_mn : real float
-        The real harmonic $Y^m_n$ sampled at `phi` and `theta` as
+        The real harmonic $Y^m_n$ sampled at `theta` and `phi` as
         implemented in mrtrix.  Warning: the basis is Tournier et al
         2004 and 2007 is slightly different.
     m : array
@@ -117,7 +117,7 @@ def real_sph_harm_mrtrix(sh_order, theta, phi):
     theta = np.reshape(theta, [-1, 1])
 
     m = -m
-    real_sh = real_sph_harm(m, n, phi, theta)
+    real_sh = real_sph_harm(m, n, theta, phi)
     real_sh /= np.where(m == 0, 1., np.sqrt(2))
     return real_sh, m, n
 
@@ -162,7 +162,7 @@ def real_sph_harm_fibernav(sh_order, theta, phi):
     phi = np.reshape(phi, [-1, 1])
     theta = np.reshape(theta, [-1, 1])
 
-    real_sh = real_sph_harm(m, n, phi, theta)
+    real_sh = real_sph_harm(m, n, theta, phi)
     return real_sh, m, n
 
 
@@ -284,8 +284,8 @@ class SphHarmModel(OdfModel, Cache):
         self.assume_normed = assume_normed
         self.min_signal = min_signal
         x, y, z = gtab.gradients[self._where_dwi].T
-        r, pol, azi = cart2sphere(x, y, z)
-        B = real_sph_harm(m, n, azi[:, None], pol[:, None])
+        r, theta, phi = cart2sphere(x, y, z)
+        B = real_sph_harm(m, n, theta[:, None], phi[:, None])
         L = -n * (n + 1)
         legendre0 = lpn(sh_order, 0)[0]
         F = legendre0[n]
@@ -364,7 +364,7 @@ class SphHarmFit(OdfFit):
             phi = sphere.phi.reshape((-1, 1))
             theta = sphere.theta.reshape((-1, 1))
             sampling_matrix = real_sph_harm(self.model.m, self.model.n,
-                                            phi, theta)
+                                            theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return dot(self._shm_coef, sampling_matrix.T)
 
