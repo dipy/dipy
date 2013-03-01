@@ -10,7 +10,7 @@ from dipy.core.sphere import Sphere
 
 
 def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_threshold=.5,
-                    peak_normalize=1, min_separation_angle=45):
+                    peak_normalize=1, min_separation_angle=45, max_peak_number=3):
 
     in_nifti = nib.load(odfs_file)
     refaff = in_nifti.get_affine()
@@ -19,7 +19,8 @@ def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_thr
     vertices = np.loadtxt(sphere_vertices_file)
     sphere = Sphere(xyz=vertices)
 
-    peaks = np.zeros(odfs.shape[:-1] + (9,))
+    num_peak_coeffs = max_peak_number*3
+    peaks = np.zeros(odfs.shape[:-1] + (num_peak_coeffs,))
 
     cnt = 0
     for index in ndindex(odfs.shape[:-1]):
@@ -32,8 +33,8 @@ def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_thr
         
         vox_peaks = vox_peaks.ravel()
         m = vox_peaks.shape[0]
-        if m > 9:
-            m = 9
+        if m > num_peak_coeffs:
+            m = num_peak_coeffs
         peaks[index][:m] = vox_peaks[:m]
 
     peaks_img = nib.Nifti1Image(peaks.astype(np.float32), refaff)
@@ -63,6 +64,9 @@ def buildArgsParser():
     p.add_argument('-a', '--angle', action='store', dest='angle',
                    metavar='float', required=False, default=45.0,
                    help='Minimum separation angle (default 45 degrees)')
+    p.add_argument('-m', '--max_peak_number', action='store', dest='max_peak_num',
+                   metavar='int', required=False, default=5,
+                   help='Maximum number of peaks found (default 5 peaks)')
 
     return p
 
@@ -77,11 +81,12 @@ def main():
 
     peak_thresh = args.peak_thresh
     peak_norm = args.peak_norm
+    max_peak_num = args.max_peak_num
     angle = args.angle
 
     peak_extraction(spherical_functions_file, sphere_vertices_file, out_file,
                     relative_peak_threshold=peak_thresh, peak_normalize=int(peak_norm),
-                    min_separation_angle=angle)
+                    min_separation_angle=angle, max_peak_number=int(max_peak_num))
 
 
 if __name__ == "__main__":
