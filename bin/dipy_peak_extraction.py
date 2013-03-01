@@ -19,18 +19,18 @@ def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_thr
     vertices = np.loadtxt(sphere_vertices_file)
     sphere = Sphere(xyz=vertices)
 
-    num_peak_coeffs = max_peak_number*3
+    num_peak_coeffs = max_peak_number * 3
     peaks = np.zeros(odfs.shape[:-1] + (num_peak_coeffs,))
 
-    cnt = 0
     for index in ndindex(odfs.shape[:-1]):
         vox_peaks, values, _ = peak_directions(odfs[index], sphere,
-                                               float(relative_peak_threshold), float(min_separation_angle))
-        
-        if peak_normalize == 1 :
+                                               float(relative_peak_threshold),
+                                               float(min_separation_angle))
+
+        if peak_normalize == 1:
             values /= values[0]
             vox_peaks = vox_peaks * values[:, None]
-        
+
         vox_peaks = vox_peaks.ravel()
         m = vox_peaks.shape[0]
         if m > num_peak_coeffs:
@@ -48,24 +48,28 @@ def buildArgsParser():
                                 formatter_class=argparse.RawTextHelpFormatter)
 
     p.add_argument(action='store', dest='spherical_functions_file',
-                   help='Input nifti file representing the orientation distribution function.')
+                   help='Input nifti file representing the orientation '
+                        'distribution function.')
     p.add_argument(action='store', dest='sphere_vertices_file',
                    help="""Sphere vertices in a text file (Nx3)
     x1 x2 x3
      ...
     xN yN zN""")
-    p.add_argument(action='store', dest='out_file', help='Output nifti file with the peak directions.')
-    p.add_argument('-t', '--peak_threshold', action='store', dest='peak_thresh',
-                   metavar='float', required=False, default=0.5,
-                   help='Relative peak threshold (default 0.5)')
+    p.add_argument(action='store', dest='out_file',
+                   help='Output nifti file with the peak directions.')
+    p.add_argument('-t', '--peak_threshold', action='store',
+                   dest='peak_thresh', metavar='float', required=False,
+                   default=0.5, help='Relative peak threshold (default 0.5)')
     p.add_argument('-n', '--peak_normalize', action='store', dest='peak_norm',
                    metavar='int', required=False, default=1,
-                   help='Normalize peaks according to spherical function value (default True)')
+                   help='Normalize peaks according to spherical function '
+                        'value (default 1)')
     p.add_argument('-a', '--angle', action='store', dest='angle',
                    metavar='float', required=False, default=45.0,
                    help='Minimum separation angle (default 45 degrees)')
-    p.add_argument('-m', '--max_peak_number', action='store', dest='max_peak_num',
-                   metavar='int', required=False, default=5,
+    p.add_argument('-m', '--max_peak_number', action='store',
+                   dest='max_peak_num', metavar='int', required=False,
+                   default=5,
                    help='Maximum number of peaks found (default 5 peaks)')
 
     return p
@@ -85,8 +89,9 @@ def main():
     angle = args.angle
 
     peak_extraction(spherical_functions_file, sphere_vertices_file, out_file,
-                    relative_peak_threshold=peak_thresh, peak_normalize=int(peak_norm),
-                    min_separation_angle=angle, max_peak_number=int(max_peak_num))
+                    relative_peak_threshold=peak_thresh,
+                    peak_normalize=int(peak_norm), min_separation_angle=angle,
+                    max_peak_number=int(max_peak_num))
 
 
 if __name__ == "__main__":
