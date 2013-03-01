@@ -23,7 +23,7 @@ def test_csdeconv():
     bvalue = 1000
     S0 = 1
     sh_order = 8
-    visu = False
+    visu = True
 
     from dipy.data import get_data
     _, fbvals, fbvecs = get_data('small_64D')
@@ -46,9 +46,10 @@ def test_csdeconv():
     csd = ConstrainedSphericalDeconvModel(gtab)
     from time import time
     t1 = time()
-    fodf_sh, fodf = csd.fit(S)
+    csd_fit = csd.fit(S)
     print time()-t1
-    
+    fodf = csd_fit.odf(sphere)
+
     if visu:
         from dipy.viz import fvtk
         r = fvtk.ren()

@@ -26,7 +26,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
                 spherical harmonics order
 
         Notes
-        ------
+        -----
         The method used here can be described in the following way.
         0 Estimate single fiber repsonse function
             From a masked FA get all voxels with FA > 0.7. Estimate eigen-vector,
@@ -48,12 +48,13 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         x, y, z = gtab.gradients[self._where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         # for the gradient sphere
-        self.B_dwi = real_sph_harm(m, n, azi[:, None], pol[:, None])
+        self.B_dwi = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         # for the odf sphere
         self.sphere = get_sphere('symmetric362')
         r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        self.B_regul = real_sph_harm(m, n, azi[:, None], pol[:, None])
+        #self.B_regul = real_sph_harm(m, n, azi[:, None], pol[:, None])
+        self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         S_r = estimate_response(gtab, 1)
         r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
@@ -80,8 +81,7 @@ class ConstrainedSphericalDeconvFit(OdfFit):
         self.shm_coeff = fodf_sh
         self.model = model
 
-    def odf(self, sphere):
-        # return sh_to_sf(self.shm_coeff, sphere, self.model.sh_order)
+    def odf(self, sphere):       
         return np.dot(self.shm_coeff, self.model.B_regul.T)
 
 
