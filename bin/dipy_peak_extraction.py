@@ -10,7 +10,7 @@ from dipy.core.sphere import Sphere
 
 
 def peak_extraction(odfs_file, sphere_vertices_file, out_file, relative_peak_threshold=.5,
-                    peak_normalize=1, min_separation_angle=45, max_peak_number=3):
+                    peak_normalize=1, min_separation_angle=45, max_peak_number=5):
 
     in_nifti = nib.load(odfs_file)
     refaff = in_nifti.get_affine()
