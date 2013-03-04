@@ -2,7 +2,8 @@ import numpy as np
 from numpy.testing import (assert_equal,
 						   assert_almost_equal,
 						   assert_array_equal,
-						   assert_array_almost_equal)
+						   assert_array_almost_equal,
+                           run_module_suite)
 
 from dipy.core.sphere import unit_icosahedron, unit_octahedron
 from dipy.reconst.shm import sf_to_sh
@@ -68,5 +69,5 @@ def test_csdeconv():
     assert_array_equal(directions2.shape[0], 2)
 
 
-if __name__ == '__main__':
-    test_csdeconv()
+if __name__ == '__main__':    
+    run_module_suite()
