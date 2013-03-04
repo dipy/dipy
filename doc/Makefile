@@ -128,7 +128,7 @@ pdf-stamp: latex
 # This one udates for the specific user named at the top of the makefile
 upload-website: upload-website-$(SF_USER)
 
-upload-website-%: html pdf examples-tgz
+upload-website-%: html examples-tgz
 	$(RSYNC_SF) _build/html/* _build/latex/*.pdf $*,$(WWW_SF)
 
 # This one udates for the specific user named at the top of the makefile

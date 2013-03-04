@@ -24,12 +24,12 @@ class Profiler():
 
     Parameters
     -------------
-    caller: file or function call
-    args: function arguments
+    caller : file or function call
+    args : function arguments
 
     Attributes
     ------------
-    stats: function, stats.print_stats(10) will prin the 10 slower functions
+    stats : function, stats.print_stats(10) will prin the 10 slower functions
     
     Examples
     -----------

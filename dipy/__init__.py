@@ -1,6 +1,6 @@
 """
-DiPy: Analysis of MR diffusion imaging in Python
-================================================
+Diffusion Imaging in Python
+============================
 
 For more information, please visit http://dipy.org
 

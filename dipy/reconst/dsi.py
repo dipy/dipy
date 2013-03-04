@@ -139,10 +139,10 @@ class DiffusionSpectrumFit(OdfFit):
 
         Parameters:
         -----------
-        model: object,
-            DiffusionSpectrumModel
-        data: 1d ndarray,
-            signal values
+        model : object,
+                DiffusionSpectrumModel
+        data : 1d ndarray,
+               signal values
         """
         self.model = model
         self.data = data

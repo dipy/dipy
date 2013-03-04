@@ -1,8 +1,8 @@
 
-""" 
+"""
 
 ==========================
-Reslice diffusion datasets 
+Reslice diffusion datasets
 ==========================
 
 Overview
@@ -20,7 +20,7 @@ The function we need to use is called resample.
 """
 
 from dipy.align.aniso2iso import resample
-from dipy.data import get_data    
+from dipy.data import get_data
 
 """
 We use here a very small dataset to show the basic principles but you can
