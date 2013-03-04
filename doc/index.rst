@@ -75,11 +75,11 @@ dataset which is given by `data.shape`.
 
 :ref:`Download <installation>` Dipy_ and try it for yourself.
 
-**********************
-To infinity and beyond
-**********************
+**********
+Next Steps
+**********
 
-If you want to learn more about how you can create these with your datasets read the examples in our :ref:`documentation`.
+You can learn more about how you to use Dipy_ with  your datasets by reading the examples in our :ref:`documentation`.
 
 .. We need the following toctree directive to include the documentation
 .. in the document hierarchy - see http://sphinx.pocoo.org/concepts.html

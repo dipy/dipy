@@ -107,7 +107,6 @@ using memory maps (numpy.memmap) but still have in mind that if you do that for
 example for a dataset of volume size ``(96, 96, 60)`` you will need about 20
 which can take less space when reasonable spheres (with < 1000 vertices) are.
 
-"""
 .. include:: ../links_names.inc
 
 """
