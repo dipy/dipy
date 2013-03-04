@@ -49,6 +49,154 @@ def fractional_anisotropy(evals, axis=-1):
 
     return fa
 
+def mean_diffusivity(evals, axis=-1):
+    r"""
+    Mean Diffusivity (MD) of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    md : array
+        Calculated MD. 
+
+    Notes
+    --------
+    MD is calculated with the following equation:
+
+    .. math::
+
+        MD = \frac{\lambda_1 + \lambda_2 + \lambda_3}{3}
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    # Make sure not to get nans
+    all_zero = (evals == 0).all(axis=0)
+    ev1, ev2, ev3 = evals
+    md = (ev1 + ev2 + ev3) / 3
+
+    return md
+
+def axial_diffusivity(evals, axis=-1):
+    r"""
+    Axial Diffusivity (AD) of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    ad : array
+        Calculated AD. 
+
+    Notes
+    --------
+    AD is calculated with the following equation:
+
+    .. math::
+
+        AD = \lambda_1
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    # Make sure not to get nans
+    all_zero = (evals == 0).all(axis=0)
+    ev1, ev2, ev3 = evals
+    ad = ev1
+
+    return ad
+
+def radial_diffusivity(evals, axis=-1):
+    r"""
+    Radial Diffusivity (RD) of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+        Returns
+    -------
+    rd : array
+        Calculated RD. 
+
+    Notes
+    --------
+    RD is calculated with the following equation:
+
+    .. math::
+
+        RD = \frac{\lambda_2 + \lambda_3}{2}
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    # Make sure not to get nans
+    all_zero = (evals == 0).all(axis=0)
+    ev1, ev2, ev3 = evals
+    rd = (ev2 + ev3) / 2
+
+    return rd
+
+def trace(evals, axis=-1):
+    r"""
+    Trace of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    trace : array
+        Calculated trace of the diffusion tensor. 
+
+    Notes
+    --------
+    Trace is calculated with the following equation:
+
+    .. math::
+
+        MD = \lambda_1 + \lambda_2 + \lambda_3
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    # Make sure not to get nans
+    all_zero = (evals == 0).all(axis=0)
+    ev1, ev2, ev3 = evals
+    trace = (ev1 + ev2 + ev3)
+
+    return trace
+
 
 def color_fa(fa, evecs):
     r""" Color fractional anisotropy of diffusion tensor
