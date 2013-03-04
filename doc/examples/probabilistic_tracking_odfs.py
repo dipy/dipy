@@ -1,8 +1,8 @@
 """
 
-==============================================
-Probabilistic Tracking with EuDX on ODF fields
-==============================================
+====================================
+Probabilistic Tracking on ODF fields
+====================================
 
 In this example we perform probabilistic fiber tracking on fields of ODF peaks.
 

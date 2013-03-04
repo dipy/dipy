@@ -75,9 +75,9 @@ dataset which is given by `data.shape`.
 
 :ref:`Download <installation>` Dipy_ and try it for yourself.
 
-**********************
-To infinity and beyond
-**********************
+**********
+Next Steps
+**********
 
 If you want to learn more about how you can create these with your datasets read the examples in our :ref:`documentation`.
 
