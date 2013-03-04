@@ -13,17 +13,19 @@ from dipy.sims.voxel import single_tensor
 
 @multi_voxel_model
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
-    def __init__(self, gtab, response_function=None, sh_order=8, Lambda=1, tau=0.1):
-        r""" Constrained Spherical Deconvolution
+    def __init__(self, gtab, response, regul_sphere=None, sh_order=8, Lambda=1, tau=0.1):
+        r""" Constrained Spherical Deconvolution [1]_.
 
         Parameters
         ----------
-
         gtab : GradientTable
-        response_function : ndarray
-                default is None
+        response : tuple
+            tuple with two elements the first are the eigen-values as an (3,) ndarray 
+            and the second is the S0.
+        regul_sphere : Sphere
+            sphere used to build the regularized B matrix
         sh_order : int
-                spherical harmonics order
+            spherical harmonics order
 
         Notes
         -----
@@ -39,10 +41,11 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
         References
         ----------
-        Tournier, J.D., et. al. NeuroImage 2007.
+        .. [1] Tournier, J.D., et. al. NeuroImage 2007.
         """
 
         m, n = sph_harm_ind_list(sh_order)
+        self.m, self.n = m, n
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
         x, y, z = gtab.gradients[self._where_dwi].T
@@ -51,12 +54,19 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         self.B_dwi = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         # for the odf sphere
-        self.sphere = get_sphere('symmetric362')
+        if regul_sphere is None:
+            self.sphere = get_sphere('symmetric362')
+        else:
+            self.sphere = regul_sphere
+
         r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        #self.B_regul = real_sph_harm(m, n, azi[:, None], pol[:, None])
         self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
-        S_r = estimate_response(gtab, 1)
+        if response is None:
+            S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
+        else:
+            S_r = estimate_response(gtab, response[0], response[1])
+
         r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
 
         r_rh = sh_to_rh(r_sh, sh_order)
@@ -81,22 +91,41 @@ class ConstrainedSphericalDeconvFit(OdfFit):
         self.shm_coeff = fodf_sh
         self.model = model
 
-    def odf(self, sphere):       
-        return np.dot(self.shm_coeff, self.model.B_regul.T)
+    def odf(self, sphere):
+
+        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
+        if sampling_matrix is None:
+            phi = sphere.phi.reshape((-1, 1))
+            theta = sphere.theta.reshape((-1, 1))
+            sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
+            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
+
+        #return np.dot(self.shm_coeff, self.model.B_regul.T)
+        return np.dot(self.shm_coeff, sampling_matrix.T)
 
 
-def estimate_response(gtab, S0=100):
-    """ Estimate response function
+def estimate_response(gtab, evals, S0):
+    """ Estimate single fiber response function
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    evals : ndarray
+    S0 : float
+        non diffusion weighted
+
+    Returns
+    -------
+    S : estimated signal
 
     """
-    s_mevals = np.array([0.0015, 0.0003, 0.0003])
-    s_mevecs = np.array([[0, 0, 1],
-                         [0, 1, 0],
-                         [1, 0, 0]])
+    # evals = np.array([0.0015, 0.0003, 0.0003])
+    evecs = np.array([[0, 0, 1],
+                      [0, 1, 0],
+                      [1, 0, 0]])
 
-    S_r = single_tensor(gtab, S0, s_mevals, s_mevecs, snr=None)
-    return S_r
-
+    return single_tensor(gtab, S0, evals, evecs, snr=None)
+    
 
 def sh_to_rh(r_sh, sh_order):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
@@ -228,7 +257,7 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
         k = k2
         M = np.concatenate((R, Lambda * B_regul[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
-        fodf_sh = np.linalg.lstsq(M, S)[0] 
+        fodf_sh = np.linalg.lstsq(M, S)[0]
 
     print 'maximum number of iterations exceeded - failed to converge'
     return fodf_sh, num_it
