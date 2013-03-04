@@ -10,6 +10,7 @@ fetch_beijing_dti()
 img, gtab = read_beijing_dti()
 
 data = img.get_data()
+
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 affine = img.get_affine()
@@ -22,7 +23,7 @@ data2, affine2 = resample(data, affine, zooms, new_zooms)
 
 print('data2.shape (%d, %d, %d, %d)' % data2.shape)
 
-mask = data2[..., 0] > 50
+mask2 = data2[..., 0] > 50
 tenmodel = TensorModel(gtab)
 
 ci, cj, ck = np.array(data2.shape[:3]) / 2
@@ -42,3 +43,32 @@ FA[np.isnan(FA)] = 0
 
 indices = np.where(FA > 0.7)
 
+lambdas = tenfit.evals[indices][:, :2]
+
+S0s = data3[indices][:, 0]
+
+S0 = np.mean(S0s)
+
+l01 = np.mean(lambdas, axis = 0) 
+
+evals = np.array([l01[0], l01[1], l01[1]])
+
+csd_model = ConstrainedSphericalDeconvModel(gtab, (evals, S0))
+
+from time import time
+t1 = time()
+csd_fit = csd_model.fit(data2[:, :, 30], mask2[:, :, 30])
+t2 = time()
+
+print t2 - t1
+
+from dipy.data import get_sphere
+
+sphere = get_sphere('symmetric724')
+
+csd_odf = csd_fit.odf(sphere)
+
+from dipy.viz import fvtk
+r = fvtk.ren()
+fvtk.add(r, fvtk.sphere_funcs(csd_odf[50:60, 50:60], sphere))
+fvtk.show(r)
