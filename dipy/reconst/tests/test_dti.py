@@ -10,7 +10,9 @@ import dipy.reconst.dti as dti
 from dipy.reconst.dti import (lower_triangular,
                               from_lower_triangular,
                               color_fa,
-                              fractional_anisotropy)
+                              fractional_anisotropy,
+                              trace, mean_diffusivity,
+                              radial_diffusivity, axial_diffusivity)
 from dipy.reconst.maskedview import MaskedView
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels
@@ -146,6 +148,8 @@ def test_fa_of_zero():
     assert_equal(ten.fa(), 0)
     assert_true(np.isnan(ten.fa(nonans=False)))
 
+def test_diffusivities():
+    
 
 def test_color_fa():
     data, gtab = dsi_voxels()
