@@ -15,10 +15,12 @@ from dipy.reconst.dti import (lower_triangular,
                               radial_diffusivity, axial_diffusivity)
 from dipy.reconst.maskedview import MaskedView
 from dipy.io.bvectxt import read_bvec_file
-from dipy.data import get_data, dsi_voxels
+from dipy.data import get_data, dsi_voxels, get_sphere
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
+from dipy.sims.voxel import single_tensor
+from dipy.core.gradients import gradient_table
 
 
 def test_TensorModel():
@@ -149,8 +151,31 @@ def test_fa_of_zero():
     assert_true(np.isnan(ten.fa(nonans=False)))
 
 def test_diffusivities():
-    
+    psphere = get_sphere('symmetric362')
+    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvals = np.zeros(len(bvecs)) + 1000
+    bvals[0] = 0
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003] ))
+    mevecs = [ np.array( [ [1,0,0], [0,1,0], [0,0,1] ] ),
+               np.array( [ [0,0,1], [0,1,0], [1,0,0] ] ) ]
+    S = single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
 
+    dm = dti.TensorModel(gtab, 'LS')
+    dmfit = dm.fit(S)
+    
+    md = mean_diffusivity(dmfit.evals)
+    Trace = trace(dmfit.evals)
+    rd = radial_diffusivity(dmfit.evals)
+    ad = axial_diffusivity(dmfit.evals)
+    
+    assert_almost_equal(md, (0.0015 + 0.0003 + 0.0001) / 3)
+    assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
+    assert_almost_equal(ad, 0.0015)
+    assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
+    
+    
+    
 def test_color_fa():
     data, gtab = dsi_voxels()
     dm = dti.TensorModel(gtab, 'LS')
