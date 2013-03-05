@@ -51,7 +51,8 @@ def fractional_anisotropy(evals, axis=-1):
 
 def mean_diffusivity(evals, axis=-1):
     r"""
-    Mean Diffusivity (MD) of a diffusion tensor.
+    Mean Diffusivity (MD) of a diffusion tensor. Also, called
+    Apparent diffusion coefficient (ADC)
 
     Parameters
     ----------
@@ -89,7 +90,8 @@ def mean_diffusivity(evals, axis=-1):
 def axial_diffusivity(evals, axis=-1):
     r"""
     Axial Diffusivity (AD) of a diffusion tensor.
-
+    Also called parallel diffusivity. 
+    
     Parameters
     ----------
     evals : array-like
@@ -126,7 +128,8 @@ def axial_diffusivity(evals, axis=-1):
 def radial_diffusivity(evals, axis=-1):
     r"""
     Radial Diffusivity (RD) of a diffusion tensor.
-
+    Also called perpendicular diffusivity.
+    
     Parameters
     ----------
     evals : array-like
