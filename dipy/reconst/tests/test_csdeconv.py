@@ -70,7 +70,6 @@ def test_csdeconv():
     assert_array_equal(directions2.shape[0], 2)
 
 def test_odfdeconv():
-
     SNR = 30
     bvalue = 1000
     S0 = 1
