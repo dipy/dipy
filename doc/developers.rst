@@ -9,7 +9,7 @@ The core development team consists of the following individuals:
 - **Eleftherios Garyfallidis**, University of Cambridge, UK 
 - **Ian Nimmo-Smith**, MRC Cognition and Brain Sciences Unit, Cambridge, UK
 - **Matthew Brett**, University of California, Berkeley, CA, US
-- **Bago Amirbekian**, University of California, San Fransisco, CA, US
+- **Bago Amirbekian**, University of California, San Francisco, CA, US
 - **Ariel Rokem**, Stanford University, CA, US
 - **Stefan Van der Walt**, Stellenbosch University, ZA
 
