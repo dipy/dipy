@@ -81,8 +81,6 @@ def mean_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    # Make sure not to get nans
-    all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
     md = (ev1 + ev2 + ev3) / 3
 
@@ -120,8 +118,6 @@ def axial_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    # Make sure not to get nans
-    all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
     ad = ev1
 
@@ -159,8 +155,6 @@ def radial_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    # Make sure not to get nans
-    all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
     rd = (ev2 + ev3) / 2
 
@@ -197,8 +191,6 @@ def trace(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    # Make sure not to get nans
-    all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
     trace = (ev1 + ev2 + ev3)
 
