@@ -472,7 +472,6 @@ def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=0.025 ) :
     # tau should be more or less around 0.025 from my experience
     # a good heuristic choice is just the mean of the fodf on the sphere. 
     threshold=tau
-    threshold = np.mean(np.dot(B_regul, fodf_sh))    
     Lambda = Lambda * R.shape[0] * R[0,0] / B_regul.shape[0]
 
     print Lambda,threshold
