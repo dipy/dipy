@@ -53,7 +53,7 @@ csa_streamlines_trk = ((sl, None, None) for sl in csa_streamlines)
 
 csa_sl_fname = 'csa_prob_streamline.trk'
 
-nib.trackvis.write(csa_sl_fname, csa_streamlines_trk, hdr, points_space='voxel')
+nib.trackvis.write(csa_sl_fname, csa_streamlines_trk, hdr)
 
 """
 Visualize the streamlines with fvtk (python vtk is required).
