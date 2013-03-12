@@ -21,10 +21,6 @@ from dipy.tracking.markov import (BoundaryStepper,
 from dipy.tracking.utils import seeds_from_mask
 
 
-mask[[0, -1]] = 0
-mask[:, [0, -1]] = 0
-mask[:, :, [0, -1]] = 0
-
 stepper = FixedSizeStepper(1)
 
 seeds = seeds_from_mask(mask, [1, 1, 1], new_zooms)
@@ -33,8 +29,8 @@ seeds = seeds[:2000]
 interpolator = NearestNeighborInterpolator(data2, new_zooms)
 
 pwt = ProbabilisticOdfWeightedTracker(csamodel, interpolator, mask,
-                                      stepper, 90, seeds, sphere)
-csa_streamlines = [streamline for streamline in pwt]
+                                      stepper, 20, seeds, sphere)
+csa_streamlines = list(pwt)
 
 """
 Now that we have our streamlines in memory we cab save the results in the disk.
