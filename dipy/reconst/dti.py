@@ -82,9 +82,8 @@ def mean_diffusivity(evals, axis=-1):
         raise ValueError(msg)
 
     ev1, ev2, ev3 = evals
-    md = (ev1 + ev2 + ev3) / 3
+    return (ev1 + ev2 + ev3) / 3
 
-    return md
 
 
 def axial_diffusivity(evals, axis=-1):
@@ -119,9 +118,7 @@ def axial_diffusivity(evals, axis=-1):
         raise ValueError(msg)
 
     ev1, ev2, ev3 = evals
-    ad = ev1
-
-    return ad
+    return ev1
 
 
 def radial_diffusivity(evals, axis=-1):
@@ -156,9 +153,7 @@ def radial_diffusivity(evals, axis=-1):
         raise ValueError(msg)
 
     ev1, ev2, ev3 = evals
-    rd = (ev2 + ev3) / 2
-
-    return rd
+    return (ev2 + ev3) / 2
 
 
 def trace(evals, axis=-1):
@@ -192,9 +187,7 @@ def trace(evals, axis=-1):
         raise ValueError(msg)
 
     ev1, ev2, ev3 = evals
-    trace = (ev1 + ev2 + ev3)
-
-    return trace
+    return (ev1 + ev2 + ev3)
 
 
 def color_fa(fa, evecs):
