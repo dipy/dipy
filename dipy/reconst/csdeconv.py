@@ -167,6 +167,14 @@ class ConstrainedSDTModel(OdfModel, Cache):
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
         qball_odf = np.dot(self.B_regul, odf_sh)
+
+        psphere = get_sphere('symmetric362')    
+        from dipy.viz import fvtk
+        r = fvtk.ren()
+        fvtk.add(r, fvtk.sphere_funcs(qball_odf, psphere))
+        fvtk.show(r)
+
+        
         Z = np.linalg.norm(qball_odf)
         print Z
         # normalize ODF
@@ -344,8 +352,8 @@ def forward_sdt_deconv_mat(ratio, sh_order):
     # std = [ 1.          0.0987961   0.0214013   0.00570876  0.00169231]
     # for sh_order = 8 and num = 1000
 
-    print frt
-    # frt =  
+    # print frt
+    # frt =  [6.28318531 -3.14159265  2.35619449 -1.96349541  1.71805848]
     i = 0 
     for l in np.arange(0,sh_order+1,2) :
         for m in np.arange(-l,l+1) :

@@ -98,8 +98,7 @@ def test_odfdeconv():
     e2 = 3.0 #3.55
     ratio = e2/e1
 
-    print 'ratio is %f'%ratio
-    
+    print 'ratio is %f'%ratio    
     csd = ConstrainedSDTModel(gtab, ratio, None)
 
     from time import time
