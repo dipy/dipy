@@ -10,13 +10,17 @@ import dipy.reconst.dti as dti
 from dipy.reconst.dti import (lower_triangular,
                               from_lower_triangular,
                               color_fa,
-                              fractional_anisotropy)
+                              fractional_anisotropy,
+                              trace, mean_diffusivity,
+                              radial_diffusivity, axial_diffusivity)
 from dipy.reconst.maskedview import MaskedView
 from dipy.io.bvectxt import read_bvec_file
-from dipy.data import get_data, dsi_voxels
+from dipy.data import get_data, dsi_voxels, get_sphere
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
+from dipy.sims.voxel import single_tensor
+from dipy.core.gradients import gradient_table
 
 
 def test_TensorModel():
@@ -33,8 +37,13 @@ def test_TensorModel():
 
     # Check that the multivoxel case works:
     dtifit = dm.fit(data)
+    # And smoke-test that all these operations return sensibly-shaped arrays:
     assert_equal(dtifit.fa.shape, data.shape[:3])
-
+    assert_equal(dtifit.ad.shape, data.shape[:3])
+    assert_equal(dtifit.md.shape, data.shape[:3])
+    assert_equal(dtifit.rd.shape, data.shape[:3])
+    assert_equal(dtifit.trace.shape, data.shape[:3])
+    
     # Make some synthetic data
     b0 = 1000.
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
@@ -113,6 +122,9 @@ def test_tensor_scalar_attributes():
     D = np.array([[1., 1., 0], [1., 1., 0], [0, 0, 1.]])
     FA = np.sqrt(1./2*(1+4+1)/(1+4+0)) # 0.7745966692414834
     MD = 1.
+    RD = 0.5
+    AD = 2.0
+    trace = 3
 
     ### CALCULATE ESTIMATE VALUES ###
     dummy_data = np.ones((1,10)) #single voxel
@@ -128,6 +140,10 @@ def test_tensor_scalar_attributes():
     assert_array_almost_equal(D, tensor[0].D, err_msg = "Recovery of self diffusion tensor from eig not adaquate")
     assert_almost_equal(FA, tensor.fa(), msg = "Calculation of FA of self diffusion tensor is not adequate")
     assert_almost_equal(MD, tensor.md(), msg = "Calculation of MD of self diffusion tensor is not adequate")
+    assert_almost_equal(AD, tensor.ad, msg = "Calculation of AD of self diffusion tensor is not adequate")
+    assert_almost_equal(RD, tensor.rd, msg = "Calculation of RD of self diffusion tensor is not adequate")
+    assert_almost_equal(trace, tensor.trace, msg = "Calculation of trace of self diffusion tensor is not adequate")
+
     assert_equal(True, tensor.mask.all())
 
     #assert_equal(m_list.shape, n_list.shape)
@@ -146,7 +162,32 @@ def test_fa_of_zero():
     assert_equal(ten.fa(), 0)
     assert_true(np.isnan(ten.fa(nonans=False)))
 
+def test_diffusivities():
+    psphere = get_sphere('symmetric362')
+    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvals = np.zeros(len(bvecs)) + 1000
+    bvals[0] = 0
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003] ))
+    mevecs = [ np.array( [ [1,0,0], [0,1,0], [0,0,1] ] ),
+               np.array( [ [0,0,1], [0,1,0], [1,0,0] ] ) ]
+    S = single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
 
+    dm = dti.TensorModel(gtab, 'LS')
+    dmfit = dm.fit(S)
+    
+    md = mean_diffusivity(dmfit.evals)
+    Trace = trace(dmfit.evals)
+    rd = radial_diffusivity(dmfit.evals)
+    ad = axial_diffusivity(dmfit.evals)
+    
+    assert_almost_equal(md, (0.0015 + 0.0003 + 0.0001) / 3)
+    assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
+    assert_almost_equal(ad, 0.0015)
+    assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
+    
+    
+    
 def test_color_fa():
     data, gtab = dsi_voxels()
     dm = dti.TensorModel(gtab, 'LS')
