@@ -20,7 +20,6 @@ from dipy.reconst.csdeconv import (forward_sdeconv_mat,
 
 
 def test_csdeconv():
-
     SNR = 30
     bvalue = 1000
     S0 = 1
@@ -70,10 +69,10 @@ def test_csdeconv():
     assert_array_equal(directions2.shape[0], 2)
 
 def test_odfdeconv():
-    SNR = 30
+    SNR = 30 #20, 10
     bvalue = 1000
     S0 = 1
-    sh_order = 8
+    sh_order = 8 #6
     visu = True
 
     from dipy.data import get_data
@@ -98,7 +97,7 @@ def test_odfdeconv():
     e2 = 3.0 #3.55
     ratio = e2/e1
 
-    print 'ratio is %f'%ratio    
+    #print 'Deconvolution eigen value ratio is %f'%ratio    
     csd = ConstrainedSDTModel(gtab, ratio, None)
 
     from time import time
@@ -125,7 +124,7 @@ def test_odfdeconv():
     assert_array_equal(directions2.shape[0], 2)
 
 
-#if __name__ == '__main__':    
-#    run_module_suite()
+if __name__ == '__main__':    
+    run_module_suite()
 
-test_odfdeconv()
+

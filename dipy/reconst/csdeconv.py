@@ -106,7 +106,7 @@ class ConstrainedSphericalDeconvFit(OdfFit):
 
 
 class ConstrainedSDTModel(OdfModel, Cache):
-    def __init__(self, gtab, ratio, regul_sphere=None, sh_order=8, Lambda=1, tau=0.025):
+    def __init__(self, gtab, ratio, regul_sphere=None, sh_order=8, Lambda=1., tau=1.):
         r""" Constrained Spherical Deconvolution [1]_.
 
         Parameters
@@ -421,7 +421,7 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
     return fodf_sh, num_it
 
 
-def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=0.025 ) :
+def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=1. ) :
     """ ODF constrained-regularized sherical deconvolution using
     the Sharpening Deconvolution Transform (SDT)
 
@@ -438,7 +438,9 @@ def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=0.025 ) :
     Lambda : float
          lambda parameter in minimization equation (default 1.0)
     tau : float
-         tau parameter in the L matrix construction (default 0.025)
+         tau parameter in the L matrix construction (default 1.0)
+         You should not play with this parameter. It is quite sensitive and actually
+         initiated directly from the fodf mean value.
          
     Returns
     _______
@@ -459,22 +461,25 @@ def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=0.025 ) :
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_regul, fodf_sh)
-    psphere = get_sphere('symmetric362')
-    from dipy.viz import fvtk
-    r = fvtk.ren()
-    fvtk.add(r, fvtk.sphere_funcs(fodf, psphere))
-    fvtk.show(r)
+    #     psphere = get_sphere('symmetric362')
+    #     from dipy.viz import fvtk
+    #     r = fvtk.ren()
+    #     fvtk.add(r, fvtk.sphere_funcs(fodf, psphere))
+    #     fvtk.show(r)
 
     Z = np.linalg.norm(fodf)
-    print Z
+    # should be around 1.5
+    #    print Z
     fodf_sh /= Z
 
+    # This should be cleaned up... Because right now the tau parameter is useless
     # tau should be more or less around 0.025 from my experience
     # a good heuristic choice is just the mean of the fodf on the sphere. 
-    threshold=tau
-    Lambda = Lambda * R.shape[0] * R[0,0] / B_regul.shape[0]
+    threshold = tau*np.mean(np.dot(B_regul, fodf_sh))
+    
+    #    print Lambda,threshold
+    #Typical values that work well: 0.124309392265 0.0339565336195
 
-    print Lambda,threshold
     k = []
     convergence = 50
     for num_it in np.arange(1,convergence+1) :
