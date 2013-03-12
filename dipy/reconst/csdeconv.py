@@ -159,27 +159,20 @@ class ConstrainedSDTModel(OdfModel, Cache):
         # scale lambda to account for differences in the number of
         # SH coefficients and number of mapped directions
         self.Lambda = Lambda * self.R.shape[0] * self.R[0,0] / self.B_regul.shape[0]
-        self.tau = 0.025
+        self.tau = tau
         self.sh_order = sh_order
 
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
-        qball_odf = np.dot(self.B_regul, odf_sh)
-
-        psphere = get_sphere('symmetric362')    
-        from dipy.viz import fvtk
-        r = fvtk.ren()
-        fvtk.add(r, fvtk.sphere_funcs(qball_odf, psphere))
-        fvtk.show(r)
-
-        
+        qball_odf = np.dot(self.B_regul, odf_sh)        
         Z = np.linalg.norm(qball_odf)
-        print Z
         # normalize ODF
-        odf_sh /= Z        
+        odf_sh /= Z
         shm_coeff, num_it = odf_deconv(odf_sh, self.sh_order, self.R, self.B_regul, self.Lambda, self.tau)
+        print 'SDT CSD converged after %d iterations'%num_it
+        
         return ConstrainedSDTFit(self, shm_coeff)
 
 
@@ -465,7 +458,13 @@ def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=0.025 ) :
     fodf_sh = np.linalg.lstsq(R, odf_sh)[0]  
     fodf_sh[15:] = 0
 
-    fodf = np.dot(B_regul,fodf_sh)
+    fodf = np.dot(B_regul, fodf_sh)
+    psphere = get_sphere('symmetric362')
+    from dipy.viz import fvtk
+    r = fvtk.ren()
+    fvtk.add(r, fvtk.sphere_funcs(fodf, psphere))
+    fvtk.show(r)
+
     Z = np.linalg.norm(fodf)
     print Z
     fodf_sh /= Z
