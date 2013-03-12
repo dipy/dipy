@@ -126,5 +126,7 @@ def test_odfdeconv():
     assert_array_equal(directions2.shape[0], 2)
 
 
-if __name__ == '__main__':    
-    run_module_suite()
+#if __name__ == '__main__':    
+#    run_module_suite()
+
+test_odfdeconv()

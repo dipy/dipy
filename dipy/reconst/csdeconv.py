@@ -106,7 +106,7 @@ class ConstrainedSphericalDeconvFit(OdfFit):
 
 
 class ConstrainedSDTModel(OdfModel, Cache):
-    def __init__(self, gtab, ratio, regul_sphere=None, sh_order=6, Lambda=1, tau=0.025):
+    def __init__(self, gtab, ratio, regul_sphere=None, sh_order=8, Lambda=1, tau=0.025):
         r""" Constrained Spherical Deconvolution [1]_.
 
         Parameters
@@ -340,13 +340,19 @@ def forward_sdt_deconv_mat(ratio, sh_order):
         sdt[l/2] = sharp
         frt[l/2] = 2 * np.pi * lpn(l, 0)[0][-1] 
 
-    i = 0
+    # print sdt
+    # std = [ 1.          0.0987961   0.0214013   0.00570876  0.00169231]
+    # for sh_order = 8 and num = 1000
+
+    print frt
+    # frt =  
+    i = 0 
     for l in np.arange(0,sh_order+1,2) :
         for m in np.arange(-l,l+1) :
             b[i] = sdt[l/2]
             bb[i] = frt[l/2]
             i = i + 1    
-        
+
     return np.diag(b),np.diag(bb)
 
 
