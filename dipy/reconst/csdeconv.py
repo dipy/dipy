@@ -4,10 +4,12 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_model
 from dipy.reconst.shm import (sph_harm_ind_list,
                               real_sph_harm,
+                              real_sph_harm_mrtrix,
                               lazy_index,
                               sh_to_sf)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
+from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from scipy.special import lpn
 
@@ -21,7 +23,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         ----------
         gtab : GradientTable
         response : tuple
-            tuple with two elements the first are the eigen-values as an (3,) ndarray 
+            tuple with two elements the first are the eigen-values as an (3,) ndarray
             and the second is the S0.
         regul_sphere : Sphere
             sphere used to build the regularized B matrix
@@ -101,10 +103,11 @@ class ConstrainedSphericalDeconvFit(OdfFit):
             sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
 
-        #return np.dot(self.shm_coeff, self.model.B_regul.T)
+        # return np.dot(self.shm_coeff, self.model.B_regul.T)
         return np.dot(self.shm_coeff, sampling_matrix.T)
 
 
+@multi_voxel_model
 class ConstrainedSDTModel(OdfModel, Cache):
     def __init__(self, gtab, ratio, regul_sphere=None, sh_order=8, Lambda=1., tau=1.):
         r""" Constrained Spherical Deconvolution [1]_.
@@ -154,11 +157,11 @@ class ConstrainedSDTModel(OdfModel, Cache):
         r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
-        self.R,self.P = forward_sdt_deconv_mat(ratio, sh_order)
+        self.R, self.P = forward_sdt_deconv_mat(ratio, sh_order)
 
         # scale lambda to account for differences in the number of
         # SH coefficients and number of mapped directions
-        self.Lambda = Lambda * self.R.shape[0] * self.R[0,0] / self.B_regul.shape[0]
+        self.Lambda = Lambda * self.R.shape[0] * self.R[0, 0] / self.B_regul.shape[0]
         self.tau = tau
         self.sh_order = sh_order
 
@@ -166,13 +169,13 @@ class ConstrainedSDTModel(OdfModel, Cache):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
-        qball_odf = np.dot(self.B_regul, odf_sh)        
+        qball_odf = np.dot(self.B_regul, odf_sh)
         Z = np.linalg.norm(qball_odf)
         # normalize ODF
         odf_sh /= Z
         shm_coeff, num_it = odf_deconv(odf_sh, self.sh_order, self.R, self.B_regul, self.Lambda, self.tau)
-        print 'SDT CSD converged after %d iterations'%num_it
-        
+        #print 'SDT CSD converged after %d iterations' % num_it
+
         return ConstrainedSDTFit(self, shm_coeff)
 
 
@@ -191,7 +194,7 @@ class ConstrainedSDTFit(OdfFit):
             sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
 
-        #return np.dot(self.shm_coeff, self.model.B_regul.T)
+        # return np.dot(self.shm_coeff, self.model.B_regul.T)
         return np.dot(self.shm_coeff, sampling_matrix.T)
 
 
@@ -216,7 +219,7 @@ def estimate_response(gtab, evals, S0):
                       [1, 0, 0]])
 
     return single_tensor(gtab, S0, evals, evecs, snr=None)
-    
+
 
 def sh_to_rh(r_sh, sh_order):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
@@ -289,6 +292,7 @@ def forward_sdeconv_mat(r_rh, sh_order):
             i = i + 1
     return np.diag(b)
 
+
 def forward_sdt_deconv_mat(ratio, sh_order):
     """ Build forward sharpening deconvolution transform (SDT) matrix
 
@@ -308,38 +312,38 @@ def forward_sdt_deconv_mat(ratio, sh_order):
     """
     m, n = sph_harm_ind_list(sh_order)
     b = np.zeros((m.shape))
-    
+
     num = 1000
-    delta = 1.0/num
+    delta = 1.0 / num
     n = (sh_order + 1.0) + (sh_order + 2.0) / 2.0
-    
+
     sdt = np.zeros((m.shape))
     frt = np.zeros((m.shape))
     b = np.zeros((m.shape))
     bb = np.zeros((m.shape))
 
     l = 0
-    for l in np.arange(0,sh_order+1,2) :
+    for l in np.arange(0, sh_order + 1, 2):
         sharp = 0.0
         integral = 0.0
-        
+
         # Trapezoidal integration
         # 1/2 [ f(x0) + 2f(x1) + ... + 2f(x{n-1}) + f(xn) ] delta
-        for z in np.linspace(-1, 1, num) :
-            if z == -1 or z == 1  :
+        for z in np.linspace(-1, 1, num):
+            if z == -1 or z == 1:
                 sharp += lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z))
-                integral += np.sqrt(1/(1 - (1 - ratio) * z * z))                    
-            else  :
-                sharp += 2 * lpn(l, z)[0][-1] * np.sqrt( 1 / (1 - (1 - ratio) * z * z))
-                integral += 2 * np.sqrt(1/(1 - (1 - ratio) * z * z))
-                
+                integral += np.sqrt(1 / (1 - (1 - ratio) * z * z))
+            else:
+                sharp += 2 * lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z))
+                integral += 2 * np.sqrt(1 / (1 - (1 - ratio) * z * z))
+
         integral /= 2
         integral *= delta
         sharp /= 2
         sharp *= delta
-        sharp /= integral        
-        sdt[l/2] = sharp
-        frt[l/2] = 2 * np.pi * lpn(l, 0)[0][-1] 
+        sharp /= integral
+        sdt[l / 2] = sharp
+        frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
 
     # print sdt
     # std = [ 1.          0.0987961   0.0214013   0.00570876  0.00169231]
@@ -347,14 +351,14 @@ def forward_sdt_deconv_mat(ratio, sh_order):
 
     # print frt
     # frt =  [6.28318531 -3.14159265  2.35619449 -1.96349541  1.71805848]
-    i = 0 
-    for l in np.arange(0,sh_order+1,2) :
-        for m in np.arange(-l,l+1) :
-            b[i] = sdt[l/2]
-            bb[i] = frt[l/2]
-            i = i + 1    
+    i = 0
+    for l in np.arange(0, sh_order + 1, 2):
+        for m in np.arange(-l, l + 1):
+            b[i] = sdt[l / 2]
+            bb[i] = frt[l / 2]
+            i = i + 1
 
-    return np.diag(b),np.diag(bb)
+    return np.diag(b), np.diag(bb)
 
 
 def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
@@ -421,7 +425,7 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
     return fodf_sh, num_it
 
 
-def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=1. ) :
+def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
     """ ODF constrained-regularized sherical deconvolution using
     the Sharpening Deconvolution Transform (SDT)
 
@@ -441,9 +445,9 @@ def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=1. ) :
          tau parameter in the L matrix construction (default 1.0)
          You should not play with this parameter. It is quite sensitive and actually
          initiated directly from the fodf mean value.
-         
+
     Returns
-    _______
+    -------
     fodf_sh : ndarray
          Spherical harmonics coefficients of the constrained-regularized fiber ODF
     num_it : int
@@ -457,7 +461,7 @@ def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=1. ) :
     m, n = sph_harm_ind_list(sh_order)
 
     # Generate initial fODF estimate, which is the ODF truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, odf_sh)[0]  
+    fodf_sh = np.linalg.lstsq(R, odf_sh)[0]
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_regul, fodf_sh)
@@ -474,31 +478,56 @@ def odf_deconv( odf_sh, sh_order, R, B_regul, Lambda=1., tau=1. ) :
 
     # This should be cleaned up... Because right now the tau parameter is useless
     # tau should be more or less around 0.025 from my experience
-    # a good heuristic choice is just the mean of the fodf on the sphere. 
-    threshold = tau*np.mean(np.dot(B_regul, fodf_sh))
-    
-    #    print Lambda,threshold
-    #Typical values that work well: 0.124309392265 0.0339565336195
+    # a good heuristic choice is just the mean of the fodf on the sphere.
+    threshold = tau * np.mean(np.dot(B_regul, fodf_sh))
+
+    #print Lambda,threshold
+    # Typical values that work well: 0.124309392265 0.0339565336195
 
     k = []
     convergence = 50
-    for num_it in np.arange(1,convergence+1) :
+    for num_it in np.arange(1, convergence + 1):
         A = np.dot(B_regul, fodf_sh)
-        k2 = np.nonzero( A < threshold )[0]
-        
-        if (k2.shape[0] + R.shape[0])  < B_regul.shape[1] :
-            print 'too few negative directions identified - failed to converge'
-            return fodf_sh,num_it
-    
-        if num_it > 1 and k.shape[0] == k2.shape[0] :
-            if (k == k2).all() :
-                return fodf_sh,num_it
-           
-        k = k2
-        M = np.concatenate( (R, Lambda*B_regul[k, :] ) )
-        ODF = np.concatenate( (odf_sh, np.zeros( k.shape ) ) )
-        fodf_sh = np.linalg.lstsq(M, ODF)[0]  # M\ODF        
-        
-    print 'maximum number of iterations exceeded - failed to converge';
-    return fodf_sh,num_it
+        k2 = np.nonzero(A < threshold)[0]
 
+        if (k2.shape[0] + R.shape[0]) < B_regul.shape[1]:
+            print 'too few negative directions identified - failed to converge'
+            return fodf_sh, num_it
+
+        if num_it > 1 and k.shape[0] == k2.shape[0]:
+            if (k == k2).all():
+                return fodf_sh, num_it
+
+        k = k2
+        M = np.concatenate((R, Lambda * B_regul[k, :]))
+        ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
+        fodf_sh = np.linalg.lstsq(M, ODF)[0]  # M\ODF
+
+    print 'maximum number of iterations exceeded - failed to converge'
+    return fodf_sh, num_it
+
+
+def odf_sh_to_sharp(odfs_sh, sphere, basis='mrtrix', ratio=3 / 15., sh_order=8, Lambda=1., tau=1.):
+    """ Sharpen odfs
+    """
+    m, n = sph_harm_ind_list(sh_order)
+    r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
+
+    if basis == 'mrtrix':
+        B_regul, m, n = real_sph_harm_mrtrix(sh_order, theta[:, None], phi[:, None])
+    else:
+        B_regul = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+    R, P = forward_sdt_deconv_mat(ratio, sh_order)
+
+    # scale lambda to account for differences in the number of
+    # SH coefficients and number of mapped directions
+    Lambda = Lambda * R.shape[0] * R[0, 0] / B_regul.shape[0]
+
+    fodf_sh = np.zeros(odfs_sh.shape)
+
+    for index in ndindex(odfs_sh.shape[:-1]):
+
+        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_regul, Lambda=Lambda, tau=tau)
+
+    return fodf_sh
