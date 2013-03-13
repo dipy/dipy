@@ -50,6 +50,146 @@ def fractional_anisotropy(evals, axis=-1):
     return fa
 
 
+def mean_diffusivity(evals, axis=-1):
+    r"""
+    Mean Diffusivity (MD) of a diffusion tensor. Also, called
+    Apparent diffusion coefficient (ADC)
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    md : array
+        Calculated MD. 
+
+    Notes
+    --------
+    MD is calculated with the following equation:
+
+    .. math::
+
+        MD = \frac{\lambda_1 + \lambda_2 + \lambda_3}{3}
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    ev1, ev2, ev3 = evals
+    return (ev1 + ev2 + ev3) / 3
+
+
+
+def axial_diffusivity(evals, axis=-1):
+    r"""
+    Axial Diffusivity (AD) of a diffusion tensor.
+    Also called parallel diffusivity. 
+    
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    ad : array
+        Calculated AD. 
+
+    Notes
+    --------
+    AD is calculated with the following equation:
+
+    .. math::
+
+        AD = \lambda_1
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    ev1, ev2, ev3 = evals
+    return ev1
+
+
+def radial_diffusivity(evals, axis=-1):
+    r"""
+    Radial Diffusivity (RD) of a diffusion tensor.
+    Also called perpendicular diffusivity.
+    
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+        Returns
+    -------
+    rd : array
+        Calculated RD. 
+
+    Notes
+    --------
+    RD is calculated with the following equation:
+
+    .. math::
+
+        RD = \frac{\lambda_2 + \lambda_3}{2}
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    ev1, ev2, ev3 = evals
+    return (ev2 + ev3) / 2
+
+
+def trace(evals, axis=-1):
+    r"""
+    Trace of a diffusion tensor.
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    trace : array
+        Calculated trace of the diffusion tensor. 
+
+    Notes
+    --------
+    Trace is calculated with the following equation:
+
+    .. math::
+
+        MD = \lambda_1 + \lambda_2 + \lambda_3
+
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    ev1, ev2, ev3 = evals
+    return (ev1 + ev2 + ev3)
+
+
 def color_fa(fa, evecs):
     r""" Color fractional anisotropy of diffusion tensor
 
@@ -69,12 +209,14 @@ def color_fa(fa, evecs):
 
     Notes :
     -----------------
-    it is computed from the clipped FA between 0 and 1 using the following formula
+
+    it is computed from the clipped FA between 0 and 1 using the following
+    formula
+
     .. math::
 
         rgb = abs(max(eigen_vector)) \times fa
     """
-
     if (fa.shape != evecs[..., 0, 0].shape) or ((3, 3) != evecs.shape[-2:]):
         raise ValueError("Wrong number of dimensions for evecs")
 
@@ -128,6 +270,7 @@ class TensorModel(object):
         self.args = args
         self.kwargs = kwargs
 
+
     def fit(self, data, mask=None):
         """
         Fit method of the DTI model class
@@ -158,6 +301,7 @@ class TensorModel(object):
 
         return TensorFit(self, dti_params)
 
+
 class TensorFit(object):
     def __init__(self, model, model_params):
         """
@@ -165,6 +309,7 @@ class TensorFit(object):
         """
         self.model = model
         self.model_params = model_params
+
 
     def __getitem__(self, index):
         model_params = self.model_params
@@ -176,9 +321,11 @@ class TensorFit(object):
         index = index + (slice(None),) * (N - len(index))
         return type(self)(self.model, model_params[index])
 
+
     @property
     def shape(self):
         return self.model_params.shape[:-1]
+
 
     @property
     def directions(self):
@@ -187,12 +334,14 @@ class TensorFit(object):
         """
         return self.evecs[..., None, :, 0]
 
+
     @property
     def evals(self):
         """
         Returns the eigenvalues of the tensor as an array
         """
         return _filled(self.model_params[..., :3])
+
 
     @property
     def evecs(self):
@@ -203,6 +352,7 @@ class TensorFit(object):
         evecs = _filled(self.model_params[..., 3:])
         return evecs.reshape(self.shape + (3, 3))
 
+
     @property
     def quadratic_form(self):
         """Calculates the 3x3 diffusion tensor for each voxel"""
@@ -211,13 +361,16 @@ class TensorFit(object):
         # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
         return vec_val_vect(self.evecs, self.evals)
 
+
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
+
 
     @auto_attr
     def fa(self):
         """Fractional anisotropy (FA) calculated from cached eigenvalues."""
         return fractional_anisotropy(self.evals)
+
 
     @auto_attr
     def md(self):
@@ -237,7 +390,72 @@ class TensorFit(object):
 
             MD = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
         """
-        return self.evals.mean(-1)
+        return self.trace/3.0
+    
+    @auto_attr
+    def rd(self):
+        r"""
+        Radial diffusitivity (RD) calculated from cached eigenvalues.
+
+        Returns
+        ---------
+        rd : array (V, 1)
+            Calculated RD.
+
+        Notes
+        --------
+        RD is calculated with the following equation:
+
+        .. math::
+
+          RD = \frac{\lambda_2 + \lambda_3}{2}
+
+
+        """
+        return radial_diffusivity(self.evals)
+
+
+    @auto_attr
+    def ad(self):
+        r"""
+        Radial diffusitivity (RD) calculated from cached eigenvalues.
+
+        Returns
+        ---------
+        ad : array (V, 1)
+            Calculated AD.
+
+        Notes
+        --------
+        RD is calculated with the following equation:
+
+        .. math::
+
+          AD = \lambda_1
+
+
+        """
+        return axial_diffusivity(self.evals)
+    
+    @auto_attr
+    def trace(self):
+        r"""
+        Trace of the tensor calculated from cached eigenvalues.
+
+        Returns
+        ---------
+        trace : array (V, 1)
+            Calculated trace.
+
+        Notes
+        --------
+        The trace is calculated with the following equation:
+
+        .. math::
+
+          trace = \lambda_1 + \lambda_2 + \lambda_3
+        """
+        return trace(self.evals)
 
     def odf(self, sphere):
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
