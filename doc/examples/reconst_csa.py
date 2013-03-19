@@ -12,7 +12,6 @@ First import the necessary modules:
 import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
-from dipy.align.aniso2iso import resample
 from dipy.reconst.shm import CsaOdfModel, normalize_data
 from dipy.reconst.odf import peaks_from_model
 
@@ -35,44 +34,12 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-data.shape ``(128, 128, 49, 65)``
-
-This dataset has anisotropic voxel sizes, therefore reslicing is necessary.
-"""
-
-affine = img.get_affine()
-
-"""
-Read the voxel size from the image header.
-"""
-
-zooms = img.get_header().get_zooms()[:3]
-
-"""
-The voxel size here is ``(1.79, 1.79, 2.5)``.
-
-We now set the required new voxel size.
-"""
-
-new_zooms = (2., 2., 2.)
-
-"""
-Which is ``(2.0, 2.0, 2.0)``
-
-Start reslicing. Trilinear interpolation is used by default.
-"""
-
-data2, affine2 = resample(data, affine, zooms, new_zooms)
-
-print('data2.shape (%d, %d, %d, %d)' % data2.shape)
-
-"""
-data2.shape ``(115, 115, 61, 65)``
+data.shape ``(81, 106, 76, 160)``
 
 Remove most of the background in the following simple way.
 """
 
-mask = data2[..., 0] > 50
+mask = data[..., 0] > 50
 
 """
 We instantiate our CSA model with sperical harmonic order of 4
@@ -92,7 +59,7 @@ grid where the ODF values will be evaluated.
 sphere = get_sphere('symmetric724')
 
 csapeaks = peaks_from_model(model=csamodel,
-                            data=data2,
+                            data=data,
                             sphere=sphere,
                             relative_peak_threshold=.8,
                             min_separation_angle=45,
@@ -105,7 +72,7 @@ GFA = csapeaks.gfa
 print('GFA.shape (%d, %d, %d)' % GFA.shape)
 
 """
-GFA.shape ``(115, 115, 61)``
+GFA.shape ``(81, 106, 76)``
 
 Apart from GFA csapeaks has also the attributes peak_values, peak_indices and
 ODF. peak_values shows the maxima values of the ODF and peak_indices gives us
@@ -117,8 +84,8 @@ Finally lets try to visualize the orientation distribution functions of a small
 rectangular area around the middle of our datasets.
 """
 
-i,j,k,w = np.array(data2.shape) / 2
-data_small  = data2[i-5:i+5, j-5:j+5, k-2:k+2]
+i,j,k,w = np.array(data.shape) / 2
+data_small  = data[i-5:i+5, j-5:j+5, k-2:k+2]
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 

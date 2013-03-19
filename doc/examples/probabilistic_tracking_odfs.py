@@ -23,10 +23,20 @@ from dipy.tracking.utils import seeds_from_mask
 
 stepper = FixedSizeStepper(1)
 
-seeds = seeds_from_mask(mask, [1, 1, 1], new_zooms)
+"""
+Read the voxel size from the image header:
+"""
+
+zooms = img.get_header().get_zooms()[:3]
+
+
+"""
+Randomly select some seed points from the mask:
+""" 
+seeds = seeds_from_mask(mask, [1, 1, 1], zooms)
 seeds = seeds[:2000]
 
-interpolator = NearestNeighborInterpolator(data2, new_zooms)
+interpolator = NearestNeighborInterpolator(data, zooms)
 
 pwt = ProbabilisticOdfWeightedTracker(csamodel, interpolator, mask,
                                       stepper, 20, seeds, sphere)
