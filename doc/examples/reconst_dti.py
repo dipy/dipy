@@ -58,7 +58,7 @@ import nibabel as nib
 voxel models from the raw data.
 """
 
-from dipy.reconst.dti import TensorModel
+import dipy.reconst.dti as dti
 
 """
 ``dipy.data`` is used for small datasets that we use in tests and examples.
@@ -91,61 +91,29 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-data.shape ``(128, 128, 49, 65)``
+data.shape ``(81, 106, 76, 160)``
 
-This dataset has anisotropic voxel sizes, therefore reslicing is necessary
-"""
-
-affine = img.get_affine()
-
-"""
-Load and show the zooms which hold the voxel size.
-"""
-
-zooms = img.get_header().get_zooms()[:3]
-
-"""
-The voxel size here is ``(1.79, 1.79, 2.5)``.
-
-We now set the required new voxel size.
-"""
-
-new_zooms = (2., 2., 2.)
-
-"""
-Start reslicing. Trilinear interpolation is used by default.
-"""
-
-from dipy.align.aniso2iso import resample
-
-data2, affine2 = resample(data, affine, zooms, new_zooms)
-
-print('data2.shape (%d, %d, %d, %d)' % data2.shape)
-
-"""
-data2.shape ``(115, 115, 61, 65)``
-
-Lets also create a simple mask. This is a quick way to avoid calculating
-Tensors on the background of the image. This is because the signal is very low in
-these region. A better way would be to extract the brain region using a brain
+Lets create a simple mask. This is a quick way to avoid calculating Tensors on
+the background of the image. This is because the signal is very low in these
+region. A better way would be to extract the brain region using a brain
 extraction method. But will skip that for now.
 """
 
-mask = data2[..., 0] > 50
+mask = data[..., 0] > 50
 
 """
 Now that we have prepared the datasets we can go forward with the voxel
 reconstruction. First, we instantiate the Tensor model in the following way.
 """
 
-tenmodel = TensorModel(gtab)
+tenmodel = dti.TensorModel(gtab)
 
 """
 Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
 
-tenfit = tenmodel.fit(data2, mask)
+tenfit = tenmodel.fit(data, mask)
 
 """
 The fit method creates a TensorFit object which contains the fitting parameters
@@ -202,12 +170,33 @@ evecs_img = nib.Nifti1Image(tenfit.evecs, img.get_affine())
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
+Other tensor statistics can be calculated from the `tenfit` object. For example,
+a commonly calculated statistic is the mean diffusivity (MD). This is simply the
+mean of the  eigenvalues of the tensor. Since FA is a normalized
+measure of variance and MD is the mean, they are often used as complimentary
+measures. In `dipy`, there are two equivalent ways to calculate the mean
+diffusivity. One is by calling the `mean_diffusivity` module function on the
+eigen-values of the TensorFit class instance: 
+"""
+
+MD1 = dti.mean_diffusivity(tenfit.evals)
+
+"""
+The other is to call the TensorFit class method: 
+
+"""
+
+MD2 = tenfit.md
+
+"""
+Obviously, the quantities are identical.
+
 Finally lets try to visualize the orientation distribution functions of a small
 rectangular area around the middle of our datasets.
 """
 
-i,j,k,w = np.array(data2.shape) / 2
-data_small  = data2[i-5:i+5, j-5:j+5, k-2:k+2]
+i,j,k,w = np.array(data.shape) / 2
+data_small  = data[i-5:i+5, j-5:j+5, k-2:k+2]
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
