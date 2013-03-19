@@ -1,6 +1,6 @@
-"""Implemention of various Tractography metods
+"""Implemention of various Tractography methods
 
-these tools are ment to be paired with diffusion reconstruction methods from
+these tools are meant to be paired with diffusion reconstruction methods from
 dipy.reconst
 
 This module uses the trackvis coordinate system, for more information about
@@ -33,8 +33,8 @@ class DirectionFinder(object):
 class BoundaryStepper(object):
     """Steps along a direction past the closest voxel boundary
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     voxel_size : array-like
         Size of voxels in data volume
     overstep : float
@@ -52,18 +52,18 @@ class BoundaryStepper(object):
         given a location and a step, finds the smallest step needed to move
         into the next voxel
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         location : ndarray, (3,)
             location to integrate from
         step : ndarray, (3,)
             direction in 3 space to integrate along
         """
-        step_sizes = self.voxel_size*(~np.signbit(step))
+        step_sizes = self.voxel_size * (~np.signbit(step))
         step_sizes -= location % self.voxel_size
         step_sizes /= step
         smallest_step = min(step_sizes) + self.overstep
-        return location + smallest_step*step
+        return location + smallest_step * step
 
 
 class FixedSizeStepper(object):
@@ -73,7 +73,7 @@ class FixedSizeStepper(object):
 
     def __call__(self, location, step):
         """Takes a step of step_size from location"""
-        new_location = self.step_size*step + location
+        new_location = self.step_size * step + location
         return new_location
 
 
@@ -83,7 +83,7 @@ def markov_streamline(get_direction, take_step, seed, first_step, maxlen):
     Parameters
     ----------
     get_direction : callable
-        This function should return a direction for the streamline given a 
+        This function should return a direction for the streamline given a
         location and the previous direction.
     take_step : callable
         Take step should take a step from a location given a direction.
@@ -247,7 +247,7 @@ class ClosestDirectionTracker(MarkovIntegrator):
         ----------
         location : point in space
             location is passed to the interpolator in order to get data
-        prev_step: array_like (3,)
+        prev_step : array_like (3,)
             the direction of the previous tracking step
 
         """
@@ -285,8 +285,8 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
     seeds : array (N, 3)
         Points to seed the tracking.
     sphere : Sphere
-        sphere used to evaluate the likelihood. A Sphere is ok, a HemiSphere is
-        better.
+        sphere used to evaluate the likelihood. A Sphere or a HemiSphere can be
+        used here. A HemiSphere is more efficient.
     max_cross : int or None
         Max number of directions to follow at each seed. By default follow all
         peaks of the odf.
@@ -331,7 +331,7 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
         ----------
         location : point in space
             location is passed to the interpolator in order to get data
-        prev_step: array_like (3,)
+        prev_step : array_like (3,)
             the direction of the previous tracking step
 
         """
@@ -361,8 +361,8 @@ class CDT_NNO(ClosestDirectionTracker):
     For use with Nearest Neighbor interpolation, directions at each voxel are
     remembered to avoid recalculating.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     model : model
         A model used to fit data. Should return a some fit object with
         directions.

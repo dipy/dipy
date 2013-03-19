@@ -9,8 +9,8 @@ from dipy.core.gradients import gradient_table
 from dipy.core.sphere import Sphere
 from dipy.sims.voxel import SticksAndBall
 import numpy as np
-from dipy.data.fetcher import (fetch_beijing_dti,
-                               read_beijing_dti,
+from dipy.data.fetcher import (fetch_stanford_hardi,
+                               read_stanford_hardi,
                                fetch_taiwan_ntu_dsi,
                                read_taiwan_ntu_dsi)
 from ..utils.arrfuncs import as_native_array
@@ -110,6 +110,7 @@ def get_sphere(name='symmetric362'):
         which sphere - one of:
         * 'symmetric362'
         * 'symmetric642'
+        * 'symmetric724'
 
     Returns
     -------
@@ -145,7 +146,7 @@ def get_data(name='small_64D'):
 
     Parameters
     ----------
-    name: str
+    name : str
         the filename/s of which dataset to return, one of:
         'small_64D' small region of interest nifti,bvecs,bvals 64 directions
         'small_101D' small region of interest nifti,bvecs,bvals 101 directions

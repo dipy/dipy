@@ -36,16 +36,16 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     ax : mpl axis, optional
         If specified, draw onto this existing axis instead.
 
-    vmin, vmax: floats
+    vmin, vmax : floats
        Values to cut the z
 
-    cmap: mpl colormap
+    cmap : mpl colormap
 
     cbar: Whether to add the color-bar to the figure
 
-    triang: Whether to display the plot triangulated as a pseudo-color plot.
+    triang : Whether to display the plot triangulated as a pseudo-color plot.
 
-    boundary: Whether to draw the boundary around the projection in a black line
+    boundary : Whether to draw the boundary around the projection in a black line
 
     Returns
     -------

@@ -73,23 +73,22 @@ class ResetMixin(object):
     OneTimeProperty descriptors, and their accessor functions will be triggered
     again.
 
-    Warning
-    -------
+    .. warning::
 
-    If a class has a set of attributes that are OneTimeProperty, but that can
-    be initialized from any one of them, do NOT use this mixin!  For instance,
-    UniformTimeSeries can be initialized with only sampling_rate and t0,
-    sampling_interval and time are auto-computed.  But if you were to reset() a
-    UniformTimeSeries, it would lose all 4, and there would be then no way to
-    break the circular dependency chains.
+       If a class has a set of attributes that are OneTimeProperty, but that
+       can be initialized from any one of them, do NOT use this mixin!  For
+       instance, UniformTimeSeries can be initialized with only sampling_rate
+       and t0, sampling_interval and time are auto-computed.  But if you were
+       to reset() a UniformTimeSeries, it would lose all 4, and there would be
+       then no way to break the circular dependency chains.
 
-    If this becomes a problem in practice (for our analyzer objects it isn't,
-    as they don't have the above pattern), we can extend reset() to check for a
-    _no_reset set of names in the instance which are meant to be kept
-    protected.  But for now this is NOT done, so caveat emptor.
+       If this becomes a problem in practice (for our analyzer objects it
+       isn't, as they don't have the above pattern), we can extend reset() to
+       check for a _no_reset set of names in the instance which are meant to be
+       kept protected.  But for now this is NOT done, so caveat emptor.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> class A(ResetMixin):
     ...     def __init__(self,x=1.0):

@@ -20,8 +20,8 @@ def bs_se(bs_pdf):
 
 def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
     """
-    Bootstrap resampling _[1] to accurately estimate the standard error and 
-    confidence interval of a desired statistic of a probability distribution 
+    Bootstrap resampling [1]_ to accurately estimate the standard error and
+    confidence interval of a desired statistic of a probability distribution
     function (pdf).
 
     Parameters
@@ -29,13 +29,13 @@ def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
     x : ndarray (N, 1)
         Observable sample to resample. N should be reasonably large.
     statistic : method (optional)
-        Method to calculate the desired statistic. (Default: calculate 
+        Method to calculate the desired statistic. (Default: calculate
         bootstrap standard error)
     B : integer (optional)
         Total number of bootstrap resamples in bootstrap pdf. (Default: 1000)
     alpha : float (optional)
         Percentile for confidence interval of the statistic. (Default: 0.05)
-    
+
     Returns
     ---------
     bs_pdf : ndarray (M, 1)
@@ -57,11 +57,11 @@ def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
 
     1) uniform weighting among all samples (1/n)
     2) resampling with replacement
-    
-    In general, the sample size should be large to ensure accuracy of the 
-    estimates. The number of bootstrap resamples should be large as well as 
+
+    In general, the sample size should be large to ensure accuracy of the
+    estimates. The number of bootstrap resamples should be large as well as
     that will also influence the accuracy of the estimate.
-    
+
     References
     ----------
     ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
@@ -70,13 +70,13 @@ def bootstrap(x, statistic = bs_se, B = 1000, alpha = 0.95):
     N = len(x)
     pdf_mask = np.ones((N,),dtype='int16')
     bs_pdf = np.empty((B,))
-    
+
     for ii in range(0, B):
         #resample with replacement
         rand_index = np.int16(np.round(np.random.random(N) * (N - 1)))
-        bs_pdf[ii] = statistic(x[rand_index]) 
-    
-    return bs_pdf, bs_se(bs_pdf), abc(x, statistic, alpha = alpha) 
+        bs_pdf[ii] = statistic(x[rand_index])
+
+    return bs_pdf, bs_se(bs_pdf), abc(x, statistic, alpha = alpha)
 
 def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
     """
@@ -87,31 +87,31 @@ def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
     x : np.ndarray
         Observed data (e.g. chosen gold standard estimate used for bootstrap)
     statistic : method
-        Method to calculate the desired statistic given x and probability 
+        Method to calculate the desired statistic given x and probability
         proportions (flat probability densities vector)
     alpha : float (0, 1)
         Desired confidence interval initial endpoint (Default: 0.05)
     eps : float (optional)
         Specifies step size in calculating numerical derivative T' and
         T''. Default: 1e-5
-    
+
     See Also
     --------
     __tt, __tt_dot, __tt_dot_dot, __calc_z0
 
     Notes
     -----
-    Unlike the BCa method of calculating the bootstrap confidence interval, 
+    Unlike the BCa method of calculating the bootstrap confidence interval,
     the ABC method is computationally less demanding (about 3% computational
     power needed) and is fairly accurate (sometimes out performing BCa!). It
     does not require any bootstrap resampling and instead uses numerical
     derivatives via Taylor series to approximate the BCa calculation. However,
-    the ABC method requires the statistic to be smooth and follow a 
+    the ABC method requires the statistic to be smooth and follow a
     multinomial distribution.
-    
+
     References
     ----------
-    ..  [1] DiCiccio, T.J., Efron, B., 1996. Bootstrap Confidence Intervals. 
+    ..  [2] DiCiccio, T.J., Efron, B., 1996. Bootstrap Confidence Intervals.
         Statistical Science. 11, 3, 189-228.
     """
     #define base variables -- n, p_0, sigma_hat, delta_hat
@@ -131,7 +131,7 @@ def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
         a_num[i] = __tt_dot(i, x, p_0, statistic, eps)**3
         a_dem[i] = __tt_dot(i, x, p_0, statistic, eps)**2
     a_hat = 1 / 6 * a_num / a_dem**1.5
-    z_0 = __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat) 
+    z_0 = __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat)
     #define helper variables -- w and l
     w = z_0 + __calc_z_alpha(1 - alpha)
     l = w / (1 - a_hat * w)**2
@@ -139,7 +139,7 @@ def abc(x, statistic = bs_se , alpha = 0.05, eps = 1e-5):
 
 def __calc_z_alpha(alpha):
     """
-    Classic "quantile function" that calculates inverse of cdf of standard 
+    Classic "quantile function" that calculates inverse of cdf of standard
     normal.
     """
     return  2**0.5 * sp.special.erfinv(2 * alpha - 1)
@@ -147,7 +147,7 @@ def __calc_z_alpha(alpha):
 def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
     """
     Function that calculates the bias z_0 for abc method.
-    
+
     See Also
     ----------
     abc, __tt, __tt_dot, __tt_dot_dot
@@ -169,7 +169,7 @@ def __calc_z0(x, p_0, statistic, eps, a_hat, sigma_hat):
 
 def __tt(x, p_0, statistic = bs_se):
     """
-    Function that calculates desired statistic from observable data and a 
+    Function that calculates desired statistic from observable data and a
     given proportional weighting.
 
     Parameters
@@ -195,8 +195,8 @@ def __tt_dot(i, x, p_0, statistic, eps):
     First numerical derivative of __tt
     """
     e = np.zeros(x.shape)
-    e[i] = 1 
-    return ( (__tt(x, (1 - eps) * p_0 + eps * e[i], statistic) - 
+    e[i] = 1
+    return ( (__tt(x, (1 - eps) * p_0 + eps * e[i], statistic) -
               __tt(x, p_0, statistic)) / eps )
 
 def __tt_dot_dot(i, x, p_0, statistic, eps):
@@ -204,14 +204,14 @@ def __tt_dot_dot(i, x, p_0, statistic, eps):
     Second numerical derivative of __tt
     """
     e = np.zeros(x.shape)
-    e[i] = 1 
-    return (__tt_dot(i, x, p_0, statistic, eps) / eps + 
-           (__tt(x, (1 - eps) * p_0 - eps * e[i], statistic) - 
+    e[i] = 1
+    return (__tt_dot(i, x, p_0, statistic, eps) / eps +
+           (__tt(x, (1 - eps) * p_0 - eps * e[i], statistic) -
             __tt(x, p_0, statistic)) / eps**2)
 
-def jackknife(pdf, statistic = np.std, M = None): 
+def jackknife(pdf, statistic = np.std, M = None):
     """
-    Jackknife resampling _[1] to quickly estimate the bias and standard 
+    Jackknife resampling [3]_ to quickly estimate the bias and standard
     error of a desired statistic in a probability distribution function (pdf).
 
     Parameters
@@ -220,11 +220,11 @@ def jackknife(pdf, statistic = np.std, M = None):
         Probability distribution function to resample. N should be reasonably
         large.
     statistic : method (optional)
-        Method to calculate the desired statistic. (Default: calculate 
+        Method to calculate the desired statistic. (Default: calculate
         standard deviation)
     M : integer (M < N)
         Total number of samples in jackknife pdf. (Default: M == N)
-    
+
     Returns
     ---------
     jk_pdf : ndarray (M, 1)
@@ -241,27 +241,27 @@ def jackknife(pdf, statistic = np.std, M = None):
     Notes
     --------
     Jackknife resampling like bootstrap resampling is non parametric. However,
-    it requires a large distribution to be accurate and in some ways can be 
-    considered deterministic (if one removes the same set of samples, 
-    then one will get the same estimates of the bias and variance). 
-    
-    In the context of this implementation, the sample size should be at least 
-    larger than the asymptotic convergence of the statistic (ACstat); 
+    it requires a large distribution to be accurate and in some ways can be
+    considered deterministic (if one removes the same set of samples,
+    then one will get the same estimates of the bias and variance).
+
+    In the context of this implementation, the sample size should be at least
+    larger than the asymptotic convergence of the statistic (ACstat);
     preferably, larger than ACstat + np.greater(ACbias, ACvar)
 
     The clear benefit of using jackknife is its ability to estimate the bias
     of the statistic. The most powerful application of this is estimating the
     bias of a bootstrap-estimated standard error. In fact, one could
-    "bootstrap the bootstrap" (nested bootstrap) of the estimated standard 
+    "bootstrap the bootstrap" (nested bootstrap) of the estimated standard
     error, but the inaccuracy of the bootstrap to characterize the true mean
     would incur a poor estimate of the bias (recall: bias = mean[sample_est] -
     mean[true population])
-    
+
     References
     -------------
-    ..  [1] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
-        look at the jackknife. Ann. Stat. 7, 1-26.
-    """     
+    .. [3] Efron, B., 1979. 1977 Rietz lecture--Bootstrap methods--Another
+           look at the jackknife. Ann. Stat. 7, 1-26.
+    """
     N = len(pdf)
     pdf_mask = np.ones((N,),dtype='int16') #keeps track of all n - 1 indexes
     mask_index = np.copy(pdf_mask)
@@ -269,7 +269,7 @@ def jackknife(pdf, statistic = np.std, M = None):
         M = N
     M = np.minimum(M, N - 1)
     jk_pdf = np.empty((M,))
-    
+
     for ii in range(0, M):
         rand_index = np.round(np.random.random() * (N - 1))
         #choose a unique random sample to remove
@@ -281,7 +281,7 @@ def jackknife(pdf, statistic = np.std, M = None):
         jk_pdf[ii] = statistic(pdf[mask_index > 0]) #compute n-1 statistic
         mask_index[rand_index] = 1
 
-    return jk_pdf, (N - 1) * (np.mean(jk_pdf) - statistic(pdf)), np.sqrt(N - 
+    return jk_pdf, (N - 1) * (np.mean(jk_pdf) - statistic(pdf)), np.sqrt(N -
                                                           1) * np.std(jk_pdf)
 
 def residual_bootstrap(data):
@@ -289,4 +289,3 @@ def residual_bootstrap(data):
 
 def repetition_bootstrap(data):
     pass
-

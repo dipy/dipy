@@ -7,9 +7,11 @@
 .. autosummary::
     :toctree:
 
+    dsi
     dti
-    gqi    
+    gqi
     maskedview
     modelarray
-    recspeed
-    
+    multi_voxel
+    odf
+    shm

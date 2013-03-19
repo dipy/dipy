@@ -36,3 +36,14 @@ div.body {
 tt {
     background-color: transparent;
 }
+
+
+div.leftside {
+    width: 614px;
+    padding: 0px 3px 0px 0px;
+    float: left;
+}
+
+div.rightside {
+    float: right;
+}

@@ -7,7 +7,7 @@ def resample(data,affine,zooms,new_zooms,order=1):
     ''' Resample data from anisotropic to isotropic voxel size
     
     Parameters
-    -----------
+    ----------
     data : array, shape (I,J,K) or (I,J,K,N) 
         3d volume or 4d volume with datasets
     affine : array, shape (4,4) 
@@ -22,21 +22,21 @@ def resample(data,affine,zooms,new_zooms,order=1):
         if you don't want any smoothing 0 is the option you need.
     
     Returns
-    --------
+    -------
     data2 : array, shape (I,J,K) or (I,J,K,N) 
         datasets resampled into isotropic voxel size
     affine2 : array, shape (4,4)
         new affine for the resampled image
         
     Notes
-    ------
+    -----
     It is also possible with this function to resample/reslice from isotropic voxel size to anisotropic 
     or from isotropic to isotropic or even from anisotropic to anisotropic, as long as you provide
     the correct zooms (voxel sizes) and new_zooms (new voxel sizes). It is fairly easy to get the correct
     zooms using nibabel as show in the example below. 
     
     Examples
-    ---------
+    --------
     >>> import nibabel as nib
     >>> from dipy.align.aniso2iso import resample
     >>> from dipy.data import get_data    
@@ -74,11 +74,3 @@ def resample(data,affine,zooms,new_zooms,order=1):
     Rx[:3,:3]=R
     affine2=np.dot(affine,Rx)
     return data2,affine2
-
-
-
-
-
-
-
-
