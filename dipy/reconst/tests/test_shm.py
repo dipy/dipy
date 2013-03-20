@@ -10,6 +10,7 @@ from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
 from ..odf import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
 
@@ -303,16 +304,18 @@ def test_ResidualBootstrapWrapper():
     d = np.arange(10) / 8.
     d.shape = (2, 5)
     dhat = np.dot(d, H)
+    signal_object = NearestNeighborInterpolator(dhat, (1,))
     ms = .2
     where_dwi = np.ones(len(H), dtype=bool)
 
-    boot_obj = ResidualBootstrapWrapper(dhat, B, where_dwi, ms)
+    boot_obj = ResidualBootstrapWrapper(signal_object, B, where_dwi, ms)
     assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
     assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))
 
     dhat = np.column_stack([[.6, .7], dhat])
+    signal_object = NearestNeighborInterpolator(dhat, (1,))
     where_dwi = np.concatenate([[False], where_dwi])
-    boot_obj = ResidualBootstrapWrapper(dhat, B, where_dwi, ms)
+    boot_obj = ResidualBootstrapWrapper(signal_object, B, where_dwi, ms)
     assert_array_almost_equal(boot_obj[0], dhat[0].clip(ms, 1))
     assert_array_almost_equal(boot_obj[1], dhat[1].clip(ms, 1))
 
