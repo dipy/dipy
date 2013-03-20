@@ -72,14 +72,13 @@ for i, centroid in enumerate(centroids):
     colormap[i] = np.random.rand(3)
     fvtk.add(r, fvtk.line(centroids, colormap, opacity=1., linewidth=5))
 
-fvtk.add(r, fvtk.line(streamlines, fvtk.white, opacity=0))
 fvtk.record(r, n_frames=1, out_path='fornix_centroids.png', size=(600, 600))
 
 """
 .. figure:: fornix_centroids.png
    :align: center
 
-   **Showing the different QuickBundles clusters with random colors**.
+   **Showing the different QuickBundles centroids with random colors**.
 
 Show the labeled fornix (colors from centroids).
 """
