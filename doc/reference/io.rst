@@ -8,8 +8,7 @@
 .. autosummary::
    :toctree:
 
-   pickles
    bvectxt
    dpy
-
-
+   gradients
+   pickles

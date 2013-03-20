@@ -1,5 +1,4 @@
-__all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges',
-           'unique_faces']
+__all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges']
 
 import numpy as np
 import warnings
@@ -61,14 +60,16 @@ def unique_edges(faces, return_mapping=False):
         Unique edges.
     mapping : (N, 3)
         For each face, [x, y, z], a mapping to it's edges [a, b, c].
-              y
-              /\
-             /  \
-           a/    \b
-           /      \
-          /        \
-         /__________\
-        x      c     z
+        ::
+
+                y
+                /\
+               /  \
+             a/    \b
+             /      \
+            /        \
+           /__________\
+          x      c     z
 
     """
     faces = np.asarray(faces)
@@ -133,7 +134,6 @@ class Sphere(object):
         and azimuth angles respectively.
     xyz : (N, 3) ndarray
         Vertices as x-y-z coordinates.
-
     faces : (N, 3) ndarray
         Indices into vertices that form triangular faces.  If unspecified,
         the faces are computed using a Delaunay triangulation.
@@ -212,14 +212,16 @@ class Sphere(object):
         New vertices are created at a, b, and c. Then each face [x, y, z] is
         divided into faces [x, a, c], [y, a, b], [z, b, c], and [a, b, c].
 
-              y
-              /\
-             /  \
-           a/____\b
-           /\    /\
-          /  \  /  \
-         /____\/____\
-        x      c     z
+        ::
+
+                y
+                /\
+               /  \
+             a/____\b
+             /\    /\
+            /  \  /  \
+           /____\/____\
+          x      c     z
 
         Parameters
         ----------
@@ -228,7 +230,7 @@ class Sphere(object):
 
         Returns
         -------
-        new_sphere :
+        new_sphere : Sphere
             The subdivided sphere.
 
         """
@@ -278,7 +280,6 @@ class HemiSphere(Sphere):
         and azimuth angles respectively.
     xyz : (N, 3) ndarray
         Vertices as x-y-z coordinates.
-
     faces : (N, 3) ndarray
         Indices into vertices that form triangular faces.  If unspecified,
         the faces are computed using a Delaunay triangulation.
@@ -465,7 +466,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
         Radial basis function spread parameter.
     smooth : float
         values greater than zero increase the smoothness of the
-        approximation with 0 (the default) as pure interpolation. 
+        approximation with 0 (the default) as pure interpolation.
 
     Returns
     -------

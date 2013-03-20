@@ -76,8 +76,8 @@ def reorient_vectors(input, current_ornt, new_ornt, axis=0):
     P: Posterior
     I: Inferior
 
-    Examples:
-    ---------
+    Examples
+    --------
     >>> gtab = np.array([[1, 1, 1], [1, 2, 3]])
     >>> reorient_vectors(gtab, 'ras', 'asr', axis=1)
     array([[1, 1, 1],

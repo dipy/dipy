@@ -11,10 +11,11 @@
     :toctree:
 
     geometry
+    gradients
     graph
-    meshes
-    onetime
     profile
     rng
-    triangle_subdivide
+    sphere
+    sphere_stats
+    subdivide_octahedron
     sphere_stats

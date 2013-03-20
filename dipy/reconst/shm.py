@@ -45,31 +45,33 @@ def real_sph_harm(m, n, theta, phi):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
     defined to be:
-        Imag($Y^m_n$) * sqrt(2)   if m > 0
-        $Y^m_n$                   if m == 0
-        Real($Y^|m|_n$) * sqrt(2) if m < 0
+
+        Real($Y^m_n$) * sqrt(2) if m > 0
+        $Y^m_n$                 if m == 0
+        Imag($Y^m_n$) * sqrt(2) if m < 0
 
     This may take scalar or array arguments. The inputs will be broadcasted
     against each other.
 
     Parameters
-    -----------
-    m : int |m| <= n
+    ----------
+    m : int ``|m| <= n``
         The order of the harmonic.
-    n : int >= 0
+    n : int ``>= 0``
         The degree of the harmonic.
-    theta : float [0, pi]
-        The polar coordinate (colatitude).
-    phi : float [0, 2*pi]
+    theta : float [0, 2*pi]
         The azimuthal (longitudinal) coordinate.
+    phi : float [0, pi]
+        The polar (colatitudinal) coordinate.
 
     Returns
     --------
     y_mn : real float
         The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
 
-    :See also:
-        scipy.special.sph_harm
+    See Also
+    --------
+    scipy.special.sph_harm
     """
     # dipy uses a convention for theta and phi that is reversed with respect to
     # function signature of scipy.special.sph_harm
@@ -374,8 +376,8 @@ class CsaOdfModel(SphHarmModel):
 
     References
     ----------
-    Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With Solid
-        Angle Consideration.
+    .. [1] Aganj, I., et. al. 2009. ODF Reconstruction in Q-Ball Imaging With
+           Solid Angle Consideration.
     """
     min = .001
     max = .999
@@ -402,10 +404,12 @@ class OpdtModel(SphHarmModel):
 
     References
     ----------
-    Tristan-Vega, A., et. al. 2010. A new methodology for estimation of fiber
-        populations in white matter of the brain with Funk-Radon transform.
-    Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation probability
-        density functions in high angular resolution diffusion imaging.
+    .. [1] Tristan-Vega, A., et. al. 2010. A new methodology for estimation of
+           fiber populations in white matter of the brain with Funk-Radon
+           transform.
+    .. [2] Tristan-Vega, A., et. al. 2009. Estimation of fiber orientation
+           probability density functions in high angular resolution diffusion
+           imaging.
     """
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, sqrt(smooth) * L)
@@ -432,8 +436,8 @@ class QballModel(SphHarmModel):
 
     References
     ----------
-    Descoteaux, M., et. al. 2007. Regularized, fast, and robust analytical
-        Q-ball imaging.
+    .. [1] Descoteaux, M., et. al. 2007. Regularized, fast, and robust
+           analytical Q-ball imaging.
     """
 
     def _set_fit_matrix(self, B, L, F, smooth):
@@ -497,14 +501,15 @@ def bootstrap_data_array(data, H, R, permute=None):
     samples can be used for non-parametric statistics or for bootstrap
     probabilistic tractography:
 
-    References:
-    -----------
-    J. I. Berman, et al., "Probabilistic streamline q-ball tractography using
-        the residual bootstrap" 2008
-    HA Haroon, et al., "Using the model-based residual bootstrap to quantify
-        uncertainty in fiber orientations from Q-ball analysis" 2009
-    B. Jeurissen, et al., "Probabilistic Fiber Tracking Using the Residual
-        Bootstrap with Constrained Spherical Deconvolution" 2011
+    References
+    ----------
+    .. [1] J. I. Berman, et al., "Probabilistic streamline q-ball tractography
+           using the residual bootstrap" 2008.
+    .. [2] HA Haroon, et al., "Using the model-based residual bootstrap to
+           quantify uncertainty in fiber orientations from Q-ball analysis"
+           2009.
+    .. [3] B. Jeurissen, et al., "Probabilistic Fiber Tracking Using the
+           Residual Bootstrap with Constrained Spherical Deconvolution" 2011.
     """
 
     if permute is None:
@@ -543,8 +548,8 @@ class ResidualBootstrapWrapper(object):
         Given some linear model described by B, the design matrix, and a
         signal_object, returns an object which can sample the residual
         bootstrap distribution of the signal. We assume that the signals are
-        normalized so we clip the bootsrap samples to be between min_signal and
-        1.
+        normalized so we clip the bootsrap samples to be between `min_signal`
+        and 1.
 
         Parameters
         ----------

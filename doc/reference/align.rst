@@ -8,4 +8,3 @@
     :toctree:
 
     aniso2iso
-    
