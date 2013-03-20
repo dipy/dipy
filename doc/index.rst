@@ -26,10 +26,9 @@ video of QuickBundles applied on a simple dataset.
 *************
 Announcements
 *************
-
-- **Release!** Version 0.6.0 21/02/2013
+- **Release 0.6.0**, End of March, 2013
 - **Dipy 3rd Sprint**, Berkeley, CA, April 2013
-- **ISBI 2013 will be based on Dipy**, February 2013
+- **ISBI HARDI challence 2013 will be based on Dipy**, February 2013
 
 
 ***************
