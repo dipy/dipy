@@ -32,7 +32,8 @@ zooms = img.get_header().get_zooms()[:3]
 
 """
 Randomly select some seed points from the mask:
-""" 
+"""
+
 seeds = seeds_from_mask(mask, [1, 1, 1], zooms)
 seeds = seeds[:2000]
 
