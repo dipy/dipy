@@ -46,7 +46,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.ifconfig', 
               'sphinx.ext.autosummary',
               'math_dollar', # has to go before numpydoc
-              'numpydoc']
+              'numpydoc',
+              'github']
+
+# ghissue config
+github_project_url = "https://github.com/nipy/nitime"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
