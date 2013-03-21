@@ -50,7 +50,7 @@ extensions = ['sphinx.ext.autodoc',
               'github']
 
 # ghissue config
-github_project_url = "https://github.com/nipy/nitime"
+github_project_url = "https://github.com/nipy/dipy"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
