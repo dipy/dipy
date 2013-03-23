@@ -569,6 +569,8 @@ class ResidualBootstrapWrapper(object):
         self._R = lcr_matrix(self._H)
         self._min_signal = min_signal
         self._where_dwi = where_dwi
+        self.data = signal_object.data
+        self.voxel_size = signal_object.voxel_size
 
     def __getitem__(self, index):
         """Indexes self._signal_object and bootstraps the result"""
