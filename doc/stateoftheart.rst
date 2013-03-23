@@ -20,6 +20,16 @@ With the help of some external tools you can also:
 - Read many different file formats e.g. Trackvis or Nifti.
 - Examine your datasets interactively (with ipython).
 
+
+For a full list of the features implemented in the most recent release cycle, check out the release notes
+
+.. toctree::
+   :maxdepth: 1
+
+   release0.6
+
+
+
 =================
 Systems supported
 =================
