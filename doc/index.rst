@@ -28,7 +28,7 @@ Announcements
 *************
 - **Release 0.6.0**, End of March, 2013
 - **Dipy 3rd Sprint**, Berkeley, CA, April 2013
-- **ISBI HARDI challence 2013 will be based on Dipy**, February 2013
+- **ISBI HARDI challenge 2013 will be based on Dipy**, February 2013
 
 
 ***************
