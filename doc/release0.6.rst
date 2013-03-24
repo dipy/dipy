@@ -26,6 +26,7 @@ this is the full list (generated with the script
 
 Pull Requests (100):
 
+* :ghpull:`146`: BF - allow Bootstrap Wrapper to work with markov tracking
 * :ghpull:`143`: Garyfallidis tutorials 0.6
 * :ghpull:`145`: Mdesco dti metrics
 * :ghpull:`141`: Peak extraction isbi
