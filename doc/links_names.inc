@@ -16,6 +16,7 @@
 .. _nibabel: http://nipy.sourceforge.net/nibabel
 .. _nibabel pypi: http://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: http://nipy.sourceforge.net/devel
+.. _buildbots: http://nipy.bic.berkeley.edu/builders
 
 .. Packaging
 .. _neurodebian: http://neuro.debian.net

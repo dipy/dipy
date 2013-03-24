@@ -14,15 +14,19 @@ Publications
 
 [6] Yeh F-C, Wedeen VJ, Tseng WY (2010), "Generalized Q-Sampling Imaging", IEEE Trans. Med. Imaging.
 
+[7] Garyfallidis E, Brett M, Correia M.M, Williams G.B, Nimmo-Smith I. (2012), "QuickBundles, a method for tractography simplification", Frontiers in
+Neuroscience, 6 (175).
 
-A short note
---------------
 
-* If you are using the Local Skeleton Clustering (LSC) method please cite [1].
+A note on citing our work
+--------------------------
 
-* If you are using track correspondence use [2].
+* The main reference citation for Dipy is [5].
 
-* If you are using Generalized Q-sampling please cite [6].
+* If you are using QuickBundles method please also cite [7].
 
-* For everything else please cite [5].
+* If you are using track correspondence also cite [2].
+
+* If you are using Generalized Q-sampling please also cite [6].
+
 

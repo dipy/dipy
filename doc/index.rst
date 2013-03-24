@@ -15,7 +15,7 @@ Highlights
 In Dipy_ we care about methods which can solve complex problems efficiently and
 robustly. QuickBundles is one of the many state-of-the art algorithms found
 in Dipy_. It can be used to simplify large datasets of streamlines. See our
-examples and try QuickBundles with your data :ref:`examples_index`. Here is a
+:ref:`gallery <examples_index>` of examples and try QuickBundles with your data. Here is a
 video of QuickBundles applied on a simple dataset.
 
 .. raw:: html
@@ -26,10 +26,9 @@ video of QuickBundles applied on a simple dataset.
 *************
 Announcements
 *************
-
-- **Release!** Version 0.6.0 21/02/2013
+- **Release 0.6.0**, End of March, 2013
 - **Dipy 3rd Sprint**, Berkeley, CA, April 2013
-- **ISBI 2013 will be based on Dipy**, February 2013
+- **ISBI HARDI challenge 2013 will be based on Dipy**, February 2013
 
 
 ***************
