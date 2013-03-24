@@ -25,13 +25,14 @@ Dipy
 The code found in Dipy was created by the following people: Eleftherios Garyfallidis, Matthew Brett, Bago Amirbekian, Ian Nimmo-Smith, Ariel Rokem, Stefan van der Walt, Christopher Nguyen, Maxime Descoteaux, Yaroslav Halchenko, Emanuele Olivetti, Michael Paquette, Samuel St-Jean, Endolith and Maria Luisa Mandelli.
 
 
-* 0.6.0 (Saturday, 23 Mar 2013)
+* 0.6.0 (Sunday, 24 Mar 2013)
 
 * Cython 0.17+ enforced
+* New reconstruction models API 
 * Diffusion Spectrum Imaging (DSI) 
 * DSI with deconvolution
 * Generalized Q-sampling Imaging 2 (GQI2)
-* Modular tracking 
+* Modular fiber tracking 
   * deterministic
   * probabilistic
 * Fast volume indexing (a faster ndindex)
@@ -48,16 +49,17 @@ The code found in Dipy was created by the following people: Eleftherios Garyfall
 * 2D sphere plotting
 * MultiTensor and Ball & Sticks voxel simulations
 * Fetch/Download data for examples
-* More examples/tutorials
-* Orbitual software phantom 
+* Software phantom generation
 * Angular similarity for comparisons between multiple peaks
-* SingleVoxelModel to MultiVoxelModel decorators
+* SingleVoxelModel to MultiVoxelModel decorator
 * Mrtrix and fibernavigator SH bases
-* Benchmarks
+* More Benchmarks
+* More Tests
 * Color FA and other Tensor metrics added
 * Scripts for the ISBI 2013 competition
 * Fit_tensor script added
-* Added radial basis function interpolation on the sphere
+* Radial basis function interpolation on the sphere
+* New examples/tutorials
 
 
 * 0.5.0 (Friday, 11 Feb 2011)
