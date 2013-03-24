@@ -22,9 +22,43 @@ Releases
 Dipy
 ++++
 
-Most work on Dipy so far has been by Eleftherios Garyfallidis, Ian
-Nimmo-Smith, Matthew Brett, Bago Amirbekian, Christopher Nguyen, Yaroslav
-Halchenko and  Emanuele Olivetti.
+The code found in Dipy was created by the following people: Eleftherios Garyfallidis, Matthew Brett, Bago Amirbekian, Ian Nimmo-Smith, Ariel Rokem, Stefan van der Walt, Christopher Nguyen, Maxime Descoteaux, Yaroslav Halchenko, Emanuele Olivetti, Michael Paquette, Samuel St-Jean, Endolith and Maria Luisa Mandelli.
+
+
+* 0.6.0 (Saturday, 23 Mar 2013)
+
+* Cython 0.17+ enforced
+* Diffusion Spectrum Imaging (DSI) 
+* DSI with deconvolution
+* Generalized Q-sampling Imaging 2 (GQI2)
+* Modular tracking 
+  * deterministic
+  * probabilistic
+* Fast volume indexing (a faster ndindex)
+* Spherical Harmonic Models
+  * Opdt (Tristan-Vega et. al)
+  * CSA odf (Aganj et. al)
+  * Analytical Q-ball (Descoteuax et. al)
+  * Tuch's Q-ball (Tuch et. al)
+* Visualization of spherical functions
+* Peak finding in odfs
+* Non-linear peak finding
+* Sphere Object
+* Gradients Object
+* 2D sphere plotting
+* MultiTensor and Ball & Sticks voxel simulations
+* Fetch/Download data for examples
+* More examples/tutorials
+* Orbitual software phantom 
+* Angular similarity for comparisons between multiple peaks
+* SingleVoxelModel to MultiVoxelModel decorators
+* Mrtrix and fibernavigator SH bases
+* Benchmarks
+* Color FA and other Tensor metrics added
+* Scripts for the ISBI 2013 competition
+* Fit_tensor script added
+* Added radial basis function interpolation on the sphere
+
 
 * 0.5.0 (Friday, 11 Feb 2011)
 
