@@ -1,6 +1,6 @@
 # init for io routines
 from .gradients import *
-from .dpy import *
+from .dpy import Dpy
 from .bvectxt import *
 from .pickles import *
-import utils 
+from . import utils
