@@ -13,6 +13,8 @@
 .. _dipy: http://dipy.org
 .. _`dipy github`: http://github.com/nipy/dipy
 .. _dipy pypi: http://pypi.python.org/pypi/dipy
+.. _nipy issues: http://github.com/nipy/nipy/issues
+.. _dipy issues: http://github.com/nipy/dipy/issues
 .. _nibabel: http://nipy.sourceforge.net/nibabel
 .. _nibabel pypi: http://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: http://nipy.sourceforge.net/devel
