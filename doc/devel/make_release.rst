@@ -6,7 +6,6 @@ A guide to making a dipy release
 
 A guide for developers who are doing a dipy release
 
-* Edit :file:`info.py` and bump the version number
 
 .. _release-tools:
 
@@ -19,6 +18,7 @@ in the ``testers`` module of that package.  Dipy has Makefile targets for their
 use.  The relevant targets are::
 
     make check-version-info
+    make check-files
     make sdist-tests
 
 The first installs the code from a git archive, from the repository, and for
@@ -41,22 +41,30 @@ the tests from the resulting directory.
 Release checklist
 =================
 
-* Review the open list of `issues <http://github.com/nipy/dipy/issues>`_ .
-  Check whether there are outstanding issues that can be closed, and whether
-  there are any issues that should delay the release.  Label them !
+* Review the open list of `dipy issues`_.  Check whether there are
+  outstanding issues that can be closed, and whether there are any issues that
+  should delay the release.  Label them !
 
 * Review and update the release notes.  Review and update the :file:`Changelog`
   file.  Get a partial list of contributors with something like::
 
-      git log 0.4.0.. | grep '^Author' | cut -d' ' -f 2- | sort | uniq
+      git log 0.5.0.. | grep '^Author' | cut -d' ' -f 2- | sort | uniq
 
-  where ``0.4.0`` was the last release tag name.
+  where ``0.5.0`` was the last release tag name.
 
-  Then manually go over the *git log* to make sure the release notes are
-  as complete as possible and that every contributor was recognized.
+  Then manually go over ``git shortlog 0.5.0..`` to make sure the release notes
+  are as complete as possible and that every contributor was recognized.
+
+* Use the opportunity to update the ``.mailmap`` file if there are any duplicate
+  authors listed from ``git shortlog -ns``.
+
+* Add any new authors to the ``AUTHORS`` file.  Add any new entries to the
+  ``THANKS`` file.
+
+* Check the copyright years in ``doc/conf.py`` and ``LICENSE``
 
 * Check the ``long_description`` in ``dipy/info.py``.  Check it matches the
-  ``README`` in the root directory.
+  ``README`` in the root directory, maybe with ``vim`` ``diffthis`` command.
 
 * Clean and compile::
 
