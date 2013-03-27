@@ -16,6 +16,9 @@ from ..utils.optpkg import optional_package
 # Allow import, but disable doctests, if we don't have pytables
 tables, have_tables, setup_module = optional_package('tables')
 
+# Make sure not to carry across setup module from * import
+__all__ = ['Dpy']
+
 
 class Dpy(object):
 
