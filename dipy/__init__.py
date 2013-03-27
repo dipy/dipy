@@ -47,7 +47,8 @@ bench = Tester().bench
 del Tester
 
 # Plumb in version etc info stuff
-import os
 from .pkg_info import get_pkg_info as _get_pkg_info
-get_info = lambda : _get_pkg_info(os.path.dirname(__file__))
-del os, sys
+def get_info():
+    from os.path import dirname
+    return _get_pkg_info(dirname(__file__))
+del sys
