@@ -20,7 +20,7 @@ execfile(ver_file)
 if not 'force_setuptools' in globals():
     # For some commands, use setuptools
     if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
-                'bdist_wininst', 'install_egg_info', 'egg_info',
+                'bdist_mpkg', 'install_egg_info', 'egg_info',
                 'easy_install')).intersection(sys.argv)) > 0:
         force_setuptools = True
     else:
@@ -166,7 +166,7 @@ def main(**extra_args):
                           ]},
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc','examples','*.py')))],
-          scripts      = glob(pjoin('scripts', '*')),
+          scripts      = glob(pjoin('bin', '*')),
           cmdclass = cmdclass,
           **extra_args
          )
