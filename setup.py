@@ -166,7 +166,7 @@ def main(**extra_args):
                           ]},
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc','examples','*.py')))],
-          scripts      = glob(pjoin('scripts', '*')),
+          scripts      = glob(pjoin('bin', '*')),
           cmdclass = cmdclass,
           **extra_args
          )
