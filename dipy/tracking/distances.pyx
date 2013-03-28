@@ -204,19 +204,23 @@ def cut_plane(tracks,ref):
     hits : sequence
        list of points and rcds (radial coefficient of divergence)``
 
+    Notes
+    -----
+    The orthogonality relationship
+    np.inner(hits[p][q][0:3]-ref[p+1],ref[p+2]-ref[r][p+1]) will hold throughout
+    for every point q in the hits plane at point (p+1) on the reference track.
+
     Examples
     --------
-    >>> from dipy.tracking.distances import cut_plane
     >>> refx = np.array([[0,0,0],[1,0,0],[2,0,0],[3,0,0]],dtype='float32')
     >>> bundlex = [np.array([[0.5,1,0],[1.5,2,0],[2.5,3,0]],dtype='float32')]
-    >>> cut_plane(bundlex,refx)
-    [array([[ 1.        ,  1.5       ,  0.        ,  0.70710683, 0,]], dtype=float32),
-     array([[ 2.        ,  2.5       ,  0.        ,  0.70710677, 0.]], dtype=float32)]
-
-    The orthogonality relationship
-    np.inner(hits[p][q][0:3]-ref[p+1],ref[p+2]-ref[r][p+1])
-    will hold throughout for every point q in the hits plane
-    at point (p+1) on the reference track.
+    >>> res = cut_plane(bundlex,refx)
+    >>> len(res)
+    2
+    >>> print(res[0])
+    [[ 1.          1.5         0.          0.70710683  0.        ]]
+    >>> print(res[1])
+    [[ 2.          2.5         0.          0.70710677  0.        ]]
     '''
     cdef:
         size_t n_hits, hit_no, max_hit_len
@@ -832,11 +836,13 @@ def minimum_closest_distance(xyz1,xyz2):
 
 
 def lee_perpendicular_distance(start0, end0, start1, end1):
-    ''' Based on Lee , Han & Whang SIGMOD07.
-        Calculates perpendicular distance metric for the distance between two line segments
+    ''' Calculates perpendicular distance metric for the distance between two line segments
 
-    This function assumes that norm(end0-start0)>norm(end1-start1)
-    i.e. that the first segment will be bigger than the second one.
+    Based on Lee , Han & Whang SIGMOD07.
+
+    This function assumes that norm(end0-start0)>norm(end1-start1) i.e. that the
+    first segment will be bigger than the second one.
+
     Parameters
     ----------
     start0 : float array(3,)
@@ -847,12 +853,6 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     Returns
     -------
     perpendicular_distance: float
-
-    Examples
-    --------
-    >>> import dipy.core.performance as pf
-    >>> pf.lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    5.9380966767403436
 
     Notes
     -----
@@ -875,6 +875,10 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
     else:
         return 0.
 
+    Examples
+    --------
+    >>> print(lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3]))
+    5.78788757324
     '''
 
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
@@ -888,9 +892,7 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
 
 
 cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1, float *end1):
-    '''
-    This function assumes that
-    norm(end0-start0)>norm(end1-start1)
+    ''' This function assumes that norm(end0-start0)>norm(end1-start1)
     '''
 
     cdef:
@@ -934,12 +936,14 @@ cdef float clee_perpendicular_distance(float *start0, float *end0,float *start1,
     else:
         return 0.
 
-def lee_angle_distance(start0, end0, start1, end1):
-    ''' Based on Lee , Han & Whang SIGMOD07.
-        Calculates angle distance metric for the distance between two line segments
 
-    This function assumes that norm(end0-start0)>norm(end1-start1)
-    i.e. that the first segment will be bigger than the second one.
+def lee_angle_distance(start0, end0, start1, end1):
+    ''' Calculates angle distance metric for the distance between two line segments
+
+    Based on Lee , Han & Whang SIGMOD07.
+
+    This function assumes that norm(end0-start0)>norm(end1-start1) i.e. that the
+    first segment will be bigger than the second one.
 
     Parameters
     ----------
@@ -952,21 +956,18 @@ def lee_angle_distance(start0, end0, start1, end1):
     -------
     angle_distance : float
 
-    Examples
-    --------
-    >>> import dipy.tracking.distances as pf
-    >>> pf.lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
-    2.0
-
     Notes
     -----
-
     l_0 = np.inner(end0-start0,end0-start0)
     l_1 = np.inner(end1-start1,end1-start1)
 
     cos_theta_squared = np.inner(end0-start0,end1-start1)**2/ (l_0*l_1)
     return np.sqrt((1-cos_theta_squared)*l_1)
 
+    Examples
+    --------
+    >>> lee_angle_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    2.0
     '''
 
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
@@ -978,10 +979,9 @@ def lee_angle_distance(start0, end0, start1, end1):
 
     return clee_angle_distance(<float *>fvec1.data,<float *>fvec2.data,<float *>fvec3.data,<float *>fvec4.data)
 
+
 cdef float clee_angle_distance(float *start0, float *end0,float *start1, float *end1):
-    '''
-    This function assumes that
-    norm(end0-start0)>norm(end1-start1)
+    ''' This function assumes that norm(end0-start0)>norm(end1-start1)
     '''
 
     cdef:
@@ -1027,8 +1027,9 @@ def approx_polygon_track(xyz,alpha=0.392):
 
     Examples
     --------
-    >>> from fos.tracking.distances import approx_polygon_track
-    >>> #approximating a helix
+
+    Approximating a helix:
+
     >>> t=np.linspace(0,1.75*2*np.pi,100)
     >>> x = np.sin(t)
     >>> y = np.cos(t)
@@ -1154,21 +1155,27 @@ def approximate_mdl_trajectory(xyz, alpha=1.):
 
 
 def intersect_segment_cylinder(sa,sb,p,q,r):
-    '''
-    Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r
-    Look p.197 from Real Time Collision Detection C. Ericson
+    ''' Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r
+
+    See p.197 from Real Time Collision Detection by C. Ericson
 
     Examples
     --------
-    >>> from dipy.tracking.distances import intersect_segment_cylinder as isc
-    >>> # Define cylinder using a segment defined by
-    >>> p=np.array([0,0,0],dtype=float32)
-    >>> q=np.array([1,0,0],dtype=float32)
+    Define cylinder using a segment defined by
+
+    >>> p=np.array([0,0,0],dtype=np.float32)
+    >>> q=np.array([1,0,0],dtype=np.float32)
     >>> r=0.5
-    >>> # Define segment
-    >>> sa=np.array([0.5,1 ,0],dtype=float32)
-    >>> sb=np.array([0.5,-1,0],dtype=float32)
-    >>> isc(sa,sb,p,q,r)
+
+    Define segment
+
+    >>> sa=np.array([0.5,1 ,0],dtype=np.float32)
+    >>> sb=np.array([0.5,-1,0],dtype=np.float32)
+
+    Intersection
+
+    >>> intersect_segment_cylinder(sa, sb, p, q, r)
+    (1.0, 0.25, 0.75)
     '''
     cdef:
         float *csa,*csb,*cp,*cq
@@ -1183,16 +1190,20 @@ def intersect_segment_cylinder(sa,sb,p,q,r):
     ct[0]=-100
     ct[1]=-100
 
-    tmp= cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
+    tmp = cintersect_segment_cylinder(csa,csb,cp, cq, cr, ct)
 
-    return tmp,ct[0],ct[1]
+    return tmp, ct[0], ct[1]
 
 cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, float r, float *t):
     ''' Intersect Segment S(t) = sa +t(sb-sa), 0 <=t<= 1 against cylinder specified by p,q and r
-    Look p.197 from Real Time Collision Detection C. Ericson
-    0 no intersection
-    1 intersection
 
+    Look p.197 from Real Time Collision Detection C. Ericson
+
+    Returns
+    -------
+    inter : bool
+        0 no intersection
+        1 intersection
     '''
     cdef:
         float d[3],m[3],n[3]
@@ -1256,25 +1267,22 @@ cdef float cintersect_segment_cylinder(float *sa,float *sb,float *p, float *q, f
     return 1.
 
 
-def point_segment_sq_distance(a,b,c):
+def point_segment_sq_distance(a, b, c):
     ''' Calculate the squared distance from a point c to a finite line segment ab.
 
     Examples
     --------
-    >>> from dipy.tracking.distances import point_segment_sq_distance
-    >>> a=np.array([0,0,0],dtype=float32)
-    >>> b=np.array([1,0,0],dtype=float32)
-    >>> c=np.array([0,1,0],dtype=float32)
-    >>> point_segment_sq_distance(a,b,c)
+    >>> a=np.array([0,0,0], dtype=np.float32)
+    >>> b=np.array([1,0,0], dtype=np.float32)
+    >>> c=np.array([0,1,0], dtype=np.float32)
+    >>> point_segment_sq_distance(a, b, c)
     1.0
-    >>> c=np.array([0,3,0],dtype=float32)
-    >>> pf.point_segment_sq_distance(a,b,c)
+    >>> c = np.array([0,3,0], dtype=np.float32)
+    >>> point_segment_sq_distance(a,b,c)
     9.0
-    >>> c=np.array([-1,1,0],dtype=float32)
-    >>> pf.point_segment_sq_distance(a,b,c)
+    >>> c = np.array([-1,1,0], dtype=np.float32)
+    >>> point_segment_sq_distance(a, b, c)
     2.0
-
-
     '''
     cdef:
         float *ca,*cb,*cc
@@ -1286,6 +1294,7 @@ def point_segment_sq_distance(a,b,c):
     cc = asfp(c)
 
     return cpoint_segment_sq_dist(ca, cb, cc)
+
 
 @cython.cdivision(True)
 cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
@@ -1311,11 +1320,10 @@ cdef inline float cpoint_segment_sq_dist(float * a, float * b, float * c) nogil:
     return cinner_3vecs(ac, ac) - e * e / f
 
 
-
 def track_dist_3pts(tracka,trackb):
-
     ''' Calculate the euclidean distance between two 3pt tracks
-    both direct and flip distances are calculated but only the smallest is returned
+
+    Both direct and flip distances are calculated but only the smallest is returned
 
     Parameters
     ----------
@@ -1330,13 +1338,10 @@ def track_dist_3pts(tracka,trackb):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> from dipy.tracking.distances import track_dist_3pts
-    >>> a=np.array([[0,0,0],[1,0,0,],[2,0,0]])
-    >>> b=np.array([[3,0,0],[3.5,1,0],[4,2,0]])
-    >>> track_dist_3pts(a,b)
-
-
+    >>> a = np.array([[0,0,0],[1,0,0,],[2,0,0]])
+    >>> b = np.array([[3,0,0],[3.5,1,0],[4,2,0]])
+    >>> print(track_dist_3pts(a, b))
+    2.72157287598
     '''
 
     cdef cnp.ndarray[cnp.float32_t, ndim=2] a,b
@@ -1352,6 +1357,7 @@ def track_dist_3pts(tracka,trackb):
         return d[0]
     else:
         return d[1]
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -1480,7 +1486,6 @@ def local_skeleton_clustering(tracks, d_thr=10):
 
     Examples
     --------
-    >>> from dipy.tracking.distances import local_skeleton_clustering
     >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
     ...         np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
     ...         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
@@ -1488,7 +1493,7 @@ def local_skeleton_clustering(tracks, d_thr=10):
     ...         np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
     ...         np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
     ...         np.array([[0,0,0],[0,1,0],[0,2,0]])]
-    >>> C = local_skeleton_clustering(tracks, d_thr=0.5,3)
+    >>> C = local_skeleton_clustering(tracks, d_thr=0.5)
 
     Notes
     -----
@@ -1666,7 +1671,6 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
 
     Examples
     --------
-    >>> from dipy.viz import fvtk
     >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]]),
     ...         np.array([[3,0,0],[3.5,1,0],[4,2,0]]),
     ...         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]]),
@@ -1674,7 +1678,7 @@ def local_skeleton_clustering_3pts(tracks, d_thr=10):
     ...         np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]]),
     ...         np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]]),
     ...         np.array([[0,0,0],[0,1,0],[0,2,0]])]
-    >>> C=local_skeleton_clustering(tracks,d_thr=0.5)
+    >>> C=local_skeleton_clustering_3pts(tracks,d_thr=0.5)
 
     Notes
     -----
@@ -1777,17 +1781,17 @@ cdef inline void track_direct_flip_3sq_dist(float *a1, float *b1,float  *c1,floa
     out[1]=(tmp1f+tmp2+tmp3f)/3.0
 
 
-def larch_3split(tracks,indices=None,thr=10.):
-    '''Generate a first pass clustering using 3 points (first, mid and last) on
-    the tracks only.
+def larch_3split(tracks, indices=None, thr=10.):
+    '''Generate a first pass clustering using 3 points on the tracks only.
 
     Parameters
     ----------
     tracks : sequence
-        of tracks as arrays, shape ``(N1,3) .. (Nm,3)``.
-    indices : sequence
-        of integer indices of tracks
-    trh : float
+        of tracks as arrays, shape ``(N1,3) .. (Nm,3)``, where 3 points are
+        (first, mid and last)
+    indices : None or sequence, optional
+        Sequence of integer indices of tracks
+    trh : float, optional
         squared euclidean distance threshold
 
     Returns
@@ -1795,42 +1799,40 @@ def larch_3split(tracks,indices=None,thr=10.):
     C : dict
         A tree graph containing the clusters.
 
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from dipy.viz import fvtk
-    >>> from dipy.tracking.distances as pf
-    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]],dtype=np.float32),
-    >>>         np.array([[3,0,0],[3.5,1,0],[4,2,0]],dtype=np.float32),
-    >>>         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]],dtype=np.float32),
-    >>>         np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]],dtype=np.float32),
-    >>>         np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]],dtype=np.float32),
-    >>>         np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]],dtype=np.float32),
-    >>>         np.array([[0,0,0],[0,1,0],[0,2,0]],dtype=np.float32),
-    >>>         np.array([[0.2,0,0],[0.2,1,0],[0.2,2,0]],dtype=np.float32),
-    >>>         np.array([[-0.2,0,0],[-0.2,1,0],[-0.2,2,0]],dtype=np.float32)]
-    >>> C=pf.larch_fast_split(tracks,None,0.5)
-
-    Here is an example of how to visualize the clustering above
-
-    >>> r=fvtk.ren()
-    >>> fvtk.add(r,fvtk.line(tracks,fvtk.red))
-    >>> fvtk.show(r)
-    >>> for c in C:
-    ...     color=np.random.rand(3)
-    ...     for i in C[c]['indices']:
-    ...         fos.add(r,fvtk.line(tracks[i],color))
-    >>> fvtk.show(r)
-    >>> for c in C:
-    ...     fvtk.add(r,fos.line(C[c]['rep3']/C[c]['N'],fos.white))
-    >>> fvtk.show(r)
-
     Notes
     -----
     If a 3 point track (3track) is far away from all clusters then add a new
     cluster and assign this 3track as the rep(representative) track for the new
     cluster. Otherwise the rep 3track of each cluster is the average track of
     the cluster.
+
+    Examples
+    --------
+    >>> tracks=[np.array([[0,0,0],[1,0,0,],[2,0,0]],dtype=np.float32),
+    ...         np.array([[3,0,0],[3.5,1,0],[4,2,0]],dtype=np.float32),
+    ...         np.array([[3.2,0,0],[3.7,1,0],[4.4,2,0]],dtype=np.float32),
+    ...         np.array([[3.4,0,0],[3.9,1,0],[4.6,2,0]],dtype=np.float32),
+    ...         np.array([[0,0.2,0],[1,0.2,0],[2,0.2,0]],dtype=np.float32),
+    ...         np.array([[2,0.2,0],[1,0.2,0],[0,0.2,0]],dtype=np.float32),
+    ...         np.array([[0,0,0],[0,1,0],[0,2,0]],dtype=np.float32),
+    ...         np.array([[0.2,0,0],[0.2,1,0],[0.2,2,0]],dtype=np.float32),
+    ...         np.array([[-0.2,0,0],[-0.2,1,0],[-0.2,2,0]],dtype=np.float32)]
+    >>> C = larch_3split(tracks, None, 0.5)
+
+    Here is an example of how to visualize the clustering above::
+
+        from dipy.viz import fvtk
+        r=fvtk.ren()
+        fvtk.add(r,fvtk.line(tracks,fvtk.red))
+        fvtk.show(r)
+        for c in C:
+            color=np.random.rand(3)
+            for i in C[c]['indices']:
+                fos.add(r,fvtk.line(tracks[i],color))
+        fvtk.show(r)
+        for c in C:
+            fvtk.add(r,fos.line(C[c]['rep3']/C[c]['N'],fos.white))
+        fvtk.show(r)
     '''
 
     cdef:
@@ -1946,7 +1948,9 @@ def larch_3merge(C,thr=10.):
 
 
 
-def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[float,ndim=1] point, double sq_dist_thr):
+def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track,
+                                  cnp.ndarray[float,ndim=1] point,
+                                  double sq_dist_thr):
     ''' Check if square distance of track from point is smaller than threshold
 
     Parameters
@@ -1961,7 +1965,6 @@ def point_track_sq_distance_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[f
 
     Examples
     --------
-    >>> from dipy.tracking.distances import point_track_sq_distance_check
     >>> t=np.random.rand(10,3).astype(np.float32)
     >>> p=np.array([0.5,0.5,0.5],dtype=np.float32)
     >>> point_track_sq_distance_check(t,p,2**2)
@@ -2018,7 +2021,6 @@ def track_roi_intersection_check(cnp.ndarray[float,ndim=2] track, cnp.ndarray[fl
 
     Examples
     --------
-    >>> from dipy.tracking.distances import track_roi_intersection_check
     >>> roi=np.array([[0,0,0],[1,0,0],[2,0,0]],dtype='f4')
     >>> t=np.array([[0,0,0],[1,1,1],[2,2,2]],dtype='f4')
     >>> track_roi_intersection_check(t,roi,1)
