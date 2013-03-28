@@ -35,11 +35,11 @@ def vec_val_vect(vecs, vals):
     >>> vecs = np.arange(9).reshape((1, 3, 3))
     >>> vals = np.arange(3).reshape((1, 3))
     >>> vec_val_vect(vecs, vals)
-    array([[  9,  24,  39],
-           [ 24,  66, 108],
-           [ 39, 108, 177]])
+    array([[[   9.,   24.,   39.],
+            [  24.,   66.,  108.],
+            [  39.,  108.,  177.]]])
 
-    That's the same as the 2D case
+    That's the same as the 2D case (apart from the float casting):
 
     >>> vecs = np.arange(9).reshape((3, 3))
     >>> vals = np.arange(3)
