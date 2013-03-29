@@ -151,6 +151,7 @@ def main(**extra_args):
                           'dipy.data',
                           'dipy.utils',
                           'dipy.utils.tests',
+                          'dipy.fixes',
                           'dipy.external',
                           'dipy.external.tests',
                           'dipy.segment',
