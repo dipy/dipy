@@ -9,7 +9,7 @@ from dipy.core.sphere import Sphere
 
 
 def sh_estimate(sphere_file, directions_file, out_file,
-                rank=4, smoothness=0.0):
+                rank=8, smoothness=0.0):
     in_nifti = nib.load(sphere_file)
     refaff = in_nifti.get_affine()
     data = in_nifti.get_data()
@@ -17,7 +17,7 @@ def sh_estimate(sphere_file, directions_file, out_file,
     vertices = np.loadtxt(directions_file)
     sphere = Sphere(xyz=vertices)
 
-    odf_sh = sf_to_sh(data, sphere, int(rank), "mrtrix", smoothness)
+    odf_sh = sf_to_sh(data, sphere, int(rank), "mrtrix", np.float(smoothness))
 
     sh_out = nib.Nifti1Image(odf_sh.astype(np.float32), refaff)
     nib.save(sh_out, out_file)
@@ -44,8 +44,8 @@ def buildArgsParser():
                    metavar='int', required=False, default=8,
                    help='Maximum SH order of estimation (default 8)')
     p.add_argument('-l', '--lambda', action='store', dest='smoothness',
-                   metavar='float', required=False, default=0.006,
-                   help='Laplace-Beltrami regularization (default 0.006)')
+                   metavar='float', required=False, default=0.0,
+                   help='Laplace-Beltrami regularization (default 0.0)')
     return p
 
 
