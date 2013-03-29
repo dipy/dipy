@@ -2,7 +2,8 @@
 
 import nibabel as nib
 import numpy as np
-import argparse
+
+from dipy.fixes import argparse
 
 from dipy.core.ndindex import ndindex
 from dipy.reconst.odf import peak_directions
