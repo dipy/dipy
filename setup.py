@@ -63,6 +63,7 @@ from distutils.extension import Extension
 from distutils.command import build_py, build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
+from setup_helpers import install_scripts_bat
 
 # Define extensions
 EXTS = []
@@ -110,6 +111,7 @@ cmdclass = dict(
     build_py=pybuilder,
     build_ext=extbuilder,
     install=installer,
+    install_scripts=install_scripts_bat,
     sdist=get_pyx_sdist())
 
 
@@ -130,6 +132,7 @@ def main(**extra_args):
           requires=REQUIRES,
           provides=PROVIDES,
           packages     = ['dipy',
+                          'dipy.tests',
                           'dipy.align',
                           'dipy.core',
                           'dipy.core.tests',
@@ -148,6 +151,7 @@ def main(**extra_args):
                           'dipy.data',
                           'dipy.utils',
                           'dipy.utils.tests',
+                          'dipy.fixes',
                           'dipy.external',
                           'dipy.external.tests',
                           'dipy.segment',
@@ -166,7 +170,9 @@ def main(**extra_args):
                           ]},
           data_files=[('share/doc/dipy/examples',
                        glob(pjoin('doc','examples','*.py')))],
-          scripts      = glob(pjoin('bin', '*')),
+          scripts      = [pjoin('bin', 'dipy_peak_extraction'),
+                          pjoin('bin', 'dipy_fit_tensor'),
+                          pjoin('bin', 'dipy_sh_estimate')],
           cmdclass = cmdclass,
           **extra_args
          )
