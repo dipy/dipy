@@ -35,4 +35,5 @@ doctests.DocTestCase.id = id
 
 
 if __name__ == '__main__':
-    nose.core.TestProgram(argv=sys.argv, addplugins=[doctests.Doctest()])
+    argv = sys.argv + ['--with-doctest']
+    nose.core.TestProgram(argv=argv, addplugins=[doctests.Doctest()])
