@@ -63,6 +63,7 @@ from distutils.extension import Extension
 from distutils.command import build_py, build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
+from setup_helpers import install_scripts_bat
 
 # Define extensions
 EXTS = []
@@ -110,6 +111,7 @@ cmdclass = dict(
     build_py=pybuilder,
     build_ext=extbuilder,
     install=installer,
+    install_scripts=install_scripts_bat,
     sdist=get_pyx_sdist())
 
 
