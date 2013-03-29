@@ -49,7 +49,7 @@ cdef  cnp.npy_intp offset(cnp.npy_intp *indices,cnp.npy_intp *strides,int lenind
 
     Returns
     ----------
-    offset : integer, offset from 0 pointer in memory normalized by dtype
+    offset : integer, element position in array
     '''
  
     cdef int i
@@ -75,7 +75,7 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices, \
 
     Returns
     -------
-    offset : integer, offset from 0 pointer in memory normalized by dtype
+    offset : integer, element position in array 
 
     Examples
     --------
@@ -84,7 +84,7 @@ def ndarray_offset(cnp.ndarray[cnp.npy_intp, ndim=1] indices, \
     >>> I=np.array([1,1])
     >>> A=np.array([[1,0,0],[0,2,0],[0,0,3]])
     >>> S=np.array(A.strides)
-    >>> ndarray_offset(I,S,2,8)
+    >>> ndarray_offset(I,S,2,A.dtype.itemsize)
     4
     >>> A.ravel()[4]==A[1,1]
     True
