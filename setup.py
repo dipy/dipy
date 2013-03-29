@@ -132,6 +132,7 @@ def main(**extra_args):
           requires=REQUIRES,
           provides=PROVIDES,
           packages     = ['dipy',
+                          'dipy.tests',
                           'dipy.align',
                           'dipy.core',
                           'dipy.core.tests',
