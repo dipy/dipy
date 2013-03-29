@@ -165,30 +165,39 @@ Release checklist
 
   after which python25 upload seemed to go smoothly.
 
-* Building OSX dmgs.  This is very unpleasant.
+* Building OSX dmgs.  This is a little complicated
 
   See `MBs OSX setup
   <http://matthew-brett.github.com/pydagogue/develop_mac.html>`_).
 
-  The problem here is that we need to run the package build as root, so that the
-  files have root permissions when installed from the installer.  We also can't
-  use virtualenvs, because the installer needs to find the correct system path
-  into which to install - so the python ``sys.prefix`` has to be e.g.
-  ``/Library/Frameworks/Python.framework/Versions/2.6``.  What I ended up doing
-  was to make a script to set paths etc from a handy virtualenv, but run the
-  relevant system python, as root.  See the crude, fragile ``tools/pythonsudo``
-  bash script for details.  The procedure then::
+  We have builders building the packages on the buildbots.
 
-    sudo ./tools/pythonsudo 5
-    make clean
-    python tools/osxbuild.py
+  The mpkg packages will appear in http://nipy.bic.berkeley.edu/dipy-dist
 
-  The ``osxbuild.py`` script comes from numpy and uses the ``bdist_mpkg`` script
-  we might have installed above.
+  The problem is that the buildbots built the packages as the ``buildslave``
+  user, but we need to make files have root permissions when installed from the
+  installer.
 
-* Repeat binary builds for Linux 32, 64 bit and OS X.
+  This can be done using a script ``reown_mpkg`` that is part of the development
+  version of ``bdist_mpkg`` : https://github.com/matthew-brett/bdist_mpkg
 
-* Get to a windows machine and do egg and wininst builds::
+  Install the development version, and then you can build correct installers
+  with something like the following (on a machine to which you have ``sudo``
+  permission)::
+
+      mkdir mpkgs
+      cd mpkgs/
+      scp -r buildbot-master:nibotmi/public_html/dipy-dist/*.mpkg .
+      sudo reown_mpkg dipy-0.6.0.dev-py2.6-macosx10.6.mpkg root admin
+      sudo reown_mpkg dipy-0.6.0.dev-py2.7-macosx10.6.mpkg root admin
+      zip -r dipy-0.6.0.dev-py2.6-macosx10.6.mpkg.zip dipy-0.6.0.dev-py2.6-macosx10.6.mpkg
+      zip -r dipy-0.6.0.dev-py2.7-macosx10.6.mpkg.zip dipy-0.6.0.dev-py2.7-macosx10.6.mpkg
+
+* Windows ``.exe`` installers should arrive in the same directory as the mpkg
+  builds.  You may need to trigger the relevant builders from the buildbot web
+  interface.  You should be able to download them and then upload them to pypi.
+
+  If not, the manual way is something like::
 
     make distclean
     c:\Python26\python.exe setup.py bdist_egg upload
