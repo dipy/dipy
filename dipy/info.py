@@ -64,8 +64,8 @@ You can find our sources and single-click downloads:
 
 .. _main repository: http://github.com/nipy/dipy
 .. _Documentation: http://dipy.org
-.. _current trunk: http://github.com/nipy/dipy/archives/master
-.. _available releases: http://github.com/nipy/dipy/downloads
+.. _current trunk: https://github.com/nipy/dipy/archive/master.zip
+.. _available releases: https://pypi.python.org/pypi/dipy
 
 License
 =======
