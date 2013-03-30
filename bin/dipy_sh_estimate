@@ -2,7 +2,8 @@
 
 import nibabel as nib
 import numpy as np
-import argparse
+
+from dipy.fixes import argparse
 
 from dipy.reconst.shm import sf_to_sh
 from dipy.core.sphere import Sphere

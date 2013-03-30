@@ -37,7 +37,7 @@ def dipysave(img, filename):
 
 if len(args) != 1:
     parser.print_help()
-    parser.exit(1)
+    parser.exit(2)
 dwi_file = args[0]
 
 if opts.root is None:
