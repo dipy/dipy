@@ -6,7 +6,6 @@ A guide to making a dipy release
 
 A guide for developers who are doing a dipy release
 
-
 .. _release-tools:
 
 Release tools
@@ -48,11 +47,11 @@ Release checklist
 * Review and update the release notes.  Review and update the :file:`Changelog`
   file.  Get a partial list of contributors with something like::
 
-      git log 0.5.0.. | grep '^Author' | cut -d' ' -f 2- | sort | uniq
+      git shortlog -ns 0.6.0..
 
-  where ``0.5.0`` was the last release tag name.
+  where ``0.6.0`` was the last release tag name.
 
-  Then manually go over ``git shortlog 0.5.0..`` to make sure the release notes
+  Then manually go over ``git shortlog 0.6.0..`` to make sure the release notes
   are as complete as possible and that every contributor was recognized.
 
 * Use the opportunity to update the ``.mailmap`` file if there are any duplicate
@@ -63,15 +62,66 @@ Release checklist
 
 * Check the copyright years in ``doc/conf.py`` and ``LICENSE``
 
+* Check the examples - we really need an automated check here.
+
 * Check the ``long_description`` in ``dipy/info.py``.  Check it matches the
   ``README`` in the root directory, maybe with ``vim`` ``diffthis`` command.
+  Check all the links are still valid.
+
+* Check all the dipy builds are green on the `nipy buildbot`_
+
+* If you have travis-ci_ building set up you might want to push the code in its
+  current state to a branch that will build, e.g::
+
+    git branch -D pre-release-test # in case branch already exists
+    git co -b pre-release-test
+
+* Run the builder and review the output from
+  http://nipy.bic.berkeley.edu/builders/dipy-release-checks   This builder does
+  *not* check the outputs - they will likely all be green - you have to check the
+  ``stdio`` output for each step using the web interface.
+
+  The ``dipy-release-checks`` builder runs these tests::
+
+    make distclean
+    python -m compileall .
+    make sdist-tests
+    make bdist-egg-tests
+    make check-version-info
+    make check-files
+
+* ``make bdist-egg-tests`` may well fail because of a problem with the script
+  tests; if you have a recent (>= March 31 2013) nibabel ``nisext`` package, you
+  could try instead doing::
+
+    python -c 'from nisext.testers import bdist_egg_tests; bdist_egg_tests("dipy", label="not slow and not script_test")'
+
+  Eventually we should update the ``bdist-egg-tests`` makefile target.
+
+* ``make check-version-info`` checks how the commit hash is stored in the
+  installed files.  You should see something like this::
+
+    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'archive substitution', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
+    /var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy/__init__.pyc
+    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'installation', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
+    /Users/mb312/dev_trees/dipy/dipy/__init__.pyc
+    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'repository', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/Users/mb312/dev_trees/dipy/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
+
+* ``make check-files`` checks if the source distribution is picking up all the
+  library and script files.  Look for output at the end about missed files, such
+  as::
+
+    Missed script files:  /Users/mb312/dev_trees/dipy/bin/nib-dicomfs, /Users/mb312/dev_trees/dipy/bin/nifti1_diagnose.py
+
+  Fix ``setup.py`` to carry across any files that should be in the distribution.
 
 * Clean and compile::
 
     make distclean
+    git clean -fxd
     python setup.py build_ext --inplace
 
-* Make sure all tests pass (from the dipy root directory)::
+* Make sure all tests pass on your local machine (from the dipy root directory)::
 
     cd ..
     nosetests --with-doctest dipy
@@ -87,36 +137,35 @@ Release checklist
   running the doctests in the code, where the doctests pass when run in nose -
   we should find out why this is at some point, but leave it for now.
 
-* Make sure all tests pass from sdist::
+* Trigger builds of all the binary build testers for dipy, using the web
+  interface.  You may need permissions set to do this - contact Matthew or
+  Eleftherios if you do.
 
-    make sdist-tests
+  At the moment, the useful dipy binary build testers are:
 
-  and bdist_egg::
-
-    make bdist-egg-tests
-
-  and the three ways of installing (from tarball, repo, local in repo)::
-
-    make check-version-info
-
-  The last may not raise any errors, but you should detect in the output
-  lines of this form::
-
-    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'archive substitution', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
-    /var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy/__init__.pyc
-    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'installation', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/var/folders/jg/jgfZ12ZXHwGSFKD85xLpLk+++TI/-Tmp-/tmpGPiD3E/pylib/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
-    Files not taken across by the installation:
-    []
-    /Users/mb312/dev_trees/dipy/dipy/__init__.pyc
-    {'sys_version': '2.6.6 (r266:84374, Aug 31 2010, 11:00:51) \n[GCC 4.0.1 (Apple Inc. build 5493)]', 'commit_source': 'repository', 'np_version': '1.5.0', 'commit_hash': '25b4125', 'pkg_path': '/Users/mb312/dev_trees/dipy/dipy', 'sys_executable': '/Library/Frameworks/Python.framework/Versions/2.6/Resources/Python.app/Contents/MacOS/Python', 'sys_platform': 'darwin'}
+      * http://nipy.bic.berkeley.edu/builders/dipy-bdist32-26
+      * http://nipy.bic.berkeley.edu/builders/dipy-bdist32-27
+      * http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.6
+      * http://nipy.bic.berkeley.edu/builders/dipy-bdist-mpkg-2.7
 
 * The release should now be ready.
 
-* Edit :file:`dipy/info.py` to set ``_version_extra`` to ``''``; commit
+Doing the release
+=================
+
+The trick here is to get all the testing, pushing to upstream done *before* you
+do the final release commit.  There should be only one commit with the release
+version number, so you might want to make the release commit on your local
+machine, push to pypi_, review, fix, rebase, until all is good.  Then and only
+then do you push to upstream on github.
+
+* Make the release commit.  Edit :file:`dipy/info.py` to set ``_version_extra``
+  to ``''``; commit
 
 * Build the release files::
 
     make distclean
+    git clean -fxd
     make source-release
 
 * Once everything looks good, upload the source release to PyPi.  See
@@ -125,96 +174,27 @@ Release checklist
     python setup.py register
     python setup.py sdist --formats=gztar,zip upload
 
-* Then upload the binary release for the platform you are currently on::
+* Remember you'll need your ``~/.pypirc`` file set up right for this to work.
+  See `setuptools intro`_.  The file should look something like this::
 
-    python setup.py bdist_egg upload
+    [distutils]
+    index-servers =
+        pypi
 
-* Do binary builds for any virtualenvs you have::
-
-    workon python25
-    python setup.py bdist_egg upload
-    deactivate
-
-  etc.  (``workon`` is a virtualenvwrapper command).
-
-  For OSX and python 2.5 only, the installation didn't recognize it was doing a fat (i386 + PPC)
-  build, and build with name ``dipy-0.5.0-py2.5-macosx-10.3-i386.egg``.  I tried
-  to tell it to use ``fat`` and ``universal`` in the name, but uploading these
-  tp pypi didn't result in in easy_install finding them.  In the end did the
-  standard::
-
-    python setup.py bdist_egg upload
-
-  which uploaded the 'i386' egg, followed by::
-
-    python setup.py bdist_egg --plat-name macosx-10.3-ppc upload
-
-  which may or may not work to allow easy_install to find the egg for PPC.  It
-  does work for easy_install on my Intel machine.  I found the default platform
-  name with ``python setup.py bdist_egg --help``.
-
-  When trying to upload in python25, after previously saving my ``~/.pypirc``
-  during the initial ``register`` step, I got a configparser error.  I found
-  `this python 2.5 pypirc page
-  <http://docs.python.org/release/2.5.2/dist/pypirc.html>`_ and so hand edited
-  the ``~/.pypirc`` file to have a new section::
+    [pypi]
+    username:your.pypi.username
+    password:your-password
 
     [server-login]
-    username:my-username
-    password:my-password
+    username:your.pypi.username
+    password:your-password
 
-  after which python25 upload seemed to go smoothly.
+* Check how everything looks on pypi - the description, the packages.  If
+  necessary delete the release and try again if it doesn't look right.
 
-* Building OSX dmgs.  This is a little complicated
+* Make an annotated tag for the release with tag of form ``0.6.0``::
 
-  See `MBs OSX setup
-  <http://matthew-brett.github.com/pydagogue/develop_mac.html>`_).
-
-  We have builders building the packages on the buildbots.
-
-  The mpkg packages will appear in http://nipy.bic.berkeley.edu/dipy-dist
-
-  The problem is that the buildbots built the packages as the ``buildslave``
-  user, but we need to make files have root permissions when installed from the
-  installer.
-
-  This can be done using a script ``reown_mpkg`` that is part of the development
-  version of ``bdist_mpkg`` : https://github.com/matthew-brett/bdist_mpkg
-
-  Install the development version, and then you can build correct installers
-  with something like the following (on a machine to which you have ``sudo``
-  permission)::
-
-      mkdir mpkgs
-      cd mpkgs/
-      scp -r buildbot-master:nibotmi/public_html/dipy-dist/*.mpkg .
-      sudo reown_mpkg dipy-0.6.0.dev-py2.6-macosx10.6.mpkg root admin
-      sudo reown_mpkg dipy-0.6.0.dev-py2.7-macosx10.6.mpkg root admin
-      zip -r dipy-0.6.0.dev-py2.6-macosx10.6.mpkg.zip dipy-0.6.0.dev-py2.6-macosx10.6.mpkg
-      zip -r dipy-0.6.0.dev-py2.7-macosx10.6.mpkg.zip dipy-0.6.0.dev-py2.7-macosx10.6.mpkg
-
-* Windows ``.exe`` installers should arrive in the same directory as the mpkg
-  builds.  You may need to trigger the relevant builders from the buildbot web
-  interface.  You should be able to download them and then upload them to pypi.
-
-  If not, the manual way is something like::
-
-    make distclean
-    c:\Python26\python.exe setup.py bdist_egg upload
-    c:\Python26\python.exe setup.py bdist_wininst --target-version=2.6 register upload
-
-  Maybe virtualenvs for the different versions of python?  I haven't explored
-  that yet.
-
-* Tag the release with tag of form ``0.5.0``::
-
-    git tag -am 'First public release' 0.5.0
-
-* Now the version number is OK, push the docs to sourceforge with::
-
-    make upload-website-mysfusername
-
-  where ``mysfusername`` is obviously your own sourceforge username.
+    git tag -am 'Second public release' 0.6.0
 
 * Set up maintenance / development branches
 
@@ -224,11 +204,13 @@ Release checklist
 
   * Branch to maintainance::
 
-      git co -b maint/0.5.x
+      git co -b maint/0.6.x
 
     Set ``_version_extra`` back to ``.dev`` and bump ``_version_micro`` by 1.
-    Thus the maintenance series will have version numbers like - say - '0.5.1.dev'
-    until the next maintenance release - say '0.5.1'.  Commit.
+    Thus the maintenance series will have version numbers like - say - '0.6.1.dev'
+    until the next maintenance release - say '0.6.1'.  Commit.
+
+    Push with something like ``git push upstream-rw maint/0.6.x --set-upstream``
 
   * Start next development series::
 
@@ -236,10 +218,92 @@ Release checklist
 
     then restore ``.dev`` to ``_version_extra``, and bump ``_version_minor`` by 1.
     Thus the development series ('trunk') will have a version number here of
-    '0.6.0.dev' and the next full release will be '0.6.0'.
+    '0.7.0.dev' and the next full release will be '0.7.0'.
 
-  If this is just a maintenance release from ``maint/0.5.x`` or similar, just
-  tag and set the version number to - say - ``0.5.2.dev``.
+    Push with something like ``git push upstream-rw main-master:master``
+
+  If this is just a maintenance release from ``maint/0.6.x`` or similar, just
+  tag and set the version number to - say - ``0.6.2.dev``.
+
+* Push the tag with ``git push upstream-rw 0.6.0``
+
+Uploading binary builds for the release
+=======================================
+
+By far the easiest way to do this is via the buildbots.
+
+In order to do this, you need first to push the release commit and the release
+tag to github, so the buildbots can find the released code and build it.
+
+* In order to trigger the binary builds for the release commit, you need to go
+  to the web interface for the binary builder, go to the "Force build" section,
+  enter your username and password for the buildbot web service and enter the
+  commit tag name in the *revision* field.  For example, if the tag was
+  ``0.6.0`` then you would enter ``0.6.0`` in the revision field of the form.
+  This builds the exact commit labeled by the tag, which is what we want.
+
+* Trigger binary builds for Windows from the buildbots. See builders
+  ``dipy-bdist32-26``, ``dipy-bdist32-27``.  The ``exe`` builds will appear in
+  http://nipy.bic.berkeley.edu/dipy-dist .  Check that the binary build version
+  numbers are release numbers (``dipy-0.6.0.win32.exe`` rather than
+  ``dipy-0.6.0.dev.win32.exe``).
+
+  Download the builds and upload to pypi.
+
+  You can upload the exe files with the *files* interface for the new dipy release.
+  Obviously you'll need to log in to do this, and you'll need to be an admin for
+  the dipy pypi project.
+
+  For reference, if you need to do binary exe builds by hand, use something
+  like::
+
+    make distclean
+    git clean -fxd
+    c:\Python26\python.exe setup.py bdist_egg upload
+    c:\Python26\python.exe setup.py bdist_wininst --target-version=2.6 register upload
+
+* Trigger binary builds for OSX from the buildbots ``dipy-bdist-mpkg-2.6``,
+  ``dipy-bdist-mpkg-2.7``. ``egg`` and ``mpkg`` builds will appear in
+  http://nipy.bic.berkeley.edu/dipy-dist .  Download the eggs and upload to
+  pypi.
+
+  Upload the dmg files with the *files* interface for the new dipy release.
+
+* Building OSX dmgs from the mpkg builds.
+
+  The buildbot binary builders build ``mpkg`` directories, which are installers
+  for OSX.
+
+  These need their permissions to be fixed because the installers should install
+  the files as the root user, group ``admin``.  The all need to be converted to
+  OSX disk images.  Use the ``./tools/build_dmgs.py``, with something like this
+  command line::
+
+    ./tools/build_dmgs "dipy-dist/dipy-0.6.0-py*.mpkg"
+
+  For this to work you'll need several things:
+
+    * An account on a OSX box with sudo (Admin user) on which to run the script.
+    * ssh access to the buildbot server http://nipy.bic.berkeley.edu (ask
+      Matthew or Eleftherios).
+    * a development version of ``bdist_mpkg`` installed from
+      https://github.com/matthew-brett/bdist_mpkg.  You need this second for the
+      script ``reown_mpkg`` that fixes the permissions.
+
+  Upload the dmg files with the *files* interface for the new dipy release.
+
+Other stuff that needs doing for the release
+============================================
+
+* Checkout the tagged release, and upload the docs::
+
+    make upload-website-mysfusername
+
+  where ``mysfusername`` is obviously your own sourceforge username.
+
+  You need to checkout the tagged version in order to get the version number
+  correct for the doc build.  The version number gets picked up from the
+  ``info.py`` version.
 
 * Make a tarball for the examples, to allow packagers to bypass the need for
   having vtk or pytables or a display on the build machines::
@@ -250,11 +314,12 @@ Release checklist
   The command requires pytables_ and python vtk on your machine. It writes an
   archive named for the dipy version and the docs, e.g::
 
-    <dipy root>/dist/dipy-0.5.0.dev-doc-examples.tar.gz
+    <dipy root>/dist/dipy-0.6.0.dev-doc-examples.tar.gz
 
   and thence writes the archive to the dipy doc directory on sourceforge.
 
 * Announce to the mailing lists.  With fear and trembling.
 
 .. _setuptools intro: http://packages.python.org/an_example_pypi_project/setuptools.html
+
 .. include:: ../links_names.inc
