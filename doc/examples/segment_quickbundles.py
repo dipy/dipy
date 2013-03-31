@@ -51,7 +51,6 @@ Lets first show the initial dataset.
 
 r = fvtk.ren()
 fvtk.add(r, fvtk.line(streamlines, fvtk.white, opacity=1, linewidth=3))
-# fvtk.show(r)
 fvtk.record(r, n_frames=1, out_path='fornix_initial.png', size=(600, 600))
 
 """
@@ -64,14 +63,10 @@ Show the centroids of the fornix after clustering (with random colors):
 """
 
 centroids = qb.centroids
-colormap = np.ones((len(centroids), 3))
+colormap = np.random.rand(len(centroids), 3)
 
 fvtk.clear(r)
-
-for i, centroid in enumerate(centroids):
-    colormap[i] = np.random.rand(3)
-    fvtk.add(r, fvtk.line(centroids, colormap, opacity=1., linewidth=5))
-
+fvtk.add(r, fvtk.line(centroids, colormap, opacity=1., linewidth=5))
 fvtk.record(r, n_frames=1, out_path='fornix_centroids.png', size=(600, 600))
 
 """
