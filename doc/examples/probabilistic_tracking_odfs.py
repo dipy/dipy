@@ -44,7 +44,7 @@ pwt = ProbabilisticOdfWeightedTracker(csamodel, interpolator, mask,
 csa_streamlines = list(pwt)
 
 """
-Now that we have our streamlines in memory we cab save the results in the disk.
+Now that we have our streamlines in memory we can save the results to disk.
 For this purpose we can use the TrackVis format (``*.trk``). First, we need to
 create a header.
 """
