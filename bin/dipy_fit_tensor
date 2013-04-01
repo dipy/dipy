@@ -6,6 +6,7 @@ import numpy as np
 import nibabel as nib
 from subprocess import call
 from optparse import OptionParser
+from dipy.core.gradients import gradient_table
 from dipy.reconst.dti import Tensor
 from dipy.io.utils import nifti1_symmat
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string
@@ -20,7 +21,7 @@ parser.add_option("-m","--mask",default="BET",
 parser.add_option("--threshold",help="threshold passed to BET", default='.2')
 parser.add_option("--min_signal",help="minimum valid singal value",
                   type='float', default=1.)
-parser.add_option("--save_tensor", action='store_true', help="Save tensor in "
+parser.add_option("--save-tensor", action='store_true', help="Save tensor in "
                         "nifti symmat format")
 parser.add_option("--scale", type='float', default=1., help="used to scale "
                         "tensor file when --save-tensor is used")
@@ -57,28 +58,31 @@ affine = img.get_affine()
 voxel_size = img.get_header().get_zooms()[:3]
 data = img.get_data()
 bvec, bval = read_bvec_file(bvec)
+gtab = gradient_table(bval, bvec)
 
-where_dwi = bval > 0
-t2di = data[..., ~where_dwi].mean(-1)
+t2di = data[..., gtab.b0s_mask].mean(-1)
 t2di = np.asarray(t2di, 'float32')
 dipysave(nib.Nifti1Image(t2di, affine), root+'_t2di.nii.gz')
 del t2di
 
 mask = opts.mask
 if mask == 'BET':
+    mask_file = root + '_mask.nii.gz'
     env = os.environ
     env['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
-    call(['bet2', root+'_t2di', root, '-n', '-f', opts.threshold, '-m'],
-         env=env)
-    if not os.path.exists(root+'_mask.nii.gz'):
-        raise RuntimeError("There was a problem running BET")
-    mask = root+"_mask.nii.gz"
+    try:
+        call(['bet2', root+'_t2di', root, '-n',
+              '-f', opts.threshold, '-m'], env=env)
+        mask = open(mask_file, 'rb')
+    except (OSError, IOError):
+        mask = 'none'
 
 if mask.lower() != 'none':
     mask = nib.load(mask).get_data() > 0
 else:
-    mask = data[..., bval == 0].max(-1) > 0
-ten = Tensor(data, bval, bvec.T, mask, min_signal=opts.min_signal)
+    mask = np.ones(t2di.shape, dtype=bool)
+
+ten = Tensor(data, gtab.bvals, gtab.bvecs, mask, min_signal=opts.min_signal)
 
 if opts.save_tensor:
     lower_triangular = ten.lower_triangular()
