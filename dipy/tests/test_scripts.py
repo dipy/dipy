@@ -114,7 +114,7 @@ def test_dipy_fit_tensor():
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_dirFA.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_L1.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_ad.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
 
@@ -140,7 +140,7 @@ def test_dipy_fit_tensor():
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_dirFA.nii.gz", shape, affine)
-        assert_image_shape_affine("small_25_L1.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_ad.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
         # small_25_tensor saves the tensor as a symmetric matrix following
