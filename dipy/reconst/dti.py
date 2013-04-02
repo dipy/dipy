@@ -48,7 +48,6 @@ def fractional_anisotropy(evals, axis=-1):
     return fa
 
 
-
 def mean_diffusivity(evals, axis=-1):
     r"""
     Mean Diffusivity (MD) of a diffusion tensor. Also, called
@@ -159,6 +158,15 @@ def trace(evals, axis=-1):
     r"""
     Trace of a diffusion tensor.
 
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
     trace : array
         Calculated trace of the diffusion tensor. 
 
@@ -1027,7 +1035,6 @@ def design_matrix(gtab, bval, dtype=None):
     design_matrix : array (g,7)
         Design matrix or B matrix assuming Gaussian distributed tensor model
         design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
-
     """
     G = gtab
     B = np.zeros((bval.size, 7), dtype = G.dtype)
