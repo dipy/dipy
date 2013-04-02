@@ -224,11 +224,7 @@ def color_fa(fa, evecs):
 
 def calculate_mode(D):
     r"""
-    Mode (MO) of a diffusion tensor
-
-    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor Invariants 
-        and the Analysis of Diffusion Tensor Magnetic Resonance Images",
-        Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146, 2006.
+    Mode (MO) of a diffusion tensor [1]_
 
     Parameters
     ----------
@@ -245,12 +241,19 @@ def calculate_mode(D):
     Notes
     --------
     Mode ranges between -1 (linear anisotropy) and +1 (planar anisotropy)
-    with 0 representing orthotropy. Modeis calculated with the 
+    with 0 representing orthotropy. Mode is calculated with the 
     following equation:
 
     .. math::
 
         Mode = 3*\sqrt{6}*det((Asq)/norm(Asq))
+
+    References
+    ----------
+
+    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor Invariants 
+        and the Analysis of Diffusion Tensor Magnetic Resonance Images",
+        Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146, 2006.
     """
 
     assert(np.shape(D)[-2:]==(3,3))
