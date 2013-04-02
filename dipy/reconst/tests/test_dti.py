@@ -104,6 +104,60 @@ def test_indexing_on_TensorFit():
     assert_raises(IndexError, fit.__getitem__, (0, 0, 0, 0))
 
 
+<<<<<<< HEAD
+=======
+def test_tensor_scalar_attributes():
+    """
+    Tests that the tensor class scalar attributes (FA, ADC, etc...) are
+    calculating properly.
+
+    """
+    ### DEFINING ANALYTICAL VALUES ###
+    evals = np.array([2., 1., 0.])
+    a = 1. / np.sqrt(2)
+    #evec[:,j] is pair with eval[j]
+    evecs = np.array([[a, 0, -a], [a, 0, a], [0, 1., 0]])
+    D = np.array([[1., 1., 0], [1., 1., 0], [0, 0, 1.]])
+    FA = np.sqrt(1./2*(1+4+1)/(1+4+0)) # 0.7745966692414834
+    MD = 1.
+    RD = 0.5
+    AD = 2.0
+    trace = 3
+<<<<<<< HEAD
+=======
+    mode = 0
+>>>>>>> Updated Tensor Mode calculation for n-dimensional array
+
+    ### CALCULATE ESTIMATE VALUES ###
+    dummy_data = np.ones((1,10)) #single voxel
+    dummy_gtab = np.zeros((10,3))
+    dummy_bval = np.zeros((10,))
+    tensor = dti.Tensor(dummy_data,dummy_bval,dummy_gtab)
+    tensor.model_params = np.r_['-1,2', evals, evecs.ravel()]
+
+    ### TESTS ###
+    assert_almost_equal(np.abs(np.dot(evecs[:, 2],
+                tensor[0].evecs[:, 2].T)), 1.,
+                msg = "Calculation of third eigenvector is not right")
+    assert_array_almost_equal(D, tensor[0].D, err_msg = "Recovery of self diffusion tensor from eig not adaquate")
+    assert_almost_equal(FA, tensor.fa(), msg = "Calculation of FA of self diffusion tensor is not adequate")
+    assert_almost_equal(MD, tensor.md(), msg = "Calculation of MD of self diffusion tensor is not adequate")
+    assert_almost_equal(AD, tensor.ad, msg = "Calculation of AD of self diffusion tensor is not adequate")
+    assert_almost_equal(RD, tensor.rd, msg = "Calculation of RD of self diffusion tensor is not adequate")
+    assert_almost_equal(trace, tensor.trace, msg = "Calculation of trace of self diffusion tensor is not adequate")
+    assert_almost_equal(mode, tensor.mode, msg = "Calculation of mode of self diffusion tensor is not adequate")
+
+    assert_equal(True, tensor.mask.all())
+
+    #assert_equal(m_list.shape, n_list.shape)
+    #assert_equal(m_list.ndim, 2)
+    #assert_equal(m_list.shape, (45,1))
+    #assert_true(np.all(np.abs(m_list) <= n_list))
+    #assert_array_equal(n_list % 2, 0)
+    #assert_raises(ValueError, qball.sph_harm_ind_list, 1)
+
+
+>>>>>>> Updated Tensor Mode calculation for n-dimensional array
 def test_fa_of_zero():
     evals = np.zeros((4, 3))
     fa = fractional_anisotropy(evals)
