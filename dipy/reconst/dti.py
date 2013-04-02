@@ -79,20 +79,19 @@ def mean_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev1 + ev2 + ev3) / 3
-
+    return evals.mean(0)
 
 
 def axial_diffusivity(evals, axis=-1):
     r"""
     Axial Diffusivity (AD) of a diffusion tensor.
-    Also called parallel diffusivity. 
-    
+    Also called parallel diffusivity.
+
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor, must be sorted in descending order
+        along `axis`.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -123,11 +122,12 @@ def radial_diffusivity(evals, axis=-1):
     r"""
     Radial Diffusivity (RD) of a diffusion tensor.
     Also called perpendicular diffusivity.
-    
+
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor, must be sorted in descending order
+        along `axis`.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -150,9 +150,7 @@ def radial_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev2 + ev3) / 2
-
+    return evals[1:].mean(0)
 
 def trace(evals, axis=-1):
     r"""
@@ -184,8 +182,7 @@ def trace(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev1 + ev2 + ev3)
+    return evals.sum(0)
 
 
 def color_fa(fa, evecs):
