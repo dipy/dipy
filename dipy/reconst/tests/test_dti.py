@@ -7,20 +7,16 @@ from nose.tools import (assert_true, assert_equal,
                         assert_almost_equal, assert_raises)
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
 import dipy.reconst.dti as dti
-from dipy.reconst.dti import (lower_triangular,
-                              from_lower_triangular,
-                              color_fa,
-                              fractional_anisotropy,
-                              trace, mean_diffusivity,
-                              radial_diffusivity, axial_diffusivity)
-from dipy.reconst.maskedview import MaskedView
+from dipy.reconst.dti import (axial_diffusivity, color_fa,
+                              fractional_anisotropy, from_lower_triangular,
+                              lower_triangular, mean_diffusivity,
+                              radial_diffusivity, TensorModel, trace)
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels, get_sphere
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
 from dipy.sims.voxel import single_tensor
-from dipy.core.gradients import gradient_table
 
 
 def test_TensorModel():
@@ -108,66 +104,18 @@ def test_indexing_on_TensorFit():
     assert_raises(IndexError, fit.__getitem__, (0, 0, 0, 0))
 
 
-def test_tensor_scalar_attributes():
-    """
-    Tests that the tensor class scalar attributes (FA, ADC, etc...) are
-    calculating properly.
-
-    """
-    ### DEFINING ANALYTICAL VALUES ###
-    evals = np.array([2., 1., 0.])
-    a = 1. / np.sqrt(2)
-    #evec[:,j] is pair with eval[j]
-    evecs = np.array([[a, 0, -a], [a, 0, a], [0, 1., 0]])
-    D = np.array([[1., 1., 0], [1., 1., 0], [0, 0, 1.]])
-    FA = np.sqrt(1./2*(1+4+1)/(1+4+0)) # 0.7745966692414834
-    MD = 1.
-    RD = 0.5
-    AD = 2.0
-    trace = 3
-
-    ### CALCULATE ESTIMATE VALUES ###
-    dummy_data = np.ones((1,10)) #single voxel
-    dummy_gtab = np.zeros((10,3))
-    dummy_bval = np.zeros((10,))
-    tensor = dti.Tensor(dummy_data,dummy_bval,dummy_gtab)
-    tensor.model_params = np.r_['-1,2', evals, evecs.ravel()]
-
-    ### TESTS ###
-    assert_almost_equal(np.abs(np.dot(evecs[:, 2],
-                tensor[0].evecs[:, 2].T)), 1.,
-                msg = "Calculation of third eigenvector is not right")
-    assert_array_almost_equal(D, tensor[0].D, err_msg = "Recovery of self diffusion tensor from eig not adaquate")
-    assert_almost_equal(FA, tensor.fa(), msg = "Calculation of FA of self diffusion tensor is not adequate")
-    assert_almost_equal(MD, tensor.md(), msg = "Calculation of MD of self diffusion tensor is not adequate")
-    assert_almost_equal(AD, tensor.ad, msg = "Calculation of AD of self diffusion tensor is not adequate")
-    assert_almost_equal(RD, tensor.rd, msg = "Calculation of RD of self diffusion tensor is not adequate")
-    assert_almost_equal(trace, tensor.trace, msg = "Calculation of trace of self diffusion tensor is not adequate")
-
-    assert_equal(True, tensor.mask.all())
-
-    #assert_equal(m_list.shape, n_list.shape)
-    #assert_equal(m_list.ndim, 2)
-    #assert_equal(m_list.shape, (45,1))
-    #assert_true(np.all(np.abs(m_list) <= n_list))
-    #assert_array_equal(n_list % 2, 0)
-    #assert_raises(ValueError, qball.sph_harm_ind_list, 1)
-
-
 def test_fa_of_zero():
-    dummy_gtab = np.zeros((10,3))
-    dummy_bval = np.zeros((10,))
-    ten = dti.Tensor(np.zeros((0,56)), dummy_bval, dummy_gtab)
-    ten.model_params = np.zeros(12)
-    assert_equal(ten.fa(), 0)
-    assert_true(np.isnan(ten.fa(nonans=False)))
+    evals = np.zeros((4, 3))
+    fa = fractional_anisotropy(evals)
+    assert_array_equal(fa, 0)
+
 
 def test_diffusivities():
     psphere = get_sphere('symmetric362')
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
-    gtab = gradient_table(bvals, bvecs)
+    gtab = grad.gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003] ))
     mevecs = [ np.array( [ [1,0,0], [0,1,0], [0,0,1] ] ),
                np.array( [ [0,0,1], [0,1,0], [1,0,0] ] ) ]
@@ -185,9 +133,8 @@ def test_diffusivities():
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
     assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
-    
-    
-    
+
+
 def test_color_fa():
     data, gtab = dsi_voxels()
     dm = dti.TensorModel(gtab, 'LS')
@@ -252,7 +199,7 @@ def test_WLS_and_LS_fit():
 
     #Recall: D = [Dxx,Dyy,Dzz,Dxy,Dxz,Dyz,log(S_0)] and D ~ 10^-4 mm^2 /s
     b0 = 1000.
-    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    bvec, bval = read_bvec_file(get_data('55dir_grad.bvec'))
     B = bval[1]
     #Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
@@ -260,34 +207,41 @@ def test_WLS_and_LS_fit():
     md = evals.mean()
     tensor = from_lower_triangular(D)
     #Design Matrix
-    X = dti.design_matrix(gtab, bval)
+    X = dti.design_matrix(bvec, bval)
     #Signals
     Y = np.exp(np.dot(X,D))
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
+    gtab = grad.gradient_table(bval, bvec)
+
     ### Testing WLS Fit on Single Voxel ###
     #Estimate tensor from test signals
-    tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8)
+    model = TensorModel(gtab, min_signal=1e-8, fit_method='WLS')
+    tensor_est = model.fit(Y)
     assert_equal(tensor_est.shape, Y.shape[:-1])
     assert_array_almost_equal(tensor_est.evals[0], evals)
-    assert_array_almost_equal(tensor_est.D[0], tensor,err_msg= "Calculation of tensor from Y does not compare to analytical solution")
-    assert_almost_equal(tensor_est.md()[0], md)
+    assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
+                              err_msg= "Calculation of tensor from Y does not "
+                                       "compare to analytical solution")
+    assert_almost_equal(tensor_est.md[0], md)
 
-    #test 0d tensor
+    # Test that we can fit a single voxel's worth of data (a 1d array)
     y = Y[0]
-    tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8)
+    tensor_est = model.fit(y)
     assert_equal(tensor_est.shape, tuple())
     assert_array_almost_equal(tensor_est.evals, evals)
-    assert_array_almost_equal(tensor_est.D, tensor)
-    assert_almost_equal(tensor_est.md(), md)
+    assert_array_almost_equal(tensor_est.quadratic_form, tensor)
+    assert_almost_equal(tensor_est.md, md)
     assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
-    tensor_est = dti.Tensor(y, bval, gtab.T, min_signal=1e-8, fit_method='LS')
+    # Test using fit_method='LS'
+    model = TensorModel(gtab, min_signal=1e-8, fit_method='LS')
+    tensor_est = model.fit(y)
     assert_equal(tensor_est.shape, tuple())
     assert_array_almost_equal(tensor_est.evals, evals)
-    assert_array_almost_equal(tensor_est.D, tensor)
-    assert_almost_equal(tensor_est.md(), md)
+    assert_array_almost_equal(tensor_est.quadratic_form, tensor)
+    assert_almost_equal(tensor_est.md, md)
     assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
 
 
@@ -296,81 +250,40 @@ def test_masked_array_with_Tensor():
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
 
-    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    bvec, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec.T)
 
-    tensor = dti.Tensor(data, bval, gtab.T, mask=mask, min_signal=1e-9)
+    tensor_model = TensorModel(gtab, min_signal=1e-9)
+    tensor = tensor_model.fit(data, mask=mask)
     assert_equal(tensor.shape, (2,4))
-    assert_equal(tensor.fa().shape, (2,4))
+    assert_equal(tensor.fa.shape, (2,4))
     assert_equal(tensor.evals.shape, (2,4,3))
     assert_equal(tensor.evecs.shape, (2,4,3,3))
-    assert_equal(type(tensor.model_params), MaskedView)
-    assert_array_equal(tensor.mask, mask)
 
     tensor = tensor[0]
     assert_equal(tensor.shape, (4,))
-    assert_equal(tensor.fa().shape, (4,))
+    assert_equal(tensor.fa.shape, (4,))
     assert_equal(tensor.evals.shape, (4,3))
     assert_equal(tensor.evecs.shape, (4,3,3))
-    assert_equal(type(tensor.model_params), MaskedView)
-    assert_array_equal(tensor.mask, mask[0])
 
     tensor = tensor[0]
     assert_equal(tensor.shape, tuple())
-    assert_equal(tensor.fa().shape, tuple())
+    assert_equal(tensor.fa.shape, tuple())
     assert_equal(tensor.evals.shape, (3,))
     assert_equal(tensor.evecs.shape, (3,3))
     assert_equal(type(tensor.model_params), np.ndarray)
 
 
-def test_passing_maskedview():
-    data = np.ones((2,4,56))
-    mask = np.array([[True, False, False, True],
-                     [True, False, True, False]])
+def test_fit_method_error():
+    bvec, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table_from_bvals_bvecs(bval, bvec.T)
 
-    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    # This should work
+    tensor_model = TensorModel(gtab, fit_method='WLS')
 
-    data = data[mask]
-    mv = MaskedView(mask, data)
-
-    tensor = dti.Tensor(mv, bval, gtab.T, min_signal=1e-9)
-    assert_equal(tensor.shape, (2,4))
-    assert_equal(tensor.fa().shape, (2,4))
-    assert_equal(tensor.evals.shape, (2,4,3))
-    assert_equal(tensor.evecs.shape, (2,4,3,3))
-    assert_equal(type(tensor.model_params), MaskedView)
-    assert_array_equal(tensor.mask, mask)
-
-    tensor = tensor[0]
-    assert_equal(tensor.shape, (4,))
-    assert_equal(tensor.fa().shape, (4,))
-    assert_equal(tensor.evals.shape, (4,3))
-    assert_equal(tensor.evecs.shape, (4,3,3))
-    assert_equal(type(tensor.model_params), MaskedView)
-    assert_array_equal(tensor.mask, mask[0])
-
-    tensor = tensor[0]
-    assert_equal(tensor.shape, tuple())
-    assert_equal(tensor.fa().shape, tuple())
-    assert_equal(tensor.evals.shape, (3,))
-    assert_equal(tensor.evecs.shape, (3,3))
-    assert_equal(type(tensor.model_params), np.ndarray)
-
-
-def test_init():
-    data = np.ones((2,4,56))
-    mask = np.ones((2,4),'bool')
-
-    gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
-    tensor = dti.Tensor(data, bval, gtab.T, mask, thresh=0)
-    mask[:] = False
-    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, mask)
-    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
-                        min_signal=-1)
-    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T, thresh=1)
-    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
-                        fit_method='s')
-    assert_raises(ValueError, dti.Tensor, data, bval, gtab.T,
-                        fit_method=0)
+    # This should raise an error because there is no such fit_method
+    assert_raises(ValueError, TensorModel, gtab, min_signal=1e-9,
+                  fit_method='s')
 
 
 def test_lower_triangular():

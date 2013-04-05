@@ -199,6 +199,11 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR, 'dsi515_b_table.txt')
     if name == 'grad514':
         return pjoin(THIS_DIR, 'grad_514.txt')
+    if name == "small_25":
+        fbvals = pjoin(THIS_DIR, 'small_25.bval')
+        fbvecs = pjoin(THIS_DIR, 'small_25.bvec')
+        fimg = pjoin(THIS_DIR, 'small_25.nii.gz')
+        return fimg, fbvals, fbvecs
 
 
 def dsi_voxels():

@@ -2,8 +2,9 @@ import os
 import numpy as np
 
 from dipy.data import get_data
+from dipy.core.gradients import gradient_table
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.reconst.dti import Tensor
+from dipy.reconst.dti import TensorModel, quantize_evecs
 from dipy.tracking.eudx import EuDX
 from dipy.tracking.propspeed import ndarray_offset
 from dipy.tracking.metrics import length
@@ -62,12 +63,13 @@ def test_eudx_further():
     """
 
     fimg,fbvals,fbvecs=get_data('small_101D')
+
     img=ni.load(fimg)
     affine=img.get_affine()
-    bvals=np.loadtxt(fbvals)
-    gradients=np.loadtxt(fbvecs).T    
     data=img.get_data()
-    ten=Tensor(data,bvals,gradients,thresh=50)
+    gtab = gradient_table(fbvals, fbvecs)
+    tensor_model = TensorModel(gtab)
+    ten = tensor_model.fit(data)
     x,y,z=data.shape[:3]
     seeds=np.zeros((10**4,3))
     for i in range(10**4):
@@ -77,8 +79,9 @@ def test_eudx_further():
         seeds[i]=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
     
     #print seeds
-    #"""    
-    eu=EuDX(a=ten.fa(),ind=ten.ind(),seeds=seeds,a_low=.2)
+    #"""
+    ind = quantize_evecs(ten.evecs)
+    eu=EuDX(a=ten.fa, ind=ind, seeds=seeds, a_low=.2)
     T=[e for e in eu]
     
     #check that there are no negative elements

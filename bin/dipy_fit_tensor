@@ -6,7 +6,8 @@ import numpy as np
 import nibabel as nib
 from subprocess import call
 from optparse import OptionParser
-from dipy.reconst.dti import Tensor
+from dipy.core.gradients import gradient_table
+from dipy.reconst.dti import TensorModel
 from dipy.io.utils import nifti1_symmat
 from dipy.io.bvectxt import read_bvec_file, orientation_to_string
 from nibabel.trackvis import empty_header, write
@@ -20,7 +21,7 @@ parser.add_option("-m","--mask",default="BET",
 parser.add_option("--threshold",help="threshold passed to BET", default='.2')
 parser.add_option("--min_signal",help="minimum valid singal value",
                   type='float', default=1.)
-parser.add_option("--save_tensor", action='store_true', help="Save tensor in "
+parser.add_option("--save-tensor", action='store_true', help="Save tensor in "
                         "nifti symmat format")
 parser.add_option("--scale", type='float', default=1., help="used to scale "
                         "tensor file when --save-tensor is used")
@@ -57,28 +58,32 @@ affine = img.get_affine()
 voxel_size = img.get_header().get_zooms()[:3]
 data = img.get_data()
 bvec, bval = read_bvec_file(bvec)
+gtab = gradient_table(bval, bvec)
 
-where_dwi = bval > 0
-t2di = data[..., ~where_dwi].mean(-1)
+t2di = data[..., gtab.b0s_mask].mean(-1)
 t2di = np.asarray(t2di, 'float32')
 dipysave(nib.Nifti1Image(t2di, affine), root+'_t2di.nii.gz')
 del t2di
 
 mask = opts.mask
 if mask == 'BET':
+    mask_file = root + '_mask.nii.gz'
     env = os.environ
     env['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
-    call(['bet2', root+'_t2di', root, '-n', '-f', opts.threshold, '-m'],
-         env=env)
-    if not os.path.exists(root+'_mask.nii.gz'):
-        raise RuntimeError("There was a problem running BET")
-    mask = root+"_mask.nii.gz"
+    try:
+        call(['bet2', root+'_t2di', root, '-n',
+              '-f', opts.threshold, '-m'], env=env)
+        mask = open(mask_file, 'rb')
+    except (OSError, IOError):
+        mask = 'none'
 
 if mask.lower() != 'none':
     mask = nib.load(mask).get_data() > 0
 else:
-    mask = data[..., bval == 0].max(-1) > 0
-ten = Tensor(data, bval, bvec.T, mask, min_signal=opts.min_signal)
+    mask = np.ones(data.shape[:-1], dtype=bool)
+
+ten_model = TensorModel(gtab, min_signal=opts.min_signal)
+ten = ten_model.fit(data, mask=mask)
 
 if opts.save_tensor:
     lower_triangular = ten.lower_triangular()
@@ -88,23 +93,12 @@ if opts.save_tensor:
     dipysave(tensor_img, root+'_tensor.nii.gz')
     del tensor_img, lower_triangular
 
-L1, L2, L3 = np.rollaxis(ten.evals, -1)
-rd = (L2 + L3) / 2
-rd = np.asarray(rd, 'float32')
-L1 = np.asarray(L1, 'float32')
-dipysave(nib.Nifti1Image(L1, affine), root+'_L1.nii.gz')
-dipysave(nib.Nifti1Image(rd, affine), root+'_rd.nii.gz')
-del L1, L2, L3, rd
+dipysave(nib.Nifti1Image(ten.ad.astype("float32"), affine), root+'_ad.nii.gz')
+dipysave(nib.Nifti1Image(ten.rd.astype("float32"), affine), root+'_rd.nii.gz')
+dipysave(nib.Nifti1Image(ten.md.astype("float32"), affine), root+'_md.nii.gz')
+dipysave(nib.Nifti1Image(ten.fa.astype("float32"), affine), root+'_fa.nii.gz')
 
-md = np.asarray(ten.md(), "float32")
-dipysave(nib.Nifti1Image(md, affine), root+'_md.nii.gz')
-del md
-
-fa = np.asarray(ten.fa(0), 'float32')
-assert not np.isnan(fa).any()
-dipysave(nib.Nifti1Image(fa, affine), root+'_fa.nii.gz')
-
-dfa = np.abs(fa[..., None] * ten.evecs[..., 0])
+dfa = np.abs(ten.fa[..., None] * ten.evecs[..., 0])
 dfa *= 256*(1.-np.finfo(float).eps)
 assert dfa.max() < 256
 assert dfa.min() >= 0
@@ -113,12 +107,12 @@ dtype = [('R', 'uint8'), ('G', 'uint8'), ('B', 'uint8')]
 dfa = dfa.view(dtype)
 dfa.shape = dfa.shape[:-1]
 dipysave(nib.Nifti1Image(dfa, affine), root+'_dirFA.nii.gz')
-del fa, dfa
 
 trk_hdr = empty_header()
 trk_hdr['voxel_order'] = orientation_to_string(nib.io_orientation(affine))
 trk_hdr['dim'] = ten.shape
 trk_hdr['voxel_size'] = voxel_size
+trk_hdr['vox_to_ras'] = affine
 # One streamline with two points at [0, 0, 0]
 dummy_track = [(np.zeros((2,3), dtype='float32'), None, None)]
 write(root+'_dummy.trk', dummy_track, trk_hdr)
