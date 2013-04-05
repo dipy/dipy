@@ -5,7 +5,7 @@ Steps are:
     analyze example index file for example py filenames
     check for any filenames in example directory not included
     do py to rst conversion, writing into build directory
-    run 
+    run
 """
 #-----------------------------------------------------------------------------
 # Library imports
@@ -90,7 +90,7 @@ for script in glob('*.py'):
 
 # clean up stray images, pickles, npy files, etc
 for globber in ('*.nii.gz', '*.dpy', '*.npy', '*.pkl', '*.mat', '*.img',
-                '*.hdr'):
+                '*.hdr', '*.pyc', '*.trk'):
     for fname in glob(globber):
         os.unlink(fname)
 
