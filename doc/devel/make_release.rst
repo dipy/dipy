@@ -64,6 +64,13 @@ Release checklist
 
 * Check the examples - we really need an automated check here.
 
+* Check the ``pyx`` file doctests with::
+
+    ./tools/doctest_extmods.py dipy
+
+  We really need an automated run of these using the buildbots, but we haven't
+  done it yet.
+
 * Check the ``long_description`` in ``dipy/info.py``.  Check it matches the
   ``README`` in the root directory, maybe with ``vim`` ``diffthis`` command.
   Check all the links are still valid.
@@ -202,7 +209,7 @@ then do you push to upstream on github.
   further substantial development (often called 'trunk') and another for
   maintenance releases.
 
-  * Branch to maintainance::
+  * Branch to maintenance::
 
       git co -b maint/0.6.x
 
@@ -219,6 +226,12 @@ then do you push to upstream on github.
     then restore ``.dev`` to ``_version_extra``, and bump ``_version_minor`` by 1.
     Thus the development series ('trunk') will have a version number here of
     '0.7.0.dev' and the next full release will be '0.7.0'.
+
+    Next merge the maintenace branch with the "ours" strategy.  This just labels
+    the maintenance branch `info.py` edits as seen but discarded, so we can
+    merge from maintenance in future without getting spurious merge conflicts::
+
+       git merge -s ours maint/0.6.x
 
     Push with something like ``git push upstream-rw main-master:master``
 
