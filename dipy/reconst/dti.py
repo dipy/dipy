@@ -222,15 +222,75 @@ def color_fa(fa, evecs):
     rgb = np.abs(evecs[..., 0]) * fa[..., None]
     return rgb
 
-def calculate_mode(D):
+
+# The following are used to calculate the tensor mode:
+def tensor_determinant(q_form):
+    """
+    The determinant of a tensor, given in quadratic form
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3)
+
+    Returns
+    -------
+    det : array
+        The determinant of the tensor in each spatial coordinate
+    """
+
+    # Following the conventions used here:
+    # http://en.wikipedia.org/wiki/Determinant
+    aei = q_form[..., 0 ,0] * q_form[..., 1, 1] * q_form[..., 2, 2]
+    bfg = q_form[..., 0, 1] * q_form[..., 1, 2] * q_form[..., 2, 0]
+    cdh = q_form[..., 0, 2] * q_form[..., 1, 0] * q_form[..., 2, 1]
+    ceg = q_form[..., 0, 2] * q_form[..., 1, 1] * q_form[..., 2, 0]
+    bdi = q_form[..., 0, 1] * q_form[..., 1, 0] * q_form[..., 2, 2]
+    afh = q_form[..., 0, 0] * q_form[..., 1, 2] * q_form[..., 2, 1]
+    return aei + bfg + cdh - ceg - bdi - afh
+
+
+def anisotropic(q_form):
+    """ 
+    Calculate the anistropic part of the tensor [Ennis2006]_.     
+    """
+    tr_A = q_form[..., 0, 0] + q_form[..., 1, 1] + q_form[..., 2, 2]
+    n_dims = len(q_form.shape)
+    add_dims = n_dims - 2  # These are the last two (the 3,3):
+    my_I = np.eye(3).reshape(add_dims * (1,) + (3,3))
+    tr_AI = (tr_A.reshape(tr_A.shape + (1,1)) * my_I)
+    return (1/3.0) * tr_AI
+
+
+def deviatoric(q_form):
+    """
+    Calculate the deviatoric part of the tensor [Ennis2006]_.
+    """
+    A_squiggle = q_form - anisotropic(q_form)
+    return A_squiggle
+
+
+def tensor_norm(q_form):
     r"""
-    Mode (MO) of a diffusion tensor [1]_
+    Calculate the Frobenius norm of a tensor quadratic form
+
+    :math:
+        ||A||_F = [\sum_{i,j} abs(a_{i,j})^2]^{1/2}
+
+    """
+    return np.sqrt(np.sum(np.sum(np.abs(q_form**2),-1),-1))
+
+    
+def tensor_mode(q_form):
+    r"""
+    Mode (MO) of a diffusion tensor [Ennis2006]_.
 
     Parameters
     ----------
 
-    D : array-like
-        Diffusion tensor
+    q_form : array-like
+       The quadratic form of a diffusion tensor
 
     Returns
     -------
@@ -248,22 +308,23 @@ def calculate_mode(D):
 
         Mode = 3*\sqrt{6}*det((Asq)/norm(Asq))
 
+    Where $Asq$ is the deviatoric part of the tensor quadratic form.
+ 
     References
     ----------
 
-    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor Invariants 
-        and the Analysis of Diffusion Tensor Magnetic Resonance Images",
-        Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146, 2006.
+    .. [Ennis2006] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
+        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
+        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
+        2006. 
     """
 
-    assert(np.shape(D)[-2:]==(3,3))
-    data_shape = np.shape(D)[0:np.ndim(D)-2]
-    tensor_mode_array = np.zeros(data_shape)
-    for entry, _ in np.ndenumerate(tensor_mode_array):
-        aniso = D[entry] - 1.0/3 * np.trace(D[entry]) * np.eye(np.shape(D[entry])[0])
-        temp_array = aniso / np.linalg.norm(aniso)
-        tensor_mode_array[entry] = 3 * np.sqrt(6) * np.linalg.det(temp_array)
-    return tensor_mode_array
+    A_squiggle = deviatoric(q_form)
+    A_s_norm = tensor_norm(A_squiggle)
+    # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
+    A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1,1)) 
+    return  3 * np.sqrt(6) * tensor_determinant((A_squiggle/A_s_norm))
+                                                 
 
 
 def mean_diffusivity(evals, axis=-1):
@@ -578,14 +639,19 @@ class TensorFit(object):
 
     @auto_attr
     def fa(self):
-        """Fractional anisotropy (FA) calculated from cached eigenvalues."""
+        """
+        Fractional anisotropy (FA) calculated from cached eigenvalues.
+        """
         return fractional_anisotropy(self.evals)
 
 
     @auto_attr
     def mode(self):
-        """Mode (MO) calculated from cached eigenvalues."""
-        return calculate_mode(self.D)
+        r"""
+        Tensor mode calculated from cached eigenvalues.
+
+        """
+        return tensor_mode(self.quadratic_form)
 
 
     @auto_attr

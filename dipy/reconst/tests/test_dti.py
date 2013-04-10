@@ -18,7 +18,17 @@ from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
 from dipy.sims.voxel import single_tensor
 
-
+def test_tensor_algebra():
+    """
+    Test that the computation of tensor determinant and norm is correct
+    """
+    test_arr = np.random.rand(10,3,3)
+    t_det = dti.tensor_determinant(test_arr)
+    t_norm = dti.tensor_norm(test_arr)
+    for i,x in enumerate(test_arr):
+        assert_almost_equal(np.linalg.det(x), t_det[i])
+        assert_almost_equal(np.linalg.norm(x), t_norm[i])
+    
 def test_TensorModel():
     data, gtab = dsi_voxels()
     dm = dti.TensorModel(gtab, 'LS')
@@ -39,6 +49,7 @@ def test_TensorModel():
     assert_equal(dtifit.md.shape, data.shape[:3])
     assert_equal(dtifit.rd.shape, data.shape[:3])
     assert_equal(dtifit.trace.shape, data.shape[:3])
+    assert_equal(dtifit.mode.shape, data.shape[:3])
     
     # Make some synthetic data
     b0 = 1000.
@@ -51,6 +62,8 @@ def test_TensorModel():
     evals = np.array([2., 1., 0.]) / B
     md = evals.mean()
     tensor = from_lower_triangular(D)
+    A_squiggle = tensor - (1/3.0) * np.trace(tensor) * np.eye(3)
+    mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle/np.linalg.norm(A_squiggle))
     evecs = np.linalg.eigh(tensor)[1]
     #Design Matrix
     X = dti.design_matrix(bvecs, bvals)
@@ -74,9 +87,9 @@ def test_TensorModel():
         "Calculation of tensor from Y does not compare to analytical solution")
 
         assert_almost_equal(tensor_fit.md[0], md)
+        assert_almost_equal(tensor_fit.mode, mode, places=5)
         assert_equal(tensor_fit.directions.shape[-2], 1)
         assert_equal(tensor_fit.directions.shape[-1], 3)
-
     # Test error-handling:
     assert_raises(ValueError,
                   dti.TensorModel,
