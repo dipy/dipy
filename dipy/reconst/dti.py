@@ -42,7 +42,7 @@ def fractional_anisotropy(evals, axis=-1):
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
-    fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
+    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
                   / ((evals*evals).sum(0) + all_zero))
 
     return fa
@@ -232,7 +232,7 @@ def tensor_determinant(q_form):
     ----------
     q_form : ndarray
         The quadratic form of a tensor, or an array with quadratic forms of
-        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3)
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
 
     Returns
     -------
@@ -252,20 +252,69 @@ def tensor_determinant(q_form):
 
 
 def anisotropic(q_form):
-    """ 
-    Calculate the anistropic part of the tensor [Ennis2006]_.     
+    r"""
+    Calculate the anistropic part of the tensor [1]_.
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
+
+    Returns
+    -------
+    A_hat: ndarray
+        The anisotropic part of the tensor in each spatial coordinate
+
+    Notes
+    -----
+    The anisotropic part of a tensor is defined as (equations 3-5 of [1]_):
+
+    .. math ::
+        \bar{A} = \frac{1}{2} tr(A) I
+
+    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
+        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
+        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
+        2006.
     """
     tr_A = q_form[..., 0, 0] + q_form[..., 1, 1] + q_form[..., 2, 2]
     n_dims = len(q_form.shape)
     add_dims = n_dims - 2  # These are the last two (the 3,3):
-    my_I = np.eye(3).reshape(add_dims * (1,) + (3,3))
-    tr_AI = (tr_A.reshape(tr_A.shape + (1,1)) * my_I)
-    return (1/3.0) * tr_AI
+    my_I = np.eye(3).reshape(add_dims * (1,) + (3, 3))
+    tr_AI = (tr_A.reshape(tr_A.shape + (1, 1)) * my_I)
+    return (1 / 3.0) * tr_AI
 
 
 def deviatoric(q_form):
-    """
-    Calculate the deviatoric part of the tensor [Ennis2006]_.
+    r"""
+    Calculate the deviatoric part of the tensor [1]_.
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
+
+    Returns
+    -------
+    A_squiggle : ndarray
+        The deviatoric part of the tensor in each spatial coordinate.
+
+    Notes
+    -----
+    The deviatoric part of the tensor is defined as (equations 3-5 in [1]_):
+
+    .. math ::
+         \widetilde{A} = A - \bar{A}
+
+    Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
+    part of the tensor.
+
+    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
+        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
+        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
+        2006.
     """
     A_squiggle = q_form - anisotropic(q_form)
     return A_squiggle
@@ -275,34 +324,52 @@ def tensor_norm(q_form):
     r"""
     Calculate the Frobenius norm of a tensor quadratic form
 
+    Parameters
+    ----------
+    q_form: ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
+
+    Returns
+    -------
+    norm : ndarray
+        The Frobenius norm of the 3,3 tensor q_form in each spatial
+        coordinate.
+
+    Notes
+    -----
+    The Frobenius norm is defined as:
+
     :math:
         ||A||_F = [\sum_{i,j} abs(a_{i,j})^2]^{1/2}
 
+    See also
+    --------
+    np.linalg.norm
     """
-    return np.sqrt(np.sum(np.sum(np.abs(q_form**2),-1),-1))
+    return np.sqrt(np.sum(np.sum(np.abs(q_form ** 2), -1), -1))
 
     
 def tensor_mode(q_form):
     r"""
-    Mode (MO) of a diffusion tensor [Ennis2006]_.
+    Mode (MO) of a diffusion tensor [1]_.
 
     Parameters
     ----------
-
-    q_form : array-like
-       The quadratic form of a diffusion tensor
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
 
     Returns
     -------
-
     mode : array
-        Calculated Mode. Note: range is -1 <= Mode <= 1.
+        Calculated tensor mode in each spatial coordinate.
 
     Notes
-    --------
+    -----
     Mode ranges between -1 (linear anisotropy) and +1 (planar anisotropy)
     with 0 representing orthotropy. Mode is calculated with the 
-    following equation:
+    following equation (equation 9 in [1]_):
 
     .. math::
 
@@ -313,7 +380,7 @@ def tensor_mode(q_form):
     References
     ----------
 
-    .. [Ennis2006] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
+    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
         Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
         Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
         2006. 
@@ -322,8 +389,8 @@ def tensor_mode(q_form):
     A_squiggle = deviatoric(q_form)
     A_s_norm = tensor_norm(A_squiggle)
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
-    A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1,1)) 
-    return  3 * np.sqrt(6) * tensor_determinant((A_squiggle/A_s_norm))
+    A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
+    return  3 * np.sqrt(6) * tensor_determinant((A_squiggle / A_s_norm))
                                                  
 
 
