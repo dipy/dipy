@@ -306,9 +306,9 @@ def tensor_mode(q_form):
 
     .. math::
 
-        Mode = 3*\sqrt{6}*det((Asq)/norm(Asq))
+        Mode = 3*\sqrt{6}*det(\widetilde{A}/norm(\widetilde{A}))
 
-    Where $Asq$ is the deviatoric part of the tensor quadratic form.
+    Where $\widetilde{A}$ is the deviatoric part of the tensor quadratic form.
  
     References
     ----------
