@@ -251,9 +251,9 @@ def tensor_determinant(q_form):
     return aei + bfg + cdh - ceg - bdi - afh
 
 
-def anisotropic(q_form):
+def isotropic(q_form):
     r"""
-    Calculate the anistropic part of the tensor [1]_.
+    Calculate the istropic part of the tensor [1]_.
 
     Parameters
     ----------
@@ -264,11 +264,11 @@ def anisotropic(q_form):
     Returns
     -------
     A_hat: ndarray
-        The anisotropic part of the tensor in each spatial coordinate
+        The isotropic part of the tensor in each spatial coordinate
 
     Notes
     -----
-    The anisotropic part of a tensor is defined as (equations 3-5 of [1]_):
+    The isotropic part of a tensor is defined as (equations 3-5 of [1]_):
 
     .. math ::
         \bar{A} = \frac{1}{2} tr(A) I
@@ -288,7 +288,7 @@ def anisotropic(q_form):
 
 def deviatoric(q_form):
     r"""
-    Calculate the deviatoric part of the tensor [1]_.
+    Calculate the deviatoric (anisotropic) part of the tensor [1]_.
 
     Parameters
     ----------
@@ -316,7 +316,7 @@ def deviatoric(q_form):
         Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
         2006.
     """
-    A_squiggle = q_form - anisotropic(q_form)
+    A_squiggle = q_form - isotropic(q_form)
     return A_squiggle
 
 
