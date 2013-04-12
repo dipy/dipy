@@ -185,7 +185,7 @@ def trace(evals, axis=-1):
 
     .. math::
 
-        MD = \lambda_1 + \lambda_2 + \lambda_3
+        Trace = \lambda_1 + \lambda_2 + \lambda_3
 
     """
     evals = _check_evals(evals, axis)
@@ -395,6 +395,111 @@ def tensor_mode(q_form):
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
     A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
     return  3 * np.sqrt(6) * tensor_determinant((A_squiggle / A_s_norm))
+
+
+def tensor_linearity(evals, axis=-1):
+    r"""
+    The linearity of the tensor [Westin1997]_
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    linearity : array
+        Calculated linearity of the diffusion tensor.
+
+    Notes
+    --------
+    Linearity is calculated with the following equation:
+
+    .. math::
+
+        Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+
+    Notes
+    -----
+    [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+        "Geometrical diffusion measures for MRI from tensor basis analysis" in
+        Proc. 5th Annual ISMRM, 1997.
+    """
+    evals = _check_evals(evals, axis)
+    ev1, ev2, ev3 = evals
+    return (ev1 - ev2) / evals.sum(0)
+
+
+def tensor_planarity(evals, axis=-1):
+    r"""
+    The planarity of the tensor [Westin1997]_
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    linearity : array
+        Calculated linearity of the diffusion tensor.
+
+    Notes
+    --------
+    Linearity is calculated with the following equation:
+
+    .. math::
+
+        Planarity = \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+
+    Notes
+    -----
+    [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+        "Geometrical diffusion measures for MRI from tensor basis analysis" in
+        Proc. 5th Annual ISMRM, 1997.
+    """
+    evals = _check_evals(evals, axis)
+    ev1, ev2, ev3 = evals
+    return (2 * (ev2 - ev3) / evals.sum(0))
+
+
+def tensor_sphericity(evals, axis=-1):
+    r"""
+    The sphericity of the tensor [Westin1997]_
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    sphericity : array
+        Calculated sphericity of the diffusion tensor.
+
+    Notes
+    --------
+    Linearity is calculated with the following equation:
+
+    .. math::
+
+        Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+
+    Notes
+    -----
+    [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+        "Geometrical diffusion measures for MRI from tensor basis analysis" in
+        Proc. 5th Annual ISMRM, 1997.
+    """
+    evals = _check_evals(evals, axis)
+    ev1, ev2, ev3 = evals
+    return (3 * ev3) / evals.sum(0)
 
 
 class TensorModel(object):
@@ -624,6 +729,85 @@ class TensorFit(object):
           trace = \lambda_1 + \lambda_2 + \lambda_3
         """
         return trace(self.evals)
+
+
+    @auto_attr
+    def planarity(self):
+        r"""
+        Returns
+        -------
+        sphericity : array
+            Calculated sphericity of the diffusion tensor [Westin1997]_.
+
+        Notes
+        --------
+        Sphericity is calculated with the following equation:
+
+        .. math::
+
+            Sphericity = \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+
+        Notes
+        -----
+        [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+            F., "Geometrical diffusion measures for MRI from tensor basis
+            analysis" in Proc. 5th Annual ISMRM, 1997.
+
+        """
+        return tensor_planarity(self.evals)
+
+
+    @auto_attr
+    def linearity(self):
+        r"""
+        Returns
+        -------
+        linearity : array
+            Calculated linearity of the diffusion tensor [Westin1997]_.
+
+        Notes
+        --------
+        Linearity is calculated with the following equation:
+
+        .. math::
+
+            Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+
+        Notes
+        -----
+        [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+            F., "Geometrical diffusion measures for MRI from tensor basis
+            analysis" in Proc. 5th Annual ISMRM, 1997.
+
+        """
+        return tensor_linearity(self.evals)
+
+
+    @auto_attr
+    def sphericity(self):
+        r"""
+        Returns
+        -------
+        sphericity : array
+            Calculated sphericity of the diffusion tensor [Westin1997]_.
+
+        Notes
+        --------
+        Sphericity is calculated with the following equation:
+
+        .. math::
+
+            Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
+
+        Notes
+        -----
+        [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+            F., "Geometrical diffusion measures for MRI from tensor basis
+            analysis" in Proc. 5th Annual ISMRM, 1997.
+
+        """
+        return tensor_sphericity(self.evals)
+
 
     def odf(self, sphere):
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
