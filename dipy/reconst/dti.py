@@ -7,6 +7,32 @@ from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
 
+def _check_evals(evals, axis=-1):
+    """
+    Helper function to check that the evals provided to functions calculating
+    tensor statistics have the right shape
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+
+    axis : int
+        The axis of the array which contains the 3 eigenvals. Default: -1
+
+    Returns
+    -------
+    evals : array-like
+        Eigenvalues of a diffusion tensor, rolled so that the 3 eigenvals are
+        the last axis.
+    """
+    evals = np.rollaxis(evals, axis)
+    if evals.shape[0] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+        raise ValueError(msg)
+
+    return evals
+
 def fractional_anisotropy(evals, axis=-1):
     r"""
     Fractional anisotropy (FA) of a diffusion tensor.
@@ -34,11 +60,7 @@ def fractional_anisotropy(evals, axis=-1):
                     \lambda_2^2+\lambda_3^2}}
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _check_evals(evals, axis)
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
@@ -74,11 +96,7 @@ def mean_diffusivity(evals, axis=-1):
         MD = \frac{\lambda_1 + \lambda_2 + \lambda_3}{3}
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _check_evals(evals, axis)
     return evals.mean(0)
 
 
@@ -109,11 +127,7 @@ def axial_diffusivity(evals, axis=-1):
         AD = \lambda_1
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _check_evals(evals, axis)
     ev1, ev2, ev3 = evals
     return ev1
 
@@ -145,11 +159,7 @@ def radial_diffusivity(evals, axis=-1):
         RD = \frac{\lambda_2 + \lambda_3}{2}
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _check_evals(evals, axis)
     return evals[1:].mean(0)
 
 
@@ -178,11 +188,7 @@ def trace(evals, axis=-1):
         MD = \lambda_1 + \lambda_2 + \lambda_3
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _check_evals(evals, axis)
     return evals.sum(0)
 
 
