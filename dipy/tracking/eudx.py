@@ -87,16 +87,18 @@ class EuDX(object):
         Examples
         --------
         >>> import nibabel as nib
-        >>> from dipy.reconst.dti import Tensor
+        >>> from dipy.reconst.dti import TensorModel, quantize_evecs
         >>> from dipy.data import get_data
+        >>> from dipy.core.gradients import gradient_table
         >>> fimg,fbvals,fbvecs=get_data('small_101D')
         >>> img=nib.load(fimg)
         >>> affine=img.get_affine()
-        >>> bvals=np.loadtxt(fbvals)
-        >>> gradients=np.loadtxt(fbvecs).T
         >>> data=img.get_data()
-        >>> ten=Tensor(data,bvals,gradients,thresh=50)
-        >>> eu=EuDX(a=ten.fa(),ind=ten.ind(),seeds=100,a_low=.2)
+        >>> gtab = gradient_table(fbvals, fbvecs)
+        >>> model = TensorModel(gtab)
+        >>> ten = model.fit(data)
+        >>> ind = quantize_evecs(ten.evecs)
+        >>> eu=EuDX(a=ten.fa, ind=ind, seeds=100,a_low=.2)
         >>> tracks=[e for e in eu]
 
         Notes

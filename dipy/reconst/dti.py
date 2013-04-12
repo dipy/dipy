@@ -1,8 +1,6 @@
 #!/usr/bin/python
 import warnings
 import numpy as np
-from .maskedview import MaskedView, _makearray, _filled
-from .modelarray import ModelArray
 from ..data import get_sphere
 from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
@@ -81,20 +79,19 @@ def mean_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev1 + ev2 + ev3) / 3
-
+    return evals.mean(0)
 
 
 def axial_diffusivity(evals, axis=-1):
     r"""
     Axial Diffusivity (AD) of a diffusion tensor.
-    Also called parallel diffusivity. 
-    
+    Also called parallel diffusivity.
+
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor, must be sorted in descending order
+        along `axis`.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -125,11 +122,12 @@ def radial_diffusivity(evals, axis=-1):
     r"""
     Radial Diffusivity (RD) of a diffusion tensor.
     Also called perpendicular diffusivity.
-    
+
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor, must be sorted in descending order
+        along `axis`.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -152,9 +150,7 @@ def radial_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev2 + ev3) / 2
-
+    return evals[1:].mean(0)
 
 def trace(evals, axis=-1):
     r"""
@@ -186,8 +182,7 @@ def trace(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev1 + ev2 + ev3)
+    return evals.sum(0)
 
 
 def color_fa(fa, evecs):
@@ -338,7 +333,7 @@ class TensorFit(object):
         """
         Returns the eigenvalues of the tensor as an array
         """
-        return _filled(self.model_params[..., :3])
+        return self.model_params[..., :3]
 
 
     @property
@@ -347,7 +342,7 @@ class TensorFit(object):
         Returns the eigenvectors of teh tensor as an array
 
         """
-        evecs = _filled(self.model_params[..., 3:])
+        evecs = self.model_params[..., 3:]
         return evecs.reshape(self.shape + (3, 3))
 
 
@@ -535,7 +530,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     if min_signal <= 0:
         raise ValueError('min_signal must be > 0')
 
-    data, wrap = _makearray(data)
+    data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     dti_params = np.empty((len(data_flat), 4, 3))
 
@@ -551,7 +546,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
         param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
                                         min_signal, min_diffusivity)
     dti_params.shape = data.shape[:-1]+(12,)
-    dti_params = wrap(dti_params)
+    dti_params = dti_params
     return dti_params
 
 
@@ -628,7 +623,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     """
     tol = 1e-6
 
-    data, wrap = _makearray(data)
+    data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     evals = np.empty((len(data_flat), 3))
     evecs = np.empty((len(data_flat), 3, 3))
@@ -647,7 +642,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
         param[0], param[1:] = _ols_iter(inv_design, sig, min_signal, min_diffusivity)
 
     dti_params.shape = data.shape[:-1]+(12,)
-    dti_params = wrap(dti_params)
+    dti_params = dti_params
     return dti_params
 
 
@@ -747,7 +742,7 @@ def tensor_eig_from_lo_tri(data):
         Eigen values and vectors, used by the Tensor class to create an
         instance
     """
-    data, wrap = _makearray(data)
+    data = np.asarray(data)
     data_flat = data.reshape((-1, data.shape[-1]))
     dti_params = np.empty((len(data_flat), 4, 3))
 
@@ -758,7 +753,6 @@ def tensor_eig_from_lo_tri(data):
         dti_params[ii, 1:] = eigvecs
 
     dti_params.shape = data.shape[:-1]+(12,)
-    dti_params = wrap(dti_params)
     return dti_params
 
 
@@ -865,211 +859,3 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'OLS': ols_fit_tensor,
                      }
 
-
-# For backwards compatibility:
-class Tensor(ModelArray, TensorFit):
-    """
-    For backwards compatibility, we continue to support this form of the Tensor
-    fitting.
-
-    """
-    def __init__(self, data, b_values, b_vectors, mask=True, thresh=None,
-                 fit_method='WLS', verbose=False, *args, **kargs):
-        """ Fits tensors to diffusion weighted data.
-
-        Fits a diffusion tensor given diffusion-weighted signals and gradient
-        info. Tensor object that when initialized calculates single self
-        diffusion tensor [1]_ in each voxel using selected fitting algorithm
-        (DEFAULT: weighted least squares [2]_) Requires a given b-vector table,
-        b value for each diffusion-weighted gradient vector, and image data
-        given all as arrays.
-
-        Parameters
-        ----------
-        data : array ([X, Y, Z, ...], g)
-            Diffusion-weighted signals. The dimension corresponding to the
-            diffusion weighting must be the last dimension
-
-        bval : array (g,)
-            Diffusion weighting factor b for each vector in gtab.
-
-        bvec : array (g, 3)
-            Diffusion gradient table found in DICOM header as a array.
-
-        mask : array, optional
-            The tensor will only be fit where mask is True. Mask must
-            broadcast to the shape of data and must have fewer dimensions than
-            data
-
-        thresh : float, default = None
-            The tensor will not be fit where data[bval == 0] < thresh. If
-            multiple b0 volumes are given, the minimum b0 signal is used.
-
-        fit_method : funciton or string, default = 'WLS'
-            The method to be used to fit the given data to a tensor. Any
-            function that takes the B matrix and the data and returns eigen
-            values and eigen vectors can be passed as the fit method. Any of
-            the common fit methods can be passed as a string.
-
-        *args, **kargs :
-            Any other arguments or keywards will be passed to fit_method.
-
-        common fit methods:
-
-            'WLS' : weighted least squares
-
-                dti.wls_fit_tensor
-
-            'LS' : ordinary least squares
-
-                dti.ols_fit_tensor
-
-        Attributes
-        ----------
-        D : array (..., 3, 3)
-            Self diffusion tensor calculated from cached eigenvalues and
-            eigenvectors.
-        mask : array
-            True in voxels where a tensor was fit, false if the voxel was skipped
-        B : array (g, 7)
-            Design matrix or B matrix constructed from given gradient table and
-            b-value vector.
-        evals : array (..., 3)
-            Cached eigenvalues of self diffusion tensor for given index.
-            (eval1, eval2, eval3)
-        evecs : array (..., 3, 3)
-            Cached associated eigenvectors of self diffusion tensor for given
-            index. Note: evals[..., j] is associated with evecs[..., :, j]
-
-        Methods
-        -------
-        fa : array
-            Calculates fractional anisotropy [2]_.
-        md : array
-            Calculates the mean diffusivity [2]_.
-            Note: [units ADC] ~ [units b value]*10**-1
-
-        Examples
-        ----------
-        For a complete example have a look at the main dipy/examples folder
-
-        """
-        warnings.warn("This implementation of DTI will be deprecated in a future release, consider using TensorModel", DeprecationWarning)
-        if not callable(fit_method):
-            try:
-                fit_method = common_fit_methods[fit_method]
-            except KeyError:
-                raise ValueError('"'+str(fit_method)+'" is not a known fit '+
-                                 'method, the fit method should either be a '+
-                                 'function or one of the common fit methods')
-
-        #64 bit design matrix makes for faster pinv
-        B = design_matrix(b_vectors.T, b_values)
-        self.B = B
-
-        mask = np.atleast_1d(mask)
-        if thresh is not None:
-            #Define total mask from thresh and mask
-            #mask = mask & (np.min(data[..., b_values == 0], -1) >
-            #thresh)
-            #the assumption that the lowest b_value is always 0 is
-            #incorrect the lowest b_value could also be higher than 0
-            #this is common with grid q-spaces
-            min_b0_sig = np.min(data[..., b_values == b_values.min()], -1)
-            mask = mask & (min_b0_sig > thresh)
-
-        #if mask is all False
-        if not mask.any():
-            raise ValueError('between mask and thresh, there is no data to '+
-            'fit')
-
-        #and the mask is not all True
-        if not mask.all():
-            #leave only data[mask is True]
-            data = data[mask]
-            data = MaskedView(mask, data, fill_value=0)
-
-        #Perform WLS fit on masked data
-        dti_params = fit_method(B, data, *args, **kargs)
-        self.model_params = dti_params
-
-    # For backwards compatibility:
-    D = TensorFit.quadratic_form
-
-    def ind(self):
-        """
-        Quantizes eigenvectors with maximum eigenvalues  on an
-        evenly distributed sphere so that the can be used for tractography.
-
-        Returns
-        ---------
-        IN : array, shape(x,y,z) integer indices for the points of the
-        evenly distributed sphere representing tensor  eigenvectors of
-        maximum eigenvalue
-
-        """
-        return quantize_evecs(self.evecs, odf_vertices=None)
-
-    def fa(self, fill_value=0, nonans=True):
-        r"""
-        Fractional anisotropy (FA) calculated from cached eigenvalues.
-
-        Parameters
-        ----------
-        fill_value : float
-            value of fa where self.mask == True.
-
-        nonans : Bool
-            When True, fa is 0 when all eigenvalues are 0, otherwise fa is nan
-
-        Returns
-        ---------
-        fa : array (V, 1)
-            Calculated FA. Range is 0 <= FA <= 1.
-
-        Notes
-        --------
-        FA is calculated with the following equation:
-
-        .. math::
-
-            FA = \sqrt{\frac{1}{2}\frac{(\lambda_1-\lambda_2)^2+(\lambda_1-
-                        \lambda_3)^2+(\lambda_2-\lambda_3)^2}{\lambda_1^2+
-                        \lambda_2^2+\lambda_3^2} }
-
-        """
-        evals, wrap = _makearray(self.model_params[..., :3])
-        ev1 = evals[..., 0]
-        ev2 = evals[..., 1]
-        ev3 = evals[..., 2]
-
-        if nonans:
-            all_zero = (ev1 == 0) & (ev2 == 0) & (ev3 == 0)
-        else:
-            all_zero = 0.
-
-        fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                      / (ev1*ev1 + ev2*ev2 + ev3*ev3 + all_zero))
-
-        fa = wrap(np.asarray(fa))
-        return _filled(fa, fill_value)
-
-
-    def md(self):
-        r"""
-        Mean diffusitivity (MD) calculated from cached eigenvalues.
-
-        Returns
-        ---------
-        md : array (V, 1)
-            Calculated MD.
-
-        Notes
-        --------
-        MD is calculated with the following equation:
-
-        .. math::
-
-            MD = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
-        """
-        return self.evals.mean(-1)

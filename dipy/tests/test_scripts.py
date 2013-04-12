@@ -10,11 +10,19 @@ from __future__ import with_statement
 
 import sys
 import os
+import shutil
+
 from os.path import dirname, join as pjoin, isfile, isdir, abspath, realpath
 
 from subprocess import Popen, PIPE
 
 from nose.tools import assert_true, assert_false, assert_equal
+import numpy.testing as nt
+
+import nibabel as nib
+from nibabel.tmpdirs import InTemporaryDirectory
+
+from dipy.data import get_data
 
 # Need shell to get path to correct executables
 USE_SHELL = True
@@ -74,3 +82,70 @@ def test_dipy_sh_estimate():
     cmd = 'dipy_sh_estimate'
     code, stdout, stderr = run_command(cmd, check_code=False)
     assert_equal(code, 2)
+
+
+def assert_image_shape_affine(filename, shape, affine):
+    assert_true(os.path.isfile(filename))
+    image = nib.load(filename)
+    assert_equal(image.shape, shape)
+    nt.assert_array_almost_equal(image.get_affine(), affine)
+
+
+def test_dipy_fit_tensor():
+    with InTemporaryDirectory() as tmp:
+        dwi, bval, bvec = get_data("small_25")
+
+        # Copy data to tmp directory
+        shutil.copyfile(dwi, "small_25.nii.gz")
+        shutil.copyfile(bval, "small_25.bval")
+        shutil.copyfile(bvec, "small_25.bvec")
+
+        # Call script
+        cmd = ["dipy_fit_tensor", "--mask=none", "small_25.nii.gz"]
+        out = run_command(" ".join(cmd))
+        assert_equal(out[0], 0)
+
+        # Get expected values
+        img = nib.load("small_25.nii.gz")
+        affine = img.get_affine()
+        shape = img.shape[:-1]
+
+        # Check expected outputs
+        assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_dirFA.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_ad.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
+
+    with InTemporaryDirectory() as tmp:
+        dwi, bval, bvec = get_data("small_25")
+
+        # Copy data to tmp directory
+        shutil.copyfile(dwi, "small_25.nii.gz")
+        shutil.copyfile(bval, "small_25.bval")
+        shutil.copyfile(bvec, "small_25.bvec")
+
+        # Call script
+        cmd = ["dipy_fit_tensor", "--save-tensor", "--mask=none", "small_25.nii.gz"]
+        out = run_command(" ".join(cmd))
+        assert_equal(out[0], 0)
+
+        # Get expected values
+        img = nib.load("small_25.nii.gz")
+        affine = img.get_affine()
+        shape = img.shape[:-1]
+
+        # Check expected outputs
+        assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_dirFA.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_ad.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_md.nii.gz", shape, affine)
+        assert_image_shape_affine("small_25_rd.nii.gz", shape, affine)
+        # small_25_tensor saves the tensor as a symmetric matrix following
+        # the nifti standard.
+        ten_shape = shape + (1, 6)
+        assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
+                                  affine)
+
