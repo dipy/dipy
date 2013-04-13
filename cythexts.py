@@ -1,4 +1,5 @@
-from os.path import splitext, sep as filesep, join as pjoin
+import os
+from os.path import splitext, sep as filesep, join as pjoin, relpath
 from hashlib import sha1
 from subprocess import check_call
 
@@ -122,6 +123,82 @@ def cyproc_exts(exts, cython_min_version,
                         % cython_min_version)
 
 
+def build_stamp(pyxes):
+    """ Cythonize files in `pyxes`, return pyx, C filenames, hashes
+
+    Parameters
+    ----------
+    pyxes : sequence
+        sequence of filenames of files on which to run Cython
+
+    Returns
+    -------
+    pyx_defs : dict
+        dict has key, value pairs of <pyx_filename>, <pyx_info>, where
+        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file SHA1
+        hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
+    """
+    pyx_defs = {}
+    for source in pyxes:
+        base, ext = splitext(source)
+        pyx_hash = sha1(open(source, 'rt').read()).hexdigest()
+        c_filename = base + '.c'
+        check_call('cython ' + source, shell=True)
+        c_hash = sha1(open(c_filename, 'rt').read()).hexdigest()
+        pyx_defs[source] = dict(pyx_hash=pyx_hash,
+                                c_filename=c_filename,
+                                c_hash=c_hash)
+    return pyx_defs
+
+
+def write_stamps(pyx_defs, stamp_fname='pyx-stamps'):
+    """ Write stamp information in `pyx_defs` to filename `stamp_fname`
+
+    Parameters
+    ----------
+    pyx_defs : dict
+        dict has key, value pairs of <pyx_filename>, <pyx_info>, where
+        <pyx_info> is a dict with key, value pairs of "pyx_hash", <pyx file SHA1
+        hash>; "c_filename", <c filemane>; "c_hash", <c file SHA1 hash>.
+    stamp_fname : str
+        filename to which to write stamp information
+    """
+    with open(stamp_fname, 'wt') as stamp_file:
+        stamp_file.write('# SHA1 hashes for pyx files and generated c files\n')
+        stamp_file.write('# Auto-generated file, do not edit\n')
+        for pyx_fname, pyx_info in pyx_defs.items():
+            stamp_file.write('%s, %s\n' % (pyx_fname,
+                                           pyx_info['pyx_hash']))
+            stamp_file.write('%s, %s\n' % (pyx_info['c_filename'],
+                                           pyx_info['c_hash']))
+
+
+def find_pyx(root_dir=None):
+    """ Recursively find files with extension '.pyx' starting at `root_dir`
+
+    Parameters
+    ----------
+    root_dir : None or str, optional
+        Directory from which to search for pyx files.  If None, use current
+        working directory.
+
+    Returns
+    -------
+    pyxes : list
+        list of filenames relative to `root_dir`
+    """
+    if root_dir is None:
+        root_dir = os.getcwd()
+    pyxes = []
+    for dirpath, dirnames, filenames in os.walk(root_dir):
+        for filename in filenames:
+            if not filename.endswith('.pyx'):
+                continue
+            base = relpath(dirpath, root_dir)
+            pyxes.append(pjoin(base, filename))
+    return pyxes
+
+
 def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
     """ Add pyx->c conversion, hash recording to sdist command `sdist_like`
 
@@ -157,30 +234,37 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
 
         def make_distribution(self):
             """ Compile pyx to c files, add to sources, stamp sha1s """
-            stamps = []
+            pyxes = []
             for mod in self.distribution.ext_modules:
                 for source in mod.sources:
                     base, ext = splitext(source)
-                    if not ext in ('.pyx', '.py'):
-                        continue
-                    source_hash = sha1(open(source, 'rt').read()).hexdigest()
-                    stamps.append('%s, %s\n' % (source, source_hash))
-                    c_fname = base + '.c'
-                    check_call('cython ' + source, shell=True)
-                    c_hash = sha1(open(c_fname, 'rt').read()).hexdigest()
-                    stamps.append('%s, %s\n' % (c_fname, c_hash))
-                    self.filelist.append(c_fname)
-            self.stamps = stamps
+                    if ext in ('.pyx', '.py'):
+                        pyxes.append(source)
+            self.pyx_defs = build_stamp(pyxes)
+            for pyx_fname, pyx_info in self.pyx_defs.items():
+                self.filelist.append(pyx_info['c_filename'])
             sdist_like.make_distribution(self)
 
         def make_release_tree(self, base_dir, files):
             """ Put pyx stamps file into release tree """
             sdist_like.make_release_tree(self, base_dir, files)
             stamp_fname = pjoin(base_dir, hash_stamps_fname)
-            stamp_file = open(stamp_fname, 'wt')
-            stamp_file.write('# SHA1 hashes for pyx files and generated c files\n')
-            stamp_file.write('# Auto-generated file, do not edit\n')
-            stamp_file.writelines(self.stamps)
-            stamp_file.close()
+            write_stamps(self.pyx_defs, stamp_fname)
 
     return PyxSDist
+
+
+def build_stamp_source(root_dir=None, stamp_fname='pyx-stamps'):
+    """ Build cython c files, make stamp file in source tree `root_dir`
+
+    Parameters
+    ----------
+    root_dir : None or str, optional
+        Directory from which to find ``.pyx`` files.  If None, use current
+        working directory.
+    stamp_fname : str, optional
+        Filename for stamp file we will write
+    """
+    pyxes = find_pyx(root_dir)
+    pyx_defs = build_stamp(pyxes)
+    write_stamps(pyx_defs, stamp_fname)
