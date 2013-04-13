@@ -42,7 +42,7 @@ def fractional_anisotropy(evals, axis=-1):
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
-    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
+    fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
                   / ((evals*evals).sum(0) + all_zero))
 
     return fa
@@ -79,20 +79,19 @@ def mean_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev1 + ev2 + ev3) / 3
-
+    return evals.mean(0)
 
 
 def axial_diffusivity(evals, axis=-1):
     r"""
     Axial Diffusivity (AD) of a diffusion tensor.
-    Also called parallel diffusivity. 
-    
+    Also called parallel diffusivity.
+
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor, must be sorted in descending order
+        along `axis`.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -123,11 +122,12 @@ def radial_diffusivity(evals, axis=-1):
     r"""
     Radial Diffusivity (RD) of a diffusion tensor.
     Also called perpendicular diffusivity.
-    
+
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor, must be sorted in descending order
+        along `axis`.
     axis : int
         Axis of `evals` which contains 3 eigenvalues.
 
@@ -150,9 +150,7 @@ def radial_diffusivity(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev2 + ev3) / 2
-
+    return evals[1:].mean(0)
 
 def trace(evals, axis=-1):
     r"""
@@ -184,8 +182,7 @@ def trace(evals, axis=-1):
         msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
         raise ValueError(msg)
 
-    ev1, ev2, ev3 = evals
-    return (ev1 + ev2 + ev3)
+    return evals.sum(0)
 
 
 def color_fa(fa, evecs):
@@ -391,7 +388,6 @@ def tensor_mode(q_form):
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
     A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
     return  3 * np.sqrt(6) * tensor_determinant((A_squiggle / A_s_norm))
-                                                 
 
 
 def mean_diffusivity(evals, axis=-1):
@@ -706,9 +702,7 @@ class TensorFit(object):
 
     @auto_attr
     def fa(self):
-        """
-        Fractional anisotropy (FA) calculated from cached eigenvalues.
-        """
+        """Fractional anisotropy (FA) calculated from cached eigenvalues."""
         return fractional_anisotropy(self.evals)
 
 
@@ -719,6 +713,7 @@ class TensorFit(object):
 
         """
         return tensor_mode(self.quadratic_form)
+        
 
 
     @auto_attr
