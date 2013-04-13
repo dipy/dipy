@@ -19,6 +19,18 @@ import dipy.core.gradients as grad
 from dipy.sims.voxel import single_tensor
 
 
+def test_tensor_algebra():
+    """
+    Test that the computation of tensor determinant and norm is correct
+    """
+    test_arr = np.random.rand(10, 3, 3)
+    t_det = dti.tensor_determinant(test_arr)
+    t_norm = dti.tensor_norm(test_arr)
+    for i, x in enumerate(test_arr):
+        assert_almost_equal(np.linalg.det(x), t_det[i])
+        assert_almost_equal(np.linalg.norm(x), t_norm[i])
+
+
 def test_TensorModel():
     data, gtab = dsi_voxels()
     dm = dti.TensorModel(gtab, 'LS')
@@ -39,7 +51,8 @@ def test_TensorModel():
     assert_equal(dtifit.md.shape, data.shape[:3])
     assert_equal(dtifit.rd.shape, data.shape[:3])
     assert_equal(dtifit.trace.shape, data.shape[:3])
-    
+    assert_equal(dtifit.mode.shape, data.shape[:3])
+
     # Make some synthetic data
     b0 = 1000.
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
@@ -51,11 +64,13 @@ def test_TensorModel():
     evals = np.array([2., 1., 0.]) / B
     md = evals.mean()
     tensor = from_lower_triangular(D)
+    A_squiggle = tensor - (1 / 3.0) * np.trace(tensor) * np.eye(3)
+    mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle / np.linalg.norm(A_squiggle))
     evecs = np.linalg.eigh(tensor)[1]
     #Design Matrix
     X = dti.design_matrix(bvecs, bvals)
     #Signals
-    Y = np.exp(np.dot(X,D))
+    Y = np.exp(np.dot(X, D))
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
@@ -70,10 +85,11 @@ def test_TensorModel():
         assert_array_almost_equal(tensor_fit.evals[0], evals)
 
         assert_array_almost_equal(tensor_fit.quadratic_form[0], tensor,
-                                  err_msg =\
+                                  err_msg=\
         "Calculation of tensor from Y does not compare to analytical solution")
 
         assert_almost_equal(tensor_fit.md[0], md)
+        assert_almost_equal(tensor_fit.mode, mode, places=5)
         assert_equal(tensor_fit.directions.shape[-2], 1)
         assert_equal(tensor_fit.directions.shape[-1], 3)
 
@@ -116,19 +132,19 @@ def test_diffusivities():
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
     gtab = grad.gradient_table(bvals, bvecs)
-    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003] ))
+    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
     mevecs = [ np.array( [ [1,0,0], [0,1,0], [0,0,1] ] ),
                np.array( [ [0,0,1], [0,1,0], [1,0,0] ] ) ]
     S = single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
 
     dm = dti.TensorModel(gtab, 'LS')
     dmfit = dm.fit(S)
-    
+
     md = mean_diffusivity(dmfit.evals)
     Trace = trace(dmfit.evals)
     rd = radial_diffusivity(dmfit.evals)
     ad = axial_diffusivity(dmfit.evals)
-    
+
     assert_almost_equal(md, (0.0015 + 0.0003 + 0.0001) / 3)
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
@@ -150,7 +166,6 @@ def test_color_fa():
     assert_equal(fa.shape, evecs[..., 0, 0].shape)
     assert_equal((3, 3), evecs.shape[-2:])
 
-
     # 3D test case
     fa = np.ones((3, 3, 3))
     evecs = np.zeros(fa.shape + (3, 3))
@@ -160,7 +175,6 @@ def test_color_fa():
     true_cfa = np.reshape(np.tile(cfa_truth, 27), [3, 3, 3, 3])
 
     assert_array_equal(cfa, true_cfa)
-
 
     # 2D test case
     fa = np.ones((3, 3))
@@ -172,7 +186,6 @@ def test_color_fa():
 
     assert_array_equal(cfa, true_cfa)
 
-
     # 1D test case
     fa = np.ones((3))
     evecs = np.zeros(fa.shape + (3, 3))
@@ -182,7 +195,6 @@ def test_color_fa():
     true_cfa = np.reshape(np.tile(cfa_truth, 3), [3, 3])
 
     assert_array_equal(cfa, true_cfa)
-
 
 
 def test_WLS_and_LS_fit():
@@ -209,7 +221,7 @@ def test_WLS_and_LS_fit():
     #Design Matrix
     X = dti.design_matrix(bvec, bval)
     #Signals
-    Y = np.exp(np.dot(X,D))
+    Y = np.exp(np.dot(X, D))
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
@@ -222,7 +234,7 @@ def test_WLS_and_LS_fit():
     assert_equal(tensor_est.shape, Y.shape[:-1])
     assert_array_almost_equal(tensor_est.evals[0], evals)
     assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
-                              err_msg= "Calculation of tensor from Y does not "
+                              err_msg="Calculation of tensor from Y does not "
                                        "compare to analytical solution")
     assert_almost_equal(tensor_est.md[0], md)
 
@@ -246,7 +258,7 @@ def test_WLS_and_LS_fit():
 
 
 def test_masked_array_with_Tensor():
-    data = np.ones((2,4,56))
+    data = np.ones((2, 4, 56))
     mask = np.array([[True, False, False, True],
                      [True, False, True, False]])
 
@@ -255,22 +267,22 @@ def test_masked_array_with_Tensor():
 
     tensor_model = TensorModel(gtab, min_signal=1e-9)
     tensor = tensor_model.fit(data, mask=mask)
-    assert_equal(tensor.shape, (2,4))
-    assert_equal(tensor.fa.shape, (2,4))
-    assert_equal(tensor.evals.shape, (2,4,3))
-    assert_equal(tensor.evecs.shape, (2,4,3,3))
+    assert_equal(tensor.shape, (2, 4))
+    assert_equal(tensor.fa.shape, (2, 4))
+    assert_equal(tensor.evals.shape, (2, 4, 3))
+    assert_equal(tensor.evecs.shape, (2, 4, 3, 3))
 
     tensor = tensor[0]
     assert_equal(tensor.shape, (4,))
     assert_equal(tensor.fa.shape, (4,))
-    assert_equal(tensor.evals.shape, (4,3))
-    assert_equal(tensor.evecs.shape, (4,3,3))
+    assert_equal(tensor.evals.shape, (4, 3))
+    assert_equal(tensor.evecs.shape, (4, 3, 3))
 
     tensor = tensor[0]
     assert_equal(tensor.shape, tuple())
     assert_equal(tensor.fa.shape, tuple())
     assert_equal(tensor.evals.shape, (3,))
-    assert_equal(tensor.evecs.shape, (3,3))
+    assert_equal(tensor.evecs.shape, (3, 3))
     assert_equal(type(tensor.model_params), np.ndarray)
 
 
@@ -287,14 +299,14 @@ def test_fit_method_error():
 
 
 def test_lower_triangular():
-    tensor = np.arange(9).reshape((3,3))
+    tensor = np.arange(9).reshape((3, 3))
     D = lower_triangular(tensor)
     assert_array_equal(D, [0, 3, 4, 6, 7, 8])
     D = lower_triangular(tensor, 1)
     assert_array_equal(D, [0, 3, 4, 6, 7, 8, 0])
     assert_raises(ValueError, lower_triangular, np.zeros((2, 3)))
-    shape = (4,5,6)
-    many_tensors = np.empty(shape + (3,3))
+    shape = (4, 5, 6)
+    many_tensors = np.empty(shape + (3, 3))
     many_tensors[:] = tensor
     result = np.empty(shape + (6,))
     result[:] = [0, 3, 4, 6, 7, 8]

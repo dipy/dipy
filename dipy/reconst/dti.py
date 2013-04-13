@@ -42,8 +42,8 @@ def fractional_anisotropy(evals, axis=-1):
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
-    fa = np.sqrt(0.5 * ((ev1 - ev2)**2 + (ev2 - ev3)**2 + (ev3 - ev1)**2)
-                  / ((evals*evals).sum(0) + all_zero))
+    fa = np.sqrt(0.5 * ((ev1 - ev2) ** 2 + (ev2 - ev3) ** 2 + (ev3 - ev1) ** 2)
+                  / ((evals * evals).sum(0) + all_zero))
 
     return fa
 
@@ -63,7 +63,7 @@ def mean_diffusivity(evals, axis=-1):
     Returns
     -------
     md : array
-        Calculated MD. 
+        Calculated MD.
 
     Notes
     --------
@@ -98,7 +98,7 @@ def axial_diffusivity(evals, axis=-1):
     Returns
     -------
     ad : array
-        Calculated AD. 
+        Calculated AD.
 
     Notes
     --------
@@ -134,7 +134,7 @@ def radial_diffusivity(evals, axis=-1):
         Returns
     -------
     rd : array
-        Calculated RD. 
+        Calculated RD.
 
     Notes
     --------
@@ -152,6 +152,7 @@ def radial_diffusivity(evals, axis=-1):
 
     return evals[1:].mean(0)
 
+
 def trace(evals, axis=-1):
     r"""
     Trace of a diffusion tensor.
@@ -166,7 +167,7 @@ def trace(evals, axis=-1):
     Returns
     -------
     trace : array
-        Calculated trace of the diffusion tensor. 
+        Calculated trace of the diffusion tensor.
 
     Notes
     --------
@@ -220,6 +221,176 @@ def color_fa(fa, evecs):
     return rgb
 
 
+# The following are used to calculate the tensor mode:
+def tensor_determinant(q_form):
+    """
+    The determinant of a tensor, given in quadratic form
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x, y, z, 3, 3) or (n, 3, 3) or (3, 3).
+
+    Returns
+    -------
+    det : array
+        The determinant of the tensor in each spatial coordinate
+    """
+
+    # Following the conventions used here:
+    # http://en.wikipedia.org/wiki/Determinant
+    aei = q_form[..., 0, 0] * q_form[..., 1, 1] * q_form[..., 2, 2]
+    bfg = q_form[..., 0, 1] * q_form[..., 1, 2] * q_form[..., 2, 0]
+    cdh = q_form[..., 0, 2] * q_form[..., 1, 0] * q_form[..., 2, 1]
+    ceg = q_form[..., 0, 2] * q_form[..., 1, 1] * q_form[..., 2, 0]
+    bdi = q_form[..., 0, 1] * q_form[..., 1, 0] * q_form[..., 2, 2]
+    afh = q_form[..., 0, 0] * q_form[..., 1, 2] * q_form[..., 2, 1]
+    return aei + bfg + cdh - ceg - bdi - afh
+
+
+def isotropic(q_form):
+    r"""
+    Calculate the istropic part of the tensor [1]_.
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
+
+    Returns
+    -------
+    A_hat: ndarray
+        The isotropic part of the tensor in each spatial coordinate
+
+    Notes
+    -----
+    The isotropic part of a tensor is defined as (equations 3-5 of [1]_):
+
+    .. math ::
+        \bar{A} = \frac{1}{2} tr(A) I
+
+    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
+        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
+        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
+        2006.
+    """
+    tr_A = q_form[..., 0, 0] + q_form[..., 1, 1] + q_form[..., 2, 2]
+    n_dims = len(q_form.shape)
+    add_dims = n_dims - 2  # These are the last two (the 3,3):
+    my_I = np.eye(3).reshape(add_dims * (1,) + (3, 3))
+    tr_AI = (tr_A.reshape(tr_A.shape + (1, 1)) * my_I)
+    return (1 / 3.0) * tr_AI
+
+
+def deviatoric(q_form):
+    r"""
+    Calculate the deviatoric (anisotropic) part of the tensor [1]_.
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
+
+    Returns
+    -------
+    A_squiggle : ndarray
+        The deviatoric part of the tensor in each spatial coordinate.
+
+    Notes
+    -----
+    The deviatoric part of the tensor is defined as (equations 3-5 in [1]_):
+
+    .. math ::
+         \widetilde{A} = A - \bar{A}
+
+    Where $A$ is the tensor quadratic form and $\bar{A}$ is the anisotropic
+    part of the tensor.
+
+    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
+        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
+        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
+        2006.
+    """
+    A_squiggle = q_form - isotropic(q_form)
+    return A_squiggle
+
+
+def tensor_norm(q_form):
+    r"""
+    Calculate the Frobenius norm of a tensor quadratic form
+
+    Parameters
+    ----------
+    q_form: ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x,y,z,3,3) or (n, 3, 3) or (3,3).
+
+    Returns
+    -------
+    norm : ndarray
+        The Frobenius norm of the 3,3 tensor q_form in each spatial
+        coordinate.
+
+    Notes
+    -----
+    The Frobenius norm is defined as:
+
+    :math:
+        ||A||_F = [\sum_{i,j} abs(a_{i,j})^2]^{1/2}
+
+    See also
+    --------
+    np.linalg.norm
+    """
+    return np.sqrt(np.sum(np.sum(np.abs(q_form ** 2), -1), -1))
+
+
+def tensor_mode(q_form):
+    r"""
+    Mode (MO) of a diffusion tensor [1]_.
+
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (x, y, z, 3, 3) or (n, 3, 3) or (3, 3).
+
+    Returns
+    -------
+    mode : array
+        Calculated tensor mode in each spatial coordinate.
+
+    Notes
+    -----
+    Mode ranges between -1 (linear anisotropy) and +1 (planar anisotropy)
+    with 0 representing orthotropy. Mode is calculated with the
+    following equation (equation 9 in [1]_):
+
+    .. math::
+
+        Mode = 3*\sqrt{6}*det(\widetilde{A}/norm(\widetilde{A}))
+
+    Where $\widetilde{A}$ is the deviatoric part of the tensor quadratic form.
+
+    References
+    ----------
+
+    .. [1] Daniel B. Ennis and G. Kindlmann, "Orthogonal Tensor
+        Invariants and the Analysis of Diffusion Tensor Magnetic Resonance
+        Images", Magnetic Resonance in Medicine, vol. 55, no. 1, pp. 136-146,
+        2006.
+    """
+
+    A_squiggle = deviatoric(q_form)
+    A_s_norm = tensor_norm(A_squiggle)
+    # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
+    A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
+    return  3 * np.sqrt(6) * tensor_determinant((A_squiggle / A_s_norm))
+
+
 class TensorModel(object):
     """ Diffusion Tensor
     """
@@ -256,7 +427,7 @@ class TensorModel(object):
             try:
                 self.fit_method = common_fit_methods[fit_method]
             except KeyError:
-                raise ValueError('"'+str(fit_method)+'" is not a known fit '
+                raise ValueError('"' + str(fit_method) + '" is not a known fit '
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
         self.bvec = gtab.bvecs
@@ -264,7 +435,6 @@ class TensorModel(object):
         self.design_matrix = design_matrix(self.bvec.T, self.bval)
         self.args = args
         self.kwargs = kwargs
-
 
     def fit(self, data, mask=None):
         """ Fit method of the DTI model class
@@ -291,7 +461,7 @@ class TensorModel(object):
 
         dti_params = np.zeros(data.shape[:-1] + (12,))
 
-        dti_params[mask,:] = params_in_mask
+        dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
 
@@ -303,7 +473,6 @@ class TensorFit(object):
         self.model = model
         self.model_params = model_params
 
-
     def __getitem__(self, index):
         model_params = self.model_params
         N = model_params.ndim
@@ -314,11 +483,9 @@ class TensorFit(object):
         index = index + (slice(None),) * (N - len(index))
         return type(self)(self.model, model_params[index])
 
-
     @property
     def shape(self):
         return self.model_params.shape[:-1]
-
 
     @property
     def directions(self):
@@ -327,14 +494,12 @@ class TensorFit(object):
         """
         return self.evecs[..., None, :, 0]
 
-
     @property
     def evals(self):
         """
         Returns the eigenvalues of the tensor as an array
         """
         return self.model_params[..., :3]
-
 
     @property
     def evecs(self):
@@ -345,7 +510,6 @@ class TensorFit(object):
         evecs = self.model_params[..., 3:]
         return evecs.reshape(self.shape + (3, 3))
 
-
     @property
     def quadratic_form(self):
         """Calculates the 3x3 diffusion tensor for each voxel"""
@@ -354,16 +518,21 @@ class TensorFit(object):
         # np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)
         return vec_val_vect(self.evecs, self.evals)
 
-
     def lower_triangular(self, b0=None):
         return lower_triangular(self.quadratic_form, b0)
-
 
     @auto_attr
     def fa(self):
         """Fractional anisotropy (FA) calculated from cached eigenvalues."""
         return fractional_anisotropy(self.evals)
 
+    @auto_attr
+    def mode(self):
+        r"""
+        Tensor mode calculated from cached eigenvalues.
+
+        """
+        return tensor_mode(self.quadratic_form)
 
     @auto_attr
     def md(self):
@@ -384,8 +553,8 @@ class TensorFit(object):
             MD = \frac{\lambda_1+\lambda_2+\lambda_3}{3}
 
         """
-        return self.trace/3.0
-    
+        return self.trace / 3.0
+
     @auto_attr
     def rd(self):
         r"""
@@ -408,7 +577,6 @@ class TensorFit(object):
         """
         return radial_diffusivity(self.evals)
 
-
     @auto_attr
     def ad(self):
         r"""
@@ -430,7 +598,7 @@ class TensorFit(object):
 
         """
         return axial_diffusivity(self.evals)
-    
+
     @auto_attr
     def trace(self):
         r"""
@@ -456,7 +624,7 @@ class TensorFit(object):
         projection = np.dot(sphere.vertices, self.evecs)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            projection /=  np.sqrt(self.evals)
+            projection /= np.sqrt(self.evals)
             odf = (vector_norm(projection) ** -3) / lower
         # Zero evals are non-physical, we replace nans with zeros
         any_zero = (self.evals == 0).any(-1)
@@ -545,7 +713,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
     for param, sig in zip(dti_params, data_flat):
         param[0], param[1:] = _wls_iter(ols_fit, design_matrix, sig,
                                         min_signal, min_diffusivity)
-    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params.shape = data.shape[:-1] + (12,)
     dti_params = dti_params
     return dti_params
 
@@ -553,10 +721,10 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
     ''' Function used by wls_fit_tensor for later optimization.
     '''
-    sig = np.maximum(sig, min_signal) #throw out zero signals
+    sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     w = np.exp(np.dot(ols_fit, log_s))
-    D = np.dot(np.linalg.pinv(design_matrix * w[:,None]), w*log_s)
+    D = np.dot(np.linalg.pinv(design_matrix * w[:, None]), w * log_s)
     # D, _, _, _ = np.linalg.lstsq(design_matrix * w[:, None], log_s)
     tensor = from_lower_triangular(D)
     return decompose_tensor(tensor, min_diffusivity=min_diffusivity)
@@ -565,7 +733,7 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
 def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
     ''' Function used by ols_fit_tensor for later optimization.
     '''
-    sig = np.maximum(sig, min_signal) #throw out zero signals
+    sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
     D = np.dot(inv_design, log_s)
     tensor = from_lower_triangular(D)
@@ -639,9 +807,10 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     inv_design = np.linalg.pinv(design_matrix)
 
     for param, sig in zip(dti_params, data_flat):
-        param[0], param[1:] = _ols_iter(inv_design, sig, min_signal, min_diffusivity)
+        param[0], param[1:] = _ols_iter(inv_design, sig,
+            min_signal, min_diffusivity)
 
-    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params.shape = data.shape[:-1] + (12,)
     dti_params = dti_params
     return dti_params
 
@@ -662,7 +831,7 @@ def _ols_fit_matrix(design_matrix):
     ols_data = np.dot(ols_fit, data)
     """
 
-    U,S,V = np.linalg.svd(design_matrix, False)
+    U, S, V = np.linalg.svd(design_matrix, False)
     return np.dot(U, U.T)
 
 
@@ -752,7 +921,7 @@ def tensor_eig_from_lo_tri(data):
         dti_params[ii, 0] = eigvals
         dti_params[ii, 1:] = eigvecs
 
-    dti_params.shape = data.shape[:-1]+(12,)
+    dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
 
@@ -810,23 +979,23 @@ def design_matrix(gtab, bval, dtype=None):
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
-	Returns
-	-------
-	design_matrix : array (g,7)
-		Design matrix or B matrix assuming Gaussian distributed tensor model
-		design_matrix[j,:] = (Bxx,Byy,Bzz,Bxy,Bxz,Byz,dummy)
+    Returns
+    -------
+    design_matrix : array (g,7)
+        Design matrix or B matrix assuming Gaussian distributed tensor model
+        design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
     """
     G = gtab
-    B = np.zeros((bval.size, 7), dtype = G.dtype)
+    B = np.zeros((bval.size, 7), dtype=G.dtype)
     if gtab.shape[1] != bval.shape[0]:
         raise ValueError('The number of b values and gradient directions must'
-                          +' be the same')
-    B[:, 0] = G[0, :] * G[0, :] * 1. * bval   #Bxx
-    B[:, 1] = G[0, :] * G[1, :] * 2. * bval   #Bxy
-    B[:, 2] = G[1, :] * G[1, :] * 1. * bval   #Byy
-    B[:, 3] = G[0, :] * G[2, :] * 2. * bval   #Bxz
-    B[:, 4] = G[1, :] * G[2, :] * 2. * bval   #Byz
-    B[:, 5] = G[2, :] * G[2, :] * 1. * bval   #Bzz
+                          + ' be the same')
+    B[:, 0] = G[0, :] * G[0, :] * 1. * bval   # Bxx
+    B[:, 1] = G[0, :] * G[1, :] * 2. * bval   # Bxy
+    B[:, 2] = G[1, :] * G[1, :] * 1. * bval   # Byy
+    B[:, 3] = G[0, :] * G[2, :] * 2. * bval   # Bxz
+    B[:, 4] = G[1, :] * G[2, :] * 2. * bval   # Byz
+    B[:, 5] = G[2, :] * G[2, :] * 1. * bval   # Bzz
     B[:, 6] = np.ones(bval.size)
     return -B
 
@@ -845,17 +1014,16 @@ def quantize_evecs(evecs, odf_vertices=None):
     -------
     IN : ndarray
     """
-    max_evecs=evecs[...,:,0]
-    if odf_vertices==None:
+    max_evecs = evecs[..., :, 0]
+    if odf_vertices == None:
         odf_vertices = get_sphere('symmetric362').vertices
-    tup=max_evecs.shape[:-1]
-    mec=max_evecs.reshape(np.prod(np.array(tup)),3)
-    IN=np.array([np.argmin(np.dot(odf_vertices,m)) for m in mec])
-    IN=IN.reshape(tup)
+    tup = max_evecs.shape[:-1]
+    mec = max_evecs.reshape(np.prod(np.array(tup)), 3)
+    IN = np.array([np.argmin(np.dot(odf_vertices, m)) for m in mec])
+    IN = IN.reshape(tup)
     return IN
 
 common_fit_methods = {'WLS': wls_fit_tensor,
                       'LS': ols_fit_tensor,
                       'OLS': ols_fit_tensor,
                      }
-
