@@ -139,8 +139,8 @@ def test_diffusivities():
     bvals[0] = 0
     gtab = grad.gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
-    mevecs = [ np.array( [ [1,0,0], [0,1,0], [0,0,1] ] ),
-               np.array( [ [0,0,1], [0,1,0], [1,0,0] ] ) ]
+    mevecs = [ np.array( [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ] ),
+               np.array( [ [0, 0, 1], [0, 1, 0], [1, 0, 0] ] ) ]
     S = single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
 
     dm = dti.TensorModel(gtab, 'LS')
@@ -158,8 +158,8 @@ def test_diffusivities():
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
     assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
-    assert_almost_equal(linearity, (0.0015-0.0003)/Trace)
-    assert_almost_equal(planarity, 2 * (0.0003-0.0001)/Trace)
+    assert_almost_equal(linearity, (0.0015 - 0.0003)/Trace)
+    assert_almost_equal(planarity, 2 * (0.0003 - 0.0001)/Trace)
     assert_almost_equal(sphericity, (3 * 0.0001)/Trace)
 
 
