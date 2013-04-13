@@ -21,3 +21,4 @@ dist/
 .pydevproject
 *.swp
 dipy.egg-info/
+pyx-stamps
