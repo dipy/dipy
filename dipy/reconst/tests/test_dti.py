@@ -356,7 +356,7 @@ def test_all_constant():
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
     fit_methods = ['LS', 'OLS', 'NNLS']
     for fit_method in fit_methods:
-        dm = dti.TensorModel(gtab, )
+        dm = dti.TensorModel(gtab)
         assert_almost_equal(dm.fit(np.zeros(bvals.shape[0])).fa, 0)
         assert_almost_equal(dm.fit(100 * np.ones(bvals.shape[0])).fa, 0)
 
@@ -384,7 +384,8 @@ def test_restore_nlls_fit_tensor():
      """
 
      b0 = 1000.
-     gtab, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+     bvecs, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+     gtab = grad.gradient_table(bval, bvecs)
      B = bval[1]
 
      #Scale the eigenvalues and tensor by the B value so the units match
@@ -394,7 +395,7 @@ def test_restore_nlls_fit_tensor():
      tensor = from_lower_triangular(D)
 
      #Design Matrix
-     X = dti.design_matrix(gtab, bval)
+     X = dti.design_matrix(bvecs, bval)
 
      #Signals
      Y = np.exp(np.dot(X,D))
@@ -402,35 +403,24 @@ def test_restore_nlls_fit_tensor():
 
      #Estimate tensor from test signals and compare against expected result
      #using non-linear least squares:
-     tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='NLLS')
+     tensor_model = dti.TensorModel(gtab, fit_method='NLLS')
+     tensor_est = tensor_model.fit(Y)
      assert_equal(tensor_est.shape, Y.shape[:-1])
      assert_array_almost_equal(tensor_est.evals[0], evals)
-     assert_array_almost_equal(tensor_est.D[0], tensor)
-     assert_almost_equal(tensor_est.md()[0], md)
+     assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
+     assert_almost_equal(tensor_est.md[0], md)
 
      # Using the gmm weighting scheme:
-     tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='NLLS',
-     weighting='gmm')
+     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='gmm')
      assert_equal(tensor_est.shape, Y.shape[:-1])
      assert_array_almost_equal(tensor_est.evals[0], evals)
-     assert_array_almost_equal(tensor_est.D[0], tensor)
-     assert_almost_equal(tensor_est.md()[0], md)
+     assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
+     assert_almost_equal(tensor_est.md[0], md)
 
      # Using RESTORE:
-     tensor_est = dti.Tensor(Y,bval,gtab.T,min_signal=1e-8,fit_method='restore',
-                             sigma=1)
+     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='gmm',
+                                    sigma=1)
      assert_equal(tensor_est.shape, Y.shape[:-1])
      assert_array_almost_equal(tensor_est.evals[0], evals)
-     assert_array_almost_equal(tensor_est.D[0], tensor)
-     assert_almost_equal(tensor_est.md()[0], md)
-
-if __name__ == "__main__":
-     test_tensor_scalar_attributes()
-     test_fa_of_zero()
-     test_WLS_and_LS_fit()
-     test_masked_array_with_Tensor()
-     test_passing_maskedview()
-     test_init()
-     test_lower_triangular()
-     test_from_lower_triangular()
-     test_restore_nlls_fit_tensor()
+     assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
+     assert_almost_equal(tensor_est.md[0], md)

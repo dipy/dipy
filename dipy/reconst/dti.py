@@ -6,7 +6,6 @@ import warnings
 
 import numpy as np
 
-from ..data import get_sphere
 import scipy.optimize as opt
 
 from dipy.reconst.maskedview import MaskedView, _makearray, _filled
