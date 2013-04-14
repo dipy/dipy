@@ -400,7 +400,7 @@ def tensor_mode(q_form):
 
 def tensor_linearity(evals, axis=-1):
     r"""
-    The linearity of the tensor [Westin1997]_
+    The linearity of the tensor [1]_
 
     Parameters
     ----------
@@ -424,7 +424,7 @@ def tensor_linearity(evals, axis=-1):
 
     Notes
     -----
-    [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
     """
@@ -435,7 +435,7 @@ def tensor_linearity(evals, axis=-1):
 
 def tensor_planarity(evals, axis=-1):
     r"""
-    The planarity of the tensor [Westin1997]_
+    The planarity of the tensor [1]_
 
     Parameters
     ----------
@@ -459,7 +459,7 @@ def tensor_planarity(evals, axis=-1):
 
     Notes
     -----
-    [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
     """
@@ -470,7 +470,7 @@ def tensor_planarity(evals, axis=-1):
 
 def tensor_sphericity(evals, axis=-1):
     r"""
-    The sphericity of the tensor [Westin1997]_
+    The sphericity of the tensor [1]_
 
     Parameters
     ----------
@@ -494,7 +494,7 @@ def tensor_sphericity(evals, axis=-1):
 
     Notes
     -----
-    [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
     """
@@ -738,7 +738,7 @@ class TensorFit(object):
         Returns
         -------
         sphericity : array
-            Calculated sphericity of the diffusion tensor [Westin1997]_.
+            Calculated sphericity of the diffusion tensor [1]_.
 
         Notes
         --------
@@ -750,7 +750,7 @@ class TensorFit(object):
 
         Notes
         -----
-        [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
 
@@ -764,7 +764,7 @@ class TensorFit(object):
         Returns
         -------
         linearity : array
-            Calculated linearity of the diffusion tensor [Westin1997]_.
+            Calculated linearity of the diffusion tensor [1]_.
 
         Notes
         --------
@@ -776,7 +776,7 @@ class TensorFit(object):
 
         Notes
         -----
-        [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
 
@@ -790,7 +790,7 @@ class TensorFit(object):
         Returns
         -------
         sphericity : array
-            Calculated sphericity of the diffusion tensor [Westin1997]_.
+            Calculated sphericity of the diffusion tensor [1]_.
 
         Notes
         --------
@@ -802,7 +802,7 @@ class TensorFit(object):
 
         Notes
         -----
-        [Westin1997] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
             F., "Geometrical diffusion measures for MRI from tensor basis
             analysis" in Proc. 5th Annual ISMRM, 1997.
 
