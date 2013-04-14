@@ -1,13 +1,12 @@
 import numpy as np
-import nibabel as nib
 
 from dipy.reconst.dti import TensorModel
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
-from dipy.data import fetch_beijing_dti, read_beijing_dti
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
-fetch_beijing_dti()
-img, gtab = read_beijing_dti()
+fetch_stanford_hardi()
+img, gtab = read_stanford_hardi()
 
 data = img.get_data()
 
