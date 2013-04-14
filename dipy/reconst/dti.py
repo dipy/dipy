@@ -7,7 +7,7 @@ from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
 
-def _check_evals(evals, axis=-1):
+def _roll_evals(evals, axis=-1):
     """
     Helper function to check that the evals provided to functions calculating
     tensor statistics have the right shape
@@ -15,7 +15,7 @@ def _check_evals(evals, axis=-1):
     Parameters
     ----------
     evals : array-like
-        Eigenvalues of a diffusion tensor.
+        Eigenvalues of a diffusion tensor. shape should be (...,3).
 
     axis : int
         The axis of the array which contains the 3 eigenvals. Default: -1
@@ -26,10 +26,11 @@ def _check_evals(evals, axis=-1):
         Eigenvalues of a diffusion tensor, rolled so that the 3 eigenvals are
         the last axis.
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
+    if evals.shape[-1] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[-1])
         raise ValueError(msg)
+
+    evals = np.rollaxis(evals, axis)
 
     return evals
 
@@ -60,7 +61,7 @@ def fractional_anisotropy(evals, axis=-1):
                     \lambda_2^2+\lambda_3^2}}
 
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
@@ -96,7 +97,7 @@ def mean_diffusivity(evals, axis=-1):
         MD = \frac{\lambda_1 + \lambda_2 + \lambda_3}{3}
 
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     return evals.mean(0)
 
 
@@ -127,7 +128,7 @@ def axial_diffusivity(evals, axis=-1):
         AD = \lambda_1
 
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
     return ev1
 
@@ -159,7 +160,7 @@ def radial_diffusivity(evals, axis=-1):
         RD = \frac{\lambda_2 + \lambda_3}{2}
 
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     return evals[1:].mean(0)
 
 
@@ -188,7 +189,7 @@ def trace(evals, axis=-1):
         Trace = \lambda_1 + \lambda_2 + \lambda_3
 
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     return evals.sum(0)
 
 
@@ -427,7 +428,7 @@ def tensor_linearity(evals, axis=-1):
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
     return (ev1 - ev2) / evals.sum(0)
 
@@ -462,7 +463,7 @@ def tensor_planarity(evals, axis=-1):
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
     return (2 * (ev2 - ev3) / evals.sum(0))
 
@@ -497,7 +498,7 @@ def tensor_sphericity(evals, axis=-1):
         "Geometrical diffusion measures for MRI from tensor basis analysis" in
         Proc. 5th Annual ISMRM, 1997.
     """
-    evals = _check_evals(evals, axis)
+    evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
     return (3 * ev3) / evals.sum(0)
 
