@@ -34,9 +34,6 @@ Utilities
 import sys
 if sys.version[0:3] < '2.6':
     raise ImportError('Dipy needs Python version 2.6 or above')
-if sys.version[0] == '3':
-    raise ImportError('Dipy does not yet work with Python 3, feel free to '
-                      'remind us about this')
 
 from .info import __version__
 
