@@ -5,8 +5,7 @@ from dipy.reconst.multi_voxel import multi_voxel_model
 from dipy.reconst.shm import (sph_harm_ind_list,
                               real_sph_harm,
                               real_sph_harm_mrtrix,
-                              lazy_index,
-                              sh_to_sf)
+                              lazy_index)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
@@ -194,7 +193,6 @@ class ConstrainedSDTFit(OdfFit):
             sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
 
-        # return np.dot(self.shm_coeff, self.model.B_regul.T)
         return np.dot(self.shm_coeff, sampling_matrix.T)
 
 
