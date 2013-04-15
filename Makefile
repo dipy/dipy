@@ -31,7 +31,7 @@ propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
 vox2track.so: ${PKGDIR}/tracking/vox2track.pyx
 distances.so: ${PKGDIR}/tracking/distances.pyx
 
-	python setup.py build_ext --inplace
+	$(PYTHON) setup.py build_ext --inplace
 
 # Phony targets for cleanup and similar uses
 
@@ -77,11 +77,11 @@ bdist-egg-tests:
 	$(PYTHON) -c 'from nisext.testers import bdist_egg_tests; bdist_egg_tests("dipy")'
 
 source-release: clean
-	python -m compileall .
-	python setup.py sdist --formats=gztar,zip
+	$(PYTHON) -m compileall .
+	$(PYTHON) setup.py sdist --formats=gztar,zip
 
 binary-release: clean
-	python setup_egg.py bdist_egg
+	$(PYTHON) setup_egg.py bdist_egg
 
 build-stamp-source:
-	python -c 'import cythexts; cythexts.build_stamp_source()'
+	$(PYTHON) -c 'import cythexts; cythexts.build_stamp_source()'
