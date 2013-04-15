@@ -1,7 +1,10 @@
+from __future__ import division, print_function, absolute_import
+
 import os
 import sys
 import subprocess
-from ConfigParser import ConfigParser
+
+from .utils.six.moves import configparser
 
 COMMIT_INFO_FNAME = 'COMMIT_INFO.txt'
 
@@ -39,7 +42,7 @@ def pkg_commit_hash(pkg_path):
     pth = os.path.join(pkg_path, COMMIT_INFO_FNAME)
     if not os.path.isfile(pth):
         raise IOError('Missing commit info file %s' % pth)
-    cfg_parser = ConfigParser()
+    cfg_parser = configparser.ConfigParser()
     cfg_parser.read(pth)
     archive_subst = cfg_parser.get('commit hash', 'archive_subst_hash')
     if not archive_subst.startswith('$Format'): # it has been substituted
