@@ -370,7 +370,7 @@ def generate_combinations(items, n):
     --------
     >>> from dipy.tracking.metrics import generate_combinations
     >>> ic=generate_combinations(range(3),2)
-    >>> for i in ic: print i
+    >>> for i in ic: print(i)
     [0, 1]
     [0, 2]
     [1, 2]
