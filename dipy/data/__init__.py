@@ -141,7 +141,7 @@ def get_sphere(name='symmetric362'):
     (362, 3)
     >>> faces.shape
     (720, 3)
-    >>> verts, faces = get_sphere('not a sphere name')
+    >>> verts, faces = get_sphere('not a sphere name') #doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     DataError: No sphere called "not a sphere name"
