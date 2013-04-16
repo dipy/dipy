@@ -1,3 +1,5 @@
+from __future__ import division, print_function, absolute_import
+
 import numpy as np
 import nose
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal

@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function, absolute_import
 """Various tools related to creating and working with streamlines
 
 Important Note:

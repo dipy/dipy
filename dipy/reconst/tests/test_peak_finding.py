@@ -1,3 +1,5 @@
+from __future__ import division, print_function, absolute_import
+
 import numpy as np
 import numpy.testing as npt
 from dipy.reconst.recspeed import (local_maxima, remove_similar_vertices,

@@ -1,4 +1,5 @@
 """ A simple graph class """
+from __future__ import division, print_function, absolute_import
 
 class Graph(object):
     ''' A simple graph class 
