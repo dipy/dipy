@@ -7,6 +7,33 @@ from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
 
+def _roll_evals(evals, axis=-1):
+    """
+    Helper function to check that the evals provided to functions calculating
+    tensor statistics have the right shape
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor. shape should be (...,3).
+
+    axis : int
+        The axis of the array which contains the 3 eigenvals. Default: -1
+
+    Returns
+    -------
+    evals : array-like
+        Eigenvalues of a diffusion tensor, rolled so that the 3 eigenvals are
+        the last axis.
+    """
+    if evals.shape[-1] != 3:
+        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[-1])
+        raise ValueError(msg)
+
+    evals = np.rollaxis(evals, axis)
+
+    return evals
+
 def fractional_anisotropy(evals, axis=-1):
     r"""
     Fractional anisotropy (FA) of a diffusion tensor.
@@ -34,11 +61,7 @@ def fractional_anisotropy(evals, axis=-1):
                     \lambda_2^2+\lambda_3^2}}
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _roll_evals(evals, axis)
     # Make sure not to get nans
     all_zero = (evals == 0).all(axis=0)
     ev1, ev2, ev3 = evals
@@ -74,11 +97,7 @@ def mean_diffusivity(evals, axis=-1):
         MD = \frac{\lambda_1 + \lambda_2 + \lambda_3}{3}
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _roll_evals(evals, axis)
     return evals.mean(0)
 
 
@@ -109,11 +128,7 @@ def axial_diffusivity(evals, axis=-1):
         AD = \lambda_1
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _roll_evals(evals, axis)
     ev1, ev2, ev3 = evals
     return ev1
 
@@ -145,11 +160,7 @@ def radial_diffusivity(evals, axis=-1):
         RD = \frac{\lambda_2 + \lambda_3}{2}
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _roll_evals(evals, axis)
     return evals[1:].mean(0)
 
 
@@ -175,14 +186,10 @@ def trace(evals, axis=-1):
 
     .. math::
 
-        MD = \lambda_1 + \lambda_2 + \lambda_3
+        Trace = \lambda_1 + \lambda_2 + \lambda_3
 
     """
-    evals = np.rollaxis(evals, axis)
-    if evals.shape[0] != 3:
-        msg = "Expecting 3 eigenvalues, got {}".format(evals.shape[0])
-        raise ValueError(msg)
-
+    evals = _roll_evals(evals, axis)
     return evals.sum(0)
 
 
@@ -389,6 +396,111 @@ def tensor_mode(q_form):
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
     A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
     return  3 * np.sqrt(6) * tensor_determinant((A_squiggle / A_s_norm))
+
+
+def tensor_linearity(evals, axis=-1):
+    r"""
+    The linearity of the tensor [1]_
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    linearity : array
+        Calculated linearity of the diffusion tensor.
+
+    Notes
+    --------
+    Linearity is calculated with the following equation:
+
+    .. math::
+
+        Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+
+    Notes
+    -----
+    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+        "Geometrical diffusion measures for MRI from tensor basis analysis" in
+        Proc. 5th Annual ISMRM, 1997.
+    """
+    evals = _roll_evals(evals, axis)
+    ev1, ev2, ev3 = evals
+    return (ev1 - ev2) / evals.sum(0)
+
+
+def tensor_planarity(evals, axis=-1):
+    r"""
+    The planarity of the tensor [1]_
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    linearity : array
+        Calculated linearity of the diffusion tensor.
+
+    Notes
+    --------
+    Linearity is calculated with the following equation:
+
+    .. math::
+
+        Planarity = \frac{2 (\lambda_2-\lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+
+    Notes
+    -----
+    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+        "Geometrical diffusion measures for MRI from tensor basis analysis" in
+        Proc. 5th Annual ISMRM, 1997.
+    """
+    evals = _roll_evals(evals, axis)
+    ev1, ev2, ev3 = evals
+    return (2 * (ev2 - ev3) / evals.sum(0))
+
+
+def tensor_sphericity(evals, axis=-1):
+    r"""
+    The sphericity of the tensor [1]_
+
+    Parameters
+    ----------
+    evals : array-like
+        Eigenvalues of a diffusion tensor.
+    axis : int
+        Axis of `evals` which contains 3 eigenvalues.
+
+    Returns
+    -------
+    sphericity : array
+        Calculated sphericity of the diffusion tensor.
+
+    Notes
+    --------
+    Linearity is calculated with the following equation:
+
+    .. math::
+
+        Sphericity = \frac{3 \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+
+    Notes
+    -----
+    [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz F.,
+        "Geometrical diffusion measures for MRI from tensor basis analysis" in
+        Proc. 5th Annual ISMRM, 1997.
+    """
+    evals = _roll_evals(evals, axis)
+    ev1, ev2, ev3 = evals
+    return (3 * ev3) / evals.sum(0)
 
 
 class TensorModel(object):
@@ -618,6 +730,85 @@ class TensorFit(object):
           trace = \lambda_1 + \lambda_2 + \lambda_3
         """
         return trace(self.evals)
+
+
+    @auto_attr
+    def planarity(self):
+        r"""
+        Returns
+        -------
+        sphericity : array
+            Calculated sphericity of the diffusion tensor [1]_.
+
+        Notes
+        --------
+        Sphericity is calculated with the following equation:
+
+        .. math::
+
+            Sphericity = \frac{2 (\lambda2 - \lambda_3)}{\lambda_1+\lambda_2+\lambda_3}
+
+        Notes
+        -----
+        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+            F., "Geometrical diffusion measures for MRI from tensor basis
+            analysis" in Proc. 5th Annual ISMRM, 1997.
+
+        """
+        return tensor_planarity(self.evals)
+
+
+    @auto_attr
+    def linearity(self):
+        r"""
+        Returns
+        -------
+        linearity : array
+            Calculated linearity of the diffusion tensor [1]_.
+
+        Notes
+        --------
+        Linearity is calculated with the following equation:
+
+        .. math::
+
+            Linearity = \frac{\lambda_1-\lambda_2}{\lambda_1+\lambda_2+\lambda_3}
+
+        Notes
+        -----
+        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+            F., "Geometrical diffusion measures for MRI from tensor basis
+            analysis" in Proc. 5th Annual ISMRM, 1997.
+
+        """
+        return tensor_linearity(self.evals)
+
+
+    @auto_attr
+    def sphericity(self):
+        r"""
+        Returns
+        -------
+        sphericity : array
+            Calculated sphericity of the diffusion tensor [1]_.
+
+        Notes
+        --------
+        Sphericity is calculated with the following equation:
+
+        .. math::
+
+            Sphericity = \frac{3 \lambda_3}{\lambda_1+\lambda_2+\lambda_3}
+
+        Notes
+        -----
+        [1] Westin C.-F., Peled S., Gubjartsson H., Kikinis R., Jolesz
+            F., "Geometrical diffusion measures for MRI from tensor basis
+            analysis" in Proc. 5th Annual ISMRM, 1997.
+
+        """
+        return tensor_sphericity(self.evals)
+
 
     def odf(self, sphere):
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
