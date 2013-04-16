@@ -1,6 +1,10 @@
-from __future__ import division
+from __future__ import division, print_function, absolute_import
+
+from ..utils.six import string_types
+
 import numpy as np
-import dipy.io.gradients as io
+
+from ..io import gradients as io
 from .onetime import auto_attr
 from .geometry import vector_norm
 
@@ -205,9 +209,9 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
 
     # If you provided strings with full paths, we go and load those from
     # the files:
-    if isinstance(bvals, basestring):
+    if isinstance(bvals, string_types):
           bvals, _ = io.read_bvals_bvecs(bvals, None)
-    if isinstance(bvecs, basestring):
+    if isinstance(bvecs, string_types):
           _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)

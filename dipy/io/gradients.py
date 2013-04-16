@@ -1,5 +1,10 @@
-import numpy as np
+from __future__ import division, print_function, absolute_import
+
 from os.path import splitext
+
+from ..utils.six import string_types
+
+import numpy as np
 
 
 def read_bvals_bvecs(fbvals, fbvecs):
@@ -33,7 +38,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
         if this_fname is None:
             vals.append(None)
         else:
-            if isinstance(this_fname, basestring):
+            if isinstance(this_fname, string_types):
                 base, ext = splitext(this_fname)
                 if ext in ['.bvals', '.bval', '.bvecs', '.bvec', '.txt', '']:
                     vals.append(np.squeeze(np.loadtxt(this_fname)))
@@ -67,5 +72,3 @@ def read_bvals_bvecs(fbvals, fbvecs):
             raise IOError('b-values and b-vectors shapes do not correspond')
 
     return bvals, bvecs
-
-
