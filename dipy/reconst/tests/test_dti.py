@@ -5,9 +5,10 @@ from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from nose.tools import (assert_true, assert_equal,
-                        assert_raises)
-from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_, assert_almost_equal)
+                        assert_almost_equal, assert_raises)
+from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
+import nibabel as nib
+
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               fractional_anisotropy, from_lower_triangular,
@@ -424,3 +425,14 @@ def test_restore_nlls_fit_tensor():
      assert_array_almost_equal(tensor_est.evals[0], evals)
      assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
      assert_almost_equal(tensor_est.md[0], md)
+
+     # Use NLLS with some actual 4D data:
+     data, bvals, bvecs = get_data('small_25')
+     gtab = grad.gradient_table(bvals, bvecs)
+     tm1 = dti.TensorModel(gtab, fit_method='NLLS')
+     dd = nib.load(data).get_data()
+     tf1 = tm1.fit(dd)
+     tm2 = dti.TensorModel(gtab)
+     tf2 = tm2.fit(dd)
+
+     assert_equal(tf1.fa.shape, tf2.fa.shape)

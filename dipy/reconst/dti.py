@@ -1092,6 +1092,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         dti_params[vox, :3] = evals
         dti_params[vox, 3:] = evecs.ravel()
 
+    dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
 
