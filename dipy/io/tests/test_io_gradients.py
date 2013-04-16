@@ -31,10 +31,11 @@ def test_read_bvals_bvecs():
     # These bvecs only have two rows/columns:
     new_bvecs1 = bvecs[:,:2]
     # Make a temporary file
-    bv_file1 = tempfile.NamedTemporaryFile()
+    bv_file1 = tempfile.NamedTemporaryFile(mode='wt')
     # And fill it with these 2-columned bvecs:
-    [bv_file1.file.write('%s %s\n'%(new_bvecs1[x][0], new_bvecs1[x][1]))
-     for x in range(new_bvecs1.shape[0])]
+    for x in range(new_bvecs1.shape[0]):
+        bv_file1.file.write('%s %s\n' %
+                            (new_bvecs1[x][0], new_bvecs1[x][1]))
     bv_file1.close()
     npt.assert_raises(IOError,read_bvals_bvecs, fbvals, bv_file1.name)
 
