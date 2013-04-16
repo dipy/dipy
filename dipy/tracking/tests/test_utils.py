@@ -191,7 +191,7 @@ def test_streamline_mapping():
 
     mapping = streamline_mapping(streamlines, (1,1,1), True)
     expected = dict((k, [streamlines[i] for i in indices])
-                    for k, indices in expected.iteritems())
+                    for k, indices in expected.items())
     assert_equal(mapping, expected)
 
 def test_rmi():

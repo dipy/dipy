@@ -154,7 +154,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
             mapping.setdefault((a, b), []).append(i)
         if mapping_as_streamlines:
             mapping = dict((k, [streamlines[i] for i in indices])
-                           for k, indices in mapping.iteritems())
+                           for k, indices in mapping.items())
         return matrix, mapping
     else:
         return matrix
@@ -269,7 +269,7 @@ def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
             mapping.setdefault(point, []).append(i)
     if mapping_as_streamlines:
         mapping = dict((k, [streamlines[i] for i in indices])
-                       for k, indices in mapping.iteritems())
+                       for k, indices in mapping.items())
     return mapping
 
 def subsegment(streamlines, max_segment_length):
