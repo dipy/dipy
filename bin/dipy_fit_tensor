@@ -1,7 +1,7 @@
 #!/usr/bin/env python
+from __future__ import division, print_function, absolute_import
+
 import os
-import sys
-import string
 import numpy as np
 import nibabel as nib
 from subprocess import call
@@ -43,7 +43,7 @@ dwi_file = args[0]
 
 if opts.root is None:
     pth, file = os.path.split(dwi_file)
-    root = string.split(file, os.path.extsep, 1)[0]
+    root = file.split(os.path.extsep, 1)[0]
     root = os.path.join(pth, root)
 else:
     root = opts.root
