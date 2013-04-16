@@ -93,19 +93,19 @@ def test_remove_similar_peaks():
                                                  return_mapping=True,
                                                  return_index=True)
     npt.assert_array_equal(uv, vertices[:6])
-    npt.assert_array_equal(mapping, range(6) + [0])
+    npt.assert_array_equal(mapping, list(range(6)) + [0])
     npt.assert_array_equal(index, range(6))
 
     # Test mapping with different angles
     uv, mapping = remove_similar_vertices(vertices, .01, return_mapping=True)
     npt.assert_array_equal(uv, vertices[:6])
-    npt.assert_array_equal(mapping, range(6) + [0])
+    npt.assert_array_equal(mapping, list(range(6)) + [0])
     uv, mapping = remove_similar_vertices(vertices, 30, return_mapping=True)
     npt.assert_array_equal(uv, vertices[:4])
-    npt.assert_array_equal(mapping, range(4) + [1, 0, 0])
+    npt.assert_array_equal(mapping, list(range(4)) + [1, 0, 0])
     uv, mapping = remove_similar_vertices(vertices, 60, return_mapping=True)
     npt.assert_array_equal(uv, vertices[:3])
-    npt.assert_array_equal(mapping, range(3) + [0, 1, 0, 0])
+    npt.assert_array_equal(mapping, list(range(3)) + [0, 1, 0, 0])
 
     # Test index with different angles
     uv, index = remove_similar_vertices(vertices, .01, return_index=True)
