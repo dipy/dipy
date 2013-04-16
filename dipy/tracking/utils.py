@@ -484,7 +484,7 @@ def merge_streamlines(backward, forward):
     B = iter(backward)
     F = iter(forward)
     while True:
-        yield concatenate((B.next()[:0:-1], F.next()))
+        yield concatenate((next(B)[:0:-1], next(F)))
 
 def move_streamlines(streamlines, affine):
     """Applies a linear transformation, given by affine, to streamlines

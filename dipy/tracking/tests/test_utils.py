@@ -164,7 +164,7 @@ def test_voxel_ornt():
     expected_sl = (sl[:, [2, 0, 1]] for sl in streamlines)
     test_sl = move_streamlines(streamlines, sra_affine)
     for ii in xrange(len(streamlines)):
-        assert_array_equal(test_sl.next(), expected_sl.next())
+        assert_array_equal(next(test_sl), next(expected_sl))
 
     lpi_affine = reorder_voxels_affine(ras, lpi, sh, sz)
     toras_affine = reorder_voxels_affine(lpi, ras, sh, sz)
@@ -172,7 +172,7 @@ def test_voxel_ornt():
     expected_sl = (box - sl for sl in streamlines)
     test_sl = move_streamlines(streamlines, lpi_affine)
     for ii in xrange(len(streamlines)):
-        assert_array_equal(test_sl.next(), expected_sl.next())
+        assert_array_equal(next(test_sl), next(expected_sl))
 
     srp_affine = reorder_voxels_affine(ras, srp, sh, sz)
     toras_affine = reorder_voxels_affine(srp, ras, (40,40,40), (3,1,2))
@@ -183,7 +183,7 @@ def test_voxel_ornt():
     expected_sl = (sl[:, [2, 0, 1]] for sl in expected_sl)
     test_sl = move_streamlines(streamlines, srp_affine)
     for ii in xrange(len(streamlines)):
-        assert_array_equal(test_sl.next(), expected_sl.next())
+        assert_array_equal(next(test_sl), next(expected_sl))
 
 def test_streamline_mapping():
     streamlines = [np.array([[0,0,0],[0,0,0],[0,2,2]], 'float'),
