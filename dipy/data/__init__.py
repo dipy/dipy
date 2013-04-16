@@ -106,8 +106,8 @@ def get_skeleton(name='C1'):
     >>> len(C.keys())
     117
     >>> for c in C: break
-    >>> C[c].keys()
-    ['indices', 'most', 'hidden', 'N']
+    >>> sorted(C[c].keys())
+    ['N', 'hidden', 'indices', 'most']
     """
     if name == 'C1':
         fname = pjoin(THIS_DIR, 'C1.pkl.gz')
