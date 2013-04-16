@@ -8,8 +8,6 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.reconst.maskedview import MaskedView, _makearray, _filled
-from dipy.reconst.modelarray import ModelArray
 from dipy.data import get_sphere
 from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
@@ -1068,7 +1066,6 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     nlls_params: the eigen-values and eigen-vectors of the tensor in each voxel.
 
     """
-    data, wrap = _makearray(data)
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
@@ -1095,8 +1092,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         dti_params[vox, :3] = evals
         dti_params[vox, 3:] = evecs.ravel()
 
-    nlls_params = wrap(dti_params)
-    return nlls_params
+    return dti_params
 
 
 def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
