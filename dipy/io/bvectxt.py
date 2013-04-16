@@ -1,6 +1,6 @@
 import numpy as np
 from os.path import splitext
-from nibabel.orientations import io_orientation
+
 
 def read_bvec_file(filename, atol=.001):
     """
