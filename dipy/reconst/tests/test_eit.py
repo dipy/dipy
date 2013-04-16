@@ -98,8 +98,7 @@ def test_dni_eit():
     dnfit=dn.fit(data)
     print('DiffusionNablaModel')
     for i,d in enumerate(data):
-        print descr[i], np.sum(dnfit.peak_values[i]>0)
-    
+        print(descr[i], np.sum(dnfit.peak_values[i]>0))
     ei=EquatorialInversionModel(bvals,bvecs,odf_sphere)
     ei.relative_peak_threshold = 0.3
     ei.angular_distance_threshold = 15
@@ -107,6 +106,5 @@ def test_dni_eit():
     eifit = ei.fit(data,return_odf=True)
     print('EquatorialInversionModel')
     for i,d in enumerate(data):
-        print descr[i], np.sum(eifit.peak_values[i]>0)
+        print(descr[i], np.sum(eifit.peak_values[i]>0))
         assert_equal(descr[i][1], np.sum(eifit.peak_values[i]>0))
-    
