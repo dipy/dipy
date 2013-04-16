@@ -1,5 +1,6 @@
 ''' Utility functions for algebra etc '''
-from __future__ import division
+from __future__ import division, print_function, absolute_import
+
 import math
 import numpy as np
 import numpy.linalg as npl
@@ -373,9 +374,9 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
 
     Examples
     ----------
-    >>> print '%.4f' % sphere_distance([0,1],[1,0])
+    >>> print('%.4f' % sphere_distance([0,1],[1,0]))
     1.5708
-    >>> print '%.4f' % sphere_distance([0,3],[3,0])
+    >>> print('%.4f' % sphere_distance([0,3],[3,0]))
     4.7124
     """
     pts1 = np.asarray(pts1)

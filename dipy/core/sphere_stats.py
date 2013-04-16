@@ -1,5 +1,6 @@
 """ Statistics on spheres
 """
+from __future__ import division, print_function, absolute_import
 
 import numpy as np
 import dipy.core.geometry as geometry
@@ -246,15 +247,15 @@ def angular_similarity(S,T):
     Now we use ``print`` to reduce the precision of of the printed output
     (so the doctests don't detect unimportant differences)
 
-    >>> print angular_similarity(S,T)
+    >>> print('%.12f' % angular_similarity(S,T))
     0.707106781187
     >>> S=np.array([[0,1,0]])
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
-    >>> print angular_similarity(S,T)
+    >>> print('%.12f' % angular_similarity(S,T))
     0.707106781187
     >>> S=np.array([[0,1,0],[0,0,1]])
     >>> T=np.array([[0,np.sqrt(2)/2.,np.sqrt(2)/2.]])
-    >>> print angular_similarity(S,T)
+    >>> print('%.12f' % angular_similarity(S,T))
     0.707106781187
     '''
     m = len(S)
@@ -274,7 +275,7 @@ def angular_similarity(S,T):
         for i in range(n):
             angles.append(np.abs(np.dot(p[i],T[i])))
         v.append(np.sum(angles))
-    print v
+    print(v)
     """
     v = [np.sum([np.abs(np.dot(p[i],T[i])) for i in range(n)]) for p in permutations(S,n)]
 
