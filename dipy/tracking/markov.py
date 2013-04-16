@@ -10,7 +10,10 @@ dipy.tracking.utils
 dipy.tracking.integration
 dipy.reconst.interpolate
 """
-from __future__ import division
+from __future__ import division, print_function, absolute_import
+
+from ..utils.six.moves import xrange
+
 import numpy as np
 from ..reconst.interpolate import OutsideImage, NearestNeighborInterpolator
 from ..reconst.odf import default_sphere, peak_directions

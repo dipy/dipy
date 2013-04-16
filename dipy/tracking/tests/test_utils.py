@@ -1,3 +1,7 @@
+from __future__ import division, print_function, absolute_import
+
+from ...utils.six.moves import xrange
+
 import numpy as np
 import nose
 from dipy.io.bvectxt import orientation_from_string

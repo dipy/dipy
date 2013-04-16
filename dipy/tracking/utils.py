@@ -42,6 +42,8 @@ dipy.tracking.integration
 dipy.reconst.interpolate
 """
 
+from ..utils.six.moves import xrange
+
 import numpy as np
 from numpy import (asarray, array, atleast_3d, ceil, concatenate, empty,
                    eye, mgrid, sqrt, zeros, linalg, diag, dot)
