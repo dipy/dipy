@@ -64,7 +64,7 @@ def test_LSCv2():
     from nibabel import trackvis as tv
     try:
         from dipy.viz import fvtk
-    except ImportError, e:
+    except ImportError as e:
         raise nose.plugins.skip.SkipTest(
             'Fails to import dipy.viz due to %s' % str(e))
     
