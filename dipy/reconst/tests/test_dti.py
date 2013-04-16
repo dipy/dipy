@@ -1,11 +1,13 @@
 """ Testing DTI
 
 """
+from __future__ import division, print_function, absolute_import
 
 import numpy as np
 from nose.tools import (assert_true, assert_equal,
-                        assert_almost_equal, assert_raises)
-from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
+                        assert_raises)
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_, assert_almost_equal)
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               fractional_anisotropy, from_lower_triangular,
@@ -95,7 +97,7 @@ def test_TensorModel():
         "Calculation of tensor from Y does not compare to analytical solution")
 
         assert_almost_equal(tensor_fit.md[0], md)
-        assert_almost_equal(tensor_fit.mode, mode, places=5)
+        assert_almost_equal(tensor_fit.mode, mode, decimal=5)
         assert_equal(tensor_fit.directions.shape[-2], 1)
         assert_equal(tensor_fit.directions.shape[-1], 3)
 
