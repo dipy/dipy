@@ -9,6 +9,8 @@ from nose.tools import (assert_true, assert_equal,
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
 import nibabel as nib
 
+import scipy.optimize as opt
+
 import dipy.reconst.dti as dti
 from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               fractional_anisotropy, from_lower_triangular,
@@ -378,6 +380,38 @@ def test_mask():
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
 
+def test_nnls_jacobian_fucn():
+    b0 = 1000.
+    bvecs, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+    gtab = grad.gradient_table(bval, bvecs)
+    B = bval[1]
+
+    #Scale the eigenvalues and tensor by the B value so the units match
+    D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+    evals = np.array([2., 1., 0.]) / B
+
+    #Design Matrix
+    X = dti.design_matrix(bvecs, bval)
+
+    #Signals
+    Y = np.exp(np.dot(X,D))
+
+    # Test Jacobian at D
+    args = [X, Y]
+    analytical = dti._nlls_jacobian_func(D, *args)
+    for i in range(len(X)):
+        args = [X[i], Y[i]]
+        approx = opt.approx_fprime(D, dti._nlls_err_func, 1e-8, *args)
+        assert_true(np.allclose(approx, analytical[i]))
+
+    # Test Jacobian at zero
+    D = np.zeros_like(D)
+    args = [X, Y]
+    analytical = dti._nlls_jacobian_func(D, *args)
+    for i in range(len(X)):
+        args = [X[i], Y[i]]
+        approx = opt.approx_fprime(D, dti._nlls_err_func, 1e-8, *args)
+        assert_true(np.allclose(approx, analytical[i]))
 
 def test_restore_nlls_fit_tensor():
      """

@@ -1082,9 +1082,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
 
 def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
-    """
-
-    The Jacobian is the first derivative of the error function [1]_.
+    """The Jacobian is the first derivative of the error function [1]_.
 
     Notes
     -----
@@ -1093,10 +1091,10 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
     [1] Koay, CG, Chang, L-C, Carew, JD, Pierpaoli, C, Basser PJ (2006).
         A unifying theoretical and algorithmic framework for least squares
         methods of estimation in diffusion tensor imaging. MRM 182, 115-25.
-    """
 
+    """
     pred = np.exp(np.dot(design_matrix, tensor))
-    return -np.dot(np.diag(pred), design_matrix)
+    return -pred[:, None] * design_matrix
 
 
 def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
