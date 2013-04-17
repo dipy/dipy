@@ -293,7 +293,7 @@ def isotropic(q_form):
     tr_A = q_form[..., 0, 0] + q_form[..., 1, 1] + q_form[..., 2, 2]
     n_dims = len(q_form.shape)
     add_dims = n_dims - 2  # These are the last two (the 3,3):
-    my_I = np.eye(3).reshape(add_dims * (1,) + (3, 3))
+    my_I = np.eye(3)
     tr_AI = (tr_A.reshape(tr_A.shape + (1, 1)) * my_I)
     return (1 / 3.0) * tr_AI
 
@@ -1029,6 +1029,79 @@ def _ols_fit_matrix(design_matrix):
     return np.dot(U, U.T)
 
 
+def _nlls_err_func(tensor, design_matrix, data, weighting=None,
+                   sigma=None):
+    """
+    Error function for the non-linear least-squares fit of the tensor.
+
+    Parameters
+    ----------
+    tensor: 3 by 3 tensor
+
+    signal: The voxel signal in all gradient directions
+
+    weighting: str (optional).
+         Whether to use the Geman McClure weighting criterion (see [Chang2005]_
+         for details)
+
+    """
+    # This is the predicted signal given the params:
+    y = np.exp(np.dot(design_matrix, tensor))
+
+    # Compute the residuals
+    residuals = data - y
+    se = residuals ** 2
+
+    # If we don't want to weight the residuals, we are basically done:
+    if weighting is None:
+       # And we return the SSE:
+       return residuals
+
+    # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
+    # suggested by Chang et al.) we will use it:
+    elif weighting == 'sigma':
+        if sigma is None:
+             e_s = "Must provide sigma value as input to use this weighting"
+             e_s += "method"
+             raise ValueError(e_s)
+        w = 1/(sigma**2)
+
+    elif weighting == 'gmm':
+        # We use the Geman McClure M-estimator to compute the weights on the
+        # residuals:
+        C = 1.4826 * np.median(residuals - np.median(residuals))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            w = 1/(se + C**2)
+
+    # Return the weighted residuals:
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return np.sqrt(w * se)
+
+
+def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
+    """
+
+    The Jacobian of the tensor is derived as follows:
+
+    The error function is defined as:
+
+    .. math ::
+
+    let : R_i = data_i - X_i\beta be the vector of residuals
+
+    then the error function is:
+
+    E_i = R_i^2
+
+
+    """
+
+    pred = np.exp(np.dot(design_matrix, tensor))
+    return (2 * (data - pred) * pred)[:, None] * design_matrix
+
+
 def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
                     sigma=None):
     """
@@ -1084,6 +1157,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
                                args=(design_matrix, flat_data[vox],
                                      weighting, sigma),
+                                     Dfun=_nlls_jacobian_func,
                                      #disp=False
                                   )
 
@@ -1170,6 +1244,7 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
                 this_tensor, status= opt.leastsq(_nlls_err_func, start_params,
                                        args=(clean_design, clean_sig,
                                              'sigma', sigma),
+                                             Dfun=_nlls_jacobian_func
                                              #disp=False
                                             )
 
@@ -1183,58 +1258,6 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
     restore_params = wrap(dti_params)
     return restore_params
 
-
-
-
-def _nlls_err_func(tensor, design_matrix, data, weighting=None,
-                   sigma=None):
-    """
-    Error function for the non-linear least-squares fit of the tensor.
-
-    Parameters
-    ----------
-    tensor: 3 by 3 tensor
-
-    signal: The voxel signal in all gradient directions
-
-    weighting: str (optional).
-         Whether to use the Geman McClure weighting criterion (see [Chang2005]_
-         for details)
-
-    """
-    # This is the predicted signal given the params:
-    y = np.exp(np.dot(design_matrix, tensor))
-
-    # Compute the residuals
-    residuals = data - y
-    se = residuals ** 2
-
-    # If we don't want to weight the residuals, we are basically done:
-    if weighting is None:
-       # And we return the SSE:
-       return residuals
-
-    # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
-    # suggested by Chang et al.) we will use it:
-    elif weighting == 'sigma':
-        if sigma is None:
-             e_s = "Must provide sigma value as input to use this weighting"
-             e_s += "method"
-             raise ValueError(e_s)
-        w = 1/(sigma**2)
-
-    elif weighting == 'gmm':
-        # We use the Geman McClure M-estimator to compute the weights on the
-        # residuals:
-        C = 1.4826 * np.median(residuals - np.median(residuals))
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            w = 1/(se + C**2)
-
-    # Return the weighted residuals:
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        return np.sqrt(w * se)
 
 
 
