@@ -1050,16 +1050,16 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     # Compute the residuals
     residuals = data - y
-    se = residuals ** 2
 
     # If we don't want to weight the residuals, we are basically done:
     if weighting is None:
        # And we return the SSE:
        return residuals
 
+    se = residuals ** 2
     # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
     # suggested by Chang et al.) we will use it:
-    elif weighting == 'sigma':
+    if weighting == 'sigma':
         if sigma is None:
              e_s = "Must provide sigma value as input to use this weighting"
              e_s += "method"
@@ -1077,6 +1077,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     # Return the weighted residuals:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
+
         return np.sqrt(w * se)
 
 
