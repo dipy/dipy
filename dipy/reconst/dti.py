@@ -1084,27 +1084,23 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
     """
 
-    The Jacobian of the tensor is derived as follows:
+    The Jacobian is the first derivative of the error function [1]_.
 
-    The error function is defined as:
+    Notes
+    -----
+    This is an implementation of equation 14 in [1]_.
 
-    .. math ::
-
-    let : R_i = data_i - X_i\beta be the vector of residuals
-
-    then the error function is:
-
-    E_i = R_i^2
-
-
+    [1] Koay, CG, Chang, L-C, Carew, JD, Pierpaoli, C, Basser PJ (2006).
+        A unifying theoretical and algorithmic framework for least squares
+        methods of estimation in diffusion tensor imaging. MRM 182, 115-25.
     """
 
     pred = np.exp(np.dot(design_matrix, tensor))
-    return (2 * (data - pred) * pred)[:, None] * design_matrix
+    return -np.dot(np.diag(pred), design_matrix)
 
 
 def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
-                    sigma=None):
+                    sigma=None, jac=True):
     """
     Fit the tensor params using non-linear least-squares.
 
@@ -1134,6 +1130,8 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         1.5267 * std(background_noise), where background_noise is estimated
         from some part of the image known to contain no signal (only noise).
 
+    jac : bool
+        Use the Jacobian? Default: True
 
     Returns
     -------
@@ -1155,12 +1153,15 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     for vox in xrange(flat_data.shape[0]):
         start_params = ols_params[vox]
         # Do the optimization in this voxel:
-        this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+        if jac:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
                                args=(design_matrix, flat_data[vox],
                                      weighting, sigma),
-                                     Dfun=_nlls_jacobian_func,
-                                     #disp=False
-                                  )
+                                     Dfun=_nlls_jacobian_func)
+        else:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+                               args=(design_matrix, flat_data[vox],
+                                     weighting, sigma))
 
         # The parameters are the evals and the evecs:
         evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))

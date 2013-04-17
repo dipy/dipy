@@ -435,4 +435,4 @@ def test_restore_nlls_fit_tensor():
      tm2 = dti.TensorModel(gtab)
      tf2 = tm2.fit(dd)
 
-     assert_equal(tf1.fa.shape, tf2.fa.shape)
+     assert_array_almost_equal(tf1.fa, tf2.fa, decimal=1)
