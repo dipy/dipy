@@ -99,7 +99,7 @@ def test_TensorModel():
         "Calculation of tensor from Y does not compare to analytical solution")
 
         assert_almost_equal(tensor_fit.md[0], md)
-        assert_almost_equal(tensor_fit.mode, mode, decimal=5)
+        assert_array_almost_equal(tensor_fit.mode, mode, decimal=5)
         assert_equal(tensor_fit.directions.shape[-2], 1)
         assert_equal(tensor_fit.directions.shape[-1], 3)
 
