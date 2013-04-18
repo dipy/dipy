@@ -1,4 +1,5 @@
 """ Random number generation utilities """
+from __future__ import division, print_function, absolute_import
 
 from math import floor
 from platform import architecture
@@ -12,13 +13,11 @@ def WichmannHill2006():
     for advice on generating many sequences for use together, and on alternative algorithms and codes
 
     Examples
-    ----------    
+    ----------
     >>> from dipy.core import rng
     >>> rng.ix, rng.iy, rng.iz, rng.it = 100001, 200002, 300003, 400004
     >>> N = 1000
     >>> a = [rng.WichmannHill2006() for i in range(N)]
-    
-
     '''
 
     global ix, iy, iz, it
@@ -26,7 +25,6 @@ def WichmannHill2006():
     if architecture()[0] == '64':
 
         #If 64 bits are available then the following lines of code will be faster.
-    
         ix = (11600 * ix) % 2147483579
         iy = (47003 * iy) % 2147483543
         iz = (23000 * iz) % 2147483423
@@ -35,12 +33,12 @@ def WichmannHill2006():
     else:
 
         #If only 32 bits are available
-        
+
         ix = 11600 * (ix % 185127) - 10379 * (ix / 185127)
         iy = 47003 * (ix %  45688) - 10479 * (iy /  45688)
         iz = 23000 * (iz %  93368) - 19423 * (iz /  93368)
         it = 33000 * (it %  65075) -  8123 * (it /  65075)
-    
+
         if ix < 0:
             ix = ix + 2147483579
         if iy < 0:
@@ -51,7 +49,7 @@ def WichmannHill2006():
             it = it + 2147483123
 
     W = ix/2147483579.0 + iy/2147483543.0 + iz/2147483423.0 + it/2147483123.0
-    
+
     return W - floor(W)
 
 
@@ -71,10 +69,9 @@ def WichmannHill1982():
     '''
 
     import numpy as np
-    
+
     global ix, iy, iz
 
-    
     ix = (171 * ix) % 30269
     iy = (172 * iy) % 30307
     iz = (170 * iz) % 30323
@@ -94,31 +91,28 @@ def WichmannHill1982():
     if iz < 0:
         iz = iz + 30323
     '''
-    
     return np.remainder(np.float(ix) / 30269. + np.float(iy) / 30307.
                           + np.float(iz) / 30323., 1.0)
 
 
-
 def LEcuyer():
     '''
-	Generate uniformly distributed random numbers using the 32-bit
-	generator from figure 3 of:
-	L'Ecuyer, P. Efficient and portable combined random number
-	generators, C.A.C.M., vol. 31, 742-749 & 774-?, June 1988.
+    Generate uniformly distributed random numbers using the 32-bit
+    generator from figure 3 of:
+        L'Ecuyer, P. Efficient and portable combined random number
+        generators, C.A.C.M., vol. 31, 742-749 & 774-?, June 1988.
 
-	The cycle length is claimed to be 2.30584E+18
-
+    The cycle length is claimed to be 2.30584E+18
     '''
-    
+
     global s1, s2
-    
+
     k = s1 / 53668
     s1 = 40014 * (s1 - k * 53668) - k * 12211
     if s1 < 0:
         s1 = s1 + 2147483563
-	k = s2 / 52774
-	s2 = 40692 * (s2 - k * 52774) - k * 3791
+    k = s2 / 52774
+    s2 = 40692 * (s2 - k * 52774) - k * 3791
     if  s2 < 0:
         s2 = s2 + 2147483399
     z = s1 - s2
@@ -126,4 +120,3 @@ def LEcuyer():
         z = z + 2147483562
 
     return z / 2147483563.
-

@@ -1,5 +1,5 @@
 # Init file for visualization package
-
+from __future__ import division, print_function, absolute_import
 
 # We make the visualization requirements optional imports:
 
@@ -13,4 +13,4 @@ except ImportError:
     has_mpl = False
 
 if has_mpl:
-    import projections
+    from . import projections

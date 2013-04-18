@@ -1,6 +1,8 @@
 ''' Testing track_metrics module '''
+from __future__ import division, print_function, absolute_import
 
-from StringIO import StringIO
+from ...utils.six.moves import xrange
+
 import numpy as np
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal

@@ -1,5 +1,9 @@
-from __future__ import division
+from __future__ import division, print_function, absolute_import
+
 from warnings import warn, catch_warnings, simplefilter
+
+from ..utils.six.moves import xrange
+
 import numpy as np
 import scipy.optimize as opt
 from .recspeed import local_maxima, remove_similar_vertices, search_descending

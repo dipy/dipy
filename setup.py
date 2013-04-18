@@ -13,8 +13,9 @@ if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 import numpy as np
 
 # Get version and release info, which is all stored in dipy/info.py
-ver_file = pjoin('dipy', 'info.py')
-execfile(ver_file)
+ver_file = os.path.join('dipy', 'info.py')
+# Use exec for compabibility with Python 3
+exec(open(ver_file).read())
 
 # force_setuptools can be set from the setup_egg.py script
 if not 'force_setuptools' in globals():

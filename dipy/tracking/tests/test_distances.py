@@ -1,3 +1,5 @@
+from __future__ import division, print_function, absolute_import
+
 import numpy as np
 import nose
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal
@@ -36,14 +38,14 @@ def test_LSCv2():
     t1=time()
     C3=pf.local_skeleton_clustering(T,.5)
     t2=time()
-    print t2-t1
-    print len(C3)
+    print(t2-t1)
+    print(len(C3))
     
     t1=time()
     C4=pf.local_skeleton_clustering_3pts(T,.5)
     t2=time()
-    print t2-t1
-    print len(C4)
+    print(t2-t1)
+    print(len(C4))
 
     for c in C3:
         assert_equal(np.sum(C3[c]['hidden']-C4[c]['hidden']),0)
@@ -55,14 +57,14 @@ def test_LSCv2():
     t1=time()
     C5=pf.local_skeleton_clustering(T2,.5)
     t2=time()
-    print t2-t1
-    print len(C5)
+    print(t2-t1)
+    print(len(C5))
     
     from dipy.data import get_data
     from nibabel import trackvis as tv
     try:
         from dipy.viz import fvtk
-    except ImportError, e:
+    except ImportError as e:
         raise nose.plugins.skip.SkipTest(
             'Fails to import dipy.viz due to %s' % str(e))
     
@@ -70,11 +72,11 @@ def test_LSCv2():
     T3=[tm.downsample(s[0],6) for s in streams]    
     
 
-    print 'lenT3',len(T3)
+    print('lenT3',len(T3))
     
     C=pf.local_skeleton_clustering(T3,10.)
     
-    print 'lenC',len(C)
+    print('lenC',len(C))
     
     """
     
@@ -136,7 +138,7 @@ def test_bundles_distances_mdf():
     tracksB = [xyz2A]
     
     DM2 = pf.bundles_distances_mdf(tracksA, tracksB)
-    print DM2
+    print(DM2)
         
     #assert_array_almost_equal(DM2,np.zeros((2,2)))    
     DM=np.zeros(DM2.shape)
@@ -145,14 +147,14 @@ def test_bundles_distances_mdf():
             md=np.sum(np.sqrt(np.sum((ta-tb)**2,axis=1)))/3.
             md2=np.sum(np.sqrt(np.sum((ta-tb[::-1])**2,axis=1)))/3.
             DM[a,b]=np.min((md,md2))
-    print DM
+    print(DM)
     
-    print '--------------'
+    print('--------------')
     for t in tracksA:
-        print t
-    print '--------------'
+        print(t)
+    print('--------------')
     for t in tracksB:
-        print t
+        print(t)
         
     assert_array_almost_equal(DM,DM2,4)
     

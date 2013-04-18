@@ -1,5 +1,7 @@
 """ Detect common dtype across object array """
 
+from functools import reduce
+
 cimport numpy as cnp
 cimport cython
 

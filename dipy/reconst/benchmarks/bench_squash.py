@@ -14,6 +14,10 @@ Run this benchmark with:
 
     nosetests -s --match '(?:^|[\\b_\\.//-])[Bb]ench' /path/to/bench_squash.py
 """
+from __future__ import division, print_function, absolute_import
+
+from functools import reduce
+
 import numpy as np
 
 from dipy.core.ndindex import ndindex

@@ -1,11 +1,11 @@
 import numpy as np
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_almost_equal)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
                               peak_directions_nl)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
-from nose.tools import (assert_almost_equal, assert_equal, assert_raises,
-                        assert_true)
+from nose.tools import (assert_equal, assert_raises, assert_true)
 
 def test_peak_directions_nl():
     def discrete_eval(sphere):

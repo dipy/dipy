@@ -1,6 +1,8 @@
+from __future__ import division, print_function, absolute_import
+
 import numpy as np
 from os.path import splitext
-from nibabel.orientations import io_orientation
+
 
 def read_bvec_file(filename, atol=.001):
     """
@@ -158,9 +160,9 @@ def orientation_to_string(ornt):
 def _check_ornt(ornt):
     uniq = np.unique(ornt[:, 0])
     if len(uniq) != len(ornt):
-        print len(uniq)
+        print(len(uniq))
         return True
     uniq = np.unique(ornt[:, 1])
     if tuple(uniq) not in set([(-1, 1), (-1,), (1,)]):
-        print tuple(uniq)
+        print(tuple(uniq))
         return True
