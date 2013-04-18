@@ -41,10 +41,10 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
             base, ext = splitext(source)
             if not ext in ('.pyx', '.py'):
                 continue
-            source_hash = sha1(open(source, 'rt').read()).hexdigest()
+            source_hash = sha1(open(source, 'rb').read()).hexdigest()
             c_fname = base + '.c'
             try:
-                c_file = open(c_fname, 'rt')
+                c_file = open(c_fname, 'rb')
             except IOError:
                 return False
             c_hash = sha1(c_file.read()).hexdigest()

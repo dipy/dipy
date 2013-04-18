@@ -1,4 +1,5 @@
 """ A simple graph class """
+from __future__ import division, print_function, absolute_import
 
 class Graph(object):
     ''' A simple graph class 
@@ -67,7 +68,7 @@ class Graph(object):
         path = path + [start]                   
         if start==end or graph[start]=={}:
             return [path]    
-        if not graph.has_key(start):
+        if not start in graph:
             return []
         paths = []
         for node in graph[start]:
@@ -81,7 +82,7 @@ class Graph(object):
         path = path + [start]
         if graph[start]=={} or start == end:
             return path
-        if not graph.has_key(start):
+        if not start in graph:
             return []
         shortest = None
         for node in graph[start]:

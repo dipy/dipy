@@ -1,5 +1,12 @@
+from __future__ import division, print_function, absolute_import
+
 import os
-import urllib2
+import sys
+if sys.version_info[0] < 3:
+    from urllib2 import urlopen
+else:
+    from urllib.request import urlopen
+
 from os.path import join as pjoin
 import numpy as np
 import nibabel as nib
@@ -21,13 +28,13 @@ def fetch_stanford_hardi():
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
         print('Downloading raw HARDI data (87MB)...')
-        opener = urllib2.urlopen(uraw)
+        opener = urlopen(uraw)
         open(pjoin(folder, 'HARDI150.nii.gz'), 'wb').write(opener.read())
 
-        opener = urllib2.urlopen(ubval)
+        opener = urlopen(ubval)
         open(pjoin(folder, 'HARDI150.bval'), 'w').write(opener.read())
 
-        opener = urllib2.urlopen(ubvec)
+        opener = urlopen(ubvec)
         open(pjoin(folder, 'HARDI150.bvec'), 'w').write(opener.read())
 
         print('Done.')
@@ -74,16 +81,16 @@ def fetch_taiwan_ntu_dsi():
 
         print('Downloading raw DSI data (91MB)...')
 
-        opener = urllib2.urlopen(uraw)
+        opener = urlopen(uraw)
         open(pjoin(folder, 'DSI203.nii.gz'), 'wb').write(opener.read())
 
-        opener = urllib2.urlopen(ubval)
+        opener = urlopen(ubval)
         open(pjoin(folder, 'DSI203.bval'), 'w').write(opener.read())
 
-        opener = urllib2.urlopen(ubvec)
+        opener = urlopen(ubvec)
         open(pjoin(folder, 'DSI203.bvec'), 'w').write(opener.read())
 
-        opener = urllib2.urlopen(ureadme)
+        opener = urlopen(ureadme)
         open(pjoin(folder, 'DSI203_license.txt'), 'w').write(opener.read())
 
         print('Done.')

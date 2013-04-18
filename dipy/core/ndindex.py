@@ -1,3 +1,5 @@
+from __future__ import division, print_function, absolute_import
+
 import numpy as np
 from numpy.lib.stride_tricks import as_strided
 
@@ -19,7 +21,7 @@ def ndindex(shape):
     >>> from dipy.core.ndindex import ndindex
     >>> shape = (3, 2, 1)
     >>> for index in ndindex(shape):
-    ...     print index
+    ...     print(index)
     (0, 0, 0)
     (0, 1, 0)
     (1, 0, 0)

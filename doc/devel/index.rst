@@ -12,6 +12,7 @@ Contents:
    gitwash/index
    make_release
    commit_codes
+   python3
 
 Indices and tables
 ==================

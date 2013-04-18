@@ -1,9 +1,24 @@
 """ Read test or example data
 """
+from __future__ import division, print_function, absolute_import
+
+
+import sys
+
 from nibabel import load
 from dipy.io.bvectxt import read_bvec_file
 from os.path import join as pjoin, dirname
-import cPickle
+
+if sys.version_info[0] < 3:
+    import cPickle
+    def loads_compat(bytes):
+        return cPickle.loads(bytes)
+else: # Python 3
+    import pickle
+    # Need to load pickles saved in Python 2
+    def loads_compat(bytes):
+        return pickle.loads(bytes, encoding='latin1')
+
 import gzip
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import Sphere
@@ -70,7 +85,7 @@ def get_sim_voxels(name='fib1'):
         fname = pjoin(THIS_DIR, 'fib1.pkl.gz')
     if name == 'fib2':
         fname = pjoin(THIS_DIR, 'fib2.pkl.gz')
-    return cPickle.loads(gzip.open(fname, 'rb').read())
+    return loads_compat(gzip.open(fname, 'rb').read())
 
 
 def get_skeleton(name='C1'):
@@ -91,14 +106,14 @@ def get_skeleton(name='C1'):
     >>> len(C.keys())
     117
     >>> for c in C: break
-    >>> C[c].keys()
-    ['indices', 'most', 'hidden', 'N']
+    >>> sorted(C[c].keys())
+    ['N', 'hidden', 'indices', 'most']
     """
     if name == 'C1':
         fname = pjoin(THIS_DIR, 'C1.pkl.gz')
     if name == 'C3':
         fname = pjoin(THIS_DIR, 'C3.pkl.gz')
-    return cPickle.loads(gzip.open(fname, 'rb').read())
+    return loads_compat(gzip.open(fname, 'rb').read())
 
 
 def get_sphere(name='symmetric362'):
@@ -126,7 +141,7 @@ def get_sphere(name='symmetric362'):
     (362, 3)
     >>> faces.shape
     (720, 3)
-    >>> verts, faces = get_sphere('not a sphere name')
+    >>> verts, faces = get_sphere('not a sphere name') #doctest: +IGNORE_EXCEPTION_DETAIL
     Traceback (most recent call last):
         ...
     DataError: No sphere called "not a sphere name"

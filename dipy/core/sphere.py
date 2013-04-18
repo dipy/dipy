@@ -1,7 +1,11 @@
+from __future__ import division, print_function, absolute_import
+
 __all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges']
 
 import numpy as np
 import warnings
+
+from ..utils.six.moves import xrange
 
 from dipy.core.geometry import cart2sphere, sphere2cart, vector_norm
 from dipy.core.onetime import auto_attr

@@ -12,6 +12,7 @@ Examples
 >>> fvtk.add(r,a)
 >>> #fvtk.show(r)
 '''
+from __future__ import division, print_function, absolute_import
 
 import types
 
@@ -295,13 +296,13 @@ def line(lines, colors, opacity=1, linewidth=1):
             inw = True
             mit = iter(Line)
             nit = iter(Line)
-            nit.next()
+            next(nit)
 
             while(inw):
 
                 try:
-                    m = mit.next()
-                    n = nit.next()
+                    m = next(mit)
+                    n = next(nit)
 
                     # scalar=sp.rand(1)
 
@@ -328,13 +329,13 @@ def line(lines, colors, opacity=1, linewidth=1):
             inw = True
             mit = iter(Line)
             nit = iter(Line)
-            nit.next()
+            next(nit)
 
             while(inw):
 
                 try:
-                    m = mit.next()
-                    n = nit.next()
+                    m = next(mit)
+                    n = next(nit)
 
                     # scalar=sp.rand(1)
 
@@ -733,7 +734,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         '''
 
     if info:
-        print 'opacitymap', opacitymap
+        print('opacitymap', opacitymap)
 
     if colormap == None:
 
@@ -752,7 +753,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         '''
 
     if info:
-        print 'colormap', colormap
+        print('colormap', colormap)
 
     im = vtk.vtkImageData()
     im.SetScalarTypeToUnsignedChar()
@@ -799,7 +800,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         # changeFilter.SetInput(im)
         if center_origin:
             changeFilter.SetOutputOrigin(-vol.shape[0] / 2.0 + 0.5, -vol.shape[1] / 2.0 + 0.5, -vol.shape[2] / 2.0 + 0.5)
-            print 'ChangeFilter ', changeFilter.GetOutputOrigin()
+            print('ChangeFilter ', changeFilter.GetOutputOrigin())
 
     opacity = vtk.vtkPiecewiseFunction()
     for i in range(opacitymap.shape[0]):
@@ -877,15 +878,15 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
 
     if info:
 
-        print 'Origin', volum.GetOrigin()
-        print 'Orientation', volum.GetOrientation()
-        print 'OrientationW', volum.GetOrientationWXYZ()
-        print 'Position', volum.GetPosition()
-        print 'Center', volum.GetCenter()
-        print 'Get XRange', volum.GetXRange()
-        print 'Get YRange', volum.GetYRange()
-        print 'Get ZRange', volum.GetZRange()
-        print 'Volume data type', vol.dtype
+        print('Origin', volum.GetOrigin())
+        print('Orientation', volum.GetOrientation())
+        print('OrientationW', volum.GetOrientationWXYZ())
+        print('Position', volum.GetPosition())
+        print('Center', volum.GetCenter())
+        print('Get XRange', volum.GetXRange())
+        print('Get YRange', volum.GetYRange())
+        print('Get ZRange', volum.GetZRange())
+        print('Volume data type', vol.dtype)
 
     return volum
 

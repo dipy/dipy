@@ -1,4 +1,4 @@
-from __future__ import division
+from __future__ import division, print_function, absolute_import
 """Various tools related to creating and working with streamlines
 
 Important Note:
@@ -41,6 +41,8 @@ dipy.tracking.utils
 dipy.tracking.integration
 dipy.reconst.interpolate
 """
+
+from ..utils.six.moves import xrange
 
 import numpy as np
 from numpy import (asarray, array, atleast_3d, ceil, concatenate, empty,
@@ -154,7 +156,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
             mapping.setdefault((a, b), []).append(i)
         if mapping_as_streamlines:
             mapping = dict((k, [streamlines[i] for i in indices])
-                           for k, indices in mapping.iteritems())
+                           for k, indices in mapping.items())
         return matrix, mapping
     else:
         return matrix
@@ -269,7 +271,7 @@ def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
             mapping.setdefault(point, []).append(i)
     if mapping_as_streamlines:
         mapping = dict((k, [streamlines[i] for i in indices])
-                       for k, indices in mapping.iteritems())
+                       for k, indices in mapping.items())
     return mapping
 
 def subsegment(streamlines, max_segment_length):
@@ -482,7 +484,7 @@ def merge_streamlines(backward, forward):
     B = iter(backward)
     F = iter(forward)
     while True:
-        yield concatenate((B.next()[:0:-1], F.next()))
+        yield concatenate((next(B)[:0:-1], next(F)))
 
 def move_streamlines(streamlines, affine):
     """Applies a linear transformation, given by affine, to streamlines
