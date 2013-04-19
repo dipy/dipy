@@ -8,6 +8,7 @@ import numpy as np
 
 import scipy.optimize as opt
 
+from dipy.utils.six.moves import xrange
 from dipy.data import get_sphere
 from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
