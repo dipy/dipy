@@ -29,18 +29,6 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         sh_order : int
             spherical harmonics order
 
-        Notes
-        -----
-        The method used here can be described in the following way.
-        0 Estimate single fiber repsonse function
-            From a masked FA get all voxels with FA > 0.7. Estimate eigen-vector,
-            for each one and align it with z-axis.
-        1 Build reconstruction matrices
-            - B_dwi (original signal)
-            - B_regul (regularized)
-            - R (single fiber)
-        2 Call csdeconv for every voxel
-
         References
         ----------
         .. [1] Tournier, J.D., et. al. NeuroImage 2007.
@@ -102,14 +90,13 @@ class ConstrainedSphericalDeconvFit(OdfFit):
             sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
 
-        # return np.dot(self.shm_coeff, self.model.B_regul.T)
         return np.dot(self.shm_coeff, sampling_matrix.T)
 
 
 @multi_voxel_model
 class ConstrainedSDTModel(OdfModel, Cache):
     def __init__(self, gtab, ratio, regul_sphere=None, sh_order=8, Lambda=1., tau=1.):
-        r""" Constrained Spherical Deconvolution [1]_.
+        r""" Spherical Deconvolution Transform [1]_.
 
         Parameters
         ----------
@@ -120,18 +107,6 @@ class ConstrainedSDTModel(OdfModel, Cache):
             sphere used to build the regularized B matrix
         sh_order : int
             spherical harmonics order
-
-        Notes
-        -----
-        The method used here can be described in the following way.
-        0 Estimate single fiber repsonse function
-            From a masked FA get all voxels with FA > 0.7. Estimate ratio
-            of second to first eigenvalues
-        1 Build reconstruction matrices
-            - B_dwi (original signal)
-            - B_regul (regularized)
-            - R (single fiber)
-        2 Call csdeconv for every voxel
 
         References
         ----------
@@ -153,7 +128,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
         else:
             self.sphere = regul_sphere
 
-        r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)        
         self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, sh_order)
@@ -230,14 +205,14 @@ def sh_to_rh(r_sh, sh_order):
     Parameters
     ----------
     r_sh : ndarray
-         ndarray of SH coefficients for the single fiber response function
+        ndarray of SH coefficients for the single fiber response function
     sh_order : int
-         maximal SH order of the SH representation
+        maximal SH order of the SH representation
 
     Returns
     -------
     r_rh : ndarray
-         Rotational harmonics coefficients representing the input `r_sh`
+        Rotational harmonics coefficients representing the input `r_sh`
     """
 
     dirac_sh = gen_dirac(0, 0, sh_order)
