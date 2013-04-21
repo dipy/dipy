@@ -15,6 +15,7 @@ from scipy.special import lpn
 
 @multi_voxel_model
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
+
     def __init__(self, gtab, response, regul_sphere=None, sh_order=8, Lambda=1, tau=0.1):
         r""" Constrained Spherical Deconvolution [1]_.
 
@@ -95,6 +96,7 @@ class ConstrainedSphericalDeconvFit(OdfFit):
 
 @multi_voxel_model
 class ConstrainedSDTModel(OdfModel, Cache):
+
     def __init__(self, gtab, ratio, regul_sphere=None, sh_order=8, Lambda=1., tau=1.):
         r""" Spherical Deconvolution Transform [1]_.
 
@@ -128,7 +130,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
         else:
             self.sphere = regul_sphere
 
-        r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)        
+        r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, sh_order)
@@ -148,7 +150,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
         # normalize ODF
         odf_sh /= Z
         shm_coeff, num_it = odf_deconv(odf_sh, self.sh_order, self.R, self.B_regul, self.Lambda, self.tau)
-        #print 'SDT CSD converged after %d iterations' % num_it
+        # print 'SDT CSD converged after %d iterations' % num_it
 
         return ConstrainedSDTFit(self, shm_coeff)
 
@@ -288,7 +290,7 @@ def forward_sdt_deconv_mat(ratio, sh_order):
 
     num = 1000
     delta = 1.0 / num
-    n = (sh_order + 1.0) + (sh_order + 2.0) / 2.0
+    # n = (sh_order + 1.0) + (sh_order + 2.0) / 2.0
 
     sdt = np.zeros((m.shape))
     frt = np.zeros((m.shape))
@@ -454,7 +456,7 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
     # a good heuristic choice is just the mean of the fodf on the sphere.
     threshold = tau * np.mean(np.dot(B_regul, fodf_sh))
 
-    #print Lambda,threshold
+    # print Lambda,threshold
     # Typical values that work well: 0.124309392265 0.0339565336195
 
     k = []

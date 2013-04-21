@@ -80,7 +80,7 @@ def test_odfdeconv():
 
     e1 = 15.0  # 13.9
     e2 = 3.0  # 3.55
-    ratio = e2/e1
+    ratio = e2 / e1
 
     # print 'Deconvolution eigen value ratio is %f'%ratio
     csd = ConstrainedSDTModel(gtab, ratio, None)
