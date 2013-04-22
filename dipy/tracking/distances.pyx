@@ -877,8 +877,9 @@ def lee_perpendicular_distance(start0, end0, start1, end1):
 
     Examples
     --------
-    >>> print(lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3]))
-    5.78788757324
+    >>> d = lee_perpendicular_distance([0,0,0],[1,0,0],[3,4,5],[5,4,3])
+    >>> print('%.6f' % d)
+    5.787888
     '''
 
     cdef cnp.ndarray[cnp.float32_t, ndim=1] fvec1,fvec2,fvec3,fvec4
@@ -1340,8 +1341,9 @@ def track_dist_3pts(tracka,trackb):
     --------
     >>> a = np.array([[0,0,0],[1,0,0,],[2,0,0]])
     >>> b = np.array([[3,0,0],[3.5,1,0],[4,2,0]])
-    >>> print(track_dist_3pts(a, b))
-    2.72157287598
+    >>> c = track_dist_3pts(a, b)
+    >>> print('%.6f' % c)
+    2.721573
     '''
 
     cdef cnp.ndarray[cnp.float32_t, ndim=2] a,b

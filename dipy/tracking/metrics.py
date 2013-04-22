@@ -419,8 +419,8 @@ def longest_track_bundle(bundle,sort=False):
     >>> longest_track_bundle(bundle)
     array([[0, 0, 0],
            [4, 4, 4]])
-    >>> longest_track_bundle(bundle,True)
-    array([0, 1])
+    >>> longest_track_bundle(bundle, True) #doctest: +ELLIPSIS
+    array([0, 1]...)
 
     '''
     alllengths=[length(t) for t in bundle]

@@ -200,10 +200,10 @@ def reduce_labels(label_volume):
     >>> new_labels, lookup = reduce_labels(labels)
     >>> lookup
     array([1, 3, 7, 8, 9])
-    >>> new_labels
+    >>> new_labels #doctest: +ELLIPSIS
     array([[0, 1, 4],
            [0, 1, 3],
-           [0, 1, 2]])
+           [0, 1, 2]]...)
     >>> (lookup[new_labels] == labels).all()
     True
     """
