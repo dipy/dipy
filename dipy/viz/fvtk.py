@@ -678,8 +678,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     >>> import numpy as np
     >>> vol=100*np.random.rand(100,100,100)
     >>> vol=vol.astype('uint8')
-    >>> print vol.min(), vol.max()
-    0 99
+    >>> vol.min(), vol.max()
+    (0, 99)
     >>> r = fvtk.ren()
     >>> v = fvtk.volume(vol)
     >>> fvtk.add(r,v)
