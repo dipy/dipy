@@ -1,3 +1,4 @@
+from __future__ import division, print_function, absolute_import
 import numpy as np
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
@@ -379,12 +380,12 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
 
     k = []
     convergence = 50
-    for num_it in xrange(1, convergence + 1):
+    for num_it in range(1, convergence + 1):
         A = np.dot(B_regul, fodf_sh)
         k2 = np.nonzero(A < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_regul.shape[1]:
-            print 'too few negative directions identified - failed to converge'
+            print('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -395,8 +396,9 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
         M = np.concatenate((R, Lambda * B_regul[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
+        #fodf_sh = np.linalg.pinv(M).dot(S)
 
-    print 'maximum number of iterations exceeded - failed to converge'
+    print('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
@@ -430,7 +432,7 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
 
     References
     ----------
-    Descoteaux, M, et. al. TMI 2009.
+    Descoteaux, M, et al. TMI 2009.
     Descoteaux, M, PhD thesis 2008.
     """
     m, n = sph_harm_ind_list(sh_order)
@@ -461,12 +463,12 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
 
     k = []
     convergence = 50
-    for num_it in np.arange(1, convergence + 1):
+    for num_it in range(1, convergence + 1):
         A = np.dot(B_regul, fodf_sh)
         k2 = np.nonzero(A < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_regul.shape[1]:
-            print 'too few negative directions identified - failed to converge'
+            print('to few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -478,7 +480,7 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, ODF)[0]  # M\ODF
 
-    print 'maximum number of iterations exceeded - failed to converge'
+    print('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 

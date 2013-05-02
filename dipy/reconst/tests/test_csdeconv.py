@@ -48,15 +48,17 @@ def test_csdeconv():
     directions, _, _ = peak_directions(odf_gt, sphere)
     directions2, _, _ = peak_directions(fodf, sphere)
 
-    ang_sim = angular_similarity(directions, directions2)
+    ang_sim = angular_similarity(directions, directions2)    
 
-    assert_almost_equal(ang_sim > 1.95, True)
+    assert_almost_equal(ang_sim > 1.92, True)
     assert_array_equal(directions.shape[0], 2)
     assert_array_equal(directions2.shape[0], 2)
 
+    #add test for angular_error
+
 
 def test_odfdeconv():
-    SNR = 30  # 20, 10
+    SNR = 30 # 20, 10
     S0 = 1
 
     _, fbvals, fbvecs = get_data('small_64D')
@@ -93,10 +95,12 @@ def test_odfdeconv():
 
     ang_sim = angular_similarity(directions, directions2)
 
-    assert_almost_equal(ang_sim > 1.95, True)
+    assert_almost_equal(ang_sim > 1.92, True)
+    
     assert_array_equal(directions.shape[0], 2)
     assert_array_equal(directions2.shape[0], 2)
 
 
 if __name__ == '__main__':
     run_module_suite()
+    
