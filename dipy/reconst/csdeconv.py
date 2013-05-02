@@ -7,6 +7,7 @@ from dipy.reconst.multi_voxel import multi_voxel_model
 from dipy.reconst.shm import (sph_harm_ind_list,
                               real_sph_harm,
                               real_sph_harm_mrtrix,
+                              real_sph_harm_fibernav,
                               lazy_index)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
@@ -34,7 +35,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
         References
         ----------
-        .. [1] Tournier, J.D., et. al. NeuroImage 2007.
+        .. [1] Tournier, J.D., et al. NeuroImage 2007.
         """
 
         m, n = sph_harm_ind_list(sh_order)
@@ -122,7 +123,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
 
         References
         ----------
-        .. [1] Descoteaux, M., et. al. TMI 2009.
+        .. [1] Descoteaux, M., et al. TMI 2009.
         """
 
         m, n = sph_harm_ind_list(sh_order)
@@ -136,7 +137,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
             warnings.warn(msg, UserWarning)
-            
+
         x, y, z = gtab.gradients[self._where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         # for the gradient sphere
@@ -459,11 +460,6 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_regul, fodf_sh)
-    #     psphere = get_sphere('symmetric362')
-    #     from dipy.viz import fvtk
-    #     r = fvtk.ren()
-    #     fvtk.add(r, fvtk.sphere_funcs(fodf, psphere))
-    #     fvtk.show(r)
 
     Z = np.linalg.norm(fodf)
     # should be around 1.5
@@ -502,13 +498,43 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
 
 
 def odf_sh_to_sharp(odfs_sh, sphere, basis='mrtrix', ratio=3 / 15., sh_order=8, Lambda=1., tau=1.):
-    """ Sharpen odfs
+    """ Sharpen odfs using the spherical seconvolution transform
+
+    Parameters
+    ----------
+    odfs_sh : ndarray
+        array of odfs expressed as spherical harmonics coefficients
+
+    sphere : Sphere
+
+    basis : {None, 'mrtrix', 'fibernav'}
+        different spherical harmonic basis. None is the default dipy basis.
+
+    ratio : float,
+        response function persentage of width versus length
+
+    sh_order : int
+
+    Lambda : float
+        lambda parameter (see odfdeconv) (default 1.0)
+
+    tau : float
+        tau parameter in the L matrix construction (see odfdeconv) (default 1.0)
+
+
+    Returns
+    -------
+    fodf_sh : ndarray
+        sharpened odf expressed as spherical harmonics coefficients
+
     """
     m, n = sph_harm_ind_list(sh_order)
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
 
     if basis == 'mrtrix':
         B_regul, m, n = real_sph_harm_mrtrix(sh_order, theta[:, None], phi[:, None])
+    elif basis == 'fibernav':
+        B_regul, m, n = real_sph_harm_fibernav(sh_order, theta[:, None], phi[:, None])
     else:
         B_regul = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
