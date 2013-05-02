@@ -1,4 +1,5 @@
 from __future__ import division, print_function, absolute_import
+import warnings
 import numpy as np
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
@@ -18,7 +19,7 @@ from scipy.special import lpn
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
     def __init__(self, gtab, response, regul_sphere=None, sh_order=8, Lambda=1, tau=0.1):
-        r""" Constrained Spherical Deconvolution [1]_.
+        r""" Super Constrained Spherical Deconvolution [1]_.
 
         Parameters
         ----------
@@ -40,6 +41,14 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         self.m, self.n = m, n
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
+
+        no_params = ((sh_order + 1) * (sh_order + 2)) / 2
+
+        if no_params > np.sum(gtab.b0s_mask == False):
+            msg = "Number of parameters required for the fit are more "
+            msg += "than the actual data points"
+            warnings.warn(msg, UserWarning)
+
         x, y, z = gtab.gradients[self._where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         # for the gradient sphere
@@ -120,6 +129,14 @@ class ConstrainedSDTModel(OdfModel, Cache):
         self.m, self.n = m, n
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
+
+        no_params = ((sh_order + 1) * (sh_order + 2)) / 2
+
+        if no_params > np.sum(gtab.b0s_mask == False):
+            msg = "Number of parameters required for the fit are more "
+            msg += "than the actual data points"
+            warnings.warn(msg, UserWarning)
+            
         x, y, z = gtab.gradients[self._where_dwi].T
         r, pol, azi = cart2sphere(x, y, z)
         # for the gradient sphere
@@ -396,7 +413,7 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
         M = np.concatenate((R, Lambda * B_regul[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
-        #fodf_sh = np.linalg.pinv(M).dot(S)
+        # fodf_sh = np.linalg.pinv(M).dot(S)
 
     print('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it

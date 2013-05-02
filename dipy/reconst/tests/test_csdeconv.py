@@ -1,5 +1,7 @@
+import warnings
 import numpy as np
-from numpy.testing import (assert_almost_equal,
+from numpy.testing import (assert_equal,
+                           assert_almost_equal,
                            assert_array_equal,
                            run_module_suite)
 
@@ -15,7 +17,7 @@ from dipy.core.sphere_stats import angular_similarity
 
 
 def test_csdeconv():
-    SNR = 30
+    SNR = 100
     S0 = 1
 
     _, fbvals, fbvecs = get_data('small_64D')
@@ -31,6 +33,7 @@ def test_csdeconv():
                              fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric724')
+    sphere = sphere.subdivide(1)
 
     mevecs = [all_tensor_evecs(sticks[0]).T,
               all_tensor_evecs(sticks[1]).T]
@@ -48,17 +51,25 @@ def test_csdeconv():
     directions, _, _ = peak_directions(odf_gt, sphere)
     directions2, _, _ = peak_directions(fodf, sphere)
 
-    ang_sim = angular_similarity(directions, directions2)    
+    ang_sim = angular_similarity(directions, directions2)
 
-    assert_almost_equal(ang_sim > 1.92, True)
+    assert_almost_equal(ang_sim > 1.9, True)
     assert_array_equal(directions.shape[0], 2)
     assert_array_equal(directions2.shape[0], 2)
 
-    #add test for angular_error
+    with warnings.catch_warnings(True) as w:
+
+        csd = ConstrainedSphericalDeconvModel(gtab, response, sh_order=16)
+        assert_equal(len(w) > 0, True)
+
+    with warnings.catch_warnings(True) as w:
+
+        csd = ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
+        assert_equal(len(w) > 0, False)
 
 
 def test_odfdeconv():
-    SNR = 30 # 20, 10
+    SNR = 100
     S0 = 1
 
     _, fbvals, fbvecs = get_data('small_64D')
@@ -73,15 +84,16 @@ def test_odfdeconv():
     S, sticks = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
                              fractions=[50, 50], snr=SNR)
 
-    sphere = get_sphere('symmetric362')
+    sphere = get_sphere('symmetric724')
+    sphere = sphere.subdivide(1)
 
     mevecs = [all_tensor_evecs(sticks[0]).T,
               all_tensor_evecs(sticks[1]).T]
 
     odf_gt = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
 
-    e1 = 15.0  # 13.9
-    e2 = 3.0  # 3.55
+    e1 = 15.0
+    e2 = 3.0
     ratio = e2 / e1
 
     # print 'Deconvolution eigen value ratio is %f'%ratio
@@ -95,12 +107,11 @@ def test_odfdeconv():
 
     ang_sim = angular_similarity(directions, directions2)
 
-    assert_almost_equal(ang_sim > 1.92, True)
-    
+    assert_almost_equal(ang_sim > 1.99, True)
+
     assert_array_equal(directions.shape[0], 2)
     assert_array_equal(directions2.shape[0], 2)
 
 
 if __name__ == '__main__':
     run_module_suite()
-    
