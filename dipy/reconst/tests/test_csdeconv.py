@@ -109,8 +109,6 @@ def test_odfdeconv():
 
     ang_sim = angular_similarity(directions, directions2)
 
-    print ang_sim
-
     assert_equal(ang_sim > 1.98, True)
 
     assert_array_equal(directions.shape[0], 2)
@@ -163,9 +161,9 @@ def test_odf_sh_to_sharp():
     angle = two_fibers_angle(directions)
     angle2 = two_fibers_angle(directions2)
 
-    print angle, angle2
+    #print angle, angle2
 
-    print directions.shape, directions2.shape
+    #print directions.shape, directions2.shape
 
     # print np.sum(gfa(fodf)) / 3**3
     # print np.sum(gfa(odfs_gt)) / 3**3
