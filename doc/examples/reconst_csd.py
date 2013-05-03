@@ -54,12 +54,7 @@ evals = np.array([l01[0], l01[1], l01[1]])
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, (evals, S0))
 
-from time import time
-t1 = time()
 csd_fit = csd_model.fit(data2[:, :, 30], mask2[:, :, 30])
-t2 = time()
-
-print t2 - t1
 
 from dipy.data import get_sphere
 
