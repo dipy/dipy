@@ -207,7 +207,6 @@ def estimate_response(gtab, evals, S0):
     S : estimated signal
 
     """
-    # evals = np.array([0.0015, 0.0003, 0.0003])
     evecs = np.array([[0, 0, 1],
                       [0, 1, 0],
                       [1, 0, 0]])
@@ -243,16 +242,13 @@ def sh_to_rh(r_sh, sh_order):
 
 
 def gen_dirac(pol, azi, sh_order):
-    m, n = sph_harm_ind_list(sh_order)
-    rsh = real_sph_harm
-    # other bases support TO DO
-
+    m, n = sph_harm_ind_list(sh_order)    
     dirac = np.zeros((m.shape))
     i = 0
     for l in np.arange(0, sh_order + 1, 2):
         for m in np.arange(-l, l + 1):
             if m == 0:
-                dirac[i] = rsh(0, l, azi, pol)
+                dirac[i] = real_sph_harm(0, l, azi, pol)
 
             i = i + 1
 
@@ -339,12 +335,6 @@ def forward_sdt_deconv_mat(ratio, sh_order):
         sdt[l / 2] = sharp
         frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
 
-    # print sdt
-    # std = [ 1.          0.0987961   0.0214013   0.00570876  0.00169231]
-    # for sh_order = 8 and num = 1000
-
-    # print frt
-    # frt =  [6.28318531 -3.14159265  2.35619449 -1.96349541  1.71805848]
     i = 0
     for l in np.arange(0, sh_order + 1, 2):
         for m in np.arange(-l, l + 1):
@@ -356,7 +346,7 @@ def forward_sdt_deconv_mat(ratio, sh_order):
 
 
 def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
-    """ Constrained-regularized spherical deconvolution (CSD)
+    r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response
     function `r_rh` in rotational harmonics coefficients from the spherical function
@@ -386,7 +376,7 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
 
     References
     ----------
-    Tournier, J.D., et. al. NeuroImage 2007.
+    .. [1] Tournier, J.D., et al. NeuroImage 2007.
     """
 
     # generate initial fODF estimate, truncated at SH order 4
@@ -421,8 +411,8 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
 
 
 def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
-    """ ODF constrained-regularized sherical deconvolution using
-    the Sharpening Deconvolution Transform (SDT)
+    r""" ODF constrained-regularized sherical deconvolution using
+    the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
 
     Parameters
     ----------
@@ -450,8 +440,8 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
 
     References
     ----------
-    Descoteaux, M, et al. TMI 2009.
-    Descoteaux, M, PhD thesis 2008.
+    .. [1] Descoteaux, M, et al. TMI 2009.
+    .. [2] Descoteaux, M, PhD thesis 2008.
     """
     m, n = sph_harm_ind_list(sh_order)
 
@@ -462,17 +452,9 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
     fodf = np.dot(B_regul, fodf_sh)
 
     Z = np.linalg.norm(fodf)
-    # should be around 1.5
-    #    print Z
     fodf_sh /= Z
 
-    # This should be cleaned up... Because right now the tau parameter is useless
-    # tau should be more or less around 0.025 from my experience
-    # a good heuristic choice is just the mean of the fodf on the sphere.
     threshold = tau * np.mean(np.dot(B_regul, fodf_sh))
-
-    # print Lambda,threshold
-    # Typical values that work well: 0.124309392265 0.0339565336195
 
     k = []
     convergence = 50
@@ -498,7 +480,7 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
 
 
 def odf_sh_to_sharp(odfs_sh, sphere, basis='mrtrix', ratio=3 / 15., sh_order=8, Lambda=1., tau=1.):
-    """ Sharpen odfs using the spherical seconvolution transform
+    r""" Sharpen odfs using the spherical deconvolution transform [1]_
 
     Parameters
     ----------
@@ -521,11 +503,14 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis='mrtrix', ratio=3 / 15., sh_order=8, 
     tau : float
         tau parameter in the L matrix construction (see odfdeconv) (default 1.0)
 
-
     Returns
     -------
     fodf_sh : ndarray
         sharpened odf expressed as spherical harmonics coefficients
+
+    References
+    ----------
+    .. [1] Descoteaux, M, et al. TMI 2009.
 
     """
     m, n = sph_harm_ind_list(sh_order)
