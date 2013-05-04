@@ -15,7 +15,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    odf_sh_to_sharp)
 from dipy.reconst.odf import peak_directions
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel
 
 
 def test_csdeconv():
@@ -59,12 +59,12 @@ def test_csdeconv():
     assert_array_equal(directions.shape[0], 2)
     assert_array_equal(directions2.shape[0], 2)
 
-    with warnings.catch_warnings(True) as w:
+    with warnings.catch_warnings(record=True) as w:
 
         csd = ConstrainedSphericalDeconvModel(gtab, response, sh_order=16)
         assert_equal(len(w) > 0, True)
 
-    with warnings.catch_warnings(True) as w:
+    with warnings.catch_warnings(record=True) as w:
 
         csd = ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
         assert_equal(len(w) > 0, False)
@@ -80,10 +80,10 @@ def test_odfdeconv():
     bvecs = np.load(fbvecs)
 
     gtab = gradient_table(bvals, bvecs)
-    mevals = np.array(([0.0017, 0.0003, 0.0003],
-                       [0.0017, 0.0003, 0.0003]))
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (65, 0)],
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (70, 0)],
                              fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric724')
@@ -94,11 +94,10 @@ def test_odfdeconv():
 
     odf_gt = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
 
-    e1 = 17.0
+    e1 = 15.0
     e2 = 3.0
     ratio = e2 / e1
 
-    # print 'Deconvolution eigen value ratio is %f'%ratio
     csd = ConstrainedSDTModel(gtab, ratio, None)
 
     csd_fit = csd.fit(S)
@@ -129,7 +128,67 @@ def test_odf_sh_to_sharp():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (45, 0)],
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (100, 0)],
+                             fractions=[50, 50], snr=SNR)
+
+    sphere = get_sphere('symmetric724')
+    sphere = sphere.subdivide(1)
+
+    qb = QballModel(gtab, sh_order=8, assume_normed=True)
+
+    qbfit = qb.fit(S)
+    odf_gt = qbfit.odf(sphere)
+    odf_sh = qbfit._shm_coef
+
+    Z = np.linalg.norm(odf_gt)
+
+    odfs_gt = np.zeros((3, 1, 1, odf_gt.shape[0]))
+    odfs_gt[:,:,:] = odf_gt[:]
+
+    odfs_sh = sf_to_sh(odfs_gt, sphere, sh_order=8, basis_type=None)
+
+    odfs_sh /= Z
+
+    fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
+                              sh_order=8, Lambda=1., tau=1.)
+
+    fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
+
+    directions, _, _ = peak_directions(odf_gt, sphere)
+    directions2, _, _ = peak_directions(fodf[0, 0, 0], sphere)
+
+    ang_sim = angular_similarity(directions, directions2)
+
+    assert_equal(ang_sim > 1.98, True)
+
+    assert_array_equal(directions.shape[0], 2)
+    assert_array_equal(directions2.shape[0], 2)
+
+    # from dipy.viz import fvtk
+    # r = fvtk.ren()
+    # fvtk.add(r, fvtk.sphere_funcs((odf_gt - odf_gt.min())/(odf_gt.max()-odf_gt.min()), sphere))
+    # fvtk.show(r)
+
+    # fvtk.clear(r)
+    # fvtk.add(r, fvtk.sphere_funcs(fodf[0, 0, 0], sphere))
+    # fvtk.show(r)
+
+
+def test_odf_sh_to_sharp2():
+
+    SNR = 100
+    S0 = 1
+
+    _, fbvals, fbvecs = get_data('small_101D')
+
+    bvals = np.loadtxt(fbvals)
+    bvecs = np.loadtxt(fbvecs).T
+
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(10, 0), (55, 0)],
                              fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric724')
@@ -140,15 +199,19 @@ def test_odf_sh_to_sharp():
 
     odf_gt = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
 
+    Z = np.linalg.norm(odf_gt)
+
     odfs_gt = np.zeros((3, 1, 1, odf_gt.shape[0]))
     odfs_gt[:,:,:] = odf_gt[:]
 
-    odfs_sh = sf_to_sh(odfs_gt, sphere, sh_order=8, basis_type='mrtrix')
+    odfs_sh = sf_to_sh(odfs_gt, sphere, sh_order=8, basis_type=None)
 
-    fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis='mrtrix', ratio=3 / 15.,
-                              sh_order=8, Lambda=.1, tau=.02)
+    odfs_sh /= Z
 
-    fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type='mrtrix')
+    fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
+                              sh_order=8, Lambda=1., tau=1.)
+
+    fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
 
     directions, _, _ = peak_directions(odf_gt, sphere, min_separation_angle=25.)
     directions2, _, _ = peak_directions(fodf[0, 0, 0], sphere,
@@ -158,8 +221,8 @@ def test_odf_sh_to_sharp():
 
         return np.arccos(np.abs(np.dot(directions[0], directions[1]))) * 180. / np.pi
 
-    angle = two_fibers_angle(directions)
-    angle2 = two_fibers_angle(directions2)
+    #angle = two_fibers_angle(directions)
+    #angle2 = two_fibers_angle(directions2)
 
     #print angle, angle2
 
@@ -170,18 +233,18 @@ def test_odf_sh_to_sharp():
 
     # assert_equal(np.sum(gfa(fodf))/3**3 < np.sum(gfa(odfs_gt))/3**3, True)
 
-    """
-    from dipy.viz import fvtk
-    r = fvtk.ren()
-    fvtk.add(r, fvtk.sphere_funcs(odf_gt, sphere))
-    fvtk.show(r)
+    
+    # from dipy.viz import fvtk
+    # r = fvtk.ren()
+    # fvtk.add(r, fvtk.sphere_funcs(odf_gt, sphere))
+    # fvtk.show(r)
 
-    fvtk.clear(r)
-    fvtk.add(r, fvtk.sphere_funcs(fodf[0, 0, 0], sphere))
-    fvtk.show(r)
-    """
-
+    # fvtk.clear(r)
+    # fvtk.add(r, fvtk.sphere_funcs(fodf[0, 0, 0], sphere))
+    # fvtk.show(r)
+    
 
 if __name__ == '__main__':
-    # run_module_suite()
-    test_odf_sh_to_sharp()
+    run_module_suite()
+    # test_odf_sh_to_sharp()
+    #test_odfdeconv2()
