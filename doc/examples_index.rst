@@ -9,6 +9,7 @@ Examples
 
    note_about_examples
    examples_built/reconst_dti
+   examples_built/reconst_csd
    examples_built/reconst_csa
    examples_built/reconst_dsi
    examples_built/reconst_gqi
