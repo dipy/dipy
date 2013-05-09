@@ -51,7 +51,7 @@ def vec_val_vect(vecs, vals):
     vecs = np.asarray(vecs)
     vals = np.asarray(vals)
     cdef:
-        cnp.npy_intp t, N, rows, cols, r, c, in_r_out_c
+        cnp.npy_intp t, N, ndim, rows, cols, r, c, in_r_out_c
         double [:, :, :] vecr
         double [:, :] valr
         double [:, :] vec
@@ -59,8 +59,11 @@ def vec_val_vect(vecs, vals):
         double [:] val
         double [:, :, :] out
         double row_c
-    common_shape = vecs.shape[:-2]
-    rows, cols = vecs.shape[-2], vecs.shape[-1]
+    # Avoid negative indexing to avoid errors with False boundscheck decorator
+    # and Cython > 0.18
+    ndim = vecs.ndim
+    common_shape = vecs.shape[:(ndim-2)]
+    rows, cols = vecs.shape[ndim-2], vecs.shape[ndim-1]
     if vals.shape != common_shape + (cols,):
         raise ValueError('dimensions do not match')
     N = np.prod(common_shape)
