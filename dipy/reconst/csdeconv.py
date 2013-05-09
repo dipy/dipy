@@ -402,11 +402,12 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
                 return fodf_sh, num_it
 
         k = k2
+
+        #this is the super-resolved trick
         M = np.concatenate((R, Lambda * B_regul[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
-        # fodf_sh = np.linalg.pinv(M).dot(S)
-
+        
     print('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
