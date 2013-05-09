@@ -25,9 +25,11 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         Parameters
         ----------
         gtab : GradientTable
-        response : tuple
-            tuple with two elements the first are the eigen-values as an (3,) ndarray
-            and the second is the S0.
+        response : tuple or caller
+            If tuple then it should have two elements the first are the eigen-values as an (3,) ndarray
+            and the second is the signal value for the response function without diffusion weighting.
+            If caller then the function should return an ndarray with the all the signal values for the
+            response function
         regul_sphere : Sphere
             sphere used to build the regularized B matrix
         sh_order : int
@@ -64,10 +66,13 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
-        if response is None:
-            S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
+        if hasattr(response, '__call__'):
+            S_r = response
         else:
-            S_r = estimate_response(gtab, response[0], response[1])
+            if response is None:
+                S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
+            else:
+                S_r = estimate_response(gtab, response[0], response[1])
 
         r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
 
@@ -115,7 +120,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
         ----------
         gtab : GradientTable
         ratio : float
-            ratio = \frac{\lambda_2}{\lambda_1} of the single tensor response function
+            ratio of the smallest vs the largest eigenvalue of the single prolate tensor response function
         regul_sphere : Sphere
             sphere used to build the regularized B matrix
         sh_order : int
@@ -242,7 +247,7 @@ def sh_to_rh(r_sh, sh_order):
 
 
 def gen_dirac(pol, azi, sh_order):
-    m, n = sph_harm_ind_list(sh_order)    
+    m, n = sph_harm_ind_list(sh_order)
     dirac = np.zeros((m.shape))
     i = 0
     for l in np.arange(0, sh_order + 1, 2):
@@ -403,11 +408,11 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
 
         k = k2
 
-        #this is the super-resolved trick
+        # this is the super-resolved trick
         M = np.concatenate((R, Lambda * B_regul[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
-        
+
     print('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
