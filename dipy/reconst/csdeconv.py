@@ -389,8 +389,9 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
     k = []
     convergence = 50
     for num_it in range(1, convergence + 1):
-        A = np.dot(B_regul, fodf_sh)
-        k2 = np.nonzero(A < threshold)[0]
+        fodf = np.dot(B_regul, fodf_sh)
+
+        k2 = np.nonzero(fodf < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_regul.shape[1]:
             print('too few negative directions identified - failed to converge')
