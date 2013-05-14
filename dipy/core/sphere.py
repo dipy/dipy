@@ -399,7 +399,8 @@ def _get_forces(charges):
     potential = 2*potential.sum()
     return f_theta, potential
 
-def disperse_charges(hemi, iters, const=.05):
+
+def disperse_charges(hemi, iters, const=.2):
     """Models electrostatic repulsion on the unit sphere
 
     Places charges on a sphere and simulates the repulsive forces felt by each
@@ -410,9 +411,9 @@ def disperse_charges(hemi, iters, const=.05):
     Parameters
     ----------
     hemi : HemiSphere
-        Points on a unit sphere
+        Points on a unit sphere.
     iters : int
-        Number of iterations to run
+        Number of iterations to run.
     const : float
         Using a smaller const could provide a more accurate result, but will
         need more iterations to converge.
@@ -420,7 +421,7 @@ def disperse_charges(hemi, iters, const=.05):
     Returns
     -------
     hemi : HemiSphere
-        distributed points on a unit sphere
+        Distributed points on a unit sphere.
     potential : ndarray
         The electrostatic potential at each iteration. This can be useful to
         check if the repulsion converged to a minimum.
@@ -435,19 +436,26 @@ def disperse_charges(hemi, iters, const=.05):
     """
     if not isinstance(hemi, HemiSphere):
         raise ValueError("expecting HemiSphere")
-    charges = hemi.vertices.copy()
+    charges = hemi.vertices
     forces, v = _get_forces(charges)
     force_mag = np.sqrt((forces*forces).sum())
-    max_force = force_mag.max()
-    if max_force > 1:
-        const = const/max_force
+    const = const / force_mag.max()
     potential = np.empty(iters)
+    v_min = v
 
     for ii in xrange(iters):
-        forces, potential[ii] = _get_forces(charges)
-        charges += forces * const
-        norms = np.sqrt((charges*charges).sum(-1))
-        charges /= norms[:, None]
+        new_charges = charges + forces * const
+        norms = np.sqrt((new_charges**2).sum(-1))
+        new_charges /= norms[:, None]
+        new_forces, v = _get_forces(new_charges)
+        if v <= v_min:
+            charges = new_charges
+            forces = new_forces
+            potential[ii] = v_min = v
+        else:
+            const /= 2.
+            potential[ii] = v_min
+
     return HemiSphere(xyz=charges), potential
 
 
