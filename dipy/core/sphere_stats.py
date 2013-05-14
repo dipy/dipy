@@ -26,26 +26,24 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     Examples
     ---------
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
-    >>> X=random_uniform_on_sphere(4,'radians')
+    >>> X = random_uniform_on_sphere(4, 'radians')
     >>> X.shape
     (4, 2)
-    >>> X=random_uniform_on_sphere(4,'xyz')
+    >>> X = random_uniform_on_sphere(4, 'xyz')
     >>> X.shape
     (4, 3)
     '''
-    u = np.random.normal(0,1,(n,3))
-    u = u/np.sqrt(np.sum(u**2,axis=1)).reshape(n,1)
-    if coords=='xyz':
-        return u
-    else:
-        angles = np.zeros((n,2))
-        for (i,xyz) in enumerate(u):
-            angles[i,:]=geometry.cart2sphere(*xyz)[1:]
-        if coords=='radians':
-            return angles
-        if coords=='degrees':
-            return (180./np.pi)*angles
-
+    z = np.random.uniform(-1, 1, n)
+    theta = np.arccos(z)
+    phi = np.random.uniform(0, 2*np.pi, n)
+    angles = np.hstack((theta, phi)).T
+    if coords == 'xyz':
+        r = np.ones(n)
+        return np.hstack(geometry.sphere2cart(r, theta, phi)).T
+    if coords == 'radians':
+        return angles
+    if coords == 'degrees':
+        return np.rad2deg(angles)
 
 def eigenstats(points, alpha=0.05):
     r'''Principal direction and confidence ellipse
