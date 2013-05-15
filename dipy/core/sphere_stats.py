@@ -7,7 +7,12 @@ import dipy.core.geometry as geometry
 from itertools import permutations
 
 def random_uniform_on_sphere(n=1, coords='xyz'):
-    r'''Random unit vectors from a uniform distribution on the sphere
+    r'''Random unit vectors from a uniform distribution on the sphere. 
+
+    $\phi\sim U[0,2\pi]$, while $z=\cos(\theta)\sim U[-1,1]$.
+
+    For a reference, see 
+    http://mathworld.wolfram.com/SpherePointPicking.html.
 
     Parameters
     -----------
@@ -36,10 +41,10 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     z = np.random.uniform(-1, 1, n)
     theta = np.arccos(z)
     phi = np.random.uniform(0, 2*np.pi, n)
-    angles = np.hstack((theta, phi)).T
     if coords == 'xyz':
         r = np.ones(n)
-        return np.hstack(geometry.sphere2cart(r, theta, phi)).T
+        return np.vstack(geometry.sphere2cart(r, theta, phi)).T
+    angles = np.vstack((theta, phi)).T
     if coords == 'radians':
         return angles
     if coords == 'degrees':
