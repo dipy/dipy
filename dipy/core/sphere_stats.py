@@ -9,11 +9,6 @@ from itertools import permutations
 def random_uniform_on_sphere(n=1, coords='xyz'):
     r'''Random unit vectors from a uniform distribution on the sphere. 
 
-    $\phi\sim U[0,2\pi]$, while $z=\cos(\theta)\sim U[-1,1]$.
-
-    For a reference, see 
-    http://mathworld.wolfram.com/SpherePointPicking.html.
-
     Parameters
     -----------
     n : int
@@ -22,6 +17,16 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
         'xyz' for cartesian form
         'radians' for spherical form in rads
         'degrees' for spherical form in degrees
+
+    Notes
+    ------
+    The uniform distribution on the sphere, parameterized by spherical
+    coordinates $(\theta, \phi)$, should verify $\phi\sim U[0,2\pi]$, while 
+    $z=\cos(\theta)\sim U[-1,1]$.
+
+    References
+    -----------
+    .. [1] http://mathworld.wolfram.com/SpherePointPicking.html.
 
     Returns
     --------
