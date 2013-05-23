@@ -4,17 +4,17 @@
 Reconstruction with Constrained Spherical Deconvolution
 =======================================================
 
-This example shows how to use Constrained Spherical Deconvolution 
+This example shows how to use Constrained Spherical Deconvolution (CSD)
 introduced by Tournier et al. [Tournier2007]_.
 
-This method is mainly useful with datasets with gradient directions acquired on 
+This method is mainly useful with datasets with gradient directions acquired on
 a spherical grid.
 
-The basic idea here is that if we could estimate the response function of a 
+The basic idea with this method is that if we could estimate the response function of a
 single fiber then we could deconvolve the measured signal and obtain the underlying
 fiber distribution.
 
-Load data.
+Lets first load the data. We will use a dataset with 10 b0s and 150 non-b0s with b-value 2000.
 """
 
 import numpy as np
@@ -24,10 +24,13 @@ from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
 
-
 """
-Estimate single fiber response function using an ROI at the center of the volume 
-and FA values higher 0.7
+You can verify the b-values of the datasets by looking at the attribute `gtab.bvals`.
+
+In CSD there is an important pre-processing step: the estimation of the fiber response function. In order to
+do this we look for voxel with very anisotropic configurations. For example here we use an ROI (20x20x20) at the center
+of the volume and store the signal values for the voxels with FA values higher than 0.7. Of course, if we haven't
+precalculated FA we need to fit a Tensor model to the datasets. Which is what we do here.
 """
 
 from dipy.reconst.dti import TensorModel
@@ -46,11 +49,11 @@ ci, cj, ck = np.array(data.shape[:3]) / 2
 
 w = 10
 
-data2 = data[ci - w : ci + w, 
-             cj - w : cj + w,
-             ck - w : ck + w]
+roi = data[ci - w: ci + w,
+           cj - w: cj + w,
+           ck - w: ck + w]
 
-tenfit = tenmodel.fit(data2)
+tenfit = tenmodel.fit(roi)
 
 from dipy.reconst.dti import fractional_anisotropy
 
@@ -61,26 +64,41 @@ indices = np.where(FA > 0.7)
 
 lambdas = tenfit.evals[indices][:, :2]
 
-S0s = data2[indices][:, 0]
+"""
+Using `gtab.b0s_mask()` we can find all the S0 volumes (which correspond to b-values equal 0) in the dataset.
+"""
+
+S0s = roi[indices][:, np.nonzero(gtab.b0s_mask)[0]]
+
+"""
+The response function in this example consists of a prolate tensor created 
+by averaging the highest and second highest eigenvalues. We also include the 
+average S0s.
+"""
 
 S0 = np.mean(S0s)
 
-l01 = np.mean(lambdas, axis = 0) 
+l01 = np.mean(lambdas, axis=0)
 
 evals = np.array([l01[0], l01[1], l01[1]])
+response = (evals, S0)
 
 """
-Import ther CSD model and fit a slice of the data.
+Now we are ready to import the CSD model and fit the datasets.
 """
 
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, (evals, S0))
 
+"""
+For illustration purposes we will fit only a slice of the datasets.
+"""
+
 csd_fit = csd_model.fit(data[:, :, 30], mask[:, :, 30])
 
 """
-Visualize the CSD-based ODFs also known as FODFs.
+Show the CSD-based ODFs also known as FODFs (fiber ODFs).
 """
 
 from dipy.data import get_sphere
@@ -92,7 +110,14 @@ csd_odf = csd_fit.odf(sphere)
 from dipy.viz import fvtk
 
 r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(csd_odf[30:60, 40:70, None], sphere))
+
+"""
+Here we visualize only a 10x10 region of the slice.
+"""
+
+fodf_spheres = fvtk.sphere_funcs(csd_odf[40:50, 50:60, None], sphere, scale=1.3, norm=False)
+
+fvtk.add(r, fodf_spheres)
 
 print('Saving illustration as csd_odfs.png')
 fvtk.record(r, n_frames=1, out_path='csd_odfs.png', size=(600, 600))
