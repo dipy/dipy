@@ -254,5 +254,16 @@ def gfa(samples):
     denom = (n-1)*(samples*samples).sum(-1)
     return np.sqrt(numer/denom)
 
+def odf_remove_negative_values(samples):
+    """Removing the negative values (if any) of a function evaluated on the unit sphere"""
+    indices = np.where(samples < 0)
+    samples[indices] = 0
+    return samples
 
+def minmax_normalize(samples):
+    """Min-max normalization of a function evaluated on the unit sphere
 
+       returns (samples - min(samples)) / (max(samples) - min(samples))
+    """
+    samples_minmax = (samples - np.min(samples, -1)[..., None]) / q(np.max(samples, -1) - np.min(samples, -1))[..., None]
+    return samples_minmax
