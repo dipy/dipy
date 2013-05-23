@@ -1,8 +1,8 @@
 import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
-from dipy.reconst.shm import CsaOdfModel, normalize_data
-from dipy.reconst.odf import peaks_from_model
+from dipy.reconst.shm import CsaOdfModel, QballModel, normalize_data
+from dipy.reconst.odf import gfa, odf_remove_negative_values, minmax_normalize
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
@@ -19,48 +19,44 @@ mask_small  = mask[20:50,55:85, 38:40]
 data_small  = data[20:50,55:85, 38:40]
 
 csamodel = CsaOdfModel(gtab, 4, smooth=0.006)
-#csa_fit = csa_model.fit(data)
+csa_fit = csamodel.fit(data_small)
 
 sphere = get_sphere('symmetric724')
-csapeaks = peaks_from_model(model=csamodel,
-                            data=data_small,
-                            sphere=sphere,
-                            relative_peak_threshold=.8,
-                            min_separation_angle=45,
-                            mask=mask_small,
-                            return_odf=False,
-                            normalize_peaks=True)
+csa_odf = csa_fit.odf(sphere)
+gfa_csa = gfa(csa_odf)
 
-GFA = csapeaks.gfa
+odfs = odf_remove_negative_values(csa_odf)
+gfa_csa_wo_zeros = gfa(odfs)
 
-print('GFA.shape (%d, %d, %d)' % GFA.shape)
-nib.save(nib.Nifti1Image(GFA.astype('float32'), affine), 'gfa.nii.gz')    
+csa_mm = minmax_normalize(odfs) 
+gfa_csa_mm = gfa(csa_mm)
 
-
-
-from dipy.data import get_sphere
-sphere = get_sphere('symmetric724')
-
-from dipy.viz import fvtk
-r = fvtk.ren()
-
-odfs = csamodel.fit(data_small[:,:,1:2]).odf(sphere)
-fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
-fvtk.show(r)
-fvtk.clear(r)
-
-indices = np.where(odfs < 0)
-odfs[indices] = 0
-r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
-fvtk.show(r)
+qballmodel = QballModel(gtab, 6, smooth=0.006)
+qball_fit = qballmodel.fit(data_small)
+qball_odf = qball_fit.odf(sphere)
+gfa_qball = gfa(qball_odf)
+gfa_qball_mm = gfa(minmax_normalize(qball_odf))
 
 
-# min-max normalization
-csa_mm = (odfs - np.min(odfs, -1)[..., None]) / (np.max(odfs, -1) - np.min(odfs, -1))[..., None]
-r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
-fvtk.show(r)
-fvtk.clear(r)
+print 'Saving GFAs...'
+nib.save(nib.Nifti1Image(gfa_qball.astype('float32'), affine), 'gfa.nii.gz')    
+nib.save(nib.Nifti1Image(gfa_qball_mm.astype('float32'), affine), 'gfa_mm.nii.gz')    
+nib.save(nib.Nifti1Image(gfa_csa.astype('float32'), affine), 'gfa_csa.nii.gz')    
+nib.save(nib.Nifti1Image(gfa_csa_wo_zeros.astype('float32'), affine), 'gfa_csa_wo_neg.nii.gz')    
+nib.save(nib.Nifti1Image(gfa_csa_mm.astype('float32'), affine), 'gfa_csa_mm.nii.gz')    
+
+
+
+coeff = csa_fit._shm_coef
+print 'Printing min-max of the zeroth order SH coeff of the CSA odf'
+print np.min(coeff[:,:,:,0]),np.max(coeff[:,:,:,0])
+gfa_sh = np.sqrt(1.0 - (csa_fit._shm_coef[:,:,:,0] ** 2 / ( np.sum(np.square(csa_fit._shm_coef), axis=3) ) ) )
+gfa_sh[np.isnan(gfa_sh)] = 0
+nib.save(nib.Nifti1Image(gfa_sh.astype('float32'), affine), 'gfa_sh_csa.nii.gz')    
+
+coeff_qb = qball_fit._shm_coef
+gfa_sh_qb = np.sqrt(1.0 - (coeff_qb[:,:,:,0] ** 2 / ( np.sum(np.square(coeff_qb), axis=3) ) ) )
+gfa_sh_qb[np.isnan(gfa_sh_qb)] = 0
+nib.save(nib.Nifti1Image(gfa_sh_qb.astype('float32'), affine), 'gfa_sh_qball.nii.gz')    
 
 
