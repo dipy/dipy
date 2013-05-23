@@ -265,5 +265,5 @@ def minmax_normalize(samples):
 
        returns (samples - min(samples)) / (max(samples) - min(samples))
     """
-    samples_minmax = (samples - np.min(samples, -1)[..., None]) / q(np.max(samples, -1) - np.min(samples, -1))[..., None]
+    samples_minmax = (samples - np.min(samples, -1)[..., None]) / (np.max(samples, -1) - np.min(samples, -1))[..., None]
     return samples_minmax
