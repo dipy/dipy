@@ -2,7 +2,7 @@ import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel, normalize_data
-from dipy.reconst.odf import peaks_from_model, odf_remove_negative_values, minmax_normalize
+from dipy.reconst.odf import peaks_from_model
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
@@ -49,14 +49,15 @@ fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
 fvtk.show(r)
 fvtk.clear(r)
 
-odfs = odf_remove_negative_values(odfs)
+indices = np.where(odfs < 0)
+odfs[indices] = 0
 r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
 fvtk.show(r)
 
 
 # min-max normalization
-csa_mm = minmax_normalize(odfs) 
+csa_mm = (odfs - np.min(odfs, -1)[..., None]) / (np.max(odfs, -1) - np.min(odfs, -1))[..., None]
 r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
 fvtk.show(r)
