@@ -2,7 +2,7 @@ import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel, normalize_data
-from dipy.reconst.odf import peaks_from_model, odf_remove_negative_values, minmax_normalize
+from dipy.reconst.odf import peaks_from_model, minmax_normalize
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
@@ -34,7 +34,7 @@ csapeaks = peaks_from_model(model=csamodel,
 GFA = csapeaks.gfa
 
 print('GFA.shape (%d, %d, %d)' % GFA.shape)
-nib.save(nib.Nifti1Image(GFA.astype('float32'), affine), 'gfa.nii.gz')    
+nib.save(nib.Nifti1Image(GFA.astype('float32'), affine), 'gfa.nii.gz')
 
 
 
@@ -45,20 +45,19 @@ from dipy.viz import fvtk
 r = fvtk.ren()
 
 odfs = csamodel.fit(data_small[:,:,1:2]).odf(sphere)
-fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
+fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet', norm=False))
 fvtk.show(r)
 fvtk.clear(r)
 
-odfs = odf_remove_negative_values(odfs)
+odfs = odfs.clip(min=0)
 r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
+fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet', norm=False))
 fvtk.show(r)
 
-
 # min-max normalization
-csa_mm = minmax_normalize(odfs) 
+csa_mm = minmax_normalize(odfs)
 r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
+fvtk.add(r, fvtk.sphere_funcs(csa_mm, sphere, colormap='jet', norm=False))
 fvtk.show(r)
 fvtk.clear(r)
 
