@@ -264,7 +264,7 @@ def lazy_index(index):
 class SphHarmModel(OdfModel, Cache):
     """The base class to sub-classed by specific spherical harmonic models of
     diffusion data"""
-    def __init__(self, gtab, sh_order, smooth=0, min_signal=1.,
+    def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
 
