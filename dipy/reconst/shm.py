@@ -31,6 +31,7 @@ from numpy.random import randint
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
+from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
 
@@ -369,6 +370,13 @@ class SphHarmFit(OdfFit):
                                             theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return dot(self._shm_coef, sampling_matrix.T)
+
+    @auto_attr
+    def gfa(self):
+        """ The gfa of the odf, computed from the spherical harmonic
+        coefficients"""
+        coef = self._shm_coef
+        return np.sqrt(1. - (coef[..., 0]**2 / (coef**2).sum(-1)))
 
 
 class CsaOdfModel(SphHarmModel):
