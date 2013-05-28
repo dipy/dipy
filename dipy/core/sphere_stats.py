@@ -7,7 +7,7 @@ import dipy.core.geometry as geometry
 from itertools import permutations
 
 def random_uniform_on_sphere(n=1, coords='xyz'):
-    r'''Random unit vectors from a uniform distribution on the sphere
+    r'''Random unit vectors from a uniform distribution on the sphere. 
 
     Parameters
     -----------
@@ -18,6 +18,16 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
         'radians' for spherical form in rads
         'degrees' for spherical form in degrees
 
+    Notes
+    ------
+    The uniform distribution on the sphere, parameterized by spherical
+    coordinates $(\theta, \phi)$, should verify $\phi\sim U[0,2\pi]$, while 
+    $z=\cos(\theta)\sim U[-1,1]$.
+
+    References
+    -----------
+    .. [1] http://mathworld.wolfram.com/SpherePointPicking.html.
+
     Returns
     --------
     X : array, shape (n,3) if coords='xyz' or shape (n,2) otherwise
@@ -26,26 +36,24 @@ def random_uniform_on_sphere(n=1, coords='xyz'):
     Examples
     ---------
     >>> from dipy.core.sphere_stats import random_uniform_on_sphere
-    >>> X=random_uniform_on_sphere(4,'radians')
+    >>> X = random_uniform_on_sphere(4, 'radians')
     >>> X.shape
     (4, 2)
-    >>> X=random_uniform_on_sphere(4,'xyz')
+    >>> X = random_uniform_on_sphere(4, 'xyz')
     >>> X.shape
     (4, 3)
     '''
-    u = np.random.normal(0,1,(n,3))
-    u = u/np.sqrt(np.sum(u**2,axis=1)).reshape(n,1)
-    if coords=='xyz':
-        return u
-    else:
-        angles = np.zeros((n,2))
-        for (i,xyz) in enumerate(u):
-            angles[i,:]=geometry.cart2sphere(*xyz)[1:]
-        if coords=='radians':
-            return angles
-        if coords=='degrees':
-            return (180./np.pi)*angles
-
+    z = np.random.uniform(-1, 1, n)
+    theta = np.arccos(z)
+    phi = np.random.uniform(0, 2*np.pi, n)
+    if coords == 'xyz':
+        r = np.ones(n)
+        return np.vstack(geometry.sphere2cart(r, theta, phi)).T
+    angles = np.vstack((theta, phi)).T
+    if coords == 'radians':
+        return angles
+    if coords == 'degrees':
+        return np.rad2deg(angles)
 
 def eigenstats(points, alpha=0.05):
     r'''Principal direction and confidence ellipse
