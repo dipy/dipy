@@ -31,6 +31,7 @@ from numpy.random import randint
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.special import sph_harm, lpn
 from dipy.core.geometry import cart2sphere
+from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
 
@@ -264,7 +265,7 @@ def lazy_index(index):
 class SphHarmModel(OdfModel, Cache):
     """The base class to sub-classed by specific spherical harmonic models of
     diffusion data"""
-    def __init__(self, gtab, sh_order, smooth=0, min_signal=1.,
+    def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
 
@@ -370,6 +371,13 @@ class SphHarmFit(OdfFit):
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return dot(self._shm_coef, sampling_matrix.T)
 
+    @auto_attr
+    def gfa(self):
+        """ The gfa of the odf, computed from the spherical harmonic
+        coefficients"""
+        coef = self._shm_coef
+        return np.sqrt(1. - (coef[..., 0]**2 / (coef**2).sum(-1)))
+
 
 class CsaOdfModel(SphHarmModel):
     """Implementation of Constant Solid Angle reconstruction method.
@@ -388,14 +396,17 @@ class CsaOdfModel(SphHarmModel):
         invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
-        self._fit_matrix = F * L * invB
+        self._fit_matrix =  (F * L) / (8 * np.pi) * invB
+        self._const = .5 / np.sqrt(np.pi)
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
         data = data[..., self._where_dwi]
         data = data.clip(self.min, self.max)
         loglog_data = np.log(-np.log(data))
-        return dot(loglog_data, self._fit_matrix.T)
+        sh_coef = dot(loglog_data, self._fit_matrix.T)
+        sh_coef[..., 0] = self._const
+        return sh_coef
 
 
 class OpdtModel(SphHarmModel):
