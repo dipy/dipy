@@ -112,7 +112,7 @@ tenmodel = dti.TensorModel(gtab)
 Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
-
+print('Tensor fitting computation')
 tenfit = tenmodel.fit(data, mask)
 
 """
@@ -139,8 +139,8 @@ may decrease in locations in which there is fanning of white matter fibers, or
 where more than one population of white matter fibers crosses.
 
 """
-
-from dipy.reconst.dti import fractional_anisotropy
+print('Computing anisotropy measures')
+from dipy.reconst.dti import fractional_anisotropy, color_fa, lower_triangular
 
 FA = fractional_anisotropy(tenfit.evals)
 
@@ -162,12 +162,24 @@ nib.save(fa_img, 'tensor_fa.nii.gz')
 
 """
 You can now see the result with any nifti viewer or check it slice by slice
-using matplotlib_'s imshow. In the same way you can save the eigen values the
+using matplotlib_'s imshow. In the same way you can save the eigen values, the
 eigen vectors or any other properties of the Tensor.
 """
 
 evecs_img = nib.Nifti1Image(tenfit.evecs, img.get_affine())
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
+
+"""
+Now, lets get the tensor coefficients D and format them for them 
+as D = [dxx, dxy, dxz, dyy, dyz, dzz] for visualisation in the Fibernavigator 
+(http://scilus.github.io/fibernavigator/). 
+"""
+
+tensor_vals = lower_triangular(tenfit.quadratic_form)
+correct_order = [0,1,3,2,4,5]
+tensor_vals_reordered = tensor_vals[:,:,:,correct_order]
+nib.save(nib.Nifti1Image(tensor_vals_reordered.astype(np.float32), img.get_affine()), 'tensors_coefs.nii')
+
 
 """
 Other tensor statistics can be calculated from the `tenfit` object. For example,
@@ -191,12 +203,21 @@ MD2 = tenfit.md
 """
 Obviously, the quantities are identical.
 
-Finally lets try to visualize the orientation distribution functions of a small
-rectangular area around the middle of our datasets.
+We can also compute the colored FA or RGB-map [Pajevic1999]. First, we make sure 
+that the FA is scaled between 0 and 1, we compute the RGB map and save it.
 """
 
-i,j,k,w = np.array(data.shape) / 2
-data_small  = data[i-5:i+5, j-5:j+5, k-2:k+2]
+FA = np.clip(FA, 0, 1)
+RGB = color_fa(FA, tenfit.evecs)
+nib.save(RGB, 'tensor_rgb.nii.gz')
+
+"""
+Finally lets try to visualize the orientation distribution functions of a small
+rectangular in an axial slice of the splenium of the corpus callosum (CC).
+"""
+
+print('Computing ODFs in the splenium of the CC')
+data_small  = data[20:50,55:85, 38:39]
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
@@ -204,7 +225,7 @@ from dipy.viz import fvtk
 r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(tenmodel.fit(data_small).odf(sphere),
 							  sphere, colormap=None))
-
+fvtk.show(r)
 print('Saving illustration as tensor_odfs.png')
 fvtk.record(r, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
 
@@ -229,6 +250,11 @@ other examples.
 
 .. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
                 spectroscopy and imaging.
+
+.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent 
+                 the orientation of anisotropic tissues from diffusion tensor 
+                 data: application to white matter fiber tract mapping in 
+                 the human brain.
 
 .. include:: ../links_names.inc
 
