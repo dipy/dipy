@@ -15,7 +15,7 @@ from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
 
 
-from dipy.reconst.shm import (real_sph_harm, real_sph_harm_mrtrix,
+from dipy.reconst.shm import (real_sph_harm, real_sph_harm_dipy, real_sph_harm_mrtrix,
                               real_sph_harm_fibernav, sph_harm_ind_list,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
@@ -79,6 +79,12 @@ def test_real_sph_harm():
     dd = np.ones((1, 1, 1, 6))
     assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 
+
+def test_real_sph_harm_dipy():
+    sphere = hemi_icosahedron.subdivide(2)
+    basis, m, n = real_sph_harm_dipy(8, sphere.theta, sphere.phi)
+    basis2 = real_sph_harm(m, n, sphere.theta[:, None], sphere.phi[:, None])
+    assert_array_equal(basis, basis2)
 
 def test_real_sph_harm_mrtrix():
     coef, expected, sphere = mrtrix_spherical_functions()
@@ -354,3 +360,4 @@ def test_sf_to_sh():
 if __name__ == "__main__":
     import nose
     nose.runmodule()
+
