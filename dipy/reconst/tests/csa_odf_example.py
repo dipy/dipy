@@ -2,7 +2,7 @@ import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel, normalize_data
-from dipy.reconst.odf import peaks_from_model, gfa
+from dipy.reconst.odf import peaks_from_model, gfa, minmax_normalize
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
@@ -26,6 +26,13 @@ csapeaks = peaks_from_model(model=csamodel,
                             return_odf=False,
                             normalize_peaks=True)
 
+GFA = csapeaks.gfa
+
+print('GFA.shape (%d, %d, %d)' % GFA.shape)
+nib.save(nib.Nifti1Image(GFA.astype('float32'), affine), 'gfa.nii.gz')
+
+from dipy.data import get_sphere
+sphere = get_sphere('symmetric724')
 
 csa_fit = csamodel.fit(data_small)
 odfs = csa_fit.odf(sphere)
@@ -34,6 +41,14 @@ r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(odfs, sphere, colormap='jet'))
 fvtk.show(r)
 fvtk.clear(r)
+
+# min-max normalization
+csa_mm = minmax_normalize(odfs)
+r = fvtk.ren()
+fvtk.add(r, fvtk.sphere_funcs(csa_mm, sphere, colormap='jet', norm=False))
+fvtk.show(r)
+fvtk.clear(r)
+
 
 # Three ways to get the GFA
 GFA = csapeaks.gfa
@@ -52,5 +67,7 @@ GFA_sh = csa_fit.gfa
 csa_sh_coeffs = csa_fit._shm_coef
 nib.save(nib.Nifti1Image(GFA_sh.astype('float32'), affine), 'gfa_fullbrain.nii.gz')
 nib.save(nib.Nifti1Image(csa_sh_coeffs.astype('float32'), affine), 'csa_sh_fullbrain.nii.gz')    
+
+
 
 

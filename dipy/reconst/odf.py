@@ -254,16 +254,35 @@ def gfa(samples):
     denom = (n-1)*(samples*samples).sum(-1)
     return np.sqrt(numer/denom)
 
-def odf_remove_negative_values(samples):
-    """Removing the negative values (if any) of a function evaluated on the unit sphere"""
-    indices = np.where(samples < 0)
-    samples[indices] = 0
-    return samples
 
-def minmax_normalize(samples):
+def minmax_normalize(samples, out=None):
     """Min-max normalization of a function evaluated on the unit sphere
 
-       returns (samples - min(samples)) / (max(samples) - min(samples))
+    Normalizes samples to ``(samples - min(samples)) / (max(samples) -
+    min(samples))`` for each unit sphere.
+
+    Parameters
+    ----------
+    samples : ndarray (..., N)
+        N samples on a unit sphere for each point, stored along the last axis
+        of the array.
+    out : ndrray (..., N), optional
+        An array to store the normalized samples.
+
+    Returns
+    -------
+    out : ndarray, (..., N)
+        Normalized samples.
+
     """
-    samples_minmax = (samples - np.min(samples, -1)[..., None]) / (np.max(samples, -1) - np.min(samples, -1))[..., None]
-    return samples_minmax
+    if out is None:
+        dtype = np.promote_types('float32', samples.dtype)
+        out = np.array(samples, dtype=dtype, copy=True)
+    else:
+        out[:] = samples
+
+    sample_mins = np.min(samples, -1)[..., None]
+    sample_maxes = np.max(samples, -1)[..., None]
+    out -= sample_mins
+    out /= (sample_maxes - sample_mins)
+    return out

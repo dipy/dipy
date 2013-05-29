@@ -2,7 +2,7 @@ import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel, QballModel, normalize_data
-from dipy.reconst.odf import gfa, odf_remove_negative_values, minmax_normalize
+from dipy.reconst.odf import gfa, minmax_normalize
 
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
@@ -25,7 +25,7 @@ sphere = get_sphere('symmetric724')
 csa_odf = csa_fit.odf(sphere)
 gfa_csa = gfa(csa_odf)
 
-odfs = odf_remove_negative_values(csa_odf)
+odfs = csa_odf.clip(0)
 gfa_csa_wo_zeros = gfa(odfs)
 
 csa_mm = minmax_normalize(odfs) 
