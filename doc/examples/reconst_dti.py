@@ -112,6 +112,7 @@ tenmodel = dti.TensorModel(gtab)
 Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
+
 print('Tensor fitting computation')
 tenfit = tenmodel.fit(data, mask)
 
@@ -139,7 +140,8 @@ may decrease in locations in which there is fanning of white matter fibers, or
 where more than one population of white matter fibers crosses.
 
 """
-print('Computing anisotropy measures')
+
+print('Computing anisotropy measures (FA, MD, RGB)')
 from dipy.reconst.dti import fractional_anisotropy, color_fa, lower_triangular
 
 FA = fractional_anisotropy(tenfit.evals)
@@ -155,9 +157,10 @@ FA[np.isnan(FA)] = 0
 """
 Saving the FA images is very easy using nibabel. We need the FA volume and the
 affine matrix which transform the image's coordinates to the world coordinates.
+Here, we choose to save the FA in float32.
 """
 
-fa_img = nib.Nifti1Image(FA, img.get_affine())
+fa_img = nib.Nifti1Image(FA.astype(np.float32), img.get_affine())
 nib.save(fa_img, 'tensor_fa.nii.gz')
 
 """
@@ -166,19 +169,20 @@ using matplotlib_'s imshow. In the same way you can save the eigen values, the
 eigen vectors or any other properties of the Tensor.
 """
 
-evecs_img = nib.Nifti1Image(tenfit.evecs, img.get_affine())
+evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), img.get_affine())
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
 Now, lets get the tensor coefficients D and format them for them 
 as D = [dxx, dxy, dxz, dyy, dyz, dzz] for visualisation in the Fibernavigator 
-(http://scilus.github.io/fibernavigator/). 
+(https://github.com/scilus/fibernavigator). 
 """
 
 tensor_vals = lower_triangular(tenfit.quadratic_form)
 correct_order = [0,1,3,2,4,5]
 tensor_vals_reordered = tensor_vals[:,:,:,correct_order]
-nib.save(nib.Nifti1Image(tensor_vals_reordered.astype(np.float32), img.get_affine()), 'tensors_coefs.nii')
+nib.save(nib.Nifti1Image(tensor_vals_reordered.astype(np.float32), img.get_affine()), 
+         'tensors_coefs.nii.gz')
 
 
 """
@@ -192,6 +196,7 @@ eigen-values of the TensorFit class instance:
 """
 
 MD1 = dti.mean_diffusivity(tenfit.evals)
+nib.save(nib.Nifti1Image(MD1.astype(np.float32), img.get_affine()), 'tensors_md.nii.gz')
 
 """
 The other is to call the TensorFit class method: 
@@ -203,20 +208,20 @@ MD2 = tenfit.md
 """
 Obviously, the quantities are identical.
 
-We can also compute the colored FA or RGB-map [Pajevic1999]. First, we make sure 
+We can also compute the colored FA or RGB-map [Pajevic1999]_. First, we make sure 
 that the FA is scaled between 0 and 1, we compute the RGB map and save it.
 """
 
 FA = np.clip(FA, 0, 1)
 RGB = color_fa(FA, tenfit.evecs)
-nib.save(RGB, 'tensor_rgb.nii.gz')
+nib.save(nib.Nifti1Image(np.array(255 * RGB, 'uint8'), img.get_affine()), 'tensor_rgb.nii.gz')
 
 """
 Finally lets try to visualize the orientation distribution functions of a small
 rectangular in an axial slice of the splenium of the corpus callosum (CC).
 """
 
-print('Computing ODFs in the splenium of the CC')
+print('Computing tensor ODFs in a part of the splenium of the CC')
 data_small  = data[20:50,55:85, 38:39]
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
@@ -225,7 +230,7 @@ from dipy.viz import fvtk
 r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(tenmodel.fit(data_small).odf(sphere),
 							  sphere, colormap=None))
-fvtk.show(r)
+#fvtk.show(r)
 print('Saving illustration as tensor_odfs.png')
 fvtk.record(r, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
 
