@@ -80,6 +80,49 @@ def real_sph_harm(m, n, theta, phi):
     real_sh *= np.where(m == 0, 1., np.sqrt(2))
     return real_sh
 
+def real_sph_harm_dipy(sh_order, theta, phi):
+    """
+    Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
+    defined to be:
+
+        Real($Y^m_n$) * sqrt(2) if m > 0
+        $Y^m_n$                 if m == 0
+        Imag($Y^m_n$) * sqrt(2) if m < 0
+
+    This may take scalar or array arguments. The inputs will be broadcasted
+    against each other.
+
+    Parameters
+    ----------
+    sh_order : int
+        The maximum degree or the spherical harmonic basis.
+    theta : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+    phi : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    Returns
+    --------
+    y_mn : real float
+        The real harmonic $Y^m_n$ sampled at `theta` and `phi`.
+    m : array
+        The order of the harmonics.
+    n : array
+        The degree of the harmonics.
+
+    See Also
+    --------
+    scipy.special.sph_harm
+    """
+    m, n = sph_harm_ind_list(sh_order)
+    phi = np.reshape(phi, [-1, 1])
+    theta = np.reshape(theta, [-1, 1])
+
+    sh = sph_harm(np.abs(m), n, phi, theta)
+    real_sh = np.where(m > 0, sh.imag, sh.real)
+    real_sh *= np.where(m == 0, 1., np.sqrt(2))
+    return real_sh, m, n
+
 
 def real_sph_harm_mrtrix(sh_order, theta, phi):
     """
@@ -168,7 +211,7 @@ def real_sph_harm_fibernav(sh_order, theta, phi):
     return real_sh, m, n
 
 
-sph_harm_lookup = {None: real_sph_harm_fibernav,
+sph_harm_lookup = {None: real_sph_harm_dipy,
                    "mrtrix": real_sph_harm_mrtrix,
                    "fibernav": real_sph_harm_fibernav}
 
