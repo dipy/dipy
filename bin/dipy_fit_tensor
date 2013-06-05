@@ -4,7 +4,7 @@ from __future__ import division, print_function, absolute_import
 import os
 import numpy as np
 import nibabel as nib
-from subprocess import call
+from subprocess import check_call, CalledProcessError
 from optparse import OptionParser
 from dipy.core.gradients import gradient_table
 from dipy.reconst.dti import TensorModel
@@ -41,9 +41,12 @@ if len(args) != 1:
     parser.exit(2)
 dwi_file = args[0]
 
+gzip_exts = set([".gz"])
 if opts.root is None:
     pth, file = os.path.split(dwi_file)
-    root = file.split(os.path.extsep, 1)[0]
+    root, ext = os.path.splitext(dwi_file)
+    if ext.lower() in gzip_exts:
+        root, _ = os.path.splitext(root)
     root = os.path.join(pth, root)
 else:
     root = opts.root
@@ -71,13 +74,15 @@ if mask == 'BET':
     env = os.environ
     env['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
     try:
-        call(['bet2', root+'_t2di', root, '-n',
-              '-f', opts.threshold, '-m'], env=env)
-        mask = open(mask_file, 'rb')
-    except (OSError, IOError):
-        mask = 'none'
+        check_call(['bet2', root+'_t2di', root, '-n',
+                    '-f', opts.threshold, '-m'], env=env)
+        mask = mask_file
+    except (OSError, CalledProcessError):
+        mask = None
+elif mask.lower() == 'none':
+    mask = None
 
-if mask.lower() != 'none':
+if mask is not None:
     mask = nib.load(mask).get_data() > 0
 else:
     mask = np.ones(data.shape[:-1], dtype=bool)
