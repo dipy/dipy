@@ -46,8 +46,7 @@ if opts.root is None:
     pth, file = os.path.split(dwi_file)
     root, ext = os.path.splitext(dwi_file)
     if ext.lower() in gzip_exts:
-        root, ext2 = os.path.splitext(root)
-        ext = ext + ext2
+        root, _ = os.path.splitext(root)
     root = os.path.join(pth, root)
 else:
     root = opts.root
