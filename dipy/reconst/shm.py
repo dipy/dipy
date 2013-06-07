@@ -389,6 +389,7 @@ class CsaOdfModel(SphHarmModel):
     """
     min = .001
     max = .999
+    _n0_const = .5 / np.sqrt(np.pi)
 
     def _set_fit_matrix(self, B, L, F, smooth):
         """The fit matrix, is used by fit_coefficients to return the
@@ -397,7 +398,6 @@ class CsaOdfModel(SphHarmModel):
         L = L[:, None]
         F = F[:, None]
         self._fit_matrix =  (F * L) / (8 * np.pi) * invB
-        self._const = .5 / np.sqrt(np.pi)
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
@@ -405,7 +405,7 @@ class CsaOdfModel(SphHarmModel):
         data = data.clip(self.min, self.max)
         loglog_data = np.log(-np.log(data))
         sh_coef = dot(loglog_data, self._fit_matrix.T)
-        sh_coef[..., 0] = self._const
+        sh_coef[..., 0] = self._n0_const
         return sh_coef
 
 
