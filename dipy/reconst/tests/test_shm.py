@@ -16,8 +16,8 @@ from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
 
 
-from dipy.reconst.shm import (real_sph_harm, real_sph_harm_mrtrix,
-                              real_sph_harm_fibernav, sph_harm_ind_list,
+from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
+                              real_sym_sh_mrtrix, sph_harm_ind_list,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
@@ -81,24 +81,24 @@ def test_real_sph_harm():
     assert_equal(rsh(aa, bb, cc, dd).shape, (3, 4, 5, 6))
 
 
-def test_real_sph_harm_mrtrix():
+def test_real_sym_sh_mrtrix():
     coef, expected, sphere = mrtrix_spherical_functions()
-    basis, m, n = real_sph_harm_mrtrix(8, sphere.theta, sphere.phi)
+    basis, m, n = real_sym_sh_mrtrix(8, sphere.theta, sphere.phi)
     func = np.dot(coef, basis.T)
     assert_array_almost_equal(func, expected, 4)
 
 
-def test_real_sph_harm_fibernav():
+def test_real_sym_sh_basis():
     # This test should do for now
     # The mrtrix basis should be the same as re-ordering and re-scaling the
     # fibernav basis
     new_order = [0, 5, 4, 3, 2, 1, 14, 13, 12, 11, 10, 9, 8, 7, 6]
     sphere = hemi_icosahedron.subdivide(2)
-    basis, m, n = real_sph_harm_mrtrix(4, sphere.theta, sphere.phi)
+    basis, m, n = real_sym_sh_mrtrix(4, sphere.theta, sphere.phi)
     expected = basis[:, new_order]
     expected *= np.where(m == 0, 1., np.sqrt(2))
 
-    fibernav_basis, m, n = real_sph_harm_fibernav(4, sphere.theta, sphere.phi)
+    fibernav_basis, m, n = real_sym_sh_basis(4, sphere.theta, sphere.phi)
     assert_array_almost_equal(fibernav_basis, expected)
 
 
