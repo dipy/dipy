@@ -15,18 +15,18 @@ The diffusion tensor models the diffusion signal as:
 
 .. math::
 
-    \frac{S(\theta, b)}{S_0} = e^{-b\theta^t Q \theta}
+    \frac{S(\mathbf{g}, b)}{S_0} = e^{-b\mathbf{g}^T \mathbf{D} \mathbf{g}}
 
-Where $\theta$ is a unit vector in 3 space indicating the direction of
+Where $\mathbf{g}$ is a unit vector in 3 space indicating the direction of
 measurement and b are the parameters of measurement, such as the strength and
-duration of diffusion-weighting gradient. $S(\theta, b)$ is the
+duration of diffusion-weighting gradient. $S(\mathbf{g}, b)$ is the
 diffusion-weighted signal measured and $S_0$ is the signal conducted in a
-measurement with no diffusion weighting. Q is a positive-definite quadratic
+measurement with no diffusion weighting. \mathbf{D} is a positive-definite quadratic
 form, which contains six free parameters to be fit. These six parameters are:
 
 .. math::
 
-   Q = \begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\
+   \mathbf{D} = \begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\
                        D_{yx} & D_{yy} & D_{yz} \\
                        D_{zx} & D_{zy} & D_{zz} \\ \end{pmatrix}
 
