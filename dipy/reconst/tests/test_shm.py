@@ -10,6 +10,7 @@ from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
 from ..odf import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
+from dipy.reconst.odf import gfa
 from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
@@ -204,6 +205,9 @@ class TestQballModel(object):
         # Check the directions == expected or -expected
         cos_similarity = (directions * expected).sum(-1)
         assert_array_almost_equal(abs(cos_similarity), np.ones(n))
+
+        # Check fit gfa
+        assert_array_almost_equal(fit.gfa, gfa(odf), 2)
 
         # Test normalize data
         model = self.model(gtab, sh_order=4, min_signal=1e-5,
