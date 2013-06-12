@@ -300,6 +300,18 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
         Voxel size for the mask. `mask` should cover the same FOV as data, but
         it can have a different voxel size. Same as the data by default.
 
+    Notes
+    -----
+    The tracker is based on a method described in [1]_ and [2]_ as FOD sampling.
+
+    References
+    ----------
+    .. [1] Jeurissen, B., Leemans, A., Jones, D. K., Tournier, J.-D., & Sijbers,
+           J. (2011). Probabilistic fiber tracking using the residual bootstrap
+           with constrained spherical deconvolution. Human Brain Mapping, 32(3),
+           461–479. doi:10.1002/hbm.21032
+    .. [2] http://cds.ismrm.org/ismrm-2005/Files/01343.pdf
+
     """
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
                  seeds, sphere, max_cross=None, maxlen=500,
