@@ -302,7 +302,8 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
 
     Notes
     -----
-    The tracker is based on a method described in [1]_ and [2]_ as FOD sampling.
+    The tracker is based on a method described in [1]_ and [2]_ as fiber
+    orientation distribution (FOD) sampling.
 
     References
     ----------
@@ -310,7 +311,9 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
            J. (2011). Probabilistic fiber tracking using the residual bootstrap
            with constrained spherical deconvolution. Human Brain Mapping, 32(3),
            461–479. doi:10.1002/hbm.21032
-    .. [2] http://cds.ismrm.org/ismrm-2005/Files/01343.pdf
+    .. [2] J-D. Tournier, F. Calamante, D. G. Gadian, A. Connelly (2005).
+           Probabilistic fibre tracking through regions containing crossing
+           fibres. http://cds.ismrm.org/ismrm-2005/Files/01343.pdf
 
     """
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
