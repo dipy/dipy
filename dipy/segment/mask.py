@@ -5,8 +5,8 @@ from scipy.ndimage import binary_opening, label
 def hist_mask(mean_volume, reference_volume=None, m=0.2, M=0.9,
               cc=True, opening=2, exclude_zeros=False):
     """
-    Compute a mask file from dMRI data. Useful for brain extraction
-    or foreground extraction.
+    Compute a mask file from dMRI or other EPI data. Useful for brain 
+    extraction or any foreground extraction in 3D volumes.
 
     Compute and write the mask of an image based on the grey level
     
@@ -37,8 +37,20 @@ def hist_mask(mean_volume, reference_volume=None, m=0.2, M=0.9,
     mask : 3D boolean ndarray
         The brain mask
 
+    Example
+    -------
+    >>> from scipy.ndimage import generate_binary_structure, binary_dilation
+    >>> from dipy.segment.mask import hist_mask
+    >>> vol = np.zeros((30, 30, 30))
+    >>> vol[15, 15, 15] = 1
+    >>> struct = generate_binary_structure(3, 1)
+    >>> voln = binary_dilation(vol, structure=struct, iterations=4).astype('f4')
+    >>> initial = np.sum(voln > 0)
+    >>> voln = 5 * voln + np.random.random(voln.shape)
+    >>> mask = hist_mask(voln, m=0.9, M=.99)
+
     Notes
-    ------
+    -----
     This is based on an heuristic proposed by T.Nichols:
 
     Find the least dense point of the histogram, between fractions
