@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """Implemention of various Tractography methods
 
 these tools are meant to be paired with diffusion reconstruction methods from
