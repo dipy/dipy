@@ -45,7 +45,6 @@ def hist_mask(mean_volume, reference_volume=None, m=0.2, M=0.9,
     >>> vol[15, 15, 15] = 1
     >>> struct = generate_binary_structure(3, 1)
     >>> voln = binary_dilation(vol, structure=struct, iterations=4).astype('f4')
-    >>> initial = np.sum(voln > 0)
     >>> voln = 5 * voln + np.random.random(voln.shape)
     >>> mask = hist_mask(voln, m=0.9, M=.99)
 
