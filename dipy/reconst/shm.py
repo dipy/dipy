@@ -275,10 +275,20 @@ class SphHarmModel(OdfModel, Cache):
             Diffusion gradients used to acquire data
         sh_order : even int >= 0
             the spherical harmonic order of the model
-        smoothness : float between 0 and 1
+        smooth : float between 0 and 1, optional
             The regularization parameter of the model
-        assume_normed : bool
-            If True, data will not be normalized before fitting to the model
+        min_signal : float, > 0, optional
+            During fitting, all signal values less than `min_signal` are
+            clipped to `min_signal`. This is done primarily to avoid values
+            less than or equal to zero when taking logs.
+        assume_normed : bool, optional
+            If True, clipping and normalization of the data with respect to the
+            mean B0 signal are skipped during mode fitting. This is an advanced
+            feature and should be used with care.
+
+        See Also
+        --------
+        normalize_data
 
         """
         m, n = sph_harm_ind_list(sh_order)
