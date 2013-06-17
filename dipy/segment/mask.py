@@ -64,10 +64,10 @@ def hist_mask(mean_volume, reference_volume=None, m=0.2, M=0.9,
     limiteinf = np.floor(m * len(sorted_input))
     limitesup = np.floor(M * len(sorted_input))
 
-    delta = np.diff(np.percentile(sorted_input, [m, M]))
+    #delta = np.diff(np.percentile(sorted_input, [m, M]))
     #the line above is the same as 
-    #delta = sorted_input[limiteinf + 1:limitesup + 1] \
-    #        - sorted_input[limiteinf:limitesup]
+    delta = sorted_input[limiteinf + 1:limitesup + 1] \
+            - sorted_input[limiteinf:limitesup]
 
     ia = delta.argmax()
     threshold = 0.5 * (sorted_input[ia + limiteinf]
