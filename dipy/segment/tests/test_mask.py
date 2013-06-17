@@ -20,5 +20,7 @@ def test_mask():
     # imshow(mask[:,:,15])
     # show()
 
+
 if __name__ == '__main__':
     run_module_suite()
+    
