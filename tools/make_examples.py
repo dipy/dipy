@@ -1,11 +1,11 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 """Run the py->rst conversion and run all examples.
 
 Steps are:
     analyze example index file for example py filenames
     check for any filenames in example directory not included
     do py to rst conversion, writing into build directory
-    run 
+    run
 """
 #-----------------------------------------------------------------------------
 # Library imports
