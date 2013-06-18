@@ -13,8 +13,7 @@ from dipy.reconst.dti import (axial_diffusivity, color_fa,
                               fractional_anisotropy, from_lower_triangular,
                               lower_triangular, mean_diffusivity,
                               radial_diffusivity, TensorModel, trace,
-                              tensor_linearity, tensor_planarity,
-                              tensor_sphericity)
+                              linearity, planarity, sphericity)
 
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels, get_sphere
@@ -29,8 +28,8 @@ def test_tensor_algebra():
     Test that the computation of tensor determinant and norm is correct
     """
     test_arr = np.random.rand(10, 3, 3)
-    t_det = dti.tensor_determinant(test_arr)
-    t_norm = dti.tensor_norm(test_arr)
+    t_det = dti.determinant(test_arr)
+    t_norm = dti.norm(test_arr)
     for i, x in enumerate(test_arr):
         assert_almost_equal(np.linalg.det(x), t_det[i])
         assert_almost_equal(np.linalg.norm(x), t_norm[i])
@@ -152,17 +151,17 @@ def test_diffusivities():
     Trace = trace(dmfit.evals)
     rd = radial_diffusivity(dmfit.evals)
     ad = axial_diffusivity(dmfit.evals)
-    linearity = tensor_linearity(dmfit.evals)
-    planarity = tensor_planarity(dmfit.evals)
-    sphericity = tensor_sphericity(dmfit.evals)
+    lin = linearity(dmfit.evals)
+    plan = planarity(dmfit.evals)
+    spher = sphericity(dmfit.evals)
     
     assert_almost_equal(md, (0.0015 + 0.0003 + 0.0001) / 3)
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
     assert_almost_equal(rd, (0.0003 + 0.0001) / 2)
-    assert_almost_equal(linearity, (0.0015 - 0.0003)/Trace)
-    assert_almost_equal(planarity, 2 * (0.0003 - 0.0001)/Trace)
-    assert_almost_equal(sphericity, (3 * 0.0001)/Trace)
+    assert_almost_equal(lin, (0.0015 - 0.0003)/Trace)
+    assert_almost_equal(plan, 2 * (0.0003 - 0.0001)/Trace)
+    assert_almost_equal(spher, (3 * 0.0001)/Trace)
 
 
 def test_color_fa():
@@ -269,9 +268,9 @@ def test_WLS_and_LS_fit():
     assert_array_almost_equal(tensor_est.quadratic_form, tensor)
     assert_almost_equal(tensor_est.md, md)
     assert_array_almost_equal(tensor_est.lower_triangular(b0), D)
-    assert_array_almost_equal(tensor_est.linearity, tensor_linearity(evals))
-    assert_array_almost_equal(tensor_est.planarity, tensor_planarity(evals))
-    assert_array_almost_equal(tensor_est.sphericity, tensor_sphericity(evals))
+    assert_array_almost_equal(tensor_est.linearity, linearity(evals))
+    assert_array_almost_equal(tensor_est.planarity, planarity(evals))
+    assert_array_almost_equal(tensor_est.sphericity, sphericity(evals))
 
 
 
