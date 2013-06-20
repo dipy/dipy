@@ -1,5 +1,4 @@
 """
-
 =======================================================
 Reconstruction with Constrained Spherical Deconvolution
 =======================================================
@@ -95,7 +94,9 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, (evals, S0))
 For illustration purposes we will fit only a slice of the datasets.
 """
 
-csd_fit = csd_model.fit(data[:, :, 30], mask[:, :, 30])
+data_small = data[20:50, 55:85, 38:39]
+
+csd_fit = csd_model.fit(data_small)
 
 """
 Show the CSD-based ODFs also known as FODFs (fiber ODFs).
@@ -112,10 +113,10 @@ from dipy.viz import fvtk
 r = fvtk.ren()
 
 """
-Here we visualize only a 10x10 region of the slice.
+Here we visualize only a 30x30 region.
 """
 
-fodf_spheres = fvtk.sphere_funcs(csd_odf[40:50, 50:60, None], sphere, scale=1.3, norm=False)
+fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
 
 fvtk.add(r, fodf_spheres)
 
