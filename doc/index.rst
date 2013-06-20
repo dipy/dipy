@@ -32,7 +32,7 @@ Announcements
 - **Dipy was used at the dMRI course at the CREATE-MIA summer school, 5-7 June, McGill, 2013.
 - **Dipy 0.6.0 Released!**, 30 March, 2013.
 - **Dipy 3rd Sprint**, Berkeley, CA, 8-18 April, 2013.
-- **ISBI HARDI challenge 2013 chooses Dipy**, February, 2013.
+- **IEEE ISBI HARDI challenge 2013 chooses Dipy**, February, 2013.
 
 
 ***************
