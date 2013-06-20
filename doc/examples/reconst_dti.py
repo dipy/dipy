@@ -173,8 +173,8 @@ evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), img.get_affine())
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
-Now, lets get the tensor coefficients D and format them for them 
-as D = [dxx, dxy, dxz, dyy, dyz, dzz] for visualisation in the Fibernavigator 
+Now, lets get the tensor coefficients D and format them as 
+D = [dxx, dxy, dxz, dyy, dyz, dzz] for visualisation in the Fibernavigator 
 (https://github.com/scilus/fibernavigator). 
 """
 
