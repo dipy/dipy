@@ -19,6 +19,7 @@ b0_mask_img = nib.Nifti1Image(b0_mask.astype(np.float32), img.get_affine())
 nib.save(b0_mask_img, 'b0_mask.nii.gz')
 
 print('Computing brain mask & crop data')
+# for dwi from Siemens 1.5T, 4, 4, is best.
 dwi_mask, mask2 = brainextract_filter(data)
 dwi_mask_img = nib.Nifti1Image(dwi_mask.astype(np.float32), img.get_affine())
 nib.save(dwi_mask_img, 'dwi_mask_crop.nii.gz')
@@ -31,6 +32,7 @@ from dipy.segment.mask import hist_mask
 epi_mask = hist_mask(mean_volume, m=0.2, M=.9, opening=2)
 epi_mask_img = nib.Nifti1Image(epi_mask.astype(np.float32), img.get_affine())
 nib.save(epi_mask_img, 'epi_mask.nii.gz')
+
 
 
 
