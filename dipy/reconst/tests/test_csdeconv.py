@@ -1,10 +1,6 @@
 import warnings
 import numpy as np
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           assert_array_equal,
-                           run_module_suite)
-
+from numpy.testing import (assert_equal, run_module_suite)
 from dipy.data import get_sphere, get_data
 from dipy.sims.voxel import (multi_tensor,
                              multi_tensor_odf,
@@ -47,6 +43,8 @@ def test_csdeconv():
 
     csd_fit = csd.fit(S)
 
+    assert_equal(csd_fit.shm_coeff[0] > 0, True)
+
     fodf = csd_fit.odf(sphere)
 
     directions, _, _ = peak_directions(odf_gt, sphere)
@@ -60,12 +58,12 @@ def test_csdeconv():
 
     with warnings.catch_warnings(record=True) as w:
 
-        csd = ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
+        ConstrainedSphericalDeconvModel(gtab, response, sh_order=10)
         assert_equal(len(w) > 0, True)
 
     with warnings.catch_warnings(record=True) as w:
 
-        csd = ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
+        ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
         assert_equal(len(w) > 0, False)
 
 
@@ -111,6 +109,16 @@ def test_odfdeconv():
     assert_equal(directions.shape[0], 2)
     assert_equal(directions2.shape[0], 2)
 
+    with warnings.catch_warnings(record=True) as w:
+
+        ConstrainedSDTModel(gtab, ratio, sh_order=10)
+        assert_equal(len(w) > 0, True)
+
+    with warnings.catch_warnings(record=True) as w:
+
+        ConstrainedSDTModel(gtab, ratio, sh_order=8)
+        assert_equal(len(w) > 0, False)
+
 
 def test_odf_sh_to_sharp():
 
@@ -135,7 +143,6 @@ def test_odf_sh_to_sharp():
 
     qbfit = qb.fit(S)
     odf_gt = qbfit.odf(sphere)
-    odf_sh = qbfit._shm_coef
 
     Z = np.linalg.norm(odf_gt)
 
