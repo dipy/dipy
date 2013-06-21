@@ -9,7 +9,7 @@ data = img.get_data()
 b0 = data[:,:,:, 0]
 print('b0.shape (%d, %d, %d)' % b0.shape)
 
-from dipy.segment.dwi_brain_mask import dwi_bet_filter
+from dipy.segment.mask import dwi_bet_filter
 print('Computing brain mask from b0 image')
 b0_mask, mask = dwi_bet_filter(b0, 4, 4, autocrop=False)
 
