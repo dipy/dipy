@@ -28,8 +28,8 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         angular resolution that is the best object to be used for later deterministic
         and probabilistic tractography [3]_.
 
-        A sharp fODF is obtained because a single fiber \emph{response} function is injected
-        as \emph{a priori} knowledge. The response function is often data-driven and thus,
+        A sharp fODF is obtained because a single fiber *response* function is injected
+        as *a priori* knowledge. The response function is often data-driven and thus,
         comes as input to the ConstrainedSphericalDeconvModel. It will be used as deconvolution
         kernel, as described in [1]_.
     
@@ -149,8 +149,8 @@ class ConstrainedSDTModel(OdfModel, Cache):
         to the Constrained CSDModel but mathematically it deconvolves the q-ball ODF
         as oppposed to the HARDI signal (see [1]_ for a comparison and a through discussion).
         
-        A sharp fODF is obtained because a single fiber \emph{response} function is injected
-        as \emph{a priori} knowledge. In the SDTModel, this response is a single fiber q-ball
+        A sharp fODF is obtained because a single fiber *response* function is injected
+        as *a priori* knowledge. In the SDTModel, this response is a single fiber q-ball
         ODF as opposed to a single fiber signal function for the CSDModel. The response function
         will be used as deconvolution kernel.
 
