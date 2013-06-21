@@ -36,10 +36,10 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         Parameters
         ----------
         gtab : GradientTable
-        response : tuple or caller
+        response : tuple or callable
             If tuple then it should have two elements. The first are the eigen-values as an (3,) ndarray
             and the second is the signal value for the response function without diffusion weighting.
-            This is to be able to generate a single fiber synthetic signal. If caller then the function
+            This is to be able to generate a single fiber synthetic signal. If callable then the function
             should return an ndarray with the all the signal values for the response function. The response
             function will be used as deconvolution kernel ([1]_)
         reg_sphere : Sphere
@@ -80,9 +80,9 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
             warnings.warn(msg, UserWarning)
 
         x, y, z = gtab.gradients[self._where_dwi].T
-        r, pol, azi = cart2sphere(x, y, z)
+        r, theta, phi = cart2sphere(x, y, z)
         # for the gradient sphere
-        self.B_dwi = real_sph_harm(m, n, pol[:, None], azi[:, None])
+        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         # for the sphere used in the regularization positivity constraint
         if reg_sphere is None:
@@ -90,10 +90,10 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         else:
             self.sphere = reg_sphere
 
-        r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        self.B_reg = real_sph_harm(m, n, pol[:, None], azi[:, None])
+        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
-        if hasattr(response, '__call__'):
+        if callable(response):
             S_r = response
         else:
             if response is None:
@@ -189,9 +189,9 @@ class ConstrainedSDTModel(OdfModel, Cache):
             warnings.warn(msg, UserWarning)
 
         x, y, z = gtab.gradients[self._where_dwi].T
-        r, pol, azi = cart2sphere(x, y, z)
+        r, theta, phi = cart2sphere(x, y, z)
         # for the gradient sphere
-        self.B_dwi = real_sph_harm(m, n, pol[:, None], azi[:, None])
+        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         # for the odf sphere
         if reg_sphere is None:
@@ -199,8 +199,8 @@ class ConstrainedSDTModel(OdfModel, Cache):
         else:
             self.sphere = reg_sphere
 
-        r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        self.B_reg = real_sph_harm(m, n, pol[:, None], azi[:, None])
+        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, sh_order)
 
@@ -271,7 +271,7 @@ def sh_to_rh(r_sh, sh_order):
     harmonic sh_order for an axially and antipodally
     symmetric function. Note that all ``m != 0`` coefficients
     will be ignored as axial symmetry is assumed. Hence, there
-    will be ``|sh_order/2 + 1|`` non-zero coefficients.
+    will be ``(sh_order/2 + 1)`` non-zero coefficients.
 
     Parameters
     ----------
@@ -282,7 +282,7 @@ def sh_to_rh(r_sh, sh_order):
 
     Returns
     -------
-    r_rh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+    r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
         Rotational harmonics coefficients representing the input `r_sh`
  
     References
@@ -315,7 +315,7 @@ def gen_dirac(pol, azi, sh_order):
 
     Returns
     -------
-    dirac : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+    dirac : ndarray (``(sh_order + 1)(sh_order + 2)/2``,)
         SH coefficients representing the Dirac function
     """
     m, n = sph_harm_ind_list(sh_order)
@@ -336,7 +336,7 @@ def forward_sdeconv_mat(r_rh, sh_order):
 
     Parameters
     ----------
-    r_rh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+    r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
         ndarray of rotational harmonics coefficients for the single
         fiber response function
     sh_order : int
@@ -344,7 +344,7 @@ def forward_sdeconv_mat(r_rh, sh_order):
 
     Returns
     -------
-    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
+    R : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
 
     """
 
@@ -371,9 +371,9 @@ def forward_sdt_deconv_mat(ratio, sh_order):
 
     Returns
     -------
-    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
+    R : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
         SDT deconvolution matrix
-    P : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
+    P : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
         Funk-Radon Transform (FRT) matrix
     """
     m, n = sph_harm_ind_list(sh_order)
@@ -409,13 +409,13 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
     Parameters
     ----------
-    s_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+    s_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          ndarray of SH coefficients for the spherical function to be deconvolved
     sh_order : int
          maximal SH order of the SH representation
-    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
+    R : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
         forward spherical harmonics matrix
-    B_reg : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
+    B_reg : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
          SH basis matrix used for deconvolution
     lambda_ : float
          lambda parameter in minimization equation (default 1.0)
@@ -429,7 +429,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
     Returns
     -------
-    fodf_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+    fodf_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regarized fiber ODF
     num_it : int
          Number of iterations in the constrained-regarization used for convergence
@@ -458,7 +458,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(fodf < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            print('too few negative directions identified - failed to converge')
+            warning.warn('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -476,7 +476,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
 
-    print('maximum number of iterations exceeded - failed to converge')
+    warning.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
@@ -486,13 +486,13 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
     Parameters
     ----------
-    odf_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+    odf_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          ndarray of SH coefficients for the ODF spherical function to be deconvolved
     sh_order : int
          maximal SH order of the SH representation
-    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
+    R : ndarray (``(sh_order + 1)(sh_order + 2)/2``, ``(sh_order + 1)(sh_order + 2)/2``)
          SDT matrix in SH basis
-    B_reg : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
+    B_reg : ndarray (``(sh_order + 1)(sh_order + 2)/2``, ``(sh_order + 1)(sh_order + 2)/2``)
          SH basis matrix used for deconvolution
     lambda_ : float
          lambda parameter in minimization equation (default 1.0)
@@ -502,7 +502,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
     Returns
     -------
-    fodf_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+    fodf_sh : ndarray (``(sh_order + 1)(sh_order + 2)/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber ODF
     num_it : int
          Number of iterations in the constrained-regularization used for convergence
@@ -535,7 +535,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(A < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            print('to few negative directions identified - failed to converge')
+            warning.warn('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -547,7 +547,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, ODF)[0]  
 
-    print('maximum number of iterations exceeded - failed to converge')
+    warning.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
@@ -561,7 +561,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
     Parameters
     ---------- 
-    odfs_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``, )
+    odfs_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, )
         array of odfs expressed as spherical harmonics coefficients
     sphere : Sphere
         sphere used to build the regularization matrix    
@@ -569,7 +569,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
         different spherical harmonic basis. None is the fibernav basis as well.
     ratio : float, 
         ratio of the smallest vs the largest eigenvalue of the single prolate tensor response function
-        ($\frac{\lambda_2}{\lambda_1}$)
+        (:math:`\frac{\lambda_2}{\lambda_1}`)
     sh_order : int
         maximal SH order of the SH representation
     lambda_ : float
