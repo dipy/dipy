@@ -111,15 +111,13 @@ def largest_cc(mask):
     return labels == label_count.argmax()
 
 
-
-
 # Very simple brain extraction tool (BET) method for DWI data
 # Inspired by MRtrix
 # mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | median3D - mask.nii 
 # MRtrix uses default mean_radius=3 and numpass=2
 # However, from my tests on 1.5T and 3T data from GE, Philips, Siemens, the most
 # robust choice is median_radis=4, numpass=4
-def dwi_bet_filter(input, median_radius=3, numpass=2, autocrop=True):
+def dwi_bet_filter(input, median_radius=4, numpass=4, autocrop=True):
     # The original data will be needed for final crop / mask
     vol = input.copy()
 
