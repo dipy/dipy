@@ -44,7 +44,7 @@ def test_csdeconv():
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
 
     csd = ConstrainedSphericalDeconvModel(gtab, response)
-
+    
     csd_fit = csd.fit(S)
 
     fodf = csd_fit.odf(sphere)
@@ -147,7 +147,7 @@ def test_odf_sh_to_sharp():
     odfs_sh /= Z
 
     fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
-                              sh_order=8, Lambda=1., tau=1.)
+                              sh_order=8, lambda_=1., tau=1.)
 
     fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
 
@@ -158,3 +158,5 @@ def test_odf_sh_to_sharp():
 
 if __name__ == '__main__':
     run_module_suite()
+
+

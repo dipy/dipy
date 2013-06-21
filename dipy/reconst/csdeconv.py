@@ -19,25 +19,52 @@ from scipy.special import lpn
 @multi_voxel_model
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
-    def __init__(self, gtab, response, regul_sphere=None, sh_order=8, Lambda=1, tau=0.1):
-        r""" Super Constrained Spherical Deconvolution [1]_.
+    def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1, tau=0.1):
+        r""" Constrained Spherical Deconvolution (CSD) [1]_.
 
+        Spherical deconvolution computes a fiber orientation distribution (FOD), also
+        called fiber ODF (fODF) [2]_, as opposed to a diffusion ODF as the QballModel
+        or the CsaOdfModel. This results in a sharper angular profile with better
+        angular resolution that is the best object to be used for later deterministic
+        and probabilistic tractography [3]_.
+
+        A sharp fODF is obtained because a single fiber \emph{response} function is injected
+        as \emph{a priori} knowledge. The response function is often data-driven and thus,
+        comes as input to the ConstrainedSphericalDeconvModel. It will be used as deconvolution
+        kernel, as described in [1]_.
+    
         Parameters
         ----------
         gtab : GradientTable
         response : tuple or caller
-            If tuple then it should have two elements the first are the eigen-values as an (3,) ndarray
+            If tuple then it should have two elements. The first are the eigen-values as an (3,) ndarray
             and the second is the signal value for the response function without diffusion weighting.
-            If caller then the function should return an ndarray with the all the signal values for the
-            response function
-        regul_sphere : Sphere
-            sphere used to build the regularized B matrix
+            This is to be able to generate a single fiber synthetic signal. If caller then the function
+            should return an ndarray with the all the signal values for the response function. The response
+            function will be used as deconvolution kernel ([1]_)
+        reg_sphere : Sphere
+            sphere used to build the regularization B matrix
         sh_order : int
-            spherical harmonics order
+            maximal spherical harmonics order
+        lambda_ : float
+            weight given to the constrained-positivity regularization part of the
+            deconvolution equation (see [1]_)
+        tau : float
+            threshold controlling the amplitude below which the corresponding fODF is assumed to be zero.
+            Ideally, tau should be set to zero. However, to improve the stability of the algorithm, tau
+            is set to tau*100 % of the mean fODF amplitude (here, 10% by default) (see [1]_)
 
         References
         ----------
-        .. [1] Tournier, J.D., et al. NeuroImage 2007.
+        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the fibre orientation
+               distribution in diffusion MRI: Non-negativity constrained super-resolved spherical
+               deconvolution
+        .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+               on Complex Fibre Orientation Distributions
+        .. [3] C\^ot\'e, M-A., et al. Medical Image Analysis 2013. Tractometer: Towards validation
+               of tractography pipelines
+        .. [4] Tournier, J.D, et al. Imaging Systems and Technology 2012. MRtrix: Diffusion
+               Tractography in Crossing Fiber Regions
         """
 
         m, n = sph_harm_ind_list(sh_order)
@@ -57,14 +84,14 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         # for the gradient sphere
         self.B_dwi = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
-        # for the odf sphere
-        if regul_sphere is None:
+        # for the sphere used in the regularization positivity constraint
+        if reg_sphere is None:
             self.sphere = get_sphere('symmetric362')
         else:
-            self.sphere = regul_sphere
+            self.sphere = reg_sphere
 
         r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
+        self.B_reg = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         if hasattr(response, '__call__'):
             S_r = response
@@ -75,20 +102,20 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
                 S_r = estimate_response(gtab, response[0], response[1])
 
         r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
-
         r_rh = sh_to_rh(r_sh, sh_order)
+
         self.R = forward_sdeconv_mat(r_rh, sh_order)
 
-        # scale lambda to account for differences in the number of
+        # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-
-        self.Lambda = Lambda * self.R.shape[0] * r_rh[0] / self.B_regul.shape[0]
+        # This is exactly what is done in [4]_ 
+        self.lambda_ = lambda_ * self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
         self.tau = 0.1
         self.sh_order = sh_order
 
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
-        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_regul, self.Lambda, self.tau)
+        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
         return ConstrainedSphericalDeconvFit(self, shm_coeff)
 
 
@@ -102,7 +129,7 @@ class ConstrainedSphericalDeconvFit(OdfFit):
 
         sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
         if sampling_matrix is None:
-            phi = sphere.phi.reshape((-1, 1))
+            phi = sphere.phi[:, np.newaxis] #sphere.phi.reshape((-1, 1))
             theta = sphere.theta.reshape((-1, 1))
             sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
@@ -113,22 +140,39 @@ class ConstrainedSphericalDeconvFit(OdfFit):
 @multi_voxel_model
 class ConstrainedSDTModel(OdfModel, Cache):
 
-    def __init__(self, gtab, ratio, regul_sphere=None, sh_order=8, Lambda=1., tau=1.):
-        r""" Spherical Deconvolution Transform [1]_.
+    def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1., tau=1.):
+        r""" Spherical Deconvolution Transform (SDT) [1]_.
+        
+        The SDT computes a fiber orientation distribution (FOD) as opposed to a diffusion
+        ODF as the QballModel or the CsaOdfModel. This results in a sharper angular
+        profile with better angular resolution. The Contrained SDTModel is similar
+        to the Constrained CSDModel but mathematically it deconvolves the q-ball ODF
+        as oppposed to the HARDI signal (see [1]_ for a comparison and a through discussion).
+        
+        A sharp fODF is obtained because a single fiber \emph{response} function is injected
+        as \emph{a priori} knowledge. In the SDTModel, this response is a single fiber q-ball
+        ODF as opposed to a single fiber signal function for the CSDModel. The response function
+        will be used as deconvolution kernel.
 
         Parameters
         ----------
         gtab : GradientTable
         ratio : float
             ratio of the smallest vs the largest eigenvalue of the single prolate tensor response function
-        regul_sphere : Sphere
-            sphere used to build the regularized B matrix
+        reg_sphere : Sphere
+            sphere used to build the regularization B matrix
         sh_order : int
-            spherical harmonics order
+            maximal spherical harmonics order
+        lambda_ : float
+            weight given to the constrained-positivity regularization part of the
+            deconvolution equation 
+        tau : float
+            threshold controlling the amplitude below which the corresponding fODF is assumed to be zero.
 
         References
         ----------
-        .. [1] Descoteaux, M., et al. TMI 2009.
+        .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+               on Complex Fibre Orientation Distributions.
         """
 
         m, n = sph_harm_ind_list(sh_order)
@@ -149,19 +193,19 @@ class ConstrainedSDTModel(OdfModel, Cache):
         self.B_dwi = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         # for the odf sphere
-        if regul_sphere is None:
+        if reg_sphere is None:
             self.sphere = get_sphere('symmetric362')
         else:
-            self.sphere = regul_sphere
+            self.sphere = reg_sphere
 
         r, pol, azi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        self.B_regul = real_sph_harm(m, n, pol[:, None], azi[:, None])
+        self.B_reg = real_sph_harm(m, n, pol[:, None], azi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, sh_order)
 
-        # scale lambda to account for differences in the number of
+        # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-        self.Lambda = Lambda * self.R.shape[0] * self.R[0, 0] / self.B_regul.shape[0]
+        self.lambda_ = lambda_ * self.R.shape[0] * self.R[0, 0] / self.B_reg.shape[0]
         self.tau = tau
         self.sh_order = sh_order
 
@@ -169,11 +213,11 @@ class ConstrainedSDTModel(OdfModel, Cache):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
         # initial ODF estimation
         odf_sh = np.dot(self.P, s_sh)
-        qball_odf = np.dot(self.B_regul, odf_sh)
+        qball_odf = np.dot(self.B_reg, odf_sh)
         Z = np.linalg.norm(qball_odf)
         # normalize ODF
         odf_sh /= Z
-        shm_coeff, num_it = odf_deconv(odf_sh, self.sh_order, self.R, self.B_regul, self.Lambda, self.tau)
+        shm_coeff, num_it = odf_deconv(odf_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
         # print 'SDT CSD converged after %d iterations' % num_it
 
         return ConstrainedSDTFit(self, shm_coeff)
@@ -189,7 +233,7 @@ class ConstrainedSDTFit(OdfFit):
 
         sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
         if sampling_matrix is None:
-            phi = sphere.phi.reshape((-1, 1))
+            phi = sphere.phi[:, np.newaxis] #sphere.phi.reshape((-1, 1))
             theta = sphere.theta.reshape((-1, 1))
             sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
@@ -224,31 +268,57 @@ def sh_to_rh(r_sh, sh_order):
 
     Calculate the rotational harmonic decomposition up to
     harmonic sh_order for an axially and antipodally
-    symmetric function. Note that all m != 0 coefficients
-    will be ignored as axial symmetry is assumed.
+    symmetric function. Note that all ``m != 0`` coefficients
+    will be ignored as axial symmetry is assumed. Hence, there
+    will be ``|sh_order/2 + 1|`` non-zero coefficients.
 
     Parameters
     ----------
-    r_sh : ndarray
+    r_sh : ndarray (``sh_order/2 + 1``,)
         ndarray of SH coefficients for the single fiber response function
     sh_order : int
         maximal SH order of the SH representation
 
     Returns
     -------
-    r_rh : ndarray
+    r_rh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
         Rotational harmonics coefficients representing the input `r_sh`
+ 
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the fibre orientation
+           distribution in diffusion MRI: Non-negativity constrained super-resolved spherical
+           deconvolution
     """
 
     dirac_sh = gen_dirac(0, 0, sh_order)
-    k = np.nonzero(dirac_sh)[0]
+    k, = np.nonzero(dirac_sh)
     r_rh = r_sh[k] / dirac_sh[k]
+
     return r_rh
 
 
 def gen_dirac(pol, azi, sh_order):
+    """ Generate Dirac delta function orientated in (theta, phi) = (azi, pol)
+    on the sphere. The spherical harmonics (SH) representation of this Dirac is
+    returned. 
+
+    Parameters
+    ----------
+    pol : float [0, pi]
+        The polar (colatitudinal) coordinate (phi)
+    az : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate (theta)
+    sh_order : int
+        maximal SH order of the SH representation
+
+    Returns
+    -------
+    dirac : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+        SH coefficients representing the Dirac function
+    """
     m, n = sph_harm_ind_list(sh_order)
-    dirac = np.zeros((m.shape))
+    dirac = np.zeros(m.shape)
     i = 0
     for l in np.arange(0, sh_order + 1, 2):
         for m in np.arange(-l, l + 1):
@@ -265,21 +335,21 @@ def forward_sdeconv_mat(r_rh, sh_order):
 
     Parameters
     ----------
-    r_rh : ndarray
+    r_rh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
         ndarray of rotational harmonics coefficients for the single
         fiber response function
     sh_order : int
-        spherical harmonic order
+        maximal SH order
 
     Returns
     -------
-    R : ndarray
+    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
 
     """
 
     m, n = sph_harm_ind_list(sh_order)
 
-    b = np.zeros((m.shape))
+    b = np.zeros(m.shape)
     i = 0
     for l in np.arange(0, sh_order + 1, 2):
         for m in np.arange(-l, l + 1):
@@ -294,28 +364,28 @@ def forward_sdt_deconv_mat(ratio, sh_order):
     Parameters
     ----------
     ratio : float
-        ratio = \frac{\lambda_2}{\lambda_1} of the single fiber response function
+        ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response function
     sh_order : int
         spherical harmonic order
 
     Returns
     -------
-    R : ndarray
+    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
         SDT deconvolution matrix
-    P : ndarray
+    P : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
         Funk-Radon Transform (FRT) matrix
     """
     m, n = sph_harm_ind_list(sh_order)
-    b = np.zeros((m.shape))
+    b = np.zeros(m.shape)
 
     num = 1000
-    delta = 1.0 / num
+    delta = 1 / num
     # n = (sh_order + 1.0) + (sh_order + 2.0) / 2.0
 
-    sdt = np.zeros((m.shape))
-    frt = np.zeros((m.shape))
-    b = np.zeros((m.shape))
-    bb = np.zeros((m.shape))
+    sdt = np.zeros(m.shape)
+    frt = np.zeros(m.shape)
+    b = np.zeros(m.shape)
+    bb = np.zeros(m.shape)
 
     l = 0
     for l in np.arange(0, sh_order + 1, 2):
@@ -350,8 +420,8 @@ def forward_sdt_deconv_mat(ratio, sh_order):
     return np.diag(b), np.diag(bb)
 
 
-def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
-    r""" Constrained-regularized spherical deconvolution (CSD) [1]_
+def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
+    r""" Constrained-regarized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response
     function `r_rh` in rotational harmonics coefficients from the spherical function
@@ -359,46 +429,48 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
 
     Parameters
     ----------
-    s_sh : ndarray
+    s_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
          ndarray of SH coefficients for the spherical function to be deconvolved
     sh_order : int
          maximal SH order of the SH representation
-    R : ndarray
+    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
         forward spherical harmonics matrix
-    B_regul : ndarray
+    B_reg : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
          SH basis matrix used for deconvolution
-    Lambda : float
+    lambda_ : float
          lambda parameter in minimization equation (default 1.0)
     tau : float
          tau parameter in the L matrix construction (default 0.1)
 
     Returns
     -------
-    fodf_sh : ndarray
-         Spherical harmonics coefficients of the constrained-regularized fiber ODF
+    fodf_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
+         Spherical harmonics coefficients of the constrained-regarized fiber ODF
     num_it : int
-         Number of iterations in the constrained-regularization used for convergence
+         Number of iterations in the constrained-regarization used for convergence
 
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2007.
+    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the fibre orientation
+           distribution in diffusion MRI: Non-negativity constrained super-resolved spherical
+           deconvolution
     """
 
     # generate initial fODF estimate, truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, s_sh)[0]  # R\s_sh
+    fodf_sh = np.linalg.lstsq(R, s_sh)[0] #fodf_sh, = np.linalg.lstsq(R, s_sh) # R\s_sh
     fodf_sh[15:] = 0
 
     # set threshold on FOD amplitude used to identify 'negative' values
-    threshold = tau * np.mean(np.dot(B_regul, fodf_sh))
+    threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
 
     k = []
     convergence = 50
     for num_it in range(1, convergence + 1):
-        fodf = np.dot(B_regul, fodf_sh)
+        fodf = np.dot(B_reg, fodf_sh)
 
         k2 = np.nonzero(fodf < threshold)[0]
 
-        if (k2.shape[0] + R.shape[0]) < B_regul.shape[1]:
+        if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
             print('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
@@ -408,8 +480,12 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
 
         k = k2
 
-        # this is the super-resolved trick
-        M = np.concatenate((R, Lambda * B_regul[k, :]))
+        # This is the super-resolved trick. 
+        # Wherever there is a negative amplitude value on the fODF, it concatinates a value
+        # to the S vector so that the estimation can focus on trying to eliminate it.
+        # In a sense, this "adds" a measurement, which can help to better estimate the fodf_sh,
+        # even if you have more SH coeffcients to estimate than actual S measurements. 
+        M = np.concatenate((R, lambda_ * B_reg[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
 
@@ -417,21 +493,21 @@ def csdeconv(s_sh, sh_order, R, B_regul, Lambda=1., tau=0.1):
     return fodf_sh, num_it
 
 
-def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
+def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=1.):
     r""" ODF constrained-regularized sherical deconvolution using
     the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
 
     Parameters
     ----------
-    odf_sh : ndarray
+    odf_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
          ndarray of SH coefficients for the ODF spherical function to be deconvolved
     sh_order : int
          maximal SH order of the SH representation
-    R : ndarray
+    R : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
          SDT matrix in SH basis
-    B_regul : ndarray
+    B_reg : ndarray (``|sh_order + 1||sh_order + 2|/2``, ``|sh_order + 1||sh_order + 2|/2``)
          SH basis matrix used for deconvolution
-    Lambda : float
+    lambda_ : float
          lambda parameter in minimization equation (default 1.0)
     tau : float
          tau parameter in the L matrix construction (default 1.0)
@@ -440,15 +516,16 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
 
     Returns
     -------
-    fodf_sh : ndarray
+    fodf_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``,)
          Spherical harmonics coefficients of the constrained-regularized fiber ODF
     num_it : int
          Number of iterations in the constrained-regularization used for convergence
 
     References
     ----------
-    .. [1] Descoteaux, M, et al. TMI 2009.
-    .. [2] Descoteaux, M, PhD thesis 2008.
+    .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+           on Complex Fibre Orientation Distributions
+    .. [2] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
     """
     m, n = sph_harm_ind_list(sh_order)
 
@@ -456,20 +533,20 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
     fodf_sh = np.linalg.lstsq(R, odf_sh)[0]
     fodf_sh[15:] = 0
 
-    fodf = np.dot(B_regul, fodf_sh)
+    fodf = np.dot(B_reg, fodf_sh)
 
     Z = np.linalg.norm(fodf)
     fodf_sh /= Z
 
-    threshold = tau * np.mean(np.dot(B_regul, fodf_sh))
+    threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
 
     k = []
     convergence = 50
     for num_it in range(1, convergence + 1):
-        A = np.dot(B_regul, fodf_sh)
+        A = np.dot(B_reg, fodf_sh)
         k2 = np.nonzero(A < threshold)[0]
 
-        if (k2.shape[0] + R.shape[0]) < B_regul.shape[1]:
+        if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
             print('to few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
@@ -478,7 +555,7 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
                 return fodf_sh, num_it
 
         k = k2
-        M = np.concatenate((R, Lambda * B_regul[k, :]))
+        M = np.concatenate((R, lambda_ * B_reg[k, :]))
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, ODF)[0]  # M\ODF
 
@@ -486,27 +563,29 @@ def odf_deconv(odf_sh, sh_order, R, B_regul, Lambda=1., tau=1.):
     return fodf_sh, num_it
 
 
-def odf_sh_to_sharp(odfs_sh, sphere, basis='mrtrix', ratio=3 / 15., sh_order=8, Lambda=1., tau=1.):
+def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lambda_=1., tau=1.):
     r""" Sharpen odfs using the spherical deconvolution transform [1]_
 
+    This function can be used to sharpen any smooth ODF spherical function. In theory, this should
+    only be used to sharpen QballModel ODFs, but in practice, one can play with the deconvolution
+    ratio and sharpen almost any ODF-like spherical function. The constrained-regularization is stable
+    and will not only sharp the ODF peaks but also regularize the noisy peaks.
+
     Parameters
-    ----------
-    odfs_sh : ndarray
+    ---------- 
+    odfs_sh : ndarray (``|sh_order + 1||sh_order + 2|/2``, )
         array of odfs expressed as spherical harmonics coefficients
-
     sphere : Sphere
-
+        sphere used to build the regularization matrix    
     basis : {None, 'mrtrix', 'fibernav'}
-        different spherical harmonic basis. None is the default dipy basis.
-
-    ratio : float,
-        response function persentage of width versus length
-
+        different spherical harmonic basis. None is the fibernav basis as well.
+    ratio : float, 
+        ratio of the smallest vs the largest eigenvalue of the single prolate tensor response function
+        ($\frac{\lambda_2}{\lambda_1}$)
     sh_order : int
-
-    Lambda : float
+        maximal SH order of the SH representation
+    lambda_ : float
         lambda parameter (see odfdeconv) (default 1.0)
-
     tau : float
         tau parameter in the L matrix construction (see odfdeconv) (default 1.0)
 
@@ -517,29 +596,29 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis='mrtrix', ratio=3 / 15., sh_order=8, 
 
     References
     ----------
-    .. [1] Descoteaux, M, et al. TMI 2009.
-
+    .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+           on Complex Fibre Orientation Distributions
     """
     m, n = sph_harm_ind_list(sh_order)
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
 
     if basis == 'mrtrix':
-        B_regul, m, n = real_sym_sh_mrtrix(sh_order, theta[:, None], phi[:, None])
+        B_reg, m, n = real_sym_sh_mrtrix(sh_order, theta[:, None], phi[:, None])
     elif basis == 'fibernav':
-        B_regul, m, n = real_sym_sh_basis(sh_order, theta[:, None], phi[:, None])
+        B_reg, m, n = real_sym_sh_basis(sh_order, theta[:, None], phi[:, None])
     else:
-        B_regul = real_sph_harm(m, n, theta[:, None], phi[:, None])
+        B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
     R, P = forward_sdt_deconv_mat(ratio, sh_order)
 
     # scale lambda to account for differences in the number of
     # SH coefficients and number of mapped directions
-    Lambda = Lambda * R.shape[0] * R[0, 0] / B_regul.shape[0]
+    lambda_ = lambda_ * R.shape[0] * R[0, 0] / B_reg.shape[0]
 
     fodf_sh = np.zeros(odfs_sh.shape)
 
     for index in ndindex(odfs_sh.shape[:-1]):
 
-        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_regul, Lambda=Lambda, tau=tau)
+        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_reg, lambda_=lambda_, tau=tau)
 
     return fodf_sh
