@@ -6,8 +6,7 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_model
 from dipy.reconst.shm import (sph_harm_ind_list,
                               real_sph_harm,
-                              real_sym_sh_mrtrix,
-                              real_sym_sh_basis,
+                              sph_harm_lookup,
                               lazy_index)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
@@ -590,13 +589,10 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     m, n = sph_harm_ind_list(sh_order)
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
 
-    if basis == 'mrtrix':
-        B_reg, m, n = real_sym_sh_mrtrix(sh_order, theta[:, None], phi[:, None])
-    elif basis == 'fibernav':
-        B_reg, m, n = real_sym_sh_basis(sh_order, theta[:, None], phi[:, None])
-    else:
-        B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
+    real_sym_sh = sph_harm_lookup[basis]
 
+    B_reg, m, n = real_sym_sh(sh_order, theta[:, None], phi[:, None])
+    
     R, P = forward_sdt_deconv_mat(ratio, sh_order)
 
     # scale lambda to account for differences in the number of
