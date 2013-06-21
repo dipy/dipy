@@ -108,3 +108,6 @@ def largest_cc(mask):
     # discard the 0 label
     label_count[0] = 0
     return labels == label_count.argmax()
+
+
+
