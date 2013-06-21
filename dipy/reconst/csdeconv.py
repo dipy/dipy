@@ -36,7 +36,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         ----------
         gtab : GradientTable
         response : tuple or callable
-            If tuple then it should have two elements. The first are the eigen-values as an (3,) ndarray
+            If tuple, then it should have two elements. The first is the eigen-values as an (3,) ndarray
             and the second is the signal value for the response function without diffusion weighting.
             This is to be able to generate a single fiber synthetic signal. If callable then the function
             should return an ndarray with the all the signal values for the response function. The response
