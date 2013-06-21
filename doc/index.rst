@@ -26,9 +26,12 @@ video of QuickBundles applied on a simple dataset.
 *************
 Announcements
 *************
-- **Dipy 0.6.0 Released!**, 30 March, 2013
-- **Dipy 3rd Sprint**, Berkeley, CA, 8-18 April, 2013
-- **ISBI HARDI challenge 2013 will be based on Dipy**, February, 2013
+- **Spherical Deconvolution** algorithms are now included in development version 0.7.0. 21 June 2013. Examples in :ref:`gallery <examples_index>`.
+- Team of Dipiers **wins** the IEEE ISBI HARDI challenge, 7 April, 2013. More information `here <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_. 
+- **Dipy was used at the dMRI course at the CREATE-MIA summer school, 5-7 June, McGill, 2013.
+- **Dipy 0.6.0 Released!**, 30 March, 2013.
+- **Dipy 3rd Sprint**, Berkeley, CA, 8-18 April, 2013.
+- **IEEE ISBI HARDI challenge 2013 chooses Dipy**, February, 2013.
 
 
 ***************
@@ -87,5 +90,8 @@ You can learn more about how you to use Dipy_ with  your datasets by reading the
 
    documentation
    stateoftheart
+
+
+
 
 .. include:: links_names.inc
