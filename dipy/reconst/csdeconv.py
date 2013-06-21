@@ -110,8 +110,8 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_ 
         self.lambda_ = lambda_ * self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
-        self.tau = 0.1
         self.sh_order = sh_order
+        self.tau = tau
 
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
@@ -140,7 +140,7 @@ class ConstrainedSphericalDeconvFit(OdfFit):
 @multi_voxel_model
 class ConstrainedSDTModel(OdfModel, Cache):
 
-    def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1., tau=1.):
+    def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1., tau=0.1):
         r""" Spherical Deconvolution Transform (SDT) [1]_.
         
         The SDT computes a fiber orientation distribution (FOD) as opposed to a diffusion
@@ -167,7 +167,8 @@ class ConstrainedSDTModel(OdfModel, Cache):
             weight given to the constrained-positivity regularization part of the
             deconvolution equation 
         tau : float
-            threshold controlling the amplitude below which the corresponding fODF is assumed to be zero.
+            threshold (tau *mean(fODF)) controlling the amplitude below
+            which the corresponding fODF is assumed to be zero.
 
         References
         ----------
@@ -376,38 +377,17 @@ def forward_sdt_deconv_mat(ratio, sh_order):
         Funk-Radon Transform (FRT) matrix
     """
     m, n = sph_harm_ind_list(sh_order)
-    b = np.zeros(m.shape)
 
-    num = 1000
-    delta = 1 / num
-    # n = (sh_order + 1.0) + (sh_order + 2.0) / 2.0
-
-    sdt = np.zeros(m.shape)
-    frt = np.zeros(m.shape)
+    sdt = np.zeros(m.shape) # SDT matrix
+    frt = np.zeros(m.shape) # FRT (Funk-Radon transform) q-ball matrix
     b = np.zeros(m.shape)
     bb = np.zeros(m.shape)
 
-    l = 0
     for l in np.arange(0, sh_order + 1, 2):
-        sharp = 0.0
-        integral = 0.0
+        from scipy.integrate import quad
+        sharp = quad(lambda z: lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
 
-        # Trapezoidal integration
-        # 1/2 [ f(x0) + 2f(x1) + ... + 2f(x{n-1}) + f(xn) ] delta
-        for z in np.linspace(-1, 1, num):
-            if z == -1 or z == 1:
-                sharp += lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z))
-                integral += np.sqrt(1 / (1 - (1 - ratio) * z * z))
-            else:
-                sharp += 2 * lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z))
-                integral += 2 * np.sqrt(1 / (1 - (1 - ratio) * z * z))
-
-        integral /= 2
-        integral *= delta
-        sharp /= 2
-        sharp *= delta
-        sharp /= integral
-        sdt[l / 2] = sharp
+        sdt[l / 2] = sharp[0]
         frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
 
     i = 0
@@ -440,7 +420,12 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     lambda_ : float
          lambda parameter in minimization equation (default 1.0)
     tau : float
-         tau parameter in the L matrix construction (default 0.1)
+         threshold controlling the amplitude below which the corresponding fODF is assumed to be zero.
+         Ideally, tau should be set to zero. However, to improve the stability of the algorithm, tau
+         is set to tau*100 % of the max fODF amplitude (here, 10% by default). This is similar to peak
+         detection where peaks below 0.1 amplitude are usually considered noise peaks. Because SDT
+         is based on a q-ball ODF deconvolution, and not signal deconvolution, using the max instead
+         of mean (as in CSD), is more stable.
 
     Returns
     -------
@@ -460,8 +445,10 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     fodf_sh = np.linalg.lstsq(R, s_sh)[0] #fodf_sh, = np.linalg.lstsq(R, s_sh) # R\s_sh
     fodf_sh[15:] = 0
 
+    fodf = np.dot(B_reg, fodf_sh)
     # set threshold on FOD amplitude used to identify 'negative' values
     threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
+    print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
@@ -493,7 +480,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     return fodf_sh, num_it
 
 
-def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=1.):
+def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     r""" ODF constrained-regularized sherical deconvolution using
     the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
 
@@ -510,9 +497,8 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=1.):
     lambda_ : float
          lambda parameter in minimization equation (default 1.0)
     tau : float
-         tau parameter in the L matrix construction (default 1.0)
-         You should not play with this parameter. It is quite sensitive and actually
-         initiated directly from the fodf mean value.
+         threshold (tau *max(fODF)) controlling the amplitude below
+         which the corresponding fODF is assumed to be zero.
 
     Returns
     -------
@@ -538,7 +524,9 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=1.):
     Z = np.linalg.norm(fodf)
     fodf_sh /= Z
 
-    threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
+    fodf = np.dot(B_reg, fodf_sh)
+    threshold = tau * np.max(np.dot(B_reg, fodf_sh))
+    print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
@@ -557,13 +545,13 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=1.):
         k = k2
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
-        fodf_sh = np.linalg.lstsq(M, ODF)[0]  # M\ODF
+        fodf_sh = np.linalg.lstsq(M, ODF)[0]  
 
     print('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
-def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lambda_=1., tau=1.):
+def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lambda_=1., tau=0.1):
     r""" Sharpen odfs using the spherical deconvolution transform [1]_
 
     This function can be used to sharpen any smooth ODF spherical function. In theory, this should
@@ -587,7 +575,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     lambda_ : float
         lambda parameter (see odfdeconv) (default 1.0)
     tau : float
-        tau parameter in the L matrix construction (see odfdeconv) (default 1.0)
+        tau parameter in the L matrix construction (see odfdeconv) (default 0.1)
 
     Returns
     -------
