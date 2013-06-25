@@ -80,6 +80,7 @@ S0 = np.mean(S0s)
 l01 = np.mean(lambdas, axis=0)
 
 evals = np.array([l01[0], l01[1], l01[1]])
+
 response = (evals, S0)
 
 """
@@ -88,7 +89,7 @@ Now we are ready to import the CSD model and fit the datasets.
 
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
-csd_model = ConstrainedSphericalDeconvModel(gtab, (evals, S0))
+csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
 """
 For illustration purposes we will fit only a slice of the datasets.

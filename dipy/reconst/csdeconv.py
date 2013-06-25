@@ -447,7 +447,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     fodf = np.dot(B_reg, fodf_sh)
     # set threshold on FOD amplitude used to identify 'negative' values
     threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
-    print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
+    #print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
@@ -525,7 +525,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
     fodf = np.dot(B_reg, fodf_sh)
     threshold = tau * np.max(np.dot(B_reg, fodf_sh))
-    print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
+    #print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
