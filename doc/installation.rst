@@ -14,9 +14,7 @@ development - at least - we hope so - if we're developing fast enough!
 Note on python versions
 ***********************
 
-Dipy needs python 2.6 or above.  Sorry to say, but dipy_ does not yet work with
-python 3 - so all the instructions following instructions apply to python 2.6 or
-python 2.7.
+Dipy supports python 2.6+ and python 3+. We started supporting Python 3 from version dipy.0.7.0dev. 
 
 On OSX we always use the python binaries available from the python.org
 downloads, and not the python that comes with the OSX system.  If you don't have
