@@ -15,7 +15,7 @@ Highlights
 In Dipy_ we care about methods which can solve complex problems efficiently and
 robustly. QuickBundles is one of the many state-of-the art algorithms found
 in Dipy_. It can be used to simplify large datasets of streamlines. See our
-:ref:`gallery <examples_index>` of examples and try QuickBundles with your data. Here is a
+:ref:`gallery <examples>` of examples and try QuickBundles with your data. Here is a
 video of QuickBundles applied on a simple dataset.
 
 .. raw:: html
@@ -26,12 +26,12 @@ video of QuickBundles applied on a simple dataset.
 *************
 Announcements
 *************
-- **Spherical Deconvolution** algorithms are now included in development version 0.7.0. 21 June 2013. Examples in :ref:`gallery <examples_index>`.
-- Team of Dipiers **wins** the IEEE ISBI HARDI challenge, 7 April, 2013. More information `here <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_. 
-- **Dipy was used at the dMRI course at the CREATE-MIA summer school, 5-7 June, McGill, 2013.
-- **Dipy 0.6.0 Released!**, 30 March, 2013.
+- **Spherical Deconvolution** algorithms are now included in the current development version 0.7.0dev. See the examples in :ref:`gallery <examples>`, 24 June 2013. 
+- A team of Dipy developers **wins** the `IEEE ISBI HARDI challenge <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.  
+- **Hands on Dipy** seminar took place at the dMRI course of the CREATE-MIA summer school, 5-7 June, McGill, Montreal, 2013.
+- **Dipy 0.6.0** Released!, 30 March, 2013.
 - **Dipy 3rd Sprint**, Berkeley, CA, 8-18 April, 2013.
-- **IEEE ISBI HARDI challenge 2013 chooses Dipy**, February, 2013.
+- **IEEE ISBI HARDI challenge** 2013 chooses **Dipy**, February, 2013.
 
 
 ***************
