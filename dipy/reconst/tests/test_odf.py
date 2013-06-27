@@ -129,7 +129,7 @@ def test_peak_directions():
     assert_array_equal(val, odf[ind])
 
 def test_peaksFromModel():
-    data = np.zeros((10,2))
+    data = np.zeros((10, 2))
 
     # Test basic case
     model = SimpleOdfModel()
@@ -210,7 +210,7 @@ def test_peaks_shm_coeff():
     assert_equal(pam.shm_coeff, None)
 
     pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
-                           return_odf=True, return_sh=True, sh_smooth = 0.5)
+                           return_odf=True, return_sh=True, sh_smooth=0.5)
     
     B = np.linalg.pinv(pam.invB)
     odf2 = np.dot(pam.shm_coeff, B)    
@@ -227,4 +227,4 @@ def test_peaks_shm_coeff():
 
 if __name__ == '__main__':
     
-    test_peaks_shm_coeff()
+    run_module_suite()
