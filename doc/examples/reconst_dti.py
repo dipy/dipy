@@ -175,7 +175,7 @@ nib.save(evecs_img, 'tensor_evecs.nii.gz')
 """
 Now, lets get the tensor coefficients D and format them as 
 D = [dxx, dxy, dxz, dyy, dyz, dzz] for visualisation in the Fibernavigator 
-(https://github.com/scilus/fibernavigator). 
+(http://scilus.github.io/fibernavigator). 
 """
 
 tensor_vals = lower_triangular(tenfit.quadratic_form)
