@@ -106,7 +106,7 @@ def test_peaks_shm_coeff():
     assert_equal(pam.shm_coeff, None)
 
     pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
-                           return_odf=True, return_sh=True, sh_smooth = 0.5)
+                           return_odf=True, return_sh=True, sh_smooth=0.5)
     
     B = np.linalg.pinv(pam.invB)
     odf2 = np.dot(pam.shm_coeff, B)    
@@ -125,4 +125,7 @@ if __name__ == '__main__':
 
 
     run_module_suite()
+<<<<<<< HEAD
 
+=======
+>>>>>>> Add run_module_suite in odf.py
