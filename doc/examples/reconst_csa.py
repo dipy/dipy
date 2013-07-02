@@ -74,7 +74,7 @@ print('GFA.shape (%d, %d, %d)' % GFA.shape)
 """
 GFA.shape ``(81, 106, 76)``
 
-Apart from GFA, csapeaks has also the attributes peak_values, peak_indices and
+Apart from GFA, csapeaks also has the attributes peak_values, peak_indices and
 ODF. peak_values shows the maxima values of the ODF and peak_indices gives us
 their position on the discrete sphere that was used to do the reconstruction of
 the ODF. In order to obtain the full ODF, return_odf should be True. Before
