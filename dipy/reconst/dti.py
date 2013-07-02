@@ -34,6 +34,7 @@ def _roll_evals(evals, axis=-1):
 
     return evals
 
+
 def fractional_anisotropy(evals, axis=-1):
     r"""
     Fractional anisotropy (FA) of a diffusion tensor.
@@ -210,22 +211,21 @@ def color_fa(fa, evecs):
         Colormap of the FA with red for the x value, y for the green
         value and z for the blue value.
 
-    Notes
+    Note
     -----
 
-    it is computed from the clipped FA between 0 and 1 using the following
+    It is computed from the clipped FA between 0 and 1 using the following
     formula
 
     .. math::
 
-        rgb = abs(max(eigen_vector)) \times fa
+        rgb = abs(max(\vec{e})) \times fa
     """
+
     if (fa.shape != evecs[..., 0, 0].shape) or ((3, 3) != evecs.shape[-2:]):
         raise ValueError("Wrong number of dimensions for evecs")
 
-    fa = np.clip(fa, 0, 1)
-    rgb = np.abs(evecs[..., 0]) * fa[..., None]
-    return rgb
+    return np.abs(evecs[..., 0]) * np.clip(fa, 0, 1)[..., None]
 
 
 # The following are used to calculate the tensor mode:
@@ -258,7 +258,7 @@ def determinant(q_form):
 
 def isotropic(q_form):
     r"""
-    Calculate the istropic part of the tensor [1]_.
+    Calculate the isotropic part of the tensor [1]_.
 
     Parameters
     ----------
@@ -395,7 +395,7 @@ def mode(q_form):
     A_s_norm = norm(A_squiggle)
     # Add two dims for the (3,3), so that it can broadcast on A_squiggle:
     A_s_norm = A_s_norm.reshape(A_s_norm.shape + (1, 1))
-    return  3 * np.sqrt(6) * determinant((A_squiggle / A_s_norm))
+    return 3 * np.sqrt(6) * determinant((A_squiggle / A_s_norm))
 
 
 def linearity(evals, axis=-1):
@@ -731,7 +731,6 @@ class TensorFit(object):
         """
         return trace(self.evals)
 
-
     @auto_attr
     def planarity(self):
         r"""
@@ -756,7 +755,6 @@ class TensorFit(object):
 
         """
         return planarity(self.evals)
-
 
     @auto_attr
     def linearity(self):
@@ -783,7 +781,6 @@ class TensorFit(object):
         """
         return linearity(self.evals)
 
-
     @auto_attr
     def sphericity(self):
         r"""
@@ -808,7 +805,6 @@ class TensorFit(object):
 
         """
         return sphericity(self.evals)
-
 
     def odf(self, sphere):
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
