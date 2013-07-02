@@ -210,22 +210,21 @@ def color_fa(fa, evecs):
         Colormap of the FA with red for the x value, y for the green
         value and z for the blue value.
 
-    Notes
+    Note
     -----
 
-    it is computed from the clipped FA between 0 and 1 using the following
+    It is computed from the clipped FA between 0 and 1 using the following
     formula
 
     .. math::
 
-        rgb = abs(max(eigen_vector)) \times fa
+        rgb = abs(max(eigen\_vector)) \times fa
     """
+
     if (fa.shape != evecs[..., 0, 0].shape) or ((3, 3) != evecs.shape[-2:]):
         raise ValueError("Wrong number of dimensions for evecs")
 
-    fa = np.clip(fa, 0, 1)
-    rgb = np.abs(evecs[..., 0]) * fa[..., None]
-    return rgb
+    return np.abs(evecs[..., 0]) * np.clip(fa, 0, 1)[..., None]
 
 
 # The following are used to calculate the tensor mode:
@@ -258,7 +257,7 @@ def determinant(q_form):
 
 def isotropic(q_form):
     r"""
-    Calculate the istropic part of the tensor [1]_.
+    Calculate the isotropic part of the tensor [1]_.
 
     Parameters
     ----------
