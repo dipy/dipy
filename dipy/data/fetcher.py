@@ -14,6 +14,110 @@ from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
 
+def fetch_isbi2013_2shell():
+    """ Download a 2-shell software phantom dataset 
+    """
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    url = 'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/'
+    uraw = url + '2shells-1500-2500-N64-SNR-30.nii.gz'
+    ubval = url + '2shells-1500-2500-N64.bval'
+    ubvec = url + '2shells-1500-2500-N64.bvec'
+    folder = pjoin(dipy_home, 'isbi2013')
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading raw 2-shell synthetic data (20MB)...')
+        opener = urlopen(uraw)
+        open(pjoin(folder, 'phantom64.nii.gz'), 'wb').write(opener.read())
+
+        opener = urlopen(ubval)
+        open(pjoin(folder, 'phantom64.bval'), 'w').write(opener.read())
+
+        opener = urlopen(ubvec)
+        open(pjoin(folder, 'phantom64.bvec'), 'w').write(opener.read())
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+    else:
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+
+
+def read_isbi2013_2shell():
+    """ Load ISBI 2013 2-shell synthetic dataset
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    gtab : obj,
+        GradientTable
+    """
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    folder = pjoin(dipy_home, 'isbi2013')
+    fraw = pjoin(folder, 'phantom64.nii.gz')
+    fbval = pjoin(folder, 'phantom64.bval')
+    fbvec = pjoin(folder, 'phantom64.bvec')
+
+    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+
+    gtab = gradient_table(bvals, bvecs)
+    img = nib.load(fraw)
+    return img, gtab
+
+
+def fetch_sherbrooke_3shell():
+    """ Download a 3shell HARDI dataset with 192 gradient directions
+    """
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    url = 'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/'
+    uraw = url + '3shells-1000-2000-3500-N193.nii.gz'
+    ubval = url + '3shells-1000-2000-3500-N193.bval'
+    ubvec = url + '3shells-1000-2000-3500-N193.bvec'
+    folder = pjoin(dipy_home, 'sherbrooke_3shell')
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading raw 3-shell data (184MB)...')
+        opener = urlopen(uraw)
+        open(pjoin(folder, 'HARDI193.nii.gz'), 'wb').write(opener.read())
+
+        opener = urlopen(ubval)
+        open(pjoin(folder, 'HARDI193.bval'), 'w').write(opener.read())
+
+        opener = urlopen(ubvec)
+        open(pjoin(folder, 'HARDI193.bvec'), 'w').write(opener.read())
+
+        print('Done.')
+        print('Files copied in folder %s' % folder)
+    else:
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+
+
+def read_sherbrooke_3shell():
+    """ Load Sherbrooke 3-shell HARDI dataset
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    gtab : obj,
+        GradientTable
+    """
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    folder = pjoin(dipy_home, 'sherbrooke_3shell')
+    fraw = pjoin(folder, 'HARDI193.nii.gz')
+    fbval = pjoin(folder, 'HARDI193.bval')
+    fbvec = pjoin(folder, 'HARDI193.bvec')
+
+    bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
+
+    gtab = gradient_table(bvals, bvecs)
+    img = nib.load(fraw)
+    return img, gtab
+
+
 def fetch_stanford_hardi():
     """ Download a HARDI dataset with 160 gradient directions
     """

@@ -27,7 +27,11 @@ import numpy as np
 from dipy.data.fetcher import (fetch_stanford_hardi,
                                read_stanford_hardi,
                                fetch_taiwan_ntu_dsi,
-                               read_taiwan_ntu_dsi)
+                               read_taiwan_ntu_dsi,
+                               fetch_sherbrooke_3shell,
+                               read_sherbrooke_3shell,
+                               fetch_isbi2013_2shell,
+                               read_isbi2013_2shell)
 from ..utils.arrfuncs import as_native_array
 
 THIS_DIR = dirname(__file__)
