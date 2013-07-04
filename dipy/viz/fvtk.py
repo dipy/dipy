@@ -1178,7 +1178,7 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     vertices = sphere.vertices
 
     if sphere_values.shape[-1] != sphere.vertices.shape[0]:
-        msg = 'Sphere.vertice.shape[0] should be the same as the'
+        msg = 'Sphere.vertice.shape[0] should be the same as the '
         msg += 'last dimensions of sphere_values i.e. sphere_values.shape[-1]'
         raise ValueError(msg)
 
