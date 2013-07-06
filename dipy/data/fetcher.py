@@ -17,6 +17,25 @@ import nibabel as nib
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
+def fetch_scil_b0():
+    """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
+        different magnetic fields (1.5T and 3T)
+    """
+    url = 'http://scil.dinf.usherbrooke.ca/wp-content/data/'
+    uraw = url+'datasets_multi-site_all_companies.zip'
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    folder = pjoin(dipy_home, 'datasets_multi-site_all_companies')
+
+    if not os.path.exists(folder):
+        print('Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
+        opener = urlopen(uraw)
+        open(uraw, 'wb').write(opener.read())
+        
+        print('Done.')
+        print('Files copied in folder %s' % dipy_home)
+    else:
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % dipy_home)
+
 
 def check_md5(filename, stored_md5):
     """

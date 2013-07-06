@@ -3,10 +3,11 @@ import copy
 from scipy.ndimage import binary_opening, label
 from scipy.ndimage.filters import median_filter
 
-def dwi_bet(input_volume, median_radius=4, numpass=4, autocrop=True):
+def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     """
-    Simple brain extraction tool (BET) method for DWI data. It uses a median filter 
-    smoothing of the input_volume and an automatic histogram Otsu thresholding technique. 
+    Simple brain extraction tool method for b0 images from DWI data. It uses a median filter 
+    smoothing of the input_volume and an automatic histogram Otsu thresholding technique, hence
+    the name medostsu. 
 
     It mimics the MRtrix bet from the documentation.
     (mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | median3D - mask.nii)
@@ -16,8 +17,8 @@ def dwi_bet(input_volume, median_radius=4, numpass=4, autocrop=True):
     robust choice is median_radis=4, numpass=4
     Parameters
     ----------
-    input_volume : 3D or 4D ndarray
-        3D ndarray if b=0 volume is provide, 4D ndarray if whole DWI data is provided
+    input_volume : 3D ndarray
+        3D ndarray of the b=0 volume 
     median_radius : float
         Radius of the applied median filter (default 4)
     numpass: int
@@ -25,10 +26,11 @@ def dwi_bet(input_volume, median_radius=4, numpass=4, autocrop=True):
     autocrop: bool, optional
         if True, the masked input_volume will also be cropped using the bounding box
         defined by the masked data. Should be on if DWI is upsampled to 1x1x1 resolution.
+        (default False)
 
     Returns
     -------
-    input_volume : 3D or 4D ndarray
+    input_volume : 3D 
         Masked input_volume
     mask : 3D ndarray
         The binary brain mask
@@ -37,15 +39,10 @@ def dwi_bet(input_volume, median_radius=4, numpass=4, autocrop=True):
     # The original data will be needed for final crop / mask
     vol = input_volume.copy()
 
-    # Use only first 3D slice. Should have an automatic way to detect b=0 images
-    # average them and compute mask vol from it.
-    if len(vol.shape) > 3:
-        vol = vol[:,:,:,0]
-
     # Make a mask using a multiple pass median filter and histogram thresholding.
     mask = multi_median(vol, median_radius, numpass)
     thresh = otsu(mask)
-    threshold2(mask, thresh)
+    binary_threshold(mask, thresh)
     
     # Auto crop the volumes using the mask as input_volume for bounding box computing.
     if autocrop:
@@ -62,13 +59,13 @@ def dwi_bet(input_volume, median_radius=4, numpass=4, autocrop=True):
 def multi_median(input, median_radius, numpass):
     """
     Applies a median filter with median_radius numpass times on input.
-    
     """
     outvol = np.zeros_like(input, dtype=input.dtype)
     
     # Array representing the size of the median window in each dimension.
     medarr = np.ones_like(input.shape) * ((median_radius * 2) +1)
-
+    print medarr
+    
     # Multi pass
     for i in range(0, numpass):
         median_filter(input, medarr, output=input)
@@ -120,16 +117,16 @@ def applymask(vol, mask):
         vol[outliers] = 0
 
 
-def threshold2(vol, thresh):
+def binary_threshold(vol, thresh):
     """
-    Simple binary thresholding of vol bigger or equal to thresh
+    Simple binary thresholding of vol bigger than thresh
     """
     maxval = maxvalue(vol.dtype)
     for x in np.nditer(vol, flags=['external_loop','buffered'],
                        op_flags=['readwrite'], order='F'):
 
-        x[np.where(x >= thresh)] = maxval
-        x[np.where(x < thresh)] = 0
+        x[np.where(x > thresh)] = maxval
+        x[np.where(x <= thresh)] = 0
 
 def maxvalue(datatype):
     if datatype.kind in 'iu':
@@ -142,6 +139,7 @@ def bounding_box(vol):
     Compute the bounding box of nonzero intensity voxels of vol
     """
     pts = np.array(np.where(vol != 0)).T
+
     if len(pts) == 0:
         print 'WARNING: Not data found in volume to bound. Returning empty bounding box.'
         return [0,0,0], [0,0,0]
@@ -163,4 +161,4 @@ def bounding_box(vol):
     return npmins, npmaxs
 
 def crop(vol, mins, maxs):
-    return vol[mins[0]:maxs[0],mins[1]:maxs[1],mins[2]:maxs[2]]
+    return vol[mins[0]:maxs[0]+1, mins[1]:maxs[1]+1, mins[2]:maxs[2]+1]
