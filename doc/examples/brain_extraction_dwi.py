@@ -27,7 +27,7 @@ for f in files :
     nib.save(mask_img, fname+'_binary_mask.nii.gz')
     nib.save(b0_img, fname+'_mask.nii.gz')
     
-    b0_mask_crop, mask_crop = dwi_bet(data, 4, 4, autocrop=True)
+    b0_mask_crop, mask_crop = medotsu(data, 4, 4, autocrop=True)
     mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.get_affine())
     b0_img_crop = nib.Nifti1Image(b0_mask_crop.astype(np.float32), img.get_affine())
     nib.save(mask_img_crop, fname+'_binary_mask_crop.nii.gz')
