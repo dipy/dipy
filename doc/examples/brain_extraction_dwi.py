@@ -3,7 +3,7 @@ import numpy as np
 import nibabel as nib
 from dipy.data import fetch_scil_b0
 from dipy.segment.mask import medotsu
-
+from os.path import join as pjoin
 
 fetch_scil_b0()
 

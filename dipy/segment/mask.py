@@ -64,7 +64,6 @@ def multi_median(input, median_radius, numpass):
     
     # Array representing the size of the median window in each dimension.
     medarr = np.ones_like(input.shape) * ((median_radius * 2) +1)
-    print medarr
     
     # Multi pass
     for i in range(0, numpass):

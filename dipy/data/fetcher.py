@@ -29,8 +29,13 @@ def fetch_scil_b0():
     if not os.path.exists(folder):
         print('Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
         opener = urlopen(uraw)
-        open(uraw, 'wb').write(opener.read())
-        
+        open(folder+'.zip', 'wb').write(opener.read())
+
+        import zipfile
+        print('Unziping '+folder+'.zip ...')
+        zip = zipfile.ZipFile(folder+'.zip', 'r')
+        zip.extractall(dipy_home)
+
         print('Done.')
         print('Files copied in folder %s' % dipy_home)
     else:
