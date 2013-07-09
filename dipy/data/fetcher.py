@@ -27,6 +27,8 @@ def fetch_scil_b0():
     folder = pjoin(dipy_home, 'datasets_multi-site_all_companies')
 
     if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
         print('Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
         opener = urlopen(uraw)
         open(folder+'.zip', 'wb').write(opener.read())
