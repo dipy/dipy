@@ -19,7 +19,7 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     ----------
     input_volume : 3D ndarray
         3D ndarray of the b=0 volume 
-    median_radius : float
+    median_radius : int
         Radius of the applied median filter (default 4)
     numpass: int
         Number of pass of the median filter (default 4)
@@ -30,7 +30,7 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
 
     Returns
     -------
-    input_volume : 3D 
+    input_volume : 3D ndarray
         Masked input_volume
     mask : 3D ndarray
         The binary brain mask
@@ -58,7 +58,20 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
 
 def multi_median(input, median_radius, numpass):
     """
-    Applies a median filter with median_radius numpass times on input.
+    Applies multiple times scikit's median filter on input data.
+
+    Parameters
+    ----------
+    input : ndarray
+        The input volume to apply filter on.
+    median_radius : int
+        Radius of the applied median filter (default 4)
+    numpass: int
+        Number of pass of the median filter (default 4)
+    Returns
+    -------
+        input : ndarray
+            Filtered input volume.
     """
     outvol = np.zeros_like(input, dtype=input.dtype)
     
@@ -72,10 +85,23 @@ def multi_median(input, median_radius, numpass):
     return input
 
 def otsu(image, nbins=256):
-    """
-    Automatic histogram thresholding
-    """
+    """Return threshold value based on Otsu's method.
 
+    Copied from scikit-image to remove dependency.
+
+    Parameters
+    ----------
+    image : array
+        Input image.
+    nbins : int
+        Number of bins used to calculate histogram. This value is ignored for
+        integer arrays.
+
+    Returns
+    -------
+    threshold : float
+        Threshold value.
+    """
     hist, bin_centers = np.histogram(image, nbins)
     hist = hist.astype(float)
 
@@ -101,6 +127,13 @@ def applymask(vol, mask):
     """
     Recursively applies N dimensionnal mask to a M dimensionnal volume
     for N <= M.
+
+    Parameters
+    ----------
+        vol : ndarray
+            Volume to apply mask on.
+        mask : ndarray
+            Binary mask.
     """
     if len(mask.shape) > len(vol.shape):
         raise Exception('applymask: The mask\'s dimmensionnality is bigger than the input\'s')
@@ -118,7 +151,14 @@ def applymask(vol, mask):
 
 def binary_threshold(vol, thresh):
     """
-    Simple binary thresholding of vol bigger than thresh
+    Simple binary thresholding.
+
+    Parameters
+    ----------
+        vol : ndarray
+            Volume to apply threshold on.
+        thresh : float
+            Thresholding value.
     """
     maxval = maxvalue(vol.dtype)
     for x in np.nditer(vol, flags=['external_loop','buffered'],
@@ -128,6 +168,19 @@ def binary_threshold(vol, thresh):
         x[np.where(x <= thresh)] = 0
 
 def maxvalue(datatype):
+    """
+    Returns the maxvalue of the input datatype.
+
+    Parameters
+    ----------
+        datatype : dtype
+            Datatype to get max value.
+
+    Returns
+    -------
+        maxvalue : numeric
+            Maximum possible valu of the input datatype
+    """
     if datatype.kind in 'iu':
         return np.iinfo(datatype.type).max
     else:
@@ -135,7 +188,19 @@ def maxvalue(datatype):
 
 def bounding_box(vol):
     """
-    Compute the bounding box of nonzero intensity voxels of vol
+    Compute the bounding box of nonzero intensity voxels in the volume.
+
+    Parameters
+    ----------
+        vol : ndarray
+            Volume to compute bounding box on.
+
+    Returns
+    -------
+        npmins : array
+            Array containg minimum index of each dimension
+        npmaxs : array
+            Array containg maximum index of each dimension
     """
     pts = np.array(np.where(vol != 0)).T
 
@@ -160,4 +225,21 @@ def bounding_box(vol):
     return npmins, npmaxs
 
 def crop(vol, mins, maxs):
+    """
+    Crops the input volume.
+
+    Parameters
+    ----------
+        vol : 3D ndarray
+            Volume to crop.
+        mins : array
+            Array containg minimum index of each dimension.
+        maxs : array
+            Array containg maximum index of each dimension.
+
+    Returns
+    -------
+        vol : 3D ndarray
+            The cropped volume.
+    """
     return vol[mins[0]:maxs[0]+1, mins[1]:maxs[1]+1, mins[2]:maxs[2]+1]
