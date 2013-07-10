@@ -173,19 +173,6 @@ evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), img.get_affine())
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
-Now, lets get the tensor coefficients D and format them as 
-D = [dxx, dxy, dxz, dyy, dyz, dzz] for visualisation in the Fibernavigator 
-(http://scilus.github.io/fibernavigator). 
-"""
-
-tensor_vals = lower_triangular(tenfit.quadratic_form)
-correct_order = [0,1,3,2,4,5]
-tensor_vals_reordered = tensor_vals[:,:,:,correct_order]
-nib.save(nib.Nifti1Image(tensor_vals_reordered.astype(np.float32), img.get_affine()), 
-         'tensors_coefs.nii.gz')
-
-
-"""
 Other tensor statistics can be calculated from the `tenfit` object. For example,
 a commonly calculated statistic is the mean diffusivity (MD). This is simply the
 mean of the  eigenvalues of the tensor. Since FA is a normalized
@@ -200,7 +187,6 @@ nib.save(nib.Nifti1Image(MD1.astype(np.float32), img.get_affine()), 'tensors_md.
 
 """
 The other is to call the TensorFit class method: 
-
 """
 
 MD2 = tenfit.md
