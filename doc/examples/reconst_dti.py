@@ -15,18 +15,18 @@ The diffusion tensor models the diffusion signal as:
 
 .. math::
 
-    \frac{S(\theta, b)}{S_0} = e^{-b\theta^t Q \theta}
+    \frac{S(\mathbf{g}, b)}{S_0} = e^{-b\mathbf{g}^T \mathbf{D} \mathbf{g}}
 
-Where $\theta$ is a unit vector in 3 space indicating the direction of
+Where $\mathbf{g}$ is a unit vector in 3 space indicating the direction of
 measurement and b are the parameters of measurement, such as the strength and
-duration of diffusion-weighting gradient. $S(\theta, b)$ is the
+duration of diffusion-weighting gradient. $S(\mathbf{g}, b)$ is the
 diffusion-weighted signal measured and $S_0$ is the signal conducted in a
-measurement with no diffusion weighting. Q is a positive-definite quadratic
+measurement with no diffusion weighting. \mathbf{D} is a positive-definite quadratic
 form, which contains six free parameters to be fit. These six parameters are:
 
 .. math::
 
-   Q = \begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\
+   \mathbf{D} = \begin{pmatrix} D_{xx} & D_{xy} & D_{xz} \\
                        D_{yx} & D_{yy} & D_{yz} \\
                        D_{zx} & D_{zy} & D_{zz} \\ \end{pmatrix}
 
@@ -113,6 +113,7 @@ Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
 
+print('Tensor fitting computation')
 tenfit = tenmodel.fit(data, mask)
 
 """
@@ -140,7 +141,8 @@ where more than one population of white matter fibers crosses.
 
 """
 
-from dipy.reconst.dti import fractional_anisotropy
+print('Computing anisotropy measures (FA, MD, RGB)')
+from dipy.reconst.dti import fractional_anisotropy, color_fa, lower_triangular
 
 FA = fractional_anisotropy(tenfit.evals)
 
@@ -155,18 +157,19 @@ FA[np.isnan(FA)] = 0
 """
 Saving the FA images is very easy using nibabel. We need the FA volume and the
 affine matrix which transform the image's coordinates to the world coordinates.
+Here, we choose to save the FA in float32.
 """
 
-fa_img = nib.Nifti1Image(FA, img.get_affine())
+fa_img = nib.Nifti1Image(FA.astype(np.float32), img.get_affine())
 nib.save(fa_img, 'tensor_fa.nii.gz')
 
 """
 You can now see the result with any nifti viewer or check it slice by slice
-using matplotlib_'s imshow. In the same way you can save the eigen values the
+using matplotlib_'s imshow. In the same way you can save the eigen values, the
 eigen vectors or any other properties of the Tensor.
 """
 
-evecs_img = nib.Nifti1Image(tenfit.evecs, img.get_affine())
+evecs_img = nib.Nifti1Image(tenfit.evecs.astype(np.float32), img.get_affine())
 nib.save(evecs_img, 'tensor_evecs.nii.gz')
 
 """
@@ -180,10 +183,10 @@ eigen-values of the TensorFit class instance:
 """
 
 MD1 = dti.mean_diffusivity(tenfit.evals)
+nib.save(nib.Nifti1Image(MD1.astype(np.float32), img.get_affine()), 'tensors_md.nii.gz')
 
 """
 The other is to call the TensorFit class method: 
-
 """
 
 MD2 = tenfit.md
@@ -191,12 +194,21 @@ MD2 = tenfit.md
 """
 Obviously, the quantities are identical.
 
-Finally lets try to visualize the orientation distribution functions of a small
-rectangular area around the middle of our datasets.
+We can also compute the colored FA or RGB-map [Pajevic1999]_. First, we make sure 
+that the FA is scaled between 0 and 1, we compute the RGB map and save it.
 """
 
-i,j,k,w = np.array(data.shape) / 2
-data_small  = data[i-5:i+5, j-5:j+5, k-2:k+2]
+FA = np.clip(FA, 0, 1)
+RGB = color_fa(FA, tenfit.evecs)
+nib.save(nib.Nifti1Image(np.array(255 * RGB, 'uint8'), img.get_affine()), 'tensor_rgb.nii.gz')
+
+"""
+Finally lets try to visualize the orientation distribution functions of a small
+rectangular in an axial slice of the splenium of the corpus callosum (CC).
+"""
+
+print('Computing tensor ODFs in a part of the splenium of the CC')
+data_small  = data[20:50,55:85, 38:39]
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
@@ -204,7 +216,7 @@ from dipy.viz import fvtk
 r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(tenmodel.fit(data_small).odf(sphere),
 							  sphere, colormap=None))
-
+#fvtk.show(r)
 print('Saving illustration as tensor_odfs.png')
 fvtk.record(r, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
 
@@ -229,6 +241,11 @@ other examples.
 
 .. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
                 spectroscopy and imaging.
+
+.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent 
+                 the orientation of anisotropic tissues from diffusion tensor 
+                 data: application to white matter fiber tract mapping in 
+                 the human brain.
 
 .. include:: ../links_names.inc
 
