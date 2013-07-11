@@ -65,9 +65,9 @@ def multi_median(input, median_radius, numpass):
     input : ndarray
         The input volume to apply filter on.
     median_radius : int
-        Radius of the applied median filter (default 4)
+        Radius of the applied median filter
     numpass: int
-        Number of pass of the median filter (default 4)
+        Number of pass of the median filter
     Returns
     -------
         input : ndarray
@@ -179,7 +179,7 @@ def maxvalue(datatype):
     Returns
     -------
         maxvalue : numeric
-            Maximum possible valu of the input datatype
+            Maximum possible value of the input datatype
     """
     if datatype.kind in 'iu':
         return np.iinfo(datatype.type).max
