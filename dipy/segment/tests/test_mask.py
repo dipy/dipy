@@ -18,7 +18,7 @@ def test_mask():
     mask = voln.copy()
 
     thresh = otsu(mask)
-    binary_threshold(mask, thresh)
+    mask = binary_threshold(mask, thresh)
     initial_otsu = np.sum(mask > 0)
     assert_equal(initial_otsu, initial)
 
