@@ -2,6 +2,7 @@ import numpy as np
 import copy
 from scipy.ndimage import binary_opening, label
 from scipy.ndimage.filters import median_filter
+from scipy.stats import threshold
 
 def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     """
@@ -42,7 +43,7 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     # Make a mask using a multiple pass median filter and histogram thresholding.
     mask = multi_median(vol, median_radius, numpass)
     thresh = otsu(mask)
-    binary_threshold(mask, thresh)
+    mask = binary_threshold(mask, thresh)
     
     # Auto crop the volumes using the mask as input_volume for bounding box computing.
     if autocrop:
@@ -160,31 +161,10 @@ def binary_threshold(vol, thresh):
         thresh : float
             Thresholding value.
     """
-    maxval = maxvalue(vol.dtype)
-    for x in np.nditer(vol, flags=['external_loop','buffered'],
-                       op_flags=['readwrite'], order='F'):
+    outvol = np.zeros_like(vol, dtype=np.uint8)
+    outvol[np.where(vol > thresh)] = 1
 
-        x[np.where(x > thresh)] = maxval
-        x[np.where(x <= thresh)] = 0
-
-def maxvalue(datatype):
-    """
-    Returns the maxvalue of the input datatype.
-
-    Parameters
-    ----------
-        datatype : dtype
-            Datatype to get max value.
-
-    Returns
-    -------
-        maxvalue : numeric
-            Maximum possible value of the input datatype
-    """
-    if datatype.kind in 'iu':
-        return np.iinfo(datatype.type).max
-    else:
-        return np.finfo(datatype.type).max
+    return outvol
 
 def bounding_box(vol):
     """
