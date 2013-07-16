@@ -44,7 +44,7 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     mask = multi_median(vol, median_radius, numpass)
     thresh = otsu(mask)
     mask = binary_threshold(mask, thresh)
-    
+
     # Auto crop the volumes using the mask as input_volume for bounding box computing.
     if autocrop:
         mins, maxs = bounding_box(mask)
@@ -56,6 +56,21 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
 
     return input_volume, mask
 
+def medotsu_4D(input_volume, median_radius=4, numpass=4, autocrop=False):
+    if len(input_volume.shape) != 4:
+        raise Exception('medotsu_4D: Make sure the input volume is 4D.')
+    else:
+        masked, mask = medotsu(input_volume[..., 0], median_radius, numpass, False)
+
+    if(autocrop):
+        mins, maxs = bounding_box(mask)
+        mask = crop(mask, mins, maxs)
+
+        input_volume = crop(input_volume, mins, maxs)
+
+    applymask(input_volume, mask)
+
+    return input_volume, mask
 
 def multi_median(input, median_radius, numpass):
     """
@@ -140,7 +155,7 @@ def applymask(vol, mask):
         raise Exception('applymask: The mask\'s dimmensionnality is bigger than the input\'s')
 
     elif len(mask.shape) < len(vol.shape):
-        lastdimelen = vol.shape[len(vol.shape)-1]
+        lastdimlen = vol.shape[len(vol.shape)-1]
         for i in range(0,lastdimlen):
             applymask(vol[..., i], mask)
     else:
