@@ -51,7 +51,7 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
         mask = crop(mask, mins, maxs)
         input_volume = crop(input_volume, mins, maxs)
 
-    # Apply the cropped mask to the cropped original volume.
+    # Apply the mask to the original volume.
     applymask(input_volume, mask)
 
     return input_volume, mask
@@ -71,13 +71,13 @@ def multi_median(input, median_radius, numpass):
         Number of pass of the median filter
     Returns
     -------
-        input : ndarray
-            Filtered input volume.
+    input : ndarray
+        Filtered input volume.
     """
     outvol = np.zeros_like(input, dtype=input.dtype)
     
     # Array representing the size of the median window in each dimension.
-    medarr = np.ones_like(input.shape) * ((median_radius * 2) +1)
+    medarr = np.ones_like(input.shape) * ((median_radius * 2) + 1)
     
     # Multi pass
     for i in range(0, numpass):
@@ -104,7 +104,7 @@ def otsu(image, nbins=256):
         Threshold value.
     """
     hist, bin_centers = np.histogram(image, nbins)
-    hist = hist.astype(float)
+    hist = hist.astype(np.float)
 
     # class probabilities for all possible thresholds
     weight1 = np.cumsum(hist)
@@ -131,15 +131,15 @@ def applymask(vol, mask):
 
     Parameters
     ----------
-        vol : ndarray
-            Volume to apply mask on.
-        mask : ndarray
-            Binary mask.
+    vol : ndarray
+        Volume to apply mask on.
+    mask : ndarray
+        Binary mask.
     """
     if len(mask.shape) > len(vol.shape):
         raise Exception('applymask: The mask\'s dimmensionnality is bigger than the input\'s')
 
-    elif len(mask.shape) > len(vol.shape):
+    elif len(mask.shape) < len(vol.shape):
         lastdimelen = vol.shape[len(vol.shape)-1]
         for i in range(0,lastdimlen):
             applymask(vol[..., i], mask)
@@ -156,10 +156,10 @@ def binary_threshold(vol, thresh):
 
     Parameters
     ----------
-        vol : ndarray
-            Volume to apply threshold on.
-        thresh : float
-            Thresholding value.
+    vol : ndarray
+        Volume to apply threshold on.
+    thresh : float
+        Thresholding value.
     """
     outvol = np.zeros_like(vol, dtype=np.uint8)
     outvol[np.where(vol > thresh)] = 1
@@ -177,10 +177,10 @@ def bounding_box(vol):
 
     Returns
     -------
-        npmins : array
-            Array containg minimum index of each dimension
-        npmaxs : array
-            Array containg maximum index of each dimension
+    npmins : array
+        Array containg minimum index of each dimension
+    npmaxs : array
+        Array containg maximum index of each dimension
     """
     pts = np.array(np.where(vol != 0)).T
 
@@ -210,12 +210,12 @@ def crop(vol, mins, maxs):
 
     Parameters
     ----------
-        vol : 3D ndarray
-            Volume to crop.
-        mins : array
-            Array containg minimum index of each dimension.
-        maxs : array
-            Array containg maximum index of each dimension.
+    vol : 3D ndarray
+        Volume to crop.
+    mins : array
+        Array containg minimum index of each dimension.
+    maxs : array
+        Array containg maximum index of each dimension.
 
     Returns
     -------

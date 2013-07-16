@@ -21,10 +21,11 @@ def fetch_scil_b0():
     """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
         different magnetic fields (1.5T and 3T)
     """
+    zipname = 'datasets_multi-site_all_companies'
     url = 'http://scil.dinf.usherbrooke.ca/wp-content/data/'
-    uraw = url+'datasets_multi-site_all_companies.zip'
+    uraw = url + zipname + '.zip'
     dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
-    folder = pjoin(dipy_home, 'datasets_multi-site_all_companies')
+    folder = pjoin(dipy_home, zipname)
 
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
