@@ -36,10 +36,12 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 """
 data.shape ``(81, 106, 76, 160)``
 
-Remove most of the background in the following simple way.
+Remove most of the background using dipy's mask module.
 """
+from dipy.segment.mask import medotsu4D
 
-mask = data[..., 0] > 50
+maskdata = data.copy()
+maskdata, mask = medotsu4D(maskdata, 3, 2, True)
 
 """
 We instantiate our CSA model with sperical harmonic order of 4
@@ -59,7 +61,7 @@ grid where the ODF values will be evaluated.
 sphere = get_sphere('symmetric724')
 
 csapeaks = peaks_from_model(model=csamodel,
-                            data=data,
+                            data=maskdata,
                             sphere=sphere,
                             relative_peak_threshold=.8,
                             min_separation_angle=45,
