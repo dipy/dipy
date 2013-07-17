@@ -98,8 +98,15 @@ the background of the image. This is because the signal is very low in these
 region. A better way would be to extract the brain region using a brain
 extraction method. But will skip that for now.
 """
+from dipy.segment.mask import medotsu_4D, applymask
+from pypavi.volumes.volume_utils import saveto
 
-mask = data[..., 0] > 50
+oldshape = data.shape
+
+saveto(data, './ORIGINAL.nii')
+data, mask = medotsu_4D(data, 3, 2, True)
+saveto(data, './MASKED.nii')
+print 'DONE MASKING'
 
 """
 Now that we have prepared the datasets we can go forward with the voxel
@@ -113,8 +120,7 @@ Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
 
-print('Tensor fitting computation')
-tenfit = tenmodel.fit(data, mask)
+tenfit = tenmodel.fit(data)
 
 """
 The fit method creates a TensorFit object which contains the fitting parameters
