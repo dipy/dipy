@@ -6,16 +6,19 @@ from scipy.stats import threshold
 
 def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     """
-    Simple brain extraction tool method for b0 images from DWI data. It uses a median filter 
-    smoothing of the input_volume and an automatic histogram Otsu thresholding technique, hence
-    the name medostsu. 
+    Simple brain extraction tool method for b0 images from DWI data. It uses a
+    median filter smoothing of the input_volume and an automatic histogram Otsu
+    thresholding technique, hence the name medostsu.
 
     It mimics the MRtrix bet from the documentation.
     (mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | median3D - mask.nii)
     MRtrix uses default mean_radius=3 and numpass=2
-    
-    However, from tests on multiple 1.5T and 3T data from GE, Philips, Siemens, the most
-    robust choice is median_radis=4, numpass=4
+
+    However, from tests on multiple 1.5T and 3T data from
+    GE, Philips, Siemens, the most robust choice is median_radis=4, numpass=4
+
+    Using medotsu with 4D data will actually yield good results but with very
+    poor performances. It is suggested to use medotsu4D when dealing with 4D data.
     Parameters
     ----------
     input_volume : 3D ndarray
@@ -25,9 +28,9 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     numpass: int
         Number of pass of the median filter (default 4)
     autocrop: bool, optional
-        if True, the masked input_volume will also be cropped using the bounding box
-        defined by the masked data. Should be on if DWI is upsampled to 1x1x1 resolution.
-        (default False)
+        if True, the masked input_volume will also be cropped using the bounding
+        box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
+        resolution. (default False)
 
     Returns
     -------
@@ -56,11 +59,37 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
 
     return input_volume, mask
 
-def medotsu_4D(input_volume, median_radius=4, numpass=4, autocrop=False):
+def medotsu4D(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slice=0):
+    """
+    Does the exact same processing than medotsu but on a 4D volume using the
+    b0 time slice to compute the mask.
+
+    Parameters
+    ----------
+    input_volume : 4D ndarray
+        4D ndarray
+    median_radius : int
+        Radius of the applied median filter (default 4)
+    numpass: int
+        Number of pass of the median filter (default 4)
+    autocrop: bool
+        if True, the masked input_volume will also be cropped using the bounding
+        box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
+        resolution. (default False)
+    b0Slice: int
+        Actual index of the b0 slice in the 4th dimension (default 0)
+
+    Returns
+    -------
+    input_volume : 4D ndarray
+        Masked input_volume
+    mask : 3D ndarray
+        The binary brain mask
+    """
     if len(input_volume.shape) != 4:
-        raise Exception('medotsu_4D: Make sure the input volume is 4D.')
+        raise Exception('medotsu4D: Make sure the input volume is 4D.')
     else:
-        masked, mask = medotsu(input_volume[..., 0], median_radius, numpass, False)
+        masked, mask = medotsu(input_volume[..., b0Slice], median_radius, numpass, False)
 
     if(autocrop):
         mins, maxs = bounding_box(mask)
@@ -101,8 +130,8 @@ def multi_median(input, median_radius, numpass):
     return input
 
 def otsu(image, nbins=256):
-    """Return threshold value based on Otsu's method.
-
+    """
+    Return threshold value based on Otsu's method.
     Copied from scikit-image to remove dependency.
 
     Parameters

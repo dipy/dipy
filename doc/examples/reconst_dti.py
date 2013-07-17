@@ -93,34 +93,26 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 """
 data.shape ``(81, 106, 76, 160)``
 
-Lets create a simple mask. This is a quick way to avoid calculating Tensors on
-the background of the image. This is because the signal is very low in these
-region. A better way would be to extract the brain region using a brain
-extraction method. But will skip that for now.
+First of all, we mask and crop the data. This is a quick way to avoid
+calculating Tensors on the background of the image. This is done using dipy's
+mask module.
 """
-from dipy.segment.mask import medotsu_4D, applymask
-from pypavi.volumes.volume_utils import saveto
+from dipy.segment.mask import medotsu4D
 
-oldshape = data.shape
-
-saveto(data, './ORIGINAL.nii')
-data, mask = medotsu_4D(data, 3, 2, True)
-saveto(data, './MASKED.nii')
-print 'DONE MASKING'
+newdat = data.copy()
+newdat, mask = medotsu4D(newdat, 3, 2, True)
 
 """
 Now that we have prepared the datasets we can go forward with the voxel
 reconstruction. First, we instantiate the Tensor model in the following way.
 """
-
 tenmodel = dti.TensorModel(gtab)
 
 """
 Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
-
-tenfit = tenmodel.fit(data)
+tenfit = tenmodel.fit(newdat)
 
 """
 The fit method creates a TensorFit object which contains the fitting parameters
