@@ -1,6 +1,7 @@
 #!/usr/bin/python
 """ Classes and functions for fitting tensors """
 # 5/17/2010
+from __future__ import division, print_function, absolute_import
 
 import warnings
 
@@ -556,6 +557,7 @@ class TensorModel(object):
         self.args = args
         self.kwargs = kwargs
 
+
     def fit(self, data, mask=None):
         """ Fit method of the DTI model class
 
@@ -1063,7 +1065,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     if weighting == 'sigma':
         if sigma is None:
              e_s = "Must provide sigma value as input to use this weighting"
-             e_s += "method"
+             e_s += " method"
              raise ValueError(e_s)
         w = 1/(sigma**2)
 
@@ -1171,29 +1173,30 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
+def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
 
     Parameters
     ----------
 
-    design_matrix: array (g, 7)
+    design_matrix : array of shape (g, 7)
         Design matrix holding the covariants used to solve for the regression
         coefficients. Use design_matrix to build a valid design matrix from
         bvalues and a gradient table.
 
-    data: array ([X, Y, Z, ...], g)
+    data : array of shape ([X, Y, Z, n_directions], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
-    sigma: an estimate of the variance. [Chang2005]_ recommend to use
-           1.5267 * std(background_noise), where background_noise is estimated
-           from some part of the image known to contain no signal (only noise).
+    sigma : float
+        An estimate of the variance. [Chang2005]_ recommend to use
+        1.5267 * std(background_noise), where background_noise is estimated
+        from some part of the image known to contain no signal (only noise).
 
     Returns
     -------
-
+    restore_params : an estimate of the tensor parameters in each voxel.
 
     Note
     ----
@@ -1202,8 +1205,6 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
 
     """
 
-    # Start by doing ols:
-    data, wrap = _makearray(data)
     # Flatten for the iteration over voxels:
     flat_data = data.reshape((-1, data.shape[-1]))
     # Use the OLS method parameters as the starting point for the optimization:
@@ -1256,7 +1257,7 @@ def restore_fit_tensor(design_matrix, data, sigma, min_signal=1):
 
         dti_params[vox] = this_dti
 
-    restore_params = wrap(dti_params)
+    restore_params = dti_params
     return restore_params
 
 
