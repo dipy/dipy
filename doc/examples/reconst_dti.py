@@ -99,8 +99,8 @@ mask module.
 """
 from dipy.segment.mask import medotsu4D
 
-newdat = data.copy()
-newdat, mask = medotsu4D(newdat, 3, 2, True)
+maskdata = data.copy()
+maskdata, mask = medotsu4D(maskdata, 3, 2, True)
 
 """
 Now that we have prepared the datasets we can go forward with the voxel
@@ -112,7 +112,7 @@ tenmodel = dti.TensorModel(gtab)
 Fitting the data is very simple. We just need to call the fit method of the
 TensorModel in the following way:
 """
-tenfit = tenmodel.fit(newdat)
+tenfit = tenmodel.fit(maskdata)
 
 """
 The fit method creates a TensorFit object which contains the fitting parameters
