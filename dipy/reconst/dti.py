@@ -1041,6 +1041,8 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     ----------
     tensor: 3 by 3 tensor
 
+    design_matrix
+
     signal: The voxel signal in all gradient directions
 
     weighting: str (optional).
@@ -1173,6 +1175,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
+            print(vox)
             dti_params[vox, :] = start_params
 
     dti_params.shape = data.shape[:-1] + (12,)
@@ -1237,9 +1240,9 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         # Do nlls using sigma weighting in this voxel:
         if jac:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                               args=(design_matrix, flat_data[vox],
-                                     'sigma', sigma),
-                                     Dfun=_nlls_jacobian_func)
+                                        args=(design_matrix, flat_data[vox],
+                                              'sigma', sigma),
+                                        Dfun=_nlls_jacobian_func)
         else:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
                                args=(design_matrix, flat_data[vox],
@@ -1251,7 +1254,14 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         # If any of the residuals are outliers:
         if np.any(residuals > 3 * sigma):
             # Do nlls with GMM-weighting:
-            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+            if jac:
+                this_tensor, status= opt.leastsq(_nlls_err_func,
+                                                 start_params,
+                                   args=(design_matrix, flat_data[vox], 'gmm'),
+                                         Dfun=_nlls_jacobian_func)
+            else:
+                this_tensor, status= opt.leastsq(_nlls_err_func,
+                                                 start_params,
                                    args=(design_matrix, flat_data[vox], 'gmm'))
 
             # How are you doin' on those residuals?
@@ -1262,25 +1272,35 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                 non_outlier_idx = np.where(residuals <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
+                if len(sigma>1):
+                    this_sigma = sigma[non_outlier_idx]
+                else:
+                    this_sigma = sigma
+
                 if jac:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                        args=(clean_design, clean_sig,
-                                             'sigma', sigma),
+                                             'sigma', this_sigma),
                                              Dfun=_nlls_jacobian_func)
                 else:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                        args=(clean_design, clean_sig,
-                                             'sigma', sigma))
+                                             'sigma', this_sigma))
 
+        # The parameters are the evals and the evecs:
+        try:
+            evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
 
-        # Finally, converge on some solution and use it:
-        this_dti = np.concatenate([np.ravel(x) for x in
-                                   decompose_tensor(
-                        from_lower_triangular(this_tensor[:6]).reshape(3,3))])
+        # If leastsq failed to converge and produced nans, we'll resort to the
+        # OLS solution in this voxel:
+        except np.linalg.LinAlgError:
+            print(vox)
+            dti_params[vox, :] = start_params
 
-        dti_params[vox] = this_dti
 
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params

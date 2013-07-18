@@ -20,6 +20,7 @@ from dipy.reconst.dti import (axial_diffusivity, color_fa,
 
 from dipy.io.bvectxt import read_bvec_file
 from dipy.data import get_data, dsi_voxels, get_sphere
+
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
@@ -494,3 +495,24 @@ def test_restore():
            tensor_est = tensor_model.fit(Y)
            assert_array_almost_equal(tensor_est.evals[0], evals)
            assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
+
+
+## def test_restore_data():
+##     data, bvals, bvecs = get_data('small_25')
+
+##     # We'll make two copies of the data, one has an outlier volume:
+##     d1 = nib.load(data).get_data()
+##     d2 = d1.copy()
+##     d2[..., 5] = 1.0
+
+##     gtab = grad.gradient_table(bvals, bvecs)
+
+##     # We find the params two ways, one's OLS:
+##     tm1 = dti.TensorModel(gtab, fit_method='OLS')
+##     # The other is RESTORE (let's guess that sigma is about 10):
+##     tm2 = dti.TensorModel(gtab, fit_method='restore', sigma=1000)
+
+##     f1 = tm1.fit(d1)
+##     f2 = tm2.fit(d2)
+
+##     assert_array_almost_equal(f1.fa, f2.fa)
