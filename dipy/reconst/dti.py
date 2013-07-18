@@ -1116,9 +1116,9 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
-    min_signal : default = 1
+    min_signal : float, optional
         All values below min_signal are repalced with min_signal. This is done
-        in order to avaid taking log(0) durring the tensor fitting.
+        in order to avaid taking log(0) durring the tensor fitting. Default = 1
 
     weighting: str
            the weighting scheme to use in considering the
@@ -1179,7 +1179,8 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     return dti_params
 
 
-def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
+def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
+                       jac=True):
     """
     Use the RESTORE algorithm [Chang2005]_ to calculate a robust tensor fit
 
@@ -1195,10 +1196,20 @@ def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
 
+    min_signal : float, optional
+        All values below min_signal are repalced with min_signal. This is done
+        in order to avaid taking log(0) durring the tensor fitting. Default = 1
+
     sigma : float
         An estimate of the variance. [Chang2005]_ recommend to use
         1.5267 * std(background_noise), where background_noise is estimated
         from some part of the image known to contain no signal (only noise).
+
+    jac : bool, optional
+        Whether to use the Jacobian of the tensor to speed the non-linear
+        optimization procedure used to fit the tensor paramters (see also
+        :func:`nlls_fit_tensor`). Default: True
+
 
     Returns
     -------
@@ -1224,11 +1235,15 @@ def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
     for vox in xrange(flat_data.shape[0]):
         start_params = ols_params[vox]
         # Do nlls using sigma weighting in this voxel:
-        this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+        if jac:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
                                args=(design_matrix, flat_data[vox],
                                      'sigma', sigma),
-                                     #disp=False
-                                  )
+                                     Dfun=_nlls_jacobian_func)
+        else:
+            this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
+                               args=(design_matrix, flat_data[vox],
+                                     'sigma', sigma))
 
         # Get the residuals:
         pred_sig = np.exp(np.dot(design_matrix, this_tensor))
@@ -1247,10 +1262,18 @@ def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
                 non_outlier_idx = np.where(residuals <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
-                this_tensor, status= opt.leastsq(_nlls_err_func, start_params,
+                if jac:
+                    this_tensor, status= opt.leastsq(_nlls_err_func,
+                                                     start_params,
                                        args=(clean_design, clean_sig,
                                              'sigma', sigma),
                                              Dfun=_nlls_jacobian_func)
+                else:
+                    this_tensor, status= opt.leastsq(_nlls_err_func,
+                                                     start_params,
+                                       args=(clean_design, clean_sig,
+                                             'sigma', sigma))
+
 
         # Finally, converge on some solution and use it:
         this_dti = np.concatenate([np.ravel(x) for x in
@@ -1259,6 +1282,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
 
         dti_params[vox] = this_dti
 
+    dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params
 
