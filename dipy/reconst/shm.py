@@ -385,7 +385,7 @@ class SphHarmFit(OdfFit):
 
     @property
     def shm_coeff(self):
-        """The spherical harmonic coefficients coefficients of the odf
+        """The spherical harmonic coefficients  of the odf
 
         Make this a property for now, if there is a usecase for modifying
         the coefficients we can add a setter or expose the coefficients more
@@ -413,7 +413,7 @@ class CsaOdfModel(SphHarmModel):
         invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
         F = F[:, None]
-        self._fit_matrix =  (F * L) / (8 * np.pi) * invB
+        self._fit_matrix = (F * L) / (8 * np.pi) * invB
 
     def _get_shm_coef(self, data, mask=None):
         """Returns the coefficients of the model"""
