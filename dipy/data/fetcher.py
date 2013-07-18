@@ -9,12 +9,33 @@ else:
     from urllib.request import urlopen
 
 from os.path import join as pjoin
+from hashlib import md5
 
 import numpy as np
 import nibabel as nib
 
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+
+
+def check_md5(filename, stored_md5):
+    """
+    Computes the md5 of filename and check if it matches with the supplied string md5
+
+    Input
+    -----
+    filename : string
+        Path to a file.
+    md5 : string
+        Known md5 of filename to check against.
+    """
+
+    md5_data = md5(open(filename, 'rb').read()).hexdigest()
+
+    if stored_md5 != md5_data:
+        print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
+               "but computed MD5 was", md5_data, '\n',
+               "Please check if the data has been downloaded correctly or if the upstream data changed.")
 
 
 def fetch_isbi2013_2shell():
@@ -26,7 +47,7 @@ def fetch_isbi2013_2shell():
     ubval = url + '2shells-1500-2500-N64.bval'
     ubvec = url + '2shells-1500-2500-N64.bvec'
     folder = pjoin(dipy_home, 'isbi2013')
-    md5_list = {'data': '42911a70f232321cf246315192d69c42',
+    md5_dict = {'data': '42911a70f232321cf246315192d69c42',
                 'bval': '90e8cf66e0f4d9737a3b3c0da24df5ea',
                 'bvec': '4b7aa2757a1ccab140667b76e8075cb1'}
 
@@ -37,15 +58,15 @@ def fetch_isbi2013_2shell():
 
         opener = urlopen(uraw)
         open(pjoin(folder, 'phantom64.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'phantom64.nii.gz'), md5_list['data'])
+        check_md5(pjoin(folder, 'phantom64.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
         open(pjoin(folder, 'phantom64.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'phantom64.bval'), md5_list['bval'])
+        check_md5(pjoin(folder, 'phantom64.bval'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
         open(pjoin(folder, 'phantom64.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'phantom64.bvec'), md5_list['bvec'])
+        check_md5(pjoin(folder, 'phantom64.bvec'), md5_dict['bvec'])
 
         print('Done.')
         print('Files copied in folder %s' % folder)
@@ -68,13 +89,13 @@ def read_isbi2013_2shell():
     fraw = pjoin(folder, 'phantom64.nii.gz')
     fbval = pjoin(folder, 'phantom64.bval')
     fbvec = pjoin(folder, 'phantom64.bvec')
-    md5_list = {'data': '42911a70f232321cf246315192d69c42',
+    md5_dict = {'data': '42911a70f232321cf246315192d69c42',
                 'bval': '90e8cf66e0f4d9737a3b3c0da24df5ea',
                 'bvec': '4b7aa2757a1ccab140667b76e8075cb1'}
 
-    check_md5(fraw, md5_list['data'])
-    check_md5(fbval, md5_list['bval'])
-    check_md5(fbvec, md5_list['bvec'])
+    check_md5(fraw, md5_dict['data'])
+    check_md5(fbval, md5_dict['bval'])
+    check_md5(fbvec, md5_dict['bvec'])
 
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
@@ -92,7 +113,7 @@ def fetch_sherbrooke_3shell():
     ubval = url + '3shells-1000-2000-3500-N193.bval'
     ubvec = url + '3shells-1000-2000-3500-N193.bvec'
     folder = pjoin(dipy_home, 'sherbrooke_3shell')
-    md5_list = {'data': '0b735e8f16695a37bfbd66aab136eb66',
+    md5_dict = {'data': '0b735e8f16695a37bfbd66aab136eb66',
                 'bval': 'e9b9bb56252503ea49d31fb30a0ac637',
                 'bvec': '0c83f7e8b917cd677ad58a078658ebb7'}
 
@@ -103,15 +124,15 @@ def fetch_sherbrooke_3shell():
 
         opener = urlopen(uraw)
         open(pjoin(folder, 'HARDI193.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_list['data'])
+        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
         open(pjoin(folder, 'HARDI193.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_list['bval'])
+        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
         open(pjoin(folder, 'HARDI193.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_list['bvec'])
+        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['bvec'])
 
         print('Done.')
         print('Files copied in folder %s' % folder)
@@ -134,13 +155,13 @@ def read_sherbrooke_3shell():
     fraw = pjoin(folder, 'HARDI193.nii.gz')
     fbval = pjoin(folder, 'HARDI193.bval')
     fbvec = pjoin(folder, 'HARDI193.bvec')
-    md5_list = {'data': '0b735e8f16695a37bfbd66aab136eb66',
+    md5_dict = {'data': '0b735e8f16695a37bfbd66aab136eb66',
                 'bval': 'e9b9bb56252503ea49d31fb30a0ac637',
                 'bvec': '0c83f7e8b917cd677ad58a078658ebb7'}
 
-    check_md5(fraw, md5_list['data'])
-    check_md5(fbval, md5_list['bval'])
-    check_md5(fbvec, md5_list['bvec'])
+    check_md5(fraw, md5_dict['data'])
+    check_md5(fbval, md5_dict['bval'])
+    check_md5(fbvec, md5_dict['bvec'])
 
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
@@ -158,7 +179,7 @@ def fetch_stanford_hardi():
     ubval = url + 'dwi.bvals'
     ubvec = url + 'dwi.bvecs'
     folder = pjoin(dipy_home, 'stanford_hardi')
-    md5_list = {'data': '0b18513b46132b4d1051ed3364f2acbc',
+    md5_dict = {'data': '0b18513b46132b4d1051ed3364f2acbc',
                 'bval': '4e08ee9e2b1d2ec3fddb68c70ae23c36',
                 'bvec': '4c63a586f29afc6a48a5809524a76cb4'}
 
@@ -169,15 +190,15 @@ def fetch_stanford_hardi():
 
         opener = urlopen(uraw)
         open(pjoin(folder, 'HARDI150.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI150.nii.gz'), md5_list['data'])
+        check_md5(pjoin(folder, 'HARDI150.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
         open(pjoin(folder, 'HARDI150.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI150.bval'), md5_list['bval'])
+        check_md5(pjoin(folder, 'HARDI150.bval'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
         open(pjoin(folder, 'HARDI150.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI150.bvec'), md5_list['bvec'])
+        check_md5(pjoin(folder, 'HARDI150.bvec'), md5_dict['bvec'])
 
         print('Done.')
         print('Files copied in folder %s' % folder)
@@ -200,13 +221,13 @@ def read_stanford_hardi():
     fraw = pjoin(folder, 'HARDI150.nii.gz')
     fbval = pjoin(folder, 'HARDI150.bval')
     fbvec = pjoin(folder, 'HARDI150.bvec')
-    md5_list = {'data': '0b18513b46132b4d1051ed3364f2acbc',
+    md5_dict = {'data': '0b18513b46132b4d1051ed3364f2acbc',
                 'bval': '4e08ee9e2b1d2ec3fddb68c70ae23c36',
                 'bvec': '4c63a586f29afc6a48a5809524a76cb4'}
 
-    check_md5(fraw, md5_list['data'])
-    check_md5(fbval, md5_list['bval'])
-    check_md5(fbvec, md5_list['bvec'])
+    check_md5(fraw, md5_dict['data'])
+    check_md5(fbval, md5_dict['bval'])
+    check_md5(fbvec, md5_dict['bvec'])
 
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
@@ -224,7 +245,7 @@ def fetch_taiwan_ntu_dsi():
     ubvec = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.bvec'
     ureadme = 'http://dl.dropbox.com/u/2481924/license_taiwan_ntu_dsi.txt'
     folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
-    md5_list = {'data': '950408c0980a7154cb188666a885a91f',
+    md5_dict = {'data': '950408c0980a7154cb188666a885a91f',
                 'bval': '602e5cb5fad2e7163e8025011d8a6755',
                 'bvec': 'a95eb1be44748c20214dc7aa654f9e6b',
                 'license': '7fa1d5e272533e832cc7453eeba23f44'}
@@ -236,19 +257,19 @@ def fetch_taiwan_ntu_dsi():
 
         opener = urlopen(uraw)
         open(pjoin(folder, 'DSI203.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203.nii.gz'), md5_list['data'])
+        check_md5(pjoin(folder, 'DSI203.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
         open(pjoin(folder, 'DSI203.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203.bval'), md5_list['bval'])
+        check_md5(pjoin(folder, 'DSI203.bval'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
         open(pjoin(folder, 'DSI203.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203.bvec'), md5_list['bvec'])
+        check_md5(pjoin(folder, 'DSI203.bvec'), md5_dict['bvec'])
 
         opener = urlopen(ureadme)
         open(pjoin(folder, 'DSI203_license.txt'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203_license.txt'), md5_list['license'])
+        check_md5(pjoin(folder, 'DSI203_license.txt'), md5_dict['license'])
 
         print('Done.')
         print('Files copied in folder %s' % folder)
@@ -275,15 +296,15 @@ def read_taiwan_ntu_dsi():
     fraw = pjoin(folder, 'DSI203.nii.gz')
     fbval = pjoin(folder, 'DSI203.bval')
     fbvec = pjoin(folder, 'DSI203.bvec')
-    md5_list = {'data': '950408c0980a7154cb188666a885a91f',
+    md5_dict = {'data': '950408c0980a7154cb188666a885a91f',
                 'bval': '602e5cb5fad2e7163e8025011d8a6755',
                 'bvec': 'a95eb1be44748c20214dc7aa654f9e6b',
                 'license': '7fa1d5e272533e832cc7453eeba23f44'}
 
-    check_md5(fraw, md5_list['data'])
-    check_md5(fbval, md5_list['bval'])
-    check_md5(fbvec, md5_list['bvec'])
-    check_md5(pjoin(folder, 'DSI203_license.txt'), md5_list['license'])
+    check_md5(fraw, md5_dict['data'])
+    check_md5(fbval, md5_dict['bval'])
+    check_md5(fbvec, md5_dict['bvec'])
+    check_md5(pjoin(folder, 'DSI203_license.txt'), md5_dict['license'])
 
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
     bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
@@ -291,25 +312,3 @@ def read_taiwan_ntu_dsi():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
-
-def check_md5(file, stored_md5):
-    """
-    Computes the md5 of file and check if it matches with the supplied string md5
-
-    Input
-    -----
-    file : string
-        Path to a file.
-    md5 : string
-        Known md5 of file to check against.
-    """
-
-    from hashlib import md5
-
-    md5_data = md5(open(file, 'rb').read()).hexdigest()
-
-    if stored_md5 != md5_data:
-        print ("MD5 checksum of file", file, "failed. Expected MD5 was", stored_md5,
-               "but computed MD5 was", md5_data, '\n',
-               "Please check if the data has been downloaded correctly or if the upstream data changed.")
