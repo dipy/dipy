@@ -1,6 +1,5 @@
 #!/usr/bin/python
 """ Classes and functions for fitting tensors """
-# 5/17/2010
 from __future__ import division, print_function, absolute_import
 
 import warnings
@@ -520,7 +519,8 @@ class TensorModel(object):
 
         Parameters
         ----------
-        gtab : GradientTable
+        gtab : GradientTable class instance
+
         fit_method : str or callable
             str can be one of the following:
             'WLS' for weighted least squares
@@ -626,8 +626,7 @@ class TensorFit(object):
     @property
     def evecs(self):
         """
-        Returns the eigenvectors of teh tensor as an array
-
+        Returns the eigenvectors of the tensor as an array
         """
         evecs = self.model_params[..., 3:]
         return evecs.reshape(self.shape + (3, 3))
@@ -650,9 +649,8 @@ class TensorFit(object):
 
     @auto_attr
     def mode(self):
-        r"""
+        """
         Tensor mode calculated from cached eigenvalues.
-
         """
         return mode(self.quadratic_form)
 
@@ -702,7 +700,7 @@ class TensorFit(object):
     @auto_attr
     def ad(self):
         r"""
-        Radial diffusitivity (RD) calculated from cached eigenvalues.
+        Axial diffusivity (AD) calculated from cached eigenvalues.
 
         Returns
         ---------
@@ -916,7 +914,7 @@ def wls_fit_tensor(design_matrix, data, min_signal=1):
 
 
 def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
-    ''' Function used by wls_fit_tensor for later optimization.
+    ''' Helper function used by wls_fit_tensor.
     '''
     sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
@@ -928,7 +926,7 @@ def _wls_iter(ols_fit, design_matrix, sig, min_signal, min_diffusivity):
 
 
 def _ols_iter(inv_design, sig, min_signal, min_diffusivity):
-    ''' Function used by ols_fit_tensor for later optimization.
+    ''' Helper function used by ols_fit_tensor.
     '''
     sig = np.maximum(sig, min_signal)  # throw out zero signals
     log_s = np.log(sig)
@@ -946,8 +944,7 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
     ----------
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
-        coefficients. Use design_matrix to build a valid design matrix from
-        bvalues and a gradient table.
+        coefficients.
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
         dimension should contain the data. It makes no copies of data.
@@ -971,8 +968,6 @@ def ols_fit_tensor(design_matrix, data, min_signal=1):
 
     Notes
     -----
-    This function is offered mainly as a quick comparison to WLS.
-
     .. math::
 
         y = \mathrm{data} \\
@@ -1039,16 +1034,29 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     Parameters
     ----------
-    tensor: 3 by 3 tensor
+    tensor : array (3,3)
+        The 3-by-3 tensor matrix
 
-    design_matrix
+    design_matrix : array
+        The design matrix
 
-    signal: The voxel signal in all gradient directions
+    data : array
+        The voxel signal in all gradient directions
 
-    weighting: str (optional).
-         Whether to use the Geman McClure weighting criterion (see [Chang2005]_
+    weighting : str (optional).
+         Whether to use the Geman McClure weighting criterion (see [1]_
          for details)
 
+    sigma : float or float array (optional)
+        If 'sigma' weighting is used, we will weight the error function
+        according to the background noise estimated either in aggregate over
+        all directions (when a float is provided), or to an estimate of the
+        noise in each diffusion-weighting direction (if an array is provided).
+
+    References
+    ----------
+    [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
+    of tensors by outlier rejection. MRM, 53: 1088-95.
     """
     # This is the predicted signal given the params:
     y = np.exp(np.dot(design_matrix, tensor))
@@ -1073,7 +1081,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     elif weighting == 'gmm':
         # We use the Geman McClure M-estimator to compute the weights on the
-        # residuals:
+        # residuals (see Chang et al. 2005 for details):
         C = 1.4826 * np.median(residuals - np.median(residuals))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -1093,6 +1101,8 @@ def _nlls_jacobian_func(tensor, design_matrix, data, *arg, **kwargs):
     -----
     This is an implementation of equation 14 in [1]_.
 
+    References
+    ----------
     [1] Koay, CG, Chang, L-C, Carew, JD, Pierpaoli, C, Basser PJ (2006).
         A unifying theoretical and algorithmic framework for least squares
         methods of estimation in diffusion tensor imaging. MRM 182, 115-25.
@@ -1111,8 +1121,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     ----------
     design_matrix : array (g, 7)
         Design matrix holding the covariants used to solve for the regression
-        coefficients. Use design_matrix to build a valid design matrix from
-        bvalues and a gradient table.
+        coefficients.
 
     data : array ([X, Y, Z, ...], g)
         Data or response variables holding the data. Note that the last
@@ -1158,13 +1167,17 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         # Do the optimization in this voxel:
         if jac:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                               args=(design_matrix, flat_data[vox],
-                                     weighting, sigma),
-                                     Dfun=_nlls_jacobian_func)
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    weighting,
+                                                    sigma),
+                                              Dfun=_nlls_jacobian_func)
         else:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                               args=(design_matrix, flat_data[vox],
-                                     weighting, sigma))
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    weighting,
+                                                    sigma))
 
         # The parameters are the evals and the evecs:
         try:
@@ -1192,8 +1205,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
 
     design_matrix : array of shape (g, 7)
         Design matrix holding the covariants used to solve for the regression
-        coefficients. Use design_matrix to build a valid design matrix from
-        bvalues and a gradient table.
+        coefficients.
 
     data : array of shape ([X, Y, Z, n_directions], g)
         Data or response variables holding the data. Note that the last
@@ -1240,13 +1252,17 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         # Do nlls using sigma weighting in this voxel:
         if jac:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                                        args=(design_matrix, flat_data[vox],
-                                              'sigma', sigma),
-                                        Dfun=_nlls_jacobian_func)
+                                              args=(design_matrix,
+                                                    flat_data[vox],
+                                                    'sigma',
+                                                    sigma),
+                                              Dfun=_nlls_jacobian_func)
         else:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                               args=(design_matrix, flat_data[vox],
-                                     'sigma', sigma))
+                                             args=(design_matrix,
+                                                   flat_data[vox],
+                                                   'sigma',
+                                                   sigma))
 
         # Get the residuals:
         pred_sig = np.exp(np.dot(design_matrix, this_tensor))
@@ -1257,12 +1273,16 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
             if jac:
                 this_tensor, status= opt.leastsq(_nlls_err_func,
                                                  start_params,
-                                   args=(design_matrix, flat_data[vox], 'gmm'),
-                                         Dfun=_nlls_jacobian_func)
+                                                 args=(design_matrix,
+                                                       flat_data[vox],
+                                                       'gmm'),
+                                                 Dfun=_nlls_jacobian_func)
             else:
                 this_tensor, status= opt.leastsq(_nlls_err_func,
                                                  start_params,
-                                   args=(design_matrix, flat_data[vox], 'gmm'))
+                                                 args=(design_matrix,
+                                                       flat_data[vox],
+                                                       'gmm'))
 
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
@@ -1280,14 +1300,18 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                 if jac:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
-                                       args=(clean_design, clean_sig,
-                                             'sigma', this_sigma),
-                                             Dfun=_nlls_jacobian_func)
+                                                     args=(clean_design,
+                                                           clean_sig,
+                                                           'sigma',
+                                                           this_sigma),
+                                                     Dfun=_nlls_jacobian_func)
                 else:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
-                                       args=(clean_design, clean_sig,
-                                             'sigma', this_sigma))
+                                                     args=(clean_design,
+                                                           clean_sig,
+                                                           'sigma',
+                                                           this_sigma))
 
         # The parameters are the evals and the evecs:
         try:
