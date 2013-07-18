@@ -84,8 +84,8 @@ def test_TensorModel():
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    # Test fitting with different methods: #XXX Add NNLS methods!
-    for fit_method in ['OLS', 'WLS']:
+    # Test fitting with different methods:
+    for fit_method in ['OLS', 'WLS', 'NLLS']:
         tensor_model = dti.TensorModel(gtab,
                                        fit_method=fit_method)
 
@@ -413,7 +413,7 @@ def test_nnls_jacobian_fucn():
         approx = opt.approx_fprime(D, dti._nlls_err_func, 1e-8, *args)
         assert_true(np.allclose(approx, analytical[i]))
 
-def test_restore_nlls_fit_tensor():
+def test_nlls_fit_tensor():
      """
      Test the implementation of NLLS and RESTORE
      """
@@ -452,14 +452,6 @@ def test_restore_nlls_fit_tensor():
      assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
      assert_almost_equal(tensor_est.md[0], md)
 
-     # Using RESTORE:
-     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='gmm',
-                                    sigma=1)
-     assert_equal(tensor_est.shape, Y.shape[:-1])
-     assert_array_almost_equal(tensor_est.evals[0], evals)
-     assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
-     assert_almost_equal(tensor_est.md[0], md)
-
      # Use NLLS with some actual 4D data:
      data, bvals, bvecs = get_data('small_25')
      gtab = grad.gradient_table(bvals, bvecs)
@@ -470,3 +462,35 @@ def test_restore_nlls_fit_tensor():
      tf2 = tm2.fit(dd)
 
      assert_array_almost_equal(tf1.fa, tf2.fa, decimal=1)
+
+def test_restore():
+     """
+     Test the implementation of the RESTORE algorithm
+     """
+     b0 = 1000.
+     bvecs, bval = read_bvec_file(get_data('55dir_grad.bvec'))
+     gtab = grad.gradient_table(bval, bvecs)
+     B = bval[1]
+
+     #Scale the eigenvalues and tensor by the B value so the units match
+     D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
+     evals = np.array([2., 1., 0.]) / B
+     md = evals.mean()
+     tensor = from_lower_triangular(D)
+
+     #Design Matrix
+     X = dti.design_matrix(bvecs, bval)
+
+     #Signals
+     Y = np.exp(np.dot(X,D))
+     Y.shape = (-1,) + Y.shape
+     for sigma in [0.1, 1, 10, 100]:
+        for drop_this in range(1, Y.shape[-1]):
+           # RESTORE estimates should be robust to dropping
+           this_y = Y.copy()
+           this_y[:, drop_this] = 1.0
+           tensor_model = dti.TensorModel(gtab, fit_method='restore',
+                                          sigma=sigma)
+           tensor_est = tensor_model.fit(Y)
+           assert_array_almost_equal(tensor_est.evals[0], evals)
+           assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)

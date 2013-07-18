@@ -1165,9 +1165,12 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
                                      weighting, sigma))
 
         # The parameters are the evals and the evecs:
-        evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
-        dti_params[vox, :3] = evals
-        dti_params[vox, 3:] = evecs.ravel()
+        try:
+            evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
+        except np.linalg.LinAlgError:
+            dti_params[vox, :] = np.nan * np.ones(12)
 
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
@@ -1228,17 +1231,15 @@ def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
         pred_sig = np.exp(np.dot(design_matrix, this_tensor))
         residuals = flat_data[vox] - pred_sig
         # If any of the residuals are outliers:
-        if np.any(residuals>3*sigma):
+        if np.any(residuals > 3 * sigma):
             # Do nlls with GMM-weighting:
             this_tensor, status = opt.leastsq(_nlls_err_func, start_params,
-                                   args=(design_matrix, flat_data[vox], 'gmm'),
-                                   #disp=False
-                                     )
+                                   args=(design_matrix, flat_data[vox], 'gmm'))
 
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
             residuals = flat_data[vox] - pred_sig
-            if np.any(residuals > 3*sigma):
+            if np.any(residuals > 3 * sigma):
                 # If you still have outliers, refit without those outliers:
                 non_outlier_idx = np.where(residuals <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
@@ -1246,9 +1247,7 @@ def restore_fit_tensor(design_matrix, data, sigma=None, min_signal=1.0):
                 this_tensor, status= opt.leastsq(_nlls_err_func, start_params,
                                        args=(clean_design, clean_sig,
                                              'sigma', sigma),
-                                             Dfun=_nlls_jacobian_func
-                                             #disp=False
-                                            )
+                                             Dfun=_nlls_jacobian_func)
 
         # Finally, converge on some solution and use it:
         this_dti = np.concatenate([np.ravel(x) for x in
