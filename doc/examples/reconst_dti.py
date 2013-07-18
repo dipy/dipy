@@ -100,7 +100,7 @@ mask module.
 from dipy.segment.mask import medotsu4D
 
 maskdata = data.copy()
-maskdata, mask = medotsu4D(maskdata, 3, 2, True)
+maskdata, mask = medotsu4D(maskdata, 3, 2, True, range(0,10))
 
 """
 Now that we have prepared the datasets we can go forward with the voxel
