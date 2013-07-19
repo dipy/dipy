@@ -30,9 +30,13 @@ def check_md5(filename, stored_md5):
         Known md5 of filename to check against.
     """
 
-    md5_data = md5(open(filename, 'rb').read()).hexdigest()
+    md5_data = md5()
 
-    if stored_md5 != md5_data:
+    with open(filename, 'rb') as f:
+        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+            md5_data.update(chunk)
+
+    if stored_md5 != md5_data.hexdigest():
         print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
                "but computed MD5 was", md5_data, '\n',
                "Please check if the data has been downloaded correctly or if the upstream data changed.")
