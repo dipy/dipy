@@ -1051,7 +1051,24 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         If 'sigma' weighting is used, we will weight the error function
         according to the background noise estimated either in aggregate over
         all directions (when a float is provided), or to an estimate of the
-        noise in each diffusion-weighting direction (if an array is provided).
+        noise in each diffusion-weighting direction (if an array is
+        provided). If 'gmm', the Geman-Mclure M-estimator is used for
+        weighting (see Notes.
+
+    Notes
+    -----
+    The GemanMcClure M-estimator is described as follows [1]_ (page 1089): "The
+    scale factor C affects the shape of the GMM [Geman-McClure M-estimator]
+    weighting function and represents the expected spread of the residuals
+    (i.e., the SD of the residuals) due to Gaussian distributed noise. The
+    scale factor C can be estimated by many robust scale estimators. We used
+    the median absolute deviation (MAD) estimator because it is very robust to
+    outliers having a 50% breakdown point (6,7). The explicit formula for C
+    using the MAD estimator is C = 1.4826 × MAD = 1.4826 × median{|r1 − r̂|, |r2
+    − r̂|, … , |rn − r̂|}, where r̂ = median {r1, r2,… , rn} and n is the number
+    of data points. The multiplicative constant 1.4826 makes this an
+    approximately unbiased estimate of scale when the error model is Gaussian."
+
 
     References
     ----------
@@ -1081,7 +1098,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
 
     elif weighting == 'gmm':
         # We use the Geman McClure M-estimator to compute the weights on the
-        # residuals (see Chang et al. 2005 for details):
+        # residuals:
         C = 1.4826 * np.median(residuals - np.median(residuals))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -1267,7 +1284,8 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         # Get the residuals:
         pred_sig = np.exp(np.dot(design_matrix, this_tensor))
         residuals = flat_data[vox] - pred_sig
-        # If any of the residuals are outliers:
+        # If any of the residuals are outliers (using 3 sigma as a criterion
+        # following Chang et al., e.g page 1089):
         if np.any(residuals > 3 * sigma):
             # Do nlls with GMM-weighting:
             if jac:
