@@ -56,6 +56,6 @@ def test_fvtk_ellipsoid():
     ren = fvtk.ren()
     fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere))
     
-    fvtk.show(ren)
+    #fvtk.show(ren)
 
 
