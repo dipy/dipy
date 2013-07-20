@@ -20,6 +20,8 @@ import numpy as np
 
 import scipy as sp
 
+from dipy.core.ndindex import ndindex
+
 # Conditional import machinery for vtk
 from ..utils.optpkg import optional_package
 
@@ -1251,7 +1253,7 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     return actor
 
 
-def tensor(evals, evecs, sphere, scale=2.2, norm=True):
+def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
     """Plot many tensors as ellipsoids simultaneously.
 
     Parameters
@@ -1264,8 +1266,11 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True):
         this sphere will be transformed to the 
     scale : float,
         Distance between ellipsoids.
-    norm : bool,
+    norm : boolean,
         Normalize `evals`.
+    autocolor : boolean,
+        colorize the ellipsoids as we do for color_fa (DEC map)
+
     
     Returns
     -------
@@ -1302,10 +1307,17 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True):
     faces = np.asarray(sphere.faces, dtype=int)
     vertices = sphere.vertices
 
-    list_sq = []
-    #list_cols = []
+    if autocolor:
+        colors = vtk.vtkUnsignedCharArray()
+        colors.SetNumberOfComponents(3)
+        colors.SetName("Colors")
+        from dipy.reconst.dti import color_fa, fractional_anisotropy
+        cfa = color_fa(fractional_anisotropy(evals), evecs)
 
-    for ijk in np.ndindex(*grid_shape):
+    list_sq = []
+    list_cols = []
+
+    for ijk in ndindex(grid_shape):
         ea = evals[ijk]
         if norm:
             ea /= ea.max()
@@ -1319,6 +1331,12 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True):
         xyz = xyz.T
 
         list_sq.append(xyz)
+
+        if autocolor:
+            acolor = np.zeros(xyz.shape)
+            acolor[:, :] = np.interp(cfa[ijk], [0, 1], [0, 255])
+
+            list_cols.append(acolor.astype('ubyte'))
         
     points = vtk.vtkPoints()
     triangles = vtk.vtkCellArray()
@@ -1326,10 +1344,14 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True):
     for k in xrange(len(list_sq)):
 
         xyz = list_sq[k]
+        if autocolor:
+            cols = list_cols[k]
 
         for i in xrange(xyz.shape[0]):
 
             points.InsertNextPoint(*xyz[i])
+            if autocolor:
+                colors.InsertNextTuple3(*cols[i])
 
         for j in xrange(faces.shape[0]):
 
@@ -1344,8 +1366,8 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True):
     polydata.SetPoints(points)
     polydata.SetPolys(triangles)
 
-    #if colormap is not None:
-    #    polydata.GetPointData().SetScalars(colors)
+    if autocolor:
+        polydata.GetPointData().SetScalars(colors)
     polydata.Modified()
 
     mapper = vtk.vtkPolyDataMapper()
