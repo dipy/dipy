@@ -174,20 +174,26 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     return_odf : bool
         If True, the odfs are returned.
     return_sh : bool
-        If True, the odf as spherical harmonics coefficients is return
+        If True, the odf as spherical harmonics coefficients is returned
     gfa_thr : float
         Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
-        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
+        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
     sh_basis_type : {None, 'mrtrix', 'fibernav'}
         ``None`` for the default dipy basis which is the fibernav basis,
         ``mrtrix`` for the MRtrix basis, and
         ``fibernav`` for the FiberNavigator basis
     sh_smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
+
+    Returns
+    -------
+    pam : PeaksAndMetrics
+        an object with ``gfa``, ``peak_values``, ``peak_indices``, ``odf``, 
+        ``shm_coeffs`` as attributes
 
     """
 
@@ -218,8 +224,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
         L = -n * (n + 1)
         invB = smooth_pinv(B, np.sqrt(sh_smooth) * L)
-        no_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-        shm_coeff = np.zeros((size, no_shm_coeff))
+        n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+        shm_coeff = np.zeros((size, n_shm_coeff))
         invB = invB.T
         #sh = np.dot(sf, invB.T)
 
@@ -270,7 +276,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     pam.qa = qa_array
 
     if return_sh:
-        pam.shm_coeff = shm_coeff.reshape(shape + (no_shm_coeff,))
+        pam.shm_coeff = shm_coeff.reshape(shape + (n_shm_coeff,))
         pam.invB = invB
     else:
         pam.shm_coeff = None

@@ -1,10 +1,8 @@
 import numpy as np
-from numpy.testing import (assert_equal, assert_array_equal, 
-                           assert_array_almost_equal,
-                           assert_almost_equal, run_module_suite)
-from dipy.reconst.odf import (OdfFit, OdfModel, gfa, 
-                              peaks_from_model, peak_directions,
-                              peak_directions_nl, minmax_normalize)
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_almost_equal, run_module_suite, assert_)
+from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
+                              peak_directions_nl)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
@@ -250,12 +248,12 @@ def test_peaks_shm_coeff():
     assert_equal(pam.shm_coeff, None)
 
     pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
-                           return_odf=True, return_sh=True, sh_smooth=0.5)
+                           return_odf=True, return_sh=True, sh_smooth=0.001)
     
     B = np.linalg.pinv(pam.invB)
     odf2 = np.dot(pam.shm_coeff, B)    
 
-    assert_equal(odf2.max() <= pam.odf.max(), True)
+    assert_(odf2.max() <= pam.odf.max(), True)
     
     pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
                            return_odf=True, return_sh=True, sh_basis_type='mrtrix')
@@ -268,7 +266,4 @@ def test_peaks_shm_coeff():
 if __name__ == '__main__':
     
     run_module_suite()
-<<<<<<< HEAD
 
-=======
->>>>>>> Add run_module_suite in odf.py
