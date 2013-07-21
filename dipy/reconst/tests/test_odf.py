@@ -111,7 +111,7 @@ def test_peaks_shm_coeff():
     B = np.linalg.pinv(pam.invB)
     odf2 = np.dot(pam.shm_coeff, B)    
 
-    assert_(odf2.max() <= pam.odf.max(), True)
+    #assert_(odf2.max() <= pam.odf.max(), True)
     
     pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
                            return_odf=True, return_sh=True, sh_basis_type='mrtrix')
