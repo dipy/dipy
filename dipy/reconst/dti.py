@@ -8,7 +8,7 @@ import numpy as np
 
 import scipy.optimize as opt
 
-from dipy.utils.six.moves import xrange
+from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.geometry import vector_norm
 from .vec_val_sum import vec_val_vect
@@ -1064,10 +1064,15 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     scale factor C can be estimated by many robust scale estimators. We used
     the median absolute deviation (MAD) estimator because it is very robust to
     outliers having a 50% breakdown point (6,7). The explicit formula for C
-    using the MAD estimator is C = 1.4826 × MAD = 1.4826 × median{|r1 − r̂|, |r2
-    − r̂|, … , |rn − r̂|}, where r̂ = median {r1, r2,… , rn} and n is the number
-    of data points. The multiplicative constant 1.4826 makes this an
-    approximately unbiased estimate of scale when the error model is Gaussian."
+    using the MAD estimator is:
+
+    .. math :: 
+
+            C = 1.4826 x MAD = 1.4826 x median{|r1-\hat{r}|,... |r_n-\hat{r}|}
+
+    where $\hat{r} = median{r_1, r_2, ..., r_3}$ and n is the number of data
+    points. The multiplicative constant 1.4826 makes this an approximately
+    unbiased estimate of scale when the error model is Gaussian." 
 
 
     References
@@ -1179,7 +1184,7 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
     ols_params = np.reshape(D, (-1, D.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
-    for vox in xrange(flat_data.shape[0]):
+    for vox in range(flat_data.shape[0]):
         start_params = ols_params[vox]
         # Do the optimization in this voxel:
         if jac:
@@ -1264,7 +1269,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
     ols_params = np.reshape(D, (-1, D.shape[-1]))
     # 12 parameters per voxel (evals + evecs):
     dti_params = np.empty((flat_data.shape[0], 12))
-    for vox in xrange(flat_data.shape[0]):
+    for vox in range(flat_data.shape[0]):
         start_params = ols_params[vox]
         # Do nlls using sigma weighting in this voxel:
         if jac:
@@ -1432,7 +1437,7 @@ def eig_from_lo_tri(data):
     data_flat = data.reshape((-1, data.shape[-1]))
     dti_params = np.empty((len(data_flat), 4, 3))
 
-    for ii in xrange(len(data_flat)):
+    for ii in range(len(data_flat)):
         tensor = from_lower_triangular(data_flat[ii])
         eigvals, eigvecs = decompose_tensor(tensor)
         dti_params[ii, 0] = eigvals
