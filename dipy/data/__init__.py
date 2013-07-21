@@ -172,6 +172,7 @@ def get_data(name='small_64D'):
         'aniso_vox' volume with anisotropic voxel size as Nifti
         'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
         'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
+        'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
 
     Returns
     -------
