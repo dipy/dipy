@@ -14,6 +14,8 @@ Examples
 '''
 from __future__ import division, print_function, absolute_import
 
+from dipy.utils.six.moves import xrange
+
 import types
 
 import numpy as np
@@ -1263,15 +1265,15 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
     evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
         eigenvectors
     sphere : Sphere,
-        this sphere will be transformed to the 
+        this sphere will be transformed to the tensor ellipsoid
     scale : float,
-        Distance between ellipsoids.
+        distance between ellipsoids.
     norm : boolean,
         Normalize `evals`.
     autocolor : boolean,
         colorize the ellipsoids as we do for color_fa (DEC map)
 
-    
+
     Returns
     -------
     actor : vtkActor
@@ -1322,7 +1324,7 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
         if norm:
             ea /= ea.max()
         ea = np.diag(ea.copy())
-        
+
         ev = evecs[ijk].copy()
         xyz = np.dot(ev, np.dot(ea, vertices.T))
 
@@ -1337,7 +1339,7 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
             acolor[:, :] = np.interp(cfa[ijk], [0, 1], [0, 255])
 
             list_cols.append(acolor.astype('ubyte'))
-        
+
     points = vtk.vtkPoints()
     triangles = vtk.vtkCellArray()
 

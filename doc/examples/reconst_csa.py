@@ -80,12 +80,12 @@ their position on the discrete sphere that was used to do the reconstruction of
 the ODF. In order to obtain the full ODF, return_odf should be True. Before
 enabling this option, make sure that you have enough memory.
 
-Finally, lets try to visualize the orientation distribution functions of a small
-rectangular area around the middle of our dataset.
+Let's visualize the ODFs of a small rectangular area in an axial slice of the
+splenium of the corpus callosum (CC).
 """
 
-i, j, k, w = np.array(data.shape) / 2
-data_small = data[i-5:i+5, j-5:j+5, k-2:k+2]
+data_small = data[20:50,55:85, 38:39]
+
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
