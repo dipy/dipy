@@ -237,10 +237,9 @@ Finally, we can visualize the tensor orientation distribution functions
 for the same area as we did with the ellipsoids.
 """
 
-odf = tenfit.odf(sphere)[20:50,55:85, 38:39]
+tensor_odfs = tenmodel.fit(data[20:50,55:85, 38:39]).odf(sphere)
 
-fvtk.add(ren, fvtk.sphere_funcs(tenmodel.fit(data_small).odf(sphere),
-							  sphere, colormap=None))
+fvtk.add(ren, fvtk.sphere_funcs(tensor_odfs, sphere, colormap=None))
 #fvtk.show(r)
 print('Saving illustration as tensor_odfs.png')
 fvtk.record(ren, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
@@ -261,7 +260,6 @@ these locations may be misleading and may lead to errors in defining the
 tracks. Fortunately, other reconstruction methods can be used to represent the
 diffusion and fiber orientations in those locations. These are presented in
 other examples.
-
 
 
 .. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
