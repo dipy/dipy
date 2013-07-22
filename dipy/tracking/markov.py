@@ -178,7 +178,7 @@ class MarkovIntegrator(object):
         else:
             mask_voxel_size = np.asarray(mask_voxel_size)
             mask_FOV = mask_voxel_size * mask.shape
-            data_FOV = interpolator.voxel_size * interpolator.data.shape
+            data_FOV = interpolator.voxel_size * interpolator.data.shape[:-1]
             if not np.allclose(mask_FOV, data_FOV):
                 raise ValueError("The FOV of the data and the FOV of the mask "
                                  "do not match")
