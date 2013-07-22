@@ -67,7 +67,7 @@ def test_minmax_normalize():
     assert_equal(odf3.max(), 1)
     assert_equal(odf3.min(), 0)
 
-    
+
 def test_peaks_shm_coeff():
 
     SNR = 100
@@ -93,33 +93,25 @@ def test_peaks_shm_coeff():
 
     model = CsaOdfModel(gtab, 4)
 
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
+    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
                            return_odf=True, return_sh=True)
     # Test that spherical harmonic coefficients return back correctly
     B = np.linalg.pinv(pam.invB)
-    odf2 = np.dot(pam.shm_coeff, B)    
+    odf2 = np.dot(pam.shm_coeff, B)
     assert_array_almost_equal(pam.odf, odf2)
     assert_equal(pam.shm_coeff.shape[-1], 45)
 
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
+    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
                            return_odf=True, return_sh=False)
     assert_equal(pam.shm_coeff, None)
 
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
-                           return_odf=True, return_sh=True, sh_smooth=0.001)
-    
-    B = np.linalg.pinv(pam.invB)
-    odf2 = np.dot(pam.shm_coeff, B)    
-
-    #assert_(odf2.max() <= pam.odf.max(), True)
-    
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45, 
+    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
                            return_odf=True, return_sh=True, sh_basis_type='mrtrix')
-    
+
     B = np.linalg.pinv(pam.invB)
-    odf2 = np.dot(pam.shm_coeff, B)    
+    odf2 = np.dot(pam.shm_coeff, B)
     assert_array_almost_equal(pam.odf, odf2)
-    
+
 
 if __name__ == '__main__':
 
