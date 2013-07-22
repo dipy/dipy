@@ -276,7 +276,7 @@ def minmax_normalize(samples, out=None):
 
     """
     if out is None:
-        dtype = np.promote_types('float32', samples.dtype)
+        dtype = np.common_type(np.empty(0, 'float32'), samples)
         out = np.array(samples, dtype=dtype, copy=True)
     else:
         out[:] = samples
