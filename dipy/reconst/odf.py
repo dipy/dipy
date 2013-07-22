@@ -275,7 +275,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     else:
         pam.shm_coeff = None
         pam.invB = None
-        
+
     if return_odf:
         pam.odf = odf_array.reshape(shape + odf_array.shape[-1:])
     else:
