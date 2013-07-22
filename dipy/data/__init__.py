@@ -1,5 +1,7 @@
-""" Read test or example data
 """
+Read test or example data
+"""
+
 from __future__ import division, print_function, absolute_import
 
 
@@ -11,19 +13,23 @@ from os.path import join as pjoin, dirname
 
 if sys.version_info[0] < 3:
     import cPickle
+
     def loads_compat(bytes):
         return cPickle.loads(bytes)
-else: # Python 3
+else:  # Python 3
     import pickle
     # Need to load pickles saved in Python 2
+
     def loads_compat(bytes):
         return pickle.loads(bytes, encoding='latin1')
 
 import gzip
+import numpy as np
 from dipy.core.gradients import gradient_table
 from dipy.core.sphere import Sphere
 from dipy.sims.voxel import SticksAndBall
-import numpy as np
+
+
 from dipy.data.fetcher import (fetch_stanford_hardi,
                                read_stanford_hardi,
                                fetch_taiwan_ntu_dsi,
@@ -32,6 +38,7 @@ from dipy.data.fetcher import (fetch_stanford_hardi,
                                read_sherbrooke_3shell,
                                fetch_isbi2013_2shell,
                                read_isbi2013_2shell)
+
 from ..utils.arrfuncs import as_native_array
 
 THIS_DIR = dirname(__file__)
@@ -242,11 +249,14 @@ def dsi_deconv_voxels():
     for ix in range(2):
         for iy in range(2):
             for iz in range(2):
-                data[ix,iy,iz], dirs = SticksAndBall(gtab, d=0.0015, S0=100, 
-                                                     angles=[(0, 0), (90, 0)],
-                                                     fractions=[50, 50], 
-                                                     snr=None)
+                data[ix, iy, iz], dirs = SticksAndBall(gtab,
+                                                       d=0.0015,
+                                                       S0=100,
+                                                       angles=[(0, 0), (90, 0)],
+                                                       fractions=[50, 50],
+                                                       snr=None)
     return data, gtab
+
 
 def mrtrix_spherical_functions():
     """Spherical functions represented by spherical harmonic coefficients and
@@ -271,7 +281,7 @@ def mrtrix_spherical_functions():
     func_discrete = load(pjoin(THIS_DIR, "func_discrete.nii.gz")).get_data()
     func_coef = load(pjoin(THIS_DIR, "func_coef.nii.gz")).get_data()
     gradients = np.loadtxt(pjoin(THIS_DIR, "sphere_grad.txt"))
-    # gradients[0] and the first volume of func_discrete, 
+    # gradients[0] and the first volume of func_discrete,
     # func_discrete[..., 0], are associated with the b=0 signal.
     # gradients[:, 3] are the b-values for each gradient/volume.
     sphere = Sphere(xyz=gradients[1:, :3])
