@@ -1,4 +1,3 @@
-
 Publications
 ==============
 
@@ -16,6 +15,8 @@ Publications
 
 [7] Garyfallidis E, Brett M, Correia M.M, Williams G.B, Nimmo-Smith I. (2012), "QuickBundles, a method for tractography simplification", Frontiers in
 Neuroscience, 6 (175).
+
+[8] Ahrens C, Nealy J, Perez F, Van der Walt S (2013), "Sparse reproducing kernels for modeling fiber crossings in diffusion weighted imaging", 10th IEEE International Symposium on Biomedical Imaging (ISBI2013).
 
 
 A note on citing our work
