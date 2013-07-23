@@ -119,6 +119,14 @@ def test_MarkovIntegrator():
     expected[:, 0] = np.arange(.2, 10, .5)
     assert_array_almost_equal(streamlines[0], expected)
 
+    mask = np.ones((20, 20, 20), 'bool')
+    gen = KeepGoing(model=None, interpolator=data_interp, mask=mask,
+                    take_step=stepper, angle_limit=0., seeds=seeds,
+                    max_cross=1, mask_voxel_size=(.5, .5, .5))
+    streamlines = list(gen)
+    assert_equal(len(streamlines), 1)
+    assert_array_almost_equal(streamlines[0], expected)
+
 
 def test_closest_peak():
     peak_values = np.array([1, .9, .8, .7, .6, .2, .1])
