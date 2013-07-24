@@ -183,11 +183,11 @@ def test_odf_sh_to_sharp():
 
 
 def test_forward_sdeconv_mat():
-    mat = forward_sdeconv_mat([0, 2, 4], 4)
+    mat = forward_sdeconv_mat([0, 2, 4])
     expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     npt.assert_array_equal(mat, expected)
 
-    mat = forward_sdeconv_mat([0, 2, 4, 6, 8], 8)
+    mat = forward_sdeconv_mat([0, 2, 4, 6, 8])
     npt.assert_equal(mat.shape, (45, 45))
 
 

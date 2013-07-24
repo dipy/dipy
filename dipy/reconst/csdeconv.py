@@ -101,7 +101,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
         r_rh = sh_to_rh(r_sh, sh_order)
 
-        self.R = forward_sdeconv_mat(r_rh, sh_order)
+        self.R = forward_sdeconv_mat(r_rh)
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
@@ -292,7 +292,7 @@ def gen_dirac(pol, azi, sh_order):
     return dirac
 
 
-def forward_sdeconv_mat(r_rh, sh_order):
+def forward_sdeconv_mat(r_rh):
     """ Build forward spherical deconvolution matrix
 
     Parameters
@@ -301,24 +301,15 @@ def forward_sdeconv_mat(r_rh, sh_order):
         ndarray of rotational harmonics coefficients for the single fiber
         response function. Each element `rh[i]` is associated with spherical
         harmonics of order `2*i`.
-    sh_order : int
-        maximal SH order
 
     Returns
     -------
     R : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
 
     """
-
-    m, n = sph_harm_ind_list(sh_order)
-
-    b = np.zeros(m.shape)
-    i = 0
-    for l in np.arange(0, sh_order + 1, 2):
-        for m in np.arange(-l, l + 1):
-            b[i] = r_rh[l // 2]
-            i = i + 1
-    return np.diag(b)
+    repeats = np.arange(1, len(r_rh)*4 + 1, 4)
+    diag = np.repeat(r_rh, repeats)
+    return np.diag(diag)
 
 
 def forward_sdt_deconv_mat(ratio, sh_order):
