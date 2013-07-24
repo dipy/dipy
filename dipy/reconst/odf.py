@@ -152,7 +152,7 @@ class PeaksAndMetrics(object):
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
-                     return_sh=True, gfa_thr=0.02, normalize_peaks=False,
+                     return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None):
     """Fits the model to data and computes peaks and metrics
 
@@ -186,9 +186,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         ``None`` for the default dipy basis which is the fibernav basis,
         ``mrtrix`` for the MRtrix basis, and
         ``fibernav`` for the FiberNavigator basis
-    sh_smooth : float, optional
-        Lambda-regularization in the SH fit (default 0.0).
-
+    
     Returns
     -------
     pam : PeaksAndMetrics
