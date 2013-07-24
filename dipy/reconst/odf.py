@@ -10,8 +10,6 @@ from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import get_sphere
-#from dipy.reconst.shm import sph_harm_ind_list, smooth_pinv
-
 
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
@@ -154,7 +152,8 @@ class PeaksAndMetrics(object):
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
-                     gfa_thr=0.02, normalize_peaks=False):
+                     return_sh=True, gfa_thr=0, normalize_peaks=False,
+                     sh_order=8, sh_basis_type=None):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -174,10 +173,25 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         no peaks are returned.
     return_odf : bool
         If True, the odfs are returned.
+    return_sh : bool
+        If True, the odf as spherical harmonics coefficients is returned
     gfa_thr : float
         Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
+    sh_order : int, optional
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
+    sh_basis_type : {None, 'mrtrix', 'fibernav'}
+        ``None`` for the default dipy basis which is the fibernav basis,
+        ``mrtrix`` for the MRtrix basis, and
+        ``fibernav`` for the FiberNavigator basis
+    
+    Returns
+    -------
+    pam : PeaksAndMetrics
+        an object with ``gfa``, ``peak_values``, ``peak_indices``, ``odf``,
+        ``shm_coeffs`` as attributes
 
     """
 
@@ -191,11 +205,28 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             raise ValueError("mask is not the same size as data")
 
     npeaks = 5
+    sh_smooth=0
     gfa_array = np.zeros(size)
     qa_array = np.zeros((size, npeaks))
     peak_values = np.zeros((size, npeaks))
     peak_indices = np.zeros((size, npeaks), dtype='int')
     peak_indices.fill(-1)
+
+    if return_sh:
+
+        #import here to avoid circular imports
+        from dipy.reconst.shm import sph_harm_lookup, smooth_pinv
+
+        sph_harm_basis = sph_harm_lookup.get(sh_basis_type)
+        if sph_harm_basis is None:
+            raise ValueError("Invalid basis name.")
+        B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
+        L = -n * (n + 1)
+        invB = smooth_pinv(B, np.sqrt(sh_smooth) * L)
+        n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+        shm_coeff = np.zeros((size, n_shm_coeff))
+        invB = invB.T
+        #sh = np.dot(sf, invB.T)
 
     if return_odf:
         odf_array = np.zeros((size, len(sphere.vertices)))
@@ -205,6 +236,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         if not mask[i]:
             continue
         odf = model.fit(sig).odf(sphere)
+
+        if return_sh:
+            shm_coeff[i] = np.dot(odf, invB)
+
         if return_odf:
             odf_array[i] = odf
 
@@ -238,6 +273,14 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     pam.peak_indices = peak_indices
     pam.gfa = gfa_array
     pam.qa = qa_array
+
+    if return_sh:
+        pam.shm_coeff = shm_coeff.reshape(shape + (n_shm_coeff,))
+        pam.invB = invB
+    else:
+        pam.shm_coeff = None
+        pam.invB = None
+
     if return_odf:
         pam.odf = odf_array.reshape(shape + odf_array.shape[-1:])
     else:

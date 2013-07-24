@@ -1,16 +1,14 @@
 import numpy as np
-from numpy.testing import (assert_equal, assert_array_equal, 
-                           assert_array_almost_equal,
-                           assert_almost_equal, run_module_suite)
-from dipy.reconst.odf import (OdfFit, OdfModel, gfa, 
-                              peaks_from_model, peak_directions,
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_almost_equal, run_module_suite, assert_)
+from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
                               peak_directions_nl, minmax_normalize)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
-from dipy.data import get_sphere
+from dipy.data import get_sphere, get_data
 from dipy.core.gradients import gradient_table
-from nose.tools import assert_true
+from nose.tools import assert_equal, assert_true
 
 
 def test_peak_directions_nl():
@@ -201,7 +199,7 @@ def test_minmax_normalize():
     S, sticks = multi_tensor(gtab, evals, S0, angles=[(0, 0), (90, 0)],
                              fractions=[50, 50], snr=SNR)
     odf = multi_tensor_odf(sphere.vertices, [0.5, 0.5], evals, evecs)
-    
+
     odf2 = minmax_normalize(odf)
     assert_equal(odf2.max(), 1)
     assert_equal(odf2.min(), 0)
@@ -212,5 +210,52 @@ def test_minmax_normalize():
     assert_equal(odf3.min(), 0)
 
 
+def test_peaks_shm_coeff():
+
+    SNR = 100
+    S0 = 100
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    from dipy.data import get_sphere
+
+    sphere = get_sphere('symmetric724')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+
+    data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
+                             fractions=[50, 50], snr=SNR)
+
+    from dipy.reconst.shm import CsaOdfModel
+
+    model = CsaOdfModel(gtab, 4)
+
+    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
+                           return_odf=True, return_sh=True)
+    # Test that spherical harmonic coefficients return back correctly
+    B = np.linalg.pinv(pam.invB)
+    odf2 = np.dot(pam.shm_coeff, B)
+    assert_array_almost_equal(pam.odf, odf2)
+    assert_equal(pam.shm_coeff.shape[-1], 45)
+
+    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
+                           return_odf=True, return_sh=False)
+    assert_equal(pam.shm_coeff, None)
+
+    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
+                           return_odf=True, return_sh=True, sh_basis_type='mrtrix')
+
+    B = np.linalg.pinv(pam.invB)
+    odf2 = np.dot(pam.shm_coeff, B)
+    assert_array_almost_equal(pam.odf, odf2)
+
+
 if __name__ == '__main__':
+
     run_module_suite()
+
