@@ -316,7 +316,7 @@ def forward_sdeconv_mat(r_rh, sh_order):
     i = 0
     for l in np.arange(0, sh_order + 1, 2):
         for m in np.arange(-l, l + 1):
-            b[i] = r_rh[l / 2]
+            b[i] = r_rh[l // 2]
             i = i + 1
     return np.diag(b)
 

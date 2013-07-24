@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+import numpy.testing as npt
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
@@ -12,6 +13,7 @@ from dipy.sims.voxel import (multi_tensor,
 from dipy.core.gradients import gradient_table
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
+                                   forward_sdeconv_mat,
                                    odf_sh_to_sharp,
                                    auto_response)
 from dipy.reconst.peaks import peak_directions
@@ -178,6 +180,15 @@ def test_odf_sh_to_sharp():
     directions2, _, _ = peak_directions(fodf[0, 0, 0], sphere)
 
     assert_equal(directions2.shape[0], 2)
+
+
+def test_forward_sdeconv_mat():
+    mat = forward_sdeconv_mat([0, 2, 4], 4)
+    expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
+    npt.assert_array_equal(mat, expected)
+
+    mat = forward_sdeconv_mat([0, 2, 4, 6, 8], 8)
+    npt.assert_equal(mat.shape, (45, 45))
 
 
 if __name__ == '__main__':
