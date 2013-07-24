@@ -18,7 +18,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel
+from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel, sph_harm_ind_list
 
 
 def test_csdeconv():
@@ -187,8 +187,13 @@ def test_forward_sdeconv_mat():
     expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     npt.assert_array_equal(mat, expected)
 
-    mat = forward_sdeconv_mat([0, 2, 4, 6, 8])
-    npt.assert_equal(mat.shape, (45, 45))
+    sh_order = 8
+    expected_size = (sh_order + 1) * (sh_order + 2) / 2
+    r_rh = np.arange(0, sh_order + 1, 2)
+    m, n = sph_harm_ind_list(sh_order)
+    mat = forward_sdeconv_mat(r_rh)
+    npt.assert_equal(mat.shape, (expected_size, expected_size))
+    npt.assert_array_equal(mat.diagonal(), n)
 
 
 if __name__ == '__main__':
