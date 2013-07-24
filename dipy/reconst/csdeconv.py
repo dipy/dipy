@@ -297,9 +297,10 @@ def forward_sdeconv_mat(r_rh, sh_order):
 
     Parameters
     ----------
-    r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
-        ndarray of rotational harmonics coefficients for the single
-        fiber response function
+    r_rh : ndarray
+        ndarray of rotational harmonics coefficients for the single fiber
+        response function. Each element `rh[i]` is associated with spherical
+        harmonics of order `2*i`.
     sh_order : int
         maximal SH order
 
