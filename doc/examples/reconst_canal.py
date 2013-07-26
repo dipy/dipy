@@ -15,6 +15,7 @@ from dipy.reconst.canal import ShoreModel
 from dipy.reconst.shm import sh_to_sf
 from dipy.viz import fvtk
 from dipy.data import fetch_isbi2013_2shell, read_isbi2013_2shell, get_sphere
+from dipy.core.gradients import gradient_table
 
 """
 Download and read the data for this tutorial.
@@ -32,8 +33,11 @@ with x,y and the three axis defining the spatial positions of the voxels.
 
 #data, affine, gtab = two_shells_voxels(10, 40, 10, 40, 25, 26)
 fetch_isbi2013_2shell()
-data, gtab=read_isbi2013_2shell()
+img, gtab=read_isbi2013_2shell()
+gtab = gradient_table(gtab.bvals[1:], gtab.bvecs[1:])
 #data, affine, gtab = three_shells_voxels(45, 65, 35, 65, 33, 34)
+data = img.get_data()
+data_small=data[10:40,10:40,25,1:]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
@@ -51,7 +55,7 @@ asm = ShoreModel(gtab)
 Fit the SHORE model to the data
 """
 
-asmfit = asm.fit(data)
+asmfit = asm.fit(data_small)
 
 
 """
@@ -67,7 +71,7 @@ For details regarding these four parameters see (Cheng J. et al, MICCAI workshop
 (Merlet S. et al, Medical Image Analysis 2013).
 """
 
-radialOrder = 4
+radialOrder = 6
 zeta = 700
 lambdaN=1e-8
 lambdaL=1e-8
@@ -79,7 +83,7 @@ Compute the ODF Spherical Harmonic coefficients
 """
 
 Csh = asmfit.odf()
-print('Csh.shape (%d, %d, %d, %d)' % Csh.shape)
+print('Csh.shape (%d,  %d, %d)' % Csh.shape)
 
 
 """
@@ -97,7 +101,7 @@ sh_order is Spherical Harmonic order
 
 sh_order = radialOrder
 odf = sh_to_sf(Csh, sphere, sh_order, basis_type="fibernav")
-print('odf.shape (%d, %d, %d, %d)' % odf.shape)
+print('odf.shape (%d, %d, %d)' % odf.shape)
 
 
 """
