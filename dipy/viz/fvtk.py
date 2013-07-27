@@ -235,6 +235,61 @@ def _lookup(colors):
     return lut
 
 
+def pretty_line(lines, colors, linewidth=0.15, tube_sides=8):
+    """ Uses streamtubes to visualize curves
+    """
+    points = vtk.vtkPoints()
+
+    # Create the polyline.
+    streamlines = vtk.vtkCellArray()
+
+    cols = vtk.vtkUnsignedCharArray()
+    cols.SetName("Cols")
+    cols.SetNumberOfComponents(3)
+
+    len_lines = len(lines)
+    prior_line_shape = 0
+    for i in range(len_lines):
+        line = lines[i]
+        streamlines.InsertNextCell(line.shape[0])
+        for j in range(line.shape[0]):
+            points.InsertNextPoint(*line[j])
+            streamlines.InsertCellPoint(j + prior_line_shape)
+            color = (255*colors[i]).astype('ubyte')
+            cols.InsertNextTuple3(*color)
+        prior_line_shape += line.shape[0]
+
+    profileData = vtk.vtkPolyData()
+    profileData.SetPoints(points)
+    profileData.SetLines(streamlines)
+    profileData.GetPointData().AddArray(cols)
+
+    # Add thickness to the resulting line.
+    profileTubes = vtk.vtkTubeFilter()
+    profileTubes.SetNumberOfSides(tube_sides)
+    profileTubes.SetInput(profileData)
+    profileTubes.SetRadius(linewidth)
+
+    profileMapper = vtk.vtkPolyDataMapper()
+    profileMapper.SetInputConnection(profileTubes.GetOutputPort())
+    profileMapper.ScalarVisibilityOn();
+    profileMapper.SetScalarModeToUsePointFieldData()
+    profileMapper.SelectColorArray("Cols")
+    profileMapper.GlobalImmediateModeRenderingOn()
+
+    profile = vtk.vtkLODActor()
+    profile.SetMapper(profileMapper)
+    #profile.GetProperty().SetDiffuseColor(banana)
+    profile.GetProperty().SetSpecular(.3)
+    profile.GetProperty().SetSpecularPower(10)
+    profile.GetProperty().BackfaceCullingOn()
+    profile.SetNumberOfCloudPoints(10**5)
+    profile.GetProperty().SetPointSize(5)
+    print(profile.GetNumberOfCloudPoints())
+
+
+    return profile
+
 def line(lines, colors, opacity=1, linewidth=1):
     ''' Create an actor for one or more lines.
 
@@ -1876,6 +1931,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     ren.ResetCamera()
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
+    #window.SetAAFrames(6)
     window.SetWindowName(title)
     window.SetSize(size[0], size[1])
     style = vtk.vtkInteractorStyleTrackballCamera()
