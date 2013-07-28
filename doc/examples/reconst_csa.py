@@ -84,15 +84,19 @@ Let's visualize the ODFs of a small rectangular area in an axial slice of the
 splenium of the corpus callosum (CC).
 """
 
-data_small = data[20:50,55:85, 38:39]
+data_small = data[20:50, 55:85, 38:39]
 
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
 from dipy.viz import fvtk
 r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(csamodel.fit(data_small).odf(sphere),
-                              sphere, colormap='jet'))
+
+csaodfs = csamodel.fit(data_small).odf(sphere)
+
+csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
+
+fvtk.add(r, fvtk.sphere_funcs(csaodfs, sphere, colormap='jet'))
 print('Saving illustration as csa_odfs.png')
 fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 
