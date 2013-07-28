@@ -1255,7 +1255,7 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     return actor
 
 
-def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
+def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     """Plot many tensors as ellipsoids simultaneously.
 
     Parameters
@@ -1264,16 +1264,17 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
         eigenvalues
     evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
         eigenvectors
+    scalar_colors : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        RGB colors used to show the tensors
+        Default None, color the ellipsoids as we do for color_fa (DEC map)
     sphere : Sphere,
         this sphere will be transformed to the tensor ellipsoid
+        Default is None which uses a symmetric sphere with 724 points.
     scale : float,
         distance between ellipsoids.
     norm : boolean,
         Normalize `evals`.
-    autocolor : boolean,
-        colorize the ellipsoids as we do for color_fa (DEC map)
-
-
+    
     Returns
     -------
     actor : vtkActor
@@ -1306,15 +1307,22 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
         raise ValueError("Wrong shape")
 
     grid_shape = np.array(evals.shape[:3])
+
+    if sphere is None:
+        from dipy.data import get_sphere
+        sphere = get_sphere('symmetric724')
     faces = np.asarray(sphere.faces, dtype=int)
     vertices = sphere.vertices
 
-    if autocolor:
-        colors = vtk.vtkUnsignedCharArray()
-        colors.SetNumberOfComponents(3)
-        colors.SetName("Colors")
+    colors = vtk.vtkUnsignedCharArray()
+    colors.SetNumberOfComponents(3)
+    colors.SetName("Colors")
+
+    if scalar_colors is None:        
         from dipy.reconst.dti import color_fa, fractional_anisotropy
         cfa = color_fa(fractional_anisotropy(evals), evecs)
+    else:
+        cfa = scalar_colors
 
     list_sq = []
     list_cols = []
@@ -1334,11 +1342,10 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
 
         list_sq.append(xyz)
 
-        if autocolor:
-            acolor = np.zeros(xyz.shape)
-            acolor[:, :] = np.interp(cfa[ijk], [0, 1], [0, 255])
+        acolor = np.zeros(xyz.shape)
+        acolor[:, :] = np.interp(cfa[ijk], [0, 1], [0, 255])
 
-            list_cols.append(acolor.astype('ubyte'))
+        list_cols.append(acolor.astype('ubyte'))
 
     points = vtk.vtkPoints()
     triangles = vtk.vtkCellArray()
@@ -1346,14 +1353,13 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
     for k in xrange(len(list_sq)):
 
         xyz = list_sq[k]
-        if autocolor:
-            cols = list_cols[k]
+
+        cols = list_cols[k]
 
         for i in xrange(xyz.shape[0]):
 
             points.InsertNextPoint(*xyz[i])
-            if autocolor:
-                colors.InsertNextTuple3(*cols[i])
+            colors.InsertNextTuple3(*cols[i])
 
         for j in xrange(faces.shape[0]):
 
@@ -1368,8 +1374,7 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
     polydata.SetPoints(points)
     polydata.SetPolys(triangles)
 
-    if autocolor:
-        polydata.GetPointData().SetScalars(colors)
+    polydata.GetPointData().SetScalars(colors)
     polydata.Modified()
 
     mapper = vtk.vtkPolyDataMapper()
@@ -1379,7 +1384,6 @@ def tensor(evals, evecs, sphere, scale=2.2, norm=True, autocolor=True):
     actor.SetMapper(mapper)
 
     return actor
-
 
 
 def tube(point1=(0, 0, 0), point2=(1, 0, 0), color=(1, 0, 0), opacity=1, radius=0.1, capson=1, specular=1, sides=8):
@@ -1735,7 +1739,7 @@ def annotatePick(object, event):
             tmp_ren.AddActor(line(track_buffer[closest], golden, opacity=1))
 
 
-def show(ren, title='dipy.viz.fvtk', size=(300, 300), png_magnify=1):
+def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     ''' Show window
 
     Notes

@@ -218,7 +218,10 @@ ren = fvtk.ren()
 evals = tenfit.evals[20:50,55:85, 38:39]
 evecs = tenfit.evecs[20:50,55:85, 38:39]
 
-fvtk.add(ren, fvtk.tensor(evals, evecs, sphere))
+cfa = RGB[20:50,55:85, 38:39]
+cfa /= cfa.max()
+
+fvtk.add(ren, fvtk.tensor(evals, evecs, cfa, sphere))
 
 print('Saving illustration as tensor_ellipsoids.png')
 fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids.png', size=(600, 600))

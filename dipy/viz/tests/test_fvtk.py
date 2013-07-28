@@ -54,7 +54,7 @@ def test_fvtk_ellipsoid():
 
     sphere = get_sphere('symmetric724')
     ren = fvtk.ren()
-    fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere))
+    fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere=sphere))
     
     #fvtk.show(ren)
 
