@@ -6,6 +6,10 @@ from ..utils.six.moves import xrange
 
 import numpy as np
 import scipy.optimize as opt
+import tempfile
+import string
+import random
+
 from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, Sphere
@@ -130,6 +134,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.25,
         peak indices of the directions on the sphere
 
     """
+    odf = np.ascontiguousarray(odf)
     values, indices = local_maxima(odf, sphere.edges)
     # If there is only one peak return
     if len(indices) == 1:
@@ -153,7 +158,7 @@ class PeaksAndMetrics(object):
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None):
+                     sh_order=8, sh_basis_type=None, ravel_peaks=False, npeaks=5):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -186,12 +191,18 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         ``None`` for the default dipy basis which is the fibernav basis,
         ``mrtrix`` for the MRtrix basis, and
         ``fibernav`` for the FiberNavigator basis
-    
+    ravel_peaks : bool
+        If True, the peaks are returned as [x1, y1, z1, ..., xn, yn, zn] instead
+        of Nx3. Set this flag to True if you want to visualize the peaks in the
+        fibernavigator or in mrtrix.
+    npeaks : int
+        Maximum number of peaks found (default 5 peaks).
+
     Returns
     -------
     pam : PeaksAndMetrics
-        an object with ``gfa``, ``peak_values``, ``peak_indices``, ``odf``,
-        ``shm_coeffs`` as attributes
+        an object with ``gfa``, ``peak_directions``, ``peak_values``,
+        ``peak_indices``, ``odf``,``shm_coeffs`` as attributes
 
     """
 
@@ -204,10 +215,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         if len(mask) != size:
             raise ValueError("mask is not the same size as data")
 
-    npeaks = 5
-    sh_smooth=0
+    sh_smooth = 0
     gfa_array = np.zeros(size)
     qa_array = np.zeros((size, npeaks))
+
+    peak_dirs = np.zeros((size, npeaks, 3))
     peak_values = np.zeros((size, npeaks))
     peak_indices = np.zeros((size, npeaks), dtype='int')
     peak_indices.fill(-1)
@@ -226,7 +238,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
         shm_coeff = np.zeros((size, n_shm_coeff))
         invB = invB.T
-        #sh = np.dot(sf, invB.T)
 
     if return_odf:
         odf_array = np.zeros((size, len(sphere.vertices)))
@@ -249,18 +260,21 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             continue
 
         # Get peaks of odf
-        _, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
-                                     min_separation_angle)
+        direction, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
+                                             min_separation_angle)
 
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
         qa_array[i, :n] = pk[:n] - odf.min()
-        if normalize_peaks:
-            peak_values[i, :n] = pk[:n] / pk[0]
-        else:
-            peak_values[i, :n] = pk[:n]
+
+        peak_dirs[i, :n] = direction[:n]
         peak_indices[i, :n] = ind[:n]
+        peak_values[i, :n] = pk[:n]
+
+        if normalize_peaks:
+            peak_values[i, :n] /= pk[0]
+            peak_dirs[i] *= peak_values[i][:, None]
 
     shape = data.shape[:-1]
     gfa_array = gfa_array.reshape(shape)
@@ -268,7 +282,15 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     peak_values = peak_values.reshape(shape + (npeaks,))
     peak_indices = peak_indices.reshape(shape + (npeaks,))
 
+    if ravel_peaks:
+        # The fibernavigator only supports float32. Since this form is mainly
+        # for external visualisation, we enforce float32.
+        peak_dirs = peak_dirs.reshape(shape + (3*npeaks,)).astype('float32')
+    else:
+        peak_dirs = peak_dirs.reshape(shape + (npeaks, 3))
+
     pam = PeaksAndMetrics()
+    pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
     pam.peak_indices = peak_indices
     pam.gfa = gfa_array
