@@ -39,7 +39,7 @@ def check_md5(filename, stored_md5):
     if stored_md5 != md5_data.hexdigest():
         print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
                "but computed MD5 was", md5_data, '\n',
-               "Please check if the data has been downloaded correctly or if the upstream data changed.")
+               "Please check if the data has been downloaded correctly or if the upstream data has changed.")
 
 
 def fetch_isbi2013_2shell():
@@ -75,7 +75,7 @@ def fetch_isbi2013_2shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_isbi2013_2shell():
@@ -141,7 +141,7 @@ def fetch_sherbrooke_3shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_sherbrooke_3shell():
@@ -207,7 +207,7 @@ def fetch_stanford_hardi():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_stanford_hardi():
@@ -282,7 +282,7 @@ def fetch_taiwan_ntu_dsi():
         print('http://dsi-studio.labsolver.org')
 
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_taiwan_ntu_dsi():
