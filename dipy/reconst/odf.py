@@ -6,14 +6,12 @@ from ..utils.six.moves import xrange
 
 import numpy as np
 import scipy.optimize as opt
-import tempfile
-import string
-import random
 
 from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import get_sphere
+from dipy.core.ndindex import ndindex
 
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
@@ -206,22 +204,21 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
     """
 
-    data_flat = data.reshape((-1, data.shape[-1]))
-    size = len(data_flat)
+    shape = data.shape[:-1]
     if mask is None:
-        mask = np.ones(size, dtype='bool')
+        mask = np.ones(shape, dtype='bool')
     else:
         mask = mask.ravel()
-        if len(mask) != size:
-            raise ValueError("mask is not the same size as data")
+        if len(mask) != shape:
+            raise ValueError("mask is not the same shape as data")
 
     sh_smooth = 0
-    gfa_array = np.zeros(size)
-    qa_array = np.zeros((size, npeaks))
+    gfa_array = np.zeros(shape)
+    qa_array = np.zeros((shape, npeaks))
 
-    peak_dirs = np.zeros((size, npeaks, 3))
-    peak_values = np.zeros((size, npeaks))
-    peak_indices = np.zeros((size, npeaks), dtype='int')
+    peak_dirs = np.zeros((shape, npeaks, 3))
+    peak_values = np.zeros((shape, npeaks))
+    peak_indices = np.zeros((shape, npeaks), dtype='int')
     peak_indices.fill(-1)
 
     if return_sh:
@@ -236,26 +233,27 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         L = -n * (n + 1)
         invB = smooth_pinv(B, np.sqrt(sh_smooth) * L)
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-        shm_coeff = np.zeros((size, n_shm_coeff))
+        shm_coeff = np.zeros((shape, n_shm_coeff))
         invB = invB.T
 
     if return_odf:
-        odf_array = np.zeros((size, len(sphere.vertices)))
+        odf_array = np.zeros((shape, len(sphere.vertices)))
 
     global_max = -np.inf
-    for i, sig in enumerate(data_flat):
-        if not mask[i]:
+    for idx in ndindex(shape):
+        if not mask[idx]:
             continue
-        odf = model.fit(sig).odf(sphere)
+
+        odf = model.fit(data[idx]).odf(sphere)
 
         if return_sh:
-            shm_coeff[i] = np.dot(odf, invB)
+            shm_coeff[idx] = np.dot(odf, invB)
 
         if return_odf:
-            odf_array[i] = odf
+            odf_array[idx] = odf
 
-        gfa_array[i] = gfa(odf)
-        if gfa_array[i] < gfa_thr:
+        gfa_array[idx] = gfa(odf)
+        if gfa_array[idx] < gfa_thr:
             global_max = max(global_max, odf.max())
             continue
 
@@ -266,28 +264,25 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
-        qa_array[i, :n] = pk[:n] - odf.min()
+        qa_array[idx, :n] = pk[:n] - odf.min()
 
-        peak_dirs[i, :n] = direction[:n]
-        peak_indices[i, :n] = ind[:n]
-        peak_values[i, :n] = pk[:n]
+        peak_dirs[idx, :n] = direction[:n]
+        peak_indices[idx, :n] = ind[:n]
+        peak_values[idx, :n] = pk[:n]
 
         if normalize_peaks:
-            peak_values[i, :n] /= pk[0]
-            peak_dirs[i] *= peak_values[i][:, None]
+            peak_values[idx, :n] /= pk[0]
+            peak_dirs[idx] *= peak_values[idx][:, None]
 
-    shape = data.shape[:-1]
-    gfa_array = gfa_array.reshape(shape)
-    qa_array = qa_array.reshape(shape + (npeaks,)) / global_max
-    peak_values = peak_values.reshape(shape + (npeaks,))
-    peak_indices = peak_indices.reshape(shape + (npeaks,))
+    gfa_array = gfa_array
+    qa_array = qa_array / global_max
+    peak_values = peak_values
+    peak_indices = peak_indices
 
+    # The fibernavigator only supports float32. Since this form is mainly
+    # for external visualisation, we enforce float32.
     if ravel_peaks:
-        # The fibernavigator only supports float32. Since this form is mainly
-        # for external visualisation, we enforce float32.
         peak_dirs = peak_dirs.reshape(shape + (3*npeaks,)).astype('float32')
-    else:
-        peak_dirs = peak_dirs.reshape(shape + (npeaks, 3))
 
     pam = PeaksAndMetrics()
     pam.peak_dirs = peak_dirs
@@ -297,14 +292,14 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     pam.qa = qa_array
 
     if return_sh:
-        pam.shm_coeff = shm_coeff.reshape(shape + (n_shm_coeff,))
+        pam.shm_coeff = shm_coeff
         pam.invB = invB
     else:
         pam.shm_coeff = None
         pam.invB = None
 
     if return_odf:
-        pam.odf = odf_array.reshape(shape + odf_array.shape[-1:])
+        pam.odf = odf_array
     else:
         pam.odf = None
 
