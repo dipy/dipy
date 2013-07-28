@@ -265,14 +265,15 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
-        qa_array[idx, :n] = pk[:n] - odf.min()
+        #print (qa_array[idx, :n].shape, pk[:n].shape, odf.min(), n, idx)
+        qa_array[idx][:n] = pk[:n] - odf.min()
 
-        peak_dirs[idx, :n] = direction[:n]
-        peak_indices[idx, :n] = ind[:n]
-        peak_values[idx, :n] = pk[:n]
+        peak_dirs[idx][:n] = direction[:n]
+        peak_indices[idx][:n] = ind[:n]
+        peak_values[idx][:n] = pk[:n]
 
         if normalize_peaks:
-            peak_values[idx, :n] /= pk[0]
+            peak_values[idx][:n] /= pk[0]
             peak_dirs[idx] *= peak_values[idx][:, None]
 
     gfa_array = gfa_array
