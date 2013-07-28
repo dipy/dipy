@@ -208,7 +208,7 @@ area in an axial slice of the splenium of the corpus callosum (CC).
 """
 
 print('Computing tensor ellipsoids in a part of the splenium of the CC')
-#data_small  = data[20:50,55:85, 38:39]
+
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
@@ -218,7 +218,12 @@ ren = fvtk.ren()
 evals = tenfit.evals[20:50,55:85, 38:39]
 evecs = tenfit.evecs[20:50,55:85, 38:39]
 
-cfa = RGB[20:50,55:85, 38:39]
+"""
+We can color the ellipsoids using the ``color_fa`` values that we calculated 
+above. In this example we additionally normalize the values to increase the contrast.
+"""
+
+cfa = RGB[20:50, 55:85, 38:39]
 cfa /= cfa.max()
 
 fvtk.add(ren, fvtk.tensor(evals, evecs, cfa, sphere))

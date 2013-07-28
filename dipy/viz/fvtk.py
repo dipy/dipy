@@ -1266,7 +1266,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
         eigenvectors
     scalar_colors : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
         RGB colors used to show the tensors
-        Default None, color the ellipsoids as we do for color_fa (DEC map)
+        Default None, color the ellipsoids using ``color_fa``
     sphere : Sphere,
         this sphere will be transformed to the tensor ellipsoid
         Default is None which uses a symmetric sphere with 724 points.
@@ -1288,7 +1288,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     >>> evecs = np.eye(3)
     >>> from dipy.data import get_sphere
     >>> sphere = get_sphere('symmetric724')
-    >>> fvtk.add(r, fvtk.tensor(evals, evecs, sphere))
+    >>> fvtk.add(r, fvtk.tensor(evals, evecs, sphere=sphere))
     >>> #fvtk.show(r)
 
     """

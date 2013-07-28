@@ -94,6 +94,10 @@ r = fvtk.ren()
 
 csaodfs = csamodel.fit(data_small).odf(sphere)
 
+"""
+It is commong with CSA ODFs to produce negative values, we can remove those using ``np.clip``
+"""
+
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
 
 fvtk.add(r, fvtk.sphere_funcs(csaodfs, sphere, colormap='jet'))

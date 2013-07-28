@@ -4,7 +4,7 @@ import numpy as np
 
 from dipy.viz import fvtk
 
-from numpy.testing import assert_array_almost_equal, assert_
+from numpy.testing import assert_equal
 import numpy.testing as npt
 
 
@@ -53,9 +53,12 @@ def test_fvtk_ellipsoid():
     from dipy.data import get_sphere
 
     sphere = get_sphere('symmetric724')
-    ren = fvtk.ren()
-    fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere=sphere))
     
-    #fvtk.show(ren)
+    ren = fvtk.ren()
 
+    fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere=sphere))
+
+    fvtk.add(ren, fvtk.tensor(mevals, mevecs, np.ones(mevals.shape), sphere=sphere))
+    
+    assert_equal(ren.GetActors().GetNumberOfItems(), 2)
 
