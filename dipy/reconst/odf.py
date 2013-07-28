@@ -6,10 +6,15 @@ from ..utils.six.moves import xrange
 
 import numpy as np
 import scipy.optimize as opt
+
 from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import get_sphere
+<<<<<<< HEAD
+=======
+from dipy.core.ndindex import ndindex
+>>>>>>> return_peaks_directions
 
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
@@ -130,6 +135,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.25,
         peak indices of the directions on the sphere
 
     """
+    odf = np.ascontiguousarray(odf)
     values, indices = local_maxima(odf, sphere.edges)
     # If there is only one peak return
     if len(indices) == 1:
@@ -152,8 +158,13 @@ class PeaksAndMetrics(object):
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
+<<<<<<< HEAD
                      return_sh=True, gfa_thr=0.02, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, sh_smooth=0):
+=======
+                     return_sh=True, gfa_thr=0, normalize_peaks=False,
+                     sh_order=8, sh_basis_type=None, ravel_peaks=False, npeaks=5):
+>>>>>>> return_peaks_directions
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -174,37 +185,61 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     return_odf : bool
         If True, the odfs are returned.
     return_sh : bool
+<<<<<<< HEAD
         If True, the odf as spherical harmonics coefficients is return
+=======
+        If True, the odf as spherical harmonics coefficients is returned
+>>>>>>> return_peaks_directions
     gfa_thr : float
         Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
+<<<<<<< HEAD
         ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
+=======
+        ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
+>>>>>>> return_peaks_directions
     sh_basis_type : {None, 'mrtrix', 'fibernav'}
         ``None`` for the default dipy basis which is the fibernav basis,
         ``mrtrix`` for the MRtrix basis, and
         ``fibernav`` for the FiberNavigator basis
+<<<<<<< HEAD
     sh_smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
+=======
+    ravel_peaks : bool
+        If True, the peaks are returned as [x1, y1, z1, ..., xn, yn, zn] instead
+        of Nx3. Set this flag to True if you want to visualize the peaks in the
+        fibernavigator or in mrtrix.
+    npeaks : int
+        Maximum number of peaks found (default 5 peaks).
+
+    Returns
+    -------
+    pam : PeaksAndMetrics
+        an object with ``gfa``, ``peak_directions``, ``peak_values``,
+        ``peak_indices``, ``odf``,``shm_coeffs`` as attributes
+>>>>>>> return_peaks_directions
 
     """
 
-    data_flat = data.reshape((-1, data.shape[-1]))
-    size = len(data_flat)
+    shape = data.shape[:-1]
     if mask is None:
-        mask = np.ones(size, dtype='bool')
+        mask = np.ones(shape, dtype='bool')
     else:
         mask = mask.ravel()
-        if len(mask) != size:
-            raise ValueError("mask is not the same size as data")
+        if len(mask) != shape:
+            raise ValueError("mask is not the same shape as data")
 
-    npeaks = 5
-    gfa_array = np.zeros(size)
-    qa_array = np.zeros((size, npeaks))
-    peak_values = np.zeros((size, npeaks))
-    peak_indices = np.zeros((size, npeaks), dtype='int')
+    sh_smooth = 0
+    gfa_array = np.zeros(shape)
+    qa_array = np.zeros((shape, npeaks))
+
+    peak_dirs = np.zeros((shape, npeaks, 3))
+    peak_values = np.zeros((shape, npeaks))
+    peak_indices = np.zeros((shape, npeaks), dtype='int')
     peak_indices.fill(-1)
 
     if return_sh:
@@ -218,66 +253,92 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
         L = -n * (n + 1)
         invB = smooth_pinv(B, np.sqrt(sh_smooth) * L)
+<<<<<<< HEAD
         no_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
         shm_coeff = np.zeros((size, no_shm_coeff))
         invB = invB.T
         #sh = np.dot(sf, invB.T)
+=======
+        n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+        shm_coeff = np.zeros((shape, n_shm_coeff))
+        invB = invB.T
+>>>>>>> return_peaks_directions
 
     if return_odf:
-        odf_array = np.zeros((size, len(sphere.vertices)))
+        odf_array = np.zeros((shape, len(sphere.vertices)))
 
     global_max = -np.inf
-    for i, sig in enumerate(data_flat):
-        if not mask[i]:
+    for idx in ndindex(shape):
+        if not mask[idx]:
             continue
+<<<<<<< HEAD
         odf = model.fit(sig).odf(sphere)
 
         if return_sh:
             shm_coeff[i] = np.dot(odf, invB)
+=======
+
+        odf = model.fit(data[idx]).odf(sphere)
+
+        if return_sh:
+            shm_coeff[idx] = np.dot(odf, invB)
+>>>>>>> return_peaks_directions
 
         if return_odf:
-            odf_array[i] = odf
+            odf_array[idx] = odf
 
-        gfa_array[i] = gfa(odf)
-        if gfa_array[i] < gfa_thr:
+        gfa_array[idx] = gfa(odf)
+        if gfa_array[idx] < gfa_thr:
             global_max = max(global_max, odf.max())
             continue
 
         # Get peaks of odf
-        _, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
-                                     min_separation_angle)
+        direction, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
+                                             min_separation_angle)
 
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
-        qa_array[i, :n] = pk[:n] - odf.min()
-        if normalize_peaks:
-            peak_values[i, :n] = pk[:n] / pk[0]
-        else:
-            peak_values[i, :n] = pk[:n]
-        peak_indices[i, :n] = ind[:n]
+        qa_array[idx, :n] = pk[:n] - odf.min()
 
-    shape = data.shape[:-1]
-    gfa_array = gfa_array.reshape(shape)
-    qa_array = qa_array.reshape(shape + (npeaks,)) / global_max
-    peak_values = peak_values.reshape(shape + (npeaks,))
-    peak_indices = peak_indices.reshape(shape + (npeaks,))
+        peak_dirs[idx, :n] = direction[:n]
+        peak_indices[idx, :n] = ind[:n]
+        peak_values[idx, :n] = pk[:n]
+
+        if normalize_peaks:
+            peak_values[idx, :n] /= pk[0]
+            peak_dirs[idx] *= peak_values[idx][:, None]
+
+    gfa_array = gfa_array
+    qa_array = qa_array / global_max
+    peak_values = peak_values
+    peak_indices = peak_indices
+
+    # The fibernavigator only supports float32. Since this form is mainly
+    # for external visualisation, we enforce float32.
+    if ravel_peaks:
+        peak_dirs = peak_dirs.reshape(shape + (3*npeaks,)).astype('float32')
 
     pam = PeaksAndMetrics()
+    pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
     pam.peak_indices = peak_indices
     pam.gfa = gfa_array
     pam.qa = qa_array
 
     if return_sh:
+<<<<<<< HEAD
         pam.shm_coeff = shm_coeff.reshape(shape + (no_shm_coeff,))
+=======
+        pam.shm_coeff = shm_coeff
+>>>>>>> return_peaks_directions
         pam.invB = invB
     else:
         pam.shm_coeff = None
         pam.invB = None
 
     if return_odf:
-        pam.odf = odf_array.reshape(shape + odf_array.shape[-1:])
+        pam.odf = odf_array
     else:
         pam.odf = None
 
@@ -314,7 +375,7 @@ def minmax_normalize(samples, out=None):
 
     """
     if out is None:
-        dtype = np.promote_types('float32', samples.dtype)
+        dtype = np.common_type(np.empty(0, 'float32'), samples)
         out = np.array(samples, dtype=dtype, copy=True)
     else:
         out[:] = samples

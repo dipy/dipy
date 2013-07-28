@@ -385,7 +385,7 @@ class SphHarmFit(OdfFit):
 
     @property
     def shm_coeff(self):
-        """The spherical harmonic coefficients coefficients of the odf
+        """The spherical harmonic coefficients of the odf
 
         Make this a property for now, if there is a usecase for modifying
         the coefficients we can add a setter or expose the coefficients more
