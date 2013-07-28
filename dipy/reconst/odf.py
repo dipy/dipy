@@ -156,7 +156,8 @@ class PeaksAndMetrics(object):
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, ravel_peaks=False, npeaks=5):
+                     sh_order=8, sh_basis_type=None, ravel_peaks=False,
+                     npeaks=5):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -208,17 +209,16 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     if mask is None:
         mask = np.ones(shape, dtype='bool')
     else:
-        mask = mask.ravel()
-        if len(mask) != shape:
+        if mask.shape != shape:
             raise ValueError("mask is not the same shape as data")
 
     sh_smooth = 0
     gfa_array = np.zeros(shape)
-    qa_array = np.zeros((shape, npeaks))
+    qa_array = np.zeros((shape + (npeaks,)))
 
-    peak_dirs = np.zeros((shape, npeaks, 3))
-    peak_values = np.zeros((shape, npeaks))
-    peak_indices = np.zeros((shape, npeaks), dtype='int')
+    peak_dirs = np.zeros((shape + (npeaks, 3)))
+    peak_values = np.zeros((shape + (npeaks,)))
+    peak_indices = np.zeros((shape + (npeaks,)), dtype='int')
     peak_indices.fill(-1)
 
     if return_sh:
@@ -233,11 +233,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         L = -n * (n + 1)
         invB = smooth_pinv(B, np.sqrt(sh_smooth) * L)
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-        shm_coeff = np.zeros((shape, n_shm_coeff))
+        shm_coeff = np.zeros((shape + (n_shm_coeff,)))
         invB = invB.T
 
     if return_odf:
-        odf_array = np.zeros((shape, len(sphere.vertices)))
+        odf_array = np.zeros((shape + (len(sphere.vertices),)))
 
     global_max = -np.inf
     for idx in ndindex(shape):
