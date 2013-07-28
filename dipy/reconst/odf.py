@@ -11,10 +11,7 @@ from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from ..core.onetime import auto_attr
 from dipy.core.sphere import HemiSphere, Sphere
 from dipy.data import get_sphere
-<<<<<<< HEAD
-=======
 from dipy.core.ndindex import ndindex
->>>>>>> return_peaks_directions
 
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
@@ -158,13 +155,8 @@ class PeaksAndMetrics(object):
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
-<<<<<<< HEAD
-                     return_sh=True, gfa_thr=0.02, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, sh_smooth=0):
-=======
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, ravel_peaks=False, npeaks=5):
->>>>>>> return_peaks_directions
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -185,30 +177,20 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     return_odf : bool
         If True, the odfs are returned.
     return_sh : bool
-<<<<<<< HEAD
-        If True, the odf as spherical harmonics coefficients is return
-=======
         If True, the odf as spherical harmonics coefficients is returned
->>>>>>> return_peaks_directions
     gfa_thr : float
         Voxels with gfa less than `gfa_thr` are skipped, no peaks are returned.
     normalize_peaks : bool
         If true, all peak values are calculated relative to `max(odf)`.
     sh_order : int, optional
         Maximum SH order in the SH fit.  For `sh_order`, there will be
-<<<<<<< HEAD
-        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
-=======
         ``(sh_order + 1) * (sh_order + 2) / 2`` SH coefficients (default 8).
->>>>>>> return_peaks_directions
     sh_basis_type : {None, 'mrtrix', 'fibernav'}
         ``None`` for the default dipy basis which is the fibernav basis,
         ``mrtrix`` for the MRtrix basis, and
         ``fibernav`` for the FiberNavigator basis
-<<<<<<< HEAD
     sh_smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
-=======
     ravel_peaks : bool
         If True, the peaks are returned as [x1, y1, z1, ..., xn, yn, zn] instead
         of Nx3. Set this flag to True if you want to visualize the peaks in the
@@ -221,8 +203,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     pam : PeaksAndMetrics
         an object with ``gfa``, ``peak_directions``, ``peak_values``,
         ``peak_indices``, ``odf``,``shm_coeffs`` as attributes
->>>>>>> return_peaks_directions
-
     """
 
     shape = data.shape[:-1]
@@ -253,16 +233,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
         L = -n * (n + 1)
         invB = smooth_pinv(B, np.sqrt(sh_smooth) * L)
-<<<<<<< HEAD
-        no_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-        shm_coeff = np.zeros((size, no_shm_coeff))
-        invB = invB.T
-        #sh = np.dot(sf, invB.T)
-=======
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
         shm_coeff = np.zeros((shape, n_shm_coeff))
         invB = invB.T
->>>>>>> return_peaks_directions
 
     if return_odf:
         odf_array = np.zeros((shape, len(sphere.vertices)))
@@ -271,18 +244,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     for idx in ndindex(shape):
         if not mask[idx]:
             continue
-<<<<<<< HEAD
-        odf = model.fit(sig).odf(sphere)
-
-        if return_sh:
-            shm_coeff[i] = np.dot(odf, invB)
-=======
 
         odf = model.fit(data[idx]).odf(sphere)
 
         if return_sh:
             shm_coeff[idx] = np.dot(odf, invB)
->>>>>>> return_peaks_directions
 
         if return_odf:
             odf_array[idx] = odf
@@ -327,11 +293,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     pam.qa = qa_array
 
     if return_sh:
-<<<<<<< HEAD
-        pam.shm_coeff = shm_coeff.reshape(shape + (no_shm_coeff,))
-=======
         pam.shm_coeff = shm_coeff
->>>>>>> return_peaks_directions
         pam.invB = invB
     else:
         pam.shm_coeff = None
