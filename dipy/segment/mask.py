@@ -109,10 +109,7 @@ def binary_threshold(vol, thresh):
     thresh : float
         Thresholding value.
     """
-    outvol = np.zeros_like(vol, dtype=np.uint8)
-    outvol[np.where(vol > thresh)] = 1
-
-    return outvol
+    return np.where(vol > thresh, True, False)
 
 def bounding_box(vol):
     """
