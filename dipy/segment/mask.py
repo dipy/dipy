@@ -6,14 +6,14 @@ from scipy.stats import threshold
 
 def multi_median(input, median_radius, numpass):
     """
-    Applies multiple times scikit's median filter on input data.
+    Applies multiple times scikit-image's median filter on input data.
 
     Parameters
     ----------
     input : ndarray
         The input volume to apply filter on.
     median_radius : int
-        Radius of the applied median filter
+        Radius (in voxels) of the applied median filter 
     numpass: int
         Number of pass of the median filter
     Returns
@@ -31,6 +31,7 @@ def multi_median(input, median_radius, numpass):
         median_filter(input, medarr, output=input)
 
     return input
+
 
 def otsu(image, nbins=256):
     """
@@ -84,11 +85,11 @@ def applymask(vol, mask):
         Binary mask.
     """
     if len(mask.shape) > len(vol.shape):
-        raise Exception('applymask: The mask\'s dimmensionnality is bigger than the input\'s')
+        raise Exception('applymask: The mask\'s dimensionality is bigger than the input\'s')
 
     elif len(mask.shape) < len(vol.shape):
         lastdimlen = vol.shape[len(vol.shape)-1]
-        for i in range(0,lastdimlen):
+        for i in range(0, lastdimlen):
             applymask(vol[..., i], mask)
     else:
         outliers = np.where(mask == 0)
