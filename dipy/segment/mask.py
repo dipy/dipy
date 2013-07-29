@@ -1,5 +1,6 @@
-import numpy as np
+from __future__ import division, print_function, absolute_import
 import copy
+import numpy as np
 from scipy.ndimage import binary_opening, label
 from scipy.ndimage.filters import median_filter
 from scipy.stats import threshold
@@ -108,6 +109,10 @@ def binary_threshold(vol, thresh):
         Volume to apply threshold on.
     thresh : float
         Thresholding value.
+
+    Returns
+    -------
+        Binary ndarray.
     """
     return np.where(vol > thresh, True, False)
 
@@ -127,27 +132,15 @@ def bounding_box(vol):
     npmaxs : array
         Array containg maximum index of each dimension
     """
-    pts = np.array(np.where(vol != 0)).T
+    mask = vol != 0
+    mins = np.zeros(mask.ndim)
+    maxs = mins.copy()
+    for i in mask.ndim:
+        flat = mask.any(i)
+        mins[i] = flat.argmax()
+        maxs[i] = mask.shape[i] - flat[::-1].argmax()
 
-    if len(pts) == 0:
-        print 'WARNING: Not data found in volume to bound. Returning empty bounding box.'
-        return [0,0,0], [0,0,0]
-
-    maxs = copy.copy(pts[0])
-    mins = copy.copy(pts[0])
-    numdims = len(pts[0])
-
-    for pt in pts:
-        for curdim in range(0, numdims):
-            if pt[curdim] > maxs[curdim]:
-                maxs[curdim] = copy.copy(pt[curdim])
-
-            if pt[curdim] < mins[curdim]:
-                mins[curdim] = copy.copy(pt[curdim])
-
-    npmaxs = np.array(maxs)
-    npmins = np.array(mins)
-    return npmins, npmaxs
+    return mins, maxs
 
 def crop(vol, mins, maxs):
     """
