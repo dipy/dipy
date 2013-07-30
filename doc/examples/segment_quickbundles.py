@@ -1,5 +1,4 @@
 """
-
 =========================================
 Tractography Clustering with QuickBundles
 =========================================
@@ -38,7 +37,7 @@ Perform QuickBundles clustering with a 10mm distance threshold after having
 downsampled the streamlines to have only 12 points.
 """
 
-qb = QuickBundles(streamlines, dist_thr=10., pts=12)
+qb = QuickBundles(streamlines, dist_thr=10., pts=18)
 
 """
 qb has attributes like `centroids` (cluster representatives), `total_clusters`

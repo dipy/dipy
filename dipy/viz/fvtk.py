@@ -14,11 +14,15 @@ Examples
 '''
 from __future__ import division, print_function, absolute_import
 
+from dipy.utils.six.moves import xrange
+
 import types
 
 import numpy as np
 
 import scipy as sp
+
+from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
 from ..utils.optpkg import optional_package
@@ -1251,6 +1255,137 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     return actor
 
 
+def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
+    """Plot many tensors as ellipsoids simultaneously.
+
+    Parameters
+    ----------
+    evals : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        eigenvalues
+    evecs : (3, 3) or (X, 3, 3) or (X, Y, 3, 3) or (X, Y, Z, 3, 3) ndarray
+        eigenvectors
+    scalar_colors : (3,) or (X, 3) or (X, Y, 3) or (X, Y, Z, 3) ndarray
+        RGB colors used to show the tensors
+        Default None, color the ellipsoids using ``color_fa``
+    sphere : Sphere,
+        this sphere will be transformed to the tensor ellipsoid
+        Default is None which uses a symmetric sphere with 724 points.
+    scale : float,
+        distance between ellipsoids.
+    norm : boolean,
+        Normalize `evals`.
+    
+    Returns
+    -------
+    actor : vtkActor
+        Ellipsoids
+
+    Examples
+    --------
+    >>> from dipy.viz import fvtk
+    >>> r = fvtk.ren()
+    >>> evals = np.array([1.4, .35, .35]) * 10 ** (-3)
+    >>> evecs = np.eye(3)
+    >>> from dipy.data import get_sphere
+    >>> sphere = get_sphere('symmetric724')
+    >>> fvtk.add(r, fvtk.tensor(evals, evecs, sphere=sphere))
+    >>> #fvtk.show(r)
+
+    """
+
+    evals = np.asarray(evals)
+    if evals.ndim == 1:
+        evals = evals[None, None, None, :]
+        evecs = evecs[None, None, None, :, :]
+    if evals.ndim == 2:
+        evals = evals[None, None, :]
+        evecs = evecs[None, None, :, :]
+    if evals.ndim == 3:
+        evals = evals[None, :]
+        evecs = evecs[None, :, :]
+    if evals.ndim > 4:
+        raise ValueError("Wrong shape")
+
+    grid_shape = np.array(evals.shape[:3])
+
+    if sphere is None:
+        from dipy.data import get_sphere
+        sphere = get_sphere('symmetric724')
+    faces = np.asarray(sphere.faces, dtype=int)
+    vertices = sphere.vertices
+
+    colors = vtk.vtkUnsignedCharArray()
+    colors.SetNumberOfComponents(3)
+    colors.SetName("Colors")
+
+    if scalar_colors is None:        
+        from dipy.reconst.dti import color_fa, fractional_anisotropy
+        cfa = color_fa(fractional_anisotropy(evals), evecs)
+    else:
+        cfa = scalar_colors
+
+    list_sq = []
+    list_cols = []
+
+    for ijk in ndindex(grid_shape):
+        ea = evals[ijk]
+        if norm:
+            ea /= ea.max()
+        ea = np.diag(ea.copy())
+
+        ev = evecs[ijk].copy()
+        xyz = np.dot(ev, np.dot(ea, vertices.T))
+
+        xyz += scale * (ijk - grid_shape / 2.)[:, None]
+
+        xyz = xyz.T
+
+        list_sq.append(xyz)
+
+        acolor = np.zeros(xyz.shape)
+        acolor[:, :] = np.interp(cfa[ijk], [0, 1], [0, 255])
+
+        list_cols.append(acolor.astype('ubyte'))
+
+    points = vtk.vtkPoints()
+    triangles = vtk.vtkCellArray()
+
+    for k in xrange(len(list_sq)):
+
+        xyz = list_sq[k]
+
+        cols = list_cols[k]
+
+        for i in xrange(xyz.shape[0]):
+
+            points.InsertNextPoint(*xyz[i])
+            colors.InsertNextTuple3(*cols[i])
+
+        for j in xrange(faces.shape[0]):
+
+            triangle = vtk.vtkTriangle()
+            triangle.GetPointIds().SetId(0, faces[j, 0] + k * xyz.shape[0])
+            triangle.GetPointIds().SetId(1, faces[j, 1] + k * xyz.shape[0])
+            triangle.GetPointIds().SetId(2, faces[j, 2] + k * xyz.shape[0])
+            triangles.InsertNextCell(triangle)
+            del triangle
+
+    polydata = vtk.vtkPolyData()
+    polydata.SetPoints(points)
+    polydata.SetPolys(triangles)
+
+    polydata.GetPointData().SetScalars(colors)
+    polydata.Modified()
+
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInput(polydata)
+
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+
+    return actor
+
+
 def tube(point1=(0, 0, 0), point2=(1, 0, 0), color=(1, 0, 0), opacity=1, radius=0.1, capson=1, specular=1, sides=8):
 
     ''' Deprecated
@@ -1604,7 +1739,7 @@ def annotatePick(object, event):
             tmp_ren.AddActor(line(track_buffer[closest], golden, opacity=1))
 
 
-def show(ren, title='dipy.viz.fvtk', size=(300, 300), png_magnify=1):
+def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     ''' Show window
 
     Notes

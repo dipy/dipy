@@ -113,8 +113,8 @@ class EuDX(object):
                tractography", PhD thesis, University of Cambridge, UK.
 
         '''
-        self.a=np.ascontiguousarray(a.copy())
-        self.ind=np.ascontiguousarray(ind.copy())
+        self.a=np.ascontiguousarray(a.copy(), dtype='f8')
+        self.ind=np.ascontiguousarray(ind.copy(), dtype='f8')
         self.a_low=a_low
         self.ang_thr=ang_thr
         self.step_sz=step_sz

@@ -80,19 +80,27 @@ their position on the discrete sphere that was used to do the reconstruction of
 the ODF. In order to obtain the full ODF, return_odf should be True. Before
 enabling this option, make sure that you have enough memory.
 
-Finally, lets try to visualize the orientation distribution functions of a small
-rectangular area around the middle of our dataset.
+Let's visualize the ODFs of a small rectangular area in an axial slice of the
+splenium of the corpus callosum (CC).
 """
 
-i, j, k, w = np.array(data.shape) / 2
-data_small = data[i-5:i+5, j-5:j+5, k-2:k+2]
+data_small = data[20:50, 55:85, 38:39]
+
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
 from dipy.viz import fvtk
 r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(csamodel.fit(data_small).odf(sphere),
-                              sphere, colormap='jet'))
+
+csaodfs = csamodel.fit(data_small).odf(sphere)
+
+"""
+It is commong with CSA ODFs to produce negative values, we can remove those using ``np.clip``
+"""
+
+csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])
+
+fvtk.add(r, fvtk.sphere_funcs(csaodfs, sphere, colormap='jet'))
 print('Saving illustration as csa_odfs.png')
 fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 
