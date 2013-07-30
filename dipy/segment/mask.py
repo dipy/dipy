@@ -121,15 +121,27 @@ def bounding_box(vol):
     npmaxs : array
         Array containg maximum index of each dimension
     """
-    mask = vol != 0
-    mins = np.zeros(mask.ndim)
-    maxs = mins.copy()
-    for i in range(mask.ndim):
-        flat = mask.any(i)
-        mins[i] = flat.argmax()
-        maxs[i] = mask.shape[i] - flat[::-1].argmax()
 
-    return mins, maxs
+    pts = np.array(np.where(vol != 0)).T
+    if len(pts) == 0:
+        print('WARNING: Not data found in volume to bound. Returning empty bounding box.')
+        return [0,0,0], [0,0,0]
+
+    maxs = copy.copy(pts[0])
+    mins = copy.copy(pts[0])
+    numdims = len(pts[0])
+
+    for pt in pts:
+        for curdim in range(0, numdims):
+            if pt[curdim] > maxs[curdim]:
+                maxs[curdim] = copy.copy(pt[curdim])
+
+            if pt[curdim] < mins[curdim]:
+                mins[curdim] = copy.copy(pt[curdim])
+
+    npmaxs = np.array(maxs)
+    npmins = np.array(mins)
+    return npmins, npmaxs
 
 def crop(vol, mins, maxs):
     """
@@ -151,7 +163,7 @@ def crop(vol, mins, maxs):
     """
     return vol[tuple(slice(i, j+1) for i, j in zip(mins, maxs))]
 
-def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
+def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=None):
     """
     Simple brain extraction tool method for b0 images from DWI data. It uses a
     median filter smoothing of the input_volume and an automatic histogram Otsu
@@ -170,7 +182,7 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
 
     Parameters
     ----------
-    input_volume : 3D ndarray
+    input_volume : ndarray
         3D ndarray of the b=0 volume
     median_radius : int
         Radius (in voxels) of the applied median filter(default 4)
@@ -183,17 +195,22 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
 
     Returns
     -------
-    input_volume : 3D ndarray
+    maskedvolume : ndarray
         Masked input_volume
     mask : 3D ndarray
         The binary brain mask
     """
 
-    # The original data will be needed for final crop / mask
-    vol = input_volume.copy()
+    if len(input_volume.shape) == 4:
+        if b0Slices <> None:
+            b0vol = np.mean(input_volume[..., tuple(b0Slices)], axis=3)
+        else:
+            b0vol = input_volume[..., 0].copy()
+    else:
+        b0vol = input_volume.copy()
 
     # Make a mask using a multiple pass median filter and histogram thresholding.
-    mask = multi_median(vol, median_radius, numpass)
+    mask = multi_median(b0vol, median_radius, numpass)
     thresh = otsu(mask)
     mask = binary_threshold(mask, thresh)
 
@@ -206,52 +223,4 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     # Apply the mask to the original volume.
     maskedvolume = applymask(input_volume, mask)
 
-    return maskedvolume, mask
-
-def medotsu4D(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slice=0):
-    """
-    Does the exact same processing as medotsu but on a 4D volume using the
-    b0 time slice to compute the mask.
-
-    Parameters
-    ----------
-    input_volume : 4D ndarray
-        4D ndarray
-    median_radius : int
-        Radius of the applied median filter (default 4)
-    numpass: int
-        Number of pass of the median filter (default 4)
-    autocrop: bool
-        if True, the masked input_volume will also be cropped using the bounding
-        box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
-        resolution. (default False)
-    b0Slice: int, tuple or list
-        Actual indexes of the b0 slices in the 4th dimension (default 0).
-        If b0Slice is a tuple or a list, the mean of all slices is used.
-
-    Returns
-    -------
-    input_volume : 4D ndarray
-        Masked input_volume
-    mask : 3D ndarray
-        The binary brain mask
-    """
-    if len(input_volume.shape) != 4:
-        raise Exception('medotsu4D: Make sure the input volume is 4D.')
-
-    if(isinstance(b0Slice, tuple)):
-        meanvol = np.mean(input_volume[..., b0Slice], axis=3)
-    elif(isinstance(b0Slice, list)):
-        meanvol = np.mean(input_volume[..., tuple(b0Slice)], axis=3)
-    else:
-        meanvol = input_volume[..., b0Slice]
-
-    masked, mask = medotsu(meanvol, median_radius, numpass, False)
-
-    if(autocrop):
-        mins, maxs = bounding_box(mask)
-        mask = crop(mask, mins, maxs)
-        input_volume = crop(input_volume, mins, maxs)
-
-    maskedvolume = applymask(input_volume, mask)
     return maskedvolume, mask
