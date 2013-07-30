@@ -35,7 +35,6 @@ num_pass) if extraction yields incorrect results but the default parameters work
 well on most volumes. For this example, default parameters (4, 4) will be used.
 """
 
-print('Segmenting brain data from GE 3T b0 volume...')
 from dipy.segment.mask import medotsu
 b0_mask, mask = medotsu(data.copy(), 4, 4)
 
