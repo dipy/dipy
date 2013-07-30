@@ -1315,7 +1315,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                 non_outlier_idx = np.where(residuals <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
-                if len(sigma>1):
+                if np.iterable(sigma):
                     this_sigma = sigma[non_outlier_idx]
                 else:
                     this_sigma = sigma

@@ -500,14 +500,9 @@ def test_restore():
      data, bvals, bvecs = get_data('small_25')
      dd = nib.load(data).get_data()
      gtab = grad.gradient_table(bvals, bvecs)
-
-
      fit_method = 'restore' # 'NLLS'
      jac = True # False
-
-  
      dd[..., 5] = 1.0
-
      tm = dti.TensorModel(gtab, fit_method=fit_method, jac=True, sigma=10)
      tm.fit(dd)
 
