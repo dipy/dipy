@@ -149,7 +149,7 @@ def crop(vol, mins, maxs):
         vol : 3D ndarray
             The cropped volume.
     """
-    return vol[mins[0]:maxs[0]+1, mins[1]:maxs[1]+1, mins[2]:maxs[2]+1]
+    return vol[tuple(slice(i, j+1) for i, j in zip(mins, maxs))]
 
 def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
     """
