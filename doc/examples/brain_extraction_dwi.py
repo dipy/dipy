@@ -36,7 +36,7 @@ well on most volumes. For this example, default parameters (4, 4) will be used.
 """
 
 from dipy.segment.mask import medotsu
-b0_mask, mask = medotsu(data.copy(), 4, 4)
+b0_mask, mask = medotsu(data, 4, 4)
 
 """
 Saving the segmentation results is very easy using nibabel. We need the b0_mask,
@@ -73,7 +73,7 @@ number of backgroud voxels. This makes outputted data significantly smaller.
 `medostu`'s auto cropping is activated by setting the autocrop parameter to True.
 """
 
-b0_mask_crop, mask_crop = medotsu(data.copy(), 4, 4, autocrop=True)
+b0_mask_crop, mask_crop = medotsu(data, 4, 4, autocrop=True)
 
 """
 Saving cropped data using nibabel as demonstrated previously.

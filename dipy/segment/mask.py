@@ -85,19 +85,8 @@ def applymask(vol, mask):
     mask : ndarray
         Binary mask.
     """
-    if len(mask.shape) > len(vol.shape):
-        raise Exception('applymask: The mask\'s dimensionality is bigger than the input\'s')
-
-    elif len(mask.shape) < len(vol.shape):
-        lastdimlen = vol.shape[len(vol.shape)-1]
-        for i in range(0, lastdimlen):
-            applymask(vol[..., i], mask)
-    else:
-        outliers = np.where(mask == 0)
-        outliers = np.array(outliers)
-        outliers = tuple(outliers)
-        vol[outliers] = 0
-
+    mask = mask.reshape(mask.shape + (vol.ndim - mask.ndim) * (1,))
+    return vol * mask
 
 def binary_threshold(vol, thresh):
     """
@@ -215,9 +204,9 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False):
         input_volume = crop(input_volume, mins, maxs)
 
     # Apply the mask to the original volume.
-    applymask(input_volume, mask)
+    maskedvolume = applymask(input_volume, mask)
 
-    return input_volume, mask
+    return maskedvolume, mask
 
 def medotsu4D(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slice=0):
     """
@@ -262,8 +251,7 @@ def medotsu4D(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slice=
     if(autocrop):
         mins, maxs = bounding_box(mask)
         mask = crop(mask, mins, maxs)
-
         input_volume = crop(input_volume, mins, maxs)
 
-    applymask(input_volume, mask)
-    return input_volume, mask
+    maskedvolume = applymask(input_volume, mask)
+    return maskedvolume, mask
