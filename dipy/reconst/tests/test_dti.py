@@ -497,6 +497,20 @@ def test_restore():
            assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
 
 
+     data, bvals, bvecs = get_data('small_25')
+     dd = nib.load(data).get_data()
+     gtab = grad.gradient_table(bvals, bvecs)
+
+
+     fit_method = 'restore' # 'NLLS'
+     jac = True # False
+
+  
+     dd[..., 5] = 1.0
+
+     tm = dti.TensorModel(gtab, fit_method=fit_method, jac=True, sigma=10)
+     tm.fit(dd)
+
 ## def test_restore_data():
 ##     data, bvals, bvecs = get_data('small_25')
 
