@@ -57,7 +57,8 @@ EG_SRC_DIR = abspath('examples')
 
 # Work in examples directory
 os.chdir('examples_built')
-if not os.getcwd().endswith('doc/examples_built'):
+
+if not os.getcwd().endswith(pjoin('doc','examples_built')):
     raise OSError('This must be run from the doc directory')
 
 # Copy the py files; check they are in the examples list and warn if not
@@ -71,8 +72,8 @@ for fname in pyfilelist:
         print 'Example %s not in index file %s' % (EG_SRC_DIR, EG_INDEX_FNAME)
 
 # Run the conversion from .py to rst file
-check_call('../../tools/ex2rst --project dipy --outdir . .',
-           shell=True)
+check_call('python ../../tools/ex2rst --project dipy --outdir . .',
+            shell=True)
 
 #added the path so that scripts can import other scripts on the same directory
 sys.path.insert(0, os.getcwd())
