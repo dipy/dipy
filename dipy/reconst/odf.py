@@ -210,7 +210,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         mask = np.ones(shape, dtype='bool')
     else:
         if mask.shape != shape:
-            raise ValueError("mask is not the same shape as data")
+            raise ValueError("Mask is not the same shape as data.")
 
     sh_smooth = 0
     gfa_array = np.zeros(shape)
