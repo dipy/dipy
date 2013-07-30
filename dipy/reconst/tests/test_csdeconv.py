@@ -183,7 +183,8 @@ def test_odf_sh_to_sharp():
 
 
 def test_forward_sdeconv_mat():
-    mat = forward_sdeconv_mat([0, 2, 4])
+    m, n = sph_harm_ind_list(4)
+    mat = forward_sdeconv_mat(np.array([0, 2, 4]), n)
     expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
     npt.assert_array_equal(mat, expected)
 
@@ -191,9 +192,13 @@ def test_forward_sdeconv_mat():
     expected_size = (sh_order + 1) * (sh_order + 2) / 2
     r_rh = np.arange(0, sh_order + 1, 2)
     m, n = sph_harm_ind_list(sh_order)
-    mat = forward_sdeconv_mat(r_rh)
+    mat = forward_sdeconv_mat(r_rh, n)
     npt.assert_equal(mat.shape, (expected_size, expected_size))
     npt.assert_array_equal(mat.diagonal(), n)
+
+    # Odd spherical harmonic degrees should raise a ValueError
+    n[2] = 3
+    npt.assert_raises(ValueError, forward_sdeconv_mat, r_rh, n)
 
 
 if __name__ == '__main__':
