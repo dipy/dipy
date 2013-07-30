@@ -179,14 +179,14 @@ mean of the  eigenvalues of the tensor. Since FA is a normalized
 measure of variance and MD is the mean, they are often used as complimentary
 measures. In `dipy`, there are two equivalent ways to calculate the mean
 diffusivity. One is by calling the `mean_diffusivity` module function on the
-eigen-values of the TensorFit class instance: 
+eigen-values of the TensorFit class instance:
 """
 
 MD1 = dti.mean_diffusivity(tenfit.evals)
 nib.save(nib.Nifti1Image(MD1.astype(np.float32), img.get_affine()), 'tensors_md.nii.gz')
 
 """
-The other is to call the TensorFit class method: 
+The other is to call the TensorFit class method:
 """
 
 MD2 = tenfit.md
@@ -194,7 +194,7 @@ MD2 = tenfit.md
 """
 Obviously, the quantities are identical.
 
-We can also compute the colored FA or RGB-map [Pajevic1999]_. First, we make sure 
+We can also compute the colored FA or RGB-map [Pajevic1999]_. First, we make sure
 that the FA is scaled between 0 and 1, we compute the RGB map and save it.
 """
 
@@ -203,22 +203,54 @@ RGB = color_fa(FA, tenfit.evecs)
 nib.save(nib.Nifti1Image(np.array(255 * RGB, 'uint8'), img.get_affine()), 'tensor_rgb.nii.gz')
 
 """
-Finally lets try to visualize the orientation distribution functions of a small
-rectangular in an axial slice of the splenium of the corpus callosum (CC).
+Let's try to visualize the tensor ellipsoids of a small rectangular
+area in an axial slice of the splenium of the corpus callosum (CC).
 """
 
-print('Computing tensor ODFs in a part of the splenium of the CC')
-data_small  = data[20:50,55:85, 38:39]
+print('Computing tensor ellipsoids in a part of the splenium of the CC')
+
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
 
 from dipy.viz import fvtk
-r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(tenmodel.fit(data_small).odf(sphere),
-							  sphere, colormap=None))
+ren = fvtk.ren()
+
+evals = tenfit.evals[20:50,55:85, 38:39]
+evecs = tenfit.evecs[20:50,55:85, 38:39]
+
+"""
+We can color the ellipsoids using the ``color_fa`` values that we calculated 
+above. In this example we additionally normalize the values to increase the contrast.
+"""
+
+cfa = RGB[20:50, 55:85, 38:39]
+cfa /= cfa.max()
+
+fvtk.add(ren, fvtk.tensor(evals, evecs, cfa, sphere))
+
+print('Saving illustration as tensor_ellipsoids.png')
+fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids.png', size=(600, 600))
+
+"""
+.. figure:: tensor_ellipsoids.png
+   :align: center
+
+   **Tensor Ellipsoids**.
+"""
+
+fvtk.clear(ren)
+
+"""
+Finally, we can visualize the tensor orientation distribution functions
+for the same area as we did with the ellipsoids.
+"""
+
+tensor_odfs = tenmodel.fit(data[20:50,55:85, 38:39]).odf(sphere)
+
+fvtk.add(ren, fvtk.sphere_funcs(tensor_odfs, sphere, colormap=None))
 #fvtk.show(r)
 print('Saving illustration as tensor_odfs.png')
-fvtk.record(r, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
+fvtk.record(ren, n_frames=1, out_path='tensor_odfs.png', size=(600, 600))
 
 """
 .. figure:: tensor_odfs.png
@@ -238,13 +270,12 @@ diffusion and fiber orientations in those locations. These are presented in
 other examples.
 
 
-
 .. [Basser1994] Basser PJ, Mattielo J, LeBihan (1994). MR diffusion tensor
                 spectroscopy and imaging.
 
-.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent 
-                 the orientation of anisotropic tissues from diffusion tensor 
-                 data: application to white matter fiber tract mapping in 
+.. [Pajevic1999] Pajevic S, Pierpaoli (1999). Color schemes to represent
+                 the orientation of anisotropic tissues from diffusion tensor
+                 data: application to white matter fiber tract mapping in
                  the human brain.
 
 .. include:: ../links_names.inc
