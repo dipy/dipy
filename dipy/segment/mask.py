@@ -135,7 +135,7 @@ def bounding_box(vol):
     mask = vol != 0
     mins = np.zeros(mask.ndim)
     maxs = mins.copy()
-    for i in mask.ndim:
+    for i in range(mask.ndim):
         flat = mask.any(i)
         mins[i] = flat.argmax()
         maxs[i] = mask.shape[i] - flat[::-1].argmax()
