@@ -1,9 +1,12 @@
 from __future__ import division, print_function, absolute_import
 import copy
 import numpy as np
-from scipy.ndimage import binary_opening, label
 from scipy.ndimage.filters import median_filter
-from scipy.stats import threshold
+try:
+    from skimage.filter import threshold_otsu as otsu
+except:
+    from dipy.segment.threshold import otsu
+
 
 def multi_median(input, median_radius, numpass):
     """
@@ -32,46 +35,6 @@ def multi_median(input, median_radius, numpass):
         median_filter(input, medarr, output=input)
 
     return input
-
-
-def otsu(image, nbins=256):
-    """
-    Return threshold value based on Otsu's method.
-    Copied from scikit-image to remove dependency.
-
-    Parameters
-    ----------
-    image : array
-        Input image.
-    nbins : int
-        Number of bins used to calculate histogram. This value is ignored for
-        integer arrays.
-
-    Returns
-    -------
-    threshold : float
-        Threshold value.
-    """
-    hist, bin_centers = np.histogram(image, nbins)
-    hist = hist.astype(np.float)
-
-    # class probabilities for all possible thresholds
-    weight1 = np.cumsum(hist)
-    weight2 = np.cumsum(hist[::-1])[::-1]
-
-    # class means for all possible thresholds
-    mean1 = np.cumsum(hist * bin_centers[1:]) / weight1
-    mean2 = (np.cumsum((hist * bin_centers[1:])[::-1]) / weight2[::-1])[::-1]
-
-    # Clip ends to align class 1 and class 2 variables:
-    # The last value of `weight1`/`mean1` should pair with zero values in
-    # `weight2`/`mean2`, which do not exist.
-    variance12 = weight1[:-1] * weight2[1:] * (mean1[:-1] - mean2[1:])**2
-
-    idx = np.argmax(variance12)
-    threshold = bin_centers[:-1][idx]
-    return threshold
-
 
 def applymask(vol, mask):
     """
@@ -148,7 +111,7 @@ def crop(vol, mins, maxs):
 
     Parameters
     ----------
-    vol : 3D ndarray
+    vol : ndarray
         Volume to crop.
     mins : array
         Array containg minimum index of each dimension.
@@ -157,7 +120,7 @@ def crop(vol, mins, maxs):
 
     Returns
     -------
-        vol : 3D ndarray
+        vol : ndarray
             The cropped volume.
     """
     return vol[tuple(slice(i, j+1) for i, j in zip(mins, maxs))]
