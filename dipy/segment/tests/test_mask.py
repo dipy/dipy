@@ -1,9 +1,11 @@
 import numpy as np
+import numpy.testing as npt
 from numpy.testing import assert_equal, run_module_suite
 from scipy.ndimage import generate_binary_structure, binary_dilation
 from scipy.ndimage.filters import median_filter
 from dipy.segment.mask import (medotsu, otsu, binary_threshold,
                                bounding_box, crop, applymask, multi_median)
+import warnings
 
 
 
@@ -43,8 +45,40 @@ def test_mask():
     median_filter(median_control, medarr, output=median_control)
     assert_equal(median_test, median_control)
 
-        
+
+def test_bounding_box():
+    vol = np.zeros((100, 100, 50), dtype=int)
+
+    # Check the more usual case
+    vol[10:90, 11:40, 5:33] = 3
+    mins, maxs = bounding_box(vol)
+    assert_equal(mins, [10, 11, 5])
+    assert_equal(maxs, [89, 39, 32])
+
+    # Check a 2d case
+    mins, maxs = bounding_box(vol[10])
+    assert_equal(mins, [11, 5])
+    assert_equal(maxs, [39, 32])
+
+    vol[:] = 0
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        # Trigger a warning.
+        num_warns = len(w)
+        mins, maxs = bounding_box(vol)
+        # Assert number of warnings has gone up by 1
+        assert_equal(len(w), num_warns + 1)
+
+        # Check that an empty array returns zeros for both min & max
+        assert_equal(mins, [0, 0, 0])
+        assert_equal(maxs, [0, 0, 0])
+
+        # Check the 2d case
+        mins, maxs = bounding_box(vol[0])
+        assert_equal(len(w), num_warns + 2)
+        assert_equal(mins, [0, 0])
+        assert_equal(maxs, [0, 0])
+
+
 if __name__ == '__main__':
     run_module_suite()
-
-

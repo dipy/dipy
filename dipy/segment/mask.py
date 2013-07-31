@@ -1,4 +1,5 @@
 from __future__ import division, print_function, absolute_import
+from warnings import warn
 import copy
 import numpy as np
 from scipy.ndimage.filters import median_filter
@@ -86,7 +87,8 @@ def bounding_box(vol):
 
     pts = np.array(np.where(vol != 0)).T
     if len(pts) == 0:
-        print('WARNING: Not data found in volume to bound. Returning empty bounding box.')
+        warn('WARNING: Not data found in volume to bound. Returning empty'
+             'bounding box.')
         return [0,0,0], [0,0,0]
 
     maxs = copy.copy(pts[0])
