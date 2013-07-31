@@ -14,6 +14,7 @@ from hashlib import md5
 import numpy as np
 import nibabel as nib
 
+import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
@@ -34,7 +35,6 @@ def fetch_scil_b0():
         opener = urlopen(uraw)
         open(folder+'.zip', 'wb').write(opener.read())
 
-        import zipfile
         print('Unziping '+folder+'.zip ...')
         zip = zipfile.ZipFile(folder+'.zip', 'r')
         zip.extractall(dipy_home)
