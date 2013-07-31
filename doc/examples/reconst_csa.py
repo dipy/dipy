@@ -39,9 +39,9 @@ data.shape ``(81, 106, 76, 160)``
 Remove most of the background using dipy's mask module.
 """
 
-from dipy.segment.mask import medotsu4D
+from dipy.segment.mask import medotsu
 
-maskdata, mask = medotsu4D(data, 3, 2, True, range(0,10))
+maskdata, mask = medotsu(data, 3, 2, True, range(0,10))
 
 """
 We instantiate our CSA model with sperical harmonic order of 4
