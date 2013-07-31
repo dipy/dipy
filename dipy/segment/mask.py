@@ -75,8 +75,7 @@ def otsu(image, nbins=256):
 
 def applymask(vol, mask):
     """
-    Recursively applies N dimensionnal mask to a M dimensionnal volume
-    for N <= M.
+    Mask vol with mask.
 
     Parameters
     ----------
