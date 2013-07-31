@@ -216,9 +216,9 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=N
     if autocrop:
         mins, maxs = bounding_box(mask)
         mask = crop(mask, mins, maxs)
-        input_volume = crop(input_volume, mins, maxs)
-
-    # Apply the mask to the original volume.
-    maskedvolume = applymask(input_volume, mask)
+        croppedvolume = crop(input_volume, mins, maxs)
+        maskedvolume = applymask(croppedvolume, mask)
+    else:
+        maskedvolume = applymask(input_volume, mask)
 
     return maskedvolume, mask
