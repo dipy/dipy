@@ -74,38 +74,37 @@ def bounding_box(vol):
 
     Parameters
     ----------
-        vol : ndarray
-            Volume to compute bounding box on.
+    vol : ndarray
+        Volume to compute bounding box on.
 
     Returns
     -------
-    npmins : array
+    npmins : list
         Array containg minimum index of each dimension
-    npmaxs : array
+    npmaxs : list
         Array containg maximum index of each dimension
+
     """
+    # Find bounds on first dimension
+    temp = vol
+    for i in range(vol.ndim - 1):
+        temp = temp.any(-1)
+    mins = [temp.argmax()]
+    maxs = [len(temp) - 1 - temp[::-1].argmax()]
 
-    pts = np.array(np.where(vol != 0)).T
-    if len(pts) == 0:
-        warn('WARNING: Not data found in volume to bound. Returning empty'
-             'bounding box.')
-        return [0,0,0], [0,0,0]
+    # Check that vol is not all 0
+    if mins[0] == 0 and temp[0] == 0:
+        warn('No data found in volume to bound. Returning empty bounding box.')
+        return [0] * vol.ndim, [0] * vol.ndim
 
-    maxs = copy.copy(pts[0])
-    mins = copy.copy(pts[0])
-    numdims = len(pts[0])
+    # Find bounds on remaining dimensions
+    if vol.ndim > 1:
+        a, b = bounding_box(vol.any(0))
+        mins.extend(a)
+        maxs.extend(b)
 
-    for pt in pts:
-        for curdim in range(0, numdims):
-            if pt[curdim] > maxs[curdim]:
-                maxs[curdim] = copy.copy(pt[curdim])
+    return mins, maxs
 
-            if pt[curdim] < mins[curdim]:
-                mins[curdim] = copy.copy(pt[curdim])
-
-    npmaxs = np.array(maxs)
-    npmins = np.array(mins)
-    return npmins, npmaxs
 
 def crop(vol, mins, maxs):
     """
