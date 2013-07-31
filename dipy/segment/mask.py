@@ -1,6 +1,5 @@
 from __future__ import division, print_function, absolute_import
 from warnings import warn
-import copy
 import numpy as np
 from scipy.ndimage.filters import median_filter
 try:
@@ -90,7 +89,7 @@ def bounding_box(vol):
     for i in range(vol.ndim - 1):
         temp = temp.any(-1)
     mins = [temp.argmax()]
-    maxs = [len(temp) - 1 - temp[::-1].argmax()]
+    maxs = [len(temp) - temp[::-1].argmax()]
 
     # Check that vol is not all 0
     if mins[0] == 0 and temp[0] == 0:
@@ -124,7 +123,7 @@ def crop(vol, mins, maxs):
         vol : ndarray
             The cropped volume.
     """
-    return vol[tuple(slice(i, j+1) for i, j in zip(mins, maxs))]
+    return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
 def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=None):
     """

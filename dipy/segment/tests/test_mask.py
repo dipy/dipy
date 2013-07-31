@@ -53,12 +53,12 @@ def test_bounding_box():
     vol[10:90, 11:40, 5:33] = 3
     mins, maxs = bounding_box(vol)
     assert_equal(mins, [10, 11, 5])
-    assert_equal(maxs, [89, 39, 32])
+    assert_equal(maxs, [90, 40, 33])
 
     # Check a 2d case
     mins, maxs = bounding_box(vol[10])
     assert_equal(mins, [11, 5])
-    assert_equal(maxs, [39, 32])
+    assert_equal(maxs, [40, 33])
 
     vol[:] = 0
     with warnings.catch_warnings(record=True) as w:
