@@ -165,9 +165,9 @@ def crop(vol, mins, maxs):
 
 def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=None):
     """
-    Simple brain extraction tool method for b0 images from DWI data. It uses a
-    median filter smoothing of the input_volume and an automatic histogram Otsu
-    thresholding technique, hence the name medotsu.
+    Simple brain extraction tool method for images from DWI data. It uses a
+    median filter smoothing of the input_volumes b0Slices and an automatic
+    histogram Otsu thresholding technique, hence the name medotsu.
 
     It mimics the MRtrix bet from the documentation.
     (mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | median3D - mask.nii)
@@ -176,14 +176,10 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=N
     However, from tests on multiple 1.5T and 3T data from
     GE, Philips, Siemens, the most robust choice is median_radius=4, numpass=4
 
-    Using medotsu with 4D data will successfully mask and crop the brain but with
-    very poor performances due to the median filtering being applied to the whole
-    data. It is suggested to use medotsu4D when dealing with 4D data.
-
     Parameters
     ----------
     input_volume : ndarray
-        3D ndarray of the b=0 volume
+        ndarray of the brain volume
     median_radius : int
         Radius (in voxels) of the applied median filter(default 4)
     numpass: int
@@ -192,6 +188,8 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=N
         if True, the masked input_volume will also be cropped using the bounding
         box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
         resolution. (default False)
+    b0Slices : array
+        1D array representing indexes of the volume where b=0
 
     Returns
     -------
