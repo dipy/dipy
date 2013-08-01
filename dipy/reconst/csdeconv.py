@@ -418,7 +418,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(fodf < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warning.warn('too few negative directions identified - failed to converge')
+            warnings.warn('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -436,7 +436,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
 
-    warning.warn('maximum number of iterations exceeded - failed to converge')
+    warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
@@ -495,7 +495,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(A < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warning.warn('too few negative directions identified - failed to converge')
+            warnings.warn('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -507,7 +507,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, ODF)[0]  
 
-    warning.warn('maximum number of iterations exceeded - failed to converge')
+    warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
