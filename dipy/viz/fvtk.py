@@ -30,6 +30,9 @@ from ..utils.optpkg import optional_package
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 
+version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+major_version = vtk.vtkVersion.GetVTKMajorVersion()
+
 '''
 For more color names see
 http://www.colourlovers.com/blog/2007/07/24/32-common-color-names-for-easy-reference/
@@ -138,7 +141,11 @@ def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
     # arrow.SetTipLength(length)
 
     arrowm = vtk.vtkPolyDataMapper()
-    arrowm.SetInput(arrow.GetOutput())
+
+    if major_version <= 5:
+        arrowm.SetInput(arrow.GetOutput())
+    else:
+        arrowm.SetInputData(arrow.GetOutput())
 
     arrowa = vtk.vtkActor()
     arrowa.SetMapper(arrowm)
@@ -364,7 +371,11 @@ def line(lines, colors, opacity=1, linewidth=1):
     polydata.GetPointData().SetScalars(linescalars)
 
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInput(polydata)
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
+
     mapper.SetLookupTable(lookuptable)
 
     mapper.SetColorModeToMapScalars()
@@ -411,7 +422,10 @@ def dots(points, color=(1, 0, 0), opacity=1):
 
     aPolyVertexGrid.SetPoints(polyVertexPoints)
     aPolyVertexMapper = vtk.vtkDataSetMapper()
-    aPolyVertexMapper.SetInput(aPolyVertexGrid)
+    if major_version <=  5:
+        aPolyVertexMapper.SetInput(aPolyVertexGrid)
+    else:
+        aPolyVertexMapper.SetInputData(aPolyVertexGrid)
     aPolyVertexActor = vtk.vtkActor()
     aPolyVertexActor.SetMapper(aPolyVertexMapper)
 
@@ -459,13 +473,18 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=3, phi=3):
 
     glyph = vtk.vtkGlyph3D()
     glyph.SetSourceConnection(src.GetOutputPort())
-    glyph.SetInput(polyData)
+    if major_version <= 5:
+        glyph.SetInput(polyData)
+    else:
+        glyph.SetInputData(polyData)
     glyph.SetColorModeToColorByScalar()
     glyph.SetScaleModeToDataScalingOff()
 
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInput(glyph.GetOutput())
-
+    if major_version <= 5:
+        mapper.SetInput(glyph.GetOutput())
+    else:
+        mapper.SetInputData(glyph.GetOutput())
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
 
@@ -484,7 +503,10 @@ def sphere(position=(0, 0, 0), radius=0.5, thetares=8, phires=8,
     sphere.SetPhiResolution(phires)
 
     spherem = vtk.vtkPolyDataMapper()
-    spherem.SetInput(sphere.GetOutput())
+    if major_version <= 5:
+        spherem.SetInput(sphere.GetOutput())
+    else:
+        spherem.SetInputData(sphere.GetOutput())
     spherea = vtk.vtkActor()
     spherea.SetMapper(spherem)
     spherea.SetPosition(position)
@@ -539,11 +561,18 @@ def ellipsoid(R=np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]]),
 
     transf = vtk.vtkTransformPolyDataFilter()
     transf.SetTransform(trans)
-    transf.SetInput(sphere.GetOutput())
+
+    if major_version <= 5:
+        transf.SetInput(sphere.GetOutput())
+    else:
+        transf.SetInputData(sphere.GetOutput())
     transf.Update()
 
     spherem = vtk.vtkPolyDataMapper()
-    spherem.SetInput(transf.GetOutput())
+    if major_version <= 5:
+        spherem.SetInput(transf.GetOutput())
+    else:
+        spherem.SetInputData(transf.GetOutput())
 
     spherea = vtk.vtkActor()
     spherea.SetMapper(spherem)
@@ -592,7 +621,10 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     atext.SetText(text)
 
     textm = vtk.vtkPolyDataMapper()
-    textm.SetInput(atext.GetOutput())
+    if major_version <= 5:
+        textm.SetInput(atext.GetOutput())
+    else:
+        textm.SetInputData(atext.GetOutput())
 
     texta = vtk.vtkFollower()
     texta.SetMapper(textm)
@@ -781,7 +813,10 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         # aff.DeepCopy((affine[0,0],affine[0,1],affine[0,2],127.5,affine[1,0],affine[1,1],affine[1,2],-127.5,affine[2,0],affine[2,1],affine[2,2],-127.5,affine[3,0],affine[3,1],affine[3,2],1))
 
         reslice = vtk.vtkImageReslice()
-        reslice.SetInput(im)
+        if major_version <= 5:
+            reslice.SetInput(im)
+        else:
+            reslice.SetInputData(im)
         # reslice.SetOutputDimensionality(2)
         # reslice.SetOutputOrigin(127,-145,147)
 
@@ -800,7 +835,10 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         # print 'reslice GetOutputSpacing',reslice.GetOutputSpacing()
 
         changeFilter = vtk.vtkImageChangeInformation()
-        changeFilter.SetInput(reslice.GetOutput())
+        if major_version <= 5:
+            changeFilter.SetInput(reslice.GetOutput())
+        else:
+            changeFilter.SetInputData(reslice.GetOutput())
         # changeFilter.SetInput(im)
         if center_origin:
             changeFilter.SetOutputOrigin(-vol.shape[0] / 2.0 + 0.5, -vol.shape[1] / 2.0 + 0.5, -vol.shape[2] / 2.0 + 0.5)
@@ -829,10 +867,15 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
             print('mapper VolumeTextureMapper2D')
         mapper = vtk.vtkVolumeTextureMapper2D()
         if affine == None:
-            mapper.SetInput(im)
+            if major_version <= 5:
+                mapper.SetInput(im)
+            else:
+                mapper.SetInputData(im)
         else:
-            # mapper.SetInput(reslice.GetOutput())
-            mapper.SetInput(changeFilter.GetOutput())
+            if major_version <= 5:
+                mapper.SetInput(changeFilter.GetOutput())
+            else:
+                mapper.SetInputData(changeFilter.GetOutput())
 
     if (maptype == 1):
 
@@ -867,10 +910,16 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
                 print('Composite')
 
         if affine == None:
-            mapper.SetInput(im)
+            if major_version <= 5:
+                mapper.SetInput(im)
+            else:
+                mapper.SetInputData(im)
         else:
             # mapper.SetInput(reslice.GetOutput())
-            mapper.SetInput(changeFilter.GetOutput())
+            if major_version <= 5:
+                mapper.SetInput(changeFilter.GetOutput())
+            else:
+                mapper.SetInputData(changeFilter.GetOutput())
             # Return mid position in world space
             # im2=reslice.GetOutput()
             # index=im2.FindPoint(vol.shape[0]/2.0,vol.shape[1]/2.0,vol.shape[2]/2.0)
@@ -954,7 +1003,10 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
 
         # print levels
         skinExtractor = vtk.vtkContourFilter()
-        skinExtractor.SetInput(im)
+        if major_version <= 5:
+            skinExtractor.SetInput(im)
+        else:
+            skinExtractor.SetInputData(im)
         skinExtractor.SetValue(0, l)
 
         skinNormals = vtk.vtkPolyDataNormals()
@@ -1247,7 +1299,10 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     polydata.Modified()
 
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInput(polydata)
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
@@ -1274,7 +1329,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
         distance between ellipsoids.
     norm : boolean,
         Normalize `evals`.
-    
+
     Returns
     -------
     actor : vtkActor
@@ -1318,7 +1373,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     colors.SetNumberOfComponents(3)
     colors.SetName("Colors")
 
-    if scalar_colors is None:        
+    if scalar_colors is None:
         from dipy.reconst.dti import color_fa, fractional_anisotropy
         cfa = color_fa(fractional_anisotropy(evals), evecs)
     else:
@@ -1378,7 +1433,10 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     polydata.Modified()
 
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInput(polydata)
+    if major_version <= 5:
+        mapper.SetInput(polydata)
+    else:
+        mapper.SetInputData(polydata)
 
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
@@ -1411,7 +1469,10 @@ def tube(point1=(0, 0, 0), point2=(1, 0, 0), color=(1, 0, 0), opacity=1, radius=
     # Add thickness to the resulting line.
     profileTubes = vtk.vtkTubeFilter()
     profileTubes.SetNumberOfSides(sides)
-    profileTubes.SetInput(profileData)
+    if major_version <= 5:
+        profileTubes.SetInput(profileData)
+    else:
+        profileTubes.SetInputData(profileData)
     profileTubes.SetRadius(radius)
 
     if capson:
@@ -1558,7 +1619,10 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
         # isosurface these render much faster on may systems.
         skinExtractor = vtk.vtkContourFilter()
         # skinExtractor.SetInputConnection(im.GetOutputPort())
-        skinExtractor.SetInput(im)
+        if major_version <= 5:
+            skinExtractor.SetInput(im)
+        else:
+            skinExtractor.SetInputData(im)
         skinExtractor.SetValue(0, le)
         skinNormals = vtk.vtkPolyDataNormals()
         skinNormals.SetInputConnection(skinExtractor.GetOutputPort())
@@ -1583,7 +1647,10 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
     # An outline provides context around the data.
     outlineData = vtk.vtkOutlineFilter()
     # outlineData.SetInputConnection(im.GetOutputPort())
-    outlineData.SetInput(im)
+    if major_version <= 5:
+        outlineData.SetInput(im)
+    else:
+        outlineData.SetInputData(im)
     mapOutline = vtk.vtkPolyDataMapper()
     mapOutline.SetInputConnection(outlineData.GetOutputPort())
     outline = vtk.vtkActor()
@@ -1618,7 +1685,10 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
     # processes a slice of data.
     planeColors = vtk.vtkImageMapToColors()
     # saggitalColors.SetInputConnection(im.GetOutputPort())
-    planeColors.SetInput(im)
+    if major_version <= 5:
+        planeColors.SetInput(im)
+    else:
+        planeColors.SetInputData(im)
     planeColors.SetLookupTable(lut)
     planeColors.Update()
 
@@ -1626,7 +1696,10 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
     for x in planesx:
 
         saggital = vtk.vtkImageActor()
-        saggital.SetInput(planeColors.GetOutput())
+        if major_version <= 5:
+            saggital.SetInput(planeColors.GetOutput())
+        else:
+            saggital.SetInputData(planeColors.GetOutput())
         saggital.SetDisplayExtent(x, x, y1, y2, z1, z2)
 
         saggitals.append(saggital)
@@ -1634,14 +1707,20 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
     axials = []
     for z in planesz:
         axial = vtk.vtkImageActor()
-        axial.SetInput(planeColors.GetOutput())
+        if major_version <= 5:
+            axial.SetInput(planeColors.GetOutput())
+        else:
+            axial.SetInputData(planeColors.GetOutput())
         axial.SetDisplayExtent(x1, x2, y1, y2, z, z)
         axials.append(axial)
 
     coronals = []
     for y in planesy:
         coronal = vtk.vtkImageActor()
-        coronal.SetInput(planeColors.GetOutput())
+        if major_version <= 5:
+            coronal.SetInput(planeColors.GetOutput())
+        else:
+            coronal.SetInputData(planeColors.GetOutput())
         coronal.SetDisplayExtent(x1, x2, y, y, z1, z2)
         coronals.append(coronal)
 
@@ -1729,7 +1808,10 @@ def annotatePick(object, event):
 
             closest = _closest_track(np.array([pickPos[0], pickPos[1], pickPos[2]]), track_buffer)
 
-            textMapper.SetInput("(%.6f, %.6f, %.6f)" % pickPos)
+            if major_version <= 5:
+                textMapper.SetInput("(%.6f, %.6f, %.6f)" % pickPos)
+            else:
+                textMapper.SetInputData("(%.6f, %.6f, %.6f)" % pickPos)
             textActor.SetPosition(selPt[:2])
             textActor.VisibilityOn()
 
@@ -1806,7 +1888,10 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
         if key == 's' or key == 'S':
             print('Saving image...')
             renderLarge = vtk.vtkRenderLargeImage()
-            renderLarge.SetInput(ren)
+            if major_version <= 5:
+                renderLarge.SetInput(ren)
+            else:
+                renderLarge.SetInputData(ren)
             renderLarge.SetMagnification(png_magnify)
             renderLarge.Update()
             writer = vtk.vtkPNGWriter()
@@ -1882,7 +1967,10 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
-    renderLarge.SetInput(ren)
+    if major_version <= 5:
+        renderLarge.SetInput(ren)
+    else:
+        renderLarge.SetInputData(ren)
     renderLarge.SetMagnification(magnification)
     renderLarge.Update()
 
@@ -1908,7 +1996,10 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     for i in range(n_frames):
         ren.GetActiveCamera().Azimuth(ang)
         renderLarge = vtk.vtkRenderLargeImage()
-        renderLarge.SetInput(ren)
+        if major_version <= 5:
+            renderLarge.SetInput(ren)
+        else:
+            renderLarge.SetInputData(ren)
         renderLarge.SetMagnification(magnification)
         renderLarge.Update()
         writer.SetInputConnection(renderLarge.GetOutputPort())
