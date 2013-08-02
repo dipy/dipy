@@ -61,15 +61,21 @@ def fetch_isbi2013_2shell():
         print('Downloading raw 2-shell synthetic data (20MB)...')
 
         opener = urlopen(uraw)
-        open(pjoin(folder, 'phantom64.nii.gz'), 'wb').write(opener.read())
+        data = open(pjoin(folder, 'phantom64.nii.gz'), 'wb')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'phantom64.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
-        open(pjoin(folder, 'phantom64.bval'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'phantom64.bval'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'phantom64.bval'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
-        open(pjoin(folder, 'phantom64.bvec'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'phantom64.bvec'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'phantom64.bvec'), md5_dict['bvec'])
 
         print('Done.')
@@ -127,15 +133,21 @@ def fetch_sherbrooke_3shell():
         print('Downloading raw 3-shell data (184MB)...')
 
         opener = urlopen(uraw)
-        open(pjoin(folder, 'HARDI193.nii.gz'), 'wb').write(opener.read())
+        data = open(pjoin(folder, 'HARDI193.nii.gz'), 'wb')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
-        open(pjoin(folder, 'HARDI193.bval'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'HARDI193.bval'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
-        open(pjoin(folder, 'HARDI193.bvec'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'HARDI193.bvec'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['bvec'])
 
         print('Done.')
@@ -193,15 +205,21 @@ def fetch_stanford_hardi():
         print('Downloading raw HARDI data (87MB)...')
 
         opener = urlopen(uraw)
-        open(pjoin(folder, 'HARDI150.nii.gz'), 'wb').write(opener.read())
+        data = open(pjoin(folder, 'HARDI150.nii.gz'), 'wb')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'HARDI150.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
-        open(pjoin(folder, 'HARDI150.bval'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'HARDI150.bval'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'HARDI150.bval'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
-        open(pjoin(folder, 'HARDI150.bvec'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'HARDI150.bvec'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'HARDI150.bvec'), md5_dict['bvec'])
 
         print('Done.')
@@ -260,19 +278,27 @@ def fetch_taiwan_ntu_dsi():
         print('Downloading raw DSI data (91MB)...')
 
         opener = urlopen(uraw)
-        open(pjoin(folder, 'DSI203.nii.gz'), 'wb').write(opener.read())
+        data = open(pjoin(folder, 'DSI203.nii.gz'), 'wb')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'DSI203.nii.gz'), md5_dict['data'])
 
         opener = urlopen(ubval)
-        open(pjoin(folder, 'DSI203.bval'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'DSI203.bval'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'DSI203.bval'), md5_dict['bval'])
 
         opener = urlopen(ubvec)
-        open(pjoin(folder, 'DSI203.bvec'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'DSI203.bvec'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'DSI203.bvec'), md5_dict['bvec'])
 
         opener = urlopen(ureadme)
-        open(pjoin(folder, 'DSI203_license.txt'), 'w').write(opener.read())
+        data = open(pjoin(folder, 'DSI203_license.txt'), 'w')
+        data.write(opener.read())
+        data.close()
         check_md5(pjoin(folder, 'DSI203_license.txt'), md5_dict['license'])
 
         print('Done.')
