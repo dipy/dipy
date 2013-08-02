@@ -361,7 +361,7 @@ def forward_sdt_deconv_mat(ratio, sh_order):
 
 
 def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
-    r""" Constrained-regarized spherical deconvolution (CSD) [1]_
+    r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response
     function `r_rh` in rotational harmonics coefficients from the spherical function
