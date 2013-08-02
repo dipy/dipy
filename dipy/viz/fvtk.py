@@ -30,9 +30,6 @@ from ..utils.optpkg import optional_package
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 
-version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
-major_version = vtk.vtkVersion.GetVTKMajorVersion()
-
 '''
 For more color names see
 http://www.colourlovers.com/blog/2007/07/24/32-common-color-names-for-easy-reference/
@@ -71,6 +68,10 @@ ind_buffer = []
 tmp_ren = None
 
 if have_vtk:
+
+    version = vtk.vtkVersion.GetVTKSourceVersion().split(' ')[-1]
+    major_version = vtk.vtkVersion.GetVTKMajorVersion()
+
     # Create a text mapper and actor to display the results of picking.
     textMapper = vtk.vtkTextMapper()
     tprop = textMapper.GetTextProperty()
