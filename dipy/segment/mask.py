@@ -162,7 +162,7 @@ def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=N
     """
 
     if len(input_volume.shape) == 4:
-        if b0Slices <> None:
+        if b0Slices is not None:
             b0vol = np.mean(input_volume[..., tuple(b0Slices)], axis=3)
         else:
             b0vol = input_volume[..., 0].copy()
