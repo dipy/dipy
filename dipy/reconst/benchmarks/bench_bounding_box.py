@@ -1,3 +1,5 @@
+from __future__ import division, print_function, absolute_import
+
 """ Benchmarks for bounding_box
 
 Run all benchmarks with::
@@ -23,12 +25,12 @@ def bench_bounding_box():
     vol [0, 0, 0] = 1
     times = 100
     time = measure("bounding_box(vol)", times) / times
-    print "Bounding_box on a sparse volume: {}".format(time)
+    print("Bounding_box on a sparse volume: {}".format(time))
 
     vol[:] = 10
     times = 1
     time = measure("bounding_box(vol)", times) / times
-    print "Bounding_box on a dense volume: {}".format(time)
+    print("Bounding_box on a dense volume: {}".format(time))
 
 if __name__ == "__main__":
     bench_bounding_box()
