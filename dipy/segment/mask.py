@@ -125,11 +125,11 @@ def crop(vol, mins, maxs):
     """
     return vol[tuple(slice(i, j) for i, j in zip(mins, maxs))]
 
-def medotsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=None):
+def median_otsu(input_volume, median_radius=4, numpass=4, autocrop=False, b0Slices=None):
     """
     Simple brain extraction tool method for images from DWI data. It uses a
     median filter smoothing of the input_volumes b0Slices and an automatic
-    histogram Otsu thresholding technique, hence the name medotsu.
+    histogram Otsu thresholding technique, hence the name medain_otsu.
 
     It mimics the MRtrix bet from the documentation.
     (mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | median3D - mask.nii)

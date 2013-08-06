@@ -98,9 +98,9 @@ calculating Tensors on the background of the image. This is done using dipy's
 mask module.
 """
 
-from dipy.segment.mask import medotsu
+from dipy.segment.mask import median_otsu
 
-maskdata, mask = medotsu(data, 3, 2, True, range(0,10))
+maskdata, mask = median_otsu(data, 3, 2, True, range(0,10))
 
 """
 Now that we have prepared the datasets we can go forward with the voxel

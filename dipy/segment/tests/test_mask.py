@@ -3,7 +3,7 @@ import numpy.testing as npt
 from numpy.testing import assert_equal, run_module_suite
 from scipy.ndimage import generate_binary_structure, binary_dilation
 from scipy.ndimage.filters import median_filter
-from dipy.segment.mask import (medotsu, otsu, binary_threshold,
+from dipy.segment.mask import (median_otsu, otsu, binary_threshold,
                                bounding_box, crop, applymask, multi_median)
 import warnings
 

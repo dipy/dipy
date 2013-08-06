@@ -30,13 +30,13 @@ numpy ndarray.
 
 Segment the brain using dipy's mask module.
 `medostu` returns the segmented brain data an a binary mask of the brain.
-It is possible to fine tune the `medotsu`'s parameters (median_radius and
+It is possible to fine tune the `median_otsu`'s parameters (median_radius and
 num_pass) if extraction yields incorrect results but the default parameters work
 well on most volumes. For this example, default parameters (4, 4) will be used.
 """
 
-from dipy.segment.mask import medotsu
-b0_mask, mask = medotsu(data, 4, 4)
+from dipy.segment.mask import median_otsu
+b0_mask, mask = median_otsu(data, 4, 4)
 
 """
 Saving the segmentation results is very easy using nibabel. We need the b0_mask,
@@ -73,7 +73,7 @@ number of backgroud voxels. This makes outputted data significantly smaller.
 `medostu`'s auto cropping is activated by setting the autocrop parameter to True.
 """
 
-b0_mask_crop, mask_crop = medotsu(data, 4, 4, autocrop=True)
+b0_mask_crop, mask_crop = median_otsu(data, 4, 4, autocrop=True)
 
 """
 Saving cropped data using nibabel as demonstrated previously.
