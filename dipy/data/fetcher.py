@@ -14,9 +14,47 @@ from hashlib import md5
 import numpy as np
 import nibabel as nib
 
+import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
+def fetch_scil_b0():
+    """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
+        different magnetic fields (1.5T and 3T)
+    """
+    zipname = 'datasets_multi-site_all_companies'
+    url = 'http://scil.dinf.usherbrooke.ca/wp-content/data/'
+    uraw = url + zipname + '.zip'
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    folder = pjoin(dipy_home, zipname)
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
+        opener = urlopen(uraw)
+        open(folder+'.zip', 'wb').write(opener.read())
+
+        print('Unziping '+folder+'.zip ...')
+        zip = zipfile.ZipFile(folder+'.zip', 'r')
+        zip.extractall(dipy_home)
+
+        print('Done.')
+        print('Files copied in folder %s' % dipy_home)
+    else:
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % dipy_home)
+
+def read_scil_b0():
+    """ Load GE 3T b0 image form the scil b0 dataset.
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    """
+    dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
+    file = dipy_home+'/datasets_multi-site_all_companies/3T/GE/b0.nii.gz'
+    return nib.load(file)
 
 def check_md5(filename, stored_md5):
     """
@@ -238,7 +276,6 @@ def read_stanford_hardi():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
-
 
 def fetch_taiwan_ntu_dsi():
     """ Download a DSI dataset with 203 gradient directions
