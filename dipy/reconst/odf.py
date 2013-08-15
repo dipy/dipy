@@ -211,7 +211,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         mask = np.ones(shape, dtype='bool')
     else:
         if mask.shape != shape:
-            raise ValueError("mask is not the same shape as data")
+            raise ValueError("Mask is not the same shape as data.")
 
     sh_smooth = 0
     gfa_array = np.zeros(shape)
@@ -274,10 +274,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             peak_values[idx][:n] /= pk[0]
             peak_dirs[idx] *= peak_values[idx][:, None]
 
-    gfa_array = gfa_array
-    qa_array = qa_array / global_max
-    peak_values = peak_values
-    peak_indices = peak_indices
+    #gfa_array = gfa_array
+    qa_array /= global_max
+    #peak_values = peak_values
+    #peak_indices = peak_indices
 
     # The fibernavigator only supports float32. Since this form is mainly
     # for external visualisation, we enforce float32.
