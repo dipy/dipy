@@ -972,6 +972,7 @@ class TensorFit(object):
         Parameters
         ----------
         sphere : Sphere class instance
+            The ADC will be calculated for each of the vertices in the sphere
 
         Returns
         -------
@@ -1015,7 +1016,7 @@ class TensorFit(object):
 
         Where:
         .. math ::
-            ADC = \theta Q \theta^T
+            ADC = -b \theta Q \theta^T
 
         $\theta$ is a unit vector pointing at any direction on the sphere for
         which a signal is to be predicted and $b$ is the b value provided in
