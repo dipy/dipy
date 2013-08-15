@@ -388,6 +388,7 @@ def test_mask():
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
 
+
 def test_nnls_jacobian_fucn():
     b0 = 1000.
     bvecs, bval = read_bvec_file(get_data('55dir_grad.bvec'))
