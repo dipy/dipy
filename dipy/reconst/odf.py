@@ -261,7 +261,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         # Get peaks of odf
         direction, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
                                              min_separation_angle)
-
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
         n = min(npeaks, len(pk))
