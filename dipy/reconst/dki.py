@@ -4,41 +4,67 @@ Diffusion Kurtosis Imaging
 """
 import numpy as np
 from scipy.misc import factorial
+import scipy.linalg as linalg
+import dipy.reconst.dti as dti
+import dipy.core.sphere as dps
 
-def monomial_matrix(grad, order):
+
+def dk_design_matrix(gtab):
     """
-    Compute the monomial matrix of the gradients up to some order
+    Compute the DKI design matrix (according to appendix in [1]_)
 
     Parameters
     ----------
-    gradients : ndarray of shape (n, 3)
-       The b vectors of the measurement
-
-    order : int
-       The order of the monomial matrix
+    gtab : a GradientTable class instance.
 
     Returns
     -------
-    n*(2+order)!/2(order)!
+    D : float array with shape (len(gtab.b0s_mask), 15)
+        The design matrix containing interactions between gradients up to 4th
+        order.
 
     Notes
     -----
-    A. Barmpoutis and B.C. Vemuri (2010) "A Unified Framework for Estimating
-    Diffusion Tensors of any order with Symmetric Positive-Definite
-    Constraints", Proc IEEE ISBI, 2010
+    [1] Lu, H, Jensen, JH, Ramani, A, Helpern, JA (2006). Three-dimensional
+    characterization of non-gaussian water diffusion in  humans using diffusion
+    kurtosis imaging. NMR in Biomedicine 19: 236-247
     """
-    monom = np.zeros((grad.shape[0], factorial(2+order)/(2*factorial(order)) ))
-    for k in range(grad.shape[0]):
-        c=0
-        for i in range(order):
-            for j in range(order-i):
-                monom[k,c]=(grad[k,0]**i)*(grad[k,1]**j)*(grad[k,2]**(order-i-j))
-                c+=1
 
-    return monom
+    bvecs = gtab.bvecs[~gtab.b0s_mask]
+    D = np.zeros((bvecs.shape[0], 15))
+    G = bvecs.T
+
+    D[:, 0] = G[0, :] ** 4
+    D[:, 1] = G[1, :] ** 4
+    D[:, 2] = G[2, :] ** 4
+    D[:, 3] = 4 * G[0, :] ** 3 * G[1, :]
+    D[:, 4] = 4 * G[0, :] ** 3 * G[2, :]
+    D[:, 5] = 4 * G[0, :] * G[1, :] ** 3
+    D[:, 6] = 4 * G[1, :] ** 3 * G[2, :]
+    D[:, 7] = 4 * G[0, :] * G[2, :] ** 3
+    D[:, 8] = 4 * G[1, :] * G[2, :] ** 3
+    D[:, 9] = 6 * G[0, :] ** 2 * G[1, :] ** 2
+    D[:, 10] = 6 * G[0, :] ** 2 * G[2, :] ** 2
+    D[:, 11] = 6 * G[1, :] ** 2 * G[2, :] ** 2
+    D[:, 12] = 12 * G[0, :] ** 2 * G[1, :] * G[2, :]
+    D[:, 13] = 12 * G[0, :] * G[1, :] ** 2 * G[2, :]
+    D[:, 14] = 12 * G[0, :] * G[1, :] * G[2, :] ** 2
+
+    return D
+
 
 class DiffusionKurtosisModel(object):
     """
+    The diffusion kurtosis model:
+
+    Notes
+    -----
+    [1] Lu, H, Jensen, JH, Ramani, A, Helpern, JA (2006). Three-dimensional
+    characterization of non-gaussian water diffusion in  humans using diffusion
+    kurtosis imaging. NMR in Biomedicine 19: 236-247
+
+    [2] Jensen, JH and Helpern JA (2010). MRI quantification of non-Gaussian
+    water diffusion by kurtosis analysis. NMR in Biomedicine 23: 698-710.
 
     """
     def __init__(self, gtab, *args, **kwargs):
@@ -51,55 +77,43 @@ class DiffusionKurtosisModel(object):
 
 
         """
-
-        g_order2 = monomial_matrix(gtab.bvecs, 2)
-	g_order4 = monomial_matrix(gtab.bvecs, 4)
-	bval_order2 = np.tile(gtab.bvals, (6,1)).transpose();
-	bval_order4 = np.tile(gtab.bvals, (15,1)).transpose();
-
-	self.G_matrix = np.concatenate((-bval_order2 * g_order2,
-                                     bval_order4 * bval_order4 * g_order4 / 6),
-                                     axis=1)
+        self.gtab = gtab
+        self.dk_design_matrix = dk_design_matrix(gtab)
+        # We'll estimate MD using DTI with the default params:
+        self.TensorModel = dti.TensorModel(gtab)
 
     def fit(self, data, mask=None):
         """
+        For now, single voxel
         """
-        # If a mask is provided, we will use it to access the data
-        if mask is not None:
-            # Make sure it's boolean, so that it can be used to mask
-            mask = np.array(mask, dtype=bool, copy=False)
-            data_in_mask = data[mask]
-        else:
-            data_in_mask = data
+        # Extract the ADC for the diffusion-weighted directions :
+        sphere = dps.Sphere(xyz=self.gtab.bvecs[~self.gtab.b0s_mask])
+        tensor_fit = self.TensorModel.fit(data, mask)
 
-        log_relative_data = np.log(data_in_mask/self.S0)
+        # XXX Use only the lower b value, using equation 38 - 40 in Jensen and
+        # Helpern ?
+        self.adc = tensor_fit.apparent_diffusion_coef(sphere)
 
-        # least-square estimation
-        if mode == 0 :
-            kurtosis = linalg.lstsq(Gbig, logS)[0];
-        else :
-            # The positive-def estimation here THIS DOES NOT WORK. The
-            # kurtosis coefficients can be it's the whole kurtosis that needs
-            # to be positive
-            kurtosis = optimize.nnls(Gbig, logS)[0];
-
-        K[x,y,z,:] = real(kurtosis);
-
-        params_in_mask = self.fit_method(self.design_matrix, data_in_mask,
-                                         *self.args, **self.kwargs)
-
-        dti_params = np.zeros(data.shape[:-1] + (12,))
-
-        dti_params[mask, :] = params_in_mask
-
-        return TensorFit(self, dti_params)
-
-
+        # Calculate the AKC:
+        logS0 = np.log(np.mean(data[self.gtab.b0s_mask]))
+        logS = np.log(data[~self.gtab.b0s_mask])
+        bv = self.gtab.bvals[~self.gtab.b0s_mask]
+        # This is based on equation 1 in Lu et al:
+        self.AKC = (logS - logS0 +  bv * self.adc) * (6 * bv**2 * self.adc**2)
+        # This is based on equation 2 in Lu et al:
+        to_fit = (self.AKC * self.adc**2)/(tensor_fit.md ** 2)
+        # least-square estimation of the 15 DK params:
+        model_params = linalg.lstsq(self.dk_design_matrix, to_fit)[0];
+        return DiffusionKurtosisFit(self, model_params)
 
 class DiffusionKurtosisFit(object):
     """
 
     """
-    def __init__():
+    def __init__(self, model, model_params):
         """
         """
+        self.model = model
+        self.model_params = model_params
+
+    def apparent_kurtosis_coef()
