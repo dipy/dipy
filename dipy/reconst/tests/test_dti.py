@@ -538,7 +538,6 @@ def test_adc():
     mask[0, 0, 0] = True
     dtifit = dm.fit(data)
     sphere = create_unit_sphere(4)
-    dtifit.adc(sphere)
     
     # The ADC in the principal diffusion direction should be equal to the AD in
     # each voxel:
@@ -554,3 +553,24 @@ def test_adc():
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
     assert_array_almost_equal(dtifit.adc(sphere_pdd0),
                         dtifit.ad, decimal=5)
+
+def test_predict():
+    """
+    
+    """
+    psphere = get_sphere('symmetric362')
+    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvals = np.zeros(len(bvecs)) + 1000
+    bvals[0] = 0
+    gtab = grad.gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
+    mevecs = [ np.array( [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ] ),
+               np.array( [ [0, 0, 1], [0, 1, 0], [1, 0, 0] ] ) ]
+    S = single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
+
+    dm = dti.TensorModel(gtab, 'LS')
+    dmfit = dm.fit(S)
+    
+    assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
+
+    

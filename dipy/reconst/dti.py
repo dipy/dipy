@@ -11,6 +11,7 @@ import scipy.optimize as opt
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
 from ..core.geometry import vector_norm
+from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
@@ -536,9 +537,9 @@ def apparent_diffusion_coef(q_form, sphere):
     """
     bvecs = sphere.vertices
     mult1 = np.tensordot(bvecs, q_form, (1, len(q_form.shape[:-2])))
-    transposer = list(np.arange(1, len(q_form.shape[:-2])+1))  + [0,-1]
+    transposer = list(np.arange(1, len(q_form.shape[:-2])+1))  + [0, -1]
     mult2 = np.dot(np.transpose(mult1, transposer),  bvecs.T)
-    return mult2[...,np.arange(bvecs.shape[0]), np.arange(bvecs.shape[0])]
+    return mult2[..., np.arange(bvecs.shape[0]), np.arange(bvecs.shape[0])]
 
 
 class TensorModel(object):
@@ -901,7 +902,54 @@ class TensorFit(object):
         """
         return apparent_diffusion_coef(self.quadratic_form, sphere)
 
-        
+
+    def predict(self, gtab, S0=1):
+        """
+        Given a model fit, predict the signal on the vertices of a sphere 
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+            This encodes the directions for which a prediction is made
+
+        S0 : float array
+           The mean non-diffusion weighted signal in each voxel. Default: 1 in
+           all voxels.
+           
+        Notes
+        -----
+        The predicted signal is given by:
+
+        .. math ::
+
+            S(\theta, b) = S_0 * e^{-b ADC}
+
+        Where:
+        .. math ::
+            ADC = \theta Q \theta^T
+
+        $\theta$ is a unit vector pointing at any direction on the sphere for
+        which a signal is to be predicted and $b$ is the b value provided in
+        the GradientTable input for that direction   
+        """
+        # Get a sphere to pass to the object's ADC function. The b0 vectors
+        # will not be on the unit sphere, but we still want them to be there,
+        # so that we have a consistent index for these, so that we can fill
+        # that in later on, so we suppress the warning here:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sphere = Sphere(xyz=gtab.bvecs)
+
+        adc = self.adc(sphere)
+        # Predict! 
+        pred_sig = S0 * np.exp(-gtab.bvals * adc)
+
+        # The above evaluates to nan for the b0 vectors, so we predict the mean
+        # S0 for those, which is our best guess:
+        pred_sig[...,gtab.b0s_mask] = S0
+
+        return pred_sig
+
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""
