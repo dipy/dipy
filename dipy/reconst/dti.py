@@ -10,6 +10,7 @@ import scipy.optimize as opt
 
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
+from ..core.gradients import gradient_table
 from ..core.geometry import vector_norm
 from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
@@ -536,10 +537,8 @@ def apparent_diffusion_coef(q_form, sphere):
     
     """
     bvecs = sphere.vertices
-    mult1 = np.tensordot(bvecs, q_form, (1, len(q_form.shape[:-2])))
-    transposer = list(np.arange(1, len(q_form.shape[:-2])+1))  + [0, -1]
-    mult2 = np.dot(np.transpose(mult1, transposer),  bvecs.T)
-    return mult2[..., np.arange(bvecs.shape[0]), np.arange(bvecs.shape[0])]
+    D = design_matrix(bvecs.T, np.ones(bvecs.shape[0]))[:, :6]
+    return -np.dot(lower_triangular(q_form), D.T)
 
 
 class TensorModel(object):
@@ -1610,13 +1609,13 @@ def decompose_tensor(tensor, min_diffusivity=0):
     return eigenvals, eigenvecs
 
 
-def design_matrix(gtab, bval, dtype=None):
+def design_matrix(bvecs, bval, dtype=None):
     """  Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
     Parameters
     ----------
-    gtab : array with shape (3,g)
+    bvecs : array with shape (3,g)
         Diffusion gradient table found in DICOM header as a numpy array.
     bval : array with shape (g,)
         Diffusion weighting factor b for each vector in gtab.
@@ -1629,9 +1628,9 @@ def design_matrix(gtab, bval, dtype=None):
         Design matrix or B matrix assuming Gaussian distributed tensor model
         design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
     """
-    G = gtab
-    B = np.zeros((bval.size, 7), dtype=G.dtype)
-    if gtab.shape[1] != bval.shape[0]:
+    G = bvecs
+    B = np.zeros((bvecs.shape[1], 7), dtype=G.dtype)
+    if bvecs.shape[1] != bval.shape[0]:
         raise ValueError('The number of b values and gradient directions must'
                           + ' be the same')
     B[:, 0] = G[0, :] * G[0, :] * 1. * bval   # Bxx
