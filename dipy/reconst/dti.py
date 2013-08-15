@@ -82,8 +82,7 @@ def fractional_anisotropy(evals, axis=-1):
 
 def mean_diffusivity(evals, axis=-1):
     r"""
-    Mean Diffusivity (MD) of a diffusion tensor. Also, called
-    Apparent diffusion coefficient (ADC)
+    Mean Diffusivity (MD) of a diffusion tensor. 
 
     Parameters
     ----------
@@ -511,6 +510,37 @@ def sphericity(evals, axis=-1):
     return (3 * ev3) / evals.sum(0)
 
 
+def apparent_diffusion_coef(q_form, sphere):
+    """
+    Calculate the apparent diffusion coefficient (ADC) in each direction of a
+    sphere.
+        
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (..., 3, 3)
+
+    sphere : a Sphere class instance
+        The ADC will be calculated for each of the vertices in the sphere
+        
+    Notes
+    -----
+    The calculation of ADC, relies on the following relationship:
+
+    .. math ::
+            ADC = \vec{b} Q \vec{b}^T
+
+    Where Q is the quadratic form of the tensor.
+    
+    """
+    bvecs = sphere.vertices
+    mult1 = np.tensordot(bvecs, q_form, (1, len(q_form.shape[:-2])))
+    transposer = list(np.arange(1, len(q_form.shape[:-2])+1))  + [0,-1]
+    mult2 = np.dot(np.transpose(mult1, transposer),  bvecs.T)
+    return mult2[...,np.arange(bvecs.shape[0]), np.arange(bvecs.shape[0])]
+
+
 class TensorModel(object):
     """ Diffusion Tensor
     """
@@ -815,6 +845,22 @@ class TensorFit(object):
         return sphericity(self.evals)
 
     def odf(self, sphere):
+        """
+        The diffusion orientation distribution function (dODF). This is an
+        estimate of the diffusion distance in each direction
+
+        Parameters
+        ----------
+        sphere : Sphere class instance.
+            The dODF is calculated in the vertices of this input.
+
+        Returns
+        -------
+        odf : ndarray
+            The diffusion distance in every direction of the sphere in every
+            voxel in the input data.
+        
+        """
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
         projection = np.dot(sphere.vertices, self.evecs)
         with warnings.catch_warnings():
@@ -828,6 +874,34 @@ class TensorFit(object):
         odf = np.rollaxis(odf, 0, odf.ndim)
         return odf
 
+    def adc(self, sphere):
+        """
+        Calculate the apparent diffusion coefficient (ADC) in each direction on
+        the sphere for each voxel in the data
+
+        Parameters
+        ----------
+        sphere : Sphere class instance
+
+        Returns
+        -------
+        adc : ndarray
+           The estimates of the apparent diffusion coefficient in every
+           direction on the input sphere
+
+        Notes
+        -----
+        The calculation of ADC, relies on the following relationship:
+
+        .. math ::
+
+            ADC = \vec{b} Q \vec{b}^T
+
+        Where Q is the quadratic form of the tensor.
+        """
+        return apparent_diffusion_coef(self.quadratic_form, sphere)
+
+        
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""
