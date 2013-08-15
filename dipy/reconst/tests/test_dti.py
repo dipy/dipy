@@ -25,7 +25,6 @@ from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
 import dipy.core.sphere as dps
-
 from dipy.sims.voxel import single_tensor
 
 
@@ -508,6 +507,7 @@ def test_restore():
 def test_adc():
     """
     Test the implementation of the calculation of apparent diffusion coefficient
+
     """
     data, gtab = dsi_voxels()
     dm = dti.TensorModel(gtab, 'LS')
