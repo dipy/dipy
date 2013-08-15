@@ -963,6 +963,7 @@ class TensorFit(object):
         odf = np.rollaxis(odf, 0, odf.ndim)
         return odf
 
+
     def adc(self, sphere):
         r"""
         Calculate the apparent diffusion coefficient (ADC) in each direction on
