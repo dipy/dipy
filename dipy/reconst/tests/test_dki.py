@@ -10,7 +10,7 @@ import numpy.testing as npt
 
 import dipy.reconst.dki as dki
 import dipy.data as dpd
-import dipy.core.gradient_table as gt
+import dipy.core.gradients as gt
 
 def test_DKIModel():
 

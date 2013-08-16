@@ -116,4 +116,7 @@ class DiffusionKurtosisFit(object):
         self.model = model
         self.model_params = model_params
 
-    def apparent_kurtosis_coef()
+    def apparent_kurtosis_coef():
+       """
+       """
+       pass

@@ -200,6 +200,9 @@ def get_data(name='small_64D'):
         'reg_c' small 2D image used for validating registration
         'reg_o' small 2D image used for validation registration
         'cb_2' two vectorized cingulum bundles
+        'dsi515btable' the gradient directions and b values for a DSI515 acquisition
+
+        'grad514' a gradient table (first column is b value, the other columns are gradient directions) for a DSI acquisition.
 
     Returns
     -------
