@@ -204,6 +204,8 @@ def get_data(name='small_64D'):
 
         'grad514' a gradient table (first column is b value, the other columns are gradient directions) for a DSI acquisition.
 
+        'small2bval' small (4 voxel**3) ROI with data measured with 2 b values:1000 and 2000
+
     Returns
     -------
     fnames : tuple
@@ -268,6 +270,11 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR, 'circle.npy')
     if name == 'cb_2':
         return pjoin(THIS_DIR, 'cb_2.npz')
+    if name == "small2bval":
+        fbvals = pjoin(THIS_DIR, 'data_b1k_b2k.bval')
+        fbvecs = pjoin(THIS_DIR, 'data_b1k_b2k.bvec')
+        fimg = pjoin(THIS_DIR, 'data_b1k_b2k.nii.gz')
+        return fimg, fbvals, fbvecs
 
 
 def _gradient_from_file(filename):
