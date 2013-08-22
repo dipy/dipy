@@ -165,8 +165,9 @@ class DiffusionSpectrumFit(OdfFit):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         #apply fourier transform
-        Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq),
-                                          3 * (self.qgrid_sz, )))))
+        Pr = fftshift(np.real(fftn(ifftshift(Sq),
+                                          3 * (self.qgrid_sz, ))))
+        Pr[Pr<0.0]=0.0
         return Pr
 
     def odf(self, sphere):
