@@ -170,6 +170,20 @@ class DiffusionSpectrumFit(OdfFit):
         Pr[Pr<0.0]=0.0
         return Pr
 
+    def rt0p_signal(self):
+        """ Calculate the return to origin probability from the signal
+        """
+        values = self.data * self.model.filter
+        #create the signal volume
+        Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
+        #fill q-space
+        for i in range(self.dn):
+            qx, qy, qz = self.model.qgrid[i]
+            Sq[qx, qy, qz] += values[i]
+        #apply fourier transform
+        rt0p=Sq.sum()
+        return rt0p
+
     def odf(self, sphere):
         r""" Calculates the real discrete odf for a given discrete sphere
 
