@@ -184,6 +184,18 @@ class DiffusionSpectrumFit(OdfFit):
         rt0p=Sq.sum()
         return rt0p
 
+    def rt0p_pdf(self, normalized=True):
+        """ Calculate the return to origin probability from the propagator
+        """
+        Pr=self.pdf()
+        if normalized:
+            Pr=Pr/Pr.sum()
+
+        center=self.qgrid_sz//2
+        
+        rt0p=Pr[center,center,center]
+        return rt0p    
+
     def odf(self, sphere):
         r""" Calculates the real discrete odf for a given discrete sphere
 
