@@ -9,42 +9,6 @@ import dipy.reconst.dti as dti
 import dipy.core.sphere as dps
 import dipy.core.gradients as grad
 
-def ols_matrix(A):
-    """
-    Generate the matrix used to solve OLS regression.
-
-    Parameters
-    ----------
-
-    A: float array
-        The design matrix
-
-    Notes
-    -----
-
-    The matrix needed for OLS regression for the equation:
-
-    ..math ::
-
-        y = A \beta
-
-   is given by:
-
-    ..math ::
-
-        \hat{\beta} = (A' x A)^{-1} A' y
-
-    See also
-    --------
-    http://en.wikipedia.org/wiki/Ordinary_least_squares#Estimation
-    """
-
-    A = np.asarray(A)
-
-    X = np.matrix(A.copy())
-
-    return np.dot(linalg.pinv(np.dot(X.T, X)), X.T)
-
 
 def dk_design_matrix(gtab):
     """
@@ -140,47 +104,60 @@ class DiffusionKurtosisModel(object):
         """
 
         """
-        # Extract the ADC for the diffusion-weighted directions :
-        sphere = dps.Sphere(xyz=self.gtab.bvecs[~self.gtab.b0s_mask])
-        self.tensor_fits = []
-        self.adc = []
-        for idx, shell in enumerate(self.shells):
-            sh_data = np.concatenate([data[...,self.sh_idx[idx]],
-                                      data[...,self.gtab.b0s_mask]], -1)
+        # If a mask is provided, we will use it to access the data
+        if mask is not None:
+            # Make sure it's boolean, so that it can be used to mask
+            mask = np.array(mask, dtype=bool, copy=False)
+            data_in_mask = data[mask]
+        else:
+            data_in_mask = data
 
-            self.tensor_fits.append(self.tensors[idx].fit(sh_data, mask))
-            # Get the ADC on the entire sphere in each b value:
-            self.adc.append(self.tensor_fits[-1].adc(sphere))
-
-        # Following equations 38-39 in Jensen and Helpern 2010. We use the two
-        # shells most different from each other:
-        self.D=((self.shells[-1] * self.adc[0] - self.shells[0] * self.adc[-1])/
-             (self.shells[-1] - self.shells[0]))  # Eq 38
-
-        self.K = (6 * (self.adc[0] - self.adc[-1])/
-             ((self.shells[-1] - self.shells[0]) * self.D **2)) # Eq 39
-
-        to_fit = (self.K * self.D**2) / (np.mean(self.D, -1) ** 2)[..., None]
-
-        # least-square estimation of the 15 DK params:
-        model_params = np.tensordot(ols_matrix(self.dk_design_matrix), to_fit,
-                                    axes=(1,-1)).T
-
-        return DiffusionKurtosisFit(self, model_params)
-
-
+        return DiffusionKurtosisFit(self, data_in_mask)
 
 
 class DiffusionKurtosisFit(object):
     """
 
     """
-    def __init__(self, model, model_params):
+    def __init__(self, model, data):
         """
+        Fit the DKI model to the provided data
         """
+        # Extract the ADC for the diffusion-weighted directions :
+        sphere = dps.Sphere(xyz=model.gtab.bvecs[~model.gtab.b0s_mask])
+        tensor_fits = []
+        adc = []
+        for idx, shell in enumerate(model.shells):
+            sh_data = np.concatenate([data[...,model.sh_idx[idx]],
+                                     data[...,model.gtab.b0s_mask]], -1)
+
+            tensor_fits.append(model.tensors[idx].fit(sh_data))
+            # Get the ADC on the entire sphere in each b value:
+            adc.append(tensor_fits[-1].adc(sphere))
+
+        # Following equations 38-39 in Jensen and Helpern 2010. We use the two
+        # shells most different from each other:
+        self.D=((model.shells[-1] * adc[0] - model.shells[0] * adc[-1])/
+             (model.shells[-1] - model.shells[0]))  # Eq 38
+
+        self.K = (6 * (adc[0] - adc[-1])/
+             ((model.shells[-1] - model.shells[0]) * self.D **2)) # Eq 39
+
+        # Kurtosis is not allowed to go below 0, but the noise sometimes drags
+        # it there:
+        self.K = np.where(self.K>0, self.K, 0)
+
+        to_fit = (self.K * self.D**2) / (np.mean(self.D, -1) ** 2)[..., None]
+
+        # least-square estimation of the 15 DK params:
+        model_params = np.rollaxis(
+                       np.tensordot(np.linalg.pinv(model.dk_design_matrix),
+                                    to_fit,
+                                    axes=(1,-1)), 0, len(data.shape))
+
         self.model = model
         self.model_params = model_params
-
+        self.tensor_fits = tensor_fits
 
     def mean_kurtosis(self):
        """
@@ -192,7 +169,25 @@ class DiffusionKurtosisFit(object):
        [1] Jensen and Helpern (2010). XXX
 
        """
-
        # This is the mean of the diagonal terms and the squared off-diagonals
        return np.mean(np.concatenate([self.model_params[..., :3],
                                       self.model_params[..., 9:12]]), -1)
+
+    def predict(self, gtab, S0=1):
+       """
+       Use the model parameters to predict
+
+       """
+       dm = dk_design_matrix(gtab)
+       AKC = np.tensordot(dm, self.model_params, (1,-1)).T
+       # Don't allow values below 0:
+       AKC = np.where(AKC>=0, AKC, 0)
+
+       sphere = dps.Sphere(xyz=gtab.bvecs)
+       # Estimate ADC from the tensor of the lowest b value:
+       ADC =  self.tensor_fits[0].adc(sphere)
+
+       new_shape = tuple([ADC.shape[-1]] + [1] * (len(ADC.shape)-1))
+       bvals = gtab.bvals[~gtab.b0s_mask].reshape(new_shape).T
+       sig = S0[...,None] * np.exp(-ADC*bvals + (bvals**2 * ADC**2 * AKC)/6.0 )
+       return sig
