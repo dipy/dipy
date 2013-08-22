@@ -940,7 +940,10 @@ class TensorFit(object):
             sphere = Sphere(xyz=gtab.bvecs)
 
         adc = self.adc(sphere)
-        # Predict! 
+        # Predict!
+        if np.iterable(S0):
+            # If it's an array, we need to give it one more dimension:
+            S0 = S0[...,None] 
         pred_sig = S0 * np.exp(-gtab.bvals * adc)
 
         # The above evaluates to nan for the b0 vectors, so we predict the mean
