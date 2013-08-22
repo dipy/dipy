@@ -150,7 +150,7 @@ class DiffusionKurtosisModel(object):
 
             self.tensor_fits.append(self.tensors[idx].fit(sh_data, mask))
             # Get the ADC on the entire sphere in each b value:
-            self.adc.append(self.tensor_fits[-1].apparent_diffusion_coef(sphere))
+            self.adc.append(self.tensor_fits[-1].adc(sphere))
 
         # Following equations 38-39 in Jensen and Helpern 2010. We use the two
         # shells most different from each other:
