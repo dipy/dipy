@@ -171,12 +171,12 @@ class DiffusionSpectrumFit(OdfFit):
         return Pr
 
     def rt0p_signal(self, normalized=True):
-        """ Calculate the return to origin probability from the signal
+        """ Calculates the return to origin probability from the signal
         """
         values = self.data * self.model.filter
         # normalize by the b0
         if normalized:
-            values=values/values[0]
+            values=values/float(values[0])
 
         #create the signal volume
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
@@ -184,12 +184,12 @@ class DiffusionSpectrumFit(OdfFit):
         for i in range(self.dn):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
-        #apply fourier transform
+
         rt0p=Sq.sum()
         return rt0p
 
     def rt0p_pdf(self, normalized=True):
-        """ Calculate the return to origin probability from the propagator
+        """ Calculates the return to origin probability from the propagator
         """
         Pr=self.pdf()
         # normalize in order to obtain a pdf
@@ -202,7 +202,7 @@ class DiffusionSpectrumFit(OdfFit):
         return rt0p  
 
     def MSD_discrete(self, normalized=True):
-        """ Calculate the mean squared displacement on the discrete propagator
+        """ Calculates the mean squared displacement on the discrete propagator
         """
         Pr=self.pdf()
         # normalize in order to obtain a pdf
