@@ -178,16 +178,27 @@ class DiffusionKurtosisFit(object):
        Use the model parameters to predict
 
        """
+       sphere = dps.Sphere(xyz=gtab.bvecs)
+
+       ADC = np.zeros(tuple(self.D.shape[:-1]) + gtab.bvals.shape)
+       ADC[..., ~gtab.b0s_mask] = self.D
+
        dm = dk_design_matrix(gtab)
-       AKC = np.tensordot(dm, self.model_params, (1,-1)).T
+       AKC = np.zeros(ADC.shape)
+       MD = np.mean(self.D, -1)[..., None]
+       AKC[..., ~gtab.b0s_mask] = ( (MD **2) / (ADC[..., ~gtab.b0s_mask])  *
+                                  np.tensordot(dm, self.model_params, (1,-1)).T)
+
        # Don't allow values below 0:
        AKC = np.where(AKC>=0, AKC, 0)
 
-       sphere = dps.Sphere(xyz=gtab.bvecs)
-       # Estimate ADC from the tensor of the lowest b value:
-       ADC =  self.tensor_fits[0].adc(sphere)
-
        new_shape = tuple([ADC.shape[-1]] + [1] * (len(ADC.shape)-1))
-       bvals = gtab.bvals[~gtab.b0s_mask].reshape(new_shape).T
-       sig = S0[...,None] * np.exp(-ADC*bvals + (bvals**2 * ADC**2 * AKC)/6.0 )
-       return sig
+       bvals = gtab.bvals.reshape(new_shape).T
+
+       if np.iterable(S0):
+           S0 = S0[...,None]
+
+       pred_sig = S0 * np.exp(-ADC*bvals + (bvals**2 * ADC**2 * AKC)/6.0 )
+       pred_sig[..., gtab.b0s_mask] = S0
+
+       return pred_sig
