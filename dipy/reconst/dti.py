@@ -513,7 +513,7 @@ def sphericity(evals, axis=-1):
 
 
 def apparent_diffusion_coef(q_form, sphere):
-    """
+    r"""
     Calculate the apparent diffusion coefficient (ADC) in each direction of a
     sphere.
         
@@ -875,7 +875,7 @@ class TensorFit(object):
         return odf
 
     def adc(self, sphere):
-        """
+        r"""
         Calculate the apparent diffusion coefficient (ADC) in each direction on
         the sphere for each voxel in the data
 
@@ -903,7 +903,7 @@ class TensorFit(object):
 
 
     def predict(self, gtab, S0=1):
-        """
+        r"""
         Given a model fit, predict the signal on the vertices of a sphere 
 
         Parameters
