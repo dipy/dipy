@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import sys
+import contextlib
 
 if sys.version_info[0] < 3:
     from urllib2 import urlopen
@@ -10,13 +11,52 @@ else:
 
 from os.path import join as pjoin
 from hashlib import md5
+from shutil import copyfileobj
 
 import numpy as np
 import nibabel as nib
 
+import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
+def fetch_scil_b0():
+    """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
+        different magnetic fields (1.5T and 3T)
+    """
+    zipname = 'datasets_multi-site_all_companies'
+    url = 'http://scil.dinf.usherbrooke.ca/wp-content/data/'
+    uraw = url + zipname + '.zip'
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    folder = pjoin(dipy_home, zipname)
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+        os.makedirs(folder)
+        print('Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
+        opener = urlopen(uraw)
+        open(folder+'.zip', 'wb').write(opener.read())
+
+        print('Unziping '+folder+'.zip ...')
+        zip = zipfile.ZipFile(folder+'.zip', 'r')
+        zip.extractall(dipy_home)
+
+        print('Done.')
+        print('Files copied in folder %s' % dipy_home)
+    else:
+        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % dipy_home)
+
+def read_scil_b0():
+    """ Load GE 3T b0 image form the scil b0 dataset.
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    """
+    dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
+    file = dipy_home+'/datasets_multi-site_all_companies/3T/GE/b0.nii.gz'
+    return nib.load(file)
 
 def check_md5(filename, stored_md5):
     """
@@ -42,6 +82,12 @@ def check_md5(filename, stored_md5):
                "Please check if the data has been downloaded correctly or if the upstream data changed.")
 
 
+def _get_file_data(fname, url):
+    with contextlib.closing(urlopen(url)) as opener:
+        with open(fname, 'wb') as data:
+            copyfileobj(opener, data)
+
+
 def fetch_isbi2013_2shell():
     """ Download a 2-shell software phantom dataset
     """
@@ -51,26 +97,22 @@ def fetch_isbi2013_2shell():
     ubval = url + '2shells-1500-2500-N64.bval'
     ubvec = url + '2shells-1500-2500-N64.bvec'
     folder = pjoin(dipy_home, 'isbi2013')
-    md5_dict = {'data': '42911a70f232321cf246315192d69c42',
-                'bval': '90e8cf66e0f4d9737a3b3c0da24df5ea',
-                'bvec': '4b7aa2757a1ccab140667b76e8075cb1'}
+
+    md5_list = ['42911a70f232321cf246315192d69c42', # data
+                '90e8cf66e0f4d9737a3b3c0da24df5ea', # bval
+                '4b7aa2757a1ccab140667b76e8075cb1'] # bvec
+
+    url_list = [uraw, ubval, ubvec]
+    fname_list = ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec']
 
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
         print('Downloading raw 2-shell synthetic data (20MB)...')
 
-        opener = urlopen(uraw)
-        open(pjoin(folder, 'phantom64.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'phantom64.nii.gz'), md5_dict['data'])
-
-        opener = urlopen(ubval)
-        open(pjoin(folder, 'phantom64.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'phantom64.bval'), md5_dict['bval'])
-
-        opener = urlopen(ubvec)
-        open(pjoin(folder, 'phantom64.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'phantom64.bvec'), md5_dict['bvec'])
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
         print('Done.')
         print('Files copied in folder %s' % folder)
@@ -93,6 +135,7 @@ def read_isbi2013_2shell():
     fraw = pjoin(folder, 'phantom64.nii.gz')
     fbval = pjoin(folder, 'phantom64.bval')
     fbvec = pjoin(folder, 'phantom64.bvec')
+
     md5_dict = {'data': '42911a70f232321cf246315192d69c42',
                 'bval': '90e8cf66e0f4d9737a3b3c0da24df5ea',
                 'bvec': '4b7aa2757a1ccab140667b76e8075cb1'}
@@ -117,26 +160,22 @@ def fetch_sherbrooke_3shell():
     ubval = url + '3shells-1000-2000-3500-N193.bval'
     ubvec = url + '3shells-1000-2000-3500-N193.bvec'
     folder = pjoin(dipy_home, 'sherbrooke_3shell')
-    md5_dict = {'data': '0b735e8f16695a37bfbd66aab136eb66',
-                'bval': 'e9b9bb56252503ea49d31fb30a0ac637',
-                'bvec': '0c83f7e8b917cd677ad58a078658ebb7'}
+
+    md5_list = ['0b735e8f16695a37bfbd66aab136eb66', # data
+                'e9b9bb56252503ea49d31fb30a0ac637', # bval
+                '0c83f7e8b917cd677ad58a078658ebb7'] # bvec
+
+    url_list = [uraw, ubval, ubvec]
+    fname_list = ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec']
 
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
         print('Downloading raw 3-shell data (184MB)...')
 
-        opener = urlopen(uraw)
-        open(pjoin(folder, 'HARDI193.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['data'])
-
-        opener = urlopen(ubval)
-        open(pjoin(folder, 'HARDI193.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['bval'])
-
-        opener = urlopen(ubvec)
-        open(pjoin(folder, 'HARDI193.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI193.nii.gz'), md5_dict['bvec'])
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
         print('Done.')
         print('Files copied in folder %s' % folder)
@@ -183,26 +222,22 @@ def fetch_stanford_hardi():
     ubval = url + 'dwi.bvals'
     ubvec = url + 'dwi.bvecs'
     folder = pjoin(dipy_home, 'stanford_hardi')
-    md5_dict = {'data': '0b18513b46132b4d1051ed3364f2acbc',
-                'bval': '4e08ee9e2b1d2ec3fddb68c70ae23c36',
-                'bvec': '4c63a586f29afc6a48a5809524a76cb4'}
+
+    md5_list = ['0b18513b46132b4d1051ed3364f2acbc', # data
+                '4e08ee9e2b1d2ec3fddb68c70ae23c36', # bval
+                '4c63a586f29afc6a48a5809524a76cb4'] # bvec
+
+    url_list = [uraw, ubval, ubvec]
+    fname_list = ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec']
 
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
         print('Downloading raw HARDI data (87MB)...')
 
-        opener = urlopen(uraw)
-        open(pjoin(folder, 'HARDI150.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI150.nii.gz'), md5_dict['data'])
-
-        opener = urlopen(ubval)
-        open(pjoin(folder, 'HARDI150.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI150.bval'), md5_dict['bval'])
-
-        opener = urlopen(ubvec)
-        open(pjoin(folder, 'HARDI150.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'HARDI150.bvec'), md5_dict['bvec'])
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
         print('Done.')
         print('Files copied in folder %s' % folder)
@@ -239,7 +274,6 @@ def read_stanford_hardi():
     img = nib.load(fraw)
     return img, gtab
 
-
 def fetch_taiwan_ntu_dsi():
     """ Download a DSI dataset with 203 gradient directions
     """
@@ -249,31 +283,23 @@ def fetch_taiwan_ntu_dsi():
     ubvec = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.bvec'
     ureadme = 'http://dl.dropbox.com/u/2481924/license_taiwan_ntu_dsi.txt'
     folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
-    md5_dict = {'data': '950408c0980a7154cb188666a885a91f',
-                'bval': '602e5cb5fad2e7163e8025011d8a6755',
-                'bvec': 'a95eb1be44748c20214dc7aa654f9e6b',
-                'license': '7fa1d5e272533e832cc7453eeba23f44'}
+
+    md5_list = ['950408c0980a7154cb188666a885a91f', # data
+                '602e5cb5fad2e7163e8025011d8a6755', # bval
+                'a95eb1be44748c20214dc7aa654f9e6b', # bvec
+                '7fa1d5e272533e832cc7453eeba23f44'] # license
+
+    url_list = [uraw, ubval, ubvec, ureadme]
+    fname_list = ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt']
 
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
         print('Downloading raw DSI data (91MB)...')
 
-        opener = urlopen(uraw)
-        open(pjoin(folder, 'DSI203.nii.gz'), 'wb').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203.nii.gz'), md5_dict['data'])
-
-        opener = urlopen(ubval)
-        open(pjoin(folder, 'DSI203.bval'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203.bval'), md5_dict['bval'])
-
-        opener = urlopen(ubvec)
-        open(pjoin(folder, 'DSI203.bvec'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203.bvec'), md5_dict['bvec'])
-
-        opener = urlopen(ureadme)
-        open(pjoin(folder, 'DSI203_license.txt'), 'w').write(opener.read())
-        check_md5(pjoin(folder, 'DSI203_license.txt'), md5_dict['license'])
+        for i in range(len(md5_list)):
+            _get_file_data(pjoin(folder, fname_list[i]), url_list[i])
+            check_md5(pjoin(folder, fname_list[i]), md5_list[i])
 
         print('Done.')
         print('Files copied in folder %s' % folder)

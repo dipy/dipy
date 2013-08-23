@@ -4,10 +4,8 @@ import numpy as np
 from dipy.reconst.odf import OdfModel, OdfFit
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_model
-from dipy.reconst.shm import (sph_harm_ind_list,
-                              real_sph_harm,
-                              sph_harm_lookup,
-                              lazy_index)
+from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
+                              sph_harm_lookup, lazy_index, SphHarmFit)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
@@ -115,25 +113,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
         shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
-        return ConstrainedSphericalDeconvFit(self, shm_coeff)
-
-
-class ConstrainedSphericalDeconvFit(OdfFit):
-
-    def __init__(self, model, fodf_sh):
-        self.shm_coeff = fodf_sh
-        self.model = model
-
-    def odf(self, sphere):
-
-        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
-        if sampling_matrix is None:
-            phi = sphere.phi[:, np.newaxis] #sphere.phi.reshape((-1, 1))
-            theta = sphere.theta.reshape((-1, 1))
-            sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
-            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
-
-        return np.dot(self.shm_coeff, sampling_matrix.T)
+        return SphHarmFit(self, shm_coeff, None)
 
 
 @multi_voxel_model
@@ -219,26 +199,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
         odf_sh /= Z
         shm_coeff, num_it = odf_deconv(odf_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
         # print 'SDT CSD converged after %d iterations' % num_it
-
-        return ConstrainedSDTFit(self, shm_coeff)
-
-
-class ConstrainedSDTFit(OdfFit):
-
-    def __init__(self, model, fodf_sh):
-        self.shm_coeff = fodf_sh
-        self.model = model
-
-    def odf(self, sphere):
-
-        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
-        if sampling_matrix is None:
-            phi = sphere.phi[:, np.newaxis] #sphere.phi.reshape((-1, 1))
-            theta = sphere.theta.reshape((-1, 1))
-            sampling_matrix = real_sph_harm(self.model.m, self.model.n, theta, phi)
-            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
-
-        return np.dot(self.shm_coeff, sampling_matrix.T)
+        return SphHarmFit(self, shm_coeff, None)
 
 
 def estimate_response(gtab, evals, S0):
@@ -400,7 +361,7 @@ def forward_sdt_deconv_mat(ratio, sh_order):
 
 
 def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
-    r""" Constrained-regarized spherical deconvolution (CSD) [1]_
+    r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response
     function `r_rh` in rotational harmonics coefficients from the spherical function
@@ -457,7 +418,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(fodf < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warning.warn('too few negative directions identified - failed to converge')
+            warnings.warn('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -475,7 +436,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
 
-    warning.warn('maximum number of iterations exceeded - failed to converge')
+    warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 
@@ -534,7 +495,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(A < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warning.warn('too few negative directions identified - failed to converge')
+            warnings.warn('too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -546,7 +507,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, ODF)[0]  
 
-    warning.warn('maximum number of iterations exceeded - failed to converge')
+    warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
 
 

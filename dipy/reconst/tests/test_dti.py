@@ -24,6 +24,8 @@ from dipy.data import get_data, dsi_voxels, get_sphere
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.reconst.odf import gfa
 import dipy.core.gradients as grad
+import dipy.core.sphere as dps
+
 from dipy.sims.voxel import single_tensor
 
 
@@ -497,6 +499,15 @@ def test_restore():
            assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
 
 
+     data, bvals, bvecs = get_data('small_25')
+     dd = nib.load(data).get_data()
+     gtab = grad.gradient_table(bvals, bvecs)
+     fit_method = 'restore' # 'NLLS'
+     jac = True # False
+     dd[..., 5] = 1.0
+     tm = dti.TensorModel(gtab, fit_method=fit_method, jac=True, sigma=10)
+     tm.fit(dd)
+
 ## def test_restore_data():
 ##     data, bvals, bvecs = get_data('small_25')
 
@@ -516,3 +527,50 @@ def test_restore():
 ##     f2 = tm2.fit(d2)
 
 ##     assert_array_almost_equal(f1.fa, f2.fa)
+
+def test_adc():
+    """
+    Test the implementation of the calculation of apparent diffusion coefficient
+    """
+    data, gtab = dsi_voxels()
+    dm = dti.TensorModel(gtab, 'LS')
+    mask = np.zeros(data.shape[:-1], dtype=bool)
+    mask[0, 0, 0] = True
+    dtifit = dm.fit(data)
+    sphere = create_unit_sphere(4)
+    
+    # The ADC in the principal diffusion direction should be equal to the AD in
+    # each voxel:
+
+    pdd0 = dtifit.evecs[0,0,0,0]
+    sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
+    assert_array_almost_equal(dtifit.adc(sphere_pdd0)[0,0,0],
+                            dtifit.ad[0,0,0], decimal=5)
+        
+    
+    # Test that it works for cases in which the data is 1D
+    dtifit = dm.fit(data[0,0,0])
+    sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
+    assert_array_almost_equal(dtifit.adc(sphere_pdd0),
+                        dtifit.ad, decimal=5)
+
+def test_predict():
+    """
+    
+    """
+    psphere = get_sphere('symmetric362')
+    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvals = np.zeros(len(bvecs)) + 1000
+    bvals[0] = 0
+    gtab = grad.gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
+    mevecs = [ np.array( [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ] ),
+               np.array( [ [0, 0, 1], [0, 1, 0], [1, 0, 0] ] ) ]
+    S = single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
+
+    dm = dti.TensorModel(gtab, 'LS')
+    dmfit = dm.fit(S)
+    
+    assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
+
+    
