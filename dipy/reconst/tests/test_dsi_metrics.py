@@ -12,65 +12,49 @@ from dipy.reconst.dsi import (DiffusionSpectrumModel,DiffusionSpectrumDeconvMode
 from dipy.core.sphere import Sphere
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+from numpy.testing import (assert_equal,
+                           assert_almost_equal,
+                           run_module_suite,
+                           assert_array_equal,
+                           assert_raises)
+from dipy.data import get_data, dsi_voxels
+from dipy.reconst.dsi import DiffusionSpectrumModel
+from dipy.reconst.odf import gfa, peak_directions
+from dipy.sims.voxel import SticksAndBall
+from dipy.core.sphere import Sphere
+from dipy.core.gradients import gradient_table
+from dipy.data import get_sphere
+from numpy.testing import assert_equal
+from dipy.core.subdivide_octahedron import create_unit_sphere
+from dipy.core.sphere_stats import angular_similarity
 
-fetch_taiwan_ntu_dsi()
-img, gtab = read_taiwan_ntu_dsi()
-data = img.get_data()
-affine = img.get_affine()
+def test_dsi():
+    #load symmetric 724 sphere
+    sphere = get_sphere('symmetric724')
+    #load icosahedron sphere
+    sphere2 = create_unit_sphere(5)
+    btable = np.loadtxt(get_data('dsi515btable'))
+    gtab = gradient_table(btable[:,0], btable[:,1:])
+    data, golden_directions = SticksAndBall(gtab, d=0.0015, 
+                                            S0=100, angles=[(0, 0), (90, 0)],
+                                            fractions=[50, 50], snr=None)
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+    dsmodel = DiffusionSpectrumModel(gtab)
 
-dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=35, r_start=0.4*17, r_end=0.7*17, filter_width=18.5)
+    rtop_signal_norm=dsmodel.fit(data).rtop_signal()
+    rtop_signal=dsmodel.fit(data).rtop_signal(normalized=False)
 
-dataslice = data[30:70, 20:80, data.shape[2] / 2]
-mask = dataslice[..., 0] > 50
+    rtop_pdf_norm=dsmodel.fit(data).rtop_pdf()
+    rtop_pdf=dsmodel.fit(data).rtop_pdf(normalized=False)
 
-# for the signal the normalization means that is divided by the b0
-print('Calculating... rtz_signal_norm') 
-rtz_signal_norm=dsmodel.fit(dataslice).rt0p_signal()
-print('Calculating... rtz_signal')
-rtz_signal=dsmodel.fit(dataslice).rt0p_signal(normalized=False)
+    MSD_norm=dsmodel.fit(data).MSD_discrete()
+    MSD=dsmodel.fit(data).MSD_discrete(normalized=False)
+    
+    assert_almost_equal(rtop_signal, rtop_pdf, 10)
+    
+    # We need a test for MSD!!!
+    
 
-# for the pdf the normalization means that is divided by pdf.sum()
-print('Calculating... rtz_pdf_norm')
-rtz_pdf_norm=dsmodel.fit(dataslice).rt0p_pdf()
-print('Calculating... rtz_pdf')
-rtz_pdf=dsmodel.fit(dataslice).rt0p_pdf(normalized=False)
 
-# for the pdf the normalization means that is divided by pdf.sum()
-print('Calculating... MSD_norm')
-MSD_norm=dsmodel.fit(dataslice).MSD_discrete()
-print('Calculating... MSD')
-MSD=dsmodel.fit(dataslice).MSD_discrete(normalized=False)
-
-# plot rt0p
-fig=plt.figure()
-ax1=fig.add_subplot(2,2,1)
-ax1.set_title('rtz_signal_norm')
-ind=ax1.imshow(rtz_signal_norm.T,interpolation='nearest',origin='lower')
-plt.colorbar(ind)
-ax2=fig.add_subplot(2,2,2)
-ax2.set_title('rtz_signal')
-ind=ax2.imshow(rtz_signal.T,interpolation='nearest',origin='lower')
-plt.colorbar(ind)
-ax3=fig.add_subplot(2,2,3)
-ax3.set_title('rtz_pdf_norm')
-ind=ax3.imshow(rtz_pdf_norm.T,interpolation='nearest',origin='lower')
-plt.colorbar(ind)
-ax4=fig.add_subplot(2,2,4)
-ax4.set_title('rtz_pdf')
-ind=ax4.imshow(rtz_pdf.T,interpolation='nearest',origin='lower')
-plt.colorbar(ind)
-plt.show()
-
-# plot MSD
-fig=plt.figure()
-ax1=fig.add_subplot(2,1,1)
-ax1.set_title('MSD_norm')
-ind=ax1.imshow(MSD_norm.T,interpolation='nearest',origin='lower')
-plt.colorbar(ind)
-ax2=fig.add_subplot(2,1,2)
-ax2.set_title('MSD')
-ind=ax2.imshow(MSD.T,interpolation='nearest',origin='lower')
-plt.colorbar(ind)
-plt.show()
+if __name__ == '__main__':
+    run_module_suite()

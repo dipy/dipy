@@ -170,52 +170,89 @@ class DiffusionSpectrumFit(OdfFit):
         Pr[Pr<0.0]=0.0
         return Pr
 
-    def rt0p_signal(self, normalized=True):
-        """ Calculates the return to origin probability from the signal
-        """
-        values = self.data * self.model.filter
-        # normalize by the b0
-        if normalized:
-            values=values/float(values[0])
+    def rtop_signal(self, filtering=True, normalized=True):
+        """ Calculates the return to origin probability (rtop) from the signal
+        
+        rtop equals to the sum of all signal values
 
-        #create the signal volume
+        
+        Parameters
+        ----------
+        .
+        .
+        .
+        """
+        
+        if filtering:
+            values = self.data * self.model.filter
+        else :
+            values = self.data
+
+        # normalize by the b0 image
+        if normalized:
+            values = values/float(values[0])
+
+        # create the signal volume
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
-        #fill q-space
+
+        # fill q-space
         for i in range(self.dn):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
 
-        rt0p=Sq.sum()
+        rt0p = Sq.sum()
         return rt0p
 
-    def rt0p_pdf(self, normalized=True):
-        """ Calculates the return to origin probability from the propagator
+    def rtop_pdf(self, normalized=True):
+        """ Calculates the return to origin probability from the propagator, which is
+        the propagator evaluated at zero (see Tuch PhD 2002, Wu et al NeuroImage 2007,
+        Descoteaux et al. MedIA 2011)
+        
+        rtop = P(0)
+
+        Parameters
+        ----------
+        .
+        .
+        .
         """
-        Pr=self.pdf()
+        Pr = self.pdf()
+        
         # normalize in order to obtain a pdf
         if normalized:
-            Pr=Pr/Pr.sum()
+            Pr = Pr/Pr.sum()
 
-        center=self.qgrid_sz//2
+        center = self.qgrid_sz//2
         
-        rt0p=Pr[center,center,center]
+        rt0p = Pr[center,center,center]
         return rt0p  
 
     def MSD_discrete(self, normalized=True):
         """ Calculates the mean squared displacement on the discrete propagator
+
+        MSD = latex equation
+
+        Parameters
+        ----------
+        
         """
-        Pr=self.pdf()
+        Pr = self.pdf()
+
         # normalize in order to obtain a pdf
         if normalized:
-            Pr=Pr/Pr.sum()
+            Pr = Pr/Pr.sum()
 
-        gridsize=self.qgrid_sz
-        a=10.0 *np.arange(gridsize)/(gridsize-1)
-        x=np.tile(a,(gridsize,gridsize,1)) -(5.0)
-        y=np.tile(a.reshape(gridsize,1),(gridsize,1,gridsize)) -(5.0)
-        z=np.tile(a.reshape(gridsize,1,1),(1,gridsize,gridsize)) -(5.0)
-        r=x**2 + y**2 +z**2
-        MSD=(np.sum(Pr*r)/float((gridsize**3)))
+        gridsize = self.qgrid_sz
+        ##### WHY???? need to adjust according to radius/diameter of the data! 
+        a = 10.0 *np.arange(gridsize)/(gridsize-1)
+        ##############
+
+        x = np.tile(a,(gridsize,gridsize,1)) -(5.0)
+        y = np.tile(a.reshape(gridsize,1),(gridsize,1,gridsize)) -(5.0)
+        z = np.tile(a.reshape(gridsize,1,1),(1,gridsize,gridsize)) -(5.0)
+        r = x**2 + y**2 +z**2
+        MSD = (np.sum(Pr*r)/float((gridsize**3)))
+        
         return MSD      
 
     def odf(self, sphere):
