@@ -11,6 +11,8 @@ import numpy.testing as npt
 import nibabel as nib
 
 import dipy.reconst.dki as dki
+import dipy.reconst.dti as dti
+
 import dipy.data as dpd
 import dipy.core.gradients as gt
 
@@ -22,3 +24,7 @@ def test_DKIModel():
     gtab = gt.gradient_table(fbval, fbvec)
     dkim = dki.DiffusionKurtosisModel(gtab)
     dkif = dkim.fit(data)
+    dtim = dti.TensorModel(gtab)
+    dtif = dtim.fit(data)
+    pt = dtif.predict(gtab)
+    pk = dkif.predict(gtab)
