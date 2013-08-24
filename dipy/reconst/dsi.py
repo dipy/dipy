@@ -111,18 +111,18 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.normalize_peaks = normalize_peaks
-        #3d volume for Sq
+        # 3d volume for Sq
         if qgrid_size % 2 == 0:
             raise ValueError('qgrid_size needs to be an odd integer')
         self.qgrid_size = qgrid_size
-        #necessary shifting for centering
+        # necessary shifting for centering
         self.origin = self.qgrid_size // 2
-        #hanning filter width
+        # hanning filter width
         self.filter = hanning_filter(gtab, filter_width)
-        #odf sampling radius
+        # odf sampling radius
         self.qradius = np.arange(r_start, r_end, r_step)
         self.qradiusn = len(self.qradius)
-        #create qspace grid
+        # create qspace grid
         self.qgrid = create_qspace(gtab, self.origin)
         b0 = np.min(self.bvals)
         self.dn = (self.bvals > b0).sum()
@@ -158,45 +158,38 @@ class DiffusionSpectrumFit(OdfFit):
         the diffusion propagator
         """
         values = self.data * self.model.filter
-        #create the signal volume
+        # create the signal volume
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
-        #fill q-space
+        # fill q-space
         for i in range(self.dn):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
-        #apply fourier transform
+        # apply fourier transform
         Pr = fftshift(np.real(fftn(ifftshift(Sq),
-                                          3 * (self.qgrid_sz, ))))
-        Pr[Pr<0.0]=0.0
+                                   3 * (self.qgrid_sz, ))))
+        Pr[Pr < 0.0] = 0.0
         return Pr
 
     def rtop_signal(self, filtering=True):
         """ Calculates the return to origin probability (rtop) from the signal
-        
         rtop equals to the sum of all signal values
 
-        
         Parameters
         ----------
-        .
-        .
-        .
+        filtering : boolean
+            default true, perform the hanning filtering
+
+        Returns
+        -------
+        rtop : float
+            the return to origin probability
         """
-        
+
         if filtering:
             values = self.data * self.model.filter
-        else :
+        else:
             values = self.data
 
-        # create the signal volume
-        # Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
-
-        # # fill q-space
-        # for i in range(self.dn):
-        #     qx, qy, qz = self.model.qgrid[i]
-        #     Sq[qx, qy, qz] += values[i]
-
-        # rtop = Sq.sum()
         rtop = values.sum()
 
         return rtop
@@ -205,53 +198,79 @@ class DiffusionSpectrumFit(OdfFit):
         """ Calculates the return to origin probability from the propagator, which is
         the propagator evaluated at zero (see Tuch PhD 2002, Wu et al NeuroImage 2007,
         Descoteaux et al. MedIA 2011)
-        
         rtop = P(0)
 
         Parameters
         ----------
-        .
-        .
-        .
+        normalized : boolean
+            default true, normalize the propagator by its sum in order to obtain a pdf
+
+        Returns
+        -------
+        rtop : float
+            the return to origin probability
         """
+
         Pr = self.pdf()
-        
+
         # normalize in order to obtain a pdf
         if normalized:
-            Pr = Pr/Pr.sum()
+            Pr = Pr / Pr.sum()
 
-        center = self.qgrid_sz//2
-        
-        rt0p = Pr[center,center,center]
-        return rt0p  
+        center = self.qgrid_sz // 2
+
+        rtop = Pr[center, center, center]
+        return rtop
 
     def MSD_discrete(self, normalized=True):
-        """ Calculates the mean squared displacement on the discrete propagator
+        r""" Calculates the mean squared displacement on the discrete propagator
 
-        MSD = latex equation
+        ..math::
+            :nowrap:
+                \begin{equation}
+                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
+                \end{equation}
+
+        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space.
 
         Parameters
         ----------
-        
+        normalized : boolean
+            default true, normalize the propagator by its sum in order to obtain a pdf
+
+        Returns
+        -------
+        MSD : float
+            the mean square displacement
         """
+
         Pr = self.pdf()
 
         # normalize in order to obtain a pdf
         if normalized:
-            Pr = Pr/Pr.sum()
+            Pr = Pr / Pr.sum()
 
         gridsize = self.qgrid_sz
-        ##### WHY???? need to adjust according to radius/diameter of the data! 
-        a = 10.0 *np.arange(gridsize)/(gridsize-1)
-        ##############
 
-        x = np.tile(a,(gridsize,gridsize,1)) -(5.0)
-        y = np.tile(a.reshape(gridsize,1),(gridsize,1,gridsize)) -(5.0)
-        z = np.tile(a.reshape(gridsize,1,1),(1,gridsize,gridsize)) -(5.0)
-        r = x**2 + y**2 +z**2
-        MSD = (np.sum(Pr*r)/float((gridsize**3)))
-        
-        return MSD      
+        bv = self.bvals
+        bmin = np.sort(bv)[1]
+        bv = np.sqrt(bv / bmin)
+        bv = np.floor(bv + .5)
+        radius = bv.max()
+        diameter = 2.0 * radius
+
+        # create the r squared 3D matrix, normalized in order to be gridsize
+        # independent
+        a = diameter * np.arange(gridsize) / (gridsize - 1)
+        x = np.tile(a, (gridsize, gridsize, 1)) - radius
+        y = np.tile(a.reshape(gridsize, 1), (gridsize, 1, gridsize)) - radius
+        z = np.tile(a.reshape(gridsize, 1, 1),
+                    (1, gridsize, gridsize)) - radius
+        r2 = x ** 2 + y ** 2 + z ** 2
+
+        MSD = (np.sum(Pr * r2) / float((gridsize ** 3)))
+
+        return MSD
 
     def odf(self, sphere):
         r""" Calculates the real discrete odf for a given discrete sphere
@@ -275,8 +294,8 @@ class DiffusionSpectrumFit(OdfFit):
 
         Pr = self.pdf()
 
-        #calculate the orientation distribution function
-        return  pdf_odf(Pr, self.model.qradius, interp_coords)
+        # calculate the orientation distribution function
+        return pdf_odf(Pr, self.model.qradius, interp_coords)
 
 
 def create_qspace(gtab, origin):
@@ -293,9 +312,9 @@ def create_qspace(gtab, origin):
     qgrid : ndarray
         qspace coordinates
     """
-    #create the q-table from bvecs and bvals
+    # create the q-table from bvecs and bvals
     qtable = create_qtable(gtab)
-    #center and index in qspace volume
+    # center and index in qspace volume
     qgrid = qtable + origin
     return qgrid.astype('i8')
 
@@ -329,9 +348,9 @@ def hanning_filter(gtab, filter_width):
 
     """
     qtable = create_qtable(gtab)
-    #calculate r - hanning filter free parameter
+    # calculate r - hanning filter free parameter
     r = np.sqrt(qtable[:, 0] ** 2 + qtable[:, 1] ** 2 + qtable[:, 2] ** 2)
-    #setting hanning filter width and hanning
+    # setting hanning filter width and hanning
     return .5 * np.cos(2 * np.pi * r / filter_width)
 
 
@@ -367,7 +386,7 @@ def pdf_odf(Pr, rradius, interp_coords):
         coordinates in the pdf for interpolating the odf
     """
     PrIs = map_coordinates(Pr, interp_coords, order=1)
-    odf = (PrIs * rradius**2).sum(-1)
+    odf = (PrIs * rradius ** 2).sum(-1)
     return odf
 
 
@@ -450,7 +469,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
         r""" Diffusion Spectrum Deconvolution
 
         The idea is to remove the convolution on the DSI propagator that is
-        caused by the truncation of the q-space in the DSI sampling. 
+        caused by the truncation of the q-space in the DSI sampling.
 
         ..math::
             :nowrap:
@@ -461,7 +480,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
                 \end{eqnarray*}
 
         where $\mathbf{r}$ is the displacement vector and $\mathbf{q}$ is the
-        wavector which corresponds to different gradient directions, 
+        wavector which corresponds to different gradient directions,
         $M(\mathbf{q})$ is a mask corresponding to your q-space sampling and
         $\otimes$ is the convolution operator [1]_.
 
@@ -486,11 +505,11 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
 
         References
         ----------
-        .. [1] Canales-Rodriguez E.J et. al, "Deconvolution in Diffusion 
+        .. [1] Canales-Rodriguez E.J et. al, "Deconvolution in Diffusion
         Spectrum Imaging", Neuroimage, 2010.
 
-        .. [2] Biggs David S.C. et. al, "Acceleration of Iterative Image 
-        Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775, 
+        .. [2] Biggs David S.C. et. al, "Acceleration of Iterative Image
+        Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775,
         1997.
 
         """
@@ -499,44 +518,44 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
                                         filter_width,
                                         normalize_peaks)
 
-
     def fit(self, data):
         return DiffusionSpectrumDeconvFit(self, data)
 
 
 class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
+
     def pdf(self):
         """ Applies the 3D FFT in the q-space grid to generate
         the DSI diffusion propagator, remove the background noise with a
-        hard threshold and then deconvolve the propagator with the 
+        hard threshold and then deconvolve the propagator with the
         Lucy-Richardson deconvolution algorithm
         """
         values = self.data
-        #create the signal volume
+        # create the signal volume
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
-        #fill q-space
+        # fill q-space
         for i in range(self.dn):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
-        #get deconvolution PSF
+        # get deconvolution PSF
         DSID_PSF = self.model.cache_get('deconv_psf', key=self.model.gtab)
         if DSID_PSF is None:
-            DSID_PSF = gen_PSF(self.model.qgrid, self.qgrid_sz, 
+            DSID_PSF = gen_PSF(self.model.qgrid, self.qgrid_sz,
                                self.qgrid_sz, self.qgrid_sz)
         self.model.cache_set('deconv_psf', self.model.gtab, DSID_PSF)
-        #apply fourier transform
-        Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq), 
+        # apply fourier transform
+        Pr = fftshift(np.abs(np.real(fftn(ifftshift(Sq),
                       3 * (self.qgrid_sz, )))))
-        #threshold propagator
+        # threshold propagator
         Pr = threshold_propagator(Pr)
-        #apply LR deconvolution
+        # apply LR deconvolution
         Pr = LR_deconv(Pr, DSID_PSF, 5, 2)
         return Pr
 
 
 def threshold_propagator(P, estimated_snr=15.):
     """
-    Applies hard threshold on the propagator to remove background noise for the 
+    Applies hard threshold on the propagator to remove background noise for the
     deconvolution.
     """
     P_thresholded = P.copy()
@@ -547,11 +566,11 @@ def threshold_propagator(P, estimated_snr=15.):
 
 def gen_PSF(qgrid_sampling, siz_x, siz_y, siz_z):
     """
-    Generate a PSF for DSI Deconvolution by taking the ifft of the binary 
+    Generate a PSF for DSI Deconvolution by taking the ifft of the binary
     q-space sampling mask and truncating it to keep only the center.
     """
     Sq = np.zeros((siz_x, siz_y, siz_z))
-    #fill q-space
+    # fill q-space
     for i in range(qgrid_sampling.shape[0]):
         qx, qy, qz = qgrid_sampling[i]
         Sq[qx, qy, qz] = 1
@@ -575,7 +594,7 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
 
     References
     ----------
-    .. [1] Biggs David S.C. et. al, "Acceleration of Iterative Image 
+    .. [1] Biggs David S.C. et. al, "Acceleration of Iterative Image
        Restoration Algorithms", Applied Optics, vol. 36, No. 8, p. 1766-1775,
        1997.
 
@@ -585,10 +604,10 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
     # Create the otf of the same size as prop
     otf = np.zeros_like(prop)
     # prop.ndim==3
-    otf[otf.shape[0] // 2 - psf.shape[0] // 2:otf.shape[0] // 2 + 
-    psf.shape[0] // 2 + 1, otf.shape[1] // 2 - psf.shape[1] // 2:
-    otf.shape[1] // 2 + psf.shape[1] // 2 + 1, otf.shape[2] // 2 - 
-    psf.shape[2] // 2:otf.shape[2] // 2 + psf.shape[2] // 2 + 1] = psf
+    otf[otf.shape[0] // 2 - psf.shape[0] // 2:otf.shape[0] // 2 +
+        psf.shape[0] // 2 + 1, otf.shape[1] // 2 - psf.shape[1] // 2:
+        otf.shape[1] // 2 + psf.shape[1] // 2 + 1, otf.shape[2] // 2 -
+        psf.shape[2] // 2:otf.shape[2] // 2 + psf.shape[2] // 2 + 1] = psf
     otf = np.real(np.fft.fftn(np.fft.ifftshift(otf)))
     # Enforce Positivity
     prop = np.clip(prop, 0, np.inf)
@@ -598,8 +617,8 @@ def LR_deconv(prop, psf, numit=5, acc_factor=1):
         reBlurred = np.real(np.fft.ifftn(otf * np.fft.fftn(prop_deconv)))
         reBlurred[reBlurred < eps] = eps
         # Update the estimate
-        prop_deconv = prop_deconv * (np.real(np.fft.ifftn(otf * 
-                   np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
+        prop_deconv = prop_deconv * (np.real(np.fft.ifftn(otf *
+                                                          np.fft.fftn((prop / reBlurred) + eps)))) ** acc_factor
         # Enforce positivity
         prop_deconv = np.clip(prop_deconv, 0, np.inf)
     return prop_deconv / prop_deconv.sum()
