@@ -170,7 +170,7 @@ class DiffusionSpectrumFit(OdfFit):
         Pr[Pr<0.0]=0.0
         return Pr
 
-    def rtop_signal(self, filtering=True, normalized=True):
+    def rtop_signal(self, filtering=True):
         """ Calculates the return to origin probability (rtop) from the signal
         
         rtop equals to the sum of all signal values
@@ -188,20 +188,18 @@ class DiffusionSpectrumFit(OdfFit):
         else :
             values = self.data
 
-        # normalize by the b0 image
-        if normalized:
-            values = values/float(values[0])
-
         # create the signal volume
-        Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
+        # Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
 
-        # fill q-space
-        for i in range(self.dn):
-            qx, qy, qz = self.model.qgrid[i]
-            Sq[qx, qy, qz] += values[i]
+        # # fill q-space
+        # for i in range(self.dn):
+        #     qx, qy, qz = self.model.qgrid[i]
+        #     Sq[qx, qy, qz] += values[i]
 
-        rt0p = Sq.sum()
-        return rt0p
+        # rtop = Sq.sum()
+        rtop = values.sum()
+
+        return rtop
 
     def rtop_pdf(self, normalized=True):
         """ Calculates the return to origin probability from the propagator, which is
