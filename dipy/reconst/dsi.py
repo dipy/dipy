@@ -252,7 +252,7 @@ class DiffusionSpectrumFit(OdfFit):
 
         gridsize = self.qgrid_sz
 
-        bv = self.bvals
+        bv = self.model.bvals
         bmin = np.sort(bv)[1]
         bv = np.sqrt(bv / bmin)
         bv = np.floor(bv + .5)
