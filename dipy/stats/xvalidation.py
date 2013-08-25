@@ -38,7 +38,11 @@ def kfold_xval(model, data, folds):
     holding b-values and corresponding unit vectors.
 
     """
-    gtab = gt.gradient_table(model.bval, model.bvec)
+    if hasattr(model, 'bval'): # e.g. DTI
+        gtab = gt.gradient_table(model.bval, model.bvec)
+    elif hasattr(model, 'gtab'): # e.g. DKI
+        gtab = model.gtab
+
     data_d = data[..., ~gtab.b0s_mask]
     modder =  np.mod(data_d.shape[-1], folds)
     # Make sure that an equal number of samples get left out in each fold:
@@ -51,30 +55,56 @@ def kfold_xval(model, data, folds):
     data_0 = data[..., gtab.b0s_mask]
     S0 = np.mean(data_0, -1)
     n_in_fold = data_d.shape[-1]/folds
+    prediction = np.zeros(data.shape)
     # We are going to leave out some randomly chosen samples in each iteration:
     order = np.random.permutation(data_d.shape[-1])
-    prediction = np.zeros(data_d.shape)
 
     nz_bval = gtab.bvals[~gtab.b0s_mask]
     nz_bvec = gtab.bvecs[~gtab.b0s_mask]
+
+    # I'm going to leave this cruft here, for now:
+    ## #### This is DKI-specific
+    ## len1 = 1
+    ## len2 = 2
+    ## while len1 != len2:
+    ##     # We are going to leave out some randomly chosen samples in each
+    ##     # iteration:
+    ##     order = np.random.permutation(data_d.shape[-1])
+    ##     len1 = []
+    ##     len2 = []
+    ##     for k in range(folds):
+    ##         fold_mask = np.ones(data_d.shape[-1], dtype=bool)
+    ##         fold_idx = order[k*n_in_fold:(k+1)*n_in_fold]
+    ##         fold_mask[fold_idx] = False
+    ##         len1.append(len(np.unique(nz_bval[fold_mask])))
+    ##         len2.append(len(np.unique(nz_bval[~fold_mask])))
+
+    ## print("Apparently it's possible...")
+    ## ##### Up until here
+
+
     for k in range(folds):
         fold_mask = np.ones(data_d.shape[-1], dtype=bool)
         fold_idx = order[k*n_in_fold:(k+1)*n_in_fold]
         fold_mask[fold_idx] = False
         this_data = np.concatenate([data_0, data_d[..., fold_mask]], -1)
 
-        this_gtab = gt.gradient_table(np.hstack([model.bval[gtab.b0s_mask],
+        this_gtab = gt.gradient_table(np.hstack([gtab.bvals[gtab.b0s_mask],
                                                  nz_bval[fold_mask]]),
-                                      np.concatenate([model.bvec[gtab.b0s_mask],
+                                      np.concatenate([gtab.bvecs[gtab.b0s_mask],
                                                  nz_bvec[fold_mask]]))
-        left_out_gtab = gt.gradient_table(np.hstack([model.bval[gtab.b0s_mask],
+        left_out_gtab = gt.gradient_table(np.hstack([gtab.bvals[gtab.b0s_mask],
                                                  nz_bval[~fold_mask]]),
-                                      np.concatenate([model.bvec[gtab.b0s_mask],
+                                      np.concatenate([gtab.bvecs[gtab.b0s_mask],
                                                  nz_bvec[~fold_mask]]))
 
         this_model = model.__class__(this_gtab)
         this_fit = this_model.fit(this_data)
         this_predict = this_fit.predict(left_out_gtab, S0=S0)
-        prediction[..., ~fold_mask] = this_predict[..., np.sum(gtab.b0s_mask):]
+        idx_to_assign = np.where(~gtab.b0s_mask)[0][~fold_mask]
+        prediction[..., idx_to_assign]=this_predict[..., np.sum(gtab.b0s_mask):]
+
+    # For the b0 measurements
+    prediction[..., gtab.b0s_mask] = S0[..., None]
 
     return prediction
