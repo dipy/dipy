@@ -26,5 +26,6 @@ def test_DKIModel():
     dkif = dkim.fit(data)
     dtim = dti.TensorModel(gtab)
     dtif = dtim.fit(data)
-    pt = dtif.predict(gtab)
-    pk = dkif.predict(gtab)
+    S0 = np.mean(data[..., gtab.b0s_mask], -1)
+    pt = dtif.predict(gtab, S0)
+    pk = dkif.predict(gtab, S0)

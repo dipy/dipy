@@ -125,6 +125,7 @@ class DiffusionKurtosisFit(object):
         sphere = dps.Sphere(xyz=model.gtab.bvecs[~model.gtab.b0s_mask])
         tensor_fits = []
         adc = []
+        md = []
         for idx, shell in enumerate(model.shells):
             sh_data = np.concatenate([data[...,model.sh_idx[idx]],
                                      data[...,model.gtab.b0s_mask]], -1)
@@ -132,20 +133,23 @@ class DiffusionKurtosisFit(object):
             tensor_fits.append(model.tensors[idx].fit(sh_data))
             # Get the ADC on the entire sphere in each b value:
             adc.append(tensor_fits[-1].adc(sphere))
-
+            md.append(tensor_fits[-1].md)
         # Following equations 38-39 in Jensen and Helpern 2010. We use the two
         # shells most different from each other:
-        self.D = ((model.shells[-1] * adc[0] - model.shells[0] * adc[-1])/
-                  (model.shells[-1] - model.shells[0]))  # Eq 38
+        self.ADC = ((model.shells[-1] * adc[0] - model.shells[0] * adc[-1])/
+                    (model.shells[-1] - model.shells[0]))  # Eq 38
+
+        self.MD = ((model.shells[-1] * md[0] - model.shells[0] * md[-1])/
+                    (model.shells[-1] - model.shells[0]))
 
         self.K = (6 * (adc[0] - adc[-1])/
-             ((model.shells[-1] - model.shells[0]) * self.D **2)) # Eq 39
+             ((model.shells[-1] - model.shells[0]) * self.ADC **2)) # Eq 39
 
         # Kurtosis is not allowed to go below 0, but the noise sometimes drags
         # it there:
         self.K = np.where(self.K>0, self.K, 0)
 
-        to_fit = (self.K * self.D**2) / (np.mean(self.D, -1) ** 2)[..., None]
+        to_fit = (self.K * self.ADC**2) / (self.MD ** 2)[..., None]
 
         # least-square estimation of the 15 DK params. We use tensordot, so
         # that we can do this over all voxels at once:
@@ -201,9 +205,13 @@ class DiffusionKurtosisFit(object):
 
         dm = dk_design_matrix(gtab)
         AKC = np.zeros(ADC.shape)
-        MD = np.mean(self.D, -1)[..., None]
+        MD = self.MD[..., None]
+        DKtensor = np.rollaxis(
+            np.tensordot(dm, self.model_params, (1,-1)),
+            0,len(MD.shape))
+
         AKC[..., ~gtab.b0s_mask] = ( (MD **2) / (ADC[..., ~gtab.b0s_mask])  *
-                                  np.tensordot(dm, self.model_params, (1,-1)).T)
+                                     DKtensor)
 
         # Don't allow values below 0:
         AKC = np.where(AKC >= 0, AKC, 0)
