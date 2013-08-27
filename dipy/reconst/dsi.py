@@ -228,7 +228,7 @@ class DiffusionSpectrumFit(OdfFit):
         rtop = Pr[center, center, center]
         return rtop
 
-    def MSD_discrete(self, normalized=True):
+    def msd_discrete(self, normalized=True):
         r""" Calculates the mean squared displacement on the discrete propagator
 
         ..math::
@@ -246,7 +246,7 @@ class DiffusionSpectrumFit(OdfFit):
 
         Returns
         -------
-        MSD : float
+        msd : float
             the mean square displacement
         """
 
@@ -273,10 +273,13 @@ class DiffusionSpectrumFit(OdfFit):
         z = np.tile(a.reshape(gridsize, 1, 1),
                     (1, gridsize, gridsize)) - radius
         r2 = x ** 2 + y ** 2 + z ** 2
+        
+        if normalized:
+            msd = np.sum(Pr * r2)
+        else:
+            msd = (np.sum(Pr * r2) / float((gridsize ** 3)))
 
-        MSD = (np.sum(Pr * r2) / float((gridsize ** 3)))
-
-        return MSD
+        return msd
 
     def odf(self, sphere):
         r""" Calculates the real discrete odf for a given discrete sphere
