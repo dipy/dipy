@@ -39,9 +39,9 @@ rtop_pdf = dsmodel.fit(dataslice).rtop_pdf(normalized=False)
 
 # for the pdf the normalization means that is divided by pdf.sum()
 print('Calculating... MSD_norm')
-MSD_norm = dsmodel.fit(dataslice).MSD_discrete()
+MSD_norm = dsmodel.fit(dataslice).msd_discrete()
 print('Calculating... MSD')
-MSD = dsmodel.fit(dataslice).MSD_discrete(normalized=False)
+MSD = dsmodel.fit(dataslice).msd_discrete(normalized=False)
 
 # plot rtop
 fig = plt.figure()
