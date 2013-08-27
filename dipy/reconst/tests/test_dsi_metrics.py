@@ -45,8 +45,8 @@ def test_dsi():
     rtop_signal_norm = dsmodel.fit(data).rtop_signal()
     rtop_pdf_norm = dsmodel.fit(data).rtop_pdf()
     rtop_pdf = dsmodel.fit(data).rtop_pdf(normalized=False)
-    MSD_norm = dsmodel.fit(data).MSD_discrete()
-    MSD = dsmodel.fit(data).MSD_discrete(normalized=False)
+    MSD_norm = dsmodel.fit(data).msd_discrete()
+    MSD = dsmodel.fit(data).msd_discrete(normalized=False)
     assert_almost_equal(rtop_signal_norm, rtop_pdf, 10)
 
     # We need a test for MSD!!!
