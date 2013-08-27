@@ -127,8 +127,9 @@ fvtk.line adds a streamline actor for streamline visualization
 and fvtk.add adds this actor in the scene
 """
 from dipy.tracking.distances import approx_polygon_track
+from dipy.tracking.metrics import length
 
-tensor_streamlines = [approx_polygon_track(s) for s in tensor_streamlines]
+tensor_streamlines = [approx_polygon_track(s, 0.2) for s in tensor_streamlines if length(s) > 40]
 
 fvtk.add(r, fvtk.pretty_line(tensor_streamlines, line_colors(tensor_streamlines)))
 

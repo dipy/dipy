@@ -280,10 +280,14 @@ def pretty_line(lines, colors, linewidth=0.15, tube_sides=8):
     profile = vtk.vtkLODActor()
     profile.SetMapper(profileMapper)
     #profile.GetProperty().SetDiffuseColor(banana)
-    profile.GetProperty().SetSpecular(.3)
+    profile.GetProperty().SetAmbient(0)#.3
+    profile.GetProperty().SetSpecular(0)#.3
     profile.GetProperty().SetSpecularPower(10)
+    #profile.GetProperty().SetInterpolationToFlat()
+    #profile.GetProperty().SetInterpolationToPhong()
+    profile.GetProperty().SetInterpolationToGouraud()
     profile.GetProperty().BackfaceCullingOn()
-    profile.SetNumberOfCloudPoints(10**5)
+    profile.SetNumberOfCloudPoints(10**4)
     profile.GetProperty().SetPointSize(5)
     print(profile.GetNumberOfCloudPoints())
 
