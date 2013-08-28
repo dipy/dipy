@@ -573,4 +573,9 @@ def test_predict():
     
     assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
 
-    
+    data, gtab = dsi_voxels()
+    dtim = dti.TensorModel(gtab)
+    dtif = dtim.fit(data)
+    S0 = np.mean(data[...,gtab.b0s_mask], -1)
+    p = dtif.predict(gtab, S0)
+
