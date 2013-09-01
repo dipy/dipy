@@ -1,12 +1,13 @@
-import numpy as np
-import numpy.testing as npt
-from numpy.testing import assert_equal, run_module_suite
-from scipy.ndimage import generate_binary_structure, binary_dilation
-from scipy.ndimage.filters import median_filter
-from dipy.segment.mask import (median_otsu, otsu, binary_threshold,
-                               bounding_box, crop, applymask, multi_median)
 import warnings
 
+import numpy as np
+
+from scipy.ndimage import generate_binary_structure, binary_dilation
+from scipy.ndimage.filters import median_filter
+
+from ..mask import otsu, bounding_box, crop, applymask, multi_median
+
+from numpy.testing import assert_equal, run_module_suite
 
 
 def test_mask():

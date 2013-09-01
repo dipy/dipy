@@ -8,7 +8,7 @@ from scipy.ndimage.filters import median_filter
 try:
     from skimage.filter import threshold_otsu as otsu
 except:
-    from dipy.segment.threshold import otsu
+    from .threshold import otsu
 
 
 def multi_median(input, median_radius, numpass):
