@@ -60,25 +60,6 @@ def applymask(vol, mask):
     return vol * mask
 
 
-def binary_threshold(vol, thresh):
-    """
-    Simple binary thresholding.
-
-    Parameters
-    ----------
-    vol : ndarray
-        Volume to apply threshold on.
-    thresh : float
-        Thresholding value.
-
-    Returns
-    -------
-    bin_vol : ndarray
-        Binary ndarray.
-    """
-    return np.where(vol > thresh, True, False)
-
-
 def bounding_box(vol):
     """ Compute the bounding box of nonzero intensity voxels in the volume.
 
@@ -181,7 +162,7 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     # Make a mask using a multiple pass median filter and histogram thresholding.
     mask = multi_median(b0vol, median_radius, numpass)
     thresh = otsu(mask)
-    mask = binary_threshold(mask, thresh)
+    mask = mask > thresh
     # Auto crop the volumes using the mask as input_volume for bounding box computing.
     if autocrop:
         mins, maxs = bounding_box(mask)

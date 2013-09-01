@@ -13,15 +13,12 @@ from numpy.testing import assert_equal, run_module_suite
 def test_mask():
     vol = np.zeros((30, 30, 30))
     vol[15, 15, 15] = 1
-    
     struct = generate_binary_structure(3, 1)
     voln = binary_dilation(vol, structure=struct, iterations=4).astype('f4')
     initial = np.sum(voln > 0)
-
     mask = voln.copy()
-
     thresh = otsu(mask)
-    mask = binary_threshold(mask, thresh)
+    mask = mask > thresh
     initial_otsu = np.sum(mask > 0)
     assert_equal(initial_otsu, initial)
 
