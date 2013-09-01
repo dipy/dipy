@@ -50,8 +50,8 @@ def applymask(vol, mask):
         $V - M$ dimensions with axis length 1 to `mask` so that `mask` will
         broadcast against `vol`.  In the typical case `vol` can be 4D, `mask`
         can be 3D, and we append a 1 to the mask shape which (via numpy
-        broadcasting) has the effect of appling the 3D mask to each 3D slice
-        ``vol[..., 0]`` to ``vol[..., -1``.
+        broadcasting) has the effect of appling the 3D mask to each 3D slice in
+        `vol` (``vol[..., 0]`` to ``vol[..., -1``).
 
     Returns
     -------
@@ -120,16 +120,19 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
                 autocrop=False, b0Slices=None):
     """ Simple brain extraction tool method for images from DWI data
 
-    It uses a median filter smoothing of the input_volumes b0Slices and an
-    automatic histogram Otsu thresholding technique, hence the name medain_otsu.
+    It uses a median filter smoothing of the input_volumes `b0Slices` and an
+    automatic histogram Otsu thresholding technique, hence the name
+    *median_otsu*.
 
-    It mimics the MRtrix bet from the documentation.
-    (mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | median3D - mask.nii)
+    It mimics the ``MRtrix`` bet from the documentation::
 
-    MRtrix uses default mean_radius=3 and numpass=2
+        mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | \
+                median3D - mask.nii
+
+    ``MRtrix`` uses default ``mean_radius=3`` and ``numpass=2``
 
     However, from tests on multiple 1.5T and 3T data from GE, Philips, Siemens,
-    the most robust choice is median_radius=4, numpass=4
+    the most robust choice is ``median_radius=4``, ``numpass=4``
 
     Parameters
     ----------
@@ -144,8 +147,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
         resolution. (default False)
     b0Slices : None or array, optional
-        1D array representing indices of axis=3 of a 4D `input_volume` where
-        the acquisition b value == 0. None (the default) corresponds to (0,)
+        1D array representing indices of ``axis=3`` of a 4D `input_volume` where
+        the acquisition b value == 0. None (the default) corresponds to ``(0,)``
         (assumes first volume in 4D array is b == 0)
 
     Returns
