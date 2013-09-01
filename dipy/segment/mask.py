@@ -44,11 +44,14 @@ def applymask(vol, mask):
     Parameters
     ----------
     vol : ndarray
-        Volume to apply mask on. Can have same number of dimensions as `mask` or
-        more
+        Array with $V$ dimensions
     mask : ndarray
-        Binary mask.  Can have less dimensions than `vol`, in which case mask is
-        extended by appending extra dimensions.
+        Binary mask.  Has $M$ dimensions where $M <= V$. When $M < V$, we append
+        $V - M$ dimensions with axis length 1 to `mask` so that `mask` will
+        broadcast against `vol`.  In the typical case `vol` can be 4D, `mask`
+        can be 3D, and we append a 1 to the mask shape which (via numpy
+        broadcasting) has the effect of appling the 3D mask to each 3D slice
+        ``vol[..., 0]`` to ``vol[..., -1``.
 
     Returns
     -------
