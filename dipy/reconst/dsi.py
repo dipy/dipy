@@ -125,7 +125,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         # create qspace grid
         self.qgrid = create_qspace(gtab, self.origin)
         b0 = np.min(self.bvals)
-        self.dn = (self.bvals > b0).sum()
+        self.dn = (self.bvals > b0).sum() + 1
         self.gtab = gtab
 
     def fit(self, data):
@@ -256,29 +256,16 @@ class DiffusionSpectrumFit(OdfFit):
         if normalized:
             Pr = Pr / Pr.sum()
 
+        # create the r squared 3D matrix
         gridsize = self.qgrid_sz
-
-        bv = self.model.bvals
-        bmin = np.sort(bv)[1]
-        bv = np.sqrt(bv / bmin)
-        bv = np.floor(bv + .5)
-        radius = bv.max()
-        diameter = 2.0 * radius
-
-        # create the r squared 3D matrix, normalized in order to be gridsize
-        # independent
-        a = diameter * np.arange(gridsize) / (gridsize - 1)
-        x = np.tile(a, (gridsize, gridsize, 1)) - radius
-        y = np.tile(a.reshape(gridsize, 1), (gridsize, 1, gridsize)) - radius
-        z = np.tile(a.reshape(gridsize, 1, 1),
-                    (1, gridsize, gridsize)) - radius
+        center = gridsize // 2
+        a = np.arange(gridsize) - center
+        x = np.tile(a, (gridsize, gridsize, 1))
+        y = np.tile(a.reshape(gridsize, 1), (gridsize, 1, gridsize))
+        z = np.tile(a.reshape(gridsize, 1, 1), (1, gridsize, gridsize))
         r2 = x ** 2 + y ** 2 + z ** 2
-        
-        if normalized:
-            msd = np.sum(Pr * r2)
-        else:
-            msd = (np.sum(Pr * r2) / float((gridsize ** 3)))
 
+        msd = np.sum(Pr * r2) / float((gridsize ** 3))
         return msd
 
     def odf(self, sphere):
