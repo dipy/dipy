@@ -190,13 +190,7 @@ class DiffusionSpectrumFit(OdfFit):
         else:
             values = self.data
 
-        Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
-        # fill q-space
-        for i in range(self.dn):
-            qx, qy, qz = self.model.qgrid[i]
-            Sq[qx, qy, qz] += values[i]
-
-        rtop = Sq.sum()
+        rtop = values.sum()
 
         return rtop
 
