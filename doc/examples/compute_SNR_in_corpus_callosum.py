@@ -1,10 +1,10 @@
 """
-=================================================
-Corpus callosum segmentation and SNR computation.
-=================================================
+==============================
+Corpus callosum segmentation 
+==============================
 
 This example shows how to segment the corpus callosum from a raw DWI
-using the color fa as a threshold reference. 
+using the Colored Fractional Anisotropy as a threshold reference. 
 
 First import the necessary modules:
 """
@@ -18,7 +18,7 @@ from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
 """
 Download and read the data for this tutorial.
-Lets first load the data. We will use a dataset with 10 b0s and 
+Let's first load the data. We will use a dataset with 10 b0s and 
 150 non-b0s with b-value 2000.
 """
 
@@ -38,51 +38,50 @@ affine = img.get_affine()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-data.shape ``(81, 106, 76, 160)``
-
-The stanford dataset contains many b0s and diffusion images. In order to reduce
-computational burden for the sake of the example, we will select only one b0 and
-60 directions. Since we only want to do a threshold on the color fa using 
-tensor estimation, this should be enough for our example. 
+data.shape ``(81, 106, 76, 160)`` 
 """
 
-subset_b0 = (0,)
-subset_gd = tuple(range(10, 70))
-data_small = data[..., subset_b0 + subset_gd]
+# # Change for full data later on
 
-bvals_small = gtab.bvals[:, np.newaxis]
-bvals_small = bvals_small[subset_b0 + subset_gd, :].squeeze()
-# bvals is a 1d vec, so there should probably be a better way to do this...
-bvecs_small = gtab.bvecs[subset_b0 + subset_gd, :]
+# subset_b0 = tuple(range(0, 9))
+# subset_gd = tuple(range(10, 160))
+# data = data[..., subset_b0 + subset_gd]
 
-print('data_small.shape (%d, %d, %d, %d)' % data.shape)
-print('bvals_small.shape (%d)' % bvals_small.shape)
-print('bvecs_small.shape (%d, %d)' % bvecs_small.shape)
+# bvals_small = gtab.bvals[:, np.newaxis]
+# bvals_small = bvals_small[subset_b0 + subset_gd, :].squeeze()
+# # bvals is a 1d vec, so there should probably be a better way to do this...
+# bvecs_small = gtab.bvecs[subset_b0 + subset_gd, :]
+
+# print('data_small.shape (%d, %d, %d, %d)' % data.shape)
+# print('bvals_small.shape (%d)' % bvals_small.shape)
+# print('bvecs_small.shape (%d, %d)' % bvecs_small.shape)
+
+# """
+# data_small.shape ``(81, 106, 76, 61)``
+# bvals_small.shape ``(61, 3)``
+# bvecs_small.shape ``(61)``
+
+# We will now create a new gtab object for our smaller dataset using the functions
+# available in dipy.
+# """
+
+# from dipy.core.gradients import gradient_table_from_bvals_bvecs
+# gtab_small = gradient_table_from_bvals_bvecs(bvals_small, bvecs_small)
 
 """
-data_small.shape ``(81, 106, 76, 61)``
-bvals_small.shape ``(61, 3)``
-bvecs_small.shape ``(61)``
-
-We will now create a new gtab object for our smaller dataset using the functions
-available in dipy.
-"""
-
-from dipy.core.gradients import gradient_table_from_bvals_bvecs
-gtab_small = gradient_table_from_bvals_bvecs(bvals_small, bvecs_small)
-
-"""
-To further reduce the computation time, we will only estimate the tensor model 
+To reduce the computation time, we will only estimate the tensor model 
 inside the brain region by creating a mask without the background.
 (See the masking example for more details about this step)
 """
 
 from dipy.segment.mask import median_otsu
-b0_mask, mask = median_otsu(data_small[..., 0], 4, 4)
+b0_mask, mask = median_otsu(data[..., 0], 4, 4)
 
 """
-We can now do a first segmentation of the data using the cfa. We will also get 
-the rgb this way so we can further improve the masking if needed.
+We can now do a first segmentation of the data using the Colored Fractionnal 
+Anisotropy (or cfa). It encodes in a 3D volume the orientation of the diffusion.
+Red means that the principal direction of the tensor is in x, Green is for the 
+y direction and the z direction is encoded with blue.
 
 We know that the corpus callosum should be in the middle of the brain 
 and since the principal diffusion direction is the x axis, 
@@ -109,7 +108,7 @@ roi = (30, 50, 35, 80, 25, 50)
 CC_box = np.zeros_like(data[..., 0])
 CC_box[roi[0]:roi[1], roi[2]:roi[3], roi[4]:roi[5]] = 1
 
-mask_corpus_callosum, cfa = segment_from_dwi(data_small, gtab_small, CC_box, 
+mask_corpus_callosum, cfa = segment_from_dwi(data, gtab, CC_box, 
                                              threshold, mask=mask, return_cfa=True)
 
 """
@@ -152,7 +151,7 @@ Let's check the result of the segmentation using matplotlib.
 
 import matplotlib.pyplot as plt
 
-plt.figure('Corpus callosum segmentation')
+fig = plt.figure('Corpus callosum segmentation')
 plt.subplot(1, 2, 1)
 plt.title("Corpus callosum")
 plt.imshow((cfa[..., 0])[40, ...])
@@ -160,4 +159,4 @@ plt.imshow((cfa[..., 0])[40, ...])
 plt.subplot(1, 2, 2)
 plt.title("Corpus callosum mask with a threshold of (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f)" % threshold2)
 plt.imshow(mask_corpus_callosum_from_cfa[40, ...])
-plt.show()
+fig.savefig("Comparison_of_segmentation.png")
