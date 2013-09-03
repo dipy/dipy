@@ -41,33 +41,6 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 data.shape ``(81, 106, 76, 160)`` 
 """
 
-# # Change for full data later on
-
-# subset_b0 = tuple(range(0, 9))
-# subset_gd = tuple(range(10, 160))
-# data = data[..., subset_b0 + subset_gd]
-
-# bvals_small = gtab.bvals[:, np.newaxis]
-# bvals_small = bvals_small[subset_b0 + subset_gd, :].squeeze()
-# # bvals is a 1d vec, so there should probably be a better way to do this...
-# bvecs_small = gtab.bvecs[subset_b0 + subset_gd, :]
-
-# print('data_small.shape (%d, %d, %d, %d)' % data.shape)
-# print('bvals_small.shape (%d)' % bvals_small.shape)
-# print('bvecs_small.shape (%d, %d)' % bvecs_small.shape)
-
-# """
-# data_small.shape ``(81, 106, 76, 61)``
-# bvals_small.shape ``(61, 3)``
-# bvecs_small.shape ``(61)``
-
-# We will now create a new gtab object for our smaller dataset using the functions
-# available in dipy.
-# """
-
-# from dipy.core.gradients import gradient_table_from_bvals_bvecs
-# gtab_small = gradient_table_from_bvals_bvecs(bvals_small, bvecs_small)
-
 """
 To reduce the computation time, we will only estimate the tensor model 
 inside the brain region by creating a mask without the background.
@@ -95,6 +68,7 @@ maks if it's not bounded properly. Adjusting the cfa threshold and the roi
 location enables the function to segment any part of the brain based on 
 an orientation and spatial location criterion.
 
+HEY READ THIS BEFORE MERGING!!!!1111!!!11111!!!!1
 Note : Just as the threshold, roi could be supplied as a tuple, then made as a mask.
 although it means you can supply premade mask made by rough drawing for example,
 but we could probably try to support both if it's not too much of an hassle.
@@ -126,7 +100,6 @@ mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum, affine)
 
 nib.save(cfa_img, 'cfa.nii.gz')
 nib.save(mask_corpus_callosum_img, 'mask_corpus_callosum.nii.gz')
-
 
 
 """
