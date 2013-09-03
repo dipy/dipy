@@ -1,26 +1,24 @@
-import numpy as np
-import numpy.testing as npt
-from numpy.testing import assert_equal, run_module_suite
-from scipy.ndimage import generate_binary_structure, binary_dilation
-from scipy.ndimage.filters import median_filter
-from dipy.segment.mask import (median_otsu, otsu, binary_threshold,
-                               bounding_box, crop, applymask, multi_median)
 import warnings
 
+import numpy as np
+
+from scipy.ndimage import generate_binary_structure, binary_dilation
+from scipy.ndimage.filters import median_filter
+
+from ..mask import otsu, bounding_box, crop, applymask, multi_median
+
+from numpy.testing import assert_equal, run_module_suite
 
 
 def test_mask():
     vol = np.zeros((30, 30, 30))
     vol[15, 15, 15] = 1
-    
     struct = generate_binary_structure(3, 1)
     voln = binary_dilation(vol, structure=struct, iterations=4).astype('f4')
     initial = np.sum(voln > 0)
-
     mask = voln.copy()
-
     thresh = otsu(mask)
-    mask = binary_threshold(mask, thresh)
+    mask = mask > thresh
     initial_otsu = np.sum(mask > 0)
     assert_equal(initial_otsu, initial)
 
