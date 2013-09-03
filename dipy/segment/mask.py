@@ -263,7 +263,7 @@ def segment_from_dwi(data, gtab, ROI, threshold, mask=None, return_cfa=False):
     mask_cfa = segment_from_cfa(cfa, ROI, threshold)
 
     if return_cfa:
-        return (mask_cfa,cfa)
+        return (mask_cfa, cfa)
 
     return mask_cfa
 
@@ -290,12 +290,12 @@ def segment_from_cfa(cfa, ROI, threshold):
     if cfa.shape[-1] != 3:
         raise ValueError("cfa last dimension must be of length 3")
 
-    mask_ROI = np.squeeze((cfa[..., 0] >= threshold[0]) *
-                          (cfa[..., 0] <= threshold[1]) *
-                          (cfa[..., 1] >= threshold[2]) *
-                          (cfa[..., 1] <= threshold[3]) *
-                          (cfa[..., 2] >= threshold[4]) *
-                          (cfa[..., 2] <= threshold[5]) * ROI)
+    mask_ROI = (cfa[..., 0] >= threshold[0]) * \
+               (cfa[..., 0] <= threshold[1]) * \
+               (cfa[..., 1] >= threshold[2]) * \
+               (cfa[..., 1] <= threshold[3]) * \
+               (cfa[..., 2] >= threshold[4]) * \
+               (cfa[..., 2] <= threshold[5]) * ROI
 
     print ("Size of the mask :", np.count_nonzero(mask_ROI), "voxels out of", np.size(mask_ROI))
     return mask_ROI
