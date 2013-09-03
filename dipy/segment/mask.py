@@ -297,6 +297,5 @@ def segment_from_cfa(cfa, ROI, threshold):
                (cfa[..., 2] >= threshold[4]) * \
                (cfa[..., 2] <= threshold[5]) * ROI
 
-    print ("Size of the mask :", np.count_nonzero(mask_ROI), "voxels out of", np.size(mask_ROI))
     return mask_ROI
 >>>>>>> Added cc segmentation example
