@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_almost_equal, run_module_suite, assert_)
-from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
+from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peaks_from_model_parallel, peak_directions,
                               peak_directions_nl, minmax_normalize)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
@@ -178,6 +178,23 @@ def test_peaksFromModel():
     assert_array_equal(pam.qa[mask, 1:], 0.)
     assert_array_equal(pam.peak_indices[mask, 0], odf_argmax)
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
+
+
+def test_peaksFromModelParallel():
+    data = np.zeros((10, 2))
+    
+    #test equality with/without parralelisation
+    model = SimpleOdfModel()
+    pam_multi = peaks_from_model_parallel(model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+    pam_single = peaks_from_model(model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+
+    assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
+    assert_array_almost_equal(pam_multi.qa, pam_single.qa)
+    assert_array_almost_equal(pam_multi.peak_values, pam_single.peak_values)
+    assert_array_equal(pam_multi.peak_indices, pam_single.peak_indices)    
+    assert_array_almost_equal(pam_multi.peak_dirs, pam_single.peak_dirs)  
+    assert_array_almost_equal(pam_multi.shm_coeff, pam_single.shm_coeff)
+    assert_array_almost_equal(pam_multi.odf, pam_single.odf)
 
 
 def test_minmax_normalize():
