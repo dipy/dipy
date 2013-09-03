@@ -103,7 +103,7 @@ but we could probably try to support both if it's not too much of an hassle.
 
 from dipy.segment.mask import segment_from_dwi
 
-threshold = (0, 0.7, 0, 0.1, 0, 0.1)
+threshold = (0.7, 1, 0, 0.1, 0, 0.1)
 roi = (30, 50, 35, 80, 25, 50)
 
 CC_box = np.zeros_like(data[..., 0])
@@ -125,32 +125,13 @@ in the fibernavigator. Remember that the function works with values between
 cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
 mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum, affine)
 
-
 nib.save(cfa_img, 'cfa.nii.gz')
 nib.save(mask_corpus_callosum_img, 'mask_corpus_callosum.nii.gz')
 
-"""
-Let's check the result of the segmentation using fvtk.
-"""
 
-from dipy.data import get_sphere
-sphere = get_sphere('symmetric724')
-
-from dipy.viz import fvtk
-ren = fvtk.ren()
-
-cfa_crop = cfa[roi, ...]
-evals = tenfit.evals[20:50,55:85, 38:39]
-evecs = tenfit.evecs[20:50,55:85, 38:39]
-
-#tensor_odfs = tenmodel.fit(data_small[roi]).odf(sphere)
-
-fvtk.add(ren, cfa_crop)
-fvtk.add(ren, mask_corpus_callosum)
-fvtk.show(r)
 
 """
-The mask is not very good, so let's change the threshold and restart segmenting
+The mask is a bit small, so let's change the threshold and restart segmenting
 from the cfa using the corresponding function. Both of them do the same thing,
 but the segmentation from cfa is faster when you have it, since it doesn't need 
 to recompute the tensors in order to compute the cfa.
@@ -158,12 +139,25 @@ to recompute the tensors in order to compute the cfa.
 
 from dipy.segment.mask import segment_from_cfa
 
-threshold2 = (0, 0.6, 0, 0.1, 0, 0.1)
+threshold2 = (0.6, 1, 0, 0.1, 0, 0.1)
 mask_corpus_callosum_from_cfa = segment_from_cfa(cfa, CC_box, threshold2)
 
 mask_corpus_callosum_from_cfa_img = nib.Nifti1Image(mask_corpus_callosum_from_cfa, affine)
 nib.save(mask_corpus_callosum_from_cfa_img, 'mask_corpus_callosum_from_cfa.nii.gz')
 
 
-print('Saving illustration as cfa_mask.png')
-fvtk.record(ren, n_frames=1, out_path='cfa_mask.png', size=(800, 800))
+"""
+Let's check the result of the segmentation using matplotlib.
+"""
+
+import matplotlib.pyplot as plt
+
+plt.figure('Corpus callosum segmentation')
+plt.subplot(1, 2, 1)
+plt.title("Corpus callosum")
+plt.imshow((cfa[..., 0])[40, ...])
+
+plt.subplot(1, 2, 2)
+plt.title("Corpus callosum mask with a threshold of (%.1f, %.1f, %.1f, %.1f, %.1f, %.1f)" % threshold2)
+plt.imshow(mask_corpus_callosum_from_cfa[40, ...])
+plt.show()
