@@ -1,5 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
+from multiprocessing import cpu_count, Pool
+from itertools import repeat
 from warnings import warn, catch_warnings, simplefilter
 
 from ..utils.six.moves import xrange
@@ -151,6 +153,110 @@ def peak_directions(odf, sphere, relative_peak_threshold=.25,
 
 class PeaksAndMetrics(object):
     pass
+
+
+
+def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
+                     min_separation_angle, mask=None, return_odf=False,
+                     return_sh=True, gfa_thr=0, normalize_peaks=False,
+                     sh_order=8, sh_basis_type=None, ravel_peaks=False,
+                     npeaks=5, nbr_process=None):
+    """
+    Fits the model to data and computes peaks and metrics using multiprocessing
+
+    Parameters
+    ----------
+    See peaks_from_model function
+
+    nbr_process: int
+        Number of subprocess to use (default multiprocessing.cpu_count()).
+
+    """
+    if nbr_process is None:
+        nbr_process = cpu_count()
+
+    # no needs for multiprocessing
+    if nbr_process < 2 :
+        return peaks_from_model(model, data, sphere, relative_peak_threshold, min_separation_angle, mask, return_odf, return_sh, gfa_thr, normalize_peaks, sh_order, sh_basis_type, ravel_peaks, npeaks)
+
+    shape = list(data.shape)
+    data = np.reshape(data,(-1,shape[-1]))
+
+    n = data.shape[0]
+    chunk_size = int(np.ceil(n / nbr_process))
+    data_chunks = [data[i:i + chunk_size] for i in range(0, n, chunk_size)]
+
+    if mask is not None:
+        mask = mask.flatten()
+        mask_chunks = [mask[i:i + chunk_size] for i in range(0, n, chunk_size)]
+    else:
+        mask_chunks = [None] * nbr_process
+
+    pool = Pool(nbr_process)
+
+    pam_res = pool.map(__peaks_from_model_parallel_sub,
+            zip(repeat(model),
+                data_chunks,
+                repeat(sphere),
+                repeat(relative_peak_threshold),
+                repeat(min_separation_angle),
+                mask_chunks,
+                repeat(return_odf),
+                repeat(return_sh),
+                repeat(gfa_thr),
+                repeat(normalize_peaks),
+                repeat(sh_order),
+                repeat(sh_basis_type),
+                repeat(ravel_peaks),
+                repeat(npeaks)))
+
+    pam = PeaksAndMetrics()
+    pam.peak_dirs = np.zeros((data.shape[0], npeaks, 3), dtype='float64')
+    pam.peak_values = np.zeros((data.shape[0], npeaks,), dtype='float64')
+    pam.peak_indices = np.zeros((data.shape[0], npeaks,), dtype='int64')
+    pam.qa = np.zeros((data.shape[0], npeaks,), dtype='float64')
+    pam.gfa = np.zeros(data.shape[0], dtype='float64')
+    if return_odf:
+        pam.odf = np.zeros((data.shape[0], len(sphere.vertices)), dtype='float64')
+    else:
+        pam.odf = None
+    if return_sh:
+        n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+        pam.shm_coeff = np.zeros((data.shape[0], n_shm_coeff), dtype='float64')
+        pam.invB = pam_res[0].invB
+    else:
+        pam.shm_coeff = None
+        pam.invB = None
+
+    #copy sub process result arrays to a single result array
+    for i in range(nbr_process):
+        start_pos = i * chunk_size
+        end_pos = (i+1) * chunk_size
+        if start_pos >= data.shape[0]:
+            break
+        pam.gfa[start_pos : end_pos] = pam_res[i].gfa[:]
+        pam.peak_dirs[start_pos : end_pos] = pam_res[i].peak_dirs[:]
+        pam.peak_values[start_pos : end_pos] = pam_res[i].peak_values[:]
+        pam.peak_indices[start_pos : end_pos] = pam_res[i].peak_indices[:]
+        pam.qa[start_pos : end_pos] = pam_res[i].qa[:]
+
+        if return_sh:
+            pam.shm_coeff[start_pos : end_pos] = pam_res[i].shm_coeff[:]
+        if return_odf:
+            pam.odf[start_pos : end_pos] = pam_res[i].odf[:]
+
+    #reshape the metric to the original shape
+    pam.peak_dirs = np.reshape(pam.peak_dirs, shape[:-1] + [npeaks, 3])
+    pam.peak_values = np.reshape(pam.peak_values, shape[:-1] + [npeaks])
+    pam.peak_indices = np.reshape(pam.peak_indices, shape[:-1] + [npeaks])
+    pam.qa = np.reshape(pam.qa, shape[:-1] + [npeaks])
+    pam.gfa = np.reshape(pam.gfa, shape[:-1])
+
+    return pam
+
+
+def __peaks_from_model_parallel_sub(args):
+    return peaks_from_model(*args)
 
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
