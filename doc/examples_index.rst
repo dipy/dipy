@@ -20,6 +20,7 @@ Examples
    examples_built/segment_quickbundles
    examples_built/streamline_formats
    examples_built/warp_streamlines
+   examples_built/brain_extraction_dwi
 
 .. In order to build the examples, you'll need (on Debian)
     sudo apt-get install python-tables python-matplotib python-vtk

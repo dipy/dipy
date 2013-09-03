@@ -10,7 +10,9 @@ import scipy.optimize as opt
 
 from dipy.utils.six.moves import range
 from dipy.data import get_sphere
+from ..core.gradients import gradient_table
 from ..core.geometry import vector_norm
+from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 
@@ -82,8 +84,7 @@ def fractional_anisotropy(evals, axis=-1):
 
 def mean_diffusivity(evals, axis=-1):
     r"""
-    Mean Diffusivity (MD) of a diffusion tensor. Also, called
-    Apparent diffusion coefficient (ADC)
+    Mean Diffusivity (MD) of a diffusion tensor. 
 
     Parameters
     ----------
@@ -511,6 +512,35 @@ def sphericity(evals, axis=-1):
     return (3 * ev3) / evals.sum(0)
 
 
+def apparent_diffusion_coef(q_form, sphere):
+    r"""
+    Calculate the apparent diffusion coefficient (ADC) in each direction of a
+    sphere.
+        
+    Parameters
+    ----------
+    q_form : ndarray
+        The quadratic form of a tensor, or an array with quadratic forms of
+        tensors. Should be of shape (..., 3, 3)
+
+    sphere : a Sphere class instance
+        The ADC will be calculated for each of the vertices in the sphere
+        
+    Notes
+    -----
+    The calculation of ADC, relies on the following relationship:
+
+    .. math ::
+            ADC = \vec{b} Q \vec{b}^T
+
+    Where Q is the quadratic form of the tensor.
+    
+    """
+    bvecs = sphere.vertices
+    D = design_matrix(bvecs.T, np.ones(bvecs.shape[0]))[:, :6]
+    return -np.dot(lower_triangular(q_form), D.T)
+
+
 class TensorModel(object):
     """ Diffusion Tensor
     """
@@ -815,6 +845,22 @@ class TensorFit(object):
         return sphericity(self.evals)
 
     def odf(self, sphere):
+        """
+        The diffusion orientation distribution function (dODF). This is an
+        estimate of the diffusion distance in each direction
+
+        Parameters
+        ----------
+        sphere : Sphere class instance.
+            The dODF is calculated in the vertices of this input.
+
+        Returns
+        -------
+        odf : ndarray
+            The diffusion distance in every direction of the sphere in every
+            voxel in the input data.
+        
+        """
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
         projection = np.dot(sphere.vertices, self.evecs)
         with warnings.catch_warnings():
@@ -827,6 +873,84 @@ class TensorFit(object):
         # Move odf to be on the last dimension
         odf = np.rollaxis(odf, 0, odf.ndim)
         return odf
+
+    def adc(self, sphere):
+        r"""
+        Calculate the apparent diffusion coefficient (ADC) in each direction on
+        the sphere for each voxel in the data
+
+        Parameters
+        ----------
+        sphere : Sphere class instance
+
+        Returns
+        -------
+        adc : ndarray
+           The estimates of the apparent diffusion coefficient in every
+           direction on the input sphere
+
+        Notes
+        -----
+        The calculation of ADC, relies on the following relationship:
+
+        .. math ::
+
+            ADC = \vec{b} Q \vec{b}^T
+
+        Where Q is the quadratic form of the tensor.
+        """
+        return apparent_diffusion_coef(self.quadratic_form, sphere)
+
+
+    def predict(self, gtab, S0=1):
+        r"""
+        Given a model fit, predict the signal on the vertices of a sphere 
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+            This encodes the directions for which a prediction is made
+
+        S0 : float array
+           The mean non-diffusion weighted signal in each voxel. Default: 1 in
+           all voxels.
+           
+        Notes
+        -----
+        The predicted signal is given by:
+
+        .. math ::
+
+            S(\theta, b) = S_0 * e^{-b ADC}
+
+        Where:
+        .. math ::
+            ADC = \theta Q \theta^T
+
+        $\theta$ is a unit vector pointing at any direction on the sphere for
+        which a signal is to be predicted and $b$ is the b value provided in
+        the GradientTable input for that direction   
+        """
+        # Get a sphere to pass to the object's ADC function. The b0 vectors
+        # will not be on the unit sphere, but we still want them to be there,
+        # so that we have a consistent index for these, so that we can fill
+        # that in later on, so we suppress the warning here:
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sphere = Sphere(xyz=gtab.bvecs)
+
+        adc = self.adc(sphere)
+        # Predict!
+        if np.iterable(S0):
+            # If it's an array, we need to give it one more dimension:
+            S0 = S0[...,None] 
+        pred_sig = S0 * np.exp(-gtab.bvals * adc)
+
+        # The above evaluates to nan for the b0 vectors, so we predict the mean
+        # S0 for those, which is our best guess:
+        pred_sig[...,gtab.b0s_mask] = S0
+
+        return pred_sig
 
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
@@ -1315,7 +1439,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                 non_outlier_idx = np.where(residuals <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
-                if len(sigma>1):
+                if np.iterable(sigma):
                     this_sigma = sigma[non_outlier_idx]
                 else:
                     this_sigma = sigma
@@ -1488,13 +1612,13 @@ def decompose_tensor(tensor, min_diffusivity=0):
     return eigenvals, eigenvecs
 
 
-def design_matrix(gtab, bval, dtype=None):
+def design_matrix(bvecs, bval, dtype=None):
     """  Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
     Parameters
     ----------
-    gtab : array with shape (3,g)
+    bvecs : array with shape (3,g)
         Diffusion gradient table found in DICOM header as a numpy array.
     bval : array with shape (g,)
         Diffusion weighting factor b for each vector in gtab.
@@ -1507,9 +1631,9 @@ def design_matrix(gtab, bval, dtype=None):
         Design matrix or B matrix assuming Gaussian distributed tensor model
         design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
     """
-    G = gtab
-    B = np.zeros((bval.size, 7), dtype=G.dtype)
-    if gtab.shape[1] != bval.shape[0]:
+    G = bvecs
+    B = np.zeros((bvecs.shape[1], 7), dtype=G.dtype)
+    if bvecs.shape[1] != bval.shape[0]:
         raise ValueError('The number of b values and gradient directions must'
                           + ' be the same')
     B[:, 0] = G[0, :] * G[0, :] * 1. * bval   # Bxx
