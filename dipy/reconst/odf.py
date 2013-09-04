@@ -154,7 +154,8 @@ def peak_directions(odf, sphere, relative_peak_threshold=.25,
 class PeaksAndMetrics(object):
     pass
 
-
+from tempfile import mkdtemp
+import os.path as path
 
 def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
@@ -175,8 +176,9 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     if nbr_process is None:
         nbr_process = cpu_count()
 
-    # no needs for multiprocessing
+
     if nbr_process < 2 :
+        # no needs for multiprocessing
         return peaks_from_model(model, data, sphere, relative_peak_threshold, min_separation_angle, mask, return_odf, return_sh, gfa_thr, normalize_peaks, sh_order, sh_basis_type, ravel_peaks, npeaks)
 
     shape = list(data.shape)
@@ -193,7 +195,6 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         mask_chunks = [None] * nbr_process
 
     pool = Pool(nbr_process)
-
     pam_res = pool.map(__peaks_from_model_parallel_sub,
             zip(repeat(model),
                 data_chunks,
@@ -209,20 +210,22 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                 repeat(sh_basis_type),
                 repeat(ravel_peaks),
                 repeat(npeaks)))
-
+    pool.close()
+    data_chunks = None
     pam = PeaksAndMetrics()
-    pam.peak_dirs = np.zeros((data.shape[0], npeaks, 3), dtype='float64')
-    pam.peak_values = np.zeros((data.shape[0], npeaks,), dtype='float64')
-    pam.peak_indices = np.zeros((data.shape[0], npeaks,), dtype='int64')
-    pam.qa = np.zeros((data.shape[0], npeaks,), dtype='float64')
-    pam.gfa = np.zeros(data.shape[0], dtype='float64')
+    #memmap are used to reduce de memory usage
+    pam.gfa = np.memmap(path.join(mkdtemp(), 'gfa.dat'), dtype='float64', mode='w+', shape=(data.shape[0]))
+    pam.peak_dirs = np.memmap(path.join(mkdtemp(), 'peak_dirs.dat'), dtype='float64', mode='w+', shape=(data.shape[0], npeaks, 3))
+    pam.peak_values = np.memmap(path.join(mkdtemp(), 'peak_values.dat'), dtype='float64', mode='w+', shape=(data.shape[0], npeaks))
+    pam.peak_indices = np.memmap(path.join(mkdtemp(), 'peak_indices.dat'), dtype='int64', mode='w+', shape=(data.shape[0], npeaks))
+    pam.qa =  np.memmap(path.join(mkdtemp(), 'qa.dat'), dtype='float64', mode='w+', shape=(data.shape[0], npeaks))
     if return_odf:
-        pam.odf = np.zeros((data.shape[0], len(sphere.vertices)), dtype='float64')
+        pam.odf = np.memmap(path.join(mkdtemp(), 'qa.dat'), dtype='float64', mode='w+', shape=(data.shape[0], len(sphere.vertices)))
     else:
         pam.odf = None
     if return_sh:
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-        pam.shm_coeff = np.zeros((data.shape[0], n_shm_coeff), dtype='float64')
+        pam.shm_coeff = np.memmap(path.join(mkdtemp(), 'qa.dat'), dtype='float64', mode='w+', shape=(data.shape[0], n_shm_coeff))
         pam.invB = pam_res[0].invB
     else:
         pam.shm_coeff = None
@@ -251,7 +254,6 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     pam.peak_indices = np.reshape(pam.peak_indices, shape[:-1] + [npeaks])
     pam.qa = np.reshape(pam.qa, shape[:-1] + [npeaks])
     pam.gfa = np.reshape(pam.gfa, shape[:-1])
-
     return pam
 
 
