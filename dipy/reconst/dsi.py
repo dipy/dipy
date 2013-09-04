@@ -125,7 +125,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         # create qspace grid
         self.qgrid = create_qspace(gtab, self.origin)
         b0 = np.min(self.bvals)
-        self.dn = (self.bvals > b0).sum() + 1
+        self.dn = (self.bvals > b0).sum()
         self.gtab = gtab
 
     def fit(self, data):
@@ -153,7 +153,7 @@ class DiffusionSpectrumFit(OdfFit):
         self._peak_values = None
         self._peak_indices = None
 
-    def pdf(self):
+    def pdf(self, normalized=True):
         """ Applies the 3D FFT in the q-space grid to generate
         the diffusion propagator
         """
@@ -161,13 +161,19 @@ class DiffusionSpectrumFit(OdfFit):
         # create the signal volume
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
         # fill q-space
-        for i in range(self.dn):
+        for i in range(len(values)):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         # apply fourier transform
         Pr = fftshift(np.real(fftn(ifftshift(Sq),
                                    3 * (self.qgrid_sz, ))))
-        Pr[Pr < 0.0] = 0.0
+        # clipping negative values to 0 (ringing artefact)
+        Pr=np.clip(Pr,0,Pr.max())
+
+        # normalize the propagator to obtain a pdf
+        if normalized:
+            Pr/=Pr.sum()
+
         return Pr
 
     def rtop_signal(self, filtering=True):
@@ -211,11 +217,7 @@ class DiffusionSpectrumFit(OdfFit):
             the return to origin probability
         """
 
-        Pr = self.pdf()
-
-        # normalize in order to obtain a pdf
-        if normalized:
-            Pr = Pr / Pr.sum()
+        Pr = self.pdf(normalized=normalized)
 
         center = self.qgrid_sz // 2
 
@@ -244,11 +246,7 @@ class DiffusionSpectrumFit(OdfFit):
             the mean square displacement
         """
 
-        Pr = self.pdf()
-
-        # normalize in order to obtain a pdf
-        if normalized:
-            Pr = Pr / Pr.sum()
+        Pr = self.pdf(normalized=normalized)
 
         # create the r squared 3D matrix
         gridsize = self.qgrid_sz
@@ -524,7 +522,7 @@ class DiffusionSpectrumDeconvFit(DiffusionSpectrumFit):
         # create the signal volume
         Sq = np.zeros((self.qgrid_sz, self.qgrid_sz, self.qgrid_sz))
         # fill q-space
-        for i in range(self.dn):
+        for i in range(len(values)):
             qx, qy, qz = self.model.qgrid[i]
             Sq[qx, qy, qz] += values[i]
         # get deconvolution PSF
