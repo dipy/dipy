@@ -3,11 +3,10 @@ from scipy.ndimage import map_coordinates
 from scipy.fftpack import fftn, fftshift, ifftshift
 from dipy.reconst.odf import OdfModel, OdfFit, gfa
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_model
+from dipy.reconst.multi_voxel import multi_voxel_model, multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
-@multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
     def __init__(self,
@@ -128,6 +127,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.dn = (self.bvals > b0).sum()
         self.gtab = gtab
 
+    @multi_voxel_fit
     def fit(self, data):
         return DiffusionSpectrumFit(self, data)
 
