@@ -29,9 +29,9 @@ img contains a nibabel Nifti1Image object. Data is the actual brain data as a
 numpy ndarray.
 
 Segment the brain using dipy's mask module.
-`medostu` returns the segmented brain data an a binary mask of the brain.
+`medotsu` returns the segmented brain data and a binary mask of the brain.
 It is possible to fine tune the `median_otsu`'s parameters (median_radius and
-num_pass) if extraction yields incorrect results but the default parameters work
+num_pass) if extraction yields incorrect results, but the default parameters work
 well on most volumes. For this example, default parameters (4, 4) will be used.
 """
 
