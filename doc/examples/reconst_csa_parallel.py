@@ -8,11 +8,9 @@ See "Reconstruction with Constrained Spherical Deconvolution" example for interm
 First import the necessary modules:
 """
 
-import numpy as np
-import nibabel as nib
 import time
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
-from dipy.reconst.shm import CsaOdfModel, normalize_data
+from dipy.reconst.shm import CsaOdfModel
 from dipy.reconst.odf import peaks_from_model, peaks_from_model_parallel
 
 """
@@ -36,14 +34,6 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 """
 data.shape ``(81, 106, 76, 160)``
 
-Remove most of the background using dipy's mask module.
-"""
-
-from dipy.segment.mask import median_otsu
-
-maskdata, mask = median_otsu(data, 3, 2, True, range(0,10))
-
-"""
 We instantiate our CSA model with sperical harmonic order of 4
 """
 
@@ -62,25 +52,35 @@ sphere = get_sphere('symmetric724')
 
 start_time = time.time()
 csapeaks_parallel = peaks_from_model_parallel(model=csamodel,
-                            data=maskdata,
+                            data=data,
                             sphere=sphere,
                             relative_peak_threshold=.8,
                             min_separation_angle=45,
-                            mask=mask,
+                            mask=None,
                             return_odf=False,
                             normalize_peaks=True,
                             nbr_process=None)
 end_time = time.time()
-print("peaks_from_model_parallel ran in :" + str(end_time - start_time) + " seconds")
+print("peaks_from_model_parallel ran in: " + str(end_time - start_time) + " seconds")
+
+"""
+peaks_from_model_parallel ran in: 73.64686203 seconds
+"""
 
 start_time = time.time()
 csapeaks = peaks_from_model(model=csamodel,
-                            data=maskdata,
+                            data=data,
                             sphere=sphere,
                             relative_peak_threshold=.8,
                             min_separation_angle=45,
-                            mask=mask,
+                            mask=None,
                             return_odf=False,
                             normalize_peaks=True)
 end_time = time.time()
-print("peaks_from_model ran in :" + str(end_time - start_time) + " seconds")
+print("peaks_from_model ran in: " + str(end_time - start_time) + " seconds")
+"""
+peaks_from_model ran in: 204.913657188 seconds
+"""
+
+
+
