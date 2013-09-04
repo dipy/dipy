@@ -7,7 +7,6 @@ from numpy.testing import (assert_equal,
                            run_module_suite,
                            assert_array_equal,
                            assert_raises)
-from dipy.data import get_data, dsi_voxels
 from dipy.reconst.dsi import DiffusionSpectrumModel
 from dipy.sims.voxel import (
     SticksAndBall, MultiTensor, multi_tensor_odf, add_noise, )
