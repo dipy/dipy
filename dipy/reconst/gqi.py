@@ -3,11 +3,10 @@ import numpy as np
 from .odf import OdfModel, OdfFit, gfa
 from .cache import Cache
 import warnings
-from .multi_voxel import multi_voxel_model
+from .multi_voxel import multi_voxel_model, multi_voxel_fit
 from .recspeed import local_maxima, remove_similar_vertices
 
 
-@multi_voxel_model
 class GeneralizedQSamplingModel(OdfModel, Cache):
 
     def __init__(self,
@@ -77,6 +76,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         b_vector = gradsT * tmp # element-wise product
         self.b_vector = b_vector.T
 
+    @multi_voxel_fit
     def fit(self, data):
         return GeneralizedQSamplingFit(self, data)
 
@@ -205,7 +205,7 @@ def equatorial_maximum(vertices, odf, pole, width):
     #need to test for whether eqvert is empty or not
     if len(eqvert) == 0:
         print('empty equatorial band at %s  pole with width %f' % (np.array_str(pole), width))
-        return Null, Null
+        return None, None
     eqvals = [odf[i] for i in eqvert]
     eqargmax = np.argmax(eqvals)
     eqvertmax = eqvert[eqargmax]
