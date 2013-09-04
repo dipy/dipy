@@ -182,51 +182,6 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     return maskedvolume, mask
 
 
-<<<<<<< HEAD
-def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
-    """
-    Segment the cfa inside roi using the values from threshold as bounds.
-
-    Parameters
-    -------------
-    tensor_fit : TensorFit object
-        TensorFit object
-
-    roi : ndarray
-        A binary mask, which contains the bounding box for the segmentation.
-
-    threshold : array-like
-        An iterable that defines the min and max values to use for the thresholding.
-        The values are specified as (R_min, R_max, G_min, G_max, B_min, B_max)
-
-    return_cfa : bool, optional
-        If True, the cfa is also returned.
-
-    Returns
-    ----------
-    mask : ndarray
-        Binary mask of the segmentation.
-
-    cfa : ndarray, optional
-        Array with shape = (..., 3), where ... is the shape of tensor_fit.
-        The color fractional anisotropy, ordered as a nd array with the last
-        dimension of size 3 for the R, G and B channels.
-    """
-
-    FA = fractional_anisotropy(tensor_fit.evals)
-    FA[np.isnan(FA)] = 0
-    FA = np.clip(FA, 0, 1)  # Clamp the FA to remove degenerate tensors
-
-    cfa = color_fa(FA, tensor_fit.evecs)
-    roi = np.asarray(roi, dtype=bool)
-
-    mask = np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]), axis=-1)
-
-    if return_cfa:
-        return mask, cfa
-
-    return mask
-=======
 def segment_from_dwi(data, gtab, ROI, threshold, mask=None, return_cfa=False):
     """
     Takes a dwi, gtab and computes FA, cfa and a binary mask
@@ -290,12 +245,13 @@ def segment_from_cfa(cfa, ROI, threshold):
     if cfa.shape[-1] != 3:
         raise ValueError("cfa last dimension must be of length 3")
 
-    mask_ROI = (cfa[..., 0] >= threshold[0]) * \
-               (cfa[..., 0] <= threshold[1]) * \
-               (cfa[..., 1] >= threshold[2]) * \
-               (cfa[..., 1] <= threshold[3]) * \
-               (cfa[..., 2] >= threshold[4]) * \
-               (cfa[..., 2] <= threshold[5]) * ROI
+    # mask_ROI = (cfa[..., 0] >= threshold[0]) * \
+    #            (cfa[..., 0] <= threshold[1]) * \
+    #            (cfa[..., 1] >= threshold[2]) * \
+    #            (cfa[..., 1] <= threshold[3]) * \
+    #            (cfa[..., 2] >= threshold[4]) * \
+    #            (cfa[..., 2] <= threshold[5]) * ROI
 
-    return mask_ROI
->>>>>>> Added cc segmentation example
+    return np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
+
+    #return mask_ROI
