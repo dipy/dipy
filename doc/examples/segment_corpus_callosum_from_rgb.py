@@ -2,13 +2,19 @@
 Corpus callosum segmentation 
 ==============================
 
-This example shows how to roughly segment the corpus callosum from a raw DWI.
+This example shows how to extract voxels in the corpus callosum that are mainly
+oriented in the left-right direction from a raw DWI. These voxels will have a 
+high value of red in the Colored Fractional Anisotropy (cfa) map.
 The method uses the Colored Fractional Anisotropy as a threshold reference. 
-Thepurpose of the kind of segmentation is not to clearly separate the structure, 
-but rather to compute an automatic mask in order to compute various metrics
-in the region of interest later.
 
-First import the necessary modules:
+The purpose of this kind of segmentation is not to clearly separate the 
+structure, but rather to compute an automatic mask in order to compute various 
+SNR in the region of interest later.
+This gives a way to quantify the quality of the signal amongst various 
+diffusion orientation, which can change accordingly to the structure, the 
+composition and the orientation of the studied tissues.
+
+As a first step, import the necessary modules:
 """
 
 from __future__ import division, print_function
