@@ -243,11 +243,13 @@ def segment_from_cfa(cfa, ROI, threshold):
     if cfa.shape[-1] != 3:
         raise ValueError("cfa last dimension must be of length 3")
 
-    mask_ROI = (cfa[..., 0] >= threshold[0]) * \
-               (cfa[..., 0] <= threshold[1]) * \
-               (cfa[..., 1] >= threshold[2]) * \
-               (cfa[..., 1] <= threshold[3]) * \
-               (cfa[..., 2] >= threshold[4]) * \
-               (cfa[..., 2] <= threshold[5]) * ROI
+    # mask_ROI = (cfa[..., 0] >= threshold[0]) * \
+    #            (cfa[..., 0] <= threshold[1]) * \
+    #            (cfa[..., 1] >= threshold[2]) * \
+    #            (cfa[..., 1] <= threshold[3]) * \
+    #            (cfa[..., 2] >= threshold[4]) * \
+    #            (cfa[..., 2] <= threshold[5]) * ROI
 
-    return mask_ROI
+    return np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
+
+    #return mask_ROI
