@@ -200,8 +200,8 @@ def segment_from_dwi(data, gtab, ROI, threshold, mask=None, return_cfa=False):
             mask (optional) : binary mask to restrict the tensor model fitting
                 in order to save computation time.
 
-            return_cfa (default=False) : If True, returns a tuple containing the 
-                mask as the first element and the cfa as the second element. This 
+            return_cfa (default=False) : If True, returns a tuple containing the
+                mask as the first element and the cfa as the second element. This
                 way the segment_from_rgb function can then be used quickly.
     """
 
@@ -245,13 +245,5 @@ def segment_from_cfa(cfa, ROI, threshold):
     if cfa.shape[-1] != 3:
         raise ValueError("cfa last dimension must be of length 3")
 
-    # mask_ROI = (cfa[..., 0] >= threshold[0]) * \
-    #            (cfa[..., 0] <= threshold[1]) * \
-    #            (cfa[..., 1] >= threshold[2]) * \
-    #            (cfa[..., 1] <= threshold[3]) * \
-    #            (cfa[..., 2] >= threshold[4]) * \
-    #            (cfa[..., 2] <= threshold[5]) * ROI
-
-    return np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
-
-    #return mask_ROI
+    # Nibabel doesn't save binary data, so we upcast to something else
+    return np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1).astype('int8')
