@@ -101,7 +101,8 @@ CC_box[bounds_min[0]:bounds_max[0],
        bounds_min[1]:bounds_max[1],
        bounds_min[2]:bounds_max[2]] = 1
 
-mask_corpus_callosum, cfa = segment_from_cfa(tensorfit, CC_box, threshold)
+mask_corpus_callosum, cfa = segment_from_cfa(tensorfit, CC_box,
+                                             threshold, return_cfa=True)
 
 print ("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
        "voxels out of", np.size(CC_box))
@@ -131,12 +132,12 @@ CC_box[bounds_min[0]:50,
        bounds_min[1]:bounds_max[1],
        bounds_min[2]:bounds_max[2]] = 1
 
-mask_corpus_callosum_from_cfa = segment_from_cfa(tensorfit, CC_box, threshold2)
+mask_corpus_callosum2 = segment_from_cfa(tensorfit, CC_box, threshold2)
 
-mask_corpus_callosum_from_cfa_img = nib.Nifti1Image(mask_corpus_callosum_from_cfa.astype('int8'), affine)
-nib.save(mask_corpus_callosum_from_cfa_img, 'mask_corpus_callosum_from_cfa.nii.gz')
+mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype('int8'), affine)
+nib.save(mask_corpus_callosum2_img, 'mask_corpus_callosum2.nii.gz')
 
-print ("Size of the mask :", np.count_nonzero(mask_corpus_callosum_from_cfa), \
+print ("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
        "voxels out of", np.size(CC_box))
 
 """Let's check the result of the second segmentation using matplotlib.
@@ -151,5 +152,5 @@ plt.imshow((cfa[..., 0])[region, ...])
 
 plt.subplot(1, 2, 2)
 plt.title("Corpus callosum segmentation")
-plt.imshow(mask_corpus_callosum_from_cfa[region, ...])
+plt.imshow(mask_corpus_callosum2[region, ...])
 fig.savefig("Comparison_of_segmentation.png")
