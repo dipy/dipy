@@ -182,7 +182,7 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     return maskedvolume, mask
 
 
-def segment_from_cfa(tensorfit, ROI, threshold):
+def segment_from_cfa(tensorfit, ROI, threshold, return_cfa=False):
     """
     Segment the cfa inside ROI using the values from threshold as bounds.
 
@@ -198,10 +198,17 @@ def segment_from_cfa(tensorfit, ROI, threshold):
         An iterable that defines the min and max values to use for the thresholding.
         The values are specified as (R_min, R_max, G_min, G_max, B_min, B_max)
 
+    return_cfa : bool, optionnal
+        If True, the cfa is also returned.
+
     Returns
     ----------
-    ndarray (bool)
+    mask : ndarray
         Binary mask of the segmentation.
+
+    cfa : nd+1 array, optionnal
+        The color fractional anisotropy, ordered as a nd array with the last
+        dimension of size 3 for the R, G and B channels.
     """
 
     FA = fractional_anisotropy(tensorfit.evals)
@@ -210,4 +217,9 @@ def segment_from_cfa(tensorfit, ROI, threshold):
 
     cfa = color_fa(FA, tensorfit.evecs)
 
-    return np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
+    mask = np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
+
+    if return_cfa:
+        return mask, cfa
+
+    return mask
