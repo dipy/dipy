@@ -55,9 +55,18 @@ inside the brain region by creating a mask without the background.
 from dipy.segment.mask import median_otsu
 b0_mask, mask = median_otsu(data)
 
+"""We also need to fit a tensor model on the data in order to compute the cfa.
+(This is the subject of another example).
+"""
+
+from dipy.reconst.dti import TensorModel
+print ("Now fitting tensor model")
+tenmodel = TensorModel(gtab)
+tensorfit = tenmodel.fit(data, mask=mask)
+
 """We can now do a first segmentation of the data using the Colored Fractional
 Anisotropy (or cfa). It encodes in a 3D volume the orientation of the diffusion.
-Red means that the principal direction of the tensor is in x, Green is for the
+Red means that the principal direction of the tensor is in x, green is for the
 y direction and the z direction is encoded with blue.
 
 We know that the corpus callosum should be in the middle of the brain
@@ -75,7 +84,7 @@ bounding box from the segmentation of the brain, just in case the subject was no
 centered properly.
 """
 
-from dipy.segment.mask import segment_from_dwi
+from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
 threshold = (0.7, 1, 0, 0.1, 0, 0.1)
@@ -92,36 +101,28 @@ CC_box[bounds_min[0]:bounds_max[0],
        bounds_min[1]:bounds_max[1],
        bounds_min[2]:bounds_max[2]] = 1
 
-mask_corpus_callosum, cfa = segment_from_dwi(data, gtab, CC_box,
-                                             threshold, mask=mask, return_cfa=True)
+mask_corpus_callosum, cfa = segment_from_cfa(tensorfit, CC_box, threshold)
 
 print ("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
        "voxels out of", np.size(CC_box))
 
 """We can save the produced dataset with nibabel to visualize them later on.
-This way, we can also redo a segmentation of another region using the cfa instead
-of recomputing everything everytime.
 
 Note that we save the cfa with values between 0 and 255 for visualization purpose
 in the fibernavigator. Remember that the function works with values between
-0 and 1, but it will warn you if it's not the case.
+0 and 1, but it will warn you if the supplied values do not fall in this range.
 """
 
 cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
-mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum, affine)
+mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum.astype('int8'), affine)
 
 nib.save(cfa_img, 'cfa.nii.gz')
 nib.save(mask_corpus_callosum_img, 'mask_corpus_callosum.nii.gz')
 
 
 """The mask bled a little because of the medotsu segmentation, so let's change the
-threshold, the bounding box  and restart segmenting from the cfa using the
-corresponding function. Both of them do the same thing, but the segmentation
-from cfa is faster when you have it, since it doesn't need to recompute the
-tensors in order to compute the cfa.
+threshold, the bounding box  and restart segmenting from the cfa.
 """
-
-from dipy.segment.mask import segment_from_cfa
 
 threshold2 = (0.6, 1, 0, 0.1, 0, 0.1)
 
@@ -130,9 +131,9 @@ CC_box[bounds_min[0]:50,
        bounds_min[1]:bounds_max[1],
        bounds_min[2]:bounds_max[2]] = 1
 
-mask_corpus_callosum_from_cfa = segment_from_cfa(cfa, CC_box, threshold2)
+mask_corpus_callosum_from_cfa = segment_from_cfa(tensorfit, CC_box, threshold2)
 
-mask_corpus_callosum_from_cfa_img = nib.Nifti1Image(mask_corpus_callosum_from_cfa, affine)
+mask_corpus_callosum_from_cfa_img = nib.Nifti1Image(mask_corpus_callosum_from_cfa.astype('int8'), affine)
 nib.save(mask_corpus_callosum_from_cfa_img, 'mask_corpus_callosum_from_cfa.nii.gz')
 
 print ("Size of the mask :", np.count_nonzero(mask_corpus_callosum_from_cfa), \
