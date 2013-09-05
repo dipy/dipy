@@ -182,68 +182,32 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     return maskedvolume, mask
 
 
-def segment_from_dwi(data, gtab, ROI, threshold, mask=None, return_cfa=False):
+def segment_from_cfa(tensorfit, ROI, threshold):
     """
-    Takes a dwi, gtab and computes FA, cfa and a binary mask
-    estimation of the supplied ROI according to a threshold on the cfa.
+    Segment the cfa inside ROI using the values from threshold as bounds.
 
-    Input : data : ndarray containing a diffusion volume.
+    Parameters:
+    -------------
+    tensorfit : tensorfit object
+        tensorfit object
 
-            gtab : a gtab object for the tensor model fitting.
+    ROI : ndarray
+        A binary mask, which contains the bounding box for the segmentation.
 
-            ROI : ndarray, binary mask in which to restrict the segmentation.
-                  If the region is too big, the mask will bleed out.
+    threshold : array-like
+        An iterable that defines the min and max values to use for the thresholding.
+        The values are specified as (R_min, R_max, G_min, G_max, B_min, B_max)
 
-            threshold : array-like : threshold to apply between 0 and 1 in R, G, and B
-                It must be supplied as (r_min, r_max, g_min, g_max, b_min, b_max).
-
-            mask (optional) : binary mask to restrict the tensor model fitting
-                in order to save computation time.
-
-            return_cfa (default=False) : If True, returns a tuple containing the
-                mask as the first element and the cfa as the second element. This
-                way the segment_from_rgb function can then be used quickly.
+    Returns
+    ----------
+    ndarray (bool)
+        Binary mask of the segmentation.
     """
 
-    print ("Now fitting tensor model")
-    tenmodel = TensorModel(gtab)
-    tenfit = tenmodel.fit(data, mask=mask)
-
-    FA = fractional_anisotropy(tenfit.evals)
+    FA = fractional_anisotropy(tensorfit.evals)
     FA[np.isnan(FA)] = 0
     FA = np.clip(FA, 0, 1)  # Clamp the FA to remove degenerate tensors
 
-    cfa = color_fa(FA, tenfit.evecs)
+    cfa = color_fa(FA, tensorfit.evecs)
 
-    mask_cfa = segment_from_cfa(cfa, ROI, threshold)
-
-    if return_cfa:
-        return (mask_cfa, cfa)
-
-    return mask_cfa
-
-
-def segment_from_cfa(cfa, ROI, threshold):
-    """
-    Input : numpy ndarray : cfa between 0 and 1
-            numpy ndarray : 3D binary mask of the ROI to segment by threshold
-            array-like : threshold to apply between 0 and 1 in R, G, and B
-            It must be supplied as (r_min, r_max, g_min, g_max, b_min, b_max)
-
-    Output : Binary mask of the ROI with voxels that are between the supplied threshold
-    """
-
-    if len(threshold) != 6:
-        raise ValueError("threshold must be of length 6")
-
-    if (np.min(threshold) < 0 or np.max(threshold) > 1):
-        raise ValueError("threshold must be between 0 and 1")
-
-    if (np.min(cfa) < 0 or np.max(cfa) > 1):
-        raise ValueError("cfa must be between 0 and 1")
-
-    if cfa.shape[-1] != 3:
-        raise ValueError("cfa last dimension must be of length 3")
-
-    # Nibabel doesn't save binary data, so we upcast to something else
-    return np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1).astype('int8')
+    return np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
