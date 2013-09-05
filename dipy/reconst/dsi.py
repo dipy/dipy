@@ -168,11 +168,11 @@ class DiffusionSpectrumFit(OdfFit):
         Pr = fftshift(np.real(fftn(ifftshift(Sq),
                                    3 * (self.qgrid_sz, ))))
         # clipping negative values to 0 (ringing artefact)
-        Pr=np.clip(Pr,0,Pr.max())
+        Pr = np.clip(Pr, 0, Pr.max())
 
         # normalize the propagator to obtain a pdf
         if normalized:
-            Pr/=Pr.sum()
+            Pr /= Pr.sum()
 
         return Pr
 
