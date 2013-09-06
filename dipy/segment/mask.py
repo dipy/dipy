@@ -182,14 +182,14 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     return maskedvolume, mask
 
 
-def segment_from_cfa(tensorfit, ROI, threshold, return_cfa=False):
+def segment_from_cfa(TensorFit, ROI, threshold, return_cfa=False):
     """
     Segment the cfa inside ROI using the values from threshold as bounds.
 
     Parameters
     -------------
-    tensorfit : tensorfit object
-        tensorfit object
+    TensorFit : TensorFit object
+        TensorFit object
 
     ROI : ndarray
         A binary mask, which contains the bounding box for the segmentation.
@@ -211,11 +211,11 @@ def segment_from_cfa(tensorfit, ROI, threshold, return_cfa=False):
         dimension of size 3 for the R, G and B channels.
     """
 
-    FA = fractional_anisotropy(tensorfit.evals)
+    FA = fractional_anisotropy(TensorFit.evals)
     FA[np.isnan(FA)] = 0
     FA = np.clip(FA, 0, 1)  # Clamp the FA to remove degenerate tensors
 
-    cfa = color_fa(FA, tensorfit.evecs)
+    cfa = color_fa(FA, TensorFit.evecs)
 
     mask = np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
 
