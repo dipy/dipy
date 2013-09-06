@@ -6,7 +6,7 @@ This example shows how to extract voxels in the corpus callosum where the
 diffusion is mainly oriented in the left-right direction from a raw DWI.
 These voxels will have a high value of red in the
 Colored Fractional Anisotropy (cfa) map.
-The method uses the Colored Fractional Anisotropy as a threshold reference.
+The method uses the colored fractional anisotropy as a threshold reference.
 
 The purpose of this kind of segmentation is not to clearly separate the
 structure, but rather to compute an automatic mask in order to compute various
