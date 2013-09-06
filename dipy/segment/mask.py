@@ -186,7 +186,7 @@ def segment_from_cfa(tensorfit, ROI, threshold, return_cfa=False):
     """
     Segment the cfa inside ROI using the values from threshold as bounds.
 
-    Parameters:
+    Parameters
     -------------
     tensorfit : tensorfit object
         tensorfit object
