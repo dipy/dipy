@@ -198,7 +198,7 @@ def segment_from_cfa(TensorFit, ROI, threshold, return_cfa=False):
         An iterable that defines the min and max values to use for the thresholding.
         The values are specified as (R_min, R_max, G_min, G_max, B_min, B_max)
 
-    return_cfa : bool, optionnal
+    return_cfa : bool, optional
         If True, the cfa is also returned.
 
     Returns
@@ -206,7 +206,8 @@ def segment_from_cfa(TensorFit, ROI, threshold, return_cfa=False):
     mask : ndarray
         Binary mask of the segmentation.
 
-    cfa : nd+1 array, optionnal
+    cfa : ndarray, optional
+        Array with shape = (..., 3), where ... is the shape of TensorFit.
         The color fractional anisotropy, ordered as a nd array with the last
         dimension of size 3 for the R, G and B channels.
     """
