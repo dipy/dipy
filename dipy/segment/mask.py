@@ -182,16 +182,16 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     return maskedvolume, mask
 
 
-def segment_from_cfa(TensorFit, ROI, threshold, return_cfa=False):
+def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
     """
-    Segment the cfa inside ROI using the values from threshold as bounds.
+    Segment the cfa inside roi using the values from threshold as bounds.
 
     Parameters
     -------------
-    TensorFit : TensorFit object
+    tensor_fit : TensorFit object
         TensorFit object
 
-    ROI : ndarray
+    roi : ndarray
         A binary mask, which contains the bounding box for the segmentation.
 
     threshold : array-like
@@ -207,18 +207,18 @@ def segment_from_cfa(TensorFit, ROI, threshold, return_cfa=False):
         Binary mask of the segmentation.
 
     cfa : ndarray, optional
-        Array with shape = (..., 3), where ... is the shape of TensorFit.
+        Array with shape = (..., 3), where ... is the shape of tensor_fit.
         The color fractional anisotropy, ordered as a nd array with the last
         dimension of size 3 for the R, G and B channels.
     """
 
-    FA = fractional_anisotropy(TensorFit.evals)
+    FA = fractional_anisotropy(tensor_fit.evals)
     FA[np.isnan(FA)] = 0
     FA = np.clip(FA, 0, 1)  # Clamp the FA to remove degenerate tensors
 
-    cfa = color_fa(FA, TensorFit.evecs)
+    cfa = color_fa(FA, tensor_fit.evecs)
 
-    mask = np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & ROI[..., None]), axis=-1)
+    mask = np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]), axis=-1)
 
     if return_cfa:
         return mask, cfa
