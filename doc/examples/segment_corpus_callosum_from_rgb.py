@@ -73,8 +73,8 @@ We know that the corpus callosum should be in the middle of the brain
 and since the principal diffusion direction is the x axis,
 the red channel should be the highest in the cfa.
 
-Let's pick a threshold of 0.7 in the x axis and 0.1 in the y and z axis as a
-segmentation threshold.
+Let's pick a range of 0.7 to 1 in the x axis and 0 to 0.1 in the y and z axis
+as a segmentation threshold.
 
 We will also define a rough roi, since noisy pixels could be considered in the
 mask if it's not bounded properly. Adjusting the cfa threshold and the roi
