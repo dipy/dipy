@@ -9,10 +9,10 @@ Colored Fractional Anisotropy (cfa) map.
 The method uses the colored fractional anisotropy as a threshold reference.
 
 The purpose of this kind of segmentation is not to clearly separate the
-structure, but rather to compute an automatic mask in order to compute various
+structure, but rather to compute an automatic mask in order to compute the
 SNR in the region of interest later.
 This gives a way to quantify the quality of the signal amongst various
-diffusion orientation, which can change accordingly to the structure, the
+diffusion orientations, which can change according to the structure, the
 composition and the orientation of the studied tissues.
 
 As a first step, import the necessary modules:
@@ -60,7 +60,7 @@ b0_mask, mask = median_otsu(data)
 """
 
 from dipy.reconst.dti import TensorModel
-print ("Now fitting tensor model")
+print("Now fitting tensor model")
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
 
@@ -79,7 +79,7 @@ segmentation threshold.
 We will also define a rough roi, since noisy pixels could be considered in the
 mask if it's not bounded properly. Adjusting the cfa threshold and the roi
 location enables the function to segment any part of the brain based on
-an orientation and spatial location criterion. For now, we will pick half of the
+an orientation and spatial location. For now, we will pick half of the
 bounding box from the segmentation of the brain, just in case the subject was not
 centered properly.
 """
@@ -104,7 +104,7 @@ CC_box[bounds_min[0]:bounds_max[0],
 mask_corpus_callosum, cfa = segment_from_cfa(tensorfit, CC_box,
                                              threshold, return_cfa=True)
 
-print ("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
+print("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
        "voxels out of", np.size(CC_box))
 
 """We can save the produced dataset with nibabel to visualize them later on.
@@ -137,7 +137,7 @@ mask_corpus_callosum2 = segment_from_cfa(tensorfit, CC_box, threshold2)
 mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype('int8'), affine)
 nib.save(mask_corpus_callosum2_img, 'mask_corpus_callosum2.nii.gz')
 
-print ("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
+print("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
        "voxels out of", np.size(CC_box))
 
 """Let's check the result of the second segmentation using matplotlib.
