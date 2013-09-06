@@ -109,8 +109,8 @@ print("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
 
 """We can save the produced dataset with nibabel to visualize them later on.
 
-Note that we save the cfa with values between 0 and 255 for visualization purpose
-in the fibernavigator. Remember that the function works with values between
+Note that we save the cfa with values between 0 and 255 for visualization purpose.
+Remember that the function works with values between
 0 and 1, but it will warn you if the supplied values do not fall in this range.
 """
 
