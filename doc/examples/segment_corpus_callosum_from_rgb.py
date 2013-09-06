@@ -1,6 +1,6 @@
-"""==============================
-Corpus callosum segmentation
-==============================
+"""============================================
+Computing SNR estimation in the corpus callosum
+===============================================
 
 This example shows how to extract voxels in the corpus callosum where the
 diffusion is mainly oriented in the left-right direction from a raw DWI.
