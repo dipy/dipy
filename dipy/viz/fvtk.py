@@ -207,10 +207,46 @@ def _lookup(colors):
     return lut
 
 
-def pretty_line(lines, colors, linewidth=0.15, tube_sides=8):
+def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8):
     """ Uses streamtubes to visualize curves
+
+    lines : list
+        list of N curves represented as 2D ndarrays
+    colors : array (N, 3) or tuple (3,)
+    opacity : float
+    linewidth : float
+    tube_sides : int
+
+    Examples
+    --------
+    >>> from dipy.viz import fvtk
+    >>> r=fvtk.ren()
+    >>> lines=[np.random.rand(10, 3), np.random.rand(20, 3)]
+    >>> colors=np.random.rand(2, 3)
+    >>> c=fvtk.streamtube(lines, colors)
+    >>> fvtk.add(r,c)
+    >>> #fvtk.show(r)
+
+    Notes
+    -----
+    Streamtubes can be heavy on GPU when loading many streamlines and therefore,
+    you may experience slow rendering time depending on system GPU. A solution
+    to this problem is to reduce the number of points in each streamline. In Dipy
+    we provide an algorithm that will reduce the number of points on the straighter
+    parts of the streamline but keep more points on the curvier parts. This can
+    be used in the following way
+
+    from dipy.tracking.distances import approx_polygon_track
+    lines = [approx_polygon_track(line, 0.2) for line in lines]
+
+
     """
+
     points = vtk.vtkPoints()
+
+    colors = np.asarray(colors)
+    if colors.ndim == 1:
+        colors = np.tile(colors, (len(lines), 1))
 
     # Create the polyline.
     streamlines = vtk.vtkCellArray()
@@ -261,8 +297,7 @@ def pretty_line(lines, colors, linewidth=0.15, tube_sides=8):
     profile.GetProperty().BackfaceCullingOn()
     profile.SetNumberOfCloudPoints(10**4)
     profile.GetProperty().SetPointSize(5)
-    print(profile.GetNumberOfCloudPoints())
-
+    profile.GetProperty().SetOpacity(opacity)
 
     return profile
 
@@ -1731,8 +1766,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
 
 def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
            out_path=None, path_numbering=False, n_frames=10, az_ang=10,
-           magnification=1, size=(300, 300), bgr_color=(0, 0, 0),
-           verbose=False):
+           magnification=1, size=(300, 300), verbose=False):
     ''' This will record a video of your scene
 
     Records a video as a series of ``.png`` files of your scene by rotating the
@@ -1771,7 +1805,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     '''
     if ren == None:
         ren = vtk.vtkRenderer()
-    ren.SetBackground(bgr_color)
+
     renWin = vtk.vtkRenderWindow()
     renWin.AddRenderer(ren)
     renWin.SetSize(size[0], size[1])

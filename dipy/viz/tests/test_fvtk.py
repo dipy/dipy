@@ -20,6 +20,11 @@ def test_fvtk_functions():
     c = fvtk.line(lines, colors)
     fvtk.add(r, c)
 
+    # create streamtubes of the same lines and shift them a bit
+    c2 = fvtk.streamtube(lines, colors)
+    c2.SetPosition(2, 0, 0)
+    fvtk.add(r, c2)
+
     # Create a volume and return a volumetric actor using volumetric rendering
     vol = 100 * np.random.rand(100, 100, 100)
     vol = vol.astype('uint8')
@@ -53,12 +58,12 @@ def test_fvtk_ellipsoid():
     from dipy.data import get_sphere
 
     sphere = get_sphere('symmetric724')
-    
+
     ren = fvtk.ren()
 
     fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere=sphere))
 
     fvtk.add(ren, fvtk.tensor(mevals, mevecs, np.ones(mevals.shape), sphere=sphere))
-    
+
     assert_equal(ren.GetActors().GetNumberOfItems(), 2)
 
