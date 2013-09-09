@@ -467,7 +467,30 @@ def dots(points, color=(1, 0, 0), opacity=1):
     return aPolyVertexActor
 
 
-def point(points, colors, opacity=1, point_radius=0.1, theta=3, phi=3):
+def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
+    """ Visualize points as sphere glyphs
+
+    Parameters
+    ----------
+    points : ndarray, shape (N, 3)
+    colors : ndarray (N,3) or tuple (3,)
+    point_radius : float
+    theta : int
+    phi : int
+
+    Returns
+    -------
+    vtkActor
+
+    Examples
+    --------
+    >>> from dipy.viz import fvtk
+    >>> ren = fvtk.ren()
+    >>> pts = np.random.rand(5, 3)
+    >>> point_actor = fvtk.point(pts, fvtk.colors.coral)
+    >>> fvtk.add(ren, point_actor)
+    >>> #fvtk.show(ren)
+    """
 
     if np.array(colors).ndim == 1:
         # return dots(points,colors,opacity)
@@ -484,10 +507,8 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=3, phi=3):
         pts.InsertNextPoint(p[0], p[1], p[2])
         scalars.InsertNextTuple3(
             round(255 * colors[cnt_colors][0]), round(255 * colors[cnt_colors][1]), round(255 * colors[cnt_colors][2]))
-        # scalars.InsertNextTuple3(255,255,255)
         cnt_colors += 1
 
-    # src = vtk.vtkPointSource()
     src = vtk.vtkSphereSource()
     src.SetRadius(point_radius)
     src.SetThetaResolution(theta)
@@ -517,31 +538,6 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=3, phi=3):
     return actor
 
 
-def sphere(position=(0, 0, 0), radius=0.5, thetares=8, phires=8,
-           color=(0, 0, 1), opacity=1, tessel=0):
-    ''' Create a sphere actor
-    '''
-    sphere = vtk.vtkSphereSource()
-    sphere.SetRadius(radius)
-    sphere.SetLatLongTessellation(tessel)
-
-    sphere.SetThetaResolution(thetares)
-    sphere.SetPhiResolution(phires)
-
-    spherem = vtk.vtkPolyDataMapper()
-    if major_version <= 5:
-        spherem.SetInput(sphere.GetOutput())
-    else:
-        spherem.SetInputData(sphere.GetOutput())
-    spherea = vtk.vtkActor()
-    spherea.SetMapper(spherem)
-    spherea.SetPosition(position)
-    spherea.GetProperty().SetColor(color)
-    spherea.GetProperty().SetOpacity(opacity)
-
-    return spherea
-
-
 def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
           color=(1, 1, 1)):
 
@@ -563,12 +559,12 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
         Label color as ``(r,g,b)`` tuple.
 
     Returns
-    ----------
+    -------
     l : vtkActor object
         Label.
 
     Examples
-    ----------
+    --------
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()
     >>> l=fvtk.label(r)
