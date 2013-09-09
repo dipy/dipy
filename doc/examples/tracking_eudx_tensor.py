@@ -71,7 +71,7 @@ the peaks and odf_vertices are the vertices of the input sphere.
 
 from dipy.tracking.eudx import EuDX
 
-eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000*2, odf_vertices = sphere.vertices, a_low=0.2)
+eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000, odf_vertices = sphere.vertices, a_low=0.2)
 
 tensor_streamlines = [streamline for streamline in eu]
 
@@ -114,7 +114,7 @@ except ImportError:
 Create a scene.
 """
 
-r=fvtk.ren()
+ren = fvtk.ren()
 
 """
 Every streamline will be coloured according to its orientation
@@ -126,15 +126,13 @@ from dipy.viz.colormap import line_colors
 fvtk.line adds a streamline actor for streamline visualization
 and fvtk.add adds this actor in the scene
 """
-from dipy.tracking.distances import approx_polygon_track
-from dipy.tracking.metrics import length
 
-tensor_streamlines = [approx_polygon_track(s, 0.2) for s in tensor_streamlines if length(s) > 40]
-
-fvtk.add(r, fvtk.pretty_line(tensor_streamlines, line_colors(tensor_streamlines)))
+fvtk.add(ren, fvtk.streamtube(tensor_streamlines, line_colors(tensor_streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
-fvtk.record(r, n_frames=1, out_path='tensor_tracking.png', size=(600, 600))
+
+ren.SetBackground(1, 1, 1)
+fvtk.record(ren, n_frames=1, out_path='tensor_tracks.png', size=(600, 600))
 
 """
 .. figure:: tensor_tracking.png
