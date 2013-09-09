@@ -30,35 +30,7 @@ from ..utils.optpkg import optional_package
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 
-'''
-For more color names see
-http://www.colourlovers.com/blog/2007/07/24/32-common-color-names-for-easy-reference/
-'''
-# Some common colors
-red = np.array([1, 0, 0])
-green = np.array([0, 1, 0])
-blue = np.array([0, 0, 1])
-yellow = np.array([1, 1, 0])
-cyan = np.array([0, 1, 1])
-azure = np.array([0, 0.49, 1])
-golden = np.array([1, 0.84, 0])
-white = np.array([1, 1, 1])
-black = np.array([0, 0, 0])
-
-aquamarine = np.array([0.498, 1., 0.83])
-indigo = np.array([0.29411765, 0., 0.50980392])
-lime = np.array([0.74901961, 1., 0.])
-hot_pink = np.array([0.98823529, 0.05882353, 0.75294118])
-
-gray = np.array([0.5, 0.5, 0.5])
-dark_red = np.array([0.5, 0, 0])
-dark_green = np.array([0, 0.5, 0])
-dark_blue = np.array([0, 0, 0.5])
-
-tan = np.array([0.82352941, 0.70588235, 0.54901961])
-chartreuse = np.array([0.49803922, 1., 0.])
-coral = np.array([1., 0.49803922, 0.31372549])
-
+from vtk.util import colors
 
 # a track buffer used only with picking tracks
 track_buffer = []
@@ -101,7 +73,7 @@ def ren():
     >>> import numpy as np
     >>> r=fvtk.ren()
     >>> lines=[np.random.rand(10,3)]
-    >>> c=fvtk.line(lines,fvtk.red)
+    >>> c=fvtk.line(lines, fvtk.colors.red)
     >>> fvtk.add(r,c)
     >>> #fvtk.show(r)
     '''
@@ -332,9 +304,9 @@ def line(lines, colors, opacity=1, linewidth=1):
     ----------
     >>> from dipy.viz import fvtk
     >>> r=fvtk.ren()
-    >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]
+    >>> lines=[np.random.rand(10,3), np.random.rand(20,3)]
     >>> colors=np.random.rand(2,3)
-    >>> c=fvtk.line(lines,colors)
+    >>> c=fvtk.line(lines, colors)
     >>> fvtk.add(r,c)
     >>> #fvtk.show(r)
     '''
@@ -349,6 +321,7 @@ def line(lines, colors, opacity=1, linewidth=1):
     lookuptable = _lookup(colors)
 
     scalarmin = 0
+    colors = np.asarray(colors)
     if colors.ndim == 2:
         scalarmax = colors.shape[0] - 1
     if colors.ndim == 1:
@@ -514,13 +487,6 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=3, phi=3):
         # scalars.InsertNextTuple3(255,255,255)
         cnt_colors += 1
 
-    '''
-    src = vtk.vtkDiskSource()
-    src.SetRadialResolution(1)
-    src.SetCircumferentialResolution(10)
-    src.SetInnerRadius(0.0)
-    src.SetOuterRadius(0.001)
-    '''
     # src = vtk.vtkPointSource()
     src = vtk.vtkSphereSource()
     src.SetRadius(point_radius)
@@ -572,74 +538,6 @@ def sphere(position=(0, 0, 0), radius=0.5, thetares=8, phires=8,
     spherea.SetPosition(position)
     spherea.GetProperty().SetColor(color)
     spherea.GetProperty().SetOpacity(opacity)
-
-    return spherea
-
-
-def ellipsoid(R=np.array([[2, 0, 0], [0, 1, 0], [0, 0, 1]]),
-              position=(0, 0, 0), thetares=20, phires=20, color=(0, 0, 1),
-              opacity=1, tessel=0):
-    ''' Create a ellipsoid actor.
-
-    Stretch a unit sphere to make it an ellipsoid under a 3x3 translation
-    matrix R.
-
-    R = sp.array([[2, 0, 0],
-                  [0, 1, 0],
-                  [0, 0, 1] ])
-    '''
-
-    Mat = sp.identity(4)
-    Mat[0:3, 0:3] = R
-
-    '''
-    Mat=sp.array([[2, 0, 0, 0],
-                             [0, 1, 0, 0],
-                             [0, 0, 1, 0],
-                             [0, 0, 0,  1]  ])
-    '''
-    mat = vtk.vtkMatrix4x4()
-
-    for i in sp.ndindex(4, 4):
-
-        mat.SetElement(i[0], i[1], Mat[i])
-
-    radius = 1
-    sphere = vtk.vtkSphereSource()
-    sphere.SetRadius(radius)
-    sphere.SetLatLongTessellation(tessel)
-
-    sphere.SetThetaResolution(thetares)
-    sphere.SetPhiResolution(phires)
-
-    trans = vtk.vtkTransform()
-
-    trans.Identity()
-    # trans.Scale(0.3,0.9,0.2)
-    trans.SetMatrix(mat)
-    trans.Update()
-
-    transf = vtk.vtkTransformPolyDataFilter()
-    transf.SetTransform(trans)
-
-    if major_version <= 5:
-        transf.SetInput(sphere.GetOutput())
-    else:
-        transf.SetInputData(sphere.GetOutput())
-    transf.Update()
-
-    spherem = vtk.vtkPolyDataMapper()
-    if major_version <= 5:
-        spherem.SetInput(transf.GetOutput())
-    else:
-        spherem.SetInputData(transf.GetOutput())
-
-    spherea = vtk.vtkActor()
-    spherea.SetMapper(spherem)
-    spherea.SetPosition(position)
-    spherea.GetProperty().SetColor(color)
-    spherea.GetProperty().SetOpacity(opacity)
-    # spherea.GetProperty().SetRepresentationToWireframe()
 
     return spherea
 
@@ -1504,117 +1402,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     return actor
 
 
-def tube(point1=(0, 0, 0), point2=(1, 0, 0), color=(1, 0, 0), opacity=1, radius=0.1, capson=1, specular=1, sides=8):
-
-    ''' Deprecated
-
-    Wrap a tube around a line connecting point1 with point2 with a specific
-    radius.
-
-    '''
-    points = vtk.vtkPoints()
-    points.InsertPoint(0, point1[0], point1[1], point1[2])
-    points.InsertPoint(1, point2[0], point2[1], point2[2])
-
-    lines = vtk.vtkCellArray()
-    lines.InsertNextCell(2)
-
-    lines.InsertCellPoint(0)
-    lines.InsertCellPoint(1)
-
-    profileData = vtk.vtkPolyData()
-    profileData.SetPoints(points)
-    profileData.SetLines(lines)
-
-    # Add thickness to the resulting line.
-    profileTubes = vtk.vtkTubeFilter()
-    profileTubes.SetNumberOfSides(sides)
-    if major_version <= 5:
-        profileTubes.SetInput(profileData)
-    else:
-        profileTubes.SetInputData(profileData)
-    profileTubes.SetRadius(radius)
-
-    if capson:
-        profileTubes.SetCapping(1)
-    else:
-        profileTubes.SetCapping(0)
-
-    profileMapper = vtk.vtkPolyDataMapper()
-    profileMapper.SetInputConnection(profileTubes.GetOutputPort())
-
-    profile = vtk.vtkActor()
-    profile.SetMapper(profileMapper)
-    profile.GetProperty().SetDiffuseColor(color)
-    profile.GetProperty().SetSpecular(specular)
-    profile.GetProperty().SetSpecularPower(30)
-    profile.GetProperty().SetOpacity(opacity)
-
-    return profile
-
-
-def _closest_track(p, tracks):
-    ''' Return the index of the closest track from tracks to point p
-    '''
-
-    d = []
-    # enumt= enumerate(tracks)
-
-    for (ind, t) in enumerate(tracks):
-        for i in range(len(t[:-1])):
-
-            d.append(
-                (ind, np.sqrt(np.sum(np.cross((p - t[i]), (p - t[i + 1])) ** 2)) / np.sqrt(np.sum((t[i + 1] - t[i]) ** 2))))
-
-    d = np.array(d)
-
-    imin = d[:, 1].argmin()
-
-    return int(d[imin, 0])
-
-
-def crossing(a, ind, sph, scale, orient=False):
-    """ visualize a volume of crossings
-
-    Examples
-    ----------
-    See 'dipy/doc/examples/visualize_crossings.py' at :ref:`examples`
-
-    """
-
-    T = []
-    Tor = []
-    if a.ndim == 4 or a.ndim == 3:
-        x, y, z = ind.shape[:3]
-        for pos in np.ndindex(x, y, z):
-            i, j, k = pos
-            pos_ = np.array(pos)
-            ind_ = ind[i, j, k]
-            a_ = a[i, j, k]
-
-            try:
-                len(ind_)
-            except TypeError:
-                ind_ = [ind_]
-                a_ = [a_]
-
-            for (i, _i) in enumerate(ind_):
-                T.append(pos_ + scale * a_[i] * np.vstack((sph[_i], -sph[_i])))
-                if orient:
-                    Tor.append(sph[_i])
-
-    if a.ndim == 1:
-
-        for (i, _i) in enumerate(ind):
-                T.append(scale * a[i] * np.vstack((sph[_i], -sph[_i])))
-                if orient:
-                    Tor.append(sph[_i])
-    if orient:
-        return T, Tor
-    return T
-
-
-def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
+def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
            planes=1, levels=[20, 30, 40], opacities=[0.8, 0.7, 0.3],
            colors=None, planesx=[20, 30], planesy=[30, 40], planesz=[20, 30]):
     ''' Slicer and contour rendering of 3d volumes
@@ -1850,35 +1638,6 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=1,
     iren.Initialize()
     renWin.Render()
     iren.Start()
-
-
-def annotatePick(object, event):
-    ''' Create a Python function to create the text for the
-    text mapper used to display the results of picking.
-    '''
-    global picker, textActor, textMapper, track_buffer
-
-    if picker.GetCellId() < 0:
-        textActor.VisibilityOff()
-    else:
-        if len(track_buffer) != 0:
-
-            selPt = picker.GetSelectionPoint()
-            pickPos = picker.GetPickPosition()
-
-            closest = _closest_track(np.array([pickPos[0], pickPos[1], pickPos[2]]), track_buffer)
-
-            if major_version <= 5:
-                textMapper.SetInput("(%.6f, %.6f, %.6f)" % pickPos)
-            else:
-                textMapper.SetInputData("(%.6f, %.6f, %.6f)" % pickPos)
-            textActor.SetPosition(selPt[:2])
-            textActor.VisibilityOn()
-
-            label(tmp_ren, text=str(ind_buffer[closest]), pos=(track_buffer[closest][0][0], track_buffer[
-                  closest][0][1], track_buffer[closest][0][2]))
-
-            tmp_ren.AddActor(line(track_buffer[closest], golden, opacity=1))
 
 
 def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
