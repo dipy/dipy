@@ -1435,7 +1435,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
 
 def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
            planes=1, levels=[20, 30, 40], opacities=[0.8, 0.7, 0.3],
-           colors=None, planesx=[20, 30], planesy=[30, 40], planesz=[20, 30]):
+           colors=None, planesx=[30], planesy=[30], planesz=[30]):
     ''' Slicer and contour rendering of 3d volumes
 
     Parameters
@@ -1469,9 +1469,9 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
     >>> import numpy as np
     >>> from dipy.viz import fvtk
     >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
-    >>> s = np.sin(x*y*z)/(x*y*z)
+    >>> s = np.sin(x * y * z) / (x * y * z)
     >>> r=fvtk.ren()
-    >>> #fvtk.slicer(r,s) #does showing too
+    >>> #fvtk.slicer(r, s) #does showing too
     '''
     vol = np.interp(vol, xp=[vol.min(), vol.max()], fp=[0, 255])
     vol = vol.astype('uint8')
