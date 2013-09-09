@@ -37,7 +37,7 @@ Randomly select some seed points from the mask:
 seeds = seeds_from_mask(mask, [1, 1, 1], zooms)
 seeds = seeds[:2000]
 
-interpolator = NearestNeighborInterpolator(data, zooms)
+interpolator = NearestNeighborInterpolator(maskdata, zooms)
 
 pwt = ProbabilisticOdfWeightedTracker(csamodel, interpolator, mask,
                                       stepper, 20, seeds, sphere)
