@@ -29,8 +29,7 @@ from ..utils.optpkg import optional_package
 
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
-
-from vtk.util import colors
+colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 
 # a track buffer used only with picking tracks
 track_buffer = []

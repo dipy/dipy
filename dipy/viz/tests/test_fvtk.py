@@ -7,8 +7,8 @@ from dipy.viz import fvtk
 from numpy.testing import assert_equal
 import numpy.testing as npt
 
-
 @npt.dec.skipif(not fvtk.have_vtk)
+@npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_functions():
 
     # Create a renderer
@@ -44,6 +44,7 @@ def test_fvtk_functions():
 
 
 @npt.dec.skipif(not fvtk.have_vtk)
+@npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_ellipsoid():
 
     evals = np.array([1.4, .35, .35]) * 10 ** (-3)
