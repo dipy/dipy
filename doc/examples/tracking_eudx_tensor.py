@@ -135,7 +135,7 @@ ren.SetBackground(1, 1, 1)
 fvtk.record(ren, n_frames=1, out_path='tensor_tracks.png', size=(600, 600))
 
 """
-.. figure:: tensor_tracking.png
+.. figure:: tensor_tracks.png
    :align: center
 
    **Deterministic streamlines with EuDX on a Tensor Field**.
