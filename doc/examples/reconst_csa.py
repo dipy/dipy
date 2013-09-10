@@ -34,7 +34,7 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-data.shape ``(72, 87, 59, 160)``
+data.shape ``(81, 106, 76, 160)``
 
 Remove most of the background using dipy's mask module.
 """
@@ -97,7 +97,7 @@ r = fvtk.ren()
 csaodfs = csamodel.fit(data_small).odf(sphere)
 
 """
-It is commong with CSA ODFs to produce negative values, we can remove those using ``np.clip``
+It is common with CSA ODFs to produce negative values, we can remove those using ``np.clip``
 """
 
 csaodfs = np.clip(csaodfs, 0, np.max(csaodfs, -1)[..., None])

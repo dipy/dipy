@@ -62,9 +62,9 @@ import matplotlib.pyplot as plt
 
 sli = data.shape[2] / 2
 plt.figure('Brain segmentation')
-plt.subplot(1, 2, 1)
+plt.subplot(1, 2, 1).set_axis_off()
 plt.imshow(data[:, :, sli], cmap='gray')
-plt.subplot(1, 2, 2)
+plt.subplot(1, 2, 2).set_axis_off()
 plt.imshow(b0_mask[:, :, sli], cmap='gray')
 plt.savefig('median_otsu.png')
 
