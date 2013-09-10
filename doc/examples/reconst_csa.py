@@ -34,7 +34,7 @@ data = img.get_data()
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
-data.shape ``(81, 106, 76, 160)``
+data.shape ``(72, 87, 59, 160)``
 
 Remove most of the background using dipy's mask module.
 """
