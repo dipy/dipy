@@ -86,7 +86,7 @@ Let's visualize the ODFs of a small rectangular area in an axial slice of the
 splenium of the corpus callosum (CC).
 """
 
-data_small = data[20:50, 55:85, 38:39]
+data_small = maskdata[13:43, 44:74, 28:29]
 
 from dipy.data import get_sphere
 sphere = get_sphere('symmetric724')
