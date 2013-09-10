@@ -66,6 +66,7 @@ centroids = qb.centroids
 colormap = np.random.rand(len(centroids), 3)
 
 fvtk.clear(ren)
+ren.SetBackground(1, 1, 1)
 fvtk.add(ren, fvtk.streamtube(streamlines, fvtk.colors.white, opacity=0.05))
 fvtk.add(ren, fvtk.streamtube(centroids, colormap, linewidth=0.4))
 fvtk.record(ren, n_frames=1, out_path='fornix_centroids.png', size=(600, 600))
@@ -85,6 +86,7 @@ for i, centroid in enumerate(centroids):
     colormap_full[inds] = colormap[i]
 
 fvtk.clear(ren)
+ren.SetBackground(1, 1, 1)
 fvtk.add(ren, fvtk.streamtube(streamlines, colormap_full))
 fvtk.record(ren, n_frames=1, out_path='fornix_clust.png', size=(600, 600))
 
