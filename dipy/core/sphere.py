@@ -504,7 +504,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
         return xx
         
     def euclidean_norm(x1, x2):
-        return sqrt(((x1 - x2)**2).sum(axis=0))
+        return np.sqrt(((x1 - x2)**2).sum(axis=0))
     
     if norm is "angle":
         norm = angle
