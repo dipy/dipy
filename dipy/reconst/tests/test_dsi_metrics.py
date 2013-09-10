@@ -1,5 +1,7 @@
 import nibabel as nib
 import numpy as np
+from dipy.reconst.dsi import (
+    DiffusionSpectrumModel, DiffusionSpectrumDeconvModel, create_qspace)
 from dipy.data import get_data, dsi_voxels
 from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_equal,

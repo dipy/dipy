@@ -4,7 +4,7 @@ Calculate DSI metrics
 =================================================
 
 We show how to calculate DSI metrics return to origin probability (rtop) 
-and mean square displacement (MSD) on your dataset.
+and mean square displacement (msd) on your dataset.
 
 First import the necessary modules:
 """
@@ -39,8 +39,7 @@ print('data.shape (%d, %d, %d, %d)' % data.shape)
 Instantiate the Model and apply it to the data.
 """
 
-dsmodel = DiffusionSpectrumModel(
-    gtab, qgrid_size=35, r_start=0.4 * 17, r_end=0.7 * 17, filter_width=18.5)
+dsmodel = DiffusionSpectrumModel(gtab, qgrid_size=35, filter_width=18.5)
 
 """
 Lets just use one slice only from the data.
@@ -75,7 +74,7 @@ rtop_pdf = dsmodel.fit(dataslice).rtop_pdf(normalized=False)
 
 """
 Following the theory this two measures must be equal, 
-to proof that we calculate the mean square error on this two measures.
+to show that we calculate the mean square error on this two measures.
 """
 
 mse = np.sum((rtop_signal - rtop_pdf) ** 2) / rtop_signal.size
@@ -95,47 +94,62 @@ rtop_pdf_norm = dsmodel.fit(dataslice).rtop_pdf()
 Lets calculate the mean square displacement on the normalized propagator.
 """
 
-print('Calculating... MSD_norm')
-MSD_norm = dsmodel.fit(dataslice).msd_discrete()
+print('Calculating... msd_norm')
+msd_norm = dsmodel.fit(dataslice).msd_discrete()
 
 """
 Turning the normalized parameter to false is possible to calculate 
 the mean square displacement on the propagator without normalization.
 """
 
-print('Calculating... MSD')
-MSD = dsmodel.fit(dataslice).msd_discrete(normalized=False)
+print('Calculating... msd')
+msd = dsmodel.fit(dataslice).msd_discrete(normalized=False)
 
 """
 Save the rtop images in rtop.png in order to compare the contrast. 
 """
 
-fig = plt.figure(figsize=(10, 10))
-ax1 = fig.add_subplot(2, 2, 1)
-ax1.set_title('rtop_signal')
+fig = plt.figure(figsize=(6, 6))
+ax1 = fig.add_subplot(2, 2, 1, title='rtop_signal')
+ax1.set_axis_off()
 ind = ax1.imshow(rtop_signal.T, interpolation='nearest', origin='lower')
 plt.colorbar(ind)
-ax2 = fig.add_subplot(2, 2, 2)
-ax2.set_title('rtop_pdf_norm')
+ax2 = fig.add_subplot(2, 2, 2, title='rtop_pdf_norm')
+ax2.set_axis_off()
 ind = ax2.imshow(rtop_pdf_norm.T, interpolation='nearest', origin='lower')
 plt.colorbar(ind)
-ax3 = fig.add_subplot(2, 2, 3)
-ax3.set_title('rtop_pdf')
+ax3 = fig.add_subplot(2, 2, 3, title='rtop_pdf')
+ax3.set_axis_off()
 ind = ax3.imshow(rtop_pdf.T, interpolation='nearest', origin='lower')
 plt.colorbar(ind)
 plt.savefig('rtop.png')
 
 """
-Save the MSD images in MSD.png in order to compare the contrast. 
+.. figure:: rtop.png
+   :align: center
+
+   **Return to origin probability**.
+
+Save the msd images in msd.png in order to compare the contrast. 
 """
 
-fig = plt.figure(figsize=(20, 10))
-ax1 = fig.add_subplot(1, 2, 1)
-ax1.set_title('MSD_norm')
-ind = ax1.imshow(MSD_norm.T, interpolation='nearest', origin='lower')
+fig = plt.figure(figsize=(7, 3))
+ax1 = fig.add_subplot(1, 2, 1, title='msd_norm')
+ax1.set_axis_off()
+ind = ax1.imshow(msd_norm.T, interpolation='nearest', origin='lower')
 plt.colorbar(ind)
-ax2 = fig.add_subplot(1, 2, 2)
-ax2.set_title('MSD')
-ind = ax2.imshow(MSD.T, interpolation='nearest', origin='lower')
+ax2 = fig.add_subplot(1, 2, 2, title='msd')
+ax2.set_axis_off()
+ind = ax2.imshow(msd.T, interpolation='nearest', origin='lower')
 plt.colorbar(ind)
-plt.savefig('MSD.png')
+plt.savefig('msd.png')
+
+"""
+.. figure:: msd.png
+   :align: center
+
+   **Mean square deviation**.
+
+.. include:: ../links_names.inc
+
+"""

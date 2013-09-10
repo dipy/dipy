@@ -12,6 +12,7 @@ Examples
    examples_built/reconst_csd
    examples_built/reconst_csa
    examples_built/reconst_dsi
+   examples_built/reconst_dsi_metrics
    examples_built/reconst_gqi
    examples_built/tracking_eudx_tensor
    examples_built/tracking_eudx_odf
