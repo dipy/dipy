@@ -11,6 +11,9 @@ Examples
 >>> a=fvtk.axes()
 >>> fvtk.add(r,a)
 >>> #fvtk.show(r)
+
+For more information on VTK there many neat examples in
+http://www.vtk.org/Wiki/VTK/Tutorials/External_Tutorials
 '''
 from __future__ import division, print_function, absolute_import
 
@@ -131,8 +134,25 @@ def _arrow(pos=(0, 0, 0), color=(1, 0, 0), scale=(1, 1, 1), opacity=1):
 
 def axes(scale=(1, 1, 1), colorx=(1, 0, 0), colory=(0, 1, 0), colorz=(0, 0, 1),
          opacity=1):
-    ''' Create an actor with the coordinate system axes where  red = x, green = y, blue =z.
-    '''
+    """ Create an actor with the coordinate's system axes where
+    red = x, green = y, blue =z.
+
+    Parameters
+    ----------
+    scale : tuple (3,)
+        axes size e.g. (100, 100, 100)
+    colorx : tuple (3,)
+        x-axis color. Default red.
+    colory : tuple (3,)
+        y-axis color. Default blue.
+    colorz : tuple (3,)
+        z-axis color. Default green.
+
+    Returns
+    -------
+    vtkAssembly
+
+    """
 
     arrowx = _arrow(color=colorx, scale=scale, opacity=opacity)
     arrowy = _arrow(color=colory, scale=scale, opacity=opacity)
@@ -206,15 +226,24 @@ def _lookup(colors):
     return lut
 
 
-def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8):
-    """ Uses streamtubes to visualize curves
+def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
+               lod=True, lod_points=10**4, lod_points_size=5):
+    """ Uses streamtubes to visualize polylines
 
+    Parameters
+    ----------
     lines : list
         list of N curves represented as 2D ndarrays
     colors : array (N, 3) or tuple (3,)
     opacity : float
     linewidth : float
     tube_sides : int
+    lod : bool
+        use vtkLODActor rather than vtkActor
+    lod_points : int
+        number of points to be used when LOD is in effect
+    lod_points_size : int
+        size of points when lod is in effect
 
     Examples
     --------
@@ -237,8 +266,6 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8):
 
     from dipy.tracking.distances import approx_polygon_track
     lines = [approx_polygon_track(line, 0.2) for line in lines]
-
-
     """
 
     points = vtk.vtkPoints()
@@ -284,21 +311,23 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8):
     profileMapper.SelectColorArray("Cols")
     profileMapper.GlobalImmediateModeRenderingOn()
 
-    profile = vtk.vtkLODActor()
+    if lod:
+        profile = vtk.vtkLODActor()
+        profile.SetNumberOfCloudPoints(lod_points)
+        profile.GetProperty().SetPointSize(lod_points_size)
+    else:
+        profile = vtk.vtkActor()
     profile.SetMapper(profileMapper)
-    #profile.GetProperty().SetDiffuseColor(banana)
+
     profile.GetProperty().SetAmbient(0)#.3
     profile.GetProperty().SetSpecular(0)#.3
     profile.GetProperty().SetSpecularPower(10)
-    #profile.GetProperty().SetInterpolationToFlat()
-    #profile.GetProperty().SetInterpolationToPhong()
     profile.GetProperty().SetInterpolationToGouraud()
     profile.GetProperty().BackfaceCullingOn()
-    profile.SetNumberOfCloudPoints(10**4)
-    profile.GetProperty().SetPointSize(5)
     profile.GetProperty().SetOpacity(opacity)
 
     return profile
+
 
 def line(lines, colors, opacity=1, linewidth=1):
     ''' Create an actor for one or more lines.
@@ -457,10 +486,25 @@ def line(lines, colors, opacity=1, linewidth=1):
     return actor
 
 
-def dots(points, color=(1, 0, 0), opacity=1):
-    '''
-    Create one or more 3d dots(points) returns one actor handling all the points
-    '''
+def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
+    """ Create one or more 3d points
+
+    Parameters
+    ----------
+    points : ndarray, (N, 3)
+    color : tuple (3,)
+    opacity : float
+    dot_size : int
+
+    Returns
+    --------
+    vtkActor
+
+    See Also
+    ---------
+    dipy.viz.fvtk.point
+
+    """
 
     if points.ndim == 2:
         points_no = points.shape[0]
@@ -485,7 +529,8 @@ def dots(points, color=(1, 0, 0), opacity=1):
 
     aPolyVertexGrid = vtk.vtkUnstructuredGrid()
     aPolyVertexGrid.Allocate(1, 1)
-    aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(), aPolyVertex.GetPointIds())
+    aPolyVertexGrid.InsertNextCell(aPolyVertex.GetCellType(),
+                                   aPolyVertex.GetPointIds())
 
     aPolyVertexGrid.SetPoints(polyVertexPoints)
     aPolyVertexMapper = vtk.vtkDataSetMapper()
@@ -498,6 +543,7 @@ def dots(points, color=(1, 0, 0), opacity=1):
 
     aPolyVertexActor.GetProperty().SetColor(color)
     aPolyVertexActor.GetProperty().SetOpacity(opacity)
+    aPolyVertexActor.GetProperty().SetPointSize(dot_size)
     return aPolyVertexActor
 
 
@@ -934,7 +980,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
 
 def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
             colors=[np.array([1.0, 0.0, 0.0])], opacities=[0.5]):
-    ''' Take a volume and draw surface contours for any any number of
+    """ Take a volume and draw surface contours for any any number of
     thresholds (levels) where every contour has its own color and opacity
 
     Parameters
@@ -955,12 +1001,11 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
         Opacities of contours.
 
     Returns
-    -----------
-    ass : assembly of actors
-        Representing the contour surfaces.
+    -------
+    vtkAssembly
 
     Examples
-    -------------
+    --------
     >>> import numpy as np
     >>> from dipy.viz import fvtk
     >>> A=np.zeros((10,10,10))
@@ -969,7 +1014,7 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
     >>> fvtk.add(r,fvtk.contour(A,levels=[1]))
     >>> #fvtk.show(r)
 
-    '''
+    """
 
     im = vtk.vtkImageData()
     im.SetScalarTypeToUnsignedChar()
@@ -1013,13 +1058,11 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
         # print colors[i]
         skin.GetProperty().SetColor(colors[i][0], colors[i][1], colors[i][2])
         # skin.Update()
-
         ass.AddPart(skin)
 
         del skin
         del skinMapper
         del skinExtractor
-        # ass=ass+[skin]
 
     return ass
 
@@ -1170,7 +1213,7 @@ def create_colormap(v, name='jet', auto=True):
 
 
 def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
-                     scale=2.2, norm=True, radial_scale=True):
+                 scale=2.2, norm=True, radial_scale=True):
     """Plot many morphed spheres simultaneously.
 
     Parameters
