@@ -1,7 +1,7 @@
 """
-=================================================
-Brain segmentation with dipy.segment.mask.
-=================================================
+===================================
+Brain segmentation with median_otsu
+===================================
 
 We show how to extract brain information and mask from a b0 image using dipy's
 segment.mask module.
@@ -60,15 +60,20 @@ Quick view of the results middle slice using matplotlib.
 
 import matplotlib.pyplot as plt
 
-slice = data.shape[2]/2
+sli = data.shape[2] / 2
 plt.figure('Brain segmentation')
-plt.subplot(1,2,1)
-plt.imshow(data[:,:,slice])
-plt.subplot(1,2,2)
-plt.imshow(b0_mask[:,:,slice])
-plt.show()
+plt.subplot(1, 2, 1).set_axis_off()
+plt.imshow(data[:, :, sli], cmap='gray')
+plt.subplot(1, 2, 2).set_axis_off()
+plt.imshow(b0_mask[:, :, sli], cmap='gray')
+plt.savefig('median_otsu.png')
 
 """
+.. figure:: median_otsu.png
+   :align: center
+
+   **An application of median_otsu for brain segmentation**.
+
 ``median_otsu`` can also automatically crop the outputs to remove the largest
 possible number of background voxels. This makes outputted data significantly
 smaller.  auto cropping in ``median_otsu`` is activated by setting the
@@ -82,6 +87,7 @@ Saving cropped data using nibabel as demonstrated previously.
 """
 
 mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.get_affine())
-b0_img_crop = nib.Nifti1Image(b0_mask_crop.astype(np.float32), img.get_affine())
-nib.save(mask_img_crop, fname+'_binary_mask_crop.nii.gz')
-nib.save(b0_img_crop, fname+'_mask_crop.nii.gz')
+b0_img_crop = nib.Nifti1Image(
+    b0_mask_crop.astype(np.float32), img.get_affine())
+nib.save(mask_img_crop, fname + '_binary_mask_crop.nii.gz')
+nib.save(b0_img_crop, fname + '_mask_crop.nii.gz')
