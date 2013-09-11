@@ -185,14 +185,15 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     data = np.reshape(data,(-1,shape[-1]))
 
     n = data.shape[0]
-    chunk_size = int(np.ceil(n / nbr_process**2))
+    nbr_chunks = nbr_process**2
+    chunk_size = int(np.ceil(n / nbr_chunks))
     data_chunks = [data[i:i + chunk_size] for i in range(0, n, chunk_size)]
 
     if mask is not None:
         mask = mask.flatten()
         mask_chunks = [mask[i:i + chunk_size] for i in range(0, n, chunk_size)]
     else:
-        mask_chunks = [None] * nbr_process
+        mask_chunks = [None] * nbr_chunks
 
     pool = Pool(nbr_process)
 
@@ -261,7 +262,6 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
 def __peaks_from_model_parallel_sub(args):
     return peaks_from_model(*args)
-
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
