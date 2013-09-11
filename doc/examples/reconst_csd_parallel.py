@@ -36,12 +36,14 @@ from dipy.reconst.dti import TensorModel
 
 data = img.get_data()
 
+data = data[:, :, 37:39]
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 affine = img.get_affine()
 zooms = img.get_header().get_zooms()[:3]
 
 mask = data[..., 0] > 50
+
 tenmodel = TensorModel(gtab)
 
 ci, cj, ck = np.array(data.shape[:3]) / 2
@@ -103,19 +105,24 @@ sphere = get_sphere('symmetric724')
 import time
 from dipy.reconst.odf import peaks_from_model, peaks_from_model_parallel
 
+
 start_time = time.time()
 csd_peaks_parallel = peaks_from_model_parallel(model=csd_model,
                             data=data,
                             sphere=sphere,
                             relative_peak_threshold=.8,
                             min_separation_angle=45,
-                            mask=None,
+                            mask=mask,
+                            return_sh=True,
                             return_odf=False,
                             normalize_peaks=True,
-                            nbr_process=None)
+                            nbr_process=4)
 end_time = time.time()
 print("peaks_from_model_parallel ran in :" + str(end_time - start_time) + " seconds")
 
+"""
+peaks_from_model_parallel ran in: 69.6995100975 seconds
+"""
 
 start_time = time.time()
 csd_peaks = peaks_from_model(model=csd_model,
@@ -123,8 +130,13 @@ csd_peaks = peaks_from_model(model=csd_model,
                             sphere=sphere,
                             relative_peak_threshold=.8,
                             min_separation_angle=45,
-                            mask=None,
+                            mask=mask,
+                            return_sh=True,
                             return_odf=False,
                             normalize_peaks=True)
 end_time = time.time()
 print("peaks_from_model ran in :" + str(end_time - start_time) + " seconds")
+
+"""
+peaks_from_model ran in: 185.693586111 seconds
+"""
