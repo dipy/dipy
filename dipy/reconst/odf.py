@@ -157,6 +157,7 @@ class PeaksAndMetrics(object):
 from tempfile import mkdtemp
 import os.path as path
 
+
 def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
@@ -184,7 +185,7 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     data = np.reshape(data,(-1,shape[-1]))
 
     n = data.shape[0]
-    chunk_size = int(np.ceil(n / nbr_process))
+    chunk_size = int(np.ceil(n / nbr_process**2))
     data_chunks = [data[i:i + chunk_size] for i in range(0, n, chunk_size)]
 
     if mask is not None:
