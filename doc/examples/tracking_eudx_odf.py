@@ -81,7 +81,8 @@ tracking in crossing areas.
 eu = EuDX(csapeaks.peak_values,
           csapeaks.peak_indices,
           odf_vertices=sphere.vertices,
-          a_low=0.2)
+          ang_thr=20.,
+          a_low=0.6)
 
 csa_streamlines_mult_peaks = [streamline for streamline in eu]
 
