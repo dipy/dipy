@@ -219,7 +219,8 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
     cfa = color_fa(FA, tensor_fit.evecs)
     roi = np.asarray(roi, dtype=bool)
 
-    mask = np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]), axis=-1)
+    include = (cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]
+    mask = np.all(include, axis=-1)
 
     if return_cfa:
         return mask, cfa
