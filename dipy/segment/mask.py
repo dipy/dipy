@@ -217,6 +217,7 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
     FA = np.clip(FA, 0, 1)  # Clamp the FA to remove degenerate tensors
 
     cfa = color_fa(FA, tensor_fit.evecs)
+    roi = np.asarray(roi, dtype=bool)
 
     mask = np.all(((cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]), axis=-1)
 
