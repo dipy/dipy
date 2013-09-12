@@ -556,7 +556,7 @@ def test_adc():
 
 def test_predict():
     """
-    
+    Test model prediction API
     """
     psphere = get_sphere('symmetric362')
     bvecs = np.concatenate(([[1, 0, 0]], psphere.vertices))
