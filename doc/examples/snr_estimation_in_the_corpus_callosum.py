@@ -164,7 +164,7 @@ noise, that is
 
 .. math::
 
-    SNR = \frac{\mu_{signal}}{\sigma_{noise}
+    SNR = \frac{\mu_{signal}}{\sigma_{noise}}
 
 We will compute the mean of the signal in the mask we just created and
 the standard deviation from the noise in the background.
