@@ -29,19 +29,12 @@ data = np.squeeze(img.get_data())
 a numpy ndarray.
 
 Segment the brain using dipy's mask module.
-<<<<<<< HEAD
-`medotsu` returns the segmented brain data and a binary mask of the brain.
-It is possible to fine tune the `median_otsu`'s parameters (median_radius and
-num_pass) if extraction yields incorrect results, but the default parameters work
-well on most volumes. For this example, default parameters (4, 4) will be used.
-=======
 
 ``median_otsu`` returns the segmented brain data and a binary mask of the brain.
 It is possible to fine tune the parameters of ``median_otsu`` (``median_radius``
 and ``num_pass``) if extraction yields incorrect results but the default
 parameters work well on most volumes. For this example, default parameters (4,
 4) will be used.
->>>>>>> upstream_master
 """
 
 from dipy.segment.mask import median_otsu
