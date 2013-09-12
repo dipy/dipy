@@ -3,7 +3,7 @@
 Calculate DSI metrics
 =================================================
 
-We show how to calculate DSI metrics return to origin probability (rtop) 
+We show how to calculated two DSI-based scalar metrics: return to origin probability (rtop) 
 and mean square displacement (msd) on your dataset.
 
 First import the necessary modules:
@@ -64,8 +64,8 @@ rtop_signal = dsmodel.fit(dataslice).rtop_signal()
 """
 Now we calculate the return to origin probability on the propagator, 
 that corresponds to its central value. 
-By default the propagator is divided by its sum in order to obtain a pdf,
-however this normalization changes the values of rtop, in order to compare it
+By default the propagator is divided by its sum in order to obtain a properly normalized pdf,
+however this normalization changes the values of rtop, therefore in order to compare it
 with the rtop previously calculated on the signal we turn the normalized parameter to false.
 """
 
@@ -73,7 +73,7 @@ print('Calculating... rtop_pdf')
 rtop_pdf = dsmodel.fit(dataslice).rtop_pdf(normalized=False)
 
 """
-Following the theory this two measures must be equal, 
+In theory, these two measures must be equal, 
 to show that we calculate the mean square error on this two measures.
 """
 
@@ -83,7 +83,7 @@ print("mse = %f" % mse)
 """ 
 mse = 0.000000
 
-Leaving normalized parameter to the default changes the values of the 
+Leaving the normalized parameter to the default changes the values of the 
 rtop but not the contrast between the voxels.
 """
 
@@ -91,14 +91,14 @@ print('Calculating... rtop_pdf_norm')
 rtop_pdf_norm = dsmodel.fit(dataslice).rtop_pdf()
 
 """
-Lets calculate the mean square displacement on the normalized propagator.
+Let's calculate the mean square displacement on the normalized propagator.
 """
 
 print('Calculating... msd_norm')
 msd_norm = dsmodel.fit(dataslice).msd_discrete()
 
 """
-Turning the normalized parameter to false is possible to calculate 
+Turning the normalized parameter to false makes possible to calculate 
 the mean square displacement on the propagator without normalization.
 """
 
@@ -106,7 +106,7 @@ print('Calculating... msd')
 msd = dsmodel.fit(dataslice).msd_discrete(normalized=False)
 
 """
-Save the rtop images in rtop.png in order to compare the contrast. 
+Show the rtop images and save them in rtop.png.
 """
 
 fig = plt.figure(figsize=(6, 6))
@@ -130,7 +130,7 @@ plt.savefig('rtop.png')
 
    **Return to origin probability**.
 
-Save the msd images in msd.png in order to compare the contrast. 
+Show the msd images and save them in msd.png. 
 """
 
 fig = plt.figure(figsize=(7, 3))
