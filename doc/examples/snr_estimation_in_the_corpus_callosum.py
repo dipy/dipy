@@ -33,9 +33,9 @@ Let's first load the data. We will use a dataset with 10 b0s and
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
 
-"""img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example to read the b-values
-it is possible to write print(gtab.bvals).
+"""img contains a nibabel Nifti1Image object (data) and gtab contains a
+GradientTable object (gradient information e.g. b-values). For example to read
+the b-values it is possible to write print(gtab.bvals).
 
 Load the raw diffusion data and the affine data.
 """
@@ -56,7 +56,6 @@ from dipy.segment.mask import median_otsu
 b0_mask, mask = median_otsu(data)
 
 """We also need to fit a tensor model on the data in order to compute the cfa.
-(This is the subject of another example).
 """
 
 from dipy.reconst.dti import TensorModel
@@ -80,8 +79,8 @@ We will also define a rough roi, since noisy pixels could be considered in the
 mask if it's not bounded properly. Adjusting the cfa threshold and the roi
 location enables the function to segment any part of the brain based on
 an orientation and spatial location. For now, we will pick half of the
-bounding box from the segmentation of the brain, just in case the subject was not
-centered properly.
+bounding box from the segmentation of the brain, just in case the subject was 
+not centered properly.
 """
 
 from dipy.segment.mask import segment_from_cfa
@@ -109,20 +108,20 @@ print("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
 
 """We can save the produced dataset with nibabel to visualize them later on.
 
-Note that we save the cfa with values between 0 and 255 for visualization purpose.
-Remember that the function works with values between
+Note that we save the cfa with values between 0 and 255 for visualization 
+purpose. Remember that the function works with values between
 0 and 1, but it will warn you if the supplied values do not fall in this range.
 """
 
 cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
-mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum.astype('int8'), affine)
+mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum.astype(np.uint8), affine)
 
 nib.save(cfa_img, 'cfa.nii.gz')
 nib.save(mask_corpus_callosum_img, 'mask_corpus_callosum.nii.gz')
 
 
-"""The mask bled a little because of the medotsu segmentation, so let's change the
-threshold, the bounding box  and restart segmenting from the cfa.
+"""The mask has random voxels because of the noise, so let's change 
+the threshold, the bounding box  and restart segmenting from the cfa.
 """
 
 threshold2 = (0.6, 1, 0, 0.1, 0, 0.1)
@@ -134,7 +133,7 @@ CC_box[bounds_min[0]:50,
 
 mask_corpus_callosum2 = segment_from_cfa(tensorfit, CC_box, threshold2)
 
-mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype('int8'), affine)
+mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype(np.uint8), affine)
 nib.save(mask_corpus_callosum2_img, 'mask_corpus_callosum2.nii.gz')
 
 print("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
@@ -154,3 +153,52 @@ plt.subplot(1, 2, 2)
 plt.title("Corpus callosum segmentation")
 plt.imshow(mask_corpus_callosum2[region, ...])
 fig.savefig("Comparison_of_segmentation.png")
+
+"""Now that we have a crude mask, we can use all the voxels to estimate the SNR
+in this region. Since the corpus callosum is in the middle of the brain, the
+signal should be weaker and will greatly varie according to the direction of
+the b vector that is used for each DWI. The SNR should be low in the X
+orientation and high in the Y and Z orientations. The SNR is usually defined as
+the ratio of the mean of the signal divided by the standard deviation of the
+noise, that is
+
+.. math::
+
+    SNR = \frac{\mu_{signal}}{\sigma_{noise}
+
+We will compute the mean of the signal in the mask we just created and
+the standard deviation from the noise in the background.
+"""
+
+mean_signal = np.mean(data[mask], axis=-1)
+
+"""In order to have a good background estimation, we will re-use the brain mask
+computed before, but add the neck and shoulder part and then invert the
+mask."""
+
+from scipy.ndimage.morphology import binary_dilation
+mask_noise = binary_dilation(mask, iterations=10)
+
+mask_noise[..., :mask_noise.shape[-1]//2] = 1
+mask_noise = ~mask_noise
+
+noise_std = np.std(data[mask_noise], axis=-1)
+
+"""We can now compute the SNR for each dwi using the formula above. Let's find 
+the position of the gradient direction that lies the closest to the X, Y and Z 
+axis."""
+
+axis_X = np.argmin(tenmodel.bvec-np.array([1, 0, 0])**2)
+axis_Y = np.argmin(tenmodel.bvec-np.array([0, 1, 0])**2)
+axis_Z = np.argmin(tenmodel.bvec-np.array([0, 0, 1])**2)
+
+"""Now that we have the closest b-vector to the cartesian axis, let's compute
+their respective SNR."""
+
+for direction in [axis_X, axis_Y, axis_Z]:
+	SNR = mean_signal[direction]/noise_std[direction]
+	print("SNR for direction", direction, "is :", SNR)
+
+"""Since the diffusion si string in the X axis, it is the lowest SNR in all of 
+the dwi, while the Y and Z axis have almost no diffusion and as such a high SNR.
+"""

@@ -4,6 +4,8 @@ from warnings import warn
 
 import numpy as np
 
+from dipy.reconst.dti import fractional_anisotropy, color_fa
+
 from scipy.ndimage.filters import median_filter
 try:
     from skimage.filter import threshold_otsu as otsu
