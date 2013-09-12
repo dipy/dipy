@@ -70,8 +70,8 @@ Using `gtab.b0s_mask()` we can find all the S0 volumes (which correspond to b-va
 S0s = roi[indices][:, np.nonzero(gtab.b0s_mask)[0]]
 
 """
-The response function in this example consists of a prolate tensor created 
-by averaging the highest and second highest eigenvalues. We also include the 
+The response function in this example consists of a prolate tensor created
+by averaging the highest and second highest eigenvalues. We also include the
 average S0s.
 """
 
@@ -119,7 +119,17 @@ Here we visualize only a 30x30 region.
 
 fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
 
+fodf_spheres.SetPosition(15, 15, 0)
+
+fodf_spheres.SetScale(0.80)
+
 fvtk.add(r, fodf_spheres)
+
+from dipy.reconst.odf import gfa
+
+GFA = gfa(csd_odf)
+
+fvtk.slicer(r, GFA, planesx=[], planesy=[], planesz=[0])
 
 print('Saving illustration as csd_odfs.png')
 fvtk.record(r, n_frames=1, out_path='csd_odfs.png', size=(600, 600))
