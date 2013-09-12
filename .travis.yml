@@ -24,6 +24,7 @@ install:
     - unzip Cython-0.18.zip
     - cd Cython-0.18
     - sudo python$PYSUF setup.py install
+    - sudo chmod 777 /dev/shm
     - cd ..
     # Dipy
     - $PYTHON setup.py build
