@@ -20,6 +20,7 @@ import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
+
 def fetch_scil_b0():
     """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
         different magnetic fields (1.5T and 3T)
@@ -46,6 +47,7 @@ def fetch_scil_b0():
     else:
         print('Dataset already in place. If you want to fetch again please first remove folder %s ' % dipy_home)
 
+
 def read_scil_b0():
     """ Load GE 3T b0 image form the scil b0 dataset.
 
@@ -57,6 +59,7 @@ def read_scil_b0():
     dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
     file = dipy_home+'/datasets_multi-site_all_companies/3T/GE/b0.nii.gz'
     return nib.load(file)
+
 
 def check_md5(filename, stored_md5):
     """
@@ -79,7 +82,7 @@ def check_md5(filename, stored_md5):
     if stored_md5 != md5_data.hexdigest():
         print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
                "but computed MD5 was", md5_data, '\n',
-               "Please check if the data has been downloaded correctly or if the upstream data changed.")
+               "Please check if the data has been downloaded correctly or if the upstream data has changed.")
 
 
 def _get_file_data(fname, url):
@@ -117,7 +120,7 @@ def fetch_isbi2013_2shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_isbi2013_2shell():
@@ -180,7 +183,7 @@ def fetch_sherbrooke_3shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_sherbrooke_3shell():
@@ -242,7 +245,7 @@ def fetch_stanford_hardi():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_stanford_hardi():
@@ -273,6 +276,7 @@ def read_stanford_hardi():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
+
 
 def fetch_taiwan_ntu_dsi():
     """ Download a DSI dataset with 203 gradient directions
@@ -308,7 +312,7 @@ def fetch_taiwan_ntu_dsi():
         print('http://dsi-studio.labsolver.org')
 
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % folder)
+        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
 
 
 def read_taiwan_ntu_dsi():
