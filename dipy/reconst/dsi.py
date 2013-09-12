@@ -7,7 +7,7 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
-class DiffusionSpectrumModel(OdfModel, Cache):
+class DiffusionSpectrumModel(ReconstModel, OdfModel, Cache):
 
     def __init__(self,
                  gtab,
@@ -19,9 +19,10 @@ class DiffusionSpectrumModel(OdfModel, Cache):
                  normalize_peaks=False):
         r""" Diffusion Spectrum Imaging
 
-        The main idea here is that you can create the diffusion propagator
-        $P(\mathbf{r})$ (probability density function of the average spin displacements) by
-        applying 3D FFT to the signal values $S(\mathbf{q})$
+        The theoretical idea underlying this method is that the diffusion
+        propagator $P(\mathbf{r})$ (probability density function of the average
+        spin displacements) can be estimated by applying 3D FFT to the signal
+        values $S(\mathbf{q})$
 
         ..math::
             :nowrap:

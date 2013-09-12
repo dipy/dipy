@@ -15,7 +15,7 @@ from ..core.geometry import vector_norm
 from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
-
+from .base import ReconstModel, ReconstFit
 
 def _roll_evals(evals, axis=-1):
     """
@@ -537,11 +537,13 @@ def apparent_diffusion_coef(q_form, sphere):
     
     """
     bvecs = sphere.vertices
-    D = design_matrix(bvecs.T, np.ones(bvecs.shape[0]))[:, :6]
+    bvals = np.ones(bvecs.shape[0])
+    gtab = gradient_table(bvals, bvecs)
+    D = design_matrix(gtab)[:, :6]
     return -np.dot(lower_triangular(q_form), D.T)
 
 
-class TensorModel(object):
+class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
     def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
@@ -574,6 +576,8 @@ class TensorModel(object):
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
 
         """
+        ReconstModel.__init__(self, gtab)
+
         if not callable(fit_method):
             try:
                 self.fit_method = common_fit_methods[fit_method]
@@ -581,9 +585,8 @@ class TensorModel(object):
                 raise ValueError('"' + str(fit_method) + '" is not a known fit '
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
-        self.bvec = gtab.bvecs
-        self.bval = gtab.bvals
-        self.design_matrix = design_matrix(self.bvec.T, self.bval)
+
+        self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
 
@@ -944,6 +947,7 @@ class TensorFit(object):
         if np.iterable(S0):
             # If it's an array, we need to give it one more dimension:
             S0 = S0[...,None] 
+
         pred_sig = S0 * np.exp(-gtab.bvals * adc)
 
         # The above evaluates to nan for the b0 vectors, so we predict the mean
@@ -1612,16 +1616,14 @@ def decompose_tensor(tensor, min_diffusivity=0):
     return eigenvals, eigenvecs
 
 
-def design_matrix(bvecs, bval, dtype=None):
+def design_matrix(gtab, dtype=None):
     """  Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
     Parameters
     ----------
-    bvecs : array with shape (3,g)
-        Diffusion gradient table found in DICOM header as a numpy array.
-    bval : array with shape (g,)
-        Diffusion weighting factor b for each vector in gtab.
+    gtab : A GradientTable class instance
+
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
@@ -1631,18 +1633,25 @@ def design_matrix(bvecs, bval, dtype=None):
         Design matrix or B matrix assuming Gaussian distributed tensor model
         design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
     """
-    G = bvecs
-    B = np.zeros((bvecs.shape[1], 7), dtype=G.dtype)
-    if bvecs.shape[1] != bval.shape[0]:
-        raise ValueError('The number of b values and gradient directions must'
-                          + ' be the same')
-    B[:, 0] = G[0, :] * G[0, :] * 1. * bval   # Bxx
-    B[:, 1] = G[0, :] * G[1, :] * 2. * bval   # Bxy
-    B[:, 2] = G[1, :] * G[1, :] * 1. * bval   # Byy
-    B[:, 3] = G[0, :] * G[2, :] * 2. * bval   # Bxz
-    B[:, 4] = G[1, :] * G[2, :] * 2. * bval   # Byz
-    B[:, 5] = G[2, :] * G[2, :] * 1. * bval   # Bzz
-    B[:, 6] = np.ones(bval.size)
+
+    B = np.zeros((gtab.gradients.shape[0], 7))
+
+    B[:, 0] = gtab.bvecs[:, 0] * gtab.bvecs[:, 0] * 1. * gtab.bvals   # Bxx
+    B[:, 1] = gtab.bvecs[:, 0] * gtab.bvecs[:, 1] * 2. * gtab.bvals   # Bxy
+    B[:, 2] = gtab.bvecs[:, 1] * gtab.bvecs[:, 1] * 1. * gtab.bvals   # Byy
+    B[:, 3] = gtab.bvecs[:, 0] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Bxz
+    B[:, 4] = gtab.bvecs[:, 1] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Byz
+    B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1. * gtab.bvals   # Bzz
+    B[:, 6] = np.ones(gtab.gradients.shape[0])
+
+    ## B = np.zeros((gtab.gradients.shape[0], 7))
+    ## B[:, 0] = gtab.gradients[:, 0] **2       # Bxx
+    ## B[:, 1] = gtab.gradients[:, 0] * gtab.gradients[:, 1] * 2.  # Bxy
+    ## B[:, 2] = gtab.gradients[:, 1] **2        # Byy
+    ## B[:, 3] = gtab.gradients[:, 0] * gtab.gradients[:, 2] * 2.  # Bxz
+    ## B[:, 4] = gtab.gradients[:, 1] * gtab.gradients[:, 2] * 2.  # Byz
+    ## B[:, 5] = gtab.gradients[:, 2] **2        # Bzz
+    ## B[:, 6] = np.ones(gtab.gradients.shape[0])
     return -B
 
 
