@@ -156,7 +156,7 @@ fig.savefig("Comparison_of_segmentation.png")
 
 """Now that we have a crude mask, we can use all the voxels to estimate the SNR
 in this region. Since the corpus callosum is in the middle of the brain, the
-signal should be weaker and will greatly varie according to the direction of
+signal should be weaker and will greatly vary according to the direction of
 the b vector that is used for each DWI. The SNR should be low in the X
 orientation and high in the Y and Z orientations. The SNR is usually defined as
 the ratio of the mean of the signal divided by the standard deviation of the
@@ -192,7 +192,7 @@ axis_X = np.argmin(tenmodel.bvec-np.array([1, 0, 0])**2)
 axis_Y = np.argmin(tenmodel.bvec-np.array([0, 1, 0])**2)
 axis_Z = np.argmin(tenmodel.bvec-np.array([0, 0, 1])**2)
 
-"""Now that we have the closest b-vector to the cartesian axis, let's compute
+"""Now that we have the closest b-vectors to the cartesian axis, let's compute
 their respective SNR."""
 
 for direction in [axis_X, axis_Y, axis_Z]:
