@@ -50,7 +50,7 @@ both images in float32.
 mask_img = nib.Nifti1Image(mask.astype(np.float32), img.get_affine())
 b0_img = nib.Nifti1Image(b0_mask.astype(np.float32), img.get_affine())
 
-fname = './ge_3t'
+fname = 'ge_3t'
 nib.save(mask_img, fname + '_binary_mask.nii.gz')
 nib.save(b0_img, fname + '_mask.nii.gz')
 
@@ -62,11 +62,11 @@ import matplotlib.pyplot as plt
 
 sli = data.shape[2] / 2
 plt.figure('Brain segmentation')
-plt.subplot(1, 2, 1)
-plt.imshow(data[:, :, slice])
-plt.subplot(1, 2, 2)
-plt.imshow(b0_mask[:, :, slice])
-plt.show()
+plt.subplot(1, 2, 1).set_axis_off()
+plt.imshow(data[:, :, sli], cmap='gray')
+plt.subplot(1, 2, 2).set_axis_off()
+plt.imshow(b0_mask[:, :, sli], cmap='gray')
+plt.savefig('median_otsu.png')
 
 """
 .. figure:: median_otsu.png
@@ -87,7 +87,7 @@ Saving cropped data using nibabel as demonstrated previously.
 """
 
 mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.get_affine())
-b0_img_crop = nib.Nifti1Image(b0_mask_crop.astype(np.float32), img.get_affine())
-
+b0_img_crop = nib.Nifti1Image(
+    b0_mask_crop.astype(np.float32), img.get_affine())
 nib.save(mask_img_crop, fname + '_binary_mask_crop.nii.gz')
 nib.save(b0_img_crop, fname + '_mask_crop.nii.gz')
