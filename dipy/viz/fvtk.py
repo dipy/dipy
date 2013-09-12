@@ -23,8 +23,6 @@ import types
 
 import numpy as np
 
-import scipy as sp
-
 from dipy.core.ndindex import ndindex
 
 # Conditional import machinery for vtk
@@ -306,7 +304,7 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
 
     profileMapper = vtk.vtkPolyDataMapper()
     profileMapper.SetInputConnection(profileTubes.GetOutputPort())
-    profileMapper.ScalarVisibilityOn();
+    profileMapper.ScalarVisibilityOn()
     profileMapper.SetScalarModeToUsePointFieldData()
     profileMapper.SelectColorArray("Cols")
     profileMapper.GlobalImmediateModeRenderingOn()
@@ -319,8 +317,8 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
         profile = vtk.vtkActor()
     profile.SetMapper(profileMapper)
 
-    profile.GetProperty().SetAmbient(0)#.3
-    profile.GetProperty().SetSpecular(0)#.3
+    profile.GetProperty().SetAmbient(0)  # .3
+    profile.GetProperty().SetSpecular(0)  # .3
     profile.GetProperty().SetSpecularPower(10)
     profile.GetProperty().SetInterpolationToGouraud()
     profile.GetProperty().BackfaceCullingOn()
@@ -534,7 +532,7 @@ def dots(points, color=(1, 0, 0), opacity=1, dot_size=5):
 
     aPolyVertexGrid.SetPoints(polyVertexPoints)
     aPolyVertexMapper = vtk.vtkDataSetMapper()
-    if major_version <=  5:
+    if major_version <= 5:
         aPolyVertexMapper.SetInput(aPolyVertexGrid)
     else:
         aPolyVertexMapper.SetInputData(aPolyVertexGrid)
@@ -806,7 +804,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     if info:
         print('opacitymap', opacitymap)
 
-    if colormap == None:
+    if colormap is None:
 
         bin, res = np.histogram(vol.ravel())
         res2 = np.interp(res, [vol.min(), vol.max()], [0, 1])
@@ -838,7 +836,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
 
                 im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
 
-    if affine != None:
+    if affine is not None:
 
         aff = vtk.vtkMatrix4x4()
         aff.DeepCopy((affine[0, 0], affine[0, 1], affine[0, 2], affine[0, 3], affine[1, 0], affine[1, 1], affine[1, 2], affine[1, 3], affine[2, 0], affine[
@@ -900,7 +898,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
         if info:
             print('mapper VolumeTextureMapper2D')
         mapper = vtk.vtkVolumeTextureMapper2D()
-        if affine == None:
+        if affine is None:
             if major_version <= 5:
                 mapper.SetInput(im)
             else:
@@ -943,7 +941,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
             if info:
                 print('Composite')
 
-        if affine == None:
+        if affine is None:
             if major_version <= 5:
                 mapper.SetInput(im)
             else:
@@ -1265,7 +1263,7 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     vertices = sphere.vertices
 
     if sphere_values.shape[-1] != sphere.vertices.shape[0]:
-        msg = 'Sphere.vertice.shape[0] should be the same as the '
+        msg = 'Sphere.vertices.shape[0] should be the same as the '
         msg += 'last dimensions of sphere_values i.e. sphere_values.shape[-1]'
         raise ValueError(msg)
 
@@ -1555,7 +1553,7 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
         skinMapper.ScalarVisibilityOff()
         skin = vtk.vtkActor()
         skin.SetMapper(skinMapper)
-        if colors == None:
+        if colors is None:
             skin.GetProperty().SetDiffuseColor(1, .49, .25)
         else:
             colorskin = colors[le]
@@ -1845,7 +1843,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     >>> #fvtk.record(r)
     >>> #check for new images in current directory
     '''
-    if ren == None:
+    if ren is None:
         ren = vtk.vtkRenderer()
 
     renWin = vtk.vtkRenderWindow()
@@ -1869,13 +1867,13 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     writer = vtk.vtkPNGWriter()
     ang = 0
 
-    if cam_pos != None:
+    if cam_pos is not None:
         cx, cy, cz = cam_pos
         ren.GetActiveCamera().SetPosition(cx, cy, cz)
-    if cam_focal != None:
+    if cam_focal is not None:
         fx, fy, fz = cam_focal
         ren.GetActiveCamera().SetFocalPoint(fx, fy, fz)
-    if cam_view != None:
+    if cam_view is not None:
         ux, uy, uz = cam_view
         ren.GetActiveCamera().SetViewUp(ux, uy, uz)
 
@@ -1897,7 +1895,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         writer.SetInputConnection(renderLarge.GetOutputPort())
         # filename='/tmp/'+str(3000000+i)+'.png'
         if path_numbering:
-            if out_path == None:
+            if out_path is None:
                 filename = str(1000000 + i) + '.png'
             else:
                 filename = out_path + str(1000000 + i) + '.png'
