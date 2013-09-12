@@ -20,6 +20,7 @@ import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
+
 def fetch_scil_b0():
     """ Download b=0 datasets from multiple MR systems (GE, Philips, Siemens) and
         different magnetic fields (1.5T and 3T)
@@ -46,6 +47,7 @@ def fetch_scil_b0():
     else:
         print('Dataset already in place. If you want to fetch again please first remove folder %s ' % dipy_home)
 
+
 def read_scil_b0():
     """ Load GE 3T b0 image form the scil b0 dataset.
 
@@ -57,6 +59,7 @@ def read_scil_b0():
     dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
     file = dipy_home+'/datasets_multi-site_all_companies/3T/GE/b0.nii.gz'
     return nib.load(file)
+
 
 def check_md5(filename, stored_md5):
     """
@@ -273,6 +276,7 @@ def read_stanford_hardi():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
+
 
 def fetch_taiwan_ntu_dsi():
     """ Download a DSI dataset with 203 gradient directions
