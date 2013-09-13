@@ -5,6 +5,7 @@ from dipy.reconst.odf import OdfModel, OdfFit, gfa
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
+from .base import ReconstModel, ReconstFit
 
 
 class DiffusionSpectrumModel(ReconstModel, OdfModel, Cache):
@@ -130,7 +131,7 @@ class DiffusionSpectrumModel(ReconstModel, OdfModel, Cache):
         return DiffusionSpectrumFit(self, data)
 
 
-class DiffusionSpectrumFit(OdfFit):
+class DiffusionSpectrumFit(ReconstFit, OdfFit):
 
     def __init__(self, model, data):
         """ Calculates PDF and ODF and other properties for a single voxel

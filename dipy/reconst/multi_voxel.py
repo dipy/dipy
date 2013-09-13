@@ -4,6 +4,7 @@ from numpy.lib.stride_tricks import as_strided
 
 from ..core.ndindex import ndindex
 from .quick_squash import quick_squash as _squash
+from .base import ReconstModel, ReconstFit
 
 
 def multi_voxel_fit(single_voxel_fit):
@@ -34,7 +35,7 @@ def multi_voxel_fit(single_voxel_fit):
     return new_fit
 
 
-class MultiVoxelFit(object):
+class MultiVoxelFit(ReconstFit):
     """Holds an array of fits and allows access to their attributes and
     methods"""
     def __init__(self, model, fit_array, mask):
