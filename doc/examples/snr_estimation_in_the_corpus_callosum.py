@@ -59,7 +59,6 @@ b0_mask, mask = median_otsu(data)
 """
 
 from dipy.reconst.dti import TensorModel
-print("Now fitting tensor model")
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
 
@@ -154,6 +153,10 @@ plt.title("Corpus callosum segmentation")
 plt.imshow(mask_corpus_callosum2[region, ...])
 fig.savefig("Comparison_of_segmentation.png")
 
+"""
+.. figure:: Comparison_of_segmentation.png
+"""
+
 """Now that we have a crude mask, we can use all the voxels to estimate the SNR
 in this region. Since the corpus callosum is in the middle of the brain, the
 signal should be weaker and will greatly vary according to the direction of
@@ -170,11 +173,12 @@ We will compute the mean of the signal in the mask we just created and
 the standard deviation from the noise in the background.
 """
 
-mean_signal = np.mean(data[mask], axis=-1)
+mean_signal = np.mean(data[mask_corpus_callosum2], axis=0)
 
 """In order to have a good background estimation, we will re-use the brain mask
 computed before, but add the neck and shoulder part and then invert the
-mask."""
+mask.
+"""
 
 from scipy.ndimage.morphology import binary_dilation
 mask_noise = binary_dilation(mask, iterations=10)
@@ -182,23 +186,39 @@ mask_noise = binary_dilation(mask, iterations=10)
 mask_noise[..., :mask_noise.shape[-1]//2] = 1
 mask_noise = ~mask_noise
 
-noise_std = np.std(data[mask_noise], axis=-1)
+mask_noise_img = nib.Nifti1Image(mask_noise.astype(np.uint8), affine)
+nib.save(mask_noise_img, 'mask_noise.nii.gz')
+
+noise_std = np.std(data[mask_noise, :])
 
 """We can now compute the SNR for each dwi using the formula above. Let's find 
 the position of the gradient direction that lies the closest to the X, Y and Z 
-axis."""
+axis.
+"""
 
-axis_X = np.argmin(tenmodel.bvec-np.array([1, 0, 0])**2)
-axis_Y = np.argmin(tenmodel.bvec-np.array([0, 1, 0])**2)
-axis_Z = np.argmin(tenmodel.bvec-np.array([0, 0, 1])**2)
+# Exclude null bvecs from the search
+idx = np.sum(tenmodel.bvec, axis=-1) == 0
+tenmodel.bvec[idx] = np.inf
 
-"""Now that we have the closest b-vectors to the cartesian axis, let's compute
-their respective SNR."""
+axis_X = np.argmin(np.sum((tenmodel.bvec-np.array([1, 0, 0]))**2, axis=-1))
+axis_Y = np.argmin(np.sum((tenmodel.bvec-np.array([0, 1, 0]))**2, axis=-1))
+axis_Z = np.argmin(np.sum((tenmodel.bvec-np.array([0, 0, 1]))**2, axis=-1))
 
-for direction in [axis_X, axis_Y, axis_Z]:
-	SNR = mean_signal[direction]/noise_std[direction]
+"""Now that we have the closest b-vectors to each of the cartesian axis, 
+let's compute their respective SNR ans compare them to a b0 image's SNR.
+"""
+
+for direction in [0, axis_X, axis_Y, axis_Z]:
+	SNR = mean_signal[direction]/noise_std
 	print("SNR for direction", direction, "is :", SNR)
 
-"""Since the diffusion si string in the X axis, it is the lowest SNR in all of 
-the dwi, while the Y and Z axis have almost no diffusion and as such a high SNR.
+"""SNR for direction 0 is : ``39.7490994429``"""
+"""SNR for direction 58 is : ``4.84444879426``"""
+"""SNR for direction 57 is : ``22.6156341499``"""
+"""SNR for direction 126 is : ``23.1985563491``"""
+
+"""Since the diffusion is strong in the X axis, it is the lowest SNR in all of 
+the DWIs, while the Y and Z axis have almost no diffusion and as such a high
+SNR. The b0 still exibit the highest SNR, since there is no diffusion
+(and as such no signal drop) at all.
 """
