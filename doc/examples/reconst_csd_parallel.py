@@ -15,7 +15,7 @@ fiber distribution.
 
 Lets first load the data. We will use a dataset with 10 b0s and 150 non-b0s with b-value 2000.
 """
-
+import multiprocessing
 import numpy as np
 
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
@@ -115,13 +115,15 @@ csd_peaks_parallel = peaks_from_model_parallel(model=csd_model,
                             return_sh=True,
                             return_odf=False,
                             normalize_peaks=True,
-                            nbr_process=4) #default multiprocessing.cpu_count()
+                            ravel_peaks=False,
+                            npeaks=5,
+                            nbr_process=None) #default multiprocessing.cpu_count()
 
 time_parallel = time.time() - start_time
-print("peaks_from_model_parallel ran in :" + str(time_parallel) + " seconds")
+print("peaks_from_model_parallel using " + str(multiprocessing.cpu_count()) + " process ran in :" + str(time_parallel) + " seconds")
 
 """
-peaks_from_model_parallel ran in :70.6614370346 seconds
+peaks_from_model_parallel using 8 process ran in :114.425682068 seconds
 """
 
 start_time = time.time()
@@ -133,17 +135,19 @@ csd_peaks = peaks_from_model(model=csd_model,
                             mask=mask,
                             return_sh=True,
                             return_odf=False,
-                            normalize_peaks=True)
+                            normalize_peaks=True,
+                            ravel_peaks=False,
+                            npeaks=5,)
 
 time_single = time.time() - start_time
 print("peaks_from_model ran in :" + str(time_single) + " seconds")
 
 """
-peaks_from_model ran in :227.644396067 seconds
+peaks_from_model ran in :242.772505999 seconds
 """
 
 print("Speedup factor : " + str(time_single/time_parallel))
 
 """
-Speedup factor : 3.22162137681
+Speedup factor : 2.12166099088
 """
