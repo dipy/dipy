@@ -205,7 +205,7 @@ axis_Y = np.argmin(np.sum((tenmodel.bvec-np.array([0, 1, 0]))**2, axis=-1))
 axis_Z = np.argmin(np.sum((tenmodel.bvec-np.array([0, 0, 1]))**2, axis=-1))
 
 """Now that we have the closest b-vectors to each of the cartesian axis, 
-let's compute their respective SNR ans compare them to a b0 image's SNR.
+let's compute their respective SNR and compare them to a b0 image's SNR.
 """
 
 for direction in [0, axis_X, axis_Y, axis_Z]:
@@ -219,6 +219,6 @@ for direction in [0, axis_X, axis_Y, axis_Z]:
 
 """Since the diffusion is strong in the X axis, it is the lowest SNR in all of 
 the DWIs, while the Y and Z axis have almost no diffusion and as such a high
-SNR. The b0 still exibit the highest SNR, since there is no diffusion
+SNR. The b0 still exhibits the highest SNR, since there is no diffusion
 (and as such no signal drop) at all.
 """
