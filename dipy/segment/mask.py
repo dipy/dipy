@@ -4,6 +4,8 @@ from warnings import warn
 
 import numpy as np
 
+from dipy.reconst.dti import fractional_anisotropy, color_fa
+
 from scipy.ndimage.filters import median_filter
 try:
     from skimage.filter import threshold_otsu as otsu
@@ -20,8 +22,8 @@ def multi_median(input, median_radius, numpass):
     input : ndarray
         The input volume to apply filter on.
     median_radius : int
-        Radius (in voxels) of the applied median filter 
-    numpass : int
+        Radius (in voxels) of the applied median filter
+    numpass: int
         Number of pass of the median filter
 
     Returns
@@ -30,8 +32,10 @@ def multi_median(input, median_radius, numpass):
         Filtered input volume.
     """
     outvol = np.zeros_like(input)
+
     # Array representing the size of the median window in each dimension.
     medarr = np.ones_like(input.shape) * ((median_radius * 2) + 1)
+
     # Multi pass
     for i in range(0, numpass):
         median_filter(input, medarr, output=input)
@@ -178,3 +182,49 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     else:
         maskedvolume = applymask(input_volume, mask)
     return maskedvolume, mask
+
+
+def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
+    """
+    Segment the cfa inside roi using the values from threshold as bounds.
+
+    Parameters
+    -------------
+    tensor_fit : TensorFit object
+        TensorFit object
+
+    roi : ndarray
+        A binary mask, which contains the bounding box for the segmentation.
+
+    threshold : array-like
+        An iterable that defines the min and max values to use for the thresholding.
+        The values are specified as (R_min, R_max, G_min, G_max, B_min, B_max)
+
+    return_cfa : bool, optional
+        If True, the cfa is also returned.
+
+    Returns
+    ----------
+    mask : ndarray
+        Binary mask of the segmentation.
+
+    cfa : ndarray, optional
+        Array with shape = (..., 3), where ... is the shape of tensor_fit.
+        The color fractional anisotropy, ordered as a nd array with the last
+        dimension of size 3 for the R, G and B channels.
+    """
+
+    FA = fractional_anisotropy(tensor_fit.evals)
+    FA[np.isnan(FA)] = 0
+    FA = np.clip(FA, 0, 1)  # Clamp the FA to remove degenerate tensors
+
+    cfa = color_fa(FA, tensor_fit.evecs)
+    roi = np.asarray(roi, dtype=bool)
+
+    include = (cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]
+    mask = np.all(include, axis=-1)
+
+    if return_cfa:
+        return mask, cfa
+
+    return mask
