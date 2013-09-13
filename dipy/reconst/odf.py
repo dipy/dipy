@@ -217,18 +217,19 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     data_chunks = None
     pam = PeaksAndMetrics()
     #memmap are used to reduce de memory usage
-    pam.gfa = np.memmap(path.join(mkdtemp(), 'gfa.dat'), dtype=pam_res[0].gfa.dtype, mode='w+', shape=(data.shape[0]))
-    pam.peak_dirs = np.memmap(path.join(mkdtemp(), 'peak_dirs.dat'), dtype=pam_res[0].peak_dirs.dtype, mode='w+', shape=(data.shape[0], npeaks, 3))
-    pam.peak_values = np.memmap(path.join(mkdtemp(), 'peak_values.dat'), dtype=pam_res[0].peak_values.dtype, mode='w+', shape=(data.shape[0], npeaks))
-    pam.peak_indices = np.memmap(path.join(mkdtemp(), 'peak_indices.dat'), dtype=pam_res[0].peak_indices.dtype, mode='w+', shape=(data.shape[0], npeaks))
-    pam.qa =  np.memmap(path.join(mkdtemp(), 'qa.dat'), dtype=pam_res[0].qa.dtype, mode='w+', shape=(data.shape[0], npeaks))
+    tmp_dir = mkdtemp()
+    pam.gfa = np.memmap(path.join(tmp_dir, 'gfa.dat'), dtype=pam_res[0].gfa.dtype, mode='w+', shape=(data.shape[0]))
+    pam.peak_dirs = np.memmap(path.join(tmp_dir, 'peak_dirs.dat'), dtype=pam_res[0].peak_dirs.dtype, mode='w+', shape=(data.shape[0], npeaks, 3))
+    pam.peak_values = np.memmap(path.join(tmp_dir, 'peak_values.dat'), dtype=pam_res[0].peak_values.dtype, mode='w+', shape=(data.shape[0], npeaks))
+    pam.peak_indices = np.memmap(path.join(tmp_dir, 'peak_indices.dat'), dtype=pam_res[0].peak_indices.dtype, mode='w+', shape=(data.shape[0], npeaks))
+    pam.qa =  np.memmap(path.join(tmp_dir, 'qa.dat'), dtype=pam_res[0].qa.dtype, mode='w+', shape=(data.shape[0], npeaks))
     if return_odf:
-        pam.odf = np.memmap(path.join(mkdtemp(), 'qa.dat'), dtype=pam_res[0].odf.dtype, mode='w+', shape=(data.shape[0], len(sphere.vertices)))
+        pam.odf = np.memmap(path.join(tmp_dir, 'odf.dat'), dtype=pam_res[0].odf.dtype, mode='w+', shape=(data.shape[0], len(sphere.vertices)))
     else:
         pam.odf = None
     if return_sh:
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-        pam.shm_coeff = np.memmap(path.join(mkdtemp(), 'qa.dat'), dtype=pam_res[0].shm_coeff.dtype, mode='w+', shape=(data.shape[0], n_shm_coeff))
+        pam.shm_coeff = np.memmap(path.join(tmp_dir, 'shm.dat'), dtype=pam_res[0].shm_coeff.dtype, mode='w+', shape=(data.shape[0], n_shm_coeff))
         pam.invB = pam_res[0].invB
     else:
         pam.shm_coeff = None
