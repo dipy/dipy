@@ -179,7 +179,18 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
     
     if nbr_process < 2 :
-        return peaks_from_model(model, data, sphere, relative_peak_threshold, min_separation_angle, mask, return_odf, return_sh, gfa_thr, normalize_peaks, sh_order, sh_basis_type, ravel_peaks, npeaks)
+        return peaks_from_model(model, 
+                                data, sphere, 
+                                relative_peak_threshold, 
+                                min_separation_angle, 
+                                mask, return_odf, 
+                                return_sh, 
+                                gfa_thr, 
+                                normalize_peaks, 
+                                sh_order, 
+                                sh_basis_type, 
+                                ravel_peaks, 
+                                npeaks)
 
     shape = list(data.shape)
     data = np.reshape(data,(-1,shape[-1]))    
@@ -218,18 +229,39 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     pam = PeaksAndMetrics()
     #memmap are used to reduce de memory usage
     temp_dir = mkdtemp()
-    pam.gfa = np.memmap(path.join(temp_dir, 'gfa.dat'), dtype=pam_res[0].gfa.dtype, mode='w+', shape=(data.shape[0]))
-    pam.peak_dirs = np.memmap(path.join(temp_dir, 'peak_dirs.dat'), dtype=pam_res[0].peak_dirs.dtype, mode='w+', shape=(data.shape[0], npeaks, 3))
-    pam.peak_values = np.memmap(path.join(temp_dir, 'peak_values.dat'), dtype=pam_res[0].peak_values.dtype, mode='w+', shape=(data.shape[0], npeaks))
-    pam.peak_indices = np.memmap(path.join(temp_dir, 'peak_indices.dat'), dtype=pam_res[0].peak_indices.dtype, mode='w+', shape=(data.shape[0], npeaks))
-    pam.qa =  np.memmap(path.join(temp_dir, 'qa.dat'), dtype=pam_res[0].qa.dtype, mode='w+', shape=(data.shape[0], npeaks))
+    pam.gfa = np.memmap(path.join(temp_dir, 'gfa.dat'), 
+                        dtype=pam_res[0].gfa.dtype, 
+                        mode='w+', 
+                        shape=(data.shape[0]))
+    pam.peak_dirs = np.memmap(path.join(temp_dir, 'peak_dirs.dat'), 
+                              dtype=pam_res[0].peak_dirs.dtype, 
+                              mode='w+', 
+                              shape=(data.shape[0], npeaks, 3))
+    pam.peak_values = np.memmap(path.join(temp_dir, 'peak_values.dat'), 
+                                dtype=pam_res[0].peak_values.dtype, 
+                                mode='w+', 
+                                shape=(data.shape[0], npeaks))
+    pam.peak_indices = np.memmap(path.join(temp_dir, 'peak_indices.dat'), 
+                                 dtype=pam_res[0].peak_indices.dtype, 
+                                 mode='w+', 
+                                 shape=(data.shape[0], npeaks))
+    pam.qa =  np.memmap(path.join(temp_dir, 'qa.dat'), 
+                        dtype=pam_res[0].qa.dtype, 
+                        mode='w+', 
+                        shape=(data.shape[0], npeaks))
     if return_odf:
-        pam.odf = np.memmap(path.join(temp_dir, 'odf.dat'), dtype=pam_res[0].odf.dtype, mode='w+', shape=(data.shape[0], len(sphere.vertices)))
+        pam.odf = np.memmap(path.join(temp_dir, 'odf.dat'), 
+                            dtype=pam_res[0].odf.dtype, 
+                            mode='w+', 
+                            shape=(data.shape[0], len(sphere.vertices)))
     else:
         pam.odf = None
     if return_sh:        
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-        pam.shm_coeff = np.memmap(path.join(temp_dir, 'shm.dat'), dtype=pam_res[0].shm_coeff.dtype, mode='w+', shape=(data.shape[0], n_shm_coeff))
+        pam.shm_coeff = np.memmap(path.join(temp_dir, 'shm.dat'), 
+                                  dtype=pam_res[0].shm_coeff.dtype, 
+                                  mode='w+', 
+                                  shape=(data.shape[0], n_shm_coeff))
         pam.invB = pam_res[0].invB
     else:
         pam.shm_coeff = None
