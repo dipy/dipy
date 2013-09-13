@@ -59,12 +59,12 @@ csapeaks_parallel = peaks_from_model_parallel(model=csamodel,
                             mask=None,
                             return_odf=False,
                             normalize_peaks=True,
-                            nbr_process=None)
-end_time = time.time()
-print("peaks_from_model_parallel ran in: " + str(end_time - start_time) + " seconds")
+                            nbr_process=4) #default multiprocessing.cpu_count()
 
+time_parallel = time.time() - start_time
+print("peaks_from_model_parallel ran in : " + str(time_parallel) + " seconds")
 """
-peaks_from_model_parallel ran in: 73.64686203 seconds
+peaks_from_model_parallel ran in :62.6462249756 seconds
 """
 
 start_time = time.time()
@@ -76,10 +76,18 @@ csapeaks = peaks_from_model(model=csamodel,
                             mask=None,
                             return_odf=False,
                             normalize_peaks=True)
-end_time = time.time()
-print("peaks_from_model ran in: " + str(end_time - start_time) + " seconds")
+
+time_single = time.time() - start_time
+print("peaks_from_model ran in : " + str(time_single) + " seconds")
+
 """
-peaks_from_model ran in: 204.913657188 seconds
+peaks_from_model ran in : 186.999890089 seconds
+"""
+
+print("Speedup factor : " + str(time_single/time_parallel))
+
+"""
+Speedup factor : 3.12166152529
 """
 
 

@@ -34,9 +34,8 @@ precalculated FA we need to fit a Tensor model to the datasets. Which is what we
 
 from dipy.reconst.dti import TensorModel
 
-data = img.get_data()
+data = img.get_data()[:, :, 33:37]
 
-data = data[:, :, 37:39]
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 affine = img.get_affine()
@@ -116,12 +115,13 @@ csd_peaks_parallel = peaks_from_model_parallel(model=csd_model,
                             return_sh=True,
                             return_odf=False,
                             normalize_peaks=True,
-                            nbr_process=4)
-end_time = time.time()
-print("peaks_from_model_parallel ran in :" + str(end_time - start_time) + " seconds")
+                            nbr_process=4) #default multiprocessing.cpu_count()
+
+time_parallel = time.time() - start_time
+print("peaks_from_model_parallel ran in :" + str(time_parallel) + " seconds")
 
 """
-peaks_from_model_parallel ran in: 69.6995100975 seconds
+peaks_from_model_parallel ran in :70.6614370346 seconds
 """
 
 start_time = time.time()
@@ -134,9 +134,16 @@ csd_peaks = peaks_from_model(model=csd_model,
                             return_sh=True,
                             return_odf=False,
                             normalize_peaks=True)
-end_time = time.time()
-print("peaks_from_model ran in :" + str(end_time - start_time) + " seconds")
+
+time_single = time.time() - start_time
+print("peaks_from_model ran in :" + str(time_single) + " seconds")
 
 """
-peaks_from_model ran in: 185.693586111 seconds
+peaks_from_model ran in :227.644396067 seconds
+"""
+
+print("Speedup factor : " + str(time_single/time_parallel))
+
+"""
+Speedup factor : 3.22162137681
 """
