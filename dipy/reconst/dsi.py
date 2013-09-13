@@ -79,7 +79,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
         >>> ds.direction_finder.config(sphere=sphere,
-        ... 						   min_separation_angle=25,
+        ...                            min_separation_angle=25,
         ...                            relative_peak_threshold=.35)
         >>> dsfit = ds.fit(data)
         >>> from dipy.reconst.odf import gfa
