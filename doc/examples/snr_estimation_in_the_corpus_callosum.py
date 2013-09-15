@@ -157,6 +157,34 @@ fig.savefig("Comparison_of_segmentation.png")
 .. figure:: Comparison_of_segmentation.png
 """
 
+"""Let's now clean up our mask of the corpus callosum by getting rid of
+any leftover random voxels.
+"""
+from dipy.segment.mask import clean_cc_mask
+
+cleaned_cc_mask = clean_cc_mask(mask_corpus_callosum2)
+
+cleaned_cc_mask_img = nib.Nifti1Image(cleaned_cc_mask.astype(np.uint8), affine)
+nib.save(cleaned_cc_mask_img, 'mask_corpus_callosum2_cleaned.nii.gz')
+
+"""Now let's check our result by plotting our new mask alongside our old mask.
+"""
+
+fig = plt.figure('Corpus callosum segmentation2')
+plt.subplot(1, 2, 1)
+plt.title("Old corpus callosum segmentation")
+plt.imshow(mask_corpus_callosum2[region, ...])
+
+plt.subplot(1, 2, 2)
+plt.title("New corpus callosum segmentation")
+plt.imshow(cleaned_cc_mask[region, ...])
+
+fig.savefig("Comparison_of_segmentation2.png")
+
+"""
+.. figure:: Comparison_of_segmentation2.png
+"""
+
 """Now that we have a crude mask, we can use all the voxels to estimate the SNR
 in this region. Since the corpus callosum is in the middle of the brain, the
 signal should be weaker and will greatly vary according to the direction of
