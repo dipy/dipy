@@ -228,3 +228,17 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
         return mask, cfa
 
     return mask
+	
+def isolate_cc(mask):
+    from scipy.ndimage.measurements import label
+    
+    new_cc_mask = np.zeros(mask.shape)
+        
+    # Flood fill algorithm to find contiguous regions
+    labels, numL = label(mask_corpus_callosum)
+    
+    volumes = [len(labels[np.where(labels == l_idx+1)]) for l_idx in np.arange(numL)]
+    biggest_vol = np.arange(numL)[np.where(volumes == np.max(volumes))] + 1
+    new_cc_mask[np.where(labels == biggest_vol)] = 1
+        
+    return new_cc_mask
