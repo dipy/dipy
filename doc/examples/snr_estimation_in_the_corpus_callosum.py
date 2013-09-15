@@ -157,9 +157,10 @@ fig.savefig("Comparison_of_segmentation.png")
 .. figure:: Comparison_of_segmentation.png
 """
 
-"""Let's now clean up our mask of the corpus callosum by getting rid of
-any leftover random voxels.
+"""Let's now clean up our mask by getting rid of any leftover random
+voxels that are not a part of the corpus callosum.
 """
+
 from dipy.segment.mask import clean_cc_mask
 
 cleaned_cc_mask = clean_cc_mask(mask_corpus_callosum2)
