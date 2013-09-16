@@ -3,7 +3,7 @@
 Calculate DSI metrics
 =================================================
 
-We show how to calculated two DSI-based scalar metrics: return to origin probability (rtop) 
+We show how to calculate two DSI-based scalar metrics: return to origin probability (rtop) 
 and mean square displacement (msd) on your dataset.
 
 First import the necessary modules:
@@ -98,7 +98,7 @@ print('Calculating... msd_norm')
 msd_norm = dsmodel.fit(dataslice).msd_discrete()
 
 """
-Turning the normalized parameter to false makes possible to calculate 
+Turning the normalized parameter to false makes it possible to calculate 
 the mean square displacement on the propagator without normalization.
 """
 
@@ -148,7 +148,7 @@ plt.savefig('msd.png')
 .. figure:: msd.png
    :align: center
 
-   **Mean square deviation**.
+   **Mean square displacement**.
 
 .. include:: ../links_names.inc
 
