@@ -201,9 +201,8 @@ class DiffusionSpectrumFit(OdfFit):
         return rtop
 
     def rtop_pdf(self, normalized=True):
-        """ Calculates the return to origin probability from the propagator, which is
-        the propagator evaluated at zero (see Tuch PhD 2002, Wu et al NeuroImage 2007,
-        Descoteaux et al. MedIA 2011)
+        r""" Calculates the return to origin probability from the propagator, which is
+        the propagator evaluated at zero (see Descoteaux et Al. [1]_, Tuch [2]_, Wu et al. [3]_)
         rtop = P(0)
 
         Parameters
@@ -215,6 +214,19 @@ class DiffusionSpectrumFit(OdfFit):
         -------
         rtop : float
             the return to origin probability
+
+        References
+        ----------
+        .. [1] Descoteaux M. et. al, "Multiple q-shell diffusion propagator
+        imaging", Medical Image Analysis, vol 15, No. 4, p. 603-621, 2011.
+
+        .. [2] Tuch D.S., "Diffusion MRI of Complex Tissue Structure",
+         PhD Thesis, 2002.
+
+        .. [3] Wu Y. et. al, "Computation of Diffusion Function Measures
+        in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging", 
+        IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865, 2008
+
         """
 
         Pr = self.pdf(normalized=normalized)
@@ -233,7 +245,7 @@ class DiffusionSpectrumFit(OdfFit):
                     MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
                 \end{equation}
 
-        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space.
+        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space (see Wu et. al [1]_).
 
         Parameters
         ----------
@@ -244,6 +256,12 @@ class DiffusionSpectrumFit(OdfFit):
         -------
         msd : float
             the mean square displacement
+
+        References
+        ----------
+        .. [1] Wu Y. et. al, "Hybrid diffusion imaging", NeuroImage, vol 36,
+        p. 617-629, 2007.
+
         """
 
         Pr = self.pdf(normalized=normalized)
