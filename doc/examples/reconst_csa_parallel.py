@@ -10,10 +10,8 @@ First import the necessary modules:
 """
 
 import time
-import numpy as np
-import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
-from dipy.reconst.shm import CsaOdfModel, normalize_data
+from dipy.reconst.shm import CsaOdfModel
 from dipy.reconst.odf import peaks_from_model, peaks_from_model_parallel
 
 """
