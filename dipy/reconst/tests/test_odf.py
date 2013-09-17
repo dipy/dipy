@@ -182,17 +182,19 @@ def test_peaksFromModel():
 
 def test_peaksFromModelParallel():
     data = np.zeros((10, 2))
-    
-    #test equality with/without parralelisation
+
+    # test equality with/without multiprocessing
     model = SimpleOdfModel()
-    pam_multi = peaks_from_model_parallel(model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
-    pam_single = peaks_from_model(model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+    pam_multi = peaks_from_model_parallel(
+        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+    pam_single = peaks_from_model(
+        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
 
     assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
     assert_array_almost_equal(pam_multi.qa, pam_single.qa)
     assert_array_almost_equal(pam_multi.peak_values, pam_single.peak_values)
-    assert_array_equal(pam_multi.peak_indices, pam_single.peak_indices)    
-    assert_array_almost_equal(pam_multi.peak_dirs, pam_single.peak_dirs)  
+    assert_array_equal(pam_multi.peak_indices, pam_single.peak_indices)
+    assert_array_almost_equal(pam_multi.peak_dirs, pam_single.peak_dirs)
     assert_array_almost_equal(pam_multi.shm_coeff, pam_single.shm_coeff)
     assert_array_almost_equal(pam_multi.odf, pam_single.odf)
 
