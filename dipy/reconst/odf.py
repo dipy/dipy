@@ -229,7 +229,7 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
     data_chunks = None
     pam = PeaksAndMetrics()
-    # memmap are used to reduce de memory usage
+    # memmap are used to reduce the memory usage
     temp_dir = mkdtemp()
     pam.gfa = np.memmap(path.join(temp_dir, 'gfa.dat'),
                         dtype=pam_res[0].gfa.dtype,

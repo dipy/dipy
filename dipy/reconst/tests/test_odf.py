@@ -183,10 +183,12 @@ def test_peaksFromModel():
 def test_peaksFromModelParallel():
     data = np.zeros((10, 2))
 
-    #test equality with/without parralelisation
+    # test equality with/without multiprocessing
     model = SimpleOdfModel()
-    pam_multi = peaks_from_model_parallel(model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
-    pam_single = peaks_from_model(model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+    pam_multi = peaks_from_model_parallel(
+        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+    pam_single = peaks_from_model(
+        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
 
     assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
     assert_array_almost_equal(pam_multi.qa, pam_single.qa)

@@ -44,7 +44,7 @@ from dipy.segment.mask import median_otsu
 maskdata, mask = median_otsu(data, 3, 2, True, range(0,10))
 
 """
-We instantiate our CSA model with sperical harmonic order of 4
+We instantiate our CSA model with spherical harmonic order of 4
 """
 
 csamodel = CsaOdfModel(gtab, 4)
