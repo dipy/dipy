@@ -91,17 +91,20 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
 
 
 class OdfModel(object):
+
     """An abstract class to be sub-classed by specific odf models
 
     All odf models should provide a fit method which may take data as it's
     first and only argument.
     """
+
     def fit(self, data):
         """To be implemented by specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
 
 
 class OdfFit(object):
+
     def odf(self, sphere):
         """To be implemented but specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
@@ -159,10 +162,10 @@ import os.path as path
 
 
 def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
-                     min_separation_angle, mask=None, return_odf=False,
-                     return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, ravel_peaks=False,
-                     npeaks=5, nbr_process=None):
+                              min_separation_angle, mask=None, return_odf=False,
+                              return_sh=True, gfa_thr=0, normalize_peaks=False,
+                              sh_order=8, sh_basis_type=None, ravel_peaks=False,
+                              npeaks=5, nbr_process=None):
     """
     Fits the model to data and computes peaks and metrics using multiprocessing
 
@@ -177,8 +180,7 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     if nbr_process is None:
         nbr_process = cpu_count()
 
-
-    if nbr_process < 2 :
+    if nbr_process < 2:
         return peaks_from_model(model,
                                 data, sphere,
                                 relative_peak_threshold,
@@ -193,10 +195,10 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                 npeaks)
 
     shape = list(data.shape)
-    data = np.reshape(data,(-1,shape[-1]))
+    data = np.reshape(data, (-1, shape[-1]))
 
     n = data.shape[0]
-    nbr_chunks = nbr_process**2
+    nbr_chunks = nbr_process ** 2
     chunk_size = int(np.ceil(n / nbr_chunks))
     data_chunks = [data[i:i + chunk_size] for i in range(0, n, chunk_size)]
 
@@ -209,25 +211,25 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     pool = Pool(nbr_process)
 
     pam_res = pool.map(__peaks_from_model_parallel_sub,
-            zip(repeat(model),
-                data_chunks,
-                repeat(sphere),
-                repeat(relative_peak_threshold),
-                repeat(min_separation_angle),
-                mask_chunks,
-                repeat(return_odf),
-                repeat(return_sh),
-                repeat(gfa_thr),
-                repeat(normalize_peaks),
-                repeat(sh_order),
-                repeat(sh_basis_type),
-                repeat(ravel_peaks),
-                repeat(npeaks)))
+                       zip(repeat(model),
+                           data_chunks,
+                           repeat(sphere),
+                           repeat(relative_peak_threshold),
+                           repeat(min_separation_angle),
+                           mask_chunks,
+                           repeat(return_odf),
+                           repeat(return_sh),
+                           repeat(gfa_thr),
+                           repeat(normalize_peaks),
+                           repeat(sh_order),
+                           repeat(sh_basis_type),
+                           repeat(ravel_peaks),
+                           repeat(npeaks)))
     pool.close()
 
     data_chunks = None
     pam = PeaksAndMetrics()
-    #memmap are used to reduce de memory usage
+    # memmap are used to reduce de memory usage
     temp_dir = mkdtemp()
     pam.gfa = np.memmap(path.join(temp_dir, 'gfa.dat'),
                         dtype=pam_res[0].gfa.dtype,
@@ -245,10 +247,10 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                  dtype=pam_res[0].peak_indices.dtype,
                                  mode='w+',
                                  shape=(data.shape[0], npeaks))
-    pam.qa =  np.memmap(path.join(temp_dir, 'qa.dat'),
-                        dtype=pam_res[0].qa.dtype,
-                        mode='w+',
-                        shape=(data.shape[0], npeaks))
+    pam.qa = np.memmap(path.join(temp_dir, 'qa.dat'),
+                       dtype=pam_res[0].qa.dtype,
+                       mode='w+',
+                       shape=(data.shape[0], npeaks))
     if return_odf:
         pam.odf = np.memmap(path.join(temp_dir, 'odf.dat'),
                             dtype=pam_res[0].odf.dtype,
@@ -267,24 +269,24 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         pam.shm_coeff = None
         pam.invB = None
 
-    #copy sub process result arrays to a single result array
+    # copy sub process result arrays to a single result array
     for i in range(len(pam_res)):
         start_pos = i * chunk_size
-        end_pos = (i+1) * chunk_size
+        end_pos = (i + 1) * chunk_size
         if start_pos >= data.shape[0]:
             break
-        pam.gfa[start_pos : end_pos] = pam_res[i].gfa[:]
-        pam.peak_dirs[start_pos : end_pos] = pam_res[i].peak_dirs[:]
-        pam.peak_values[start_pos : end_pos] = pam_res[i].peak_values[:]
-        pam.peak_indices[start_pos : end_pos] = pam_res[i].peak_indices[:]
-        pam.qa[start_pos : end_pos] = pam_res[i].qa[:]
+        pam.gfa[start_pos: end_pos] = pam_res[i].gfa[:]
+        pam.peak_dirs[start_pos: end_pos] = pam_res[i].peak_dirs[:]
+        pam.peak_values[start_pos: end_pos] = pam_res[i].peak_values[:]
+        pam.peak_indices[start_pos: end_pos] = pam_res[i].peak_indices[:]
+        pam.qa[start_pos: end_pos] = pam_res[i].qa[:]
 
         if return_sh:
-            pam.shm_coeff[start_pos : end_pos] = pam_res[i].shm_coeff[:]
+            pam.shm_coeff[start_pos: end_pos] = pam_res[i].shm_coeff[:]
         if return_odf:
-            pam.odf[start_pos : end_pos] = pam_res[i].odf[:]
+            pam.odf[start_pos: end_pos] = pam_res[i].odf[:]
 
-    #reshape the metric to the original shape
+    # reshape the metric to the original shape
     pam.peak_dirs = np.reshape(pam.peak_dirs, shape[:-1] + [npeaks, 3])
     pam.peak_values = np.reshape(pam.peak_values, shape[:-1] + [npeaks])
     pam.peak_indices = np.reshape(pam.peak_indices, shape[:-1] + [npeaks])
@@ -295,6 +297,7 @@ def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
 def __peaks_from_model_parallel_sub(args):
     return peaks_from_model(*args)
+
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
@@ -365,7 +368,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     peak_indices.fill(-1)
 
     if return_sh:
-        #import here to avoid circular imports
+        # import here to avoid circular imports
         from dipy.reconst.shm import sph_harm_lookup, smooth_pinv
 
         sph_harm_basis = sph_harm_lookup.get(sh_basis_type)
@@ -400,8 +403,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             continue
 
         # Get peaks of odf
-        direction, pk, ind = peak_directions(odf, sphere, relative_peak_threshold,
-                                             min_separation_angle)
+        direction, pk, ind = peak_directions(
+            odf, sphere, relative_peak_threshold,
+            min_separation_angle)
 
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
@@ -424,7 +428,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     # The fibernavigator only supports float32. Since this form is mainly
     # for external visualisation, we enforce float32.
     if ravel_peaks:
-        peak_dirs = peak_dirs.reshape(shape + (3*npeaks,)).astype('float32')
+        peak_dirs = peak_dirs.reshape(shape + (3 * npeaks,)).astype('float32')
 
     pam = PeaksAndMetrics()
     pam.peak_dirs = peak_dirs
@@ -452,9 +456,9 @@ def gfa(samples):
     """The general fractional anisotropy of a function evaluated on the unit sphere"""
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
-    numer = n*(diff*diff).sum(-1)
-    denom = (n-1)*(samples*samples).sum(-1)
-    return np.sqrt(numer/denom)
+    numer = n * (diff * diff).sum(-1)
+    denom = (n - 1) * (samples * samples).sum(-1)
+    return np.sqrt(numer / denom)
 
 
 def minmax_normalize(samples, out=None):
