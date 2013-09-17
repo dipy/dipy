@@ -354,8 +354,6 @@ def forward_sdt_deconv_mat(ratio, n):
     n_degrees = n.max() // 2 + 1
     sdt = np.zeros(n_degrees) # SDT matrix
     frt = np.zeros(n_degrees) # FRT (Funk-Radon transform) q-ball matrix
-    b = np.zeros(len(n))
-    bb = np.zeros(len(n))
 
     for l in np.arange(0, n_degrees*2, 2):
         sharp = quad(lambda z: lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
