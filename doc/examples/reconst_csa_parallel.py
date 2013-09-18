@@ -40,7 +40,7 @@ Remove most of the background using dipy's mask module.
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, 3, 2, True, range(0,10))
+maskdata, mask = median_otsu(data, 3, 2, True, range(0, 10))
 
 """
 We instantiate our CSA model with spherical harmonic order of 4
@@ -61,19 +61,20 @@ sphere = get_sphere('symmetric724')
 
 start_time = time.time()
 csapeaks_parallel = peaks_from_model_parallel(model=csamodel,
-                            data=data,
-                            sphere=sphere,
-                            relative_peak_threshold=.8,
-                            min_separation_angle=45,
-                            mask=None,
-                            return_odf=False,
-                            normalize_peaks=True,
-                            ravel_peaks=False,
-                            npeaks=5,
-                            nbr_process=2) #default multiprocessing.cpu_count()
+                                              data=data,
+                                              sphere=sphere,
+                                              relative_peak_threshold=.8,
+                                              min_separation_angle=45,
+                                              mask=None,
+                                              return_odf=False,
+                                              normalize_peaks=True,
+                                              ravel_peaks=False,
+                                              npeaks=5,
+                                              nbr_process=2)  # default multiprocessing.cpu_count()
 
 time_parallel = time.time() - start_time
-print("peaks_from_model_parallel using 2 process ran in : " + str(time_parallel) + " seconds")
+print("peaks_from_model_parallel using 2 process ran in : " +
+      str(time_parallel) + " seconds")
 """
 peaks_from_model_parallel using 2 process ran in  : 114.333221912 seconds, using 2 process
 """
@@ -97,11 +98,8 @@ print("peaks_from_model ran in : " + str(time_single) + " seconds")
 peaks_from_model ran in : 196.872478008 seconds
 """
 
-print("Speedup factor : " + str(time_single/time_parallel) )
+print("Speedup factor : " + str(time_single / time_parallel))
 
 """
 Speedup factor : 1.72191839533
 """
-
-
-
