@@ -125,6 +125,10 @@ fodf_spheres.SetScale(0.78)
 
 fvtk.add(ren, fodf_spheres)
 
+"""
+Additionally, we can visualize the ODFs together with slices
+"""
+
 from dipy.reconst.odf import gfa
 
 GFA = gfa(csd_odf)
@@ -132,7 +136,7 @@ GFA = gfa(csd_odf)
 fvtk.add(ren, fvtk.slicer(GFA, plane_k=[0]))
 
 print('Saving illustration as csd_odfs.png')
-fvtk.record(ren, n_frames=1, out_path='csd_odfs.png', size=(600, 600))
+fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
 
 """
 .. figure:: csd_odfs.png

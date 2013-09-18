@@ -1625,8 +1625,51 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
     return assem
 
 
+def camera(ren, pos=None, focal=None, viewup=None, verbose=True):
+    """ Change the active camera
+
+    Parameters
+    ----------
+    ren : vtkRenderer
+    pos : tuple
+        (x, y, z) position of the camera
+    focal : tuple
+        (x, y, z) focal point
+    viewup : tuple
+        (x, y, z) viewup vector
+    verbose : bool
+        show information about the camera
+
+    Returns
+    -------
+    vtkCamera
+    """
+
+    cam = ren.GetActiveCamera()
+    if verbose:
+        print('Camera Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
+        print('Camera Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
+        print('Camera View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
+    if pos is not None:
+        cam = ren.GetActiveCamera().SetPosition(*pos)
+    if focal is not None:
+        ren.GetActiveCamera().SetFocalPoint(*focal)
+    if viewup is not None:
+        ren.GetActiveCamera().SetViewUp(*viewup)
+
+    cam = ren.GetActiveCamera()
+    if pos is not None or focal is not None or viewup is not None:
+        if verbose:
+            print('-------------------------------------')
+            print('Camera New Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
+            print('Camera New Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
+            print('Camera New View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
+
+    return cam
+
+
 def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
-    ''' Show window
+    """ Show window
 
     Notes
     -----
@@ -1674,7 +1717,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     ----------
     dipy.viz.fvtk.record
 
-    '''
+    """
 
     ren.ResetCamera()
     window = vtk.vtkRenderWindow()
@@ -1719,7 +1762,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
 
 
 def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
-           out_path=None, path_numbering=False, n_frames=10, az_ang=10,
+           out_path=None, path_numbering=False, n_frames=1, az_ang=10,
            magnification=1, size=(300, 300), verbose=False):
     ''' This will record a video of your scene
 
@@ -1741,7 +1784,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     path_numbering : bool
         when recording it changes out_path ot out_path + str(frame number)
     n_frames : int, optional
-        number of frames to save, default 10
+        number of frames to save, default 1
     az_ang : float, optional
         azimuthal angle of camera rotation.
     magnification : int, optional
