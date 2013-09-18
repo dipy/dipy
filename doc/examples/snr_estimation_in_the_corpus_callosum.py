@@ -71,7 +71,7 @@ We know that the corpus callosum should be in the middle of the brain
 and since the principal diffusion direction is the x axis,
 the red channel should be the highest in the cfa.
 
-Let's pick a range of 0.7 to 1 in the x axis and 0 to 0.1 in the y and z axis
+Let's pick a range of 0.2 to 1 in the x axis and 0 to 0.1 in the y and z axis
 as a segmentation threshold.
 
 We will also define a rough roi, since noisy pixels could be considered in the
@@ -85,7 +85,7 @@ not centered properly.
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
-threshold = (0.7, 1, 0, 0.1, 0, 0.1)
+threshold = (0.2, 1, 0, 0.3, 0, 0.3)
 CC_box = np.zeros_like(data[..., 0])
 
 mins, maxs = bounding_box(mask)
@@ -115,15 +115,12 @@ purpose. Remember that the function works with values between
 cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
 mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum.astype(np.uint8), affine)
 
-nib.save(cfa_img, 'cfa.nii.gz')
-nib.save(mask_corpus_callosum_img, 'mask_corpus_callosum.nii.gz')
-
 
 """The mask has random voxels because of the noise, so let's change 
 the threshold, the bounding box  and restart segmenting from the cfa.
 """
 
-threshold2 = (0.6, 1, 0, 0.1, 0, 0.1)
+threshold2 = (0.3, 1, 0, 0.3, 0, 0.3)
 
 CC_box = np.zeros_like(CC_box)
 CC_box[bounds_min[0]:50,
@@ -131,9 +128,6 @@ CC_box[bounds_min[0]:50,
        bounds_min[2]:bounds_max[2]] = 1
 
 mask_corpus_callosum2 = segment_from_cfa(tensorfit, CC_box, threshold2)
-
-mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype(np.uint8), affine)
-nib.save(mask_corpus_callosum2_img, 'mask_corpus_callosum2.nii.gz')
 
 print("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
        "voxels out of", np.size(CC_box))
@@ -173,11 +167,11 @@ nib.save(cleaned_cc_mask_img, 'mask_corpus_callosum2_cleaned.nii.gz')
 
 fig = plt.figure('Corpus callosum segmentation2')
 plt.subplot(1, 2, 1)
-plt.title("Old corpus callosum segmentation")
+plt.title("Old segmentation")
 plt.imshow(mask_corpus_callosum2[region, ...])
 
 plt.subplot(1, 2, 2)
-plt.title("New corpus callosum segmentation")
+plt.title("New segmentation")
 plt.imshow(cleaned_cc_mask[region, ...])
 
 fig.savefig("Comparison_of_segmentation2.png")

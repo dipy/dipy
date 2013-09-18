@@ -229,13 +229,27 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
 
     return mask
 	
-def isolate_cc(mask):
+def clean_cc_mask(mask):
+    """
+    Cleans a segmentation of the corpus callosum so no random pixels are included.
+    
+    Parameters
+    ----------
+    mask : ndarray
+        Binary mask of the coarse segmentation.
+    
+    Returns
+    -------
+    new_cc_mask : ndarray
+        Binary mask of the cleaned segmentation.
+    """
+    
     from scipy.ndimage.measurements import label
     
     new_cc_mask = np.zeros(mask.shape)
         
-    # Flood fill algorithm to find contiguous regions
-    labels, numL = label(mask_corpus_callosum)
+    # Flood fill algorithm to find contiguous regions.
+    labels, numL = label(mask)
     
     volumes = [len(labels[np.where(labels == l_idx+1)]) for l_idx in np.arange(numL)]
     biggest_vol = np.arange(numL)[np.where(volumes == np.max(volumes))] + 1
