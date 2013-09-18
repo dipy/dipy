@@ -126,7 +126,7 @@ fodf_spheres.SetScale(0.78)
 fvtk.add(ren, fodf_spheres)
 
 """
-Additionally, we can visualize the ODFs together with slices
+Additionally, we can visualize the ODFs together with a GFA slice
 """
 
 from dipy.reconst.odf import gfa
