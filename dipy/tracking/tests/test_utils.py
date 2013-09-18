@@ -220,6 +220,23 @@ def test_streamline_mapping():
                     for k, indices in expected.items())
     assert_equal(mapping, expected)
 
+    # Test passing affine
+    affine = np.eye(4)
+    affine[:3, 3] = .5
+    mapping = streamline_mapping(streamlines, affine=affine,
+                                 mapping_as_streamlines=True)
+    assert_equal(mapping, expected)
+
+    # Make the voxel size smaller
+    affine = np.diag([.5, .5, .5, 1.])
+    affine[:3, 3] = .25
+    expected = dict((tuple(i*2 for i in key), value)
+                    for key, value in expected.items())
+    mapping = streamline_mapping(streamlines, affine=affine,
+                                 mapping_as_streamlines=True)
+    assert_equal(mapping, expected)
+
+
 def test_rmi():
 
     I1 = _rmi([3, 4], [10, 10])
