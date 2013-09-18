@@ -1843,10 +1843,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
     for i in range(n_frames):
         ren.GetActiveCamera().Azimuth(ang)
         renderLarge = vtk.vtkRenderLargeImage()
-        if major_version <= 5:
-            renderLarge.SetInput(ren)
-        else:
-            renderLarge.SetInputData(ren)
+        renderLarge.SetInput(ren)
         renderLarge.SetMagnification(magnification)
         renderLarge.Update()
         writer.SetInputConnection(renderLarge.GetOutputPort())
