@@ -482,7 +482,7 @@ def interp_rbf(data, sphere_origin, sphere_target,
         approximation with 0 (the default) as pure interpolation.
     norm : str
         A string indicating the function that returns the
-        ‘distance’ between two points.
+        "distance" between two points.
         'angle' - The angle between two vectors
         'euclidean_norm' - The Euclidean distance
         
