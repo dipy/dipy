@@ -1473,103 +1473,70 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     return actor
 
 
-def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
-           planes=1, levels=[20, 30, 40], opacities=[0.8, 0.7, 0.3],
-           colors=None, planesx=[30], planesy=[30], planesz=[30]):
-    ''' Slicer and contour rendering of 3d volumes
+def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
+           plane_k=None, outline=True):
+    """ Slice a 3D volume
 
     Parameters
-    ----------------
-    vol : array, shape (N, M, K), dtype uint8
-        An array representing the volumetric dataset that we want to visualize
-        using volumetric rendering.
+    ----------
+    vol : array, shape (N, M, K)
+        An array representing the volumetric dataset that we want to slice
     voxsz : sequence of 3 floats
         Voxel size.
-    affine : array, shape (4,4), default None
-        As given by ``volumeimages``.
-    contours : bool 1 to show contours
-        Whether to show contours.
-    planes : boolean 1 show planes
-        Whether to show planes.
-    levels : sequence
-        Contour levels.
-    opacities : sequence
-        Opacity for every contour level.
-    colors : None or sequence of 3-tuples
-        Color for each contour level.
-    planesx : (2,) array_like
-        Saggital.
-    planesy : (2,) array_like
-        Coronal.
-    planesz :
-        Axial (2,) array_like
+    plane_i : sequence of ints
+        show plane or planes along the first dimension
+    plane_j : sequence of ints
+        show plane or planes along the second dimension
+    plane_k : sequence of ints
+        show plane or planes along the third(last) dimension
+    outline : bool
+        if True (default) a small outline is drawn around the slices
 
     Examples
-    --------------
+    --------
     >>> import numpy as np
     >>> from dipy.viz import fvtk
     >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
     >>> s = np.sin(x * y * z) / (x * y * z)
-    >>> r=fvtk.ren()
-    >>> #fvtk.slicer(r, s) #does showing too
-    '''
+    >>> r = fvtk.ren()
+    >>> fvtk.add(r, fvtk.slicer(s, plane_i=[0, 5]))
+    >>> #fvtk.show(r)
+    """
+
+    if plane_i is None:
+        plane_i = []
+    if plane_j is None:
+        plane_j = []
+    if plane_k is None:
+        plane_k = []
+
+    if vol.ndim != 3:
+        raise ValueError("vol has to be a 3d array")
+
     vol = np.interp(vol, xp=[vol.min(), vol.max()], fp=[0, 255])
     vol = vol.astype('uint8')
 
     im = vtk.vtkImageData()
     im.SetScalarTypeToUnsignedChar()
-    im.SetDimensions(vol.shape[0], vol.shape[1], vol.shape[2])
+    I, J, K = vol.shape[:3]
+    im.SetDimensions(I, J, K)
     # im.SetOrigin(0,0,0)
     im.SetSpacing(voxsz[2], voxsz[0], voxsz[1])
     im.AllocateScalars()
 
+    # copy data
     for i in range(vol.shape[0]):
         for j in range(vol.shape[1]):
             for k in range(vol.shape[2]):
-
                 im.SetScalarComponentFromFloat(i, j, k, 0, vol[i, j, k])
-
-    Contours = []
-    for le in levels:
-        # An isosurface, or contour value of 500 is known to correspond to the
-        # skin of the patient. Once generated, a vtkPolyDataNormals filter is
-        # is used to create normals for smooth surface shading during rendering.
-        # The triangle stripper is used to create triangle strips from the
-        # isosurface these render much faster on may systems.
-        skinExtractor = vtk.vtkContourFilter()
-        # skinExtractor.SetInputConnection(im.GetOutputPort())
-        if major_version <= 5:
-            skinExtractor.SetInput(im)
-        else:
-            skinExtractor.SetInputData(im)
-        skinExtractor.SetValue(0, le)
-        skinNormals = vtk.vtkPolyDataNormals()
-        skinNormals.SetInputConnection(skinExtractor.GetOutputPort())
-        skinNormals.SetFeatureAngle(60.0)
-        skinStripper = vtk.vtkStripper()
-        skinStripper.SetInputConnection(skinNormals.GetOutputPort())
-        skinMapper = vtk.vtkPolyDataMapper()
-        skinMapper.SetInputConnection(skinStripper.GetOutputPort())
-        skinMapper.ScalarVisibilityOff()
-        skin = vtk.vtkActor()
-        skin.SetMapper(skinMapper)
-        if colors is None:
-            skin.GetProperty().SetDiffuseColor(1, .49, .25)
-        else:
-            colorskin = colors[le]
-            skin.GetProperty().SetDiffuseColor(colorskin[0], colorskin[1], colorskin[2])
-        skin.GetProperty().SetSpecular(.3)
-        skin.GetProperty().SetSpecularPower(20)
-
-        Contours.append(skin)
 
     # An outline provides context around the data.
     outlineData = vtk.vtkOutlineFilter()
-    # outlineData.SetInputConnection(im.GetOutputPort())
     if major_version <= 5:
         outlineData.SetInput(im)
     else:
         outlineData.SetInputData(im)
+
     mapOutline = vtk.vtkPolyDataMapper()
     mapOutline.SetInputConnection(outlineData.GetOutputPort())
     outline = vtk.vtkActor()
@@ -1612,7 +1579,7 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
     planeColors.Update()
 
     saggitals = []
-    for x in planesx:
+    for x in plane_i:
 
         saggital = vtk.vtkImageActor()
         if major_version <= 5:
@@ -1624,7 +1591,7 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
         saggitals.append(saggital)
 
     axials = []
-    for z in planesz:
+    for z in plane_k:
         axial = vtk.vtkImageActor()
         if major_version <= 5:
             axial.SetInput(planeColors.GetOutput())
@@ -1634,7 +1601,7 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
         axials.append(axial)
 
     coronals = []
-    for y in planesy:
+    for y in plane_j:
         coronal = vtk.vtkImageActor()
         if major_version <= 5:
             coronal.SetInput(planeColors.GetOutput())
@@ -1643,72 +1610,19 @@ def slicer(ren, vol, voxsz=(1.0, 1.0, 1.0), affine=None, contours=0,
         coronal.SetDisplayExtent(x1, x2, y, y, z1, z2)
         coronals.append(coronal)
 
-    # It is convenient to create an initial view of the data. The FocalPoint
-    # and Position form a vector direction. Later on (ResetCamera() method)
-    # this vector is used to position the camera to look at the data in
-    # this direction.
-    aCamera = vtk.vtkCamera()
-    aCamera.SetViewUp(0, 0, -1)
-    aCamera.SetPosition(0, 1, 0)
-    aCamera.SetFocalPoint(0, 0, 0)
-    aCamera.ComputeViewPlaneNormal()
+    assem = vtk.vtkAssembly()
 
-    # saggital.SetOpacity(0.1)
+    for sag in saggitals:
+        assem.AddPart(sag)
+    for ax in axials:
+        assem.AddPart(ax)
+    for cor in coronals:
+        assem.AddPart(cor)
 
-    # Actors are added to the renderer.
-    ren.AddActor(outline)
-    if planes:
-        for sag in saggitals:
-            ren.AddActor(sag)
-        for ax in axials:
-            ren.AddActor(ax)
-        for cor in coronals:
-            ren.AddActor(cor)
+    if outline:
+        assem.AddPart(outline)
 
-    if contours:
-        cnt = 0
-        for actor in Contours:
-            actor.GetProperty().SetOpacity(opacities[cnt])
-            ren.AddActor(actor)
-            cnt += 1
-
-    # Turn off bone for this example.
-    # bone.VisibilityOff()
-
-    # Set skin to semi-transparent.
-
-    # An initial camera view is created.  The Dolly() method moves
-    # the camera towards the FocalPoint, thereby enlarging the image.
-    ren.SetActiveCamera(aCamera)
-    ren.ResetCamera()
-    aCamera.Dolly(1.5)
-
-    # Set a background color for the renderer and set the size of the
-    # render window (expressed in pixels).
-    ren.SetBackground(0, 0, 0)
-    # renWin.SetSize(640, 480)
-
-    # Note that when camera movement occurs (as it does in the Dolly()
-    # method), the clipping planes often need adjusting. Clipping planes
-    # consist of two planes: near and far along the view direction. The
-    # near plane clips out objects in front of the plane the far plane
-    # clips out objects behind the plane. This way only what is drawn
-    # between the planes is actually rendered.
-    # ren.ResetCameraClippingRange()
-
-    # return ren
-
-    renWin = vtk.vtkRenderWindow()
-    renWin.AddRenderer(ren)
-    iren = vtk.vtkRenderWindowInteractor()
-    iren.SetRenderWindow(renWin)
-
-    ren.ResetCameraClippingRange()
-
-    # Interact with the data.
-    iren.Initialize()
-    renWin.Render()
-    iren.Start()
+    return assem
 
 
 def show(ren, title='Dipy', size=(300, 300), png_magnify=1):

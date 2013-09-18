@@ -39,6 +39,9 @@ def test_fvtk_functions():
     l = fvtk.label(r, text='Yes Men')
     fvtk.add(r, l)
 
+    # Slice the volume
+    fvtk.add(r, fvtk.slicer(vol, plane_i=[50]))
+
     # Show everything
     # fvtk.show(r)
 

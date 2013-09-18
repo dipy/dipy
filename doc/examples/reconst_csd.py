@@ -111,7 +111,7 @@ csd_odf = csd_fit.odf(sphere)
 
 from dipy.viz import fvtk
 
-r = fvtk.ren()
+ren = fvtk.ren()
 
 """
 Here we visualize only a 30x30 region.
@@ -119,20 +119,20 @@ Here we visualize only a 30x30 region.
 
 fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
 
-fodf_spheres.SetPosition(15, 15, 0)
+fodf_spheres.SetPosition(15, 15, 1)
 
-fodf_spheres.SetScale(0.80)
+fodf_spheres.SetScale(0.78)
 
-fvtk.add(r, fodf_spheres)
+fvtk.add(ren, fodf_spheres)
 
 from dipy.reconst.odf import gfa
 
 GFA = gfa(csd_odf)
 
-fvtk.slicer(r, GFA, planesx=[], planesy=[], planesz=[0])
+fvtk.add(ren, fvtk.slicer(GFA, plane_k=[0]))
 
 print('Saving illustration as csd_odfs.png')
-fvtk.record(r, n_frames=1, out_path='csd_odfs.png', size=(600, 600))
+fvtk.record(ren, n_frames=1, out_path='csd_odfs.png', size=(600, 600))
 
 """
 .. figure:: csd_odfs.png
