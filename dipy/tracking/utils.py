@@ -42,6 +42,7 @@ dipy.tracking.integration
 dipy.reconst.interpolate
 """
 
+from collections import defaultdict
 from ..utils.six.moves import xrange
 
 import numpy as np
@@ -73,7 +74,59 @@ except ImportError:
     ravel_multi_index = _rmi
 
 
-def density_map(streamlines, vol_dims, voxel_size):
+def _choose_best_affine(affine, voxel_size):
+    """ Gets the best mapping from either affine or voxel_size
+
+    Parameters
+    ----------
+    affine : array_like (4, 4)
+        The mapping to use, can be None
+    voxel_size : array_like (3,)
+        If the affine is not None, `voxel_size` is ignored, otherwise the
+        the mapping is assumed to be in trk space. IE the corners of the image
+        are ``[0, 0, 0]`` and ``voxel_size * dim``.
+
+    If both are None, then coordinates are taken to be nifti-style voxel
+    indices. IE [0, 0, 0] is the center of the first voxel.
+
+    Return
+    ------
+    rot : array (3, 3)
+        Transpose of the rotational part of the mapping. (ie ``affine[:3, :3].T``)
+    offset : array or scaler
+        Offset part of the mapping. (ie, ``affine[:3, 3]``)
+
+    Note
+    ----
+    This is meant to be used along with `_to_voxel_coordinates`.
+
+    """
+    if affine is not None:
+        affine = np.array(affine, dtype=float)
+        inv_affine = np.linalg.inv(affine)
+        rot = inv_affine[:-1, :-1].T
+        offset = inv_affine[:-1, -1] + .5
+    elif voxel_size is not None:
+        voxel_size = np.asarray(voxel_size, dtype=float)
+        rot = np.diag(1. / voxel_size)
+        offset = 0.
+    else:
+        rot = np.eye(3)
+        offset = .5
+    return rot, offset
+
+
+def _to_voxel_coordinates(streamline, rot, offset):
+    """Applies a mapping from streamline coordinates to voxel_coordinates"""
+    inds = np.dot(streamline, rot)
+    inds += offset
+    if inds.min() < 0:
+        raise IndexError('streamline has points that map to negative voxel'
+                         ' indices')
+    return inds.astype(int)
+
+
+def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     """Counts the number of unique streamlines that pass though each voxel
 
     Counts the number of points in each streamline that lie inside each voxel.
@@ -88,8 +141,14 @@ def density_map(streamlines, vol_dims, voxel_size):
     vol_dims : 3 ints
         The shape of the volume to be returned containing the streamlines
         counts
-    voxel_size : 3 floats
-        The size of the voxels in the image volume
+    voxel_size : array_like (3,), optional
+        The size of the voxels in the image volume. This is ignored if affine
+        is set.
+    affine : array_like (4, 4), optional
+        The mapping from voxel coordinates to streamline coordinates. If
+        neither `affine` or `voxel_size` is set, the streamline values are
+        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
+        the first voxel and the voxel size is ``[1, 1, 1]``.
 
     Returns
     -------
@@ -107,42 +166,82 @@ def density_map(streamlines, vol_dims, voxel_size):
     streamline does not lie in the voxel. For example a step from [0,0,0] to
     [0,0,2] passes though [0,0,1]. Consider subsegmenting the streamlines when
     the edges of the voxels are smaller than the steps of the streamlines.
+
     """
+    rot, offset = _choose_best_affine(affine, voxel_size)
     counts = zeros(vol_dims, 'int')
     for sl in streamlines:
-        inds = (sl // voxel_size).astype('int')
-        if inds.min() < 0:
-            raise IndexError('streamline has negative values, these values ' +
-                             'are outside the image volume')
+        inds = _to_voxel_coordinates(sl, rot, offset)
         i, j, k = inds.T
         #this takes advantage of the fact that numpy's += operator only acts
         #once even if there are repeats in inds
         counts[i, j, k] += 1
     return counts
 
-def connectivity_matrix(streamlines, label_volume, voxel_size,
-                        symmetric=False, return_mapping=False,
+def connectivity_matrix(streamlines, label_volume, voxel_size=None,
+                        affine=None, symmetric=False, return_mapping=False,
                         mapping_as_streamlines=False):
     """Counts the streamlines that start and end at each label pair
 
-    symmetric means we don't distiguish between start and end
+    Parameters
+    ----------
+    streamlines : sequence
+        A sequence of streamlines.
+    label_volume : ndarray
+        An image volume with an integer data type, where the intensities in the
+        volume map to anatomical structures.
+    voxel_size : array_like (3,), optional
+        The size of the voxels in the image volume. This is ignored if affine
+        is set.
+    affine : array_like (4, 4), optional
+        The mapping from voxel coordinates to streamline coordinates. If
+        neither `affine` or `voxel_size` is set, the streamline values are
+        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
+        the first voxel and the voxel size is ``[1, 1, 1]``.
+    symmetric : bool, False by default
+        Symmetric means we don't distinguish between start and end points. If
+        symmetric is True, ``matrix[i, j] == matrix[j, i]``.
+    return_mapping : bool, False by default
+        If True, a mapping is returned which maps matrix indices to
+        streamlines.
+    mapping_as_streamlines : bool, False by default
+        If True voxel indices map to lists of streamline objects. Otherwise
+        voxel indices map to lists of integers.
+
+    Returns
+    -------
+    matrix : ndarray
+        The number of connection between each pair of regions in
+        `label_volume`.
+    mapping : defaultdict(list)
+        ``mapping[i, j]`` returns all the streamlines that connect region `i`
+        to region `j`. If `symmetric` is True mapping will only have one key
+        for each start end pair such that if ``i < j`` mapping will have key
+        ``(i, j)`` but not key ``(j, i)``.
+
     """
-    assert label_volume.dtype.kind == 'i'
-    assert label_volume.ndim == 3
-    assert label_volume.min() >= 0
-    voxel_size = np.asarray(voxel_size)
+    # Error checking on label_volume
+    kind = label_volume.dtype.kind
+    labels_possitive = ((kind == 'u') or
+                        ((kind == 'i') and (label_volume.min() >= 0))
+                       )
+    valid_label_volume = (labels_possitive and label_volume.ndim == 3)
+    if not valid_label_volume:
+        raise ValueError("label_volume must be a 3d integer array with"
+                         "non-negative label values")
+
     # If streamlines is an iterators
     if return_mapping and mapping_as_streamlines:
         streamlines = list(streamlines)
     #take the first and last point of each streamline
     endpoints = [sl[0::len(sl)-1] for sl in streamlines]
-    #devide by voxel_size to get get voxel indices
-    endpoints = (endpoints // voxel_size).astype('int')
-    if endpoints.min() < 0:
-        raise IndexError('streamline has negative values, these values ' +
-                         'are outside the image volume')
-    i, j, k = endpoints.T
+
+    # Map the streamlines coordinates to voxel coordinates
+    rot, offset = _choose_best_affine(affine, voxel_size)
+    endpoints = _to_voxel_coordinates(endpoints, rot, offset)
+
     #get labels for label_volume
+    i, j, k = endpoints.T
     endlabels = label_volume[i, j, k]
     if symmetric:
         endlabels.sort(0)
@@ -150,13 +249,18 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
     matrix = ndbincount(endlabels, shape=(mx, mx))
     if symmetric:
         matrix = np.maximum(matrix, matrix.T)
+
     if return_mapping:
-        mapping = {}
+        mapping = defaultdict(list)
         for i, (a, b) in enumerate(endlabels.T):
-            mapping.setdefault((a, b), []).append(i)
+            mapping[a, b].append(i)
+
+        # Replace each list of indices with the streamlines they index
         if mapping_as_streamlines:
-            mapping = dict((k, [streamlines[i] for i in indices])
-                           for k, indices in mapping.items())
+            for key in mapping:
+                mapping[key] = [streamlines[i] for i in mapping[key]]
+
+        # Return the mapping matrix and the mapping
         return matrix, mapping
     else:
         return matrix
@@ -233,11 +337,35 @@ def length(streamlines):
             seglen = sqrt((diff * diff).sum(-1))
             yield seglen.sum()
 
-def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
+
+def streamline_mapping(streamlines, voxel_size=None, affine=None,
+                       mapping_as_streamlines=False):
     """Creates a mapping from voxel indices to streamlines
 
     Returns a dictionary where each key is a 3d voxel index and the associated
     value is a list of the streamlines that pass through that voxel.
+
+    Parameters
+    ----------
+    streamlines : sequence
+        A sequence of streamlines.
+    voxel_size : array_like (3,), optional
+        The size of the voxels in the image volume. This is ignored if affine
+        is set.
+    affine : array_like (4, 4), optional
+        The mapping from voxel coordinates to streamline coordinates. If
+        neither `affine` or `voxel_size` is set, the streamline values are
+        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
+        the first voxel and the voxel size is ``[1, 1, 1]``.
+    mapping_as_streamlines : bool, optional, False by default
+        If True voxel indices map to lists of streamline objects. Otherwise
+        voxel indices map to lists of integers.
+
+    Returns
+    -------
+    mapping : defaultdict(list)
+        A mapping from voxel indices to the streamlines that pass though that
+        voxel.
 
     Examples
     --------
@@ -259,20 +387,22 @@ def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
     ...                              mapping_as_streamlines=True)
     >>> mapping[1, 2, 3][0] is streamlines[1]
     True
+
     """
-    voxel_size = np.asarray(voxel_size)
-    mapping = {}
+    rot, offset = _choose_best_affine(affine, voxel_size)
+    mapping = defaultdict(list)
     if mapping_as_streamlines:
         streamlines = list(streamlines)
     for i, sl in enumerate(streamlines):
-        voxel_indices = (sl // voxel_size).astype('int')
+        voxel_indices = _to_voxel_coordinates(sl, rot, offset)
         uniq_points = set(tuple(point) for point in voxel_indices)
         for point in uniq_points:
-            mapping.setdefault(point, []).append(i)
+            mapping[point].append(i)
     if mapping_as_streamlines:
-        mapping = dict((k, [streamlines[i] for i in indices])
-                       for k, indices in mapping.items())
+        for key in mapping:
+            mapping[key] = [streamlines[i] for i in mapping[key]]
     return mapping
+
 
 def subsegment(streamlines, max_segment_length):
     """Splits the segments of the streamlines into small segments
@@ -345,7 +475,7 @@ def subsegment(streamlines, max_segment_length):
                 pass
                 #repeated point
             else:
-                #this should never happen because ns should be a posative int
+                #this should never happen because ns should be a positive int
                 assert(ns >= 0)
         yield output_sl
 
@@ -398,7 +528,7 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
     seeds *= voxel_size
     return seeds
 
-def target(streamlines, target_mask, voxel_size):
+def target(streamlines, target_mask, voxel_size, affine=None):
     """Retain tracks that pass though target_mask
 
     This function loops over the streamlines and returns streamlines that pass
@@ -429,13 +559,11 @@ def target(streamlines, target_mask, voxel_size):
     density_map
 
     """
-    voxel_size = asarray(voxel_size, 'float')
+    ones = np.ones(3.)
+    rot, offset = _choose_best_affine(affine, voxel_size)
     for sl in streamlines:
-        ind = sl // voxel_size
-        if ind.min() < 0:
-            raise IndexError('streamline has negative values, these values ' +
-                             'are outside target_mask')
-        i, j, k = ind.T.astype('int')
+        ind = _to_voxel_coordinates(sl, rot, affine)
+        i, j, k = ind.T
         try:
             state = target_mask[i, j, k]
         except IndexError:
@@ -444,6 +572,7 @@ def target(streamlines, target_mask, voxel_size):
                              'the target mask, ' + str(volume_size))
         if state.any():
             yield sl
+
 
 def merge_streamlines(backward, forward):
     """Merges two sets of streamlines seeded at the same points
