@@ -12,7 +12,7 @@ First import the necessary modules:
 import time
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel
-from dipy.reconst.odf import peaks_from_model, peaks_from_model_parallel
+from dipy.reconst.odf import peaks_from_model
 
 """
 Download and read the data for this tutorial.
@@ -60,23 +60,24 @@ grid where the ODF values will be evaluated.
 sphere = get_sphere('symmetric724')
 
 start_time = time.time()
-csapeaks_parallel = peaks_from_model_parallel(model=csamodel,
-                                              data=data,
-                                              sphere=sphere,
-                                              relative_peak_threshold=.8,
-                                              min_separation_angle=45,
-                                              mask=None,
-                                              return_odf=False,
-                                              normalize_peaks=True,
-                                              ravel_peaks=False,
-                                              npeaks=5,
-                                              nbr_process=2)  # default multiprocessing.cpu_count()
+csapeaks_parallel = peaks_from_model(model=csamodel,
+                                     data=data,
+                                     sphere=sphere,
+                                     relative_peak_threshold=.8,
+                                     min_separation_angle=45,
+                                     mask=None,
+                                     return_odf=False,
+                                     normalize_peaks=True,
+                                     ravel_peaks=False,
+                                     npeaks=5,
+                                     parallel=True,
+                                     nbr_process=2)  # default multiprocessing.cpu_count()
 
 time_parallel = time.time() - start_time
-print("peaks_from_model_parallel using 2 process ran in : " +
+print("peaks_from_model using 2 process ran in : " +
       str(time_parallel) + " seconds")
 """
-peaks_from_model_parallel using 2 process ran in  : 114.333221912 seconds, using 2 process
+peaks_from_model using 2 process ran in  : 114.333221912 seconds, using 2 process
 """
 
 start_time = time.time()
@@ -89,7 +90,9 @@ csapeaks = peaks_from_model(model=csamodel,
                             return_odf=False,
                             normalize_peaks=True,
                             ravel_peaks=False,
-                            npeaks=5)
+                            npeaks=5,
+                            parallel=False,
+                            nbr_process=None)
 
 time_single = time.time() - start_time
 print("peaks_from_model ran in : " + str(time_single) + " seconds")

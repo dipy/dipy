@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_almost_equal, run_module_suite, assert_)
-from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peaks_from_model_parallel, peak_directions,
+from dipy.reconst.odf import (OdfFit, OdfModel, gfa, peaks_from_model, peak_directions,
                               peak_directions_nl, minmax_normalize)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
@@ -185,10 +185,10 @@ def test_peaksFromModelParallel():
 
     # test equality with/without multiprocessing
     model = SimpleOdfModel()
-    pam_multi = peaks_from_model_parallel(
-        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+    pam_multi = peaks_from_model(
+        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True, parallel=True)
     pam_single = peaks_from_model(
-        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True)
+        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True, parallel=False)
 
     assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
     assert_array_almost_equal(pam_multi.qa, pam_single.qa)
