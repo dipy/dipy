@@ -3,7 +3,7 @@ from scipy.ndimage import map_coordinates
 from scipy.fftpack import fftn, fftshift, ifftshift
 from dipy.reconst.odf import OdfModel, OdfFit, gfa
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_model, multi_voxel_fit
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
@@ -464,7 +464,6 @@ def project_hemisph_bvecs(gtab):
     return bvecs2, pairs
 
 
-@multi_voxel_model
 class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
 
     def __init__(self, gtab, qgrid_size=35, r_start=4.1, r_end=13.,
@@ -521,6 +520,7 @@ class DiffusionSpectrumDeconvModel(DiffusionSpectrumModel):
                                         filter_width,
                                         normalize_peaks)
 
+    @multi_voxel_fit
     def fit(self, data):
         return DiffusionSpectrumDeconvFit(self, data)
 
