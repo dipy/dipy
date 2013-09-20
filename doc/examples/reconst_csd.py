@@ -70,8 +70,8 @@ Using `gtab.b0s_mask()` we can find all the S0 volumes (which correspond to b-va
 S0s = roi[indices][:, np.nonzero(gtab.b0s_mask)[0]]
 
 """
-The response function in this example consists of a prolate tensor created 
-by averaging the highest and second highest eigenvalues. We also include the 
+The response function in this example consists of a prolate tensor created
+by averaging the highest and second highest eigenvalues. We also include the
 average S0s.
 """
 
@@ -111,7 +111,7 @@ csd_odf = csd_fit.odf(sphere)
 
 from dipy.viz import fvtk
 
-r = fvtk.ren()
+ren = fvtk.ren()
 
 """
 Here we visualize only a 30x30 region.
@@ -119,10 +119,24 @@ Here we visualize only a 30x30 region.
 
 fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
 
-fvtk.add(r, fodf_spheres)
+fodf_spheres.SetPosition(15, 15, 1)
+
+fodf_spheres.SetScale(0.78)
+
+fvtk.add(ren, fodf_spheres)
+
+"""
+Additionally, we can visualize the ODFs together with a GFA slice
+"""
+
+from dipy.reconst.odf import gfa
+
+GFA = gfa(csd_odf)
+
+fvtk.add(ren, fvtk.slicer(GFA, plane_k=[0]))
 
 print('Saving illustration as csd_odfs.png')
-fvtk.record(r, n_frames=1, out_path='csd_odfs.png', size=(600, 600))
+fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
 
 """
 .. figure:: csd_odfs.png
