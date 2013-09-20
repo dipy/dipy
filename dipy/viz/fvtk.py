@@ -1539,9 +1539,9 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
 
     mapOutline = vtk.vtkPolyDataMapper()
     mapOutline.SetInputConnection(outlineData.GetOutputPort())
-    outline = vtk.vtkActor()
-    outline.SetMapper(mapOutline)
-    outline.GetProperty().SetColor(1, 0, 0)
+    outline_ = vtk.vtkActor()
+    outline_.SetMapper(mapOutline)
+    outline_.GetProperty().SetColor(1, 0, 0)
 
     # Now we are creating three orthogonal planes passing through the
     # volume. Each plane uses a different texture map and therefore has
@@ -1587,7 +1587,6 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
         else:
             saggital.SetInputData(planeColors.GetOutput())
         saggital.SetDisplayExtent(x, x, y1, y2, z1, z2)
-
         saggitals.append(saggital)
 
     axials = []
@@ -1620,7 +1619,7 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
         assem.AddPart(cor)
 
     if outline:
-        assem.AddPart(outline)
+        assem.AddPart(outline_)
 
     return assem
 
