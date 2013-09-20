@@ -3,7 +3,7 @@ import numpy as np
 from .odf import OdfModel, OdfFit, gfa
 from .cache import Cache
 import warnings
-from .multi_voxel import multi_voxel_model, multi_voxel_fit
+from .multi_voxel import multi_voxel_fit
 from .recspeed import local_maxima, remove_similar_vertices
 
 

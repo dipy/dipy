@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 from dipy.reconst.odf import OdfModel
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_fit, multi_voxel_model
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit)
 from dipy.data import get_sphere
