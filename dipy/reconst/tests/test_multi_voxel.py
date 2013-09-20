@@ -128,8 +128,6 @@ def test_multi_voxel_fit():
             n = np.random.randint(0, 10)
             return np.zeros((n, 3))
 
-    
-
     # Test the single voxel case
     model = SillyModel()
     single_voxel = np.zeros(64)
@@ -150,7 +148,7 @@ def test_multi_voxel_fit():
     mask = np.eye(3).astype('bool')
     data = np.zeros((3, 3, 64))
     fit = model.fit(data, mask)
-    npt.assert_array_equal(fit.model_attr, np.eye(3)*2)
+    npt.assert_array_equal(fit.model_attr, np.eye(3) * 2)
     odf = fit.odf(unit_icosahedron)
     npt.assert_equal(odf.shape, (3, 3, 12))
     npt.assert_array_equal(odf[~mask], 0)
@@ -162,5 +160,3 @@ def test_multi_voxel_fit():
     # Test indexing into a fit
     npt.assert_equal(type(fit[0, 0]), SillyFit)
     npt.assert_equal(fit[:2, :2].shape, (2, 2))
-
-
