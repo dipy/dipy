@@ -2,7 +2,10 @@ from __future__ import division, print_function, absolute_import
 
 from multiprocessing import cpu_count, Pool
 from itertools import repeat
+from os import path
+from tempfile import mkdtemp
 from warnings import warn, catch_warnings, simplefilter
+
 
 from ..utils.six.moves import xrange
 
@@ -157,42 +160,15 @@ def peak_directions(odf, sphere, relative_peak_threshold=.25,
 class PeaksAndMetrics(object):
     pass
 
-from tempfile import mkdtemp
-import os.path as path
 
+def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
+                                min_separation_angle, mask, return_odf,
+                                return_sh, gfa_thr, normalize_peaks,
+                                sh_order, sh_basis_type, ravel_peaks,
+                                npeaks, nbr_process):
 
-def peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
-                              min_separation_angle, mask=None, return_odf=False,
-                              return_sh=True, gfa_thr=0, normalize_peaks=False,
-                              sh_order=8, sh_basis_type=None, ravel_peaks=False,
-                              npeaks=5, nbr_process=None):
-    """
-    Fits the model to data and computes peaks and metrics using multiprocessing
-
-    Parameters
-    ----------
-    See peaks_from_model function
-
-    nbr_process: int
-        Number of subprocess to use (default multiprocessing.cpu_count()).
-
-    """
     if nbr_process is None:
         nbr_process = cpu_count()
-
-    if nbr_process < 2:
-        return peaks_from_model(model,
-                                data, sphere,
-                                relative_peak_threshold,
-                                min_separation_angle,
-                                mask, return_odf,
-                                return_sh,
-                                gfa_thr,
-                                normalize_peaks,
-                                sh_order,
-                                sh_basis_type,
-                                ravel_peaks,
-                                npeaks)
 
     shape = list(data.shape)
     data = np.reshape(data, (-1, shape[-1]))
@@ -303,7 +279,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, ravel_peaks=False,
-                     npeaks=5):
+                     npeaks=5, nbr_process=None, parallel=False):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -342,14 +318,34 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         fibernavigator or in mrtrix.
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
+    nbr_process: int
+        Number of subprocess to use (default multiprocessing.cpu_count()).
+    parallel: bool
+        If True, use multiprocessing to compute peaks and metric (default False).
 
     Returns
     -------
-    pam : PeaksAndMetrics
+    pam:
+        PeaksAndMetrics
         an object with ``gfa``, ``peak_directions``, ``peak_values``,
-        ``peak_indices``, ``odf``,``shm_coeffs`` as attributes
+        ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes
 
     """
+
+    if parallel:
+        return __peaks_from_model_parallel(model,
+                                           data, sphere,
+                                           relative_peak_threshold,
+                                           min_separation_angle,
+                                           mask, return_odf,
+                                           return_sh,
+                                           gfa_thr,
+                                           normalize_peaks,
+                                           sh_order,
+                                           sh_basis_type,
+                                           ravel_peaks,
+                                           npeaks,
+                                           nbr_process)
 
     shape = data.shape[:-1]
     if mask is None:
