@@ -39,6 +39,12 @@ def test_fvtk_functions():
     l = fvtk.label(r, text='Yes Men')
     fvtk.add(r, l)
 
+    # Slice the volume
+    fvtk.add(r, fvtk.slicer(vol, plane_i=[50]))
+
+    # Change the position of the active camera
+    fvtk.camera(r, pos=(0.6, 0, 0), verbose=False)
+
     # Show everything
     # fvtk.show(r)
 
