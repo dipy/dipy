@@ -181,7 +181,20 @@ def test_peaksFromModel():
 
 
 def test_peaksFromModelParallel():
-    data = np.zeros((10, 2))
+    SNR = 100
+    S0 = 100
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+
+    data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
+                           fractions=[50, 50], snr=SNR)
 
     # test equality with/without multiprocessing
     model = SimpleOdfModel()
@@ -192,7 +205,6 @@ def test_peaksFromModelParallel():
     pam_single = peaks_from_model(model, data, _sphere, .5, 45,
                                   normalize_peaks=True, return_odf=True,
                                   return_sh=True, parallel=False)
-
 
     assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
     assert_array_almost_equal(pam_multi.qa, pam_single.qa)
