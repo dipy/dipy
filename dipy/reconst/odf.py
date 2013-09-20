@@ -171,6 +171,7 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         nbr_process = cpu_count()
 
     shape = list(data.shape)
+    n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
     data = np.reshape(data, (-1, shape[-1]))
 
     n = data.shape[0]
@@ -200,7 +201,8 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                            repeat(sh_order),
                            repeat(sh_basis_type),
                            repeat(ravel_peaks),
-                           repeat(npeaks)))
+                           repeat(npeaks),
+                           repeat(False)))
     pool.close()
 
     data_chunks = None
@@ -235,7 +237,6 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     else:
         pam.odf = None
     if return_sh:
-        n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
         pam.shm_coeff = np.memmap(path.join(temp_dir, 'shm.dat'),
                                   dtype=pam_res[0].shm_coeff.dtype,
                                   mode='w+',
@@ -268,6 +269,10 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     pam.peak_indices = np.reshape(pam.peak_indices, shape[:-1] + [npeaks])
     pam.qa = np.reshape(pam.qa, shape[:-1] + [npeaks])
     pam.gfa = np.reshape(pam.gfa, shape[:-1])
+    if return_sh:
+        pam.shm_coeff = np.reshape(pam.shm_coeff, shape[:-1] + [n_shm_coeff])
+    if return_odf:
+        pam.odf = np.reshape(pam.odf, shape[:-1] + [len(sphere.vertices)])
     return pam
 
 
@@ -279,7 +284,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, ravel_peaks=False,
-                     npeaks=5, nbr_process=None, parallel=False):
+                     npeaks=5, parallel=False, nbr_process=None):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -318,16 +323,15 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         fibernavigator or in mrtrix.
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
-    nbr_process: int
-        Number of subprocess to use (default multiprocessing.cpu_count()).
     parallel: bool
         If True, use multiprocessing to compute peaks and metric (default False).
+    nbr_process: int
+        Number of subprocess to use (default multiprocessing.cpu_count()).
 
     Returns
     -------
-    pam:
-        PeaksAndMetrics
-        an object with ``gfa``, ``peak_directions``, ``peak_values``,
+    pam : PeaksAndMetrics
+        An object with ``gfa``, ``peak_directions``, ``peak_values``,
         ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes
 
     """
