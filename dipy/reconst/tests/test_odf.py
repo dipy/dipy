@@ -185,10 +185,14 @@ def test_peaksFromModelParallel():
 
     # test equality with/without multiprocessing
     model = SimpleOdfModel()
-    pam_multi = peaks_from_model(
-        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True, parallel=True)
-    pam_single = peaks_from_model(
-        model, data, _sphere, .5, 45, normalize_peaks=True, return_odf=True, return_sh=True, parallel=False)
+    pam_multi = peaks_from_model(model, data, _sphere, .5, 45,
+                                 normalize_peaks=True, return_odf=True,
+                                 return_sh=True, parallel=True)
+
+    pam_single = peaks_from_model(model, data, _sphere, .5, 45,
+                                  normalize_peaks=True, return_odf=True,
+                                  return_sh=True, parallel=False)
+
 
     assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
     assert_array_almost_equal(pam_multi.qa, pam_single.qa)
@@ -266,8 +270,9 @@ def test_peaks_shm_coeff():
                            return_odf=True, return_sh=False)
     assert_equal(pam.shm_coeff, None)
 
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
-                           return_odf=True, return_sh=True, sh_basis_type='mrtrix')
+    pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
+                           return_odf=True, return_sh=True,
+                           sh_basis_type='mrtrix')
 
     B = np.linalg.pinv(pam.invB)
     odf2 = np.dot(pam.shm_coeff, B)
