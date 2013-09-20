@@ -326,7 +326,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     parallel: bool
         If True, use multiprocessing to compute peaks and metric (default False).
     nbr_process: int
-        Number of subprocess to use (default multiprocessing.cpu_count()).
+        If `parallel == True`, the number of subprocess to use (default multiprocessing.cpu_count()).
 
     Returns
     -------
