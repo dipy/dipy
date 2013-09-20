@@ -180,6 +180,41 @@ def test_peaksFromModel():
     assert_array_equal(pam.peak_indices[mask, 1:], -1)
 
 
+def test_peaksFromModelParallel():
+    SNR = 100
+    S0 = 100
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+
+    data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
+                           fractions=[50, 50], snr=SNR)
+
+    # test equality with/without multiprocessing
+    model = SimpleOdfModel()
+    pam_multi = peaks_from_model(model, data, _sphere, .5, 45,
+                                 normalize_peaks=True, return_odf=True,
+                                 return_sh=True, parallel=True)
+
+    pam_single = peaks_from_model(model, data, _sphere, .5, 45,
+                                  normalize_peaks=True, return_odf=True,
+                                  return_sh=True, parallel=False)
+
+    assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
+    assert_array_almost_equal(pam_multi.qa, pam_single.qa)
+    assert_array_almost_equal(pam_multi.peak_values, pam_single.peak_values)
+    assert_array_equal(pam_multi.peak_indices, pam_single.peak_indices)
+    assert_array_almost_equal(pam_multi.peak_dirs, pam_single.peak_dirs)
+    assert_array_almost_equal(pam_multi.shm_coeff, pam_single.shm_coeff)
+    assert_array_almost_equal(pam_multi.odf, pam_single.odf)
+
+
 def test_minmax_normalize():
 
     bvalue = 3000
@@ -247,8 +282,9 @@ def test_peaks_shm_coeff():
                            return_odf=True, return_sh=False)
     assert_equal(pam.shm_coeff, None)
 
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
-                           return_odf=True, return_sh=True, sh_basis_type='mrtrix')
+    pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
+                           return_odf=True, return_sh=True,
+                           sh_basis_type='mrtrix')
 
     B = np.linalg.pinv(pam.invB)
     odf2 = np.dot(pam.shm_coeff, B)

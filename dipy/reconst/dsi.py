@@ -3,11 +3,10 @@ from scipy.ndimage import map_coordinates
 from scipy.fftpack import fftn, fftshift, ifftshift
 from dipy.reconst.odf import OdfModel, OdfFit, gfa
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_model
+from dipy.reconst.multi_voxel import multi_voxel_model, multi_voxel_fit
 from dipy.reconst.recspeed import local_maxima, remove_similar_vertices
 
 
-@multi_voxel_model
 class DiffusionSpectrumModel(OdfModel, Cache):
 
     def __init__(self,
@@ -79,9 +78,6 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         >>> sphere = get_sphere('symmetric724')
         >>> from dipy.reconst.dsi import DiffusionSpectrumModel
         >>> ds = DiffusionSpectrumModel(gtab)
-        >>> ds.direction_finder.config(sphere=sphere,
-                                       min_separation_angle=25,
-                                       relative_peak_threshold=.35)
         >>> dsfit = ds.fit(data)
         >>> from dipy.reconst.odf import gfa
         >>> np.round(gfa(dsfit.odf(sphere))[0, 0, 0], 2)
@@ -128,6 +124,7 @@ class DiffusionSpectrumModel(OdfModel, Cache):
         self.dn = (self.bvals > b0).sum()
         self.gtab = gtab
 
+    @multi_voxel_fit
     def fit(self, data):
         return DiffusionSpectrumFit(self, data)
 

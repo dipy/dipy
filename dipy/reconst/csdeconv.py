@@ -1,9 +1,9 @@
 from __future__ import division, print_function, absolute_import
 import warnings
 import numpy as np
-from dipy.reconst.odf import OdfModel, OdfFit
+from dipy.reconst.odf import OdfModel
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_model
+from dipy.reconst.multi_voxel import multi_voxel_fit, multi_voxel_model
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit)
 from dipy.data import get_sphere
@@ -13,7 +13,6 @@ from dipy.sims.voxel import single_tensor
 from scipy.special import lpn
 
 
-@multi_voxel_model
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1, tau=0.1):
@@ -110,13 +109,13 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         self.sh_order = sh_order
         self.tau = tau
 
+    @multi_voxel_fit
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
         shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
         return SphHarmFit(self, shm_coeff, None)
 
 
-@multi_voxel_model
 class ConstrainedSDTModel(OdfModel, Cache):
 
     def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1., tau=0.1):
@@ -189,6 +188,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
         self.tau = tau
         self.sh_order = sh_order
 
+    @multi_voxel_fit
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
         # initial ODF estimation
