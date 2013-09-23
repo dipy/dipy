@@ -2,11 +2,11 @@
 Computing SNR estimation in the corpus callosum
 ===============================================
 
-This example shows how to extract voxels in the corpus callosum where the
-diffusion is mainly oriented in the left-right direction from a raw DWI.
-These voxels will have a high value of red in the
-Colored Fractional Anisotropy (cfa) map.
-The method uses the colored fractional anisotropy as a threshold reference.
+This example shows how to extract voxels in the splenium of the corpus
+callosum where the diffusion is mainly oriented in the left-right
+direction from a raw DWI.  These voxels will have a high value of red
+in the Colored Fractional Anisotropy (cfa) map.  The method uses the
+colored fractional anisotropy as a threshold reference.
 
 The purpose of this kind of segmentation is not to clearly separate the
 structure, but rather to compute an automatic mask in order to compute the
@@ -71,7 +71,7 @@ We know that the corpus callosum should be in the middle of the brain
 and since the principal diffusion direction is the x axis,
 the red channel should be the highest in the cfa.
 
-Let's pick a range of 0.2 to 1 in the x axis and 0 to 0.1 in the y and z axis
+Let's pick a range of 0.7 to 1 in the x axis and 0 to 0.1 in the y and z axis
 as a segmentation threshold.
 
 We will also define a rough roi, since noisy pixels could be considered in the
@@ -85,7 +85,7 @@ not centered properly.
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
-threshold = (0.2, 1, 0, 0.3, 0, 0.3)
+threshold = (0.7, 1, 0, 0.1, 0, 0.1)
 CC_box = np.zeros_like(data[..., 0])
 
 mins, maxs = bounding_box(mask)
@@ -116,11 +116,12 @@ cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
 mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum.astype(np.uint8), affine)
 
 
-"""The mask has random voxels because of the noise, so let's change 
-the threshold, the bounding box  and restart segmenting from the cfa.
+"""The mask has random voxels outside the splenium because of the noise, so
+let's change the threshold, the bounding box and restart segmenting from
+the cfa.
 """
 
-threshold2 = (0.3, 1, 0, 0.3, 0, 0.3)
+threshold2 = (0.6, 1, 0, 0.1, 0, 0.1)
 
 CC_box = np.zeros_like(CC_box)
 CC_box[bounds_min[0]:50,
@@ -128,6 +129,9 @@ CC_box[bounds_min[0]:50,
        bounds_min[2]:bounds_max[2]] = 1
 
 mask_corpus_callosum2 = segment_from_cfa(tensorfit, CC_box, threshold2)
+
+mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype(np.uint8), affine)
+nib.save(mask_corpus_callosum2_img, 'mask_corpus_callosum2.nii.gz')
 
 print("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
        "voxels out of", np.size(CC_box))
@@ -149,35 +153,6 @@ fig.savefig("Comparison_of_segmentation.png")
 
 """
 .. figure:: Comparison_of_segmentation.png
-"""
-
-"""Let's now clean up our mask by getting rid of any leftover random
-voxels that are not a part of the corpus callosum.
-"""
-
-from dipy.segment.mask import clean_cc_mask
-
-cleaned_cc_mask = clean_cc_mask(mask_corpus_callosum2)
-
-cleaned_cc_mask_img = nib.Nifti1Image(cleaned_cc_mask.astype(np.uint8), affine)
-nib.save(cleaned_cc_mask_img, 'mask_corpus_callosum2_cleaned.nii.gz')
-
-"""Now let's check our result by plotting our new mask alongside our old mask.
-"""
-
-fig = plt.figure('Corpus callosum segmentation2')
-plt.subplot(1, 2, 1)
-plt.title("Old segmentation")
-plt.imshow(mask_corpus_callosum2[region, ...])
-
-plt.subplot(1, 2, 2)
-plt.title("New segmentation")
-plt.imshow(cleaned_cc_mask[region, ...])
-
-fig.savefig("Comparison_of_segmentation2.png")
-
-"""
-.. figure:: Comparison_of_segmentation2.png
 """
 
 """Now that we have a crude mask, we can use all the voxels to estimate the SNR
@@ -245,3 +220,43 @@ the DWIs, while the Y and Z axis have almost no diffusion and as such a high
 SNR. The b0 still exhibits the highest SNR, since there is no diffusion
 (and as such no signal drop) at all.
 """
+
+"""Now that we have the SNR in the splenium of the corpus callosum, let's now
+start a new segmentation to create a mask of the entire corpus callosum.  We
+start by loosening the restrictions on the threshold and running the
+segmentation again with the same bounding box.
+"""
+threshold = (0.2, 1, 0, 0.3, 0, 0.3)
+
+mask_corpus_callosum3, cfa = segment_from_cfa(tensorfit, CC_box,
+                                             threshold, return_cfa=True)
+
+"""Let's now clean up our mask by getting rid of any leftover voxels that are
+not a part of the corpus callosum.
+"""
+
+from dipy.segment.mask import clean_cc_mask
+
+cleaned_cc_mask = clean_cc_mask(mask_corpus_callosum3)
+
+cleaned_cc_mask_img = nib.Nifti1Image(cleaned_cc_mask.astype(np.uint8), affine)
+nib.save(cleaned_cc_mask_img, 'mask_corpus_callosum3_cleaned.nii.gz')
+
+"""Now let's check our result by plotting our new mask alongside our old mask.
+"""
+
+fig = plt.figure('Corpus callosum segmentation2')
+plt.subplot(1, 2, 1)
+plt.title("Old segmentation")
+plt.imshow(mask_corpus_callosum3[region, ...])
+
+plt.subplot(1, 2, 2)
+plt.title("New segmentation")
+plt.imshow(cleaned_cc_mask[region, ...])
+
+fig.savefig("Comparison_of_segmentation2.png")
+
+"""
+.. figure:: Comparison_of_segmentation2.png
+"""
+
