@@ -34,10 +34,10 @@ with x,y and the three axis defining the spatial positions of the voxels.
 #data, affine, gtab = two_shells_voxels(10, 40, 10, 40, 25, 26)
 fetch_isbi2013_2shell()
 img, gtab=read_isbi2013_2shell()
-gtab = gradient_table(gtab.bvals[1:], gtab.bvecs[1:])
+gtab = gradient_table(gtab.bvals, gtab.bvecs)
 #data, affine, gtab = three_shells_voxels(45, 65, 35, 65, 33, 34)
 data = img.get_data()
-data_small=data[10:40,10:40,25,1:]
+data_small=data[10:40,10:40,25]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
