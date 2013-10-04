@@ -256,3 +256,4 @@ def clean_cc_mask(mask):
     new_cc_mask[np.where(labels == biggest_vol)] = 1
         
     return new_cc_mask
+    
