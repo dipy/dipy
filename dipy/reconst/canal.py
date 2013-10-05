@@ -236,6 +236,17 @@ class ShoreFit(AnalyticalFit):
         Pr = Pr * (2 * radius_max / gridsize) ** 3
         return Pr, propagator, psi
 
+    def pdf_iso(self, sphere):
+        """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
+        To be implemented.
+        """
+        
+        psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, sphere)
+        #psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab/float(gridsize//2))
+        propagator = np.dot(psi, self.Cshore)
+
+        return propagator
+        
     def odf(self):
         r""" Calculates the real analytical odf in terms of Spherical Harmonics.
         """
