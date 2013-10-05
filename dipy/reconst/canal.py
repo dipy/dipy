@@ -1,19 +1,16 @@
 import numpy as np
 from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_model
+from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import real_sph_harm
 from dipy.core.gradients import gradient_table
 from scipy.special import genlaguerre, gamma, hyp2f1
 from dipy.core.geometry import cart2sphere
 from math import factorial
-# Next step: Tester cette class
 
 
-@multi_voxel_model
 class AnalyticalModel(Cache):
 
-    def __init__(self,
-                 gtab):
+    def __init__(self, gtab):
         r""" Analytical and continuous modeling of the diffusion signal
 
         The main idea is to model the diffusion signal as a linear combination of continuous
@@ -56,6 +53,7 @@ class AnalyticalModel(Cache):
         self.bvecs = gtab.bvecs
         self.gtab = gtab
 
+    @multi_voxel_fit
     def fit(self, data):
         return AnalyticalFit(self, data)
 
@@ -94,11 +92,9 @@ class AnalyticalFit():
         pass
 
 
-@multi_voxel_model
 class ShoreModel(AnalyticalModel):
 
-    def __init__(self,
-                 gtab):
+    def __init__(self, gtab):
         r""" Analytical and continuous modeling of the diffusion signal with respect to the SHORE
         basis [1,2]_.
 
@@ -164,6 +160,7 @@ class ShoreModel(AnalyticalModel):
         self.bvecs = gtab.bvecs
         self.gtab = gtab
 
+    @multi_voxel_fit
     def fit(self, data):
         return ShoreFit(self, data)
 
