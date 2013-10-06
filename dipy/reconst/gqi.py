@@ -93,7 +93,7 @@ class GeneralizedQSamplingFit(ReconstFit, OdfFit):
             signal values
 
         """
-        ReconstFit.__init__(model, data)
+        ReconstFit.__init__(self, model, data)
         self._gfa = None
         self.npeaks = 5
         self._peak_values = None
