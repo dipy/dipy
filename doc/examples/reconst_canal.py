@@ -31,11 +31,8 @@ the data. They respectively correspond to (xmin,xmax,ymin,ymax,zmin,zmax)
 with x,y and the three axis defining the spatial positions of the voxels.
 """
 
-#data, affine, gtab = two_shells_voxels(10, 40, 10, 40, 25, 26)
 fetch_isbi2013_2shell()
 img, gtab=read_isbi2013_2shell()
-gtab = gradient_table(gtab.bvals, gtab.bvecs)
-#data, affine, gtab = three_shells_voxels(45, 65, 35, 65, 33, 34)
 data = img.get_data()
 data_small=data[10:40,10:40,25]
 
@@ -77,32 +74,18 @@ lambdaN=1e-8
 lambdaL=1e-8
 Cshore = asmfit.l2estimation(radialOrder=radialOrder, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
 
-
-"""
-Compute the ODF Spherical Harmonic coefficients  
-"""
-
-Csh = asmfit.odf()
-print('Csh.shape (%d,  %d, %d)' % Csh.shape)
-
-
 """
 Load an odf reconstruction sphere
 """
 
 sphere = get_sphere('symmetric724')
 
-
 """
-Evaluate the ODF in the direction provided by 'sphere'
-
-sh_order is Spherical Harmonic order
+Compute the ODF  
 """
 
-sh_order = radialOrder
-odf = sh_to_sf(Csh, sphere, sh_order, basis_type="fibernav")
+odf = asmfit.odf(sphere)
 print('odf.shape (%d, %d, %d)' % odf.shape)
-
 
 """
 Display the ODFs
