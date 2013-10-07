@@ -216,6 +216,21 @@ class ShoreFit(AnalyticalFit):
 
     def pdf(self, gridsize, radius_max):
         """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
+
+        Parameters
+        ----------
+        gridsize : unsigned int
+            dimension of the propagator grid
+        radius_max : float
+            maximal radius in which compute the propagator
+        
+        Returns
+        -------
+        Pr : ndarray
+            the propagator in the 3D grid
+        psi : ndarray
+            shore propagator matrix $psi$ 
+
         """
         Pr = np.zeros((gridsize, gridsize, gridsize))
         # Create the grid in wich compute the pdf
@@ -234,14 +249,14 @@ class ShoreFit(AnalyticalFit):
         Pr = Pr * (2 * radius_max / gridsize) ** 3
         return Pr, psi
 
-    def pdf_iso(self, sphere):
+    def pdf_iso(self, points):
         """ Diffusion propagator on a given shell.
         """
         
         psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, sphere)
-        propagator = np.dot(psi, self.Cshore)
+        Pr = np.dot(psi, self.Cshore)
 
-        return propagator
+        return Pr
         
     def odf_sh(self):
         r""" Calculates the real analytical odf in terms of Spherical Harmonics.
@@ -283,6 +298,8 @@ class ShoreFit(AnalyticalFit):
         return odf
 
     def rtop_signal(self):
+        r""" Calculates the analytical return to origin probability from the signal. 
+        """
         rtop = 0
         c = self.Cshore
         counter = 0
@@ -297,6 +314,8 @@ class ShoreFit(AnalyticalFit):
         return rtop
 
     def rtop_pdf(self):
+        r""" Calculates the analytical return to origin probability from the pdf. 
+        """
         rtop = 0
         c = self.Cshore
         counter = 0
@@ -311,6 +330,22 @@ class ShoreFit(AnalyticalFit):
         return rtop
 
     def msd(self):
+        r""" Calculates the analytical mean squared displacement 
+
+        ..math::
+            :nowrap:
+                \begin{equation}
+                    MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
+                \end{equation}
+
+        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space (see Wu et. al [1]_).
+
+        References
+        ----------
+        .. [1] Wu Y. et. al, "Hybrid diffusion imaging", NeuroImage, vol 36,
+        p. 617-629, 2007.
+
+        """
         msd = 0
         c = self.Cshore
         counter = 0
@@ -382,8 +417,8 @@ def SHOREmatrix_pdf(radialOrder, zeta, rtab):
         Radial Order
     zeta : unsigned int,
         scale factor
-    rtab : GradientTable,
-        Gradient directions and bvalues container class
+    rtab : array, shape (N,3)
+        r-space points in which calculates the pdf
     """
 
     r, theta, phi = cart2sphere(
@@ -485,12 +520,12 @@ def N_SHORE(radialOrder):
 
 
 def create_rspace(gridsize, radius_max):
-    """ create the R-space table, that contains the points in which 
+    """ create the r-space table, that contains the points in which 
         compute the pdf.
 
     Parameters
     ----------
-    gridsize : integer
+    gridsize : unsigned int
         dimension of the propagator grid
     radius_max : float
         maximal radius in which compute the propagator
@@ -501,7 +536,7 @@ def create_rspace(gridsize, radius_max):
         positions of the pdf points in a 3D matrix
 
     tab : array, shape (N,3)
-        R-space points in which calculates the pdf
+        r-space points in which calculates the pdf
     """
 
     radius = gridsize // 2
