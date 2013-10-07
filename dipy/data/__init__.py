@@ -225,6 +225,8 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR, 'ScannerVectors_GQI101.txt')
     if name == 'dsi515btable':
         return pjoin(THIS_DIR, 'dsi515_b_table.txt')
+    if name == 'dsi4169btable':
+        return pjoin(THIS_DIR, 'dsi4169_b_table.txt')
     if name == 'grad514':
         return pjoin(THIS_DIR, 'grad_514.txt')
     if name == "small_25":

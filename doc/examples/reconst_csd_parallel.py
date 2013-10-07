@@ -1,7 +1,7 @@
 """
-=======================================================
-Reconstruction with Constrained Spherical Deconvolution
-=======================================================
+=============================================================================
+Reconstruction with Constrained Spherical Deconvolution using multiprocessing
+=============================================================================
 
 This example shows how to use Constrained Spherical Deconvolution (CSD)
 introduced by Tournier et al. [Tournier2007]_.
@@ -15,7 +15,7 @@ fiber distribution.
 
 Lets first load the data. We will use a dataset with 10 b0s and 150 non-b0s with b-value 2000.
 """
-
+import multiprocessing
 import numpy as np
 
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
@@ -34,7 +34,7 @@ precalculated FA we need to fit a Tensor model to the datasets. Which is what we
 
 from dipy.reconst.dti import TensorModel
 
-data = img.get_data()
+data = img.get_data()[:, :, 33:37]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
@@ -42,6 +42,7 @@ affine = img.get_affine()
 zooms = img.get_header().get_zooms()[:3]
 
 mask = data[..., 0] > 50
+
 tenmodel = TensorModel(gtab)
 
 ci, cj, ck = np.array(data.shape[:3]) / 2
@@ -91,61 +92,66 @@ from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
 csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
-"""
-For illustration purposes we will fit only a slice of the datasets.
-"""
-
-data_small = data[20:50, 55:85, 38:39]
-
-csd_fit = csd_model.fit(data_small)
 
 """
-Show the CSD-based ODFs also known as FODFs (fiber ODFs).
+Compute the CSD-based ODFs, peaks and other metrics
 """
 
 from dipy.data import get_sphere
 
 sphere = get_sphere('symmetric724')
 
-csd_odf = csd_fit.odf(sphere)
+import time
+from dipy.reconst.odf import peaks_from_model
 
-from dipy.viz import fvtk
 
-ren = fvtk.ren()
+start_time = time.time()
+csd_peaks_parallel = peaks_from_model(model=csd_model,
+                                      data=data,
+                                      sphere=sphere,
+                                      relative_peak_threshold=.25,
+                                      min_separation_angle=45,
+                                      mask=mask,
+                                      return_sh=True,
+                                      return_odf=False,
+                                      normalize_peaks=True,
+                                      ravel_peaks=False,
+                                      npeaks=5,
+                                      parallel=True,
+                                      nbr_process=None)  # default multiprocessing.cpu_count()
 
-"""
-Here we visualize only a 30x30 region.
-"""
-
-fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
-
-fodf_spheres.SetPosition(15, 15, 1)
-
-fodf_spheres.SetScale(0.78)
-
-fvtk.add(ren, fodf_spheres)
-
-"""
-Additionally, we can visualize the ODFs together with a GFA slice
-"""
-
-from dipy.reconst.odf import gfa
-
-GFA = gfa(csd_odf)
-
-fvtk.add(ren, fvtk.slicer(GFA, plane_k=[0]))
-
-print('Saving illustration as csd_odfs.png')
-fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
+time_parallel = time.time() - start_time
+print("peaks_from_model using " + str(multiprocessing.cpu_count())
+      + " process ran in :" + str(time_parallel) + " seconds")
 
 """
-.. figure:: csd_odfs.png
-   :align: center
+peaks_from_model using 8 process ran in :114.425682068 seconds
+"""
 
-   **CSD ODFs**.
+start_time = time.time()
+csd_peaks = peaks_from_model(model=csd_model,
+                             data=data,
+                             sphere=sphere,
+                             relative_peak_threshold=.25,
+                             min_separation_angle=45,
+                             mask=mask,
+                             return_sh=True,
+                             return_odf=False,
+                             normalize_peaks=True,
+                             ravel_peaks=False,
+                             npeaks=5,
+                             parallel=False,
+                             nbr_process=None)
 
-.. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+time_single = time.time() - start_time
+print("peaks_from_model ran in :" + str(time_single) + " seconds")
 
-.. include:: ../links_names.inc
+"""
+peaks_from_model ran in :242.772505999 seconds
+"""
 
+print("Speedup factor : " + str(time_single / time_parallel))
+
+"""
+Speedup factor : 2.12166099088
 """

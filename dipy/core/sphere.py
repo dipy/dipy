@@ -460,7 +460,8 @@ def disperse_charges(hemi, iters, const=.2):
 
 
 def interp_rbf(data, sphere_origin, sphere_target,
-               function='multiquadric', epsilon=None, smooth=0):
+               function='multiquadric', epsilon=None, smooth=0,
+               norm = "euclidean_norm"):
     """Interpolate data on the sphere, using radial basis functions.
 
     Parameters
@@ -479,7 +480,12 @@ def interp_rbf(data, sphere_origin, sphere_target,
     smooth : float
         values greater than zero increase the smoothness of the
         approximation with 0 (the default) as pure interpolation.
-
+    norm : str
+        A string indicating the function that returns the
+        "distance" between two points.
+        'angle' - The angle between two vectors
+        'euclidean_norm' - The Euclidean distance
+        
     Returns
     -------
     v : (M,) ndarray
@@ -491,16 +497,31 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
     """
     from scipy.interpolate import Rbf
-
+    
+    def angle(x1, x2):
+        xx = np.arccos((x1 * x2).sum(axis=0))
+        xx[np.isnan(xx)] = 0
+        return xx
+        
+    def euclidean_norm(x1, x2):
+        return np.sqrt(((x1 - x2)**2).sum(axis=0))
+    
+    if norm is "angle":
+        norm = angle
+    elif norm is "euclidean_norm":
+        norm = euclidean_norm
+        
     # Workaround for bug in SciPy that doesn't allow
     # specification of epsilon None
     if epsilon is not None:
         kwargs = {'function': function,
                   'epsilon': epsilon,
-                  'smooth' : smooth}
+                  'smooth' : smooth,
+                  'norm' : norm}
     else:
         kwargs = {'function': function,
-                  'smooth': smooth}
+                  'smooth': smooth,
+                  'norm' : norm}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)

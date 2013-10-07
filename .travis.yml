@@ -24,6 +24,9 @@ install:
     - unzip Cython-0.18.zip
     - cd Cython-0.18
     - sudo python$PYSUF setup.py install
+    # Temporary solution to travis issue #155
+    # https://github.com/travis-ci/travis-cookbooks/issues/155
+    - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
     - cd ..
     # Dipy
     - $PYTHON setup.py build

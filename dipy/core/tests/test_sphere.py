@@ -352,9 +352,11 @@ def test_interp_rbf():
 
     data = np.cos(s0.theta) + np.sin(s0.phi)
     expected = np.cos(s1.theta) + np.sin(s1.phi)
-    interp_data = interp_rbf(data, s0, s1)
+    interp_data_en = interp_rbf(data, s0, s1, norm = "euclidean_norm")
+    interp_data_a = interp_rbf(data, s0, s1, norm = "angle")
 
-    nt.assert_(np.mean(np.abs(interp_data - expected)) < 0.1)
+    nt.assert_(np.mean(np.abs(interp_data_en - expected)) < 0.1)
+    nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)
 
 
 if __name__ == "__main__":

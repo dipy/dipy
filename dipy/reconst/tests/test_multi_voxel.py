@@ -5,7 +5,7 @@ from functools import reduce
 import numpy as np
 import numpy.testing as npt
 
-from dipy.reconst.multi_voxel import _squash, multi_voxel_model, CallableArray
+from dipy.reconst.multi_voxel import _squash, multi_voxel_fit, CallableArray
 from dipy.core.sphere import unit_icosahedron
 
 
@@ -105,10 +105,11 @@ def test_CallableArray():
     npt.assert_array_equal(callarray(4), expected)
 
 
-def test_multi_voxel_model():
+def test_multi_voxel_fit():
 
     class SillyModel(object):
 
+        @multi_voxel_fit
         def fit(self, data, mask=None):
             return SillyFit(model)
 
@@ -127,11 +128,8 @@ def test_multi_voxel_model():
             n = np.random.randint(0, 10)
             return np.zeros((n, 3))
 
-    # Wrap the SillyModel
-    MultiVoxelSillyModel = multi_voxel_model(SillyModel)
-
     # Test the single voxel case
-    model = MultiVoxelSillyModel()
+    model = SillyModel()
     single_voxel = np.zeros(64)
     fit = model.fit(single_voxel)
     npt.assert_equal(type(fit), SillyFit)
@@ -150,7 +148,7 @@ def test_multi_voxel_model():
     mask = np.eye(3).astype('bool')
     data = np.zeros((3, 3, 64))
     fit = model.fit(data, mask)
-    npt.assert_array_equal(fit.model_attr, np.eye(3)*2)
+    npt.assert_array_equal(fit.model_attr, np.eye(3) * 2)
     odf = fit.odf(unit_icosahedron)
     npt.assert_equal(odf.shape, (3, 3, 12))
     npt.assert_array_equal(odf[~mask], 0)
@@ -162,5 +160,3 @@ def test_multi_voxel_model():
     # Test indexing into a fit
     npt.assert_equal(type(fit[0, 0]), SillyFit)
     npt.assert_equal(fit[:2, :2].shape, (2, 2))
-
-

@@ -6,40 +6,32 @@ from ..core.ndindex import ndindex
 from .quick_squash import quick_squash as _squash
 
 
-def multi_voxel_model(SingleVoxelModel):
-    """Class decorator to turn a single voxel model into a multi voxel model
-
-    See Also
-    --------
-    dipy/docs/examples/multiVoxelModel.py
-
+def multi_voxel_fit(single_voxel_fit):
+    """Method decorator to turn a single voxel model fit
+    definition into a multi voxel model fit definition
     """
-    class MultiVoxelModel(SingleVoxelModel):
-        """A subclass of SingleVoxelModel that fits many voxels"""
+    def new_fit(self, data, mask=None):
+        """Fit method for every voxel in data"""
+        # If only one voxel just return a normal fit
+        if data.ndim == 1:
+            return single_voxel_fit(self, data)
 
-        def fit(self, data, mask=None):
-            """Fit model for every voxel in data"""
-            # If only one voxel just return a normal fit
-            if data.ndim == 1:
-                return SingleVoxelModel.fit(self, data)
+        # Make a mask if mask is None
+        if mask is None:
+            shape = data.shape[:-1]
+            strides = (0,) * len(shape)
+            mask = as_strided(np.array(True), shape=shape, strides=strides)
+        # Check the shape of the mask if mask is not None
+        elif mask.shape != data.shape[:-1]:
+            raise ValueError("mask and data shape do not match")
 
-            # Make a mask if mask is None
-            if mask is None:
-                shape = data.shape[:-1]
-                strides = (0,) * len(shape)
-                mask = as_strided(np.array(True), shape=shape, strides=strides)
-            # Check the shape of the mask if mask is not None
-            elif mask.shape != data.shape[:-1]:
-                raise ValueError("mask and data shape do not match")
-
-            # Fit data where mask is True
-            fit_array = np.empty(data.shape[:-1], dtype=object)
-            for ijk in ndindex(data.shape[:-1]):
-                if mask[ijk]:
-                    fit_array[ijk] = SingleVoxelModel.fit(self, data[ijk])
-            return MultiVoxelFit(self, fit_array, mask)
-
-    return MultiVoxelModel
+        # Fit data where mask is True
+        fit_array = np.empty(data.shape[:-1], dtype=object)
+        for ijk in ndindex(data.shape[:-1]):
+            if mask[ijk]:
+                fit_array[ijk] = single_voxel_fit(self, data[ijk])
+        return MultiVoxelFit(self, fit_array, mask)
+    return new_fit
 
 
 class MultiVoxelFit(object):
