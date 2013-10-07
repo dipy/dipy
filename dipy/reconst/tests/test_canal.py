@@ -45,8 +45,7 @@ def test_canal():
     # symmetric724
     asmfit = asm.fit(data)
     Cshore = asmfit.l2estimation(radialOrder=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8)
-    Csh = asmfit.odf()
-    odf = sh_to_sf(Csh, sphere, 6, basis_type="fibernav")
+    odf = asmfit.odf(sphere)
 
     directions, _, _ = peak_directions(odf, sphere, .35, 25)
     assert_equal(len(directions), 2)
@@ -55,8 +54,7 @@ def test_canal():
     # 5 subdivisions
     asmfit = asm.fit(data)
     Cshore = asmfit.l2estimation(radialOrder=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8)
-    Csh = asmfit.odf()
-    odf = sh_to_sf(Csh, sphere2, 6, basis_type="fibernav")
+    odf = asmfit.odf(sphere2)
     directions, _, _ = peak_directions(odf, sphere2, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
@@ -66,8 +64,7 @@ def test_canal():
         data, golden_directions = sb_dummies[sbd]
         asmfit = asm.fit(data)
         Cshore = asmfit.l2estimation(radialOrder=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8)
-        Csh = asmfit.odf()
-        odf = sh_to_sf(Csh, sphere2, 6, basis_type="fibernav")
+        odf = asmfit.odf(sphere2)
         directions, _, _ = peak_directions(odf, sphere2, .35, 25)
         if len(directions) <= 3:
             assert_equal(len(directions), len(golden_directions))
@@ -78,14 +75,11 @@ def test_canal():
 def test_multivox_canal():    
     fetch_sherbrooke_3shell()
     img, gtab=read_sherbrooke_3shell()
-    
-    gtab2 = gradient_table(gtab.bvals[1:], gtab.bvecs[1:,:])
 
-    # must remove the b=0 image
     test = img.get_data()
-    data = test[45:65, 35:65, 33:34, 1:]
+    data = test[45:65, 35:65, 33:34]
 
-    asm = ShoreModel(gtab2)
+    asm = ShoreModel(gtab)
     asmfit = asm.fit(data)
     radialOrder = 4
     zeta = 700
