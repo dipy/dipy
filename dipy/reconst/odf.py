@@ -213,10 +213,14 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                         dtype=pam_res[0].gfa.dtype,
                         mode='w+',
                         shape=(data.shape[0]))
+    if ravel_peaks:
+        peaks_dirs_shape = (data.shape[0], npeaks * 3)
+    else:
+        peaks_dirs_shape = (data.shape[0], npeaks, 3)
     pam.peak_dirs = np.memmap(path.join(temp_dir, 'peak_dirs.dat'),
                               dtype=pam_res[0].peak_dirs.dtype,
                               mode='w+',
-                              shape=(data.shape[0], npeaks, 3))
+                              shape=peaks_dirs_shape)
     pam.peak_values = np.memmap(path.join(temp_dir, 'peak_values.dat'),
                                 dtype=pam_res[0].peak_values.dtype,
                                 mode='w+',
@@ -404,7 +408,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             continue
 
         # Get peaks of odf
-
         direction, pk, ind = peak_directions(
             odf, sphere, relative_peak_threshold,
             min_separation_angle)
@@ -422,10 +425,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             peak_values[idx][:n] /= pk[0]
             peak_dirs[idx] *= peak_values[idx][:, None]
 
-    #gfa_array = gfa_array
     qa_array /= global_max
-    #peak_values = peak_values
-    #peak_indices = peak_indices
 
     # The fibernavigator only supports float32. Since this form is mainly
     # for external visualisation, we enforce float32.
