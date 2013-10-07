@@ -202,49 +202,48 @@ class ShoreFit(AnalyticalFit):
         self.zeta = zeta
         Lshore = L_SHORE(self.radialOrder)
         Nshore = N_SHORE(self.radialOrder)
-        M = SHOREmatrix(self.radialOrder,  self.zeta, self.gtab)
-        # Generate the SHORE basis
-        #M= self.model.cache_get('shore_matrix', key=self.gtab)
-        # if M is None:
+        #Generate the SHORE basis
+        M= self.model.cache_get('shore_matrix', key=self.gtab)
+        if M is None:
+            M = SHOREmatrix(self.radialOrder,  self.zeta, self.gtab)
+            self.model.cache_set('shore_matrix', self.gtab, M)
 
-                #	self.model.cache_set('shore_matrix', self.gtab, M)
-
-        # Compute the signal coefficients in SHORE basis
-        pseudoInv = np.dot(
-            np.linalg.inv(np.dot(M.T, M) + lambdaN * Nshore + lambdaL * Lshore), M.T)
+        #Compute the signal coefficients in SHORE basis
+        pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + lambdaN * Nshore + lambdaL * Lshore), M.T)
         self.Cshore = np.dot(pseudoInv, self.data)
 
-        return self.Cshore  # , self.Sshore
+        return self.Cshore 
 
     def pdf(self, gridsize, radius_max):
         """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
-        To be implemented.
         """
         Pr = np.zeros((gridsize, gridsize, gridsize))
+        # Create the grid in wich compute the pdf
         rgrid, rtab = create_rspace(gridsize, radius_max)
-        psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab)
-        #psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab/float(gridsize//2))
+        psi= self.model.cache_get('shore_matrix_pdf', key=gridsize)
+        if psi is None:
+            psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab)
+            self.model.cache_set('shore_matrix_pdf', gridsize, psi)
+        
         propagator = np.dot(psi, self.Cshore)
-
+        # fill R-space
         for i in range(len(rgrid)):
             qx, qy, qz = rgrid[i]
             Pr[qx, qy, qz] += propagator[i]
-
+        # normalize by the area of the propagator 
         Pr = Pr * (2 * radius_max / gridsize) ** 3
-        return Pr, propagator, psi
+        return Pr, psi
 
     def pdf_iso(self, sphere):
-        """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
-        To be implemented.
+        """ Diffusion propagator on a given shell.
         """
         
         psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, sphere)
-        #psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab/float(gridsize//2))
         propagator = np.dot(psi, self.Cshore)
 
         return propagator
         
-    def odf(self):
+    def odf_sh(self):
         r""" Calculates the real analytical odf in terms of Spherical Harmonics.
         """
 
@@ -272,28 +271,15 @@ class ShoreFit(AnalyticalFit):
 
         return Csh
 
-    def odf_mauro(self, sphere):
-        r""" Calculates the real analytical odf in terms of Spherical Harmonics.
+    def odf(self, sphere):
+        r""" Calculates the real analytical odf for a given discrete sphere.
         """
-        v = sphere.vertices
-        r, theta, phi = cart2sphere(v[:, 0], v[:, 1], v[:, 2])
-        counter = 0
-        zeta = self.zeta
-        M = np.zeros(
-            (len(v), (self.radialOrder + 1) * ((self.radialOrder + 1) / 2) * (2 * self.radialOrder + 1)))
-        for n in range(self.radialOrder + 1):
-            for l in range(0, n + 1, 2):
-                for m in range(-l, l + 1):
-                    k = (-1) ** (n - l / 2.0) * np.sqrt(
-                        (gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
-                        (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
-
-                    F = hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0)
-                    S = real_sph_harm(m, l, theta, phi)
-                    M[:, counter] = k * F * S
-                    counter += 1
-        M = M[:, 0:counter]
-        odf = M * self.Cshore
+        upsilon= self.model.cache_get('shore_matrix_odf', key=sphere)
+        if upsilon is None:
+            upsilon = SHOREmatrix_odf(self.radialOrder,  self.zeta, sphere.vertices)
+            self.model.cache_set('shore_matrix_odf', sphere, upsilon)
+        
+        odf = np.dot (upsilon , self.Cshore)
         return odf
 
     def rtop_signal(self):
@@ -387,7 +373,7 @@ def __kappa(zeta, n, l):
         return np.sqrt((2 * factorial(n - l)) / (zeta ** 1.5 * gamma(n + 1.5)))
 
 
-def SHOREmatrix_pdf(radialOrder, zeta, rgradients):
+def SHOREmatrix_pdf(radialOrder, zeta, rtab):
     """Compute the SHORE matrix"
 
     Parameters
@@ -401,17 +387,17 @@ def SHOREmatrix_pdf(radialOrder, zeta, rgradients):
     """
 
     r, theta, phi = cart2sphere(
-        rgradients[:, 0], rgradients[:, 1], rgradients[:, 2])
+        rtab[:, 0], rtab[:, 1], rtab[:, 2])
     theta[np.isnan(theta)] = 0
 
-    M = np.zeros(
+    psi = np.zeros(
         (r.shape[0], (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1)))
     counter = 0
     for n in range(radialOrder + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
 
-                M[:, counter] = real_sph_harm(m, l, theta, phi) * \
+                psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 * zeta * r ** 2 ) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
                     __kappa_pdf(zeta, n, l) *\
@@ -419,7 +405,7 @@ def SHOREmatrix_pdf(radialOrder, zeta, rgradients):
                     (-1) ** (n - l / 2)
 
                 counter += 1
-    return M[:, 0:counter]
+    return psi[:, 0:counter]
 
 
 def __kappa_pdf(zeta, n, l):
@@ -427,6 +413,41 @@ def __kappa_pdf(zeta, n, l):
         return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5) / gamma(n + 1.5))
     else:
         return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) / gamma(n + 1.5))
+
+def SHOREmatrix_odf(radialOrder, zeta, sphere_vertices):
+    """Compute the SHORE matrix"
+
+    Parameters
+    ----------
+    radialOrder : unsigned int,
+        Radial Order
+    zeta : unsigned int,
+        scale factor
+    sphere_vertices : array, shape (N,3)
+        vertices of the odf sphere
+    """
+
+    r, theta, phi = cart2sphere(sphere_vertices[:, 0], sphere_vertices[:, 1], sphere_vertices[:, 2])
+    theta[np.isnan(theta)] = 0
+    counter = 0
+    upsilon = np.zeros((len(sphere_vertices), (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1)))
+    for n in range(radialOrder + 1):
+        for l in range(0, n + 1, 2):
+            for m in range(-l, l + 1):
+                upsilon[:, counter] = (-1) ** (n - l / 2.0) * __kappa_odf(zeta,n,l) * \
+                    hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
+                    real_sph_harm(m, l, theta, phi)
+                counter += 1
+
+    return upsilon[:, 0:counter]
+
+def __kappa_odf(zeta, n, l):
+    if n - l < 0:
+        return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
+                    (16 * np.pi ** 3 * (zeta) ** 1.5  * gamma(l + 1.5) ** 2))
+    else:
+        return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
+                    (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
 
 
 def L_SHORE(radialOrder):
@@ -464,18 +485,23 @@ def N_SHORE(radialOrder):
 
 
 def create_rspace(gridsize, radius_max):
-    """ create the 3D grid which holds the signal values (q-space)
+    """ create the R-space table, that contains the points in which 
+        compute the pdf.
 
     Parameters
     ----------
-    gtab : GradientTable
-    origin : (3,) ndarray
-        center of the qspace
+    gridsize : integer
+        dimension of the propagator grid
+    radius_max : float
+        maximal radius in which compute the propagator
 
     Returns
     -------
-    qgrid : ndarray
-        qspace coordinates
+    vecs : array, shape (N,3)
+        positions of the pdf points in a 3D matrix
+
+    tab : array, shape (N,3)
+        R-space points in which calculates the pdf
     """
 
     radius = gridsize // 2
@@ -484,8 +510,8 @@ def create_rspace(gridsize, radius_max):
         for j in range(-radius, radius + 1):
             for k in range(-radius, radius + 1):
                 vecs.append([i, j, k])
+
     vecs = np.array(vecs, dtype=np.float32)
-    #tab = vecs / float(np.sqrt(radius ** 2 + radius ** 2 + radius ** 2))
     tab = vecs / float(radius)
     tab = tab * radius_max
     vecs = vecs + radius
