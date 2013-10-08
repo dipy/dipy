@@ -421,12 +421,18 @@ def single_tensor_rtop(evals=None, tau=1 / (4 * np.pi ** 2)):
     evals : 1D arrays,
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
+    tau : float,
+        Diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
     rtop : float
         Return to origin probability.
 
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     rtop = 1 / np.sqrt((4 * np.pi * tau) ** 3 * np.prod(evals))
@@ -443,12 +449,18 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     mevals : sequence of 1D arrays,
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
+    tau : float,
+        Diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
     rtop : float
         Return to origin probability.
 
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     rtop = 0
@@ -474,6 +486,9 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
         Eigenvectors of the tensor.  You can also think of these as the
         rotation matrix that determines the orientation of the diffusion
         tensor.
+    tau : float,
+        Diffusion time. By default the value that makes q=sqrt(b).
+
 
     Returns
     -------
@@ -482,10 +497,8 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Aganj et al., "Reconstruction of the Orientation Distribution
-           Function in Single- and Multiple-Shell q-Ball Imaging Within
-           Constant Solid Angle", Magnetic Resonance in Medicine, nr. 64,
-           pp. 554--566, 2010.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     """
     if evals is None:
@@ -524,26 +537,18 @@ def multi_tensor_pdf(pdf_points, mf, mevals=None, mevecs=None, tau=1 / (4 * np.p
     mevecs : sequence of 3D arrays,
         Eigenvectors for each tensor.  You can also think of these
         as the rotation matrices that align the different tensors.
+    tau : float,
+        Diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
-    ODF : (N,) ndarray
+    pdf : (N,) ndarray
         Orientation distribution function.
 
-    Examples
-    --------
-    Simulate a MultiTensor ODF with two peaks and calculate its exact ODF.
-
-    >>> import numpy as np
-    >>> from dipy.sims.voxel import multi_tensor_odf, all_tensor_evecs
-    >>> from dipy.data import get_sphere
-    >>> sphere = get_sphere('symmetric724')
-    >>> vertices, faces = sphere.vertices, sphere.faces
-    >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
-    >>> e0 = np.array([1, 0, 0.])
-    >>> e1 = np.array([0., 1, 0])
-    >>> mevecs=[all_tensor_evecs(e0), all_tensor_evecs(e1)]
-    >>> odf = multi_tensor_odf(vertices, [0.5,0.5], mevals, mevecs)
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     pdf = np.zeros(len(pdf_points))
@@ -568,12 +573,18 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
     evals : 1D arrays,
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
+    tau : float,
+        Diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
     msd : float
         Mean square displacement.
 
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     msd = 2 * tau * np.sum(evals)
@@ -590,12 +601,18 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
     mevals : sequence of 1D arrays,
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
+    tau : float,
+        Diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
     msd : float
         Mean square displacement.
 
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
     msd = 0
