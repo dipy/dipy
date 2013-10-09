@@ -6,8 +6,6 @@ from ascm import ascm
 def test_filters():
     nib_image=nib.load("data/fibercup-averaged_b-1500.nii")
     image=nib_image.get_data().astype(np.double)
-    affine=nib_image.get_affine()
-
     fima1=np.empty_like(image, order='F')
     fima2=np.empty_like(image, order='F')
     fima3=np.empty_like(image, order='F')
@@ -15,8 +13,8 @@ def test_filters():
     for i in xrange(image.shape[3]):
         print "Filtering volume",i+1,"/",image.shape[3]
         mv=image[:,:,:,i].max()
-        fima1[:,:,:,i]=ornlm.ornlmpy(image[:,:,:,i], 3, 1, 0.05*mv)
-        fima2[:,:,:,i]=ornlm.ornlmpy(image[:,:,:,i], 3, 2, 0.05*mv)
+        fima1[:,:,:,i]=ornlm.ornlm_pyx(image[:,:,:,i], 3, 1, 0.05*mv)
+        fima2[:,:,:,i]=ornlm.ornlm_pyx(image[:,:,:,i], 3, 2, 0.05*mv)
         fima4[:,:,:,i]=np.array(ascm(image[:,:,:,i], fima1[:,:,:,i],fima2[:,:,:,i], 0.05*mv))
         fima3[:,:,:,i]=np.array(hsm(fima1[:,:,:,i],fima2[:,:,:,i]))
     #####ornlm######
@@ -40,4 +38,6 @@ def test_filters():
     diff4=abs(fima4-matlab_filtered4)
     print "Maximum error [ascm]: ", diff4.max()
 
-test_filters()
+
+if __name__=='__main__':
+    test_filters()
