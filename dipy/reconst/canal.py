@@ -183,7 +183,7 @@ class ShoreFit(AnalyticalFit):
         self.gtab = model.gtab
         self.Cshore = None
 
-    def l2estimation(self, radialOrder=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8):
+    def l2estimation(self, radialOrder=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8, tau=1 / (4 * np.pi ** 2)):
         """ Least square estimation with an $\ell_2$ regularisation of the $c_i$ coefficients.
 
         Parameters
@@ -202,17 +202,18 @@ class ShoreFit(AnalyticalFit):
         self.zeta = zeta
         Lshore = L_SHORE(self.radialOrder)
         Nshore = N_SHORE(self.radialOrder)
-        #Generate the SHORE basis
-        M= self.model.cache_get('shore_matrix', key=self.gtab)
+        # Generate the SHORE basis
+        M = self.model.cache_get('shore_matrix', key=self.gtab)
         if M is None:
-            M = SHOREmatrix(self.radialOrder,  self.zeta, self.gtab)
+            M = SHOREmatrix(self.radialOrder,  self.zeta, self.gtab, tau)
             self.model.cache_set('shore_matrix', self.gtab, M)
 
-        #Compute the signal coefficients in SHORE basis
-        pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + lambdaN * Nshore + lambdaL * Lshore), M.T)
+        # Compute the signal coefficients in SHORE basis
+        pseudoInv = np.dot(
+            np.linalg.inv(np.dot(M.T, M) + lambdaN * Nshore + lambdaL * Lshore), M.T)
         self.Cshore = np.dot(pseudoInv, self.data)
 
-        return self.Cshore 
+        return self.Cshore
 
     def pdf(self, gridsize, radius_max):
         """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
@@ -235,29 +236,29 @@ class ShoreFit(AnalyticalFit):
         Pr = np.zeros((gridsize, gridsize, gridsize))
         # Create the grid in wich compute the pdf
         rgrid, rtab = create_rspace(gridsize, radius_max)
-        psi= self.model.cache_get('shore_matrix_pdf', key=gridsize)
+        psi = self.model.cache_get('shore_matrix_pdf', key=gridsize)
         if psi is None:
             psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab)
             self.model.cache_set('shore_matrix_pdf', gridsize, psi)
-        
+
         propagator = np.dot(psi, self.Cshore)
         # fill R-space
         for i in range(len(rgrid)):
             qx, qy, qz = rgrid[i]
             Pr[qx, qy, qz] += propagator[i]
-        # normalize by the area of the propagator 
-        Pr = Pr * (2 * radius_max / gridsize) ** 3
+        # normalize by the area of the propagator
+        Pr = Pr * (2 * radius_max / (gridsize - 1)) ** 3
         return Pr, psi
 
-    def pdf_iso(self, points):
+    def pdf_iso(self, r_points):
         """ Diffusion propagator on a given shell.
         """
-        
-        psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, sphere)
+
+        psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, r_points)
         Pr = np.dot(psi, self.Cshore)
 
         return Pr
-        
+
     def odf_sh(self):
         r""" Calculates the real analytical odf in terms of Spherical Harmonics.
         """
@@ -289,12 +290,13 @@ class ShoreFit(AnalyticalFit):
     def odf(self, sphere):
         r""" Calculates the real analytical odf for a given discrete sphere.
         """
-        upsilon= self.model.cache_get('shore_matrix_odf', key=sphere)
+        upsilon = self.model.cache_get('shore_matrix_odf', key=sphere)
         if upsilon is None:
-            upsilon = SHOREmatrix_odf(self.radialOrder,  self.zeta, sphere.vertices)
+            upsilon = SHOREmatrix_odf(
+                self.radialOrder,  self.zeta, sphere.vertices)
             self.model.cache_set('shore_matrix_odf', sphere, upsilon)
-        
-        odf = np.dot (upsilon , self.Cshore)
+
+        odf = np.dot(upsilon, self.Cshore)
         return odf
 
     def rtop_signal(self):
@@ -360,7 +362,7 @@ class ShoreFit(AnalyticalFit):
         return msd
 
 
-def SHOREmatrix(radialOrder, zeta, gtab):
+def SHOREmatrix(radialOrder, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     """Compute the SHORE matrix"
 
     Parameters
@@ -371,9 +373,12 @@ def SHOREmatrix(radialOrder, zeta, gtab):
         scale factor
     gtab : GradientTable,
         Gradient directions and bvalues container class
+    tau : float,
+        Diffusion time. By default the value that makes q=sqrt(b).
+
     """
 
-    qvals = np.sqrt(gtab.bvals)
+    qvals = np.sqrt(gtab.bvals / (4 * np.pi ** 2 * tau))
     bvecs = gtab.bvecs
 
     qgradients = qvals[:, None] * bvecs
@@ -449,6 +454,7 @@ def __kappa_pdf(zeta, n, l):
     else:
         return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) / gamma(n + 1.5))
 
+
 def SHOREmatrix_odf(radialOrder, zeta, sphere_vertices):
     """Compute the SHORE matrix"
 
@@ -462,27 +468,30 @@ def SHOREmatrix_odf(radialOrder, zeta, sphere_vertices):
         vertices of the odf sphere
     """
 
-    r, theta, phi = cart2sphere(sphere_vertices[:, 0], sphere_vertices[:, 1], sphere_vertices[:, 2])
+    r, theta, phi = cart2sphere(
+        sphere_vertices[:, 0], sphere_vertices[:, 1], sphere_vertices[:, 2])
     theta[np.isnan(theta)] = 0
     counter = 0
-    upsilon = np.zeros((len(sphere_vertices), (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1)))
+    upsilon = np.zeros(
+        (len(sphere_vertices), (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1)))
     for n in range(radialOrder + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-                upsilon[:, counter] = (-1) ** (n - l / 2.0) * __kappa_odf(zeta,n,l) * \
+                upsilon[:, counter] = (-1) ** (n - l / 2.0) * __kappa_odf(zeta, n, l) * \
                     hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
                     real_sph_harm(m, l, theta, phi)
                 counter += 1
 
     return upsilon[:, 0:counter]
 
+
 def __kappa_odf(zeta, n, l):
     if n - l < 0:
         return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
-                    (16 * np.pi ** 3 * (zeta) ** 1.5  * gamma(l + 1.5) ** 2))
+                      (16 * np.pi ** 3 * (zeta) ** 1.5 * gamma(l + 1.5) ** 2))
     else:
         return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
-                    (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
+                      (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
 
 
 def L_SHORE(radialOrder):
