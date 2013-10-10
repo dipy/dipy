@@ -24,17 +24,16 @@ def test_canal_metrics():
                             fractions=[50, 50], snr=None)
     S = S / S[0, None].astype(np.float)
 
-    asm = ShoreModel(gtab)
-    asmfit = asm.fit(S)
     radialOrder = 8
     zeta = 800
     lambdaN = 1e-12
     lambdaL = 1e-12
-    Cshore = asmfit.l2estimation(radialOrder=radialOrder, zeta=zeta,
-                                 lambdaN=lambdaN, lambdaL=lambdaL)
+    asm = ShoreModel(gtab, radialOrder=radialOrder, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
+    asmfit = asm.fit(S)
+    c_shore= asmfit.shore_coeff
 
-    Cmat = SHOREmatrix(radialOrder, zeta, gtab)
-    S_reconst = np.dot(Cmat, Cshore)
+    cmat = SHOREmatrix(radialOrder, zeta, gtab)
+    S_reconst = np.dot(cmat, c_shore)
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 4)
 

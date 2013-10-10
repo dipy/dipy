@@ -59,7 +59,6 @@ Fit the signal with the model and calculate the SHORE coefficients.
 """
 
 asmfit = asm.fit(dataslice)
-Cshore = asmfit.l2estimation()
 
 """
 Calculate the analytical return to origin probability on the signal 

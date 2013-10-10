@@ -55,12 +55,13 @@ class AnalyticalModel(Cache):
 
     @multi_voxel_fit
     def fit(self, data):
-        return AnalyticalFit(self, data)
+        coef = None
+        return AnalyticalFit(self, coef)
 
 
 class AnalyticalFit():
 
-    def __init__(self, model, data):
+    def __init__(self, model, coef):
         """ Calculates diffusion properties for a single voxel. This is an abstract class.
 
         Parameters
@@ -72,29 +73,18 @@ class AnalyticalFit():
         """
 
         self.model = model
-        self.data = data
-
-    def l2estimation(self):
-        """ Least square estimation with an $\ell_2$ regularisation of the $c_i$ coefficients.
-        """
-
-        pass
-
-    def pdf(self):
-        """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
-        """
-        pass
-
-    def odf(self, sphere):
-        r""" Calculates the real analytical odf in terms of Spherical Harmonics.
-        """
-
-        pass
+        self.coef = coef
 
 
 class ShoreModel(AnalyticalModel):
 
-    def __init__(self, gtab):
+    def __init__(self, 
+                 gtab, 
+                 radialOrder=6,
+                 zeta=700,
+                 lambdaN=1e-8,
+                 lambdaL=1e-8,
+                 tau=1 / (4 * np.pi ** 2)):
         r""" Analytical and continuous modeling of the diffusion signal with respect to the SHORE
         basis [1,2]_.
 
@@ -152,22 +142,39 @@ class ShoreModel(AnalyticalModel):
         asmfit = asm.fit(data)
         radialOrder = 4
         zeta = 700
-        Cshore, Sshore = asmfit.l2estimation(radialOrder=radialOrder, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
+        coeffs, Sshore = asmfit.l2estimation(radialOrder=radialOrder, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
         Csh = asmfit.odf()
         """
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.gtab = gtab
+        self.radialOrder = radialOrder
+        self.zeta = zeta
+        self.lambdaL = lambdaL
+        self.lambdaN = lambdaN
+        self.tau=tau
 
     @multi_voxel_fit
     def fit(self, data):
-        return ShoreFit(self, data)
+        Lshore = L_SHORE(self.radialOrder)
+        Nshore = N_SHORE(self.radialOrder)
+        # Generate the SHORE basis
+        M = self.cache_get('shore_matrix', key=self.gtab)
+        if M is None:
+            M = SHOREmatrix(self.radialOrder,  self.zeta, self.gtab, self.tau)
+            self.cache_set('shore_matrix', self.gtab, M)
+
+        # Compute the signal coefficients in SHORE basis
+        pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
+        coef = np.dot(pseudoInv, data)
+
+        return ShoreFit(self, coef)
 
 
 class ShoreFit(AnalyticalFit):
 
-    def __init__(self, model, data):
+    def __init__(self, model, shore_coef):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -179,41 +186,10 @@ class ShoreFit(AnalyticalFit):
         """
 
         self.model = model
-        self.data = data
+        self._shore_coef = shore_coef
         self.gtab = model.gtab
-        self.Cshore = None
-
-    def l2estimation(self, radialOrder=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8, tau=1 / (4 * np.pi ** 2)):
-        """ Least square estimation with an $\ell_2$ regularisation of the $c_i$ coefficients.
-
-        Parameters
-        ----------
-        radialOrder : unsigned int,
-            Radial Order
-        zeta : unsigned int,
-            scale factor
-        lambdaN : float,
-            radial regularisation constant
-        lambdaL : float,
-            angular regularisation constant
-        """
-
-        self.radialOrder = radialOrder
-        self.zeta = zeta
-        Lshore = L_SHORE(self.radialOrder)
-        Nshore = N_SHORE(self.radialOrder)
-        # Generate the SHORE basis
-        M = self.model.cache_get('shore_matrix', key=self.gtab)
-        if M is None:
-            M = SHOREmatrix(self.radialOrder,  self.zeta, self.gtab, tau)
-            self.model.cache_set('shore_matrix', self.gtab, M)
-
-        # Compute the signal coefficients in SHORE basis
-        pseudoInv = np.dot(
-            np.linalg.inv(np.dot(M.T, M) + lambdaN * Nshore + lambdaL * Lshore), M.T)
-        self.Cshore = np.dot(pseudoInv, self.data)
-
-        return self.Cshore
+        self.radialOrder = model.radialOrder
+        self.zeta = model.zeta
 
     def pdf(self, gridsize, radius_max):
         """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
@@ -241,7 +217,7 @@ class ShoreFit(AnalyticalFit):
             psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab)
             self.model.cache_set('shore_matrix_pdf', gridsize, psi)
 
-        propagator = np.dot(psi, self.Cshore)
+        propagator = np.dot(psi, self._shore_coef)
         # fill R-space
         for i in range(len(rgrid)):
             qx, qy, qz = rgrid[i]
@@ -255,7 +231,7 @@ class ShoreFit(AnalyticalFit):
         """
 
         psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, r_points)
-        Pr = np.dot(psi, self.Cshore)
+        Pr = np.dot(psi, self._shore_coef)
 
         return Pr
 
@@ -267,7 +243,7 @@ class ShoreFit(AnalyticalFit):
         J = (self.radialOrder + 1) * (self.radialOrder + 2) / 2
 
         # Compute the spherical Harmonic Coefficients
-        Csh = np.zeros(J)
+        c_sh = np.zeros(J)
         counter = 0
 
         for n in range(self.radialOrder + 1):
@@ -282,10 +258,10 @@ class ShoreFit(AnalyticalFit):
                         l + 3.0 / 2.0) * factorial(n - l)) * (1.0 / 2.0) ** (-l / 2 - 3.0 / 2.0)
                     Fnl = hyp2f1(-n + l, l / 2 + 3.0 / 2.0, l + 3.0 / 2.0, 2.0)
 
-                    Csh[j] += self.Cshore[counter] * Cnl * Gnl * Fnl
+                    c_sh[j] += self._shore_coef[counter] * Cnl * Gnl * Fnl
                     counter += 1
 
-        return Csh
+        return c_sh
 
     def odf(self, sphere):
         r""" Calculates the real analytical odf for a given discrete sphere.
@@ -296,14 +272,14 @@ class ShoreFit(AnalyticalFit):
                 self.radialOrder,  self.zeta, sphere.vertices)
             self.model.cache_set('shore_matrix_odf', sphere, upsilon)
 
-        odf = np.dot(upsilon, self.Cshore)
+        odf = np.dot(upsilon, self._shore_coef)
         return odf
 
     def rtop_signal(self):
         r""" Calculates the analytical return to origin probability from the signal. 
         """
         rtop = 0
-        c = self.Cshore
+        c = self._shore_coef
         counter = 0
         for n in range(self.radialOrder + 1):
             for l in range(0, n + 1, 2):
@@ -319,7 +295,7 @@ class ShoreFit(AnalyticalFit):
         r""" Calculates the analytical return to origin probability from the pdf. 
         """
         rtop = 0
-        c = self.Cshore
+        c = self._shore_coef
         counter = 0
         for n in range(self.radialOrder + 1):
             for l in range(0, n + 1, 2):
@@ -349,7 +325,7 @@ class ShoreFit(AnalyticalFit):
 
         """
         msd = 0
-        c = self.Cshore
+        c = self._shore_coef
         counter = 0
         for n in range(self.radialOrder + 1):
             for l in range(0, n + 1, 2):
@@ -360,6 +336,12 @@ class ShoreFit(AnalyticalFit):
                             hyp2f1(-n, 2.5, 1.5, 2)
                     counter += 1
         return msd
+
+    @property
+    def shore_coeff(self):
+        """The SHORE coefficients
+        """
+        return self._shore_coef
 
 
 def SHOREmatrix(radialOrder, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
