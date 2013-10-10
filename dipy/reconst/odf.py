@@ -215,7 +215,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     pam.peak_dirs = np.memmap(path.join(temp_dir, 'peak_dirs.dat'),
                               dtype=pam_res[0].peak_dirs.dtype,
                               mode='w+',
-                              shape=data.shape[0], npeaks, 3)
+                              shape=(data.shape[0], npeaks, 3))
     pam.peak_values = np.memmap(path.join(temp_dir, 'peak_values.dat'),
                                 dtype=pam_res[0].peak_values.dtype,
                                 mode='w+',
@@ -502,8 +502,12 @@ def reshape_peaks_for_visualisation(peaks):
 
     if isinstance(peaks, PeaksAndMetrics):
         peaks.peak_dirs = np.reshape(peaks.peak_dirs,
-                                     peaks.peak_dirs.shape[:-2], -1).astype('float32')
+                                     np.append(peaks.peak_dirs.shape[:-2], -1))
+
+        peaks.peak_dirs = peaks.peak_dirs.astype('float32')
+
     else:
-        peaks = np.reshape(peaks, peaks.shape[:-2], -1).astype('float32')
+        print(type(peaks))
+        peaks = np.reshape(peaks, (peaks.shape[:-2] + (-1,))).astype('float32')
 
     return peaks
