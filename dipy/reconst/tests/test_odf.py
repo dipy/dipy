@@ -87,13 +87,13 @@ def test_peaks_shm_coeff():
                        [0.0015, 0.0003, 0.0003]))
 
     data, _ = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
-                             fractions=[50, 50], snr=SNR)
+                           fractions=[50, 50], snr=SNR)
 
     from dipy.reconst.shm import CsaOdfModel
 
     model = CsaOdfModel(gtab, 4)
 
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
+    pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
                            return_odf=True, return_sh=True)
     # Test that spherical harmonic coefficients return back correctly
     B = np.linalg.pinv(pam.invB)
@@ -101,7 +101,7 @@ def test_peaks_shm_coeff():
     assert_array_almost_equal(pam.odf, odf2)
     assert_equal(pam.shm_coeff.shape[-1], 45)
 
-    pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
+    pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
                            return_odf=True, return_sh=False)
     assert_equal(pam.shm_coeff, None)
 
@@ -111,6 +111,25 @@ def test_peaks_shm_coeff():
     B = np.linalg.pinv(pam.invB)
     odf2 = np.dot(pam.shm_coeff, B)
     assert_array_almost_equal(pam.odf, odf2)
+
+
+def test_reshape_peaks_for_visualisation():
+
+    data1 = np.random.randn(10, 5, 3).astype('float32')
+    data2 = np.random.randn(10, 2, 5, 3).astype('float32')
+    data3 = np.random.randn(10, 2, 12, 5, 3).astype('float32')
+
+    data1_reshape = reshape_peaks_for_visualisation(data1)
+    data2_reshape = reshape_peaks_for_visualisation(data2)
+    data3_reshape = reshape_peaks_for_visualisation(data3)
+
+    assert_array_equal(data1_reshape.shape, (10, 15))
+    assert_array_equal(data2_reshape.shape, (10, 2, 15))
+    assert_array_equal(data3_reshape.shape, (10, 2, 12, 15))
+
+    assert_array_equal(data1_reshape.reshape(10, 5, 3), data1)
+    assert_array_equal(data2_reshape.reshape(10, 2, 5, 3), data2)
+    assert_array_equal(data3_reshape.reshape(10, 2, 12, 5, 3), data3)
 
 
 if __name__ == '__main__':

@@ -86,8 +86,12 @@ def reshape_peaks_for_visualisation(peaks):
 
     if isinstance(peaks, PeaksAndMetrics):
         peaks.peak_dirs = np.reshape(peaks.peak_dirs,
-                                     peaks.peak_dirs.shape[:-2], -1).astype('float32')
+                                     np.append(peaks.peak_dirs.shape[:-2], -1))
+
+        peaks.peak_dirs = peaks.peak_dirs.astype('float32')
+
     else:
-        peaks = np.reshape(peaks, peaks.shape[:-2], -1).astype('float32')
+        print(type(peaks))
+        peaks = np.reshape(peaks, (peaks.shape[:-2] + (-1,))).astype('float32')
 
     return peaks
