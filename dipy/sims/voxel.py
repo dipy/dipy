@@ -413,7 +413,7 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
     return odf
 
 
-def single_tensor_rtop(evals=None, tau=1 / (4 * np.pi ** 2)):
+def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
     r'''Simulate a Multi-Tensor rtop.
 
     Parameters
@@ -435,7 +435,7 @@ def single_tensor_rtop(evals=None, tau=1 / (4 * np.pi ** 2)):
            Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
-    rtop = 1 / np.sqrt((4 * np.pi * tau) ** 3 * np.prod(evals))
+    rtop = 1.0 / np.sqrt((4 * np.pi * tau) ** 3 * np.prod(evals))
     return rtop
 
 
