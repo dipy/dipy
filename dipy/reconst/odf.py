@@ -66,3 +66,28 @@ def minmax_normalize(samples, out=None):
     out -= sample_mins
     out /= (sample_maxes - sample_mins)
     return out
+
+
+def reshape_peaks_for_visualisation(peaks):
+    """Reshape peaks for visualisation.
+
+    Reshape and convert to float32 a set of peaks for visualisation with mrtrix
+    or the fibernavigator.
+
+    Parameters:
+    -----------
+    peaks: nd array (..., N, 3) or PeaksAndMetrics object
+        The peaks to be reshaped and converted to float32.
+
+    Returns:
+    --------
+    peaks : nd array (..., 3*N) or PeaksAndMetrics object
+    """
+
+    if isinstance(peaks, PeaksAndMetrics):
+        peaks.peak_dirs = np.reshape(peaks.peak_dirs,
+                                     peaks.peak_dirs.shape[:-2], -1).astype('float32')
+    else:
+        peaks = np.reshape(peaks, peaks.shape[:-2], -1).astype('float32')
+
+    return peaks
