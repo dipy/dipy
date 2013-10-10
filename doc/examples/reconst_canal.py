@@ -44,19 +44,6 @@ object (gradient information e.g. b-values). For example to read the b-values
 it is possible to write print(gtab.bvals).
 
 Instantiate the SHORE Model.
-"""
-
-asm = ShoreModel(gtab)
-
-"""
-Fit the SHORE model to the data
-"""
-
-asmfit = asm.fit(data_small)
-
-
-"""
-Estimate the SHORE coefficient using the least square estimation with a l2 regularization.
 
 radialOrder is the radial order of the SHORE basis.
 
@@ -72,7 +59,13 @@ radialOrder = 6
 zeta = 700
 lambdaN=1e-8
 lambdaL=1e-8
-Cshore = asmfit.l2estimation(radialOrder=radialOrder, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
+asm = ShoreModel(gtab, radialOrder=radialOrder, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
+
+"""
+Fit the SHORE model to the data
+"""
+
+asmfit = asm.fit(data_small)
 
 """
 Load an odf reconstruction sphere
