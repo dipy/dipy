@@ -38,8 +38,8 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
         Only return peaks greater than ``relative_peak_threshold * m`` where m
         is the largest peak.
     min_separation_angle : float in [0, 90]
-        The minimum distance between directions. If two peaks are too close only
-        the larger of the two is returned.
+        The minimum distance between directions. If two peaks are too close
+        only the larger of the two is returned.
     sphere : Sphere
         A discrete Sphere. The points on the sphere will be used for initial
         estimate of maximums.
@@ -161,11 +161,11 @@ class PeaksAndMetrics(object):
     pass
 
 
-def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
-                                min_separation_angle, mask, return_odf,
-                                return_sh, gfa_thr, normalize_peaks,
-                                sh_order, sh_basis_type, ravel_peaks,
-                                npeaks, nbr_process):
+def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
+                               min_separation_angle, mask, return_odf,
+                               return_sh, gfa_thr, normalize_peaks,
+                               sh_order, sh_basis_type, ravel_peaks,
+                               npeaks, nbr_process):
 
     if nbr_process is None:
         nbr_process = cpu_count()
@@ -187,7 +187,7 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
     pool = Pool(nbr_process)
 
-    pam_res = pool.map(__peaks_from_model_parallel_sub,
+    pam_res = pool.map(_peaks_from_model_parallel_sub,
                        zip(repeat(model),
                            data_chunks,
                            repeat(sphere),
@@ -280,7 +280,7 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     return pam
 
 
-def __peaks_from_model_parallel_sub(args):
+def _peaks_from_model_parallel_sub(args):
     return peaks_from_model(*args)
 
 
@@ -330,9 +330,11 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
     parallel: bool
-        If True, use multiprocessing to compute peaks and metric (default False).
+        If True, use multiprocessing to compute peaks and metric
+        (default False).
     nbr_process: int
-        If `parallel == True`, the number of subprocess to use (default multiprocessing.cpu_count()).
+        If `parallel == True`, the number of subprocess to use
+        (default multiprocessing.cpu_count()).
 
     Returns
     -------
@@ -342,19 +344,19 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     """
 
     if parallel:
-        return __peaks_from_model_parallel(model,
-                                           data, sphere,
-                                           relative_peak_threshold,
-                                           min_separation_angle,
-                                           mask, return_odf,
-                                           return_sh,
-                                           gfa_thr,
-                                           normalize_peaks,
-                                           sh_order,
-                                           sh_basis_type,
-                                           ravel_peaks,
-                                           npeaks,
-                                           nbr_process)
+        return _peaks_from_model_parallel(model,
+                                          data, sphere,
+                                          relative_peak_threshold,
+                                          min_separation_angle,
+                                          mask, return_odf,
+                                          return_sh,
+                                          gfa_thr,
+                                          normalize_peaks,
+                                          sh_order,
+                                          sh_basis_type,
+                                          ravel_peaks,
+                                          npeaks,
+                                          nbr_process)
 
     shape = data.shape[:-1]
     if mask is None:
@@ -455,7 +457,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
 
 def gfa(samples):
-    """The general fractional anisotropy of a function evaluated on the unit sphere"""
+    """The general fractional anisotropy of a function evaluated
+    on the unit sphere"""
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
     numer = n * (diff * diff).sum(-1)
