@@ -164,8 +164,7 @@ class PeaksAndMetrics(object):
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks,
-                               sh_order, sh_basis_type, ravel_peaks,
-                               npeaks, nbr_process):
+                               sh_order, sh_basis_type, npeaks, nbr_process):
 
     if nbr_process is None:
         nbr_process = cpu_count()
@@ -200,7 +199,6 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                            repeat(normalize_peaks),
                            repeat(sh_order),
                            repeat(sh_basis_type),
-                           repeat(ravel_peaks),
                            repeat(npeaks),
                            repeat(False)))
     pool.close()
@@ -213,14 +211,11 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                         dtype=pam_res[0].gfa.dtype,
                         mode='w+',
                         shape=(data.shape[0]))
-    if ravel_peaks:
-        peaks_dirs_shape = (data.shape[0], npeaks * 3)
-    else:
-        peaks_dirs_shape = (data.shape[0], npeaks, 3)
+
     pam.peak_dirs = np.memmap(path.join(temp_dir, 'peak_dirs.dat'),
                               dtype=pam_res[0].peak_dirs.dtype,
                               mode='w+',
-                              shape=peaks_dirs_shape)
+                              shape=data.shape[0], npeaks, 3)
     pam.peak_values = np.memmap(path.join(temp_dir, 'peak_values.dat'),
                                 dtype=pam_res[0].peak_values.dtype,
                                 mode='w+',
@@ -287,8 +282,8 @@ def _peaks_from_model_parallel_sub(args):
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, ravel_peaks=False,
-                     npeaks=5, parallel=False, nbr_process=None):
+                     sh_order=8, sh_basis_type=None, npeaks=5,
+                     parallel=False, nbr_process=None):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -323,10 +318,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         ``fibernav`` for the FiberNavigator basis
     sh_smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
-    ravel_peaks : bool
-        If True, the peaks are returned as [x1, y1, z1, ..., xn, yn, zn] instead
-        of Nx3. Set this flag to True if you want to visualize the peaks in the
-        fibernavigator or in mrtrix.
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
     parallel: bool
@@ -354,7 +345,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           normalize_peaks,
                                           sh_order,
                                           sh_basis_type,
-                                          ravel_peaks,
                                           npeaks,
                                           nbr_process)
 
@@ -429,11 +419,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
     qa_array /= global_max
 
-    # The fibernavigator only supports float32. Since this form is mainly
-    # for external visualisation, we enforce float32.
-    if ravel_peaks:
-        peak_dirs = peak_dirs.reshape(shape + (3 * npeaks,)).astype('float32')
-
     pam = PeaksAndMetrics()
     pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
@@ -497,3 +482,28 @@ def minmax_normalize(samples, out=None):
     out -= sample_mins
     out /= (sample_maxes - sample_mins)
     return out
+
+
+def reshape_peaks_for_visualisation(peaks):
+    """Reshape peaks for visualisation.
+
+    Reshape and convert to float32 a set of peaks for visualisation with mrtrix
+    or the fibernavigator.
+
+    Parameters:
+    -----------
+    peaks: nd array (..., N, 3) or PeaksAndMetrics object
+        The peaks to be reshaped and converted to float32.
+
+    Returns:
+    --------
+    peaks : nd array (..., 3*N) or PeaksAndMetrics object
+    """
+
+    if isinstance(peaks, PeaksAndMetrics):
+        peaks.peak_dirs = np.reshape(peaks.peak_dirs,
+                                     peaks.peak_dirs.shape[:-2], -1).astype('float32')
+    else:
+        peaks = np.reshape(peaks, peaks.shape[:-2], -1).astype('float32')
+
+    return peaks
