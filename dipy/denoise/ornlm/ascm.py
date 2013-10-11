@@ -3,18 +3,38 @@ import numpy as np
 from wavelet import dwt3D
 from wavelet import idwt3D
 def ascm(ima,fimau,fimao,h):
-# Pierrick Coupe - pierrick.coupe@gmail.com                                  
-# Jose V. Manjon - jmanjon@fis.upv.es                                        
-# Addapted to Python by Omar Ocegueda - jomaroceguedag@gmail.com
-# Brain Imaging Center, Montreal Neurological Institute.                     
-# Mc Gill University                                                         
-#                                                                            
-# Copyright (C) 2008 Pierrick Coupe and Jose V. Manjon                       
+    '''
+    Combines two filtered 3D-images at different resolutions and the orginal
+    image. Returns the resulting combined image.
+    Parameters
+    ----------
+        ima: the original (not filtered) image
+        fimau : 3D double array,
+            filtered image with optimized non-local means using a small block 
+            (suggested:3x3), which corresponds to a "high resolution" filter.
+        fimao : 3D double array,
+            filtered image with optimized non-local means using a small block 
+            (suggested:5x5), which corresponds to a "low resolution" filter.
+        h: the estimated standard deviation of the Gaussian random variables
+            that explain the rician noise. Note: In P. Coupe et al. the 
+            rician noise was simulated as sqrt((f+x)^2 + (y)^2) where f is 
+            the pixel value and x and y are independent realizations of a 
+            random variable with Normal distribution, with mean=0 and 
+            standard deviation=h
+    References
+    ----------
+    Pierrick Coupe - pierrick.coupe@gmail.com                                  
+    Jose V. Manjon - jmanjon@fis.upv.es                                        
+    Brain Imaging Center, Montreal Neurological Institute.                     
+    Mc Gill University                                                         
+                                                                               
+    Copyright (C) 2008 Pierrick Coupe and Jose V. Manjon                       
 
-#****************************************************************************
-#              3D Adaptive Multiresolution Non-Local Means Filter           *
-#            P. Coupe a, J. V. Manjon, M. Robles , D. L. Collin             * 
-#****************************************************************************
+    ************************************************************************
+    *              3D Adaptive Multiresolution Non-Local Means Filter      *
+    *           P. Coupe a, J. V. Manjon, M. Robles , D. L. Collin         * 
+    ************************************************************************
+    '''
     s=fimau.shape;
     p=[0,0,0]
     p[0]=2**math.ceil(math.log(s[0],2))
@@ -40,7 +60,6 @@ def ascm(ima,fimau,fimao,h):
     w1=dwt3D.dwt3D(pad1,1,af)
     w2=dwt3D.dwt3D(pad2,1,af)
     w3=dwt3D.dwt3D(pad3,1,af)
-    #BayeSkrink for Coeff mixing
     for i in xrange(7):
         tmp = np.array(w3[0][i])
         tmp = tmp[:(s[0]//2), :(s[1]//2), :(s[2]//2)]

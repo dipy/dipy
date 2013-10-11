@@ -1,4 +1,4 @@
-import ornlm_module
+from ornlm import firdn
 import numpy as np
 from cshift3D import cshift3D
 def permutationInverse(perm):
@@ -21,12 +21,12 @@ def afb3D_A(x, af, d):
     lo=np.zeros((L+n1Half, N2, N3));
     hi=np.zeros((L+n1Half, N2, N3));
     for k in xrange(N3):
-        lo[:, :, k]=ornlm_module.firdnpy(x[:, :, k], lpf);
+        lo[:, :, k]=firdn(x[:, :, k], lpf);
     lo[:L]=lo[:L]+lo[n1Half:n1Half+L, :, :];
     lo=lo[:n1Half, :, :];
     
     for k in xrange(N3):
-        hi[:, :, k]=ornlm_module.firdnpy(x[:, :, k], hpf);
+        hi[:, :, k]=firdn(x[:, :, k], hpf);
     hi[:L]=hi[:L]+hi[n1Half:n1Half+L, :, :];
     hi=hi[:n1Half, :, :];
     #permute dimensions of x (inverse permutation)

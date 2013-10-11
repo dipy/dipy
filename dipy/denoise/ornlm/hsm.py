@@ -3,27 +3,38 @@ import numpy as np
 from wavelet import dwt3D
 from wavelet import idwt3D
 def hsm(fimau, fimao):
-# Pierrick Coupe - pierrick.coupe@gmail.com                                  
-# Jose V. Manjon - jmanjon@fis.upv.es                                        
-# Addapted to Python by Omar Ocegueda - jomaroceguedag@gmail.com
-# Brain Imaging Center, Montreal Neurological Institute.                     
-# Mc Gill University                                                         
-#                                                                            
-# Copyright (C) 2008 Pierrick Coupe and Jose V. Manjon                       
-
-#****************************************************************************
-#              3D Adaptive Multiresolution Non-Local Means Filter           *
-#            P. Coupe a, J. V. Manjon, M. Robles , D. L. Collin             * 
-#****************************************************************************
-
-#                          Details on Wavelet mixing                         
-#***************************************************************************
- #  The hard wavelet subbands mixing is described in:                      *
- #                                                                         *
- #  P. Coupe, S. Prima, P. Hellier, C. Kervrann, C. Barillot.              *
- #  3D Wavelet Sub-Bands Mixing for Image Denoising                        *
- #  International Journal of Biomedical Imaging, 2008                      * 
-# ***************************************************************************/
+    '''
+    Combines two filtered 3D-images at different resolutions. Returns the
+    resulting combined image.
+    Parameters
+    ----------
+        fimau : 3D double array,
+            filtered image with optimized non-local means using a small block 
+            (suggested:3x3), which corresponds to a "high resolution" filter.
+        fimao : 3D double array,
+            filtered image with optimized non-local means using a small block 
+            (suggested:5x5), which corresponds to a "low resolution" filter.
+    References
+    ----------
+    Pierrick Coupe - pierrick.coupe@gmail.com                                  
+    Jose V. Manjon - jmanjon@fis.upv.es                                        
+    Brain Imaging Center, Montreal Neurological Institute.                     
+    Mc Gill University                                                         
+    Copyright (C) 2008 Pierrick Coupe and Jose V. Manjon                       
+    ************************************************************************
+    *              3D Adaptive Multiresolution Non-Local Means Filter      *
+    *            P. Coupe a, J. V. Manjon, M. Robles , D. L. Collin        * 
+    ************************************************************************
+    
+                              Details on Wavelet mixing                         
+    ************************************************************************
+    *  The hard wavelet subbands mixing is described in:                   *
+    *                                                                      *
+    *  P. Coupe, S. Prima, P. Hellier, C. Kervrann, C. Barillot.           *
+    *  3D Wavelet Sub-Bands Mixing for Image Denoising                     *
+    *  International Journal of Biomedical Imaging, 2008                   * 
+    ************************************************************************
+    '''
     s=fimau.shape;
     p=[0,0,0]
     p[0]=2**math.ceil(math.log(s[0],2))

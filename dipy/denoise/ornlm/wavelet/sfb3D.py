@@ -1,4 +1,4 @@
-import ornlm_module
+from ornlm import upfir
 import numpy as np
 from cshift3D import cshift3D
 def permutationInverse(perm):
@@ -20,7 +20,8 @@ def sfb3D_A(lo, hi, sf, d):
     L=sf.shape[0]
     y=np.zeros((N+L-2, N2, N3))
     for k in xrange(N3):
-        y[:, :, k] = np.array(ornlm_module.upfirpy(lo[:, :, k], lpf)) + np.array(ornlm_module.upfirpy(hi[:, :, k], hpf))
+        y[:, :, k] = (np.array(upfir(lo[:, :, k], lpf)) + 
+                     np.array(upfir(hi[:, :, k], hpf)))
     y[:(L-2), :, :] = y[:(L-2), :, :] + y[N:(N+L-2), :, :]
     y=y[:N, :, :]
     y=cshift3D(y, 1-L/2, 0);

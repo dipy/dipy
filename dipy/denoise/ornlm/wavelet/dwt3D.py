@@ -1,4 +1,3 @@
-import numpy as np
 from afb3D import afb3D
 def dwt3D(x, J, af):
     w=[None]*(J+1)
