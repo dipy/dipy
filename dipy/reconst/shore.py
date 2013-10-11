@@ -25,15 +25,6 @@ class ShoreModel(Cache):
 
     From the $c_i$ coefficients, there exist analytical formulae to estimate the ODF.
 
-    This is an abstract class, which is used as a template for the implementation
-    of specific continuous functions classe.
-
-    Parameters
-    ----------
-    gtab : GradientTable,
-        Gradient directions and bvalues container class
-
-
     References
     ----------
     .. [1] Orzaslan E. et. al, "Simple harmonic oscillator based reconstruction and
