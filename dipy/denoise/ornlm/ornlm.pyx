@@ -82,7 +82,7 @@ cpdef upfirpy(double[:,:] image, double[:] h):
 ########################################################################
 ############### Reimplementation of ORNLM routines #####################
 ########################################################################
-
+@cython.boundscheck(False)
 def Average_block_pyx(double[:,:,:] ima, int x, int y, int z, double[:,:,:] average, double weight):
     cdef int a, b, c, x_pos, y_pos, z_pos
     cdef int is_outside
@@ -106,6 +106,7 @@ def Average_block_pyx(double[:,:,:] ima, int x, int y, int z, double[:,:,:] aver
                 else:
                     average[a,b,c]+= weight*(ima[y_pos,x_pos,z_pos]**2)
 
+@cython.boundscheck(False)
 def Value_block_pyx(double[:,:,:] Estimate, double[:,:,:] Label, int x, int y, int z, double[:,:,:] average, double global_sum, double hh):
     cdef int is_outside, a, b, c, x_pos, y_pos, z_pos, count=0
     cdef double value = 0.0
@@ -139,6 +140,7 @@ def Value_block_pyx(double[:,:,:] Estimate, double[:,:,:] Label, int x, int y, i
 
 # Computes the distance between two square subpatches of image located at p and q, respectively.
 # If the centered squares lie beyond the boundaries of image, they are mirrored.
+@cython.boundscheck(False)
 def distance_pyx(double[:,:,:] image, int x, int y, int z, int nx, int ny, int nz, int f):
     cdef double d, acu, distancetotal
     cdef int i, j, k, ni1, nj1, ni2, nj2, nk1, nk2
@@ -171,6 +173,7 @@ def distance_pyx(double[:,:,:] image, int x, int y, int z, int nx, int ny, int n
     d=distancetotal/acu
     return d
 
+@cython.boundscheck(False)
 def localMean(double [:,:,:]ima, int x, int y, int z):
     cdef double ss=0
     cdef int px, py, pz, dx, dy, dz, nx, ny, nz
@@ -183,6 +186,7 @@ def localMean(double [:,:,:]ima, int x, int y, int z):
                 ss+=ima[px,py,pz]
     return ss/27.0
 
+@cython.boundscheck(False)
 def localVariance(double[:,:,:] ima, double mean, int x, int y, int z):
     cdef int cnt=0
     cdef double ss=0
@@ -195,6 +199,7 @@ def localVariance(double[:,:,:] ima, double mean, int x, int y, int z):
                     cnt+=1
     return ss/(cnt-1)
 
+@cython.boundscheck(False)
 def ornlm_pyx(double [:,:,:]ima, int v, int f, double h):
     cdef int[:] dims=cvarray((3,), itemsize=sizeof(int), format="i")
     dims[0]=ima.shape[0]
