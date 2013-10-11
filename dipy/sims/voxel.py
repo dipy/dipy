@@ -422,11 +422,11 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
     tau : float,
-        Diffusion time. By default the value that makes q=sqrt(b).
+        diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
-    rtop : float
+    rtop : float,
         Return to origin probability.
 
     References
@@ -450,11 +450,11 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
     tau : float,
-        Diffusion time. By default the value that makes q=sqrt(b).
+        diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
-    rtop : float
+    rtop : float,
         Return to origin probability.
 
     References
@@ -487,7 +487,7 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
         rotation matrix that determines the orientation of the diffusion
         tensor.
     tau : float,
-        Diffusion time. By default the value that makes q=sqrt(b).
+        diffusion time. By default the value that makes q=sqrt(b).
 
 
     Returns
@@ -538,12 +538,12 @@ def multi_tensor_pdf(pdf_points, mf, mevals=None, mevecs=None, tau=1 / (4 * np.p
         Eigenvectors for each tensor.  You can also think of these
         as the rotation matrices that align the different tensors.
     tau : float,
-        Diffusion time. By default the value that makes q=sqrt(b).
+        diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
-    pdf : (N,) ndarray
-        Orientation distribution function.
+    pdf : (N,) ndarray,
+        Probability density function of the water displacement.
 
     References
     ----------
@@ -574,11 +574,11 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
         Eigen-values for the tensor.  By default, values typical for prolate
         white matter are used.
     tau : float,
-        Diffusion time. By default the value that makes q=sqrt(b).
+        diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
-    msd : float
+    msd : float,
         Mean square displacement.
 
     References
@@ -602,11 +602,11 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
     tau : float,
-        Diffusion time. By default the value that makes q=sqrt(b).
+        diffusion time. By default the value that makes q=sqrt(b).
 
     Returns
     -------
-    msd : float
+    msd : float,
         Mean square displacement.
 
     References
