@@ -23,9 +23,6 @@ Download and read the data for this tutorial.
 two_shells_voxels() provides data from the ISBI HARDI contest 2013 acquired 
 for two shells at b-values 1500 and 2500.
 
-three_shells_voxels() provides a humain brain data acquired for for three 
-shells at b-values 1000 and 2000 and 3500.
-
 The six parameters of these two functions define the ROI where to reconstruct
 the data. They respectively correspond to (xmin,xmax,ymin,ymax,zmin,zmax)
 with x,y and the three axis defining the spatial positions of the voxels.
@@ -87,3 +84,8 @@ Display the ODFs
 r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(odf, sphere, colormap='jet'))
 fvtk.show(r)
+
+"""
+.. include:: ../links_names.inc
+
+"""

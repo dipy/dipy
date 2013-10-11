@@ -68,8 +68,8 @@ class AnalyticalFit():
         ----------
         model : object,
             AnalyticalModel
-        data : 1d ndarray,
-            signal values
+        coef : 1d ndarray,
+            fit coefficients
         """
 
         self.model = model
@@ -78,8 +78,8 @@ class AnalyticalFit():
 
 class ShoreModel(AnalyticalModel):
 
-    def __init__(self, 
-                 gtab, 
+    def __init__(self,
+                 gtab,
                  radialOrder=6,
                  zeta=700,
                  lambdaN=1e-8,
@@ -106,7 +106,16 @@ class ShoreModel(AnalyticalModel):
         ----------
         gtab : GradientTable,
             Gradient directions and bvalues container class
-
+         radialOrder : unsigned int,
+            Radial Order
+        zeta : unsigned int,
+            scale factor
+        lambdaN : float,
+            radial regularisation constant
+        lambdaL : float,
+            angular regularisation constant
+        tau : float,
+            diffusion time. By default the value that makes q=sqrt(b).
 
         References
         ----------
@@ -138,12 +147,11 @@ class ShoreModel(AnalyticalModel):
                                                 S0=1, angles=[(0, 0), (90, 0)],
                                                 fractions=[50, 50], snr=None)
         from dipy.reconst.canal import ShoreModel
-        asm = ShoreModel(gtab)
-        asmfit = asm.fit(data)
         radialOrder = 4
         zeta = 700
-        coeffs, Sshore = asmfit.l2estimation(radialOrder=radialOrder, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
-        Csh = asmfit.odf()
+        asm = ShoreModel(gtab, radialOrder=radialOrder, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
+        asmfit = asm.fit(data)
+        odf_sh = asmfit.odf_sh()
         """
 
         self.bvals = gtab.bvals
@@ -153,7 +161,7 @@ class ShoreModel(AnalyticalModel):
         self.zeta = zeta
         self.lambdaL = lambdaL
         self.lambdaN = lambdaN
-        self.tau=tau
+        self.tau = tau
 
     @multi_voxel_fit
     def fit(self, data):
@@ -166,7 +174,8 @@ class ShoreModel(AnalyticalModel):
             self.cache_set('shore_matrix', self.gtab, M)
 
         # Compute the signal coefficients in SHORE basis
-        pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
+        pseudoInv = np.dot(
+            np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
         coef = np.dot(pseudoInv, data)
 
         return ShoreFit(self, coef)
@@ -181,8 +190,8 @@ class ShoreFit(AnalyticalFit):
         ----------
         model : object,
             AnalyticalModel
-        data : 1d ndarray,
-            signal values
+        shore_coef : 1d ndarray,
+            shore coefficients
         """
 
         self.model = model
@@ -192,7 +201,7 @@ class ShoreFit(AnalyticalFit):
         self.zeta = model.zeta
 
     def pdf(self, gridsize, radius_max):
-        """ Applies the analytical FFT on $S$ to generate the diffusion propagator.
+        r""" Applies the analytical FFT on $S$ to generate the diffusion propagator.
 
         Parameters
         ----------
@@ -218,7 +227,7 @@ class ShoreFit(AnalyticalFit):
             self.model.cache_set('shore_matrix_pdf', gridsize, psi)
 
         propagator = np.dot(psi, self._shore_coef)
-        # fill R-space
+        # fill r-space
         for i in range(len(rgrid)):
             qx, qy, qz = rgrid[i]
             Pr[qx, qy, qz] += propagator[i]
@@ -227,7 +236,7 @@ class ShoreFit(AnalyticalFit):
         return Pr, psi
 
     def pdf_iso(self, r_points):
-        """ Diffusion propagator on a given shell.
+        """ Diffusion propagator on a given set of r-points.
         """
 
         psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, r_points)
@@ -356,7 +365,7 @@ def SHOREmatrix(radialOrder, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     gtab : GradientTable,
         Gradient directions and bvalues container class
     tau : float,
-        Diffusion time. By default the value that makes q=sqrt(b).
+        diffusion time. By default the value that makes q=sqrt(b).
 
     """
 
@@ -376,14 +385,11 @@ def SHOREmatrix(radialOrder, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     for n in range(radialOrder + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-
-                M[:, counter] = \
-                    real_sph_harm(m, l, theta, phi) * \
+                M[:, counter] = real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(r ** 2 / float(zeta)) * \
                     np.exp(- r ** 2 / (2.0 * zeta)) * \
                     __kappa(zeta, n, l) * \
                     (r ** 2 / float(zeta)) ** (l / 2)
-
                 counter += 1
     return M[:, 0:counter]
 
@@ -418,14 +424,12 @@ def SHOREmatrix_pdf(radialOrder, zeta, rtab):
     for n in range(radialOrder + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
-
                 psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 * zeta * r ** 2 ) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
                     __kappa_pdf(zeta, n, l) *\
                     (4 * np.pi ** 2 * zeta * r ** 2) ** (l / 2) * \
                     (-1) ** (n - l / 2)
-
                 counter += 1
     return psi[:, 0:counter]
 
@@ -450,8 +454,7 @@ def SHOREmatrix_odf(radialOrder, zeta, sphere_vertices):
         vertices of the odf sphere
     """
 
-    r, theta, phi = cart2sphere(
-        sphere_vertices[:, 0], sphere_vertices[:, 1], sphere_vertices[:, 2])
+    r, theta, phi = cart2sphere(sphere_vertices[:, 0], sphere_vertices[:, 1], sphere_vertices[:, 2])
     theta[np.isnan(theta)] = 0
     counter = 0
     upsilon = np.zeros(
