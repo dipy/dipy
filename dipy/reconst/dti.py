@@ -512,7 +512,11 @@ def sphericity(evals, axis=-1):
     ev1, ev2, ev3 = evals
     return (3 * ev3) / evals.sum(0)
 
-def conductivity(evecs, evals, scale_factor=237.5972, sigma_white_matter=0.126, outlier_correction=False, volume_normalized=False):
+
+def conductivity(evecs, evals, scale_factor=237.5972,
+                 sigma_white_matter=0.126, outlier_correction=False,
+                 volume_normalized=False):
+
     r"""
     Estimated electrical conductivity from the diffusion tensor [1]_.
 
@@ -523,11 +527,13 @@ def conductivity(evecs, evals, scale_factor=237.5972, sigma_white_matter=0.126, 
     evals : array-like
         eigen vectors from the tensor model
     scale_factor : float
-        scaling factor used by the direct mapping between DTI and conductivity tensors
+        scaling factor used by the direct mapping between
+        DTI and conductivity tensors
     sigma_white_matter : float
         conductivity for white matter (default: 0.126 [S/m])
     outlier_correction : boolean (default: False)
-        if True, conductivity eigenvalues are bounded to a maximum of 0.4 [S/m]
+        if True, conductivity eigenvalues are bounded to a
+        maximum of 0.4 [S/m]
     volume_normalized : boolean (default: False)
         if True, uses volume-normalized mapping from [2]_.
 
@@ -548,8 +554,23 @@ def conductivity(evecs, evals, scale_factor=237.5972, sigma_white_matter=0.126, 
     of the tensor [1]_., as well as volume-normalized mapping [2]_., are
     supported.
 
-    Notes
-    -----
+    References
+    ----------
+
+    .. [1] Tuch, D. S., Wedeen, V. J., Dale, A. M., George, J. S., and
+        Belliveau, J. W., "Conductivity tensor mapping of the human
+        brain using diffusion tensor MRI" in Proceedings of the National
+        Academy of Sciences 98, 11697–11701, 2001
+
+    .. [2] Güllmar, D., Haueisen, J., and Reichenbach, J. R., "Influence of
+        anisotropic electrical conductivity in white matter tissue on
+        the EEG/MEG forward and inverse solution. A high-resolution
+        whole head simulation study", NeuroImage 51, 145–163, 2010.
+
+    .. [3] Windhoff, M., Opitz, A., and Thielscher A., "Electric field
+        calculations in brain stimulation based on finite elements:
+        An optimized processing pipeline for the generation and usage of
+        accurate individual head models", Human Brain Mapping, 2011.
 
     """
 
@@ -571,6 +592,7 @@ def conductivity(evecs, evals, scale_factor=237.5972, sigma_white_matter=0.126, 
     conductivity_quadratic = np.array(vec_val_vect(evecs, evals))
     conductivity = lower_triangular(conductivity_quadratic)
     return conductivity
+
 
 def apparent_diffusion_coef(q_form, sphere):
     r"""
@@ -906,7 +928,7 @@ class TensorFit(object):
 
     @auto_attr
     def conductivity(self, scale_factor=237.5972, sigma_white_matter=0.126,
-        outlier_correction=False, volume_normalized=False):
+                     outlier_correction=False, volume_normalized=False):
         r"""
         Returns
         -------
@@ -934,7 +956,7 @@ class TensorFit(object):
 
         .. [2] Güllmar, D., Haueisen, J., and Reichenbach, J. R., "Influence of
             anisotropic electrical conductivity in white matter tissue on
-            the EEG/MEG forward and inverse solution. A high-resolution
+            the EEG / MEG forward and inverse solution. A high - resolution
             whole head simulation study", NeuroImage 51, 145–163, 2010.
 
         .. [3] Windhoff, M., Opitz, A., and Thielscher A., "Electric field
@@ -943,9 +965,12 @@ class TensorFit(object):
             accurate individual head models", Human Brain Mapping, 2011.
 
 
+
         """
-        return conductivity(self.evecs, self.evals, scale_factor, sigma_white_matter,
-        outlier_correction, volume_normalized)
+        return conductivity(
+            self.evecs, self.evals, scale_factor, sigma_white_matter,
+            outlier_correction, volume_normalized)
+
 
     def odf(self, sphere):
         """
@@ -962,7 +987,7 @@ class TensorFit(object):
         odf : ndarray
             The diffusion distance in every direction of the sphere in every
             voxel in the input data.
-        
+
         """
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
         projection = np.dot(sphere.vertices, self.evecs)
