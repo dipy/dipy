@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 """ Classes and functions for fitting tensors """
 from __future__ import division, print_function, absolute_import
 
@@ -511,6 +512,65 @@ def sphericity(evals, axis=-1):
     ev1, ev2, ev3 = evals
     return (3 * ev3) / evals.sum(0)
 
+def conductivity(evecs, evals, scale_factor=237.5972, sigma_white_matter=0.126, outlier_correction=False, volume_normalized=False):
+    r"""
+    Estimated electrical conductivity from the diffusion tensor [1]_.
+
+    Parameters
+    ----------
+    evecs : array-like
+        eigen vectors from the tensor model
+    evals : array-like
+        eigen vectors from the tensor model
+    scale_factor : float
+        scaling factor used by the direct mapping between DTI and conductivity tensors
+    sigma_white_matter : float
+        conductivity for white matter (default: 0.126 [S/m])
+    outlier_correction : boolean (default: False)
+        if True, conductivity eigenvalues are bounded to a maximum of 0.4 [S/m]
+    volume_normalized : boolean (default: False)
+        if True, uses volume-normalized mapping from [2]_.
+
+    Returns
+    -------
+    conductivity : array-like (..., 6)
+        Estimated conductivity tensor in each spatial coordinate. Conductivity
+        tensor elements stored in lower triangular order
+
+    Notes
+    -----
+    This function is used to convert diffusion tensors into conductivity
+    tensors for the purpose of electromagnetic simulations (e.g. M/EEG
+    forward modeling). Tensors are assumed to be in the white matter of
+    a human brain and a default conductivity value and eigenvalue scaling
+    factor is included. Options are provided for correcting implausibly
+    high conductivity values to a maximum value (0.4 [S/m]). Direct mapping
+    of the tensor [1]_., as well as volume-normalized mapping [2]_., are
+    supported.
+
+    Notes
+    -----
+
+    """
+
+    evals = abs(scale_factor * evals)
+
+    if volume_normalized:
+        # Calculate the cube root of the product of the three eigenvalues (for
+        # normalization)
+        denominator = np.power(
+            (evals[..., 0] * evals[..., 1] * evals[..., 2]), (1 / 3))
+        # Calculate conductivity and normalize the eigenvalues
+        evals = sigma_white_matter * evals / denominator
+        evals[denominator < 0.0001] = sigma_white_matter
+
+    # Threshold outliers that show unusually high conductivity
+    if outlier_correction:
+        evals[evals > 0.4] = 0.4
+
+    conductivity_quadratic = np.array(vec_val_vect(evecs, evals))
+    conductivity = lower_triangular(conductivity_quadratic)
+    return conductivity
 
 def apparent_diffusion_coef(q_form, sphere):
     r"""
@@ -843,6 +903,49 @@ class TensorFit(object):
 
         """
         return sphericity(self.evals)
+
+    @auto_attr
+    def conductivity(self, scale_factor=237.5972, sigma_white_matter=0.126,
+        outlier_correction=False, volume_normalized=False):
+        r"""
+        Returns
+        -------
+        conductivity : array
+            Estimated electrical conductivity for the diffusion tensor
+
+        Notes
+        -----
+        This function is used to convert diffusion tensors into conductivity
+        tensors for the purpose of electromagnetic simulations (e.g. M/EEG
+        forward modeling). Tensors are assumed to be in the white matter of
+        a human brain and a default conductivity value and eigenvalue scaling
+        factor is included. Options are provided for correcting implausibly
+        high conductivity values to a maximum value (0.4 [S/m]). Direct mapping
+        of the tensor [1]_., as well as volume-normalized mapping [2]_., are
+        supported. Adapted from the SimNibs package [3]_.
+
+        References
+        ----------
+
+        .. [1] Tuch, D. S., Wedeen, V. J., Dale, A. M., George, J. S., and
+            Belliveau, J. W., "Conductivity tensor mapping of the human
+            brain using diffusion tensor MRI" in Proceedings of the National
+            Academy of Sciences 98, 11697–11701, 2001
+
+        .. [2] Güllmar, D., Haueisen, J., and Reichenbach, J. R., "Influence of
+            anisotropic electrical conductivity in white matter tissue on
+            the EEG/MEG forward and inverse solution. A high-resolution
+            whole head simulation study", NeuroImage 51, 145–163, 2010.
+
+        .. [3] Windhoff, M., Opitz, A., and Thielscher A., "Electric field
+            calculations in brain stimulation based on finite elements:
+            An optimized processing pipeline for the generation and usage of
+            accurate individual head models", Human Brain Mapping, 2011.
+
+
+        """
+        return conductivity(self.evecs, self.evals, scale_factor, sigma_white_matter,
+        outlier_correction, volume_normalized)
 
     def odf(self, sphere):
         """
