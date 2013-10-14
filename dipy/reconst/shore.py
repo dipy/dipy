@@ -45,8 +45,7 @@ class ShoreModel(Cache):
                  radialOrder=6,
                  zeta=700,
                  lambdaN=1e-8,
-                 lambdaL=1e-8,
-                 tau=1 / (4 * np.pi ** 2)):
+                 lambdaL=1e-8):
         r""" Analytical and continuous modeling of the diffusion signal with respect to the SHORE
         basis [1,2]_.
 
@@ -121,8 +120,11 @@ class ShoreModel(Cache):
         self.zeta = zeta
         self.lambdaL = lambdaL
         self.lambdaN = lambdaN
-        self.tau = tau
-
+        if (gtab.big_delta is None) or (gtab.small_delta is None):
+            self.tau = 1 / (4 * np.pi ** 2)
+        else:
+            self.tau = gtab.big_delta - gtab.small_delta / 3.0
+            
     @multi_voxel_fit
     def fit(self, data):
         Lshore = L_SHORE(self.radialOrder)
