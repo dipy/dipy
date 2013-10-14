@@ -30,7 +30,7 @@ def test_shore():
     data, golden_directions = SticksAndBall(gtab, d=0.0015,
                                             S0=100, angles=[(0, 0), (90, 0)],
                                             fractions=[50, 50], snr=None)
-    asm = ShoreModel(gtab,radialOrder=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8)
+    asm = ShoreModel(gtab,radial_order=6, zeta=700, lambdaN=1e-8, lambdaL=1e-8)
     # symmetric724
     asmfit = asm.fit(data)
     odf = asmfit.odf(sphere)
@@ -63,9 +63,9 @@ def test_multivox_shore():
 
     test = img.get_data()
     data = test[45:65, 35:65, 33:34]
-    radialOrder = 4
+    radial_order = 4
     zeta = 700
-    asm = ShoreModel(gtab, radialOrder=radialOrder, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
+    asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
     asmfit = asm.fit(data)
     c_shore=asmfit.shore_coeff
     assert_equal(c_shore.shape[0:3], data.shape[0:3])

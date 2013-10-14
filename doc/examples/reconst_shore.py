@@ -42,7 +42,7 @@ it is possible to write print(gtab.bvals).
 
 Instantiate the SHORE Model.
 
-radialOrder is the radial order of the SHORE basis.
+radial_order is the radial order of the SHORE basis.
 
 zeta is the scale factor of the SHORE basis.
 
@@ -52,11 +52,11 @@ For details regarding these four parameters see (Cheng J. et al, MICCAI workshop
 (Merlet S. et al, Medical Image Analysis 2013).
 """
 
-radialOrder = 6
+radial_order = 6
 zeta = 700
 lambdaN=1e-8
 lambdaL=1e-8
-asm = ShoreModel(gtab, radialOrder=radialOrder, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
+asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
 
 """
 Fit the SHORE model to the data

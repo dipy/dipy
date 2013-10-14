@@ -22,15 +22,15 @@ def test_shore_metrics():
                             fractions=[50, 50], snr=None)
     S = S / S[0, None].astype(np.float)
 
-    radialOrder = 8
+    radial_order = 8
     zeta = 800
     lambdaN = 1e-12
     lambdaL = 1e-12
-    asm = ShoreModel(gtab, radialOrder=radialOrder, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
+    asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
     asmfit = asm.fit(S)
     c_shore= asmfit.shore_coeff
 
-    cmat = SHOREmatrix(radialOrder, zeta, gtab)
+    cmat = SHOREmatrix(radial_order, zeta, gtab)
     S_reconst = np.dot(cmat, c_shore)
     nmse_signal = np.sqrt(np.sum((S - S_reconst) ** 2)) / (S.sum())
     assert_almost_equal(nmse_signal, 0.0, 4)
