@@ -518,7 +518,7 @@ def conductivity(evecs, evals, scale_factor=237.5972,
                  volume_normalized=False):
 
     r"""
-    Estimated electrical conductivity from the diffusion tensor [1]_.
+    Estimates electrical conductivity from the diffusion tensor [1]_.
 
     Parameters
     ----------
@@ -930,6 +930,25 @@ class TensorFit(object):
     def conductivity(self, scale_factor=237.5972, sigma_white_matter=0.126,
                      outlier_correction=False, volume_normalized=False):
         r"""
+        Estimates electrical conductivity from the diffusion tensor [1]_.
+
+        Parameters
+        ----------
+        evecs : array-like
+            eigen vectors from the tensor model
+        evals : array-like
+            eigen vectors from the tensor model
+        scale_factor : float
+            scaling factor used by the direct mapping between
+            DTI and conductivity tensors
+        sigma_white_matter : float
+            conductivity for white matter (default: 0.126 [S/m])
+        outlier_correction : boolean (default: False)
+            if True, conductivity eigenvalues are bounded to a
+            maximum of 0.4 [S/m]
+        volume_normalized : boolean (default: False)
+            if True, uses volume-normalized mapping from [2]_.
+
         Returns
         -------
         conductivity : array
@@ -963,8 +982,6 @@ class TensorFit(object):
             calculations in brain stimulation based on finite elements:
             An optimized processing pipeline for the generation and usage of
             accurate individual head models", Human Brain Mapping, 2011.
-
-
 
         """
         return conductivity(
