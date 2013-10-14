@@ -119,21 +119,7 @@ Here we visualize only a 30x30 region.
 
 fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3, norm=False)
 
-fodf_spheres.SetPosition(15, 15, 1)
-
-fodf_spheres.SetScale(0.78)
-
 fvtk.add(ren, fodf_spheres)
-
-"""
-Additionally, we can visualize the ODFs together with a GFA slice
-"""
-
-from dipy.reconst.odf import gfa
-
-GFA = gfa(csd_odf)
-
-fvtk.add(ren, fvtk.slicer(GFA, plane_k=[0]))
 
 print('Saving illustration as csd_odfs.png')
 fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
