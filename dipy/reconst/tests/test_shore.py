@@ -1,5 +1,4 @@
 import numpy as np
-import pylab as py
 from dipy.data import get_data, two_shells_voxels, three_shells_voxels, get_sphere
 from dipy.data.fetcher import (fetch_isbi2013_2shell, read_isbi2013_2shell,
                                fetch_sherbrooke_3shell, read_sherbrooke_3shell)
@@ -17,7 +16,6 @@ from dipy.sims.voxel import SticksAndBall, multi_tensor
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-from dipy.viz import fvtk
 import nibabel as nib
 
 
