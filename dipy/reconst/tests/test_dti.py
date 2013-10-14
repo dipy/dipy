@@ -27,7 +27,7 @@ import dipy.core.gradients as grad
 import dipy.core.sphere as dps
 
 from dipy.sims.voxel import single_tensor
-
+from ..vec_val_sum import vec_val_vect
 
 def test_tensor_algebra():
     """
@@ -62,6 +62,7 @@ def test_TensorModel():
     assert_equal(dtifit.rd.shape, data.shape[:3])
     assert_equal(dtifit.trace.shape, data.shape[:3])
     assert_equal(dtifit.mode.shape, data.shape[:3])
+    assert_equal(dtifit.conductivity.shape, data.shape[:3] + (6,))
     assert_equal(dtifit.linearity.shape, data.shape[:3])
     assert_equal(dtifit.planarity.shape, data.shape[:3])
     assert_equal(dtifit.sphericity.shape, data.shape[:3])
@@ -80,6 +81,7 @@ def test_TensorModel():
     A_squiggle = tensor - (1 / 3.0) * np.trace(tensor) * np.eye(3)
     mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle / np.linalg.norm(A_squiggle))
     evecs = np.linalg.eigh(tensor)[1]
+
     #Design Matrix
     X = dti.design_matrix(bvecs, bvals)
     #Signals
@@ -87,12 +89,19 @@ def test_TensorModel():
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
+    # Tests for conductivity
+    scaled_evals = abs(237.5972 * evals)
+
     # Test fitting with different methods:
     for fit_method in ['OLS', 'WLS', 'NLLS']:
         tensor_model = dti.TensorModel(gtab,
                                        fit_method=fit_method)
 
         tensor_fit = tensor_model.fit(Y)
+
+        conductivity_quadratic = np.array(vec_val_vect(tensor_fit.evecs[0], scaled_evals))
+        conductivity = lower_triangular(conductivity_quadratic)
+
         assert_true(tensor_fit.model is tensor_model)
         assert_equal(tensor_fit.shape, Y.shape[:-1])
         assert_array_almost_equal(tensor_fit.evals[0], evals)
@@ -103,6 +112,7 @@ def test_TensorModel():
 
         assert_almost_equal(tensor_fit.md[0], md)
         assert_array_almost_equal(tensor_fit.mode, mode, decimal=5)
+        assert_array_almost_equal(tensor_fit.conductivity[0], conductivity, decimal=5)
         assert_equal(tensor_fit.directions.shape[-2], 1)
         assert_equal(tensor_fit.directions.shape[-1], 3)
 
