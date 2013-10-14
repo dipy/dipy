@@ -43,7 +43,7 @@ def test_shore_metrics():
     sphere = get_sphere('symmetric724')
     v = sphere.vertices
     radius = 10e-3
-    pdf_shore = asmfit.pdf_iso(v * radius)
+    pdf_shore = asmfit.pdf(v * radius)
     pdf_mt = multi_tensor_pdf(v * radius, [.5, .5], mevals=mevals, mevecs=mevecs2)
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_shore) ** 2)) / (pdf_mt.sum())
     assert_almost_equal(nmse_pdf, 0.0, 2)
