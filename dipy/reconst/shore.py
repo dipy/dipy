@@ -8,10 +8,11 @@ from dipy.core.geometry import cart2sphere
 from math import factorial
 
 class ShoreModel(Cache):
-    r"""Simple Harmonic Oscillator based Reconstruction and Estimation (SHORE) [1] of the diffusion signal
+    r"""Simple Harmonic Oscillator based Reconstruction and Estimation 
+    (SHORE) [1]_ of the diffusion signal.
 
-    The main idea is to model the diffusion signal as a linear combination of continuous
-    functions $\phi_i$,
+    The main idea is to model the diffusion signal as a linear combination of
+    continuous functions $\phi_i$,
 
     ..math::
         :nowrap:
@@ -19,38 +20,41 @@ class ShoreModel(Cache):
                 S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
             \end{equation}
 
-    where $\mathbf{q}$ is the wavector which corresponds to different gradient directions.
-    Numerous continuous functions $\phi_i$ can be used to model $S$. Some are presented in
-    [2,3,4]_.
+    where $\mathbf{q}$ is the wavector which corresponds to different gradient
+    directions. Numerous continuous functions $\phi_i$ can be used to model 
+    $S$. Some are presented in [2,3,4]_.
 
-    From the $c_i$ coefficients, there exist analytical formulae to estimate the ODF.
+    From the $c_i$ coefficients, there exist analytical formulae to estimate 
+    the ODF.
 
     References
     ----------
-    .. [1] Orzaslan E. et. al, "Simple harmonic oscillator based reconstruction and
-           estimation for one-dimensional q-space magnetic resonance (1D-SHORE)", 
-           Proc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
+    .. [1] Orzaslan E. et. al, "Simple harmonic oscillator based reconstruction
+           and estimation for one-dimensional q-space magnetic resonance 
+           1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
 
-    .. [2] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF estimation via
-           Compressive Sensing in diffusion MRI", Medical Image Analysis, 2013.
+    .. [2] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF 
+           estimation via Compressive Sensing in diffusion MRI", Medical 
+           Image Analysis, 2013.
 
-    .. [3] Rathi Y. et. al, "Sparse multi-shell diffusion imaging", MICCAI, 2011.
+    .. [3] Rathi Y. et. al, "Sparse multi-shell diffusion imaging", MICCAI, 
+           2011.
 
-    .. [4] Cheng J. et. al, "Theoretical Analysis and Practical Insights on EAP
-           Estimation via a Unified HARDI Framework", MICCAI workshop on Computational
-           Diffusion MRI, 2011.
+    .. [4] Cheng J. et. al, "Theoretical Analysis and eapactical Insights on
+           EAP Estimation via a Unified HARDI Framework", MICCAI workshop on 
+           Computational Diffusion MRI, 2011.
     """
     def __init__(self,
                  gtab,
-                 radialOrder=6,
+                 radial_order=6,
                  zeta=700,
                  lambdaN=1e-8,
                  lambdaL=1e-8):
-        r""" Analytical and continuous modeling of the diffusion signal with respect to the SHORE
-        basis [1,2]_.
+        r""" Analytical and continuous modeling of the diffusion signal with
+        respect to the SHORE basis [1,2]_.
 
-        The main idea is to model the diffusion signal as a linear combination of continuous
-        functions $\phi_i$,
+        The main idea is to model the diffusion signal as a linear 
+        combination of continuous functions $\phi_i$,
 
         ..math::
             :nowrap:
@@ -58,16 +62,18 @@ class ShoreModel(Cache):
                     S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
                 \end{equation}
 
-        where $\mathbf{q}$ is the wavector which corresponds to different gradient directions.
+        where $\mathbf{q}$ is the wavector which corresponds to different 
+        gradient directions.
 
-        From the $c_i$ coefficients, there exists an analytical formula to estimate the ODF.
+        From the $c_i$ coefficients, there exists an analytical formula to
+        estimate the ODF.
 
 
         Parameters
         ----------
         gtab : GradientTable,
             Gradient directions and bvalues container class
-         radialOrder : unsigned int,
+         radial_order : unsigned int,
             Radial Order
         zeta : unsigned int,
             scale factor
@@ -80,13 +86,14 @@ class ShoreModel(Cache):
 
         References
         ----------
-        .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF estimation via
-        Compressive Sensing in diffusion MRI", Medical Image Analysis, 2013.
+        .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and 
+        ODF estimation via Compressive Sensing in diffusion MRI", Medical
+        Image Analysis, 2013.
 
 
-        .. [2] Cheng J. et. al, "Theoretical Analysis and Practical Insights on EAP
-        Estimation via a Unified HARDI Framework", MICCAI workshop on Computational
-        Diffusion MRI, 2011.
+        .. [2] Cheng J. et. al, "Theoretical Analysis and eapactical Insights
+        on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on 
+        Computational Diffusion MRI, 2011.
 
 
         Examples
@@ -106,9 +113,10 @@ class ShoreModel(Cache):
                                                 S0=1, angles=[(0, 0), (90, 0)],
                                                 fractions=[50, 50], snr=None)
         from dipy.reconst.canal import ShoreModel
-        radialOrder = 4
+        radial_order = 4
         zeta = 700
-        asm = ShoreModel(gtab, radialOrder=radialOrder, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
+        asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, 
+                         lambdaN=1e-8, lambdaL=1e-8)
         asmfit = asm.fit(data)
         odf_sh = asmfit.odf_sh()
         """
@@ -116,7 +124,7 @@ class ShoreModel(Cache):
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.gtab = gtab
-        self.radialOrder = radialOrder
+        self.radial_order = radial_order
         self.zeta = zeta
         self.lambdaL = lambdaL
         self.lambdaN = lambdaN
@@ -127,12 +135,12 @@ class ShoreModel(Cache):
             
     @multi_voxel_fit
     def fit(self, data):
-        Lshore = L_SHORE(self.radialOrder)
-        Nshore = N_SHORE(self.radialOrder)
+        Lshore = L_SHORE(self.radial_order)
+        Nshore = N_SHORE(self.radial_order)
         # Generate the SHORE basis
         M = self.cache_get('shore_matrix', key=self.gtab)
         if M is None:
-            M = SHOREmatrix(self.radialOrder,  self.zeta, self.gtab, self.tau)
+            M = SHOREmatrix(self.radial_order,  self.zeta, self.gtab, self.tau)
             self.cache_set('shore_matrix', self.gtab, M)
 
         # Compute the signal coefficients in SHORE basis
@@ -159,10 +167,10 @@ class ShoreFit():
         self.model = model
         self._shore_coef = shore_coef
         self.gtab = model.gtab
-        self.radialOrder = model.radialOrder
+        self.radial_order = model.radial_order
         self.zeta = model.zeta
 
-    def pdf(self, gridsize, radius_max):
+    def pdf_grid(self, gridsize, radius_max):
         r""" Applies the analytical FFT on $S$ to generate the diffusion propagator.
 
         Parameters
@@ -174,50 +182,48 @@ class ShoreFit():
         
         Returns
         -------
-        Pr : ndarray
-            the propagator in the 3D grid
-        psi : ndarray
-            shore propagator matrix $psi$ 
+        eap : ndarray
+            the ensemble average propagator in the 3D grid
 
         """
-        Pr = np.zeros((gridsize, gridsize, gridsize))
+        eap = np.zeros((gridsize, gridsize, gridsize))
         # Create the grid in wich compute the pdf
         rgrid, rtab = create_rspace(gridsize, radius_max)
         psi = self.model.cache_get('shore_matrix_pdf', key=gridsize)
         if psi is None:
-            psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, rtab)
+            psi = SHOREmatrix_pdf(self.radial_order,  self.zeta, rtab)
             self.model.cache_set('shore_matrix_pdf', gridsize, psi)
 
         propagator = np.dot(psi, self._shore_coef)
         # fill r-space
         for i in range(len(rgrid)):
             qx, qy, qz = rgrid[i]
-            Pr[qx, qy, qz] += propagator[i]
+            eap[qx, qy, qz] += propagator[i]
         # normalize by the area of the propagator
-        Pr = Pr * (2 * radius_max / (gridsize - 1)) ** 3
-        return Pr, psi
+        eap = eap * (2 * radius_max / (gridsize - 1)) ** 3
+        return eap
 
-    def pdf_iso(self, r_points):
+    def pdf(self, r_points):
         """ Diffusion propagator on a given set of r-points.
         """
 
-        psi = SHOREmatrix_pdf(self.radialOrder,  self.zeta, r_points)
-        Pr = np.dot(psi, self._shore_coef)
+        psi = SHOREmatrix_pdf(self.radial_order,  self.zeta, r_points)
+        eap = np.dot(psi, self._shore_coef)
 
-        return Pr
+        return eap
 
     def odf_sh(self):
         r""" Calculates the real analytical odf in terms of Spherical Harmonics.
         """
 
         # Number of Spherical Harmonics involved in the estimation
-        J = (self.radialOrder + 1) * (self.radialOrder + 2) / 2
+        J = (self.radial_order + 1) * (self.radial_order + 2) / 2
 
         # Compute the spherical Harmonic Coefficients
         c_sh = np.zeros(J)
         counter = 0
 
-        for n in range(self.radialOrder + 1):
+        for n in range(self.radial_order + 1):
             for l in range(0, n + 1, 2):
                 for m in range(-l, l + 1):
 
@@ -240,7 +246,7 @@ class ShoreFit():
         upsilon = self.model.cache_get('shore_matrix_odf', key=sphere)
         if upsilon is None:
             upsilon = SHOREmatrix_odf(
-                self.radialOrder,  self.zeta, sphere.vertices)
+                self.radial_order,  self.zeta, sphere.vertices)
             self.model.cache_set('shore_matrix_odf', sphere, upsilon)
 
         odf = np.dot(upsilon, self._shore_coef)
@@ -252,7 +258,7 @@ class ShoreFit():
         rtop = 0
         c = self._shore_coef
         counter = 0
-        for n in range(self.radialOrder + 1):
+        for n in range(self.radial_order + 1):
             for l in range(0, n + 1, 2):
                 for m in range(-l, l + 1):
                     if l == 0:
@@ -268,7 +274,7 @@ class ShoreFit():
         rtop = 0
         c = self._shore_coef
         counter = 0
-        for n in range(self.radialOrder + 1):
+        for n in range(self.radial_order + 1):
             for l in range(0, n + 1, 2):
                 for m in range(-l, l + 1):
                     if l == 0:
@@ -287,7 +293,7 @@ class ShoreFit():
                     MSD:{DSI}=\int_{-\infty}^{\infty}\int_{-\infty}^{\infty}\int_{-\infty}^{\infty} P(\hat{\mathbf{r}}) \cdot \hat{\mathbf{r}}^{2} \ dr_x \ dr_y \ dr_z
                 \end{equation}
 
-        where $\hat{\mathbf{r}}$ is a point in the 3D Propagator space (see Wu et. al [1]_).
+        where $\hat{\mathbf{r}}$ is a point in the 3D propagator space (see Wu et. al [1]_).
 
         References
         ----------
@@ -298,7 +304,7 @@ class ShoreFit():
         msd = 0
         c = self._shore_coef
         counter = 0
-        for n in range(self.radialOrder + 1):
+        for n in range(self.radial_order + 1):
             for l in range(0, n + 1, 2):
                 for m in range(-l, l + 1):
                     if l == 0:
@@ -315,12 +321,12 @@ class ShoreFit():
         return self._shore_coef
 
 
-def SHOREmatrix(radialOrder, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
+def SHOREmatrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     """Compute the SHORE matrix"
 
     Parameters
     ----------
-    radialOrder : unsigned int,
+    radial_order : unsigned int,
         Radial Order
     zeta : unsigned int,
         scale factor
@@ -341,10 +347,10 @@ def SHOREmatrix(radialOrder, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     theta[np.isnan(theta)] = 0
 
     M = np.zeros(
-        (r.shape[0], (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1)))
+        (r.shape[0], (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1)))
 
     counter = 0
-    for n in range(radialOrder + 1):
+    for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
                 M[:, counter] = real_sph_harm(m, l, theta, phi) * \
@@ -363,12 +369,12 @@ def __kappa(zeta, n, l):
         return np.sqrt((2 * factorial(n - l)) / (zeta ** 1.5 * gamma(n + 1.5)))
 
 
-def SHOREmatrix_pdf(radialOrder, zeta, rtab):
+def SHOREmatrix_pdf(radial_order, zeta, rtab):
     """Compute the SHORE matrix"
 
     Parameters
     ----------
-    radialOrder : unsigned int,
+    radial_order : unsigned int,
         Radial Order
     zeta : unsigned int,
         scale factor
@@ -381,9 +387,9 @@ def SHOREmatrix_pdf(radialOrder, zeta, rtab):
     theta[np.isnan(theta)] = 0
 
     psi = np.zeros(
-        (r.shape[0], (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1)))
+        (r.shape[0], (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1)))
     counter = 0
-    for n in range(radialOrder + 1):
+    for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
                 psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
@@ -403,12 +409,12 @@ def __kappa_pdf(zeta, n, l):
         return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) / gamma(n + 1.5))
 
 
-def SHOREmatrix_odf(radialOrder, zeta, sphere_vertices):
+def SHOREmatrix_odf(radial_order, zeta, sphere_vertices):
     """Compute the SHORE matrix"
 
     Parameters
     ----------
-    radialOrder : unsigned int,
+    radial_order : unsigned int,
         Radial Order
     zeta : unsigned int,
         scale factor
@@ -420,8 +426,8 @@ def SHOREmatrix_odf(radialOrder, zeta, sphere_vertices):
     theta[np.isnan(theta)] = 0
     counter = 0
     upsilon = np.zeros(
-        (len(sphere_vertices), (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1)))
-    for n in range(radialOrder + 1):
+        (len(sphere_vertices), (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1)))
+    for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
                 upsilon[:, counter] = (-1) ** (n - l / 2.0) * __kappa_odf(zeta, n, l) * \
@@ -441,12 +447,12 @@ def __kappa_odf(zeta, n, l):
                       (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
 
 
-def L_SHORE(radialOrder):
+def L_SHORE(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
     diagL = np.zeros(
-        (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1))
+        (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1))
     counter = 0
-    for n in range(radialOrder + 1):
+    for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
                 # print(counter)
@@ -458,12 +464,12 @@ def L_SHORE(radialOrder):
     return np.diag(diagL[0:counter])
 
 
-def N_SHORE(radialOrder):
+def N_SHORE(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
     diagN = np.zeros(
-        (radialOrder + 1) * ((radialOrder + 1) / 2) * (2 * radialOrder + 1))
+        (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1))
     counter = 0
-    for n in range(radialOrder + 1):
+    for n in range(radial_order + 1):
         for l in range(0, n + 1, 2):
             for m in range(-l, l + 1):
                 # print(counter)
