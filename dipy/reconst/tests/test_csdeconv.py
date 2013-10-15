@@ -1,14 +1,19 @@
 import warnings
 import numpy as np
-from numpy.testing import (assert_equal, run_module_suite)
+from numpy.testing import (assert_equal, 
+                           assert_almost_equal,
+                           assert_array_almost_equal,
+                           run_module_suite)
 from dipy.data import get_sphere, get_data
 from dipy.sims.voxel import (multi_tensor,
+                             single_tensor,
                              multi_tensor_odf,
                              all_tensor_evecs)
 from dipy.core.gradients import gradient_table
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
-                                   odf_sh_to_sharp)
+                                   odf_sh_to_sharp,
+                                   auto_response)
 from dipy.reconst.odf import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel
@@ -65,6 +70,18 @@ def test_csdeconv():
 
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
         assert_equal(len(w) > 0, False)
+
+    S2 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
+    big_S = np.zeros((10, 10, 10, len(S2)))
+    big_S[:] = S2
+    
+    aresponse, aratio = auto_response(gtab, big_S, center=(5, 5, 4), w=3, fa_thr=0.5)
+    assert_array_almost_equal(aresponse[0], response[0])
+    assert_almost_equal(aresponse[1], 100)
+    assert_almost_equal(aratio, response[0][1]/response[0][0])
+    
+    aresponse2, aratio2 = auto_response(gtab, big_S, w=3, fa_thr=0.5)
+    assert_array_almost_equal(aresponse[0], response[0])
 
 
 def test_odfdeconv():
@@ -164,6 +181,7 @@ def test_odf_sh_to_sharp():
 
 
 if __name__ == '__main__':
-    run_module_suite()
+    #run_module_suite()
+    test_csdeconv()
 
 

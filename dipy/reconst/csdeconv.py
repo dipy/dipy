@@ -11,6 +11,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from scipy.special import lpn
+from dipy.reconst.dti import TensorModel, fractional_anisotropy
 
 
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
@@ -567,3 +568,67 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
         fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_reg, lambda_=lambda_, tau=tau)
 
     return fodf_sh
+
+
+def auto_response(gtab, data, center=None, w=10, fa_thr=0.7):
+    """ Automatic estimation of response function using FA 
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    center : tuple, (3,)
+        Center of ROI in data. If center is None, it is assumed that is
+        the center of the volume with shape `data.shape[:3]`.
+    w : int
+        radius of cubic ROI
+    fa_thr : float
+        FA threshold
+
+    Returns
+    -------
+    response : tuple, (2,)
+        (`evals`, `S0`)
+    ratio : float
+        the ratio between smallest versus largest eigenvalue of the response
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the 
+    fiber response function. In order to do this we look for voxel with very 
+    anisotropic configurations. For example we can use an ROI (20x20x20) at
+    the center of the volume and store the signal values for the voxels with
+    FA values higher than 0.7. Of course, if we haven't precalculated FA we 
+    need to fit a Tensor model to the datasets. Which is what we do  in this
+    function. 
+
+    For the response we also need to find the average S0 in the ROI. This is
+    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which 
+    correspond to b-values equal 0) in the dataset.
+
+    The `response` consists always of a prolate tensor created by averaging 
+    the highest and second highest eigenvalues in the ROI with FA higher than
+    threshold. We also include the average S0s.
+
+    Finally, we also return the `ratio` which is used for the SDT models.
+    """
+
+    ten = TensorModel(gtab)
+    if center is None:
+        ci, cj, ck = np.array(data.shape[:3]) / 2
+    else:
+        ci, cj, ck = center
+    roi = data[ci - w: ci + w, cj - w: cj + w, ck - w: ck + w]
+    tenfit = ten.fit(roi)
+    FA = fractional_anisotropy(tenfit.evals)
+    FA[np.isnan(FA)] = 0
+    indices = np.where(FA > fa_thr)
+    lambdas = tenfit.evals[indices][:, :2]
+    S0s = roi[indices][:, np.nonzero(gtab.b0s_mask)[0]]
+    S0 = np.mean(S0s)
+    l01 = np.mean(lambdas, axis=0)
+    evals = np.array([l01[0], l01[1], l01[1]])
+    response = (evals, S0)
+    ratio = evals[1]/evals[0]
+    return response, ratio
