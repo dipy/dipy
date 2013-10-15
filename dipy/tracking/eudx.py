@@ -3,7 +3,9 @@ import numpy as np
 from dipy.tracking.propspeed import eudx_both_directions
 from dipy.data import get_sphere
 
+
 class EuDX(object):
+
     '''Euler Delta Crossings
 
     Generates tracks with termination criteria defined by a delta function [1]_
@@ -50,23 +52,28 @@ class EuDX(object):
                  ang_thr=60.,
                  length_thr=0.,
                  total_weight=.5,
-                 max_points=1000):
+                 max_points=1000,
+                 voxel_origin='center'):
         '''
         Euler integration with multiple stopping criteria and supporting
         multiple multiple fibres in crossings [1]_.
 
         Parameters
         ------------
-        a : array, shape(x,y,z,Np)
-            magnitude of the peak of a scalar anisotropic function e.g. QA
-            (quantitative anisotropy)  or a different function of shape(x,y,z)
-            e.g FA or GFA.
+        a : array, 
+            Shape (I, J, K, Np), magnitude of the peak of a scalar anisotropic 
+            function e.g. QA (quantitative anisotropy) where Np is the number of
+            peaks or a different function of shape (I, J, K) e.g FA or GFA.
         ind : array, shape(x,y,z,Np)
             indices of orientations of the scalar anisotropic peaks found on the
             resampling sphere
-        seeds : int or sequence, optional
-            number of random seeds or list of seeds
-        odf_vertices : None or ndarray, shape (N,3) , optional
+        seeds : int or ndarray
+            If an int is specified then a number of random seeds is generated
+            everywhere in the volume. If an (N, 3) array of (I, J, K) coordinates
+            is given then these will be used for seeds. The latter is useful when
+            you need to track from specific regions e.g. the white/gray matter 
+            interface or a specific ROI e.g. in the corpus callosum.
+        odf_vertices : None or ndarray, shape (N, 3), optional
             sphere points which define a discrete representation of orientations
             for the peaks, the same for all voxels. Usually the same sphere is
             used as an input for a reconstruction algorithm e.g. DSI.
@@ -83,6 +90,15 @@ class EuDX(object):
             total weighting threshold
         max_points : int, optional
             maximum number of points in a track. Used to stop tracks from looping for ever
+        voxel_origin : str
+            If `corner` then the streamlines will be shifted (0.5, 0.5, 0.5) else
+            if `center` they will stay as they are. 
+
+        Returns
+        -------
+        generator : obj
+            By iterating this generator you can obtain all the streamlines.
+
 
         Examples
         --------
@@ -90,16 +106,16 @@ class EuDX(object):
         >>> from dipy.reconst.dti import TensorModel, quantize_evecs
         >>> from dipy.data import get_data
         >>> from dipy.core.gradients import gradient_table
-        >>> fimg,fbvals,fbvecs=get_data('small_101D')
-        >>> img=nib.load(fimg)
-        >>> affine=img.get_affine()
-        >>> data=img.get_data()
+        >>> fimg,fbvals,fbvecs = get_data('small_101D')
+        >>> img = nib.load(fimg)
+        >>> affine = img.get_affine()
+        >>> data = img.get_data()
         >>> gtab = gradient_table(fbvals, fbvecs)
         >>> model = TensorModel(gtab)
         >>> ten = model.fit(data)
         >>> ind = quantize_evecs(ten.evecs)
-        >>> eu=EuDX(a=ten.fa, ind=ind, seeds=100,a_low=.2)
-        >>> tracks=[e for e in eu]
+        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100,a_low=.2)
+        >>> tracks = [e for e in eu]
 
         Notes
         -------
@@ -113,61 +129,67 @@ class EuDX(object):
                tractography", PhD thesis, University of Cambridge, UK.
 
         '''
-        self.a=np.ascontiguousarray(a.copy(), dtype='f8')
-        self.ind=np.ascontiguousarray(ind.copy(), dtype='f8')
-        self.a_low=a_low
-        self.ang_thr=ang_thr
-        self.step_sz=step_sz
-        self.length_thr=length_thr
-        self.total_weight=total_weight
-        self.max_points=max_points
-        if len(self.a.shape)==3:
-            self.a.shape=self.a.shape+(1,)
-            self.ind.shape=self.ind.shape+(1,)
-        #store number of maximum peacks
-        x,y,z,g=self.a.shape
-        self.Np=g
-        if odf_vertices==None:
+        self.a = np.ascontiguousarray(a.copy(), dtype='f8')
+        self.ind = np.ascontiguousarray(ind.copy(), dtype='f8')
+        self.a_low = a_low
+        self.ang_thr = ang_thr
+        self.step_sz = step_sz
+        self.length_thr = length_thr
+        self.total_weight = total_weight
+        self.max_points = max_points
+        self.voxel_shift = 0
+        if voxel_origin == 'corner': 
+            self.voxel_shift = 0.5
+        if len(self.a.shape) == 3:
+            self.a.shape = self.a.shape + (1,)
+            self.ind.shape = self.ind.shape + (1,)
+        # store number of maximum peacks
+        x, y, z, g = self.a.shape
+        self.Np = g
+        if odf_vertices == None:
             sphere = get_sphere('symmetric724')
             vertices, faces = sphere.vertices, sphere.faces
             self.odf_vertices = vertices
         else:
             self.odf_vertices = np.ascontiguousarray(odf_vertices, dtype='f8')
         try:
-            if len(seeds)>0:
-                self.seed_list=seeds
-                self.seed_no=len(seeds)
+            if len(seeds) > 0:
+                self.seed_list = seeds
+                self.seed_no = len(seeds)
         except TypeError:
-            self.seed_no=seeds
-            self.seed_list=None
-        self.ind=self.ind.astype(np.double)
+            self.seed_no = seeds
+            self.seed_list = None
+        self.ind = self.ind.astype(np.double)
 
     def __iter__(self):
         ''' This is were all the fun starts '''
-        x,y,z,g=self.a.shape
-        #for all seeds
+        x, y, z, g = self.a.shape
+        # for all seeds
         for i in range(self.seed_no):
-            if self.seed_list==None:
-                rx=(x-1)*np.random.rand()
-                ry=(y-1)*np.random.rand()
-                rz=(z-1)*np.random.rand()
-                seed=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
+            if self.seed_list == None:
+                rx = (x - 1) * np.random.rand()
+                ry = (y - 1) * np.random.rand()
+                rz = (z - 1) * np.random.rand()
+                seed = np.ascontiguousarray(
+                    np.array([rx, ry, rz]), dtype=np.float64)
             else:
-                seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)
-            #for all peaks
+                seed = np.ascontiguousarray(
+                    self.seed_list[i], dtype=np.float64)
+            # for all peaks
             for ref in range(g):
-                track =eudx_both_directions(seed.copy(),
-                                            ref,
-                                            self.a,
-                                            self.ind,
-                                            self.odf_vertices,
-                                            self.a_low,
-                                            self.ang_thr,
-                                            self.step_sz,
-                                            self.total_weight,
-                                            self.max_points)
+                track = eudx_both_directions(seed.copy(),
+                                             ref,
+                                             self.a,
+                                             self.ind,
+                                             self.odf_vertices,
+                                             self.a_low,
+                                             self.ang_thr,
+                                             self.step_sz,
+                                             self.total_weight,
+                                             self.max_points)
+
                 if track == None:
                     pass
                 else:
                     if track.shape[0] > 1:
-                        yield track
+                        yield track + self.voxel_shift
