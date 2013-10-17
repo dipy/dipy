@@ -508,7 +508,7 @@ def reshape_peaks_for_visualisation(peaks):
 
     else:
 
-        peaks = np.reshape(peaks, np.append(peaks.peak_dirs.shape[:-2], -1))
+        peaks = np.reshape(peaks, np.append(peaks.shape[:-2], -1))
         peaks = peaks.astype('float32')
 
     return peaks
