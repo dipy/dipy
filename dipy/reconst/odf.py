@@ -497,18 +497,10 @@ def reshape_peaks_for_visualisation(peaks):
 
     Returns:
     --------
-    peaks : nd array (..., 3*N) or PeaksAndMetrics object
+    peaks : nd array (..., 3*N)
     """
 
     if isinstance(peaks, PeaksAndMetrics):
-        peaks.peak_dirs = np.reshape(peaks.peak_dirs,
-                                     np.append(peaks.peak_dirs.shape[:-2], -1))
+        peaks = peaks.peak_dirs
 
-        peaks.peak_dirs = peaks.peak_dirs.astype('float32')
-
-    else:
-
-        peaks = np.reshape(peaks, np.append(peaks.shape[:-2], -1))
-        peaks = peaks.astype('float32')
-
-    return peaks
+    return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
