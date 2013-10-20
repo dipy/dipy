@@ -1,4 +1,4 @@
-from dipy.denoise.wavelets.sfb3D import sfb3D
+from dipy.denoise.wavelet.sfb3D import sfb3D
 
 
 def idwt3D(w, J, sf):

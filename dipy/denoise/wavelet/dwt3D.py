@@ -1,4 +1,4 @@
-from dipy.denoise.wavelets.afb3D import afb3D
+from dipy.denoise.wavelet.afb3D import afb3D
 
 
 def dwt3D(x, J, af):

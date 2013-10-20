@@ -1,6 +1,6 @@
 import numpy as np
 from dipy.denoise.ornlm import firdn
-from dipy.denoise.wavelets.cshift3D import cshift3D
+from dipy.denoise.wavelet.cshift3D import cshift3D
 
 
 def permutationInverse(perm):
