@@ -158,7 +158,9 @@ def main(**extra_args):
                           'dipy.segment',
                           'dipy.segment.tests',
                           'dipy.sims',
-                          'dipy.sims.tests'],
+                          'dipy.sims.tests',
+                          'dipy.denoise',
+                          'dipy.denoise.tests'],
           ext_modules = EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the source
