@@ -1,0 +1,62 @@
+#! /usr/bin/env python
+import argparse as arg
+import os
+
+import numpy as np
+import scipy.io as sio
+
+from nibabel import trackvis
+import dipy.segment.quickbundles as qb
+
+parser = arg.ArgumentParser(description='Segment a mrDiffusion FiberGroup object into clusters using QuickBundles (Garyfallidise et al. 2012)')
+
+parser.add_argument('in_file', action='store', metavar='File', 
+                    help='FG file (.mat)')
+
+parser.add_argument('--dist_thr', action='store', metavar='Float',
+                    help='Distance threshold (default: 30.)', default=30.)
+
+parser.add_argument('--pts',  action='store', metavar='Int',
+                    help='Points (default: 12)', default=12)
+
+params = parser.parse_args()
+
+if __name__ == "__main__":
+    def gimme_clusters(streamlines, th, pts):
+        bundles = qb.QuickBundles(streamlines,
+                                  dist_thr=th,
+                                  pts=pts)
+    
+        return bundles.clusters()
+    fname_orig = params.in_file
+
+    if params.in_file.endswith('.trk'):
+        tracks = trackvis.read(params.in_file)
+        streamlines = [fibers[0] for fibers in tracks[0]]
+        clusters = gimme_clusters(streamlines, params.dist_thr, params.pts)
+        for c in clusters:
+            new_streamlines = new_streamlines = [(s, None, None) for s in
+                                np.array(streamlines)[clusters[c]['indices']]]
+            split = os.path.splitext(fname_orig)
+            trackvis.write(split[0] + '_%s'%(c + 1) + split[1],
+                           new_streamlines)
+
+    if params.in_file.endswith('.mat'):
+        fg_mat = sio.loadmat(params.in_file, struct_as_record=False,
+                             squeeze_me=True)
+        fg = fg_mat['fg']
+        name_orig = fg.name
+        fibers = fg.fibers
+        streamlines = np.array([np.array(ff).T for ff in fibers])
+        clusters = gimme_clusters(streamlines, params.dist_thr, params.pts)
+        
+        for c in clusters:
+            new_fibers = streamlines[clusters[c]['indices']]
+            new_fg = np.copy(fg).item()
+            new_fg.fibers = new_fibers
+            new_fg.name = name_orig + '_%s'%(c + 1)
+            new_fg_mat = np.copy(fg_mat).item()
+            new_fg_mat['fg'] = fg
+            split = os.path.splitext(fname_orig)
+            sio.savemat(split[0] + '_%s'%(c + 1) + split[1],
+                        new_fg_mat)
