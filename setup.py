@@ -173,7 +173,8 @@ def main(**extra_args):
                        glob(pjoin('doc','examples','*.py')))],
           scripts      = [pjoin('bin', 'dipy_peak_extraction'),
                           pjoin('bin', 'dipy_fit_tensor'),
-                          pjoin('bin', 'dipy_sh_estimate')],
+                          pjoin('bin', 'dipy_sh_estimate'),
+                          pjoin('bin', 'dipy_quickbundles')],
           cmdclass = cmdclass,
           **extra_args
          )
