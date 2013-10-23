@@ -42,29 +42,50 @@ if __name__ == "__main__":
                            new_streamlines)
 
     if params.in_file.endswith('.mat'):
+        # Once read this as a mat-object
         fg_mat = sio.loadmat(params.in_file, struct_as_record=False,
                              squeeze_me=True)
+        # So that you can painlessly get the fiber-group:
         fg = fg_mat['fg']
+        # And once as a non-struct, so that you can use this later to pass back
+        # to savemat:
+        fg_mat = sio.loadmat(params.in_file, squeeze_me=True)
         name_orig = fg.name
         fibers = fg.fibers
         streamlines = np.array([np.array(ff).T for ff in fibers])
         clusters = gimme_clusters(streamlines, params.dist_thr, params.pts)
 
-        cluster_arr = []
+        dt = [('name', 'O'),
+              ('colorRgb', 'O'),
+              ('thickness', 'O'),
+              ('visible', 'O'),
+              ('seeds', 'O'),
+              ('seedRadius', 'O'),
+              ('seedVoxelOffsets', 'O'),
+              ('params', 'O'),
+              ('fibers', 'O'),
+              ('query_id', 'O')]
+
+        cluster_arr = np.empty(len(clusters), dtype=dt)
         for c in clusters:
             ff = streamlines[clusters[c]['indices']]
             new_fibers = np.empty(len(ff), dtype=object)
             for f in range(new_fibers.shape[0]):
                 new_fibers[f] = ff[f].T
 
-            new_fg = np.copy(fg).item()
-            new_fg.fibers = new_fibers
-            new_fg.colorRgb = np.array(fg.colorRgb).astype(np.float).reshape(1,3)
-            new_fg.name = str(name_orig) + '_%s'%(c + 1)
-            new_fg_mat = np.copy(fg_mat).item()
-            new_fg_mat['fg'] = fg
-            cluster_arr.append(new_fg_mat)
+            cluster_arr[c]['fibers'] = new_fibers
+            cluster_arr[c]['colorRgb']=\
+                np.array(fg.colorRgb).astype(np.float).reshape(1,3)
+            cluster_arr[c]['name'] = str(name_orig) + '_%s'%(c + 1)
 
+            for d in dt:
+                if cluster_arr[c][d[0]] is None:
+                    try:
+                        cluster_arr[c][d[0]] = fg_mat['fg'][d[0]]
+                    except TypeError:
+                        print fg_mat['fg']
+                        foo
         split = os.path.splitext(fname_orig)
+        fg_mat['fg'] = cluster_arr
         sio.savemat(split[0] + '_cluster.mat',
-                    dict(clusters=cluster_arr))
+                    fg_mat)
