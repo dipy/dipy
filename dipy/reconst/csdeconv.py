@@ -570,7 +570,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     return fodf_sh
 
 
-def auto_response(gtab, data, center=None, w=10, fa_thr=0.7):
+def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     """ Automatic estimation of response function using FA 
 
     Parameters
@@ -578,10 +578,10 @@ def auto_response(gtab, data, center=None, w=10, fa_thr=0.7):
     gtab : GradientTable
     data : ndarray
         diffusion data
-    center : tuple, (3,)
+    roi_center : tuple, (3,)
         Center of ROI in data. If center is None, it is assumed that is
         the center of the volume with shape `data.shape[:3]`.
-    w : int
+    roi_radius : int
         radius of cubic ROI
     fa_thr : float
         FA threshold
@@ -618,7 +618,8 @@ def auto_response(gtab, data, center=None, w=10, fa_thr=0.7):
     if center is None:
         ci, cj, ck = np.array(data.shape[:3]) / 2
     else:
-        ci, cj, ck = center
+        ci, cj, ck = roi_center
+    w = roi_radius
     roi = data[ci - w: ci + w, cj - w: cj + w, ck - w: ck + w]
     tenfit = ten.fit(roi)
     FA = fractional_anisotropy(tenfit.evals)

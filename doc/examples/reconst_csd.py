@@ -31,14 +31,14 @@ You can verify the b-values of the datasets by looking at the attribute `gtab.bv
 In CSD there is an important pre-processing step: the estimation of the fiber response 
 function. In order to do this we look for voxels with very anisotropic configurations. 
 For example here we use an ROI (20x20x20) at the center of the volume hoping to find 
-an area of corpus callosum and store the signal values for the voxels with FA values 
+an area of the corpus callosum and store the signal values for the voxels with FA values 
 higher than 0.7. Of course, if we haven't precalculated FA we need to fit a Tensor 
 model to the datasets. Which is what we do with the `auto_response` function here.
 """
 
 from dipy.reconst.csdeconv import auto_response
 
-response, ratio = auto_response(gtab, data, w=10, fa_thr=0.7)
+response, ratio = auto_response(gtab, data, roi_width=10, fa_thr=0.7)
 
 """
 Now we are ready to import the CSD model and fit the datasets.

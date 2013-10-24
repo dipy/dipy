@@ -143,7 +143,7 @@ class EuDX(object):
         if len(self.a.shape) == 3:
             self.a.shape = self.a.shape + (1,)
             self.ind.shape = self.ind.shape + (1,)
-        # store number of maximum peacks
+        # store number of maximum peaks
         x, y, z, g = self.a.shape
         self.Np = g
         if odf_vertices == None:
