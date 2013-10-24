@@ -615,7 +615,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     """
 
     ten = TensorModel(gtab)
-    if center is None:
+    if roi_center is None:
         ci, cj, ck = np.array(data.shape[:3]) / 2
     else:
         ci, cj, ck = roi_center

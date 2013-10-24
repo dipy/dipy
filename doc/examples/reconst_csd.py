@@ -38,7 +38,7 @@ model to the datasets. Which is what we do with the `auto_response` function her
 
 from dipy.reconst.csdeconv import auto_response
 
-response, ratio = auto_response(gtab, data, roi_width=10, fa_thr=0.7)
+response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
 """
 Now we are ready to import the CSD model and fit the datasets.
