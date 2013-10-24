@@ -1,23 +1,29 @@
 #! /usr/bin/env python
 import argparse as arg
 import os
+import warnings 
+import pickle
 
 import numpy as np
 import scipy.io as sio
+import matplotlib.cm as cm
 
 from nibabel import trackvis
 import dipy.segment.quickbundles as qb
 
-parser = arg.ArgumentParser(description='Segment a mrDiffusion FiberGroup object into clusters using QuickBundles (Garyfallidise et al. 2012)')
+parser = arg.ArgumentParser(description='Segment a fiber-group into clusters using the QuickBundles algorithm (Garyfallidis et al. 2012)')
 
 parser.add_argument('in_file', action='store', metavar='File', 
-                    help='FG file (.mat)')
+                    help='Vistasoft fiber-group file (.mat) or Trackvis fiber file (.trk)')
 
 parser.add_argument('--dist_thr', action='store', metavar='Float',
                     help='Distance threshold (default: 30.)', default=30.)
 
 parser.add_argument('--pts',  action='store', metavar='Int',
                     help='Points (default: 12)', default=12)
+                    
+parser.add_argument('--pkl_file', action='store', metavar='File',
+		    help='Whether to save a QB object in pickle format. Provide full path to the file name (default: none)')
 
 params = parser.parse_args()
 
@@ -26,14 +32,16 @@ if __name__ == "__main__":
         bundles = qb.QuickBundles(streamlines,
                                   dist_thr=th,
                                   pts=pts)
+        return bundles, bundles.clusters()
     
-        return bundles.clusters()
     fname_orig = params.in_file
 
     if params.in_file.endswith('.trk'):
         tracks = trackvis.read(params.in_file)
         streamlines = [fibers[0] for fibers in tracks[0]]
-        clusters = gimme_clusters(streamlines, params.dist_thr, params.pts)
+        bundles, clusters = gimme_clusters(streamlines,
+                                           np.float(params.dist_thr),
+                                           np.int(params.pts))
         for c in clusters:
             new_streamlines = new_streamlines = [(s, None, None) for s in
                                 np.array(streamlines)[clusters[c]['indices']]]
@@ -53,8 +61,14 @@ if __name__ == "__main__":
         name_orig = fg.name
         fibers = fg.fibers
         streamlines = np.array([np.array(ff).T for ff in fibers])
-        clusters = gimme_clusters(streamlines, params.dist_thr, params.pts)
+        bundles, clusters = gimme_clusters(streamlines,
+                                           np.float(params.dist_thr),
+                                           np.int(params.pts))
+        # We will give each cluster a different color:
+        cmap = cm.get_cmap('jet', len(clusters)) 
+        cmap_arr = cmap(np.arange(len(clusters)))[:, :3]  # We don't need alpha
 
+        # We prepare a struct array to assign into with the original dtype:
         dt = [('name', 'O'),
               ('colorRgb', 'O'),
               ('thickness', 'O'),
@@ -65,8 +79,8 @@ if __name__ == "__main__":
               ('params', 'O'),
               ('fibers', 'O'),
               ('query_id', 'O')]
-
         cluster_arr = np.empty(len(clusters), dtype=dt)
+
         for c in clusters:
             ff = streamlines[clusters[c]['indices']]
             new_fibers = np.empty(len(ff), dtype=object)
@@ -75,7 +89,7 @@ if __name__ == "__main__":
 
             cluster_arr[c]['fibers'] = new_fibers
             cluster_arr[c]['colorRgb']=\
-                np.array(fg.colorRgb).astype(np.float).reshape(1,3)
+                np.array(cmap_arr[c]).astype(np.float).reshape(1,3)
             cluster_arr[c]['name'] = str(name_orig) + '_%s'%(c + 1)
 
             for d in dt:
@@ -87,5 +101,14 @@ if __name__ == "__main__":
                         foo
         split = os.path.splitext(fname_orig)
         fg_mat['fg'] = cluster_arr
-        sio.savemat(split[0] + '_cluster.mat',
-                    fg_mat)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sio.savemat(split[0] + '_cluster.mat',
+            	        fg_mat)
+    else:
+        raise ValueError('Unrecognized file-format')
+
+    if params.pkl_file:
+        pkl_f = file(params.pkl_file, 'w')
+        pickle.dump(bundles, pkl_f)
+        pkl_f.close()
