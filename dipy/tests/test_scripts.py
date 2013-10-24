@@ -149,3 +149,8 @@ def test_dipy_fit_tensor():
         assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
                                   affine)
 
+def test_qb_commandline():
+    tracks_file = get_data('fornix')
+    cmd = ["dipy_quickbundles", tracks_file]
+    out = run_command(" ".join(cmd))
+    assert_equal(out[0], 0)
