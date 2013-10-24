@@ -2,7 +2,7 @@
 import argparse as arg
 import os
 import warnings 
-import pickle
+import dipy.io.pickles as pkl
 
 import numpy as np
 import scipy.io as sio
@@ -109,6 +109,4 @@ if __name__ == "__main__":
         raise ValueError('Unrecognized file-format')
 
     if params.pkl_file:
-        pkl_f = file(params.pkl_file, 'w')
-        pickle.dump(bundles, pkl_f)
-        pkl_f.close()
+        pkl.save_pickle(params.pkl_file, bundles)

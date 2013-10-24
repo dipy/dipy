@@ -150,7 +150,8 @@ def test_dipy_fit_tensor():
                                   affine)
 
 def test_qb_commandline():
-    tracks_file = get_data('fornix')
-    cmd = ["dipy_quickbundles", tracks_file]
-    out = run_command(" ".join(cmd))
-    assert_equal(out[0], 0)
+    with InTemporaryDirectory() as tmp:
+        tracks_file = get_data('fornix')
+        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file mypickle.pkl']
+        out = run_command(" ".join(cmd))
+        assert_equal(out[0], 0)
