@@ -24,6 +24,13 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.data import get_data
 
+# Quickbundles command-line requires matplotlib: 
+try:
+    import matplotlib
+    no_mpl = False
+except ImportError:
+    no_mpl = True
+
 # Need shell to get path to correct executables
 USE_SHELL = True
 
@@ -149,9 +156,11 @@ def test_dipy_fit_tensor():
         assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
                                   affine)
 
+@nt.dec.skipif(no_mpl)
 def test_qb_commandline():
     with InTemporaryDirectory() as tmp:
         tracks_file = get_data('fornix')
-        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file mypickle.pkl']
+        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file ./mypickle.pkl',
+               '--out_file ./tracks300.trk']
         out = run_command(" ".join(cmd))
         assert_equal(out[0], 0)
