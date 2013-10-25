@@ -10,7 +10,7 @@ from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
-from scipy.special import lpn
+from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 
 
@@ -320,7 +320,7 @@ def forward_sdeconv_mat(r_rh, sh_order):
     return np.diag(b)
 
 
-def forward_sdt_deconv_mat(ratio, sh_order):
+def forward_sdt_deconv_mat(ratio, sh_order, r2_term=False):
     """ Build forward sharpening deconvolution transform (SDT) matrix
 
     Parameters
@@ -329,6 +329,12 @@ def forward_sdt_deconv_mat(ratio, sh_order):
         ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response function
     sh_order : int
         spherical harmonic order
+    r2_term : bool
+        True if ODF comes from an ODF computed from a model using the r^2 term in the integral.
+        For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. This results in using
+        the proper analytical response function solution solving from the single-fiber ODF
+        with the r^2 term. This derivation is not published anywhere. 
+        Please contact m.descoteaux@usherbrooke.ca or garyfallidis@gmail.com for the Math.
 
     Returns
     -------
@@ -340,13 +346,18 @@ def forward_sdt_deconv_mat(ratio, sh_order):
     m, n = sph_harm_ind_list(sh_order)
 
     sdt = np.zeros(m.shape) # SDT matrix
-    frt = np.zeros(m.shape) # FRT (Funk-Radon transform) q-ball matrix
+    frt = np.zeros(m.shape) # FRT (Funk-Radon transform) 
     b = np.zeros(m.shape)
     bb = np.zeros(m.shape)
 
     for l in np.arange(0, sh_order + 1, 2):
         from scipy.integrate import quad
-        sharp = quad(lambda z: lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
+
+        if r2_term :                        
+            sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) * np.sqrt( ratio / (4 * np.pi ** 3) ) /
+                         np.power((1 - (1 - ratio) * z ** 2), 1.5), -1., 1.)
+        else :
+            sharp = quad(lambda z: lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)  
 
         sdt[l / 2] = sharp[0]
         frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
@@ -441,7 +452,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     return fodf_sh, num_it
 
 
-def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
+def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
     r""" ODF constrained-regularized sherical deconvolution using
     the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
 
@@ -460,6 +471,10 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     tau : float
          threshold (tau *max(fODF)) controlling the amplitude below
          which the corresponding fODF is assumed to be zero.
+    r2_term : bool
+        True if ODF comes from an ODF computed from a model using the r^2 term in the integral.
+        For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs.
+
 
     Returns
     -------
@@ -482,8 +497,11 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
     fodf = np.dot(B_reg, fodf_sh)
 
-    Z = np.linalg.norm(fodf)
-    fodf_sh /= Z
+    # if sharpening a q-ball odf (it is NOT properly normalized), we need to force normalization
+    # otherwise, for DSI, CSA, SHORE, Tensor odfs, they are normalized by construction
+    if ~r2_term : 
+        Z = np.linalg.norm(fodf)
+        fodf_sh /= Z
 
     fodf = np.dot(B_reg, fodf_sh)
     threshold = tau * np.max(np.dot(B_reg, fodf_sh))
@@ -512,7 +530,8 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     return fodf_sh, num_it
 
 
-def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lambda_=1., tau=0.1):
+def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lambda_=1., tau=0.1,
+                    r2_term=False):
     r""" Sharpen odfs using the spherical deconvolution transform [1]_
 
     This function can be used to sharpen any smooth ODF spherical function. In theory, this should
@@ -537,6 +556,12 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
         lambda parameter (see odfdeconv) (default 1.0)
     tau : float
         tau parameter in the L matrix construction (see odfdeconv) (default 0.1)
+    r2_term : bool
+        True if you want the proper analytical r^2 ODF response function solution to be used.
+        Default is False as in [1]_, used to sharpen the q-ball ODF. 
+        Should be true if you are sharpening an ODF coming from GQI, DSI, CSA, SHORE, 
+        Tensor, Multi-Tensor, which all use the true ODF integral with the r^2 term to compute the ODF, 
+        as opposed to q-ball imaging [2]_, [3]_.
 
     Returns
     -------
@@ -547,6 +572,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     ----------
     .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
            on Complex Fibre Orientation Distributions
+    .. [2] Tuch, D. MRM 2004. Q-Ball Imaging.
+    .. [3] Descoteaux, M, et al. MRM 2007. Fast, Regularized and Analytical Q-Ball Imaging
     """
     m, n = sph_harm_ind_list(sh_order)
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
@@ -555,7 +582,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
     B_reg, m, n = real_sym_sh(sh_order, theta[:, None], phi[:, None])
     
-    R, P = forward_sdt_deconv_mat(ratio, sh_order)
+    R, P = forward_sdt_deconv_mat(ratio, sh_order, r2_term)
 
     # scale lambda to account for differences in the number of
     # SH coefficients and number of mapped directions
@@ -565,7 +592,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
     for index in ndindex(odfs_sh.shape[:-1]):
 
-        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_reg, lambda_=lambda_, tau=tau)
+        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_reg, 
+                                            lambda_=lambda_, tau=tau, r2_term=r2_term)
 
     return fodf_sh
 
