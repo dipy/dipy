@@ -206,7 +206,6 @@ def test_forward_sdeconv_mat():
 
 
 def test_r2_term_odf_sharp():
-
     SNR = None
     S0 = 1
     angle = 75
