@@ -18,8 +18,12 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
+<<<<<<< HEAD
 from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel, 
                               CsaOdfModel, sph_harm_ind_list)
+=======
+from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel, CsaOdfModel
+>>>>>>> faster test
 
 def test_csdeconv():
     SNR = 100
@@ -300,7 +304,7 @@ def test_r2_term_odf_sharp():
     assert_equal(ang_sim > 1.9, True)
     assert_equal(directions.shape[0], 2)
 
->>
+
 
 if __name__ == '__main__':
     run_module_suite()
