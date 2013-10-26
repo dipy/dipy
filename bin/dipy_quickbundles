@@ -104,11 +104,8 @@ if __name__ == "__main__":
 
             for d in dt:
                 if cluster_arr[c][d[0]] is None:
-                    try:
-                        cluster_arr[c][d[0]] = fg_mat['fg'][d[0]]
-                    except TypeError:
-                        print fg_mat['fg']
-                        foo
+                    cluster_arr[c][d[0]] = fg_mat['fg'][d[0]]
+
         fg_mat['fg'] = cluster_arr
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
