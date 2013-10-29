@@ -12,6 +12,8 @@ from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
+from scipy.integrate import quad
+
 
 
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
@@ -330,11 +332,12 @@ def forward_sdt_deconv_mat(ratio, sh_order, r2_term=False):
     sh_order : int
         spherical harmonic order
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the r^2 term in the integral.
+        True if ODF comes from an ODF computed from a model using the $r^2$ term in the integral.
         For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. This results in using
         the proper analytical response function solution solving from the single-fiber ODF
-        with the r^2 term. This derivation is not published anywhere. 
-        Please contact m.descoteaux@usherbrooke.ca or garyfallidis@gmail.com for the Math.
+        with the $r^2$ term. This derivation is not published anywhere but is the straight 
+        forward extension to the derivation found in Appendix A, Section 9.6 of [1]_.
+
 
     Returns
     -------
@@ -342,6 +345,11 @@ def forward_sdt_deconv_mat(ratio, sh_order, r2_term=False):
         SDT deconvolution matrix
     P : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
         Funk-Radon Transform (FRT) matrix
+
+    References
+    ----------
+    .. [1] Descoteaux, M. PhD Thesis. INRIA Sophia-Antipolis. 2008.
+
     """
     m, n = sph_harm_ind_list(sh_order)
 
@@ -351,8 +359,6 @@ def forward_sdt_deconv_mat(ratio, sh_order, r2_term=False):
     bb = np.zeros(m.shape)
 
     for l in np.arange(0, sh_order + 1, 2):
-        from scipy.integrate import quad
-
         if r2_term :                        
             sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) * np.sqrt( ratio / (4 * np.pi ** 3) ) /
                          np.power((1 - (1 - ratio) * z ** 2), 1.5), -1., 1.)
@@ -472,7 +478,7 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
          threshold (tau *max(fODF)) controlling the amplitude below
          which the corresponding fODF is assumed to be zero.
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the r^2 term in the integral.
+        True if ODF comes from an ODF computed from a model using the $r^2$ term in the integral.
         For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs.
 
 
@@ -557,10 +563,10 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     tau : float
         tau parameter in the L matrix construction (see odfdeconv) (default 0.1)
     r2_term : bool
-        True if you want the proper analytical r^2 ODF response function solution to be used.
+        True if you want the proper analytical $r^2$ ODF response function solution to be used.
         Default is False as in [1]_, used to sharpen the q-ball ODF. 
         Should be true if you are sharpening an ODF coming from GQI, DSI, CSA, SHORE, 
-        Tensor, Multi-Tensor, which all use the true ODF integral with the r^2 term to compute the ODF, 
+        Tensor, Multi-Tensor, which all use the true ODF integral with the $r^2$ term to compute the ODF, 
         as opposed to q-ball imaging [2]_, [3]_.
 
     Returns
