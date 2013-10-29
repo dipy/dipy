@@ -38,8 +38,8 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
         Only return peaks greater than ``relative_peak_threshold * m`` where m
         is the largest peak.
     min_separation_angle : float in [0, 90]
-        The minimum distance between directions. If two peaks are too close only
-        the larger of the two is returned.
+        The minimum distance between directions. If two peaks are too close
+        only the larger of the two is returned.
     sphere : Sphere
         A discrete Sphere. The points on the sphere will be used for initial
         estimate of maximums.
@@ -161,11 +161,10 @@ class PeaksAndMetrics(object):
     pass
 
 
-def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
-                                min_separation_angle, mask, return_odf,
-                                return_sh, gfa_thr, normalize_peaks,
-                                sh_order, sh_basis_type, ravel_peaks,
-                                npeaks, nbr_process):
+def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
+                               min_separation_angle, mask, return_odf,
+                               return_sh, gfa_thr, normalize_peaks,
+                               sh_order, sh_basis_type, npeaks, nbr_process):
 
     if nbr_process is None:
         nbr_process = cpu_count()
@@ -187,7 +186,7 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
     pool = Pool(nbr_process)
 
-    pam_res = pool.map(__peaks_from_model_parallel_sub,
+    pam_res = pool.map(_peaks_from_model_parallel_sub,
                        zip(repeat(model),
                            data_chunks,
                            repeat(sphere),
@@ -200,7 +199,6 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                            repeat(normalize_peaks),
                            repeat(sh_order),
                            repeat(sh_basis_type),
-                           repeat(ravel_peaks),
                            repeat(npeaks),
                            repeat(False)))
     pool.close()
@@ -213,6 +211,7 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                         dtype=pam_res[0].gfa.dtype,
                         mode='w+',
                         shape=(data.shape[0]))
+
     pam.peak_dirs = np.memmap(path.join(temp_dir, 'peak_dirs.dat'),
                               dtype=pam_res[0].peak_dirs.dtype,
                               mode='w+',
@@ -276,15 +275,15 @@ def __peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     return pam
 
 
-def __peaks_from_model_parallel_sub(args):
+def _peaks_from_model_parallel_sub(args):
     return peaks_from_model(*args)
 
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, ravel_peaks=False,
-                     npeaks=5, parallel=False, nbr_process=None):
+                     sh_order=8, sh_basis_type=None, npeaks=5,
+                     parallel=False, nbr_process=None):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -317,39 +316,37 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         ``None`` for the default dipy basis which is the fibernav basis,
         ``mrtrix`` for the MRtrix basis, and
         ``fibernav`` for the FiberNavigator basis
-    ravel_peaks : bool
-        If True, the peaks are returned as [x1, y1, z1, ..., xn, yn, zn] instead
-        of Nx3. Set this flag to True if you want to visualize the peaks in the
-        fibernavigator or in mrtrix.
+    sh_smooth : float, optional
+        Lambda-regularization in the SH fit (default 0.0).
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
     parallel: bool
-        If True, use multiprocessing to compute peaks and metric (default False).
+        If True, use multiprocessing to compute peaks and metric
+        (default False).
     nbr_process: int
-        If `parallel == True`, the number of subprocess to use (default multiprocessing.cpu_count()).
+        If `parallel == True`, the number of subprocess to use
+        (default multiprocessing.cpu_count()).
 
     Returns
     -------
     pam : PeaksAndMetrics
         An object with ``gfa``, ``peak_directions``, ``peak_values``,
         ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes
-
     """
 
     if parallel:
-        return __peaks_from_model_parallel(model,
-                                           data, sphere,
-                                           relative_peak_threshold,
-                                           min_separation_angle,
-                                           mask, return_odf,
-                                           return_sh,
-                                           gfa_thr,
-                                           normalize_peaks,
-                                           sh_order,
-                                           sh_basis_type,
-                                           ravel_peaks,
-                                           npeaks,
-                                           nbr_process)
+        return _peaks_from_model_parallel(model,
+                                          data, sphere,
+                                          relative_peak_threshold,
+                                          min_separation_angle,
+                                          mask, return_odf,
+                                          return_sh,
+                                          gfa_thr,
+                                          normalize_peaks,
+                                          sh_order,
+                                          sh_basis_type,
+                                          npeaks,
+                                          nbr_process)
 
     shape = data.shape[:-1]
     if mask is None:
@@ -420,15 +417,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             peak_values[idx][:n] /= pk[0]
             peak_dirs[idx] *= peak_values[idx][:, None]
 
-    #gfa_array = gfa_array
     qa_array /= global_max
-    #peak_values = peak_values
-    #peak_indices = peak_indices
-
-    # The fibernavigator only supports float32. Since this form is mainly
-    # for external visualisation, we enforce float32.
-    if ravel_peaks:
-        peak_dirs = peak_dirs.reshape(shape + (3 * npeaks,)).astype('float32')
 
     pam = PeaksAndMetrics()
     pam.peak_dirs = peak_dirs
@@ -453,7 +442,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
 
 
 def gfa(samples):
-    """The general fractional anisotropy of a function evaluated on the unit sphere"""
+    """The general fractional anisotropy of a function evaluated
+    on the unit sphere"""
     diff = samples - samples.mean(-1)[..., None]
     n = samples.shape[-1]
     numer = n * (diff * diff).sum(-1)
@@ -492,3 +482,25 @@ def minmax_normalize(samples, out=None):
     out -= sample_mins
     out /= (sample_maxes - sample_mins)
     return out
+
+
+def reshape_peaks_for_visualisation(peaks):
+    """Reshape peaks for visualisation.
+
+    Reshape and convert to float32 a set of peaks for visualisation with mrtrix
+    or the fibernavigator.
+
+    Parameters:
+    -----------
+    peaks: nd array (..., N, 3) or PeaksAndMetrics object
+        The peaks to be reshaped and converted to float32.
+
+    Returns:
+    --------
+    peaks : nd array (..., 3*N)
+    """
+
+    if isinstance(peaks, PeaksAndMetrics):
+        peaks = peaks.peak_dirs
+
+    return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
