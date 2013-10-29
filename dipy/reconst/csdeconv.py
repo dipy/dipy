@@ -63,6 +63,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
                of tractography pipelines
         .. [4] Tournier, J.D, et al. Imaging Systems and Technology 2012. MRtrix: Diffusion
                Tractography in Crossing Fiber Regions
+
         """
 
         m, n = sph_harm_ind_list(sh_order)
@@ -325,6 +326,7 @@ def forward_sdeconv_mat(r_rh, n):
         Deconvolution matrix with shape (N, N)
 
     """
+
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     return np.diag(r_rh[n // 2])
@@ -341,11 +343,12 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
         The degree of spherical harmonic function associated with each row of
         the deconvolution matrix. Only even degrees are allowed.
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the r^2 term in the integral.
+        True if ODF comes from an ODF computed from a model using the $r^2$ term in the integral.
         For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. This results in using
         the proper analytical response function solution solving from the single-fiber ODF
         with the r^2 term. This derivation is not published anywhere but is very similar to
         [1]_. 
+
 
     Returns
     -------
