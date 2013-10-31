@@ -332,10 +332,11 @@ def forward_sdt_deconv_mat(ratio, sh_order, r2_term=False):
     sh_order : int
         spherical harmonic order
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the $r^2$ term in the integral.
-        For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. This results in using
-        the proper analytical response function solution solving from the single-fiber ODF
-        with the $r^2$ term. This derivation is not published anywhere but is the straight 
+        True if ODF is computed from a model that computes the ODF using the $r^2$ term 
+        in the integral. For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. 
+        This results in using the proper analytical response function solution solving 
+        from the single-fiber ODF with the $r^2$ term. 
+        This derivation is not published anywhere but is the straight 
         forward extension to the derivation found in Appendix A, Section 9.6 of [1]_.
 
 
@@ -478,9 +479,15 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
          threshold (tau *max(fODF)) controlling the amplitude below
          which the corresponding fODF is assumed to be zero.
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the $r^2$ term in the integral.
-        For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs.
-
+         True if ODF is computed from model that uses the $r^2$ term in the integral.
+         Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and the true normalized ODF
+         definition differ from a $r^2$ term in the ODF integral. The original Sharpening
+         Deconvolution Transform (SDT) technique [2]_ is expecting Tuch's ODF without 
+         the $r^2$ (see [3]_ for the mathematical details). 
+         Now, this function supports ODF that have been computed using the $r^2$ term because
+         the proper analytical response function has be derived. 
+         For example, models such as DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs, should now
+         be deconvolved with the r2_term=True.         
 
     Returns
     -------
@@ -491,9 +498,10 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
     References
     ----------
-    .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+    .. [1] Tuch, D. MRM 2004. Q-Ball Imaging.
+    .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
            on Complex Fibre Orientation Distributions
-    .. [2] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
+    .. [3] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
     """
     m, n = sph_harm_ind_list(sh_order)
 
@@ -563,11 +571,15 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     tau : float
         tau parameter in the L matrix construction (see odfdeconv) (default 0.1)
     r2_term : bool
-        True if you want the proper analytical $r^2$ ODF response function solution to be used.
-        Default is False as in [1]_, used to sharpen the q-ball ODF. 
-        Should be true if you are sharpening an ODF coming from GQI, DSI, CSA, SHORE, 
-        Tensor, Multi-Tensor, which all use the true ODF integral with the $r^2$ term to compute the ODF, 
-        as opposed to q-ball imaging [2]_, [3]_.
+         True if ODF is computed from model that uses the $r^2$ term in the integral.
+         Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and the true normalized ODF
+         definition differ from a $r^2$ term in the ODF integral. The original Sharpening
+         Deconvolution Transform (SDT) technique [2]_ is expecting Tuch's ODF without 
+         the $r^2$ (see [3]_ for the mathematical details). 
+         Now, this function supports ODF that have been computed using the $r^2$ term because
+         the proper analytical response function has be derived. 
+         For example, models such as DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs, should now
+         be deconvolved with the r2_term=True.         
 
     Returns
     -------
@@ -576,9 +588,9 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
     References
     ----------
-    .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+    .. [1] Tuch, D. MRM 2004. Q-Ball Imaging.
+    .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
            on Complex Fibre Orientation Distributions
-    .. [2] Tuch, D. MRM 2004. Q-Ball Imaging.
     .. [3] Descoteaux, M, et al. MRM 2007. Fast, Regularized and Analytical Q-Ball Imaging
     """
     m, n = sph_harm_ind_list(sh_order)
