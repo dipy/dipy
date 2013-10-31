@@ -555,8 +555,12 @@ class TensorModel(object):
             str can be one of the following:
             'WLS' for weighted least squares
                 dti.wls_fit_tensor
-            'LS' for ordinary least squares
+            'LS' or 'OLS' for ordinary least squares
                 dti.ols_fit_tensor
+            'NLLS' for non-linear least-squares
+                dti.nlls_fit_tensor
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting [3]_
+                dti.restore_fit_tensor
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
@@ -572,6 +576,8 @@ class TensorModel(object):
         .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
+        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+           estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
         """
         if not callable(fit_method):
@@ -1675,4 +1681,5 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'NLLS': nlls_fit_tensor,
                       'RT': restore_fit_tensor,
                       'restore':restore_fit_tensor,
+                      'RESTORE':restore_fit_tensor
                      }
