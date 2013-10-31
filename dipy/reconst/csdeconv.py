@@ -349,7 +349,6 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
         with the r^2 term. This derivation is not published anywhere but is very similar to
         [1]_. 
 
-
     Returns
     -------
     R : ndarray (N, N)
