@@ -176,8 +176,8 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                     relative_peak_threshold,
                                     min_separation_angle, mask, return_odf,
                                     return_sh, gfa_thr, normalize_peaks,
-                                    sh_order, sh_basis_type, ravel_peaks,
-                                    npeaks, parallel=False)
+                                    sh_order, sh_basis_type, npeaks,
+                                    parallel=False)
 
     shape = list(data.shape)
     n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
