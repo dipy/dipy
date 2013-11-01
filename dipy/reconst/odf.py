@@ -167,7 +167,17 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                sh_order, sh_basis_type, npeaks, nbr_process):
 
     if nbr_process is None:
-        nbr_process = cpu_count()
+        try:
+            nbr_process = cpu_count()
+        except NotImplementedError:
+            warn("Cannot determine number of cpus. \
+                 returns peaks_from_model(..., paralle=False).", UserWarning)
+            return peaks_from_model(model, data, sphere,
+                                    relative_peak_threshold,
+                                    min_separation_angle, mask, return_odf,
+                                    return_sh, gfa_thr, normalize_peaks,
+                                    sh_order, sh_basis_type, npeaks,
+                                    parallel=False)
 
     shape = list(data.shape)
     n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
