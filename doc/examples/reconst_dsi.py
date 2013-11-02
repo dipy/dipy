@@ -9,9 +9,7 @@ diffusion MRI datasets of Cartesian keyhole diffusion gradients.
 First import the necessary modules:
 """
 
-import nibabel as nib
 from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
-from dipy.align.aniso2iso import resample
 from dipy.reconst.dsi import DiffusionSpectrumModel
 
 """

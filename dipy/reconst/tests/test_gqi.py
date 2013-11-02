@@ -11,7 +11,8 @@ from numpy.testing import (assert_equal,
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.odf import gfa, peak_directions
+from dipy.reconst.odf import gfa
+from dipy.reconst.peaks import peak_directions
 
 
 def test_gqi():
