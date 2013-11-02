@@ -95,9 +95,8 @@ def test_peaks_shm_coeff():
 
     pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
                            return_odf=True, return_sh=True)
-    # Test that spherical harmonic coefficients return back correctly
-    B = np.linalg.pinv(pam.invB)
-    odf2 = np.dot(pam.shm_coeff, B)
+    # Test that spherical harmonic coefficients return back correctly    
+    odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)
     assert_equal(pam.shm_coeff.shape[-1], 45)
 
@@ -108,20 +107,19 @@ def test_peaks_shm_coeff():
     pam = peaks_from_model(model, data[None,:], sphere, .5, 45,
                            return_odf=True, return_sh=True, sh_basis_type='mrtrix')
 
-    B = np.linalg.pinv(pam.invB)
-    odf2 = np.dot(pam.shm_coeff, B)
+    odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)
 
 
-def test_reshape_peaks_for_visualisation():
+def test_reshape_peaks_for_visualization():
 
     data1 = np.random.randn(10, 5, 3).astype('float32')
     data2 = np.random.randn(10, 2, 5, 3).astype('float32')
     data3 = np.random.randn(10, 2, 12, 5, 3).astype('float32')
 
-    data1_reshape = reshape_peaks_for_visualisation(data1)
-    data2_reshape = reshape_peaks_for_visualisation(data2)
-    data3_reshape = reshape_peaks_for_visualisation(data3)
+    data1_reshape = reshape_peaks_for_visualization(data1)
+    data2_reshape = reshape_peaks_for_visualization(data2)
+    data3_reshape = reshape_peaks_for_visualization(data3)
 
     assert_array_equal(data1_reshape.shape, (10, 15))
     assert_array_equal(data2_reshape.shape, (10, 2, 15))
