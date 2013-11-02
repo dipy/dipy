@@ -22,6 +22,7 @@ as RESTORE.
 """
 
 import dipy.reconst.dti as dti
+reload(dti)
 
 """
 ``dipy.data`` is used for small datasets that we use in tests and examples.
@@ -37,6 +38,7 @@ import dipy.data as dpd
 """
 import dipy.viz.fvtk as fvtk
 
+import matplotlib.pyplot as plt
 
 """
 If needed, the fetch_stanford_hardi function will download the raw dMRI dataset
@@ -85,12 +87,12 @@ sphere = dpd.get_sphere('symmetric724')
 We visualize the ODFs in the ROI using fvtk:
 """
 
-r = fvtk.ren()
-fvtk.add(r, fvtk.tensor(evals1, evecs1, cfa1, sphere))
+#r = fvtk.ren()
+#fvtk.add(r, fvtk.tensor(evals1, evecs1, cfa1, sphere))
 
-print('Saving illustration as tensor_ellipsoids_wls.png')
-fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls.png',
-            size=(1200, 1200))
+#print('Saving illustration as tensor_ellipsoids_wls.png')
+#fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls.png',
+#            size=(1200, 1200))
 
 """
 .. figure:: tensor_ellipsoids_wls.png
@@ -99,7 +101,7 @@ fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls.png',
    **Tensor Ellipsoids**.
 """
 
-fvtk.clear(r)
+#fvtk.clear(r)
 
 """
 Next, we corrupt the data with some noise. To simulate a subject that moves
@@ -113,7 +115,7 @@ noisy_data = np.copy(data)
 mean_var = np.mean(np.var(data[..., gtab.b0s_mask], -1))
 
 # We will corrupt the last few volumes:
-noisy_idx = slice(-10, None)
+noisy_idx = slice(-20, None)
 
 noise_real = np.random.randn(*noisy_data[..., noisy_idx].shape) * mean_var
 noise_imag = np.random.randn(*noisy_data[..., noisy_idx].shape) * mean_var
@@ -131,12 +133,13 @@ fa2 = fit_wls_noisy.fa
 evals2 = fit_wls_noisy.evals
 evecs2 = fit_wls_noisy.evecs
 cfa2 = dti.color_fa(fa2, evecs2)
-r = fvtk.ren()
-fvtk.add(r, fvtk.tensor(evals2, evecs2, cfa2, sphere))
 
-print('Saving illustration as tensor_ellipsoids_wls_noisy.png')
-fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls_noisy.png',
-            size=(1200, 1200))
+#r = fvtk.ren()
+#fvtk.add(r, fvtk.tensor(evals2, evecs2, cfa2, sphere))
+
+#print('Saving illustration as tensor_ellipsoids_wls_noisy.png')
+#fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls_noisy.png',
+#            size=(1200, 1200))
 
 
 """
@@ -151,17 +154,19 @@ resulting ODF field will be distorted
 """
 
 dti_restore = dti.TensorModel(gtab, fit_method='RESTORE',
-                              sigma=np.sqrt(mean_var))
+                              sigma=np.sqrt(mean_var)/1000.)
+
 fit_restore_noisy = dti_restore.fit(noisy_data)
 fa3 = fit_restore_noisy.fa
 evals3 = fit_restore_noisy.evals
 evecs3 = fit_restore_noisy.evecs
 cfa3 = dti.color_fa(fa3, evecs3)
-r = fvtk.ren()
-fvtk.add(r, fvtk.tensor(evals3, evecs3, cfa3, sphere))
-print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
-fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
-            size=(1200, 1200))
+
+#r = fvtk.ren()
+#fvtk.add(r, fvtk.tensor(evals3, evecs3, cfa3, sphere))
+#print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
+#fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
+#            size=(1200, 1200))
 
 
 
@@ -171,3 +176,8 @@ fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
 .. include:: ../links_names.inc
 
 """
+
+fig, ax = plt.subplots(1)
+ax.hist(np.ravel(fa1), histtype='step')
+ax.hist(np.ravel(fa2), histtype='step')
+ax.hist(np.ravel(fa3), histtype='step')

@@ -1421,6 +1421,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         residuals = flat_data[vox] - pred_sig
         # If any of the residuals are outliers (using 3 sigma as a criterion
         # following Chang et al., e.g page 1089):
+        1/0.
         if np.any(residuals > 3 * sigma):
             # Do nlls with GMM-weighting:
             if jac:
