@@ -8,7 +8,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
-from ..odf import peak_directions
+from ..peaks import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf

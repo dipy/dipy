@@ -17,7 +17,7 @@ from ..utils.six.moves import xrange
 
 import numpy as np
 from ..reconst.interpolate import OutsideImage, NearestNeighborInterpolator
-from ..reconst.odf import default_sphere, peak_directions
+from ..reconst.peaks import default_sphere, peak_directions
 
 
 class DirectionFinder(object):
