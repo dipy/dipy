@@ -67,7 +67,7 @@ csapeaks_parallel = peaks_from_model(model=csamodel,
                                      min_separation_angle=45,
                                      mask=None,
                                      return_odf=False,
-                                     normalize_peaks=True,                                     
+                                     normalize_peaks=True,
                                      npeaks=5,
                                      parallel=True,
                                      nbr_process=2)  # default multiprocessing.cpu_count()
