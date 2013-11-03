@@ -12,7 +12,7 @@ First import the necessary modules:
 import time
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel
-from dipy.reconst.odf import peaks_from_model
+from dipy.reconst.peaks import peaks_from_model
 
 """
 Download and read the data for this tutorial.
@@ -67,8 +67,7 @@ csapeaks_parallel = peaks_from_model(model=csamodel,
                                      min_separation_angle=45,
                                      mask=None,
                                      return_odf=False,
-                                     normalize_peaks=True,
-                                     ravel_peaks=False,
+                                     normalize_peaks=True,                                     
                                      npeaks=5,
                                      parallel=True,
                                      nbr_process=2)  # default multiprocessing.cpu_count()
@@ -89,7 +88,6 @@ csapeaks = peaks_from_model(model=csamodel,
                             mask=None,
                             return_odf=False,
                             normalize_peaks=True,
-                            ravel_peaks=False,
                             npeaks=5,
                             parallel=False,
                             nbr_process=None)

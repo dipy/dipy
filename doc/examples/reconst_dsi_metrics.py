@@ -10,11 +10,9 @@ probability (rtop) [Descoteaux2011]_ and mean square displacement (msd)
 First import the necessary modules:
 """
 
-import nibabel as nib
 import numpy as np
 import matplotlib.pyplot as plt
-from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
-from dipy.data import get_data, dsi_voxels
+from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi
 from dipy.reconst.dsi import DiffusionSpectrumModel
 
 """

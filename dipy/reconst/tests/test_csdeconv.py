@@ -14,7 +14,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    odf_sh_to_sharp,
                                    auto_response)
-from dipy.reconst.odf import peak_directions
+from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel
 

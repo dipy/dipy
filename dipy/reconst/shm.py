@@ -681,3 +681,47 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     sf = np.dot(sh, B.T)
 
     return sf
+
+
+def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0):
+    """ Matrix that transforms Spherical harmonics (SH) to spherical 
+    function (SF).
+
+    Parameters
+    ----------
+    sphere : Sphere
+        The points on which to sample the spherical function.
+    sh_order : int, optional
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
+    basis_type : {None, 'mrtrix', 'fibernav'}
+        ``None`` for the default dipy basis,
+        ``mrtrix`` for the MRtrix basis, and
+        ``fibernav`` for the FiberNavigator basis
+        (default ``None``).
+    return_inv : bool
+        If True then the inverse of the matrix is also returned
+    smooth : float, optional
+        Lambda-regularization in the SH fit (default 0.0).
+    
+    Returns
+    -------
+    B : ndarray
+        Matrix that transforms spherical harmonics to spherical function
+        ``sf = np.dot(sh, B)``.
+    invB : ndarray
+        Inverse of B.
+
+    """
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+
+    if sph_harm_basis is None:
+        raise ValueError("Invalid basis name.")
+    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
+
+    if return_inv:
+        L = -n * (n + 1)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
+        return B.T, invB.T
+
+    return B.T
