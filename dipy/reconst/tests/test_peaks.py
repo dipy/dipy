@@ -4,7 +4,7 @@ from numpy.testing import (assert_array_equal, assert_array_almost_equal,
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
 
 from dipy.reconst.peaks import (peaks_from_model,
-                                peak_directions, 
+                                peak_directions,
                                 peak_directions_nl,
                                 reshape_peaks_for_visualization)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
@@ -210,12 +210,25 @@ def test_peaksFromModelParallel():
                                   normalize_peaks=True, return_odf=True,
                                   return_sh=True, parallel=False)
 
+    assert_equal(pam_multi.gfa.dtype, pam_single.gfa.dtype)
     assert_array_almost_equal(pam_multi.gfa, pam_single.gfa)
+
+    assert_equal(pam_multi.qa.dtype, pam_single.qa.dtype)
     assert_array_almost_equal(pam_multi.qa, pam_single.qa)
+
+    assert_equal(pam_multi.peak_values.dtype, pam_single.peak_values.dtype)
     assert_array_almost_equal(pam_multi.peak_values, pam_single.peak_values)
+
+    assert_equal(pam_multi.peak_indices.dtype, pam_single.peak_indices.dtype)
     assert_array_equal(pam_multi.peak_indices, pam_single.peak_indices)
+
+    assert_equal(pam_multi.peak_dirs.dtype, pam_single.peak_dirs.dtype)
     assert_array_almost_equal(pam_multi.peak_dirs, pam_single.peak_dirs)
+
+    assert_equal(pam_multi.shm_coeff.dtype, pam_single.shm_coeff.dtype)
     assert_array_almost_equal(pam_multi.shm_coeff, pam_single.shm_coeff)
+
+    assert_equal(pam_multi.odf.dtype, pam_single.odf.dtype)
     assert_array_almost_equal(pam_multi.odf, pam_single.odf)
 
 
@@ -246,7 +259,7 @@ def test_peaks_shm_coeff():
 
     pam = peaks_from_model(model, data[None, :], sphere, .5, 45,
                            return_odf=True, return_sh=True)
-    # Test that spherical harmonic coefficients return back correctly    
+    # Test that spherical harmonic coefficients return back correctly
     odf2 = np.dot(pam.shm_coeff, pam.B)
     assert_array_almost_equal(pam.odf, odf2)
     assert_equal(pam.shm_coeff.shape[-1], 45)

@@ -136,7 +136,7 @@ csd_peaks = peaks_from_model(model=csd_model,
                              mask=mask,
                              return_sh=True,
                              return_odf=False,
-                             normalize_peaks=True,                             
+                             normalize_peaks=True,
                              npeaks=5,
                              parallel=False,
                              nbr_process=None)
