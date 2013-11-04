@@ -140,11 +140,11 @@ class PeaksAndMetrics(object):
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks,
-                               sh_order, sh_basis_type, npeaks, B, invB, nbr_process):
+                               sh_order, sh_basis_type, npeaks, B, invB, nbr_processes):
 
-    if nbr_process is None:
+    if nbr_processes is None:
         try:
-            nbr_process = cpu_count()
+            nbr_processes = cpu_count()
         except NotImplementedError:
             warn("Cannot determine number of cpus. \
                  returns peaks_from_model(..., paralle=False).")
@@ -160,7 +160,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
     data = np.reshape(data, (-1, shape[-1]))
     n = data.shape[0]
-    nbr_chunks = nbr_process ** 2
+    nbr_chunks = nbr_processes ** 2
     chunk_size = int(np.ceil(n / nbr_chunks))
     indices = zip(np.arange(0, n, chunk_size),
                   np.arange(0, n, chunk_size) + chunk_size)
@@ -177,7 +177,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         else:
             mask_file_name = None
 
-        pool = Pool(nbr_process)
+        pool = Pool(nbr_processes)
 
         pam_res = pool.map(_peaks_from_model_parallel_sub,
                            zip(repeat((data_file_name, mask_file_name)),
@@ -311,14 +311,14 @@ def _peaks_from_model_parallel_sub(args):
                             min_separation_angle, mask, return_odf,
                             return_sh, gfa_thr, normalize_peaks,
                             sh_order, sh_basis_type, npeaks, B, invB,
-                            parallel=False, nbr_process=None)
+                            parallel=False, nbr_processes=None)
 
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
                      sh_order=8, sh_basis_type=None, npeaks=5, B=None, invB=None,
-                     parallel=False, nbr_process=None):
+                     parallel=False, nbr_processes=None):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -363,8 +363,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     parallel: bool
         If True, use multiprocessing to compute peaks and metric
         (default False).
-    nbr_process: int
-        If `parallel == True`, the number of subprocess to use
+    nbr_processes: int
+        If `parallel == True`, the number of subprocesses to use
         (default multiprocessing.cpu_count()).
 
     Returns
@@ -392,7 +392,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           npeaks,
                                           B,
                                           invB,
-                                          nbr_process)
+                                          nbr_processes)
 
     shape = data.shape[:-1]
     if mask is None:
@@ -539,4 +539,3 @@ def reshape_peaks_for_visualization(peaks):
         peaks = peaks.peak_dirs
 
     return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
-('float32')

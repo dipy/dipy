@@ -70,10 +70,10 @@ csapeaks_parallel = peaks_from_model(model=csamodel,
                                      normalize_peaks=True,
                                      npeaks=5,
                                      parallel=True,
-                                     nbr_process=2)  # default multiprocessing.cpu_count()
+                                     nbr_processes=2)  # default multiprocessing.cpu_count()
 
 time_parallel = time.time() - start_time
-print("peaks_from_model using 2 process ran in : " +
+print("peaks_from_model using 2 processes ran in : " +
       str(time_parallel) + " seconds")
 """
 peaks_from_model using 2 process ran in  : 114.333221912 seconds, using 2 process
@@ -90,7 +90,7 @@ csapeaks = peaks_from_model(model=csamodel,
                             normalize_peaks=True,
                             npeaks=5,
                             parallel=False,
-                            nbr_process=None)
+                            nbr_processes=None)
 
 time_single = time.time() - start_time
 print("peaks_from_model ran in : " + str(time_single) + " seconds")
