@@ -140,11 +140,11 @@ class PeaksAndMetrics(object):
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
                                return_sh, gfa_thr, normalize_peaks,
-                               sh_order, sh_basis_type, npeaks, nbr_process):
+                               sh_order, sh_basis_type, npeaks, B, invB, nbr_processes):
 
-    if nbr_process is None:
+    if nbr_processes is None:
         try:
-            nbr_process = cpu_count()
+            nbr_processes = cpu_count()
         except NotImplementedError:
             warn("Cannot determine number of cpus. \
                  returns peaks_from_model(..., paralle=False).")
@@ -160,7 +160,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
     data = np.reshape(data, (-1, shape[-1]))
     n = data.shape[0]
-    nbr_chunks = nbr_process ** 2
+    nbr_chunks = nbr_processes ** 2
     chunk_size = int(np.ceil(n / nbr_chunks))
     indices = zip(np.arange(0, n, chunk_size),
                   np.arange(0, n, chunk_size) + chunk_size)
@@ -177,7 +177,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         else:
             mask_file_name = None
 
-        pool = Pool(nbr_process)
+        pool = Pool(nbr_processes)
 
         pam_res = pool.map(_peaks_from_model_parallel_sub,
                            zip(repeat((data_file_name, mask_file_name)),
@@ -192,7 +192,9 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                repeat(normalize_peaks),
                                repeat(sh_order),
                                repeat(sh_basis_type),
-                               repeat(npeaks)))
+                               repeat(npeaks),
+                               repeat(B),
+                               repeat(invB)))
         pool.close()
 
         pam = PeaksAndMetrics()
@@ -296,6 +298,8 @@ def _peaks_from_model_parallel_sub(args):
     sh_order = args[10]
     sh_basis_type = args[11]
     npeaks = args[12]
+    B = args[13]
+    invB = args[14]
 
     data = np.load(data_file_name, mmap_mode='r')[i_start:i_end]
     if mask_file_name is not None:
@@ -306,15 +310,15 @@ def _peaks_from_model_parallel_sub(args):
     return peaks_from_model(model, data, sphere, relative_peak_threshold,
                             min_separation_angle, mask, return_odf,
                             return_sh, gfa_thr, normalize_peaks,
-                            sh_order, sh_basis_type, npeaks,
-                            parallel=False, nbr_process=None)
+                            sh_order, sh_basis_type, npeaks, B, invB,
+                            parallel=False, nbr_processes=None)
 
 
 def peaks_from_model(model, data, sphere, relative_peak_threshold,
                      min_separation_angle, mask=None, return_odf=False,
                      return_sh=True, gfa_thr=0, normalize_peaks=False,
-                     sh_order=8, sh_basis_type=None, npeaks=5,
-                     parallel=False, nbr_process=None):
+                     sh_order=8, sh_basis_type=None, npeaks=5, B=None, invB=None,
+                     parallel=False, nbr_processes=None):
     """Fits the model to data and computes peaks and metrics
 
     Parameters
@@ -351,11 +355,16 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         Lambda-regularization in the SH fit (default 0.0).
     npeaks : int
         Maximum number of peaks found (default 5 peaks).
+    B : ndarray, optional
+        Matrix that transforms spherical harmonics to spherical function
+        ``sf = np.dot(sh, B)``.
+    invB : ndarray, optional
+        Inverse of B.
     parallel: bool
         If True, use multiprocessing to compute peaks and metric
         (default False).
-    nbr_process: int
-        If `parallel == True`, the number of subprocess to use
+    nbr_processes: int
+        If `parallel == True`, the number of subprocesses to use
         (default multiprocessing.cpu_count()).
 
     Returns
@@ -364,6 +373,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         An object with ``gfa``, ``peak_directions``, ``peak_values``,
         ``peak_indices``, ``odf``, ``shm_coeffs`` as attributes
     """
+
+    if return_sh and (B is None or invB is None):
+        B, invB = sh_to_sf_matrix(
+            sphere, sh_order, sh_basis_type, return_inv=True)
 
     if parallel:
         return _peaks_from_model_parallel(model,
@@ -377,7 +390,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                           sh_order,
                                           sh_basis_type,
                                           npeaks,
-                                          nbr_process)
+                                          B,
+                                          invB,
+                                          nbr_processes)
 
     shape = data.shape[:-1]
     if mask is None:
@@ -386,7 +401,6 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         if mask.shape != shape:
             raise ValueError("Mask is not the same shape as data.")
 
-    # sh_smooth = 0
     gfa_array = np.zeros(shape)
     qa_array = np.zeros((shape + (npeaks,)))
 
@@ -396,21 +410,8 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     peak_indices.fill(-1)
 
     if return_sh:
-
-        B, invB = sh_to_sf_matrix(
-            sphere, sh_order, sh_basis_type, return_inv=True)
-        # import here to avoid circular imports
-        # from dipy.reconst.shm import sph_harm_lookup, smooth_pinv
-
-        # sph_harm_basis = sph_harm_lookup.get(sh_basis_type)
-        # if sph_harm_basis is None:
-        #     raise ValueError("Invalid basis name.")
-        # B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
-        # L = -n * (n + 1)
-        # invB = smooth_pinv(B, np.sqrt(sh_smooth) * L)
         n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
         shm_coeff = np.zeros((shape + (n_shm_coeff,)))
-        # invB = invB.T
 
     if return_odf:
         odf_array = np.zeros((shape + (len(sphere.vertices),)))
@@ -538,4 +539,3 @@ def reshape_peaks_for_visualization(peaks):
         peaks = peaks.peak_dirs
 
     return peaks.reshape(np.append(peaks.shape[:-2], -1)).astype('float32')
-('float32')
