@@ -270,6 +270,10 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         if return_odf:
             pam.odf = np.array(pam.odf)
 
+        # Make sure all worker processes have exited before leaving context
+        # manager in order to prevent temporary file deletion errors in windows
+        pool.join()
+
     # reshape the metric to the original shape
     pam.peak_dirs = np.reshape(pam.peak_dirs, shape[:-1] + [npeaks, 3])
     pam.peak_values = np.reshape(pam.peak_values, shape[:-1] + [npeaks])
