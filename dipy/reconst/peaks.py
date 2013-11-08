@@ -252,7 +252,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
         # load memmaps to arrays and reshape the metric
         shape[-1] = -1
-        pam.gfa = np.reshape(np.array(pam.gfa), shape[:])
+        pam.gfa = np.reshape(np.array(pam.gfa), shape[:-1])
         pam.peak_dirs = np.reshape(np.array(pam.peak_dirs), shape[:] + [3])
         pam.peak_values = np.reshape(np.array(pam.peak_values), shape[:])
         pam.peak_indices = np.reshape(np.array(pam.peak_indices), shape[:])
