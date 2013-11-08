@@ -160,8 +160,8 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
     n = data.shape[0]
     nbr_chunks = nbr_processes ** 2
     chunk_size = int(np.ceil(n / nbr_chunks))
-    indices = zip(np.arange(0, n, chunk_size),
-                  np.arange(0, n, chunk_size) + chunk_size)
+    indices = list(zip(np.arange(0, n, chunk_size),
+                       np.arange(0, n, chunk_size) + chunk_size))
 
     with InTemporaryDirectory() as tmpdir:
 
@@ -195,7 +195,6 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         pool.close()
 
         pam = PeaksAndMetrics()
-
         # use memmap to reduce the memory usage
         pam.gfa = np.memmap(path.join(tmpdir, 'gfa.npy'),
                             dtype=pam_res[0].gfa.dtype,
@@ -236,6 +235,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         else:
             pam.odf = None
 
+        print(indices)
         # copy subprocesses pam to a single pam (memmaps)
         for i, (start_pos, end_pos) in enumerate(indices):
             pam.gfa[start_pos: end_pos] = pam_res[i].gfa[:]
@@ -252,7 +252,8 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
         # load memmaps to arrays and reshape the metric
         shape[-1] = -1
-        pam.gfa = np.reshape(np.array(pam.gfa), shape[:-1])
+        pam.gfa = np.array(pam.gfa)
+        pam.gfa = np.reshape(pam.gfa, shape[:-1])
         pam.peak_dirs = np.reshape(np.array(pam.peak_dirs), shape[:] + [3])
         pam.peak_values = np.reshape(np.array(pam.peak_values), shape[:])
         pam.peak_indices = np.reshape(np.array(pam.peak_indices), shape[:])
