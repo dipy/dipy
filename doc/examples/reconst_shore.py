@@ -84,7 +84,7 @@ Display the ODFs
 r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(odf, sphere, colormap='jet'))
 fvtk.show(r)
-
+fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
 """
 .. include:: ../links_names.inc
 
