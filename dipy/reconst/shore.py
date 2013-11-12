@@ -201,7 +201,8 @@ class ShoreFit():
             eap[qx, qy, qz] += propagator[i]
         # normalize by the area of the propagator
         eap = eap * (2 * radius_max / (gridsize - 1)) ** 3
-        return eap
+
+        return np.clip(eap, 0, eap.max())
 
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of r-points.
@@ -382,8 +383,7 @@ def SHOREmatrix_pdf(radial_order, zeta, rtab):
         r-space points in which calculates the pdf
     """
 
-    r, theta, phi = cart2sphere(
-        rtab[:, 0], rtab[:, 1], rtab[:, 2])
+    r, theta, phi = cart2sphere(rtab[:, 0], rtab[:, 1], rtab[:, 2])
     theta[np.isnan(theta)] = 0
 
     psi = np.zeros(
