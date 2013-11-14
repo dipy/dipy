@@ -8,11 +8,12 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
 from dipy.sims.voxel import single_tensor
-from ..peaks import peak_directions
+from dipy.reconst.peaks import peak_directions
 from dipy.reconst.shm import sf_to_sh, sh_to_sf
 from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.sims.voxel import multi_tensor_odf
 from dipy.data import mrtrix_spherical_functions
+from dipy.reconst import odf
 
 
 from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
@@ -20,7 +21,7 @@ from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
-                              OpdtModel, CsaOdfModel, QballModel, SphHarmFit)
+                              CsaOdfModel, QballModel, SphHarmFit)
 
 
 def test_sph_harm_ind_list():
@@ -236,6 +237,16 @@ class TestQballModel(object):
         model = self.model(gtab, sh_order=6, min_signal=1e-5)
         assert_equal(model.B.shape[1], 28)
         assert_equal(max(model.n), 6)
+
+    def test_gfa(self):
+        signal, gtab, expected = make_fake_signal()
+        signal = np.ones((2, 3, 4, 1)) * signal
+        sphere = hemi_icosahedron.subdivide(3)
+        model = self.model(gtab, 6, min_signal=1e-5)
+        fit = model.fit(signal)
+        gfa_shm = fit.gfa
+        gfa_odf = odf.gfa(fit.odf(sphere))
+        assert_array_almost_equal(gfa_shm, gfa_odf, 3)
 
 
 def test_SphHarmFit():
