@@ -363,7 +363,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             sphere, sh_order, sh_basis_type, return_inv=True)
 
     if parallel:
-        # It is mandatory to provides B and invB to the parallel function.
+        # It is mandatory to provide B and invB to the parallel function.
         # Otherwise, a call to np.linalg.pinv is made in a subprocess and
         # makes it timeout on some system.
         # see https://github.com/nipy/dipy/issues/253 for details
