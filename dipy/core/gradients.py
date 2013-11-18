@@ -47,6 +47,8 @@ class GradientTable(object):
         if gradients.ndim != 2 or gradients.shape[1] != 3:
             raise ValueError("gradients should be an (N, 3) array")
         self.gradients = gradients
+        # Avoid nan gradients. Set these to 0 instead:
+        self.gradients[np.isnan(gradients)] = 0.
         self.big_delta = big_delta
         self.small_delta = small_delta
         self.b0_threshold = b0_threshold

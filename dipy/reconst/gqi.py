@@ -67,9 +67,6 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
         # tau included in the b-value
         scaling = np.sqrt(self.gtab.bvals * 0.01506)
         tmp = np.tile(scaling, (3, 1))
-        #the b vectors might have nan values where they correspond to b
-        #value equals with 0
-        self.gtab.bvecs[np.isnan(self.gtab.bvecs)] = 0.
         gradsT = self.gtab.bvecs.T
         b_vector = gradsT * tmp # element-wise product
         self.b_vector = b_vector.T
