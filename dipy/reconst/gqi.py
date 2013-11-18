@@ -5,10 +5,9 @@ from .cache import Cache
 import warnings
 from .multi_voxel import multi_voxel_fit
 from .recspeed import local_maxima, remove_similar_vertices
-from .base import ReconstModel, ReconstFit
 
 
-class GeneralizedQSamplingModel(ReconstModel, OdfModel, Cache):
+class GeneralizedQSamplingModel(OdfModel, Cache):
     def __init__(self,
                  gtab,
                  method='gqi2',
@@ -59,7 +58,7 @@ class GeneralizedQSamplingModel(ReconstModel, OdfModel, Cache):
         dipy.reconst.gqi.DiffusionSpectrumModel
 
         """
-        ReconstModel.__init__(self, gtab)
+        OdfModel.__init__(self, gtab)
         self.method = method
         self.Lambda = sampling_length
         self.normalize_peaks = normalize_peaks
@@ -80,7 +79,7 @@ class GeneralizedQSamplingModel(ReconstModel, OdfModel, Cache):
         return GeneralizedQSamplingFit(self, data)
 
 
-class GeneralizedQSamplingFit(ReconstFit, OdfFit):
+class GeneralizedQSamplingFit(OdfFit):
 
     def __init__(self, model, data):
         """ Calculates PDF and ODF for a single voxel
@@ -93,7 +92,7 @@ class GeneralizedQSamplingFit(ReconstFit, OdfFit):
             signal values
 
         """
-        ReconstFit.__init__(self, model, data)
+        OdfFit.__init__(self, model, data)
         self._gfa = None
         self.npeaks = 5
         self._peak_values = None
