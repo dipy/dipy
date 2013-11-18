@@ -6,7 +6,6 @@ import dipy.io.pickles as pkl
 
 import numpy as np
 import scipy.io as sio
-import matplotlib.cm as cm
 
 from nibabel import trackvis
 import dipy.segment.quickbundles as qb
@@ -14,7 +13,7 @@ import dipy.segment.quickbundles as qb
 parser = arg.ArgumentParser(description='Segment a fiber-group into clusters using the QuickBundles algorithm (Garyfallidis et al. 2012)')
 
 parser.add_argument('in_file', action='store', metavar='File', 
-                    help='Vistasoft fiber-group file (.mat) or Trackvis fiber file (.trk)')
+                    help='Trackvis fiber file (.trk) or Vistasoft fiber-group file (.mat)')
 
 parser.add_argument('--dist_thr', action='store', metavar='Float',
                     help='Distance threshold (default: 30.)', default=30.)
@@ -87,10 +86,8 @@ if __name__ == "__main__":
         bundles, clusters, centroids = gimme_clusters(streamlines,
                                                       np.float(params.dist_thr),
                                                       np.int(params.pts))
-        # We will give each cluster a different color:
-        cmap = cm.get_cmap('jet', len(clusters)) 
-        cmap_arr = cmap(np.arange(len(clusters)))[:, :3]  # We don't need alpha
-
+        # We will give each cluster a different random RGB color:
+        cmap_arr = np.random.rand(len(clusters), 3)
         # We prepare a struct array to assign into with the original dtype:
         dt = [('name', 'O'),
               ('colorRgb', 'O'),
