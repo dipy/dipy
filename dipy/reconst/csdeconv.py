@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 import warnings
 import numpy as np
+from scipy.integrate import quad
 from dipy.reconst.odf import OdfModel
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -99,9 +100,9 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
                 S_r = estimate_response(gtab, response[0], response[1])
 
         r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
-        r_rh = sh_to_rh(r_sh, sh_order)
+        r_rh = sh_to_rh(r_sh, m, n)
 
-        self.R = forward_sdeconv_mat(r_rh, sh_order)
+        self.R = forward_sdeconv_mat(r_rh, n)
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
@@ -181,7 +182,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
         r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
-        self.R, self.P = forward_sdt_deconv_mat(ratio, sh_order)
+        self.R, self.P = forward_sdt_deconv_mat(ratio, n)
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
@@ -198,7 +199,8 @@ class ConstrainedSDTModel(OdfModel, Cache):
         Z = np.linalg.norm(qball_odf)
         # normalize ODF
         odf_sh /= Z
-        shm_coeff, num_it = odf_deconv(odf_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
+        shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
+                                       self.lambda_, self.tau)
         # print 'SDT CSD converged after %d iterations' % num_it
         return SphHarmFit(self, shm_coeff, None)
 
@@ -225,7 +227,7 @@ def estimate_response(gtab, evals, S0):
     return single_tensor(gtab, S0, evals, evecs, snr=None)
 
 
-def sh_to_rh(r_sh, sh_order):
+def sh_to_rh(r_sh, m, n):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
 
     Calculate the rotational harmonic decomposition up to
@@ -236,128 +238,132 @@ def sh_to_rh(r_sh, sh_order):
 
     Parameters
     ----------
-    r_sh : ndarray (``sh_order/2 + 1``,)
-        ndarray of SH coefficients for the single fiber response function
-    sh_order : int
-        maximal SH order of the SH representation
+    r_sh : ndarray (N,)
+        ndarray of SH coefficients for the single fiber response function.
+        These coefficients must correspond to the real spherical harmonic
+        functions produced by `shm.real_sph_harm`.
+    m : ndarray (N,)
+        The order of the spherical harmonic function associated with each
+        coefficient.
+    n : ndarray (N,)
+        The degree of the spherical harmonic function associated with each
+        coefficient.
 
     Returns
     -------
     r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
         Rotational harmonics coefficients representing the input `r_sh`
- 
+
+    See Also
+    --------
+    shm.real_sph_harm, shm.real_sym_sh_basis
+
     References
     ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the fibre orientation
-           distribution in diffusion MRI: Non-negativity constrained super-resolved spherical
-           deconvolution
+    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
+        fibre orientation distribution in diffusion MRI: Non-negativity
+        constrained super-resolved spherical deconvolution
+
     """
-
-    dirac_sh = gen_dirac(0, 0, sh_order)
-    k, = np.nonzero(dirac_sh)
-    r_rh = r_sh[k] / dirac_sh[k]
-
+    mask = m == 0
+    # The delta function at theta = phi = 0 is known to have zero coefficients
+    # where m != 0, therefore we need only compute the coefficients at m=0.
+    dirac_sh = gen_dirac(0, n[mask], 0, 0)
+    r_rh = r_sh[mask] / dirac_sh
     return r_rh
 
 
-def gen_dirac(pol, azi, sh_order):
-    """ Generate Dirac delta function orientated in (theta, phi) = (azi, pol)
-    on the sphere. The spherical harmonics (SH) representation of this Dirac is
-    returned. 
+def gen_dirac(m, n, theta, phi):
+    """ Generate Dirac delta function orientated in (theta, phi) on the sphere
+
+    The spherical harmonics (SH) representation of this Dirac is returned as
+    coefficients to spherical harmonic functions produced by
+    `shm.real_sph_harm`.
 
     Parameters
     ----------
-    pol : float [0, pi]
-        The polar (colatitudinal) coordinate (phi)
-    az : float [0, 2*pi]
-        The azimuthal (longitudinal) coordinate (theta)
-    sh_order : int
-        maximal SH order of the SH representation
+    m : ndarray (N,)
+        The order of the spherical harmonic function associated with each
+        coefficient.
+    n : ndarray (N,)
+        The degree of the spherical harmonic function associated with each
+        coefficient.
+    theta : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+    phi : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    See Also
+    --------
+    shm.real_sph_harm, shm.real_sym_sh_basis
 
     Returns
     -------
-    dirac : ndarray (``(sh_order + 1)(sh_order + 2)/2``,)
+    dirac : ndarray
         SH coefficients representing the Dirac function
+
     """
-    m, n = sph_harm_ind_list(sh_order)
-    dirac = np.zeros(m.shape)
-    i = 0
-    for l in np.arange(0, sh_order + 1, 2):
-        for m in np.arange(-l, l + 1):
-            if m == 0:
-                dirac[i] = real_sph_harm(0, l, azi, pol)
-
-            i = i + 1
-
-    return dirac
+    return real_sph_harm(m, n, theta, phi)
 
 
-def forward_sdeconv_mat(r_rh, sh_order):
+def forward_sdeconv_mat(r_rh, n):
     """ Build forward spherical deconvolution matrix
 
     Parameters
     ----------
-    r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
-        ndarray of rotational harmonics coefficients for the single
-        fiber response function
-    sh_order : int
-        maximal SH order
+    r_rh : ndarray
+        ndarray of rotational harmonics coefficients for the single fiber
+        response function. Each element `rh[i]` is associated with spherical
+        harmonics of degree `2*i`.
+    n : ndarray
+        The degree of spherical harmonic function associated with each row of
+        the deconvolution matrix. Only even degrees are allowed
 
     Returns
     -------
-    R : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
+    R : ndarray (N, N)
+        Deconvolution matrix with shape (N, N)
 
     """
-
-    m, n = sph_harm_ind_list(sh_order)
-
-    b = np.zeros(m.shape)
-    i = 0
-    for l in np.arange(0, sh_order + 1, 2):
-        for m in np.arange(-l, l + 1):
-            b[i] = r_rh[l / 2]
-            i = i + 1
-    return np.diag(b)
+    if np.any(n % 2):
+        raise ValueError("n has odd degrees, expecting only even degrees")
+    return np.diag(r_rh[n // 2])
 
 
-def forward_sdt_deconv_mat(ratio, sh_order):
+def forward_sdt_deconv_mat(ratio, n):
     """ Build forward sharpening deconvolution transform (SDT) matrix
 
     Parameters
     ----------
     ratio : float
         ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response function
-    sh_order : int
-        spherical harmonic order
+    n : ndarray (N,)
+        The degree of spherical harmonic function associated with each row of
+        the deconvolution matrix. Only even degrees are allowed.
 
     Returns
     -------
-    R : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
+    R : ndarray (N, N)
         SDT deconvolution matrix
-    P : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
+    P : ndarray (N, N)
         Funk-Radon Transform (FRT) matrix
+
     """
-    m, n = sph_harm_ind_list(sh_order)
+    if np.any(n % 2):
+        raise ValueError("n has odd degrees, expecting only even degrees")
+    n_degrees = n.max() // 2 + 1
+    sdt = np.zeros(n_degrees) # SDT matrix
+    frt = np.zeros(n_degrees) # FRT (Funk-Radon transform) q-ball matrix
 
-    sdt = np.zeros(m.shape) # SDT matrix
-    frt = np.zeros(m.shape) # FRT (Funk-Radon transform) q-ball matrix
-    b = np.zeros(m.shape)
-    bb = np.zeros(m.shape)
-
-    for l in np.arange(0, sh_order + 1, 2):
-        from scipy.integrate import quad
+    for l in np.arange(0, n_degrees*2, 2):
         sharp = quad(lambda z: lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
 
         sdt[l / 2] = sharp[0]
         frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
 
-    i = 0
-    for l in np.arange(0, sh_order + 1, 2):
-        for m in np.arange(-l, l + 1):
-            b[i] = sdt[l / 2]
-            bb[i] = frt[l / 2]
-            i = i + 1
-
+    idx = n // 2
+    b = sdt[idx]
+    bb = frt[idx]
     return np.diag(b), np.diag(bb)
 
 
@@ -441,7 +447,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     return fodf_sh, num_it
 
 
-def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
+def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1):
     r""" ODF constrained-regularized sherical deconvolution using
     the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
 
@@ -449,8 +455,6 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     ----------
     odf_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
          ndarray of SH coefficients for the ODF spherical function to be deconvolved
-    sh_order : int
-         maximal SH order of the SH representation
     R : ndarray (``(sh_order + 1)(sh_order + 2)/2``, ``(sh_order + 1)(sh_order + 2)/2``)
          SDT matrix in SH basis
     B_reg : ndarray (``(sh_order + 1)(sh_order + 2)/2``, ``(sh_order + 1)(sh_order + 2)/2``)
@@ -473,9 +477,8 @@ def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
            on Complex Fibre Orientation Distributions
     .. [2] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
-    """
-    m, n = sph_harm_ind_list(sh_order)
 
+    """
     # Generate initial fODF estimate, which is the ODF truncated at SH order 4
     fodf_sh = np.linalg.lstsq(R, odf_sh)[0]
     fodf_sh[15:] = 0
@@ -547,15 +550,12 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     ----------
     .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
            on Complex Fibre Orientation Distributions
+
     """
-    m, n = sph_harm_ind_list(sh_order)
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
-
     real_sym_sh = sph_harm_lookup[basis]
-
-    B_reg, m, n = real_sym_sh(sh_order, theta[:, None], phi[:, None])
-    
-    R, P = forward_sdt_deconv_mat(ratio, sh_order)
+    B_reg, m, n = real_sym_sh(sh_order, theta, phi)
+    R, P = forward_sdt_deconv_mat(ratio, n)
 
     # scale lambda to account for differences in the number of
     # SH coefficients and number of mapped directions
@@ -565,7 +565,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
     for index in ndindex(odfs_sh.shape[:-1]):
 
-        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_reg, lambda_=lambda_, tau=tau)
+        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], R, B_reg, lambda_=lambda_, tau=tau)
 
     return fodf_sh
 

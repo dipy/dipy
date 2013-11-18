@@ -1,5 +1,6 @@
 import warnings
 import numpy as np
+import numpy.testing as npt
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            assert_array_almost_equal,
@@ -12,11 +13,12 @@ from dipy.sims.voxel import (multi_tensor,
 from dipy.core.gradients import gradient_table
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
+                                   forward_sdeconv_mat,
                                    odf_sh_to_sharp,
                                    auto_response)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel
+from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel, sph_harm_ind_list
 
 
 def test_csdeconv():
@@ -178,6 +180,25 @@ def test_odf_sh_to_sharp():
     directions2, _, _ = peak_directions(fodf[0, 0, 0], sphere)
 
     assert_equal(directions2.shape[0], 2)
+
+
+def test_forward_sdeconv_mat():
+    m, n = sph_harm_ind_list(4)
+    mat = forward_sdeconv_mat(np.array([0, 2, 4]), n)
+    expected = np.diag([0, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4])
+    npt.assert_array_equal(mat, expected)
+
+    sh_order = 8
+    expected_size = (sh_order + 1) * (sh_order + 2) / 2
+    r_rh = np.arange(0, sh_order + 1, 2)
+    m, n = sph_harm_ind_list(sh_order)
+    mat = forward_sdeconv_mat(r_rh, n)
+    npt.assert_equal(mat.shape, (expected_size, expected_size))
+    npt.assert_array_equal(mat.diagonal(), n)
+
+    # Odd spherical harmonic degrees should raise a ValueError
+    n[2] = 3
+    npt.assert_raises(ValueError, forward_sdeconv_mat, r_rh, n)
 
 
 if __name__ == '__main__':
