@@ -1642,14 +1642,6 @@ def design_matrix(gtab, dtype=None):
     B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1. * gtab.bvals   # Bzz
     B[:, 6] = np.ones(gtab.gradients.shape[0])
 
-    ## B = np.zeros((gtab.gradients.shape[0], 7))
-    ## B[:, 0] = gtab.gradients[:, 0] **2       # Bxx
-    ## B[:, 1] = gtab.gradients[:, 0] * gtab.gradients[:, 1] * 2.  # Bxy
-    ## B[:, 2] = gtab.gradients[:, 1] **2        # Byy
-    ## B[:, 3] = gtab.gradients[:, 0] * gtab.gradients[:, 2] * 2.  # Bxz
-    ## B[:, 4] = gtab.gradients[:, 1] * gtab.gradients[:, 2] * 2.  # Byz
-    ## B[:, 5] = gtab.gradients[:, 2] **2        # Bzz
-    ## B[:, 6] = np.ones(gtab.gradients.shape[0])
     return -B
 
 
