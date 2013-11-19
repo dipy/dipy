@@ -74,15 +74,17 @@ except ImportError:
     ravel_multi_index = _rmi
 
 
-def _choose_best_affine(affine, voxel_size):
-    """ Gets the best mapping from either affine or voxel_size
+def _mapping_to_voxel(affine, voxel_size):
+    """ Returns the best nearest neighbor mapping from real world coordinates
+    to voxel indices based on available information.
 
     Parameters
     ----------
     affine : array_like (4, 4)
-        The mapping to use, can be None
+        The mapping from voxel indices, [i, j, k], to real world coordinates.
+        The inverse of this mapping is used unless `affine` is None.
     voxel_size : array_like (3,)
-        If the affine is not None, `voxel_size` is ignored, otherwise the
+        If `affine` is not None, `voxel_size` is ignored, otherwise the
         the mapping is assumed to be in trk space. IE the corners of the image
         are ``[0, 0, 0]`` and ``voxel_size * dim``.
 
@@ -91,8 +93,8 @@ def _choose_best_affine(affine, voxel_size):
 
     Return
     ------
-    rot : array (3, 3)
-        Transpose of the rotational part of the mapping. (ie ``affine[:3, :3].T``)
+    lin : array (3, 3)
+        Transpose of the linear part of the mapping. (ie ``affine[:3, :3].T``)
     offset : array or scaler
         Offset part of the mapping. (ie, ``affine[:3, 3]``)
 
@@ -104,21 +106,21 @@ def _choose_best_affine(affine, voxel_size):
     if affine is not None:
         affine = np.array(affine, dtype=float)
         inv_affine = np.linalg.inv(affine)
-        rot = inv_affine[:-1, :-1].T
+        lin = inv_affine[:-1, :-1].T
         offset = inv_affine[:-1, -1] + .5
     elif voxel_size is not None:
         voxel_size = np.asarray(voxel_size, dtype=float)
-        rot = np.diag(1. / voxel_size)
+        lin = np.diag(1. / voxel_size)
         offset = 0.
     else:
-        rot = np.eye(3)
+        lin = np.eye(3)
         offset = .5
-    return rot, offset
+    return lin, offset
 
 
-def _to_voxel_coordinates(streamline, rot, offset):
+def _to_voxel_coordinates(streamline, lin, offset):
     """Applies a mapping from streamline coordinates to voxel_coordinates"""
-    inds = np.dot(streamline, rot)
+    inds = np.dot(streamline, lin)
     inds += offset
     if inds.min() < 0:
         raise IndexError('streamline has points that map to negative voxel'
@@ -168,10 +170,10 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
-    rot, offset = _choose_best_affine(affine, voxel_size)
+    lin, offset = _choose_best_affine(affine, voxel_size)
     counts = zeros(vol_dims, 'int')
     for sl in streamlines:
-        inds = _to_voxel_coordinates(sl, rot, offset)
+        inds = _to_voxel_coordinates(sl, lin, offset)
         i, j, k = inds.T
         #this takes advantage of the fact that numpy's += operator only acts
         #once even if there are repeats in inds
@@ -237,8 +239,8 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     endpoints = [sl[0::len(sl)-1] for sl in streamlines]
 
     # Map the streamlines coordinates to voxel coordinates
-    rot, offset = _choose_best_affine(affine, voxel_size)
-    endpoints = _to_voxel_coordinates(endpoints, rot, offset)
+    lin, offset = _choose_best_affine(affine, voxel_size)
+    endpoints = _to_voxel_coordinates(endpoints, lin, offset)
 
     #get labels for label_volume
     i, j, k = endpoints.T
@@ -389,12 +391,12 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     True
 
     """
-    rot, offset = _choose_best_affine(affine, voxel_size)
+    lin, offset = _choose_best_affine(affine, voxel_size)
     mapping = defaultdict(list)
     if mapping_as_streamlines:
         streamlines = list(streamlines)
     for i, sl in enumerate(streamlines):
-        voxel_indices = _to_voxel_coordinates(sl, rot, offset)
+        voxel_indices = _to_voxel_coordinates(sl, lin, offset)
         uniq_points = set(tuple(point) for point in voxel_indices)
         for point in uniq_points:
             mapping[point].append(i)
@@ -528,7 +530,8 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
     seeds *= voxel_size
     return seeds
 
-def target(streamlines, target_mask, voxel_size, affine=None):
+
+def target(streamlines, target_mask, voxel_size=None, affine=None):
     """Retain tracks that pass though target_mask
 
     This function loops over the streamlines and returns streamlines that pass
@@ -560,15 +563,15 @@ def target(streamlines, target_mask, voxel_size, affine=None):
 
     """
     ones = np.ones(3.)
-    rot, offset = _choose_best_affine(affine, voxel_size)
+    lin, offset = _choose_best_affine(affine, voxel_size)
     for sl in streamlines:
-        ind = _to_voxel_coordinates(sl, rot, affine)
+        ind = _to_voxel_coordinates(sl, lin, offset)
         i, j, k = ind.T
         try:
             state = target_mask[i, j, k]
         except IndexError:
             volume_size = tuple(voxel_size * target_mask.shape)
-            raise IndexError('streamline has values greater than the size of ' +
+            raise IndexError('streamline has values greater than the size of '
                              'the target mask, ' + str(volume_size))
         if state.any():
             yield sl
