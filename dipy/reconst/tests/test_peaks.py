@@ -10,8 +10,8 @@ from dipy.reconst.peaks import (peaks_from_model,
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor
-from dipy.data import get_data, get_sphere
-from dipy.core.gradients import gradient_table
+from dipy.data import get_data
+from dipy.core.gradients import gradient_table, GradientTable
 from nose.tools import assert_equal, assert_true
 
 
@@ -68,15 +68,17 @@ def test_peak_directions_nl():
     assert_equal(directions.shape, (1, 3))
     assert_almost_equal(values, 3 * 3 / np.sqrt(3))
 
+
 _sphere = create_unit_hemisphere(4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
+_gtab = GradientTable(np.ones((64, 3)))
 
 
 class SimpleOdfModel(OdfModel):
     sphere = _sphere
 
     def fit(self, data):
-        fit = SimpleOdfFit(_sphere, data)
+        fit = SimpleOdfFit(self, data)
         fit.model = self
         return fit
 
@@ -91,26 +93,15 @@ class SimpleOdfFit(OdfFit):
         return np.ascontiguousarray((sphere.vertices * [1, 2, 3]).sum(-1))
 
 
-bvalue = 3000
-S0 = 1
-SNR = 100
-
-sphere = get_sphere('symmetric362')
-bvecs = np.concatenate(([[0, 0, 0]], sphere.vertices))
-bvals = np.zeros(len(bvecs)) + bvalue
-bvals[0] = 0
-gtab = gradient_table(bvals, bvecs)
-
 def test_OdfFit():
-
-    m = SimpleOdfModel(gtab)
+    m = SimpleOdfModel(_gtab)
     f = m.fit(None)
     odf = f.odf(_sphere)
     assert_equal(len(odf), len(_sphere.theta))
 
 
 def test_peak_directions():
-    model = SimpleOdfModel(gtab)
+    model = SimpleOdfModel(_gtab)
     fit = model.fit(None)
     odf = fit.odf()
 
@@ -153,18 +144,9 @@ def test_peak_directions():
 
 def test_peaksFromModel():
     data = np.zeros((10, 2))
-    bvalue = 3000
-    S0 = 1
-    SNR = 100
-
-    sphere = get_sphere('symmetric362')
-    bvecs = np.concatenate(([[0, 0, 0]], sphere.vertices))
-    bvals = np.zeros(len(bvecs)) + bvalue
-    bvals[0] = 0
-    gtab = gradient_table(bvals, bvecs)
 
     # Test basic case
-    model = SimpleOdfModel(gtab)
+    model = SimpleOdfModel(_gtab)
     odf_argmax = _odf.argmax()
     pam = peaks_from_model(model, data, _sphere, .5, 45, normalize_peaks=True)
 
