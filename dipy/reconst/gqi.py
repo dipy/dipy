@@ -55,7 +55,7 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
         See Also
         --------
-        dipy.reconst.gqi.DiffusionSpectrumModel
+        dipy.reconst.dsi.DiffusionSpectrumModel
 
         """
         OdfModel.__init__(self, gtab)
