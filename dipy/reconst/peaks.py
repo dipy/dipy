@@ -156,20 +156,17 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                     parallel=False)
 
     shape = list(data.shape)
-    n_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
-
     data = np.reshape(data, (-1, shape[-1]))
     n = data.shape[0]
     nbr_chunks = nbr_processes ** 2
     chunk_size = int(np.ceil(n / nbr_chunks))
-    indices = zip(np.arange(0, n, chunk_size),
-                  np.arange(0, n, chunk_size) + chunk_size)
+    indices = list(zip(np.arange(0, n, chunk_size),
+                       np.arange(0, n, chunk_size) + chunk_size))
 
     with InTemporaryDirectory() as tmpdir:
 
         data_file_name = path.join(tmpdir, 'data.npy')
         np.save(data_file_name, data)
-
         if mask is not None:
             mask = mask.flatten()
             mask_file_name = path.join(tmpdir, 'mask.npy')
@@ -198,99 +195,82 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         pool.close()
 
         pam = PeaksAndMetrics()
-
-        # memmap are used to reduce the memory usage
-
-        pam.gfa = np.memmap(path.join(tmpdir, 'gfa.dat'),
+        # use memmap to reduce the memory usage
+        pam.gfa = np.memmap(path.join(tmpdir, 'gfa.npy'),
                             dtype=pam_res[0].gfa.dtype,
                             mode='w+',
                             shape=(data.shape[0]))
 
-        pam.peak_dirs = np.memmap(path.join(tmpdir, 'peak_dirs.dat'),
+        pam.peak_dirs = np.memmap(path.join(tmpdir, 'peak_dirs.npy'),
                                   dtype=pam_res[0].peak_dirs.dtype,
                                   mode='w+',
                                   shape=(data.shape[0], npeaks, 3))
-        pam.peak_values = np.memmap(path.join(tmpdir, 'peak_values.dat'),
+        pam.peak_values = np.memmap(path.join(tmpdir, 'peak_values.npy'),
                                     dtype=pam_res[0].peak_values.dtype,
                                     mode='w+',
                                     shape=(data.shape[0], npeaks))
-        pam.peak_indices = np.memmap(path.join(tmpdir, 'peak_indices.dat'),
+        pam.peak_indices = np.memmap(path.join(tmpdir, 'peak_indices.npy'),
                                      dtype=pam_res[0].peak_indices.dtype,
                                      mode='w+',
                                      shape=(data.shape[0], npeaks))
-        pam.qa = np.memmap(path.join(tmpdir, 'qa.dat'),
+        pam.qa = np.memmap(path.join(tmpdir, 'qa.npy'),
                            dtype=pam_res[0].qa.dtype,
                            mode='w+',
                            shape=(data.shape[0], npeaks))
+        if return_sh:
+            nbr_shm_coeff = (sh_order + 2) * (sh_order + 1) / 2
+            pam.shm_coeff = np.memmap(path.join(tmpdir, 'shm.npy'),
+                                      dtype=pam_res[0].shm_coeff.dtype,
+                                      mode='w+',
+                                      shape=(data.shape[0], nbr_shm_coeff))
+            pam.B = pam_res[0].B
+        else:
+            pam.shm_coeff = None
+            pam.invB = None
         if return_odf:
-            pam.odf = np.memmap(path.join(tmpdir, 'odf.dat'),
+            pam.odf = np.memmap(path.join(tmpdir, 'odf.npy'),
                                 dtype=pam_res[0].odf.dtype,
                                 mode='w+',
                                 shape=(data.shape[0], len(sphere.vertices)))
         else:
             pam.odf = None
-        if return_sh:
-            pam.shm_coeff = np.memmap(path.join(tmpdir, 'shm.dat'),
-                                      dtype=pam_res[0].shm_coeff.dtype,
-                                      mode='w+',
-                                      shape=(data.shape[0], n_shm_coeff))
-            pam.B = pam_res[0].B
-        else:
-            pam.shm_coeff = None
-            pam.invB = None
 
-        # copy sub process pam to a single pam (memmaps)
-        for i in range(len(pam_res)):
-            start_pos = i * chunk_size
-            end_pos = (i + 1) * chunk_size
-            if start_pos >= data.shape[0]:
-                break
-            pam.gfa[start_pos: end_pos] = pam_res[i].gfa[:]
-            pam.peak_dirs[start_pos: end_pos] = pam_res[i].peak_dirs[:]
-            pam.peak_values[start_pos: end_pos] = pam_res[i].peak_values[:]
-            pam.peak_indices[start_pos: end_pos] = pam_res[i].peak_indices[:]
-            pam.qa[start_pos: end_pos] = pam_res[i].qa[:]
-
+        # copy subprocesses pam to a single pam (memmaps)
+        for i, (start_pos, end_pos) in enumerate(indices):
+            pam.gfa[start_pos: end_pos] = pam_res[i].gfa
+            pam.peak_dirs[start_pos: end_pos] = pam_res[i].peak_dirs
+            pam.peak_values[start_pos: end_pos] = pam_res[i].peak_values
+            pam.peak_indices[start_pos: end_pos] = pam_res[i].peak_indices
+            pam.qa[start_pos: end_pos] = pam_res[i].qa
             if return_sh:
-                pam.shm_coeff[start_pos: end_pos] = pam_res[i].shm_coeff[:]
+                pam.shm_coeff[start_pos: end_pos] = pam_res[i].shm_coeff
             if return_odf:
-                pam.odf[start_pos: end_pos] = pam_res[i].odf[:]
+                pam.odf[start_pos: end_pos] = pam_res[i].odf
 
         pam_res = None
 
-        # memmaps to arrays
-        pam.gfa = np.array(pam.gfa)
-        pam.peak_dirs = np.array(pam.peak_dirs)
-        pam.peak_values = np.array(pam.peak_values)
-        pam.peak_indices = np.array(pam.peak_indices)
-        pam.qa = np.array(pam.qa)
-
+        # load memmaps to arrays and reshape the metric
+        shape[-1] = -1
+        pam.gfa = np.reshape(np.array(pam.gfa), shape[:-1])
+        pam.peak_dirs = np.reshape(np.array(pam.peak_dirs), shape + [3])
+        pam.peak_values = np.reshape(np.array(pam.peak_values), shape)
+        pam.peak_indices = np.reshape(np.array(pam.peak_indices), shape)
+        pam.qa = np.reshape(np.array(pam.qa), shape)
         if return_sh:
-            pam.shm_coeff = np.array(pam.shm_coeff)
+            pam.shm_coeff = np.reshape(np.array(pam.shm_coeff), shape)
         if return_odf:
-            pam.odf = np.array(pam.odf)
+            pam.odf = np.reshape(np.array(pam.odf), shape)
 
         # Make sure all worker processes have exited before leaving context
         # manager in order to prevent temporary file deletion errors in windows
         pool.join()
-
-    # reshape the metric to the original shape
-    pam.peak_dirs = np.reshape(pam.peak_dirs, shape[:-1] + [npeaks, 3])
-    pam.peak_values = np.reshape(pam.peak_values, shape[:-1] + [npeaks])
-    pam.peak_indices = np.reshape(pam.peak_indices, shape[:-1] + [npeaks])
-    pam.qa = np.reshape(pam.qa, shape[:-1] + [npeaks])
-    pam.gfa = np.reshape(pam.gfa, shape[:-1])
-    if return_sh:
-        pam.shm_coeff = np.reshape(pam.shm_coeff, shape[:-1] + [n_shm_coeff])
-    if return_odf:
-        pam.odf = np.reshape(pam.odf, shape[:-1] + [len(sphere.vertices)])
 
     return pam
 
 
 def _peaks_from_model_parallel_sub(args):
     (data_file_name, mask_file_name) = args[0]
-    (i_start, i_end) = args[1]
+    (start_pos, end_pos) = args[1]
     model = args[2]
     sphere = args[3]
     relative_peak_threshold = args[4]
@@ -305,9 +285,9 @@ def _peaks_from_model_parallel_sub(args):
     B = args[13]
     invB = args[14]
 
-    data = np.load(data_file_name, mmap_mode='r')[i_start:i_end]
+    data = np.load(data_file_name, mmap_mode='r')[start_pos:end_pos]
     if mask_file_name is not None:
-        mask = np.load(mask_file_name, mmap_mode='r')[i_start:i_end]
+        mask = np.load(mask_file_name, mmap_mode='r')[start_pos:end_pos]
     else:
         mask = None
 
@@ -383,6 +363,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             sphere, sh_order, sh_basis_type, return_inv=True)
 
     if parallel:
+        # It is mandatory to provide B and invB to the parallel function.
+        # Otherwise, a call to np.linalg.pinv is made in a subprocess and
+        # makes it timeout on some system.
+        # see https://github.com/nipy/dipy/issues/253 for details
         return _peaks_from_model_parallel(model,
                                           data, sphere,
                                           relative_peak_threshold,
