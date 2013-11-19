@@ -5,19 +5,19 @@ from dipy.reconst.odf import (OdfFit, OdfModel, minmax_normalize)
 from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
 from dipy.data import get_sphere
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import gradient_table, GradientTable
 
 
 _sphere = create_unit_hemisphere(4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
+_gtab = GradientTable(np.ones((64, 3)))
 
 
 class SimpleOdfModel(OdfModel):
     sphere = _sphere
 
     def fit(self, data):
-        fit = SimpleOdfFit()
-        fit.model = self
+        fit = SimpleOdfFit(self, data)
         return fit
 
 
@@ -32,7 +32,7 @@ class SimpleOdfFit(OdfFit):
 
 
 def test_OdfFit():
-    m = SimpleOdfModel()
+    m = SimpleOdfModel(_gtab)
     f = m.fit(None)
     odf = f.odf(_sphere)
     assert_equal(len(odf), len(_sphere.theta))

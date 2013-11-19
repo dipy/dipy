@@ -8,7 +8,6 @@ from .recspeed import local_maxima, remove_similar_vertices
 
 
 class GeneralizedQSamplingModel(OdfModel, Cache):
-
     def __init__(self,
                  gtab,
                  method='gqi2',
@@ -56,23 +55,19 @@ class GeneralizedQSamplingModel(OdfModel, Cache):
 
         See Also
         --------
-        dipy.reconst.gqi.DiffusionSpectrumModel
+        dipy.reconst.dsi.DiffusionSpectrumModel
 
         """
-        bvals = gtab.bvals
-        gradients = gtab.bvecs
+        OdfModel.__init__(self, gtab)
         self.method = method
         self.Lambda = sampling_length
         self.normalize_peaks = normalize_peaks
         # 0.01506 = 6*D where D is the free water diffusion coefficient
         # l_values sqrt(6 D tau) D free water diffusion coefficient and
         # tau included in the b-value
-        scaling = np.sqrt(bvals * 0.01506)
+        scaling = np.sqrt(self.gtab.bvals * 0.01506)
         tmp = np.tile(scaling, (3, 1))
-        #the b vectors might have nan values where they correspond to b
-        #value equals with 0
-        gradients[np.isnan(gradients)] = 0.
-        gradsT = gradients.T
+        gradsT = self.gtab.bvecs.T
         b_vector = gradsT * tmp # element-wise product
         self.b_vector = b_vector.T
 
@@ -94,8 +89,7 @@ class GeneralizedQSamplingFit(OdfFit):
             signal values
 
         """
-        self.model = model
-        self.data = data
+        OdfFit.__init__(self, model, data)
         self._gfa = None
         self.npeaks = 5
         self._peak_values = None
@@ -110,11 +104,9 @@ class GeneralizedQSamplingFit(OdfFit):
             if self.model.method == 'gqi2':
                 H=squared_radial_component
                 #print self.gqi_vector.shape
-                self.gqi_vector = np.real(H(np.dot(self.model.b_vector, 
-                                        sphere.vertices.T) * self.model.Lambda / np.pi))
+                self.gqi_vector = np.real(H(np.dot(self.model.b_vector,                                         sphere.vertices.T) * self.model.Lambda / np.pi))
             if self.model.method == 'standard':
-                self.gqi_vector = np.real(np.sinc(np.dot(self.model.b_vector, 
-                                        sphere.vertices.T) * self.model.Lambda / np.pi))
+                self.gqi_vector = np.real(np.sinc(np.dot(self.model.b_vector,                                   sphere.vertices.T) * self.model.Lambda / np.pi))
             self.model.cache_set('gqi_vector', sphere, self.gqi_vector)
 
         return np.dot(self.data, self.gqi_vector)

@@ -1,11 +1,11 @@
 from __future__ import division, print_function, absolute_import
-
+from .base import ReconstModel, ReconstFit
 import numpy as np
 
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base
 
-class OdfModel(object):
+class OdfModel(ReconstModel):
 
     """An abstract class to be sub-classed by specific odf models
 
@@ -18,7 +18,7 @@ class OdfModel(object):
         raise NotImplementedError("To be implemented in sub classes")
 
 
-class OdfFit(object):
+class OdfFit(ReconstFit):
 
     def odf(self, sphere):
         """To be implemented but specific odf models"""

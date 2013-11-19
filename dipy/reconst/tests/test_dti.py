@@ -81,7 +81,7 @@ def test_TensorModel():
     mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle / np.linalg.norm(A_squiggle))
     evecs = np.linalg.eigh(tensor)[1]
     #Design Matrix
-    X = dti.design_matrix(bvecs, bvals)
+    X = dti.design_matrix(gtab)
     #Signals
     Y = np.exp(np.dot(X, D))
     assert_almost_equal(Y[0], b0)
@@ -238,13 +238,13 @@ def test_WLS_and_LS_fit():
     md = evals.mean()
     tensor = from_lower_triangular(D)
     #Design Matrix
-    X = dti.design_matrix(bvec, bval)
+    gtab = grad.gradient_table(bval, bvec)
+    X = dti.design_matrix(gtab)
     #Signals
     Y = np.exp(np.dot(X, D))
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    gtab = grad.gradient_table(bval, bvec)
 
     ### Testing WLS Fit on Single Voxel ###
     #Estimate tensor from test signals
@@ -394,7 +394,7 @@ def test_nnls_jacobian_fucn():
     evals = np.array([2., 1., 0.]) / B
 
     #Design Matrix
-    X = dti.design_matrix(bvecs, bval)
+    X = dti.design_matrix(gtab)
 
     #Signals
     Y = np.exp(np.dot(X,D))
@@ -433,7 +433,7 @@ def test_nlls_fit_tensor():
      tensor = from_lower_triangular(D)
 
      #Design Matrix
-     X = dti.design_matrix(bvecs, bval)
+     X = dti.design_matrix(gtab)
 
      #Signals
      Y = np.exp(np.dot(X,D))
@@ -482,7 +482,7 @@ def test_restore():
      tensor = from_lower_triangular(D)
 
      #Design Matrix
-     X = dti.design_matrix(bvecs, bval)
+     X = dti.design_matrix(gtab)
 
      #Signals
      Y = np.exp(np.dot(X,D))
@@ -556,10 +556,10 @@ def test_adc():
 
 def test_predict():
     """
-    
+    Test model prediction API
     """
     psphere = get_sphere('symmetric362')
-    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvecs = np.concatenate(([[1, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
     gtab = grad.gradient_table(bvals, bvecs)

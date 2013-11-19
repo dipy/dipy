@@ -47,6 +47,8 @@ class GradientTable(object):
         if gradients.ndim != 2 or gradients.shape[1] != 3:
             raise ValueError("gradients should be an (N, 3) array")
         self.gradients = gradients
+        # Avoid nan gradients. Set these to 0 instead:
+        self.gradients = np.where(np.isnan(gradients), 0., gradients)
         self.big_delta = big_delta
         self.small_delta = small_delta
         self.b0_threshold = b0_threshold
@@ -114,7 +116,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
     dwi_mask = bvals > b0_threshold
 
     # check that bvals is (N,) array and bvecs is (N, 3) unit vectors
-    if bvals.ndim != 1 or bvecs.ndim != 2 or len(bvecs) != len(bvals):
+    if bvals.ndim != 1 or bvecs.ndim != 2 or bvecs.shape[0] != bvals.shape[0]:
         raise ValueError("bvals and bvecs should be (N,) and (N, 3) arrays "
                          "respectively, where N is the number of diffusion "
                          "gradients")
@@ -228,7 +230,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                              "array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
-        if bvecs.shape[1] > bvecs.shape[0]:
+        if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0]>1:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=None,
                                            small_delta=None,

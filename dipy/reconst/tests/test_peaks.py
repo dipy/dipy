@@ -11,7 +11,7 @@ from dipy.core.subdivide_octahedron import create_unit_hemisphere
 from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor
 from dipy.data import get_data
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import gradient_table, GradientTable
 from nose.tools import assert_equal, assert_true
 
 
@@ -68,15 +68,17 @@ def test_peak_directions_nl():
     assert_equal(directions.shape, (1, 3))
     assert_almost_equal(values, 3 * 3 / np.sqrt(3))
 
+
 _sphere = create_unit_hemisphere(4)
 _odf = (_sphere.vertices * [1, 2, 3]).sum(-1)
+_gtab = GradientTable(np.ones((64, 3)))
 
 
 class SimpleOdfModel(OdfModel):
     sphere = _sphere
 
     def fit(self, data):
-        fit = SimpleOdfFit()
+        fit = SimpleOdfFit(self, data)
         fit.model = self
         return fit
 
@@ -92,14 +94,14 @@ class SimpleOdfFit(OdfFit):
 
 
 def test_OdfFit():
-    m = SimpleOdfModel()
+    m = SimpleOdfModel(_gtab)
     f = m.fit(None)
     odf = f.odf(_sphere)
     assert_equal(len(odf), len(_sphere.theta))
 
 
 def test_peak_directions():
-    model = SimpleOdfModel()
+    model = SimpleOdfModel(_gtab)
     fit = model.fit(None)
     odf = fit.odf()
 
@@ -144,7 +146,7 @@ def test_peaksFromModel():
     data = np.zeros((10, 2))
 
     # Test basic case
-    model = SimpleOdfModel()
+    model = SimpleOdfModel(_gtab)
     odf_argmax = _odf.argmax()
     pam = peaks_from_model(model, data, _sphere, .5, 45, normalize_peaks=True)
 
@@ -201,7 +203,7 @@ def test_peaksFromModelParallel():
                            fractions=[50, 50], snr=SNR)
 
     # test equality with/without multiprocessing
-    model = SimpleOdfModel()
+    model = SimpleOdfModel(gtab)
     pam_multi = peaks_from_model(model, data, _sphere, .5, 45,
                                  normalize_peaks=True, return_odf=True,
                                  return_sh=True, parallel=True)

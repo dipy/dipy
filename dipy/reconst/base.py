@@ -1,19 +1,33 @@
+"""
+
+Base-classes for reconstruction models and reconstruction fits.
+
+All the models in the reconst module follow the same template: a Model object
+is used to represent the abstract properties of the model, that are independent
+of the specifics of the data . These properties are reused whenver fitting a
+particular set of data (different voxels, for example).
+
+
+"""
 
 
 class ReconstModel(object):
     """ Abstract class for signal reconstruction models
     """
-    def get_directions(self, sig):
-        """ returns Nx3 array of unit vectors
+    def __init__(self, gtab):
         """
-        raise NotImplementedError()
 
-    def fit(self, data, mask=None,**kargs):
-        raise NotImplementedError()
+        """
+        self.gtab=gtab
+
+    def fit(self, data, mask=None,**kwargs):
+        return ReconstFit(self, data)
 
 class ReconstFit(object):
     """ Abstract class which holds the fit result of ReconstModel
 
     For example that could be holding FA or GFA etc.
     """
-    pass
+    def __init__(self, model, data):
+        self.model = model
+        self.data = data
