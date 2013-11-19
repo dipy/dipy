@@ -237,29 +237,29 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
 
         # copy subprocesses pam to a single pam (memmaps)
         for i, (start_pos, end_pos) in enumerate(indices):
-            pam.gfa[start_pos: end_pos] = pam_res[i].gfa[:]
-            pam.peak_dirs[start_pos: end_pos] = pam_res[i].peak_dirs[:]
-            pam.peak_values[start_pos: end_pos] = pam_res[i].peak_values[:]
-            pam.peak_indices[start_pos: end_pos] = pam_res[i].peak_indices[:]
-            pam.qa[start_pos: end_pos] = pam_res[i].qa[:]
+            pam.gfa[start_pos: end_pos] = pam_res[i].gfa
+            pam.peak_dirs[start_pos: end_pos] = pam_res[i].peak_dirs
+            pam.peak_values[start_pos: end_pos] = pam_res[i].peak_values
+            pam.peak_indices[start_pos: end_pos] = pam_res[i].peak_indices
+            pam.qa[start_pos: end_pos] = pam_res[i].qa
             if return_sh:
-                pam.shm_coeff[start_pos: end_pos] = pam_res[i].shm_coeff[:]
+                pam.shm_coeff[start_pos: end_pos] = pam_res[i].shm_coeff
             if return_odf:
-                pam.odf[start_pos: end_pos] = pam_res[i].odf[:]
+                pam.odf[start_pos: end_pos] = pam_res[i].odf
 
         pam_res = None
 
         # load memmaps to arrays and reshape the metric
         shape[-1] = -1
         pam.gfa = np.reshape(np.array(pam.gfa), shape[:-1])
-        pam.peak_dirs = np.reshape(np.array(pam.peak_dirs), shape[:] + [3])
-        pam.peak_values = np.reshape(np.array(pam.peak_values), shape[:])
-        pam.peak_indices = np.reshape(np.array(pam.peak_indices), shape[:])
-        pam.qa = np.reshape(np.array(pam.qa), shape[:])
+        pam.peak_dirs = np.reshape(np.array(pam.peak_dirs), shape + [3])
+        pam.peak_values = np.reshape(np.array(pam.peak_values), shape)
+        pam.peak_indices = np.reshape(np.array(pam.peak_indices), shape)
+        pam.qa = np.reshape(np.array(pam.qa), shape)
         if return_sh:
-            pam.shm_coeff = np.reshape(np.array(pam.shm_coeff), shape[:])
+            pam.shm_coeff = np.reshape(np.array(pam.shm_coeff), shape)
         if return_odf:
-            pam.odf = np.reshape(np.array(pam.odf), shape[:])
+            pam.odf = np.reshape(np.array(pam.odf), shape)
 
         # Make sure all worker processes have exited before leaving context
         # manager in order to prevent temporary file deletion errors in windows
