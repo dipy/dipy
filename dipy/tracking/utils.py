@@ -170,7 +170,7 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
-    lin, offset = _choose_best_affine(affine, voxel_size)
+    lin, offset = _mapping_to_voxel(affine, voxel_size)
     counts = zeros(vol_dims, 'int')
     for sl in streamlines:
         inds = _to_voxel_coordinates(sl, lin, offset)
@@ -239,7 +239,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     endpoints = [sl[0::len(sl)-1] for sl in streamlines]
 
     # Map the streamlines coordinates to voxel coordinates
-    lin, offset = _choose_best_affine(affine, voxel_size)
+    lin, offset = _mapping_to_voxel(affine, voxel_size)
     endpoints = _to_voxel_coordinates(endpoints, lin, offset)
 
     #get labels for label_volume
@@ -391,7 +391,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     True
 
     """
-    lin, offset = _choose_best_affine(affine, voxel_size)
+    lin, offset = _mapping_to_voxel(affine, voxel_size)
     mapping = defaultdict(list)
     if mapping_as_streamlines:
         streamlines = list(streamlines)
@@ -481,7 +481,7 @@ def subsegment(streamlines, max_segment_length):
                 assert(ns >= 0)
         yield output_sl
 
-def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
+def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     """Takes a binary mask and returns seeds in voxels != 0
 
     places evanly spaced points in nonzero voxels of mask, spaces the points
@@ -498,10 +498,10 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
 
     >>> seeds_from_mask(mask, [1,2,3], [1,1,1])
     array([[ 0.5       ,  0.25      ,  0.16666667],
-           [ 0.5       ,  0.25      ,  0.5       ],
-           [ 0.5       ,  0.25      ,  0.83333333],
            [ 0.5       ,  0.75      ,  0.16666667],
+           [ 0.5       ,  0.25      ,  0.5       ],
            [ 0.5       ,  0.75      ,  0.5       ],
+           [ 0.5       ,  0.25      ,  0.83333333],
            [ 0.5       ,  0.75      ,  0.83333333]])
     >>> mask[0,1,2] = 1
     >>> seeds_from_mask(mask, [1,1,2], [1.1,1.1,2.5])
@@ -511,23 +511,36 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
            [ 0.55 ,  1.65 ,  6.875]])
 
     """
-    mask = atleast_3d(mask)
+    mask = np.array(mask, dtype=bool, copy=False, ndmin=3)
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
-    density = asarray(density, 'int')
-    sp = empty(3)
-    sp[:] = 1./density
+    density = asarray(density, int)
+    if density.shape == (1,):
+        density = density + [0, 0, 0]
+    elif density.shape != (3,):
+        raise ValueError("density should be in integer array of shape (3,)")
 
-    voxels = mask.nonzero()
-    mg = mgrid[0:1:sp[0], 0:1:sp[1], 0:1:sp[2]]
+    # Grid of points between -.5 and .5, centered at 0, with given density
+    grid = mgrid[0:density[0], 0:density[1], 0:density[2]]
+    grid = grid.T.reshape((-1, 3))
+    grid = grid / density
+    grid += (.5 / density - .5)
 
-    seeds = []
-    for ii, jj, kk in zip(voxels, mg, sp):
-        s = ii[:,None] + jj.ravel() + kk/2
-        seeds.append(s.ravel())
+    # Add the grid of points to each voxel in mask
+    where = np.argwhere(mask)
+    seeds = where[:, np.newaxis, :] + grid[np.newaxis, :, :]
+    seeds.shape = (-1, 3)
 
-    seeds = array(seeds).T
-    seeds *= voxel_size
+    # Apply the spacial transform
+    if affine is not None:
+        # Use affine to move seeds int real world coordinates
+        seeds = np.dot(seeds, affine[:3, :3].T)
+        seeds += affine[:3, 3]
+    elif voxel_size is not None:
+        # Use voxel_size to move seeds into trackvis space
+        seeds += .5
+        seeds *= voxel_size
+
     return seeds
 
 
@@ -563,7 +576,7 @@ def target(streamlines, target_mask, voxel_size=None, affine=None):
 
     """
     ones = np.ones(3.)
-    lin, offset = _choose_best_affine(affine, voxel_size)
+    lin, offset = _mapping_to_voxel(affine, voxel_size)
     for sl in streamlines:
         ind = _to_voxel_coordinates(sl, lin, offset)
         i, j, k = ind.T
