@@ -207,8 +207,11 @@ class ShoreFit():
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of r-points.
         """
-
-        psi = SHOREmatrix_pdf(self.radial_order,  self.zeta, r_points)
+        psi = self.model.cache_get('shore_matrix_pdf', key=len(r_points))
+        if psi is None:
+            psi = SHOREmatrix_pdf(self.radial_order,  self.zeta, r_points)
+            self.model.cache_set('shore_matrix_pdf', len(r_points), psi)
+        
         eap = np.dot(psi, self._shore_coef)
 
         return eap
