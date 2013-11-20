@@ -4,7 +4,7 @@ from dipy.data.fetcher import (fetch_isbi2013_2shell, read_isbi2013_2shell,
                                fetch_sherbrooke_3shell, read_sherbrooke_3shell)
 from dipy.reconst.shore import ShoreModel
 from dipy.reconst.shm import QballModel
-from dipy.reconst.odf import gfa, peak_directions
+from dipy.reconst.peaks import gfa, peak_directions
 from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
