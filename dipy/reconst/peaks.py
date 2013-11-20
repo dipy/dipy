@@ -474,39 +474,6 @@ def gfa(samples):
     return np.sqrt(numer / denom)
 
 
-def minmax_normalize(samples, out=None):
-    """Min-max normalization of a function evaluated on the unit sphere
-
-    Normalizes samples to ``(samples - min(samples)) / (max(samples) -
-    min(samples))`` for each unit sphere.
-
-    Parameters
-    ----------
-    samples : ndarray (..., N)
-        N samples on a unit sphere for each point, stored along the last axis
-        of the array.
-    out : ndrray (..., N), optional
-        An array to store the normalized samples.
-
-    Returns
-    -------
-    out : ndarray, (..., N)
-        Normalized samples.
-
-    """
-    if out is None:
-        dtype = np.common_type(np.empty(0, 'float32'), samples)
-        out = np.array(samples, dtype=dtype, copy=True)
-    else:
-        out[:] = samples
-
-    sample_mins = np.min(samples, -1)[..., None]
-    sample_maxes = np.max(samples, -1)[..., None]
-    out -= sample_mins
-    out /= (sample_maxes - sample_mins)
-    return out
-
-
 def reshape_peaks_for_visualization(peaks):
     """Reshape peaks for visualization.
 
