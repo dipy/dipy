@@ -515,8 +515,10 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     if mask.ndim != 3:
         raise ValueError('mask cannot be more than 3d')
     density = asarray(density, int)
-    if density.shape == (1,):
-        density = density + [0, 0, 0]
+    if density.size == 1:
+        d = density
+        density = np.empty(3, dtype=int)
+        density.fill(d)
     elif density.shape != (3,):
         raise ValueError("density should be in integer array of shape (3,)")
 
@@ -544,31 +546,37 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
-def target(streamlines, target_mask, voxel_size=None, affine=None):
-    """Retain tracks that pass though target_mask
-
-    This function loops over the streamlines and returns streamlines that pass
-    though target_mask.
+def target(streamlines, target_mask, voxel_size=None, affine=None,
+           include=True):
+    """Filters tracks based on whether or not they pass though target_mask
 
     Parameters
     ----------
     streamlines : iterable
-        A squence of streamlines. Each streamline should be a (N, 3) array,
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
     target_mask : array-like
         A mask used as a target
-    voxel_size
-        Size of the voxels in the target_mask
+    voxel_size : array-like (3,), optional
+        Size of the voxels if the track is in "trackvis space". This is ignored
+        if `affine` is not None.
+    affine : array (4, 4), optional
+        The affine transform from voxel indices to streamline points. If
+        neither `affine` nor `voxel_size` are specified, the streamline is
+        assumed to be in voxel coordinates.
+    include : bool, default True
+        If True, streamlines passing though `target_mask` are kept. If False,
+        the streamlines not passing thought `target_mask` are kept.
 
     Returns
     -------
     streamlines : generator
-        A sequence of streamlines that pass though target_mask
+        A sequence of streamlines that pass though `target_mask`
 
     Raises
     ------
     IndexError
-        When the points of the streamlines lie outside of the target_mask
+        When the points of the streamlines lie outside of the `target_mask`
 
     See Also
     --------
@@ -586,7 +594,7 @@ def target(streamlines, target_mask, voxel_size=None, affine=None):
             volume_size = tuple(voxel_size * target_mask.shape)
             raise IndexError('streamline has values greater than the size of '
                              'the target mask, ' + str(volume_size))
-        if state.any():
+        if state.any() == include:
             yield sl
 
 
