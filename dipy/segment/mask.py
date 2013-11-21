@@ -12,10 +12,11 @@ try:
 except:
     from .threshold import otsu
 
+from scipy.ndimage import binary_dilation, generate_binary_structure
+
 
 def multi_median(input, median_radius, numpass):
-    """
-    Applies multiple times scikit-image's median filter on input data.
+    """ Applies multiple times scikit-image's median filter on input data.
 
     Parameters
     ----------
@@ -121,10 +122,10 @@ def crop(vol, mins, maxs):
 
 
 def median_otsu(input_volume, median_radius=4, numpass=4,
-                autocrop=False, b0Slices=None):
+                autocrop=False, dwi_slices=None, dilate=None):
     """ Simple brain extraction tool method for images from DWI data
 
-    It uses a median filter smoothing of the input_volumes `b0Slices` and an
+    It uses a median filter smoothing of the input_volumes `dwi_slices` and an
     automatic histogram Otsu thresholding technique, hence the name
     *median_otsu*.
 
@@ -150,10 +151,11 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         if True, the masked input_volume will also be cropped using the bounding
         box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
         resolution. (default False)
-    b0Slices : None or array, optional
-        1D array representing indices of ``axis=3`` of a 4D `input_volume` where
-        the acquisition b value == 0. None (the default) corresponds to ``(0,)``
-        (assumes first volume in 4D array is b == 0)
+    dwi_slices : None or array, optional
+        1D array representing indices of ``axis=3`` of a 4D `input_volume`
+        None (the default) corresponds to ``(0,)`` (assumes first volume in 4D array is b == 0)
+    dilate : None or int, optional
+        number of iterations for binary dilation
 
     Returns
     -------
@@ -163,8 +165,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         The binary brain mask
     """
     if len(input_volume.shape) == 4:
-        if b0Slices is not None:
-            b0vol = np.mean(input_volume[..., tuple(b0Slices)], axis=3)
+        if dwi_slices is not None:
+            b0vol = np.mean(input_volume[..., tuple(dwi_slices)], axis=3)
         else:
             b0vol = input_volume[..., 0].copy()
     else:
@@ -173,6 +175,11 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     mask = multi_median(b0vol, median_radius, numpass)
     thresh = otsu(mask)
     mask = mask > thresh
+
+    if dilate is not None:
+        cross = generate_binary_structure(3, 1)
+        mask = binary_dilation(mask, cross, iterations=dilate)
+
     # Auto crop the volumes using the mask as input_volume for bounding box computing.
     if autocrop:
         mins, maxs = bounding_box(mask)

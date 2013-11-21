@@ -42,19 +42,8 @@ Remove most of the background using dipy's mask module.
 from dipy.segment.mask import median_otsu
 
 
-maskdata, mask = median_otsu(data, 3, 2, True, b0Slices=[10, 20, 30, 40])
-
-nib.save(nib.Nifti1Image(maskdata, img.get_affine()), 'masked.nii.gz')
-
-from scipy.ndimage import binary_dilation, generate_binary_structure
-
-cross3 = generate_binary_structure(3, 1)
-
-mask2 = binary_dilation(mask, cross3).astype('ubyte')
-
-nib.save(nib.Nifti1Image(mask2, img.get_affine()), 'mask2.nii.gz')
-
-1/0
+maskdata, mask = median_otsu(data, 3, 1, True,
+                             dwi_slices=range(10, 50), dilate=2)
 
 """
 We instantiate our CSA model with spherical harmonic order of 4
