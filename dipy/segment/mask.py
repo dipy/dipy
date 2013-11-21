@@ -16,7 +16,7 @@ from scipy.ndimage import binary_dilation, generate_binary_structure
 
 
 def multi_median(input, median_radius, numpass):
-    """ Applies multiple times scikit-image's median filter on input data.
+    """ Applies median filter multiple times on input data.
 
     Parameters
     ----------
@@ -122,22 +122,17 @@ def crop(vol, mins, maxs):
 
 
 def median_otsu(input_volume, median_radius=4, numpass=4,
-                autocrop=False, dwi_slices=None, dilate=None):
+                autocrop=False, vol_idx=None, dilate=None):
     """ Simple brain extraction tool method for images from DWI data
 
-    It uses a median filter smoothing of the input_volumes `dwi_slices` and an
+    It uses a median filter smoothing of the input_volumes `vol_idx` and an
     automatic histogram Otsu thresholding technique, hence the name
     *median_otsu*.
 
-    It mimics the ``MRtrix`` bet from the documentation::
-
-        mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | \
-                median3D - mask.nii
-
-    ``MRtrix`` uses default ``mean_radius=3`` and ``numpass=2``
-
-    However, from tests on multiple 1.5T and 3T data from GE, Philips, Siemens,
-    the most robust choice is ``median_radius=4``, ``numpass=4``
+    This function is inspired from Mrtrix's bet which has default values
+    ``median_radius=3``, ``numpass=2``. However, from tests on multiple 1.5T
+    and 3T data     from GE, Philips, Siemens, the most robust choice is
+    ``median_radius=4``, ``numpass=4``.
 
     Parameters
     ----------
@@ -151,9 +146,9 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         if True, the masked input_volume will also be cropped using the bounding
         box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
         resolution. (default False)
-    dwi_slices : None or array, optional
+    vol_idx : None or array, optional
         1D array representing indices of ``axis=3`` of a 4D `input_volume`
-        None (the default) corresponds to ``(0,)`` (assumes first volume in 4D array is b == 0)
+        None (the default) corresponds to ``(0,)`` (assumes first volume in 4D array)
     dilate : None or int, optional
         number of iterations for binary dilation
 
@@ -165,8 +160,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         The binary brain mask
     """
     if len(input_volume.shape) == 4:
-        if dwi_slices is not None:
-            b0vol = np.mean(input_volume[..., tuple(dwi_slices)], axis=3)
+        if vol_idx is not None:
+            b0vol = np.mean(input_volume[..., tuple(vol_idx)], axis=3)
         else:
             b0vol = input_volume[..., 0].copy()
     else:
