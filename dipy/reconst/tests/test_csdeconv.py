@@ -173,7 +173,7 @@ def test_odf_sh_to_sharp():
     odfs_sh /= Z
 
     fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
-                              sh_order=8, lambda_=1., tau=1.)
+                              sh_order=8, lambda_=1., tau=0.1)
 
     fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
 
