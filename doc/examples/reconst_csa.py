@@ -41,7 +41,9 @@ Remove most of the background using dipy's mask module.
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, 3, 2, True, range(0,10))
+
+maskdata, mask = median_otsu(data, 3, 1, True,
+                             vol_idx=range(10, 50), dilate=2)
 
 """
 We instantiate our CSA model with spherical harmonic order of 4
@@ -115,3 +117,4 @@ fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 .. include:: ../links_names.inc
 
 """
+

@@ -12,10 +12,11 @@ try:
 except:
     from .threshold import otsu
 
+from scipy.ndimage import binary_dilation, generate_binary_structure
+
 
 def multi_median(input, median_radius, numpass):
-    """
-    Applies multiple times scikit-image's median filter on input data.
+    """ Applies median filter multiple times on input data.
 
     Parameters
     ----------
@@ -121,22 +122,17 @@ def crop(vol, mins, maxs):
 
 
 def median_otsu(input_volume, median_radius=4, numpass=4,
-                autocrop=False, b0Slices=None):
+                autocrop=False, vol_idx=None, dilate=None):
     """ Simple brain extraction tool method for images from DWI data
 
-    It uses a median filter smoothing of the input_volumes `b0Slices` and an
+    It uses a median filter smoothing of the input_volumes `vol_idx` and an
     automatic histogram Otsu thresholding technique, hence the name
     *median_otsu*.
 
-    It mimics the ``MRtrix`` bet from the documentation::
-
-        mrconvert dwi.nii -coord 3 0 - | threshold - - | median3D - - | \
-                median3D - mask.nii
-
-    ``MRtrix`` uses default ``mean_radius=3`` and ``numpass=2``
-
-    However, from tests on multiple 1.5T and 3T data from GE, Philips, Siemens,
-    the most robust choice is ``median_radius=4``, ``numpass=4``
+    This function is inspired from Mrtrix's bet which has default values
+    ``median_radius=3``, ``numpass=2``. However, from tests on multiple 1.5T
+    and 3T data     from GE, Philips, Siemens, the most robust choice is
+    ``median_radius=4``, ``numpass=4``.
 
     Parameters
     ----------
@@ -150,10 +146,11 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         if True, the masked input_volume will also be cropped using the bounding
         box defined by the masked data. Should be on if DWI is upsampled to 1x1x1
         resolution. (default False)
-    b0Slices : None or array, optional
-        1D array representing indices of ``axis=3`` of a 4D `input_volume` where
-        the acquisition b value == 0. None (the default) corresponds to ``(0,)``
-        (assumes first volume in 4D array is b == 0)
+    vol_idx : None or array, optional
+        1D array representing indices of ``axis=3`` of a 4D `input_volume`
+        None (the default) corresponds to ``(0,)`` (assumes first volume in 4D array)
+    dilate : None or int, optional
+        number of iterations for binary dilation
 
     Returns
     -------
@@ -163,8 +160,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         The binary brain mask
     """
     if len(input_volume.shape) == 4:
-        if b0Slices is not None:
-            b0vol = np.mean(input_volume[..., tuple(b0Slices)], axis=3)
+        if vol_idx is not None:
+            b0vol = np.mean(input_volume[..., tuple(vol_idx)], axis=3)
         else:
             b0vol = input_volume[..., 0].copy()
     else:
@@ -173,6 +170,11 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
     mask = multi_median(b0vol, median_radius, numpass)
     thresh = otsu(mask)
     mask = mask > thresh
+
+    if dilate is not None:
+        cross = generate_binary_structure(3, 1)
+        mask = binary_dilation(mask, cross, iterations=dilate)
+
     # Auto crop the volumes using the mask as input_volume for bounding box computing.
     if autocrop:
         mins, maxs = bounding_box(mask)
@@ -228,32 +230,32 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
         return mask, cfa
 
     return mask
-	
+
 def clean_cc_mask(mask):
     """
     Cleans a segmentation of the corpus callosum so no random pixels are included.
-    
+
     Parameters
     ----------
     mask : ndarray
         Binary mask of the coarse segmentation.
-    
+
     Returns
     -------
     new_cc_mask : ndarray
         Binary mask of the cleaned segmentation.
     """
-    
+
     from scipy.ndimage.measurements import label
-    
+
     new_cc_mask = np.zeros(mask.shape)
-        
+
     # Flood fill algorithm to find contiguous regions.
     labels, numL = label(mask)
-    
+
     volumes = [len(labels[np.where(labels == l_idx+1)]) for l_idx in np.arange(numL)]
     biggest_vol = np.arange(numL)[np.where(volumes == np.max(volumes))] + 1
     new_cc_mask[np.where(labels == biggest_vol)] = 1
-        
+
     return new_cc_mask
-    
+

@@ -53,7 +53,8 @@ inside the brain region by creating a mask without the background.
 """
 
 from dipy.segment.mask import median_otsu
-b0_mask, mask = median_otsu(data)
+b0_mask, mask = median_otsu(data, 3, 1, True,
+                            vol_idx=range(10, 50), dilate=2)
 
 """We also need to fit a tensor model on the data in order to compute the cfa.
 """
@@ -78,7 +79,7 @@ We will also define a rough roi, since noisy pixels could be considered in the
 mask if it's not bounded properly. Adjusting the cfa threshold and the roi
 location enables the function to segment any part of the brain based on
 an orientation and spatial location. For now, we will pick half of the
-bounding box from the segmentation of the brain, just in case the subject was 
+bounding box from the segmentation of the brain, just in case the subject was
 not centered properly.
 """
 
@@ -107,7 +108,7 @@ print("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
 
 """We can save the produced dataset with nibabel to visualize them later on.
 
-Note that we save the cfa with values between 0 and 255 for visualization 
+Note that we save the cfa with values between 0 and 255 for visualization
 purpose. Remember that the function works with values between
 0 and 1, but it will warn you if the supplied values do not fall in this range.
 """
@@ -189,8 +190,8 @@ nib.save(mask_noise_img, 'mask_noise.nii.gz')
 
 noise_std = np.std(data[mask_noise, :])
 
-"""We can now compute the SNR for each dwi using the formula above. Let's find 
-the position of the gradient direction that lies the closest to the X, Y and Z 
+"""We can now compute the SNR for each dwi using the formula above. Let's find
+the position of the gradient direction that lies the closest to the X, Y and Z
 axis.
 """
 
@@ -202,7 +203,7 @@ axis_X = np.argmin(np.sum((tenmodel.bvec-np.array([1, 0, 0]))**2, axis=-1))
 axis_Y = np.argmin(np.sum((tenmodel.bvec-np.array([0, 1, 0]))**2, axis=-1))
 axis_Z = np.argmin(np.sum((tenmodel.bvec-np.array([0, 0, 1]))**2, axis=-1))
 
-"""Now that we have the closest b-vectors to each of the cartesian axis, 
+"""Now that we have the closest b-vectors to each of the cartesian axis,
 let's compute their respective SNR and compare them to a b0 image's SNR.
 """
 
@@ -215,7 +216,7 @@ for direction in [0, axis_X, axis_Y, axis_Z]:
 """SNR for direction 57 is : ``22.6156341499``"""
 """SNR for direction 126 is : ``23.1985563491``"""
 
-"""Since the diffusion is strong in the X axis, it is the lowest SNR in all of 
+"""Since the diffusion is strong in the X axis, it is the lowest SNR in all of
 the DWIs, while the Y and Z axis have almost no diffusion and as such a high
 SNR. The b0 still exhibits the highest SNR, since there is no diffusion
 (and as such no signal drop) at all.

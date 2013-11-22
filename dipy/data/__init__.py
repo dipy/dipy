@@ -234,6 +234,9 @@ def get_data(name='small_64D'):
         fbvecs = pjoin(THIS_DIR, 'small_25.bvec')
         fimg = pjoin(THIS_DIR, 'small_25.nii.gz')
         return fimg, fbvals, fbvecs
+    if name == "S0_10":
+        fimg = pjoin(THIS_DIR, 'S0_10slices.nii.gz')
+        return fimg
 
 
 def dsi_voxels():

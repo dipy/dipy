@@ -1,13 +1,15 @@
 import warnings
 
 import numpy as np
-
+import nibabel as nib
 from scipy.ndimage import generate_binary_structure, binary_dilation
 from scipy.ndimage.filters import median_filter
 
-from ..mask import otsu, bounding_box, crop, applymask, multi_median
+from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
+                               multi_median, median_otsu)
 
 from numpy.testing import assert_equal, run_module_suite
+from dipy.data import get_data
 
 
 def test_mask():
@@ -32,12 +34,12 @@ def test_mask():
     assert_equal(final, initial)
 
     # Test multi_median.
-    median_test = np.arange(25).reshape(5,5)
+    median_test = np.arange(25).reshape(5, 5)
     median_control = median_test.copy()
     medianradius = 3
     median_test = multi_median(median_test, medianradius, 3)
 
-    medarr = np.ones_like(median_control.shape) * ((medianradius * 2) +1)
+    medarr = np.ones_like(median_control.shape) * ((medianradius * 2) + 1)
     median_filter(median_control, medarr, output=median_control)
     median_filter(median_control, medarr, output=median_control)
     median_filter(median_control, medarr, output=median_control)
@@ -78,5 +80,35 @@ def test_bounding_box():
         assert_equal(maxs, [0, 0])
 
 
+def test_median_otsu():
+    fname = get_data('S0_10')
+    img = nib.load(fname)
+    data = img.get_data()
+    data = np.squeeze(data)
+    dummy_mask = data > data.mean()
+    data_masked, mask = median_otsu(data, median_radius=3, numpass=2,
+                                    autocrop=False, vol_idx=None,
+                                    dilate=None)
+    assert_equal(mask.sum() < dummy_mask.sum(), True)
+    data2 = np.zeros(data.shape + (2,))
+    data2[..., 0] = data
+    data2[..., 1] = data
+    data2_masked, mask2 = median_otsu(data2, median_radius=3, numpass=2,
+                                      autocrop=False, vol_idx=[0, 1],
+                                      dilate=None)
+    assert_equal(mask.sum() == mask2.sum(), True)
+
+    _, mask3 = median_otsu(data2, median_radius=3, numpass=2,
+                                      autocrop=False, vol_idx=[0, 1],
+                                      dilate=1)
+    assert_equal(mask2.sum() < mask3.sum(), True)
+
+    _, mask4 = median_otsu(data2, median_radius=3, numpass=2,
+                                      autocrop=False, vol_idx=[0, 1],
+                                      dilate=2)
+    assert_equal(mask3.sum() < mask4.sum(), True)
+
+
 if __name__ == '__main__':
     run_module_suite()
+
