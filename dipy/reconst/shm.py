@@ -264,6 +264,29 @@ def lazy_index(index):
         return slice(index[0], index[-1] + 1, step[0])
 
 
+def _gfa_sh(coef, sh0_index=0):
+    """The gfa of the odf, computed from the spherical harmonic coefficients
+
+    This is a private function because it only works for coefficients of
+    normalized sh bases.
+
+    Parameters
+    ----------
+    coef : array
+        The coefficients, using a normalized sh basis, that represent each odf.
+    sh0_index : int
+        The index of the coefficient associated with the 0th order sh harmonic.
+
+    Returns
+    -------
+    gfa_values : array
+        The gfa of each odf.
+
+    """
+    coef_sq = coef**2
+    return np.sqrt(1. - (coef_sq[..., sh0_index] / (coef_sq).sum(-1)))
+
+
 class SphHarmModel(OdfModel, Cache):
     """The base class to sub-classed by specific spherical harmonic models of
     diffusion data"""
@@ -382,6 +405,10 @@ class SphHarmFit(OdfFit):
             sampling_matrix, m, n = real_sym_sh_basis(sh_order, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return dot(self._shm_coef, sampling_matrix.T)
+
+    @auto_attr
+    def gfa(self):
+        return _gfa_sh(self._shm_coef, 0)
 
     @property
     def shm_coeff(self):
