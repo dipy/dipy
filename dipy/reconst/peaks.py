@@ -117,7 +117,11 @@ def peak_directions(odf, sphere, relative_peak_threshold=.25,
 
     """
     odf = np.ascontiguousarray(odf)
-    values, indices = local_maxima(odf, sphere.edges)
+
+    odf_norm = (odf - odf.min()) / (odf.max() - odf.min())
+    _, indices = local_maxima(odf_norm, sphere.edges)
+    values = odf[indices]
+
     # If there is only one peak return
     if len(indices) == 1:
         return sphere.vertices[indices], values, indices
@@ -125,6 +129,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.25,
     n = search_descending(values, relative_peak_threshold)
     indices = indices[:n]
     directions = sphere.vertices[indices]
+
     directions, uniq = remove_similar_vertices(directions,
                                                min_separation_angle,
                                                return_index=True)
