@@ -101,7 +101,7 @@ mask module.
 from dipy.segment.mask import median_otsu
 
 maskdata, mask = median_otsu(data, 3, 1, True,
-                             dwi_slices=range(10, 50), dilate=2)
+                             vol_idx=range(10, 50), dilate=2)
 print('maskdata.shape (%d, %d, %d, %d)' % maskdata.shape)
 
 """
