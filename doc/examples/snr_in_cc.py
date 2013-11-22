@@ -54,7 +54,7 @@ inside the brain region by creating a mask without the background.
 
 from dipy.segment.mask import median_otsu
 b0_mask, mask = median_otsu(data, 3, 1, True,
-                            dwi_slices=range(10, 50), dilate=2)
+                            vol_idx=range(10, 50), dilate=2)
 
 """We also need to fit a tensor model on the data in order to compute the cfa.
 """
