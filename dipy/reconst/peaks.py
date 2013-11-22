@@ -22,7 +22,7 @@ default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
-                       min_separation_angle=45, sphere=default_sphere,
+                       min_separation_angle=25, sphere=default_sphere,
                        xtol=1e-7):
     """Non Linear Direction Finder
 
@@ -89,8 +89,8 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
     return directions, values
 
 
-def peak_directions(odf, sphere, relative_peak_threshold=.25,
-                    min_separation_angle=45):
+def peak_directions(odf, sphere, relative_peak_threshold=.5,
+                    min_separation_angle=25):
     """Get the directions of odf peaks
 
     Parameters
