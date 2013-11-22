@@ -4,35 +4,36 @@
 Using Dipy to Target, Group, and Count Streamlines
 ==================================================
 
-This tutorial is meant to demonstrate some of the streamline utilities
-available in dipy.
+This example is meant to be an introduction to some of the streamline tools
+available in dipy. Some of the functions covered in this example are
+``target``, ``connectivity_matrix`` and ``density map``. ``target`` allows one
+to filter streamlines that either pass though or do not pass through some
+region of the brain, ``connectivity__matrix`` groups and counts streamlines
+based on where in the brain be begin and end, and finally, density map counts
+the number of streamlines that pass though every voxel of some image.
 
-To get started you'll need to have a set of streamlines to work with. We'll
-use EuDx along with the CsaOdfModel to make some streamlines. Lets import the
-modules we'll be using and load the data.
+To get started you'll need to have a set of streamlines to work with. We'll use
+EuDx along with the CsaOdfModel to make some streamlines. Lets import the
+modules and download the data we'll be using.
 """
 
 from dipy.tracking.eudx import EuDX
 from dipy.reconst import peaks, shm
 from dipy.tracking import utils
 
-from dipy.data import (fetch_stanford_hardi, read_stanford_hardi,
-                       read_freesurfer_reduced)
+from dipy.data import read_stanford_labels
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
-data = img.get_data()
-voxel_size = img.get_header().get_zooms()[:3]
-
-labels_img = read_freesurfer_reduced()
+hardi_img, gtab, labels_img = read_stanford_labels()
+data = hardi_img.get_data()
 labels = labels_img.get_data()
 
 """
-``labels`` is a map of tissue types where every integer value in ``labels``
-represents a anatomical structure or tissue type. For this example, white
-matter voxels have have values of either 0 or 1. We'll use ``peak_from_model``
-to apply the ``CsaOdfModel`` to each white matter voxel and fiber directions
-for tracking.
+We've loaded an image called ``labels_img`` which is a map of tissue types such
+that every integer value in the array ``labels`` represents a anatomical
+structure or tissue type [#]_. For this example, the image was created so that
+white matter voxels have values of either 1 or 2. We'll use ``peak_from_model``
+to apply the ``CsaOdfModel`` to each white matter voxel and estimate fiber
+orientations which we can use for tracking.
 """
 
 white_matter = (labels == 1) | (labels == 2)
@@ -54,20 +55,64 @@ streamlines = EuDX(csapeaks.peak_values,
                    csapeaks.peak_indices,
                    odf_vertices=peaks.default_sphere.vertices,
                    a_low=0.,
-                   step_sz=.25,
+                   step_sz=.5,
                    seeds=seeds)
 
 """
-There first of the tracking utilities we'll cover here is ``target``. This
+The first of the tracking utilities we'll cover here is ``target``. This
 function takes a set of streamlines and an rio and returns only those that pass
-though the roi. The roi should be an array where the voxels that belong to the
-are True and all other voxel are False. The roi we'll be using a sagittal slice
-thought the corpus callosum, all the voxels in this roi have value 2 in our
-``labels`` array.
+though the roi. The roi should be an array such that the voxels that belong to
+the roi are True and all other voxels are False. In this example we'll target
+the streamlines of the corpus callosum. Our ``labels`` array has a sagital
+slice of the corpus callosum identified by the label value 2. We'll create an
+roi mask from that label and target that roi.
 """
 
 cc_slice = labels == 2
 cc_streamlines = utils.target(streamlines, cc_slice)
+cc_streamlines = list(cc_streamlines)
+
+"""
+Lets take a quick look at what these streamlines look like. We can display the
+streamlines using dipy's viz module in ``dipy.viz``. As you can see, from a
+whole brain set of streamlines, we've selected only those streamlines that pass
+thought the corpus callosum, shown in yellow.
+"""
+
+from dipy.viz import fvtk
+from dipy.viz.colormap import line_colors
+
+# Make display objects
+color = line_colors(cc_streamlines)
+cc_streamlines_actor = fvtk.line(cc_streamlines, line_colors(cc_streamlines))
+cc_roi_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
+                            opacities=[1.])
+
+# Add display objects to canvas
+r = fvtk.ren()
+fvtk.add(r, cc_streamlines_actor)
+fvtk.add(r, cc_roi_actor)
+
+# Save figures
+fvtk.record(r, n_frames=1, out_path='corpuscollosum_axial.png',
+            size=(800, 800))
+fvtk.camera(r, [-1, 0, 0], [0, 0, 0], viewup=[0, 0, 1])
+fvtk.record(r, n_frames=1, out_path='corpuscollosum_sagital.png',
+            size=(800, 800))
+
+"""
+.. figure:: corpuscollosum_axial.png
+   :align: center
+
+   **Corpus Collosum Axial**
+
+.. include:: ../links_names.inc
+
+.. figure:: corpuscollosum_sagital.png
+   :align: center
+
+   **Corpus Collosum Sagital**
+"""
 
 """
 Once we've targeted on the corpus collosum roi, we might want to find out
@@ -110,14 +155,30 @@ plt.title("Connectivity of Corpus Collosum Streamlines")
 plt.savefig("connectivity.png")
 
 """
+.. figure:: connectivity.png
+   :align: center
+
+   **Connectivity of Corpus Collosum**
+
+.. include:: ../links_names.inc
+
+"""
+
+"""
 In our example track there are more streamlines connecting regions 11 and
 54 than any other pair of regions. These labels represent the left and right
-superior frontal areas respectively. These two regions are large, close
+superior frontal gyrus respectively. These two regions are large, close
 together, have lots of corpus collosum fibers and easy to track so this result
 should not be a surprise to anyone.
 
+Lets lake a look at what the streamlines that connect these two regions look
+like.
+"""
+
+
+"""
 In order to demonstrate the density_map function, we'll use the streamlines
-connecting the left and right superior frontal regions. We can get these
+connecting the left and right superior frontal gyrus. We can get these
 streamlines from the dictionary ``grouping``. We'll then give those streamlines
 as an argument to the ``density_map`` function which will count the number of
 streamlines that pass though each voxel. We'll also need give ``density_map``
@@ -125,7 +186,7 @@ the dimensions of the image.
 """
 
 lr_superiorfrontal_track = grouping[11, 54]
-shape = data.shape[:3]
+shape = labels.shape
 dm = utils.density_map(lr_superiorfrontal_track, shape)
 
 """
@@ -136,6 +197,7 @@ need to move them to "trackvis space".
 
 import nibabel as nib
 
+voxel_size = labels_img.get_header().get_zooms()
 trackvis_header = nib.trackvis.empty_header()
 trackvis_header['voxel_size'] = voxel_size
 trackvis_header['dim'] = shape
@@ -145,7 +207,7 @@ lr_sf_trk = [(sl + .5) * voxel_size for sl in lr_superiorfrontal_track]
 for_save = [(sl, None, None) for sl in lr_sf_trk]
 nib.trackvis.write("lr-superiorfrontal.trk", for_save, trackvis_header)
 
-dm_img = nib.Nifti1Image(dm.astype("int16"), img.get_affine())
+dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.get_affine())
 dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
 
 """
@@ -189,3 +251,15 @@ affine[:3, 3] = voxel_size / 2.
 dm_using_affine = utils.density_map(lr_sf_trk, shape, affine=affine)
 assert np.all(dm == dm_using_affine)
 
+"""
+.. rubric:: Footnotes
+
+.. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, was
+    is a modified versioin of label map `aparc+aseg.mgz` created by freesurfer.
+    The corpus callosum region is a combination of the freesurfer labels
+    251-255.  The remaining freesurfer labels were re-mapped and reduced so
+    that they lie between 0 and 88. To see the freesurfer region, label and
+    name, represented by each value see `label_info.txt` in
+    `~/.dipy/stanford_hardi`.
+..
+"""
