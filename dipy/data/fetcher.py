@@ -80,8 +80,9 @@ def check_md5(filename, stored_md5):
             md5_data.update(chunk)
 
     if stored_md5 != md5_data.hexdigest():
-        print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
-               "but computed MD5 was", md5_data, '\n',
+        print ("MD5 checksum of filename", filename,
+               "failed. Expected MD5 was", stored_md5,
+               "but computed MD5 was", md5_data.hex_digest(), '\n',
                "Please check if the data has been downloaded correctly or if the upstream data has changed.")
 
 
