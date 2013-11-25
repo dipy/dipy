@@ -97,6 +97,7 @@ def sphere2cart(r, theta, phi):
     x, y, z = np.broadcast_arrays(x, y, z)
     return x, y, z
 
+
 def cart2sphere(x, y, z):
     r''' Return angles for Cartesian 3D coordinates `x`, `y`, and `z`
 
@@ -123,8 +124,8 @@ def cart2sphere(x, y, z):
     phi : array
        azimuth angle
     '''
-    r = np.sqrt(x*x + y*y + z*z)
-    theta = np.arccos(z/r)
+    r = np.sqrt(x * x + y * y + z * z)
+    theta = np.arccos(z / r)
     phi = np.arctan2(y, x)
     r, theta, phi = np.broadcast_arrays(r, theta, phi)
     return r, theta, phi
@@ -139,7 +140,7 @@ def sph2latlon(theta, phi):
         Latitude and longitude.
 
     """
-    return np.rad2deg(theta - np.pi/2), np.rad2deg(phi - np.pi)
+    return np.rad2deg(theta - np.pi / 2), np.rad2deg(phi - np.pi)
 
 
 def normalized_vector(vec, axis=-1):
@@ -183,7 +184,7 @@ def vector_norm(vec, axis=-1, keepdims=False):
         Vectors to norm.
     axis : int
         Axis over which to norm. By default norm over last axis. If `axis` is
-        None, `vec` if flattened then normed.
+        None, `vec` is flattened then normed.
     keepdims : bool
         If True, the output will have the same number of dimensions as `vec`,
         with shape 1 on `axis`.
@@ -209,7 +210,7 @@ def vector_norm(vec, axis=-1, keepdims=False):
     vec_norm = np.sqrt((vec * vec).sum(axis))
     if keepdims:
         if axis is None:
-            shape = [1]*vec.ndim
+            shape = [1] * vec.ndim
         else:
             shape = list(vec.shape)
             shape[axis] = 1
@@ -217,12 +218,12 @@ def vector_norm(vec, axis=-1, keepdims=False):
     return vec_norm
 
 
-def rodriguez_axis_rotation(r,theta):
+def rodriguez_axis_rotation(r, theta):
     """ Rodriguez formula
 
     Rotation matrix for rotation around axis r for angle theta.
 
-    The rotation matrix is given by the Rodrigues formula:
+    The rotation matrix is given by the Rodriguez formula:
 
     R = Id + sin(theta)*Sn + (1-cos(theta))*Sn^2
 
@@ -267,17 +268,18 @@ def rodriguez_axis_rotation(r,theta):
 
     """
     #theta = spl.norm(r)
-    theta=np.deg2rad(theta)
+    theta = np.deg2rad(theta)
     if theta > 1e-30:
-        n = r/np.linalg.norm(r)
-        Sn = np.array([[0,-n[2],n[1]],[n[2],0,-n[0]],[-n[1],n[0],0]])
-        R = np.eye(3) + np.sin(theta)*Sn + (1-np.cos(theta))*np.dot(Sn,Sn)
+        n = r / np.linalg.norm(r)
+        Sn = np.array([[0, -n[2], n[1]], [n[2], 0, -n[0]], [-n[1], n[0], 0]])
+        R = np.eye(3) + np.sin(theta) * Sn + \
+            (1 - np.cos(theta)) * np.dot(Sn, Sn)
     else:
-        Sr = np.array([[0,-r[2],r[1]],[r[2],0,-r[0]],[-r[1],r[0],0]])
-        theta2 = theta*theta
-        R = np.eye(3) + (1-theta2/6.)*Sr + (.5-theta2/24.)*np.dot(Sr,Sr)
+        Sr = np.array([[0, -r[2], r[1]], [r[2], 0, -r[0]], [-r[1], r[0], 0]])
+        theta2 = theta * theta
+        R = np.eye(3) + (1 - theta2 / 6.) * \
+            Sr + (.5 - theta2 / 24.) * np.dot(Sr, Sr)
     return R
-
 
 
 def nearest_pos_semi_def(B):
@@ -318,23 +320,23 @@ def nearest_pos_semi_def(B):
     if cardneg == 0:
         return B
     if cardneg == 3:
-        return np.zeros((3,3))
+        return np.zeros((3, 3))
     lam1a, lam2a, lam3a = vals
     scalers = np.zeros((3,))
     if cardneg == 2:
-        b112 = np.max([0,lam1a+(lam2a+lam3a)/3.])
+        b112 = np.max([0, lam1a + (lam2a + lam3a) / 3.])
         scalers[0] = b112
     elif cardneg == 1:
-        lam1b=lam1a+0.25*lam3a
-        lam2b=lam2a+0.25*lam3a
+        lam1b = lam1a + 0.25 * lam3a
+        lam2b = lam2a + 0.25 * lam3a
         if lam1b >= 0 and lam2b >= 0:
             scalers[:2] = lam1b, lam2b
-        else: # one of the lam1b, lam2b is < 0
+        else:  # one of the lam1b, lam2b is < 0
             if lam2b < 0:
-                b111=np.max([0,lam1a+(lam2a+lam3a)/3.])
+                b111 = np.max([0, lam1a + (lam2a + lam3a) / 3.])
                 scalers[0] = b111
             if lam1b < 0:
-                b221=np.max([0,lam2a+(lam1a+lam3a)/3.])
+                b221 = np.max([0, lam2a + (lam1a + lam3a) / 3.])
                 scalers[1] = b221
     # resort the scalers to match the original vecs
     scalers = scalers[np.argsort(inds)]
@@ -381,8 +383,8 @@ def sphere_distance(pts1, pts2, radius=None, check_radius=True):
     """
     pts1 = np.asarray(pts1)
     pts2 = np.asarray(pts2)
-    lens1 = np.sqrt(np.sum(pts1**2, axis=-1))
-    lens2 = np.sqrt(np.sum(pts2**2, axis=-1))
+    lens1 = np.sqrt(np.sum(pts1 ** 2, axis=-1))
+    lens2 = np.sqrt(np.sum(pts2 ** 2, axis=-1))
     if radius is None:
         radius = (np.mean(lens1) + np.mean(lens2)) / 2.0
     if check_radius:
@@ -429,7 +431,7 @@ def cart_distance(pts1, pts2):
     >>> cart_distance([0,0,0], [0,0,3])
     3.0
     '''
-    sqs = np.subtract(pts1, pts2)**2
+    sqs = np.subtract(pts1, pts2) ** 2
     return np.sqrt(np.sum(sqs, axis=-1))
 
 
@@ -463,11 +465,12 @@ def vector_cosine(vecs1, vecs2):
     """
     vecs1 = np.asarray(vecs1)
     vecs2 = np.asarray(vecs2)
-    lens1 = np.sqrt(np.sum(vecs1**2, axis=-1))
-    lens2 = np.sqrt(np.sum(vecs2**2, axis=-1))
+    lens1 = np.sqrt(np.sum(vecs1 ** 2, axis=-1))
+    lens2 = np.sqrt(np.sum(vecs2 ** 2, axis=-1))
     dots = np.inner(vecs1, vecs2)
     lens = lens1 * lens2
     return dots / lens
+
 
 def lambert_equal_area_projection_polar(theta, phi):
     r""" Lambert Equal Area Projection from polar sphere to plane
@@ -499,10 +502,10 @@ def lambert_equal_area_projection_polar(theta, phi):
        planar coordinates of points following mapping by Lambert's EAP.
     """
 
-    return 2 * np.repeat(np.sin(theta/2),2).reshape((theta.shape[0],2)) * np.column_stack((np.cos(phi), np.sin(phi)))
+    return 2 * np.repeat(np.sin(theta / 2), 2).reshape((theta.shape[0], 2)) * np.column_stack((np.cos(phi), np.sin(phi)))
 
 
-def lambert_equal_area_projection_cart(x,y,z):
+def lambert_equal_area_projection_cart(x, y, z):
     r''' Lambert Equal Area Projection from cartesian vector to plane
 
     Return positions in $(y_1,y_2)$ plane corresponding to the
@@ -533,7 +536,7 @@ def lambert_equal_area_projection_cart(x,y,z):
        planar coordinates of points following mapping by Lambert's EAP.
     '''
 
-    (r, theta, phi) = cart2sphere(x,y,z)
+    (r, theta, phi) = cart2sphere(x, y, z)
     return lambert_equal_area_projection_polar(theta, phi)
 
 
@@ -578,8 +581,8 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
         firstaxis, parity, repetition, frame = axes
 
     i = firstaxis
-    j = _NEXT_AXIS[i+parity]
-    k = _NEXT_AXIS[i-parity+1]
+    j = _NEXT_AXIS[i + parity]
+    k = _NEXT_AXIS[i - parity + 1]
 
     if frame:
         ai, ak = ak, ai
@@ -588,34 +591,34 @@ def euler_matrix(ai, aj, ak, axes='sxyz'):
 
     si, sj, sk = math.sin(ai), math.sin(aj), math.sin(ak)
     ci, cj, ck = math.cos(ai), math.cos(aj), math.cos(ak)
-    cc, cs = ci*ck, ci*sk
-    sc, ss = si*ck, si*sk
+    cc, cs = ci * ck, ci * sk
+    sc, ss = si * ck, si * sk
 
     M = np.identity(4)
     if repetition:
         M[i, i] = cj
-        M[i, j] = sj*si
-        M[i, k] = sj*ci
-        M[j, i] = sj*sk
-        M[j, j] = -cj*ss+cc
-        M[j, k] = -cj*cs-sc
-        M[k, i] = -sj*ck
-        M[k, j] = cj*sc+cs
-        M[k, k] = cj*cc-ss
+        M[i, j] = sj * si
+        M[i, k] = sj * ci
+        M[j, i] = sj * sk
+        M[j, j] = -cj * ss + cc
+        M[j, k] = -cj * cs - sc
+        M[k, i] = -sj * ck
+        M[k, j] = cj * sc + cs
+        M[k, k] = cj * cc - ss
     else:
-        M[i, i] = cj*ck
-        M[i, j] = sj*sc-cs
-        M[i, k] = sj*cc+ss
-        M[j, i] = cj*sk
-        M[j, j] = sj*ss+cc
-        M[j, k] = sj*cs-sc
+        M[i, i] = cj * ck
+        M[i, j] = sj * sc - cs
+        M[i, k] = sj * cc + ss
+        M[j, i] = cj * sk
+        M[j, j] = sj * ss + cc
+        M[j, k] = sj * cs - sc
         M[k, i] = -sj
-        M[k, j] = cj*si
-        M[k, k] = cj*ci
+        M[k, j] = cj * si
+        M[k, k] = cj * ci
     return M
 
 
-def compose_matrix(scale=None, shear=None, angles=None, translate=None,perspective=None):
+def compose_matrix(scale=None, shear=None, angles=None, translate=None, perspective=None):
     """Return 4x4 transformation matrix from sequence of
     transformations.
 
@@ -680,8 +683,6 @@ def compose_matrix(scale=None, shear=None, angles=None, translate=None,perspecti
         M = np.dot(M, S)
     M /= M[3, 3]
     return M
-
-
 
 
 def decompose_matrix(matrix):
@@ -792,20 +793,21 @@ def circumradius(a, b, c):
     circumradius : float
         the desired circumradius
     '''
-    x = a-c
-    xx = np.linalg.norm(x)**2
-    y = b-c
-    yy = np.linalg.norm(y)**2
-    z = np.cross(x,y)
+    x = a - c
+    xx = np.linalg.norm(x) ** 2
+    y = b - c
+    yy = np.linalg.norm(y) ** 2
+    z = np.cross(x, y)
     # test for collinearity
     if np.linalg.norm(z) == 0:
-        return np.sqrt(np.max(np.dot(x,x), np.dot(y,y), np.dot(a-b,a-b)))/2.
+        return np.sqrt(np.max(np.dot(x, x), np.dot(y, y), np.dot(a - b, a - b))) / 2.
     else:
-        m = np.vstack((x,y,z))
-        w = np.dot(np.linalg.inv(m.T),np.array([xx/2.,yy/2.,0]))
-        return np.linalg.norm(w)/2.
+        m = np.vstack((x, y, z))
+        w = np.dot(np.linalg.inv(m.T), np.array([xx / 2., yy / 2., 0]))
+        return np.linalg.norm(w) / 2.
 
-def vec2vec_rotmat(u,v):
+
+def vec2vec_rotmat(u, v):
     r""" rotation matrix from 2 unit vectors
 
     u,v being unit 3d vectors return a 3x3 rotation matrix R than aligns u to v.
@@ -841,27 +843,26 @@ def vec2vec_rotmat(u,v):
     """
 
     # return eye when u is the same with v
-    if np.linalg.norm(u-v) < np.finfo(float).eps:
+    if np.linalg.norm(u - v) < np.finfo(float).eps:
         return np.eye(3)
 
-    w=np.cross(u,v)
-    w=w/np.linalg.norm(w)
+    w = np.cross(u, v)
+    w = w / np.linalg.norm(w)
 
     # vp is in plane of u,v,  perpendicular to u
-    vp=(v-(np.dot(u,v)*u))
-    vp=vp/np.linalg.norm(vp)
+    vp = (v - (np.dot(u, v) * u))
+    vp = vp / np.linalg.norm(vp)
 
     # (u vp w) is an orthonormal basis
-    P=np.array([u,vp,w])
-    Pt=P.T
-    cosa=np.dot(u,v)
-    sina=np.sqrt(1-cosa**2)
-    R=np.array([[cosa,-sina,0],[sina,cosa,0],[0,0,1]])
-    Rp=np.dot(Pt,np.dot(R,P))
+    P = np.array([u, vp, w])
+    Pt = P.T
+    cosa = np.dot(u, v)
+    sina = np.sqrt(1 - cosa ** 2)
+    R = np.array([[cosa, -sina, 0], [sina, cosa, 0], [0, 0, 1]])
+    Rp = np.dot(Pt, np.dot(R, P))
 
-    #make sure that you don't return any Nans
-    if np.sum(np.isnan(Rp))>0:
+    # make sure that you don't return any Nans
+    if np.sum(np.isnan(Rp)) > 0:
         return np.eye(3)
-
 
     return Rp
