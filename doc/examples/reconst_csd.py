@@ -28,11 +28,11 @@ data = img.get_data()
 """
 You can verify the b-values of the datasets by looking at the attribute `gtab.bvals`.
 
-In CSD there is an important pre-processing step: the estimation of the fiber response 
-function. In order to do this we look for voxels with very anisotropic configurations. 
-For example here we use an ROI (20x20x20) at the center of the volume hoping to find 
-an area of the corpus callosum and store the signal values for the voxels with FA values 
-higher than 0.7. Of course, if we haven't precalculated FA we need to fit a Tensor 
+In CSD there is an important pre-processing step: the estimation of the fiber response
+function. In order to do this we look for voxels with very anisotropic configurations.
+For example here we use an ROI (20x20x20) at the center of the volume hoping to find
+an area of the corpus callosum and store the signal values for the voxels with FA values
+higher than 0.7. Of course, if we haven't precalculated FA we need to fit a Tensor
 model to the datasets. Which is what we do with the `auto_response` function here.
 """
 
@@ -86,6 +86,52 @@ fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
    :align: center
 
    **CSD ODFs**.
+
+
+In Dipy we also provide tools for finding the peak directions (maxima) of the
+ODFs. For this purpose we strongly recommend using ``peaks_from_model``.
+"""
+
+from dipy.reconst.peaks import peaks_from_model
+
+csd_peaks = peaks_from_model(model=csd_model,
+                             data=data_small,
+                             sphere=sphere,
+                             relative_peak_threshold=.5,
+                             min_separation_angle=25,
+                             parallel=True)
+
+fvtk.clear(ren)
+
+fodf_peaks = fvtk.peaks(csd_peaks.peak_dirs, csd_peaks.peak_values, scale=1.3)
+
+fvtk.add(ren, fodf_peaks)
+
+print('Saving illustration as csd_peaks.png')
+fvtk.record(ren, out_path='csd_peaks.png', size=(600, 600))
+
+"""
+.. figure:: csd_peaks.png
+   :align: center
+
+   **CSD Peaks**.
+
+We can finally visualize both the ODFs and peaks in the same space.
+"""
+
+fodf_spheres.GetProperty().SetOpacity(0.4)
+
+fvtk.add(ren, fodf_spheres)
+
+print('Saving illustration as csd_both.png')
+fvtk.record(ren, out_path='csd_both.png', size=(600, 600))
+
+
+"""
+.. figure:: csd_both.png
+   :align: center
+
+   **CSD Peaks and ODFs**.
 
 .. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
 
