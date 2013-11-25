@@ -170,24 +170,6 @@ def _create_mt_sim(mevals, angles, fractions, S0, SNR):
     return odf_gt, sticks, sphere
 
 
-# def _show_odf_peaks(odf_gt, directions, sticks, sphere):
-
-#     from dipy.viz import fvtk
-#     ren = fvtk.ren()
-#     fvtk.add(ren, fvtk.sphere_funcs(odf_gt, sphere))
-
-#     for i in range(directions.shape[0]):
-#         line_actor = fvtk.line(np.vstack((-directions[i], directions[i])),
-#                                fvtk.colors.red)
-#         fvtk.add(ren, line_actor)
-#     for i in range(sticks.shape[0]):
-#         line_actor2 = fvtk.line(np.vstack((-sticks[i], sticks[i])),
-#                                 fvtk.colors.blue)
-#         fvtk.add(ren, line_actor2)
-
-#     fvtk.show(ren)
-
-
 def test_peak_directions_thorough():
 
     # two equal fibers
