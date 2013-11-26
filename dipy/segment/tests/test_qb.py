@@ -7,11 +7,11 @@ from dipy.segment.quickbundles import QuickBundles
 
 
 def test_qbundles():
-    streams,hdr = nib.trackvis.read(get_data('fornix'))    
-    T=[s[0] for s in streams]
-    Trk=np.array(T, dtype=np.object)    
-    qb=QuickBundles(T,10.,12)
-    Tqb=qb.virtuals()    
-    #Tqbe,Tqbei=qb.exemplars(T)
-    Tqbe,Tqbei=qb.exemplars()    
-    assert_equal(4,qb.total_clusters)
+    streams, hdr = nib.trackvis.read(get_data('fornix'))
+    T = [s[0] for s in streams]
+    Trk = np.array(T, dtype=np.object)
+    qb = QuickBundles(T, 10., 12)
+    Tqb = qb.virtuals()
+    # Tqbe,Tqbei=qb.exemplars(T)
+    Tqbe, Tqbei = qb.exemplars()
+    assert_equal(4, qb.total_clusters)

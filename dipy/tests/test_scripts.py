@@ -24,7 +24,7 @@ from nibabel.tmpdirs import InTemporaryDirectory
 
 from dipy.data import get_data
 
-# Quickbundles command-line requires matplotlib: 
+# Quickbundles command-line requires matplotlib:
 try:
     import matplotlib
     no_mpl = False
@@ -38,6 +38,7 @@ DEBUG_PRINT = os.environ.get('NIPY_DEBUG_PRINT', False)
 
 DATA_PATH = abspath(pjoin(dirname(__file__), 'data'))
 
+
 def local_script_dir(script_sdir):
     # Check for presence of scripts in development directory.  ``realpath``
     # checks for the situation where the development directory has been linked
@@ -49,6 +50,7 @@ def local_script_dir(script_sdir):
     return None
 
 LOCAL_SCRIPT_DIR = local_script_dir('bin')
+
 
 def run_command(cmd, check_code=True):
     if not LOCAL_SCRIPT_DIR is None:
@@ -134,7 +136,8 @@ def test_dipy_fit_tensor():
         shutil.copyfile(bvec, "small_25.bvec")
 
         # Call script
-        cmd = ["dipy_fit_tensor", "--save-tensor", "--mask=none", "small_25.nii.gz"]
+        cmd = ["dipy_fit_tensor", "--save-tensor",
+               "--mask=none", "small_25.nii.gz"]
         out = run_command(" ".join(cmd))
         assert_equal(out[0], 0)
 
@@ -155,6 +158,7 @@ def test_dipy_fit_tensor():
         ten_shape = shape + (1, 6)
         assert_image_shape_affine("small_25_tensor.nii.gz", ten_shape,
                                   affine)
+
 
 @nt.dec.skipif(no_mpl)
 def test_qb_commandline():

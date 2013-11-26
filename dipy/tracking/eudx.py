@@ -138,7 +138,7 @@ class EuDX(object):
         self.total_weight = total_weight
         self.max_points = max_points
         self.voxel_shift = 0
-        if voxel_origin == 'corner': 
+        if voxel_origin == 'corner':
             self.voxel_shift = 0.5
         if len(self.a.shape) == 3:
             self.a.shape = self.a.shape + (1,)

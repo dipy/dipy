@@ -8,6 +8,7 @@ from dipy.data import get_sphere, get_data
 from dipy.core.sphere import unique_edges, HemiSphere
 from dipy.sims.voxel import all_tensor_evecs, multi_tensor_odf
 
+
 def test_local_maxima():
     sphere = get_sphere('symmetric724')
     vertices, faces = sphere.vertices, sphere.faces
@@ -83,8 +84,8 @@ def test_remove_similar_peaks():
                          [0., 2., 1.],
                          [2., 1., 0.],
                          [1., 0., 0.]])
-    norms = np.sqrt((vertices*vertices).sum(-1))
-    vertices = vertices/norms[:, None]
+    norms = np.sqrt((vertices * vertices).sum(-1))
+    vertices = vertices / norms[:, None]
 
     # Return unique vertices
     uv = remove_similar_vertices(vertices, .01)

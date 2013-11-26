@@ -5,5 +5,5 @@
 
 if __name__ == '__main__':
     execfile('setup.py', dict(__name__='__main__',
-                              __file__='setup.py', # needed in setup.py
+                              __file__='setup.py',  # needed in setup.py
                               force_setuptools=True))

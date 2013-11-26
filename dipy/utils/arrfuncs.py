@@ -27,4 +27,3 @@ def as_native_array(arr):
     if endian_codes[arr.dtype.byteorder] == native_code:
         return arr
     return arr.byteswap().newbyteorder()
-

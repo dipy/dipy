@@ -88,14 +88,16 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         else:
             self.sphere = reg_sphere
 
-        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        r, theta, phi = cart2sphere(
+            self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if callable(response):
             S_r = response
         else:
             if response is None:
-                S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
+                S_r = estimate_response(
+                    gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
             else:
                 S_r = estimate_response(gtab, response[0], response[1])
 
@@ -106,15 +108,17 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-        # This is exactly what is done in [4]_ 
-        self.lambda_ = lambda_ * self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
+        # This is exactly what is done in [4]_
+        self.lambda_ = lambda_ * \
+            self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
         self.sh_order = sh_order
         self.tau = tau
 
     @multi_voxel_fit
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
-        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
+        shm_coeff, num_it = csdeconv(
+            s_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
         return SphHarmFit(self, shm_coeff, None)
 
 
@@ -179,14 +183,16 @@ class ConstrainedSDTModel(OdfModel, Cache):
         else:
             self.sphere = reg_sphere
 
-        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        r, theta, phi = cart2sphere(
+            self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         self.R, self.P = forward_sdt_deconv_mat(ratio, n)
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-        self.lambda_ = lambda_ * self.R.shape[0] * self.R[0, 0] / self.B_reg.shape[0]
+        self.lambda_ = lambda_ * \
+            self.R.shape[0] * self.R[0, 0] / self.B_reg.shape[0]
         self.tau = tau
         self.sh_order = sh_order
 
@@ -352,11 +358,12 @@ def forward_sdt_deconv_mat(ratio, n):
     if np.any(n % 2):
         raise ValueError("n has odd degrees, expecting only even degrees")
     n_degrees = n.max() // 2 + 1
-    sdt = np.zeros(n_degrees) # SDT matrix
-    frt = np.zeros(n_degrees) # FRT (Funk-Radon transform) q-ball matrix
+    sdt = np.zeros(n_degrees)  # SDT matrix
+    frt = np.zeros(n_degrees)  # FRT (Funk-Radon transform) q-ball matrix
 
-    for l in np.arange(0, n_degrees*2, 2):
-        sharp = quad(lambda z: lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
+    for l in np.arange(0, n_degrees * 2, 2):
+        sharp = quad(lambda z: lpn(l, z)
+                     [0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
 
         sdt[l / 2] = sharp[0]
         frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
@@ -409,7 +416,8 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     """
 
     # generate initial fODF estimate, truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, s_sh)[0] #fodf_sh, = np.linalg.lstsq(R, s_sh) # R\s_sh
+    # fodf_sh, = np.linalg.lstsq(R, s_sh) # R\s_sh
+    fodf_sh = np.linalg.lstsq(R, s_sh)[0]
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_reg, fodf_sh)
@@ -425,7 +433,8 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(fodf < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warnings.warn('too few negative directions identified - failed to converge')
+            warnings.warn(
+                'too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -434,11 +443,12 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
         k = k2
 
-        # This is the super-resolved trick. 
+        # This is the super-resolved trick.
         # Wherever there is a negative amplitude value on the fODF, it concatinates a value
         # to the S vector so that the estimation can focus on trying to eliminate it.
         # In a sense, this "adds" a measurement, which can help to better estimate the fodf_sh,
-        # even if you have more SH coeffcients to estimate than actual S measurements. 
+        # even if you have more SH coeffcients to estimate than actual S
+        # measurements.
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         fodf_sh = np.linalg.lstsq(M, S)[0]
@@ -499,7 +509,8 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(A < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warnings.warn('too few negative directions identified - failed to converge')
+            warnings.warn(
+                'too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -509,7 +520,7 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1):
         k = k2
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
-        fodf_sh = np.linalg.lstsq(M, ODF)[0]  
+        fodf_sh = np.linalg.lstsq(M, ODF)[0]
 
     warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
@@ -565,7 +576,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
     for index in ndindex(odfs_sh.shape[:-1]):
 
-        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], R, B_reg, lambda_=lambda_, tau=tau)
+        fodf_sh[index], num_it = odf_deconv(
+            odfs_sh[index], R, B_reg, lambda_=lambda_, tau=tau)
 
     return fodf_sh
 
@@ -631,5 +643,5 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     l01 = np.mean(lambdas, axis=0)
     evals = np.array([l01[0], l01[1], l01[1]])
     response = (evals, S0)
-    ratio = evals[1]/evals[0]
+    ratio = evals[1] / evals[0]
     return response, ratio

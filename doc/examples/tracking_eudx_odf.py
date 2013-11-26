@@ -51,7 +51,8 @@ csa_streamlines_trk = ((sl, None, None) for sl in csa_streamlines)
 
 csa_sl_fname = 'csa_streamline.trk'
 
-nib.trackvis.write(csa_sl_fname, csa_streamlines_trk, hdr, points_space='voxel')
+nib.trackvis.write(csa_sl_fname, csa_streamlines_trk,
+                   hdr, points_space='voxel')
 
 """
 Visualize the streamlines with fvtk (python vtk is required).
@@ -88,7 +89,8 @@ csa_streamlines_mult_peaks = [streamline for streamline in eu]
 
 fvtk.clear(r)
 
-fvtk.add(r, fvtk.line(csa_streamlines_mult_peaks, line_colors(csa_streamlines_mult_peaks)))
+fvtk.add(r, fvtk.line(csa_streamlines_mult_peaks,
+         line_colors(csa_streamlines_mult_peaks)))
 
 print('Saving illustration as csa_tracking_mpeaks.png')
 

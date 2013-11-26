@@ -61,6 +61,7 @@ from __future__ import division, print_function, absolute_import
 
 
 class ResetMixin(object):
+
     """A Mixin class to add a .reset() method to users of OneTimeProperty.
 
     By default, auto attributes once computed, become static.  If they happen
@@ -143,10 +144,12 @@ class ResetMixin(object):
 
 
 class OneTimeProperty(object):
+
     """A descriptor to make special properties that become normal attributes.
 
     This is meant to be used mostly by the auto_attr decorator in this module.
     """
+
     def __init__(self, func):
         """Create a OneTimeProperty instance.
 

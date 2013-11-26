@@ -34,18 +34,21 @@ def fetch_scil_b0():
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
         os.makedirs(folder)
-        print('Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
+        print(
+            'Downloading SCIL b=0 datasets from multiple sites and multiple companies (9.2MB)...')
         opener = urlopen(uraw)
-        open(folder+'.zip', 'wb').write(opener.read())
+        open(folder + '.zip', 'wb').write(opener.read())
 
-        print('Unziping '+folder+'.zip ...')
-        zip = zipfile.ZipFile(folder+'.zip', 'r')
+        print('Unziping ' + folder + '.zip ...')
+        zip = zipfile.ZipFile(folder + '.zip', 'r')
         zip.extractall(dipy_home)
 
         print('Done.')
         print('Files copied in folder %s' % dipy_home)
     else:
-        print('Dataset already in place. If you want to fetch again please first remove folder %s ' % dipy_home)
+        print(
+            'Dataset already in place. If you want to fetch again please first remove folder %s ' %
+            dipy_home)
 
 
 def read_scil_b0():
@@ -57,7 +60,7 @@ def read_scil_b0():
         Nifti1Image
     """
     dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
-    file = dipy_home+'/datasets_multi-site_all_companies/3T/GE/b0.nii.gz'
+    file = dipy_home + '/datasets_multi-site_all_companies/3T/GE/b0.nii.gz'
     return nib.load(file)
 
 
@@ -76,13 +79,14 @@ def check_md5(filename, stored_md5):
     md5_data = md5()
 
     with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+        for chunk in iter(lambda: f.read(128 * md5_data.block_size), b''):
             md5_data.update(chunk)
 
     if stored_md5 != md5_data.hexdigest():
-        print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
-               "but computed MD5 was", md5_data, '\n',
-               "Please check if the data has been downloaded correctly or if the upstream data has changed.")
+        print (
+            "MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
+            "but computed MD5 was", md5_data, '\n',
+            "Please check if the data has been downloaded correctly or if the upstream data has changed.")
 
 
 def _get_file_data(fname, url):
@@ -101,9 +105,9 @@ def fetch_isbi2013_2shell():
     ubvec = url + '2shells-1500-2500-N64.bvec'
     folder = pjoin(dipy_home, 'isbi2013')
 
-    md5_list = ['42911a70f232321cf246315192d69c42', # data
-                '90e8cf66e0f4d9737a3b3c0da24df5ea', # bval
-                '4b7aa2757a1ccab140667b76e8075cb1'] # bvec
+    md5_list = ['42911a70f232321cf246315192d69c42',  # data
+                '90e8cf66e0f4d9737a3b3c0da24df5ea',  # bval
+                '4b7aa2757a1ccab140667b76e8075cb1']  # bvec
 
     url_list = [uraw, ubval, ubvec]
     fname_list = ['phantom64.nii.gz', 'phantom64.bval', 'phantom64.bvec']
@@ -120,7 +124,9 @@ def fetch_isbi2013_2shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        print(
+            'Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' %
+            folder)
 
 
 def read_isbi2013_2shell():
@@ -164,9 +170,9 @@ def fetch_sherbrooke_3shell():
     ubvec = url + '3shells-1000-2000-3500-N193.bvec'
     folder = pjoin(dipy_home, 'sherbrooke_3shell')
 
-    md5_list = ['0b735e8f16695a37bfbd66aab136eb66', # data
-                'e9b9bb56252503ea49d31fb30a0ac637', # bval
-                '0c83f7e8b917cd677ad58a078658ebb7'] # bvec
+    md5_list = ['0b735e8f16695a37bfbd66aab136eb66',  # data
+                'e9b9bb56252503ea49d31fb30a0ac637',  # bval
+                '0c83f7e8b917cd677ad58a078658ebb7']  # bvec
 
     url_list = [uraw, ubval, ubvec]
     fname_list = ['HARDI193.nii.gz', 'HARDI193.bval', 'HARDI193.bvec']
@@ -183,7 +189,9 @@ def fetch_sherbrooke_3shell():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        print(
+            'Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' %
+            folder)
 
 
 def read_sherbrooke_3shell():
@@ -226,9 +234,9 @@ def fetch_stanford_hardi():
     ubvec = url + 'dwi.bvecs'
     folder = pjoin(dipy_home, 'stanford_hardi')
 
-    md5_list = ['0b18513b46132b4d1051ed3364f2acbc', # data
-                '4e08ee9e2b1d2ec3fddb68c70ae23c36', # bval
-                '4c63a586f29afc6a48a5809524a76cb4'] # bvec
+    md5_list = ['0b18513b46132b4d1051ed3364f2acbc',  # data
+                '4e08ee9e2b1d2ec3fddb68c70ae23c36',  # bval
+                '4c63a586f29afc6a48a5809524a76cb4']  # bvec
 
     url_list = [uraw, ubval, ubvec]
     fname_list = ['HARDI150.nii.gz', 'HARDI150.bval', 'HARDI150.bvec']
@@ -245,7 +253,9 @@ def fetch_stanford_hardi():
         print('Done.')
         print('Files copied in folder %s' % folder)
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        print(
+            'Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' %
+            folder)
 
 
 def read_stanford_hardi():
@@ -288,13 +298,14 @@ def fetch_taiwan_ntu_dsi():
     ureadme = 'http://dl.dropbox.com/u/2481924/license_taiwan_ntu_dsi.txt'
     folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
 
-    md5_list = ['950408c0980a7154cb188666a885a91f', # data
-                '602e5cb5fad2e7163e8025011d8a6755', # bval
-                'a95eb1be44748c20214dc7aa654f9e6b', # bvec
-                '7fa1d5e272533e832cc7453eeba23f44'] # license
+    md5_list = ['950408c0980a7154cb188666a885a91f',  # data
+                '602e5cb5fad2e7163e8025011d8a6755',  # bval
+                'a95eb1be44748c20214dc7aa654f9e6b',  # bvec
+                '7fa1d5e272533e832cc7453eeba23f44']  # license
 
     url_list = [uraw, ubval, ubvec, ureadme]
-    fname_list = ['DSI203.nii.gz', 'DSI203.bval', 'DSI203.bvec', 'DSI203_license.txt']
+    fname_list = ['DSI203.nii.gz', 'DSI203.bval',
+                  'DSI203.bvec', 'DSI203_license.txt']
 
     if not os.path.exists(folder):
         print('Creating new directory %s' % folder)
@@ -312,7 +323,9 @@ def fetch_taiwan_ntu_dsi():
         print('http://dsi-studio.labsolver.org')
 
     else:
-        print('Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' % folder)
+        print(
+            'Dataset is already in place. If you want to fetch it again, please first remove the folder %s ' %
+            folder)
 
 
 def read_taiwan_ntu_dsi():
@@ -341,7 +354,8 @@ def read_taiwan_ntu_dsi():
     check_md5(pjoin(folder, 'DSI203_license.txt'), md5_dict['license'])
 
     bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
-    bvecs[1:] = bvecs[1:] / np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
+    bvecs[1:] = bvecs[1:] / \
+        np.sqrt(np.sum(bvecs[1:] * bvecs[1:], axis=1))[:, None]
 
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)

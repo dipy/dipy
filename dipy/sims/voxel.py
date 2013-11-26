@@ -157,7 +157,8 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
     for (i, g) in enumerate(gtab.bvecs[1:]):
         S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + \
             np.sum([
-                   fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+                   fractions[j] *
+                   np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
                    for (j, s) in enumerate(sticks)
                    ])
 
@@ -285,10 +286,11 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 
     for i in range(len(fractions)):
             S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
-                                                 evecs=all_tensor_evecs(sticks[i]).T,
+                                                 evecs=all_tensor_evecs(
+                                                     sticks[i]).T,
                                                  snr=None)
-    
-    return add_noise(S, snr, S0), sticks 
+
+    return add_noise(S, snr, S0), sticks
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
@@ -415,4 +417,4 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
 # for backward compatibility
 SticksAndBall = sticks_and_ball
 SingleTensor = single_tensor
-MultiTensor  = multi_tensor
+MultiTensor = multi_tensor

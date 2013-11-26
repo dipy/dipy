@@ -4,6 +4,7 @@ from __future__ import division, print_function, absolute_import
 from math import floor
 from platform import architecture
 
+
 def WichmannHill2006():
     '''
     B.A. Wichmann, I.D. Hill, Generating good pseudo-random numbers,
@@ -24,7 +25,8 @@ def WichmannHill2006():
 
     if architecture()[0] == '64':
 
-        #If 64 bits are available then the following lines of code will be faster.
+        # If 64 bits are available then the following lines of code will be
+        # faster.
         ix = (11600 * ix) % 2147483579
         iy = (47003 * iy) % 2147483543
         iz = (23000 * iz) % 2147483423
@@ -32,12 +34,12 @@ def WichmannHill2006():
 
     else:
 
-        #If only 32 bits are available
+        # If only 32 bits are available
 
         ix = 11600 * (ix % 185127) - 10379 * (ix / 185127)
-        iy = 47003 * (ix %  45688) - 10479 * (iy /  45688)
-        iz = 23000 * (iz %  93368) - 19423 * (iz /  93368)
-        it = 33000 * (it %  65075) -  8123 * (it /  65075)
+        iy = 47003 * (ix % 45688) - 10479 * (iy / 45688)
+        iz = 23000 * (iz % 93368) - 19423 * (iz / 93368)
+        it = 33000 * (it % 65075) - 8123 * (it / 65075)
 
         if ix < 0:
             ix = ix + 2147483579
@@ -48,7 +50,8 @@ def WichmannHill2006():
         if it < 0:
             it = it + 2147483123
 
-    W = ix/2147483579.0 + iy/2147483543.0 + iz/2147483423.0 + it/2147483123.0
+    W = ix / 2147483579.0 + iy / 2147483543.0 + \
+        iz / 2147483423.0 + it / 2147483123.0
 
     return W - floor(W)
 
@@ -92,7 +95,7 @@ def WichmannHill1982():
         iz = iz + 30323
     '''
     return np.remainder(np.float(ix) / 30269. + np.float(iy) / 30307.
-                          + np.float(iz) / 30323., 1.0)
+                        + np.float(iz) / 30323., 1.0)
 
 
 def LEcuyer():
@@ -113,7 +116,7 @@ def LEcuyer():
         s1 = s1 + 2147483563
     k = s2 / 52774
     s2 = 40692 * (s2 - k * 52774) - k * 3791
-    if  s2 < 0:
+    if s2 < 0:
         s2 = s2 + 2147483399
     z = s1 - s2
     if z < 0:

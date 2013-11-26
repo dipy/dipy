@@ -12,22 +12,27 @@ particular set of data (different voxels, for example).
 
 
 class ReconstModel(object):
+
     """ Abstract class for signal reconstruction models
     """
+
     def __init__(self, gtab):
         """
 
         """
-        self.gtab=gtab
+        self.gtab = gtab
 
-    def fit(self, data, mask=None,**kwargs):
+    def fit(self, data, mask=None, **kwargs):
         return ReconstFit(self, data)
 
+
 class ReconstFit(object):
+
     """ Abstract class which holds the fit result of ReconstModel
 
     For example that could be holding FA or GFA etc.
     """
+
     def __init__(self, model, data):
         self.model = model
         self.data = data

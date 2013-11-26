@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
-__all__ = ['Sphere', 'HemiSphere', 'faces_from_sphere_vertices', 'unique_edges']
+__all__ = ['Sphere', 'HemiSphere',
+           'faces_from_sphere_vertices', 'unique_edges']
 
 import numpy as np
 import warnings
@@ -43,10 +44,11 @@ def faces_from_sphere_vertices(vertices):
     """
     from scipy.spatial import Delaunay
     faces = Delaunay(vertices).convex_hull
-    if len(vertices) < 2**16:
+    if len(vertices) < 2 ** 16:
         return np.asarray(faces, np.uint16)
     else:
         return faces
+
 
 def unique_edges(faces, return_mapping=False):
     """Extract all unique edges from given triangular faces.
@@ -121,6 +123,7 @@ def unique_sets(sets, return_inverse=False):
 
 
 class Sphere(object):
+
     """Points on the unit sphere.
 
     The sphere can be constructed using one of three conventions::
@@ -153,9 +156,9 @@ class Sphere(object):
                  faces=None, edges=None):
 
         all_specified = _all_specified(x, y, z) + _all_specified(xyz) + \
-                        _all_specified(theta, phi)
+            _all_specified(theta, phi)
         one_complete = _some_specified(x, y, z) + _some_specified(xyz) + \
-                       _some_specified(theta, phi)
+            _some_specified(theta, phi)
 
         if not (all_specified == 1 and one_complete == 1):
             raise ValueError("Sphere must be constructed using either "
@@ -255,12 +258,13 @@ class Sphere(object):
             face4 = mapping
             faces = np.concatenate([face1, face2, face3, face4])
 
-        if len(vertices) < 2**16:
+        if len(vertices) < 2 ** 16:
             faces = np.asarray(faces, dtype='uint16')
         return Sphere(xyz=vertices, faces=faces)
 
 
 class HemiSphere(Sphere):
+
     """Points on the unit sphere.
 
     A HemiSphere is similar to a Sphere but it takes antipodal symmetry into
@@ -299,6 +303,7 @@ class HemiSphere(Sphere):
     Sphere
 
     """
+
     def __init__(self, x=None, y=None, z=None,
                  theta=None, phi=None,
                  xyz=None,
@@ -308,7 +313,7 @@ class HemiSphere(Sphere):
         sphere = Sphere(x=x, y=y, z=z, theta=theta, phi=phi, xyz=xyz)
         uniq_vertices, mapping = remove_similar_vertices(sphere.vertices, tol,
                                                          return_mapping=True)
-        uniq_vertices *= 1 - 2*(uniq_vertices[:, -1:] < 0)
+        uniq_vertices *= 1 - 2 * (uniq_vertices[:, -1:] < 0)
         if faces is not None:
             faces = np.asarray(faces)
             faces = unique_sets(mapping[faces])
@@ -329,11 +334,11 @@ class HemiSphere(Sphere):
         vertices = np.vstack([self.vertices, -self.vertices])
 
         edges = np.vstack([self.edges, n + self.edges])
-        _switch_vertex(edges[:,0], edges[:,1], vertices)
+        _switch_vertex(edges[:, 0], edges[:, 1], vertices)
 
         faces = np.vstack([self.faces, n + self.faces])
-        _switch_vertex(faces[:,0], faces[:,1], vertices)
-        _switch_vertex(faces[:,0], faces[:,2], vertices)
+        _switch_vertex(faces[:, 0], faces[:, 1], vertices)
+        _switch_vertex(faces[:, 0], faces[:, 2], vertices)
         return Sphere(xyz=vertices, edges=edges, faces=faces)
 
     @auto_attr
@@ -363,7 +368,7 @@ def _switch_vertex(index1, index2, vertices):
     A = vertices[index1]
     B = vertices[index2]
     is_far = (A * B).sum(-1) < 0
-    index2[is_far] += n/2
+    index2[is_far] += n / 2
     index2 %= n
 
 
@@ -384,19 +389,19 @@ def _get_forces(charges):
     all_charges = np.concatenate((charges, -charges))
     all_charges = all_charges[:, None]
     r = charges - all_charges
-    r_mag = np.sqrt((r*r).sum(-1))[:, :, None]
+    r_mag = np.sqrt((r * r).sum(-1))[:, :, None]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        force = r / r_mag**3
+        force = r / r_mag ** 3
         potential = 1. / r_mag
 
     d = np.arange(len(charges))
-    force[d,d] = 0
+    force[d, d] = 0
     force = force.sum(0)
-    force_r_comp = (charges*force).sum(-1)[:, None]
-    f_theta = force - force_r_comp*charges
-    potential[d,d] = 0
-    potential = 2*potential.sum()
+    force_r_comp = (charges * force).sum(-1)[:, None]
+    f_theta = force - force_r_comp * charges
+    potential[d, d] = 0
+    potential = 2 * potential.sum()
     return f_theta, potential
 
 
@@ -438,14 +443,14 @@ def disperse_charges(hemi, iters, const=.2):
         raise ValueError("expecting HemiSphere")
     charges = hemi.vertices
     forces, v = _get_forces(charges)
-    force_mag = np.sqrt((forces*forces).sum())
+    force_mag = np.sqrt((forces * forces).sum())
     const = const / force_mag.max()
     potential = np.empty(iters)
     v_min = v
 
     for ii in xrange(iters):
         new_charges = charges + forces * const
-        norms = np.sqrt((new_charges**2).sum(-1))
+        norms = np.sqrt((new_charges ** 2).sum(-1))
         new_charges /= norms[:, None]
         new_forces, v = _get_forces(new_charges)
         if v <= v_min:
@@ -461,7 +466,7 @@ def disperse_charges(hemi, iters, const=.2):
 
 def interp_rbf(data, sphere_origin, sphere_target,
                function='multiquadric', epsilon=None, smooth=0,
-               norm = "euclidean_norm"):
+               norm="euclidean_norm"):
     """Interpolate data on the sphere, using radial basis functions.
 
     Parameters
@@ -497,31 +502,31 @@ def interp_rbf(data, sphere_origin, sphere_target,
 
     """
     from scipy.interpolate import Rbf
-    
+
     def angle(x1, x2):
         xx = np.arccos((x1 * x2).sum(axis=0))
         xx[np.isnan(xx)] = 0
         return xx
-        
+
     def euclidean_norm(x1, x2):
-        return np.sqrt(((x1 - x2)**2).sum(axis=0))
-    
+        return np.sqrt(((x1 - x2) ** 2).sum(axis=0))
+
     if norm is "angle":
         norm = angle
     elif norm is "euclidean_norm":
         norm = euclidean_norm
-        
+
     # Workaround for bug in SciPy that doesn't allow
     # specification of epsilon None
     if epsilon is not None:
         kwargs = {'function': function,
                   'epsilon': epsilon,
-                  'smooth' : smooth,
-                  'norm' : norm}
+                  'smooth': smooth,
+                  'norm': norm}
     else:
         kwargs = {'function': function,
                   'smooth': smooth,
-                  'norm' : norm}
+                  'norm': norm}
 
     rbfi = Rbf(sphere_origin.x, sphere_origin.y, sphere_origin.z, data,
                **kwargs)
@@ -570,13 +575,13 @@ def euler_characteristic_check(sphere, chi=2):
 
 
 octahedron_vertices = np.array(
-    [[ 1.0 , 0.0,  0.0],
+    [[1.0, 0.0,  0.0],
      [-1.0,  0.0,  0.0],
-     [ 0.0,  1.0,  0.0],
-     [ 0.0, -1.0,  0.0],
-     [ 0.0,  0.0,  1.0],
-     [ 0.0,  0.0, -1.0],
-    ])
+     [0.0,  1.0,  0.0],
+     [0.0, -1.0,  0.0],
+     [0.0,  0.0,  1.0],
+     [0.0,  0.0, -1.0],
+     ])
 octahedron_faces = np.array(
     [[0, 4, 2],
      [1, 5, 3],
@@ -586,46 +591,46 @@ octahedron_faces = np.array(
      [0, 5, 2],
      [0, 4, 3],
      [1, 5, 2],
-    ], dtype='uint16')
+     ], dtype='uint16')
 
 t = (1 + np.sqrt(5)) / 2
 icosahedron_vertices = np.array(
-    [[  t,  1,  0], #  0
-     [ -t,  1,  0], #  1
-     [  t, -1,  0], #  2
-     [ -t, -1,  0], #  3
-     [  1,  0,  t], #  4
-     [  1,  0, -t], #  5
-     [ -1,  0,  t], #  6
-     [ -1,  0, -t], #  7
-     [  0,  t,  1], #  8
-     [  0, -t,  1], #  9
-     [  0,  t, -1], # 10
-     [  0, -t, -1], # 11
-    ])
+    [[t,  1,  0],  # 0
+     [-t,  1,  0],  # 1
+     [t, -1,  0],  # 2
+     [-t, -1,  0],  # 3
+     [1,  0,  t],  # 4
+     [1,  0, -t],  # 5
+     [-1,  0,  t],  # 6
+     [-1,  0, -t],  # 7
+     [0,  t,  1],  # 8
+     [0, -t,  1],  # 9
+     [0,  t, -1],  # 10
+     [0, -t, -1],  # 11
+     ])
 icosahedron_vertices /= vector_norm(icosahedron_vertices, keepdims=True)
 icosahedron_faces = np.array(
-    [[ 8,  4,  0],
-     [ 2,  5,  0],
-     [ 2,  5, 11],
-     [ 9,  2, 11],
-     [ 2,  4,  0],
-     [ 9,  2,  4],
+    [[8,  4,  0],
+     [2,  5,  0],
+     [2,  5, 11],
+     [9,  2, 11],
+     [2,  4,  0],
+     [9,  2,  4],
      [10,  8,  1],
      [10,  8,  0],
      [10,  5,  0],
-     [ 6,  3,  1],
-     [ 9,  6,  3],
-     [ 6,  8,  1],
-     [ 6,  8,  4],
-     [ 9,  6,  4],
-     [ 7, 10,  1],
-     [ 7, 10,  5],
-     [ 7,  3,  1],
-     [ 7,  3, 11],
-     [ 9,  3, 11],
-     [ 7,  5, 11],
-    ], dtype='uint16')
+     [6,  3,  1],
+     [9,  6,  3],
+     [6,  8,  1],
+     [6,  8,  4],
+     [9,  6,  4],
+     [7, 10,  1],
+     [7, 10,  5],
+     [7,  3,  1],
+     [7,  3, 11],
+     [9,  3, 11],
+     [7,  5, 11],
+     ], dtype='uint16')
 
 unit_octahedron = Sphere(xyz=octahedron_vertices, faces=octahedron_faces)
 unit_icosahedron = Sphere(xyz=icosahedron_vertices, faces=icosahedron_faces)

@@ -27,6 +27,7 @@ edges = unit_octahedron.edges
 oct_faces = unit_octahedron.faces
 r, theta, phi = cart2sphere(*verts.T)
 
+
 def test_sphere_construct_args():
     nt.assert_raises(ValueError, Sphere)
     nt.assert_raises(ValueError, Sphere, x=1, theta=1)
@@ -167,7 +168,7 @@ def test_hemisphere_subdivide():
     def flip(vertices):
         x, y, z = vertices.T
         f = (z < 0) | ((z == 0) & (y < 0)) | ((z == 0) & (y == 0) & (x < 0))
-        return 1 - 2*f[:, None]
+        return 1 - 2 * f[:, None]
 
     decimals = 6
     # Test HemiSphere.subdivide
@@ -236,9 +237,9 @@ def test_mirror():
 
     for triangle in s.faces:
         a, b, c = triangle
-        nt.assert_(_angle(verts[a], verts[b]) <= np.pi/2)
-        nt.assert_(_angle(verts[a], verts[c]) <= np.pi/2)
-        nt.assert_(_angle(verts[b], verts[c]) <= np.pi/2)
+        nt.assert_(_angle(verts[a], verts[b]) <= np.pi / 2)
+        nt.assert_(_angle(verts[a], verts[c]) <= np.pi / 2)
+        nt.assert_(_angle(verts[b], verts[c]) <= np.pi / 2)
 
 
 @needs_delaunay
@@ -246,13 +247,13 @@ def test_hemisphere_faces():
 
     t = (1 + np.sqrt(5)) / 2
     vertices = np.array(
-        [[ -t, -1,  0],
-         [ -t,  1,  0],
-         [  1,  0,  t],
-         [ -1,  0,  t],
-         [  0,  t,  1],
-         [  0, -t,  1],
-        ])
+        [[-t, -1,  0],
+         [-t,  1,  0],
+         [1,  0,  t],
+         [-1,  0,  t],
+         [0,  t,  1],
+         [0, -t,  1],
+         ])
     vertices /= vector_norm(vertices, keepdims=True)
     faces = np.array(
         [[0, 1, 2],
@@ -265,7 +266,7 @@ def test_hemisphere_faces():
          [2, 3, 5],
          [0, 4, 5],
          [1, 4, 5],
-        ])
+         ])
     edges = np.array(
         [(0, 1),
          (0, 2),
@@ -282,7 +283,7 @@ def test_hemisphere_faces():
          (3, 4),
          (3, 5),
          (4, 5),
-        ])
+         ])
 
     h = HemiSphere(xyz=vertices)
     nt.assert_equal(len(h.edges), len(edges))
@@ -304,6 +305,7 @@ def test_get_force():
     nt.assert_array_almost_equal(force[1, [0, 2]], 0)
     nt.assert_(force[1, 1] > 0)
 
+
 def test_disperse_charges():
     charges = np.array([[1., 0, 0],
                         [0, 1., 0],
@@ -311,36 +313,37 @@ def test_disperse_charges():
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 10)
     nt.assert_array_almost_equal(charges, d_sphere.vertices)
 
-    a = np.sqrt(3)/2
-    charges = np.array([[3./5, 4./5, 0],
-                        [4./5, 3./5, 0]])
-    expected_charges =  np.array([[0, 1., 0],
-                                  [1., 0, 0]])
+    a = np.sqrt(3) / 2
+    charges = np.array([[3. / 5, 4. / 5, 0],
+                        [4. / 5, 3. / 5, 0]])
+    expected_charges = np.array([[0, 1., 0],
+                                 [1., 0, 0]])
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .2)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in xrange(1, len(pot)):
-        #check that the potential of the system is going down
-        nt.assert_(pot[ii] - pot[ii-1] <= 0)
+        # check that the potential of the system is going down
+        nt.assert_(pot[ii] - pot[ii - 1] <= 0)
 
     # Check that the disperse_charges does not blow up with a large constant
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, 20.)
     nt.assert_array_almost_equal(expected_charges, d_sphere.vertices)
     for ii in xrange(1, len(pot)):
-        #check that the potential of the system is going down
-        nt.assert_(pot[ii] - pot[ii-1] <= 0)
+        # check that the potential of the system is going down
+        nt.assert_(pot[ii] - pot[ii - 1] <= 0)
 
-    #check that the function seems to work with a larger number of charges
-    charges = np.arange(21).reshape(7,3)
-    norms = np.sqrt((charges*charges).sum(-1))
+    # check that the function seems to work with a larger number of charges
+    charges = np.arange(21).reshape(7, 3)
+    norms = np.sqrt((charges * charges).sum(-1))
     charges = charges / norms[:, None]
     d_sphere, pot = disperse_charges(HemiSphere(xyz=charges), 1000, .05)
     for ii in xrange(1, len(pot)):
-        #check that the potential of the system is going down
-        nt.assert_(pot[ii] - pot[ii-1] <= 0)
-    #check that the resulting charges all lie on the unit sphere
+        # check that the potential of the system is going down
+        nt.assert_(pot[ii] - pot[ii - 1] <= 0)
+    # check that the resulting charges all lie on the unit sphere
     d_charges = d_sphere.vertices
-    norms = np.sqrt((d_charges*d_charges).sum(-1))
+    norms = np.sqrt((d_charges * d_charges).sum(-1))
     nt.assert_array_almost_equal(norms, 1)
+
 
 def test_interp_rbf():
     from dipy.core.sphere import Sphere, interp_rbf
@@ -352,8 +355,8 @@ def test_interp_rbf():
 
     data = np.cos(s0.theta) + np.sin(s0.phi)
     expected = np.cos(s1.theta) + np.sin(s1.phi)
-    interp_data_en = interp_rbf(data, s0, s1, norm = "euclidean_norm")
-    interp_data_a = interp_rbf(data, s0, s1, norm = "angle")
+    interp_data_en = interp_rbf(data, s0, s1, norm="euclidean_norm")
+    interp_data_a = interp_rbf(data, s0, s1, norm="angle")
 
     nt.assert_(np.mean(np.abs(interp_data_en - expected)) < 0.1)
     nt.assert_(np.mean(np.abs(interp_data_a - expected)) < 0.1)

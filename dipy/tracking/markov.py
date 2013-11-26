@@ -35,6 +35,7 @@ class DirectionFinder(object):
 
 
 class BoundaryStepper(object):
+
     """Steps along a direction past the closest voxel boundary
 
     Parameters
@@ -46,6 +47,7 @@ class BoundaryStepper(object):
         edge of a voxel.
 
     """
+
     def __init__(self, voxel_size=(1, 1, 1), overstep=.1):
         self.overstep = overstep
         self.voxel_size = np.array(voxel_size, 'float')
@@ -71,7 +73,9 @@ class BoundaryStepper(object):
 
 
 class FixedSizeStepper(object):
+
     """A stepper that uses a fixed step size"""
+
     def __init__(self, step_size=.5):
         self.step_size = step_size
 
@@ -124,6 +128,7 @@ def markov_streamline(get_direction, take_step, seed, first_step, maxlen):
 
 
 class MarkovIntegrator(object):
+
     """An abstract class for fiber-tracking"""
 
     _get_directions = DirectionFinder()
@@ -264,6 +269,7 @@ class ClosestDirectionTracker(MarkovIntegrator):
 
 
 class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
+
     """A stochastic (probabilistic) fiber tracking method
 
     Stochastically tracks streamlines by randomly choosing directions from
@@ -317,6 +323,7 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
            fibres. http://cds.ismrm.org/ismrm-2005/Files/01343.pdf
 
     """
+
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
                  seeds, sphere, max_cross=None, maxlen=500,
                  mask_voxel_size=None):
@@ -375,6 +382,7 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
 
 
 class CDT_NNO(ClosestDirectionTracker):
+
     """ClosestDirectionTracker optimized for NearestNeighbor interpolator
 
     For use with Nearest Neighbor interpolation, directions at each voxel are
@@ -392,6 +400,7 @@ class CDT_NNO(ClosestDirectionTracker):
         Maximum angle allowed between prev_step and next_step.
 
     """
+
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
                  seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
         if not isinstance(interpolator, NearestNeighborInterpolator):

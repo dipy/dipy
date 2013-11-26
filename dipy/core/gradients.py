@@ -10,6 +10,7 @@ from .geometry import vector_norm
 
 
 class GradientTable(object):
+
     """Diffusion gradient information
 
     Parameters
@@ -40,6 +41,7 @@ class GradientTable(object):
     gradient_table
 
     """
+
     def __init__(self, gradients, big_delta=None, small_delta=None,
                  b0_threshold=0):
         """Constructor for GradientTable class"""
@@ -80,7 +82,7 @@ class GradientTable(object):
 
 
 def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
-                                  **kwargs):
+                                    **kwargs):
     """Creates a GradientTable from a bvals array and a bvecs array
 
     Parameters
@@ -135,6 +137,7 @@ def gradient_table_from_bvals_bvecs(bvals, bvecs, b0_threshold=0, atol=1e-2,
     grad_table.b0s_mask = ~dwi_mask
 
     return grad_table
+
 
 def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                    b0_threshold=0, atol=1e-2):
@@ -212,9 +215,9 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     # If you provided strings with full paths, we go and load those from
     # the files:
     if isinstance(bvals, string_types):
-          bvals, _ = io.read_bvals_bvecs(bvals, None)
+        bvals, _ = io.read_bvals_bvecs(bvals, None)
     if isinstance(bvecs, string_types):
-          _, bvecs = io.read_bvals_bvecs(None, bvecs)
+        _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
     # If bvals is None we expect bvals to be an (N, 3) or (3, N) array
@@ -230,7 +233,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
                              "array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
-        if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0]>1:
+        if (bvecs.shape[1] > bvecs.shape[0]) and bvecs.shape[0] > 1:
             bvecs = bvecs.T
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=None,
                                            small_delta=None,

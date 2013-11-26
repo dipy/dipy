@@ -43,6 +43,7 @@ def test_markov_streamline():
     east = np.array([1, 0, 0])
 
     class MoveEastWest(object):
+
         def get_direction(self, location, prev_step):
             if np.any(location < 0):
                 raise OutsideImage
@@ -80,6 +81,7 @@ def test_markov_streamline():
 def test_MarkovIntegrator():
 
     class KeepGoing(MarkovIntegrator):
+
         def _next_step(self, location, prev_step):
             if prev_step is None:
                 return np.array([[1., 0, 0],
@@ -150,6 +152,7 @@ def test_closest_peak():
 
 def test_ClosestDirectionTracker():
     class MyModel(object):
+
         def fit(self, data):
             return MyFit()
 
@@ -228,10 +231,12 @@ def test_ProbabilisticOdfWeightedTracker():
 
     # Simple model and fit for this image
     class MyModel():
+
         def fit(self, data):
             return MyFit(data)
 
     class MyFit(object):
+
         def __init__(self, n):
             self.n = n
 

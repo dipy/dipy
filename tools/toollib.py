@@ -11,11 +11,13 @@ pjoin = os.path.join
 cd = os.chdir
 
 # Utility functions
+
+
 def c(cmd):
     """Run system command, raise SystemExit if it returns an error."""
-    print "$",cmd
+    print "$", cmd
     stat = os.system(cmd)
-    #stat = 0  # Uncomment this and comment previous to run in debug mode
+    # stat = 0  # Uncomment this and comment previous to run in debug mode
     if stat:
         raise SystemExit("Command %s failed with code: %s" % (cmd, stat))
 
@@ -37,6 +39,8 @@ def get_dipydir():
     return dipydir
 
 # import compileall and then get dir os.path.split
+
+
 def compile_tree():
     """Compile all Python files below current directory."""
     stat = os.system('python -m compileall .')

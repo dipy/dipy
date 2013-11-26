@@ -58,7 +58,8 @@ def test_dsi():
         if len(directions) > 3:
             assert_equal(gfa(odf) < 0.1, True)
 
-    assert_raises(ValueError, DiffusionSpectrumDeconvModel, gtab, qgrid_size=16)
+    assert_raises(ValueError, DiffusionSpectrumDeconvModel,
+                  gtab, qgrid_size=16)
 
 
 def test_multivox_dsi():

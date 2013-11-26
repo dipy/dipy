@@ -11,7 +11,8 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
 
 # Doc generation depends on being able to import dipy
 try:
@@ -29,7 +30,7 @@ if LooseVersion(sphinx.__version__) < LooseVersion('1'):
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.append(os.path.abspath('sphinxext'))
 
-# -- General configuration -----------------------------------------------------
+# -- General configuration -----------------------------------------------
 
 # We load the nibabel release info into a dict by explicit execution
 rel = {}
@@ -37,15 +38,15 @@ execfile(os.path.join('..', 'dipy', 'info.py'), rel)
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 
-              'sphinx.ext.doctest', 
-              'sphinx.ext.intersphinx', 
-              'sphinx.ext.todo', 
-              'sphinx.ext.coverage', 
-              'sphinx.ext.pngmath', 
-              'sphinx.ext.ifconfig', 
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
+              'sphinx.ext.pngmath',
+              'sphinx.ext.ifconfig',
               'sphinx.ext.autosummary',
-              'math_dollar', # has to go before numpydoc
+              'math_dollar',  # has to go before numpydoc
               'numpydoc',
               'github']
 
@@ -119,7 +120,7 @@ pygments_style = 'sphinx'
 #modindex_common_prefix = []
 
 
-# -- Options for HTML output ---------------------------------------------------
+# -- Options for HTML output ---------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
@@ -199,7 +200,7 @@ html_use_modindex = False
 htmlhelp_basename = 'dipydoc'
 
 
-# -- Options for LaTeX output --------------------------------------------------
+# -- Options for LaTeX output --------------------------------------------
 
 # The paper size ('letter' or 'a4').
 #latex_paper_size = 'letter'
@@ -210,8 +211,8 @@ htmlhelp_basename = 'dipydoc'
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'dipy.tex', u'dipy Documentation',
-   u'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
+    ('index', 'dipy.tex', u'dipy Documentation',
+     u'Eleftherios Garyfallidis, Ian Nimmo-Smith, Matthew Brett', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -236,4 +237,3 @@ latex_preamble = """
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'http://docs.python.org/': None}
-

@@ -6,34 +6,33 @@ from nibabel.dicom import dicomreaders as dcm
 import dipy.core.generalized_q_sampling as gq
 
 
-dname='/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
+dname = '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
 
 #dname ='/home/eg309/Data/Eleftherios/Series_003_CBU_DTI_64D_iso_1000'
 
-S0name='/tmp/S0.nii'
+S0name = '/tmp/S0.nii'
 
-#smallname='/tmp/small_volume2.5_steam_4000.nii'
+# smallname='/tmp/small_volume2.5_steam_4000.nii'
 
-smallname='/tmp/small_64D.nii'
+smallname = '/tmp/small_64D.nii'
 
 smallname_grad = '/tmp/small_64D.gradients'
 
 smallname_bvals = '/tmp/small_64D.bvals'
 
 
-#read diffusion dicoms
+# read diffusion dicoms
 
-data,affine,bvals,gradients=dcm.read_mosaic_dir(dname)
+data, affine, bvals, gradients = dcm.read_mosaic_dir(dname)
 
 print data.shape
 
-#calculate QA
+# calculate QA
 #gqs = gq.GeneralizedQSampling(data,bvals,gradients)
 
-#gqs.QA[0]
+# gqs.QA[0]
 
 #S0 = data[:,:,:,0]
-
 
 
 '''

@@ -11,6 +11,7 @@ def multi_voxel_fit(single_voxel_fit):
     """Method decorator to turn a single voxel model fit
     definition into a multi voxel model fit definition
     """
+
     def new_fit(self, data, mask=None):
         """Fit method for every voxel in data"""
         # If only one voxel just return a normal fit
@@ -36,8 +37,10 @@ def multi_voxel_fit(single_voxel_fit):
 
 
 class MultiVoxelFit(ReconstFit):
+
     """Holds an array of fits and allows access to their attributes and
     methods"""
+
     def __init__(self, model, fit_array, mask):
         self.model = model
         self.fit_array = fit_array
@@ -63,7 +66,9 @@ class MultiVoxelFit(ReconstFit):
 
 
 class CallableArray(np.ndarray):
+
     """An array which can be called like a function"""
+
     def __call__(self, *args, **kwargs):
         result = np.empty(self.shape, dtype=object)
         for ijk in ndindex(self.shape):

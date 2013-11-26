@@ -77,10 +77,11 @@ def test_csdeconv():
     big_S = np.zeros((10, 10, 10, len(S2)))
     big_S[:] = S2
 
-    aresponse, aratio = auto_response(gtab, big_S, roi_center=(5, 5, 4), roi_radius=3, fa_thr=0.5)
+    aresponse, aratio = auto_response(
+        gtab, big_S, roi_center=(5, 5, 4), roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
     assert_almost_equal(aresponse[1], 100)
-    assert_almost_equal(aratio, response[0][1]/response[0][0])
+    assert_almost_equal(aratio, response[0][1] / response[0][0])
 
     aresponse2, aratio2 = auto_response(gtab, big_S, roi_radius=3, fa_thr=0.5)
     assert_array_almost_equal(aresponse[0], response[0])
@@ -202,7 +203,5 @@ def test_forward_sdeconv_mat():
 
 
 if __name__ == '__main__':
-    #run_module_suite()
+    # run_module_suite()
     test_csdeconv()
-
-

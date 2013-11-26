@@ -34,14 +34,16 @@ LAST_RELEASE = datetime(2011, 12, 2)
 # Functions
 #-----------------------------------------------------------------------------
 
+
 def parse_link_header(headers):
     link_s = headers.get('link', '')
     urls = element_pat.findall(link_s)
     rels = rel_pat.findall(link_s)
     d = {}
-    for rel,url in zip(rels, urls):
+    for rel, url in zip(rels, urls):
         d[rel] = url
     return d
+
 
 def get_paged_request(url):
     """get a full list, handling APIv3's paging"""
@@ -54,10 +56,12 @@ def get_paged_request(url):
         url = links.get('next')
     return results
 
+
 def get_issues(project="nipy/dipy", state="closed", pulls=False):
     """Get a list of the issues from the Github API."""
     which = 'pulls' if pulls else 'issues'
-    url = "https://api.github.com/repos/%s/%s?state=%s&per_page=%i" % (project, which, state, PER_PAGE)
+    url = "https://api.github.com/repos/%s/%s?state=%s&per_page=%i" % (project,
+                                                                       which, state, PER_PAGE)
     return get_paged_request(url)
 
 
@@ -91,21 +95,23 @@ latter case, it is used as a time before the present."""
 
     if isinstance(period, timedelta):
         period = datetime.now() - period
-    url = "https://api.github.com/repos/%s/%s?state=closed&sort=updated&since=%s&per_page=%i" % (project, which, period.strftime(ISO8601), PER_PAGE)
+    url = "https://api.github.com/repos/%s/%s?state=closed&sort=updated&since=%s&per_page=%i" % (
+        project, which, period.strftime(ISO8601), PER_PAGE)
     allclosed = get_paged_request(url)
     # allclosed = get_issues(project=project, state='closed', pulls=pulls, since=period)
-    filtered = [i for i in allclosed if _parse_datetime(i['closed_at']) > period]
-    
+    filtered = [
+        i for i in allclosed if _parse_datetime(i['closed_at']) > period]
+
     # exclude rejected PRs
     if pulls:
-        filtered = [ pr for pr in filtered if pr['merged_at'] ]
-    
+        filtered = [pr for pr in filtered if pr['merged_at']]
+
     return filtered
 
 
 def sorted_by_field(issues, field='closed_at', reverse=False):
     """Return a list of issues sorted by closing date date."""
-    return sorted(issues, key = lambda i:i[field], reverse=reverse)
+    return sorted(issues, key=lambda i: i[field], reverse=reverse)
 
 
 def report(issues, show_urls=False):
@@ -116,7 +122,7 @@ def report(issues, show_urls=False):
         for i in issues:
             role = 'ghpull' if 'merged_at' in i else 'ghissue'
             print('* :%s:`%d`: %s' % (role, i['number'],
-                                        i['title'].encode('utf-8')))
+                                      i['title'].encode('utf-8')))
     else:
         for i in issues:
             print('* %d: %s' % (i['number'], i['title'].encode('utf-8')))
@@ -138,7 +144,7 @@ if __name__ == "__main__":
             tag = sys.argv[1]
     else:
         tag = check_output(['git', 'describe', '--abbrev=0']).strip()
-    
+
     if tag:
         cmd = ['git', 'log', '-1', '--format=%ai', tag]
         tagday, tz = check_output(cmd).strip().rsplit(' ', 1)
@@ -146,42 +152,46 @@ if __name__ == "__main__":
     else:
         since = datetime.now() - timedelta(days=days)
 
-    print("fetching GitHub stats since %s (tag: %s)" % (since, tag), file=sys.stderr)
+    print("fetching GitHub stats since %s (tag: %s)" %
+          (since, tag), file=sys.stderr)
     # turn off to play interactively without redownloading, use %run -i
     if 1:
         issues = issues_closed_since(since, pulls=False)
         pulls = issues_closed_since(since, pulls=True)
 
-    # For regular reports, it's nice to show them in reverse chronological order
+    # For regular reports, it's nice to show them in reverse chronological
+    # order
     issues = sorted_by_field(issues, reverse=True)
     pulls = sorted_by_field(pulls, reverse=True)
-    
+
     n_issues, n_pulls = map(len, (issues, pulls))
     n_total = n_issues + n_pulls
-    
+
     # Print summary report we can directly include into release notes.
     print()
     since_day = since.strftime("%Y/%m/%d")
     today = datetime.today().strftime("%Y/%m/%d")
     print("GitHub stats for %s - %s (tag: %s)" % (since_day, today, tag))
     print()
-    print("These lists are automatically generated, and may be incomplete or contain duplicates.")
+    print(
+        "These lists are automatically generated, and may be incomplete or contain duplicates.")
     print()
     if tag:
         # print git info, in addition to GitHub info:
-        since_tag = tag+'..'
+        since_tag = tag + '..'
         cmd = ['git', 'log', '--oneline', since_tag]
         ncommits = len(check_output(cmd).splitlines())
-        
+
         author_cmd = ['git', 'log', '--format=* %aN', since_tag]
         all_authors = check_output(author_cmd).splitlines()
         unique_authors = sorted(set(all_authors))
-        
-        print("The following %i authors contributed %i commits." % (len(unique_authors), ncommits))
+
+        print("The following %i authors contributed %i commits." %
+              (len(unique_authors), ncommits))
         print()
         print('\n'.join(unique_authors))
         print()
-        
+
     print()
     print("We closed a total of %d issues, %d pull requests and %d regular issues;\n"
           "this is the full list (generated with the script \n"
