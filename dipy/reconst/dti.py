@@ -1421,8 +1421,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         residuals = flat_data[vox] - pred_sig
         # If any of the residuals are outliers (using 3 sigma as a criterion
         # following Chang et al., e.g page 1089):
-        1/0.
-        if np.any(residuals > 3 * sigma):
+        if np.any(np.abs(residuals) > 3 * sigma):
             # Do nlls with GMM-weighting:
             if jac:
                 this_tensor, status= opt.leastsq(_nlls_err_func,
@@ -1441,9 +1440,9 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
             residuals = flat_data[vox] - pred_sig
-            if np.any(residuals > 3 * sigma):
+            if np.any(np.abs(residuals) > 3 * sigma):
                 # If you still have outliers, refit without those outliers:
-                non_outlier_idx = np.where(residuals <= 3 * sigma)
+                non_outlier_idx = np.where(np.abs(residuals) <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
                 if np.iterable(sigma):
