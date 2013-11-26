@@ -45,6 +45,8 @@ del Tester
 
 # Plumb in version etc info stuff
 from .pkg_info import get_pkg_info as _get_pkg_info
+
+
 def get_info():
     from os.path import dirname
     return _get_pkg_info(dirname(__file__))

@@ -6,7 +6,7 @@ dname = '/home/eg01/Data_Backup/Data/Eleftherios/CBU090133_METHODS/20090227_1454
 #dname =  '/home/eg01/Data_Backup/Data/Frank_Eleftherios/frank/20100511_m030y_cbu100624/08_ep2d_advdiff_101dir_DSI'
 
 
-data,affine,bvals,gradients=dp.load_dcm_dir(dname)
+data, affine, bvals, gradients = dp.load_dcm_dir(dname)
 
 '''
 rot=np.array([[1,0,0,0],
@@ -19,32 +19,32 @@ from scipy.ndimage import affine_transform as aff
 naffine=np.dot(affine,rot)
 '''
 
-data[:,:,:,1]
+data[:, :,:, 1]
 
-source=ni.Nifti1Image(data[:,:,:,1],affine)
-target=ni.Nifti1Image(data[:,:,:,0],affine)
+source = ni.Nifti1Image(data[:, :,:, 1], affine)
+target = ni.Nifti1Image(data[:, :,:, 0], affine)
 
-#similarity 'cc', 'cr', 'crl1', 'mi', je', 'ce', 'nmi', 'smi'.  'cr'
-similarity='cr'
+# similarity 'cc', 'cr', 'crl1', 'mi', je', 'ce', 'nmi', 'smi'.  'cr'
+similarity = 'cr'
 
-#interp 'pv', 'tri'
-interp =  'tri'
+# interp 'pv', 'tri'
+interp = 'tri'
 
-#subsampling None or sequence (3,)
-subsampling=None
+# subsampling None or sequence (3,)
+subsampling = None
 
-#search 'affine', 'rigid', 'similarity' or ['rigid','affine']
-search='affine'
+# search 'affine', 'rigid', 'similarity' or ['rigid','affine']
+search = 'affine'
 
-#optimizer 'simplex', 'powell', 'steepest', 'cg', 'bfgs' or
-#sequence of optimizers
-optimizer= 'powell'
+# optimizer 'simplex', 'powell', 'steepest', 'cg', 'bfgs' or
+# sequence of optimizers
+optimizer = 'powell'
 
-T=dp.volume_register(source,target,similarity,\
-                       interp,subsampling,search,)
+T = dp.volume_register(source, target, similarity,
+                       interp, subsampling, search,)
 
-sourceT=dp.volume_transform(source, T.inv(), reference=target)
+sourceT = dp.volume_transform(source, T.inv(), reference=target)
 
-s=source.get_data()
-t=target.get_data()
-sT=sourceT.get_data()
+s = source.get_data()
+t = target.get_data()
+sT = sourceT.get_data()

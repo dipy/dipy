@@ -166,7 +166,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
             b0vol = input_volume[..., 0].copy()
     else:
         b0vol = input_volume.copy()
-    # Make a mask using a multiple pass median filter and histogram thresholding.
+    # Make a mask using a multiple pass median filter and histogram
+    # thresholding.
     mask = multi_median(b0vol, median_radius, numpass)
     thresh = otsu(mask)
     mask = mask > thresh
@@ -175,7 +176,8 @@ def median_otsu(input_volume, median_radius=4, numpass=4,
         cross = generate_binary_structure(3, 1)
         mask = binary_dilation(mask, cross, iterations=dilate)
 
-    # Auto crop the volumes using the mask as input_volume for bounding box computing.
+    # Auto crop the volumes using the mask as input_volume for bounding box
+    # computing.
     if autocrop:
         mins, maxs = bounding_box(mask)
         mask = crop(mask, mins, maxs)
@@ -223,13 +225,15 @@ def segment_from_cfa(tensor_fit, roi, threshold, return_cfa=False):
     cfa = color_fa(FA, tensor_fit.evecs)
     roi = np.asarray(roi, dtype=bool)
 
-    include = (cfa >= threshold[0::2]) & (cfa <= threshold[1::2]) & roi[..., None]
+    include = (cfa >= threshold[0::2]) & (
+        cfa <= threshold[1::2]) & roi[..., None]
     mask = np.all(include, axis=-1)
 
     if return_cfa:
         return mask, cfa
 
     return mask
+
 
 def clean_cc_mask(mask):
     """
@@ -253,9 +257,9 @@ def clean_cc_mask(mask):
     # Flood fill algorithm to find contiguous regions.
     labels, numL = label(mask)
 
-    volumes = [len(labels[np.where(labels == l_idx+1)]) for l_idx in np.arange(numL)]
+    volumes = [len(labels[np.where(labels == l_idx + 1)])
+               for l_idx in np.arange(numL)]
     biggest_vol = np.arange(numL)[np.where(volumes == np.max(volumes))] + 1
     new_cc_mask[np.where(labels == biggest_vol)] = 1
 
     return new_cc_mask
-

@@ -115,10 +115,11 @@ def density_map(streamlines, vol_dims, voxel_size):
             raise IndexError('streamline has negative values, these values ' +
                              'are outside the image volume')
         i, j, k = inds.T
-        #this takes advantage of the fact that numpy's += operator only acts
-        #once even if there are repeats in inds
+        # this takes advantage of the fact that numpy's += operator only acts
+        # once even if there are repeats in inds
         counts[i, j, k] += 1
     return counts
+
 
 def connectivity_matrix(streamlines, label_volume, voxel_size,
                         symmetric=False, return_mapping=False,
@@ -134,15 +135,15 @@ def connectivity_matrix(streamlines, label_volume, voxel_size,
     # If streamlines is an iterators
     if return_mapping and mapping_as_streamlines:
         streamlines = list(streamlines)
-    #take the first and last point of each streamline
-    endpoints = [sl[0::len(sl)-1] for sl in streamlines]
-    #devide by voxel_size to get get voxel indices
+    # take the first and last point of each streamline
+    endpoints = [sl[0::len(sl) - 1] for sl in streamlines]
+    # devide by voxel_size to get get voxel indices
     endpoints = (endpoints // voxel_size).astype('int')
     if endpoints.min() < 0:
         raise IndexError('streamline has negative values, these values ' +
                          'are outside the image volume')
     i, j, k = endpoints.T
-    #get labels for label_volume
+    # get labels for label_volume
     endlabels = label_volume[i, j, k]
     if symmetric:
         endlabels.sort(0)
@@ -211,6 +212,7 @@ def reduce_labels(label_volume):
     label_volume = lookup_table.searchsorted(label_volume)
     return label_volume, lookup_table
 
+
 def length(streamlines):
     """Calculates the lenth of each streamline in a sequence of streamlines
 
@@ -232,6 +234,7 @@ def length(streamlines):
             diff = sl[1:] - sl[:-1]
             seglen = sqrt((diff * diff).sum(-1))
             yield seglen.sum()
+
 
 def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
     """Creates a mapping from voxel indices to streamlines
@@ -273,6 +276,7 @@ def streamline_mapping(streamlines, voxel_size, mapping_as_streamlines=False):
         mapping = dict((k, [streamlines[i] for i in indices])
                        for k, indices in mapping.items())
     return mapping
+
 
 def subsegment(streamlines, max_segment_length):
     """Splits the segments of the streamlines into small segments
@@ -322,20 +326,20 @@ def subsegment(streamlines, max_segment_length):
     """
     for sl in streamlines:
         diff = (sl[1:] - sl[:-1])
-        length = sqrt((diff*diff).sum(-1))
-        num_segments = ceil(length/max_segment_length).astype('int')
+        length = sqrt((diff * diff).sum(-1))
+        num_segments = ceil(length / max_segment_length).astype('int')
 
-        output_sl = empty((num_segments.sum()+1, 3), 'float')
+        output_sl = empty((num_segments.sum() + 1, 3), 'float')
         output_sl[0] = sl[0]
 
         count = 1
         for ii in xrange(len(num_segments)):
             ns = num_segments[ii]
             if ns == 1:
-                output_sl[count] = sl[ii+1]
+                output_sl[count] = sl[ii + 1]
                 count += 1
             elif ns > 1:
-                small_d = diff[ii]/ns
+                small_d = diff[ii] / ns
                 point = sl[ii]
                 for jj in xrange(ns):
                     point = point + small_d
@@ -343,13 +347,14 @@ def subsegment(streamlines, max_segment_length):
                     count += 1
             elif ns == 0:
                 pass
-                #repeated point
+                # repeated point
             else:
-                #this should never happen because ns should be a posative int
+                # this should never happen because ns should be a posative int
                 assert(ns >= 0)
         yield output_sl
 
-def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
+
+def seeds_from_mask(mask, density, voxel_size=(1, 1, 1)):
     """Takes a binary mask and returns seeds in voxels != 0
 
     places evanly spaced points in nonzero voxels of mask, spaces the points
@@ -384,19 +389,20 @@ def seeds_from_mask(mask, density, voxel_size=(1,1,1)):
         raise ValueError('mask cannot be more than 3d')
     density = asarray(density, 'int')
     sp = empty(3)
-    sp[:] = 1./density
+    sp[:] = 1. / density
 
     voxels = mask.nonzero()
     mg = mgrid[0:1:sp[0], 0:1:sp[1], 0:1:sp[2]]
 
     seeds = []
     for ii, jj, kk in zip(voxels, mg, sp):
-        s = ii[:,None] + jj.ravel() + kk/2
+        s = ii[:, None] + jj.ravel() + kk / 2
         seeds.append(s.ravel())
 
     seeds = array(seeds).T
     seeds *= voxel_size
     return seeds
+
 
 def target(streamlines, target_mask, voxel_size):
     """Retain tracks that pass though target_mask
@@ -445,6 +451,7 @@ def target(streamlines, target_mask, voxel_size):
         if state.any():
             yield sl
 
+
 def merge_streamlines(backward, forward):
     """Merges two sets of streamlines seeded at the same points
 
@@ -486,6 +493,7 @@ def merge_streamlines(backward, forward):
     while True:
         yield concatenate((next(B)[:0:-1], next(F)))
 
+
 def move_streamlines(streamlines, affine):
     """Applies a linear transformation, given by affine, to streamlines
 
@@ -503,7 +511,8 @@ def move_streamlines(streamlines, affine):
         A sequence of transformed streamlines
     """
     for sl in streamlines:
-        yield dot(sl, affine[:3,:3].T) + affine[:3,3]
+        yield dot(sl, affine[:3, :3].T) + affine[:3, 3]
+
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     """Calculates a linear tranformation equivelent to chaning voxel order
@@ -540,13 +549,14 @@ def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     map = ornt_mapping(input_ornt, output_ornt)
     if input_ornt.shape != output_ornt.shape:
         raise ValueError("input_ornt and output_ornt must have the same shape")
-    affine = eye(len(input_ornt)+1)
+    affine = eye(len(input_ornt) + 1)
     affine[:3] = affine[map[:, 0]]
     corner = asarray(voxel_size) * shape
     affine[:3, 3] = (map[:, 1] < 0) * corner[map[:, 0]]
-    #multiply the rows of affine to get right sign
+    # multiply the rows of affine to get right sign
     affine[:3, :3] *= map[:, 1:]
     return affine
+
 
 def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
     """It takes the affine matrix from flirt (FSLdot) and the voxel size of the
@@ -556,9 +566,9 @@ def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
     input_voxsz = asarray(input_voxsz)
     output_voxsz = asarray(output_voxsz)
     shift = eye(4)
-    shift[:3,3] = -input_voxsz/2
+    shift[:3, 3] = -input_voxsz / 2
 
     affine = dot(mat_affine, shift)
-    affine[:3,3] += output_voxsz/2
+    affine[:3, 3] += output_voxsz / 2
 
     return affine

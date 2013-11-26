@@ -60,11 +60,11 @@ def test_squash():
     npt.assert_array_equal(_squash(obj_arr, mask=None, fill=99), arr)
     msk = arr == 1
     npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), arr)
-    msk[1, 1] = 1 # unmask None - object array back
+    msk[1, 1] = 1  # unmask None - object array back
     npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), obj_arr)
-    msk[1, 1] = 0 # remask, back to fill again
+    msk[1, 1] = 0  # remask, back to fill again
     npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), arr)
-    obj_arr[2, 3] = None # add another unmasked None, object again
+    obj_arr[2, 3] = None  # add another unmasked None, object again
     npt.assert_array_equal(_squash(obj_arr, mask=msk, fill=99), obj_arr)
 
     # Check array of arrays
@@ -81,13 +81,12 @@ def test_squash():
     arr_masked[1] = 99
     npt.assert_array_equal(_squash(obj_masked, mask=None, fill=99),
                            arr_masked)
-    msk = np.array([1, 0, 1], dtype=np.bool_) # explicit mask
+    msk = np.array([1, 0, 1], dtype=np.bool_)  # explicit mask
     npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
                            arr_masked)
-    msk[1] = True # unmask None, object array back
+    msk[1] = True  # unmask None, object array back
     npt.assert_array_equal(_squash(obj_masked, mask=msk, fill=99),
                            obj_masked)
-
 
 
 def test_CallableArray():

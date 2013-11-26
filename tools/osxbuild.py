@@ -25,6 +25,7 @@ BUILD_DIR = 'build'
 DIST_DIR = 'dist'
 DIST_DMG_DIR = 'dist-dmg'
 
+
 def remove_dirs(sudo):
     print 'Removing old build and distribution directories...'
     print """The distribution is built as root, so the files have the correct
@@ -75,6 +76,7 @@ def build_dmg(sudo):
         cmd = 'sudo ' + cmd
     shellcmd(cmd)
 
+
 def copy_readme():
     """Copy a user README with info regarding the website, instead of
     the developer README which tells one how to build the source.
@@ -82,11 +84,13 @@ def copy_readme():
     print 'Copy user README.txt for installer.'
     shutil.copy(USER_README, DEV_README)
 
+
 def revert_readme():
     """Revert the developer README."""
     print 'Reverting README.txt...'
     cmd = 'svn revert %s' % DEV_README
     shellcmd(cmd)
+
 
 def shellcmd(cmd, verbose=True):
     """Call a shell command."""
@@ -100,6 +104,7 @@ def shellcmd(cmd, verbose=True):
         %s
         """ % str(err)
         raise Exception(msg)
+
 
 def build():
     parser = OptionParser()
@@ -126,7 +131,7 @@ def build():
                            'with setup.py, or pass in this '
                            'directory on command line')
     # update end-user documentation
-    #copy_readme()
+    # copy_readme()
     #shellcmd("svn stat %s"%DEV_README)
 
     # change to source directory
@@ -141,7 +146,7 @@ def build():
     # change back to original directory
     os.chdir(cwd)
     # restore developer documentation
-    #revert_readme()
+    # revert_readme()
 
 if __name__ == '__main__':
     build()

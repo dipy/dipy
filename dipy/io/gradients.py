@@ -45,7 +45,7 @@ def read_bvals_bvecs(fbvals, fbvecs):
                 elif ext == '.npy':
                     vals.append(np.squeeze(np.load(this_fname)))
                 else:
-                    e_s = "File type %s is not recognized"%ext
+                    e_s = "File type %s is not recognized" % ext
                     raise ValueError(e_s)
             else:
                 raise ValueError('String with full path to file is required')

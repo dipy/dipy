@@ -5,6 +5,7 @@ import numpy as np
 # Classes OdfModel and OdfFit are using API ReconstModel and ReconstFit from
 # .base
 
+
 class OdfModel(ReconstModel):
 
     """An abstract class to be sub-classed by specific odf models
@@ -66,4 +67,3 @@ def minmax_normalize(samples, out=None):
     out -= sample_mins
     out /= (sample_maxes - sample_mins)
     return out
-

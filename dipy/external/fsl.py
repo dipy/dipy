@@ -21,6 +21,7 @@ _VAL_FMT = '   %e'
 
 
 class FSLError(Exception):
+
     """ Class signals error in FSL processing """
 
 
@@ -216,8 +217,10 @@ def warp_displacements(ffa, flaff, fdis, fref, ffaw, order=1):
     # hold the displacements' shape reshaping
     di, dj, dk, dl = disdata.shape
     # do the interpolation using map coordinates
-    # the list of points where the interpolation is done given by the reshaped in 2D A2 (list of 3d points in fa index)
-    W = mc(fadata, A2.reshape(di * dj * dk, dl).T, order=order).reshape(di, dj, dk)
+    # the list of points where the interpolation is done given by the reshaped
+    # in 2D A2 (list of 3d points in fa index)
+    W = mc(fadata, A2.reshape(di * dj * dk, dl).T,
+           order=order).reshape(di, dj, dk)
     # save the warped image
     Wimg = nib.Nifti1Image(W, refaff)
     nib.save(Wimg, ffaw)
@@ -286,9 +289,12 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
     shape = nib.load(ffa).get_data().shape
 
     # transform the displacements affine back to image space
-    disaff0 = affine_transform(disaff[..., 0], res[:3, :3], res[:3, 3], shape, order=1)
-    disaff1 = affine_transform(disaff[..., 1], res[:3, :3], res[:3, 3], shape, order=1)
-    disaff2 = affine_transform(disaff[..., 2], res[:3, :3], res[:3, 3], shape, order=1)
+    disaff0 = affine_transform(
+        disaff[..., 0], res[:3, :3], res[:3, 3], shape, order=1)
+    disaff1 = affine_transform(
+        disaff[..., 1], res[:3, :3], res[:3, 3], shape, order=1)
+    disaff2 = affine_transform(
+        disaff[..., 2], res[:3, :3], res[:3, 3], shape, order=1)
 
     # remove the transformed affine from the invwarp displacements
     di = invwdata[:, :, :, 0] + disaff0
@@ -297,7 +303,8 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
 
     dprw = Dpy(fdpyw, 'r+')
     rows = len(dprw.f.root.streamlines.tracks)
-    blocks = np.round(np.linspace(0, rows, 10)).astype(int)  # lets work in blocks
+    # lets work in blocks
+    blocks = np.round(np.linspace(0, rows, 10)).astype(int)
     # print rows
     for i in range(len(blocks) - 1):
         # print blocks[i],blocks[i+1]
@@ -312,7 +319,7 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
         # and then to mni world space
         caboodlew = np.dot(WI2, refaff[:3, :3].T) + refaff[:3, 3]
         # write back
-        dprw.f.root.streamlines.tracks[blocks[i]:blocks[i + 1]] = caboodlew.astype('f4')
+        dprw.f.root.streamlines.tracks[blocks[i]                                       :blocks[i + 1]] = caboodlew.astype('f4')
     dprw.close()
 
 
@@ -408,9 +415,12 @@ def create_displacements(fin, fmat, fnonlin, finvw, fdisp, fdispa, fref):
 
     commands = []
     commands.append('flirt -ref ' + fref + ' -in ' + fin + ' -omat ' + fmat)
-    commands.append('fnirt --in=' + fin + ' --aff=' + fmat + ' --cout=' + fnonlin + ' --config=FA_2_FMRIB58_1mm')
-    commands.append('invwarp --ref=' + fin + ' --warp=' + fnonlin + ' --out=' + finvw)
-    commands.append('fnirtfileutils --in=' + fnonlin + ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' + fdisp)
+    commands.append('fnirt --in=' + fin + ' --aff=' + fmat +
+                    ' --cout=' + fnonlin + ' --config=FA_2_FMRIB58_1mm')
+    commands.append('invwarp --ref=' + fin + ' --warp=' +
+                    fnonlin + ' --out=' + finvw)
+    commands.append('fnirtfileutils --in=' + fnonlin +
+                    ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' + fdisp)
     commands.append('fnirtfileutils --in=' + fnonlin + ' --ref=${FSLDIR}/data/standard/FMRIB58_FA_1mm --out=' +
                     fdispa + ' --withaff')
     for c in commands:

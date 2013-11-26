@@ -18,8 +18,8 @@ dd = nib.load(data).get_data()
 gtab = grad.gradient_table(bvals, bvecs)
 
 
-fit_method = 'restore' # 'NLLS'
-jac = True # False
+fit_method = 'restore'  # 'NLLS'
+jac = True  # False
 
 # To profile RESTORE, set some of the signals to be outliers (otherwise comment
 # out the following line):
@@ -27,8 +27,9 @@ dd[..., 5] = 1.0
 
 tm = dti.TensorModel(gtab, fit_method=fit_method, jac=True, sigma=10)
 
+
 def func():
     tf = tm.fit(dd)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     func()

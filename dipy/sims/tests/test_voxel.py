@@ -5,8 +5,9 @@ from nose.tools import (assert_true, assert_false, assert_equal,
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
                            assert_)
 
-from dipy.sims.voxel import (SingleTensor, MultiTensor, multi_tensor_odf, all_tensor_evecs,
-                             add_noise, single_tensor, sticks_and_ball)
+from dipy.sims.voxel import (
+    SingleTensor, MultiTensor, multi_tensor_odf, all_tensor_evecs,
+    add_noise, single_tensor, sticks_and_ball)
 from dipy.core.geometry import vec2vec_rotmat
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table

@@ -11,6 +11,7 @@ from distutils.version import LooseVersion
 def derror_maker(klass, msg):
     """ Decorate distutils class to make run method raise error """
     class K(klass):
+
         def run(self):
             raise RuntimeError(msg)
     return K
@@ -71,7 +72,7 @@ def stamped_pyx_ok(exts, hash_stamp_fname):
 
 
 def cyproc_exts(exts, cython_min_version,
-                hash_stamps_fname = 'pyx-stamps',
+                hash_stamps_fname='pyx-stamps',
                 build_ext=build_ext):
     """ Process sequence of `exts` to check if we need Cython.  Return builder
 
@@ -219,6 +220,7 @@ def get_pyx_sdist(sdist_like=sdist, hash_stamps_fname='pyx-stamps'):
         into the file named from `hash_stamps_fname`
     """
     class PyxSDist(sdist_like):
+
         """ Custom distutils sdist command to generate .c files from pyx files.
 
         Running the command object ``obj.run()`` will compile the pyx / py files

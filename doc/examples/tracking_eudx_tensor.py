@@ -20,7 +20,7 @@ import numpy as np
 import nibabel as nib
 
 if not os.path.exists('tensor_fa.nii.gz'):
-	import reconst_dti
+    import reconst_dti
 
 """
 EuDX will use the directions (eigen vectors) of the Tensors to propagate
@@ -71,7 +71,8 @@ the peaks and odf_vertices are the vertices of the input sphere.
 
 from dipy.tracking.eudx import EuDX
 
-eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000, odf_vertices = sphere.vertices, a_low=0.2)
+eu = EuDX(FA.astype('f8'), peak_indices, seeds=50000,
+          odf_vertices=sphere.vertices, a_low=0.2)
 
 tensor_streamlines = [streamline for streamline in eu]
 
@@ -97,7 +98,8 @@ ten_sl_fname = 'tensor_streamlines.trk'
 Save the streamlines.
 """
 
-nib.trackvis.write(ten_sl_fname, tensor_streamlines_trk, hdr, points_space='voxel')
+nib.trackvis.write(ten_sl_fname, tensor_streamlines_trk,
+                   hdr, points_space='voxel')
 
 """
 If you don't want to use Trackvis to visualize the file you can use our
@@ -105,10 +107,10 @@ lightweight `fvtk` module.
 """
 
 try:
-	from dipy.viz import fvtk
+    from dipy.viz import fvtk
 except ImportError:
-	raise ImportError('Python vtk module is not installed')
-	sys.exit()
+    raise ImportError('Python vtk module is not installed')
+    sys.exit()
 
 """
 Create a scene.
@@ -127,7 +129,8 @@ fvtk.line adds a streamline actor for streamline visualization
 and fvtk.add adds this actor in the scene
 """
 
-fvtk.add(ren, fvtk.streamtube(tensor_streamlines, line_colors(tensor_streamlines)))
+fvtk.add(ren, fvtk.streamtube(tensor_streamlines,
+         line_colors(tensor_streamlines)))
 
 print('Saving illustration as tensor_tracks.png')
 

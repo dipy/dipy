@@ -103,8 +103,8 @@ CC_box[bounds_min[0]:bounds_max[0],
 mask_corpus_callosum, cfa = segment_from_cfa(tensorfit, CC_box,
                                              threshold, return_cfa=True)
 
-print("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
-       "voxels out of", np.size(CC_box))
+print("Size of the mask :", np.count_nonzero(mask_corpus_callosum),
+      "voxels out of", np.size(CC_box))
 
 """We can save the produced dataset with nibabel to visualize them later on.
 
@@ -113,8 +113,9 @@ purpose. Remember that the function works with values between
 0 and 1, but it will warn you if the supplied values do not fall in this range.
 """
 
-cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
-mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum.astype(np.uint8), affine)
+cfa_img = nib.Nifti1Image((cfa * 255).astype(np.uint8), affine)
+mask_corpus_callosum_img = nib.Nifti1Image(
+    mask_corpus_callosum.astype(np.uint8), affine)
 
 
 """The mask has random voxels outside the splenium because of the noise, so
@@ -131,11 +132,12 @@ CC_box[bounds_min[0]:50,
 
 mask_corpus_callosum2 = segment_from_cfa(tensorfit, CC_box, threshold2)
 
-mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype(np.uint8), affine)
+mask_corpus_callosum2_img = nib.Nifti1Image(
+    mask_corpus_callosum2.astype(np.uint8), affine)
 nib.save(mask_corpus_callosum2_img, 'mask_corpus_callosum2.nii.gz')
 
-print("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
-       "voxels out of", np.size(CC_box))
+print("Size of the mask :", np.count_nonzero(mask_corpus_callosum2),
+      "voxels out of", np.size(CC_box))
 
 """Let's check the result of the second segmentation using matplotlib.
 """
@@ -182,7 +184,7 @@ mask.
 from scipy.ndimage.morphology import binary_dilation
 mask_noise = binary_dilation(mask, iterations=10)
 
-mask_noise[..., :mask_noise.shape[-1]//2] = 1
+mask_noise[..., :mask_noise.shape[-1] // 2] = 1
 mask_noise = ~mask_noise
 
 mask_noise_img = nib.Nifti1Image(mask_noise.astype(np.uint8), affine)
@@ -199,17 +201,17 @@ axis.
 idx = np.sum(tenmodel.bvec, axis=-1) == 0
 tenmodel.bvec[idx] = np.inf
 
-axis_X = np.argmin(np.sum((tenmodel.bvec-np.array([1, 0, 0]))**2, axis=-1))
-axis_Y = np.argmin(np.sum((tenmodel.bvec-np.array([0, 1, 0]))**2, axis=-1))
-axis_Z = np.argmin(np.sum((tenmodel.bvec-np.array([0, 0, 1]))**2, axis=-1))
+axis_X = np.argmin(np.sum((tenmodel.bvec - np.array([1, 0, 0])) ** 2, axis=-1))
+axis_Y = np.argmin(np.sum((tenmodel.bvec - np.array([0, 1, 0])) ** 2, axis=-1))
+axis_Z = np.argmin(np.sum((tenmodel.bvec - np.array([0, 0, 1])) ** 2, axis=-1))
 
 """Now that we have the closest b-vectors to each of the cartesian axis,
 let's compute their respective SNR and compare them to a b0 image's SNR.
 """
 
 for direction in [0, axis_X, axis_Y, axis_Z]:
-	SNR = mean_signal[direction]/noise_std
-	print("SNR for direction", direction, "is :", SNR)
+    SNR = mean_signal[direction] / noise_std
+    print("SNR for direction", direction, "is :", SNR)
 
 """SNR for direction 0 is : ``39.7490994429``"""
 """SNR for direction 58 is : ``4.84444879426``"""
@@ -230,7 +232,7 @@ segmentation again with the same bounding box.
 threshold = (0.2, 1, 0, 0.3, 0, 0.3)
 
 mask_corpus_callosum3, cfa = segment_from_cfa(tensorfit, CC_box,
-                                             threshold, return_cfa=True)
+                                              threshold, return_cfa=True)
 
 """Let's now clean up our mask by getting rid of any leftover voxels that are
 not a part of the corpus callosum.
@@ -260,4 +262,3 @@ fig.savefig("Comparison_of_segmentation2.png")
 """
 .. figure:: Comparison_of_segmentation2.png
 """
-

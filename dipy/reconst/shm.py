@@ -283,13 +283,15 @@ def _gfa_sh(coef, sh0_index=0):
         The gfa of each odf.
 
     """
-    coef_sq = coef**2
+    coef_sq = coef ** 2
     return np.sqrt(1. - (coef_sq[..., sh0_index] / (coef_sq).sum(-1)))
 
 
 class SphHarmModel(OdfModel, Cache):
+
     """The base class to sub-classed by specific spherical harmonic models of
     diffusion data"""
+
     def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data
@@ -354,6 +356,7 @@ class SphHarmModel(OdfModel, Cache):
 
 
 class SphHarmFit(OdfFit):
+
     """Diffusion data fit to a spherical harmonic model"""
 
     def __init__(self, model, shm_coef, mask):
@@ -423,6 +426,7 @@ class SphHarmFit(OdfFit):
 
 
 class CsaOdfModel(SphHarmModel):
+
     """Implementation of Constant Solid Angle reconstruction method.
 
     References
@@ -453,6 +457,7 @@ class CsaOdfModel(SphHarmModel):
 
 
 class OpdtModel(SphHarmModel):
+
     """Implementation of Orientation Probability Density Transform
     reconstruction method.
 
@@ -465,6 +470,7 @@ class OpdtModel(SphHarmModel):
            probability density functions in high angular resolution diffusion
            imaging.
     """
+
     def _set_fit_matrix(self, B, L, F, smooth):
         invB = smooth_pinv(B, sqrt(smooth) * L)
         L = L[:, None]
@@ -486,6 +492,7 @@ def _slowadc_formula(data, delta_b, delta_q):
 
 
 class QballModel(SphHarmModel):
+
     """Implementation of regularized Qball reconstruction method.
 
     References
@@ -589,6 +596,7 @@ def bootstrap_data_voxel(data, H, R, permute=None):
 
 
 class ResidualBootstrapWrapper(object):
+
     """Returns a residual bootstrap sample of the signal_object when indexed
 
     Wraps a signal_object, this signal object can be an interpolator. When
@@ -596,6 +604,7 @@ class ResidualBootstrapWrapper(object):
     There wrapper than samples the residual boostrap distribution of signal and
     returns that sample.
     """
+
     def __init__(self, signal_object, B, where_dwi, min_signal=1.):
         """Builds a ResidualBootstrapWapper
 

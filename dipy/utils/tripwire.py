@@ -1,7 +1,9 @@
 """ Class to raise error for missing modules or other misfortunes
 """
 
+
 class TripWireError(Exception):
+
     """ Exception if trying to use TripWire object """
 
 
@@ -25,6 +27,7 @@ def is_tripwire(obj):
 
 
 class TripWire(object):
+
     """ Class raising error if used
 
     Standard use is to proxy modules that we could not import
@@ -40,6 +43,7 @@ class TripWire(object):
         ...
     TripWireError: We do not have silly_module_name
     """
+
     def __init__(self, msg):
         self._msg = msg
 

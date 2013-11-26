@@ -7,6 +7,7 @@ from dipy.viz import fvtk
 from numpy.testing import assert_equal
 import numpy.testing as npt
 
+
 @npt.dec.skipif(not fvtk.have_vtk)
 @npt.dec.skipif(not fvtk.have_vtk_colors)
 def test_fvtk_functions():
@@ -70,7 +71,7 @@ def test_fvtk_ellipsoid():
 
     fvtk.add(ren, fvtk.tensor(mevals, mevecs, sphere=sphere))
 
-    fvtk.add(ren, fvtk.tensor(mevals, mevecs, np.ones(mevals.shape), sphere=sphere))
+    fvtk.add(ren, fvtk.tensor(mevals, mevecs,
+             np.ones(mevals.shape), sphere=sphere))
 
     assert_equal(ren.GetActors().GetNumberOfItems(), 2)
-

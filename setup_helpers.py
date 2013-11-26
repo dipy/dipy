@@ -22,7 +22,9 @@ set py_exe=%line1:~2%
 call %py_exe% %pyscript% %*
 """
 
+
 class install_scripts_bat(install_scripts):
+
     """ Make scripts executable on Windows
 
     Scripts are bare file names without extension on Unix, fitting (for example)
@@ -39,6 +41,7 @@ class install_scripts_bat(install_scripts):
     example at git://github.com/matthew-brett/myscripter.git for more
     background.
     """
+
     def run(self):
         install_scripts.run(self)
         if not os.name == "nt":
@@ -51,7 +54,7 @@ class install_scripts_bat(install_scripts):
             if not (first_line.startswith('#!') and
                     'python' in first_line.lower()):
                 log.info("No #!python executable found, skipping .bat "
-                            "wrapper")
+                         "wrapper")
                 continue
             pth, fname = psplit(filepath)
             froot, ext = splitext(fname)

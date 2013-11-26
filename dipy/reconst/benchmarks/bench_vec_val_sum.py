@@ -21,7 +21,8 @@ try:
 except AttributeError:
     with_einsum = dec.skipif(True, "Need einsum for benchmark")
 else:
-    with_einsum = lambda f : f
+    with_einsum = lambda f: f
+
 
 @with_einsum
 def bench_vec_val_vect():
@@ -29,7 +30,8 @@ def bench_vec_val_vect():
     repeat = 100
     shape = (100, 100)
     evecs, evals = randn(*(shape + (3, 3))), randn(*(shape + (3,)))
-    etime = measure("np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)",
-                    repeat)
+    etime = measure(
+        "np.einsum('...ij,...j,...kj->...ik', evecs, evals, evecs)",
+        repeat)
     vtime = measure("vec_val_vect(evecs, evals)", repeat)
     print("einsum %4.2f; vec_val_vect %4.2f" % (etime, vtime))

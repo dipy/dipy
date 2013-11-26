@@ -10,16 +10,22 @@ dipy.reconst.interpolate
 from numpy import array
 from dipy.reconst.recspeed import trilinear_interp
 
+
 class OutsideImage(Exception):
     pass
 
+
 class Interpolator(object):
+
     """Class to be subclassed by different interpolator types"""
+
     def __init__(self, data, voxel_size):
         self.data = data
         self.voxel_size = array(voxel_size, dtype=float, copy=True)
 
+
 class NearestNeighborInterpolator(Interpolator):
+
     """Interpolates data using nearest neighbor interpolation"""
 
     def __getitem__(self, index):
@@ -31,11 +37,14 @@ class NearestNeighborInterpolator(Interpolator):
         except IndexError:
             raise OutsideImage
 
+
 class TriLinearInterpolator(Interpolator):
+
     """Interpolates data using trilinear interpolation
 
     interpolate 4d diffusion volume using 3 indices, ie data[x, y, z]
     """
+
     def __init__(self, data, voxel_size):
         super(TriLinearInterpolator, self).__init__(data, voxel_size)
         if self.voxel_size.shape != (3,) or self.data.ndim != 4:

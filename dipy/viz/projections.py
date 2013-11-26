@@ -76,10 +76,12 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
         m.drawmapboundary()
 
     # Rotate the coordinate system so that you are looking from the north pole:
-    verts_rot = np.array(np.dot(np.matrix([[0,0,-1],[0,1,0],[1,0,0]]), vertices))
+    verts_rot = np.array(
+        np.dot(np.matrix([[0, 0, -1], [0, 1, 0], [1, 0, 0]]), vertices))
 
-    # To get the orthographic projection, when the first coordinate is positive:
-    neg_idx = np.where(verts_rot[0]>0)
+    # To get the orthographic projection, when the first coordinate is
+    # positive:
+    neg_idx = np.where(verts_rot[0] > 0)
 
     # rotate the entire bvector around to point in the other direction:
     verts_rot[:, neg_idx] *= -1
@@ -102,18 +104,18 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
     else:
         cmap_data = cmap._segmentdata
         red_interp, blue_interp, green_interp = (
-        interp.interp1d(np.array(cmap_data[gun])[:,0],
-                        np.array(cmap_data[gun])[:,1]) for gun in
-                                                  ['red', 'blue','green'])
+            interp.interp1d(np.array(cmap_data[gun])[:, 0],
+                            np.array(cmap_data[gun])[:, 1]) for gun in
+            ['red', 'blue', 'green'])
 
-        r = (val - my_min)/float(my_max-my_min)
+        r = (val - my_min) / float(my_max - my_min)
 
         # Enforce the maximum and minumum boundaries, if there are values
         # outside those boundaries:
-        r[r<0]=0
-        r[r>1]=1
+        r[r < 0] = 0
+        r[r > 1] = 1
 
-        for this_x, this_y, this_r in zip(x,y,r):
+        for this_x, this_y, this_r in zip(x, y, r):
             red = red_interp(this_r)
             blue = blue_interp(this_r)
             green = green_interp(this_r)
@@ -127,8 +129,7 @@ def sph_project(vertices, val, ax=None, vmin=None, vmax=None, cmap=None,
         pos = ax.get_position()
         l, b, w, h = pos.bounds
         # setup colorbar axes
-        cax = fig.add_axes([l+w+0.075, b, 0.05, h], frameon=False)
-        fig.colorbar(mappable, cax=cax) # draw colorbar
+        cax = fig.add_axes([l + w + 0.075, b, 0.05, h], frameon=False)
+        fig.colorbar(mappable, cax=cax)  # draw colorbar
 
     return ax
-

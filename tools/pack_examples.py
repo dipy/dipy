@@ -39,6 +39,8 @@ eg_out_base = pjoin(out_root, dpv, 'doc')
 eg_out_dir = pjoin(eg_out_base, EG_BUILT_SDIR)
 if os.path.isdir(eg_out_dir):
     shutil.rmtree(eg_out_dir)
+
+
 def ignorandi(src, names):
     return [name for name in names if name == 'README' or name == '.gitignore']
 shutil.copytree(eg_built_dir, eg_out_dir, ignore=ignorandi)

@@ -24,7 +24,7 @@ def nifti1_symmat(image_data, *args, **kwargs):
     """
     image_data = make5d(image_data)
     last_dim = image_data.shape[-1]
-    n = (np.sqrt(1+8*last_dim) - 1)/2
+    n = (np.sqrt(1 + 8 * last_dim) - 1) / 2
     if (n % 1) != 0:
         raise ValueError("input_data does not seem to have matrix elements")
 
@@ -42,5 +42,5 @@ def make5d(input):
     if input.ndim > 5:
         raise ValueError("input is already more than 5d")
     shape = input.shape
-    shape = shape[:-1] + (1,)*(5-len(shape)) + shape[-1:]
+    shape = shape[:-1] + (1,) * (5 - len(shape)) + shape[-1:]
     return input.reshape(shape)

@@ -26,7 +26,7 @@ CLASSIFIERS = ["Development Status :: 3 - Alpha",
                "Programming Language :: Python",
                "Topic :: Scientific/Engineering"]
 
-description  = 'Diffusion MRI utilities in python'
+description = 'Diffusion MRI utilities in python'
 
 # Note: this long_description is actually a copy/paste from the top-level
 # README.txt, so that it shows up nicely on PyPI.  So please remember to edit
@@ -76,30 +76,30 @@ dipy distribution.
 """
 
 # versions for dependencies
-NUMPY_MIN_VERSION='1.3'
-SCIPY_MIN_VERSION='0.7.2'
-CYTHON_MIN_VERSION='0.17'
-NIBABEL_MIN_VERSION='1.0.0'
+NUMPY_MIN_VERSION = '1.3'
+SCIPY_MIN_VERSION = '0.7.2'
+CYTHON_MIN_VERSION = '0.17'
+NIBABEL_MIN_VERSION = '1.0.0'
 
 # Main setup parameters
-NAME                = 'dipy'
-MAINTAINER          = "Eleftherios Garyfallidis"
-MAINTAINER_EMAIL    = "nipy-devel@neuroimaging.scipy.org"
-DESCRIPTION         = description
-LONG_DESCRIPTION    = long_description
-URL                 = "http://dipy.org"
-DOWNLOAD_URL        = "http://github.com/nipy/dipy/archives/master"
-LICENSE             = "BSD license"
-CLASSIFIERS         = CLASSIFIERS
-AUTHOR              = "dipy developers"
-AUTHOR_EMAIL        = "nipy-devel@neuroimaging.scipy.org"
-PLATFORMS           = "OS Independent"
-MAJOR               = _version_major
-MINOR               = _version_minor
-MICRO               = _version_micro
-ISRELEASE           = _version_extra == ''
-VERSION             = __version__
-PROVIDES            = ["dipy"]
-REQUIRES            = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
-                       "scipy (>=%s)" % SCIPY_MIN_VERSION,
-                       "nibabel (>=%s)" % NIBABEL_MIN_VERSION]
+NAME = 'dipy'
+MAINTAINER = "Eleftherios Garyfallidis"
+MAINTAINER_EMAIL = "nipy-devel@neuroimaging.scipy.org"
+DESCRIPTION = description
+LONG_DESCRIPTION = long_description
+URL = "http://dipy.org"
+DOWNLOAD_URL = "http://github.com/nipy/dipy/archives/master"
+LICENSE = "BSD license"
+CLASSIFIERS = CLASSIFIERS
+AUTHOR = "dipy developers"
+AUTHOR_EMAIL = "nipy-devel@neuroimaging.scipy.org"
+PLATFORMS = "OS Independent"
+MAJOR = _version_major
+MINOR = _version_minor
+MICRO = _version_micro
+ISRELEASE = _version_extra == ''
+VERSION = __version__
+PROVIDES = ["dipy"]
+REQUIRES = ["numpy (>=%s)" % NUMPY_MIN_VERSION,
+            "scipy (>=%s)" % SCIPY_MIN_VERSION,
+            "nibabel (>=%s)" % NIBABEL_MIN_VERSION]

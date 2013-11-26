@@ -9,6 +9,7 @@ import re
 
 SKIP_RE = re.compile("(\s*>>>.*?)(\s*)#\s*skip\s+if\s+(.*)$")
 
+
 def doctest_skip_parser(func):
     """ Decorator replaces custom skip test markup in doctests
 

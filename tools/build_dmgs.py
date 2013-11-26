@@ -25,6 +25,7 @@ my_call = partial(check_call, shell=True)
 BUILDBOT_LOGIN = "buildbot@nipy.bic.berkeley.edu"
 BUILDBOT_HTML = "nibotmi/public_html/"
 
+
 def main():
     parser = ArgumentParser(description=__doc__,
                             formatter_class=RawDescriptionHelpFormatter)
@@ -62,7 +63,8 @@ def main():
                 shutil.copy(readme, pkg_name)
             else:
                 warnings.warn("Could not find readme with " + readme)
-            my_call('sudo hdiutil create {0}.dmg -srcfolder ./{0}/ -ov'.format(pkg_name))
+            my_call(
+                'sudo hdiutil create {0}.dmg -srcfolder ./{0}/ -ov'.format(pkg_name))
     finally:
         os.chdir(cwd)
 

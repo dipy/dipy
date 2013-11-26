@@ -11,7 +11,9 @@ pstats, _, _ = optional_package('pstats',
                                 'pstats is not installed.  It is part of the'
                                 'python-profiler package in Debian/Ubuntu')
 
+
 class Profiler():
+
     ''' Profile python/cython files or functions
     
     If you are profiling cython code you need to add    
@@ -49,41 +51,40 @@ class Profiler():
     
     '''
 
-    def __init__(self,call=None,*args):
+    def __init__(self, call=None, *args):
         # Delay import until use of class instance.  We were getting some very
         # odd build-as-we-go errors running tests and documentation otherwise
         import pyximport
         pyximport.install()
 
         try:
-            
-            ext=os.path.splitext(call)[1].lower()        
-            print('ext',ext)               
-            if ext == '.py' or ext == '.pyx': #python/cython file
+
+            ext = os.path.splitext(call)[1].lower()
+            print('ext', ext)
+            if ext == '.py' or ext == '.pyx':  # python/cython file
                 print('profiling python/cython file ...')
-                subprocess.call(['python','-m','cProfile', \
-                                 '-o','profile.prof',call])
-                s = pstats.Stats('profile.prof')            
-                stats=s.strip_dirs().sort_stats('time')
-                self.stats=stats
-            
+                subprocess.call(['python', '-m', 'cProfile',
+                                 '-o', 'profile.prof', call])
+                s = pstats.Stats('profile.prof')
+                stats = s.strip_dirs().sort_stats('time')
+                self.stats = stats
+
         except:
 
-            print('profiling function call ...')   
-            self.args=args
-            self.call=call
+            print('profiling function call ...')
+            self.args = args
+            self.call = call
 
-            cProfile.runctx('self._profile_function()',globals(),locals(),\
-                                'profile.prof')
+            cProfile.runctx('self._profile_function()', globals(), locals(),
+                            'profile.prof')
             s = pstats.Stats('profile.prof')
-            stats=s.strip_dirs().sort_stats('time')
-            self.stats=stats
-
+            stats = s.strip_dirs().sort_stats('time')
+            self.stats = stats
 
     def _profile_function(self):
         self.call(*self.args)
 
-    def print_stats(self,N=10):
+    def print_stats(self, N=10):
         ''' Print stats for profiling
 
         You can use it in all different ways developed in pstats

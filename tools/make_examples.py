@@ -38,11 +38,13 @@ from matplotlib._pylab_helpers import Gcf
 figure_basename = None
 
 # We must change the show command to save instead
+
+
 def show():
     allfm = Gcf.get_all_fig_managers()
     for fcount, fm in enumerate(allfm):
         fm.canvas.figure.savefig('%s_%02i.png' %
-                                 (figure_basename, fcount+1))
+                                 (figure_basename, fcount + 1))
 
 _mpl_show = plt.show
 plt.show = show
@@ -58,7 +60,7 @@ EG_SRC_DIR = abspath('examples')
 # Work in examples directory
 os.chdir('examples_built')
 
-if not os.getcwd().endswith(pjoin('doc','examples_built')):
+if not os.getcwd().endswith(pjoin('doc', 'examples_built')):
     raise OSError('This must be run from the doc directory')
 
 # Copy the py files; check they are in the examples list and warn if not
@@ -73,9 +75,9 @@ for fname in pyfilelist:
 
 # Run the conversion from .py to rst file
 check_call('python ../../tools/ex2rst --project dipy --outdir . .',
-            shell=True)
+           shell=True)
 
-#added the path so that scripts can import other scripts on the same directory
+# added the path so that scripts can import other scripts on the same directory
 sys.path.insert(0, os.getcwd())
 
 # Execute each python script in the directory.
@@ -94,4 +96,3 @@ for globber in ('*.nii.gz', '*.dpy', '*.npy', '*.pkl', '*.mat', '*.img',
                 '*.hdr'):
     for fname in glob(globber):
         os.unlink(fname)
-

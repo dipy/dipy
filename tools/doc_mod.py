@@ -19,6 +19,7 @@ TEMPLATE = \
     :members:
 """
 
+
 def main():
     try:
         mod_name = sys.argv[1]
