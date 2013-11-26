@@ -90,7 +90,7 @@ def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
 
 
 def peak_directions(odf, sphere, relative_peak_threshold=.5,
-                    min_separation_angle=25):
+                    min_separation_angle=25, minmax_norm=True):
     """Get the directions of odf peaks
 
     Parameters
@@ -116,16 +116,18 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
         peak indices of the directions on the sphere
 
     """
-    odf = np.ascontiguousarray(odf)
-
-    odf_norm = (odf - odf.min()) / (odf.max() - odf.min())
-    _, indices = local_maxima(odf_norm, sphere.edges)
-    values = odf[indices]
-    values_norm = odf_norm[indices]
+    values, indices = local_maxima(odf, sphere.edges)
 
     # If there is only one peak return
     if len(indices) == 1:
         return sphere.vertices[indices], values, indices
+
+    if minmax_norm:
+        odf_min = odf.min()
+        odf_max = values[0]
+        values_norm = (values - odf_min) / (odf_max - odf_min)
+    else:
+        values_norm = values
 
     n = search_descending(values_norm, relative_peak_threshold)
     indices = indices[:n]
