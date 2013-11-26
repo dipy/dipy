@@ -218,12 +218,12 @@ def vector_norm(vec, axis=-1, keepdims=False):
     return vec_norm
 
 
-def rodriguez_axis_rotation(r, theta):
-    """ Rodriguez formula
+def rodrigues_axis_rotation(r, theta):
+    """ Rodrigues formula
 
     Rotation matrix for rotation around axis r for angle theta.
 
-    The rotation matrix is given by the Rodriguez formula:
+    The rotation matrix is given by the Rodrigues formula:
 
     R = Id + sin(theta)*Sn + (1-cos(theta))*Sn^2
 
@@ -257,17 +257,15 @@ def rodriguez_axis_rotation(r, theta):
     Examples
     ---------
     >>> import numpy as np
-    >>> from dipy.core.geometry import rodriguez_axis_rotation
+    >>> from dipy.core.geometry import rodrigues_axis_rotation
     >>> v=np.array([0,0,1])
     >>> u=np.array([1,0,0])
-    >>> R=rodriguez_axis_rotation(v,40)
+    >>> R=rodrigues_axis_rotation(v,40)
     >>> ur=np.dot(R,u)
     >>> np.round(np.rad2deg(np.arccos(np.dot(ur,u))))
     40.0
-
-
     """
-    #theta = spl.norm(r)
+
     theta = np.deg2rad(theta)
     if theta > 1e-30:
         n = r / np.linalg.norm(r)
