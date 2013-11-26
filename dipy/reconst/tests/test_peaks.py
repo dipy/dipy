@@ -14,6 +14,7 @@ from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
 from nose.tools import assert_equal, assert_true
 from dipy.core.sphere_stats import angular_similarity
+from dipy.core.sphere import HemiSphere
 
 
 def test_peak_directions_nl():
@@ -143,9 +144,7 @@ def test_peak_directions():
     assert_array_equal(val, odf[ind])
 
 
-def _create_mt_sim(mevals, angles, fractions, S0, SNR):
-
-    fractions = np.array(fractions)
+def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
 
     _, fbvals, fbvecs = get_data('small_64D')
 
@@ -163,7 +162,12 @@ def _create_mt_sim(mevals, angles, fractions, S0, SNR):
     for i in range(sticks.shape[0]):
         mevecs += [all_tensor_evecs(sticks[i]).T]
 
+    fractions = np.array(fractions)
     fracts = fractions / 100.
+
+    if half_sphere:
+
+        sphere = HemiSphere.from_sphere(sphere)
 
     odf_gt = multi_tensor_odf(sphere.vertices, fracts, mevals, mevecs)
 
@@ -291,7 +295,12 @@ def test_peak_directions_thorough():
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_almost_equal(angular_similarity(directions, sticks), 4, 1)
-    print(angular_similarity(directions, sticks))
+
+    odf_gt, sticks, hsphere = _create_mt_sim(mevals, angles, fractions,
+                                             100, None, half_sphere=True)
+
+    directions, values, indices = peak_directions(odf_gt, hsphere, 0, 0)
+    assert_equal(angular_similarity(directions, sticks) < 4, True)
 
     # four peaks and one them quite small
     fractions = [35, 35, 20, 10]
@@ -300,9 +309,12 @@ def test_peak_directions_thorough():
 
     directions, values, indices = peak_directions(odf_gt, sphere, 0, 0)
     assert_equal(angular_similarity(directions, sticks) < 4, True)
-    print(angular_similarity(directions, sticks))
 
-    # _show_odf_peaks(odf_gt, directions, sticks, sphere)
+    odf_gt, sticks, hsphere = _create_mt_sim(mevals, angles, fractions,
+                                             100, None, half_sphere=True)
+
+    directions, values, indices = peak_directions(odf_gt, hsphere, 0, 0)
+    assert_equal(angular_similarity(directions, sticks) < 4, True)
 
 
 def test_peaksFromModel():
