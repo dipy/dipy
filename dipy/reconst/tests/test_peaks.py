@@ -316,6 +316,73 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(odf_gt, hsphere, 0, 0)
     assert_equal(angular_similarity(directions, sticks) < 4, True)
 
+    # isotropic case
+    mevals = np.array([[0.0015, 0.0015, 0.0015]])
+    angles = [(0, 0)]
+    fractions = [100.]
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+
+    directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
+    assert_equal(len(values) > 10, True)
+
+
+def test_degenerative_cases():
+
+    sphere = get_sphere('symmetric724')
+
+    # completely isotropic and degencase
+    odf = np.zeros(sphere.vertices.shape[0])
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    print(directions, values, indices)
+
+    assert_equal(values[0], 0)
+
+    odf = np.zeros(sphere.vertices.shape[0])
+    odf[0] = 0.020
+    odf[1] = 0.018
+
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    print(directions, values, indices)
+
+    assert_equal(values[0], 0.02)
+      
+    odf = - np.ones(sphere.vertices.shape[0])
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    print(directions, values, indices)
+
+    assert_equal(values[0], 0)
+
+    odf = np.zeros(sphere.vertices.shape[0])
+    odf[0] = 0.020
+    odf[1] = 0.018
+    odf[2] = - 0.018
+
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    assert_equal(values[0], 0.02)
+
+    odf = np.ones(sphere.vertices.shape[0])
+    odf += 0.1 * np.random.rand(odf.shape[0])
+
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    assert_equal(len(directions) > 1, True)
+
+    odf = np.ones(sphere.vertices.shape[0])
+    odf -= np.finfo(np.float).eps * np.random.rand(odf.shape[0])
+
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    assert_equal(len(directions) > 10, True)
+
+    odf = np.ones(sphere.vertices.shape[0])
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    assert_equal(values[0], 1)
+    assert_equal(len(values), 1)
+    
+    odf[1:] = np.finfo(np.float).eps * np.random.rand(odf.shape[0] - 1)
+    directions, values, indices = peak_directions(odf, sphere, .5, 25)
+    
+    assert_equal(values[0], 1)
+    assert_equal(len(values), 1)
+
 
 def test_peaksFromModel():
     data = np.zeros((10, 2))
@@ -482,3 +549,4 @@ def test_reshape_peaks_for_visualization():
 if __name__ == '__main__':
 
     run_module_suite()
+    

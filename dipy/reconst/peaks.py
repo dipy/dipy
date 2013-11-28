@@ -105,6 +105,11 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     min_separation_angle : float in [0, 90] The minimum distance between
         directions. If two peaks are too close only the larger of the two is
         returned.
+    minmax_norm : bool
+        If True min max normalization is applied internaly in the odf for the 
+        peak finding. The returned ``values`` will be on the initial odf. This 
+        parameter affects the ``relative_peak_threshold`` parameter because now 
+        ``m`` will be 1.
 
     Returns
     -------
@@ -115,7 +120,13 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     indices : (N,) ndarray
         peak indices of the directions on the sphere
 
+    Notes
+    -----
+    If the odf has any negative values, they will be clipped to zeros.
+
     """
+
+    odf = np.clip(odf, 0, np.inf)
     values, indices = local_maxima(odf, sphere.edges)
 
     # If there is only one peak return
@@ -431,9 +442,9 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             continue
 
         # Get peaks of odf
-        direction, pk, ind = peak_directions(
-            odf, sphere, relative_peak_threshold,
-            min_separation_angle)
+        direction, pk, ind = peak_directions(odf, sphere, 
+                                             relative_peak_threshold,
+                                             min_separation_angle)
 
         # Calculate peak metrics
         global_max = max(global_max, pk[0])
