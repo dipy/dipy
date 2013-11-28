@@ -340,3 +340,36 @@ def shore_laplace_reg_matrix(radial_order, mu):
             LR[i, j] = shore_laplace_delta(ind_mat[i], ind_mat[j], mu)
 
     return LR
+
+
+def shore_e0(radial_order, coeff):
+
+    ind_mat = shore_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+
+    s0 = 0
+
+    for n in range(n_elem):
+
+        s0 += (np.sqrt(factorial(n)) / factorial2(n)) * coeff[n]
+
+    return s0 
+
+
+def shore_evaluate_E(radial_order, coeff, qlist, mu):
+
+    ind_mat = shore_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+
+    n_qgrad = qlist.shape[0]
+
+    data_out = np.zeros(n_qgrad)
+
+    for i in range(n_qgrad):
+        for j in range(n_elem):
+            data_out[i] += coeff[j] * shore_phi_3d(ind_mat[j], qlist[i], mu)
+
+    return data_out
+
