@@ -352,8 +352,16 @@ def shore_e0(radial_order, coeff):
 
     for n in range(n_elem):
 
-        s0 += (np.sqrt(factorial(n)) / factorial2(n)) * coeff[n]
+        n1, n2, n3 = ind_mat[n]
 
+        if (n1 % 2 == 0) and (n2 % 2 == 0) and (n3 % 2 == 0):
+
+            num = (np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)))
+        
+            den = factorial2(n1) *  factorial2(n2) * factorial2(n3)
+        
+            s0 += (num / np.float(den))  * coeff[n]
+    
     return s0 
 
 
