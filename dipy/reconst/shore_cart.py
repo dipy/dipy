@@ -3,6 +3,7 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from scipy.special import hermite, gamma
 from scipy.misc import factorial, factorial2
+from cvxopt import matrix, solvers
 
 
 class ShoreCartModel(Cache):
@@ -46,6 +47,72 @@ class ShoreCartModel(Cache):
                             M.T)
 
         coef = np.dot(pseudo_inv, data)
+
+        return ShoreCartFit(self, coef)
+
+
+    @multi_voxel_fit
+    def fit_cvx(self, data):
+
+        # Generate the SHORE basis
+        M = self.cache_get('shore_phi_matrix', key=self.gtab)
+        if M is None:
+            M = shore_phi_matrix(
+                self.radial_order,  self.mu, self.gtab, self.tau)
+            self.cache_set('shore_phi_matrix', self.gtab, M)
+
+        ind_mat = self.cache_get('shore_index_matrix', key=self.gtab)
+        if ind_mat is None:
+            ind_mat = shore_index_matrix(self.radial_order)
+            self.cache_set('shore_index_matrix', self.gtab, ind_mat)
+
+        LR = self.cache_get('shore_laplace_matrix', key=self.gtab)
+        if LR is None:
+            LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
+            self.cache_set('shore_laplace_matrix', self.gtab, LR)
+
+        # K = self.cache_get('shore_psi_matrix', key=self.OTHER_gtab)
+        # if K is None:
+        #     K = shore_psi_matrix(
+        #         self.radial_order,  self.mu, self.OTHER_gtab, self.tau)
+        #     self.cache_set('shore_psi_matrix', self.OTHER_gtab, K)
+
+
+        """
+        K: shore_psi_matrix for some N q-points
+
+        min_coef 0.5*||M*coef-data||_2^2 + 0.5*lambd*||LR*coef||_2^2
+        
+        s.t.
+
+        K*coef >= 0
+        M["line of q=0"]*coef = 1
+
+
+        recasting as QP
+
+
+        min_coef 0.5 coef' * [M'*M + lambd * LR'*LR] * coef + [- M' * data]' coef
+
+        s.t.
+
+        -K*coef <= 0
+        M["line of q=0"]*coef = 1
+        """
+
+        Q = matrix(np.dot(M.T,M) + self.lambd * np.dot(LR.T,LR))
+        p = matrix(-1*np.dot(M.T,data))
+        # G = matrix(-1*K)
+        G = None
+        # h = matrix(np.zeros((N)),(N,1))
+        h = None
+        A = matrix(M[0],(1,M.shape[1])) #line of M corresponding to q=0
+        b = matrix(1.0)
+
+        sol = solvers.qp(Q, p, G, h, A, b)
+
+        coef = np.array(sol['x'])[:,0]
+
         return ShoreCartFit(self, coef)
 
 
@@ -86,6 +153,7 @@ class ShoreCartFit():
             self.model.cache_set('shore_odf_matrix', sphere, I_s)
 
         odf = np.dot(I_s, self._shore_coef)
+        print(odf.shape)
         return odf
 
 
