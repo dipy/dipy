@@ -6,7 +6,7 @@ import cython
 
 import numpy as np
 cimport numpy as cnp
-from dipy.tracking.utils import _mapping_to_voxel, _to_voxel_coordinates
+from ._utils import _mapping_to_voxel, _to_voxel_coordinates
 
 cdef extern from "dpy_math.h":
     double floor(double x)

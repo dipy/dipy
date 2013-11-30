@@ -5,7 +5,8 @@ from ...utils.six.moves import xrange
 import numpy as np
 import nose
 from dipy.io.bvectxt import orientation_from_string
-from dipy.tracking.utils import (_rmi, connectivity_matrix, density_map,
+from dipy.tracking._utils import _rmi
+from dipy.tracking.utils import (connectivity_matrix, density_map,
                                  move_streamlines, ndbincount, reduce_labels,
                                  reorder_voxels_affine)
 from dipy.tracking.vox2track import streamline_mapping
