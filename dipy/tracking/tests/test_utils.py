@@ -7,7 +7,8 @@ import nose
 from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking.utils import (_rmi, connectivity_matrix, density_map,
                                  move_streamlines, ndbincount, reduce_labels,
-                                 reorder_voxels_affine, streamline_mapping)
+                                 reorder_voxels_affine)
+from dipy.tracking.vox2track import streamline_mapping
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
 

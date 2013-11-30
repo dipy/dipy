@@ -180,6 +180,7 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
         counts[i, j, k] += 1
     return counts
 
+
 def connectivity_matrix(streamlines, label_volume, voxel_size=None,
                         affine=None, symmetric=False, return_mapping=False,
                         mapping_as_streamlines=False):
@@ -317,6 +318,7 @@ def reduce_labels(label_volume):
     label_volume = lookup_table.searchsorted(label_volume)
     return label_volume, lookup_table
 
+
 def length(streamlines):
     """Calculates the lenth of each streamline in a sequence of streamlines
 
@@ -338,72 +340,6 @@ def length(streamlines):
             diff = sl[1:] - sl[:-1]
             seglen = sqrt((diff * diff).sum(-1))
             yield seglen.sum()
-
-
-def streamline_mapping(streamlines, voxel_size=None, affine=None,
-                       mapping_as_streamlines=False):
-    """Creates a mapping from voxel indices to streamlines
-
-    Returns a dictionary where each key is a 3d voxel index and the associated
-    value is a list of the streamlines that pass through that voxel.
-
-    Parameters
-    ----------
-    streamlines : sequence
-        A sequence of streamlines.
-    voxel_size : array_like (3,), optional
-        The size of the voxels in the image volume. This is ignored if affine
-        is set.
-    affine : array_like (4, 4), optional
-        The mapping from voxel coordinates to streamline coordinates. If
-        neither `affine` or `voxel_size` is set, the streamline values are
-        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
-        the first voxel and the voxel size is ``[1, 1, 1]``.
-    mapping_as_streamlines : bool, optional, False by default
-        If True voxel indices map to lists of streamline objects. Otherwise
-        voxel indices map to lists of integers.
-
-    Returns
-    -------
-    mapping : defaultdict(list)
-        A mapping from voxel indices to the streamlines that pass though that
-        voxel.
-
-    Examples
-    --------
-    >>> streamlines = [np.array([[0., 0., 0.],
-    ...                          [1., 1., 1.],
-    ...                          [2., 3., 4.]]),
-    ...                np.array([[0., 0., 0.],
-    ...                          [1., 2., 3.]])]
-    >>> mapping = streamline_mapping(streamlines, (1, 1, 1))
-    >>> mapping[0, 0, 0]
-    [0, 1]
-    >>> mapping[1, 1, 1]
-    [0]
-    >>> mapping[1, 2, 3]
-    [1]
-    >>> mapping.get((3, 2, 1), 'no streamlines')
-    'no streamlines'
-    >>> mapping = streamline_mapping(streamlines, (1, 1, 1),
-    ...                              mapping_as_streamlines=True)
-    >>> mapping[1, 2, 3][0] is streamlines[1]
-    True
-
-    """
-    lin, offset = _mapping_to_voxel(affine, voxel_size)
-    mapping = defaultdict(list)
-    if mapping_as_streamlines:
-        streamlines = list(streamlines)
-    for i, sl in enumerate(streamlines):
-        voxel_indices = _to_voxel_coordinates(sl, lin, offset)
-        uniq_points = set(tuple(point) for point in voxel_indices)
-        for point in uniq_points:
-            mapping[point].append(i)
-    if mapping_as_streamlines:
-        for key in mapping:
-            mapping[key] = [streamlines[i] for i in mapping[key]]
-    return mapping
 
 
 def subsegment(streamlines, max_segment_length):
@@ -480,6 +416,7 @@ def subsegment(streamlines, max_segment_length):
                 #this should never happen because ns should be a positive int
                 assert(ns >= 0)
         yield output_sl
+
 
 def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     """Takes a binary mask and returns seeds in voxels != 0
@@ -639,6 +576,7 @@ def merge_streamlines(backward, forward):
     while True:
         yield concatenate((next(B)[:0:-1], next(F)))
 
+
 def move_streamlines(streamlines, affine):
     """Applies a linear transformation, given by affine, to streamlines
 
@@ -657,6 +595,7 @@ def move_streamlines(streamlines, affine):
     """
     for sl in streamlines:
         yield dot(sl, affine[:3,:3].T) + affine[:3,3]
+
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     """Calculates a linear tranformation equivelent to chaning voxel order
@@ -701,6 +640,7 @@ def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
     affine[:3, :3] *= map[:, 1:]
     return affine
 
+
 def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
     """It takes the affine matrix from flirt (FSLdot) and the voxel size of the
     input and output images and it returns the adjusted affine matrix for
@@ -715,3 +655,4 @@ def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
     affine[:3,3] += output_voxsz/2
 
     return affine
+
