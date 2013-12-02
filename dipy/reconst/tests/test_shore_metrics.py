@@ -23,7 +23,7 @@ def test_shore_metrics():
     S = S / S[0, None].astype(np.float)
 
     radial_order = 8
-    zeta = 800
+    zeta = 700
     lambdaN = 1e-12
     lambdaL = 1e-12
     asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
