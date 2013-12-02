@@ -144,9 +144,20 @@ class ShoreModel(Cache):
             self.cache_set('shore_matrix', self.gtab, M)
 
         # Compute the signal coefficients in SHORE basis
-        pseudoInv = np.dot(
-            np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
+        pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
         coef = np.dot(pseudoInv, data)
+
+        coef_0=0
+        counter=0
+        for l in range(0, self.radial_order+ 1, 2):
+            for p in range((self.radial_order-l)/2 +1):
+                n=p+l
+                for m in range(-l,l+1):
+                    if l==0:
+                        coef_0 += coef[counter] *genlaguerre(n , 0.5)(0) * \
+                            ((factorial(n)) / (2*np.pi * (self.zeta**1.5) * gamma(n+1.5)) )**0.5
+                    counter = counter+1
+        coef = coef / float(coef_0)
 
         return ShoreFit(self, coef)
 
@@ -214,7 +225,7 @@ class ShoreFit():
 
         eap = np.dot(psi, self._shore_coef)
 
-        return eap
+        return np.clip(eap, 0, eap.max())
 
     def odf_sh(self):
         r""" Calculates the real analytical odf in terms of Spherical Harmonics.
@@ -227,9 +238,10 @@ class ShoreFit():
         c_sh = np.zeros(J)
         counter = 0
 
-        for n in range(self.radial_order + 1):
-            for l in range(0, n + 1, 2):
-                for m in range(-l, l + 1):
+        for l in range(0, self.radial_order+ 1, 2):
+            for p in range((self.radial_order-l)/2 +1):
+                n=p+l
+                for m in range(-l,l+1):
 
                     j = int(l + m + (2 * np.array(range(0, l, 2)) + 1).sum())
 
@@ -262,9 +274,10 @@ class ShoreFit():
         rtop = 0
         c = self._shore_coef
         counter = 0
-        for n in range(self.radial_order + 1):
-            for l in range(0, n + 1, 2):
-                for m in range(-l, l + 1):
+        for l in range(0, self.radial_order+ 1, 2):
+            for p in range((self.radial_order-l)/2 +1):
+                n=p+l
+                for m in range(-l,l+1):
                     if l == 0:
                         rtop +=  c[counter] * (-1) ** n * \
                             ((16 * np.pi * self.zeta ** 1.5 * gamma(n + 1.5)) / (
@@ -278,9 +291,10 @@ class ShoreFit():
         rtop = 0
         c = self._shore_coef
         counter = 0
-        for n in range(self.radial_order + 1):
-            for l in range(0, n + 1, 2):
-                for m in range(-l, l + 1):
+        for l in range(0, self.radial_order+ 1, 2):
+            for p in range((self.radial_order-l)/2 +1):
+                n=p+l
+                for m in range(-l,l+1):
                     if l == 0:
                         rtop += c[counter] * (-1) ** n * \
                             ((4 * np.pi ** 2 * self.zeta ** 1.5 * factorial(n)) / (gamma(n + 1.5))) ** 0.5 * \
@@ -308,9 +322,10 @@ class ShoreFit():
         msd = 0
         c = self._shore_coef
         counter = 0
-        for n in range(self.radial_order + 1):
-            for l in range(0, n + 1, 2):
-                for m in range(-l, l + 1):
+        for l in range(0, self.radial_order+ 1, 2):
+            for p in range((self.radial_order-l)/2 +1):
+                n=p+l
+                for m in range(-l,l+1):
                     if l == 0:
                         msd += c[counter]  * (-1) ** n *\
                             (9 * (gamma(n + 1.5)) / (8 * np.pi ** 6  *  self.zeta ** 3.5 * factorial(n))) ** 0.5 *\
@@ -346,24 +361,24 @@ def SHOREmatrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
 
     qgradients = qvals[:, None] * bvecs
 
-    r, theta, phi = cart2sphere(
-        qgradients[:, 0], qgradients[:, 1], qgradients[:, 2])
+    r, theta, phi = cart2sphere(qgradients[:, 0], qgradients[:, 1], qgradients[:, 2])
     theta[np.isnan(theta)] = 0
-
-    M = np.zeros(
-        (r.shape[0], (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1)))
+    F=radial_order/2
+    n_c= np.round(1/6.0 * (F+1) *(F+2)* (4*F+3))
+    M = np.zeros((r.shape[0], n_c))
 
     counter = 0
-    for n in range(radial_order + 1):
-        for l in range(0, n + 1, 2):
-            for m in range(-l, l + 1):
+    for l in range(0, radial_order+ 1, 2):
+        for p in range((radial_order-l)/2 +1):
+            n=p+l
+            for m in range(-l,l+1):
                 M[:, counter] = real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(r ** 2 / float(zeta)) * \
                     np.exp(- r ** 2 / (2.0 * zeta)) * \
                     __kappa(zeta, n, l) * \
                     (r ** 2 / float(zeta)) ** (l / 2)
                 counter += 1
-    return M[:, 0:counter]
+    return M
 
 
 def __kappa(zeta, n, l):
@@ -388,13 +403,14 @@ def SHOREmatrix_pdf(radial_order, zeta, rtab):
 
     r, theta, phi = cart2sphere(rtab[:, 0], rtab[:, 1], rtab[:, 2])
     theta[np.isnan(theta)] = 0
-
-    psi = np.zeros(
-        (r.shape[0], (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1)))
+    F=radial_order/2
+    n_c= np.round(1/6.0 * (F+1) *(F+2)* (4*F+3))
+    psi = np.zeros((r.shape[0], n_c))
     counter = 0
-    for n in range(radial_order + 1):
-        for l in range(0, n + 1, 2):
-            for m in range(-l, l + 1):
+    for l in range(0, radial_order+ 1, 2):
+        for p in range((radial_order-l)/2 +1):
+            n=p+l
+            for m in range(-l,l+1):
                 psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 * zeta * r ** 2 ) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
@@ -402,7 +418,7 @@ def SHOREmatrix_pdf(radial_order, zeta, rtab):
                     (4 * np.pi ** 2 * zeta * r ** 2) ** (l / 2) * \
                     (-1) ** (n - l / 2)
                 counter += 1
-    return psi[:, 0:counter]
+    return psi
 
 
 def __kappa_pdf(zeta, n, l):
@@ -427,18 +443,20 @@ def SHOREmatrix_odf(radial_order, zeta, sphere_vertices):
 
     r, theta, phi = cart2sphere(sphere_vertices[:, 0], sphere_vertices[:, 1], sphere_vertices[:, 2])
     theta[np.isnan(theta)] = 0
+    F=radial_order/2
+    n_c= np.round(1/6.0 * (F+1) *(F+2)* (4*F+3))
+    upsilon = np.zeros((len(sphere_vertices), n_c))
     counter = 0
-    upsilon = np.zeros(
-        (len(sphere_vertices), (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1)))
-    for n in range(radial_order + 1):
-        for l in range(0, n + 1, 2):
-            for m in range(-l, l + 1):
+    for l in range(0, radial_order+ 1, 2):
+        for p in range((radial_order-l)/2 +1):
+            n=p+l
+            for m in range(-l,l+1):
                 upsilon[:, counter] = (-1) ** (n - l / 2.0) * __kappa_odf(zeta, n, l) * \
                     hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
                     real_sph_harm(m, l, theta, phi)
                 counter += 1
 
-    return upsilon[:, 0:counter]
+    return upsilon
 
 
 def __kappa_odf(zeta, n, l):
@@ -452,36 +470,34 @@ def __kappa_odf(zeta, n, l):
 
 def L_SHORE(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
-    diagL = np.zeros(
-        (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1))
+    F=radial_order/2
+    n_c= np.round(1/6.0 * (F+1) *(F+2)* (4*F+3))
+    diagL = np.zeros(n_c)
     counter = 0
-    for n in range(radial_order + 1):
-        for l in range(0, n + 1, 2):
-            for m in range(-l, l + 1):
-                # print(counter)
-                # print "(n,l,m) = (%d,%d,%d)" % (n,l,m)
-                # print(counter)
+    for l in range(0, radial_order+ 1, 2):
+        for p in range((radial_order-l)/2 +1):
+            n=p+l
+            for m in range(-l,l+1):
                 diagL[counter] = (l * (l + 1)) ** 2
                 counter += 1
 
-    return np.diag(diagL[0:counter])
+    return np.diag(diagL)
 
 
 def N_SHORE(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
-    diagN = np.zeros(
-        (radial_order + 1) * ((radial_order + 1) / 2) * (2 * radial_order + 1))
+    F=radial_order/2
+    n_c= np.round(1/6.0 * (F+1) *(F+2)* (4*F+3))
+    diagN = np.zeros(n_c)
     counter = 0
-    for n in range(radial_order + 1):
-        for l in range(0, n + 1, 2):
-            for m in range(-l, l + 1):
-                # print(counter)
-                # print "(n,l,m) = (%d,%d,%d)" % (n,l,m)
-                # print(counter)
+    for l in range(0, radial_order+ 1, 2):
+        for p in range((radial_order-l)/2 +1):
+            n=p+l
+            for m in range(-l,l+1):
                 diagN[counter] = (n * (n + 1)) ** 2
                 counter += 1
 
-    return np.diag(diagN[0:counter])
+    return np.diag(diagN)
 
 
 def create_rspace(gridsize, radius_max):
