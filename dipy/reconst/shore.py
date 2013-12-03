@@ -30,18 +30,18 @@ class ShoreModel(Cache):
     References
     ----------
     .. [1] Orzaslan E. et. al, "Simple harmonic oscillator based reconstruction
-           and estimation for one-dimensional q-space magnetic resonance 
+           and estimation for one-dimensional q-space magnetic resonance
            1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
 
-    .. [2] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF 
-           estimation via Compressive Sensing in diffusion MRI", Medical 
+    .. [2] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+           estimation via Compressive Sensing in diffusion MRI", Medical
            Image Analysis, 2013.
 
-    .. [3] Rathi Y. et. al, "Sparse multi-shell diffusion imaging", MICCAI, 
+    .. [3] Rathi Y. et. al, "Sparse multi-shell diffusion imaging", MICCAI,
            2011.
 
     .. [4] Cheng J. et. al, "Theoretical Analysis and eapactical Insights on
-           EAP Estimation via a Unified HARDI Framework", MICCAI workshop on 
+           EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
            Computational Diffusion MRI, 2011.
     """
     def __init__(self,
@@ -90,11 +90,9 @@ class ShoreModel(Cache):
         ODF estimation via Compressive Sensing in diffusion MRI", Medical
         Image Analysis, 2013.
 
-
         .. [2] Cheng J. et. al, "Theoretical Analysis and eapactical Insights
         on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on 
         Computational Diffusion MRI, 2011.
-
 
         Examples
         --------
