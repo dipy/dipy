@@ -18,9 +18,8 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    auto_response)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.dsi import DiffusionSpectrumModel
-from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.reconst.shm import sf_to_sh, sh_to_sf, QballModel, CsaOdfModel
+from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel, 
+                              CsaOdfModel, sph_harm_ind_list)
 
 
 def test_csdeconv():
