@@ -202,6 +202,7 @@ def test_forward_sdeconv_mat():
 
 
 def test_r2_term_odf_sharp():
+
     SNR = None
     S0 = 1
     angle = 75
@@ -212,7 +213,6 @@ def test_r2_term_odf_sharp():
     bvecs = np.load(fbvecs)
 
     sphere = get_sphere('symmetric724')
-
     gtab = gradient_table(bvals, bvecs)
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
@@ -239,19 +239,58 @@ def test_r2_term_odf_sharp():
     fodf_csa_sh = odf_sh_to_sharp(odfs_csa, sphere, basis=None, ratio=3 / 15.,
                                   sh_order=8, lambda_=1., tau=0.1, r2_term=True)
     fodf_csa = sh_to_sf(fodf_csa_sh, sphere, sh_order=8, basis_type=None)
+
+    # DSI ODF is a solid angle odf using the r2-term in its derivation
+    btable = np.loadtxt(get_data('dsi515btable'))
+    gtab = gradient_table(btable[:,0], btable[:,1:])
+    data, golden_directions = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (angle, 0)],
+                                           fractions=[50, 50], snr=SNR)
+    ds = DiffusionSpectrumModel(gtab)
+    dsfit = ds.fit(data)
+    odf_dsi = dsfit.odf(sphere)
+
+    odfs_dsi = sf_to_sh(odf_dsi, sphere, sh_order=8, basis_type=None)
+    fodf_dsi_sh = odf_sh_to_sharp(odfs_dsi, sphere, basis=None, ratio=3 / 15.,
+                                  sh_order=8, lambda_=1., tau=0.1, r2_term=True)
+    fodf_dsi = sh_to_sf(fodf_dsi_sh, sphere, sh_order=8, basis_type=None)
+
+    # GQI is also a model that computes the solid angle ODF with the r2-term 
+    gq = GeneralizedQSamplingModel(gtab, method='gqi2', sampling_length=2)#1.4)
+    gqfit = gq.fit(data)
+    odf_gqi = gqfit.odf(sphere)
     
+    odfs_gqi = sf_to_sh(odf_gqi, sphere, sh_order=8, basis_type=None)
+    fodf_gqi_sh = odf_sh_to_sharp(odfs_gqi, sphere, basis=None, ratio=3 / 15.,
+                                  sh_order=8, lambda_=1., tau=0.1, r2_term=True)
+    fodf_gqi = sh_to_sf(fodf_gqi_sh, sphere, sh_order=8, basis_type=None)
+
+    # from dipy.viz import fvtk
+    # r = fvtk.ren()
+    # fvtk.add( r, fvtk.sphere_funcs( np.vstack((odf_gt, fodf, odf_csa, fodf_csa,  
+    #                                           odf_dsi, fodf_dsi, odf_gqi, fodf_gqi, odf_gt)), 
+    #                                sphere ))
+    # fvtk.show( r )
     directions_gt, _, _ = peak_directions(odf_gt, sphere)
     directions, _, _ = peak_directions(fodf, sphere)
     directions2, _, _ = peak_directions(fodf_csa, sphere)
+    directions_dsi, _, _ = peak_directions(fodf_dsi, sphere)
+    directions_gqi, _, _ = peak_directions(fodf_gqi, sphere)
 
     ang_sim = angular_similarity(directions_gt, directions)
     assert_equal(ang_sim > 1.9, True)
     ang_sim = angular_similarity(directions_gt, directions2)
     assert_equal(ang_sim > 1.9, True)
+    assert_equal(directions.shape[0], 2)
+    assert_equal(directions2.shape[0], 2)
+    ang_sim = angular_similarity(directions_gt, directions_dsi)
+    assert_equal(ang_sim > 1.9, True)
+    ang_sim = angular_similarity(directions_gt, directions_gqi)
+    assert_equal(ang_sim > 1.9, True)
 
     assert_equal(directions.shape[0], 2)
     assert_equal(directions2.shape[0], 2)
-
+    assert_equal(directions_dsi.shape[0], 2)
+    assert_equal(directions_gqi.shape[0], 2)
 
 if __name__ == '__main__':
     run_module_suite()

@@ -604,8 +604,8 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     fodf_sh = np.zeros(odfs_sh.shape)
 
     for index in ndindex(odfs_sh.shape[:-1]):
-        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], R, B_reg, lambda_=lambda_, 
-                                            tau=tau, r2_term=r2_term)
+        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], R, B_reg, 
+                                            lambda_=lambda_, tau=tau, r2_term=r2_term)
 
     return fodf_sh
 
