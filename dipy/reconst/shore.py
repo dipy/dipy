@@ -147,17 +147,13 @@ class ShoreModel(Cache):
         pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
         coef = np.dot(pseudoInv, data)
 
-        coef_0=0
-        counter=0
-        for l in range(0, self.radial_order+ 1, 2):
-            for p in range((self.radial_order-l)/2 +1):
-                n=p+l
-                for m in range(-l,l+1):
-                    if l==0:
-                        coef_0 += coef[counter] *genlaguerre(n , 0.5)(0) * \
-                            ((factorial(n)) / (2*np.pi * (self.zeta**1.5) * gamma(n+1.5)) )**0.5
-                    counter = counter+1
-        coef = coef / float(coef_0)
+        signal_0=0
+
+        for n in range((self.radial_order)/2 +1):
+            signal_0 += coef[n] *genlaguerre(n , 0.5)(0) * \
+                        ((factorial(n)) / (2*np.pi * (self.zeta**1.5) * gamma(n+1.5)) )**0.5
+
+        coef = coef / float(signal_0)
 
         return ShoreFit(self, coef)
 
@@ -273,16 +269,12 @@ class ShoreFit():
         """
         rtop = 0
         c = self._shore_coef
-        counter = 0
-        for l in range(0, self.radial_order+ 1, 2):
-            for p in range((self.radial_order-l)/2 +1):
-                n=p+l
-                for m in range(-l,l+1):
-                    if l == 0:
-                        rtop +=  c[counter] * (-1) ** n * \
-                            ((16 * np.pi * self.zeta ** 1.5 * gamma(n + 1.5)) / (
-                             factorial(n))) ** 0.5
-                    counter += 1
+
+        for n in range((self.radial_order)/2 +1):
+            rtop +=  c[n] * (-1) ** n * \
+                     ((16 * np.pi * self.zeta ** 1.5 * gamma(n + 1.5)) / (
+                     factorial(n))) ** 0.5
+
         return rtop
 
     def rtop_pdf(self):
@@ -290,16 +282,11 @@ class ShoreFit():
         """
         rtop = 0
         c = self._shore_coef
-        counter = 0
-        for l in range(0, self.radial_order+ 1, 2):
-            for p in range((self.radial_order-l)/2 +1):
-                n=p+l
-                for m in range(-l,l+1):
-                    if l == 0:
-                        rtop += c[counter] * (-1) ** n * \
-                            ((4 * np.pi ** 2 * self.zeta ** 1.5 * factorial(n)) / (gamma(n + 1.5))) ** 0.5 * \
-                            genlaguerre(n, 0.5)(0)
-                    counter += 1
+        for n in range((self.radial_order)/2 +1):
+            rtop += c[n] * (-1) ** n * \
+                    ((4 * np.pi ** 2 * self.zeta ** 1.5 * factorial(n)) / (gamma(n + 1.5))) ** 0.5 * \
+                    genlaguerre(n, 0.5)(0)
+
         return rtop
 
     def msd(self):
@@ -321,16 +308,12 @@ class ShoreFit():
         """
         msd = 0
         c = self._shore_coef
-        counter = 0
-        for l in range(0, self.radial_order+ 1, 2):
-            for p in range((self.radial_order-l)/2 +1):
-                n=p+l
-                for m in range(-l,l+1):
-                    if l == 0:
-                        msd += c[counter]  * (-1) ** n *\
-                            (9 * (gamma(n + 1.5)) / (8 * np.pi ** 6  *  self.zeta ** 3.5 * factorial(n))) ** 0.5 *\
-                            hyp2f1(-n, 2.5, 1.5, 2)
-                    counter += 1
+
+        for n in range((self.radial_order)/2 +1):
+            msd += c[n]  * (-1) ** n *\
+                   (9 * (gamma(n + 1.5)) / (8 * np.pi ** 6  *  self.zeta ** 3.5 * factorial(n))) ** 0.5 *\
+                   hyp2f1(-n, 2.5, 1.5, 2)
+
         return msd
 
     @property
