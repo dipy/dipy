@@ -13,17 +13,14 @@ Examples
 Quick Start
 -----------
 
-
+- :ref:`example_quick_start`
 
 -------------
 Preprocessing
 -------------
 
-Gradients
-~~~~~~~~~
-
-Spheres
-~~~~~~~
+Gradients & Spheres
+~~~~~~~~~~~~~~~~~~~
 
 Brain Extraction
 ~~~~~~~~~~~~~~~~
