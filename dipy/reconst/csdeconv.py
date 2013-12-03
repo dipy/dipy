@@ -13,6 +13,8 @@ from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
+from scipy.integrate import quad
+
 
 
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
@@ -330,13 +332,18 @@ def forward_sdeconv_mat(r_rh, n):
     return np.diag(r_rh[n // 2])
 
 
+<<<<<<< HEAD
 def forward_sdt_deconv_mat(ratio, n, r2_term=False):
+=======
+def forward_sdt_deconv_mat(ratio, sh_order, r2_term=False):
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
     """ Build forward sharpening deconvolution transform (SDT) matrix
 
     Parameters
     ----------
     ratio : float
         ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response function
+<<<<<<< HEAD
     n : ndarray (N,)
         The degree of spherical harmonic function associated with each row of
         the deconvolution matrix. Only even degrees are allowed.
@@ -346,6 +353,18 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
         the proper analytical response function solution solving from the single-fiber ODF
         with the r^2 term. This derivation is not published anywhere. 
         Please contact m.descoteaux@usherbrooke.ca or garyfallidis@gmail.com for the Math.
+=======
+    sh_order : int
+        spherical harmonic order
+    r2_term : bool
+        True if ODF is computed from a model that computes the ODF using the $r^2$ term 
+        in the integral. For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. 
+        This results in using the proper analytical response function solution solving 
+        from the single-fiber ODF with the $r^2$ term. 
+        This derivation is not published anywhere but is the straight 
+        forward extension to the derivation found in Appendix A, Section 9.6 of [1]_.
+
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
 
     Returns
     -------
@@ -353,6 +372,7 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
         SDT deconvolution matrix
     P : ndarray (N, N)
         Funk-Radon Transform (FRT) matrix
+<<<<<<< HEAD
 
     """
     if np.any(n % 2):
@@ -362,6 +382,22 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     frt = np.zeros(n_degrees) # FRT (Funk-Radon transform) q-ball matrix
 
     for l in np.arange(0, n_degrees*2, 2):
+=======
+
+    References
+    ----------
+    .. [1] Descoteaux, M. PhD Thesis. INRIA Sophia-Antipolis. 2008.
+
+    """
+    m, n = sph_harm_ind_list(sh_order)
+
+    sdt = np.zeros(m.shape) # SDT matrix
+    frt = np.zeros(m.shape) # FRT (Funk-Radon transform) 
+    b = np.zeros(m.shape)
+    bb = np.zeros(m.shape)
+
+    for l in np.arange(0, sh_order + 1, 2):
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
         if r2_term :                        
             sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) * np.sqrt( ratio / (4 * np.pi ** 3) ) /
                          np.power((1 - (1 - ratio) * z ** 2), 1.5), -1., 1.)
@@ -457,8 +493,12 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     return fodf_sh, num_it
 
 
+<<<<<<< HEAD
 
 def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
+=======
+def odf_deconv(odf_sh, sh_order, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
     r""" ODF constrained-regularized sherical deconvolution using
     the Sharpening Deconvolution Transform (SDT) [1]_, [2]_.
 
@@ -476,9 +516,21 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
          threshold (tau *max(fODF)) controlling the amplitude below
          which the corresponding fODF is assumed to be zero.
     r2_term : bool
+<<<<<<< HEAD
         True if ODF comes from an ODF computed from a model using the r^2 term in the integral.
         For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs.
 
+=======
+         True if ODF is computed from model that uses the $r^2$ term in the integral.
+         Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and the true normalized ODF
+         definition differ from a $r^2$ term in the ODF integral. The original Sharpening
+         Deconvolution Transform (SDT) technique [2]_ is expecting Tuch's ODF without 
+         the $r^2$ (see [3]_ for the mathematical details). 
+         Now, this function supports ODF that have been computed using the $r^2$ term because
+         the proper analytical response function has be derived. 
+         For example, models such as DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs, should now
+         be deconvolved with the r2_term=True.         
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
 
     Returns
     -------
@@ -489,9 +541,16 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
 
     References
     ----------
-    .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+    .. [1] Tuch, D. MRM 2004. Q-Ball Imaging.
+    .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
            on Complex Fibre Orientation Distributions
+<<<<<<< HEAD
     .. [2] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
+=======
+    .. [3] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
+    """
+    m, n = sph_harm_ind_list(sh_order)
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
 
     """
     # Generate initial fODF estimate, which is the ODF truncated at SH order 4
@@ -560,11 +619,23 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     tau : float
         tau parameter in the L matrix construction (see odfdeconv) (default 0.1)
     r2_term : bool
+<<<<<<< HEAD
         True if you want the proper analytical r^2 ODF response function solution to be used.
         Default is False as in [1]_, used to sharpen the q-ball ODF. 
         Should be true if you are sharpening an ODF coming from GQI, DSI, CSA, SHORE, 
         Tensor, Multi-Tensor, which all use the true ODF integral with the r^2 term to compute the ODF, 
         as opposed to q-ball imaging [2]_, [3]_.
+=======
+         True if ODF is computed from model that uses the $r^2$ term in the integral.
+         Recall that Tuch's ODF (used in Q-ball Imaging [1]_) and the true normalized ODF
+         definition differ from a $r^2$ term in the ODF integral. The original Sharpening
+         Deconvolution Transform (SDT) technique [2]_ is expecting Tuch's ODF without 
+         the $r^2$ (see [3]_ for the mathematical details). 
+         Now, this function supports ODF that have been computed using the $r^2$ term because
+         the proper analytical response function has be derived. 
+         For example, models such as DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs, should now
+         be deconvolved with the r2_term=True.         
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
 
     Returns
     -------
@@ -573,16 +644,26 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
     References
     ----------
-    .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
+    .. [1] Tuch, D. MRM 2004. Q-Ball Imaging.
+    .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
            on Complex Fibre Orientation Distributions
+<<<<<<< HEAD
     .. [2] Tuch, D. MRM 2004. Q-Ball Imaging.
+=======
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
     .. [3] Descoteaux, M, et al. MRM 2007. Fast, Regularized and Analytical Q-Ball Imaging
     """
     r, theta, phi = cart2sphere(sphere.x, sphere.y, sphere.z)
     real_sym_sh = sph_harm_lookup[basis]
 
+<<<<<<< HEAD
     B_reg, m, n = real_sym_sh(sh_order, theta, phi)
     R, P = forward_sdt_deconv_mat(ratio, n)
+=======
+    B_reg, m, n = real_sym_sh(sh_order, theta[:, None], phi[:, None])
+    
+    R, P = forward_sdt_deconv_mat(ratio, sh_order, r2_term)
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
 
     # scale lambda to account for differences in the number of
     # SH coefficients and number of mapped directions
@@ -591,8 +672,14 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     fodf_sh = np.zeros(odfs_sh.shape)
 
     for index in ndindex(odfs_sh.shape[:-1]):
+<<<<<<< HEAD
         fodf_sh[index], num_it = odf_deconv(odfs_sh[index], R, B_reg, lambda_=lambda_, 
                                             tau=tau, r2_term=r2_term)
+=======
+
+        fodf_sh[index], num_it = odf_deconv(odfs_sh[index], sh_order, R, B_reg, 
+                                            lambda_=lambda_, tau=tau, r2_term=r2_term)
+>>>>>>> 20d83b34089f6b3e24c820bf9bd1bd795f4c8150
 
     return fodf_sh
 

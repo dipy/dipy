@@ -21,7 +21,6 @@ from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel, 
                               CsaOdfModel, sph_harm_ind_list)
 
-
 def test_csdeconv():
     SNR = 100
     S0 = 1
