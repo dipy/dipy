@@ -230,6 +230,7 @@ def test_r2_term_odf_sharp():
                               sh_order=8, lambda_=1., tau=0.1, r2_term=True)
     fodf = sh_to_sf(fodf_sh, sphere, sh_order=8, basis_type=None)
 
+<<<<<<< HEAD
     # CSA ODF is a solid angle odf using the r2-term in its derivation
     csa = CsaOdfModel(gtab, sh_order=8, assume_normed=True)    
     csafit = csa.fit(S)
@@ -291,6 +292,15 @@ def test_r2_term_odf_sharp():
     assert_equal(directions2.shape[0], 2)
     assert_equal(directions_dsi.shape[0], 2)
     assert_equal(directions_gqi.shape[0], 2)
+
+    directions_gt, _, _ = peak_directions(odf_gt, sphere)
+    directions, _, _ = peak_directions(fodf, sphere)
+
+    ang_sim = angular_similarity(directions_gt, directions)
+    assert_equal(ang_sim > 1.9, True)
+    assert_equal(directions.shape[0], 2)
+
+>>
 
 if __name__ == '__main__':
     run_module_suite()
