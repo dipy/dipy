@@ -90,11 +90,9 @@ class ShoreModel(Cache):
         ODF estimation via Compressive Sensing in diffusion MRI", Medical
         Image Analysis, 2013.
 
-
         .. [2] Cheng J. et. al, "Theoretical Analysis and eapactical Insights
         on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
         Computational Diffusion MRI, 2011.
-
 
         Examples
         --------
