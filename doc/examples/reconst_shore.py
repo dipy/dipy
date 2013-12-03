@@ -25,19 +25,19 @@ for two shells at b-values 1500 and 2500.
 
 The six parameters of these two functions define the ROI where to reconstruct
 the data. They respectively correspond to (xmin,xmax,ymin,ymax,zmin,zmax)
-with x,y and the three axis defining the spatial positions of the voxels.
+with x, y, z and the three axis defining the spatial positions of the voxels.
 """
 
 fetch_isbi2013_2shell()
-img, gtab=read_isbi2013_2shell()
+img, gtab = read_isbi2013_2shell()
 data = img.get_data()
-data_small=data[10:40,10:40,25]
+data_small = data[10:40, 10:40, 25]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
 data contains the voxel data and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example to read the b-values
+object (gradient information e.g. b-values). For example, to show the b-values
 it is possible to write print(gtab.bvals).
 
 Instantiate the SHORE Model.
@@ -46,17 +46,18 @@ radial_order is the radial order of the SHORE basis.
 
 zeta is the scale factor of the SHORE basis.
 
-lambdaN and lambdaN are the radial and angular regularization constants, respectively.
+lambdaN and lambdaN are the radial and angular regularization constants, 
+respectively.
 
-For details regarding these four parameters see (Cheng J. et al, MICCAI workshop 2011) and 
-(Merlet S. et al, Medical Image Analysis 2013).
+For details regarding these four parameters see [Cheng2011]_ and [Merlet2013].
 """
 
 radial_order = 6
 zeta = 700
-lambdaN=1e-8
-lambdaL=1e-8
-asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
+lambdaN = 1e-8
+lambdaL = 1e-8
+asm = ShoreModel(gtab, radial_order=radial_order,
+                 zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
 
 """
 Fit the SHORE model to the data
@@ -85,7 +86,16 @@ r = fvtk.ren()
 fvtk.add(r, fvtk.sphere_funcs(odf, sphere, colormap='jet'))
 fvtk.show(r)
 fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
+
 """
+.. [Cheng2011] Cheng J. et. al , "Theoretical Analysis and Pratical Insights
+			   on EAP Estimation via Unified HARDI Framework", MICCAI 
+			   workshop workshop on Computational Diffusion MRI, 2011.
+
+.. [Merlet2013] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF 
+           estimation via Compressive Sensing in diffusion MRI", Medical 
+           Image Analysis, 2013.
+
 .. include:: ../links_names.inc
 
 """
