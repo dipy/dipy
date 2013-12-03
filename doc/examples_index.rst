@@ -14,17 +14,14 @@ Examples
 Quick Start
 -----------
 
-
+- :ref:`example_quick_start`
 
 -------------
 Preprocessing
 -------------
 
-Gradients
-~~~~~~~~~
-
-Spheres
-~~~~~~~
+Gradients & Spheres
+~~~~~~~~~~~~~~~~~~~
 
 Brain Extraction
 ~~~~~~~~~~~~~~~~
@@ -118,13 +115,13 @@ Multiprocessing
 
 - :ref:`example_reconst_csd_parallel`
 - :ref:`example_reconst_csa_parallel`
-   
+
 ------------
 File Formats
 ------------
 
 - :ref:`example_streamline_formats`
-   
+
 
 .. In order to build the examples, you'll need (on Debian)
     sudo apt-get install python-tables python-matplotib python-vtk
