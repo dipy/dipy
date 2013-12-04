@@ -71,11 +71,11 @@ class ShoreCartModel(Cache):
             LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
             self.cache_set('shore_laplace_matrix', self.gtab, LR)
 
-        # K = self.cache_get('shore_psi_matrix', key=self.OTHER_gtab)
+        # K = self.cache_get('shore_psi_matrix', key=self.rgrad)
         # if K is None:
         #     K = shore_psi_matrix(
-        #         self.radial_order,  self.mu, self.OTHER_gtab, self.tau)
-        #     self.cache_set('shore_psi_matrix', self.OTHER_gtab, K)
+        #         self.radial_order,  self.mu, self.rgrad, self.tau)
+        #     self.cache_set('shore_psi_matrix', self.rgrad, K)
 
 
         """
@@ -92,7 +92,7 @@ class ShoreCartModel(Cache):
         recasting as QP
 
 
-        min_coef 0.5 coef' * [M'*M + lambd * LR'*LR] * coef + [- M' * data]' coef
+        min_coef 0.5* coef' * [M'*M + lambd * LR'*LR] * coef + [- M' * data]' coef
 
         s.t.
 
@@ -100,7 +100,8 @@ class ShoreCartModel(Cache):
         M["line of q=0"]*coef = 1
         """
 
-        Q = matrix(np.dot(M.T,M) + self.lambd * np.dot(LR.T,LR))
+        # Q = matrix(np.dot(M.T,M) + self.lambd * np.dot(LR.T,LR))
+        Q = matrix(np.dot(M.T,M) + self.lambd * LR)
         p = matrix(-1*np.dot(M.T,data))
         # G = matrix(-1*K)
         G = None
@@ -109,12 +110,96 @@ class ShoreCartModel(Cache):
         A = matrix(M[0],(1,M.shape[1])) #line of M corresponding to q=0
         b = matrix(1.0)
 
+        # options['show_progress'] True/False (default: True)
+        # options['maxiters'] positive integer (default: 100)
+        # options['refinement']  positive integer (default: 0)
+        # options['abstol'] scalar (default: 1e-7)
+        # options['reltol'] scalar (default: 1e-6)
+        # options['feastol'] scalar (default: 1e-7).
+
+
         sol = solvers.qp(Q, p, G, h, A, b)
 
         coef = np.array(sol['x'])[:,0]
 
         return ShoreCartFit(self, coef)
 
+
+    @multi_voxel_fit
+    def fit_cvx_nonneg(self, data):
+        # Generate the SHORE basis
+        M = self.cache_get('shore_phi_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau))
+        if M is None:
+            M = shore_phi_matrix(
+                self.radial_order,  self.mu, self.gtab, self.tau)
+            self.cache_set('shore_phi_matrix', (self.radial_order, self.mu, self.gtab, self.tau), M)
+
+        ind_mat = self.cache_get('shore_index_matrix', key=self.radial_order)
+        if ind_mat is None:
+            ind_mat = shore_index_matrix(self.radial_order)
+            self.cache_set('shore_index_matrix', self.radial_order, ind_mat)
+
+        LR = self.cache_get('shore_laplace_matrix', key=(self.radial_order, self.mu))
+        if LR is None:
+            LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
+            self.cache_set('shore_laplace_matrix', (self.radial_order, self.mu), LR)
+
+
+        K = self.cache_get('shore_psi_matrix_nonneg', key=(self.radial_order, self.mu, self.tau))
+        if K is None:
+            rgrad = []
+            # Nstep**3 EAP point in the discrete regularization
+            Nstep = 10.
+            # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
+            rmax = 0.3 * self.mu * (2 * np.pi * np.sqrt(700))
+            gridmax = rmax / np.sqrt(3)
+            for xx in np.arange(-gridmax,gridmax,2*gridmax/Nstep):
+                for yy in np.arange(-gridmax,gridmax,2*gridmax/Nstep):
+                    for zz in np.arange(0,gridmax,gridmax/Nstep):
+                        rgrad.append([xx, yy, zz])
+            rgrad = np.array(rgrad)
+            K = shore_psi_matrix(
+                self.radial_order,  self.mu, rgrad, self.tau)
+            self.cache_set('shore_psi_matrix_nonneg', (self.radial_order, self.mu, self.tau), K)
+
+
+        """
+        K: shore_psi_matrix for some N q-points
+
+        min_coef 0.5*||M*coef-data||_2^2 + 0.5*lambd*||LR*coef||_2^2
+        
+        s.t.
+
+        K*coef >= 0
+        M["line of q=0"]*coef = 1
+
+
+        recasting as QP
+
+
+        min_coef 0.5* coef' * [M'*M + lambd * LR'*LR] * coef + [- M' * data]' coef
+
+        s.t.
+
+        -K*coef <= 0
+        M["line of q=0"]*coef = 1
+        """
+
+        Q = matrix(np.dot(M.T,M) + self.lambd * LR)
+        p = matrix(-1*np.dot(M.T,data))
+        G = matrix(-1*K)
+        # G = None
+        h = matrix(np.zeros((K.shape[0])),(K.shape[0],1))
+        # h = None
+        A = matrix(M[0],(1,M.shape[1])) #line of M corresponding to q=0
+        b = matrix(1.0)
+
+        solvers.options['show_progress'] = False
+        sol = solvers.qp(Q, p, G, h, A, b)
+
+        coef = np.array(sol['x'])[:,0]
+
+        return ShoreCartFit(self, coef)
 
 class ShoreCartFit():
 
@@ -239,8 +324,6 @@ def shore_phi_matrix(radial_order, mu, gtab, tau):
 
     qgradients = qvals[:, None] * bvecs
 
-    np.savetxt('qgradients.txt', qgradients)
-
     n_elem = ind_mat.shape[0]
 
     n_qgrad = qgradients.shape[0]
@@ -252,6 +335,22 @@ def shore_phi_matrix(radial_order, mu, gtab, tau):
             M[i, j] = shore_phi_3d(ind_mat[j], qgradients[i], mu)
 
     return M
+
+def shore_psi_matrix(radial_order, mu, rgrad, tau):
+
+    ind_mat = shore_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+
+    n_rgrad = rgrad.shape[0]
+
+    K = np.zeros((n_rgrad, n_elem))
+
+    for i in range(n_rgrad):
+        for j in range(n_elem):
+            K[i, j] = shore_psi_3d(ind_mat[j], rgrad[i], mu)
+
+    return K
 
 
 def shore_odf_matrix(radial_order, mu, smoment, vertices):
@@ -446,6 +545,22 @@ def shore_evaluate_E(radial_order, coeff, qlist, mu):
     for i in range(n_qgrad):
         for j in range(n_elem):
             data_out[i] += coeff[j] * shore_phi_3d(ind_mat[j], qlist[i], mu)
+
+    return data_out
+
+def shore_evaluate_EAP(radial_order, coeff, rlist, mu):
+
+    ind_mat = shore_index_matrix(radial_order)
+    
+    n_elem = ind_mat.shape[0]
+
+    n_rgrad = rlist.shape[0]
+
+    data_out = np.zeros(n_rgrad)
+
+    for i in range(n_rgrad):
+        for j in range(n_elem):
+            data_out[i] += coeff[j] * shore_psi_3d(ind_mat[j], rlist[i], mu)
 
     return data_out
 
