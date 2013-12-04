@@ -181,16 +181,16 @@ def test_peak_directions_thorough():
                        [0.0025, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0)]
     fractions = [50, 50]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
+                                            100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
     # two unequal fibers
     fractions = [75, 25]
-    odf_gt, sticks, sphere = _create_mt_sim(
-        mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
+                                            100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
@@ -320,10 +320,54 @@ def test_peak_directions_thorough():
     mevals = np.array([[0.0015, 0.0015, 0.0015]])
     angles = [(0, 0)]
     fractions = [100.]
-    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions, 100, None)
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
+                                            100, None)
 
     directions, values, indices = peak_directions(odf_gt, sphere, .5, 25.)
     assert_equal(len(values) > 10, True)
+
+
+def test_difference_with_minmax():
+
+    # Show difference with and without minmax normalization
+    # we create an odf here with 3 main peaks, 1 small sharp unwanted peak
+    # (noise) and an isotropic compartment.
+    mevals = np.array([[0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.00005, 0.00005],
+                       [0.0015, 0.0015, 0.0015]])
+    angles = [(0, 0), (45, 0), (90, 0), (90, 90), (0, 0)]
+    fractions = [20, 20, 10, 1, 100 - 20 - 20 - 10 - 1]
+    odf_gt, sticks, sphere = _create_mt_sim(mevals, angles, fractions,
+                                            100, None)
+
+    # We will show that when the minmax normalization is used we can remove
+    # the noisy peak using a lower threshold.
+
+    odf_gt_minmax = (odf_gt - odf_gt.min()) / (odf_gt.max() - odf_gt.min())
+
+    _, values_1, _ = peak_directions(odf_gt, sphere, .30, 25.)
+
+    assert_equal(len(values_1), 3)
+
+    _, values_2, _ = peak_directions(odf_gt_minmax, sphere, .30, 25.)
+
+    assert_equal(len(values_2), 3)
+
+    _, values_3, _ = peak_directions(odf_gt, sphere, .30, 25.,
+                                     minmax_norm=False)
+
+    assert_equal(len(values_3), 4)
+
+    # we show here that to actually get that noisy peak out we need to
+    # increase the peak threshold considerably
+    directions, values_4, indices = peak_directions(odf_gt, sphere,
+                                                    .60, 25.,
+                                                    minmax_norm=False)
+
+    assert_equal(len(values_4), 3)
+    assert_almost_equal(values_1, values_4)
 
 
 def test_degenerative_cases():
@@ -345,7 +389,7 @@ def test_degenerative_cases():
     print(directions, values, indices)
 
     assert_equal(values[0], 0.02)
-      
+
     odf = - np.ones(sphere.vertices.shape[0])
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
     print(directions, values, indices)
@@ -376,10 +420,10 @@ def test_degenerative_cases():
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
     assert_equal(values[0], 1)
     assert_equal(len(values), 1)
-    
+
     odf[1:] = np.finfo(np.float).eps * np.random.rand(odf.shape[0] - 1)
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
-    
+
     assert_equal(values[0], 1)
     assert_equal(len(values), 1)
 
@@ -549,4 +593,4 @@ def test_reshape_peaks_for_visualization():
 if __name__ == '__main__':
 
     run_module_suite()
-    
+
