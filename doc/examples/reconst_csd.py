@@ -13,7 +13,8 @@ The basic idea with this method is that if we could estimate the response functi
 single fiber then we could deconvolve the measured signal and obtain the underlying
 fiber distribution.
 
-Let's first load the data. We will use a dataset with 10 b0s and 150 non-b0s with b-value 2000.
+Let's first load the data. We will use a dataset with 10 b0s and 150 non-b0s
+with b-value 2000.
 """
 
 import numpy as np
@@ -28,12 +29,13 @@ data = img.get_data()
 """
 You can verify the b-values of the datasets by looking at the attribute `gtab.bvals`.
 
-In CSD there is an important pre-processing step: the estimation of the fiber response
-function. In order to do this we look for voxels with very anisotropic configurations.
-For example here we use an ROI (20x20x20) at the center of the volume hoping to find
-an area of the corpus callosum and store the signal values for the voxels with FA values
-higher than 0.7. Of course, if we haven't precalculated FA we need to fit a Tensor
-model to the datasets. Which is what we do with the `auto_response` function here.
+In CSD there is an important pre-processing step: the estimation of the fiber
+response function. In order to do this we look for regions of the brain where
+it is known to have single fibers. For example if we use an ROI at the center of
+the brain, we will find single fibers from the corpus callosum. The
+``auto_response`` function will calculate FA for an ROI of radius equal to
+``roi_radius`` in the center of the volume and return the response function
+estimated in that region.
 """
 
 from dipy.reconst.csdeconv import auto_response
@@ -41,10 +43,12 @@ from dipy.reconst.csdeconv import auto_response
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
 """
-The response parameter contains the eigenvalues of the response function and
-the average S0 for this response.
+The ``response`` parameter contains two parameters. The first is an array with
+the eigenvalues of the response function and the second is the average S0 for
+this response.
 
-It is a very good practice to print the response and have a look at its values.
+It is a very good practice to always validate the result of auto_response. For,
+this purpose we can print it and have a look at its values.
 """
 
 print(response)
@@ -63,8 +67,8 @@ print(ratio)
 """
 0.21197
 
-In order to make sure that we have a good response function it is a good
-practice to visualize the response's function ODF. Here is how:
+We can double check that we have a good response function by visualizing the
+response's function's ODF. Here is how:
 """
 
 from dipy.viz import fvtk
@@ -73,7 +77,7 @@ ren = fvtk.ren()
 
 evals = response[0]
 
-evecs = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
 
 from dipy.data import get_sphere
 
@@ -85,18 +89,17 @@ response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
 
 response_actor = fvtk.sphere_funcs(response_odf, sphere)
 
-response_actor.RotateX(90)
-
 fvtk.add(ren, response_actor)
 
 print('Saving illustration as csd_response.png')
-fvtk.record(ren, out_path='csd_response.png', size=(600, 600))
+fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
 
 """
 .. figure:: csd_response.png
    :align: center
 
    **Estimated response function**.
+
 """
 
 fvtk.rm(ren, response_actor)
@@ -140,7 +143,6 @@ fvtk.record(ren, out_path='csd_odfs.png', size=(600, 600))
    :align: center
 
    **CSD ODFs**.
-
 
 In Dipy we also provide tools for finding the peak directions (maxima) of the
 ODFs. For this purpose we strongly recommend using ``peaks_from_model``.
