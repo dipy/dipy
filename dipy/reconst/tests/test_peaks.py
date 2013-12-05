@@ -176,7 +176,7 @@ def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
 
 def test_peak_directions_thorough():
 
-    # two equal fibers
+    # two equal fibers (creating a very sharp odf)
     mevals = np.array([[0.0025, 0.0003, 0.0003],
                        [0.0025, 0.0003, 0.0003]])
     angles = [(0, 0), (45, 0)]
@@ -198,7 +198,7 @@ def test_peak_directions_thorough():
     directions, values, indices = peak_directions(odf_gt, sphere, .20, 25.)
     assert_almost_equal(angular_similarity(directions, sticks), 2, 2)
 
-    # two equal fibers short angle
+    # two equal fibers short angle (simulating very sharp ODF)
     mevals = np.array(([0.0045, 0.0003, 0.0003],
                        [0.0045, 0.0003, 0.0003]))
     fractions = [50, 50]
