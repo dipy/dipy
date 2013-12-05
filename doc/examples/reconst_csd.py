@@ -35,7 +35,7 @@ it is known to have single fibers. For example if we use an ROI at the center of
 the brain, we will find single fibers from the corpus callosum. The
 ``auto_response`` function will calculate FA for an ROI of radius equal to
 ``roi_radius`` in the center of the volume and return the response function
-estimated in that region.
+estimated in that region for the voxels with FA higher than 0.7.
 """
 
 from dipy.reconst.csdeconv import auto_response
