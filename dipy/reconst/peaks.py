@@ -106,9 +106,9 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
         directions. If two peaks are too close only the larger of the two is
         returned.
     minmax_norm : bool
-        If True min max normalization is applied internaly in the odf for the 
-        peak finding. The returned ``values`` will be on the initial odf. This 
-        parameter affects the ``relative_peak_threshold`` parameter because now 
+        If True min max normalization is applied internaly in the odf for the
+        peak finding. The returned ``values`` will be on the initial odf. This
+        parameter affects the ``relative_peak_threshold`` parameter because now
         ``m`` will be 1.
 
     Returns
@@ -136,7 +136,11 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     if minmax_norm:
         odf_min = odf.min()
         odf_max = values[0]
-        values_norm = (values - odf_min) / (odf_max - odf_min)
+        #because of the relative threshold this algorithm will
+        #give the same peaks as if we divide (values - odf_min) with
+        #(odf_max - odf_min) or not so here we skip the division
+        #to increase speed
+        values_norm = (values - odf_min)
     else:
         values_norm = values
 
@@ -442,7 +446,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
             continue
 
         # Get peaks of odf
-        direction, pk, ind = peak_directions(odf, sphere, 
+        direction, pk, ind = peak_directions(odf, sphere,
                                              relative_peak_threshold,
                                              min_separation_angle)
 
