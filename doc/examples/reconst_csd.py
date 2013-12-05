@@ -13,7 +13,7 @@ The basic idea with this method is that if we could estimate the response functi
 single fiber then we could deconvolve the measured signal and obtain the underlying
 fiber distribution.
 
-Lets first load the data. We will use a dataset with 10 b0s and 150 non-b0s with b-value 2000.
+Let's first load the data. We will use a dataset with 10 b0s and 150 non-b0s with b-value 2000.
 """
 
 import numpy as np
@@ -41,7 +41,69 @@ from dipy.reconst.csdeconv import auto_response
 response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
 """
-Now we are ready to import the CSD model and fit the datasets.
+The response parameter contains the eigenvalues of the response function and
+the average S0 for this response.
+
+It is a very good practice to print the response and have a look at its values.
+"""
+
+print(response)
+
+"""
+(array([ 0.0014,  0.00029,  0.00029]), 416.206)
+
+The tensor generated from the response must be prolate (two smaller eigenvalues
+should be equal) and look anisotropic with ratio of second to first eigenvalue
+of about 0.2. Or in other words the maximum eigenvalue must be around 5 times
+larger than the second maximum eigenvalue.
+"""
+
+print(ratio)
+
+"""
+0.21197
+
+In order to make sure that we have a good response function it is a good
+practice to visualize the response's function ODF. Here is how:
+"""
+
+from dipy.viz import fvtk
+
+ren = fvtk.ren()
+
+evals = response[0]
+
+evecs = np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])
+
+from dipy.data import get_sphere
+
+sphere = get_sphere('symmetric724')
+
+from dipy.sims.voxel import single_tensor_odf
+
+response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
+
+response_actor = fvtk.sphere_funcs(response_odf, sphere)
+
+response_actor.RotateX(90)
+
+fvtk.add(ren, response_actor)
+
+print('Saving illustration as csd_response.png')
+fvtk.record(ren, out_path='csd_response.png', size=(600, 600))
+
+"""
+.. figure:: csd_response.png
+   :align: center
+
+   **Estimated response function**.
+"""
+
+fvtk.rm(ren, response_actor)
+
+"""
+Now, that we have the response function, we are ready to start the deconvolution
+process. Let's import the CSD model and fit the datasets.
 """
 
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
@@ -60,15 +122,7 @@ csd_fit = csd_model.fit(data_small)
 Show the CSD-based ODFs also known as FODFs (fiber ODFs).
 """
 
-from dipy.data import get_sphere
-
-sphere = get_sphere('symmetric724')
-
 csd_odf = csd_fit.odf(sphere)
-
-from dipy.viz import fvtk
-
-ren = fvtk.ren()
 
 """
 Here we visualize only a 30x30 region.
