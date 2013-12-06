@@ -2,11 +2,11 @@
 SNR estimation for Diffusion-Weighted Images
 =============================================
 
-Signal-to-Noise-Ratio (SNR) of DW images is still an open question 
+Computing the Signal-to-Noise-Ratio (SNR) of DW images is still an open question,
 as SNR depends on the white matter structure of interest as well as 
 the gradient direction corresponding to each DWI.  
 
-In classical MRI, SNR is usually defined as the ratio of the mean 
+In classical MRI, SNR can be defined as the ratio of the mean 
 of the signal divided by the standard deviation of the
 noise, that is
 
@@ -14,20 +14,26 @@ noise, that is
 
     SNR = \frac{\mu_{signal}}{\sigma_{noise}}
 
-The noise standard deviation can be computed from the background. But how 
-do we computed the mean of the signal, and what signal?
+The noise standard deviation can be computed from the background in any of the DW
+images. But how do we computed the mean of the signal, and what signal?
 
-The strategy here is compute a worst-case SNR for DWI. Several white matter 
+The strategy here is to compute a \emph{'worst-case'} SNR for DWI. Several white matter  
 structures such as the corpus callosum (CC), corticospinal tract (CST), or
 the superior longitudinal fasciculus (SLF) can be easily identified from
 the colored-FA (cfa) map. In this example, we will use voxels from the CC, 
-which are highly red color in the cfa map because mainly oriented in 
-the left-right direction.  Hence, the purpose here is not to get a valid 
-segmentation of the corpus callosum but voxels where we are confident that
-the underlying fiber population is in left-right (x direction). These voxels
-will be used to compute the mean signal of the DW image along the x-direction,
-which we know will be the \emph{most attenuated} diffusion signal. Therefore, 
-this will produce a worst-case SNR estimation for the given DWI dataset.
+which have the characteristic of being highly RED in the cfa map because mainly oriented in  
+the left-right direction.
+
+Hence, the purpose here is \emph{not} to get a valid 
+segmentation of the CC but voxels where we are very confident that
+the underlying fiber population is in left-right (x-direction). These voxels
+will be used to compute the mean signal of all DW images. We know that the DW image
+closest to the x-direction will be the one with \emph{most attenuated} diffusion signal.
+Therefore,  this will produce a worst-case SNR estimation for the given DWI dataset. This is
+the strategy adopted in several recent papers (see [1]_ and [2]_). It gives a good
+indication of the quality of the DWI data.
+
+First, we compute the tensor model in a brain mask (see the DTI example for more explanation)
 
 """
 
@@ -46,30 +52,21 @@ from dipy.reconst.dti import TensorModel
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
 
-"""We can now do a first segmentation of the data using the Colored Fractional
-Anisotropy (or cfa). It encodes in a 3D volume the orientation of the diffusion.
-Red means that the principal direction of the tensor is in x, green is for the
-y direction and the z direction is encoded with blue.
+"""Next, we set our red-blue-green thresholds to (0.7, 1) in the x axis
+and (0, 0.1) in the y and z axes respectively.
+These values work well in practice to isolate the very RED voxels of the cfa map.
 
-We know that the corpus callosum should be in the middle of the brain
-and since the principal diffusion direction is the x axis,
-the red channel should be the highest in the cfa.
+Then, as assurance, we want just RED voxels in the CC (there could be
+noisy red voxels around the brain mask and we don't want those). Unless the brain
+acquisition was badly aligned, the CC is always close to the mid-sagittal slice. 
 
-Let's pick a range of 0.7 to 1 in the x axis and 0 to 0.1 in the y and z axis
-as a segmentation threshold.
-
-We will also define a rough roi, since noisy pixels could be considered in the
-mask if it's not bounded properly. Adjusting the cfa threshold and the roi
-location enables the function to segment any part of the brain based on
-an orientation and spatial location. For now, we will pick half of the
-bounding box from the segmentation of the brain, just in case the subject was
-not centered properly.
+The following lines perform these two operations and then saves the computed mask.
 """
 
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
-threshold = (0.7, 1, 0, 0.1, 0, 0.1)
+threshold = (0.6, 1, 0, 0.1, 0, 0.1)
 CC_box = np.zeros_like(data[..., 0])
 
 mins, maxs = bounding_box(mask)
@@ -83,164 +80,96 @@ CC_box[bounds_min[0]:bounds_max[0],
        bounds_min[1]:bounds_max[1],
        bounds_min[2]:bounds_max[2]] = 1
 
-mask_corpus_callosum, cfa = segment_from_cfa(tensorfit, CC_box,
-                                             threshold, return_cfa=True)
-
-print("Size of the mask :", np.count_nonzero(mask_corpus_callosum), \
-       "voxels out of", np.size(CC_box))
-
-"""We can save the produced dataset with nibabel to visualize them later on.
-
-Note that we save the cfa with values between 0 and 255 for visualization
-purpose. Remember that the function works with values between
-0 and 1, but it will warn you if the supplied values do not fall in this range.
-"""
-
-cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
-mask_corpus_callosum_img = nib.Nifti1Image(mask_corpus_callosum.astype(np.uint8), affine)
-
-
-"""The mask has random voxels outside the splenium because of the noise, so
-let's change the threshold, the bounding box and restart segmenting from
-the cfa.
-"""
-
-threshold2 = (0.6, 1, 0, 0.1, 0, 0.1)
-
-CC_box = np.zeros_like(CC_box)
+print(bounds_max[0])
 CC_box[bounds_min[0]:50,
        bounds_min[1]:bounds_max[1],
        bounds_min[2]:bounds_max[2]] = 1
 
-mask_corpus_callosum2 = segment_from_cfa(tensorfit, CC_box, threshold2)
+mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box,
+				     threshold, return_cfa=True)
 
-mask_corpus_callosum2_img = nib.Nifti1Image(mask_corpus_callosum2.astype(np.uint8), affine)
-nib.save(mask_corpus_callosum2_img, 'mask_corpus_callosum2.nii.gz')
-
-print("Size of the mask :", np.count_nonzero(mask_corpus_callosum2), \
+print("Size of the mask :", np.count_nonzero(mask_cc_part), \
        "voxels out of", np.size(CC_box))
+cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
+mask_cc_part_img = nib.Nifti1Image(mask_cc_part.astype(np.uint8), affine)
+nib.save(mask_cc_part_img, 'mask_CC_part.nii.gz')
+
 
 """Let's check the result of the second segmentation using matplotlib.
 """
 
-import matplotlib.pyplot as plt
-region = 40
-fig = plt.figure('Corpus callosum segmentation')
-plt.subplot(1, 2, 1)
-plt.title("Corpus callosum")
-plt.imshow((cfa[..., 0])[region, ...])
+# import matplotlib.pyplot as plt
+# region = 40
+# fig = plt.figure('Corpus callosum segmentation')
+# plt.subplot(1, 2, 1)
+# plt.title("Corpus callosum")
+# plt.imshow((cfa[..., 0])[region, ...])
 
-plt.subplot(1, 2, 2)
-plt.title("Corpus callosum segmentation")
-plt.imshow(mask_corpus_callosum2[region, ...])
-#fig.savefig("Comparison_of_segmentation.png")
+# plt.subplot(1, 2, 2)
+# plt.title("Corpus callosum segmentation")
+# plt.imshow(mask_cc_part[region, ...])
+# fig.savefig("Comparison_of_segmentation.png")
 
 """
 .. figure:: Comparison_of_segmentation.png
 """
 
-"""Now that we have a crude mask, we can use all the voxels to estimate the SNR
-in this region. Since the corpus callosum is in the middle of the brain, the
-signal should be weaker and will greatly vary according to the direction of
-the b vector that is used for each DWI. The SNR should be low in the X
-orientation and high in the Y and Z orientations. The SNR is usually defined as
-the ratio of the mean of the signal divided by the standard deviation of the
-noise, that is
+"""Now that we are happy with our crude mask that selected voxels in x-direction, 
+we can use all the voxels to estimate the mean signal in this region.
+(\emph{recall that we did not want a perfect CC segmentation but just several voxels in the
+x-direction})
 
-.. math::
-
-    SNR = \frac{\mu_{signal}}{\sigma_{noise}}
-
-We will compute the mean of the signal in the mask we just created and
-the standard deviation from the noise in the background.
 """
 
-mean_signal = np.mean(data[mask_corpus_callosum2], axis=0)
+mean_signal = np.mean(data[mask_cc_part], axis=0)
 
-"""In order to have a good background estimation, we will re-use the brain mask
-computed before, but add the neck and shoulder part and then invert the
-mask.
+"""Now, we need a good background estimation. We will re-use the brain mask
+computed before and invert it to catch the outside of the brain. This could
+also be determined manually with a box ROI in the background.
+(certain MR manufacturers mask out the outside of the brain with 0's, you then
+have to carefully define a box ROI manually).
 """
 
 from scipy.ndimage.morphology import binary_dilation
 mask_noise = binary_dilation(mask, iterations=10)
-
 mask_noise[..., :mask_noise.shape[-1]//2] = 1
 mask_noise = ~mask_noise
-
 mask_noise_img = nib.Nifti1Image(mask_noise.astype(np.uint8), affine)
 nib.save(mask_noise_img, 'mask_noise.nii.gz')
 
 noise_std = np.std(data[mask_noise, :])
 
-"""We can now compute the SNR for each dwi using the formula above. Let's find
-the position of the gradient direction that lies the closest to the X, Y and Z
-axis.
+"""We can now compute the SNR for each DWI using the formula defined above.
+Let's find the position of the gradient direction that lies the closest to
+the X, Y and Z axes.
 """
 
 # Exclude null bvecs from the search
 idx = np.sum(gtab.bvecs, axis=-1) == 0
 gtab.bvecs[idx] = np.inf
-
 axis_X = np.argmin(np.sum((gtab.bvecs-np.array([1, 0, 0]))**2, axis=-1))
 axis_Y = np.argmin(np.sum((gtab.bvecs-np.array([0, 1, 0]))**2, axis=-1))
 axis_Z = np.argmin(np.sum((gtab.bvecs-np.array([0, 0, 1]))**2, axis=-1))
 
-"""Now that we have the closest b-vectors to each of the cartesian axis,
-let's compute their respective SNR and compare them to a b0 image's SNR.
+"""Now let's compute their respective SNR and compare them to the SNR of the
+b0 image SNR. 
 """
 
 for direction in [0, axis_X, axis_Y, axis_Z]:
 	SNR = mean_signal[direction]/noise_std
 	print("SNR for direction", direction, "is :", SNR)
-
+	print(gtab.bvecs[direction]
+	      
 """SNR for direction 0 is : ``39.7490994429``"""
 """SNR for direction 58 is : ``4.84444879426``"""
 """SNR for direction 57 is : ``22.6156341499``"""
 """SNR for direction 126 is : ``23.1985563491``"""
 
-"""Since the diffusion is strong in the X axis, it is the lowest SNR in all of
-the DWIs, while the Y and Z axis have almost no diffusion and as such a high
-SNR. The b0 still exhibits the highest SNR, since there is no diffusion
-(and as such no signal drop) at all.
+"""Since the CC is aligned with the X axis, it is the lowest SNR in all of
+the DWIs, where the DW signal is the most attenuated. In comparison, the DW images in
+perpendical Y and Z axes have a high SNR. The b0 still exhibits the highest SNR,
+since there is no signal attenuation.
+
+Hence, we can say the Stanford diffusion data has a 'worst-case' SNR of approximately 5, a 
+'best-case' SNR of approximately 23, and a SNR of 40 on the b0 image. 
 """
-
-"""Now that we have the SNR in the splenium of the corpus callosum, let's now
-start a new segmentation to create a mask of the entire corpus callosum.  We
-start by loosening the restrictions on the threshold and running the
-segmentation again with the same bounding box.
-"""
-threshold = (0.2, 1, 0, 0.3, 0, 0.3)
-
-mask_corpus_callosum3, cfa = segment_from_cfa(tensorfit, CC_box,
-                                             threshold, return_cfa=True)
-
-"""Let's now clean up our mask by getting rid of any leftover voxels that are
-not a part of the corpus callosum.
-"""
-
-from dipy.segment.mask import clean_cc_mask
-
-cleaned_cc_mask = clean_cc_mask(mask_corpus_callosum3)
-
-cleaned_cc_mask_img = nib.Nifti1Image(cleaned_cc_mask.astype(np.uint8), affine)
-nib.save(cleaned_cc_mask_img, 'mask_corpus_callosum3_cleaned.nii.gz')
-
-"""Now let's check our result by plotting our new mask alongside our old mask.
-"""
-
-fig = plt.figure('Corpus callosum segmentation2')
-plt.subplot(1, 2, 1)
-plt.title("Old segmentation")
-plt.imshow(mask_corpus_callosum3[region, ...])
-
-plt.subplot(1, 2, 2)
-plt.title("New segmentation")
-plt.imshow(cleaned_cc_mask[region, ...])
-
-#fig.savefig("Comparison_of_segmentation2.png")
-
-"""
-.. figure:: Comparison_of_segmentation2.png
-"""
-
