@@ -46,9 +46,10 @@ img, gtab = read_stanford_hardi()
 data = img.get_data()
 affine = img.get_affine()
 from dipy.segment.mask import median_otsu
-b0_mask, mask = median_otsu(data, 3, 1, True,
-                            vol_idx=range(10, 50), dilate=2)
+print('Computing brain mask...')
+b0_mask, mask = median_otsu(data) 
 from dipy.reconst.dti import TensorModel
+print('Computing tensors...')
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
 
@@ -63,6 +64,7 @@ acquisition was badly aligned, the CC is always close to the mid-sagittal slice.
 The following lines perform these two operations and then saves the computed mask.
 """
 
+print('Computing worst-case/best-case SNR using the corpus callosum...')
 from dipy.segment.mask import segment_from_cfa
 from dipy.segment.mask import bounding_box
 
@@ -80,39 +82,12 @@ CC_box[bounds_min[0]:bounds_max[0],
        bounds_min[1]:bounds_max[1],
        bounds_min[2]:bounds_max[2]] = 1
 
-print(bounds_max[0])
-CC_box[bounds_min[0]:50,
-       bounds_min[1]:bounds_max[1],
-       bounds_min[2]:bounds_max[2]] = 1
-
 mask_cc_part, cfa = segment_from_cfa(tensorfit, CC_box,
 				     threshold, return_cfa=True)
 
-print("Size of the mask :", np.count_nonzero(mask_cc_part), \
-       "voxels out of", np.size(CC_box))
 cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
 mask_cc_part_img = nib.Nifti1Image(mask_cc_part.astype(np.uint8), affine)
 nib.save(mask_cc_part_img, 'mask_CC_part.nii.gz')
-
-
-"""Let's inspect the result using matplotlib.
-"""
-
-# import matplotlib.pyplot as plt
-# region = 40
-# fig = plt.figure('Corpus callosum segmentation')
-# plt.subplot(1, 2, 1)
-# plt.title("Corpus callosum")
-# plt.imshow((cfa[..., 0])[region, ...])
-
-# plt.subplot(1, 2, 2)
-# plt.title("Corpus callosum segmentation")
-# plt.imshow(mask_cc_part[region, ...])
-# fig.savefig("Comparison_of_segmentation.png")
-
-"""
-.. figure:: Comparison_of_segmentation.png
-"""
 
 """Now that we are happy with our crude mask that selected voxels in x-direction, 
 we can use all the voxels to estimate the mean signal in this region.
@@ -157,13 +132,15 @@ b0 image SNR.
 
 for direction in [0, axis_X, axis_Y, axis_Z]:
 	SNR = mean_signal[direction]/noise_std
-	print("SNR for direction", direction, "is :", SNR)
-	print(gtab.bvecs[direction]
+	if direction == 0 :
+		print("SNR for the b=0 image is :", SNR)
+	else :
+		print("SNR for direction", direction, " ", gtab.bvecs[direction], "is :", SNR)
 	      
-"""SNR for direction 0 is : ``39.7490994429``"""
-"""SNR for direction 58 is : ``4.84444879426``"""
-"""SNR for direction 57 is : ``22.6156341499``"""
-"""SNR for direction 126 is : ``23.1985563491``"""
+"""SNR for direction 0 is : ''42.0695455758''"""
+"""SNR for direction 58  [ 0.98875  0.1177  -0.09229] is : ''5.46995373635''"""
+"""SNR for direction 57  [-0.05039  0.99871  0.0054406] is : ''23.9329492871''"""
+"""SNR for direction 126 [-0.11825  -0.039925  0.99218 ] is : ''23.9965694823''"""
 
 """Since the CC is aligned with the X axis, it is the lowest SNR in all of
 the DWIs, where the DW signal is the most attenuated. In comparison, the DW images in
@@ -173,3 +150,5 @@ since there is no signal attenuation.
 Hence, we can say the Stanford diffusion data has a 'worst-case' SNR of approximately 5, a 
 'best-case' SNR of approximately 23, and a SNR of 40 on the b0 image. 
 """
+
+
