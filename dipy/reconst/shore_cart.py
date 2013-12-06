@@ -8,7 +8,7 @@ from cvxopt import matrix, solvers
 
 class ShoreCartModel(Cache):
 
-    def __init__(self, gtab, radial_order=6, mu=1, lambd=0):
+    def __init__(self, gtab, radial_order=6, mu=1, lambd=0, e0_cons = True, eap_cons = True):
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
@@ -16,118 +16,19 @@ class ShoreCartModel(Cache):
         self.radial_order = radial_order
         self.mu = mu
         self.lambd = lambd
+        self.e0_cons = e0_cons
+        self.eap_cons = eap_cons
 
         if (gtab.big_delta is None) or (gtab.small_delta is None):
             self.tau = 1 / (4 * np.pi ** 2)
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
 
+
     @multi_voxel_fit
     def fit(self, data):
-
         # Generate the SHORE basis
-        M = self.cache_get('shore_phi_matrix', key=self.gtab)
-        if M is None:
-            M = shore_phi_matrix(
-                self.radial_order,  self.mu, self.gtab, self.tau)
-            self.cache_set('shore_phi_matrix', self.gtab, M)
-
-        ind_mat = self.cache_get('shore_index_matrix', key=self.gtab)
-        if ind_mat is None:
-            ind_mat = shore_index_matrix(self.radial_order)
-            self.cache_set('shore_index_matrix', self.gtab, ind_mat)
-
-        LR = self.cache_get('shore_laplace_matrix', key=self.gtab)
-        if LR is None:
-            LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
-            self.cache_set('shore_laplace_matrix', self.gtab, LR)
-
-
-        pseudo_inv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambd * LR),
-                            M.T)
-
-        coef = np.dot(pseudo_inv, data)
-
-        return ShoreCartFit(self, coef)
-
-
-    @multi_voxel_fit
-    def fit_cvx(self, data):
-
-        # Generate the SHORE basis
-        M = self.cache_get('shore_phi_matrix', key=self.gtab)
-        if M is None:
-            M = shore_phi_matrix(
-                self.radial_order,  self.mu, self.gtab, self.tau)
-            self.cache_set('shore_phi_matrix', self.gtab, M)
-
-        ind_mat = self.cache_get('shore_index_matrix', key=self.gtab)
-        if ind_mat is None:
-            ind_mat = shore_index_matrix(self.radial_order)
-            self.cache_set('shore_index_matrix', self.gtab, ind_mat)
-
-        LR = self.cache_get('shore_laplace_matrix', key=self.gtab)
-        if LR is None:
-            LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
-            self.cache_set('shore_laplace_matrix', self.gtab, LR)
-
-        # K = self.cache_get('shore_psi_matrix', key=self.rgrad)
-        # if K is None:
-        #     K = shore_psi_matrix(
-        #         self.radial_order,  self.mu, self.rgrad, self.tau)
-        #     self.cache_set('shore_psi_matrix', self.rgrad, K)
-
-
-        """
-        K: shore_psi_matrix for some N q-points
-
-        min_coef 0.5*||M*coef-data||_2^2 + 0.5*lambd*||LR*coef||_2^2
-        
-        s.t.
-
-        K*coef >= 0
-        M["line of q=0"]*coef = 1
-
-
-        recasting as QP
-
-
-        min_coef 0.5* coef' * [M'*M + lambd * LR'*LR] * coef + [- M' * data]' coef
-
-        s.t.
-
-        -K*coef <= 0
-        M["line of q=0"]*coef = 1
-        """
-
-        # Q = matrix(np.dot(M.T,M) + self.lambd * np.dot(LR.T,LR))
-        Q = matrix(np.dot(M.T,M) + self.lambd * LR)
-        p = matrix(-1*np.dot(M.T,data))
-        # G = matrix(-1*K)
-        G = None
-        # h = matrix(np.zeros((N)),(N,1))
-        h = None
-        A = matrix(M[0],(1,M.shape[1])) #line of M corresponding to q=0
-        b = matrix(1.0)
-
-        # options['show_progress'] True/False (default: True)
-        # options['maxiters'] positive integer (default: 100)
-        # options['refinement']  positive integer (default: 0)
-        # options['abstol'] scalar (default: 1e-7)
-        # options['reltol'] scalar (default: 1e-6)
-        # options['feastol'] scalar (default: 1e-7).
-
-
-        sol = solvers.qp(Q, p, G, h, A, b)
-
-        coef = np.array(sol['x'])[:,0]
-
-        return ShoreCartFit(self, coef)
-
-
-    @multi_voxel_fit
-    def fit_cvx_nonneg(self, data):
-        # Generate the SHORE basis
+        # Temporary variable to turn constraints off for testing purposes
         M = self.cache_get('shore_phi_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau))
         if M is None:
             M = shore_phi_matrix(
@@ -144,55 +45,40 @@ class ShoreCartModel(Cache):
             LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
             self.cache_set('shore_laplace_matrix', (self.radial_order, self.mu), LR)
 
-
-        K = self.cache_get('shore_psi_matrix_nonneg', key=(self.radial_order, self.mu, self.tau))
-        if K is None:
-            rgrad = []
-            # Nstep**3 EAP point in the discrete regularization
-            Nstep = 10.
-            # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
-            rmax = 0.3 * self.mu * (2 * np.pi * np.sqrt(700))
-            gridmax = rmax / np.sqrt(3)
-            for xx in np.arange(-gridmax,gridmax,2*gridmax/Nstep):
-                for yy in np.arange(-gridmax,gridmax,2*gridmax/Nstep):
-                    for zz in np.arange(0,gridmax,gridmax/Nstep):
-                        rgrad.append([xx, yy, zz])
-            rgrad = np.array(rgrad)
-            K = shore_psi_matrix(
-                self.radial_order,  self.mu, rgrad, self.tau)
-            self.cache_set('shore_psi_matrix_nonneg', (self.radial_order, self.mu, self.tau), K)
+        if self.eap_cons:
+            K = self.cache_get('shore_psi_matrix_nonneg', key=(self.radial_order, self.mu, self.tau))
+            if K is None:
+                # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
+                rmax = 0.35 * self.mu * (2 * np.pi * np.sqrt(700))
+                rgrad = gen_rgrid(rmax = rmax, Nstep = 10.)
+                K = shore_psi_matrix(
+                    self.radial_order,  self.mu, rgrad, self.tau)
+                self.cache_set('shore_psi_matrix_nonneg', (self.radial_order, self.mu, self.tau), K)
 
 
-        """
-        K: shore_psi_matrix for some N q-points
-
-        min_coef 0.5*||M*coef-data||_2^2 + 0.5*lambd*||LR*coef||_2^2
-        
-        s.t.
-
-        K*coef >= 0
-        M["line of q=0"]*coef = 1
+        Q = self.cache_get('Q_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau, self.lambd))
+        if Q is None:
+            # Because M and LR are already updated a few line above
+            Q = matrix(np.dot(M.T,M) + self.lambd * LR)
+            self.cache_set('Q_matrix', (self.radial_order, self.mu, self.gtab, self.tau, self.lambd), Q)
 
 
-        recasting as QP
-
-
-        min_coef 0.5* coef' * [M'*M + lambd * LR'*LR] * coef + [- M' * data]' coef
-
-        s.t.
-
-        -K*coef <= 0
-        M["line of q=0"]*coef = 1
-        """
-
-        Q = matrix(np.dot(M.T,M) + self.lambd * LR)
         p = matrix(-1*np.dot(M.T,data))
-        G = matrix(-1*K)
-        # G = None
-        h = matrix(np.zeros((K.shape[0])),(K.shape[0],1))
-        # h = None
-        A = matrix(M[0],(1,M.shape[1])) #line of M corresponding to q=0
-        b = matrix(1.0)
+        
+        if self.eap_cons:
+            G = matrix(-1*K)
+            h = matrix(np.zeros((K.shape[0])),(K.shape[0],1))
+        else:
+            G = None
+            h = None
+
+        if self.e0_cons:
+            #line of M corresponding to q=0
+            A = matrix(M[0],(1,M.shape[1]))
+            b = matrix(1.0)
+        else:
+            A = None
+            b = None
 
         solvers.options['show_progress'] = False
         sol = solvers.qp(Q, p, G, h, A, b)
@@ -507,6 +393,18 @@ def shore_laplace_reg_matrix(radial_order, mu):
             LR[i, j] = shore_laplace_delta(ind_mat[i], ind_mat[j], mu)
 
     return LR
+
+
+def gen_rgrid(rmax, Nstep = 10.):
+    rgrad = []
+    # Build a regular grid of Nstep**3 points in (R^2 X R+)
+    gridmax = rmax / np.sqrt(3)
+    for xx in np.arange(-gridmax,gridmax,2*gridmax/float(Nstep)):
+        for yy in np.arange(-gridmax,gridmax,2*gridmax/float(Nstep)):
+            for zz in np.arange(0,gridmax,gridmax/float(Nstep)):
+                rgrad.append([xx, yy, zz])
+    return np.array(rgrad)
+
 
 
 def shore_e0(radial_order, coeff):
