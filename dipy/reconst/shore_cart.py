@@ -50,7 +50,7 @@ class ShoreCartModel(Cache):
             if K is None:
                 # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
                 rmax = 0.35 * self.mu * (2 * np.pi * np.sqrt(700))
-                rgrad = gen_rgrid(rmax = rmax, Nstep = 10.)
+                rgrad = gen_rgrid(rmax = rmax, Nstep = 10)
                 K = shore_psi_matrix(
                     self.radial_order,  self.mu, rgrad, self.tau)
                 self.cache_set('shore_psi_matrix_nonneg', (self.radial_order, self.mu, self.tau), K)
@@ -395,13 +395,13 @@ def shore_laplace_reg_matrix(radial_order, mu):
     return LR
 
 
-def gen_rgrid(rmax, Nstep = 10.):
+def gen_rgrid(rmax, Nstep = 10):
     rgrad = []
     # Build a regular grid of Nstep**3 points in (R^2 X R+)
     gridmax = rmax / np.sqrt(3)
-    for xx in np.arange(-gridmax,gridmax,2*gridmax/float(Nstep)):
-        for yy in np.arange(-gridmax,gridmax,2*gridmax/float(Nstep)):
-            for zz in np.arange(0,gridmax,gridmax/float(Nstep)):
+    for xx in np.linspace(-gridmax,gridmax,Nstep):
+        for yy in np.linspace(-gridmax,gridmax,Nstep):
+            for zz in np.linspace(0,gridmax,Nstep):
                 rgrad.append([xx, yy, zz])
     return np.array(rgrad)
 
