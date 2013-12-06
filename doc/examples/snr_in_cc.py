@@ -1,4 +1,6 @@
-"""==========================================
+"""
+
+=============================================
 SNR estimation for Diffusion-Weighted Images
 =============================================
 
@@ -6,25 +8,23 @@ Computing the Signal-to-Noise-Ratio (SNR) of DW images is still an open question
 as SNR depends on the white matter structure of interest as well as 
 the gradient direction corresponding to each DWI.  
 
+
 In classical MRI, SNR can be defined as the ratio of the mean 
 of the signal divided by the standard deviation of the
-noise, that is
+noise, that is SNR = mean(signal) / std(noise). The noise standard deviation can be 
+computed from the background in any of the DW images. But how do we computed 
+the mean of the signal, and what signal?
 
-.. math::
 
-    SNR = \frac{\mu_{signal}}{\sigma_{noise}}
-
-The noise standard deviation can be computed from the background in any of the DW
-images. But how do we computed the mean of the signal, and what signal?
-
-The strategy here is to compute a \emph{'worst-case'} SNR for DWI. Several white matter  
+The strategy here is to compute a 'worst-case' SNR for DWI. Several white matter  
 structures such as the corpus callosum (CC), corticospinal tract (CST), or
 the superior longitudinal fasciculus (SLF) can be easily identified from
 the colored-FA (cfa) map. In this example, we will use voxels from the CC, 
 which have the characteristic of being highly RED in the cfa map because mainly oriented in  
 the left-right direction.
 
-Hence, the purpose here is \emph{not} to get a valid 
+
+Hence, the purpose here is not to get a valid 
 segmentation of the CC but voxels where we are very confident that
 the underlying fiber population is in left-right (x-direction). These voxels
 will be used to compute the mean signal of all DW images. We know that the DW image
@@ -32,6 +32,7 @@ closest to the x-direction will be the one with \emph{most attenuated} diffusion
 Therefore,  this will produce a worst-case SNR estimation for the given DWI dataset. This is
 the strategy adopted in several recent papers (see [1]_ and [2]_). It gives a good
 indication of the quality of the DWI data.
+
 
 First, we compute the tensor model in a brain mask (see the DTI example for more explanation)
 
@@ -89,6 +90,22 @@ cfa_img = nib.Nifti1Image((cfa*255).astype(np.uint8), affine)
 mask_cc_part_img = nib.Nifti1Image(mask_cc_part.astype(np.uint8), affine)
 nib.save(mask_cc_part_img, 'mask_CC_part.nii.gz')
 
+import matplotlib.pyplot as plt
+region = 40
+fig = plt.figure('Corpus callosum segmentation')
+plt.subplot(1, 2, 1)
+plt.title("Corpus callosum")
+plt.imshow((cfa[..., 0])[region, ...])
+
+plt.subplot(1, 2, 2)
+plt.title("Corpus callosum segmentation")
+plt.imshow(mask_cc_part[region, ...])
+fig.savefig("CC_segmentation.png")
+
+"""
+.. figure:: CC_segmentation.png
+"""
+
 """Now that we are happy with our crude mask that selected voxels in x-direction, 
 we can use all the voxels to estimate the mean signal in this region.
 (\emph{recall that we did not want a perfect CC segmentation but just several voxels in the
@@ -137,18 +154,30 @@ for direction in [0, axis_X, axis_Y, axis_Z]:
 	else :
 		print("SNR for direction", direction, " ", gtab.bvecs[direction], "is :", SNR)
 	      
-"""SNR for direction 0 is : ''42.0695455758''"""
+"""SNR for direction b=0 image is : ''42.0695455758''"""
 """SNR for direction 58  [ 0.98875  0.1177  -0.09229] is : ''5.46995373635''"""
 """SNR for direction 57  [-0.05039  0.99871  0.0054406] is : ''23.9329492871''"""
 """SNR for direction 126 [-0.11825  -0.039925  0.99218 ] is : ''23.9965694823''"""
 
-"""Since the CC is aligned with the X axis, it is the lowest SNR in all of
-the DWIs, where the DW signal is the most attenuated. In comparison, the DW images in
-perpendical Y and Z axes have a high SNR. The b0 still exhibits the highest SNR,
-since there is no signal attenuation.
-
-Hence, we can say the Stanford diffusion data has a 'worst-case' SNR of approximately 5, a 
-'best-case' SNR of approximately 23, and a SNR of 40 on the b0 image. 
 """
 
+Since the CC is aligned with the X axis, it is the lowest SNR in all of
+the DWIs, where the DW signal is the most attenuated. In comparison, the DW images in
+perpendical Y and Z axes have a high SNR. The b0 still exhibits the highest SNR,
+since there is no signal attenuation. Hence, we can say the Stanford diffusion data has a 'worst-case' SNR of approximately 5, a  
+'best-case' SNR of approximately 24, and a SNR of 44 on the b0 image. 
 
+"""
+
+"""
+References:
+
+.. [1] Descoteaux, M., Deriche, R., Le Bihan, D., Mangin, J.-F., and Poupon, C. 
+       Multiple q-shell diffusion propagator imaging. 
+       Medical image analysis, 15(4), 603, 2011. 
+
+.. [2] Jones, D. K., Knosche, T. R., & Turner, R. 
+       White Matter Integrity, Fiber Count, and Other Fallacies: The Dos and Don'ts of Diffusion MRI. 
+       NeuroImage, 73, 239, 2013. 
+
+"""
