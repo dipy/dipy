@@ -100,10 +100,12 @@ plt.subplot(1, 2, 2)
 plt.title("CC mask used for SNR computation")
 plt.axis('off')
 plt.imshow(np.rot90(mask_cc_part[region, ...]))
-fig.savefig("CC_segmentation.png")
+fig.savefig("CC_segmentation.png", bbox_inches='tight')
 
 """
 .. figure:: CC_segmentation.png
+   :align: center
+
 """
 
 """Now that we are happy with our crude CC mask that selected voxels in the x-direction, 
