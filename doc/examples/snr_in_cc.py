@@ -91,19 +91,22 @@ import matplotlib.pyplot as plt
 region = 40
 fig = plt.figure('Corpus callosum segmentation')
 plt.subplot(1, 2, 1)
-plt.title("Corpus callosum")
-plt.imshow((cfa[..., 0])[region, ...])
+plt.title("Corpus callosum (CC)")
+plt.axis('off')
+red = cfa[..., 0]
+plt.imshow(np.rot90(red[region, ...]))
 
 plt.subplot(1, 2, 2)
-plt.title("Corpus callosum segmentation")
-plt.imshow(mask_cc_part[region, ...])
+plt.title("CC mask used for SNR computation")
+plt.axis('off')
+plt.imshow(np.rot90(mask_cc_part[region, ...]))
 fig.savefig("CC_segmentation.png")
 
 """
 .. figure:: CC_segmentation.png
 """
 
-"""Now that we are happy with our crude mask that selected voxels in the x-direction, 
+"""Now that we are happy with our crude CC mask that selected voxels in the x-direction, 
 we can use all the voxels to estimate the mean signal in this region.
 
 """
@@ -126,8 +129,8 @@ nib.save(mask_noise_img, 'mask_noise.nii.gz')
 
 noise_std = np.std(data[mask_noise, :])
 
-"""We can now compute the SNR for each DWI.
-Let's find the position of the gradient direction that lies the closest to
+"""We can now compute the SNR for each DWI and for example, report SNR
+for DW images with gradient direction that lies the closest to
 the X, Y and Z axes.
 """
 
@@ -145,17 +148,19 @@ for direction in [0, axis_X, axis_Y, axis_Z]:
 	else :
 		print("SNR for direction", direction, " ", gtab.bvecs[direction], "is :", SNR)
 	      
-"""SNR for direction b=0 image is : ''42.0695455758''"""
+"""SNR for the b=0 image is : ''42.0695455758''"""
 """SNR for direction 58  [ 0.98875  0.1177  -0.09229] is : ''5.46995373635''"""
 """SNR for direction 57  [-0.05039  0.99871  0.0054406] is : ''23.9329492871''"""
 """SNR for direction 126 [-0.11825  -0.039925  0.99218 ] is : ''23.9965694823''"""
 
 """
 
-Since the CC is aligned with the X axis, it is the lowest SNR in all of
-the DWIs, where the DW signal is the most attenuated. In comparison, the DW images in
+Since the CC is aligned with the X axis, the lowest SNR is for that gradient
+direction. In comparison, the DW images in
 the perpendical Y and Z axes have a high SNR. The b0 still exhibits the highest SNR,
-since there is no signal attenuation. Hence, we can say the Stanford diffusion 
+since there is no signal attenuation. 
+
+Hence, we can say the Stanford diffusion 
 data has a 'worst-case' SNR of approximately 5, a  
 'best-case' SNR of approximately 24, and a SNR of 44 on the b0 image. 
 
