@@ -95,7 +95,7 @@ mask_cc_part_img = nib.Nifti1Image(mask_cc_part.astype(np.uint8), affine)
 nib.save(mask_cc_part_img, 'mask_CC_part.nii.gz')
 
 
-"""Let's check the result of the second segmentation using matplotlib.
+"""Let's inspect the result using matplotlib.
 """
 
 # import matplotlib.pyplot as plt
