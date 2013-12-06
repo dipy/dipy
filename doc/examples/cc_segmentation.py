@@ -39,12 +39,8 @@ nib.save(cleaned_cc_mask_img, 'mask_corpus_callosum.nii.gz')
 # plt.title("CC enire segmentation")
 # plt.imshow(cleaned_cc_mask[region, ...])
 
-#fig.savefig("Comparison_of_segmentation2.png")
+#fig.savefig("CC_segmentation.png")
 
 """
-.. figure:: Comparison_of_segmentation2.png
+.. figure:: CC_segmentation.png
 """
-
-
-
-
