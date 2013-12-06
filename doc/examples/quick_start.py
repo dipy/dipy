@@ -3,15 +3,15 @@
 Getting started with Dipy
 =========================
 
-In diffusion MRI (dMRI) usually use three types of files the a Nifti file with the
+In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with the
 diffusion weighted data (*.nii.gz), and two text files one with b-values and
-one for the b-vectors.
+one with the b-vectors.
 
 In Dipy we provide tools to load and process these files and we also provide
 access to publically available datasets for those who haven't acquired yet
 their own datasets.
 
-With the followin commands we will download a dMRI dataset
+With the following commands we can download a dMRI dataset
 """
 
 from dipy.data import fetch_sherbrooke_3shell
@@ -48,16 +48,16 @@ fbvec = join(dname, 'HARDI193.bvec')
 print(fbvec)
 
 """
-/home/username/.dipy/sherbrooke_3shell/HARDI193.nii.gz
+``/home/username/.dipy/sherbrooke_3shell/HARDI193.nii.gz``
 
-/home/username/.dipy/sherbrooke_3shell/HARDI193.bval
+``/home/username/.dipy/sherbrooke_3shell/HARDI193.bval``
 
-/home/username/.dipy/sherbrooke_3shell/HARDI193.bvec
+``/home/username/.dipy/sherbrooke_3shell/HARDI193.bvec``
 
-Now, that we have the filenames we can start doing some processing
+Now, that we have their filenames we can start checking how these look like.
 
-Lets, start first by loading the dMRI datasets. For this purpose we
-can use nibabel.
+Let's start first by loading the dMRI datasets. For this purpose we can use 
+the Python module called ``nibabel``.
 """
 
 import nibabel as nib
@@ -69,7 +69,7 @@ data = img.get_data()
 positions and the last dimension is the number of non-weighted (S0s) and
 diffusion waited volumes.
 
-We can very easily check the size of ``data`` in the following way
+We can very easily check the size of ``data`` in the following way:
 """
 
 print(data.shape)
@@ -77,8 +77,7 @@ print(data.shape)
 """
 ``(128, 128, 60, 194)``
 
-We can also check the dimensions of each voxel in the following way
-
+We can also check the dimensions of each voxel in the following way:
 """
 
 print(img.get_header().get_zooms()[:3])
@@ -105,7 +104,7 @@ plt.savefig('data.png', bbox_inches='tight')
 .. figure:: data.png
    :align: center
 
-   **Showing the middle axial without (left) and with (right) diffusion weighting**.
+   **Showing the middle axial slice without (left) and with (right) diffusion weighting**.
 
 The next step is to load the b-values and b-vectors from the disk using 
 the function ``read_bvals_bvecs``.
@@ -115,9 +114,10 @@ from dipy.io import read_bvals_bvecs
 bvals, bvecs = read_bvals_bvecs(fbval, fbvec)
 
 """
-In Dipy we use an object called GradientTable which holds all in good form all the 
-acquision specific parameters e.g. b-values, b-vectors, timings and others. To create this 
-object you can use the function ``gradient_table``.
+In Dipy, we use an object called ``GradientTable`` which holds in a form that 
+Dipy understands, all the acquision specific parameters, e.g. b-values, 
+b-vectors, timings and others. To create this object you can use the 
+function ``gradient_table``.
 """
 
 from dipy.core.gradients import gradient_table
@@ -195,7 +195,7 @@ print(gtab.bvecs[:10, :])
 S0s = data[:, :, :, gtab.b0s_mask]
 
 """
-Here, we had only 1 S0 as we can see by looking at the dimension of S0s
+Here, we had only 1 S0 as we can verify by looking at the dimensions of S0s
 """
 
 print(S0s.shape)
@@ -203,12 +203,12 @@ print(S0s.shape)
 """
 ``(128, 128, 60, 1)``
 
-Just, for fun let's save this in a new Nifti1 file.
+Just, for fun let's save this in a new Nifti file.
 """
 
 nib.save(nib.Nifti1Image(S0s, img.get_affine()), 'HARDI193_S0.nii.gz')
 
 """
 Now, that we learned how to load dMRI datasets we can start the analysis. 
-See example :ref:`example_reconst_dti` to learn how to create Tensors.
+See example :ref:`example_reconst_dti` to learn how to create FA maps.
 """
