@@ -4,7 +4,7 @@ Getting started with Dipy
 =========================
 
 In diffusion MRI (dMRI) usually we use three types of files, a Nifti file with the
-diffusion weighted data (*.nii.gz), and two text files one with b-values and
+diffusion weighted data, and two text files one with b-values and
 one with the b-vectors.
 
 In Dipy we provide tools to load and process these files and we also provide
