@@ -22,6 +22,8 @@ Preprocessing
 Gradients & Spheres
 ~~~~~~~~~~~~~~~~~~~
 
+- :ref:`example_gradients_spheres`
+
 Brain Extraction
 ~~~~~~~~~~~~~~~~
 
@@ -36,7 +38,6 @@ Reslice
 ~~~~~~~
 
 - :ref:`example_reslice_datasets`
-
 
 --------------
 Reconstruction
