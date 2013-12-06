@@ -36,14 +36,17 @@ from __future__ import division, print_function
 import nibabel as nib
 import numpy as np
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+from dipy.segment.mask import median_otsu
+from dipy.reconst.dti import TensorModel
+
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
 data = img.get_data()
 affine = img.get_affine()
-from dipy.segment.mask import median_otsu
+
 print('Computing brain mask...')
 b0_mask, mask = median_otsu(data) 
-from dipy.reconst.dti import TensorModel
+
 print('Computing tensors...')
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
