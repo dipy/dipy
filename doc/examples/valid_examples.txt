@@ -1,3 +1,4 @@
+ quick_start.py
 # brain_extraction_dwi.py
 # probabilistic_tracking_odfs.py
 # reconst_csa_parallel.py
@@ -6,7 +7,7 @@
 # reconst_csd.py
 # reconst_dsi_metrics.py
 # reconst_dsi.py
-# reconst_dti.py
+ reconst_dti.py
 # reconst_gqi.py
 # reslice_datasets.py
 # segment_quickbundles.py
