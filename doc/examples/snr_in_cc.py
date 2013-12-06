@@ -1,64 +1,47 @@
-"""============================================
-Computing SNR estimation in the corpus callosum
-===============================================
+"""==========================================
+SNR estimation for Diffusion-Weighted Images
+=============================================
 
-This example shows how to extract voxels in the splenium of the corpus
-callosum where the diffusion is mainly oriented in the left-right
-direction from a raw DWI.  These voxels will have a high value of red
-in the Colored Fractional Anisotropy (cfa) map.  The method uses the
-colored fractional anisotropy as a threshold reference.
+Signal-to-Noise-Ratio (SNR) of DW images is still an open question 
+as SNR depends on the white matter structure of interest as well as 
+the gradient direction corresponding to each DWI.  
 
-The purpose of this kind of segmentation is not to clearly separate the
-structure, but rather to compute an automatic mask in order to compute the
-SNR in the region of interest later.
-This gives a way to quantify the quality of the signal amongst various
-diffusion orientations, which can change according to the structure, the
-composition and the orientation of the studied tissues.
+In classical MRI, SNR is usually defined as the ratio of the mean 
+of the signal divided by the standard deviation of the
+noise, that is
 
-As a first step, import the necessary modules:
+.. math::
+
+    SNR = \frac{\mu_{signal}}{\sigma_{noise}}
+
+The noise standard deviation can be computed from the background. But how 
+do we computed the mean of the signal, and what signal?
+
+The strategy here is compute a worst-case SNR for DWI. Several white matter 
+structures such as the corpus callosum (CC), corticospinal tract (CST), or
+the superior longitudinal fasciculus (SLF) can be easily identified from
+the colored-FA (cfa) map. In this example, we will use voxels from the CC, 
+which are highly red color in the cfa map because mainly oriented in 
+the left-right direction.  Hence, the purpose here is not to get a valid 
+segmentation of the corpus callosum but voxels where we are confident that
+the underlying fiber population is in left-right (x direction). These voxels
+will be used to compute the mean signal of the DW image along the x-direction,
+which we know will be the \emph{most attenuated} diffusion signal. Therefore, 
+this will produce a worst-case SNR estimation for the given DWI dataset.
+
 """
 
 from __future__ import division, print_function
-
 import nibabel as nib
 import numpy as np
-
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
-
-"""Download and read the data for this tutorial.
-Let's first load the data. We will use a dataset with 10 b0s and
-150 non-b0s with b-value 2000.
-"""
-
 fetch_stanford_hardi()
 img, gtab = read_stanford_hardi()
-
-"""img contains a nibabel Nifti1Image object (data) and gtab contains a
-GradientTable object (gradient information e.g. b-values). For example to read
-the b-values it is possible to write print(gtab.bvals).
-
-Load the raw diffusion data and the affine data.
-"""
-
 data = img.get_data()
 affine = img.get_affine()
-print('data.shape (%d, %d, %d, %d)' % data.shape)
-
-"""data.shape ``(81, 106, 76, 160)``
-"""
-
-"""To reduce the computation time, we will only estimate the tensor model
-inside the brain region by creating a mask without the background.
-(See the masking example for more details about this step)
-"""
-
 from dipy.segment.mask import median_otsu
 b0_mask, mask = median_otsu(data, 3, 1, True,
                             vol_idx=range(10, 50), dilate=2)
-
-"""We also need to fit a tensor model on the data in order to compute the cfa.
-"""
-
 from dipy.reconst.dti import TensorModel
 tenmodel = TensorModel(gtab)
 tensorfit = tenmodel.fit(data, mask=mask)
@@ -150,7 +133,7 @@ plt.imshow((cfa[..., 0])[region, ...])
 plt.subplot(1, 2, 2)
 plt.title("Corpus callosum segmentation")
 plt.imshow(mask_corpus_callosum2[region, ...])
-fig.savefig("Comparison_of_segmentation.png")
+#fig.savefig("Comparison_of_segmentation.png")
 
 """
 .. figure:: Comparison_of_segmentation.png
@@ -196,12 +179,12 @@ axis.
 """
 
 # Exclude null bvecs from the search
-idx = np.sum(tenmodel.bvec, axis=-1) == 0
-tenmodel.bvec[idx] = np.inf
+idx = np.sum(gtab.bvecs, axis=-1) == 0
+gtab.bvecs[idx] = np.inf
 
-axis_X = np.argmin(np.sum((tenmodel.bvec-np.array([1, 0, 0]))**2, axis=-1))
-axis_Y = np.argmin(np.sum((tenmodel.bvec-np.array([0, 1, 0]))**2, axis=-1))
-axis_Z = np.argmin(np.sum((tenmodel.bvec-np.array([0, 0, 1]))**2, axis=-1))
+axis_X = np.argmin(np.sum((gtab.bvecs-np.array([1, 0, 0]))**2, axis=-1))
+axis_Y = np.argmin(np.sum((gtab.bvecs-np.array([0, 1, 0]))**2, axis=-1))
+axis_Z = np.argmin(np.sum((gtab.bvecs-np.array([0, 0, 1]))**2, axis=-1))
 
 """Now that we have the closest b-vectors to each of the cartesian axis,
 let's compute their respective SNR and compare them to a b0 image's SNR.
@@ -255,7 +238,7 @@ plt.subplot(1, 2, 2)
 plt.title("New segmentation")
 plt.imshow(cleaned_cc_mask[region, ...])
 
-fig.savefig("Comparison_of_segmentation2.png")
+#fig.savefig("Comparison_of_segmentation2.png")
 
 """
 .. figure:: Comparison_of_segmentation2.png
