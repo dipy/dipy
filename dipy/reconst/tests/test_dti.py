@@ -494,7 +494,7 @@ def test_restore():
            this_y[:, drop_this] = 1.0
            tensor_model = dti.TensorModel(gtab, fit_method='restore',
                                           sigma=sigma)
-           tensor_est = tensor_model.fit(Y)
+           tensor_est = tensor_model.fit(this_y)
            assert_array_almost_equal(tensor_est.evals[0], evals)
            assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
 
