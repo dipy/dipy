@@ -109,6 +109,7 @@ Brain Segmentation
 
 Simulations
 ~~~~~~~~~~~
+- :ref:`example_simulate_mtensor`
 
 ---------------
 Multiprocessing

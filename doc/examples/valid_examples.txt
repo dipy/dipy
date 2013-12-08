@@ -11,8 +11,9 @@
 # reconst_gqi.py
 # reslice_datasets.py
 # segment_quickbundles.py
-snr_in_cc.py
+# snr_in_cc.py
 # streamline_formats.py
 # tracking_eudx_odf.py
 # tracking_eudx_tensor.py
- gradients_spheres.py
+# gradients_spheres.py
+simulate_mtensor.py
