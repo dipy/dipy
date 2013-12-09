@@ -557,8 +557,12 @@ class TensorModel(ReconstModel):
             str can be one of the following:
             'WLS' for weighted least squares
                 dti.wls_fit_tensor
-            'LS' for ordinary least squares
+            'LS' or 'OLS' for ordinary least squares
                 dti.ols_fit_tensor
+            'NLLS' for non-linear least-squares
+                dti.nlls_fit_tensor
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting [3]_
+                dti.restore_fit_tensor
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
@@ -574,6 +578,8 @@ class TensorModel(ReconstModel):
         .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
+        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+           estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
         """
         ReconstModel.__init__(self, gtab)
@@ -1218,7 +1224,6 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     if weighting is None:
        # And we return the SSE:
        return residuals
-
     se = residuals ** 2
     # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
     # suggested by Chang et al.) we will use it:
@@ -1232,15 +1237,16 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     elif weighting == 'gmm':
         # We use the Geman McClure M-estimator to compute the weights on the
         # residuals:
-        C = 1.4826 * np.median(residuals - np.median(residuals))
+        C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             w = 1/(se + C**2)
+            # The weights are normalized to the mean weight (see p. 1089):
+            w = w/np.mean(w)
 
     # Return the weighted residuals:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-
         return np.sqrt(w * se)
 
 
@@ -1334,13 +1340,11 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
             evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
-
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             print(vox)
             dti_params[vox, :] = start_params
-
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
@@ -1419,7 +1423,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         residuals = flat_data[vox] - pred_sig
         # If any of the residuals are outliers (using 3 sigma as a criterion
         # following Chang et al., e.g page 1089):
-        if np.any(residuals > 3 * sigma):
+        if np.any(np.abs(residuals) > 3 * sigma):
             # Do nlls with GMM-weighting:
             if jac:
                 this_tensor, status= opt.leastsq(_nlls_err_func,
@@ -1438,45 +1442,38 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
             residuals = flat_data[vox] - pred_sig
-            if np.any(residuals > 3 * sigma):
+            if np.any(np.abs(residuals) > 3 * sigma):
                 # If you still have outliers, refit without those outliers:
-                non_outlier_idx = np.where(residuals <= 3 * sigma)
+                non_outlier_idx = np.where(np.abs(residuals) <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
                 if np.iterable(sigma):
                     this_sigma = sigma[non_outlier_idx]
                 else:
                     this_sigma = sigma
-
+                    
                 if jac:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                                      args=(clean_design,
-                                                           clean_sig,
-                                                           'sigma',
-                                                           this_sigma),
+                                                           clean_sig),
                                                      Dfun=_nlls_jacobian_func)
                 else:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                                      args=(clean_design,
-                                                           clean_sig,
-                                                           'sigma',
-                                                           this_sigma))
+                                                           clean_sig))
 
         # The parameters are the evals and the evecs:
         try:
             evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
-
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             print(vox)
             dti_params[vox, :] = start_params
-
-
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params
@@ -1674,4 +1671,5 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'NLLS': nlls_fit_tensor,
                       'RT': restore_fit_tensor,
                       'restore':restore_fit_tensor,
+                      'RESTORE':restore_fit_tensor
                      }
