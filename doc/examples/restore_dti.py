@@ -12,13 +12,14 @@ of this is that it can lead to wrong interepertation of group differences. For
 example, some groups of participants (e.g. young children, patient groups,
 etc.) are particularly prone to motion and differences in tensor parameters and
 derived statistics (such as FA) due to motion would be confounded with actual
-differences in the physical properties of the white matter.
+differences in the physical properties of the white matter. An example of this
+was shown in a paper by Yendiki et al. [1]_.
 
 One of the strategies to deal with this problem is to apply an automatic method
 for detecting outliers in the data, excluding these outliers and refitting the
 model without the presence of these outliers. This is often referred to as
 "robust model fitting". One of the common algorithms for robust tensor fitting
-is called RESTORE, and was first proposed by Chang et al. [1]_.
+is called RESTORE, and was first proposed by Chang et al. [2]_.
 
 In the following example, we will demonstrate how to use RESTORE on a simulated
 data-set, which we will corrupt by adding intermittent noise.
@@ -78,8 +79,9 @@ this model as a baseline for comparison of noise-corrupted models:
 dti_wls = dti.TensorModel(gtab)
 
 """
-For the purpose of this example, we will focus on the data from a limited
-ROI surrounding the Corpus Callosum. We define that ROI as the following indices:
+For the purpose of this example, we will focus on the data from a region of
+interest (ROI) surrounding the Corpus Callosum. We define that ROI as the
+following indices: 
 """
 
 roi_idx = (slice(20,50), slice(55,85), slice(38,39))
@@ -91,8 +93,8 @@ And use them to index into the data:
 data = img.get_data()[roi_idx]
 
 """
-This data is not very noisy and we will artificially corrupt it to simulate the
-effects of 'physiological' noise, such as subject motion. But first, let's
+This data-set is not very noisy, so we will artificially corrupt it to simulate
+the effects of 'physiological' noise, such as subject motion. But first, let's
 establish a baseline, using the data as it is:   
 """
 
@@ -163,8 +165,10 @@ estimate what would be a reasonable amount of noise to expect in the
 measurement. There are two common ways of doing that. The first is to look at
 the variance in the signal in parts of the volume outside of the brain, or in
 the ventricles, where the signal is expected to be identical regardless of
-the direction of diffusion weighting. If several non diffusion-weighted volumes
-were acquired, another way is to calculate the variance in these volumes.
+the direction of diffusion weighting. The variance in these regions is
+therefore noise. Another option is available, if several non diffusion-weighted
+volumes were acquired. In this cas,e the variance in these volumes is an
+estimate of 'reasonable' noise in the data.
 """
 
 mean_std = np.mean(np.std(data[..., gtab.b0s_mask], -1))
@@ -173,10 +177,9 @@ mean_std = np.mean(np.std(data[..., gtab.b0s_mask], -1))
 This estimate is usually based on a small sample, and is thus a bit biased (for
 a proof of that fact, see the following derivation_.)
 
-
 .. _derivation: http://nbviewer.ipython.org/4287207
 
-Therefore, we apply a small sample correction. In this case, the bias is rather
+Therefore, we apply a small-sample correction. In this case, the bias is rather
 small: 
 """
 
@@ -186,7 +189,6 @@ bias = mean_std*(1. - np.sqrt(2. / (n-1)) * (gamma(n / 2.) / gamma((n-1) / 2.)))
 sigma = mean_std + bias
 
 """
-
 This estimate of the standard deviation will be used by the RESTORE algorithm
 to identify the outliers in each voxel and is given as an input when
 initializing the TensorModel object:
@@ -206,15 +208,15 @@ fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
             size=(600, 600))
 
 """
-
 .. figure:: tensor_ellipsoids_restore_noisy.png
    :align: center
 
    **Tensor Ellipsoids from noisy data recovered with RESTORE**.
 
-To convince ourselves further that this did the right thing, we will compare
-the distribution of FA in this region relative to the baseline, using the
-RESTORE estimate and the WLS estimate
+The tensor ODF field looks rather restored to its noiseless state in this
+image, but to convince ourselves further that this did the right thing, we will
+compare  the distribution of FA in this region relative to the baseline, using
+the RESTORE estimate and the WLS estimate.
 """
 
 fig_hist, ax = plt.subplots(1)
@@ -233,20 +235,29 @@ fig_hist.savefig('dti_fa_distributions.png')
 
 
 This demonstrates that RESTORE can recover a distribution of FA that more
-closely resembles the baseline distribution of the noiseless signal.
+closely resembles the baseline distribution of the noiseless signal, and
+demonstrates the utility of the method to data with intermittent
+noise. Importantly, this method assumes that the tensor is a good
+representation of the diffusion signal in the data. If you have reason to
+believe this is not the case (for example, you have data with very high b
+values and you are particularly interested in locations in the brain in which
+fibers cross), you might want to use a different method to fit your data.
 
 
 References
 ----------
 
-.. [1] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
+.. [1] Yendikia, A, Koldewynb, K, Kakunooria, S, Kanwisher, N, and Fischl,
+       B. (2013). Spurious group differences due to head motion in a diffusion
+       MRI study. Neuroimage, 
+
+.. [2] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
        of tensors by outlier rejection. MRM, 53: 1088-95. 
 
-.. [2] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+.. [3] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
        approaches for estimation of uncertainties of DTI parameters.
        NeuroImage 33, 531-541.
 
 .. include:: ../links_names.inc
-
 
 """
