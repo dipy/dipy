@@ -49,6 +49,10 @@ with the principal axes of the tensors in cartesian coordinates.
 signal, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
                          fractions=fractions, snr=None)
 
+"""
+We can also add rician noise with a specific SNR.
+"""
+
 signal_noisy, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
                          fractions=fractions, snr=20)
 
