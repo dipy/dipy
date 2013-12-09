@@ -361,13 +361,13 @@ def SHOREmatrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
                 M[:, counter] = real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(r ** 2 / float(zeta)) * \
                     np.exp(- r ** 2 / (2.0 * zeta)) * \
-                    __kappa(zeta, n, l) * \
+                    _kappa(zeta, n, l) * \
                     (r ** 2 / float(zeta)) ** (l / 2)
                 counter += 1
     return M
 
 
-def __kappa(zeta, n, l):
+def _kappa(zeta, n, l):
     if n - l < 0:
         return np.sqrt((2 * 1) / (zeta ** 1.5 * gamma(n + 1.5)))
     else:
@@ -400,14 +400,14 @@ def SHOREmatrix_pdf(radial_order, zeta, rtab):
                 psi[:, counter] = real_sph_harm(m, l, theta, phi) * \
                     genlaguerre(n - l, l + 0.5)(4 * np.pi ** 2 * zeta * r ** 2 ) *\
                     np.exp(-2 * np.pi ** 2 * zeta * r ** 2) *\
-                    __kappa_pdf(zeta, n, l) *\
+                    _kappa_pdf(zeta, n, l) *\
                     (4 * np.pi ** 2 * zeta * r ** 2) ** (l / 2) * \
                     (-1) ** (n - l / 2)
                 counter += 1
     return psi
 
 
-def __kappa_pdf(zeta, n, l):
+def _kappa_pdf(zeta, n, l):
     if n - l < 0:
         return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5) / gamma(n + 1.5))
     else:
@@ -438,7 +438,7 @@ def SHOREmatrix_odf(radial_order, zeta, sphere_vertices):
         for p in range(int((radial_order - l) / 2) + 1):
             n = p + l
             for m in range(-l, l + 1):
-                upsilon[:, counter] = (-1) ** (n - l / 2.0) * __kappa_odf(zeta, n, l) * \
+                upsilon[:, counter] = (-1) ** (n - l / 2.0) * _kappa_odf(zeta, n, l) * \
                     hyp2f1(l - n, l / 2.0 + 1.5, l + 1.5, 2.0) * \
                     real_sph_harm(m, l, theta, phi)
                 counter += 1
@@ -446,7 +446,7 @@ def SHOREmatrix_odf(radial_order, zeta, sphere_vertices):
     return upsilon
 
 
-def __kappa_odf(zeta, n, l):
+def _kappa_odf(zeta, n, l):
     if n - l < 0:
         return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
                       (16 * np.pi ** 3 * (zeta) ** 1.5 * gamma(l + 1.5) ** 2))
