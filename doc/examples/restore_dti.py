@@ -42,15 +42,31 @@ including an implementation of the RESTORE algorithm.
 """
 
 import dipy.reconst.dti as dti
+reload(dti)
 
 """
-``dipy.data`` is used for small datasets that we use in tests and examples,
-while ``dipy.core.gradients`` is used to represent gradient tables
-
+``dipy.data`` is used for small datasets that we use in tests and examples.
 """
 
 import dipy.data as dpd
-import dipy.core.gradients as grad
+
+"""
+
+``dipy.viz.fvtk`` is used for 3D visualization and matplotlib for 2D
+visualizations:
+
+"""
+import dipy.viz.fvtk as fvtk
+import matplotlib.pyplot as plt
+
+"""
+If needed, the fetch_stanford_hardi function will download the raw dMRI dataset
+of a single subject. The size of this dataset is 87 MBytes. You only need to
+fetch once. 
+"""
+
+dpd.fetch_stanford_hardi()
+img, gtab = dpd.read_stanford_hardi()
 
 """
 We initialize a DTI model class instance using the gradient table used in the
@@ -59,43 +75,62 @@ algorithm (described in [2]_) to fit the parameters of the model. We initialize
 this model as a baseline for comparison of noise-corrupted models:
 """
 
-
-b0 = 1000.
-bvecs, bval = dpd.read_bvec_file(dpd.get_data('55dir_grad.bvec'))
-gtab = grad.gradient_table(bval, bvecs)
-B = bval[1]
-
-#Scale the eigenvalues and tensor by the B value so the units match
-D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
-evals = np.array([2., 1., 0.]) / B
-md = evals.mean()
-tensor = dti.from_lower_triangular(D)
-
-#Design Matrix
-X = dti.design_matrix(bvecs, bval)
-
-#Signals
-data = np.exp(np.dot(X,D))
-data.shape = (-1,) + data.shape
-
-"""
-We initialize a DTI model class instance using the gradient table we just
-created. Per default, dti.Tensor model will use a weighted least-squares
-algorithm (described in [2]_) to fit the parameters of the model. We initialize
-this model as a baseline for comparison of noise-corrupted models:
-"""
-
 dti_wls = dti.TensorModel(gtab)
-fit_wls = dti_wls.fit(data)
-fa1 = fit_wls.fa
 
 """
-Next, we corrupt the data by introducing an outlier. To simulate a subject that
-moves intermittently, we will replace one of the images with a very low signal
+For the purpose of this example, we will focus on the data from a limited
+ROI surrounding the Corpus Callosum. We define that ROI as the following indices:
+"""
+
+roi_idx = (slice(20,50), slice(55,85), slice(38,39))
+
+"""
+And use them to index into the data:
+"""
+
+data = img.get_data()[roi_idx]
+
+"""
+This data is not very noisy and we will artificially corrupt it to simulate the
+effects of 'physiological' noise, such as subject motion. But first, let's
+establish a baseline, using the data as it is:   
+"""
+
+fit_wls = dti_wls.fit(data)
+
+fa1 = fit_wls.fa
+evals1 = fit_wls.evals
+evecs1 = fit_wls.evecs
+cfa1 = dti.color_fa(fa1, evecs1)
+sphere = dpd.get_sphere('symmetric724')
+
+"""
+We visualize the ODFs in the ROI using fvtk:
+"""
+
+r = fvtk.ren()
+fvtk.add(r, fvtk.tensor(evals1, evecs1, cfa1, sphere))
+print('Saving illustration as tensor_ellipsoids_wls.png')
+fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls.png',
+            size=(600, 600))
+
+"""
+.. figure:: tensor_ellipsoids_wls.png
+   :align: center
+
+   **Tensor Ellipsoids**.
+"""
+
+fvtk.clear(r)
+
+"""
+Next, we corrupt the data with some noise. To simulate a subject that moves
+intermittently, we will replace a few of the images with a very low signal
 """
 
 noisy_data = np.copy(data)
-noisy_data[..., -1] = 1.0
+noisy_idx = slice(-10, None)  # The last 10 volumes are corrupted
+noisy_data[..., noisy_idx] = 1.0
 
 """
 We use the same model to fit this noisy data
@@ -103,31 +138,102 @@ We use the same model to fit this noisy data
 
 fit_wls_noisy = dti_wls.fit(noisy_data)
 fa2 = fit_wls_noisy.fa
+evals2 = fit_wls_noisy.evals
+evecs2 = fit_wls_noisy.evecs
+cfa2 = dti.color_fa(fa2, evecs2)
+
+r = fvtk.ren()
+fvtk.add(r, fvtk.tensor(evals2, evecs2, cfa2, sphere))
+print('Saving illustration as tensor_ellipsoids_wls_noisy.png')
+fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls_noisy.png',
+            size=(600, 600))
+
 
 """
+In places where the tensor model is particularly sensitive to noise, the
+resulting ODF field will be distorted 
+
+.. figure:: tensor_ellipsoids_wls_noisy.png
+   :align: center
+
+   **Tensor Ellipsoids from noisy data**.
+
 To estimate the parameters from the noisy data using RESTORE, we need to
 estimate what would be a reasonable amount of noise to expect in the
 measurement. There are two common ways of doing that. The first is to look at
 the variance in the signal in parts of the volume outside of the brain, or in
-the ventricles, where the signal is expected to be identical regardless of the
-direction of diffusion weighting. If several non diffusion-weighted volumes
+the ventricles, where the signal is expected to be identical regardless of
+the direction of diffusion weighting. If several non diffusion-weighted volumes
 were acquired, another way is to calculate the variance in these volumes.
-
-Here, we estimate that the noise above which the outlier in the simulation is
-properly recognized is approximately 67: 
 """
 
-dti_restore = dti.TensorModel(gtab,  fit_method='RESTORE', sigma=67.)
+mean_std = np.mean(np.std(data[..., gtab.b0s_mask], -1))
+
+"""
+This estimate is usually based on a small sample, and is thus a bit biased (for
+a proof of that fact, see the following derivation_.)
+
+
+.. _derivation: http://nbviewer.ipython.org/4287207
+
+Therefore, we apply a small sample correction. In this case, the bias is rather
+small: 
+"""
+
+from scipy.special import gamma
+n = np.sum(gtab.b0s_mask)
+bias = mean_std*(1. - np.sqrt(2. / (n-1)) * (gamma(n / 2.) / gamma((n-1) / 2.)))
+sigma = mean_std + bias
+
+"""
+
+This estimate of the standard deviation will be used by the RESTORE algorithm
+to identify the outliers in each voxel and is given as an input when
+initializing the TensorModel object:
+"""
+
+dti_restore = dti.TensorModel(gtab,fit_method='RESTORE', sigma=sigma)
 fit_restore_noisy = dti_restore.fit(noisy_data)
 fa3 = fit_restore_noisy.fa
+evals3 = fit_restore_noisy.evals
+evecs3 = fit_restore_noisy.evecs
+cfa3 = dti.color_fa(fa3, evecs3)
 
-print("FA for noiseless data: %s"%fa1)
-print("FA for noise-introduced data: %s"%fa2)
-print("FA for noise-introduced data, analyzed with RESTORE: %s"%fa3)
+r = fvtk.ren()
+fvtk.add(r, fvtk.tensor(evals3, evecs3, cfa3, sphere))
+print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
+fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
+            size=(600, 600))
 
 """
-This demonstrates that RESTORE can recover the parameters of the outlier-less 
-signal. 
+
+.. figure:: tensor_ellipsoids_restore_noisy.png
+   :align: center
+
+   **Tensor Ellipsoids from noisy data recovered with RESTORE**.
+
+To convince ourselves further that this did the right thing, we will compare
+the distribution of FA in this region relative to the baseline, using the
+RESTORE estimate and the WLS estimate
+"""
+
+fig_hist, ax = plt.subplots(1)
+ax.hist(np.ravel(fa2), color='b', histtype='step', label='WLS')
+ax.hist(np.ravel(fa3), color='r', histtype='step', label='RESTORE')
+ax.hist(np.ravel(fa1), color='g', histtype='step', label='Original')
+ax.set_xlabel('Fractional Anisotropy')
+ax.set_ylabel('Count')
+plt.legend()
+fig_hist.savefig('dti_fa_distributions.png')
+
+"""
+
+.. figure:: dti_fa_distributions.png
+   :align: center
+
+
+This demonstrates that RESTORE can recover a distribution of FA that more
+closely resembles the baseline distribution of the noiseless signal.
 
 
 References
