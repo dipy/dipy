@@ -1237,6 +1237,8 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             w = 1/(se + C**2)
+            # The weights are normalized to the mean weight (see p. 1089):
+            w = w/np.mean(w)
 
     # Return the weighted residuals:
     with warnings.catch_warnings():
@@ -1445,22 +1447,18 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                     this_sigma = sigma[non_outlier_idx]
                 else:
                     this_sigma = sigma
-
+                    
                 if jac:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                                      args=(clean_design,
-                                                           clean_sig,
-                                                           'sigma',
-                                                           this_sigma),
+                                                           clean_sig),
                                                      Dfun=_nlls_jacobian_func)
                 else:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                                      args=(clean_design,
-                                                           clean_sig,
-                                                           'sigma',
-                                                           this_sigma))
+                                                           clean_sig))
 
                 pred_sig = np.exp(np.dot(clean_design, this_tensor))
                 residuals = clean_sig - pred_sig
