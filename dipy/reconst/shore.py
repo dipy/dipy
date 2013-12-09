@@ -136,8 +136,8 @@ class ShoreModel(Cache):
 
     @multi_voxel_fit
     def fit(self, data):
-        Lshore = L_SHORE(self.radial_order)
-        Nshore = N_SHORE(self.radial_order)
+        Lshore = l_shore(self.radial_order)
+        Nshore = n_shore(self.radial_order)
         # Generate the SHORE basis
         M = self.cache_get('shore_matrix', key=self.gtab)
         if M is None:
@@ -455,7 +455,7 @@ def _kappa_odf(zeta, n, l):
                       (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
 
 
-def L_SHORE(radial_order):
+def l_shore(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
     F = radial_order / 2
     n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
@@ -471,7 +471,7 @@ def L_SHORE(radial_order):
     return np.diag(diagL)
 
 
-def N_SHORE(radial_order):
+def n_shore(radial_order):
     "Returns the angular regularisation matrix for SHORE basis"
     F = radial_order / 2
     n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
