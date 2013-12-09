@@ -3,7 +3,7 @@ from dipy.data import get_data, two_shells_voxels, three_shells_voxels, get_sphe
 from dipy.data.fetcher import (fetch_isbi2013_2shell, read_isbi2013_2shell,
                                fetch_sherbrooke_3shell, read_sherbrooke_3shell)
 from dipy.reconst.shore import ShoreModel
-from dipy.reconst.shm import QballModel
+from dipy.reconst.shm import QballModel, sh_to_sf
 from dipy.reconst.peaks import gfa, peak_directions
 from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_equal,
@@ -34,6 +34,10 @@ def test_shore():
     # symmetric724
     asmfit = asm.fit(data)
     odf = asmfit.odf(sphere)
+    odf_sh = asmfit.odf_sh()
+    odf_from_sh = sh_to_sf(odf_sh, sphere, 6, basis_type=None)
+    assert_almost_equal(odf, odf_from_sh, 10)
+
 
     directions, _, _ = peak_directions(odf, sphere, .35, 25)
     assert_equal(len(directions), 2)
