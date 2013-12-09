@@ -15,5 +15,5 @@
 # streamline_formats.py
 # tracking_eudx_odf.py
 # tracking_eudx_tensor.py
-# gradients_spheres.py
-simulate_mtensor.py
+gradients_spheres.py
+simulate_multi_tensor.py

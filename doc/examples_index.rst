@@ -106,9 +106,12 @@ Brain Segmentation
 - :ref:`example_brain_extraction_dwi`
 
 
+-----------
 Simulations
-~~~~~~~~~~~
-- :ref:`example_simulate_mtensor`
+-----------
+
+- :ref:`example_simulate_multi_tensor`
+
 
 ---------------
 Multiprocessing
