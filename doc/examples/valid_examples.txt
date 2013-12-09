@@ -17,4 +17,6 @@
 # tracking_eudx_tensor.py
 # gradients_spheres.py
 # simulate_multi_tensor.py
-restore_dti.py
+# restore_dti.py
+streamline_length.py
+

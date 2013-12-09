@@ -86,12 +86,7 @@ Fiber tracking
 Streamline analysis
 -------------------
 
-- lengths
-- curvature
-- streamline distances
-- resampling
-- roi intersections
-- connectivity
+- :ref:`example_streamline_length`
 
 ------------
 Segmentation
