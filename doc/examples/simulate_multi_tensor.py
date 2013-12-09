@@ -42,12 +42,32 @@ In ``fractions`` we save the percentage of the contribution of each tensor.
 fractions = [50, 50]
 
 """
-The function ``multi_tensor`` will return the simulates signal and an array
+The function ``multi_tensor`` will return the simulated signal and an array
 with the principal axes of the tensors in cartesian coordinates.
 """
 
-S, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
+signal, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
                          fractions=fractions, snr=None)
+
+signal_noisy, sticks = multi_tensor(gtab, mevals, S0=100, angles=angles,
+                         fractions=fractions, snr=20)
+
+
+import matplotlib.pyplot as plt
+
+plt.plot(signal, label='noiseless')
+
+plt.plot(signal_noisy, label='with noise')
+plt.legend()
+plt.show()
+plt.savefig('simulated_signal.png')
+
+"""
+.. figure:: simulated_signal.png
+   :align: center
+
+   **Simulated MultiTensor signal**
+"""
 
 """
 For the ODF simulation we will need a sphere. Because, here we are
@@ -58,9 +78,7 @@ resolution by subdividing the triangles of one of the Dipy's default spheres.
 sphere = get_sphere('symmetric724')
 sphere = sphere.subdivide(2)
 
-"""
 
-"""
 
 def multi_tensor_odf_new(odf_verts, mf, mevals, angles):
     r'''Simulate a Multi-Tensor ODF.
@@ -138,5 +156,5 @@ fvtk.record(ren, out_path='multi_tensor_simulation.png', size=(300, 300))
 .. figure:: multi_tensor_simulation.png
    :align: center
 
-   **Simulating a MultiTensor**
+   **Simulating a MultiTensor ODF**
 """
