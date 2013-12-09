@@ -1438,7 +1438,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
             residuals = flat_data[vox] - pred_sig
-            while np.any(np.abs(residuals) > 3 * sigma):
+            if np.any(np.abs(residuals) > 3 * sigma):
                 # If you still have outliers, refit without those outliers:
                 non_outlier_idx = np.where(np.abs(residuals) <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
@@ -1459,9 +1459,6 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                                                      start_params,
                                                      args=(clean_design,
                                                            clean_sig))
-
-                pred_sig = np.exp(np.dot(clean_design, this_tensor))
-                residuals = clean_sig - pred_sig
 
         # The parameters are the evals and the evecs:
         try:
