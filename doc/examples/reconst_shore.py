@@ -1,11 +1,11 @@
 """
-====================================================
-Continuous and analytical diffusion signal modelling
-====================================================
+==================================================================
+Continuous and analytical diffusion signal modelling with 3D-SHORE
+==================================================================
 
 We show how to model the diffusion signal as a linear combination
-of continuous functions from the SHORE basis (Ozarslan et al. ISMRM 2009).
-We also compute analytically the ODF.
+of continuous functions from the SHORE basis [Merlet2013]_.
+We also compute the analytical Orientation Distribution Function ODF.
 
 First import the necessary modules:
 """
@@ -31,7 +31,7 @@ with x, y, z and the three axis defining the spatial positions of the voxels.
 fetch_isbi2013_2shell()
 img, gtab = read_isbi2013_2shell()
 data = img.get_data()
-data_small = data[10:40, 10:40, 25]
+data_small = data[10:40, 22, 10:40]
 
 print('data.shape (%d, %d, %d, %d)' % data.shape)
 
@@ -46,10 +46,10 @@ radial_order is the radial order of the SHORE basis.
 
 zeta is the scale factor of the SHORE basis.
 
-lambdaN and lambdaN are the radial and angular regularization constants, 
+lambdaN and lambdaL are the radial and angular regularization constants, 
 respectively.
 
-For details regarding these four parameters see [Cheng2011]_ and [Merlet2013].
+For details regarding these four parameters see [Cheng2011]_ and [Merlet2013]_.
 """
 
 radial_order = 6
@@ -81,10 +81,11 @@ print('odf.shape (%d, %d, %d)' % odf.shape)
 """
 Display the ODFs
 """
-
 r = fvtk.ren()
-fvtk.add(r, fvtk.sphere_funcs(odf, sphere, colormap='jet'))
-fvtk.show(r)
+sfu = fvtk.sphere_funcs(odf[:, None, :], sphere, colormap='jet')
+sfu.RotateX(-90)
+fvtk.add(r, sfu)
+#fvtk.show(r)
 fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
 
 """

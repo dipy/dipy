@@ -21,7 +21,7 @@ def test_shore_metrics():
     angl = [(0, 0), (60, 0)]
     S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
                             fractions=[50, 50], snr=None)
-
+    # since we are testing without noise we can use highere order and lower lambdas respect the default.
     radial_order = 8
     zeta = 700
     lambdaN = 1e-12

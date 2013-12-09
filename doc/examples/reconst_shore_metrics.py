@@ -5,7 +5,8 @@ Calculate SHORE metrics
 
 We show how to calculate two SHORE-based scalar metrics: return to origin 
 probability (rtop) [Descoteaux2011]_ and mean square displacement (msd) 
-[Wu2007]_, [Wu2008]_ on your dataset.
+[Wu2007]_, [Wu2008]_ on your data. SHORE can be used with any multiple b-value
+dataset like multi-shell or DSI.
 
 First import the necessary modules:
 """
@@ -47,12 +48,6 @@ Lets just use one slice only from the data.
 """
 
 dataslice = data[30:70, 20:80, data.shape[2] / 2]
-
-"""
-Normalize the signal by the b0
-"""
-
-dataslice = dataslice / (dataslice[..., 0, None]).astype(np.float)
 
 """
 Fit the signal with the model and calculate the SHORE coefficients.

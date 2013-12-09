@@ -18,7 +18,7 @@ from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
 import nibabel as nib
 
 
-def test_shore():
+def test_shore_odf():
     fetch_isbi2013_2shell()
     img, gtab=read_isbi2013_2shell()
 
