@@ -1220,7 +1220,6 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     if weighting is None:
        # And we return the SSE:
        return residuals
-
     se = residuals ** 2
     # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
     # suggested by Chang et al.) we will use it:
@@ -1234,7 +1233,7 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     elif weighting == 'gmm':
         # We use the Geman McClure M-estimator to compute the weights on the
         # residuals:
-        C = 1.4826 * np.median(residuals - np.median(residuals))
+        C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             w = 1/(se + C**2)
@@ -1242,7 +1241,6 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     # Return the weighted residuals:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-
         return np.sqrt(w * se)
 
 
@@ -1440,7 +1438,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
             residuals = flat_data[vox] - pred_sig
-            if np.any(np.abs(residuals) > 3 * sigma):
+            while np.any(np.abs(residuals) > 3 * sigma):
                 # If you still have outliers, refit without those outliers:
                 non_outlier_idx = np.where(np.abs(residuals) <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
@@ -1466,19 +1464,19 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                                                            'sigma',
                                                            this_sigma))
 
+                pred_sig = np.exp(np.dot(clean_design, this_tensor))
+                residuals = clean_sig - pred_sig
+
         # The parameters are the evals and the evecs:
         try:
             evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
-
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             print(vox)
             dti_params[vox, :] = start_params
-
-
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params
