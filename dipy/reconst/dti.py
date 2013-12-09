@@ -1334,13 +1334,11 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
             evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
-
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             print(vox)
             dti_params[vox, :] = start_params
-
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
