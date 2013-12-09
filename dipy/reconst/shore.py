@@ -368,10 +368,7 @@ def SHOREmatrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
 
 
 def _kappa(zeta, n, l):
-    if n - l < 0:
-        return np.sqrt((2 * 1) / (zeta ** 1.5 * gamma(n + 1.5)))
-    else:
-        return np.sqrt((2 * factorial(n - l)) / (zeta ** 1.5 * gamma(n + 1.5)))
+    return np.sqrt((2 * factorial(n - l)) / (zeta ** 1.5 * gamma(n + 1.5)))
 
 
 def SHOREmatrix_pdf(radial_order, zeta, rtab):
@@ -408,10 +405,7 @@ def SHOREmatrix_pdf(radial_order, zeta, rtab):
 
 
 def _kappa_pdf(zeta, n, l):
-    if n - l < 0:
-        return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5) / gamma(n + 1.5))
-    else:
-        return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) / gamma(n + 1.5))
+    return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) / gamma(n + 1.5))
 
 
 def SHOREmatrix_odf(radial_order, zeta, sphere_vertices):
@@ -447,12 +441,8 @@ def SHOREmatrix_odf(radial_order, zeta, sphere_vertices):
 
 
 def _kappa_odf(zeta, n, l):
-    if n - l < 0:
-        return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
-                      (16 * np.pi ** 3 * (zeta) ** 1.5 * gamma(l + 1.5) ** 2))
-    else:
-        return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
-                      (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
+    return np.sqrt((gamma(l / 2.0 + 1.5) ** 2 * gamma(n + 1.5) * 2 ** (l + 3)) /
+                   (16 * np.pi ** 3 * (zeta) ** 1.5 * factorial(n - l) * gamma(l + 1.5) ** 2))
 
 
 def l_shore(radial_order):
