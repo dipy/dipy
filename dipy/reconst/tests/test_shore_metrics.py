@@ -4,7 +4,7 @@ from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite)
-from dipy.reconst.shore import ShoreModel, SHOREmatrix
+from dipy.reconst.shore import ShoreModel, shore_matrix
 from dipy.sims.voxel import (
     MultiTensor, all_tensor_evecs, multi_tensor_odf, single_tensor_odf,
     multi_tensor_rtop, multi_tensor_msd, multi_tensor_pdf)
@@ -31,7 +31,7 @@ def test_shore_metrics():
     asmfit = asm.fit(S)
     c_shore = asmfit.shore_coeff
 
-    cmat = SHOREmatrix(radial_order, zeta, gtab)
+    cmat = shore_matrix(radial_order, zeta, gtab)
     S_reconst = np.dot(cmat, c_shore)
 
     # test the signal reconstruction

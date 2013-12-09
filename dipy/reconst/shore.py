@@ -158,7 +158,7 @@ class ShoreModel(Cache):
         # Generate the SHORE basis
         M = self.cache_get('shore_matrix', key=self.gtab)
         if M is None:
-            M = SHOREmatrix(self.radial_order,  self.zeta, self.gtab, self.tau)
+            M = shore_matrix(self.radial_order,  self.zeta, self.gtab, self.tau)
             self.cache_set('shore_matrix', self.gtab, M)
 
         # Compute the signal coefficients in SHORE basis
@@ -219,7 +219,7 @@ class ShoreFit():
         rgrid, rtab = create_rspace(gridsize, radius_max)
         psi = self.model.cache_get('shore_matrix_pdf', key=gridsize)
         if psi is None:
-            psi = SHOREmatrix_pdf(self.radial_order,  self.zeta, rtab)
+            psi = shore_matrix_pdf(self.radial_order,  self.zeta, rtab)
             self.model.cache_set('shore_matrix_pdf', gridsize, psi)
 
         propagator = np.dot(psi, self._shore_coef)
@@ -237,7 +237,7 @@ class ShoreFit():
         """
         psi = self.model.cache_get('shore_matrix_pdf', key=r_points.sum())
         if psi is None:
-            psi = SHOREmatrix_pdf(self.radial_order,  self.zeta, r_points)
+            psi = shore_matrix_pdf(self.radial_order,  self.zeta, r_points)
             self.model.cache_set('shore_matrix_pdf', r_points.sum(), psi)
 
         eap = np.dot(psi, self._shore_coef)
@@ -276,7 +276,7 @@ class ShoreFit():
         """
         upsilon = self.model.cache_get('shore_matrix_odf', key=sphere)
         if upsilon is None:
-            upsilon = SHOREmatrix_odf(
+            upsilon = shore_matrix_odf(
                 self.radial_order,  self.zeta, sphere.vertices)
             self.model.cache_set('shore_matrix_odf', sphere, upsilon)
 
@@ -355,7 +355,7 @@ class ShoreFit():
         return self._shore_coef
 
 
-def SHOREmatrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
+def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     r"""Compute the SHORE matrix [1]_"
 
     Parameters
@@ -406,7 +406,7 @@ def _kappa(zeta, n, l):
     return np.sqrt((2 * factorial(n - l)) / (zeta ** 1.5 * gamma(n + 1.5)))
 
 
-def SHOREmatrix_pdf(radial_order, zeta, rtab):
+def shore_matrix_pdf(radial_order, zeta, rtab):
     r"""Compute the SHORE propagator matrix [1]_"
 
     Parameters
@@ -448,7 +448,7 @@ def _kappa_pdf(zeta, n, l):
     return np.sqrt((16 * np.pi ** 3 * zeta ** 1.5 * factorial(n - l)) / gamma(n + 1.5))
 
 
-def SHOREmatrix_odf(radial_order, zeta, sphere_vertices):
+def shore_matrix_odf(radial_order, zeta, sphere_vertices):
     r"""Compute the SHORE ODF matrix [1]_"
 
     Parameters
