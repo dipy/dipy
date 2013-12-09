@@ -54,6 +54,7 @@ Diffusion Tensor Imaging
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 - :ref:`example_reconst_dti`
+- :ref:`example_restore_dti`
 
 
 Q-Ball Constant Solid Angle
