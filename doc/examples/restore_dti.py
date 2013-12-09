@@ -36,7 +36,6 @@ including an implementation of the RESTORE algorithm.
 """
 
 import dipy.reconst.dti as dti
-reload(dti)
 
 """
 ``dipy.data`` is used for small datasets that we use in tests and examples.
@@ -63,8 +62,8 @@ img, gtab = dpd.read_stanford_hardi()
 
 """
 We initialize a DTI model class instance using the gradient table used in the
-measurement. By default, dti.Tensor model will use a weighted least-squares
-algorithm (described in [2]_) to fit the parameters of the model. We initialize
+measurement. Per default, dti.Tensor model will use a weighted least-squares
+algorithm (described in [3]_) to fit the parameters of the model. We initialize
 this model as a baseline for comparison of noise-corrupted models:
 """
 
@@ -200,21 +199,24 @@ fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
             size=(600, 600))
 
 """
+This produces an image which more closely resembles the tensor ODFs from the
+original, uncorrupted data:
+
 .. figure:: tensor_ellipsoids_restore_noisy.png
    :align: center
 
    **Tensor Ellipsoids from noisy data recovered with RESTORE**.
 
-The tensor field looks rather restored to its noiseless state in this
+The tensor ODF field looks like it was restored to its noiseless state in this
 image, but to convince ourselves further that this did the right thing, we will
 compare  the distribution of FA in this region relative to the baseline, using
 the RESTORE estimate and the WLS estimate.
 """
 
 fig_hist, ax = plt.subplots(1)
+ax.hist(np.ravel(fa1), color='g', histtype='step', label='Original')
 ax.hist(np.ravel(fa2), color='b', histtype='step', label='WLS')
 ax.hist(np.ravel(fa3), color='r', histtype='step', label='RESTORE')
-ax.hist(np.ravel(fa1), color='g', histtype='step', label='Original')
 ax.set_xlabel('Fractional Anisotropy')
 ax.set_ylabel('Count')
 plt.legend()
@@ -241,7 +243,7 @@ References
 
 .. [1] Yendiki, A, Koldewynb, K, Kakunooria, S, Kanwisher, N, and Fischl,
        B. (2013). Spurious group differences due to head motion in a diffusion
-       MRI study. Neuroimage.
+       MRI study. Neuroimage, **in press**
 
 .. [2] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
        of tensors by outlier rejection. MRM, 53: 1088-95.
