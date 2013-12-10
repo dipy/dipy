@@ -88,6 +88,27 @@ def test_eudx_further():
     for t in T:
         assert_equal(np.sum(t.ravel()<0),0)
 
+def test_eudx_bad_seed():
+    """Test passing a bad seed to eudx"""
+    fimg, fbvals, fbvecs = get_data('small_101D')
+
+    img = ni.load(fimg)
+    affine = img.get_affine()
+    data = img.get_data()
+    gtab = gradient_table(fbvals, fbvecs)
+    tensor_model = TensorModel(gtab)
+    ten = tensor_model.fit(data)
+    ind = quantize_evecs(ten.evecs)
+
+    import sys
+    seed = [1000000., 1000000., 1000000.]
+    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed], a_low=.2)
+    print "looking for segfault"
+    sys.stdout.flush()
+    track = list(eu)
+    print "no segfault"
+    sys.stdout.flush()
+
 def uniform_seed_grid():
 
     #read bvals,gradients and data   
