@@ -8,7 +8,7 @@ from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking._utils import _rmi
 from dipy.tracking.utils import (connectivity_matrix, density_map,
                                  move_streamlines, ndbincount, reduce_labels,
-                                 reorder_voxels_affine)
+                                 reorder_voxels_affine, affine_for_trackvis)
 from dipy.tracking.vox2track import streamline_mapping
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
@@ -159,6 +159,14 @@ def test_move_streamlines():
     for i, test_sl in enumerate(new_streamlines):
         assert_array_equal(test_sl, streamlines[i][:, [2, 1, 0]])
 
+    affine[:3,3] += (4,5,6)
+    new_streamlines = move_streamlines(streamlines, affine)
+    undo_affine = move_streamlines(new_streamlines, np.eye(4),
+                                   input_space=affine)
+    for i, test_sl in enumerate(undo_affine):
+        assert_array_almost_equal(test_sl, streamlines[i])
+
+
 def test_voxel_ornt():
     sh = (40,40,40)
     sz = (1, 2, 3)
@@ -262,3 +270,9 @@ def test_rmi():
     I2 = ravel_multi_index([A, B, C, D], dims=[1000]*4)
     assert_array_equal(I1, I2)
 
+def test_affine_for_trackvis():
+
+    voxel_size = np.array([1., 2, 3.])
+    affine = affine_for_trackvis(voxel_size)
+    origin = np.dot(affine, [0, 0, 0, 1])
+    assert_array_almost_equal(origin[:3], voxel_size / 2)
