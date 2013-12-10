@@ -151,7 +151,8 @@ class EuDX(object):
             vertices, faces = sphere.vertices, sphere.faces
             self.odf_vertices = vertices
         else:
-            self.odf_vertices = np.ascontiguousarray(odf_vertices, dtype='f8')
+            self.odf_vertices = np.ascontiguousarray(odf_vertices, 
+                                                     dtype='f8')
         try:
             if len(seeds) > 0:
                 self.seed_list = seeds
@@ -164,6 +165,7 @@ class EuDX(object):
     def __iter__(self):
         ''' This is were all the fun starts '''
         x, y, z, g = self.a.shape
+
         # for all seeds
         for i in range(self.seed_no):
             if self.seed_list == None:
@@ -173,8 +175,13 @@ class EuDX(object):
                 seed = np.ascontiguousarray(
                     np.array([rx, ry, rz]), dtype=np.float64)
             else:
-                seed = np.ascontiguousarray(
-                    self.seed_list[i], dtype=np.float64)
+                seed = np.ascontiguousarray(self.seed_list[i], 
+                                            dtype=np.float64)
+                if np.any(seed >= np.array([x, y, z])):
+                    raise ValueError('Seed outside boundaries', seed)
+                if np.any(seed < np.zeros(3)):
+                    raise ValueError('Seed outside boundaries', seed)
+
             # for all peaks
             for ref in range(g):
                 track = eudx_both_directions(seed.copy(),
