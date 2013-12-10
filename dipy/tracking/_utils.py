@@ -40,8 +40,9 @@ The following modules also use this coordinate system:
 dipy.tracking.utils
 dipy.tracking.integration
 dipy.reconst.interpolate
-"""
 
+"""
+from warnings import warn
 from collections import defaultdict
 from ..utils.six.moves import xrange
 
@@ -74,9 +75,16 @@ except ImportError:
     ravel_multi_index = _rmi
 
 
+def _voxel_size_deprecated():
+    m = DeprecationWarning('the voxel_size argument to this function is '
+                           'deprecated, use the affine argument instead')
+    warn(m)
+
+
 def _mapping_to_voxel(affine, voxel_size):
-    """ Returns the best nearest neighbor mapping from real world coordinates
-    to voxel indices based on available information.
+    """ Inverts affine and returns a mapping so voxel coordinates. This
+    function is an implementation detail and only meant to be used with
+    ``_to_voxel_coordinates``.
 
     Parameters
     ----------
@@ -84,23 +92,23 @@ def _mapping_to_voxel(affine, voxel_size):
         The mapping from voxel indices, [i, j, k], to real world coordinates.
         The inverse of this mapping is used unless `affine` is None.
     voxel_size : array_like (3,)
-        If `affine` is not None, `voxel_size` is ignored, otherwise the
-        the mapping is assumed to be in trk space. IE the corners of the image
-        are ``[0, 0, 0]`` and ``voxel_size * dim``.
-
-    If both are None, then coordinates are taken to be nifti-style voxel
-    indices. IE [0, 0, 0] is the center of the first voxel.
+        The mapping is assumed to be in trk space. IE the corners of the image
+        are ``[0, 0, 0]`` and ``voxel_size * dim``. This 
 
     Return
     ------
     lin : array (3, 3)
-        Transpose of the linear part of the mapping. (ie ``affine[:3, :3].T``)
+        Transpose of the linear part of the mapping to voxel space, (ie
+        ``affine[:3, :3].T``)
     offset : array or scaler
-        Offset part of the mapping. (ie, ``affine[:3, 3]``)
+        Offset part of the mapping (ie, ``affine[:3, 3]``) + ``.5``. The half
+        voxel shift is so that ``int(result)`` will give the correct voxel
+        coordinate.
 
-    Note
-    ----
-    This is meant to be used along with `_to_voxel_coordinates`.
+    Raises
+    ------
+    ValueError
+        If both affine and voxel_size are None.
 
     """
     if affine is not None:
@@ -109,23 +117,30 @@ def _mapping_to_voxel(affine, voxel_size):
         lin = inv_affine[:-1, :-1].T
         offset = inv_affine[:-1, -1] + .5
     elif voxel_size is not None:
+        _voxel_size_deprecated()
         voxel_size = np.asarray(voxel_size, dtype=float)
         lin = np.diag(1. / voxel_size)
         offset = 0.
     else:
-        lin = np.eye(3)
-        offset = .5
+        raise ValueError("no affine specified")
     return lin, offset
 
 
 def _to_voxel_coordinates(streamline, lin, offset):
-    """Applies a mapping from streamline coordinates to voxel_coordinates"""
+    """Applies a mapping from streamline coordinates to voxel_coordinates,
+    raises an error for negative voxel values."""
     inds = np.dot(streamline, lin)
     inds += offset
     if inds.min() < 0:
         raise IndexError('streamline has points that map to negative voxel'
                          ' indices')
     return inds.astype(int)
+
+
+def apply_affine(points, affine):
+    result = np.dot(points, affine[:3, :3].T)
+    result += affine[:3, 3]
+    return results
 
 
 def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
@@ -136,31 +151,25 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     Parameters
     ----------
     streamlines : iterable
-        A sequence of arrays, each streamline should a list of points in
-        3-space, where (0,0,0) is one corner of the first voxel in image
-        volume, voxel_size the diagonal corner of the same voxel and
-        voxel_size*vol_dims is the diagonal corner of the image.
+        A sequence of streamlines.
+
     vol_dims : 3 ints
         The shape of the volume to be returned containing the streamlines
         counts
-    voxel_size : array_like (3,), optional
-        The size of the voxels in the image volume. This is ignored if affine
-        is set.
-    affine : array_like (4, 4), optional
-        The mapping from voxel coordinates to streamline coordinates. If
-        neither `affine` or `voxel_size` is set, the streamline values are
-        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
-        the first voxel and the voxel size is ``[1, 1, 1]``.
+    voxel_size :
+        This argument is deprecated.
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline points.
 
     Returns
     -------
     image_volume : ndarray, shape=vol_dims
-        The number of streamline points in each voxel of volume
+        The number of streamline points in each voxel of volume.
 
     Raises
     ------
     IndexError
-        When the points of the streamlines lie outside of the return volume
+        When the points of the streamlines lie outside of the return volume.
 
     Notes
     -----
@@ -193,12 +202,11 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     label_volume : ndarray
         An image volume with an integer data type, where the intensities in the
         volume map to anatomical structures.
-    voxel_size : array_like (3,), optional
-        The size of the voxels in the image volume. This is ignored if affine
-        is set.
+    voxel_size :
+        This argument is deprecated.
     affine : array_like (4, 4), optional
         The mapping from voxel coordinates to streamline coordinates. If
-        neither `affine` or `voxel_size` is set, the streamline values are
+        `affine` is not set, the streamline values are
         assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
         the first voxel and the voxel size is ``[1, 1, 1]``.
     symmetric : bool, False by default
@@ -317,29 +325,6 @@ def reduce_labels(label_volume):
     lookup_table = np.unique(label_volume)
     label_volume = lookup_table.searchsorted(label_volume)
     return label_volume, lookup_table
-
-
-def length(streamlines):
-    """Calculates the lenth of each streamline in a sequence of streamlines
-
-    Sums the lenths of each segment in a streamline to get the length of the
-    streamline. Returns a generator.
-
-    Example:
-    >>> streamlines = [np.array([[0., 0., 0.],
-    ...                          [0., 0., 1.],
-    ...                          [3., 4., 1.]]),
-    ...                np.array([[0., 0., 0.]])]
-    >>> list(length(streamlines))
-    [6.0, 0.0]
-    """
-    for sl in streamlines:
-        if len(sl) == 1:
-            yield 0.
-        else:
-            diff = sl[1:] - sl[:-1]
-            seglen = sqrt((diff * diff).sum(-1))
-            yield seglen.sum()
 
 
 def subsegment(streamlines, max_segment_length):
@@ -535,64 +520,34 @@ def target(streamlines, target_mask, voxel_size=None, affine=None,
             yield sl
 
 
-def merge_streamlines(backward, forward):
-    """Merges two sets of streamlines seeded at the same points
-
-    Because the first point of each streamline pair should be the same, only
-    one is kept
-
-    Parameters
-    ----------
-    backward : iterable
-        a sequence of streamlines, will be returned in reversed order in the
-        result
-    forward : iterable
-        a sequence of streamlines, will be returned in same order in the result
-
-    Returns
-    -------
-    streamlines : generator
-        generator of merged streamlines
-
-    Examples
-    --------
-    >>> A = [array([[0,0,0],[1,1,1],[2,2,2]])]
-    >>> B = [array([[0,0,0],[-1,-1,-1],[-2,-2,-2]])]
-    >>> list(merge_streamlines(A,B))
-    [array([[ 2,  2,  2],
-           [ 1,  1,  1],
-           [ 0,  0,  0],
-           [-1, -1, -1],
-           [-2, -2, -2]])]
-    >>> list(merge_streamlines(B,A))
-    [array([[-2, -2, -2],
-           [-1, -1, -1],
-           [ 0,  0,  0],
-           [ 1,  1,  1],
-           [ 2,  2,  2]])]
-    """
-    B = iter(backward)
-    F = iter(forward)
-    while True:
-        yield concatenate((next(B)[:0:-1], next(F)))
-
-
-def move_streamlines(streamlines, affine):
+def move_streamlines(streamlines, output_space, input_space=None):
     """Applies a linear transformation, given by affine, to streamlines
 
     Parameters
     ----------
     streamlines : sequence
         A set of streamlines to be transformed.
-    affine : array (4, 4)
-        A linear tranformation to be applied to the streamlines. The last row
-        of affine should be [0, 0, 0, 1].
+    output_space : array (4, 4)
+        An affine matrix describing the target space to which the streamlines
+        will be transformed.
+    input_space : array (4, 4), optional
+        An affine matrix describing the current space of the streamlines, if no
+        ``input_space`` is specified, it's assumed the streamlines are in the
+        reference space. The reference space is the same as the space
+        associated with the affine matrix ``np.eye(4)``.
 
     Returns
     -------
     streamlines : generator
-        A sequence of transformed streamlines
+        A sequence of transformed streamlines.
+
     """
+    if input_space is None:
+        affine = output_space
+    else:
+        inv = np.linalg.inv(input_space)
+        affine = np.dot(output_space, inv)
+
     for sl in streamlines:
         yield dot(sl, affine[:3,:3].T) + affine[:3,3]
 
@@ -656,3 +611,30 @@ def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
 
     return affine
 
+
+def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
+                       ref_img_voxel_order=None):
+    """ Returns an affine which maps points for voxel indices to trackvis space
+
+    Parameters
+    ----------
+    voxel_size : array (3,)
+        The sizes of the voxels in the reference image
+
+    Returns
+    -------
+    affine : array (4, 4)
+        Mapping from the voxel indices of the reference image to trackvis
+        space.
+
+    """
+    if (voxel_order is not None or dim is not None or
+        ref_img_voxel_order is not None):
+        raise NotImplemented
+
+    # Create affine
+    voxel_size = np.asarray(voxel_size)
+    affine = np.zeros((4, 4))
+    affine[[0, 1, 2], [0, 1, 2]] = voxel_size
+    affine[:3, 3] = voxel_size / 2.
+    return affine
