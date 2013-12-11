@@ -7,7 +7,7 @@ You basically add actors in a renderer and in that way you can visualize the for
 Examples
 ---------
 >>> from dipy.viz import fvtk
->>> r=fvtk.ren()
+>>> r=fvtk.renderer()
 >>> a=fvtk.axes()
 >>> fvtk.add(r,a)
 >>> #fvtk.show(r)
@@ -59,7 +59,7 @@ if have_vtk:
     picker = vtk.vtkCellPicker()
 
 
-def ren():
+def renderer():
     '''Create a renderer.
 
     Returns
@@ -71,13 +71,16 @@ def ren():
     --------
     >>> from dipy.viz import fvtk
     >>> import numpy as np
-    >>> r=fvtk.ren()
+    >>> r=fvtk.renderer()
     >>> lines=[np.random.rand(10,3)]
     >>> c=fvtk.line(lines, fvtk.colors.red)
     >>> fvtk.add(r,c)
     >>> #fvtk.show(r)
     '''
     return vtk.vtkRenderer()
+
+# Provide shorthand for backward compatibility
+ren = renderer
 
 
 def add(ren, a):
@@ -246,7 +249,7 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
     Examples
     --------
     >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
+    >>> r=fvtk.renderer()
     >>> lines=[np.random.rand(10, 3), np.random.rand(20, 3)]
     >>> colors=np.random.rand(2, 3)
     >>> c=fvtk.streamtube(lines, colors)
@@ -364,7 +367,7 @@ def line(lines, colors, opacity=1, linewidth=1):
     Examples
     ----------
     >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
+    >>> r=fvtk.renderer()
     >>> lines=[np.random.rand(10,3), np.random.rand(20,3)]
     >>> colors=np.random.rand(2,3)
     >>> c=fvtk.line(lines, colors)
@@ -563,7 +566,7 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
     Examples
     --------
     >>> from dipy.viz import fvtk
-    >>> ren = fvtk.ren()
+    >>> ren = fvtk.renderer()
     >>> pts = np.random.rand(5, 3)
     >>> point_actor = fvtk.point(pts, fvtk.colors.coral)
     >>> fvtk.add(ren, point_actor)
@@ -626,7 +629,7 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     Parameters
     ----------
     ren : vtkRenderer() object
-       Renderer as returned by ``ren()``.
+       Renderer as returned by ``renderer()``.
     text : str
         Text for the label.
     pos : (3,) array_like, optional
@@ -644,7 +647,7 @@ def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
     Examples
     --------
     >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
+    >>> r=fvtk.renderer()
     >>> l=fvtk.label(r)
     >>> fvtk.add(r,l)
     >>> #fvtk.show(r)
@@ -748,7 +751,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     >>> vol=vol.astype('uint8')
     >>> vol.min(), vol.max()
     (0, 99)
-    >>> r = fvtk.ren()
+    >>> r = fvtk.renderer()
     >>> v = fvtk.volume(vol)
     >>> fvtk.add(r,v)
     >>> #fvtk.show(r)
@@ -759,7 +762,7 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
     >>> import numpy as np
     >>> x, y, z = np.ogrid[-10:10:20j, -10:10:20j, -10:10:20j]
     >>> s = np.sin(x*y*z)/(x*y*z)
-    >>> r = fvtk.ren()
+    >>> r = fvtk.renderer()
     >>> v = fvtk.volume(s)
     >>> fvtk.add(r,v)
     >>> #fvtk.show(r)
@@ -1008,7 +1011,7 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
     >>> from dipy.viz import fvtk
     >>> A=np.zeros((10,10,10))
     >>> A[3:-3,3:-3,3:-3]=1
-    >>> r=fvtk.ren()
+    >>> r=fvtk.renderer()
     >>> fvtk.add(r,fvtk.contour(A,levels=[1]))
     >>> #fvtk.show(r)
 
@@ -1238,7 +1241,7 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     Examples
     --------
     >>> from dipy.viz import fvtk
-    >>> r = fvtk.ren()
+    >>> r = fvtk.renderer()
     >>> odfs = np.ones((5, 5, 724))
     >>> odfs[..., 0] = 2.
     >>> from dipy.data import get_sphere
@@ -1367,7 +1370,7 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     Examples
     --------
     >>> from dipy.viz import fvtk
-    >>> r = fvtk.ren()
+    >>> r = fvtk.renderer()
     >>> evals = np.array([1.4, .35, .35]) * 10 ** (-3)
     >>> evecs = np.eye(3)
     >>> from dipy.data import get_sphere
@@ -1498,7 +1501,7 @@ def slicer(vol, voxsz=(1.0, 1.0, 1.0), plane_i=[0], plane_j=None,
     >>> from dipy.viz import fvtk
     >>> x, y, z = np.ogrid[-10:10:80j, -10:10:80j, -10:10:80j]
     >>> s = np.sin(x * y * z) / (x * y * z)
-    >>> r = fvtk.ren()
+    >>> r = fvtk.renderer()
     >>> fvtk.add(r, fvtk.slicer(s, plane_i=[0, 5]))
     >>> #fvtk.show(r)
     """
@@ -1678,7 +1681,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     Parameters
     ------------
     ren : vtkRenderer() object
-        As returned from function ``ren()``.
+        As returned from function ``renderer()``.
     title : string
         A string for the window title bar.
     size : (int, int)
@@ -1703,7 +1706,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     ----------
     >>> import numpy as np
     >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
+    >>> r=fvtk.renderer()
     >>> lines=[np.random.rand(10,3),np.random.rand(20,3)]
     >>> colors=np.array([[0.2,0.2,0.2],[0.8,0.8,0.8]])
     >>> c=fvtk.line(lines,colors)
@@ -1760,47 +1763,66 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     ren.SetRenderWindow(None)
 
 
-def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
-           out_path=None, path_numbering=False, n_frames=1, az_ang=10,
+def record(ren=None, out_path=None, cam_pos=None, cam_focal=None, cam_view=None,
+           path_numbering=False, n_frames=1, az_ang=10,
            magnification=1, size=(300, 300), verbose=False):
-    ''' This will record a video of your scene
+    """Record one or more snapshots of the current scene.
 
-    Records a video as a series of ``.png`` files of your scene by rotating the
-    azimuth angle az_angle in every frame.
+    Multiple views of the scene are saved as ``.png`` snapshots.  After each
+    snapshot, the scene is rotated by a given azimuth angle.
 
     Parameters
     -----------
     ren : vtkRenderer() object
-        as returned from function ren()
-    cam_pos : None or sequence (3,), optional
-        camera position
-    cam_focal : None or sequence (3,), optional
-        camera focal point
-    cam_view : None or sequence (3,), optional
-        camera view up
+        The renderer, as returned by ``renderer()``.
     out_path : str, optional
-        output directory for the frames
+        Output directory and filename for the frames, e.g. 'output/snapshot'.
+        If `path_numbering` is enabled, output filenames will be
+        of the form `output/snapshot0000005.png'.
+    cam_pos : tuple (x, y, z), optional
+        Camera position (see notes below).
+    cam_focal : tuple (x, y, z), optional
+        Camera focal point (see notes below).
+    cam_view : tuple (x, y, z), optional
+        Camera upward orientation vector (see notes below).
     path_numbering : bool
-        when recording it changes out_path ot out_path + str(frame number)
+        If True, append the current frame number to the output filename.
     n_frames : int, optional
-        number of frames to save, default 1
+        Number of frames to save (default 1).
     az_ang : float, optional
-        azimuthal angle of camera rotation.
+        Azimuthal angle of camera rotation in degrees, applied after each
+        snapshot.
     magnification : int, optional
-        how much to magnify the saved frame
+        Magnifiation applied to each saved frame.
+
+    Notes
+    -----
+    The camera view is determined by three vectors:
+
+    - `cam_pos`: The location of the camera in three-dimensional space.
+    - `cam_focal`: The point at which the camera is aimed (XXX check)
+    - `cam_view`: A vector pointing along the vertical axis of the camera.
+                  I.e., if the camera is horizontally aligned with the X axis,
+                  pointing in the direction of the Y axis, then `cam_view` is along
+                  the Z axis.
 
     Examples
     ---------
     >>> from dipy.viz import fvtk
-    >>> r=fvtk.ren()
+    >>> r=fvtk.renderer()
     >>> a=fvtk.axes()
     >>> fvtk.add(r,a)
     >>> #uncomment below to record
     >>> #fvtk.record(r)
     >>> #check for new images in current directory
-    '''
+    """
     if ren is None:
-        ren = vtk.vtkRenderer()
+        ren = renderer()
+
+    if out_path is None:
+        out_path = 'snapshot'
+    elif out_path.endswith('.png'):
+        out_path = out_path[:-4]
 
     renWin = vtk.vtkRenderWindow()
     renWin.AddRenderer(ren)
@@ -1846,14 +1868,13 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
         renderLarge.SetMagnification(magnification)
         renderLarge.Update()
         writer.SetInputConnection(renderLarge.GetOutputPort())
-        # filename='/tmp/'+str(3000000+i)+'.png'
+
         if path_numbering:
-            if out_path is None:
-                filename = str(1000000 + i) + '.png'
-            else:
-                filename = out_path + str(1000000 + i) + '.png'
+            filename = out_path + '%07d' % i
         else:
             filename = out_path
+        filename += '.png'
+
         writer.SetFileName(filename)
         writer.Write()
 
