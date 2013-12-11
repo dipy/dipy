@@ -93,23 +93,25 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
                     min_separation_angle=25, minmax_norm=True):
     """Get the directions of odf peaks
 
+    Peaks are defined as points on the odf that are greater than at least one
+    neighbor and greater than or equal to all neighbors. Peaks are sorted in
+    descending order by their values then filtered based on their relative size
+    and spacing on the sphere. An odf may have 0 peaks, for example if the odf
+    is perfectly isotropic.
+
     Parameters
     ----------
     odf : 1d ndarray
         The odf function evaluated on the vertices of `sphere`
     sphere : Sphere
         The Sphere providing discrete directions for evaluation.
-    relative_peak_threshold : float
-        Only return peaks greater than ``relative_peak_threshold * m`` where m
-        is the largest peak.
-    min_separation_angle : float in [0, 90] The minimum distance between
-        directions. If two peaks are too close only the larger of the two is
-        returned.
-    minmax_norm : bool
-        If True min max normalization is applied internaly in the odf for the
-        peak finding. The returned ``values`` will be on the initial odf. This
-        parameter affects the ``relative_peak_threshold`` parameter because now
-        ``m`` will be 1.
+    relative_peak_threshold : float in [0., 1.]
+        Only peaks greater than ``min + relative_peak_threshold * scale`` are
+        kept, where ``min = max(0, odf.min())`` and
+        ``scale = odf.max() - min``.
+    min_separation_angle : float in [0, 90]
+        The minimum distance between directions. If two peaks are too close
+        only the larger of the two is returned.
 
     Returns
     -------
@@ -125,29 +127,28 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     If the odf has any negative values, they will be clipped to zeros.
 
     """
-
-    odf = np.clip(odf, 0, np.inf)
     values, indices = local_maxima(odf, sphere.edges)
 
     # If there is only one peak return
-    if len(indices) == 1:
+    n = len(values)
+    if n == 0 or (values[0] < 0.):
+        return np.zeros((0, 3)), np.zeros(0), np.zeros(0, dtype=int)
+    elif n == 1:
         return sphere.vertices[indices], values, indices
 
-    if minmax_norm:
-        odf_min = odf.min()
-        odf_max = values[0]
-        #because of the relative threshold this algorithm will
-        #give the same peaks as if we divide (values - odf_min) with
-        #(odf_max - odf_min) or not so here we skip the division
-        #to increase speed
-        values_norm = (values - odf_min)
-    else:
-        values_norm = values
+    odf_min = odf.min()
+    odf_min = odf_min if (odf_min >= 0.) else 0.
+    # because of the relative threshold this algorithm will give the same peaks
+    # as if we divide (values - odf_min) with (odf_max - odf_min) or not so
+    # here we skip the division to increase speed
+    values_norm = (values - odf_min)
 
+    # Remove small peaks
     n = search_descending(values_norm, relative_peak_threshold)
     indices = indices[:n]
     directions = sphere.vertices[indices]
 
+    # Remove peaks too close together
     directions, uniq = remove_similar_vertices(directions,
                                                min_separation_angle,
                                                return_index=True)

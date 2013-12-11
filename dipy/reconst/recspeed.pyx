@@ -204,17 +204,12 @@ def search_descending(cnp.ndarray[cnp.float_t, ndim=1, mode='c'] a,
         The greatest index such that ``all(a[:i] >= relative_threshold *
         a[0])``.
 
-    Note
-    ----
-    This function will never return 0, 1 is returned if ``a[0] <
-    relative_threshold * a[0]`` or if ``len(a) == 0``.
-
     """
     if a.shape[0] == 0:
-        return 1
+        return 0
 
     cdef:
-        size_t left = 1
+        size_t left = 0
         size_t right = a.shape[0]
         size_t mid
         double threshold = relative_threshould * a[0]
@@ -382,12 +377,6 @@ cdef long _compare_neighbors(double[:] odf, cnp.uint16_t[:, :] edges,
         if wpeak_ptr[i] > 0:
             wpeak_ptr[count] = i
             count += 1
-
-    # If count == 0, all values of odf are equal, and point 0 is returned as a
-    # peak to satisfy the requirement that peak_values[0] == max(odf).
-    if count == 0:
-        count = 1
-        wpeak_ptr[0] = 0
 
     return count
 
