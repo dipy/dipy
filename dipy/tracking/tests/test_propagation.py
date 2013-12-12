@@ -15,7 +15,10 @@ import nibabel as ni
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises, assert_almost_equal
 
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import (assert_array_equal, 
+                           assert_array_almost_equal, 
+                           run_module_suite)
+
 
 def test_trilinear_interp_cubic_voxels():
     A=np.ones((17,17,17))
@@ -26,37 +29,6 @@ def test_trilinear_interp_cubic_voxels():
     map_coordinates_trilinear_iso(A,points,strides,3,B)
     assert_array_almost_equal(B,np.array([ 1. ,  1.5,  1. ]))
 
-"""
-#Removed this test for now needs to be refactored with the new API
-def test_eudx():
-    
-    #read bvals,gradients and data
-    fimg,fbvals, fbvecs = get_data('small_64D')    
-    bvals=np.load(fbvals)
-    gradients=np.load(fbvecs)
-    img =ni.load(fimg)    
-    data=img.get_data()
-    
-    print(data.shape)    
-    #gqs = GeneralizedQSampling(data,bvals,gradients)       
-    ten = Tensor(data,bvals,gradients,thresh=50)
-    seed_list=np.dot(np.diag(np.arange(10)),np.ones((10,3)))    
-    #iT=iter(EuDX(gqs.qa(),gqs.ind(),seeds=seed_list))
-    #T=[]
-    #for t in iT: 
-    #    T.append(t)    
-    iT2=iter(EuDX(ten.fa(),ten.ind(),seeds=seed_list))
-    T2=[]
-    for t in iT2: 
-        T2.append(t)    
-    #print('length T ',sum([length(t) for t in T]))  
-    print('length T2',sum([length(t) for t in T2]))  
-    #print(gqs.QA[1,4,8,0])
-    #print(gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
-    #assert_almost_equal(gqs.QA[1,4,8,0], gqs.QA.ravel()[ndarray_offset(np.array([1,4,8,0]),np.array(gqs.QA.strides),4,8)])
-    #assert_almost_equal(sum([length(t) for t in T ]) , 70.999996185302734,places=3)
-    assert_almost_equal(sum([length(t) for t in T2]) , 56.999997615814209,places=3)
-"""
 
 def test_eudx_further():
     """ Cause we love testin.. ;-)
@@ -78,8 +50,6 @@ def test_eudx_further():
         rz=(z-1)*np.random.rand()            
         seeds[i]=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
     
-    #print seeds
-    #"""
     ind = quantize_evecs(ten.evecs)
     eu=EuDX(a=ten.fa, ind=ind, seeds=seeds, a_low=.2)
     T=[e for e in eu]
@@ -87,6 +57,7 @@ def test_eudx_further():
     #check that there are no negative elements
     for t in T:
         assert_equal(np.sum(t.ravel()<0),0)
+
 
 def test_eudx_bad_seed():
     """Test passing a bad seed to eudx"""
@@ -100,15 +71,28 @@ def test_eudx_bad_seed():
     ten = tensor_model.fit(data)
     ind = quantize_evecs(ten.evecs)
 
-    import sys
     seed = [1000000., 1000000., 1000000.]
     eu = EuDX(a=ten.fa, ind=ind, seeds=[seed], a_low=.2)
-    print "looking for segfault"
-    sys.stdout.flush()
+    try:
+        track = list(eu)
+    except ValueError as ve:        
+        if ve.args[0] == 'Seed outside boundaries':
+            print(ve)
+   
+    print(data.shape)
+    seed = [1., 5., 8.]
+    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed], a_low=.2)    
     track = list(eu)
-    print "no segfault"
-    sys.stdout.flush()
-
+    
+    seed = [-1., 1000000., 1000000.]
+    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed], a_low=.2)
+    try:
+        track = list(eu)
+    except ValueError as ve:
+        if ve.args[0] == 'Seed outside boundaries':
+            print(ve)
+     
+   
 def uniform_seed_grid():
 
     #read bvals,gradients and data   
@@ -138,4 +122,6 @@ def uniform_seed_grid():
     assert_equal(len(T), 1221)
 
 
+if __name__ == '__main__':
 
+    run_module_suite()
