@@ -82,8 +82,18 @@ def test_fvtk_record():
 
 @npt.dec.skipif(not fvtk.have_vtk)
 @npt.dec.skipif(not fvtk.have_vtk_colors)
-def test_fvtk_ellipsoid():
+def test_fvtk_object_API():
+    ren = fvtk.renderer()
+    axes = fvtk.axes()
+    ren.add(axes)
+    ren.rm(axes)
+    ren.add(axes)
+    ren.clear()
 
+
+@npt.dec.skipif(not fvtk.have_vtk)
+@npt.dec.skipif(not fvtk.have_vtk_colors)
+def test_fvtk_ellipsoid():
     evals = np.array([1.4, .35, .35]) * 10 ** (-3)
     evecs = np.eye(3)
 
