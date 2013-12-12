@@ -226,6 +226,8 @@ def _closest_peak(peak_directions, prev_step, cos_similarity):
     """
     if prev_step is None:
         return peak_directions
+    if len(peak_directions) == 0:
+        return None
 
     peak_dots = np.dot(peak_directions, prev_step)
     closest_peak = abs(peak_dots).argmax()

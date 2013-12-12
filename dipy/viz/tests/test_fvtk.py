@@ -45,6 +45,17 @@ def test_fvtk_functions():
     # Change the position of the active camera
     fvtk.camera(r, pos=(0.6, 0, 0), verbose=False)
 
+    fvtk.clear(r)
+
+    # Peak directions
+    p = fvtk.peaks(np.random.rand(3, 3, 3, 5, 3))
+    fvtk.add(r, p)
+
+    p2 = fvtk.peaks(np.random.rand(3, 3, 3, 5, 3),
+                   np.random.rand(3, 3, 3, 5),
+                   colors=(0, 1, 0))
+    fvtk.add(r, p2)
+
     # Show everything
     # fvtk.show(r)
 
