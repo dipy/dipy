@@ -355,16 +355,16 @@ def test_difference_with_minmax():
 
     assert_equal(len(values_2), 3)
 
-    _, values_3, _ = peak_directions(odf_gt, sphere, .30, 25.,
-                                     minmax_norm=False)
+    # Setting the smallest value of the odf to zero is like running
+    # peak_directions without the odf_min correction.
+    odf_gt[odf_gt.argmin()] = 0.
+    _, values_3, _ = peak_directions(odf_gt, sphere, .30, 25.,)
 
     assert_equal(len(values_3), 4)
 
     # we show here that to actually get that noisy peak out we need to
     # increase the peak threshold considerably
-    directions, values_4, indices = peak_directions(odf_gt, sphere,
-                                                    .60, 25.,
-                                                    minmax_norm=False)
+    directions, values_4, indices = peak_directions(odf_gt, sphere, .60, 25.,)
 
     assert_equal(len(values_4), 3)
     assert_almost_equal(values_1, values_4)
@@ -379,7 +379,9 @@ def test_degenerative_cases():
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
     print(directions, values, indices)
 
-    assert_equal(values[0], 0)
+    assert_equal(len(values), 0)
+    assert_equal(len(directions), 0)
+    assert_equal(len(indices), 0)
 
     odf = np.zeros(sphere.vertices.shape[0])
     odf[0] = 0.020
@@ -394,7 +396,7 @@ def test_degenerative_cases():
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
     print(directions, values, indices)
 
-    assert_equal(values[0], 0)
+    assert_equal(len(values), 0)
 
     odf = np.zeros(sphere.vertices.shape[0])
     odf[0] = 0.020
@@ -406,21 +408,11 @@ def test_degenerative_cases():
 
     odf = np.ones(sphere.vertices.shape[0])
     odf += 0.1 * np.random.rand(odf.shape[0])
-
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
-    assert_equal(len(directions) > 1, True)
+    assert_true(all(values > values[0] * .5))
+    assert_array_equal(values, odf[indices])
 
     odf = np.ones(sphere.vertices.shape[0])
-    odf -= np.finfo(np.float).eps * np.random.rand(odf.shape[0])
-
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
-    assert_equal(len(directions) > 10, True)
-
-    odf = np.ones(sphere.vertices.shape[0])
-    directions, values, indices = peak_directions(odf, sphere, .5, 25)
-    assert_equal(values[0], 1)
-    assert_equal(len(values), 1)
-
     odf[1:] = np.finfo(np.float).eps * np.random.rand(odf.shape[0] - 1)
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
 
