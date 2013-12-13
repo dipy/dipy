@@ -106,8 +106,8 @@ that for example for a dataset of volume size ``(96, 96, 60)`` you will need abo
 2.5 GBytes which can take less space when reasonable spheres (with < 1000 vertices) 
 are used.
 
-Finally, we calculate maps of Generalized Fractional Anisotropy (GFA) [Tuch04]_ 
-using the DSI ODFs in the following way.
+Let's now calculate a map of Generalized Fractional Anisotropy (GFA) [Tuch04]_ 
+using the DSI ODFs.
 """
 
 from dipy.reconst.odf import gfa
@@ -126,14 +126,14 @@ plt.savefig('dsi_gfa.png', bbox_inches='tight', origin='lower', cmap='gray')
    :align: center
 
 See also :ref:`example_reconst_dsi_metrics` for calculating different types 
-of DSI maps. 
+of DSI maps.
 
-.. [Wedeen08] Wedeen et al. Diffusion spectrum magnetic resonance imaging (DSI) 
+
+.. [Wedeen08] Wedeen et al., Diffusion spectrum magnetic resonance imaging (DSI) 
             tractography of crossing fibers, Neuroimage, vol 41, no 4, 
             1267-1277, 2008.
 
 .. [Tuch04] Tuch, D.S, Q-ball imaging, MRM, vol 52, no 6, 1358-1372, 2004. 
-
 
 .. include:: ../links_names.inc
 

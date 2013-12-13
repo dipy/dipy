@@ -9,6 +9,7 @@
 # reconst_dsi.py
 # reconst_dti.py
 # reconst_gqi.py
+# reconst_dsid.py
 # reslice_datasets.py
 # segment_quickbundles.py
 # snr_in_cc.py
@@ -18,5 +19,5 @@
 # gradients_spheres.py
 # simulate_multi_tensor.py
 # restore_dti.py
- streamline_length.py
+# streamline_length.py
 
