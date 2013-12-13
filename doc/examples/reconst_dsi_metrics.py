@@ -1,9 +1,9 @@
 """
-=================================================
-Calculate DSI metrics
-=================================================
+===============================
+Calculate DSI-based scalar maps
+===============================
 
-We show how to calculate two DSI-based scalar metrics: return to origin 
+We show how to calculate two DSI-based scalar maps: return to origin 
 probability (rtop) [Descoteaux2011]_ and mean square displacement (msd) 
 [Wu2007]_, [Wu2008]_ on your dataset.
 
@@ -153,10 +153,10 @@ plt.savefig('msd.png')
 					propagator imaging", Medical Image Analysis, vol 15,
 					No. 4, p. 603-621, 2011.
 
-.. [Wu2007] Wu Y. et. al, "Hybrid diffusion imaging", NeuroImage, vol 36,
+.. [Wu2007] Wu Y. et al., "Hybrid diffusion imaging", NeuroImage, vol 36,
         	p. 617-629, 2007.
 
-.. [Wu2008] Wu Y. et. al, "Computation of Diffusion Function Measures
+.. [Wu2008] Wu Y. et al., "Computation of Diffusion Function Measures
 			in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
 			IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
 			2008
