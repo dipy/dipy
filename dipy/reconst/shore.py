@@ -356,7 +356,28 @@ class ShoreFit():
 
 
 def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
-    r"""Compute the SHORE matrix [1]_"
+    r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE [1]_
+
+    ..math::
+            :nowrap:
+                \begin{equation}
+                    \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
+                                            \sum_{n=l}^{(N_{max}+l)/2}
+                                            \sum_{m=-l}^l c_{nlm}
+                                            \phi_{nlm}(q\textbf{u})
+                \end{equation}
+
+    where $\phi_{nlm}$ is
+    ..math::
+            :nowrap:
+                \begin{equation}
+                    \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
+                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2} 
+                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2} 
+                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr) 
+                        L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
+                        Y_l^m(\textbf{u}).
+                \end{equation}
 
     Parameters
     ----------
@@ -521,7 +542,7 @@ def n_shore(radial_order):
 
 
 def create_rspace(gridsize, radius_max):
-    """ create the real space table, that contains the points in which 
+    """ Create the real space table, that contains the points in which 
         to compute the pdf.
 
     Parameters
@@ -553,3 +574,107 @@ def create_rspace(gridsize, radius_max):
     vecs = vecs + radius
 
     return vecs, tab
+
+def shore_indices(radial_order, index):
+    r"""Given the basis order and the index, return the shore indices n, l, m
+    for modified Merlet's 3D-SHORE
+    ..math::
+            :nowrap:
+                \begin{equation}
+                    \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
+                                            \sum_{n=l}^{(N_{max}+l)/2}
+                                            \sum_{m=-l}^l c_{nlm}
+                                            \phi_{nlm}(q\textbf{u})
+                \end{equation}
+
+    where $\phi_{nlm}$ is
+    ..math::
+            :nowrap:
+                \begin{equation}
+                    \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
+                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2} 
+                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2} 
+                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr) 
+                        L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
+                        Y_l^m(\textbf{u}).
+                \end{equation}
+
+    Parameters
+    ----------
+    radial_order : unsigned int
+        an even integer that represent the maximal order of the basis
+    index : unsigned int
+        index of the coefficients, start from 0
+
+    Returns
+    -------
+    n :  unsigned int
+        the index n of the modified shore basis
+    l :  unsigned int
+        the index l of the modified shore basis
+    m :  unsigned int
+        the index m of the modified shore basis        
+    """
+
+    F = radial_order / 2
+    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
+    n_i = 0
+    l_i = 0
+    m_i = 0
+
+    if n_c < (index + 1):
+        msg = "the index is higher than the number of coefficients of the truncated basis."
+        raise ValueError(msg)
+    else:
+        counter = 0
+        for l in range(0, radial_order + 1, 2):
+            for n in range(l, int((radial_order + l) / 2) + 1):
+                for m in range(-l, l + 1):
+                    if counter == index:
+                        n_i = n
+                        l_i = l
+                        m_i = m
+                    counter += 1
+    return n_i, l_i, m_i
+
+def shore_order(n, l, m):
+    r"""Given the indices (n,l,m) of the basis, return the minimum order
+    for those indices and their index for modified Merlet's 3D-SHORE.
+    
+    Parameters
+    ----------
+    n :  unsigned int
+        the index n of the modified shore basis
+    l :  unsigned int
+        the index l of the modified shore basis
+    m :  unsigned int
+        the index m of the modified shore basis  
+
+    Returns
+    -------
+    radial_order : unsigned int
+        an even integer that represent the maximal order of the basis
+    index : unsigned int
+        index of the coefficient correspondig to (n,l,m), start from 0
+      
+    """
+    if l % 2 == 1 or l > n or l < 0 or n < 0  or np.abs(m) > l:
+        msg = "the index l must be even and 0 <= l <= n, the index m must be -l <= m <= l"
+        raise ValueError(msg)
+    else: 
+        if n % 2 == 1:
+            radial_order = n + 1
+        else:
+            radial_order = n
+
+        counter_i  = 0
+
+        counter = 0
+        for l_i in range(0, radial_order + 1, 2):
+            for n_i in range(l_i, int((radial_order + l_i) / 2) + 1):
+                for m_i in range(-l_i, l_i + 1):
+                    if n == n_i and l == l_i and m == m_i:
+                        counter_i = counter
+                    counter += 1
+
+    return radial_order, counter_i

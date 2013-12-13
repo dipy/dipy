@@ -4,7 +4,7 @@ from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite)
-from dipy.reconst.shore import ShoreModel, shore_matrix
+from dipy.reconst.shore import ShoreModel, shore_matrix, shore_indices, shore_order
 from dipy.sims.voxel import (
     MultiTensor, all_tensor_evecs, multi_tensor_odf, single_tensor_odf,
     multi_tensor_rtop, multi_tensor_msd, multi_tensor_pdf)
@@ -21,6 +21,25 @@ def test_shore_metrics():
     angl = [(0, 0), (60, 0)]
     S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
                             fractions=[50, 50], snr=None)
+
+    # test shore_indices
+    n = 7
+    l = 6
+    m = -4
+    radial_order, c = shore_order(n, l, m)
+    n2, l2, m2 = shore_indices(radial_order, c)
+    assert_equal(n, n2)
+    assert_equal(l, l2)
+    assert_equal(m, m2)
+
+    radial_order = 6
+    c = 41
+    n, l, m = shore_indices(radial_order, c)
+    radial_order2, c2 = shore_order(n, l, m)
+    assert_equal(radial_order, radial_order2)
+    assert_equal(c, c2)
+
+
     # since we are testing without noise we can use highere order and lower lambdas respect the default.
     radial_order = 8
     zeta = 700
