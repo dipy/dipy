@@ -337,10 +337,9 @@ def test_sf_to_sh():
     sphere = hemi_icosahedron.subdivide(2)
 
     mevals = np.array(([0.0015, 0.0003, 0.0003], [0.0015, 0.0003, 0.0003]))
-    mevecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-              np.array([[0, 1, 0], [1, 0, 0], [0, 0, 1]])]
+    angles = [(0, 0), (90, 0)]
 
-    odf = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
+    odf = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
     # 1D case with the 3 bases functions
     odf_sh = sf_to_sh(odf, sphere, 8)

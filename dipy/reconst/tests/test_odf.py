@@ -51,12 +51,11 @@ def test_minmax_normalize():
     gtab = gradient_table(bvals, bvecs)
 
     evals = np.array(([0.0017, 0.0003, 0.0003], [0.0017, 0.0003, 0.0003]))
-    evecs = [np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]]),
-             np.array([[0, 0, 1], [0, 1, 0], [1, 0, 0]])]
 
     S, sticks = multi_tensor(gtab, evals, S0, angles=[(0, 0), (90, 0)],
                              fractions=[50, 50], snr=SNR)
-    odf = multi_tensor_odf(sphere.vertices, [0.5, 0.5], evals, evecs)
+    odf = multi_tensor_odf(sphere.vertices, evals, angles=[(0, 0), (90, 0)],
+                           fractions=[50, 50])
 
     odf2 = minmax_normalize(odf)
     assert_equal(odf2.max(), 1)
