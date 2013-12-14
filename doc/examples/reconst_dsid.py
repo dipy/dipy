@@ -47,18 +47,22 @@ odf_gt = multi_tensor_odf(sphere.vertices, evals, angles=directions,
                           fractions=fractions)
 
 """
-Now, we can fit
+Perform the reconstructions with standard DSI and DSI with deconvolution.
 """
 
 dsi_model = DiffusionSpectrumModel(gtab)
 
 dsi_odf = dsi_model.fit(signal).odf(sphere)
 
-
 dsid_model = DiffusionSpectrumDeconvModel(gtab)
 
 dsid_odf = dsid_model.fit(signal).odf(sphere)
 
+"""
+Finally, we can visualize the ground truth ODF together, with the DSI and DSI
+with deconvolution ODFs and observe that with the deconvolved method it is
+easier to resolve the correct fiber directions because the ODF is sharper.
+"""
 
 from dipy.viz import fvtk
 
@@ -69,9 +73,7 @@ odfs = np.vstack((odf_gt, dsi_odf, dsid_odf))[:, None, None]
 odf_actor = fvtk.sphere_funcs(odfs, sphere)
 odf_actor.RotateX(90)
 fvtk.add(ren, odf_actor)
-
-fvtk.show(ren)
-fvtk.record(ren, path_out='dsid.png', size=(600, 600))
+fvtk.record(ren, out_path='dsid.png', size=(300, 300))
 
 """
 .. figure:: dsid.png
