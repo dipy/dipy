@@ -74,6 +74,11 @@ Generalized Q-Sampling Imaging
 
 - :ref:`example_reconst_gqi`
 
+DSI with Deconvolution
+~~~~~~~~~~~~~~~~~~~~~~
+
+- :ref:`example_reconst_dsid`
+
 --------------
 Fiber tracking
 --------------
@@ -101,13 +106,12 @@ Brain Segmentation
 ~~~~~~~~~~~~~~~~~~
 - :ref:`example_brain_extraction_dwi`
 
-
 -----------
 Simulations
 -----------
 
 - :ref:`example_simulate_multi_tensor`
-
+- :ref:`example_reconst_dsid`
 
 ---------------
 Multiprocessing
