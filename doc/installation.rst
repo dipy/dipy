@@ -4,9 +4,7 @@
 Installation
 ############
 
-dipy_ is in active development at the moment. You can install it from our latest
-release, but you may find that the release has got well behind the current
-development - at least - we hope so - if we're developing fast enough!
+dipy_ is in active development at the moment. You can install it from our latest release, but you may find that the release has got well behind the current development - at least - we hope so - if we're developing fast enough!
 
 .. _python-versions:
 
@@ -14,62 +12,16 @@ development - at least - we hope so - if we're developing fast enough!
 Note on python versions
 ***********************
 
-Dipy supports python 2.6+ and python 3+. We started supporting Python 3 from version dipy.0.7.0dev. 
+Dipy supports python 2.6+ and python 3+. We started supporting Python 3 from version dipy.0.7.0dev.
 
-On OSX we always use the python binaries available from the python.org
-downloads, and not the python that comes with the OSX system.  If you don't have
-the python.org python you need to go to http://python.org/downloads, then
-download and install the python version you want (2.7 or 2.6).  Check
-that you have this version on your path (perhaps after ``. ~/.bash_profile``)
-with ``which python``.  This should show something like::
-
-    /Library/Frameworks/Python.framework/Versions/2.6/bin/python
-
-We've compiled and tested dipy against this python.  The OSX system python may
-work, but it will be harder for you to install dipy (and other software).
 
 ********************
 Installing a release
 ********************
 
 If you are on Debian or Ubuntu Linux we recommend you try
-:ref:`install-packages` first. Otherwise please try :ref:`install-easy-install`.
+:ref:`install-packages` first. Otherwise please try :ref:`install-pip`.
 
-.. _install-easy-install:
-
-Using easy_install
-==================
-
-See first the :ref:`python-versions`.
-
-In case ``easy_install`` is not installed then please install setuptools_ or
-distribute_.
-
-Please install numpy_ and scipy_ using their respective binary installers if you
-haven't already.
-
-For windows you can use pythonxy_ to get numpy and scipy and lots of other
-useful python packages. This is quite a big package but will install
-lots of python stuff that is useful for your scientific endeavors.
-
-When you have numpy and scipy installed then try ::
-
-    easy_install dipy
-
-This command should work under Linux, Mac OS X and Windows.
-
-Then from any python console or script try ::
-
-    >>> import dipy
-
-Does it work? For any problems/suggestions please let us know by sending us an
-e-mail to the `nipy mailing list`_ with the subject line starting with
-``[dipy]``.
-
-By the way, you might be tempted to try and run the tests after installing with
-easy_install.  Unfortunately this doesn't work because of a problem with
-easy_install.  To run the tests you need to install from source on windows or
-mac, or via a package on Linux (source also works on Linux).
 
 .. _install-packages:
 
@@ -79,9 +31,10 @@ Using packages
 Windows
 -------
 
-Download and install numpy_ and scipy_ - or install pythonxy_.  Install nibabel_
-from `nibabel pypi`_ using the ``.exe`` installer.  Install dipy from `dipy
-pypi`_ using the ``.exe`` installer for your version of python.
+Install canopy_ and then ::
+
+    pip install nibabel
+    pip install dipy
 
 Then from any python console or script try ::
 
@@ -90,10 +43,12 @@ Then from any python console or script try ::
 OSX
 ---
 
-Download and install numpy_ and scipy_ using the OSX binary packages for your
-distribution of python.  Install nibabel_ from `nibabel pypi`_ using the
-``.mpkg`` installer for your version of python.  Install dipy from `dipy pypi`_
-using the ``.mpkg`` installer for your version of python.
+Install Xcode_
+
+Install canopy_ and then ::
+
+    pip install nibabel
+    pip install dipy
 
 Then from any python console or script try ::
 
@@ -102,13 +57,41 @@ Then from any python console or script try ::
 Linux
 -----
 
-For Debian and Ubuntu, set up the NeuroDebian_ repositories - see `NeuroDebian
-how to`_. Then::
+For Debian, Ubuntu and Mint set up the NeuroDebian_ repositories - see `NeuroDebian how to`_. Then::
 
     sudo apt-get install python-dipy
 
 We hope to get packages for the other Linux distributions, but for now, please
-try :ref:`install-easy-install` instead.
+try :ref:`install-pip` instead.
+
+
+.. _install-pip:
+
+Using pip
+=========
+
+This method should work under Linux, Mac OS X and Windows.
+
+See first the :ref:`python-versions`.
+
+Please install numpy_ and scipy_ using their respective binary installers if you haven't already.
+
+For Windows and Macosx you can use canopy_ to get numpy, scipy, cython and lots of other useful python module. canopy_ is a big package but will install tools which are useful for scientific processing.
+
+When you have numpy, scipy and cython installed then try ::
+
+    pip install nibabel
+    pip install dipy
+
+Then from any python console or script try ::
+
+    >>> import dipy
+
+Does it work? For any problems/suggestions please let us know by sending us an
+e-mail to the `nipy mailing list`_ with the subject line starting with
+``[dipy]``.
+
+
 
 **********************
 Installing from source
@@ -305,5 +288,24 @@ Then change directory to ``<dipy root>`` and::
     make html
 
 to make the html documentation.
+
+.. _install-osx-tip:
+
+Tip for OSX installation
+------------------------
+
+On OSX we always use the python binaries available from the python.org
+downloads, and not the python that comes with the OSX system.  If you don't have
+the python.org python you need to go to http://python.org/downloads, then
+download and install the python version you want (2.7 or 2.6).  Check
+that you have this version on your path (perhaps after ``. ~/.bash_profile``)
+with ``which python``.  This should show something like::
+
+    /Library/Frameworks/Python.framework/Versions/2.6/bin/python
+
+We've compiled and tested dipy against this python.  The OSX system python may
+work, but it will be harder for you to install dipy (and other software).
+
+
 
 .. include:: links_names.inc
