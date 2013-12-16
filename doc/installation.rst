@@ -12,7 +12,7 @@ dipy_ is in active development at the moment. You can install it from our latest
 Note on python versions
 ***********************
 
-Dipy supports python 2.6+ and python 3+. We started supporting Python 3 from version dipy.0.7.0dev.
+Dipy supports python 2.6+ and python 3+. We started supporting Python 3 from version dipy.0.7.0.dev.
 
 
 ********************
@@ -120,16 +120,7 @@ Building and installing
 Windows
 -------
 
-pythonxy_ is probably the easiest way to install the dependencies that you need.
-
-Otherwise you will need python_ (obviously). You'll need to install the mingw_
-compiler suite if you don't have a c compiler on your machine. We suggest you
-run the mingw_ automated installer, and install the developer tools, including
-msys_.  Don't forget to put the mingw ``bin`` directory on your path so python
-can find the compiler. Install numpy_, scipy_, nibabel_ and cython_ from their
-respective binary installers.  All of these come with pythonxy_ . You can also
-install them from their Windows binary installers.  You'll find these by
-following the links from their home pages.
+Canopy_ is probably the easiest way to install the dependencies that you need.
 
 Start a command shell like ``cmd`` or Powershell_ and change directory into the
 *dipy source root directory*.
@@ -158,19 +149,7 @@ This will be something like ``C:\Python26\Lib\distutils\distutils.cfg``.
 OSX
 ---
 
-See the :ref:`python-versions` for which python you need.
-
-Make sure you have Xcode_ installed.
-
-Download and install numpy_ and scipy_ from their respective download sites.
-Chose the version for your versions of OSX and python.  Install cython_.
-This is probably most easily done with::
-
-    sudo easy_install cython
-
-Install nibabel_ ::
-
-    sudo easy_install nibabel
+Make sure you have Xcode_ and canopy_ installed.
 
 From here follow the :ref:`install-source-nix` instructions.
 
@@ -270,7 +249,7 @@ To build in the source tree so you can run the code in the source tree
 
 If you want to run the tests::
 
-    sudo easy_install nose
+    sudo pip install nose
 
 Then (in python or ipython_)::
 
@@ -281,7 +260,7 @@ You can also run the examples in ``<dipy root>/doc``.
 
 To build the documentation you will need::
 
-    sudo easy_install -U sphinx
+    sudo pip install sphinx
 
 Then change directory to ``<dipy root>`` and::
 
