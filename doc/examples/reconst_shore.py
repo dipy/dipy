@@ -10,7 +10,6 @@ We also compute the analytical Orientation Distribution Function ODF.
 First import the necessary modules:
 """
 
-#from dipy.data import three_shells_voxels, two_shells_voxels, get_sphere
 from dipy.reconst.shore import ShoreModel
 from dipy.reconst.shm import sh_to_sf
 from dipy.viz import fvtk
@@ -81,21 +80,26 @@ print('odf.shape (%d, %d, %d)' % odf.shape)
 """
 Display the ODFs
 """
+
 r = fvtk.ren()
 sfu = fvtk.sphere_funcs(odf[:, None, :], sphere, colormap='jet')
 sfu.RotateX(-90)
 fvtk.add(r, sfu)
-#fvtk.show(r)
 fvtk.record(r, n_frames=1, out_path='odfs.png', size=(600, 600))
 
 """
+.. figure:: odfs.png
+   :align: center
+
+   **Orientation distribution functions**.
+   
+.. [Merlet2013] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+				estimation via Compressive Sensing in diffusion MRI", Medical
+				Image Analysis, 2013.
+
 .. [Cheng2011] Cheng J. et. al , "Theoretical Analysis and Pratical Insights
 			   on EAP Estimation via Unified HARDI Framework", MICCAI
 			   workshop workshop on Computational Diffusion MRI, 2011.
-
-.. [Merlet2013] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
-           estimation via Compressive Sensing in diffusion MRI", Medical
-           Image Analysis, 2013.
 
 .. include:: ../links_names.inc
 

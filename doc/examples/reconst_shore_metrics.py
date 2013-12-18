@@ -123,7 +123,7 @@ plt.savefig('SHORE_metrics.png')
 .. [Wu2008] Wu Y. et. al, "Computation of Diffusion Function Measures
 			in q -Space Using Magnetic Resonance Hybrid Diffusion Imaging",
 			IEEE TRANSACTIONS ON MEDICAL IMAGING, vol. 27, No. 6, p. 858-865,
-			2008
+			2008.
 
 .. include:: ../links_names.inc
 
