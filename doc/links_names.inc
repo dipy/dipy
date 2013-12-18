@@ -106,6 +106,7 @@
 .. _voxbo: http://www.voxbo.org
 .. _mricron: http://www.mccauslandcenter.sc.edu/mricro/mricron/index.html
 .. _slicer: http://www.slicer.org/
+.. _fibernavigator: https://github.com/scilus/fibernavigator
 
 .. File formats
 .. _DICOM: http://medical.nema.org/
