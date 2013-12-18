@@ -1,8 +1,8 @@
 """
 
-==================================================
-Using Dipy to 
-==================================================
+=========================================================
+Using Dipy to interact with streamlines and image volumes
+=========================================================
 
 This example is meant to be an introduction to some of the streamline tools
 available in dipy. Some of the functions covered in this example are
@@ -13,7 +13,7 @@ based on where in the brain they begin and end, and finally, density map counts
 the number of streamlines that pass though every voxel of some image.
 
 To get started you'll need to have a set of streamlines to work with. We'll use
-EuDX along with the CsaOdfModel to make some streamlines. Lets import the
+EuDX along with the CsaOdfModel to make some streamlines. Let's import the
 modules and download the data we'll be using.
 """
 
@@ -25,16 +25,15 @@ from dipy.data import read_stanford_labels
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
-affine = hardi_img.get_affine()
 labels = labels_img.get_data()
 
 """
 We've loaded an image called ``labels_img`` which is a map of tissue types such
 that every integer value in the array ``labels`` represents a anatomical
 structure or tissue type [#]_. For this example, the image was created so that
-white matter voxels have values of either 1 or 2. We'll use ``peaks_from_model``
-to apply the ``CsaOdfModel`` to each white matter voxel and estimate fiber
-orientations which we can use for tracking.
+white matter voxels have values of either 1 or 2. We'll use
+``peaks_from_model`` to apply the ``CsaOdfModel`` to each white matter voxel
+and estimate fiber orientations which we can use for tracking.
 """
 
 white_matter = (labels == 1) | (labels == 2)
@@ -47,38 +46,45 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
                                   mask=white_matter)
 
 """
-Now we can use EuDX track all of the white matter. To keep things
-reasonably fast we use 1 seed per voxel here.
+Now we can use EuDX track all of the white matter. To keep things reasonably
+fast we use 1 seed per voxel. We'll set ``a_low`` to be very low because we've
+already applied a white matter mask.
 """
 
 seeds = utils.seeds_from_mask(white_matter, density=1)
-streamlines = EuDX(csapeaks.peak_values,
-                   csapeaks.peak_indices,
-                   odf_vertices=peaks.default_sphere.vertices,
-                   a_low=0.,
-                   step_sz=.5,
-                   seeds=seeds,
-                   affine=affine)
+streamline_generator = EuDX(csapeaks.peak_values, csapeaks.peak_indices,
+                            odf_vertices=peaks.default_sphere.vertices,
+                            a_low=.05, step_sz=.5, seeds=seeds)
+affine = streamline_generator.affine
+streamlines = list(streamline_generator)
 
 """
 The first of the tracking utilities we'll cover here is ``target``. This
-function takes a set of streamlines and an region of interest ROI and returns only those that pass
-though the ROI. The ROI should be an array such that the voxels that belong to
-the ROI are True and all other voxels are False. In this example we'll target
-the streamlines of the corpus callosum. Our ``labels`` array has a sagital
-slice of the corpus callosum identified by the label value 2. We'll create an
-ROI mask from that label and target that ROI.
+function takes a set of streamlines and a region of interest (ROI) and returns
+only those streamlines that pass though the ROI. The ROI should be an array
+such that the voxels that belong to the ROI are ``True`` and all other voxels
+are ``False`` (this type of binary array is sometimes called a mask). This
+function can also exclude all the streamlines that pass though an ROI by
+setting the ``include`` flag to ``False``. In this example we'll target the
+streamlines of the corpus callosum. Our ``labels`` array has a sagittal slice
+of the corpus callosum identified by the label value 2. We'll create an ROI
+mask from that label and create two sets of streamlines, those that intersect
+with the ROI and those that don't.
 """
 
 cc_slice = labels == 2
-cc_streamlines = utils.target(streamlines, cc_slice)
+cc_streamlines = utils.target(streamlines, cc_slice, affine=affine)
 cc_streamlines = list(cc_streamlines)
 
+other_streamlines = utils.target(streamlines, cc_slice, affine=affine,
+                                 include=False)
+other_streamlines = list(other_streamlines)
+assert len(other_streamlines) + len(cc_streamlines) == len(streamlines)
+
 """
-Lets take a quick look at what these streamlines look like. We can display the
-streamlines using dipy's viz module in ``dipy.viz``. As you can see, from a
-whole brain set of streamlines, we've selected only those streamlines that pass
-thought the corpus callosum, shown in yellow.
+We can use some of dipy's visualization tools to display the ROI we targeted
+above and all the streamlines that pass though that ROI. The ROI is the yellow
+region near the center of the axial image.
 """
 
 from dipy.viz import fvtk
@@ -96,55 +102,50 @@ fvtk.add(r, cc_streamlines_actor)
 fvtk.add(r, cc_ROI_actor)
 
 # Save figures
-fvtk.record(r, n_frames=1, out_path='corpuscollosum_axial.png',
+fvtk.record(r, n_frames=1, out_path='corpuscallosum_axial.png',
             size=(800, 800))
 fvtk.camera(r, [-1, 0, 0], [0, 0, 0], viewup=[0, 0, 1])
-fvtk.record(r, n_frames=1, out_path='corpuscollosum_sagital.png',
+fvtk.record(r, n_frames=1, out_path='corpuscallosum_sagittal.png',
             size=(800, 800))
 
 """
-.. figure:: corpuscollosum_axial.png
+.. figure:: corpuscallosum_axial.png
    :align: center
 
-   **Corpus Collosum Axial**
+   **Corpus Callosum Axial**
 
 .. include:: ../links_names.inc
 
-.. figure:: corpuscollosum_sagital.png
+.. figure:: corpuscallosum_sagittal.png
    :align: center
 
-   **Corpus Collosum Sagital**
+   **Corpus Callosum Sagittal**
+"""
+"""
+Once we've targeted on the corpus callosum ROI, we might want to find out which
+regions of the brain are connected by these streamlines. To do this we can use
+the ``connectivity_matrix`` function. This function takes a set of streamlines
+and an array of labels as arguments. It returns the number of streamlines that
+start and end at each pair of labels and it can return the streamlines grouped
+by their endpoints. Notice that this function only considers the endpoints of
+each streamline.
 """
 
-"""
-Once we've targeted on the corpus collosum ROI, we might want to find out
-which regions of the brain are connected by these streamlines. To do this we
-can use the connectivity_matrix function. This function takes a set of
-streamlines and an array of labels as arguments. It returns the number of
-streamlines that start and end at each pair of labels and it can return the
-streamlines grouped by their endpoints. Notice that this function only
-considers the endpoints of each streamline.
-"""
-
-M, grouping = utils.connectivity_matrix(cc_streamlines, labels,
-                                        symmetric=True,
+M, grouping = utils.connectivity_matrix(cc_streamlines, labels, affine=affine,
                                         return_mapping=True,
                                         mapping_as_streamlines=True)
 M[:3, :] = 0
 M[:, :3] = 0
 
 """
-We've set ``return_mapping`` and ``mapping_as_streamlines`` to True so that
-connectivity_matrix returns all the streamlines in cc_streamlines grouped by
-their endpoint.
+We've set ``return_mapping`` and ``mapping_as_streamlines`` to ``True`` so that
+``connectivity_matrix`` returns all the streamlines in ``cc_streamlines``
+grouped by their endpoint.
 
-We've set ``symmetric`` to True so that the start and end points are treated
-the same and our connectivity matrix will be symmetric.
-
-Because we're typically only interested int gray to gray connections, and because
-the label 0 represents background and the labels 1 and 2 represent white
-matter, we then discard the first three rows and columns of the connectivity
-matrix.
+Because we're typically only interested in connections between gray matter
+regions, and because the label 0 represents background and the labels 1 and 2
+represent white matter, we discard the first three rows and columns of the
+connectivity matrix.
 
 We can now display this matrix using matplotlib, we display it using a log
 scale to make small values in the matrix easier to see.
@@ -153,115 +154,112 @@ scale to make small values in the matrix easier to see.
 import numpy as np
 import matplotlib.pyplot as plt
 plt.imshow(np.log1p(M), interpolation='nearest')
-plt.title("Connectivity of Corpus Collosum Streamlines")
 plt.savefig("connectivity.png")
 
 """
 .. figure:: connectivity.png
    :align: center
 
-   **Connectivity of Corpus Collosum**
+   **Connectivity of Corpus Callosum**
 
 .. include:: ../links_names.inc
 
 """
-
 """
 In our example track there are more streamlines connecting regions 11 and
 54 than any other pair of regions. These labels represent the left and right
 superior frontal gyrus respectively. These two regions are large, close
-together, have lots of corpus collosum fibers and easy to track so this result
-should not be a surprise to anyone.
+together, have lots of corpus callosum fibers and are easy to track so this
+result should not be a surprise to anyone.
 
-Lets lake a look at what the streamlines that connect these two regions look
-like.
-"""
+However, the interpretation of streamline counts can be tricky. The
+relationship between the underlying biology and the streamline counts will
+depend on several factors, including how the tracking was done, and the correct
+way to interpret these kinds of connectivity matrices is still an open question
+in the diffusion imaging literature.
 
-
-"""
-In order to demonstrate the density_map function, we'll use the streamlines
-connecting the left and right superior frontal gyrus. We can get these
-streamlines from the dictionary ``grouping``. We'll then give those streamlines
-as an argument to the ``density_map`` function which will count the number of
-streamlines that pass though each voxel. We'll also need give ``density_map``
-the dimensions of the image.
+The next function we'll demonstrate is ``density_map``. This function allows
+one to represent the spacial distribution of a track by counting the density of
+streamlines in each voxel. For example, let's take the track connecting the
+left and right superior frontal gyrus.
 """
 
 lr_superiorfrontal_track = grouping[11, 54]
 shape = labels.shape
-dm = utils.density_map(lr_superiorfrontal_track, shape)
+dm = utils.density_map(lr_superiorfrontal_track, shape, affine=affine)
 
 """
-Lets save this density map and the streamlines so that they can be
+Let's save this density map and the streamlines so that they can be
 visualized together. In order to save the streamlines in a ".trk" file we'll
-need to move them to "trackvis space".
+need to move them to "trackvis space", or the representation of streamlines
+specified by the trackvis Track File format.
 """
 
 import nibabel as nib
 
+# Save density map
+dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.get_affine())
+dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
+
+# Make a trackvis header so we can save streamlines
 voxel_size = labels_img.get_header().get_zooms()
 trackvis_header = nib.trackvis.empty_header()
 trackvis_header['voxel_size'] = voxel_size
 trackvis_header['dim'] = shape
 trackvis_header['voxel_order'] = "RAS"
 
-lr_sf_trk = [(sl + .5) * voxel_size for sl in lr_superiorfrontal_track]
+# Move streamlines to "trackvis space"
+trackvis_point_space = utils.affine_for_trackvis(voxel_size)
+lr_sf_trk = utils.move_streamlines(lr_superiorfrontal_track,
+                                   trackvis_point_space, input_space=affine)
+lr_sf_trk = list(lr_sf_trk)
+
+# Save streamlines
 for_save = [(sl, None, None) for sl in lr_sf_trk]
 nib.trackvis.write("lr-superiorfrontal.trk", for_save, trackvis_header)
 
-dm_img = nib.Nifti1Image(dm.astype("int16"), hardi_img.get_affine())
-dm_img.to_filename("lr-superiorfrontal-dm.nii.gz")
-
 """
-Since we have the streamlines in "trackvis space" lets take a moment to
-consider the representation of streamlines used in dipy. Streamlines are simply
-a sequence of points in 3d space. These points can be represented using
-different coordinate systems. So far in this example, all points have been in
-the "voxel space" of the data that was used to create the streamlines. That is,
-the point [0., 0., 0.] is at the center of the voxel [0, 0, 0]. And the point
-[0., 0., .5] is half way between voxels [0, 0, 0] and [0, 0, 1].
+Let's take a moment here to consider the representation of streamlines used in
+dipy. Streamlines are a path though the 3d space of an image represented by a
+set of points. For these points to have a meaningful interpretation, these
+points must be given in a known coordinate system. The ``affine`` attribute of
+the ``streamline_generator`` object specifies the coordinate system of the
+points with respect to the voxel indices of the input data.
+``trackvis_point_space`` specifies the trackvis coordinate system with respect
+to the same indices. The ``move_streamlines`` function returns a new set of
+streamlines from an existing set of streamlines in the target space. The
+target space and the input space must be specified as affine transformations
+with respect to the same reference [#]_. If no input space is given, the input
+space will be the same as the current representation of the streamlines, in
+other words the input space is assumed to be ``np.eye(4)``.
 
-All of the streamline tools that allow streamlines to interact with images must
-be able to map between the points of the streamlines and the indices of the
-image arrays. In order to do this, they take two optional keyword arguments,
-``affine`` and ``voxel_size``, which can be used to specify the coordinate
-system being used. If neither of these arugments is specified, the streamlines
-should be in voxel coordinates. If the ``affine`` argument is specified any
-affine mapping between voxel coordinates and streamline points can be used.
-The ``voxel_size`` argument is meant to be used with streamlines in "trackvis
-space" along with the ``voxel_size`` filed of the trackvis header.
-
-The streamlines in ``lr_sf_trk`` were moved to "trackvis space" for saving.
-If we use them to make a density map we'll get the same result as before as
-long as we don't forget to specify the coordinate system.
+You may have noticed that all of the functions above that allow streamlines to
+interact with volumes take an affine argument. This argument allows these
+functions to work with streamlines regardless of their coordinate system. For
+example even though we moved our track to "trackvis space", we can still
+compute the density map as long as we specify the right coordinate system.
 """
 
-voxel_size = trackvis_header['voxel_size']
-dm_using_voxel_size = utils.density_map(lr_sf_trk, shape, voxel_size=voxel_size)
-assert np.all(dm == dm_using_voxel_size)
+dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=trackvis_point_space)
+assert np.all(dm == dm_trackvis)
 
 """
-We can also use the affine to specify the coordinate system, we just have
-to be careful to build the right affine. Here's how you can build an affine for
-"trackvis space" coordinates.
+This means that streamlines an interact with any image volume, for example a
+high resolution structural image, as long as one can register that images to
+the diffusion images and calculate the coordinate system with respect to that
+image.
 """
-
-affine = np.eye(4)
-affine[[0, 1, 2], [0, 1, 2]] = voxel_size
-affine[:3, 3] = voxel_size / 2.
-
-dm_using_affine = utils.density_map(lr_sf_trk, shape, affine=affine)
-assert np.all(dm == dm_using_affine)
-
 """
 .. rubric:: Footnotes
 
-.. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, was
-    is a modified versioin of label map `aparc+aseg.mgz` created by freesurfer.
-    The corpus callosum region is a combination of the freesurfer labels
-    251-255.  The remaining freesurfer labels were re-mapped and reduced so
-    that they lie between 0 and 88. To see the freesurfer region, label and
-    name, represented by each value see `label_info.txt` in
-    `~/.dipy/stanford_hardi`.
-..
+.. [#] The image `aparc-reduced.nii.gz`, which we load as ``labels_img``, is a
+    modified version of label map `aparc+aseg.mgz` created by freesurfer.  The
+    corpus callosum region is a combination of the freesurfer labels 251-255.
+    The remaining freesurfer labels were re-mapped and reduced so that they lie
+    between 0 and 88. To see the freesurfer region, label and name, represented
+    by each value see `label_info.txt` in `~/.dipy/stanford_hardi`.
+.. [#] An affine transformation is a mapping between two coordinate systems
+    that can represent scaling, rotation, sheer, translation and reflection.
+    Affine transformations are often represented using a 4x4 matrix where the
+    last row of the matrix is ``[0, 0, 0, 1]``.
 """
