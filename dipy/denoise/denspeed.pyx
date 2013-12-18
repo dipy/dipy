@@ -3,7 +3,6 @@ cimport numpy as cnp
 cimport cython
 
 from libc.math cimport sqrt, exp
-from libc.stdlib cimport malloc, free
 
 
 @cython.wraparound(False)
@@ -27,15 +26,15 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None,
     K = arr.shape[2]
 
     with nogil:
-        for i in range(B, I - B + 1):
-            for j in range(B, J - B + 1):
-                for k in range(B, K - B + 1):
+        for i in range(B, I - B - 1):
+            for j in range(B, J - B - 1):
+                for k in range(B, K - B - 1):
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
 
     new = np.asarray(out)
     if rician:
-        new -= 2 * sigm**2
+        new -= 2 * sigm ** 2
         new[new < 0] = 0
 
     return np.sqrt(new)
@@ -48,7 +47,8 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
                           int i, int j, int k, int B, int P, double sigma) nogil:
 
     cdef:
-        cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, patch_vol_size
+        cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt,
+        double patch_vol_size
         double summ, x, d, w, sumw, sum_out
 
 
@@ -90,7 +90,9 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
                 w = W[cnt] / sumw
 
-                sum_out += w * arr[m, n, o] * arr[m, n, o]
+                x = arr[m, n, o]
+
+                sum_out += w * x * x
 
                 cnt += 1
 
