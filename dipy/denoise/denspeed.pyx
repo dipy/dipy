@@ -20,6 +20,8 @@ def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, 
 
     if sigma is None:
         sigm = 5 # call piesno
+    else:
+        sigm = sigma
 
     I = arr.shape[0]
     J = arr.shape[1]
@@ -32,8 +34,11 @@ def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, 
                 for k in range(B, K - B - 1):
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
+                    # with gil:
+                    #     print(out[i, j, k])
 
     new = np.asarray(out)
+
     if rician:
         new -= 2 * sigm ** 2
         new[new < 0] = 0
@@ -77,7 +82,15 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
                             summ += d
 
                 w = exp( - (sqrt(summ / patch_vol_size)) / sigma)
+                # with gil:
+                #      if w != 0:
+                #          print(w)
+                #          print(summ)
+                #          print(sigma)
+                #          print('---')
                 sumw += w
+                # with gil:
+                #     print(sumw)
                 W[cnt] = w
                 cnt += 1
 
@@ -91,7 +104,10 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
         for n in range(j - B, j + B + 1):
             for o in range(k - B, k + B + 1):
 
-                w = W[cnt] / sumw
+                if sumw > 0:
+                    w = W[cnt] / sumw
+                else:
+                    w = 0
 
                 x = arr[m, n, o]
 
