@@ -92,7 +92,6 @@ slice_no = data.shape[2] / 2
 fvtk.add(ren, fvtk.peaks(csd_peaks.peak_dirs[:, :, slice_no:slice_no + 1],
                          stopping_values[:, :, slice_no:slice_no + 1]))
 
-fvtk.show(ren)
 print('Saving illustration as csd_direction_field.png')
 fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
 
@@ -102,7 +101,7 @@ fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
 
    **Direction Field (peaks)**
 
-``EuDX`` [Garyfallids12]_ is a fast algorithm that we use here to generate streamlines. If
+``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate streamlines. If
 the parameter ``seeds`` is a positive integer it will generate random seeds
 everywhere in the volume or you can specify the exact seed points using
 an array (N, 3) where N is the number of seed points. For simplicity, here we
@@ -127,7 +126,7 @@ fvtk.clear(ren)
 fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 
 print('Saving illustration as csd_streamlines_eudx.png')
-fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(600, 600))
+fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(900, 900))
 
 """
 .. figure:: csd_streamlines_eudx.png
@@ -135,12 +134,15 @@ fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(600, 600))
 
    **CSD-based streamlines using EuDX**
 
+We used above ``fvtk.record`` because we want to create a figure for the tutorial 
+but you can visualize the same objects in 3D using ``fvtk.show(ren)``.
+
 For practice you could start playing with the number of seed points or even
 better specify seeds to be in specific regions of interest in the brain.
 
 ``fvtk`` gives some minimal interactivity however you can save the resulting
 streamlines in a Trackvis (.trk) format and load them for example with the
-Fibernavigator_ or another tool for interactive streamline visualization.
+Fibernavigator_ or another tool for medical visualization.
 
 Finally, let's save the streamlines as a (.trk) file and FA as a Nifti image.
 """

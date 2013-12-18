@@ -14,6 +14,7 @@ Quick Start
 -----------
 
 - :ref:`example_quick_start`
+- :ref:`example_tracking_quick_start`
 
 -------------
 Preprocessing
