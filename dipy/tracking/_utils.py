@@ -43,6 +43,7 @@ dipy.reconst.interpolate
 
 """
 from warnings import warn
+from functools import wraps
 from collections import defaultdict
 from ..utils.six.moves import xrange
 
@@ -92,18 +93,17 @@ def _mapping_to_voxel(affine, voxel_size):
         The mapping from voxel indices, [i, j, k], to real world coordinates.
         The inverse of this mapping is used unless `affine` is None.
     voxel_size : array_like (3,)
-        The mapping is assumed to be in trk space. IE the corners of the image
-        are ``[0, 0, 0]`` and ``voxel_size * dim``. This 
+        Used to support deprecated trackvis space.
 
     Return
     ------
-    lin : array (3, 3)
+    lin_T : array (3, 3)
         Transpose of the linear part of the mapping to voxel space, (ie
-        ``affine[:3, :3].T``)
+        ``inv(affine)[:3, :3].T``)
     offset : array or scaler
-        Offset part of the mapping (ie, ``affine[:3, 3]``) + ``.5``. The half
-        voxel shift is so that ``int(result)`` will give the correct voxel
-        coordinate.
+        Offset part of the mapping (ie, ``inv(affine)[:3, 3]``) + ``.5``. The
+        half voxel shift is so that truncating the result of this mapping
+        will give the correct integer voxel coordinate.
 
     Raises
     ------
@@ -114,22 +114,22 @@ def _mapping_to_voxel(affine, voxel_size):
     if affine is not None:
         affine = np.array(affine, dtype=float)
         inv_affine = np.linalg.inv(affine)
-        lin = inv_affine[:-1, :-1].T
-        offset = inv_affine[:-1, -1] + .5
+        lin_T = inv_affine[:3, :3].T.copy()
+        offset = inv_affine[:3, 3] + .5
     elif voxel_size is not None:
         _voxel_size_deprecated()
         voxel_size = np.asarray(voxel_size, dtype=float)
-        lin = np.diag(1. / voxel_size)
+        lin_T = np.diag(1. / voxel_size)
         offset = 0.
     else:
         raise ValueError("no affine specified")
-    return lin, offset
+    return lin_T, offset
 
 
-def _to_voxel_coordinates(streamline, lin, offset):
+def _to_voxel_coordinates(streamline, lin_T, offset):
     """Applies a mapping from streamline coordinates to voxel_coordinates,
     raises an error for negative voxel values."""
-    inds = np.dot(streamline, lin)
+    inds = np.dot(streamline, lin_T)
     inds += offset
     if inds.min() < 0:
         raise IndexError('streamline has points that map to negative voxel'
@@ -137,16 +137,8 @@ def _to_voxel_coordinates(streamline, lin, offset):
     return inds.astype(int)
 
 
-def apply_affine(points, affine):
-    result = np.dot(points, affine[:3, :3].T)
-    result += affine[:3, 3]
-    return results
-
-
 def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     """Counts the number of unique streamlines that pass though each voxel
-
-    Counts the number of points in each streamline that lie inside each voxel.
 
     Parameters
     ----------
@@ -179,10 +171,10 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
     the edges of the voxels are smaller than the steps of the streamlines.
 
     """
-    lin, offset = _mapping_to_voxel(affine, voxel_size)
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size)
     counts = zeros(vol_dims, 'int')
     for sl in streamlines:
-        inds = _to_voxel_coordinates(sl, lin, offset)
+        inds = _to_voxel_coordinates(sl, lin_T, offset)
         i, j, k = inds.T
         #this takes advantage of the fact that numpy's += operator only acts
         #once even if there are repeats in inds
@@ -248,8 +240,8 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     endpoints = [sl[0::len(sl)-1] for sl in streamlines]
 
     # Map the streamlines coordinates to voxel coordinates
-    lin, offset = _mapping_to_voxel(affine, voxel_size)
-    endpoints = _to_voxel_coordinates(endpoints, lin, offset)
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size)
+    endpoints = _to_voxel_coordinates(endpoints, lin_T, offset)
 
     #get labels for label_volume
     i, j, k = endpoints.T
@@ -468,8 +460,23 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
-def target(streamlines, target_mask, voxel_size=None, affine=None,
-           include=True):
+def _with_initialize(generator):
+    """Allows one to write a generator with initialization code
+
+    All code up to the first yield is run as soon as the generator function is
+    called and the first yield value is ignored
+    """
+    @wraps(generator)
+    def helper(*args, **kwargs):
+        gen = generator(*args, **kwargs)
+        next(gen)
+        return gen
+
+    return helper
+
+
+@_with_initialize
+def target(streamlines, target_mask, affine=None, include=True):
     """Filters tracks based on whether or not they pass though target_mask
 
     Parameters
@@ -479,9 +486,6 @@ def target(streamlines, target_mask, voxel_size=None, affine=None,
         where N is the length of the streamline.
     target_mask : array-like
         A mask used as a target
-    voxel_size : array-like (3,), optional
-        Size of the voxels if the track is in "trackvis space". This is ignored
-        if `affine` is not None.
     affine : array (4, 4), optional
         The affine transform from voxel indices to streamline points. If
         neither `affine` nor `voxel_size` are specified, the streamline is
@@ -505,21 +509,23 @@ def target(streamlines, target_mask, voxel_size=None, affine=None,
     density_map
 
     """
-    ones = np.ones(3.)
-    lin, offset = _mapping_to_voxel(affine, voxel_size)
+    target_mask = np.array(target_mask, dtype=bool, copy=True)
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    yield
+    # End of initialization
+
     for sl in streamlines:
-        ind = _to_voxel_coordinates(sl, lin, offset)
-        i, j, k = ind.T
         try:
+            ind = _to_voxel_coordinates(sl, lin_T, offset)
+            i, j, k = ind.T
             state = target_mask[i, j, k]
         except IndexError:
-            volume_size = tuple(voxel_size * target_mask.shape)
-            raise IndexError('streamline has values greater than the size of '
-                             'the target mask, ' + str(volume_size))
+            raise ValueError("streamlines points are outside of target_mask")
         if state.any() == include:
             yield sl
 
 
+@_with_initialize
 def move_streamlines(streamlines, output_space, input_space=None):
     """Applies a linear transformation, given by affine, to streamlines
 
@@ -548,8 +554,13 @@ def move_streamlines(streamlines, output_space, input_space=None):
         inv = np.linalg.inv(input_space)
         affine = np.dot(output_space, inv)
 
+    lin_T = affine[:3, :3].T.copy()
+    offset = affine[:3, 3].copy()
+    yield
+    # End of initialization
+
     for sl in streamlines:
-        yield dot(sl, affine[:3,:3].T) + affine[:3,3]
+        yield np.dot(sl, lin_T) + offset
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
@@ -634,7 +645,7 @@ def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
 
     # Create affine
     voxel_size = np.asarray(voxel_size)
-    affine = np.zeros((4, 4))
+    affine = np.eye(4)
     affine[[0, 1, 2], [0, 1, 2]] = voxel_size
     affine[:3, 3] = voxel_size / 2.
     return affine

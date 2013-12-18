@@ -8,7 +8,8 @@ from dipy.io.bvectxt import orientation_from_string
 from dipy.tracking._utils import _rmi
 from dipy.tracking.utils import (connectivity_matrix, density_map,
                                  move_streamlines, ndbincount, reduce_labels,
-                                 reorder_voxels_affine, affine_for_trackvis)
+                                 reorder_voxels_affine, affine_for_trackvis,
+                                 target)
 from dipy.tracking.vox2track import streamline_mapping
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
@@ -166,6 +167,74 @@ def test_move_streamlines():
     for i, test_sl in enumerate(undo_affine):
         assert_array_almost_equal(test_sl, streamlines[i])
 
+    # Test that changing affine does effect moving streamlines
+    affineA = affine.copy()
+    affineB = affine.copy()
+    streamlinesA = move_streamlines(streamlines, affineA)
+    streamlinesB = move_streamlines(streamlines, affineB)
+    affineB[:] = 0
+    for (a, b) in zip(streamlinesA, streamlinesB):
+        assert_array_equal(a, b)
+
+
+def test_target():
+    streamlines = [np.array([[0., 0., 0.],
+                             [1., 0., 0.],
+                             [2., 0., 0.]]),
+                   np.array([[0., 0., 0],
+                             [0, 1., 1.],
+                             [0, 2., 2.]])
+                  ]
+    affine = np.eye(4)
+    mask = np.zeros((4, 4, 4), dtype=bool)
+    mask[0, 0, 0] = True
+
+    # Both pass though
+    new = list(target(streamlines, mask, affine=affine))
+    assert_equal(len(new), 2)
+    new = list(target(streamlines, mask, affine=affine, include=False))
+    assert_equal(len(new), 0)
+
+    # only first
+    mask[:] = False
+    mask[1, 0, 0] = True
+    new = list(target(streamlines, mask, affine=affine))
+    assert_equal(len(new), 1)
+    assert_true(new[0] is streamlines[0])
+    new = list(target(streamlines, mask, affine=affine, include=False))
+    assert_equal(len(new), 1)
+    assert_true(new[0] is streamlines[1])
+
+    # Test that bad points raise a value error
+    bad_sl = [ np.array([[10., 10., 10.]])]
+    new = target(bad_sl, mask, affine=affine)
+    assert_raises(ValueError, list, new)
+    bad_sl = [-np.array([[10., 10., 10.]])]
+    new = target(bad_sl, mask, affine=affine)
+    assert_raises(ValueError, list, new)
+
+    # Test smaller voxels
+    affine = np.random.random((4, 4)) - .5
+    affine[3] = [0, 0, 0, 1]
+    streamlines = list(move_streamlines(streamlines, affine))
+    new = list(target(streamlines, mask, affine=affine))
+    assert_equal(len(new), 1)
+    assert_true(new[0] is streamlines[0])
+    new = list(target(streamlines, mask, affine=affine, include=False))
+    assert_equal(len(new), 1)
+    assert_true(new[0] is streamlines[1])
+
+    # Test that changing mask and affine do not break target
+    include = target(streamlines, mask, affine=affine)
+    exclude = target(streamlines, mask, affine=affine, include=False)
+    affine[:] = np.eye(4)
+    mask[:] = False
+    include = list(include)
+    exclude = list(exclude)
+    assert_equal(len(include), 1)
+    assert_true(include[0] is streamlines[0])
+    assert_equal(len(exclude), 1)
+    assert_true(exclude[0] is streamlines[1])
 
 def test_voxel_ornt():
     sh = (40,40,40)
