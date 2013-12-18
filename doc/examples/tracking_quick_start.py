@@ -32,8 +32,6 @@ img, gtab = read_stanford_hardi()
 
 data = img.get_data()
 
-#data = data[30:40, 50:60, 30:40]
-
 """
 Create a brain mask. This dataset is a bit difficult to segment with the default
 ``median_otsu`` parameters (see :ref:`example_brain_extraction_dwi`) therefore we use
@@ -158,9 +156,9 @@ csd_streamlines_trk = ((sl, None, None) for sl in streamlines)
 
 csd_sl_fname = 'csd_streamline.trk'
 
-nib.trackvis.write(csd_sl_fname, csa_streamlines_trk, hdr, points_space='voxel')
+nib.trackvis.write(csd_sl_fname, csd_streamlines_trk, hdr, points_space='voxel')
 
-nib.save(nib.Nifti1Image(FA, affine), 'FA_map.nii.gz')
+nib.save(nib.Nifti1Image(FA, img.get_affine()), 'FA_map.nii.gz')
 
 """
 .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
