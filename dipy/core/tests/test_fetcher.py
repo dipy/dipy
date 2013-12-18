@@ -23,7 +23,7 @@ def test_fetch_data():
         npt.assert_(path.exists(newfile))
         npt.assert_equal(fetcher._get_file_md5(newfile), md5)
 
-        # Test that an error is raised when the md5 chechsum of the download
+        # Test that an error is raised when the md5 checksum of the download
         # file does not match the expected value
         files = {"testfile.txt" : ("file://" + symmetric362, bad_md5)}
         npt.assert_raises(fetcher.FetcherError,
