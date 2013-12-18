@@ -3,14 +3,19 @@ from __future__ import division, print_function, absolute_import
 
 Important Note:
 ---------------
-At this time all the tools in this module are using the "trackvis coordinate
-system." This coordinate system places the origin at the corner of the first
-voxel of an image. The diagonal corner of the image is [x*i, j*y, k*z] where
-[x, y, z] is the voxel size and [i, j, k] is the dimention of the image. A
-2d example is shown below where the dimention is [3, 3] and the voxel size is
-[1, 3]:
+Some functions in this module use an affine matrix to represent the coordinate
+system associated with the points of a streamline. Dipy uses a similar
+convention to nifti files when interpreting this affine matrix. This convention
+is that the point at the center of voxel ``[i, j, k`]` is represented by the
+point ``[x, y, z]`` where ``[x, y, z, 1] = affine * [i, j, k, 1]``.
+Also when the phrase "voxel coordinates" is used, it is understood to be the
+same as ``affine = eye(4)``.
 
-Trackvis:
+As an example, lets take a 2d image where the affine is
+``[[1., 0., 0.],
+   [0., 2., 0.],
+   [0., 0., 1.]]``:
+
 A------------
 |   |   |   |
 | C |   |   |
@@ -25,23 +30,12 @@ A------------
 |   |   |   |
 ------------D
 
-A = [0, 0]
-B = [1, 3]
-C = [.5, 1.5]
-D = [3, 9]
+A = [-.5, -1.]
+B = [ .5,  1.]
+C = [ 0.,  0.]
+D = [ 2.5,  5.]
+"""
 
-Any streamlines created using a differnt coordinate system should be moved to
-this coordinate system before any of the functions from this module are used.
-"""
-"""
-This module uses the trackvis coordinate system, for more information about
-this coordinate system please see dipy.tracking.utils
-The following modules also use this coordinate system:
-dipy.tracking.utils
-dipy.tracking.integration
-dipy.reconst.interpolate
-
-"""
 from warnings import warn
 from functools import wraps
 from collections import defaultdict

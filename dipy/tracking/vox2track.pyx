@@ -96,28 +96,6 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     return mapping
 
 
-def uniq_with_list(streamlines, voxel_size=None, affine=None):
-
-    cdef:
-        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] voxel_indices
-
-    lin, offset = _mapping_to_voxel(affine, voxel_size)
-    mapping = {}
-    for i, sl in enumerate(streamlines):
-        voxel_indices = _to_voxel_coordinates(sl, lin, offset)
-        uniq = set()
-        for j in range(voxel_indices.shape[0]):
-            p = (voxel_indices[j, 0],
-                 voxel_indices[j, 1],
-                 voxel_indices[j, 2])
-            uniq.add(p)
-        for p in uniq:
-            if p in mapping:
-                mapping[p].append(i)
-            else:
-                mapping[p] = [i]
-    return mapping
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.profile(False)
