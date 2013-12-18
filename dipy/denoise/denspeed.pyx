@@ -7,7 +7,7 @@ from libc.math cimport sqrt, exp
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, rician=True):
+def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, rician=True):
 
     cdef:
         cnp.npy_intp i, j, k, I, J, K
@@ -25,10 +25,11 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None,
     J = arr.shape[1]
     K = arr.shape[2]
 
+    #moving the block
     with nogil:
-        for i in range(B, I - B - 1):
-            for j in range(B, J - B - 1):
-                for k in range(B, K - B - 1):
+        for i in range(I):
+            for j in range(J):
+                for k in range(K):
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
 
@@ -56,8 +57,8 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
     sumw = 0
 
-
     # calculate weights between the central patch and the moving patch in block
+    # moving the patch
     for m in range(i - B, i + B + 1):
         for n in range(j - B, j + B + 1):
             for o in range(k - B, k + B + 1):
@@ -75,7 +76,7 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
                             summ += d
 
-                w = exp( - (summ / patch_vol_size) / sigma)
+                w = exp( - (sqrt(summ / patch_vol_size)) / sigma)
                 sumw += w
                 W[cnt] = w
                 cnt += 1
@@ -84,6 +85,8 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
     sum_out = 0
 
+    # calculate normalized weights and sums of the weights with the positions
+    # of the patches
     for m in range(i - B, i + B + 1):
         for n in range(j - B, j + B + 1):
             for o in range(k - B, k + B + 1):
