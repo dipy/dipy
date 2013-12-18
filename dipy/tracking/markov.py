@@ -18,6 +18,7 @@ from ..utils.six.moves import xrange
 import numpy as np
 from ..reconst.interpolate import OutsideImage, NearestNeighborInterpolator
 from ..reconst.peaks import default_sphere, peak_directions
+from . import utils
 
 
 class DirectionFinder(object):
@@ -129,7 +130,8 @@ class MarkovIntegrator(object):
     _get_directions = DirectionFinder()
 
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
-                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
+                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None,
+                 affine=None):
         """Creates streamlines by using a Markov approach.
 
         Parameters
@@ -159,6 +161,9 @@ class MarkovIntegrator(object):
             Voxel size for the mask. `mask` should cover the same FOV as data,
             but it can have a different voxel size. Same as the data by
             default.
+        affine : array (4, 4)
+            Coordinate space for the streamline point with respect to voxel
+            indices of input data.
 
         """
         self.model = model
@@ -166,6 +171,15 @@ class MarkovIntegrator(object):
         self.seeds = seeds
         self.max_cross = max_cross
         self.maxlen = maxlen
+
+        voxel_size = np.asarray(interpolator.voxel_size)
+        self._input_space = input_space = np.eye(4)
+        input_space[[0, 1, 2], [0, 1, 2]] = voxel_size
+        input_space[:3, 3] = voxel_size / 2.
+        if affine is None:
+            self.affine = input_space
+        else:
+            self.affine = affine
 
         self._take_step = take_step
         self._cos_similarity = np.cos(np.deg2rad(angle_limit))
@@ -185,7 +199,9 @@ class MarkovIntegrator(object):
         self._mask = NearestNeighborInterpolator(mask.copy(), mask_voxel_size)
 
     def __iter__(self):
-        return self._generate_streamlines()
+        return utils.move_streamlines(self._generate_streamlines(),
+                                      output_space=self.affine,
+                                      input_space=self._input_space)
 
     def _generate_streamlines(self):
         """A streamline generator"""
@@ -199,7 +215,6 @@ class MarkovIntegrator(object):
                 B = markov_streamline(self._next_step, self._take_step, s,
                                       first_step, self.maxlen)
                 yield np.concatenate([B[:0:-1], F], axis=0)
-
 
 def _closest_peak(peak_directions, prev_step, cos_similarity):
     """Return the closest direction to prev_step from peak_directions.
@@ -321,11 +336,11 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
     """
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
                  seeds, sphere, max_cross=None, maxlen=500,
-                 mask_voxel_size=None):
+                 mask_voxel_size=None, affine=None):
 
         MarkovIntegrator.__init__(self, model, interpolator, mask, take_step,
                                   angle_limit, seeds, max_cross, maxlen,
-                                  mask_voxel_size)
+                                  mask_voxel_size, affine)
         self.sphere = sphere
         self._set_adjacency_matrix(sphere, self._cos_similarity)
         self._get_directions.sphere = sphere
@@ -395,7 +410,8 @@ class CDT_NNO(ClosestDirectionTracker):
 
     """
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
-                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
+                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None,
+                 affine=None):
         if not isinstance(interpolator, NearestNeighborInterpolator):
             msg = ("CDT_NNO is an optimized version of "
                    "ClosestDirectionTracker that requires a "
@@ -405,7 +421,8 @@ class CDT_NNO(ClosestDirectionTracker):
         ClosestDirectionTracker.__init__(self, model, interpolator, mask,
                                          take_step, angle_limit, seeds,
                                          max_cross=max_cross, maxlen=maxlen,
-                                         mask_voxel_size=mask_voxel_size)
+                                         mask_voxel_size=mask_voxel_size,
+                                         affine=None)
         self._data = self.interpolator.data
         self._voxel_size = self.interpolator.voxel_size
         self.reset_cache()
