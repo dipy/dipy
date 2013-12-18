@@ -1,19 +1,19 @@
 """
 
 ==================================================
-Using Dipy to Target, Group, and Count Streamlines
+Using Dipy to 
 ==================================================
 
 This example is meant to be an introduction to some of the streamline tools
 available in dipy. Some of the functions covered in this example are
-``target``, ``connectivity_matrix`` and ``density map``. ``target`` allows one
+``target``, ``connectivity_matrix`` and ``density_map``. ``target`` allows one
 to filter streamlines that either pass though or do not pass through some
-region of the brain, ``connectivity__matrix`` groups and counts streamlines
-based on where in the brain be begin and end, and finally, density map counts
+region of the brain, ``connectivity_matrix`` groups and counts streamlines
+based on where in the brain they begin and end, and finally, density map counts
 the number of streamlines that pass though every voxel of some image.
 
 To get started you'll need to have a set of streamlines to work with. We'll use
-EuDx along with the CsaOdfModel to make some streamlines. Lets import the
+EuDX along with the CsaOdfModel to make some streamlines. Lets import the
 modules and download the data we'll be using.
 """
 
@@ -25,13 +25,14 @@ from dipy.data import read_stanford_labels
 
 hardi_img, gtab, labels_img = read_stanford_labels()
 data = hardi_img.get_data()
+affine = hardi_img.get_affine()
 labels = labels_img.get_data()
 
 """
 We've loaded an image called ``labels_img`` which is a map of tissue types such
 that every integer value in the array ``labels`` represents a anatomical
 structure or tissue type [#]_. For this example, the image was created so that
-white matter voxels have values of either 1 or 2. We'll use ``peak_from_model``
+white matter voxels have values of either 1 or 2. We'll use ``peaks_from_model``
 to apply the ``CsaOdfModel`` to each white matter voxel and estimate fiber
 orientations which we can use for tracking.
 """
@@ -46,7 +47,7 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
                                   mask=white_matter)
 
 """
-Now we can use EuDx track all of the white matter. To keep things
+Now we can use EuDX track all of the white matter. To keep things
 reasonably fast we use 1 seed per voxel here.
 """
 
@@ -56,16 +57,17 @@ streamlines = EuDX(csapeaks.peak_values,
                    odf_vertices=peaks.default_sphere.vertices,
                    a_low=0.,
                    step_sz=.5,
-                   seeds=seeds)
+                   seeds=seeds,
+                   affine=affine)
 
 """
 The first of the tracking utilities we'll cover here is ``target``. This
-function takes a set of streamlines and an rio and returns only those that pass
-though the roi. The roi should be an array such that the voxels that belong to
-the roi are True and all other voxels are False. In this example we'll target
+function takes a set of streamlines and an region of interest ROI and returns only those that pass
+though the ROI. The ROI should be an array such that the voxels that belong to
+the ROI are True and all other voxels are False. In this example we'll target
 the streamlines of the corpus callosum. Our ``labels`` array has a sagital
 slice of the corpus callosum identified by the label value 2. We'll create an
-roi mask from that label and target that roi.
+ROI mask from that label and target that ROI.
 """
 
 cc_slice = labels == 2
@@ -85,13 +87,13 @@ from dipy.viz.colormap import line_colors
 # Make display objects
 color = line_colors(cc_streamlines)
 cc_streamlines_actor = fvtk.line(cc_streamlines, line_colors(cc_streamlines))
-cc_roi_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
+cc_ROI_actor = fvtk.contour(cc_slice, levels=[1], colors=[(1., 1., 0.)],
                             opacities=[1.])
 
 # Add display objects to canvas
 r = fvtk.ren()
 fvtk.add(r, cc_streamlines_actor)
-fvtk.add(r, cc_roi_actor)
+fvtk.add(r, cc_ROI_actor)
 
 # Save figures
 fvtk.record(r, n_frames=1, out_path='corpuscollosum_axial.png',
@@ -115,7 +117,7 @@ fvtk.record(r, n_frames=1, out_path='corpuscollosum_sagital.png',
 """
 
 """
-Once we've targeted on the corpus collosum roi, we might want to find out
+Once we've targeted on the corpus collosum ROI, we might want to find out
 which regions of the brain are connected by these streamlines. To do this we
 can use the connectivity_matrix function. This function takes a set of
 streamlines and an array of labels as arguments. It returns the number of
@@ -139,12 +141,12 @@ their endpoint.
 We've set ``symmetric`` to True so that the start and end points are treated
 the same and our connectivity matrix will be symmetric.
 
-Because we're typically only interested int gray-gray connections, and because
+Because we're typically only interested int gray to gray connections, and because
 the label 0 represents background and the labels 1 and 2 represent white
 matter, we then discard the first three rows and columns of the connectivity
 matrix.
 
-We can now display this matrix using matplotlib, we dispaly it using a log
+We can now display this matrix using matplotlib, we display it using a log
 scale to make small values in the matrix easier to see.
 """
 
