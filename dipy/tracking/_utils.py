@@ -183,7 +183,7 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
 
 
 def connectivity_matrix(streamlines, label_volume, voxel_size=None,
-                        affine=None, symmetric=False, return_mapping=False,
+                        affine=None, symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
     """Counts the streamlines that start and end at each label pair
 

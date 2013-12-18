@@ -76,11 +76,12 @@ def test_connectivity_matrix():
     expected[3, 4] = 2
     expected[4, 3] = 1
     # Check basic Case
-    matrix = connectivity_matrix(streamlines, label_volume, (1, 1, 1))
+    matrix = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+                                 symmetric=False)
     assert_array_equal(matrix, expected)
     # Test mapping
     matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
-                                          return_mapping=True)
+                                          symmetric=False, return_mapping=True)
     assert_array_equal(matrix, expected)
     assert_equal(mapping[3, 4], [0, 1])
     assert_equal(mapping[4, 3], [2])
@@ -96,6 +97,7 @@ def test_connectivity_matrix():
     assert_array_equal(matrix, expected)
     # Test mapping_as_streamlines, mapping dict has lists of streamlines
     matrix, mapping = connectivity_matrix(streamlines, label_volume, (1, 1, 1),
+                                          symmetric=False,
                                           return_mapping=True,
                                           mapping_as_streamlines=True)
     assert_true(mapping[3, 4][0] is streamlines[0])
