@@ -27,9 +27,9 @@ def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, 
 
     #moving the block
     with nogil:
-        for i in range(I):
-            for j in range(J):
-                for k in range(K):
+        for i in range(B, I - B - 1):
+            for j in range(B, J - B - 1):
+                for k in range(B, K - B - 1):
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
 
