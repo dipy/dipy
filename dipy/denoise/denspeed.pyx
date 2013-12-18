@@ -29,10 +29,12 @@ def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, 
 
     #moving the block
     with nogil:
-        for i in range(B, I - B - 1):
-            for j in range(B, J - B - 1):
-                for k in range(B, K - B - 1):
+        for i in range(B, I - B):
+            for j in range(B, J - B):
+                for k in range(B, K - B):
 
+                    # with gil:
+                    #     print(i, j, k)
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
                     # with gil:
                     #     print(out[i, j, k])
@@ -82,15 +84,7 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
                             summ += d
 
                 w = exp( - (sqrt(summ / patch_vol_size)) / sigma)
-                # with gil:
-                #      if w != 0:
-                #          print(w)
-                #          print(summ)
-                #          print(sigma)
-                #          print('---')
                 sumw += w
-                # with gil:
-                #     print(sumw)
                 W[cnt] = w
                 cnt += 1
 
