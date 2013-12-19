@@ -82,7 +82,7 @@ resolution by subdividing the triangles of one of the Dipy's default spheres.
 sphere = get_sphere('symmetric724')
 sphere = sphere.subdivide(2)
 
-odf = multi_tensor_odf(sphere, mevals, angles, fractions)
+odf = multi_tensor_odf(sphere.vertices, mevals, angles, fractions)
 
 from dipy.viz import fvtk
 
