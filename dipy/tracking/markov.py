@@ -149,7 +149,8 @@ class MarkovIntegrator(object):
         angle_limit : float [0, 90]
             Maximum angle allowed between successive steps of the streamline.
         seeds : array (N, 3)
-            Points to seed the tracking.
+            Points to seed the tracking. Seed points should be given in point
+            space of the track (see ``affine``).
         max_cross : int or None
             The maximum number of direction to track from each seed in crossing
             voxels.  By default track all peaks of the odf, otherwise track the
@@ -173,11 +174,11 @@ class MarkovIntegrator(object):
         self.maxlen = maxlen
 
         voxel_size = np.asarray(interpolator.voxel_size)
-        self._input_space = input_space = np.eye(4)
-        input_space[[0, 1, 2], [0, 1, 2]] = voxel_size
-        input_space[:3, 3] = voxel_size / 2.
+        self._tracking_space = tracking_space = np.eye(4)
+        tracking_space[[0, 1, 2], [0, 1, 2]] = voxel_size
+        tracking_space[:3, 3] = voxel_size / 2.
         if affine is None:
-            self.affine = input_space
+            self.affine = tracking_space.copy()
         else:
             self.affine = affine
 
@@ -199,13 +200,23 @@ class MarkovIntegrator(object):
         self._mask = NearestNeighborInterpolator(mask.copy(), mask_voxel_size)
 
     def __iter__(self):
-        return utils.move_streamlines(self._generate_streamlines(),
-                                      output_space=self.affine,
-                                      input_space=self._input_space)
+        # Check that seeds are reasonable
+        seeds = np.asarray(self.seeds)
+        if seeds.ndim != 2 or seeds.shape[1] != 3:
+            raise ValueError("Seeds should be an (N, 3) array of points")
 
-    def _generate_streamlines(self):
+        # Compute affine from point space to tracking space, apply to seeds
+        inv_A = np.dot(self._tracking_space, np.linalg.inv(self.affine))
+        tracking_space_seeds = np.dot(seeds, inv_A[:3, :3].T) + inv_A[:3, 3]
+
+        # Make tracks, move them to point space and return
+        track = self._generate_streamlines(tracking_space_seeds)
+        return utils.move_streamlines(track, output_space=self.affine,
+                                      input_space=self._tracking_space)
+
+    def _generate_streamlines(self, seeds):
         """A streamline generator"""
-        for s in self.seeds:
+        for s in seeds:
             directions = self._next_step(s, prev_step=None)
             directions = directions[:self.max_cross]
             for first_step in directions:
@@ -215,6 +226,7 @@ class MarkovIntegrator(object):
                 B = markov_streamline(self._next_step, self._take_step, s,
                                       first_step, self.maxlen)
                 yield np.concatenate([B[:0:-1], F], axis=0)
+
 
 def _closest_peak(peak_directions, prev_step, cos_similarity):
     """Return the closest direction to prev_step from peak_directions.
