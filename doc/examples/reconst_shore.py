@@ -5,7 +5,7 @@ Continuous and analytical diffusion signal modelling with 3D-SHORE
 
 We show how to model the diffusion signal as a linear combination
 of continuous functions from the SHORE basis [Merlet2013]_.
-We also compute the analytical Orientation Distribution Function ODF.
+We also compute the analytical Orientation Distribution Function (ODF).
 
 First import the necessary modules:
 """
@@ -19,7 +19,7 @@ from dipy.core.gradients import gradient_table
 """
 Download and read the data for this tutorial.
 
-two_shells_voxels() provides data from the ISBI HARDI contest 2013 acquired 
+fetch_isbi2013_2shell() provides data from the ISBI HARDI contest 2013 acquired 
 for two shells at b-values 1500 and 2500.
 
 The six parameters of these two functions define the ROI where to reconstruct
@@ -71,7 +71,7 @@ Load an odf reconstruction sphere
 sphere = get_sphere('symmetric724')
 
 """
-Compute the ODF  
+Compute the ODFs
 """
 
 odf = asmfit.odf(sphere)
