@@ -425,7 +425,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     """
 
     # generate initial fODF estimate, truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, s_sh)[0] #fodf_sh, = np.linalg.lstsq(R, s_sh) # R\s_sh
+    fodf_sh = np.linalg.lstsq(R, s_sh)[0] 
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_reg, fodf_sh)
@@ -451,18 +451,19 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k = k2
 
         # This is the super-resolved trick.
-        # Wherever there is a negative amplitude value on the fODF, it concatinates a value
-        # to the S vector so that the estimation can focus on trying to eliminate it.
-        # In a sense, this "adds" a measurement, which can help to better estimate the fodf_sh,
-        # even if you have more SH coeffcients to estimate than actual S measurements.
+        # Wherever there is a negative amplitude value on the fODF, it 
+        # concatinates a value to the S vector so that the estimation can 
+        # focus on trying to eliminate it. In a sense, this "adds" a measurement, 
+        # which can help to better estimate the fodf_sh, even if you have more SH 
+        # coeffcients to estimate than actual S measurements.
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         try:
             fodf_sh = np.linalg.lstsq(M, S)[0]
         except np.linalg.LinAlgError as lae:
-            msg = 'SVD did not converge in Linear Least Squares in current '
-            msg += 'voxel. Proceeding with initial SH estimate for this voxel'
-            warnings.warn(msg)
+            # SVD did not converge in Linear Least Squares in current 
+            # voxel. Proceeding with initial SH estimate for this voxel.
+            pass
 
     warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
@@ -545,9 +546,9 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         try:
             fodf_sh = np.linalg.lstsq(M, ODF)[0]
         except np.linalg.LinAlgError as lae:
-            msg = 'SVD did not converge in Linear Least Squares in current '
-            msg += 'voxel. Proceeding with initial SH estimate for this voxel'
-            warnings.warn(msg)
+            # SVD did not converge in Linear Least Squares in current 
+            # voxel. Proceeding with initial SH estimate for this voxel.
+            pass
 
     warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
