@@ -156,11 +156,8 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
 
     for (i, g) in enumerate(gtab.bvecs[1:]):
         S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + \
-            np.sum([
-                   fractions[j] * np.exp(
-                       -gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
-                   for (j, s) in enumerate(sticks)
-                   ])
+            np.sum([fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+                   for (j, s) in enumerate(sticks)])
 
         S[i + 1] = S0 * S[i + 1]
 
@@ -435,6 +432,9 @@ def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
            Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
+    if evals is None:
+        evals = diffusion_evals
+
     rtop = 1.0 / np.sqrt((4 * np.pi * tau) ** 3 * np.prod(evals))
     return rtop
 
@@ -464,6 +464,7 @@ def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
 
     '''
     rtop = 0
+
     if mevals is None:
         mevals = [None, ] * len(mf)
 
@@ -587,6 +588,9 @@ def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
            Its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
+    if evals is None:
+        evals = diffusion_evals
+
     msd = 2 * tau * np.sum(evals)
     return msd
 
@@ -616,6 +620,7 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
 
     '''
     msd = 0
+    
     if mevals is None:
         mevals = [None, ] * len(mf)
 
