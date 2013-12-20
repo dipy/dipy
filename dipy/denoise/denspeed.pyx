@@ -7,6 +7,8 @@ from libc.math cimport sqrt, exp
 
 def nlmeans_3d(arr, patch_size=3, block_size=11, sigma=None, rician=True):
 
+    arr = np.ascontiguousarray(arr)
+
     if arr.sum() == 0:
         raise ValueError('Wrong parameter, arr is 0 everywhere')
 
@@ -17,7 +19,7 @@ def nlmeans_3d(arr, patch_size=3, block_size=11, sigma=None, rician=True):
 
     arrnlm = _nlmeans_3d(arr, patch_size, block_size, sigma, rician)
 
-    return rm_border(arrnlm, block_size)
+    return remove_border(arrnlm, block_size)
 
 
 @cython.wraparound(False)
@@ -43,16 +45,11 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None,
     J = arr.shape[1]
     K = arr.shape[2]
 
-    print(P, B, I, J, K, sigm)
-
     #moving the block
     with nogil:
         for i in range(BS - 1, I - BS + 1):
             for j in range(BS - 1, J - BS + 1):
                 for k in range(BS -1 , K - BS +1):
-
-                    # with gil:
-                    #     print(i, j, k)
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
 
@@ -73,20 +70,20 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
                           cnp.npy_intp B, cnp.npy_intp P, double sigma) nogil:
 
     cdef:
-        cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt,
+        cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
         double patch_vol_size
         double summ, x, d, w, sumw, sum_out
-
 
     cnt = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
     sumw = 0
+    step = P + P + 1
 
     # calculate weights between the central patch and the moving patch in block
     # moving the patch
-    for m in range(i - B, i + B + 1):
-        for n in range(j - B, j + B + 1):
-            for o in range(k - B, k + B + 1):
+    for m from i - B <= m < i + B + 1 by step:
+        for n from j - B <= n < j + B + 1 by step:
+            for o from k - B <= o < k + B + 1 by step:
 
                 summ = 0
 
@@ -105,6 +102,7 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
                 sumw += w
                 W[cnt] = w
                 cnt += 1
+
 
     cnt = 0
 
@@ -141,7 +139,7 @@ def add_border(arr, block_size=11):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def rm_border(arr, block_size=11):
+def remove_border(arr, block_size=11):
 
     shape = arr.shape
     block_size -= 1
