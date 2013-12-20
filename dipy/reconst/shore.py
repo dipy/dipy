@@ -6,7 +6,7 @@ from dipy.core.gradients import gradient_table
 from scipy.special import genlaguerre, gamma, hyp2f1
 from dipy.core.geometry import cart2sphere
 from math import factorial
-
+from __future__ import division
 
 class ShoreModel(Cache):
 
@@ -32,7 +32,7 @@ class ShoreModel(Cache):
 
     References
     ----------
-    .. [1] Orzaslan E. et. al, "Simple harmonic oscillator based reconstruction
+    .. [1] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
            and estimation for one-dimensional q-space magnetic resonance
            1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
 
@@ -83,7 +83,7 @@ class ShoreModel(Cache):
         Parameters
         ----------
         gtab : GradientTable,
-            Gradient directions and bvalues container class
+            gradient directions and bvalues container class
         radial_order : unsigned int,
             an even integer that represent the order of the basis
         zeta : unsigned int,
@@ -113,7 +113,7 @@ class ShoreModel(Cache):
         Examples
         --------
         In this example, where the data, gradient table and sphere tessellation
-        used for reconstruction is provided, we model the diffusion signal 
+        used for reconstruction are provided, we model the diffusion signal 
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
@@ -162,8 +162,7 @@ class ShoreModel(Cache):
             self.cache_set('shore_matrix', self.gtab, M)
 
         # Compute the signal coefficients in SHORE basis
-        pseudoInv = np.dot(
-            np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
+        pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
         coef = np.dot(pseudoInv, data)
 
         signal_0 = 0
@@ -172,7 +171,7 @@ class ShoreModel(Cache):
             signal_0 += coef[n] * genlaguerre(n, 0.5)(0) * \
                 ((factorial(n)) / (2 * np.pi * (self.zeta ** 1.5) * gamma(n + 1.5))) ** 0.5
 
-        coef = coef / float(signal_0)
+        coef = coef / signal_0
 
         return ShoreFit(self, coef)
 
@@ -199,7 +198,7 @@ class ShoreFit():
     def pdf_grid(self, gridsize, radius_max):
         r""" Applies the analytical FFT on $S$ to generate the diffusion
         propagator. This is calculated on a discrete 3D grid in order to
-        obtain an EAP similar to that which is obtain with DSI.
+        obtain an EAP similar to that which is obtained with DSI.
 
         Parameters
         ----------
@@ -215,7 +214,7 @@ class ShoreFit():
 
         """
         eap = np.zeros((gridsize, gridsize, gridsize))
-        # Create the grid in wich to compute the pdf
+        # Create the grid in which to compute the pdf
         rgrid, rtab = create_rspace(gridsize, radius_max)
         psi = self.model.cache_get('shore_matrix_pdf', key=gridsize)
         if psi is None:
@@ -250,7 +249,7 @@ class ShoreFit():
         # Number of Spherical Harmonics involved in the estimation
         J = (self.radial_order + 1) * (self.radial_order + 2) / 2
 
-        # Compute the spherical Harmonic Coefficients
+        # Compute the Spherical Harmonics Coefficients
         c_sh = np.zeros(J)
         counter = 0
 
@@ -386,7 +385,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     zeta : unsigned int,
         scale factor
     gtab : GradientTable,
-        Gradient directions and bvalues container class
+        gradient directions and bvalues container class
     tau : float,
         diffusion time. By default the value that makes q=sqrt(b).
 
@@ -415,10 +414,10 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
         for n in range(l, int((radial_order + l) / 2) + 1):
             for m in range(-l, l + 1):
                 M[:, counter] = real_sph_harm(m, l, theta, phi) * \
-                    genlaguerre(n - l, l + 0.5)(r ** 2 / float(zeta)) * \
+                    genlaguerre(n - l, l + 0.5)(r ** 2 / zeta) * \
                     np.exp(- r ** 2 / (2.0 * zeta)) * \
                     _kappa(zeta, n, l) * \
-                    (r ** 2 / float(zeta)) ** (l / 2)
+                    (r ** 2 / zeta) ** (l / 2)
                 counter += 1
     return M
 
@@ -569,7 +568,7 @@ def create_rspace(gridsize, radius_max):
                 vecs.append([i, j, k])
 
     vecs = np.array(vecs, dtype=np.float32)
-    tab = vecs / float(radius)
+    tab = vecs / radius
     tab = tab * radius_max
     vecs = vecs + radius
 
@@ -623,7 +622,7 @@ def shore_indices(radial_order, index):
     m_i = 0
 
     if n_c < (index + 1):
-        msg = "the index is higher than the number of coefficients of the truncated basis."
+        msg = "The index is higher than the number of coefficients of the truncated basis."
         raise ValueError(msg)
     else:
         counter = 0
@@ -659,7 +658,7 @@ def shore_order(n, l, m):
       
     """
     if l % 2 == 1 or l > n or l < 0 or n < 0  or np.abs(m) > l:
-        msg = "the index l must be even and 0 <= l <= n, the index m must be -l <= m <= l"
+        msg = "The index l must be even and 0 <= l <= n, the index m must be -l <= m <= l."
         raise ValueError(msg)
     else: 
         if n % 2 == 1:
