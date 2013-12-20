@@ -39,13 +39,13 @@ def test_shore_odf():
     assert_almost_equal(odf, odf_from_sh, 10)
 
 
-    directions, _, _ = peak_directions(odf, sphere, .35, 25)
+    directions, _ , _ = peak_directions(odf, sphere, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
     # 5 subdivisions
     odf = asmfit.odf(sphere2)
-    directions, _, _ = peak_directions(odf, sphere2, .35, 25)
+    directions, _ , _ = peak_directions(odf, sphere2, .35, 25)
     assert_equal(len(directions), 2)
     assert_almost_equal(angular_similarity(directions, golden_directions), 2, 1)
 
@@ -54,7 +54,7 @@ def test_shore_odf():
         data, golden_directions = sb_dummies[sbd]
         asmfit = asm.fit(data)
         odf = asmfit.odf(sphere2)
-        directions, _, _ = peak_directions(odf, sphere2, .35, 25)
+        directions, _ , _ = peak_directions(odf, sphere2, .35, 25)
         if len(directions) <= 3:
             assert_equal(len(directions), len(golden_directions))
         if len(directions) > 3:
