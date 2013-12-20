@@ -39,8 +39,7 @@ def test_shore_metrics():
     assert_equal(radial_order, radial_order2)
     assert_equal(c, c2)
 
-
-    # since we are testing without noise we can use highere order and lower lambdas respect the default.
+    # since we are testing without noise we can use higher order and lower lambdas, with respect to the default.
     radial_order = 8
     zeta = 700
     lambdaN = 1e-12
@@ -65,7 +64,7 @@ def test_shore_metrics():
                 
     assert_almost_equal(integral, 1.0, 10)
 
-    # test if the integral of the pdf canculated on a discrete grid is equal to one
+    # test if the integral of the pdf calculated on a discrete grid is equal to one
     pdf_discrete = asmfit.pdf_grid(17, 40e-3)
     integral = pdf_discrete.sum()
     assert_almost_equal(integral, 1.0, 1)
