@@ -27,7 +27,7 @@ img, gtab = read_taiwan_ntu_dsi()
 
 """
 img contains a nibabel Nifti1Image object (data) and gtab contains a GradientTable
-object (gradient information e.g. b-values). For example to read the b-values
+object (gradient information e.g. b-values). For example, to read the b-values
 it is possible to write print(gtab.bvals).
 
 Load the raw diffusion data and the affine.
@@ -44,7 +44,7 @@ Instantiate the Model.
 asm = ShoreModel(gtab)
 
 """
-Lets just use one slice only from the data.
+Lets just use only one slice only from the data.
 """
 
 dataslice = data[30:70, 20:80, data.shape[2] / 2]
@@ -56,7 +56,7 @@ Fit the signal with the model and calculate the SHORE coefficients.
 asmfit = asm.fit(dataslice)
 
 """
-Calculate the analytical return to origin probability on the signal 
+Calculate the analytical rtop on the signal 
 that corresponds to the integral of the signal.
 """
 
@@ -64,7 +64,7 @@ print('Calculating... rtop_signal')
 rtop_signal = asmfit.rtop_signal()
 
 """
-Now we calculate the analytical return to origin probability on the propagator, 
+Now we calculate the analytical rtop on the propagator, 
 that corresponds to its central value.
 """
 
