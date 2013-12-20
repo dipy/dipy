@@ -5,9 +5,24 @@ cimport cython
 from libc.math cimport sqrt, exp
 
 
+def nlmeans_3d(arr, patch_size=3, block_size=11, sigma=None, rician=True):
+
+    if arr.sum() == 0:
+        raise ValueError('Wrong parameter, arr is 0 everywhere')
+
+    arr = add_border(arr, block_size)
+
+    print(arr.flags)
+    print(arr.shape)
+
+    arrnlm = _nlmeans_3d(arr, patch_size, block_size, sigma, rician)
+
+    return rm_border(arrnlm, block_size)
+
+
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, rician=True):
+def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, rician=True):
 
     cdef:
         cnp.npy_intp i, j, k, I, J, K
@@ -17,6 +32,7 @@ def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, 
         double sigm = 0
         cnp.npy_intp P = patch_size / 2
         cnp.npy_intp B = block_size / 2
+        cnp.npy_intp BS = block_size
 
     if sigma is None:
         sigm = 5 # call piesno
@@ -27,17 +43,18 @@ def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, 
     J = arr.shape[1]
     K = arr.shape[2]
 
+    print(P, B, I, J, K, sigm)
+
     #moving the block
     with nogil:
-        for i in range(B, I - B):
-            for j in range(B, J - B):
-                for k in range(B, K - B):
+        for i in range(BS - 1, I - BS + 1):
+            for j in range(BS - 1, J - BS + 1):
+                for k in range(BS -1 , K - BS +1):
 
                     # with gil:
                     #     print(i, j, k)
+
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
-                    # with gil:
-                    #     print(out[i, j, k])
 
     new = np.asarray(out)
 
@@ -52,7 +69,8 @@ def nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, 
 @cython.boundscheck(False)
 @cython.cdivision(True)
 cdef double process_block(double [:, :, ::1] arr, double [::1] W,
-                          int i, int j, int k, int B, int P, double sigma) nogil:
+                          cnp.npy_intp i, cnp.npy_intp j, cnp.npy_intp k,
+                          cnp.npy_intp B, cnp.npy_intp P, double sigma) nogil:
 
     cdef:
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt,
@@ -111,3 +129,22 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
     return sum_out
 
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+def add_border(arr, block_size=11):
+
+    padding = (block_size-1, block_size-1) * arr.ndim
+    arr = np.pad(arr, zip(padding[::2], padding[1::2]), mode='reflect')
+    return arr
+
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+def rm_border(arr, block_size=11):
+
+    shape = arr.shape
+    block_size -= 1
+    return arr[block_size:shape[0] - block_size,
+               block_size:shape[1] - block_size,
+               block_size:shape[2] - block_size]
