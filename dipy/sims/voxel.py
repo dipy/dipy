@@ -237,7 +237,7 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     angles : array (K,2) or (K,3)
         List of K tensor directions in polar angles (in degrees) or unit vectors
     fractions : float
-        Percentage of the contribution of each tensor. The sum of factions
+        Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
     snr : float
         Signal to noise ratio, assuming Rician noise.  If set to None, no

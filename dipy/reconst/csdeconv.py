@@ -338,16 +338,17 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     Parameters
     ----------
     ratio : float
-        ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response function
+        ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response 
+        function
     n : ndarray (N,)
         The degree of spherical harmonic function associated with each row of
         the deconvolution matrix. Only even degrees are allowed.
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the $r^2$ term in the integral.
-        For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. This results in using
-        the proper analytical response function solution solving from the single-fiber ODF
-        with the r^2 term. This derivation is not published anywhere but is very similar to
-        [1]_. 
+        True if ODF comes from an ODF computed from a model using the $r^2$ term
+        in the integral. For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor
+        ODFs. This results in using the proper analytical response function 
+        solution solving from the single-fiber ODF with the r^2 term. This 
+        derivation is not published anywhere but is very similar to [1]_. 
 
     Returns
     -------
@@ -453,9 +454,9 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         # This is the super-resolved trick.
         # Wherever there is a negative amplitude value on the fODF, it 
         # concatinates a value to the S vector so that the estimation can 
-        # focus on trying to eliminate it. In a sense, this "adds" a measurement, 
-        # which can help to better estimate the fodf_sh, even if you have more SH 
-        # coeffcients to estimate than actual S measurements.
+        # focus on trying to eliminate it. In a sense, this "adds" a 
+        # measurement, which can help to better estimate the fodf_sh, even if 
+        # you have more SH coeffcients to estimate than actual S measurements.
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
         try:
@@ -649,7 +650,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     Notes
     -----
     In CSD there is an important pre-processing step: the estimation of the
-    fiber response function. In order to do this we look for voxel with very
+    fiber response function. In order to do this we look for voxels with very
     anisotropic configurations. For example we can use an ROI (20x20x20) at
     the center of the volume and store the signal values for the voxels with
     FA values higher than 0.7. Of course, if we haven't precalculated FA we
