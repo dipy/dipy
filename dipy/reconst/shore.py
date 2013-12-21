@@ -1,3 +1,4 @@
+from __future__ import division
 import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -6,7 +7,6 @@ from dipy.core.gradients import gradient_table
 from scipy.special import genlaguerre, gamma, hyp2f1
 from dipy.core.geometry import cart2sphere
 from math import factorial
-from __future__ import division
 
 class ShoreModel(Cache):
 
