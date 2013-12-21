@@ -74,9 +74,10 @@ plt.savefig('simulated_signal.png')
 """
 
 """
-For the ODF simulation we will need a sphere. Because, here we are
-interested in a single voxel simulation we can use a sphere at very high
-resolution by subdividing the triangles of one of the Dipy's default spheres.
+For the ODF simulation we will need a sphere. Because we are interetested in a
+simulation of only a single voxel, we can use a sphere with very high
+resolution. We generate that by subdividing the triangles of one of Dipy's
+cached spheres, which we can read in the following way.
 """
 
 sphere = get_sphere('symmetric724')

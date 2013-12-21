@@ -1,15 +1,15 @@
 """
-==================================
-Reconstruct with DSI Deconvolution
-==================================
+========================
+DSI Deconvolution vs DSI
+========================
 
 An alternative method to DSI is the method proposed by [Canales10]_ which is
 called DSI with Deconvolution. This algorithm is using Lucy-Richardson
 deconvolution in the diffusion propagator with the goal to create sharper ODFs
 with higher angular resolution.
 
-In this example we will show how this method performs against standard DSI and
-a ground truth multi tensor ODF.
+In this example we will show with simulated data how this method's ODF performs
+against standard DSI ODF and a ground truth multi tensor ODF.
 """
 
 from dipy.sims.voxel import multi_tensor, multi_tensor_odf
@@ -20,7 +20,7 @@ from dipy.reconst.dsi import (DiffusionSpectrumDeconvModel,
 
 """
 For the simulation we will use a standard DSI acqusition scheme with 514
-gradient directions and 1 b-value=0.
+gradient directions and 1 S0.
 """
 
 btable = np.loadtxt(get_data('dsi515btable'))
@@ -59,7 +59,7 @@ dsid_model = DiffusionSpectrumDeconvModel(gtab)
 dsid_odf = dsid_model.fit(signal).odf(sphere)
 
 """
-Finally, we can visualize the ground truth ODF together, with the DSI and DSI
+Finally, we can visualize the ground truth ODF, together with the DSI and DSI
 with deconvolution ODFs and observe that with the deconvolved method it is
 easier to resolve the correct fiber directions because the ODF is sharper.
 """
