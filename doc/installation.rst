@@ -4,7 +4,7 @@
 Installation
 ############
 
-dipy_ is in active development at the moment. You can install it from our latest release, but you may find that the release has got well behind the current development - at least - we hope so - if we're developing fast enough!
+dipy_ is in active development at the moment. You can install it from our latest release, but you may find that the release has gotten well behind the current development - at least - we hope so - if we're developing fast enough!
 
 ********************
 Installing a release

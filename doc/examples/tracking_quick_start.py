@@ -3,7 +3,7 @@
 Tracking Quick Start
 ====================
 
-This example shows  how to perform fiber tracking using Dipy.
+This example shows how to perform fiber tracking using Dipy.
 
 We will use Constrained Spherical Deconvolution (CSD) [Tournier07]_ for local
 reconstructions and then generate deterministic streamlines using the fiber
@@ -68,8 +68,8 @@ csd_peaks = peaks_from_model(model=csd_model,
 """
 For the tracking part, we will use the fiber directions from the ``csd_model``
 but stop tracking in areas where fractional anisotropy (FA) is low (< 0.1).
-Of course, in order to use FA we need to perform some Tensor fitting first.
-Here, fit the Tensor using weighted least squares (WLS).
+To derive the FA, used here as a stopping criterion, we would need to fit a
+tensor model first. Here, we fit the Tensor using weighted least squares (WLS).
 """
 
 tensor_model = TensorModel(gtab, fit_method='WLS')
@@ -77,12 +77,19 @@ tensor_fit = tensor_model.fit(data, mask)
 
 FA = fractional_anisotropy(tensor_fit.evals)
 
+"""
+In order for the stopping values to be used with our tracking algorithm we need
+to have the same dimensions as the ``csd_peaks.peak_values``. For this reason,
+we can assign the same FA value to every peak direction in the same voxel in
+the following way.
+"""
+
 stopping_values = np.zeros(csd_peaks.peak_values.shape)
 stopping_values[:] = FA[..., None]
 
 """
 For quality assurance we can also visualize a slice from the direction field
-which we will use at the basis to perform the tracking.
+which we will use as the basis to perform the tracking.
 """
 
 ren = fvtk.ren()
@@ -101,12 +108,14 @@ fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
 
    **Direction Field (peaks)**
 
-``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate streamlines. If
-the parameter ``seeds`` is a positive integer it will generate random seeds
-everywhere in the volume or you can specify the exact seed points using
-an array (N, 3) where N is the number of seed points. For simplicity, here we
-will use the first option. ``a_low`` is the threshold of the fist parameter
-(``stopping_values``). There will be not tracking in regions with FA < 0.1
+``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate
+streamlines. If the parameter ``seeds`` is a positive integer it will generate
+that number of randomly placed seeds everywhere in the volume. Alternatively,
+you can specify the exact seed points using an array (N, 3) where N is the
+number of seed points. For simplicity, here we will use the first option
+(random seeds). ``a_low`` is the threshold of the fist parameter
+(``stopping_values``) which means that there will that tracking will stop in
+regions with FA < 0.1.
 """
 
 streamline_generator = EuDX(stopping_values,
@@ -134,11 +143,12 @@ fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(900, 900))
 
    **CSD-based streamlines using EuDX**
 
-We used above ``fvtk.record`` because we want to create a figure for the tutorial 
+We used above ``fvtk.record`` because we want to create a figure for the tutorial
 but you can visualize the same objects in 3D using ``fvtk.show(ren)``.
 
-For practice you could start playing with the number of seed points or even
-better specify seeds to be in specific regions of interest in the brain.
+To learn more about this process you could start playing with the number of
+seed points or even better specify seeds to be in specific regions of interest
+in the brain.
 
 ``fvtk`` gives some minimal interactivity however you can save the resulting
 streamlines in a Trackvis (.trk) format and load them for example with the

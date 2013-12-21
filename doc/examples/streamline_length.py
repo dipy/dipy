@@ -4,13 +4,13 @@ Streamline length and size reduction
 =====================================
 
 This example shows how to calculate the lengths of a set of streamlines and
-also how to compress the streamlines without reducing considerably their lengths
-or overall shape. 
+also how to compress the streamlines without considerably reducing their
+lengths or overall shape.
 
-A streamline in Dipy is represented as a numpy array of size 
+A streamline in Dipy is represented as a numpy array of size
 :math:`(N \times 3)` where each row of the array represent a 3D point of the
-streamline. A set of streamlines is represented with a list of 
-numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the 
+streamline. A set of streamlines is represented with a list of
+numpy arrays of size :math:`(N_i \times 3)` for :math:`i=1:M` where $M$ is the
 number of streamlines in the set.
 """
 
@@ -23,8 +23,8 @@ Let's first create a simple simulation of a bundle of streamlines using
 a cosine function.
 """
 
-def simulated_bundles(no_streamlines=50, no_pts=100):
-    t = np.linspace(-10, 10, no_pts)
+def simulated_bundles(no_streamlines=50, n_pts=100):
+    t = np.linspace(-10, 10, n_pts)
 
     bundle = []
     for i in np.linspace(3, 5, no_streamlines):
@@ -46,7 +46,7 @@ print('This bundle has %d streamlines' % len(bundle))
 """
 This bundle has 50 streamlines.
 
-Using the ``length`` function we can retrieve the lengths of each streamline. 
+Using the ``length`` function we can retrieve the lengths of each streamline.
 Below we show the histogram of the lengths of the streamlines.
 """
 
@@ -68,40 +68,40 @@ plt.savefig('length_histogram.png')
 
    **Histogram of lengths of the streamlines**
 
-``Length`` will return the length in the units of the coordinate system that 
+``Length`` will return the length in the units of the coordinate system that
 streamlines are currently. So, if the streamlines are in world coordinates then
-the lengths will be in millimeters (mm). If the streamlines are for example in 
-native image coordinates of voxel size 2mm isotropic then you will need to 
-multiply the lengths by 2 if you want them to correspond to mm. In this example 
+the lengths will be in millimeters (mm). If the streamlines are for example in
+native image coordinates of voxel size 2mm isotropic then you will need to
+multiply the lengths by 2 if you want them to correspond to mm. In this example
 we process simulated data without units, however this information is good to have
-in mind when you calculate lengths with real data. 
+in mind when you calculate lengths with real data.
 
 Next, let's find the number of points that each streamline has.
 """
 
-no_pts = [len(streamline) for streamline in bundle]
+n_pts = [len(streamline) for streamline in bundle]
 
 """
 Often, streamlines are represented with more points than what is actually
 necessary for specific applications. Also, sometimes every streamline has
 different number of points which could be of a trouble for some algorithms
-. The function ``downsample`` can be used to set the number of points of a 
-streamline at a specific number and at the same time enforce that all the 
+. The function ``downsample`` can be used to set the number of points of a
+streamline at a specific number and at the same time enforce that all the
 segments of the streamline will have equal length.
 """
 
 bundle_downsampled = [downsample(s, 12) for s in bundle]
-no_pts_ds = [len(s) for s in bundle_downsampled]
+n_pts_ds = [len(s) for s in bundle_downsampled]
 
 """
 Alternatively, the function ``approx_polygon_track`` allows to reduce the number
 of points so that they are more points in curvy regions and less points in
-less curvy regions. In contrast with ``downsample`` it does not enforce that 
+less curvy regions. In contrast with ``downsample`` it does not enforce that
 segments should be of equal size.
 """
 
 bundle_downsampled2 = [approx_polygon_track(s, 0.25) for s in bundle]
-no_pts_ds2 = [len(streamline) for streamline in bundle_downsampled2]
+n_pts_ds2 = [len(streamline) for streamline in bundle_downsampled2]
 
 """
 Both, ``downsample`` and ``approx_polygon_track`` can be thought as methods for
@@ -143,17 +143,17 @@ initial dataset.
 import matplotlib.pyplot as plt
 
 fig_hist, ax = plt.subplots(1)
-ax.hist(no_pts, color='r', histtype='step', label='initial')
-ax.hist(no_pts_ds, color='g', histtype='step', label='downsample (12)')
-ax.hist(no_pts_ds2, color='b', histtype='step', label='approx_polygon_track (0.25)')
+ax.hist(n_pts, color='r', histtype='step', label='initial')
+ax.hist(n_pts_ds, color='g', histtype='step', label='downsample (12)')
+ax.hist(n_pts_ds2, color='b', histtype='step', label='approx_polygon_track (0.25)')
 ax.set_xlabel('Number of points')
 ax.set_ylabel('Count')
 plt.show()
 plt.legend()
-plt.savefig('no_pts_histogram.png')
+plt.savefig('n_pts_histogram.png')
 
 """
-.. figure:: no_pts_histogram.png
+.. figure:: n_pts_histogram.png
    :align: center
 
    **Histogram of the number of points of the streamlines**

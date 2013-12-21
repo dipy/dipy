@@ -131,7 +131,7 @@ nib.save(mask_noise_img, 'mask_noise.nii.gz')
 
 noise_std = np.std(data[mask_noise, :])
 
-"""We can now compute the SNR for each DWI and for example, report SNR
+"""We can now compute the SNR for each DWI. For example, report SNR
 for DW images with gradient direction that lies the closest to
 the X, Y and Z axes.
 """
