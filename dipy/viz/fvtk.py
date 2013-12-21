@@ -1230,7 +1230,7 @@ def create_colormap(v, name='jet', auto=True):
 
 
 def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
-                 scale=2.2, norm=True, radial_scale=True):
+                 scale=2.2, norm=True, radial_scale=True, origin=None):
     """Plot many morphed spherical functions simultaneously.
 
     Parameters
@@ -1248,7 +1248,9 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
         Normalize `sphere_values`.
     radial_scale : bool,
         Scale sphere points according to odf values.
-
+    origin : 3-element array, optional
+        Moves the sphere_funcs to be centered on this xyz coordinate in the
+        volume. Default : [0, 0, 0]
     Returns
     -------
     actor : vtkActor
@@ -1280,7 +1282,6 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     grid_shape = np.array(sphere_values.shape[:3])
     faces = np.asarray(sphere.faces, dtype=int)
     vertices = sphere.vertices
-
     if sphere_values.shape[-1] != sphere.vertices.shape[0]:
         msg = 'Sphere.vertices.shape[0] should be the same as the '
         msg += 'last dimensions of sphere_values i.e. sphere_values.shape[-1]'
@@ -1291,7 +1292,6 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
 
     for ijk in np.ndindex(*grid_shape):
         m = sphere_values[ijk].copy()
-
         if norm:
             m /= abs(m).max()
 
@@ -1303,6 +1303,8 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
         xyz += scale * (ijk - grid_shape / 2.)[:, None]
 
         xyz = xyz.T
+        if origin is not None:
+            xyz = xyz + origin
 
         list_sq.append(xyz)
         if colormap is not None:
