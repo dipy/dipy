@@ -15,6 +15,8 @@ Examples
    examples_built/reconst_dsi
    examples_built/reconst_dsi_metrics
    examples_built/reconst_gqi
+   examples_built/reconst_shore
+   examples_built/reconst_shore_metrics
    examples_built/tracking_eudx_tensor
    examples_built/tracking_eudx_odf
    examples_built/probabilistic_tracking_odfs
