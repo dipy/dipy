@@ -46,7 +46,7 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
                                   mask=white_matter)
 
 """
-Now we can use EuDX track all of the white matter. To keep things reasonably
+Now we can use EuDX to track all of the white matter. To keep things reasonably
 fast we use 1 seed per voxel. We'll set ``a_low`` to be very low because we've
 already applied a white matter mask.
 """
@@ -236,7 +236,7 @@ other words the input space is assumed to be ``np.eye(4)``.
 You may have noticed that all of the functions above that allow streamlines to
 interact with volumes take an affine argument. This argument allows these
 functions to work with streamlines regardless of their coordinate system. For
-example even though we moved our track to "trackvis space", we can still
+example even though we moved our streamlines to "trackvis space", we can still
 compute the density map as long as we specify the right coordinate system.
 """
 

@@ -471,7 +471,7 @@ def _with_initialize(generator):
 
 @_with_initialize
 def target(streamlines, target_mask, affine=None, include=True):
-    """Filters tracks based on whether or not they pass though target_mask
+    """Filters streamlines based on whether or not they pass though target_mask
 
     Parameters
     ----------
