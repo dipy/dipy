@@ -21,4 +21,5 @@
  simulate_multi_tensor.py
  restore_dti.py
  streamline_length.py
-
+ reconst_shore.py
+ reconst_shore_metrics.py

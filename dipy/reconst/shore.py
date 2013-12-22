@@ -10,7 +10,7 @@ from math import factorial
 
 class ShoreModel(Cache):
 
-    r"""Simple Harmonic Oscillator based Reconstruction and Estimation 
+    r"""Simple Harmonic Oscillator based Reconstruction and Estimation
     (SHORE) [1]_ of the diffusion signal.
 
     The main idea is to model the diffusion signal as a linear combination of
@@ -23,11 +23,11 @@ class ShoreModel(Cache):
             \end{equation}
 
     where $\mathbf{q}$ is the wavector which corresponds to different gradient
-    directions. Numerous continuous functions $\phi_i$ can be used to model 
+    directions. Numerous continuous functions $\phi_i$ can be used to model
     $S$. Some are presented in [2,3,4]_.
 
-    From the $c_i$ coefficients, there exist analytical formulae to estimate 
-    the ODF, the return to the origin porbability (RTOP), the mean square 
+    From the $c_i$ coefficients, there exist analytical formulae to estimate
+    the ODF, the return to the origin porbability (RTOP), the mean square
     displacement (MSD), amongst others [5]_.
 
     References
@@ -47,8 +47,8 @@ class ShoreModel(Cache):
            EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
            Computational Diffusion MRI, 2011.
 
-    .. [5] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel 
-           diffusion imaging method for mapping tissue microstructure", 
+    .. [5] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+           diffusion imaging method for mapping tissue microstructure",
            NeuroImage, 2013.
     """
 
@@ -61,10 +61,10 @@ class ShoreModel(Cache):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the SHORE basis [1,2]_.
         This implementation is a modification of SHORE presented in [1]_.
-        The modification was made to obtain the same ordering of the basis 
+        The modification was made to obtain the same ordering of the basis
         presented in [2,3]_.
 
-        The main idea is to model the diffusion signal as a linear 
+        The main idea is to model the diffusion signal as a linear
         combination of continuous functions $\phi_i$,
 
         ..math::
@@ -73,7 +73,7 @@ class ShoreModel(Cache):
                     S(\mathbf{q})= \sum_{i=0}^I  c_{i} \phi_{i}(\mathbf{q}).
                 \end{equation}
 
-        where $\mathbf{q}$ is the wavector which corresponds to different 
+        where $\mathbf{q}$ is the wavector which corresponds to different
         gradient directions.
 
         From the $c_i$ coefficients, there exists an analytical formula to
@@ -98,22 +98,22 @@ class ShoreModel(Cache):
 
         References
         ----------
-        .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and 
+        .. [1] Merlet S. et al., "Continuous diffusion signal, EAP and
         ODF estimation via Compressive Sensing in diffusion MRI", Medical
         Image Analysis, 2013.
 
-        .. [2] Cheng J. et. al, "Theoretical Analysis and eapactical Insights
-        on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on 
+        .. [2] Cheng J. et al., "Theoretical Analysis and eapactical Insights
+        on EAP Estimation via a Unified HARDI Framework", MICCAI workshop on
         Computational Diffusion MRI, 2011.
 
-        .. [3] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel 
-           diffusion imaging method for mapping tissue microstructure", 
+        .. [3] Ozarslan E. et al., "Mean apparent propagator (MAP) MRI: A novel
+           diffusion imaging method for mapping tissue microstructure",
            NeuroImage, 2013.
 
         Examples
         --------
         In this example, where the data, gradient table and sphere tessellation
-        used for reconstruction are provided, we model the diffusion signal 
+        used for reconstruction are provided, we model the diffusion signal
         with respect to the SHORE basis and compute the real and analytical
         ODF.
 
@@ -129,7 +129,7 @@ class ShoreModel(Cache):
         from dipy.reconst.canal import ShoreModel
         radial_order = 4
         zeta = 700
-        asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, 
+        asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta,
                          lambdaN=1e-8, lambdaL=1e-8)
         asmfit = asm.fit(data)
         odf= asmfit.odf(sphere)
@@ -206,7 +206,7 @@ class ShoreFit():
             dimension of the propagator grid
         radius_max : float
             maximal radius in which to compute the propagator
-        
+
         Returns
         -------
         eap : ndarray
@@ -284,12 +284,12 @@ class ShoreFit():
 
     def rtop_signal(self):
         r""" Calculates the analytical return to origin probability (RTOP)
-        from the signal [1]_.  
-        
+        from the signal [1]_.
+
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel 
-        diffusion imaging method for mapping tissue microstructure", 
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
         """
         rtop = 0
@@ -303,13 +303,13 @@ class ShoreFit():
         return np.clip(rtop, 0, rtop.max())
 
     def rtop_pdf(self):
-        r""" Calculates the analytical return to origin probability (RTOP) 
-        from the pdf [1]_.  
-        
+        r""" Calculates the analytical return to origin probability (RTOP)
+        from the pdf [1]_.
+
         References
         ----------
-        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel 
-        diffusion imaging method for mapping tissue microstructure", 
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
         NeuroImage, 2013.
         """
         rtop = 0
@@ -371,9 +371,9 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
             :nowrap:
                 \begin{equation}
                     \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
-                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2} 
-                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2} 
-                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr) 
+                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
+                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
+                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
                         L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
                         Y_l^m(\textbf{u}).
                 \end{equation}
@@ -391,7 +391,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
 
     References
     ----------
-    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and 
+    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and
     ODF estimation via Compressive Sensing in diffusion MRI", Medical
     Image Analysis, 2013.
 
@@ -440,7 +440,7 @@ def shore_matrix_pdf(radial_order, zeta, rtab):
 
     References
     ----------
-    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and 
+    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and
     ODF estimation via Compressive Sensing in diffusion MRI", Medical
     Image Analysis, 2013.
     """
@@ -479,12 +479,12 @@ def shore_matrix_odf(radial_order, zeta, sphere_vertices):
         scale factor
     sphere_vertices : array, shape (N,3)
         vertices of the odf sphere
-    
+
     References
     ----------
-    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and 
+    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and
     ODF estimation via Compressive Sensing in diffusion MRI", Medical
-    Image Analysis, 2013.    
+    Image Analysis, 2013.
     """
 
     r, theta, phi = cart2sphere(sphere_vertices[:, 0], sphere_vertices[:, 1],
@@ -541,7 +541,7 @@ def n_shore(radial_order):
 
 
 def create_rspace(gridsize, radius_max):
-    """ Create the real space table, that contains the points in which 
+    """ Create the real space table, that contains the points in which
         to compute the pdf.
 
     Parameters
@@ -591,9 +591,9 @@ def shore_indices(radial_order, index):
             :nowrap:
                 \begin{equation}
                     \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
-                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2} 
-                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2} 
-                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr) 
+                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
+                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
+                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
                         L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
                         Y_l^m(\textbf{u}).
                 \end{equation}
@@ -612,7 +612,7 @@ def shore_indices(radial_order, index):
     l :  unsigned int
         the index l of the modified shore basis
     m :  unsigned int
-        the index m of the modified shore basis        
+        the index m of the modified shore basis
     """
 
     F = radial_order / 2
@@ -639,7 +639,7 @@ def shore_indices(radial_order, index):
 def shore_order(n, l, m):
     r"""Given the indices (n,l,m) of the basis, return the minimum order
     for those indices and their index for modified Merlet's 3D-SHORE.
-    
+
     Parameters
     ----------
     n :  unsigned int
@@ -647,7 +647,7 @@ def shore_order(n, l, m):
     l :  unsigned int
         the index l of the modified shore basis
     m :  unsigned int
-        the index m of the modified shore basis  
+        the index m of the modified shore basis
 
     Returns
     -------
@@ -655,12 +655,12 @@ def shore_order(n, l, m):
         an even integer that represent the maximal order of the basis
     index : unsigned int
         index of the coefficient correspondig to (n,l,m), start from 0
-      
+
     """
     if l % 2 == 1 or l > n or l < 0 or n < 0  or np.abs(m) > l:
         msg = "The index l must be even and 0 <= l <= n, the index m must be -l <= m <= l."
         raise ValueError(msg)
-    else: 
+    else:
         if n % 2 == 1:
             radial_order = n + 1
         else:
