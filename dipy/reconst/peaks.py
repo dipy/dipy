@@ -171,7 +171,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
             nbr_processes = cpu_count()
         except NotImplementedError:
             warn("Cannot determine number of cpus. \
-                 returns peaks_from_model(..., paralle=False).")
+                 returns peaks_from_model(..., parallel=False).")
             return peaks_from_model(model, data, sphere,
                                     relative_peak_threshold,
                                     min_separation_angle, mask, return_odf,
@@ -455,16 +455,16 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
         if pk.shape[0] != 0:
             global_max = max(global_max, pk[0])
 
-        n = min(npeaks, pk.shape[0])
-        qa_array[idx][:n] = pk[:n] - odf.min()
+            n = min(npeaks, pk.shape[0])
+            qa_array[idx][:n] = pk[:n] - odf.min()
 
-        peak_dirs[idx][:n] = direction[:n]
-        peak_indices[idx][:n] = ind[:n]
-        peak_values[idx][:n] = pk[:n]
+            peak_dirs[idx][:n] = direction[:n]
+            peak_indices[idx][:n] = ind[:n]
+            peak_values[idx][:n] = pk[:n]
 
-        if normalize_peaks:
-            peak_values[idx][:n] /= pk[0]
-            peak_dirs[idx] *= peak_values[idx][:, None]
+            if normalize_peaks:
+                peak_values[idx][:n] /= pk[0]
+                peak_dirs[idx] *= peak_values[idx][:, None]
 
     qa_array /= global_max
 
