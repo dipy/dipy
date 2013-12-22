@@ -12,6 +12,7 @@ from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi
 from dipy.data import get_sphere
 from scipy.special import genlaguerre
 
+
 def test_shore_metrics():
     fetch_taiwan_ntu_dsi()
     img, gtab = read_taiwan_ntu_dsi()
@@ -60,8 +61,8 @@ def test_shore_metrics():
     # test if the analytical integral of the pdf is equal to one
     integral = 0
     for n in range(int((radial_order)/2 +1)):
-        integral += c_shore[n] * (np.pi**(-1.5) * zeta **(-1.5) * genlaguerre(n,0.5)(0)) ** 0.5       
-                
+        integral += c_shore[n] * (np.pi**(-1.5) * zeta **(-1.5) * genlaguerre(n,0.5)(0)) ** 0.5
+
     assert_almost_equal(integral, 1.0, 10)
 
     # test if the integral of the pdf calculated on a discrete grid is equal to one
@@ -70,15 +71,13 @@ def test_shore_metrics():
     assert_almost_equal(integral, 1.0, 1)
 
     # compare the shore pdf with the ground truth multi_tensor pdf
-    mevecs2 = np.zeros((2, 3, 3))
-    angl = np.array(angl)
-    for i in range(2):
-        mevecs2[i] = all_tensor_evecs(sticks[i]).T
+
     sphere = get_sphere('symmetric724')
     v = sphere.vertices
     radius = 10e-3
     pdf_shore = asmfit.pdf(v * radius)
-    pdf_mt = multi_tensor_pdf(v * radius, [.5, .5], mevals=mevals, mevecs=mevecs2)
+    pdf_mt = multi_tensor_pdf(v * radius, mevals=mevals,
+                              angles=angl, fractions= [50, 50])
     nmse_pdf = np.sqrt(np.sum((pdf_mt - pdf_shore) ** 2)) / (pdf_mt.sum())
     assert_almost_equal(nmse_pdf, 0.0, 2)
 

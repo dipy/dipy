@@ -369,7 +369,8 @@ def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     mevals : sequence of 1D arrays,
         Eigen-values for each tensor.
     angles : sequence of 2d tuples,
-        principal directions for each tensor
+        Sequence of principal directions for each tensor in polar angles
+        or cartesian unit coordinates.
     fractions : sequence of floats,
         Percentages of the fractions for each tensor.
 
@@ -528,21 +529,22 @@ def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
     return pdf.reshape(out_shape)
 
 
-def multi_tensor_pdf(pdf_points, mf, mevals=None, mevecs=None, tau=1 / (4 * np.pi ** 2)):
+def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
+                     tau=1 / (4 * np.pi ** 2)):
     r'''Simulate a Multi-Tensor ODF.
 
     Parameters
     ----------
-    odf_verts : (N,3) ndarray
-        Vertices of the reconstruction sphere.
-    mf : sequence of floats, bounded [0,1]
-        Percentages of the fractions for each tensor.
+    pdf_points : (N, 3) ndarray
+        Points to evaluate the PDF.
     mevals : sequence of 1D arrays,
         Eigen-values for each tensor.  By default, values typical for prolate
         white matter are used.
-    mevecs : sequence of 3D arrays,
-        Eigenvectors for each tensor.  You can also think of these
-        as the rotation matrices that align the different tensors.
+    angles : sequence,
+        Sequence of principal directions for each tensor in polar angles
+        or cartesian unit coordinates.
+    fractions : sequence of floats,
+        Percentages of the fractions for each tensor.
     tau : float,
         diffusion time. By default the value that makes q=sqrt(b).
 
@@ -553,17 +555,25 @@ def multi_tensor_pdf(pdf_points, mf, mevals=None, mevecs=None, tau=1 / (4 * np.p
 
     References
     ----------
-    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
-           Its Features in Diffusion MRI", PhD Thesis, 2012.
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and its Features in Diffusion MRI", PhD Thesis, 2012.
 
     '''
+    mf = [f / 100. for f in fractions]
+
+    angles = np.array(angles)
+    if angles.shape[-1] == 3:
+        sticks = angles
+    else:
+        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
+                  for pair in angles]
+        sticks = np.array(sticks)
+
     pdf = np.zeros(len(pdf_points))
 
-    if mevals is None:
-        mevals = [None, ] * len(mf)
-
-    if mevecs is None:
-        mevecs = [np.eye(3) for i in range(len(mf))]
+    mevecs = []
+    for s in sticks:
+        mevecs += [all_tensor_evecs(s).T]
 
     for j, f in enumerate(mf):
         pdf += f * single_tensor_pdf(pdf_points,
@@ -625,7 +635,7 @@ def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
 
     '''
     msd = 0
-    
+
     if mevals is None:
         mevals = [None, ] * len(mf)
 
