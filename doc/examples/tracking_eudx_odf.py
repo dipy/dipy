@@ -5,7 +5,7 @@ Deterministic Tracking with EuDX on ODF Peaks
 =============================================
 
 In this example we do deterministic fiber tracking on fields of ODF peaks. EuDX
-(Garyfallidis, PhD thesis, 2012) will be used for this.
+[Garyfallidis12]_ will be used for this.
 
 This example requires importing example `reconst_csa.py` in order to run. EuDX was
 primarily made with cpu efficiency in mind. The main idea can be used with any
@@ -99,6 +99,8 @@ fvtk.record(r, n_frames=1, out_path='csa_tracking_mpeaks.png', size=(600, 600))
    :align: center
 
    **Deterministic streamlines with EuDX on multiple ODF peaks**.
+
+.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 
 .. include:: ../links_names.inc
 """

@@ -30,7 +30,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         as *a priori* knowledge. The response function is often data-driven and thus,
         comes as input to the ConstrainedSphericalDeconvModel. It will be used as deconvolution
         kernel, as described in [1]_.
-    
+
         Parameters
         ----------
         gtab : GradientTable
@@ -107,7 +107,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-        # This is exactly what is done in [4]_ 
+        # This is exactly what is done in [4]_
         self.lambda_ = lambda_ * self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
         self.sh_order = sh_order
         self.tau = tau
@@ -123,13 +123,13 @@ class ConstrainedSDTModel(OdfModel, Cache):
 
     def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1., tau=0.1):
         r""" Spherical Deconvolution Transform (SDT) [1]_.
-        
+
         The SDT computes a fiber orientation distribution (FOD) as opposed to a diffusion
         ODF as the QballModel or the CsaOdfModel. This results in a sharper angular
         profile with better angular resolution. The Contrained SDTModel is similar
         to the Constrained CSDModel but mathematically it deconvolves the q-ball ODF
         as oppposed to the HARDI signal (see [1]_ for a comparison and a through discussion).
-        
+
         A sharp fODF is obtained because a single fiber *response* function is injected
         as *a priori* knowledge. In the SDTModel, this response is a single fiber q-ball
         ODF as opposed to a single fiber signal function for the CSDModel. The response function
@@ -146,7 +146,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
             maximal spherical harmonics order
         lambda_ : float
             weight given to the constrained-positivity regularization part of the
-            deconvolution equation 
+            deconvolution equation
         tau : float
             threshold (tau *mean(fODF)) controlling the amplitude below
             which the corresponding fODF is assumed to be zero.
@@ -338,16 +338,17 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     Parameters
     ----------
     ratio : float
-        ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response function
+        ratio = $\frac{\lambda_2}{\lambda_1}$ of the single fiber response 
+        function
     n : ndarray (N,)
         The degree of spherical harmonic function associated with each row of
         the deconvolution matrix. Only even degrees are allowed.
     r2_term : bool
-        True if ODF comes from an ODF computed from a model using the $r^2$ term in the integral.
-        For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor ODFs. This results in using
-        the proper analytical response function solution solving from the single-fiber ODF
-        with the r^2 term. This derivation is not published anywhere but is very similar to
-        [1]_. 
+        True if ODF comes from an ODF computed from a model using the $r^2$ term
+        in the integral. For example, DSI, GQI, SHORE, CSA, Tensor, Multi-tensor
+        ODFs. This results in using the proper analytical response function 
+        solution solving from the single-fiber ODF with the r^2 term. This 
+        derivation is not published anywhere but is very similar to [1]_. 
 
     Returns
     -------
@@ -425,7 +426,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     """
 
     # generate initial fODF estimate, truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, s_sh)[0] #fodf_sh, = np.linalg.lstsq(R, s_sh) # R\s_sh
+    fodf_sh = np.linalg.lstsq(R, s_sh)[0] 
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_reg, fodf_sh)
@@ -450,14 +451,20 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
         k = k2
 
-        # This is the super-resolved trick. 
-        # Wherever there is a negative amplitude value on the fODF, it concatinates a value
-        # to the S vector so that the estimation can focus on trying to eliminate it.
-        # In a sense, this "adds" a measurement, which can help to better estimate the fodf_sh,
-        # even if you have more SH coeffcients to estimate than actual S measurements. 
+        # This is the super-resolved trick.
+        # Wherever there is a negative amplitude value on the fODF, it 
+        # concatinates a value to the S vector so that the estimation can 
+        # focus on trying to eliminate it. In a sense, this "adds" a 
+        # measurement, which can help to better estimate the fodf_sh, even if 
+        # you have more SH coeffcients to estimate than actual S measurements.
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         S = np.concatenate((s_sh, np.zeros(k.shape)))
-        fodf_sh = np.linalg.lstsq(M, S)[0]
+        try:
+            fodf_sh = np.linalg.lstsq(M, S)[0]
+        except np.linalg.LinAlgError as lae:
+            # SVD did not converge in Linear Least Squares in current 
+            # voxel. Proceeding with initial SH estimate for this voxel.
+            pass
 
     warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
@@ -537,7 +544,12 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         k = k2
         M = np.concatenate((R, lambda_ * B_reg[k, :]))
         ODF = np.concatenate((odf_sh, np.zeros(k.shape)))
-        fodf_sh = np.linalg.lstsq(M, ODF)[0]  
+        try:
+            fodf_sh = np.linalg.lstsq(M, ODF)[0]
+        except np.linalg.LinAlgError as lae:
+            # SVD did not converge in Linear Least Squares in current 
+            # voxel. Proceeding with initial SH estimate for this voxel.
+            pass
 
     warnings.warn('maximum number of iterations exceeded - failed to converge')
     return fodf_sh, num_it
@@ -553,14 +565,14 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     and will not only sharp the ODF peaks but also regularize the noisy peaks.
 
     Parameters
-    ---------- 
+    ----------
     odfs_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, )
         array of odfs expressed as spherical harmonics coefficients
     sphere : Sphere
-        sphere used to build the regularization matrix    
+        sphere used to build the regularization matrix
     basis : {None, 'mrtrix', 'fibernav'}
         different spherical harmonic basis. None is the fibernav basis as well.
-    ratio : float, 
+    ratio : float,
         ratio of the smallest vs the largest eigenvalue of the single prolate tensor response function
         (:math:`\frac{\lambda_2}{\lambda_1}`)
     sh_order : int
@@ -613,7 +625,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
 
 
 def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
-    """ Automatic estimation of response function using FA 
+    """ Automatic estimation of response function using FA
 
     Parameters
     ----------
@@ -637,19 +649,19 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
 
     Notes
     -----
-    In CSD there is an important pre-processing step: the estimation of the 
-    fiber response function. In order to do this we look for voxel with very 
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. In order to do this we look for voxels with very
     anisotropic configurations. For example we can use an ROI (20x20x20) at
     the center of the volume and store the signal values for the voxels with
-    FA values higher than 0.7. Of course, if we haven't precalculated FA we 
+    FA values higher than 0.7. Of course, if we haven't precalculated FA we
     need to fit a Tensor model to the datasets. Which is what we do  in this
-    function. 
+    function.
 
     For the response we also need to find the average S0 in the ROI. This is
-    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which 
+    possible using `gtab.b0s_mask()` we can find all the S0 volumes (which
     correspond to b-values equal 0) in the dataset.
 
-    The `response` consists always of a prolate tensor created by averaging 
+    The `response` consists always of a prolate tensor created by averaging
     the highest and second highest eigenvalues in the ROI with FA higher than
     threshold. We also include the average S0s.
 

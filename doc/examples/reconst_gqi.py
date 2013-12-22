@@ -3,7 +3,7 @@
 Reconstruct with Generalized Q-Sampling Imaging
 ===============================================
 
-We show how to apply Generalized Q-Sampling Imaging (Yeh et al. IEEE TMI 2010)
+We show how to apply Generalized Q-Sampling Imaging [Yeh2010]_
 to diffusion MRI datasets. You can think of GQI as an analytical version of
 DSI orientation distribution function (ODF) (Garyfallidis, PhD thesis, 2012).
 
@@ -136,6 +136,9 @@ True
 
 The advantage of using peaks_from_models is that it calculates the ODF only once and
 saves it or deletes if it is not necessary to keep.
+
+.. [Yeh2010] Yeh, F-C et al., Generalized Q-sampling imaging, IEEE 
+             Transactions on Medical Imaging, vol 29, no 9, 2010. 
 
 .. include:: ../links_names.inc
 

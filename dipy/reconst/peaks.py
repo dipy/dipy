@@ -452,8 +452,10 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
                                              min_separation_angle)
 
         # Calculate peak metrics
-        global_max = max(global_max, pk[0])
-        n = min(npeaks, len(pk))
+        if pk.shape[0] != 0:
+            global_max = max(global_max, pk[0])
+
+        n = min(npeaks, pk.shape[0])
         qa_array[idx][:n] = pk[:n] - odf.min()
 
         peak_dirs[idx][:n] = direction[:n]

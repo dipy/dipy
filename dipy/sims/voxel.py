@@ -235,9 +235,9 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     S0 : float
         Unweighted signal value (b0 signal).
     angles : array (K,2) or (K,3)
-        List of K tensor directions in polar angles (in degrees) or unit vectors  
+        List of K tensor directions in polar angles (in degrees) or unit vectors
     fractions : float
-        Percentage of the contribution of each tensor. The sum of factions 
+        Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
     snr : float
         Signal to noise ratio, assuming Rician noise.  If set to None, no
@@ -359,21 +359,19 @@ def all_tensor_evecs(e0):
     return np.array([e0, e1, e2])
 
 
-def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
+def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     r'''Simulate a Multi-Tensor ODF.
 
     Parameters
     ----------
     odf_verts : (N,3) ndarray
         Vertices of the reconstruction sphere.
-    mf : sequence of floats, bounded [0,1]
-        Percentages of the fractions for each tensor.
     mevals : sequence of 1D arrays,
-        Eigen-values for each tensor.  By default, values typical for prolate
-        white matter are used.
-    mevecs : sequence of 3D arrays,
-        Eigenvectors for each tensor.  You can also think of these
-        as the rotation matrices that align the different tensors.
+        Eigen-values for each tensor.
+    angles : sequence of 2d tuples,
+        principal directions for each tensor
+    fractions : sequence of floats,
+        Percentages of the fractions for each tensor.
 
     Returns
     -------
@@ -389,22 +387,29 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
     >>> from dipy.data import get_sphere
     >>> sphere = get_sphere('symmetric724')
     >>> vertices, faces = sphere.vertices, sphere.faces
-    >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
-    >>> e0 = np.array([1, 0, 0.])
-    >>> e1 = np.array([0., 1, 0])
-    >>> mevecs=[all_tensor_evecs(e0), all_tensor_evecs(e1)]
-    >>> odf = multi_tensor_odf(vertices, [0.5,0.5], mevals, mevecs)
+    >>> mevals = np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
+    >>> angles = [(0, 0), (90, 0)]
+    >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
 
     '''
+
+    mf = [f / 100. for f in fractions]
+
+    angles = np.array(angles)
+    if angles.shape[-1] == 3:
+        sticks = angles
+    else:
+        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
+                  for pair in angles]
+        sticks = np.array(sticks)
+
     odf = np.zeros(len(odf_verts))
 
-    if mevals is None:
-        mevals = [None, ] * len(mf)
+    mevecs = []
+    for s in sticks:
+        mevecs += [all_tensor_evecs(s).T]
 
-    if mevecs is None:
-        mevecs = [np.eye(3) for i in range(len(mf))]
-
-    for j, f in enumerate(mf):
+    for (j, f) in enumerate(mf):
         odf += f * single_tensor_odf(odf_verts,
                                      evals=mevals[j], evecs=mevecs[j])
     return odf

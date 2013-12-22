@@ -4,7 +4,7 @@ Using the RESTORE algorithm for robust tensor fitting
 =====================================================
 
 The diffusion tensor model takes into account certain kinds of noise (thermal),
-but not other kinds, such as 'physiological' noise. For example, if a subject
+but not other kinds, such as "physiological" noise. For example, if a subject
 moves during the acquisition of one of the diffusion-weighted samples, this
 might have a substantial effect on the parameters of the tensor fit calculated
 in all voxels in the brain for that subject. One of the pernicious consequences
@@ -22,19 +22,12 @@ model without the presence of these outliers. This is often referred to as
 is called RESTORE, and was first proposed by Chang et al. [2]_.
 
 In the following example, we will demonstrate how to use RESTORE on a simulated
-data-set, which we will corrupt by adding intermittent noise.
+dataset, which we will corrupt by adding intermittent noise.
 
-We start by importing a few of the libraries we will use. ``Numpy`` for numeric
-computation: 
-
+We start by importing a few of the libraries we will use.
 """
 
 import numpy as np
-
-"""
-``nibabel`` is for loading imaging datasets
-"""
-
 import nibabel as nib
 
 """
@@ -52,18 +45,17 @@ reload(dti)
 import dipy.data as dpd
 
 """
-
 ``dipy.viz.fvtk`` is used for 3D visualization and matplotlib for 2D
 visualizations:
-
 """
+
 import dipy.viz.fvtk as fvtk
 import matplotlib.pyplot as plt
 
 """
 If needed, the fetch_stanford_hardi function will download the raw dMRI dataset
 of a single subject. The size of this dataset is 87 MBytes. You only need to
-fetch once. 
+fetch once.
 """
 
 dpd.fetch_stanford_hardi()
@@ -71,7 +63,7 @@ img, gtab = dpd.read_stanford_hardi()
 
 """
 We initialize a DTI model class instance using the gradient table used in the
-measurement. Per default, dti.Tensor model will use a weighted least-squares
+measurement. By default, dti.Tensor model will use a weighted least-squares
 algorithm (described in [2]_) to fit the parameters of the model. We initialize
 this model as a baseline for comparison of noise-corrupted models:
 """
@@ -81,7 +73,7 @@ dti_wls = dti.TensorModel(gtab)
 """
 For the purpose of this example, we will focus on the data from a region of
 interest (ROI) surrounding the Corpus Callosum. We define that ROI as the
-following indices: 
+following indices:
 """
 
 roi_idx = (slice(20,50), slice(55,85), slice(38,39))
@@ -94,8 +86,8 @@ data = img.get_data()[roi_idx]
 
 """
 This data-set is not very noisy, so we will artificially corrupt it to simulate
-the effects of 'physiological' noise, such as subject motion. But first, let's
-establish a baseline, using the data as it is:   
+the effects of "physiological" noise, such as subject motion. But first, let's
+establish a baseline, using the data as it is:
 """
 
 fit_wls = dti_wls.fit(data)
@@ -110,10 +102,10 @@ sphere = dpd.get_sphere('symmetric724')
 We visualize the ODFs in the ROI using fvtk:
 """
 
-r = fvtk.ren()
-fvtk.add(r, fvtk.tensor(evals1, evecs1, cfa1, sphere))
+ren = fvtk.ren()
+fvtk.add(ren, fvtk.tensor(evals1, evecs1, cfa1, sphere))
 print('Saving illustration as tensor_ellipsoids_wls.png')
-fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls.png',
+fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_wls.png',
             size=(600, 600))
 
 """
@@ -123,7 +115,7 @@ fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls.png',
    **Tensor Ellipsoids**.
 """
 
-fvtk.clear(r)
+fvtk.clear(ren)
 
 """
 Next, we corrupt the data with some noise. To simulate a subject that moves
@@ -144,16 +136,16 @@ evals2 = fit_wls_noisy.evals
 evecs2 = fit_wls_noisy.evecs
 cfa2 = dti.color_fa(fa2, evecs2)
 
-r = fvtk.ren()
-fvtk.add(r, fvtk.tensor(evals2, evecs2, cfa2, sphere))
+ren = fvtk.ren()
+fvtk.add(ren, fvtk.tensor(evals2, evecs2, cfa2, sphere))
 print('Saving illustration as tensor_ellipsoids_wls_noisy.png')
-fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_wls_noisy.png',
+fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_wls_noisy.png',
             size=(600, 600))
 
 
 """
 In places where the tensor model is particularly sensitive to noise, the
-resulting ODF field will be distorted 
+resulting tensor field will be distorted
 
 .. figure:: tensor_ellipsoids_wls_noisy.png
    :align: center
@@ -180,7 +172,7 @@ a proof of that fact, see the following derivation_.)
 .. _derivation: http://nbviewer.ipython.org/4287207
 
 Therefore, we apply a small-sample correction. In this case, the bias is rather
-small: 
+small:
 """
 
 from scipy.special import gamma
@@ -201,10 +193,10 @@ evals3 = fit_restore_noisy.evals
 evecs3 = fit_restore_noisy.evecs
 cfa3 = dti.color_fa(fa3, evecs3)
 
-r = fvtk.ren()
-fvtk.add(r, fvtk.tensor(evals3, evecs3, cfa3, sphere))
+ren = fvtk.ren()
+fvtk.add(ren, fvtk.tensor(evals3, evecs3, cfa3, sphere))
 print('Saving illustration as tensor_ellipsoids_restore_noisy.png')
-fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
+fvtk.record(ren, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
             size=(600, 600))
 
 """
@@ -213,7 +205,7 @@ fvtk.record(r, n_frames=1, out_path='tensor_ellipsoids_restore_noisy.png',
 
    **Tensor Ellipsoids from noisy data recovered with RESTORE**.
 
-The tensor ODF field looks rather restored to its noiseless state in this
+The tensor field looks rather restored to its noiseless state in this
 image, but to convince ourselves further that this did the right thing, we will
 compare  the distribution of FA in this region relative to the baseline, using
 the RESTORE estimate and the WLS estimate.
@@ -247,14 +239,14 @@ fibers cross), you might want to use a different method to fit your data.
 References
 ----------
 
-.. [1] Yendikia, A, Koldewynb, K, Kakunooria, S, Kanwisher, N, and Fischl,
+.. [1] Yendiki, A, Koldewynb, K, Kakunooria, S, Kanwisher, N, and Fischl,
        B. (2013). Spurious group differences due to head motion in a diffusion
-       MRI study. Neuroimage, 
+       MRI study. Neuroimage.
 
 .. [2] Chang, L-C, Jones, DK and Pierpaoli, C (2005). RESTORE: robust estimation
-       of tensors by outlier rejection. MRM, 53: 1088-95. 
+       of tensors by outlier rejection. MRM, 53: 1088-95.
 
-.. [3] Chung, SW., Lu, Y., Henry, R.G., 2006. Comparison of bootstrap
+.. [3] Chung, SW, Lu, Y, Henry, R-G, (2006). Comparison of bootstrap
        approaches for estimation of uncertainties of DTI parameters.
        NeuroImage 33, 531-541.
 

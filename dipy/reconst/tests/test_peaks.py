@@ -158,18 +158,12 @@ def _create_mt_sim(mevals, angles, fractions, S0, SNR, half_sphere=False):
 
     sphere = get_sphere('symmetric724').subdivide(2)
 
-    mevecs = []
-    for i in range(sticks.shape[0]):
-        mevecs += [all_tensor_evecs(sticks[i]).T]
-
-    fractions = np.array(fractions)
-    fracts = fractions / 100.
-
     if half_sphere:
 
         sphere = HemiSphere.from_sphere(sphere)
 
-    odf_gt = multi_tensor_odf(sphere.vertices, fracts, mevals, mevecs)
+    odf_gt = multi_tensor_odf(sphere.vertices, mevals,
+                              angles=angles, fractions=fractions)
 
     return odf_gt, sticks, sphere
 

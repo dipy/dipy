@@ -2,7 +2,7 @@
    and name substitutions.  It may be included in many files,
    therefore it should only contain link targets and name
    substitutions.  Try grepping for "^\.\. _" to find plausible
-   candidates for this list.  
+   candidates for this list.
 
 .. NOTE: reST targets are
    __not_case_sensitive__, so only one target definition is needed for
@@ -77,6 +77,8 @@
 .. _pythonxy: http://www.pythonxy.com
 .. _ETS: http://code.enthought.com/projects/tool-suite.php
 .. _`Enthought Tool Suite`: http://code.enthought.com/projects/tool-suite.php
+.. _canopy: https://www.enthought.com/products/canopy
+.. _anaconda: http://continuum.io/downloads
 .. _python: http://www.python.org
 .. _mayavi: http://mayavi.sourceforge.net/
 .. _sympy: http://code.google.com/p/sympy/
@@ -104,6 +106,7 @@
 .. _voxbo: http://www.voxbo.org
 .. _mricron: http://www.mccauslandcenter.sc.edu/mricro/mricron/index.html
 .. _slicer: http://www.slicer.org/
+.. _fibernavigator: https://github.com/scilus/fibernavigator
 
 .. File formats
 .. _DICOM: http://medical.nema.org/

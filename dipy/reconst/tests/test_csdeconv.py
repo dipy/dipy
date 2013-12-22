@@ -35,15 +35,14 @@ def test_csdeconv():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (60, 0)],
+    angles = [(0, 0), (60, 0)]
+
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
                              fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric362')
 
-    mevecs = [all_tensor_evecs(sticks[0]).T,
-              all_tensor_evecs(sticks[1]).T]
-
-    odf_gt = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
+    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
 
@@ -74,6 +73,10 @@ def test_csdeconv():
         ConstrainedSphericalDeconvModel(gtab, response, sh_order=8)
         assert_equal(len(w) > 0, False)
 
+    mevecs = []
+    for s in sticks:
+        mevecs += [all_tensor_evecs(s).T]
+
     S2 = single_tensor(gtab, 100, mevals[0], mevecs[0], snr=None)
     big_S = np.zeros((10, 10, 10, len(S2)))
     big_S[:] = S2
@@ -100,15 +103,13 @@ def test_odfdeconv():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (90, 0)],
+    angles = [(0, 0), (90, 0)]
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
                              fractions=[50, 50], snr=SNR)
 
     sphere = get_sphere('symmetric362')
 
-    mevecs = [all_tensor_evecs(sticks[0]).T,
-              all_tensor_evecs(sticks[1]).T]
-
-    odf_gt = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
+    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
 
     e1 = 15.0
     e2 = 3.0
@@ -217,14 +218,12 @@ def test_r2_term_odf_sharp():
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
 
-    S, sticks = multi_tensor(gtab, mevals, S0, angles=[(0, 0), (angle, 0)],
-                             fractions=[50, 50], snr=SNR)
-    
-    
-    mevecs = [all_tensor_evecs(sticks[0]).T,
-              all_tensor_evecs(sticks[1]).T]
+    angles = [(0, 0), (angle, 0)]
 
-    odf_gt = multi_tensor_odf(sphere.vertices, [0.5, 0.5], mevals, mevecs)
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
+                             fractions=[50, 50], snr=SNR)    
+
+    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     odfs_sh = sf_to_sh(odf_gt, sphere, sh_order=8, basis_type=None)
     fodf_sh = odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15.,
                               sh_order=8, lambda_=1., tau=0.1, r2_term=True)
