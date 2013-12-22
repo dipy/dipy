@@ -65,8 +65,8 @@ sphere = get_sphere('symmetric724')
 csapeaks = peaks_from_model(model=csamodel,
                             data=maskdata,
                             sphere=sphere,
-                            relative_peak_threshold=.8,
-                            min_separation_angle=45,
+                            relative_peak_threshold=.5,
+                            min_separation_angle=25,
                             mask=mask,
                             return_odf=False,
                             normalize_peaks=True)

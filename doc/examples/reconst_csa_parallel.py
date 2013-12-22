@@ -62,16 +62,16 @@ sphere = get_sphere('symmetric724')
 
 start_time = time.time()
 csapeaks_parallel = peaks_from_model(model=csamodel,
-                                     data=data,
+                                     data=maskdata,
                                      sphere=sphere,
-                                     relative_peak_threshold=.8,
-                                     min_separation_angle=45,
-                                     mask=None,
+                                     relative_peak_threshold=.5,
+                                     min_separation_angle=25,
+                                     mask=mask,
                                      return_odf=False,
                                      normalize_peaks=True,
                                      npeaks=5,
                                      parallel=True,
-                                     nbr_processes=2)  # default multiprocessing.cpu_count()
+                                     nbr_processes=2)
 
 time_parallel = time.time() - start_time
 print("peaks_from_model using 2 processes ran in : " +
@@ -82,11 +82,11 @@ peaks_from_model using 2 process ran in  : 114.333221912 seconds, using 2 proces
 
 start_time = time.time()
 csapeaks = peaks_from_model(model=csamodel,
-                            data=data,
+                            data=maskdata,
                             sphere=sphere,
-                            relative_peak_threshold=.8,
-                            min_separation_angle=45,
-                            mask=None,
+                            relative_peak_threshold=.5,
+                            min_separation_angle=25,
+                            mask=mask,
                             return_odf=False,
                             normalize_peaks=True,
                             npeaks=5,
