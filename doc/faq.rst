@@ -65,20 +65,20 @@ Theoretical
   millimeter (mm) in real world space. World coordinates have floating point
   precision and your dataset has 3 real dimensions e.g. $(x, y, z)$.
 
-6. **We made the mistake in our lab of generating datasets with nonisotropic voxel sizes. What do we do?**
+6. **We generated dMRI datasets with nonisotropic voxel sizes. What do we do?**
 
   You need to resample your raw data to an isotropic size. Have a look at
-  the module ``dipy.align.noniso2iso``. (We think it is a mistake to
+  the module ``dipy.align.aniso2iso``. (We think it is a mistake to
   acquire nonisotropic data because the directional resolution of the data
   will depend on the orientation of the gradient with respect to the
   voxels, being lower when aligned with a longer voxel dimension.)
 
-7. **Why are nonisotropic voxel sizes a bad idea in diffusion?**
+7. **Why are non-isotropic voxel sizes a bad idea in diffusion?**
 
   If, for example, you have $2 \times 2 \times 4\ \textrm{mm}^3$ voxels, the
   last dimension will be averaged over the double distance and less detail
   will be captured compared to the other two dimensions. Furthermore, with
-  very nonisotropic voxels the uncertainty on orientation estimates will
+  very anisotropic voxels the uncertainty on orientation estimates will
   depend on the position of the subject in the scanner.
 
 ---------
@@ -108,9 +108,11 @@ Practical
 
 3. **What do you use for visualization?**
 
-  We use ``fvtk`` which depends in turn on ``python-vtk``::
+  For 3D visualization we use ``fvtk`` which depends in turn on ``python-vtk``::
 
     from dipy.viz import fvtk
+
+  For 2D visualization we use matplotlib_.
 
 4. **What about interactive visualization?**
 
@@ -125,7 +127,7 @@ Practical
   pydicom.
 
   You can also read/save in Matlab version v4 (Level 1.0), v6 and v7 to 7.2,
-  using `scipy.io.loadmat`. For higher versions >= 7.3, you can use pytables
+  using `scipy.io.loadmat`. For higher versions >= 7.3, you can use pytables_
   or any other python-to-hdf5 library e.g. h5py.
 
   For object serialization you can use `dipy.io.pickles` functions
