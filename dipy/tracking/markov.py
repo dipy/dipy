@@ -18,6 +18,7 @@ from ..utils.six.moves import xrange
 import numpy as np
 from ..reconst.interpolate import OutsideImage, NearestNeighborInterpolator
 from ..reconst.peaks import default_sphere, peak_directions
+from . import utils
 
 
 class DirectionFinder(object):
@@ -129,7 +130,8 @@ class MarkovIntegrator(object):
     _get_directions = DirectionFinder()
 
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
-                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
+                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None,
+                 affine=None):
         """Creates streamlines by using a Markov approach.
 
         Parameters
@@ -147,7 +149,8 @@ class MarkovIntegrator(object):
         angle_limit : float [0, 90]
             Maximum angle allowed between successive steps of the streamline.
         seeds : array (N, 3)
-            Points to seed the tracking.
+            Points to seed the tracking. Seed points should be given in point
+            space of the track (see ``affine``).
         max_cross : int or None
             The maximum number of direction to track from each seed in crossing
             voxels.  By default track all peaks of the odf, otherwise track the
@@ -159,6 +162,9 @@ class MarkovIntegrator(object):
             Voxel size for the mask. `mask` should cover the same FOV as data,
             but it can have a different voxel size. Same as the data by
             default.
+        affine : array (4, 4)
+            Coordinate space for the streamline point with respect to voxel
+            indices of input data.
 
         """
         self.model = model
@@ -166,6 +172,15 @@ class MarkovIntegrator(object):
         self.seeds = seeds
         self.max_cross = max_cross
         self.maxlen = maxlen
+
+        voxel_size = np.asarray(interpolator.voxel_size)
+        self._tracking_space = tracking_space = np.eye(4)
+        tracking_space[[0, 1, 2], [0, 1, 2]] = voxel_size
+        tracking_space[:3, 3] = voxel_size / 2.
+        if affine is None:
+            self.affine = tracking_space.copy()
+        else:
+            self.affine = affine
 
         self._take_step = take_step
         self._cos_similarity = np.cos(np.deg2rad(angle_limit))
@@ -185,11 +200,23 @@ class MarkovIntegrator(object):
         self._mask = NearestNeighborInterpolator(mask.copy(), mask_voxel_size)
 
     def __iter__(self):
-        return self._generate_streamlines()
+        # Check that seeds are reasonable
+        seeds = np.asarray(self.seeds)
+        if seeds.ndim != 2 or seeds.shape[1] != 3:
+            raise ValueError("Seeds should be an (N, 3) array of points")
 
-    def _generate_streamlines(self):
+        # Compute affine from point space to tracking space, apply to seeds
+        inv_A = np.dot(self._tracking_space, np.linalg.inv(self.affine))
+        tracking_space_seeds = np.dot(seeds, inv_A[:3, :3].T) + inv_A[:3, 3]
+
+        # Make tracks, move them to point space and return
+        track = self._generate_streamlines(tracking_space_seeds)
+        return utils.move_streamlines(track, output_space=self.affine,
+                                      input_space=self._tracking_space)
+
+    def _generate_streamlines(self, seeds):
         """A streamline generator"""
-        for s in self.seeds:
+        for s in seeds:
             directions = self._next_step(s, prev_step=None)
             directions = directions[:self.max_cross]
             for first_step in directions:
@@ -321,11 +348,11 @@ class ProbabilisticOdfWeightedTracker(MarkovIntegrator):
     """
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
                  seeds, sphere, max_cross=None, maxlen=500,
-                 mask_voxel_size=None):
+                 mask_voxel_size=None, affine=None):
 
         MarkovIntegrator.__init__(self, model, interpolator, mask, take_step,
                                   angle_limit, seeds, max_cross, maxlen,
-                                  mask_voxel_size)
+                                  mask_voxel_size, affine)
         self.sphere = sphere
         self._set_adjacency_matrix(sphere, self._cos_similarity)
         self._get_directions.sphere = sphere
@@ -395,7 +422,8 @@ class CDT_NNO(ClosestDirectionTracker):
 
     """
     def __init__(self, model, interpolator, mask, take_step, angle_limit,
-                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None):
+                 seeds, max_cross=None, maxlen=500, mask_voxel_size=None,
+                 affine=None):
         if not isinstance(interpolator, NearestNeighborInterpolator):
             msg = ("CDT_NNO is an optimized version of "
                    "ClosestDirectionTracker that requires a "
@@ -405,7 +433,8 @@ class CDT_NNO(ClosestDirectionTracker):
         ClosestDirectionTracker.__init__(self, model, interpolator, mask,
                                          take_step, angle_limit, seeds,
                                          max_cross=max_cross, maxlen=maxlen,
-                                         mask_voxel_size=mask_voxel_size)
+                                         mask_voxel_size=mask_voxel_size,
+                                         affine=None)
         self._data = self.interpolator.data
         self._voxel_size = self.interpolator.voxel_size
         self.reset_cache()

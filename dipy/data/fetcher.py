@@ -2,6 +2,7 @@ from __future__ import division, print_function, absolute_import
 
 import os
 import sys
+import textwrap
 import contextlib
 
 if sys.version_info[0] < 3:
@@ -19,6 +20,64 @@ import nibabel as nib
 import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
+
+
+_bad_md5_message="""The downloaded file, {}, does not have the expected md5
+checksum of "{}". This could mean that that something is wrong with the file or
+that the upstream file has been updated. You can try downloading the file again
+or updating to the newest version of dipy."""
+
+
+class FetcherError(Exception):
+    pass
+
+
+def _log(msg):
+    print(msg)
+
+
+def fetch_data(files, folder):
+    """Downloads files to folder and checks their md5 checksums
+
+    Parameters
+    ----------
+    files : dictionary
+        For each file in `files` the value should be (url, md5). The file will
+        be downloaded from url if the file does not already exist or if the
+        file exists but the md5 checksum does not match.
+    folder : str
+        The directory where to save the file, the directory will be created if
+        it does not already exist.
+
+    Raises
+    ------
+    FetcherError
+        Raises if the md5 checksum of the file does not match the expected
+        value. The downloaded file is not deleted when this error is raised.
+
+    """
+    if not os.path.exists(folder):
+        _log("Creating new folder {}".format(folder))
+        os.makedirs(folder)
+
+    all_skip = True
+    for f in files:
+        url, md5 = files[f]
+        fullpath = pjoin(folder, f)
+        if os.path.exists(fullpath) and (_get_file_md5(fullpath) == md5):
+            continue
+        all_skip = False
+        _log('Downloading "{}" to {}'.format(f, folder))
+        _get_file_data(fullpath, url)
+        if _get_file_md5(fullpath) != md5:
+            msg = _bad_md5_message.format(fullpath, md5)
+            msg = textwrap.fill(msg)
+            raise FetcherError(msg)
+
+    if all_skip:
+        _log("All files already in {}.".format(folder))
+    else:
+        _log("Files successfully downloaded to {}".format(folder))
 
 
 def fetch_scil_b0():
@@ -61,6 +120,15 @@ def read_scil_b0():
     return nib.load(file)
 
 
+def _get_file_md5(filename):
+    """Compute the md5 checksum of a file"""
+    md5_data = md5()
+    with open(filename, 'rb') as f:
+        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
+            md5_data.update(chunk)
+    return md5_data.hexdigest()
+
+
 def check_md5(filename, stored_md5):
     """
     Computes the md5 of filename and check if it matches with the supplied string md5
@@ -71,17 +139,12 @@ def check_md5(filename, stored_md5):
         Path to a file.
     md5 : string
         Known md5 of filename to check against.
+
     """
-
-    md5_data = md5()
-
-    with open(filename, 'rb') as f:
-        for chunk in iter(lambda: f.read(128*md5_data.block_size), b''):
-            md5_data.update(chunk)
-
-    if stored_md5 != md5_data.hexdigest():
+    computed_md5 = _get_file_md5(filename)
+    if stored_md5 != computed_md5:
         print ("MD5 checksum of filename", filename, "failed. Expected MD5 was", stored_md5,
-               "but computed MD5 was", md5_data, '\n',
+               "but computed MD5 was", computed_md5, '\n',
                "Please check if the data has been downloaded correctly or if the upstream data has changed.")
 
 
@@ -214,6 +277,34 @@ def read_sherbrooke_3shell():
     gtab = gradient_table(bvals, bvecs)
     img = nib.load(fraw)
     return img, gtab
+
+
+def fetch_stanford_labels():
+    """Download reduced freesurfer aparc image from stanford web site."""
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    folder = pjoin(dipy_home, 'stanford_hardi')
+    baseurl = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
+
+    files = {}
+    files["aparc-reduced.nii.gz"] = (baseurl + "aparc-reduced.nii.gz",
+                                     '742de90090d06e687ce486f680f6d71a')
+    files["label-info.txt"] = (baseurl + "label_info.txt",
+                               '39db9f0f5e173d7a2c2e51b07d5d711b')
+    fetch_data(files, folder)
+    return files, folder
+
+
+def read_stanford_labels():
+    """Read stanford hardi data and label map"""
+    # First get the hardi data
+    fetch_stanford_hardi()
+    hard_img, gtab = read_stanford_hardi()
+
+    # Fetch and load
+    files, folder = fetch_stanford_labels()
+    labels_file = pjoin(folder, "aparc-reduced.nii.gz")
+    labels_img = nib.load(labels_file)
+    return hard_img, gtab, labels_img
 
 
 def fetch_stanford_hardi():

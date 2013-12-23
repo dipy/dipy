@@ -1,13 +1,105 @@
 # A type of -*- python -*- file
-""" Counting incidence of tracks in voxels of volume
+"""This module contains the parts of dipy.tracking.utils that need to be
+implemented in cython.
 """
+
+import cython
 
 import numpy as np
 cimport numpy as cnp
+from ._utils import _mapping_to_voxel, _to_voxel_coordinates
 
 cdef extern from "dpy_math.h":
     double floor(double x)
 
+def streamline_mapping(streamlines, voxel_size=None, affine=None,
+                       mapping_as_streamlines=False):
+    """Creates a mapping from voxel indices to streamlines.
+
+    Returns a dictionary where each key is a 3d voxel index and the associated
+    value is a list of the streamlines that pass through that voxel.
+
+    Parameters
+    ----------
+    streamlines : sequence
+        A sequence of streamlines.
+    voxel_size : array_like (3,), optional
+        The size of the voxels in the image volume. This is ignored if affine
+        is set.
+    affine : array_like (4, 4), optional
+        The mapping from voxel coordinates to streamline coordinates. If
+        neither `affine` or `voxel_size` is set, the streamline values are
+        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
+        the first voxel and the voxel size is ``[1, 1, 1]``.
+    mapping_as_streamlines : bool, optional, False by default
+        If True voxel indices map to lists of streamline objects. Otherwise
+        voxel indices map to lists of integers.
+
+    Returns
+    -------
+    mapping : defaultdict(list)
+        A mapping from voxel indices to the streamlines that pass through that
+        voxel.
+
+    Examples
+    --------
+    >>> streamlines = [np.array([[0., 0., 0.],
+    ...                          [1., 1., 1.],
+    ...                          [2., 3., 4.]]),
+    ...                np.array([[0., 0., 0.],
+    ...                          [1., 2., 3.]])]
+    >>> mapping = streamline_mapping(streamlines, (1, 1, 1))
+    >>> mapping[0, 0, 0]
+    [0, 1]
+    >>> mapping[1, 1, 1]
+    [0]
+    >>> mapping[1, 2, 3]
+    [1]
+    >>> mapping.get((3, 2, 1), 'no streamlines')
+    'no streamlines'
+    >>> mapping = streamline_mapping(streamlines, (1, 1, 1),
+    ...                              mapping_as_streamlines=True)
+    >>> mapping[1, 2, 3][0] is streamlines[1]
+    True
+
+    """
+    cdef:
+        cnp.ndarray[cnp.int_t, ndim=2, mode='strided'] voxel_indices
+
+    lin, offset = _mapping_to_voxel(affine, voxel_size)
+    if mapping_as_streamlines:
+        streamlines = list(streamlines)
+    mapping = {}
+
+    for i, sl in enumerate(streamlines):
+        voxel_indices = _to_voxel_coordinates(sl, lin, offset)
+
+        # Get the unique voxels every streamline passes though
+        uniq_points = set()
+        for j in range(voxel_indices.shape[0]):
+            point = (voxel_indices[j, 0],
+                     voxel_indices[j, 1],
+                     voxel_indices[j, 2])
+            uniq_points.add(point)
+
+        # Add the index of this streamline for each uniq voxel
+        for point in uniq_points:
+            if point in mapping:
+                mapping[point].append(i)
+            else:
+                mapping[point] = [i]
+
+    # If mapping_as_streamlines replace ids with streamlines
+    if mapping_as_streamlines:
+        for key in mapping:
+            mapping[key] = [streamlines[i] for i in mapping[key]]
+
+    return mapping
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.profile(False)
 def track_counts(tracks, vol_dims, vox_sizes=(1,1,1), return_elements=True):
     ''' Counts of points in `tracks` that pass through voxels in volume
 
