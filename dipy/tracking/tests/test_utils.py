@@ -109,7 +109,10 @@ def test_connectivity_matrix():
     affine = np.diag([-1, -1, -1, 1.])
     streamlines = [-i for i in streamlines]
     matrix = connectivity_matrix(streamlines, label_volume, affine=affine)
+    # In the symmetrical case, the matrix should be, well, symmetric:
+    assert_equal(matrix[4,3], matrix[4,3])
 
+    
 def test_ndbincount():
     def check(expected):
         assert_equal(bc[0, 0], expected[0])
@@ -135,6 +138,7 @@ def test_ndbincount():
     #raises an error if shape is too small
     assert_raises(ValueError, ndbincount, x, None, (2, 2))
 
+
 def test_reduce_labels():
     shape = (4, 5, 6)
     #labels from 100 to 220
@@ -143,6 +147,7 @@ def test_reduce_labels():
     new_labels, lookup = reduce_labels(labels)
     assert_array_equal(new_labels, labels-100)
     assert_array_equal(lookup, labels.ravel())
+
 
 def test_move_streamlines():
     streamlines = make_streamlines()
@@ -238,8 +243,9 @@ def test_target():
     assert_equal(len(exclude), 1)
     assert_true(exclude[0] is streamlines[1])
 
+
 def test_voxel_ornt():
-    sh = (40,40,40)
+    sh = (40, 40, 40)
     sz = (1, 2, 3)
     I4 = np.eye(4)
 
@@ -277,7 +283,7 @@ def test_voxel_ornt():
         assert_array_equal(next(test_sl), next(expected_sl))
 
     srp_affine = reorder_voxels_affine(ras, srp, sh, sz)
-    toras_affine = reorder_voxels_affine(srp, ras, (40,40,40), (3,1,2))
+    toras_affine = reorder_voxels_affine(srp, ras, (40 ,40, 40), (3, 1, 2))
     assert_array_equal(np.dot(toras_affine, srp_affine), I4)
     expected_sl = [sl.copy() for sl in streamlines]
     for sl in expected_sl:
@@ -287,15 +293,16 @@ def test_voxel_ornt():
     for ii in xrange(len(streamlines)):
         assert_array_equal(next(test_sl), next(expected_sl))
 
+
 def test_streamline_mapping():
-    streamlines = [np.array([[0,0,0],[0,0,0],[0,2,2]], 'float'),
-                   np.array([[0,0,0],[0,1,1],[0,2,2]], 'float'),
-                   np.array([[0,2,2],[0,1,1],[0,0,0]], 'float')]
-    mapping = streamline_mapping(streamlines, (1,1,1))
-    expected = {(0,0,0):[0,1,2], (0,2,2):[0,1,2], (0,1,1):[1,2]}
+    streamlines = [np.array([[0, 0, 0], [0, 0, 0], [0, 2, 2]], 'float'),
+                   np.array([[0, 0, 0], [0, 1, 1], [0, 2, 2]], 'float'),
+                   np.array([[0, 2, 2], [0, 1, 1], [0, 0, 0]], 'float')]
+    mapping = streamline_mapping(streamlines, (1, 1, 1))
+    expected = {(0, 0, 0):[0, 1, 2], (0, 2, 2):[0, 1, 2], (0, 1, 1):[1, 2]}
     assert_equal(mapping, expected)
 
-    mapping = streamline_mapping(streamlines, (1,1,1),
+    mapping = streamline_mapping(streamlines, (1, 1, 1),
                                  mapping_as_streamlines=True)
     expected = dict((k, [streamlines[i] for i in indices])
                     for k, indices in expected.items())
@@ -319,7 +326,6 @@ def test_streamline_mapping():
 
 
 def test_rmi():
-
     I1 = _rmi([3, 4], [10, 10])
     assert_equal(I1, 34)
     I1 = _rmi([0, 0], [10, 10])

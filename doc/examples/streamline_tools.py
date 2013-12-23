@@ -47,8 +47,9 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
 
 """
 Now we can use EuDX to track all of the white matter. To keep things reasonably
-fast we use 1 seed per voxel. We'll set ``a_low`` to be very low because we've
-already applied a white matter mask.
+fast we use 1 seed per voxel. We'll set ``a_low`` (the parameter which
+determines the threshold of FA/QA under which tracking stops) to be very low
+because we've already applied a white matter mask.
 """
 
 seeds = utils.seeds_from_mask(white_matter, density=1)
@@ -179,7 +180,7 @@ way to interpret these kinds of connectivity matrices is still an open question
 in the diffusion imaging literature.
 
 The next function we'll demonstrate is ``density_map``. This function allows
-one to represent the spacial distribution of a track by counting the density of
+one to represent the spatial distribution of a track by counting the density of
 streamlines in each voxel. For example, let's take the track connecting the
 left and right superior frontal gyrus.
 """
@@ -193,6 +194,8 @@ Let's save this density map and the streamlines so that they can be
 visualized together. In order to save the streamlines in a ".trk" file we'll
 need to move them to "trackvis space", or the representation of streamlines
 specified by the trackvis Track File format.
+
+To do that, we will use tools available in [nibabel](http://nipy.org/nibabel)
 """
 
 import nibabel as nib
@@ -231,7 +234,8 @@ streamlines from an existing set of streamlines in the target space. The
 target space and the input space must be specified as affine transformations
 with respect to the same reference [#]_. If no input space is given, the input
 space will be the same as the current representation of the streamlines, in
-other words the input space is assumed to be ``np.eye(4)``.
+other words the input space is assumed to be ``np.eye(4)``, the 4-by-4 identity
+matrix.
 
 All of the functions above that allow streamlines to interact with volumes take
 an affine argument. This argument allows these functions to work with
