@@ -567,9 +567,23 @@ def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
 
 
 def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
-    """It takes the affine matrix from flirt (FSLdot) and the voxel size of the
-    input and output images and it returns the adjusted affine matrix for
-    trackvis.
+    """
+    Converts an affine matrix from flirt (FSLdot) and a given voxel size for
+    input and output images and returns an adjusted affine matrix for trackvis.
+
+    Parameters
+    ----------
+    mat_affine : array of shape (4, 4)
+       An FSL flirt affine.
+    input_voxsz : array of shape (3,)
+       The input image voxel dimensions.
+    output_voxsz : array of shape (3,)
+       
+    Returns
+    -------
+    affine : array of shape (4, 4)
+      A trackvis-compatible affine. 
+
     """
     # TODO the affine returned by this function uses a different reference than
     # the nifti-style index coordinates dipy has adopted as a convention. We
