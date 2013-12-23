@@ -22,17 +22,37 @@ Releases
 Dipy
 ++++
 
-The code found in Dipy was created by the following people: Eleftherios Garyfallidis, Matthew Brett, Bago Amirbekian, Ian Nimmo-Smith, Ariel Rokem, Stefan van der Walt, Christopher Nguyen, Maxime Descoteaux, Yaroslav Halchenko, Emanuele Olivetti, Michael Paquette, Samuel St-Jean, Endolith and Maria Luisa Mandelli.
+The code found in Dipy was created by the following people: Eleftherios Garyfallidis, Matthew Brett, Bago Amirbekian, Ian Nimmo-Smith, Ariel Rokem, Stefan van der Walt, Maxime Descoteaux, Yaroslav Halchenko, Emanuele Olivetti, Michael Paquette, Samuel St-Jean, Endolith, Maria Luisa Mandelli, Mauro Zucchelli, Gabriel Girard, Matthieu Dumont, Kimberly Chan, Erik Ziegler, Emmanuel Caruyer, Matthias Ekman, Jean-Christophe Houde, Sylvain Merlet and
+Christopher Nguyen.
+
+
+* 0.7.0 (Monday, 23 Dec 2013)
+
+* Constrained Spherical Deconvolution (CSD)
+* Simple Harmonic Oscillator based Reconstruction and Estimation (SHORE)
+* Sharpening Deconvolution Transform (SDT)
+* Signal to noise estimation
+* Parallel processing enabled for all reconstruction models using `peaks_from_model`
+* Simultaneous peak and ODF visualization
+* Streamtube visualization
+* Electrostatic repulsion for sphere generation
+* Connectivity matrix generation
+* Streamline filtering through specific ROIs using `target`.
+* Brain extraction and foreground extraction using `median_otsu`
+* RESTORE fitting for DTI
+* Westin's Tensor maps
+* Access to more publicly available datasets directly through Dipy functions.
+* 3x more tutorials than previous release
 
 
 * 0.6.0 (Sunday, 24 Mar 2013)
 
 * Cython 0.17+ enforced
-* New reconstruction models API 
-* Diffusion Spectrum Imaging (DSI) 
+* New reconstruction models API
+* Diffusion Spectrum Imaging (DSI)
 * DSI with deconvolution
 * Generalized Q-sampling Imaging 2 (GQI2)
-* Modular fiber tracking 
+* Modular fiber tracking
   * deterministic
   * probabilistic
 * Fast volume indexing (a faster ndindex)
