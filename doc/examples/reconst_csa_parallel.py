@@ -1,10 +1,10 @@
 """
-===================================================================
-Reconstruct with Constant Solid Angle (QBall) using multiprocessing
-===================================================================
+====================================
+Parallel reconstruction using Q-Ball
+====================================
 
-We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et.
-al (MRM 2010) to your datasets.
+We show an example of parallel reconstruction using a Q-Ball Constant Solid
+Angle model (see Aganj et. al (MRM 2010)) and `peaks_from_model`.
 
 First import the necessary modules:
 """
@@ -61,6 +61,16 @@ grid where the ODF values will be evaluated.
 sphere = get_sphere('symmetric724')
 
 start_time = time.time()
+
+"""
+We will first run `peaks_from_model` using parallelism with 2 processes. If
+`nbr_processes` is None (default option) then this function will find the total
+number of processors from the operating system and use this number as
+`nbr_processes`. Sometimes it makes sense to use only a few of the processes in
+order to allow resources for other applications. However, most of the times
+using the default option will be sufficient.
+"""
+
 csapeaks_parallel = peaks_from_model(model=csamodel,
                                      data=maskdata,
                                      sphere=sphere,
@@ -76,8 +86,11 @@ csapeaks_parallel = peaks_from_model(model=csamodel,
 time_parallel = time.time() - start_time
 print("peaks_from_model using 2 processes ran in : " +
       str(time_parallel) + " seconds")
+
 """
 peaks_from_model using 2 process ran in  : 114.333221912 seconds, using 2 process
+
+If we don't use parallelism then we need to set `parallel=False`:
 """
 
 start_time = time.time()

@@ -1,6 +1,6 @@
 """
 =================================================
-Reconstruct with Constant Solid Angle (QBall)
+Reconstruct with Constant Solid Angle (Q-Ball)
 =================================================
 
 We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et.
