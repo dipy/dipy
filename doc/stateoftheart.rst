@@ -20,7 +20,7 @@ With the help of some external tools you can also:
 - Read many different file formats e.g. Trackvis or Nifti (with nibabel).
 - Examine your datasets interactively (with ipython).
 
-For more information on specific algorithms we recommend starting from  looking at Dipy's :ref:`gallery <examples>` of examples.
+For more information on specific algorithms we recommend starting by looking at Dipy's :ref:`gallery <examples>` of examples.
 
 For a full list of the features implemented in the most recent release cycle, check out the release notes.
 
