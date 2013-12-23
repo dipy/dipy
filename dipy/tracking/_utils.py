@@ -1,40 +1,6 @@
 from __future__ import division, print_function, absolute_import
-"""Various tools related to creating and working with streamlines
-
-Important Note:
----------------
-Some functions in this module use an affine matrix to represent the coordinate
-system associated with the points of a streamline. Dipy uses a similar
-convention to nifti files when interpreting this affine matrix. This convention
-is that the point at the center of voxel ``[i, j, k`]` is represented by the
-point ``[x, y, z]`` where ``[x, y, z, 1] = affine * [i, j, k, 1]``.
-Also when the phrase "voxel coordinates" is used, it is understood to be the
-same as ``affine = eye(4)``.
-
-As an example, lets take a 2d image where the affine is
-``[[1., 0., 0.],
-   [0., 2., 0.],
-   [0., 0., 1.]]``:
-
-A------------
-|   |   |   |
-| C |   |   |
-|   |   |   |
-----B--------
-|   |   |   |
-|   |   |   |
-|   |   |   |
--------------
-|   |   |   |
-|   |   |   |
-|   |   |   |
-------------D
-
-A = [-.5, -1.]
-B = [ .5,  1.]
-C = [ 0.,  0.]
-D = [ 2.5,  5.]
-"""
+"""This module is the python part of dipy.tracking.utils.py, it was split
+into another file to avoid circular imports."""
 
 from warnings import warn
 from functools import wraps
@@ -42,8 +8,7 @@ from collections import defaultdict
 from ..utils.six.moves import xrange
 
 import numpy as np
-from numpy import (asarray, array, atleast_3d, ceil, concatenate, empty,
-                   eye, mgrid, sqrt, zeros, linalg, diag, dot)
+from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
 
 
@@ -77,7 +42,7 @@ def _voxel_size_deprecated():
 
 
 def _mapping_to_voxel(affine, voxel_size):
-    """ Inverts affine and returns a mapping so voxel coordinates. This
+    """Inverts affine and returns a mapping so voxel coordinates. This
     function is an implementation detail and only meant to be used with
     ``_to_voxel_coordinates``.
 
@@ -132,7 +97,7 @@ def _to_voxel_coordinates(streamline, lin_T, offset):
 
 
 def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
-    """Counts the number of unique streamlines that pass though each voxel
+    """Counts the number of unique streamlines that pass though each voxel.
 
     Parameters
     ----------
@@ -166,7 +131,7 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
 
     """
     lin_T, offset = _mapping_to_voxel(affine, voxel_size)
-    counts = zeros(vol_dims, 'int')
+    counts = np.zeros(vol_dims, 'int')
     for sl in streamlines:
         inds = _to_voxel_coordinates(sl, lin_T, offset)
         i, j, k = inds.T
@@ -179,7 +144,7 @@ def density_map(streamlines, vol_dims, voxel_size=None, affine=None):
 def connectivity_matrix(streamlines, label_volume, voxel_size=None,
                         affine=None, symmetric=True, return_mapping=False,
                         mapping_as_streamlines=False):
-    """Counts the streamlines that start and end at each label pair
+    """Counts the streamlines that start and end at each label pair.
 
     Parameters
     ----------
@@ -264,7 +229,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
 
 
 def ndbincount(x, weights=None, shape=None):
-    """Like bincount, but for nd-indicies
+    """Like bincount, but for nd-indicies.
 
     Parameters
     ----------
@@ -291,7 +256,7 @@ def ndbincount(x, weights=None, shape=None):
 
 def reduce_labels(label_volume):
     """Reduces an array of labels to the integers from 0 to n with smallest
-    possible n
+    possible n.
 
     Examples
     --------
@@ -314,7 +279,7 @@ def reduce_labels(label_volume):
 
 
 def subsegment(streamlines, max_segment_length):
-    """Splits the segments of the streamlines into small segments
+    """Splits the segments of the streamlines into small segments.
 
     Replaces each segment of each of the streamlines with the smallest possible
     number ofequally sized smaller segments such that no segmentment is longer
@@ -390,9 +355,9 @@ def subsegment(streamlines, max_segment_length):
 
 
 def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
-    """Takes a binary mask and returns seeds in voxels != 0
+    """Takes a binary mask and returns seeds in voxels != 0.
 
-    places evanly spaced points in nonzero voxels of mask, spaces the points
+    places evenly spaced points in nonzero voxels of mask, spaces the points
     based on density. For example if density is [1, 2, 3], there will be 6
     points in each voxel, at x=.5, y=[.25, .75] and z=[.166, .5, .833].
     density=a is the same as density = [a, a, a]
@@ -431,7 +396,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
         raise ValueError("density should be in integer array of shape (3,)")
 
     # Grid of points between -.5 and .5, centered at 0, with given density
-    grid = mgrid[0:density[0], 0:density[1], 0:density[2]]
+    grid = np.mgrid[0:density[0], 0:density[1], 0:density[2]]
     grid = grid.T.reshape((-1, 3))
     grid = grid / density
     grid += (.5 / density - .5)
@@ -455,10 +420,10 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
 
 
 def _with_initialize(generator):
-    """Allows one to write a generator with initialization code
+    """Allows one to write a generator with initialization code.
 
     All code up to the first yield is run as soon as the generator function is
-    called and the first yield value is ignored
+    called and the first yield value is ignored.
     """
     @wraps(generator)
     def helper(*args, **kwargs):
@@ -471,7 +436,7 @@ def _with_initialize(generator):
 
 @_with_initialize
 def target(streamlines, target_mask, affine=None, include=True):
-    """Filters streamlines based on whether or not they pass though target_mask
+    """Filters streamlines based on whether or not they pass through an ROI.
 
     Parameters
     ----------
@@ -479,7 +444,7 @@ def target(streamlines, target_mask, affine=None, include=True):
         A sequence of streamlines. Each streamline should be a (N, 3) array,
         where N is the length of the streamline.
     target_mask : array-like
-        A mask used as a target
+        A mask used as a target.
     affine : array (4, 4), optional
         The affine transform from voxel indices to streamline points. If
         neither `affine` nor `voxel_size` are specified, the streamline is
@@ -491,12 +456,12 @@ def target(streamlines, target_mask, affine=None, include=True):
     Returns
     -------
     streamlines : generator
-        A sequence of streamlines that pass though `target_mask`
+        A sequence of streamlines that pass though `target_mask`.
 
     Raises
     ------
     IndexError
-        When the points of the streamlines lie outside of the `target_mask`
+        When the points of the streamlines lie outside of the `target_mask`.
 
     See Also
     --------
@@ -521,7 +486,7 @@ def target(streamlines, target_mask, affine=None, include=True):
 
 @_with_initialize
 def move_streamlines(streamlines, output_space, input_space=None):
-    """Applies a linear transformation, given by affine, to streamlines
+    """Applies a linear transformation, given by affine, to streamlines.
 
     Parameters
     ----------
@@ -558,7 +523,7 @@ def move_streamlines(streamlines, output_space, input_space=None):
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
-    """Calculates a linear tranformation equivelent to chaning voxel order
+    """Calculates a linear transformation equivalent to changing voxel order.
 
     Calculates a linear tranformation A such that [a, b, c, 1] = A[x, y, z, 1].
     where [x, y, z] is a point in the coordinate system defined by input_ornt
@@ -606,6 +571,10 @@ def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
     input and output images and it returns the adjusted affine matrix for
     trackvis.
     """
+    # TODO the affine returned by this function uses a different reference than
+    # the nifti-style index coordinates dipy has adopted as a convention. We
+    # should either fix this function in a backward compatible way or replace
+    # and deprecate it.
     input_voxsz = asarray(input_voxsz)
     output_voxsz = asarray(output_voxsz)
     shift = eye(4)
@@ -618,13 +587,13 @@ def affine_from_fsl_mat_file(mat_affine, input_voxsz, output_voxsz):
 
 
 def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
-                       ref_img_voxel_order=None):
-    """ Returns an affine which maps points for voxel indices to trackvis space
+                        ref_img_voxel_order=None):
+    """Returns an affine which maps points for voxel indices to trackvis space.
 
     Parameters
     ----------
     voxel_size : array (3,)
-        The sizes of the voxels in the reference image
+        The sizes of the voxels in the reference image.
 
     Returns
     -------

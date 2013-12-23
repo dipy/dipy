@@ -1,5 +1,6 @@
 # A type of -*- python -*- file
-""" Counting incidence of tracks in voxels of volume
+"""This module contains the parts of dipy.tracking.utils that need to be
+implemented in cython.
 """
 
 import cython
@@ -13,7 +14,7 @@ cdef extern from "dpy_math.h":
 
 def streamline_mapping(streamlines, voxel_size=None, affine=None,
                        mapping_as_streamlines=False):
-    """Creates a mapping from voxel indices to streamlines
+    """Creates a mapping from voxel indices to streamlines.
 
     Returns a dictionary where each key is a 3d voxel index and the associated
     value is a list of the streamlines that pass through that voxel.
@@ -37,7 +38,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     Returns
     -------
     mapping : defaultdict(list)
-        A mapping from voxel indices to the streamlines that pass though that
+        A mapping from voxel indices to the streamlines that pass through that
         voxel.
 
     Examples
@@ -73,7 +74,7 @@ def streamline_mapping(streamlines, voxel_size=None, affine=None,
     for i, sl in enumerate(streamlines):
         voxel_indices = _to_voxel_coordinates(sl, lin, offset)
 
-        # Get the uniq voxels every streamline passes though
+        # Get the unique voxels every streamline passes though
         uniq_points = set()
         for j in range(voxel_indices.shape[0]):
             point = (voxel_indices[j, 0],

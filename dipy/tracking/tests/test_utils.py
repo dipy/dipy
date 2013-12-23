@@ -169,7 +169,7 @@ def test_move_streamlines():
     for i, test_sl in enumerate(undo_affine):
         assert_array_almost_equal(test_sl, streamlines[i])
 
-    # Test that changing affine does effect moving streamlines
+    # Test that changing affine does affect moving streamlines
     affineA = affine.copy()
     affineB = affine.copy()
     streamlinesA = move_streamlines(streamlines, affineA)

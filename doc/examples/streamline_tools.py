@@ -1,18 +1,18 @@
 """
 
 =========================================================
-Using Dipy to interact with streamlines and image volumes
+Connectivity Matrices, ROI Intersections and Density Maps
 =========================================================
 
 This example is meant to be an introduction to some of the streamline tools
 available in dipy. Some of the functions covered in this example are
 ``target``, ``connectivity_matrix`` and ``density_map``. ``target`` allows one
-to filter streamlines that either pass though or do not pass through some
+to filter streamlines that either pass through or do not pass through some
 region of the brain, ``connectivity_matrix`` groups and counts streamlines
 based on where in the brain they begin and end, and finally, density map counts
 the number of streamlines that pass though every voxel of some image.
 
-To get started you'll need to have a set of streamlines to work with. We'll use
+To get started we'll need to have a set of streamlines to work with. We'll use
 EuDX along with the CsaOdfModel to make some streamlines. Let's import the
 modules and download the data we'll be using.
 """
@@ -29,7 +29,7 @@ labels = labels_img.get_data()
 
 """
 We've loaded an image called ``labels_img`` which is a map of tissue types such
-that every integer value in the array ``labels`` represents a anatomical
+that every integer value in the array ``labels`` represents an anatomical
 structure or tissue type [#]_. For this example, the image was created so that
 white matter voxels have values of either 1 or 2. We'll use
 ``peaks_from_model`` to apply the ``CsaOdfModel`` to each white matter voxel
@@ -233,19 +233,19 @@ with respect to the same reference [#]_. If no input space is given, the input
 space will be the same as the current representation of the streamlines, in
 other words the input space is assumed to be ``np.eye(4)``.
 
-You may have noticed that all of the functions above that allow streamlines to
-interact with volumes take an affine argument. This argument allows these
-functions to work with streamlines regardless of their coordinate system. For
-example even though we moved our streamlines to "trackvis space", we can still
-compute the density map as long as we specify the right coordinate system.
+All of the functions above that allow streamlines to interact with volumes take
+an affine argument. This argument allows these functions to work with
+streamlines regardless of their coordinate system. For example even though we
+moved our streamlines to "trackvis space", we can still compute the density map
+as long as we specify the right coordinate system.
 """
 
 dm_trackvis = utils.density_map(lr_sf_trk, shape, affine=trackvis_point_space)
 assert np.all(dm == dm_trackvis)
 
 """
-This means that streamlines an interact with any image volume, for example a
-high resolution structural image, as long as one can register that images to
+This means that streamlines can interact with any image volume, for example a
+high resolution structural image, as long as one can register that image to
 the diffusion images and calculate the coordinate system with respect to that
 image.
 """
