@@ -31,7 +31,7 @@ Christopher Nguyen.
 * Constrained Spherical Deconvolution (CSD)
 * Simple Harmonic Oscillator based Reconstruction and Estimation (SHORE)
 * Sharpening Deconvolution Transform (SDT)
-* Signal to noise estimation
+* Signal-to-noise ratio estimation
 * Parallel processing enabled for all reconstruction models using `peaks_from_model`
 * Simultaneous peak and ODF visualization
 * Streamtube visualization
