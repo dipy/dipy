@@ -282,7 +282,7 @@ def subsegment(streamlines, max_segment_length):
     """Splits the segments of the streamlines into small segments.
 
     Replaces each segment of each of the streamlines with the smallest possible
-    number ofequally sized smaller segments such that no segmentment is longer
+    number of equally sized smaller segments such that no segment is longer
     than max_segment_length. Among other things, this can useful for getting
     streamline counts on a grid that is smaller than the length of the
     streamline segments.
