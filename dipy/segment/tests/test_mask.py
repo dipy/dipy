@@ -86,7 +86,7 @@ def test_median_otsu():
     fname = get_data('S0_10')
     img = nib.load(fname)
     data = img.get_data()
-    data = np.squeeze(data)
+    data = np.squeeze(data.astype('f8'))
     dummy_mask = data > data.mean()
     data_masked, mask = median_otsu(data, median_radius=3, numpass=2,
                                     autocrop=False, vol_idx=None,
@@ -95,6 +95,7 @@ def test_median_otsu():
     data2 = np.zeros(data.shape + (2,))
     data2[..., 0] = data
     data2[..., 1] = data
+
     data2_masked, mask2 = median_otsu(data2, median_radius=3, numpass=2,
                                       autocrop=False, vol_idx=[0, 1],
                                       dilate=None)
