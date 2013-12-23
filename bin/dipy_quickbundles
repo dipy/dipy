@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-import argparse as arg
+from dipy.fixes import argparse as arg
 import os
 import warnings 
 import dipy.io.pickles as pkl
