@@ -13,15 +13,14 @@ Here are just a few of the state-of-the-art :ref:`technologies <examples>` and a
 - Simplify large datasets of streamlines using QuickBundles clustering.
 - Reslice datasets with anisotropic voxels to isotropic.
 - Calculate distances/correspondences between streamlines.
-- Deal with huge tractographies without memory restrictions (.dpy).
+- Deal with huge streamline datasets without memory restrictions (.dpy).
 
 With the help of some external tools you can also:
 
 - Read many different file formats e.g. Trackvis or Nifti (with nibabel).
 - Examine your datasets interactively (with ipython).
 
-For more information on specific algorithms we recommend start from our
-:ref:`gallery <examples>`.
+For more information on specific algorithms we recommend starting from our looking at our :ref:`gallery <examples>` of examples.
 
 For a full list of the features implemented in the most recent release cycle, check out the release notes.
 
