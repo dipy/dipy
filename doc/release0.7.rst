@@ -24,11 +24,12 @@ The following 16 authors contributed 814 commits.
 * Sylvain Merlet
 
 
-We closed a total of 83 pull requests; this is the full list (generated with the script
+We closed a total of 84 pull requests; this is the full list (generated with the script
 :file:`tools/github_stats.py`):
 
-Pull Requests (83):
+Pull Requests (84):
 
+* :ghpull:`292`: Streamline tools
 * :ghpull:`289`: Examples checked for peaks_from_model
 * :ghpull:`288`: Link shore examples
 * :ghpull:`279`: Update release 0.7 examples' system
