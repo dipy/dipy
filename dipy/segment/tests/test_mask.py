@@ -8,7 +8,9 @@ from scipy.ndimage.filters import median_filter
 from dipy.segment.mask import (otsu, bounding_box, crop, applymask,
                                multi_median, median_otsu)
 
-from numpy.testing import assert_equal, run_module_suite
+from numpy.testing import (assert_equal,
+                           assert_almost_equal,
+                           run_module_suite)
 from dipy.data import get_data
 
 
@@ -96,7 +98,7 @@ def test_median_otsu():
     data2_masked, mask2 = median_otsu(data2, median_radius=3, numpass=2,
                                       autocrop=False, vol_idx=[0, 1],
                                       dilate=None)
-    assert_equal(mask.sum() == mask2.sum(), True)
+    assert_almost_equal(mask.sum(), mask2.sum())
 
     _, mask3 = median_otsu(data2, median_radius=3, numpass=2,
                                       autocrop=False, vol_idx=[0, 1],
