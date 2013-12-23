@@ -1,11 +1,11 @@
 """
-=======================
-Parallel reconstruction
-=======================
+=================================
+Parallel reconstruction using CSD
+=================================
 
-This example shows how to use parallelism (multiprocessing) using 
-``peaks_from_model`` in order to speedup the signal reconstruction 
-process. For this example will we use the same initial steps 
+This example shows how to use parallelism (multiprocessing) using
+``peaks_from_model`` in order to speedup the signal reconstruction
+process. For this example will we use the same initial steps
 as we used in :ref:`example_reconst_csd`.
 
 Import modules, fetch and read data, apply the mask and calculate the response

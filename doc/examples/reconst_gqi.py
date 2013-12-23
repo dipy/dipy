@@ -89,8 +89,8 @@ properties.
 gqpeaks = peaks_from_model(model=gqmodel,
                            data=dataslice,
                            sphere=sphere,
-                           relative_peak_threshold=.8,
-                           min_separation_angle=45,
+                           relative_peak_threshold=.5,
+                           min_separation_angle=25,
                            mask=mask,
                            return_odf=False,
                            normalize_peaks=True)
@@ -118,8 +118,8 @@ With parameter `return_odf=True` we can obtain the ODF using gqpeaks.ODF
 gqpeaks = peaks_from_model(model=gqmodel,
                            data=dataslice,
                            sphere=sphere,
-                           relative_peak_threshold=.8,
-                           min_separation_angle=45,
+                           relative_peak_threshold=.5,
+                           min_separation_angle=25,
                            mask=mask,
                            return_odf=True,
                            normalize_peaks=True)
@@ -137,8 +137,8 @@ True
 The advantage of using peaks_from_models is that it calculates the ODF only once and
 saves it or deletes if it is not necessary to keep.
 
-.. [Yeh2010] Yeh, F-C et al., Generalized Q-sampling imaging, IEEE 
-             Transactions on Medical Imaging, vol 29, no 9, 2010. 
+.. [Yeh2010] Yeh, F-C et al., Generalized Q-sampling imaging, IEEE
+             Transactions on Medical Imaging, vol 29, no 9, 2010.
 
 .. include:: ../links_names.inc
 
