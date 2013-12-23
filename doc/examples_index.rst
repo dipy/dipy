@@ -98,6 +98,7 @@ Fiber tracking
 Streamline analysis
 -------------------
 
+- :ref:`example_streamline_tools`
 - :ref:`example_streamline_length`
 
 ------------

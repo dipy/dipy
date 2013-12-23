@@ -36,8 +36,8 @@ Christopher Nguyen.
 * Simultaneous peak and ODF visualization
 * Streamtube visualization
 * Electrostatic repulsion for sphere generation
-* Connectivity matrix generation
-* Streamline filtering through specific ROIs using `target`.
+* Connectivity matrices and density maps
+* Streamline filtering through specific ROIs using `target`
 * Brain extraction and foreground extraction using `median_otsu`
 * RESTORE fitting for DTI
 * Westin's Tensor maps

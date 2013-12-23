@@ -23,3 +23,5 @@
  streamline_length.py
  reconst_shore.py
  reconst_shore_metrics.py
+ streamline_tools.py
+
