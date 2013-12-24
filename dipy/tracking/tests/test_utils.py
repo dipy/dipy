@@ -9,7 +9,10 @@ from dipy.tracking._utils import _rmi
 from dipy.tracking.utils import (connectivity_matrix, density_map,
                                  move_streamlines, ndbincount, reduce_labels,
                                  reorder_voxels_affine, affine_for_trackvis,
-                                 target)
+                                 target, length)
+
+import dipy.tracking.metrics as metrix 
+
 from dipy.tracking.vox2track import streamline_mapping
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises, assert_true
@@ -353,3 +356,26 @@ def test_affine_for_trackvis():
     affine = affine_for_trackvis(voxel_size)
     origin = np.dot(affine, [0, 0, 0, 1])
     assert_array_almost_equal(origin[:3], voxel_size / 2)
+
+
+def test_length():
+
+    # Generate a simulated bundle of fibers:
+    n_streamlines=50
+    n_pts=100
+    t = np.linspace(-10, 10, n_pts)
+
+    bundle = []
+    for i in np.linspace(3, 5, n_streamlines):
+        pts = np.vstack((np.cos(2 * t/np.pi), np.zeros(t.shape) + i, t )).T
+        bundle.append(pts)
+
+    start = np.random.randint(10, 30, n_streamlines)
+    end = np.random.randint(60, 100, n_streamlines)
+
+    bundle = [10 * streamline[start[i]:end[i]] for (i, streamline) in
+              enumerate(bundle)]
+
+    bundle_lengths = length(bundle)
+    for idx, this_length in enumerate(bundle_lengths):
+        assert_equal(this_length, metrix.length(bundle[idx])) 

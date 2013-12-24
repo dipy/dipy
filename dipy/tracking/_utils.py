@@ -6,11 +6,12 @@ from warnings import warn
 from functools import wraps
 from collections import defaultdict
 from ..utils.six.moves import xrange
+from ..utils.six.moves import map
 
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
 from dipy.io.bvectxt import ornt_mapping
-
+from . import metrics
 
 def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
@@ -626,3 +627,27 @@ def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
     affine[[0, 1, 2], [0, 1, 2]] = voxel_size
     affine[:3, 3] = voxel_size / 2.
     return affine
+
+
+
+def length(streamlines, affine=None):
+    """
+    Calculate the lengths of many streamlines in a bundle.
+
+    Parameters
+    ----------
+    streamlines : list
+        Each item in the list is an array with 3D coordinates of a streamline.
+
+    affine : 4 x 4 array (optional)
+        An affine transformation to move the fibers by, before computing their
+        lengths 
+
+    Returns
+    -------
+    Iterator object which then computes the length of each
+    streamline in the bundle, upon iteration.
+    """
+    if affine is not None:
+        streamlines = move_streamlines(streamlines, affine)
+    return map(metrics.length, streamlines)
