@@ -632,6 +632,8 @@ def affine_for_trackvis(voxel_size, voxel_order=None, dim=None,
 
 def length(streamlines, affine=None):
     """
+    Calculate the lengths of many streamlines in a bundle.
+
     Parameters
     ----------
     streamlines : list
