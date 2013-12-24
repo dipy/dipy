@@ -25,7 +25,7 @@ else:  # Python 3
 
 import gzip
 import numpy as np
-from dipy.core.gradients import gradient_table
+from dipy.core.gradients import GradientTable, gradient_table
 from dipy.core.sphere import Sphere
 from dipy.sims.voxel import SticksAndBall
 import numpy as np
@@ -248,6 +248,21 @@ def get_data(name='small_64D'):
         fbvecs = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bvec')
         fimg = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.nii.gz')
         return fimg, fbvals, fbvecs
+
+
+def get_3shell_gtab():
+    gradfile = pjoin(THIS_DIR, "gtab_3shell.txt")
+    grad = np.loadtxt(gradfile, delimiter=',')
+    gtab = GradientTable(grad)
+    return gtab
+
+
+def get_isbi2013_2shell_gtab():
+    gradfile = pjoin(THIS_DIR, "gtab_isbi2013_2shell.txt")
+    grad = np.loadtxt(gradfile, delimiter=',')
+    gtab = GradientTable(grad)
+    return gtab
+
 
 def dsi_voxels():
     fimg, fbvals, fbvecs = get_data('small_101D')

@@ -14,9 +14,6 @@ from scipy.special import genlaguerre
 
 
 def test_shore_metrics():
-    fetch_taiwan_ntu_dsi()
-    img, gtab = read_taiwan_ntu_dsi()
-
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     angl = [(0, 0), (60, 0)]
