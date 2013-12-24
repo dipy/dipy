@@ -7,6 +7,7 @@ from warnings import warn
 from functools import wraps
 from collections import defaultdict
 from ..utils.six.moves import xrange
+from ..utils.six.moves import map
 
 import numpy as np
 from numpy import (asarray, ceil, dot, empty, eye, sqrt)
@@ -650,4 +651,4 @@ def length(streamlines, affine=None):
     """
     if affine is not None:
         streamlines = move_streamlines(streamlines, affine)
-    return itertools.imap(metrics.length, streamlines)
+    return map(metrics.length, streamlines)
