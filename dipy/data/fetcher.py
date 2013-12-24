@@ -21,13 +21,6 @@ import zipfile
 from dipy.core.gradients import gradient_table
 from dipy.io.gradients import read_bvals_bvecs
 
-
-_bad_md5_message="""The downloaded file, {}, does not have the expected md5
-checksum of "{}". This could mean that that something is wrong with the file or
-that the upstream file has been updated. You can try downloading the file again
-or updating to the newest version of dipy."""
-
-
 class FetcherError(Exception):
     pass
 
@@ -57,7 +50,7 @@ def fetch_data(files, folder):
 
     """
     if not os.path.exists(folder):
-        _log("Creating new folder {}".format(folder))
+        _log("Creating new folder %s" % (folder))
         os.makedirs(folder)
 
     all_skip = True
@@ -67,17 +60,20 @@ def fetch_data(files, folder):
         if os.path.exists(fullpath) and (_get_file_md5(fullpath) == md5):
             continue
         all_skip = False
-        _log('Downloading "%s" to %s'%(f, folder))
+        _log('Downloading "%s" to %s' % (f, folder))
         _get_file_data(fullpath, url)
         if _get_file_md5(fullpath) != md5:
-            msg = _bad_md5_message.format(fullpath, md5)
+            msg = """The downloaded file, %s, does not have the expected md5
+checksum of "%s". This could mean that that something is wrong with the file or
+that the upstream file has been updated. You can try downloading the file again
+or updating to the newest version of dipy.""" % (fullpath, md5)
             msg = textwrap.fill(msg)
             raise FetcherError(msg)
 
     if all_skip:
-        _log("All files already in {}.".format(folder))
+        _log("All files already in %s." % (folder))
     else:
-        _log("Files successfully downloaded to {}".format(folder))
+        _log("Files successfully downloaded to %s" % (folder))
 
 
 def fetch_scil_b0():
