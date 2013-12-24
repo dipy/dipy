@@ -1,6 +1,5 @@
 import numpy as np
-from dipy.data import get_data
-from dipy.core.gradients import gradient_table
+from dipy.data import get_gtab_taiwan_dsi
 from numpy.testing import (assert_almost_equal,
                            assert_equal,
                            run_module_suite)
@@ -8,12 +7,12 @@ from dipy.reconst.shore import ShoreModel, shore_matrix, shore_indices, shore_or
 from dipy.sims.voxel import (
     MultiTensor, all_tensor_evecs, multi_tensor_odf, single_tensor_odf,
     multi_tensor_rtop, multi_tensor_msd, multi_tensor_pdf)
-from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi
 from dipy.data import get_sphere
 from scipy.special import genlaguerre
 
 
 def test_shore_metrics():
+    gtab = get_gtab_taiwan_dsi()
     mevals = np.array(([0.0015, 0.0003, 0.0003],
                        [0.0015, 0.0003, 0.0003]))
     angl = [(0, 0), (60, 0)]
