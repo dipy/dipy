@@ -250,18 +250,20 @@ def get_data(name='small_64D'):
         return fimg, fbvals, fbvecs
 
 
-def get_3shell_gtab():
-    gradfile = pjoin(THIS_DIR, "gtab_3shell.txt")
-    grad = np.loadtxt(gradfile, delimiter=',')
-    gtab = GradientTable(grad)
-    return gtab
+def _gradient_from_file(filename):
+    """Reads a gradient file saved as a text file compatible with np.loadtxt
+    and saved in the dipy data directory"""
+    def gtab_getter():
+        gradfile = pjoin(THIS_DIR, filename)
+        grad = np.loadtxt(gradfile, delimiter=',')
+        gtab = GradientTable(grad)
+        return gtab
+    return gtab_getter
 
 
-def get_isbi2013_2shell_gtab():
-    gradfile = pjoin(THIS_DIR, "gtab_isbi2013_2shell.txt")
-    grad = np.loadtxt(gradfile, delimiter=',')
-    gtab = GradientTable(grad)
-    return gtab
+get_3shell_gtab = _gradient_from_file("gtab_3shell.txt")
+get_isbi2013_2shell_gtab = _gradient_from_file("gtab_isbi2013_2shell.txt")
+get_gtab_taiwan_dsi = _gradient_from_file("gtab_taiwan_dsi.txt")
 
 
 def dsi_voxels():
