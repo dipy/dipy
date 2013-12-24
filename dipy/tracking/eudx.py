@@ -60,8 +60,8 @@ class EuDX(object):
 
         Parameters
         ------------
-        a : array, 
-            Shape (I, J, K, Np), magnitude of the peak of a scalar anisotropic 
+        a : array,
+            Shape (I, J, K, Np), magnitude of the peak of a scalar anisotropic
             function e.g. QA (quantitative anisotropy) where Np is the number of
             peaks or a different function of shape (I, J, K) e.g FA or GFA.
         ind : array, shape(x,y,z,Np)
@@ -156,7 +156,7 @@ class EuDX(object):
             vertices, faces = sphere.vertices, sphere.faces
             self.odf_vertices = vertices
         else:
-            self.odf_vertices = np.ascontiguousarray(odf_vertices, 
+            self.odf_vertices = np.ascontiguousarray(odf_vertices,
                                                      dtype='f8')
         try:
             self.seed_no = len(seeds)
@@ -195,7 +195,7 @@ class EuDX(object):
 
             # for all peaks
             for ref in range(g):
-                track = eudx_both_directions(seed.copy(order="C"),
+                track = eudx_both_directions(seed.copy(),
                                              ref,
                                              self.a,
                                              self.ind,
