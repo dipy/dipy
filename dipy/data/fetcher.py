@@ -67,7 +67,7 @@ def fetch_data(files, folder):
         if os.path.exists(fullpath) and (_get_file_md5(fullpath) == md5):
             continue
         all_skip = False
-        _log('Downloading "{}" to {}'.format(f, folder))
+        _log('Downloading "%s" to %s'%(f, folder))
         _get_file_data(fullpath, url)
         if _get_file_md5(fullpath) != md5:
             msg = _bad_md5_message.format(fullpath, md5)
