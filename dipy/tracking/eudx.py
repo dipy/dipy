@@ -192,6 +192,7 @@ class EuDX(object):
                 seed = seed_voxels[i]
                 if np.any(seed < 0.) or np.any(seed > edge):
                     raise ValueError('Seed outside boundaries', seed)
+            seed = np.ascontiguousarray(seed)
 
             # for all peaks
             for ref in range(g):
