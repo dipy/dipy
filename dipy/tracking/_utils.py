@@ -2,7 +2,6 @@ from __future__ import division, print_function, absolute_import
 """This module is the python part of dipy.tracking.utils.py, it was split
 into another file to avoid circular imports."""
 
-import itertools
 from warnings import warn
 from functools import wraps
 from collections import defaultdict
