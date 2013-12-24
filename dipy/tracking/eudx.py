@@ -180,7 +180,7 @@ class EuDX(object):
         if seed_voxels is not None and seed_voxels.dtype != np.float64:
             # This is a private method so users should never see this error. If
             # you've reached this error, there is a bug somewhere.
-            raise ValueError("wrong dtype")
+            raise ValueError("wrong dtype seeds have to be float64")
         x, y, z, g = self.a.shape
         edge = np.array([x, y, z], dtype=np.float64) - 1.
 
