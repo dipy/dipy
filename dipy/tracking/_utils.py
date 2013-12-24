@@ -645,7 +645,7 @@ def length(streamlines, affine=None):
 
     Returns
     -------
-    terator object which then computes the length of each
+    Iterator object which then computes the length of each
     streamline in the bundle, upon iteration.
     """
     if affine is not None:
