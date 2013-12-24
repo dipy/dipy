@@ -1,9 +1,16 @@
 from os import path
-import urllib, urlparse
+
+try:
+    from urllib import pathname2url
+    from urlparse import urljoin
+except ImportError:
+    from urllib.request import pathname2url
+    from urllib.parse import urljoin
 
 import numpy.testing as npt
 from nibabel.tmpdirs import TemporaryDirectory
 from dipy.data import fetcher, SPHERE_FILES
+
 
 def test_fetch_data():
     symmetric362 = SPHERE_FILES['symmetric362']
@@ -13,8 +20,8 @@ def test_fetch_data():
 
         newfile = path.join(tmpdir, "testfile.txt")
         # Test that the fetcher can get a file
-        testfile_url = urllib.pathname2url(symmetric362)
-        testfile_url = urlparse.urljoin("file:", testfile_url)
+        testfile_url = pathname2url(symmetric362)
+        testfile_url = urljoin("file:", testfile_url)
         files = {"testfile.txt" : (testfile_url, md5)}
         fetcher.fetch_data(files, tmpdir)
         npt.assert_(path.exists(newfile))
