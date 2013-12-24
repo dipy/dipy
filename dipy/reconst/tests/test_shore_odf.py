@@ -1,26 +1,21 @@
 import numpy as np
-from dipy.data import get_data, two_shells_voxels, three_shells_voxels, get_sphere
-from dipy.data.fetcher import (fetch_isbi2013_2shell, read_isbi2013_2shell,
-                               fetch_sherbrooke_3shell, read_sherbrooke_3shell)
+from dipy.data import get_sphere, get_3shell_gtab, get_isbi2013_2shell_gtab
 from dipy.reconst.shore import ShoreModel
 from dipy.reconst.shm import QballModel, sh_to_sf
 from dipy.reconst.peaks import gfa, peak_directions
-from dipy.core.gradients import gradient_table
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
                            run_module_suite,
                            assert_array_equal,
                            assert_raises)
-from dipy.sims.voxel import SticksAndBall, multi_tensor
+from dipy.sims.voxel import SticksAndBall
 from dipy.core.subdivide_octahedron import create_unit_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.tests.test_dsi import sticks_and_ball_dummies
-import nibabel as nib
 
 
 def test_shore_odf():
-    fetch_isbi2013_2shell()
-    img, gtab=read_isbi2013_2shell()
+    gtab = get_isbi2013_2shell_gtab()
 
     # load symmetric 724 sphere
     sphere = get_sphere('symmetric724')
@@ -62,11 +57,9 @@ def test_shore_odf():
 
 
 def test_multivox_shore():    
-    fetch_sherbrooke_3shell()
-    img, gtab=read_sherbrooke_3shell()
+    gtab = get_3shell_gtab()
 
-    test = img.get_data()
-    data = test[45:65, 35:65, 33:34]
+    data = np.random.random([20, 30, 1, gtab.gradients.shape[0]])
     radial_order = 4
     zeta = 700
     asm = ShoreModel(gtab, radial_order=radial_order, zeta=zeta, lambdaN=1e-8, lambdaL=1e-8)
