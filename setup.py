@@ -55,7 +55,7 @@ if 'setuptools' in sys.modules:
     # to the Pyrex / setuptools hack above (force_setuptools)
     from setuptools.command import install
     # If running setuptools and nibabel is not installed, we have to force
-    # setuptools to install nibabel locally for the script to contine.  This
+    # setuptools to install nibabel locally for the script to continue.  This
     # hack is from
     # http://stackoverflow.com/questions/12060925/best-way-to-share-code-across-several-setup-py-scripts
     # with thanks
@@ -101,6 +101,8 @@ except ImportError: # No nibabel
            ' - please install nibabel first')
     pybuilder = derror_maker(build_py.build_py, msg)
     extbuilder = derror_maker(build_ext.build_ext, msg)
+    def package_check(*args, **kwargs):
+        raise RuntimeError(msg + " or try 'python setup_egg.py install'")
 else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
     # Cython is a dependency for building extensions, iff we don't have stamped
