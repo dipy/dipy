@@ -28,15 +28,16 @@ if not 'force_setuptools' in globals():
         force_setuptools = False
 
 if force_setuptools:
-    # Try to preempt setuptools monkeypatching of Extension handling when Pyrex
-    # is missing.  Otherwise the monkeypatched Extension will change .pyx
-    # filenames to .c filenames, and we probably don't have the .c files.
-    sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
     import setuptools
 
 # We may just have imported setuptools, or we may have been exec'd from a
 # setuptools environment like pip
 if 'setuptools' in sys.modules:
+    # Try to preempt setuptools monkeypatching of Extension handling when Pyrex
+    # is missing.  Otherwise the monkeypatched Extension will change .pyx
+    # filenames to .c filenames, and we probably don't have the .c files.
+    sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
+    # Set setuptools extra arguments
     nibabel_spec = 'nibabel>=' + NIBABEL_MIN_VERSION
     extra_setuptools_args = dict(
         tests_require=['nose'],
