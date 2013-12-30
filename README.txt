@@ -36,5 +36,5 @@ License
 =======
 
 dipy is licensed under the terms of the BSD license. Some code included with
-dipy is also licensed under the BSD license.  Please the LICENSE file in the
+dipy is also licensed under the BSD license.  Please see the LICENSE file in the
 dipy distribution.
