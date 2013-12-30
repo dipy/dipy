@@ -19,9 +19,9 @@ exec(open(ver_file).read())
 
 # force_setuptools can be set from the setup_egg.py script
 if not 'force_setuptools' in globals():
-    # For some commands, use setuptools
+    # For some commands, always use setuptools
     if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
-                'bdist_mpkg', 'install_egg_info', 'egg_info',
+                'bdist_mpkg', 'bdist_wheel', 'install_egg_info', 'egg_info',
                 'easy_install')).intersection(sys.argv)) > 0:
         force_setuptools = True
     else:
