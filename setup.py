@@ -19,24 +19,26 @@ exec(open(ver_file).read())
 
 # force_setuptools can be set from the setup_egg.py script
 if not 'force_setuptools' in globals():
-    # For some commands, use setuptools
+    # For some commands, always use setuptools
     if len(set(('develop', 'bdist_egg', 'bdist_rpm', 'bdist', 'bdist_dumb',
-                'bdist_mpkg', 'install_egg_info', 'egg_info',
+                'bdist_mpkg', 'bdist_wheel', 'install_egg_info', 'egg_info',
                 'easy_install')).intersection(sys.argv)) > 0:
         force_setuptools = True
     else:
         force_setuptools = False
 
 if force_setuptools:
-    # Try to preempt setuptools monkeypatching of Extension handling when Pyrex
-    # is missing.  Otherwise the monkeypatched Extension will change .pyx
-    # filenames to .c filenames, and we probably don't have the .c files.
-    sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
     import setuptools
 
 # We may just have imported setuptools, or we may have been exec'd from a
 # setuptools environment like pip
 if 'setuptools' in sys.modules:
+    # Try to preempt setuptools monkeypatching of Extension handling when Pyrex
+    # is missing.  Otherwise the monkeypatched Extension will change .pyx
+    # filenames to .c filenames, and we probably don't have the .c files.
+    sys.path.insert(0, pjoin(dirname(__file__), 'fake_pyrex'))
+    # Set setuptools extra arguments
+    nibabel_spec = 'nibabel>=' + NIBABEL_MIN_VERSION
     extra_setuptools_args = dict(
         tests_require=['nose'],
         test_suite='nose.collector',
@@ -44,7 +46,7 @@ if 'setuptools' in sys.modules:
         extras_require = dict(
             doc=['Sphinx>=1.0'],
             test=['nose>=0.10.1']),
-        install_requires = ['nibabel>=' + NIBABEL_MIN_VERSION])
+        install_requires = [nibabel_spec])
     # I removed numpy and scipy from install requires because easy_install seems
     # to want to fetch these if they are already installed, meaning of course
     # that there's a long fragile and unnecessary compile before the install
@@ -53,6 +55,13 @@ if 'setuptools' in sys.modules:
     # further down.  Using distutils install command causes some confusion, due
     # to the Pyrex / setuptools hack above (force_setuptools)
     from setuptools.command import install
+    # If running setuptools and nibabel is not installed, we have to force
+    # setuptools to install nibabel locally for the script to continue.  This
+    # hack is from
+    # http://stackoverflow.com/questions/12060925/best-way-to-share-code-across-several-setup-py-scripts
+    # with thanks
+    from setuptools.dist import Distribution
+    Distribution(dict(setup_requires=nibabel_spec))
 else:
     extra_setuptools_args = {}
     from distutils.command import install
@@ -93,6 +102,8 @@ except ImportError: # No nibabel
            ' - please install nibabel first')
     pybuilder = derror_maker(build_py.build_py, msg)
     extbuilder = derror_maker(build_ext.build_ext, msg)
+    def package_check(*args, **kwargs):
+        raise RuntimeError(msg + " or try 'python setup_egg.py install'")
 else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
     # Cython is a dependency for building extensions, iff we don't have stamped
