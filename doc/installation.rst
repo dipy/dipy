@@ -4,7 +4,13 @@
 Installation
 ############
 
-dipy_ is in active development at the moment. You can install it from our latest release, but you may find that the release has gotten well behind the current development - at least - we hope so - if we're developing fast enough!
+dipy_ is in active development at the moment. You can install it from our
+latest release, but you may find that the release has gotten well behind the
+current development - at least - we hope so - if we're developing fast enough!
+
+If you want install the latest and greatest from the bleeding edge of the
+development, skip to :ref:`from-source`. If you just want to install a released
+version, read on for your platform.
 
 ********************
 Installing a release
@@ -21,31 +27,87 @@ Using packages:
 Windows
 -------
 
-Install canopy_ and then ::
+#. To use dipy_, you will need to install a few :ref:`dependencies`. One
+    simple way to get the dependencies on your machine, is to install the
+    Enthought Canopy_ distribution, following the instructions on their
+    website. Note that there are alternatives to Canopy. See below for :ref:`alternatives`
 
-    pip install nibabel
-    pip install dipy
+#. You will still need to install the nibabel_ library, which supports reading
+    and writing of neuroimaging data formats. As of November 2013, nibabel is
+    included in the Canopy Package Manager only as a "Community Package"
+    (i.e. without dependencies provided), and attempting to install it generates
+    an error. But never fear, you can install it by opening a Canopy Command
+    Prompt (from the Start Menu), and type ::
 
-Then from any python console or script try ::
+    easy_install nibabel
+
+#. Similarly, you can install dipy_ itself, by opening a Canopy Command Prompt
+    and typing ::
+
+    easy_install dipy
+
+Now, you should be able to start using dipy_ Then from any python console or
+script try ::
 
     >>> import dipy
+
+.. note::
+
+    There are other alternatives than the one we have outlined above to
+    installing the dependencies and to install nibabel_ and dipy_. In
+    particular, assuming you have installed the :ref:`dependencies`, e.g. using
+    Canopy_ you can download so-called 'binary installers' from the `nibabel
+    pypi`_ and from the `dipy pypi`_. Depending on your platform, this would be
+    the `.exe` (for Windows) and `.dmg` (for Mac) files at the bottom of these
+    pages. You can download these and double-click on them to install these
+    libraries. Things should work just the same.
+
+    The `pip` command can be used as an alternative to the `easy_install`
+    command mentioned above::
+
+        pip install nibabel
+	pip install dipy
+
 
 OSX
 ---
 
-Install Xcode_ and canopy_ and then ::
+#. To use dipy_, you need to have some :ref:`dependencies` installed. First of
+    all, make sure that you have installed the Apple Xcode_ developer tools. You'll
+    need those to install all the following dependencies.
 
-    pip install nibabel
-    pip install dipy
+#. Next, install the python library dependencies. One easy way to do that is to
+    use the Enthought Canopy_ distribution (but see below for
+    :ref:`alternatives`).
 
-Then from any python console or script try ::
+#. Even with Canopy installed, you will still need to install the nibabel_
+    library, which supports reading and writing of neuroimaging data formats.
+    As of November 2013, nibabel is included in the Canopy Package Manager only
+    as a "Community Package" (i.e. without dependencies provided), and
+    attempting to install it generates an error. Instead, open a terminal shell and type
+    at the command line the following command ::
+
+       pip install nibabel
+
+#. Finally, we are ready to install `dipy` itself. Same as with `nibabel`
+    above, we will type at the terminal shell command line ::
+
+        pip install dipy
+
+When this is all said and done, we can try to see if the installation
+worked. From any python console or script try ::
 
     >>> import dipy
+
+This should work with no error.
 
 Linux
 -----
 
-For Debian, Ubuntu and Mint set up the NeuroDebian_ repositories - see `NeuroDebian how to`_. Then::
+First of all, let us say: thank god for NeuroDebian_. This wonderful project
+makes it easy to install neuroscience-related software on Linux operating
+systems: for Debian, Ubuntu and Mint set up the NeuroDebian_ repositories - see
+`NeuroDebian how to`_. Then::
 
     sudo apt-get install python-dipy
 
@@ -60,9 +122,12 @@ Using pip:
 
 This method should work under Linux, Mac OS X and Windows.
 
-Please install numpy_ and scipy_ using their respective binary installers if you haven't already.
+Please install numpy_ and scipy_ using their respective binary installers if
+you haven't already.
 
-For Windows and Macosx you can use canopy_ to get numpy, scipy, cython and lots of other useful python module. canopy_ is a big package but will install tools which are useful for scientific processing.
+For Windows and Mac OSX you can use canopy_ to get numpy, scipy, cython and lots
+of other useful python module. canopy_ is a big package but will install many
+tools and libraries that are useful for scientific processing.
 
 When you have numpy, scipy and cython installed then try ::
 
@@ -96,6 +161,8 @@ Make sure that you have uninstalled all previous versions of Dipy before install
 
 and then remove the Dipy directory that contains that file.
 
+.. _alternatives:
+
 Alternatives to Canopy
 ----------------------
 If you have problems installing Canopy_ we recommend using Anaconda_ or pythonxy_.
@@ -111,6 +178,7 @@ Note on python versions
 
 Dipy supports python 2.6+ and python 3+. We started supporting Python 3 from version dipy.0.7.0.dev.
 
+.. _from-source:
 
 **********************
 Installing from source
@@ -126,9 +194,10 @@ latest changes.  In that case, you can use::
 
 For more information about this see :ref:`following-latest`.
 
-After you've cloned the repository, you will have a new directory, containing the dipy ``setup.py`` file, among others.  We'll call this
-directory - that contains the ``setup.py`` file - the *dipy source root
-directory*.  Sometimes we'll also call it the ``<dipy root>`` directory.
+After you've cloned the repository, you will have a new directory, containing
+the dipy ``setup.py`` file, among others.  We'll call this directory - that
+contains the ``setup.py`` file - the *dipy source root directory*.  Sometimes
+we'll also call it the ``<dipy root>`` directory.
 
 Building and installing
 =======================
@@ -259,8 +328,6 @@ Then change directory to ``<dipy root>`` and::
     cd doc
     make clean
     make html
-
-
 
 
 .. include:: links_names.inc
