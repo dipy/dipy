@@ -1804,7 +1804,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
 
     """
 
-    ren.ResetCamera()
+    #ren.ResetCamera()
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
     # window.SetAAFrames(6)
@@ -1896,7 +1896,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     # ren.GetActiveCamera().Azimuth(180)
 
-    ren.ResetCamera()
+    # ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
     if major_version <= 5:
