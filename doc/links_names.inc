@@ -78,9 +78,7 @@
 .. _ETS: http://code.enthought.com/projects/tool-suite.php
 .. _`Enthought Tool Suite`: http://code.enthought.com/projects/tool-suite.php
 .. _canopy: https://www.enthought.com/products/canopy
-.. _Canopy: https://www.enthought.com/products/canopy
 .. _anaconda: http://continuum.io/downloads
-.. _Anaconda: http://continuum.io/downloads
 .. _python: http://www.python.org
 .. _mayavi: http://mayavi.sourceforge.net/
 .. _sympy: http://code.google.com/p/sympy/
