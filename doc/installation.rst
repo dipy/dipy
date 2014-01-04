@@ -104,9 +104,7 @@ This should work with no error.
 Linux
 -----
 
-First of all, let us say: thank god for NeuroDebian_. This wonderful project
-makes it easy to install neuroscience-related software on Linux operating
-systems: for Debian, Ubuntu and Mint set up the NeuroDebian_ repositories - see
+For Debian, Ubuntu and Mint set up the NeuroDebian_ repositories - see
 `NeuroDebian how to`_. Then::
 
     sudo apt-get install python-dipy
