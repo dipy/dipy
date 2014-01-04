@@ -23,6 +23,8 @@
 .. Packaging
 .. _neurodebian: http://neuro.debian.net
 .. _neurodebian how to: http://neuro.debian.net/#how-to-use-this-repository
+.. _pip: http://www.pip-installer.org/en/latest/
+.. _easy_install:
 
 .. Documentation tools
 .. _graphviz: http://www.graphviz.org/

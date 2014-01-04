@@ -36,15 +36,14 @@ Windows
     and writing of neuroimaging data formats. As of November 2013, nibabel is
     included in the Canopy Package Manager only as a "Community Package"
     (i.e. without dependencies provided), and attempting to install it generates
-    an error. But never fear, you can install it by opening a Canopy Command
-    Prompt (from the Start Menu), and type ::
+    an error. But never fear, you can install it from a binary installer on the
+    `nibabel pypi`_ web page. Download the `.exe` installer in the table at the
+    bottom and double-click it to launch the installation process.
 
-    easy_install nibabel
+#. Similarly, you can install dipy_ itself from the `dipy pypi`_
+    web-page. Download the `.exe` installer in the table at the bottom of the page
+    and double-click it to launch the installation.
 
-#. Similarly, you can install dipy_ itself, by opening a Canopy Command Prompt
-    and typing ::
-
-    easy_install dipy
 
 Now, you should be able to start using dipy_ Then from any python console or
 script try ::
@@ -55,19 +54,19 @@ script try ::
 
     There are other alternatives than the one we have outlined above to
     installing the dependencies and to install nibabel_ and dipy_. In
-    particular, assuming you have installed the :ref:`dependencies`, e.g. using
-    Canopy_ you can download so-called 'binary installers' from the `nibabel
-    pypi`_ and from the `dipy pypi`_. Depending on your platform, this would be
-    the `.exe` (for Windows) and `.dmg` (for Mac) files at the bottom of these
-    pages. You can download these and double-click on them to install these
-    libraries. Things should work just the same.
+    particular, you can use `pip`_ or `easy_install`_ from the Canopy Command
+    Prompt (which you can launch from the Start Menu),
 
-    The `pip` command can be used as an alternative to the `easy_install`
-    command mentioned above::
+    To do that, you would replace the instructions above with typing the
+    following at the command prompt ::
 
         pip install nibabel
 	pip install dipy
 
+    Or ::
+
+        easy_install nibabel
+	easy_install dipy
 
 OSX
 ---
