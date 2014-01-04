@@ -94,8 +94,8 @@ OSX
 
         pip install dipy
 
-When this is all said and done, we can try to see if the installation
-worked. From any python console or script try ::
+When the installation has finished we can check if it is successful in the
+following way. From a Python console script try ::
 
     >>> import dipy
 
