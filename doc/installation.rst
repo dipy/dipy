@@ -4,9 +4,9 @@
 Installation
 ############
 
-dipy_ is in active development at the moment. You can install it from our
-latest release, but you may find that the release has gotten well behind the
-current development - at least - we hope so - if we're developing fast enough!
+dipy_ is in active development. You can install it from our latest release, but
+you may find that the release has gotten well behind the current development -
+at least - we hope so - if we're developing fast enough!
 
 If you want install the latest and greatest from the bleeding edge of the
 development, skip to :ref:`from-source`. If you just want to install a released
@@ -33,19 +33,25 @@ Windows
     website. Note that there are alternatives to Canopy. See below for :ref:`alternatives`
 
 #. You will still need to install the nibabel_ library, which supports reading
-    and writing of neuroimaging data formats. As of November 2013, nibabel is
-    included in the Canopy Package Manager only as a "Community Package"
-    (i.e. without dependencies provided), and attempting to install it generates
-    an error. But never fear, you can install it from a binary installer on the
-    `nibabel pypi`_ web page. Download the `.exe` installer in the table at the
-    bottom and double-click it to launch the installation process.
+    and writing of neuroimaging data formats. You can install it from a binary
+    installer on the `nibabel pypi`_ web page. Download the `.exe` installer in
+    the table at the bottom and double-click it to launch the installation
+    process.
+
+    .. note ::
+
+    As of November 2013, nibabel is included in the Canopy Package Manager only
+    as a "Community Package" (i.e. without dependencies provided), and
+    attempting to install it generates an error. Please use the binary
+    installer, as described above.
+
 
 #. Similarly, you can install dipy_ itself from the `dipy pypi`_
     web-page. Download the `.exe` installer in the table at the bottom of the page
     and double-click it to launch the installation.
 
 
-Now, you should be able to start using dipy_ Then from any python console or
+Now, you should be able to start using dipy_. From a python console or
 script try ::
 
     >>> import dipy
