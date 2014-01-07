@@ -1360,7 +1360,8 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     return actor
 
 
-def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
+def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0),
+          origin=None):
     """ Visualize peak directions as given from ``peaks_from_model``
 
     Parameters
@@ -1386,16 +1387,20 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
     --------
     dipy.viz.fvtk.sphere_funcs
     """
-    peaks_dirs = np.asarray(peaks_dirs)
-    if peaks_dirs.ndim == 2:
-        peaks_dirs = peaks_dirs[None, None, None, :]
-    if peaks_dirs.ndim == 3:
-        peaks_dirs = peaks_dirs[None, None, :]
-    if peaks_dirs.ndim == 4:
-        peaks_dirs = peaks_dirs[None, :]
-    if peaks_dirs.ndim > 5:
-        raise ValueError("Wrong shape")
-
+    # We need a helper function here to reshape the inputs so that we have the
+    # right number of dimensions on peak_dirs and on peak_values (and the same
+    # number on both... 
+    def _reshaper(thing, dims=5):
+        np.asarray(thing)
+        # We can't handle stuff with more than 5D:
+        if thing.ndim > 5:
+            raise ValueError("Wrong shape")
+        while thing.ndim<dims:
+            thing = thing[None, :]
+        return thing
+        
+    peaks_dirs = _reshaper(peaks_dirs)
+    peaks_values = _reshaper(peaks_values, 4)
     grid_shape = np.array(peaks_dirs.shape[:3])
 
     list_dirs = []
@@ -1405,6 +1410,9 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
         xyz = scale * (ijk - grid_shape / 2.)[:, None]
 
         xyz = xyz.T
+
+        if origin is not None:
+            xyz = xyz + origin
 
         for i in range(peaks_dirs.shape[-2]):
 
