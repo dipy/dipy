@@ -74,7 +74,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
         no_params = ((sh_order + 1) * (sh_order + 2)) / 2
 
-        if no_params > np.sum(gtab.b0s_mask is False):
+        if no_params > np.sum(gtab.b0s_mask == False):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
             warnings.warn(msg, UserWarning)
@@ -165,7 +165,7 @@ class ConstrainedSDTModel(OdfModel, Cache):
 
         no_params = ((sh_order + 1) * (sh_order + 2)) / 2
 
-        if no_params > np.sum(gtab.b0s_mask is False):
+        if no_params > np.sum(gtab.b0s_mask == False):
             msg = "Number of parameters required for the fit are more "
             msg += "than the actual data points"
             warnings.warn(msg, UserWarning)
@@ -454,7 +454,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
         # This is the super-resolved trick.
         # Wherever there is a negative amplitude value on the fODF, it
-        # concatinates a value to the S vector so that the estimation can
+        # concatenates a value to the S vector so that the estimation can
         # focus on trying to eliminate it. In a sense, this "adds" a
         # measurement, which can help to better estimate the fodf_sh, even if
         # you have more SH coeffcients to estimate than actual S measurements.
