@@ -22,6 +22,7 @@ import numpy.testing as nt
 import nibabel as nib
 from nibabel.tmpdirs import InTemporaryDirectory
 
+from dipy.utils.six import string_types
 from dipy.data import get_data
 
 # Quickbundles command-line requires matplotlib: 
@@ -30,9 +31,6 @@ try:
     no_mpl = False
 except ImportError:
     no_mpl = True
-
-# Need shell to get path to correct executables
-USE_SHELL = True
 
 DEBUG_PRINT = os.environ.get('NIPY_DEBUG_PRINT', False)
 
@@ -51,16 +49,38 @@ def local_script_dir(script_sdir):
 LOCAL_SCRIPT_DIR = local_script_dir('bin')
 
 def run_command(cmd, check_code=True):
+    """ Run command sequence `cmd` returning exit code, stdout, stderr
+
+    Parameters
+    ----------
+    cmd : str or sequence
+        string with command name or sequence of strings defining command
+    check_code : {True, False}, optional
+        If True, raise error for non-zero return code
+
+    Returns
+    -------
+    returncode : int
+        return code from execution of `cmd`
+    stdout : bytes (python 3) or str (python 2)
+        stdout from `cmd`
+    stderr : bytes (python 3) or str (python 2)
+        stderr from `cmd`
+    """
+    if isinstance(cmd, string_types):
+        cmd = [cmd]
+    else:
+        cmd = list(cmd)
     if not LOCAL_SCRIPT_DIR is None:
         # Windows can't run script files without extensions natively so we need
         # to run local scripts (no extensions) via the Python interpreter.  On
         # Unix, we might have the wrong incantation for the Python interpreter
         # in the hash bang first line in the source file.  So, either way, run
         # the script through the Python interpreter
-        cmd = "%s %s" % (sys.executable, pjoin(LOCAL_SCRIPT_DIR, cmd))
+        cmd = [sys.executable, pjoin(LOCAL_SCRIPT_DIR, cmd[0])] + cmd[1:]
     if DEBUG_PRINT:
         print("Running command '%s'" % cmd)
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=USE_SHELL)
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
     stdout, stderr = proc.communicate()
     if proc.poll() == None:
         proc.terminate()
@@ -98,25 +118,21 @@ def assert_image_shape_affine(filename, shape, affine):
     nt.assert_array_almost_equal(image.get_affine(), affine)
 
 
-def test_dipy_fit_tensor():
+def test_dipy_fit_tensor_again():
     with InTemporaryDirectory() as tmp:
         dwi, bval, bvec = get_data("small_25")
-
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
         shutil.copyfile(bvec, "small_25.bvec")
-
         # Call script
         cmd = ["dipy_fit_tensor", "--mask=none", "small_25.nii.gz"]
-        out = run_command(" ".join(cmd))
+        out = run_command(cmd)
         assert_equal(out[0], 0)
-
         # Get expected values
         img = nib.load("small_25.nii.gz")
         affine = img.get_affine()
         shape = img.shape[:-1]
-
         # Check expected outputs
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
@@ -127,22 +143,18 @@ def test_dipy_fit_tensor():
 
     with InTemporaryDirectory() as tmp:
         dwi, bval, bvec = get_data("small_25")
-
         # Copy data to tmp directory
         shutil.copyfile(dwi, "small_25.nii.gz")
         shutil.copyfile(bval, "small_25.bval")
         shutil.copyfile(bvec, "small_25.bvec")
-
         # Call script
         cmd = ["dipy_fit_tensor", "--save-tensor", "--mask=none", "small_25.nii.gz"]
-        out = run_command(" ".join(cmd))
+        out = run_command(cmd)
         assert_equal(out[0], 0)
-
         # Get expected values
         img = nib.load("small_25.nii.gz")
         affine = img.get_affine()
         shape = img.shape[:-1]
-
         # Check expected outputs
         assert_image_shape_affine("small_25_fa.nii.gz", shape, affine)
         assert_image_shape_affine("small_25_t2di.nii.gz", shape, affine)
@@ -160,7 +172,7 @@ def test_dipy_fit_tensor():
 def test_qb_commandline():
     with InTemporaryDirectory() as tmp:
         tracks_file = get_data('fornix')
-        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file ./mypickle.pkl',
-               '--out_file ./tracks300.trk']
-        out = run_command(" ".join(cmd))
+        cmd = ["dipy_quickbundles", tracks_file, '--pkl_file', 'mypickle.pkl',
+               '--out_file', 'tracks300.trk']
+        out = run_command(cmd)
         assert_equal(out[0], 0)
