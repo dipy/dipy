@@ -21,15 +21,16 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1, tau=0.1):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
 
-        Spherical deconvolution computes a fiber orientation distribution (FOD), also
-        called fiber ODF (fODF) [2]_, as opposed to a diffusion ODF as the QballModel
-        or the CsaOdfModel. This results in a sharper angular profile with better
-        angular resolution that is the best object to be used for later deterministic
-        and probabilistic tractography [3]_.
+        Spherical deconvolution computes a fiber orientation distribution
+        (FOD), also called fiber ODF (fODF) [2]_, as opposed to a diffusion ODF
+        as the QballModel or the CsaOdfModel. This results in a sharper angular
+        profile with better angular resolution that is the best object to be
+        used for later deterministic and probabilistic tractography [3]_.
 
-        A sharp fODF is obtained because a single fiber *response* function is injected
-        as *a priori* knowledge. The response function is often data-driven and thus,
-        comes as input to the ConstrainedSphericalDeconvModel. It will be used as deconvolution
+        A sharp fODF is obtained because a single fiber *response* function is
+        injected as *a priori* knowledge. The response function is often
+        data-driven and thus, comes as input to the
+        ConstrainedSphericalDeconvModel. It will be used as deconvolution
         kernel, as described in [1]_.
 
         Parameters
@@ -49,24 +50,26 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
             weight given to the constrained-positivity regularization part of the
             deconvolution equation (see [1]_)
         tau : float
-            threshold controlling the amplitude below which the corresponding fODF is assumed to be zero.
-            Ideally, tau should be set to zero. However, to improve the stability of the algorithm, tau
-            is set to tau*100 % of the mean fODF amplitude (here, 10% by default) (see [1]_)
+            threshold controlling the amplitude below which the corresponding
+            fODF is assumed to be zero.  Ideally, tau should be set to
+            zero. However, to improve the stability of the algorithm, tau is
+            set to tau*100 % of the mean fODF amplitude (here, 10% by default)
+            (see [1]_)
 
         References
         ----------
-        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the fibre orientation
-               distribution in diffusion MRI: Non-negativity constrained super-resolved spherical
+        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
+               the fibre orientation distribution in diffusion MRI:
+               Non-negativity constrained super-resolved spherical
                deconvolution
-        .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
-               on Complex Fibre Orientation Distributions
-        .. [3] C\^ot\'e, M-A., et al. Medical Image Analysis 2013. Tractometer: Towards validation
-               of tractography pipelines
-        .. [4] Tournier, J.D, et al. Imaging Systems and Technology 2012. MRtrix: Diffusion
-               Tractography in Crossing Fiber Regions
-
+        .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
+               Probabilistic Tractography Based on Complex Fibre Orientation
+               Distributions
+        .. [3] C\^ot\'e, M-A., et al. Medical Image Analysis 2013. Tractometer:
+               Towards validation of tractography pipelines
+        .. [4] Tournier, J.D, et al. Imaging Systems and Technology
+               2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
         """
-
         m, n = sph_harm_ind_list(sh_order)
         self.m, self.n = m, n
         self._where_b0s = lazy_index(gtab.b0s_mask)
@@ -565,8 +568,8 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
     return fodf_sh, num_it
 
 
-def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lambda_=1., tau=0.1,
-                    r2_term=False):
+def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8,
+                    lambda_=1., tau=0.1, r2_term=False):
     r""" Sharpen odfs using the spherical deconvolution transform [1]_
 
     This function can be used to sharpen any smooth ODF spherical function. In
