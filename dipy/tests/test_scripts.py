@@ -12,7 +12,8 @@ import sys
 import os
 import shutil
 
-from os.path import dirname, join as pjoin, isfile, isdir, abspath, realpath
+from os.path import (dirname, join as pjoin, isfile, isdir, abspath, realpath,
+                     pathsep)
 
 from subprocess import Popen, PIPE
 
@@ -48,6 +49,16 @@ def local_script_dir(script_sdir):
 
 LOCAL_SCRIPT_DIR = local_script_dir('bin')
 
+def local_module_dir(module_name):
+    mod = __import__(module_name)
+    containing_path = dirname(dirname(realpath(mod.__file__)))
+    if containing_path == realpath(os.getcwd()):
+        return containing_path
+    return None
+
+LOCAL_MODULE_DIR = local_module_dir('dipy')
+
+
 def run_command(cmd, check_code=True):
     """ Run command sequence `cmd` returning exit code, stdout, stderr
 
@@ -80,13 +91,31 @@ def run_command(cmd, check_code=True):
         cmd = [sys.executable, pjoin(LOCAL_SCRIPT_DIR, cmd[0])] + cmd[1:]
     if DEBUG_PRINT:
         print("Running command '%s'" % cmd)
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE)
+    env = os.environ
+    if not LOCAL_MODULE_DIR is None:
+        # module likely comes from the current working directory. We might need
+        # that directory on the path if we're running the scripts from a
+        # temporary directory
+        env = env.copy()
+        pypath = env.get('PYTHONPATH', None)
+        if pypath is None:
+            env['PYTHONPATH'] = LOCAL_MODULE_DIR
+        else:
+            env['PYTHONPATH'] = LOCAL_MODULE_DIR + pathsep + pypath
+    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, env=env)
     stdout, stderr = proc.communicate()
     if proc.poll() == None:
         proc.terminate()
     if check_code and proc.returncode != 0:
-        raise RuntimeError('Command "%s" failed with stdout\n%s\nstderr\n%s\n'
-                           % (cmd, stdout, stderr))
+        raise RuntimeError(
+            """Command "{0}" failed with
+            stdout
+            ------
+            {1}
+            stderr
+            ------
+            {2}
+            """.format(cmd, stdout, stderr))
     return proc.returncode, stdout, stderr
 
 
