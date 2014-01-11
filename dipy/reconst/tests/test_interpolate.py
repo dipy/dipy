@@ -41,7 +41,7 @@ def test_TriLinearInterpolator():
         y = b.flat[ii]
         z = c.flat[ii]
         expected_result = x + y + z + o.ravel()
-        assert_array_almost_equal(tli[x, y, z], expected_result)
+        assert_array_almost_equal(tli[x, y, z], expected_result, decimal=5)
         ind = np.array([x, y, z])
         assert_array_almost_equal(tli[ind], expected_result)
 

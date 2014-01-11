@@ -17,8 +17,10 @@ def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
     versions of numpy.
 
+    Assumes array layout is C contiguous
     """
-    index = np.asarray(index)
+    # Upcast to integer type capable of holding largest array index
+    index = np.asarray(index, dtype=np.intp)
     dims = np.asarray(dims)
     if index.ndim > 2:
         raise ValueError("Index should be 1 or 2-D")
