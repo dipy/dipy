@@ -358,12 +358,26 @@ def subsegment(streamlines, max_segment_length):
 
 
 def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
-    """Takes a binary mask and returns seeds in voxels != 0.
+    """Creates seeds for fiber tracking from a binary mask.
 
-    places evenly spaced points in nonzero voxels of mask, spaces the points
-    based on density. For example if density is [1, 2, 3], there will be 6
-    points in each voxel, at x=.5, y=[.25, .75] and z=[.166, .5, .833].
-    density=a is the same as density = [a, a, a]
+    Seeds points are placed evenly distributed in all voxels of ``mask`` which
+    are ``True``.
+
+    Parameters
+    ----------
+    mask : binary 3d array_like
+        A binary array specifying where to place the seeds for fiber tracking.
+    density : int or array_like (3,)
+        Specifies the number of seeds to place along each dimension. A
+        ``density`` of `2` is the same as ``[2, 2, 2]`` and will result in a
+        total of 8 seeds per voxel.
+    voxel_size :
+        This argument is deprecated.
+    affine : array, (4, 4), optional
+        The mapping between voxel indices and the point space for seeds. A
+        seed point at the center the voxel ``[i, j, k]`` will be represented as
+        ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
+        ``affine`` is ``np.eye(4)`` by default.
 
     Examples
     --------
