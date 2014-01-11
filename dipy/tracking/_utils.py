@@ -407,7 +407,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     # Add the grid of points to each voxel in mask
     where = np.argwhere(mask)
     seeds = where[:, np.newaxis, :] + grid[np.newaxis, :, :]
-    seeds.shape = (-1, 3)
+    seeds = seeds.reshape((-1, 3))
 
     # Apply the spacial transform
     if affine is not None:
