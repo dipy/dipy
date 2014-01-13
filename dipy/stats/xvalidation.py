@@ -38,11 +38,9 @@ def kfold_xval(model, data, folds):
     holding b-values and corresponding unit vectors.
 
     """
-    if hasattr(model, 'bval'): # e.g. DTI
-        gtab = gt.gradient_table(model.bval, model.bvec)
-    elif hasattr(model, 'gtab'): # e.g. DKI
-        gtab = model.gtab
-
+    # This should always be there, if the model inherits from
+    # dipy.reconst.base.ReconstModel!
+    gtab = model.gtab
     data_d = data[..., ~gtab.b0s_mask]
     modder =  np.mod(data_d.shape[-1], folds)
     # Make sure that an equal number of samples get left out in each fold:

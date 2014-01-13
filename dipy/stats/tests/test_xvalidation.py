@@ -40,5 +40,5 @@ def test_kfold_xval():
     dmfit = dm.fit(S)
 
     kf_xval = xval.kfold_xval(dm, S, 2)
-    cod = ut.coeff_of_determination(S[~gtab.b0s_mask], kf_xval)
+    cod = ut.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)
