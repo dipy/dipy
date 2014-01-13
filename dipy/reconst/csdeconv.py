@@ -125,22 +125,25 @@ class ConstrainedSDTModel(OdfModel, Cache):
     def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1., tau=0.1):
         r""" Spherical Deconvolution Transform (SDT) [1]_.
 
-        The SDT computes a fiber orientation distribution (FOD) as opposed to a diffusion
-        ODF as the QballModel or the CsaOdfModel. This results in a sharper angular
-        profile with better angular resolution. The Contrained SDTModel is similar
-        to the Constrained CSDModel but mathematically it deconvolves the q-ball ODF
-        as oppposed to the HARDI signal (see [1]_ for a comparison and a through discussion).
+        The SDT computes a fiber orientation distribution (FOD) as opposed to a
+        diffusion ODF as the QballModel or the CsaOdfModel. This results in a
+        sharper angular profile with better angular resolution. The Contrained
+        SDTModel is similar to the Constrained CSDModel but mathematically it
+        deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
+        for a comparison and a through discussion).
 
-        A sharp fODF is obtained because a single fiber *response* function is injected
-        as *a priori* knowledge. In the SDTModel, this response is a single fiber q-ball
-        ODF as opposed to a single fiber signal function for the CSDModel. The response function
-        will be used as deconvolution kernel.
+        A sharp fODF is obtained because a single fiber *response* function is
+        injected as *a priori* knowledge. In the SDTModel, this response is a
+        single fiber q-ball ODF as opposed to a single fiber signal function
+        for the CSDModel. The response function will be used as deconvolution
+        kernel.
 
         Parameters
         ----------
         gtab : GradientTable
         ratio : float
-            ratio of the smallest vs the largest eigenvalue of the single prolate tensor response function
+            ratio of the smallest vs the largest eigenvalue of the single
+            prolate tensor response function
         reg_sphere : Sphere
             sphere used to build the regularization B matrix
         sh_order : int
@@ -154,8 +157,9 @@ class ConstrainedSDTModel(OdfModel, Cache):
 
         References
         ----------
-        .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and Probabilistic Tractography Based
-               on Complex Fibre Orientation Distributions.
+        .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
+               Probabilistic Tractography Based on Complex Fibre Orientation
+               Distributions.
         """
 
         m, n = sph_harm_ind_list(sh_order)
@@ -188,7 +192,8 @@ class ConstrainedSDTModel(OdfModel, Cache):
 
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
-        self.lambda_ = lambda_ * self.R.shape[0] * self.R[0, 0] / self.B_reg.shape[0]
+        self.lambda_ = (lambda_ * self.R.shape[0] * self.R[0, 0] /
+                        self.B_reg.shape[0])
         self.tau = tau
         self.sh_order = sh_order
 
@@ -389,8 +394,8 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
     r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
     Deconvolves the axially symmetric single fiber response
-    function `r_rh` in rotational harmonics coefficients from the spherical function
-    `s_sh` in SH coefficients.
+    function `r_rh` in rotational harmonics coefficients from the spherical
+    function `s_sh` in SH coefficients.
 
     Parameters
     ----------
@@ -448,7 +453,8 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         k2 = np.nonzero(fodf < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warnings.warn('too few negative directions identified - failed to converge')
+            warnings.warn(
+            'too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
@@ -547,7 +553,8 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
         k2 = np.nonzero(A < threshold)[0]
 
         if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
-            warnings.warn('too few negative directions identified - failed to converge')
+            warnings.warn(
+            'too few negative directions identified - failed to converge')
             return fodf_sh, num_it
 
         if num_it > 1 and k.shape[0] == k2.shape[0]:
