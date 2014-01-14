@@ -52,7 +52,7 @@ determines the threshold of FA/QA under which tracking stops) to be very low
 because we've already applied a white matter mask.
 """
 
-seeds = utils.seeds_from_mask(white_matter, density=1)
+seeds = utils.seeds_from_mask(white_matter, density=2)
 streamline_generator = EuDX(csapeaks.peak_values, csapeaks.peak_indices,
                             odf_vertices=peaks.default_sphere.vertices,
                             a_low=.05, step_sz=.5, seeds=seeds)
