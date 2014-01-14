@@ -961,8 +961,7 @@ class TensorFit(object):
 
         # For completeness, we predict the mean S0 for the non-diffusion
         # weighted measurements, which is our best guess:
-        pred_sig[...,gtab.b0s_mask] = S0
-
+        pred_sig[..., gtab.b0s_mask] = S0
         return pred_sig
 
 

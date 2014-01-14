@@ -11,7 +11,7 @@ from dipy.utils.six.moves import range
 import numpy as np
 import dipy.core.gradients as gt
 
-def kfold_xval(model, data, folds):
+def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     """
     Given a Model object perform iterative k-fold cross-validation of fitting
     that model
@@ -23,8 +23,14 @@ def kfold_xval(model, data, folds):
     data : ndarray
         Diffusion MRI data acquired with the gtab of the model
 
-    folds: int
+    folds : int
         The number of divisions to apply to the data
+
+    model_args :
+        Additional arguments to the model initialization
+
+    model_kwargs :
+        Additional key-word arguments to the model initialization
 
     Notes
     -----
@@ -39,7 +45,7 @@ def kfold_xval(model, data, folds):
 
     """
     # This should always be there, if the model inherits from
-    # dipy.reconst.base.ReconstModel!
+    # dipy.reconst.base.ReconstModel:
     gtab = model.gtab
     data_d = data[..., ~gtab.b0s_mask]
     modder =  np.mod(data_d.shape[-1], folds)
@@ -96,7 +102,7 @@ def kfold_xval(model, data, folds):
                                       np.concatenate([gtab.bvecs[gtab.b0s_mask],
                                                  nz_bvec[~fold_mask]]))
 
-        this_model = model.__class__(this_gtab)
+        this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
         this_fit = this_model.fit(this_data)
         this_predict = this_fit.predict(left_out_gtab, S0=S0)
         idx_to_assign = np.where(~gtab.b0s_mask)[0][~fold_mask]

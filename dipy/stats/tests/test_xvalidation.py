@@ -14,6 +14,8 @@ import dipy.data as dpd
 import dipy.reconst.dti as dti
 import dipy.core.gradients as gt
 import dipy.sims.voxel as sims
+import dipy.reconst.csdeconv as csd
+
 
 def test_kfold_xval():
     """
@@ -40,5 +42,23 @@ def test_kfold_xval():
     dmfit = dm.fit(S)
 
     kf_xval = xval.kfold_xval(dm, S, 2)
+    cod = ut.coeff_of_determination(S, kf_xval)
+    npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)
+
+
+def test_shm_xval():
+    psphere = dpd.get_sphere('symmetric362')
+    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvals = np.zeros(len(bvecs)) + 1000
+    bvals[0] = 0
+    gtab = gt.gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
+    mevecs = [ np.array( [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ] ),
+               np.array( [ [0, 0, 1], [0, 1, 0], [1, 0, 0] ] ) ]
+    S = sims.single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
+    response = ([0.0015, 0.0003, 0.0001], 1)
+    sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
+    smfit = sm.fit(S)
+    kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2)
     cod = ut.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)

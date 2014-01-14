@@ -9,6 +9,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
+from ..core.sphere import Sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from scipy.special import lpn, gamma
@@ -18,7 +19,8 @@ from scipy.integrate import quad
 
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
-    def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1, tau=0.1):
+    def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
+                 tau=0.1):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
 
         Spherical deconvolution computes a fiber orientation distribution
@@ -70,6 +72,8 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         .. [4] Tournier, J.D, et al. Imaging Systems and Technology
                2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
         """
+        # Initialize the parent class:
+        OdfModel.__init__(self, gtab)
         m, n = sph_harm_ind_list(sh_order)
         self.m, self.n = m, n
         self._where_b0s = lazy_index(gtab.b0s_mask)
@@ -116,9 +120,51 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
     @multi_voxel_fit
     def fit(self, data):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
-        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg, self.lambda_, self.tau)
-        return SphHarmFit(self, shm_coeff, None)
+        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg,
+                                     self.lambda_, self.tau)
+        return ConstrainedSphericalDeconvFit(self, shm_coeff)
 
+
+class ConstrainedSphericalDeconvFit(SphHarmFit):
+    def __init__(self, model, shm_coeff):
+        """
+        Initialize a ConstrainedSphericalDeconvFit class instance
+
+        Parameters
+        ----------
+        model : A ConstrainedSphericalDeconvModel class instance
+
+        shm_coeff : ndarray
+           Spherical harmonic coefficients estimated with `csdeconv`
+
+        Returns
+        -------
+        ConstrainedSphericalDeconvFit class instance
+        """
+        SphHarmFit.__init__(self, model, shm_coeff, None)
+
+
+    def predict(self, gtab, S0=1):
+        """
+        Predict the diffusion signal from the model coefficients.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+            The directions and bvalues on which prediction is desired
+
+        S0 : float array
+           The mean non-diffusion-weighted signal in each voxel. Default: 1 in
+           all voxels
+
+        """
+        # To invert the model, we estimate the ODF on the provided sphere and
+        # then convolve with the response function, rotated to each one of the
+        # gtab bvecs:
+        sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+        odf = self.odf(sphere)
+        np.dot(odf, self.model.S_r[gtab.bvecs[~gtab.b0s_mask]])
+        return pred_sig
 
 class ConstrainedSDTModel(OdfModel, Cache):
 
@@ -376,10 +422,12 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
 
     for l in np.arange(0, n_degrees*2, 2):
         if r2_term :
-            sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) * np.sqrt( ratio / (4 * np.pi ** 3) ) /
+            sharp = quad(lambda z: lpn(l, z)[0][-1] * gamma(1.5) *
+                         np.sqrt( ratio / (4 * np.pi ** 3) ) /
                          np.power((1 - (1 - ratio) * z ** 2), 1.5), -1., 1.)
         else :
-            sharp = quad(lambda z: lpn(l, z)[0][-1] * np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
+            sharp = quad(lambda z: lpn(l, z)[0][-1] *
+                         np.sqrt(1 / (1 - (1 - ratio) * z * z)), -1., 1.)
 
         sdt[l / 2] = sharp[0]
         frt[l / 2] = 2 * np.pi * lpn(l, 0)[0][-1]
