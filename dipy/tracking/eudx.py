@@ -45,8 +45,8 @@ class EuDX(object):
     '''
 
     def __init__(self, a, ind,
-                 seeds=10000,
-                 odf_vertices=None,
+                 seeds,
+                 odf_vertices,
                  a_low=0.0239,
                  step_sz=0.5,
                  ang_thr=60.,
@@ -64,7 +64,7 @@ class EuDX(object):
             Shape (I, J, K, Np), magnitude of the peak of a scalar anisotropic
             function e.g. QA (quantitative anisotropy) where Np is the number of
             peaks or a different function of shape (I, J, K) e.g FA or GFA.
-        ind : array, shape(x,y,z,Np)
+        ind : array, shape(x, y, z, Np)
             indices of orientations of the scalar anisotropic peaks found on the
             resampling sphere
         seeds : int or ndarray
@@ -75,12 +75,10 @@ class EuDX(object):
             useful when you need to track from specific regions e.g. the
             white/gray matter interface or a specific ROI e.g. in the corpus
             callosum.
-        odf_vertices : None or ndarray, shape (N, 3), optional
+        odf_vertices : ndarray, shape (N, 3)
             sphere points which define a discrete representation of orientations
             for the peaks, the same for all voxels. Usually the same sphere is
             used as an input for a reconstruction algorithm e.g. DSI.
-            None results in loading the vertices from a default sphere with
-            362 points.
         a_low : float, optional
             low threshold for QA(typical 0.023)  or FA(typical 0.2) or any other
             anisotropic function
@@ -111,7 +109,7 @@ class EuDX(object):
         --------
         >>> import nibabel as nib
         >>> from dipy.reconst.dti import TensorModel, quantize_evecs
-        >>> from dipy.data import get_data
+        >>> from dipy.data import get_data, get_sphere
         >>> from dipy.core.gradients import gradient_table
         >>> fimg,fbvals,fbvecs = get_data('small_101D')
         >>> img = nib.load(fimg)
@@ -120,8 +118,9 @@ class EuDX(object):
         >>> gtab = gradient_table(fbvals, fbvecs)
         >>> model = TensorModel(gtab)
         >>> ten = model.fit(data)
-        >>> ind = quantize_evecs(ten.evecs)
-        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100,a_low=.2)
+        >>> sphere = get_sphere('symmetric724')
+        >>> ind = quantize_evecs(ten.evecs, sphere.vertices)
+        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100, odf_vertices=sphere.vertices, a_low=.2)
         >>> tracks = [e for e in eu]
 
         Notes
@@ -151,13 +150,8 @@ class EuDX(object):
         # store number of maximum peaks
         x, y, z, g = self.a.shape
         self.Np = g
-        if odf_vertices == None:
-            sphere = get_sphere('symmetric724')
-            vertices, faces = sphere.vertices, sphere.faces
-            self.odf_vertices = vertices
-        else:
-            self.odf_vertices = np.ascontiguousarray(odf_vertices,
-                                                     dtype='f8')
+        self.odf_vertices = np.ascontiguousarray(odf_vertices,
+                                                 dtype='f8')
         try:
             self.seed_no = len(seeds)
             self.seed_list = seeds
