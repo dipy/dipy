@@ -109,7 +109,7 @@ class EuDX(object):
         --------
         >>> import nibabel as nib
         >>> from dipy.reconst.dti import TensorModel, quantize_evecs
-        >>> from dipy.data import get_data
+        >>> from dipy.data import get_data, get_sphere
         >>> from dipy.core.gradients import gradient_table
         >>> fimg,fbvals,fbvecs = get_data('small_101D')
         >>> img = nib.load(fimg)
@@ -118,8 +118,9 @@ class EuDX(object):
         >>> gtab = gradient_table(fbvals, fbvecs)
         >>> model = TensorModel(gtab)
         >>> ten = model.fit(data)
-        >>> ind = quantize_evecs(ten.evecs)
-        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100,a_low=.2)
+        >>> sphere = get_sphere('symmetric724')
+        >>> ind = quantize_evecs(ten.evecs, sphere.vertices)
+        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100, odf_vertices=sphere.vertices, a_low=.2)
         >>> tracks = [e for e in eu]
 
         Notes
