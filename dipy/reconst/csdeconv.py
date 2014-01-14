@@ -35,12 +35,12 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         Parameters
         ----------
         gtab : GradientTable
-        response : tuple or callable
-            If tuple, then it should have two elements. The first is the eigen-values as an (3,) ndarray
-            and the second is the signal value for the response function without diffusion weighting.
-            This is to be able to generate a single fiber synthetic signal. If callable then the function
-            should return an ndarray with the all the signal values for the response function. The response
-            function will be used as deconvolution kernel ([1]_)
+        response : tuple
+            A tuple with two elements. The first is the eigen-values as an (3,)
+            ndarray and the second is the signal value for the response
+            function without diffusion weighting.  This is to be able to
+            generate a single fiber synthetic signal. The response function
+            will be used as deconvolution kernel ([1]_)
         reg_sphere : Sphere
             sphere used to build the regularization B matrix
         sh_order : int
@@ -93,13 +93,10 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
-        if callable(response):
-            S_r = response
+        if response is None:
+            S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
         else:
-            if response is None:
-                S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
-            else:
-                S_r = estimate_response(gtab, response[0], response[1])
+            S_r = estimate_response(gtab, response[0], response[1])
 
         r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
         r_rh = sh_to_rh(r_sh, m, n)
