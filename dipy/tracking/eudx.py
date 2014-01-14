@@ -150,7 +150,7 @@ class EuDX(object):
         x, y, z, g = self.a.shape
         self.Np = g
         self.odf_vertices = np.ascontiguousarray(odf_vertices,
-                                                     dtype='f8')
+                                                 dtype='f8')
         try:
             self.seed_no = len(seeds)
             self.seed_list = seeds

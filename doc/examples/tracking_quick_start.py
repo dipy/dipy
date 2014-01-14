@@ -120,8 +120,8 @@ regions with FA < 0.1.
 
 streamline_generator = EuDX(stopping_values,
                             csd_peaks.peak_indices,
-                            odf_vertices=sphere.vertices,
                             seeds=10**4,
+                            odf_vertices=sphere.vertices,
                             a_low=0.1)
 
 streamlines = [streamline for streamline in streamline_generator]
