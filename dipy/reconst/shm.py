@@ -383,6 +383,7 @@ class SphHarmFit(OdfFit):
 
         return SphHarmFit(self.model, new_coef, new_mask)
 
+
     def odf(self, sphere):
         """Samples the odf function on the points of a sphere
 
@@ -406,9 +407,11 @@ class SphHarmFit(OdfFit):
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return dot(self._shm_coef, sampling_matrix.T)
 
+
     @auto_attr
     def gfa(self):
         return _gfa_sh(self._shm_coef, 0)
+
 
     @property
     def shm_coeff(self):
@@ -417,7 +420,6 @@ class SphHarmFit(OdfFit):
         Make this a property for now, if there is a usecase for modifying
         the coefficients we can add a setter or expose the coefficients more
         directly
-
         """
         return self._shm_coef
 

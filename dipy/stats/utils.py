@@ -1,5 +1,5 @@
 """
-Utility functions for the boots module
+Utility functions for the stats module
 
 """
 from __future__ import division, print_function, absolute_import
