@@ -49,7 +49,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None,
     with nogil:
         for i in range(BS - 1, I - BS + 1):
             for j in range(BS - 1, J - BS + 1):
-                for k in range(BS -1 , K - BS +1):
+                for k in range(BS -1 , K - BS + 1):
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
 
@@ -110,9 +110,9 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
     # calculate normalized weights and sums of the weights with the positions
     # of the patches
-    for m in range(i - B, i + B + 1):
-        for n in range(j - B, j + B + 1):
-            for o in range(k - B, k + B + 1):
+    for m from i - B <= m < i + B + 1 by step:
+        for n from j - B <= n < j + B + 1 by step:
+            for o from k - B <= o < k + B + 1 by step:
 
                 if sumw > 0:
                     w = W[cnt] / sumw
