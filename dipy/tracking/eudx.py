@@ -64,7 +64,7 @@ class EuDX(object):
             Shape (I, J, K, Np), magnitude of the peak of a scalar anisotropic
             function e.g. QA (quantitative anisotropy) where Np is the number of
             peaks or a different function of shape (I, J, K) e.g FA or GFA.
-        ind : array, shape(x,y,z,Np)
+        ind : array, shape(x, y, z, Np)
             indices of orientations of the scalar anisotropic peaks found on the
             resampling sphere
         seeds : int or ndarray
