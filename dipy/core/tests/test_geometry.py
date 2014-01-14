@@ -11,6 +11,8 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 vector_cosine,
                                 lambert_equal_area_projection_polar,
                                 circumradius,
+                                vector_norm,
+                                vector_angle,
                                 vec2vec_rotmat
                                 )
 
@@ -188,6 +190,21 @@ def test_lambert_equal_area_projection_cart():
 def test_circumradius():
 
     yield assert_array_almost_equal, np.sqrt(0.5), circumradius(np.array([0,2,0]),np.array([2,0,0]),np.array([0,0,0]))
+
+
+def test_vector_angle():
+    """
+    Test that calculation of angles between vectors makes sense.
+    """
+    a = [1, 0, 0]
+    b = [0, 0, 1]
+    assert_equal(vector_angle(a,b), np.pi/2)
+    a = [1,0,0]
+    b = [-1,0,0]
+    assert_equal(vector_angle(a,b), np.pi)
+    a = [1,0,0]
+    b = [1,0,0]
+    assert_equal(vector_angle(a,b), 0)
 
 
 def test_vec2vec_rotmat():
