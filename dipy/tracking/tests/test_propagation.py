@@ -2,7 +2,7 @@ import os
 import numpy as np
 import numpy.testing
 
-from dipy.data import get_data
+from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table
 from dipy.reconst.gqi import GeneralizedQSamplingModel
 from dipy.reconst.dti import TensorModel, quantize_evecs
@@ -17,8 +17,8 @@ import nibabel as ni
 from nose.tools import assert_true, assert_false, \
      assert_equal, assert_raises, assert_almost_equal
 
-from numpy.testing import (assert_array_equal, 
-                           assert_array_almost_equal, 
+from numpy.testing import (assert_array_equal,
+                           assert_array_almost_equal,
                            run_module_suite)
 
 
@@ -52,8 +52,11 @@ def test_eudx_further():
         rz=(z-1)*np.random.rand()
         seeds[i]=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
 
+    sphere = get_sphere('symmetric724')
+
     ind = quantize_evecs(ten.evecs)
-    eu=EuDX(a=ten.fa, ind=ind, seeds=seeds, a_low=.2)
+    eu=EuDX(a=ten.fa, ind=ind, seeds=seeds,
+            odf_vertices=sphere.vertices, a_low=.2)
     T=[e for e in eu]
 
     #check that there are no negative elements
@@ -73,8 +76,10 @@ def test_eudx_further():
     affine2, seeds2 = random_affine(seeds)
 
     # Make tracks using different affines
-    eu1 = EuDX(a=ten.fa, ind=ind, seeds=seeds1, a_low=.2, affine=affine1)
-    eu2 = EuDX(a=ten.fa, ind=ind, seeds=seeds2, a_low=.2, affine=affine2)
+    eu1 = EuDX(a=ten.fa, ind=ind, odf_vertices=sphere.vertices,
+               seeds=seeds1, a_low=.2, affine=affine1)
+    eu2 = EuDX(a=ten.fa, ind=ind, odf_vertices=sphere.vertices,
+               seeds=seeds2, a_low=.2, affine=affine2)
 
     # Move from eu2 affine2 to affine1
     eu2_to_eu1 = utils.move_streamlines(eu2, output_space=affine1,
@@ -96,17 +101,21 @@ def test_eudx_bad_seed():
     ten = tensor_model.fit(data)
     ind = quantize_evecs(ten.evecs)
 
+    sphere = get_sphere('symmetric724')
     seed = [1000000., 1000000., 1000000.]
-    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed], a_low=.2)
+    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed],
+              odf_vertices=sphere.vertices, a_low=.2)
     assert_raises(ValueError, list, eu)
 
     print(data.shape)
     seed = [1., 5., 8.]
-    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed], a_low=.2)    
+    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed],
+              odf_vertices=sphere.vertices, a_low=.2)
     track = list(eu)
-    
+
     seed = [-1., 1000000., 1000000.]
-    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed], a_low=.2)
+    eu = EuDX(a=ten.fa, ind=ind, seeds=[seed],
+              odf_vertices=sphere.vertices, a_low=.2)
     assert_raises(ValueError, list, eu)
 
 

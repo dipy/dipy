@@ -25,6 +25,7 @@ from dipy.tracking.eudx import EuDX
 
 eu = EuDX(csapeaks.gfa,
           csapeaks.peak_indices[..., 0],
+          seeds=10000,
           odf_vertices=sphere.vertices,
           a_low=0.2)
 
@@ -80,6 +81,7 @@ tracking in crossing areas.
 
 eu = EuDX(csapeaks.peak_values,
           csapeaks.peak_indices,
+          seeds=10000,
           odf_vertices=sphere.vertices,
           ang_thr=20.,
           a_low=0.6)

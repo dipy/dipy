@@ -45,8 +45,8 @@ class EuDX(object):
     '''
 
     def __init__(self, a, ind,
-                 seeds=10000,
-                 odf_vertices=None,
+                 seeds,
+                 odf_vertices,
                  a_low=0.0239,
                  step_sz=0.5,
                  ang_thr=60.,
@@ -75,12 +75,10 @@ class EuDX(object):
             useful when you need to track from specific regions e.g. the
             white/gray matter interface or a specific ROI e.g. in the corpus
             callosum.
-        odf_vertices : None or ndarray, shape (N, 3), optional
+        odf_vertices : ndarray, shape (N, 3)
             sphere points which define a discrete representation of orientations
             for the peaks, the same for all voxels. Usually the same sphere is
             used as an input for a reconstruction algorithm e.g. DSI.
-            None results in loading the vertices from a default sphere with
-            362 points.
         a_low : float, optional
             low threshold for QA(typical 0.023)  or FA(typical 0.2) or any other
             anisotropic function
@@ -151,12 +149,7 @@ class EuDX(object):
         # store number of maximum peaks
         x, y, z, g = self.a.shape
         self.Np = g
-        if odf_vertices == None:
-            sphere = get_sphere('symmetric724')
-            vertices, faces = sphere.vertices, sphere.faces
-            self.odf_vertices = vertices
-        else:
-            self.odf_vertices = np.ascontiguousarray(odf_vertices,
+        self.odf_vertices = np.ascontiguousarray(odf_vertices,
                                                      dtype='f8')
         try:
             self.seed_no = len(seeds)
