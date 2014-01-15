@@ -82,6 +82,8 @@ def run_command(cmd, check_code=True):
         cmd = [cmd]
     else:
         cmd = list(cmd)
+    if os.name == 'nt': # Need .bat file extension for windows
+        cmd[0] += '.bat'
     if not LOCAL_SCRIPT_DIR is None:
         # Windows can't run script files without extensions natively so we need
         # to run local scripts (no extensions) via the Python interpreter.  On
