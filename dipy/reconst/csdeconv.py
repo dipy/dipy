@@ -44,19 +44,20 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
             function without diffusion weighting.  This is to be able to
             generate a single fiber synthetic signal. The response function
             will be used as deconvolution kernel ([1]_)
-        reg_sphere : Sphere
-            sphere used to build the regularization B matrix
-        sh_order : int
-            maximal spherical harmonics order
-        lambda_ : float
+        reg_sphere : Sphere (optional)
+            sphere used to build the regularization B matrix.
+            Default: 'symmetric362'.
+        sh_order : int (optional)
+            maximal spherical harmonics order. Default: 8
+        lambda_ : float (optional)
             weight given to the constrained-positivity regularization part of the
-            deconvolution equation (see [1]_)
-        tau : float
+            deconvolution equation (see [1]_). Default: 1
+        tau : float (optional)
             threshold controlling the amplitude below which the corresponding
             fODF is assumed to be zero.  Ideally, tau should be set to
             zero. However, to improve the stability of the algorithm, tau is
             set to tau*100 % of the mean fODF amplitude (here, 10% by default)
-            (see [1]_)
+            (see [1]_). Default: 0.1
 
         References
         ----------
