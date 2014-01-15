@@ -18,7 +18,7 @@ if "%line1:~0,2%" == "#!" (goto :goodstart)
 echo First line of %pyscript% does not start with "#!"
 exit /b 1
 :goodstart
-set py_exe=%line1:~2%
+set py_exe="%line1:~2%"
 call %py_exe% %pyscript% %*
 """
 
