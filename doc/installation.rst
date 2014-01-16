@@ -27,69 +27,43 @@ Using packages:
 Windows
 -------
 
-#. To use dipy_, you will need to install a few :ref:`dependencies`. One
-    simple way to get the dependencies on your machine, is to install the
-    Anaconda_ python distribution, following the instructions on their
-    website. Note that there are alternatives to Anaconda_. See below for :ref:`alternatives`
+#. To use dipy_, you will need to install a few :ref:`dependencies`. One     simple way to get the dependencies on your machine, is to install the Anaconda_ python distribution, following the instructions on their website. Note that there are alternatives to Anaconda_. See below for :ref:`alternatives`.
 
-#. You will still need to install the nibabel_ library, which supports reading
-    and writing of neuroimaging data formats. You can install it from a binary
-    installer on the `nibabel pypi`_ web page. Download the `.exe` installer in
-    the table at the bottom and double-click it to launch the installation
-    process.
+#. You will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. You can install it from a binary installer on the `nibabel pypi`_ web page. Download the `.exe` installer in the table at the bottom and double-click it to launch the installation process.
 
-    .. note ::
+#. Similarly, you can install dipy_ itself from the `dipy pypi`_ web-page. Download the `.exe` installer in the table at the bottom of the page and double-click it to launch the installation.
 
-#. Similarly, you can install dipy_ itself from the `dipy pypi`_
-    web-page. Download the `.exe` installer in the table at the bottom of the page and double-click it to launch the installation.
-
-
-Now, you should be able to start using dipy_. From a python console or
-script try ::
+#. Now, you should be able to start using dipy_. From a python console or script try ::
 
     >>> import dipy
 
-.. note::
+There are other alternatives than the one we have outlined above to installing the dependencies and to install nibabel_ and dipy_. In particular, you can use pip_ or  easy_install_ from the Anaconda Command Prompt (which you can launch from the Start Menu),
+To do that, you would replace the instructions above with typing the following at the command prompt ::
 
-    There are other alternatives than the one we have outlined above to
-    installing the dependencies and to install nibabel_ and dipy_. In
-    particular, you can use `pip`_ or `easy_install`_ from the Anaconda Command
-    Prompt (which you can launch from the Start Menu),
+    pip install nibabel
+    pip install dipy
 
-    To do that, you would replace the instructions above with typing the
-    following at the command prompt ::
-
-        pip install nibabel
-	    pip install dipy
-
-    Or ::
-
-        easy_install nibabel
-	    easy_install dipy
+or ::
+    
+    easy_install nibabel
+    easy_install dipy
 
 OSX
 ---
 
-#. To use dipy_, you need to have some :ref:`dependencies` installed. First of
-    all, make sure that you have installed the Apple Xcode_ developer tools. You'll
-    need those to install all the following dependencies.
+#. To use dipy_, you need to have some :ref:`dependencies` installed. First of all, make sure that you have installed the Apple Xcode_ developer tools. You'll need those to install all the following dependencies.
 
-#. Next, install the python library dependencies. One easy way to do that is to
-    use the Anaconda_ distribution (see below for :ref:`alternatives`).
+#. Next, install the python library dependencies. One easy way to do that is to use the Anaconda_ distribution (see below for :ref:`alternatives`).
 
-#. Even with Anaconda installed, you will still need to install the nibabel_
-    library, which supports reading and writing of neuroimaging data formats.
-    Open a terminal and type ::
+#. Even with Anaconda installed, you will still need to install the nibabel_ library, which supports reading and writing of neuroimaging data formats. Open a terminal and type ::
 
-       pip install nibabel
+        pip install nibabel
 
-#. Finally, we are ready to install `dipy` itself. Same as with `nibabel`
-    above, we will type at the terminal shell command line ::
+#. Finally, we are ready to install 'dipy` itself. Same as with `nibabel` above, we will type at the terminal shell command line ::
 
         pip install dipy
 
-When the installation has finished we can check if it is successful in the
-following way. From a Python console script try ::
+When the installation has finished we can check if it is successful in the following way. From a Python console script try ::
 
     >>> import dipy
 
