@@ -7,7 +7,7 @@ cimport cython
 from libc.math cimport sqrt, exp
 
 
-def nlmeans_3d(arr, patch_size=1, block_size=5, sigma=None, rician=True):
+def nlmeans_3d(arr, patch_size=3, block_size=11, sigma=None, rician=True):
 
     arr = np.ascontiguousarray(arr)
 
@@ -26,7 +26,7 @@ def nlmeans_3d(arr, patch_size=1, block_size=5, sigma=None, rician=True):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def _nlmeans_3d(double [:, :, ::1] arr, patch_size=1, block_size=5, sigma=None, rician=True):
+def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, rician=True):
 
     cdef:
         cnp.npy_intp i, j, k, I, J, K
@@ -51,7 +51,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_size=1, block_size=5, sigma=None, 
     with nogil:
         for i in range(BS - 1, I - BS + 1):
             for j in range(BS - 1, J - BS + 1):
-                for k in range(BS -1, K - BS + 1):
+                for k in range(BS - 1, K - BS + 1):
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
 
@@ -90,9 +90,9 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
                 summ = 0
 
                 # calculate square distance
-                for a in range(- P, P + 1):
-                    for b in range(- P, P + 1):
-                        for c in range(- P, P + 1):
+                for a in range(-P, P + 1):
+                    for b in range(-P, P + 1):
+                        for c in range(-P, P + 1):
 
                             x = arr[i + a, j + b, k + c]
                             d = x - arr[m + a, n + b, o + c]
@@ -131,16 +131,22 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def add_border(arr, block_size=5):
+def add_border(arr, block_size=11):
 
-    padding = (block_size-1, block_size-1) * arr.ndim
-    arr = np.pad(arr, zip(padding[::2], padding[1::2]), mode='reflect')
+    padding = (block_size - 1) / 2
+    #padding = (block_size-1) * arr.ndim-1
+
+    #print(padding, arr.ndim)#, zip(padding[::2], padding[1::2]))
+    #arr = np.pad(arr, zip(padding[::2], padding[1::2]), mode='reflect')
+    print(arr.shape)
+    arr = np.pad(arr, (padding, padding,), mode='reflect')
+    print(arr.shape)
     return arr
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def remove_border(arr, block_size=5):
+def remove_border(arr, block_size=11):
 
     shape = arr.shape
     block_size -= 1
