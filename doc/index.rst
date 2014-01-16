@@ -26,6 +26,7 @@ video of QuickBundles applied on a simple dataset.
 *************
 Announcements
 *************
+- **Dipy 0.7.1** Released!, 16 January, 2014.
 - **Dipy 0.7.0** Released!, 23 December, 2013.
 - **Spherical Deconvolution** algorithms are now included in the current development version 0.7.0dev. See the examples in :ref:`gallery <examples>`, 24 June 2013.
 - A team of Dipy developers **wins** the `IEEE ISBI HARDI challenge <http://hardi.epfl.ch/static/events/2013_ISBI/workshop.html#results>`_, 7 April, 2013.

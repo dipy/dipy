@@ -25,6 +25,11 @@ Dipy
 The code found in Dipy was created by the following people: Eleftherios Garyfallidis, Matthew Brett, Bago Amirbekian, Ian Nimmo-Smith, Ariel Rokem, Stefan van der Walt, Maxime Descoteaux, Yaroslav Halchenko, Emanuele Olivetti, Michael Paquette, Samuel St-Jean, Endolith, Maria Luisa Mandelli, Mauro Zucchelli, Gabriel Girard, Matthieu Dumont, Kimberly Chan, Erik Ziegler, Emmanuel Caruyer, Matthias Ekman, Jean-Christophe Houde, Sylvain Merlet and
 Christopher Nguyen.
 
+* 0.7.1 (Thursday, 16 Jan 2014)
+
+* Made installing Dipy easier and more universal
+* Fixed automated seeding problems for tracking
+* Removed default parameter for odf_vertices in EuDX
 
 * 0.7.0 (Monday, 23 Dec 2013)
 
