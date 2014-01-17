@@ -139,10 +139,10 @@ def test_nlmeans():
     print("vol size", data.shape)
     from time import time
     deb = time()
-    den = nlmeans(data, sigma=5.)
-    print("total time", time()-deb)
+    den = nlmeans(data, sigma=19.88)
+    print("total time", time() - deb)
     print("vol size", den.shape)
-    nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised_latest_sigma_5.nii.gz')
+    nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised_latest_sigma_19.88.nii.gz')
 
 
 #test_nlmeans_borders()

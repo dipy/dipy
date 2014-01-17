@@ -71,12 +71,14 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
         double patch_vol_size
         double summ, x, d, w, sumw, sum_out
         double * sumw_arr
+        double denom
 
     cnt = 0
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
     #step = P + P + 1
     step = 1
+    denom = sigma * sigma
 
     #sumw_arr = <double *> malloc((B * 2  + 1) / (P * 2 + 1) ** 3 * sizeof(double))
 
@@ -99,7 +101,7 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
                             summ += d
 
-                w = exp(-(sqrt(summ / patch_vol_size)) / sigma)
+                w = exp(-(summ / patch_vol_size) / denom)
                 sumw += w
                 W[cnt] = w
                 cnt += 1
