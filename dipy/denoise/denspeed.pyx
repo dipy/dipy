@@ -32,7 +32,6 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
         double sigm = 0
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
-        cnp.npy_intp BS = 2 * block_radius + 1
 
     if sigma is None:
         sigm = 5 # call piesno
@@ -45,9 +44,9 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
 
     #move the block
     with nogil:
-        for i in range(BS - 1, I - BS + 1):
-            for j in range(BS - 1, J - BS + 1):
-                for k in range(BS - 1, K - BS + 1):
+        for i in range(B, I - B + 1):
+            for j in range(B , J - B + 1):
+                for k in range(B, K - B + 1):
 
                     out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
 
@@ -76,22 +75,23 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
     cnt = 0
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
-    step = P + P + 1
+    #step = P + P + 1
+    step = 1
 
     #sumw_arr = <double *> malloc((B * 2  + 1) / (P * 2 + 1) ** 3 * sizeof(double))
 
     # calculate weights between the central patch and the moving patch in block
     # moving the patch
-    for m from i - B <= m < i + B + 1 by step:
-        for n from j - B <= n < j + B + 1 by step:
-            for o from k - B <= o < k + B + 1 by step:
+    for m from i - B + P <= m < i + B - P by step:
+        for n from j - B + P <= n < j + B - P by step:
+            for o from k - B + P <= o < k + B - P by step:
 
                 summ = 0
 
                 # calculate square distance
-                for a in range(-P, P + 1):
-                    for b in range(-P, P + 1):
-                        for c in range(-P, P + 1):
+                for a in range(- P, P + 1):
+                    for b in range(- P, P + 1):
+                        for c in range(- P, P + 1):
 
                             x = arr[i + a, j + b, k + c]
                             d = x - arr[m + a, n + b, o + c]
@@ -110,9 +110,10 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
     # calculate normalized weights and sums of the weights with the positions
     # of the patches
-    for m from i - B <= m < i + B + 1 by step:
-        for n from j - B <= n < j + B + 1 by step:
-            for o from k - B <= o < k + B + 1 by step:
+
+    for m from i - B + P <= m < i + B - P by step:
+        for n from j - B + P <= n < j + B - P by step:
+            for o from k - B + P <= o < k + B - P by step:
 
                 if sumw > 0:
                     w = W[cnt] / sumw
@@ -131,15 +132,11 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
 
 def add_border(arr, padding):
-    print(arr.shape)
-    print(padding)
     arr = np.pad(arr, (padding, padding,), mode='reflect')
-    print(arr.shape)
     return arr
 
 
 def remove_border(arr, padding):
-
     shape = arr.shape
     return arr[padding:shape[0] - padding,
                padding:shape[1] - padding,
