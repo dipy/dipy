@@ -8,36 +8,37 @@ from libc.math cimport sqrt, exp
 from libc.stdlib cimport malloc, free
 
 
-def nlmeans_3d(arr, patch_size=3, block_size=11, sigma=None, rician=True):
+def nlmeans_3d(arr, patch_radius=1, block_radius=5, sigma=None, rician=True):
 
     arr = np.ascontiguousarray(arr)
 
     if arr.sum() == 0:
         raise ValueError('Wrong parameter, arr is 0 everywhere')
 
-    arr = add_border(arr, block_size)
+    arr = add_border(arr, 2 * block_radius + 1)
 
     print(arr.flags)
     print(arr.shape)
 
-    arrnlm = _nlmeans_3d(arr, patch_size, block_size, sigma, rician)
+    arrnlm = _nlmeans_3d(arr, patch_radius, block_radius, sigma, rician)
 
-    return remove_border(arrnlm, block_size)
+    return remove_border(arrnlm, 2 * block_radius + 1)
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def _nlmeans_3d(double [:, :, ::1] arr, patch_size=3, block_size=11, sigma=None, rician=True):
+def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
+                sigma=None, rician=True):
 
     cdef:
         cnp.npy_intp i, j, k, I, J, K
         double [:, :, ::1] out = np.zeros_like(arr)
-        double [::1] W = np.zeros(block_size ** 3)
+        double [::1] W = np.zeros((2 * block_radius + 1) ** 3)
         double summ = 0
         double sigm = 0
-        cnp.npy_intp P = (patch_size - 1) / 2
-        cnp.npy_intp B = (block_size - 1) / 2
-        cnp.npy_intp BS = block_size
+        cnp.npy_intp P = patch_radius
+        cnp.npy_intp B = block_radius
+        cnp.npy_intp BS = 2 * block_radius + 1
 
     if sigma is None:
         sigm = 5 # call piesno
