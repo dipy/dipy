@@ -5,6 +5,7 @@ cimport numpy as cnp
 cimport cython
 
 from libc.math cimport sqrt, exp
+from libc.stdlib cimport malloc, free
 
 
 def nlmeans_3d(arr, patch_size=3, block_size=11, sigma=None, rician=True):
@@ -75,11 +76,14 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
         double patch_vol_size
         double summ, x, d, w, sumw, sum_out
+        double * sumw_arr
 
     cnt = 0
-    patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
     sumw = 0
+    patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
     step = P + P + 1
+
+    #sumw_arr = <double *> malloc((B * 2  + 1) / (P * 2 + 1) ** 3 * sizeof(double))
 
     # calculate weights between the central patch and the moving patch in block
     # moving the patch
@@ -125,6 +129,8 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
                 sum_out += w * x * x
 
                 cnt += 1
+
+    #free(sumw_arr)
 
     return sum_out
 
