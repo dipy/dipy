@@ -10,19 +10,13 @@ from libc.stdlib cimport malloc, free
 
 def nlmeans_3d(arr, patch_radius=1, block_radius=5, sigma=None, rician=True):
 
-    arr = np.ascontiguousarray(arr)
+    arr = np.ascontiguousarray(arr, dtype='f8')
 
-    if arr.sum() == 0:
-        raise ValueError('Wrong parameter, arr is 0 everywhere')
-
-    arr = add_border(arr, 2 * block_radius + 1)
-
-    print(arr.flags)
-    print(arr.shape)
+    arr = add_border(arr, block_radius)
 
     arrnlm = _nlmeans_3d(arr, patch_radius, block_radius, sigma, rician)
 
-    return remove_border(arrnlm, 2 * block_radius + 1)
+    return remove_border(arrnlm, block_radius)
 
 
 @cython.wraparound(False)
@@ -49,7 +43,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
     J = arr.shape[1]
     K = arr.shape[2]
 
-    #moving the block
+    #move the block
     with nogil:
         for i in range(BS - 1, I - BS + 1):
             for j in range(BS - 1, J - BS + 1):
@@ -136,27 +130,17 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
     return sum_out
 
 
-@cython.wraparound(False)
-@cython.boundscheck(False)
-def add_border(arr, block_size=11):
-
-    padding = (block_size - 1) / 2
-    #padding = (block_size-1) * arr.ndim-1
-
-    #print(padding, arr.ndim)#, zip(padding[::2], padding[1::2]))
-    #arr = np.pad(arr, zip(padding[::2], padding[1::2]), mode='reflect')
+def add_border(arr, padding):
     print(arr.shape)
+    print(padding)
     arr = np.pad(arr, (padding, padding,), mode='reflect')
     print(arr.shape)
     return arr
 
 
-@cython.wraparound(False)
-@cython.boundscheck(False)
-def remove_border(arr, block_size=11):
+def remove_border(arr, padding):
 
     shape = arr.shape
-    padding = (block_size - 1) / 2
     return arr[padding:shape[0] - padding,
                padding:shape[1] - padding,
                padding:shape[2] - padding]
