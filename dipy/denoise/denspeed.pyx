@@ -27,7 +27,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
     cdef:
         cnp.npy_intp i, j, k, I, J, K
         double [:, :, ::1] out = np.zeros_like(arr)
-        double [::1] W = np.zeros((2 * block_radius + 1) ** 3)
+        #double [::1] W = np.zeros((2 * block_radius + 1) ** 3)
         double summ = 0
         double sigm = 0
         cnp.npy_intp P = patch_radius
@@ -48,7 +48,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
             for j in range(B , J - B + 1):
                 for k in range(B, K - B + 1):
 
-                    out[i, j, k] = process_block(arr, W, i, j, k, B, P, sigm)
+                    out[i, j, k] = process_block(arr, i, j, k, B, P, sigm)
 
     new = np.asarray(out)
 
@@ -62,7 +62,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
 @cython.wraparound(False)
 @cython.boundscheck(False)
 @cython.cdivision(True)
-cdef double process_block(double [:, :, ::1] arr, double [::1] W,
+cdef double process_block(double [:, :, ::1] arr,
                           cnp.npy_intp i, cnp.npy_intp j, cnp.npy_intp k,
                           cnp.npy_intp B, cnp.npy_intp P, double sigma) nogil:
 
@@ -70,17 +70,17 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
         double patch_vol_size
         double summ, x, d, w, sumw, sum_out
-        double * sumw_arr
+        double * W
         double denom
+        cnp.npy_intp BS = B * 2 + 1
 
     cnt = 0
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
-    #step = P + P + 1
     step = 1
     denom = sigma * sigma
 
-    #sumw_arr = <double *> malloc((B * 2  + 1) / (P * 2 + 1) ** 3 * sizeof(double))
+    W = <double *> malloc(BS * BS * BS * sizeof(double))
 
     # calculate weights between the central patch and the moving patch in block
     # moving the patch
@@ -128,7 +128,7 @@ cdef double process_block(double [:, :, ::1] arr, double [::1] W,
 
                 cnt += 1
 
-    #free(sumw_arr)
+    free(W)
 
     return sum_out
 
