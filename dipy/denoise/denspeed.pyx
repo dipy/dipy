@@ -149,7 +149,7 @@ def add_border(arr, block_size=11):
 def remove_border(arr, block_size=11):
 
     shape = arr.shape
-    block_size -= 1
-    return arr[block_size:shape[0] - block_size,
-               block_size:shape[1] - block_size,
-               block_size:shape[2] - block_size]
+    padding = (block_size - 1) / 2
+    return arr[padding:shape[0] - padding,
+               padding:shape[1] - padding,
+               padding:shape[2] - padding]

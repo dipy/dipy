@@ -37,6 +37,7 @@ def test_nlmeans():
     deb = time()
     den = nlmeans_3d(data, sigma=19.8849)
     print("total time", time()-deb)
+    print("vol size", den.shape)
     nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised.nii.gz')
 
 
