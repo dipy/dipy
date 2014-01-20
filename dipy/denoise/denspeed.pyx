@@ -6,6 +6,7 @@ cimport cython
 
 from libc.math cimport sqrt, exp
 from libc.stdlib cimport malloc, free
+from libc.string cimport memcpy
 
 
 def nlmeans_3d(arr, patch_radius=1, block_radius=5, sigma=None, rician=True):
@@ -71,8 +72,10 @@ cdef double process_block(double [:, :, ::1] arr,
         double patch_vol_size
         double summ, d, w, sumw, sum_out, x
         double * W
+        double * cache
         double denom
         cnp.npy_intp BS = B * 2 + 1
+
 
     cnt = 0
     sumw = 0
@@ -80,6 +83,9 @@ cdef double process_block(double [:, :, ::1] arr,
     denom = sigma * sigma
 
     W = <double *> malloc(BS * BS * BS * sizeof(double))
+    cache = <double *> malloc(BS * BS * BS * sizeof(double))
+
+    copy_sub_array(cache, BS, BS, BS, arr, i - B, j - B, k - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
@@ -128,6 +134,7 @@ cdef double process_block(double [:, :, ::1] arr,
                 cnt += 1
 
     free(W)
+    free(cache)
 
     return sum_out
 
@@ -142,3 +149,62 @@ def remove_border(arr, padding):
     return arr[padding:shape[0] - padding,
                padding:shape[1] - padding,
                padding:shape[2] - padding]
+
+def test_copy_sub_array():
+
+    source = np.ones((10, 10, 10))
+    source[2, 2, 2] = 2
+    source[6, 6, 7] = 3
+    dest = np.zeros((5, 5, 6))
+
+    copy_sub_memview(dest, source, 2, 2, 2)
+    print(dest)
+
+    source = np.ones((10, 10, 10))
+    source[2, 2, 2] = 2
+    source[6, 6, 7] = 3
+
+    cdef cnp.ndarray[double, ndim=3, mode ='c'] dest2 = np.zeros((5, 5, 6))
+    copy_sub_array(<double *>dest2.data, 5, 5, 6, source, 2, 2, 2)
+    print(dest2)
+
+
+cdef void copy_sub_memview(double [:, :, ::1] dest,
+                         double [:, :, ::1] source,
+                         cnp.npy_intp min_i,
+                         cnp.npy_intp min_j,
+                         cnp.npy_intp min_k) nogil:
+
+    cdef cnp.npy_intp I, J, K, i, j
+
+    I = dest.shape[0]
+    J = dest.shape[1]
+    K = dest.shape[2]
+
+    for i in range(I):
+        for j in range(J):
+            memcpy(&dest[i, j, 0], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
+
+    return
+
+
+cdef void copy_sub_array(double * dest,
+                         cnp.npy_intp I,
+                         cnp.npy_intp J,
+                         cnp.npy_intp K,
+                         double [:, :, ::1] source,
+                         cnp.npy_intp min_i,
+                         cnp.npy_intp min_j,
+                         cnp.npy_intp min_k) nogil:
+
+    cdef cnp.npy_intp i, j
+
+    for i in range(I):
+        for j in range(J):
+            memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
+
+    return
+
+
+
+
