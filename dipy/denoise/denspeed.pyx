@@ -69,7 +69,7 @@ cdef double process_block(double [:, :, ::1] arr,
     cdef:
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
         double patch_vol_size
-        double summ, x, d, w, sumw, sum_out
+        double summ, d, w, sumw, sum_out, x
         double * W
         double denom
         cnp.npy_intp BS = B * 2 + 1
@@ -77,16 +77,17 @@ cdef double process_block(double [:, :, ::1] arr,
     cnt = 0
     sumw = 0
     patch_vol_size = (P + P + 1) * (P + P + 1) * (P + P + 1)
-    step = 1
     denom = sigma * sigma
 
     W = <double *> malloc(BS * BS * BS * sizeof(double))
 
     # calculate weights between the central patch and the moving patch in block
-    # moving the patch
-    for m from i - B + P <= m < i + B - P by step:
-        for n from j - B + P <= n < j + B - P by step:
-            for o from k - B + P <= o < k + B - P by step:
+    # (m, n, o) coordinates are the center of the moving patch
+    # (i, j, k) coordinates are the center of the static patch
+    # (a, b, c) run incide both patches
+    for m in range(i - B + P, i + B - P):
+        for n in range(j - B + P, j + B - P):
+            for o in range(k - B + P, k + B - P):
 
                 summ = 0
 
@@ -95,11 +96,9 @@ cdef double process_block(double [:, :, ::1] arr,
                     for b in range(- P, P + 1):
                         for c in range(- P, P + 1):
 
-                            x = arr[i + a, j + b, k + c]
-                            d = x - arr[m + a, n + b, o + c]
-                            d = d * d
-
-                            summ += d
+                            # this line takes most of the time! mem access
+                            d = arr[i + a, j + b, k + c] - arr[m + a, n + b, o + c]
+                            summ += d * d
 
                 w = exp(-(summ / patch_vol_size) / denom)
                 sumw += w
@@ -113,9 +112,9 @@ cdef double process_block(double [:, :, ::1] arr,
     # calculate normalized weights and sums of the weights with the positions
     # of the patches
 
-    for m from i - B + P <= m < i + B - P by step:
-        for n from j - B + P <= n < j + B - P by step:
-            for o from k - B + P <= o < k + B - P by step:
+    for m in range(i - B + P, i + B - P):
+        for n in range(j - B + P, j + B - P):
+            for o in range(k - B + P, k + B - P):
 
                 if sumw > 0:
                     w = W[cnt] / sumw

@@ -142,7 +142,12 @@ def test_nlmeans():
     den = nlmeans(data, sigma=19.88)
     print("total time", time() - deb)
     print("vol size", den.shape)
-    nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised_latest_sigma_19.88.nii.gz')
+    nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised_latest_sigma_19.88_2.nii.gz')
+
+    img = nib.load('t1_denoised_latest_sigma_19.88.nii.gz')
+    old = img.get_data()
+    print(np.sum(np.abs(old-den)))
+
 
 
 #test_nlmeans_borders()
