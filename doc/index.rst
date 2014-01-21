@@ -12,15 +12,17 @@ Dipy_ is a **free** and **open source** software project for
 Highlights
 **********
 
-In Dipy_ we care about methods which can solve complex problems efficiently and
-robustly. QuickBundles is one of the many state-of-the art algorithms found
-in Dipy_. It can be used to simplify large datasets of streamlines. See our
-:ref:`gallery <examples>` of examples and try QuickBundles with your data. Here is a
-video of QuickBundles applied on a simple dataset.
+Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0!!! In addition, a **journal paper** focusing on teaching the fundamentals of Dipy will be soon available in Frontiers of Neuroinformatics... Stay alert! 
 
-.. raw:: html
+.. raw :: html
 
-    <iframe width="420" height="315" src="http://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
+	<div style="width: 800px">
+		<img alt=" " class="align-center" src="_images/dipy_paper_logo.jpg" style="width: 50%;max-height: 50%">		
+	</div>
+
+So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above by reading the tutorials in our :ref:`gallery <examples>`.  
+
+See :ref:`older highlights <old_highlights>`. 
 
 
 *************
