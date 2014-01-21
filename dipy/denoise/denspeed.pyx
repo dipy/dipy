@@ -28,7 +28,6 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
     cdef:
         cnp.npy_intp i, j, k, I, J, K
         double [:, :, ::1] out = np.zeros_like(arr)
-        #double [::1] W = np.zeros((2 * block_radius + 1) ** 3)
         double summ = 0
         double sigm = 0
         cnp.npy_intp P = patch_radius
@@ -45,9 +44,9 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
 
     #move the block
     with nogil:
-        for i in range(B, I - B + 1):
-            for j in range(B , J - B + 1):
-                for k in range(B, K - B + 1):
+        for i in range(B, I - B):
+            for j in range(B , J - B):
+                for k in range(B, K - B):
 
                     out[i, j, k] = process_block(arr, i, j, k, B, P, sigm)
 
@@ -85,15 +84,17 @@ cdef double process_block(double [:, :, ::1] arr,
     W = <double *> malloc(BS * BS * BS * sizeof(double))
     cache = <double *> malloc(BS * BS * BS * sizeof(double))
 
+    # with gil:
+    #     print(i - B, j - B, k - B)
     copy_sub_array(cache, BS, BS, BS, arr, i - B, j - B, k - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
     # (i, j, k) coordinates are the center of the static patch
     # (a, b, c) run incide both patches
-    for m in range(i - B + P, i + B - P):
-        for n in range(j - B + P, j + B - P):
-            for o in range(k - B + P, k + B - P):
+    for m in range(P, BS - P):
+        for n in range(P, BS - P):
+            for o in range(P, BS - P):
 
                 summ = 0
 
@@ -103,7 +104,9 @@ cdef double process_block(double [:, :, ::1] arr,
                         for c in range(- P, P + 1):
 
                             # this line takes most of the time! mem access
-                            d = arr[i + a, j + b, k + c] - arr[m + a, n + b, o + c]
+                            #d = arr[i + a, j + b, k + c] - arr[m + a, n + b, o + c]
+                            d = cache[(B + a) * BS * BS + (B + b) * BS + (B + c)] - cache[(m + a) * BS * BS + (n + b) * BS + (o + c)]
+
                             summ += d * d
 
                 w = exp(-(summ / patch_vol_size) / denom)
@@ -118,16 +121,16 @@ cdef double process_block(double [:, :, ::1] arr,
     # calculate normalized weights and sums of the weights with the positions
     # of the patches
 
-    for m in range(i - B + P, i + B - P):
-        for n in range(j - B + P, j + B - P):
-            for o in range(k - B + P, k + B - P):
+    for m in range(P, BS - P):
+        for n in range(P, BS - P):
+            for o in range(P, BS - P):
 
                 if sumw > 0:
                     w = W[cnt] / sumw
                 else:
                     w = 0
 
-                x = arr[m, n, o]
+                x = cache[m * BS * BS + n * BS + o]
 
                 sum_out += w * x * x
 
@@ -168,7 +171,8 @@ def test_copy_sub_array():
     copy_sub_array(<double *>dest2.data, 5, 5, 6, source, 2, 2, 2)
     print(dest2)
 
-
+@cython.wraparound(False)
+@cython.boundscheck(False)
 cdef void copy_sub_memview(double [:, :, ::1] dest,
                          double [:, :, ::1] source,
                          cnp.npy_intp min_i,
@@ -188,6 +192,8 @@ cdef void copy_sub_memview(double [:, :, ::1] dest,
     return
 
 
+@cython.wraparound(False)
+@cython.boundscheck(False)
 cdef void copy_sub_array(double * dest,
                          cnp.npy_intp I,
                          cnp.npy_intp J,
