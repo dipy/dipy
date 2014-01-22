@@ -136,13 +136,15 @@ def test_nlmeans():
     aff = vol.get_affine()
     hdr = vol.get_header()
 
+    mask = data > 30
+
     print("vol size", data.shape)
     from time import time
     deb = time()
-    den = nlmeans(data, sigma=19.88)
+    den = nlmeans(data, mask, sigma=19.88)
     print("total time", time() - deb)
     print("vol size", den.shape)
-    nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised_latest_sigma_19.88_2.nii.gz')
+    nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised_latest_sigma_19.88_3.nii.gz')
 
     img = nib.load('t1_denoised_latest_sigma_19.88.nii.gz')
     old = img.get_data()

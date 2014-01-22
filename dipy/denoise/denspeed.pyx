@@ -3,26 +3,33 @@ from __future__ import division
 import numpy as np
 cimport numpy as cnp
 cimport cython
+from cython.parallel import parallel, prange
 
 from libc.math cimport sqrt, exp
 from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
-def nlmeans_3d(arr, patch_radius=1, block_radius=5, sigma=None, rician=True):
+def nlmeans_3d(arr, mask=None, patch_radius=1, block_radius=5, sigma=None, rician=True):
 
     arr = np.ascontiguousarray(arr, dtype='f8')
 
     arr = add_border(arr, block_radius)
 
-    arrnlm = _nlmeans_3d(arr, patch_radius, block_radius, sigma, rician)
+    if mask is None:
+        mask = np.ones_like(arr, dtype=np.uint8)
+    else:
+        mask = np.ascontiguousarray(mask, dtype=np.uint8)
+
+    arrnlm = _nlmeans_3d(arr, mask, patch_radius, block_radius, sigma, rician)
 
     return remove_border(arrnlm, block_radius)
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
+def _nlmeans_3d(double [:, :, ::1] arr, cnp.npy_uint8 [:, :, ::1] mask,
+                patch_radius=1, block_radius=5,
                 sigma=None, rician=True):
 
     cdef:
@@ -43,10 +50,13 @@ def _nlmeans_3d(double [:, :, ::1] arr, patch_radius=1, block_radius=5,
     K = arr.shape[2]
 
     #move the block
-    with nogil:
-        for i in range(B, I - B):
+    with nogil, parallel(num_threads=I):
+        for i in prange(B, I - B):
             for j in range(B , J - B):
                 for k in range(B, K - B):
+
+                    if mask[i, j, k] == 0:
+                        continue
 
                     out[i, j, k] = process_block(arr, i, j, k, B, P, sigm)
 
@@ -84,13 +94,12 @@ cdef double process_block(double [:, :, ::1] arr,
     W = <double *> malloc(BS * BS * BS * sizeof(double))
     cache = <double *> malloc(BS * BS * BS * sizeof(double))
 
-    # with gil:
-    #     print(i - B, j - B, k - B)
+    # (i, j, k) coordinates are the center of the static patch
+    # copy block in cache
     copy_sub_array(cache, BS, BS, BS, arr, i - B, j - B, k - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
-    # (i, j, k) coordinates are the center of the static patch
     # (a, b, c) run incide both patches
     for m in range(P, BS - P):
         for n in range(P, BS - P):
@@ -104,9 +113,7 @@ cdef double process_block(double [:, :, ::1] arr,
                         for c in range(- P, P + 1):
 
                             # this line takes most of the time! mem access
-                            #d = arr[i + a, j + b, k + c] - arr[m + a, n + b, o + c]
                             d = cache[(B + a) * BS * BS + (B + b) * BS + (B + c)] - cache[(m + a) * BS * BS + (n + b) * BS + (o + c)]
-
                             summ += d * d
 
                 w = exp(-(summ / patch_vol_size) / denom)
