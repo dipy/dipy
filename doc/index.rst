@@ -78,11 +78,6 @@ a slice should look like.
 .. image:: _static/colorfa.png
     :align: center
 
-We recommend to copy and paste this example in an IPython_ console. IPython_ helps interacting with the datasets easily. For example it is easy to find the size of the
-dataset which is given by `data.shape`.
-
-:ref:`Download <installation>` Dipy_ and try it for yourself.
-
 **********
 Next Steps
 **********
