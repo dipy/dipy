@@ -15,10 +15,13 @@
 .. _dipy pypi: http://pypi.python.org/pypi/dipy
 .. _nipy issues: http://github.com/nipy/nipy/issues
 .. _dipy issues: http://github.com/nipy/dipy/issues
+.. _dipy paper: http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
+.. _journal paper: http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract
 .. _nibabel: http://nipy.org/nibabel
 .. _nibabel pypi: http://pypi.python.org/pypi/nibabel
 .. _nipy development guidelines: http://nipy.org/devel
 .. _buildbots: http://nipy.bic.berkeley.edu/builders
+
 
 .. Packaging
 .. _neurodebian: http://neuro.debian.net

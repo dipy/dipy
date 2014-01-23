@@ -12,20 +12,24 @@ Dipy_ is a **free** and **open source** software project for
 Highlights
 **********
 
-In Dipy_ we care about methods which can solve complex problems efficiently and
-robustly. QuickBundles is one of the many state-of-the art algorithms found
-in Dipy_. It can be used to simplify large datasets of streamlines. See our
-:ref:`gallery <examples>` of examples and try QuickBundles with your data. Here is a
-video of QuickBundles applied on a simple dataset.
+Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0!!! In addition, a `journal paper`_ focusing on teaching the fundamentals of Dipy is now available in Frontiers of Neuroinformatics!
 
-.. raw:: html
+.. raw :: html
 
-    <iframe width="420" height="315" src="http://www.youtube.com/embed/kstL7KKqu94" frameborder="0" allowfullscreen></iframe>
+	<div style="width: 80% max-width=800px">
+		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_images/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%">
+        </a>		
+	</div>
+
+So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.  
+
+See :ref:`older highlights <old_highlights>`. 
 
 
 *************
 Announcements
 *************
+- `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
 - **Dipy 0.7.1** Released!, 16 January, 2014.
 - **Dipy 0.7.0** Released!, 23 December, 2013.
 - **Spherical Deconvolution** algorithms are now included in the current development version 0.7.0dev. See the examples in :ref:`gallery <examples>`, 24 June 2013.
@@ -72,12 +76,7 @@ As an exercise try to calculate the `color FA` with your datasets. Here is how
 a slice should look like.
 
 .. image:: _static/colorfa.png
-
-
-We recommend to copy and paste this example in an IPython_ console. IPython_ helps interacting with the datasets easily. For example it is easy to find the size of the
-dataset which is given by `data.shape`.
-
-:ref:`Download <installation>` Dipy_ and try it for yourself.
+    :align: center
 
 **********
 Next Steps
