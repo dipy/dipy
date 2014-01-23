@@ -12,7 +12,7 @@ Dipy_ is a **free** and **open source** software project for
 Highlights
 **********
 
-Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0!!! In addition, a `journal paper`_ focusing on teaching the fundamentals of Dipy will is now available in Frontiers of Neuroinformatics!
+Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0!!! In addition, a `journal paper`_ focusing on teaching the fundamentals of Dipy is now available in Frontiers of Neuroinformatics!
 
 .. raw :: html
 
@@ -21,7 +21,7 @@ Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3
         </a>		
 	</div>
 
-So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above by reading the tutorials in our :ref:`gallery <examples>`.  
+So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.  
 
 See :ref:`older highlights <old_highlights>`. 
 
