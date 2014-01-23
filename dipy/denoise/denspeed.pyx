@@ -127,7 +127,7 @@ cdef double process_block(double [:, :, ::1] arr,
 
     # (i, j, k) coordinates are the center of the static patch
     # copy block in cache
-    copy_sub_array(cache, BS, BS, BS, arr, i - B, j - B, k - B)
+    copy_block_3d(cache, BS, BS, BS, arr, i - B, j - B, k - B)
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
@@ -158,7 +158,6 @@ cdef double process_block(double [:, :, ::1] arr,
 
     # calculate normalized weights and sums of the weights with the positions
     # of the patches
-
     for m in range(P, BS - P):
         for n in range(P, BS - P):
             for o in range(P, BS - P):
@@ -213,24 +212,9 @@ def remove_padding(arr, padding):
                padding:shape[2] - padding]
 
 
-def test_copy_sub_array():
-
-    source = np.ones((10, 10, 10))
-    source[2, 2, 2] = 2
-    source[6, 6, 7] = 3
-    dest = np.zeros((5, 5, 6))
-
-    source = np.ones((10, 10, 10))
-    source[2, 2, 2] = 2
-    source[6, 6, 7] = 3
-
-    cdef cnp.ndarray[double, ndim=3, mode ='c'] dest2 = np.zeros((5, 5, 6))
-    copy_sub_array(<double *>dest2.data, 5, 5, 6, source, 2, 2, 2)
-    print(dest2)
-
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef cnp.npy_intp copy_sub_array(double * dest,
+cdef cnp.npy_intp copy_block_3d(double * dest,
                                  cnp.npy_intp I,
                                  cnp.npy_intp J,
                                  cnp.npy_intp K,
