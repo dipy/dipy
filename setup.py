@@ -171,7 +171,7 @@ def main(**extra_args):
                           'dipy.segment',
                           'dipy.segment.tests',
                           'dipy.sims',
-                          'dipy.sims.tests'
+                          'dipy.sims.tests',
                           'dipy.denoise',
                           'dipy.denoise.tests'],
           ext_modules = EXTS,

@@ -5,6 +5,9 @@ from dipy.denoise.denspeed import nlmeans_3d
 
 
 def nlmeans(arr, mask, sigma=None, patch_radius=1, block_radius=5, rician=True):
+	"""
+
+	"""
 
     if arr.ndim == 3:
 
