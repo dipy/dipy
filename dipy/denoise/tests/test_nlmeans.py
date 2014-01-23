@@ -128,28 +128,13 @@ def test_nlmeans_boundary():
     colorbar()
 
 
-def test_nlmeans():
+def test_reflected_border():    
 
-    import nibabel as nib
-    vol = nib.load('/home/eleftherios/Desktop/t1.nii.gz')
-    data = vol.get_data()[:, :, :, 0].astype('float64')
-    aff = vol.get_affine()
-    hdr = vol.get_header()
+    data = np.ones((10, 10, 10))
+    data2 = add_border(data, 5)
+    data3 = remove_border(data2, 5)
 
-    mask = data > 30
-
-    print("vol size", data.shape)
-    from time import time
-    deb = time()
-    den = nlmeans(data, mask, sigma=19.88)
-    print("total time", time() - deb)
-    print("vol size", den.shape)
-    nib.save(nib.Nifti1Image(den, aff, hdr), 't1_denoised_latest_sigma_19.88_3.nii.gz')
-
-    img = nib.load('t1_denoised_latest_sigma_19.88.nii.gz')
-    old = img.get_data()
-    print(np.sum(np.abs(old-den)))
-
+    assert_equal(data.shape, data3.shape)
 
 
 #test_nlmeans_borders()

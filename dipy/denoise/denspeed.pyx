@@ -10,27 +10,29 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
-def nlmeans_3d(arr, mask=None, patch_radius=1, block_radius=5, sigma=None, rician=True):
+def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, rician=True):
 
     arr = np.ascontiguousarray(arr, dtype='f8')
 
     arr = add_border(arr, block_radius)
 
     if mask is None:
-        mask = np.ones_like(arr, dtype=np.uint8)
+        mask = np.ones_like(arr, dtype='f8')
     else:
-        mask = np.ascontiguousarray(mask, dtype=np.uint8)
+        mask = np.ascontiguousarray(mask, dtype='f8')
 
-    arrnlm = _nlmeans_3d(arr, mask, patch_radius, block_radius, sigma, rician)
+    mask = add_border(mask.astype('f8'), block_radius)
+
+    arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
 
     return remove_border(arrnlm, block_radius)
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def _nlmeans_3d(double [:, :, ::1] arr, cnp.npy_uint8 [:, :, ::1] mask,
-                patch_radius=1, block_radius=5,
-                sigma=None, rician=True):
+def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask, 
+                sigma=None, patch_radius=1, block_radius=5,
+                rician=True):
 
     cdef:
         cnp.npy_intp i, j, k, I, J, K
@@ -149,9 +151,30 @@ cdef double process_block(double [:, :, ::1] arr,
     return sum_out
 
 
-def add_border(arr, padding):
-    arr = np.pad(arr, (padding, padding,), mode='reflect')
-    return arr
+def add_border(double [:, :, ::1] arr, padding):
+    #arr = np.pad(arr, (padding, padding,), mode='reflect')
+    cdef: 
+        double [:, :, ::1] final 
+        cnp.npy_intp i, j, k
+        cnp.npy_intp B = padding
+        cnp.npy_intp [::1] indices_i = correspond_indices(arr.shape[0], padding)
+        cnp.npy_intp [::1] indices_j = correspond_indices(arr.shape[1], padding)
+        cnp.npy_intp [::1] indices_k = correspond_indices(arr.shape[2], padding)
+
+    final = np.zeros(np.array((arr.shape[0], arr.shape[1], arr.shape[2])) + 2*padding)
+
+    for i in range(final.shape[0]):
+        for j in range(final.shape[1]):
+            for k in range(final.shape[2]):
+                final[i, j, k] = arr[indices_i[i], indices_j[j], indices_k[k]]
+
+    return final
+
+
+def correspond_indices(dim_size, padding):
+    return np.ascontiguousarray(np.hstack((np.arange(1, padding + 1)[::-1], 
+                                np.arange(dim_size),
+                                np.arange(dim_size - padding - 1, dim_size - 1)[::-1])))
 
 
 def remove_border(arr, padding):
@@ -159,6 +182,7 @@ def remove_border(arr, padding):
     return arr[padding:shape[0] - padding,
                padding:shape[1] - padding,
                padding:shape[2] - padding]
+
 
 def test_copy_sub_array():
 
