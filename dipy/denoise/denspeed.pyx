@@ -11,21 +11,48 @@ from libc.string cimport memcpy
 
 
 def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, rician=True):
+    """ Non-local means for denoising 3D images
+
+    Parameters
+    ----------
+    arr : 3D or 4D ndarray
+        The array to be denoised
+    mask : 3D ndarray
+    sigma : float
+        standard deviation of the noise estimated from the data
+    patch_radius : int
+        patch size is ``2 x patch_radius + 1``. Default is 1.
+    block_radius : int
+        block size is ``2 x block_radius + 1``. Default is 5.
+    rician : boolean
+        If True the noise is estimate as Rician, otherwise Gaussian noise 
+        is assumed.
+
+    Returns
+    -------
+    denoised_arr : ndarray
+        the denoised ``arr`` which has the same shape as ``arr``.
+
+    """
+    if arr.ndim != 3:
+        raise ValueError('arr needs to be a 3D ndarray')
+    if mask.ndim != 3:
+        raise ValueError('arr needs to be a 3D ndarray')
 
     arr = np.ascontiguousarray(arr, dtype='f8')
 
-    arr = add_border(arr, block_radius)
+    arr = add_padding_reflection(arr, block_radius)
 
     if mask is None:
         mask = np.ones_like(arr, dtype='f8')
     else:
         mask = np.ascontiguousarray(mask, dtype='f8')
 
-    mask = add_border(mask.astype('f8'), block_radius)
+    mask = add_padding_reflection(mask.astype('f8'), block_radius)
 
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
 
-    return remove_border(arrnlm, block_radius)
+    return remove_padding(arrnlm, block_radius)
 
 
 @cython.wraparound(False)
@@ -33,6 +60,11 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
 def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask, 
                 sigma=None, patch_radius=1, block_radius=5,
                 rician=True):
+    """ This algorithm denoises the value of every voxel (i, j ,k) by 
+    calculating a weight between a moving 3D patch and a static 3D patch 
+    centered at (i, j, k). The moving patch can only move inside a 
+    3D block.
+    """
 
     cdef:
         cnp.npy_intp i, j, k, I, J, K
@@ -151,7 +183,7 @@ cdef double process_block(double [:, :, ::1] arr,
     return sum_out
 
 
-def add_border(double [:, :, ::1] arr, padding):
+def add_padding_reflection(double [:, :, ::1] arr, padding):
     #arr = np.pad(arr, (padding, padding,), mode='reflect')
     cdef: 
         double [:, :, ::1] final 
@@ -177,7 +209,7 @@ def correspond_indices(dim_size, padding):
                                 np.arange(dim_size - padding - 1, dim_size - 1)[::-1])))
 
 
-def remove_border(arr, padding):
+def remove_padding(arr, padding):
     shape = arr.shape
     return arr[padding:shape[0] - padding,
                padding:shape[1] - padding,
