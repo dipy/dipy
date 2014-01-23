@@ -12,12 +12,13 @@ Dipy_ is a **free** and **open source** software project for
 Highlights
 **********
 
-Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0!!! In addition, a **journal paper** focusing on teaching the fundamentals of Dipy will be soon available in Frontiers of Neuroinformatics... Stay alert! 
+Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0!!! In addition, a `journal paper`_ focusing on teaching the fundamentals of Dipy will is now available in Frontiers of Neuroinformatics!
 
 .. raw :: html
 
-	<div style="width: 800px">
-		<img alt=" " class="align-center" src="_images/dipy_paper_logo.jpg" style="width: 50%;max-height: 50%">		
+	<div style="width: 80% max-width=800px">
+		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_images/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%">
+        </a>		
 	</div>
 
 So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above by reading the tutorials in our :ref:`gallery <examples>`.  
@@ -28,6 +29,7 @@ See :ref:`older highlights <old_highlights>`.
 *************
 Announcements
 *************
+- `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
 - **Dipy 0.7.1** Released!, 16 January, 2014.
 - **Dipy 0.7.0** Released!, 23 December, 2013.
 - **Spherical Deconvolution** algorithms are now included in the current development version 0.7.0dev. See the examples in :ref:`gallery <examples>`, 24 June 2013.
