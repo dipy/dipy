@@ -58,7 +58,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
 @cython.wraparound(False)
 @cython.boundscheck(False)
 def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask, 
-                sigma=None, patch_radius=1, block_radius=5,
+                sigma, patch_radius=1, block_radius=5,
                 rician=True):
     """ This algorithm denoises the value of every voxel (i, j ,k) by 
     calculating a weight between a moving 3D patch and a static 3D patch 
@@ -74,10 +74,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
         cnp.npy_intp P = patch_radius
         cnp.npy_intp B = block_radius
 
-    if sigma is None:
-        sigm = 5 # call piesno
-    else:
-        sigm = sigma
+    sigm = sigma
 
     I = arr.shape[0]
     J = arr.shape[1]
@@ -223,9 +220,6 @@ def test_copy_sub_array():
     source[6, 6, 7] = 3
     dest = np.zeros((5, 5, 6))
 
-    copy_sub_memview(dest, source, 2, 2, 2)
-    print(dest)
-
     source = np.ones((10, 10, 10))
     source[2, 2, 2] = 2
     source[6, 6, 7] = 3
@@ -236,35 +230,14 @@ def test_copy_sub_array():
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef void copy_sub_memview(double [:, :, ::1] dest,
-                         double [:, :, ::1] source,
-                         cnp.npy_intp min_i,
-                         cnp.npy_intp min_j,
-                         cnp.npy_intp min_k) nogil:
-
-    cdef cnp.npy_intp I, J, K, i, j
-
-    I = dest.shape[0]
-    J = dest.shape[1]
-    K = dest.shape[2]
-
-    for i in range(I):
-        for j in range(J):
-            memcpy(&dest[i, j, 0], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
-
-    return
-
-
-@cython.wraparound(False)
-@cython.boundscheck(False)
-cdef void copy_sub_array(double * dest,
-                         cnp.npy_intp I,
-                         cnp.npy_intp J,
-                         cnp.npy_intp K,
-                         double [:, :, ::1] source,
-                         cnp.npy_intp min_i,
-                         cnp.npy_intp min_j,
-                         cnp.npy_intp min_k) nogil:
+cdef cnp.npy_intp copy_sub_array(double * dest,
+                                 cnp.npy_intp I,
+                                 cnp.npy_intp J,
+                                 cnp.npy_intp K,
+                                 double [:, :, ::1] source,
+                                 cnp.npy_intp min_i,
+                                 cnp.npy_intp min_j,
+                                 cnp.npy_intp min_k) nogil:
 
     cdef cnp.npy_intp i, j
 
@@ -272,7 +245,7 @@ cdef void copy_sub_array(double * dest,
         for j in range(J):
             memcpy(&dest[i * J * K  + j * K], &source[i + min_i, j + min_j, min_k], K * sizeof(double))
 
-    return
+    return 1
 
 
 
