@@ -4,7 +4,7 @@ import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
 
 
-def nlmeans(arr, mask, sigma, patch_radius=1, block_radius=5, rician=True):
+def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     """ Non-local means for denoising 3D and 4D images
 
     Parameters

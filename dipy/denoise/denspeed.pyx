@@ -36,6 +36,12 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
     """
     if arr.ndim != 3:
         raise ValueError('arr needs to be a 3D ndarray')
+
+    if mask is None:
+        mask = np.ones_like(arr, dtype='f8')
+    else:
+        mask = np.ascontiguousarray(mask, dtype='f8')
+
     if mask.ndim != 3:
         raise ValueError('arr needs to be a 3D ndarray')
 
@@ -43,11 +49,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
 
     arr = add_padding_reflection(arr, block_radius)
 
-    if mask is None:
-        mask = np.ones_like(arr, dtype='f8')
-    else:
-        mask = np.ascontiguousarray(mask, dtype='f8')
-
+    
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
 
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)

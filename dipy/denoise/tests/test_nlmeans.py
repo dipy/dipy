@@ -24,16 +24,16 @@ def test_nlmeans_static():
 
 
 def test_nlmeans_random_noise():
-    S0 = 100 + 2 * np.random.standard_normal((50, 50, 50))
+    S0 = 100 + 2 * np.random.standard_normal((22, 23, 30))
 
     S0n = nlmeans(S0, sigma = np.std(S0), rician=False)
 
     print(S0.mean(), S0.min(), S0.max())
     print(S0n.mean(), S0n.min(), S0n.max())
 
-    assert_(S0n.min() > S0.min)
-    assert_(S0n.max() > S0.max)
-    assert_(np.abs(S0n.mean() - 100) < np.abs(S0.mean() - 100))
+    assert_(S0n.min() > S0.min())
+    assert_(S0n.max() < S0.max())
+    assert_equal(np.round(S0n.mean()), 100)
 
 
 # def test_nlmeans_random_noise():
@@ -130,6 +130,8 @@ def test_nlmeans_random_noise():
 #test_nlmeans_borders()
 #test_nlmeans_static()
 #test_nlmeans_random_noise()
-test_nlmeans()
+#test_nlmeans()
 #test_nlmeans_boundary()
 
+if __name__ == '__main__':
+    run_module_suite()
