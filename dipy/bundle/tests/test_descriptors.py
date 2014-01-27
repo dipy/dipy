@@ -10,8 +10,6 @@ from dipy.bundle.descriptors import (length_distribution,
                                      midpoints,
                                      centers_of_mass,
                                      dragons_hits)
-from dipy.bundle.descriptors import show_streamlines
-from dipy.viz import fvtk
 
 
 def fornix_streamlines():
@@ -56,16 +54,6 @@ def test_descriptors_fornix():
     hpoints, hangles = dragons_hits(centroids, avg)
 
     assert_equal(len(hpoints) > len(avg), True)
-
-    ren = show_streamlines(centroids, mpoints)
-
-    fvtk.add(ren, fvtk.point(hpoints, fvtk.colors.red))
-
-    fvtk.add(ren, fvtk.line(avg, fvtk.colors.tomato))
-
-    fvtk.add(ren, fvtk.point(avg, fvtk.colors.yellow))
-
-    fvtk.show(ren)
 
 
 def simulated_bundles(no_pts=200):

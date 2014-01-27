@@ -1,27 +1,11 @@
 import numpy as np
 from dipy.segment.quickbundles import QuickBundles
-from dipy.viz import fvtk
-from dipy.viz.colormap import line_colors
 from dipy.tracking.utils import length
 from dipy.tracking.metrics import (downsample,
                                    winding,
                                    midpoint,
                                    center_of_mass)
 from dipy.tracking.distances import cut_plane
-
-
-def show_streamlines(streamlines, mpoints=None, cpoints=None):
-    ren = fvtk.ren()
-    fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
-
-    if mpoints is not None:
-        fvtk.add(ren, fvtk.point(mpoints, fvtk.colors.yellow))
-
-    if cpoints is not None:
-        fvtk.add(ren, fvtk.point(cpoints, fvtk.colors.white))
-
-    fvtk.show(ren)
-    return ren
 
 
 def length_distribution(streamlines):
