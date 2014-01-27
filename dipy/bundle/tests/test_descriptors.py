@@ -94,7 +94,6 @@ def test_descriptors_sim_bundles():
 
     helix, parallel, spider, centerdiv = sbundles
 
-    #show_streamlines(sbundles[3])
 
 if __name__ == '__main__':
     run_module_suite()

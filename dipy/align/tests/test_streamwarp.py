@@ -74,12 +74,9 @@ def test_rigid_real_bundles():
     new_bundle2 = lin.transform(bundle, bundle2)
 
     evaluate_convergence(bundle, new_bundle2)
-    # viz(bundle, bundle2)
-    # viz(bundle, new_bundle2)
 
     cx, cy, cz = shift
     new_bundle2_initial = transform_streamlines(new_bundle2, matrix44([cx, cy, cz, 0, 0, 0]))
-    # viz(bundle_initial, new_bundle2_initial)
     
     evaluate_convergence(bundle_initial, new_bundle2_initial)
 
@@ -116,10 +113,10 @@ def test_rigid_partial():
         i, j, k = index
         vol2[i, j, k] = 1
 
-    overlap = np.sum(np.logical_and(vol,vol2))/float(np.sum(vol2))
+    overlap = np.sum(np.logical_and(vol,vol2)) / float(np.sum(vol2))
     print(overlap)
 
-    assert_equal(overlap*100 > 40, True )
+    assert_equal(overlap * 100 > 40, True )
 
 
 if __name__ == '__main__':
