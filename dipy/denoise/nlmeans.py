@@ -19,7 +19,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     block_radius : int
         block size is ``2 x block_radius + 1``. Default is 5.
     rician : boolean
-        If True the noise is estimate as Rician, otherwise Gaussian noise 
+        If True the noise is estimate as Rician, otherwise Gaussian noise
         is assumed.
 
     Returns
@@ -33,14 +33,15 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
 
         return nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
 
-    if arr.ndim == 4:       
+    if arr.ndim == 4:
 
         denoised_arr = np.zeros_like(arr)
 
         for i in range(arr.shape[-1]):
-            denoised_arr = nlmeans_3d(arr[..., i], mask, sigma, 
-                                      patch_radius, block_radius, rician)
+            denoised_arr[..., i] = nlmeans_3d(arr[..., i], mask,
+                                              sigma, patch_radius,
+                                              block_radius, rician)
 
-        return 
+        return denoised_arr
 
 
