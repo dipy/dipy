@@ -49,7 +49,7 @@ def matrix44(t, dtype=np.double):
     Parameters
     -----------
     t : ndarray
-        t is a vector of of affine transformation parameters with 
+        t is a vector of of affine transformation parameters with
         size at least 6.
         If size < 6, error.
         If size == 6, t is interpreted as translation + rotation.
@@ -62,7 +62,7 @@ def matrix44(t, dtype=np.double):
     Returns
     -------
     T : ndarray
-        
+
     """
     if isinstance(t, list):
         t = np.array(t)
@@ -113,7 +113,7 @@ def mdf_optimization_sum(t, static, moving):
     Parameters
     -----------
     t : ndarray
-        t is a vector of of affine transformation parameters with 
+        t is a vector of of affine transformation parameters with
         size at least 6. If size < 6, returns an error.
         If size == 6, t is interpreted as translation + rotation.
         If size == 7, t is interpreted as translation + rotation +
@@ -149,7 +149,7 @@ def mdf_optimization_min(t, static, moving):
     Parameters
     -----------
     t : ndarray
-        t is a vector of of affine transformation parameters with 
+        t is a vector of of affine transformation parameters with
         size at least 6. If size < 6, returns an error.
         If size == 6, t is interpreted as translation + rotation.
         If size == 7, t is interpreted as translation + rotation +
@@ -177,13 +177,13 @@ def mdf_optimization_min(t, static, moving):
 
 
 def center_streamlines(streamlines):
-    """ Move streamlines to the origin 
+    """ Move streamlines to the origin
 
     Parameters
     ----------
     streamlines : list
         List of 2D ndarrays of shape[-1]==3
-            
+
     Returns
     -------
     new_streamlines : list
@@ -218,7 +218,7 @@ class LinearRegistration(object):
                                 (self.static, self.moving),
                                 xtol = self.xtol,
                                 ftol = self.ftol,
-                                maxiter = self.maxiter)                                
+                                maxiter = self.maxiter)
 
         return self.xopt
 
@@ -230,3 +230,41 @@ class LinearRegistration(object):
         self.mat = mat
         self.moved = transform_streamlines(self.moving, mat)
         return self.moved
+
+
+class StreamlineRigidRegistration(object):
+
+    def __init__(self, similarity, xtol=10 ** (-6),
+                 ftol=10 ** (-6), maxiter=10 ** 6, disp=False,
+                 retall=False):
+
+        self.similarity = similarity
+        self.xopt = None
+        self.xtol = xtol
+        self.ftol = ftol
+        self.maxiter = maxiter
+        self.disp = disp
+        self.retall = retall
+        self.initial = np.zeros(6).tolist()
+
+    def optimize(self, static, moving):
+
+        xopt = fmin_powell(self.similarity,
+                           self.initial,
+                           (static, moving),
+                           xtol = self.xtol,
+                           ftol = self.ftol,
+                           maxiter = self.maxiter,
+                           disp = self.disp,
+                           retall = self.retall)
+
+        if self.retall:
+            mat = matrix44(xopt[0])
+            return mat, xopt[0]
+        else:
+            mat = matrix44(xopt)
+            return mat, xopt
+
+
+
+
