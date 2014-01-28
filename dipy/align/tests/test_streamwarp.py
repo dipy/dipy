@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.testing import (run_module_suite,
                            assert_equal,
+                           assert_array_equal,
                            assert_array_almost_equal)
 from dipy.align.streamwarp import (LinearRegistration,
                                    transform_streamlines,
@@ -12,6 +13,7 @@ from dipy.tracking.metrics import downsample
 from dipy.data import get_data
 from dipy.bundle.descriptors import midpoints
 from nibabel import trackvis as tv
+from dipy.align.streamwarp import StreamlineRigidRegistration, compose_transformations
 
 
 def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
@@ -127,16 +129,41 @@ def test_stream_rigid():
     mat = matrix44([0, 0, 0, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
 
-    from dipy.align.streamwarp import StreamlineRigidRegistration
+    srr = StreamlineRigidRegistration(mdf_optimization_min, full_output=True)
 
-    srr = StreamlineRigidRegistration(mdf_optimization_min, retall=True)
+    sr_params = srr.optimize(static, moving)
 
-    mat, xopt = srr.optimize(static, moving)
+    moved = transform_streamlines(moving, sr_params.matrix)
 
-    moved = transform_streamlines(mat)
+    srr = StreamlineRigidRegistration(mdf_optimization_min, full_output=False)
+
+    srp = srr.optimize(static, moving)
+
+    moved2 = transform_streamlines(moving, srp.matrix)
+
+    moved3 = srp.transform(moving)
+
+    assert_array_equal(moved[0], moved2[0])
+    assert_array_equal(moved2[0], moved3[0])
+
+
+def test_compose_transformations():
+
+    A = np.eye(4)
+    A[0, -1] = 10
+
+    B = np.eye(4)    
+    B[0, -1] = -20    
+
+    C = np.eye(4)
+    C[0, -1] = 10    
+
+    CBA = compose_transformations(A, B, C)
+
+    assert_array_equal(CBA, np.eye(4))
 
 
 if __name__ == '__main__':
 
-    #run_module_suite()
-    test_stream_rigid()
+    run_module_suite()
+    
