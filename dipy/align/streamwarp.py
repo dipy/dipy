@@ -235,36 +235,99 @@ class LinearRegistration(object):
 class StreamlineRigidRegistration(object):
 
     def __init__(self, similarity, xtol=10 ** (-6),
-                 ftol=10 ** (-6), maxiter=10 ** 6, disp=False,
-                 retall=False):
+                 ftol=10 ** (-6), maxiter=10 ** 6, full_output=False, 
+                 disp=False):
 
         self.similarity = similarity
-        self.xopt = None
         self.xtol = xtol
         self.ftol = ftol
         self.maxiter = maxiter
-        self.disp = disp
-        self.retall = retall
+        self.full_output = full_output
+        self.disp = disp        
         self.initial = np.zeros(6).tolist()
 
     def optimize(self, static, moving):
 
-        xopt = fmin_powell(self.similarity,
-                           self.initial,
-                           (static, moving),
-                           xtol = self.xtol,
-                           ftol = self.ftol,
-                           maxiter = self.maxiter,
-                           disp = self.disp,
-                           retall = self.retall)
+        msg = 'need to have the same number of points.'
+        if static[0].shape[0] != static[-1].shape[0]:
+            raise ValueError('Static streamlines ' + msg)
+        
+        if moving[0].shape[0] != moving[-1].shape[0]:
+            raise ValueError('Moving streamlines ' + msg)
 
-        if self.retall:
-            mat = matrix44(xopt[0])
-            return mat, xopt[0]
+        if static[0].shape[0] != moving[-1].shape[0]:
+            raise ValueError('Static and moving streamlines ' + msg)
+
+        static_centered, static_shift = center_streamlines(static)
+        moving_centered, moving_shift = center_streamlines(moving)
+
+        optimum = fmin_powell(self.similarity,
+                              self.initial,
+                              (static_centered, moving_centered),
+                              xtol = self.xtol,
+                              ftol = self.ftol,
+                              maxiter = self.maxiter,
+                              full_output = self.full_output,
+                              disp = self.disp,
+                              retall = True)
+
+        if self.full_output:
+            xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
         else:
-            mat = matrix44(xopt)
-            return mat, xopt
+            xopt, fopt, allvecs = optimum[0], None, optimum[1]
+
+        opt_mat = matrix44(xopt)
+        static_mat = matrix44([static_shift[0], static_shift[1], 
+                               static_shift[2], 0, 0, 0])
+
+        moving_mat = matrix44([-moving_shift[0], -moving_shift[1], 
+                               -moving_shift[2], 0, 0, 0])
+
+        mat = compose_transformations(moving_mat, opt_mat, static_mat)
+
+        mat_history = []
+        for vecs in allvecs:
+            mat_history.append(compose_transformations(moving_mat, 
+                                                       matrix44(vecs),
+                                                       static_mat))
+
+        return StreamlineRegistrationParams(mat, xopt, fopt, mat_history)
 
 
+class StreamlineRegistrationParams(object):
+
+    def __init__(self, matopt, xopt, fopt, matopt_history):
+
+        self.matrix = matopt
+        self.xopt = xopt
+        self.fopt = fopt
+        self.matrix_history = matopt_history
+
+    def transform(self, streamlines):
+
+        return transform_streamlines(streamlines, self.matrix)
 
 
+def compose_transformations(*mats):
+    """ Compose multiple transformations in one 4x4 matrix
+
+    Parameters
+    -----------
+
+    mat1 : array, (4, 4)
+    mat2 : array, (4, 4)
+    ...
+    matN : array, (4, 4)
+
+    Returns
+    -------
+    matN x mat2 x mat1 : array, (4, 4)
+    """
+
+    prev = mats[0]
+    
+    for mat in mats[1:]:
+
+        prev = np.dot(mat, prev)
+
+    return prev
