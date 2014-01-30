@@ -12,6 +12,18 @@ First import the necessary modules:
 import numpy as np
 import nibabel as nib
 
+def histeq(im,nbr_bins=256):
+
+   #get image histogram
+   imhist,bins = np.histogram(im.flatten(), nbr_bins, normed=True)
+   cdf = imhist.cumsum() #cumulative distribution function
+   cdf = 255 * cdf / cdf[-1] #normalize
+
+   #use linear interpolation of cdf to find new pixel values
+   im2 = np.interp(im.flatten(),bins[:-1],cdf)
+
+   return im2.reshape(im.shape)
+
 """
 Download and read the data for this tutorial.
 
@@ -59,13 +71,29 @@ Quick view of the results middle slice using matplotlib.
 """
 
 import matplotlib.pyplot as plt
+from matplotlib.pyplot import colormaps as cm
 
 sli = data.shape[2] / 2
 plt.figure('Brain segmentation')
 plt.subplot(1, 2, 1).set_axis_off()
-plt.imshow(data[:, :, sli], cmap='gray')
+
+'''
+# Compute new display scale to view removed background.
+min = data[:, :, sli].min()
+max = data[:, :, sli].max()
+mean = (max - min) / 2.0
+qmean = mean / 4.0
+
+
+plt.imshow(data[:, :, sli], vmin=min, vmax=mean - qmean, cmap='jet')#cmap='jet')
 plt.subplot(1, 2, 2).set_axis_off()
-plt.imshow(b0_mask[:, :, sli], cmap='gray')
+plt.imshow(b0_mask[:, :, sli], vmin=min, vmax=mean - qmean, cmap='jet') #cmap='jet')
+plt.savefig('median_otsu.png')
+'''
+
+plt.imshow(histeq(data[:, :, sli].astype('float')).T, cmap='gray', origin='lower')
+plt.subplot(1, 2, 2).set_axis_off()
+plt.imshow(histeq(b0_mask[:, :, sli].astype('float')).T, cmap='gray', origin='lower')
 plt.savefig('median_otsu.png')
 
 """
@@ -82,12 +110,4 @@ smaller.  auto cropping in ``median_otsu`` is activated by setting the
 
 b0_mask_crop, mask_crop = median_otsu(data, 4, 4, autocrop=True)
 
-"""
-Saving cropped data using nibabel as demonstrated previously.
-"""
 
-mask_img_crop = nib.Nifti1Image(mask_crop.astype(np.float32), img.get_affine())
-b0_img_crop = nib.Nifti1Image(
-    b0_mask_crop.astype(np.float32), img.get_affine())
-nib.save(mask_img_crop, fname + '_binary_mask_crop.nii.gz')
-nib.save(b0_img_crop, fname + '_mask_crop.nii.gz')
