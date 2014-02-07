@@ -234,11 +234,17 @@ class ShoreFit():
 
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of real points.
+            if the array r_points is non writeable, then intermediate
+            results are cached for faster recalculation
         """
-        psi = self.model.cache_get('shore_matrix_pdf', key=r_points.sum())
+        if not r_points.flags.writeable:
+            psi = self.model.cache_get('shore_matrix_pdf', key=hash(r_points.data))
+        else:
+            psi = None
         if psi is None:
             psi = shore_matrix_pdf(self.radial_order,  self.zeta, r_points)
-            self.model.cache_set('shore_matrix_pdf', r_points.sum(), psi)
+            if not r_points.flags.writeable:
+                self.model.cache_set('shore_matrix_pdf', hash(r_points.data), psi)
 
         eap = np.dot(psi, self._shore_coef)
 
