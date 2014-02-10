@@ -213,31 +213,38 @@ class ShoreFit():
             the ensemble average propagator in the 3D grid
 
         """
-        eap = np.zeros((gridsize, gridsize, gridsize))
         # Create the grid in which to compute the pdf
-        rgrid, rtab = create_rspace(gridsize, radius_max)
-        psi = self.model.cache_get('shore_matrix_pdf', key=gridsize)
+        rgrid_rtab = self.model.cache_get('pdf_grid', key=(gridsize, radius_max))
+        if rgrid_rtab is None:
+            rgrid_rtab = create_rspace(gridsize, radius_max)
+            self.model.cache_set('pdf_grid', (gridsize, radius_max), rgrid_rtab)
+        rgrid, rtab = rgrid_rtab
+
+        psi = self.model.cache_get('shore_matrix_pdf', key=(gridsize, radius_max))
         if psi is None:
             psi = shore_matrix_pdf(self.radial_order,  self.zeta, rtab)
-            self.model.cache_set('shore_matrix_pdf', gridsize, psi)
+            self.model.cache_set('shore_matrix_pdf', (gridsize, radius_max), psi)
 
         propagator = np.dot(psi, self._shore_coef)
-        # fill real space
-        for i in range(len(rgrid)):
-            qx, qy, qz = rgrid[i]
-            eap[qx, qy, qz] += propagator[i]
-        # normalize by the area of the propagator
-        eap = eap * (2 * radius_max / (gridsize - 1)) ** 3
+        eap = np.empty((gridsize, gridsize, gridsize), dtype=float)
+        eap[tuple(rgrid.astype(int).T)] = propagator
+        eap *= (2 * radius_max / (gridsize - 1)) ** 3
 
         return np.clip(eap, 0, eap.max())
 
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of real points.
+            if the array r_points is non writeable, then intermediate
+            results are cached for faster recalculation
         """
-        psi = self.model.cache_get('shore_matrix_pdf', key=r_points.sum())
+        if not r_points.flags.writeable:
+            psi = self.model.cache_get('shore_matrix_pdf', key=hash(r_points.data))
+        else:
+            psi = None
         if psi is None:
             psi = shore_matrix_pdf(self.radial_order,  self.zeta, r_points)
-            self.model.cache_set('shore_matrix_pdf', r_points.sum(), psi)
+            if not r_points.flags.writeable:
+                self.model.cache_set('shore_matrix_pdf', hash(r_points.data), psi)
 
         eap = np.dot(psi, self._shore_coef)
 
