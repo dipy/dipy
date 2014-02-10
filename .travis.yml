@@ -23,6 +23,7 @@ install:
     # Cython easy_install breaks with error about refnanny.c; maybe something
     # to do with having a previous cython version;
     # http://mail.python.org/pipermail//cython-devel/2012-April/002344.html
+    - sudo easy_install$PYSUF cvxopt
     - curl -O http://www.cython.org/release/Cython-0.18.zip
     - unzip Cython-0.18.zip
     - cd Cython-0.18
