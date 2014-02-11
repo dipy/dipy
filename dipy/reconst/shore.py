@@ -202,22 +202,24 @@ class ShoreModel(Cache):
                 M0 = M[self.gtab.b0s_mask, :]
                 M0_mean = M0.mean(0)[None, :]
                 Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
-                Q = cvxopt.matrix(
+                Q = cvxopt.matrix(np.ascontiguousarray(
                     np.dot(Mprime.T, Mprime)
                     + self.lambdaN * Nshore + self.lambdaL * Lshore
-                )
+                ))
 
                 data_b0 = data[self.gtab.b0s_mask].mean()
                 data_single_b0 = np.r_[data_b0, data[~self.gtab.b0s_mask]] / data_b0
-                p = cvxopt.matrix(-1 * np.dot(Mprime.T, data_single_b0))
+                p = cvxopt.matrix(np.ascontiguousarray(
+                    -1 * np.dot(Mprime.T, data_single_b0))
+                )
 
                 cvxopt.solvers.options['show_progress'] = False
 
                 G = None
                 h = None
 
-                A = cvxopt.matrix(M0_mean)
-                b = cvxopt.matrix([1.])
+                A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
+                b = cvxopt.matrix(np.array([1.]))
 
                 sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
 
