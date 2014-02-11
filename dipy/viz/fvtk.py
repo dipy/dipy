@@ -32,6 +32,8 @@ from ..utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 
+import matplotlib
+
 # a track buffer used only with picking tracks
 track_buffer = []
 # indices buffer for the tracks
@@ -1291,7 +1293,12 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
 
         list_sq.append(xyz)
         if colormap is not None:
-            cols = create_colormap(m, colormap)
+            if isinstance(colormap, str):
+                cols = create_colormap(m, colormap)
+            elif isinstance(colormap, matplotlib.cm.colors.Colormap):
+                cols = colormap(m)[:, :3]
+            else:
+                ValueError("colormap must be a string or Colormap object")
             cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
             list_cols.append(cols)
 
