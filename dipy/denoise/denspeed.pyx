@@ -25,7 +25,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
     block_radius : int
         block size is ``2 x block_radius + 1``. Default is 5.
     rician : boolean
-        If True the noise is estimate as Rician, otherwise Gaussian noise 
+        If True the noise is estimate as Rician, otherwise Gaussian noise
         is assumed.
 
     Returns
@@ -49,7 +49,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
 
     arr = add_padding_reflection(arr, block_radius)
 
-    
+
     mask = add_padding_reflection(mask.astype('f8'), block_radius)
 
     arrnlm = _nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
@@ -59,12 +59,12 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask, 
+def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
                 sigma, patch_radius=1, block_radius=5,
                 rician=True):
-    """ This algorithm denoises the value of every voxel (i, j ,k) by 
-    calculating a weight between a moving 3D patch and a static 3D patch 
-    centered at (i, j, k). The moving patch can only move inside a 
+    """ This algorithm denoises the value of every voxel (i, j ,k) by
+    calculating a weight between a moving 3D patch and a static 3D patch
+    centered at (i, j, k). The moving patch can only move inside a
     3D block.
     """
 
@@ -83,7 +83,7 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
     K = arr.shape[2]
 
     #move the block
-    with nogil, parallel(num_threads=I):
+    with nogil, parallel():
         for i in prange(B, I - B):
             for j in range(B , J - B):
                 for k in range(B, K - B):
@@ -183,8 +183,8 @@ cdef double process_block(double [:, :, ::1] arr,
 
 def add_padding_reflection(double [:, :, ::1] arr, padding):
     #arr = np.pad(arr, (padding, padding,), mode='reflect')
-    cdef: 
-        double [:, :, ::1] final 
+    cdef:
+        double [:, :, ::1] final
         cnp.npy_intp i, j, k
         cnp.npy_intp B = padding
         cnp.npy_intp [::1] indices_i = correspond_indices(arr.shape[0], padding)
@@ -202,7 +202,7 @@ def add_padding_reflection(double [:, :, ::1] arr, padding):
 
 
 def correspond_indices(dim_size, padding):
-    return np.ascontiguousarray(np.hstack((np.arange(1, padding + 1)[::-1], 
+    return np.ascontiguousarray(np.hstack((np.arange(1, padding + 1)[::-1],
                                 np.arange(dim_size),
                                 np.arange(dim_size - padding - 1, dim_size - 1)[::-1])))
 
