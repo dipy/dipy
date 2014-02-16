@@ -19,7 +19,7 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     block_radius : int
         block size is ``2 x block_radius + 1``. Default is 5.
     rician : boolean
-        If True the noise is estimate as Rician, otherwise Gaussian noise
+        If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
 
     Returns

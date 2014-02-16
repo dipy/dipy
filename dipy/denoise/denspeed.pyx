@@ -25,7 +25,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, ricia
     block_radius : int
         block size is ``2 x block_radius + 1``. Default is 5.
     rician : boolean
-        If True the noise is estimate as Rician, otherwise Gaussian noise
+        If True the noise is estimated as Rician, otherwise Gaussian noise
         is assumed.
 
     Returns
@@ -133,7 +133,7 @@ cdef double process_block(double [:, :, ::1] arr,
 
     # calculate weights between the central patch and the moving patch in block
     # (m, n, o) coordinates are the center of the moving patch
-    # (a, b, c) run incide both patches
+    # (a, b, c) run inside both patches
     for m in range(P, BS - P):
         for n in range(P, BS - P):
             for o in range(P, BS - P):
