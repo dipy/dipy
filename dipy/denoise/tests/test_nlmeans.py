@@ -68,5 +68,20 @@ def test_nlmeans_4D_and_mask():
     assert_equal(S0n[8, 8, 8], 0)
 
 
+def test_nlmeans_dtype():
+
+    S0 = 200 * np.ones((20, 20, 20, 3), dtype='f4')
+    mask = np.zeros((20, 20, 20))
+    mask[10:14, 10:14, 10:14] = 1
+    S0n = nlmeans(S0, sigma=1, mask=mask, rician=True)
+    assert_equal(S0.dtype, S0n.dtype)
+
+    S0 = 200 * np.ones((20, 20, 20), dtype='i16')
+    mask = np.zeros((20, 20, 20))
+    mask[10:14, 10:14, 10:14] = 1
+    S0n = nlmeans(S0, sigma=1, mask=mask, rician=True)
+    assert_equal(S0.dtype, S0n.dtype)
+
+
 if __name__ == '__main__':
     run_module_suite()

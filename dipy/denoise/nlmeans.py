@@ -31,16 +31,21 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
 
     if arr.ndim == 3:
 
-        return nlmeans_3d(arr, mask, sigma, patch_radius, block_radius, rician)
+        return nlmeans_3d(arr, mask, sigma,
+                          patch_radius, block_radius,
+                          rician).astype(arr.dtype)
 
     if arr.ndim == 4:
 
         denoised_arr = np.zeros_like(arr)
 
         for i in range(arr.shape[-1]):
-            denoised_arr[..., i] = nlmeans_3d(arr[..., i], mask,
-                                              sigma, patch_radius,
-                                              block_radius, rician)
+            denoised_arr[..., i] = nlmeans_3d(arr[..., i],
+                                              mask,
+                                              sigma,
+                                              patch_radius,
+                                              block_radius,
+                                              rician).astype(arr.dtype)
 
         return denoised_arr
 
