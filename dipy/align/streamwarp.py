@@ -1,7 +1,7 @@
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
-from scipy.optimize import fmin_powell
+from scipy.optimize import fmin_powell, fmin, fmin_l_bfgs_b
 from dipy.tracking.metrics import downsample
 
 
@@ -142,7 +142,7 @@ def mdf_optimization_sum(t, static, moving):
 
 
 def mdf_optimization_min(t, static, moving):
-    """ MDF distance optimization function (SUM)
+    """ MDF distance optimization function
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
@@ -175,6 +175,43 @@ def mdf_optimization_min(t, static, moving):
     moving = transform_streamlines(moving, aff)
     d01 = bundles_distances_mdf(static, moving)
     return np.sum(np.min(d01, axis=0)) + np.sum(np.min(d01, axis=1))
+
+
+def bundle_min_distance(t, static, moving):
+
+    """ MDF-based pairwise distance optimization function
+
+    We minimize the distance between moving streamlines as they align
+    with the static streamlines.
+
+    Parameters
+    -----------
+    t : ndarray
+        t is a vector of of affine transformation parameters with
+        size at least 6. If size < 6, returns an error.
+        If size == 6, t is interpreted as translation + rotation.
+        If size == 7, t is interpreted as translation + rotation +
+        isotropic scaling. If 7 < size < 12, error.
+        If size >= 12, t is interpreted as translation + rotation +
+        scaling + pre-rotation.
+
+    static : list
+        Static streamlines
+
+    moving : list
+        Moving streamlines. These will be transform to align with
+        the static streamlines
+
+    Returns
+    -------
+    cost: float
+
+    """
+    aff = matrix44(t)
+    moving = transform_streamlines(moving, aff)
+    d01 = bundles_distances_mdf(static, moving)
+    return (np.sum(np.min(d01, axis=0)) + np.sum(np.min(d01, axis=1))) ** 2
+
 
 
 def center_streamlines(streamlines):
@@ -236,23 +273,33 @@ class LinearRegistration(object):
 class StreamlineRigidRegistration(object):
 
     def __init__(self, similarity, xtol=10 ** (-6),
-                 ftol=10 ** (-6), maxiter=10 ** 6, full_output=False, 
-                 disp=False):
+                 ftol=10 ** (-6), maxiter=10 ** 6, full_output=False,
+                 disp=False, algorithm='powell', bounds=None):
 
         self.similarity = similarity
         self.xtol = xtol
         self.ftol = ftol
         self.maxiter = maxiter
         self.full_output = full_output
-        self.disp = disp        
+        self.disp = disp
         self.initial = np.zeros(6).tolist()
+        self.algorithm = algorithm
+
+        if self.algorithm == 'powell':
+            self.fmin = fmin_powell
+        if self.algorithm == 'simplex':
+            self.fmin = fmin
+        if self.algorithm == 'l_bfgs':
+            self.fmin = fmin_l_bfgs_b
+
+        self.bounds = bounds
 
     def optimize(self, static, moving):
 
         msg = 'need to have the same number of points.'
         if static[0].shape[0] != static[-1].shape[0]:
             raise ValueError('Static streamlines ' + msg)
-        
+
         if moving[0].shape[0] != moving[-1].shape[0]:
             raise ValueError('Moving streamlines ' + msg)
 
@@ -262,33 +309,67 @@ class StreamlineRigidRegistration(object):
         static_centered, static_shift = center_streamlines(static)
         moving_centered, moving_shift = center_streamlines(moving)
 
-        optimum = fmin_powell(self.similarity,
-                              self.initial,
-                              (static_centered, moving_centered),
-                              xtol = self.xtol,
-                              ftol = self.ftol,
-                              maxiter = self.maxiter,
-                              full_output = self.full_output,
-                              disp = self.disp,
-                              retall = True)
+        if self.algorithm != 'l_bfgs':
+
+            optimum = self.fmin(self.similarity,
+                                self.initial,
+                                (static_centered, moving_centered),
+                                xtol=self.xtol,
+                                ftol=self.ftol,
+                                maxiter=self.maxiter,
+                                full_output=self.full_output,
+                                disp=self.disp,
+                                retall=True)
+
+        if self.algorithm == 'l_bfgs':
+
+            optimum = self.fmin(self.similarity,
+                                self.initial,
+                                None,
+                                (static_centered, moving_centered),
+                                approx_grad=True,
+                                bounds=self.bounds,
+                                disp=self.disp)
+
 
         if self.full_output:
-            xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
+
+            if self.algorithm == 'powell':
+
+                xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
+
+            if self.algorithm == 'simplex':
+
+                xopt, fopt, iterations, funcs, warnflag, allvecs = optimum
+
         else:
-            xopt, fopt, allvecs = optimum[0], None, optimum[1]
+
+            if self.algorithm != 'l_bfgs':
+
+                xopt, fopt, allvecs = optimum[0], None, optimum[1]
+
+
+        if self.algorithm == 'l_bfgs':
+
+            xopt, fopt, dictionary = optimum
+            if self.full_output:
+                print('function evaluations', dictionary['funcalls'])
+                print('number of iterations', dictionary['nit'])
+                print('fopt', fopt)
+            allvecs = [xopt]
 
         opt_mat = matrix44(xopt)
-        static_mat = matrix44([static_shift[0], static_shift[1], 
+        static_mat = matrix44([static_shift[0], static_shift[1],
                                static_shift[2], 0, 0, 0])
 
-        moving_mat = matrix44([-moving_shift[0], -moving_shift[1], 
+        moving_mat = matrix44([-moving_shift[0], -moving_shift[1],
                                -moving_shift[2], 0, 0, 0])
 
         mat = compose_transformations(moving_mat, opt_mat, static_mat)
 
         mat_history = []
         for vecs in allvecs:
-            mat_history.append(compose_transformations(moving_mat, 
+            mat_history.append(compose_transformations(moving_mat,
                                                        matrix44(vecs),
                                                        static_mat))
 
@@ -326,7 +407,7 @@ def compose_transformations(*mats):
     """
 
     prev = mats[0]
-    
+
     for mat in mats[1:]:
 
         prev = np.dot(mat, prev)
