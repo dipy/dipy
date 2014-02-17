@@ -2,6 +2,7 @@ import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
 from scipy.optimize import fmin_powell
+from dipy.tracking.metrics import downsample
 
 
 def rotation_vec2mat(r):
@@ -331,3 +332,9 @@ def compose_transformations(*mats):
         prev = np.dot(mat, prev)
 
     return prev
+
+
+def vectorize_streamlines(streamlines, no_pts):
+    """ Resample all streamlines to the same number of points
+    """
+    return [downsample(s, no_pts) for s in streamlines]
