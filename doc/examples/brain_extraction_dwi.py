@@ -59,7 +59,7 @@ Quick view of the results middle slice using matplotlib.
 """
 
 import matplotlib.pyplot as plt
-from dipy.core import histeq
+from dipy.core.histeq import histeq
 
 sli = data.shape[2] / 2
 plt.figure('Brain segmentation')
