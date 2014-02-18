@@ -115,6 +115,18 @@ def read_scil_b0():
     file = dipy_home+'/datasets_multi-site_all_companies/3T/GE/b0.nii.gz'
     return nib.load(file)
 
+def read_siemens_scil_b0():
+    """ Load Siemens 1.5T b0 image form the scil b0 dataset.
+
+    Returns
+    -------
+    img : obj,
+        Nifti1Image
+    """
+    dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
+    file = dipy_home+'/datasets_multi-site_all_companies/1.5T/Siemens/b0.nii.gz'
+    return nib.load(file)
+
 
 def _get_file_md5(filename):
     """Compute the md5 checksum of a file"""
