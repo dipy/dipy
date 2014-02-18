@@ -7,12 +7,17 @@ def histeq(im, num_bins=256):
     This was taken from:
     http://www.janeriksolem.net/2009/06/histogram-equalization-with-python-and.html
 
-    Input
-    -----
+    Parameters
+    ----------
     im : ndarray
         Image on which to perform histogram equalization.
     num_bins : int
         Number of bins used to construct the histogram.
+
+    Returns
+    -------
+    result : ndarray
+        Histogram equalized image.
     """
     #get image histogram
     histo, bins = np.histogram(im.flatten(), num_bins, normed=True)
