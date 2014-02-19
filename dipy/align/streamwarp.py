@@ -1,7 +1,7 @@
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
-from scipy.optimize import fmin_powell, fmin, fmin_l_bfgs_b
+from scipy.optimize import fmin_powell, fmin_ncg
 from dipy.tracking.metrics import downsample
 
 
@@ -274,7 +274,7 @@ class StreamlineRigidRegistration(object):
 
     def __init__(self, similarity, xtol=10 ** (-6),
                  ftol=10 ** (-6), maxiter=10 ** 6, full_output=False,
-                 disp=False, algorithm='powell', bounds=None):
+                 disp=False, algorithm='Powell', bounds=None):
 
         self.similarity = similarity
         self.xtol = xtol
@@ -284,14 +284,6 @@ class StreamlineRigidRegistration(object):
         self.disp = disp
         self.initial = np.zeros(6).tolist()
         self.algorithm = algorithm
-
-        if self.algorithm == 'powell':
-            self.fmin = fmin_powell
-        if self.algorithm == 'simplex':
-            self.fmin = fmin
-        if self.algorithm == 'l_bfgs':
-            self.fmin = fmin_l_bfgs_b
-
         self.bounds = bounds
 
     def optimize(self, static, moving):
@@ -309,54 +301,50 @@ class StreamlineRigidRegistration(object):
         static_centered, static_shift = center_streamlines(static)
         moving_centered, moving_shift = center_streamlines(moving)
 
-        if self.algorithm != 'l_bfgs':
+        if self.algorithm == 'Powell':
 
-            optimum = self.fmin(self.similarity,
-                                self.initial,
-                                (static_centered, moving_centered),
-                                xtol=self.xtol,
-                                ftol=self.ftol,
-                                maxiter=self.maxiter,
-                                full_output=self.full_output,
-                                disp=self.disp,
-                                retall=True)
+            optimum = fmin_powell(self.similarity,
+                                  self.initial,
+                                  (static_centered, moving_centered),
+                                  xtol=self.xtol,
+                                  ftol=self.ftol,
+                                  maxiter=self.maxiter,
+                                  full_output=self.full_output,
+                                  disp=self.disp,
+                                  retall=True)
 
-        if self.algorithm == 'l_bfgs':
+        if self.algorithm == 'Newton-CG':
 
-            optimum = self.fmin(self.similarity,
-                                self.initial,
-                                None,
-                                (static_centered, moving_centered),
-                                approx_grad=True,
-                                bounds=self.bounds,
-                                disp=self.disp)
+            from ad import gh
+
+            
+
+            optimum = fmin_ncg(self.similarity,
+                                  self.initial,
+                                  fprime,
+                                  fhess,
+                                  (static_centered, moving_centered),
+                                  xtol=self.xtol,
+                                  ftol=self.ftol,
+                                  maxiter=self.maxiter,
+                                  full_output=self.full_output,
+                                  disp=self.disp,
+                                  retall=True)
 
 
         if self.full_output:
 
-            if self.algorithm == 'powell':
+            if self.algorithm == 'Powell':
 
                 xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
 
-            if self.algorithm == 'simplex':
+            if self.algorithm == 'Newton-CG':
 
-                xopt, fopt, iterations, funcs, warnflag, allvecs = optimum
+                xopt, fopt, funcs, gcalls, hcalls, warnflag, allvecs = optimum
 
         else:
 
-            if self.algorithm != 'l_bfgs':
-
-                xopt, fopt, allvecs = optimum[0], None, optimum[1]
-
-
-        if self.algorithm == 'l_bfgs':
-
-            xopt, fopt, dictionary = optimum
-            if self.full_output:
-                print('function evaluations', dictionary['funcalls'])
-                print('number of iterations', dictionary['nit'])
-                print('fopt', fopt)
-            allvecs = [xopt]
+            xopt, fopt, allvecs = optimum[0], None, optimum[1]
 
         opt_mat = matrix44(xopt)
         static_mat = matrix44([static_shift[0], static_shift[1],
