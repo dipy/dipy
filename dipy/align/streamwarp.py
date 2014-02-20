@@ -1,7 +1,7 @@
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
-from scipy.optimize import fmin_powell, fmin_ncg
+from scipy.optimize import fmin_powell, fmin_l_bfgs_b
 from dipy.tracking.metrics import downsample
 
 
@@ -273,16 +273,15 @@ class LinearRegistration(object):
 class StreamlineRigidRegistration(object):
 
     def __init__(self, similarity, xtol=10 ** (-6),
-                 ftol=10 ** (-6), maxiter=10 ** 6, full_output=False,
+                 ftol=10 ** (-6), maxiter=10 ** 6,
                  disp=False, algorithm='Powell', bounds=None):
 
         self.similarity = similarity
         self.xtol = xtol
         self.ftol = ftol
         self.maxiter = maxiter
-        self.full_output = full_output
         self.disp = disp
-        self.initial = np.zeros(6).tolist()
+        self.initial = np.ones(6).tolist()
         self.algorithm = algorithm
         self.bounds = bounds
 
@@ -309,42 +308,56 @@ class StreamlineRigidRegistration(object):
                                   xtol=self.xtol,
                                   ftol=self.ftol,
                                   maxiter=self.maxiter,
-                                  full_output=self.full_output,
-                                  disp=self.disp,
+                                  full_output=True,
+                                  disp=False,
                                   retall=True)
 
-        if self.algorithm == 'Newton-CG':
+        if self.algorithm == 'L_BFGS_B':
 
-            from ad import gh
+            optimum = fmin_l_bfgs_b(self.similarity,
+                                    self.initial,
+                                    None,
+                                    (static_centered, moving_centered),
+                                    approx_grad=True,
+                                    bounds=self.bounds,
+                                    m=100,
+                                    factr=10,
+                                    pgtol=1e-16,
+                                    epsilon=1e-3)
+  
 
-            
+        if self.algorithm == 'Powell':
 
-            optimum = fmin_ncg(self.similarity,
-                                  self.initial,
-                                  fprime,
-                                  fhess,
-                                  (static_centered, moving_centered),
-                                  xtol=self.xtol,
-                                  ftol=self.ftol,
-                                  maxiter=self.maxiter,
-                                  full_output=self.full_output,
-                                  disp=self.disp,
-                                  retall=True)
+            xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
 
+            print('P==========')
+            print('xopt', xopt)
+            print('fopt', fopt)
 
-        if self.full_output:
+            print('iter', iterations)
+            print('funcs', funcs)
+            print('warn', warnflag)
 
-            if self.algorithm == 'Powell':
+        if self.algorithm == 'L_BFGS_B':
 
-                xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
+            xopt, fopt, dictionary = optimum
+            funcs = dictionary['funcalls']
+            warnflag = dictionary['warnflag']
+            iterations = dictionary['nit']
+            grad = dictionary['grad']
 
-            if self.algorithm == 'Newton-CG':
+            print('L==========')
+            print('xopt', xopt)
+            print('fopt', fopt)
 
-                xopt, fopt, funcs, gcalls, hcalls, warnflag, allvecs = optimum
-
-        else:
-
-            xopt, fopt, allvecs = optimum[0], None, optimum[1]
+            print('iter', iterations)
+            print('grad', grad)
+            print('funcs', funcs)
+            print('warn', warnflag)
+            print('msg', dictionary['task'])
+  
+        print('static_shift', static_shift)
+        print('moving_shift', moving_shift)
 
         opt_mat = matrix44(xopt)
         static_mat = matrix44([static_shift[0], static_shift[1],
@@ -355,11 +368,16 @@ class StreamlineRigidRegistration(object):
 
         mat = compose_transformations(moving_mat, opt_mat, static_mat)
 
+        print('mat', mat)
+
         mat_history = []
-        for vecs in allvecs:
-            mat_history.append(compose_transformations(moving_mat,
-                                                       matrix44(vecs),
-                                                       static_mat))
+
+        if self.algorithm == 'Powell':
+
+            for vecs in allvecs:
+                mat_history.append(compose_transformations(moving_mat,
+                                                           matrix44(vecs),
+                                                           static_mat))
 
         return StreamlineRegistrationParams(mat, xopt, fopt, mat_history)
 
