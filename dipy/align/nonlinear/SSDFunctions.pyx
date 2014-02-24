@@ -45,8 +45,8 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y, f
 @cython.wraparound(False)
 def iterate_residual_displacement_field_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  floating[:,:,:] target, floating lambdaParam, floating[:,:,:] displacementField):
     cdef int NUM_NEIGHBORS = 4
-    cdef int[:] dRow = np.array([-1, 0, 1,  0])
-    cdef int[:] dCol = np.array([ 0, 1, 0, -1])
+    cdef int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
+    cdef int[:] dCol = np.array([ 0, 1, 0, -1], dtype=np.int32)
     cdef int nrows=deltaField.shape[0]
     cdef int ncols=deltaField.shape[1]
     cdef int r,c, dr, dc, nn, k
@@ -129,9 +129,9 @@ def compute_energy_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, flo
 @cython.wraparound(False)
 def iterate_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  floating[:,:,:,:] target, floating lambdaParam, floating[:,:,:,:] displacementField):
     cdef int NUM_NEIGHBORS = 6 
-    cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1])
-    cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0])
-    cdef int[:] dCol = np.array([0,  0, 1, 0, -1, 0])
+    cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
+    cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
+    cdef int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
     cdef int nslices=deltaField.shape[0]
     cdef int nrows=deltaField.shape[1]
     cdef int ncols=deltaField.shape[2]
@@ -234,9 +234,9 @@ def compute_energy_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField,
 @cython.wraparound(False)
 def compute_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  floating[:,:,:,:] target, floating lambdaParam, floating[:,:,:,:] displacementField, floating[:,:,:,:] residual):
     cdef int NUM_NEIGHBORS = 6 
-    cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1])
-    cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0])
-    cdef int[:] dCol = np.array([0,  0, 1, 0, -1, 0])
+    cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
+    cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
+    cdef int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
     cdef floating[:] b = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0,0,0]))
     cdef floating[:] y = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0,0,0]))
     cdef int nslices=deltaField.shape[0]
@@ -288,8 +288,8 @@ def compute_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floati
 @cython.wraparound(False)
 cpdef compute_residual_displacement_field_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  floating[:,:,:] target, floating lambdaParam, floating[:,:,:] displacementField, floating[:,:,:] residual):
     cdef int NUM_NEIGHBORS = 4
-    cdef int[:] dRow = np.array([-1, 0, 1,  0])
-    cdef int[:] dCol = np.array([ 0, 1, 0, -1])
+    cdef int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
+    cdef int[:] dCol = np.array([ 0, 1, 0, -1], dtype=np.int32)
     cdef floating[:] b = np.ndarray(shape=(2,), dtype=cython.typeof(deltaField[0,0]))
     cdef floating[:] y = np.ndarray(shape=(2,), dtype=cython.typeof(deltaField[0,0]))
     cdef int nrows=deltaField.shape[0]
