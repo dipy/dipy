@@ -211,8 +211,8 @@ def bundle_min_distance(t, static, moving):
     moving = transform_streamlines(moving, aff)
     d01 = bundles_distances_mdf(static, moving)
     rows, cols = d01.shape
-    return (np.sum(np.min(d01, axis=0)) / float(cols) + 
-            np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
+    return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
+                   np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
 
 
 
@@ -326,7 +326,7 @@ class StreamlineRigidRegistration(object):
                                     factr=10,
                                     pgtol=1e-16,
                                     epsilon=1e-3)
-  
+
 
         if self.algorithm == 'Powell':
 
@@ -357,7 +357,7 @@ class StreamlineRigidRegistration(object):
             print('funcs', funcs)
             print('warn', warnflag)
             print('msg', dictionary['task'])
-  
+
         print('static_shift', static_shift)
         print('moving_shift', moving_shift)
 
