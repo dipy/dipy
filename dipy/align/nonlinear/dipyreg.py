@@ -9,7 +9,6 @@ import nibabel as nib
 import RegistrationCommon as rcommon
 import VectorFieldUtils as vfu
 from SymmetricRegistrationOptimizer import SymmetricRegistrationOptimizer
-from EMMetric import EMMetric
 from CCMetric import CCMetric
 import UpdateRule as UpdateRule
 from dipy.fixes import argparse as arg
@@ -263,13 +262,8 @@ def register_3d(params):
     metric_name=params.metric[0:params.metric.find('[')]
     metric_params_list=params.metric[params.metric.find('[')+1:params.metric.find(']')].split(',')
     if metric_name=='EM':
-        metric_parameters = {
-            'max_step_length':float(metric_params_list[0]),
-            'lambda':float(metric_params_list[1]),
-            'q_levels':int(metric_params_list[2]),
-            'max_inner_iter':int(metric_params_list[3]),
-            'use_double_gradient':False if params.single_gradient else True}
-        similarity_metric = EMMetric(3, metric_parameters)
+        print 'EM Metric not supported yet. Aborting.'
+        return
     elif metric_name=='CC':
         metric_parameters = {
             'max_step_length':float(metric_params_list[0]),
