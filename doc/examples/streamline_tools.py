@@ -47,9 +47,10 @@ csapeaks = peaks.peaks_from_model(model=csamodel,
 
 """
 Now we can use EuDX to track all of the white matter. To keep things reasonably
-fast we use 1 seed per voxel. We'll set ``a_low`` (the parameter which
-determines the threshold of FA/QA under which tracking stops) to be very low
-because we've already applied a white matter mask.
+fast we use ``density=2`` which will result in 8 seeds per voxel. We'll set
+``a_low`` (the parameter which determines the threshold of FA/QA under which
+tracking stops) to be very low because we've already applied a white matter
+mask.
 """
 
 seeds = utils.seeds_from_mask(white_matter, density=2)
