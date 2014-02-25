@@ -20,6 +20,7 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y, f
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y, floating[:] out):
     r'''
     Solves the symmetric positive-definite linear system Mx = y given by 
@@ -171,7 +172,8 @@ def iterate_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floati
                     y[0]+=displacementField[ds, dr, dc, 0]
                     y[1]+=displacementField[ds, dr, dc, 1]
                     y[2]+=displacementField[ds, dr, dc, 2]
-                if(isinf(sigma)):
+                diag=sigma if isinf(sigma) else sigma*lambdaParam*nn
+                if(isinf(diag)):
                     xx=displacementField[s,r,c,0]
                     yy=displacementField[s,r,c,1]
                     zz=displacementField[s,r,c,2]
@@ -184,7 +186,7 @@ def iterate_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floati
                     opt=xx*xx+yy*yy+zz*zz
                     if(maxDisplacement<opt):
                         maxDisplacement=opt
-                elif(sigma==0):
+                elif(diag<1e-10):
                         nrm2=gradientField[s,r,c,0]**2+gradientField[s,r,c,1]**2+gradientField[s,r,c,2]**2
                         if(nrm2==0):
                             displacementField[s,r,c,:] = 0
@@ -196,12 +198,12 @@ def iterate_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floati
                     y[0]=b[0] + sigma*lambdaParam*y[0]
                     y[1]=b[1] + sigma*lambdaParam*y[1]
                     y[2]=b[2] + sigma*lambdaParam*y[2]
-                    A[0]=gradientField[s,r,c,0]*gradientField[s,r,c,0] + sigma*lambdaParam*nn
+                    A[0]=gradientField[s,r,c,0]**2 + diag
                     A[1]=gradientField[s,r,c,0]*gradientField[s,r,c,1]
                     A[2]=gradientField[s,r,c,0]*gradientField[s,r,c,2]
-                    A[3]=gradientField[s,r,c,1]*gradientField[s,r,c,1] + sigma*lambdaParam*nn
+                    A[3]=gradientField[s,r,c,1]**2 + diag
                     A[4]=gradientField[s,r,c,1]*gradientField[s,r,c,2]
-                    A[5]=gradientField[s,r,c,2]**2 + sigma*lambdaParam*nn
+                    A[5]=gradientField[s,r,c,2]**2 + diag
                     xx=displacementField[s,r,c,0]
                     yy=displacementField[s,r,c,1]
                     zz=displacementField[s,r,c,2]
