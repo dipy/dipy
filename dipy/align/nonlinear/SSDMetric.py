@@ -573,7 +573,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     del subsigma_field
     del subgradient_field
     del sub_residual
-    ssd.accumulate_upsample_displacement_field3D(sub_displacement, displacement)
+    vfu.accumulate_upsample_displacement_field3D(sub_displacement, displacement)
     del sub_displacement
     if printEnergy and depth == 0:
         energy = ssd.compute_energy_SSD3D(delta_field, sigma_field, 

@@ -7,6 +7,7 @@ ext_modules = []
 ext_modules.append(Extension("VectorFieldUtils", ["VectorFieldUtils.pyx"],include_dirs=get_numpy_include_dirs()))
 ext_modules.append(Extension("CrossCorrelationFunctions", ["CrossCorrelationFunctions.pyx"],include_dirs=get_numpy_include_dirs()))
 ext_modules.append(Extension("SSDFunctions", ["SSDFunctions.pyx"],include_dirs=get_numpy_include_dirs()))
+ext_modules.append(Extension("EMFunctions", ["EMFunctions.pyx"],include_dirs=get_numpy_include_dirs()))
 setup(
   name = 'Tensor Field Utilities',
   cmdclass = {'build_ext': build_ext},
