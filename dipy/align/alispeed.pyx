@@ -71,8 +71,7 @@ def bundle_minimum_distance_rigid(float [:, ::1] static,
         Static streamlines
 
     moving: array
-        Moving streamlines. These will be transform to align with
-        the static streamlines
+        Moving streamlines 
 
     Returns
     -------
@@ -84,16 +83,25 @@ def bundle_minimum_distance_rigid(float [:, ::1] static,
 
     with nogil:
 
-        for i in range(static_size):
-            mov_j = 0
-            for j in range(moving_size):
+        # for i in range(static_size):
+        #     mov_j = 0
+        #     for j in range(moving_size):
 
-                D[i, j] = direct_flip_dist(&static[mov_i, 0],
-                                           &moving[mov_j, 0],
+        #         D[i, j] = direct_flip_dist(&static[mov_i, 0],
+        #                                    &moving[mov_j, 0],
+        #                                    rows)
+
+        #         mov_j += rows
+        #     mov_i += rows
+
+        for i in prange(static_size):
+            
+            for j in prange(moving_size):
+
+                D[i, j] = direct_flip_dist(&static[i * rows, 0],
+                                           &moving[j * rows, 0],
                                            rows)
-
-                mov_j += rows
-            mov_i += rows
+           
 
     return np.asarray(D)
 

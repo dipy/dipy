@@ -294,7 +294,7 @@ class LinearRegistration(object):
 
 class StreamlineRigidRegistration(object):
 
-    def __init__(self, similarity, xtol=10 ** (-6),
+    def __init__(self, similarity=None, xtol=10 ** (-6),
                  ftol=10 ** (-6), maxiter=10 ** 6,
                  disp=False, algorithm='L_BFGS_B', bounds=None, fast=True):
 
@@ -331,12 +331,15 @@ class StreamlineRigidRegistration(object):
 
         block_size = st_idx[0]
 
-        if self.fast:
-            args = (static_centered_pts, moving_centered_pts, block_size)
-            self.similarity = bundle_min_distance_fast
+        if self.similarity is None:
+            if self.fast:
+                args = (static_centered_pts, moving_centered_pts, block_size)
+                self.similarity = bundle_min_distance_fast
+            else:
+                args = (static_centered, moving_centered)
+                self.similarity = bundle_min_distance
         else:
             args = (static_centered, moving_centered)
-            self.similarity = bundle_min_distance
 
         if self.algorithm == 'Powell':
 
