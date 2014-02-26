@@ -5,6 +5,7 @@ from cython.parallel import parallel, prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
 
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
@@ -24,7 +25,7 @@ cdef float direct_flip_dist(float *a,float *b,
     Returns
     -------
     out : float
-        mininum of direct and flipped average distance added
+        mininum of direct and flipped average distances
 
     '''
     cdef:
@@ -43,7 +44,7 @@ cdef float direct_flip_dist(float *a,float *b,
         dist += sqrt(tmprow)
         distf += sqrt(tmprowf)
 
-    dist = dist / <float>rows 
+    dist = dist / <float>rows
     distf = distf / <float>rows
 
     if dist <= distf:
@@ -53,8 +54,8 @@ cdef float direct_flip_dist(float *a,float *b,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def bundle_minimum_distance_rigid(float [:, ::1] static, 
-                                  float [:, ::1] moving, 
+def bundle_minimum_distance_rigid(float [:, ::1] static,
+                                  float [:, ::1] moving,
                                   cnp.npy_intp static_size,
                                   cnp.npy_intp moving_size,
                                   cnp.npy_intp rows,
@@ -78,8 +79,8 @@ def bundle_minimum_distance_rigid(float [:, ::1] static,
     cost : double
     """
 
-    cdef: 
-        cnp.npy_intp i, j, mov_i=0, mov_j=0#, I, J, rows
+    cdef:
+        cnp.npy_intp i, j, mov_i=0, mov_j=0
 
     with nogil:
 
@@ -90,10 +91,10 @@ def bundle_minimum_distance_rigid(float [:, ::1] static,
                 D[i, j] = direct_flip_dist(&static[mov_i, 0],
                                            &moving[mov_j, 0],
                                            rows)
-                
+
                 mov_j += rows
             mov_i += rows
-    
+
     return np.asarray(D)
 
 

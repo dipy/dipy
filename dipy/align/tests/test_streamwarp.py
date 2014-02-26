@@ -13,7 +13,7 @@ from dipy.tracking.metrics import downsample
 from dipy.data import get_data
 from dipy.bundle.descriptors import midpoints
 from nibabel import trackvis as tv
-from dipy.align.streamwarp import (StreamlineRigidRegistration, 
+from dipy.align.streamwarp import (StreamlineRigidRegistration,
                                    compose_transformations,
                                    vectorize_streamlines,
                                    unlist_streamlines,
@@ -158,11 +158,11 @@ def test_compose_transformations():
     A = np.eye(4)
     A[0, -1] = 10
 
-    B = np.eye(4)    
-    B[0, -1] = -20    
+    B = np.eye(4)
+    B[0, -1] = -20
 
     C = np.eye(4)
-    C[0, -1] = 10    
+    C[0, -1] = 10
 
     CBA = compose_transformations(A, B, C)
 
@@ -171,8 +171,8 @@ def test_compose_transformations():
 
 def test_unlist_relist_streamlines():
 
-    streamlines = [np.random.rand(10, 3), 
-                   np.random.rand(20, 3), 
+    streamlines = [np.random.rand(10, 3),
+                   np.random.rand(20, 3),
                    np.random.rand(5, 3)]
 
     points, offsets = unlist_streamlines(streamlines)
@@ -192,9 +192,6 @@ def test_unlist_relist_streamlines():
 
 def test_efficient_bmd():
 
-    # streamlines = [np.random.rand(10, 3), 
-    #                np.random.rand(20, 3), 
-    #                np.random.rand(5, 3)]
 
     a = np.array([[1, 1, 1],
                   [2, 2, 2],
@@ -211,7 +208,7 @@ def test_efficient_bmd():
 
     t = np.zeros(6, dtype=np.float32)
 
-    D = bundle_minimum_distance_rigid(t, points, points2, 
+    D = bundle_minimum_distance_rigid(t, points, points2,
                                       len(offsets), len(offsets),
                                       3, cache)
 
@@ -219,7 +216,7 @@ def test_efficient_bmd():
 
     points2 = points2 + 2
 
-    D = bundle_minimum_distance_rigid(t, points, points2, 
+    D = bundle_minimum_distance_rigid(t, points, points2,
                                       len(offsets), len(offsets),
                                       3, cache)
 
@@ -230,10 +227,11 @@ def test_efficient_bmd():
 
 
 
+
 if __name__ == '__main__':
 
-    #run_module_suite()
+    run_module_suite()
     #test_unlist_relist_streamlines()
     #test_efficient_bmd()
     #test_transform_streamlines()
-    
+
