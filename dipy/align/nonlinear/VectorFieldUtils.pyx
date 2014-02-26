@@ -41,7 +41,7 @@ cdef inline floating __apply_affine_2d_x1(number x0, number x1, floating[:,:] af
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void __compose_vector_fields(floating[:,:,:] d1, floating[:,:,:] d2, floating[:,:,:] comp, floating[:] stats) nogil:
+cdef void __compose_vector_fields(floating[:,:,:] d1, floating[:,:,:] d2, floating[:,:,:] comp, floating[:] stats):
     cdef int nr1=d1.shape[0]
     cdef int nc1=d1.shape[1]
     cdef int nr2=d2.shape[0]
@@ -51,6 +51,7 @@ cdef void __compose_vector_fields(floating[:,:,:] d1, floating[:,:,:] d2, floati
     cdef floating stdNorm=0
     cdef floating nn
     cdef int cnt=0
+    comp[...]=0
     cdef int i,j,ii,jj
     cdef floating dii, djj, alpha, beta, calpha, cbeta
     for i in range(nr1):
@@ -109,7 +110,7 @@ def compose_vector_fields(floating[:,:,:] d1, floating[:,:,:] d2):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void __compose_vector_fields_3d(floating[:,:,:,:] d1, floating[:,:,:,:] d2, floating[:,:,:,:] comp, floating[:] stats) nogil:
+cdef void __compose_vector_fields_3d(floating[:,:,:,:] d1, floating[:,:,:,:] d2, floating[:,:,:,:] comp, floating[:] stats):
     cdef int ns1=d1.shape[0]
     cdef int nr1=d1.shape[1]
     cdef int nc1=d1.shape[2]
@@ -123,6 +124,7 @@ cdef void __compose_vector_fields_3d(floating[:,:,:,:] d1, floating[:,:,:,:] d2,
     cdef floating dkk, dii, djj
     cdef floating alpha, beta, gamma, calpha, cbeta, cgamma, nn
     cdef int cnt=0
+    comp[...]=0
     for k in range(ns1):
         for i in range(nr1):
             for j in range(nc1):
@@ -208,6 +210,9 @@ def compose_vector_fields_3d(floating[:,:,:,:] d1, floating[:,:,:,:] d2):
     __compose_vector_fields_3d(d1, d2, comp, stats)
     return comp, stats
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
 def invert_vector_field_fixed_point(floating[:,:,:] d, integral[:] inverseShape, int maxIter, floating tolerance, floating[:,:,:] start=None):
     cdef int nr1=d.shape[0]
     cdef int nc1=d.shape[1]
@@ -245,6 +250,9 @@ def invert_vector_field_fixed_point(floating[:,:,:] d, integral[:] inverseShape,
     stats[1]=iter_count
     return p
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
 def invert_vector_field_fixed_point_3d(floating[:,:,:,:] d, int[:] inverseShape, int maxIter, floating tolerance, floating[:,:,:,:] start=None):
     cdef int ns1=d.shape[0]
     cdef int nr1=d.shape[1]
@@ -287,6 +295,8 @@ def invert_vector_field_fixed_point_3d(floating[:,:,:,:] d, int[:] inverseShape,
     stats[1]=iter_count
     return p
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def prepend_affine_to_displacement_field_2d(floating[:,:,:] d, floating[:,:] affine):
     if affine==None:
         return
@@ -298,6 +308,8 @@ def prepend_affine_to_displacement_field_2d(floating[:,:,:] d, floating[:,:] aff
             d[i,j,0]+=__apply_affine_2d_x0(i,j,affine)-i
             d[i,j,1]+=__apply_affine_2d_x1(i,j,affine)-j
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def prepend_affine_to_displacement_field_3d(floating[:,:,:,:] d, floating[:,:] affine):
     if affine==None:
         return
@@ -312,6 +324,8 @@ def prepend_affine_to_displacement_field_3d(floating[:,:,:,:] d, floating[:,:] a
                 d[k,i,j,1]+=__apply_affine_3d_x1(k,i,j,affine)-i
                 d[k,i,j,2]+=__apply_affine_3d_x2(k,i,j,affine)-j
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def append_affine_to_displacement_field_2d(floating[:,:,:] d, floating[:,:] affine):
     if affine==None:
         return
@@ -326,6 +340,8 @@ def append_affine_to_displacement_field_2d(floating[:,:,:] d, floating[:,:] affi
             d[i,j,0]=__apply_affine_2d_x0(dii,djj,affine)-i
             d[i,j,1]=__apply_affine_2d_x1(dii,djj,affine)-j
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def append_affine_to_displacement_field_3d(floating[:,:,:,:] d, floating[:,:] affine):
     if affine==None:
         return
@@ -344,6 +360,8 @@ def append_affine_to_displacement_field_3d(floating[:,:,:,:] d, floating[:,:] af
                 d[k,i,j,1]=__apply_affine_3d_x1(dkk,dii,djj,affine)-i
                 d[k,i,j,2]=__apply_affine_3d_x2(dkk,dii,djj,affine)-j
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def upsample_displacement_field(floating[:,:,:] field, int[:] targetShape):
     cdef int nr=field.shape[0]
     cdef int nc=field.shape[1]
@@ -387,6 +405,8 @@ def upsample_displacement_field(floating[:,:,:] field, int[:] targetShape):
                 up[i,j,1]+=calpha*beta*field[ii,jj,1]
     return up
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def upsample_displacement_field_3d(floating[:,:,:,:] field, int[:] targetShape):
     cdef int nslices=field.shape[0]
     cdef int nrows=field.shape[1]
@@ -651,6 +671,8 @@ def downsample_displacement_field2D(floating[:,:,:] field):
                 down[i,j,1]/=cnt[i,j]
     return down
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def get_displacement_range(floating[:,:,:,:] d, floating[:,:] affine):
     cdef int nslices=d.shape[0]
     cdef int nrows=d.shape[1]
@@ -684,6 +706,8 @@ def get_displacement_range(floating[:,:,:,:] d, floating[:,:] affine):
 #############################volume warping#############################
 ########################################################################
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_volume(floating[:,:,:] volume, floating[:,:,:,:] d1, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
     cdef int nslices=volume.shape[0]
     cdef int nrows=volume.shape[1]
@@ -761,7 +785,8 @@ def warp_volume(floating[:,:,:] volume, floating[:,:,:,:] d1, floating[:,:] affi
                         warped[k,i,j]+=calpha*beta*cgamma*volume[kk,ii,jj]
     return warped
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_volume_affine(floating[:,:,:] volume, int[:]refShape, floating[:,:] affine):
     cdef int nslices=refShape[0]
     cdef int nrows=refShape[1]
@@ -829,6 +854,8 @@ def warp_volume_affine(floating[:,:,:] volume, int[:]refShape, floating[:,:] aff
                         warped[k,i,j]+=calpha*beta*cgamma*volume[kk,ii,jj]
     return warped
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_volume_nn(number[:,:,:] volume, floating[:,:,:,:] displacement, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
     cdef int nslices=displacement.shape[0]
     cdef int nrows=displacement.shape[1]
@@ -883,6 +910,8 @@ def warp_volume_nn(number[:,:,:] volume, floating[:,:,:,:] displacement, floatin
                     warped[k,i,j]=volume[kk,ii,jj]
     return warped
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_volume_affine_nn(number[:,:,:] volume, int[:]refShape, floating[:,:] affine=None):
     cdef int nslices=refShape[0]
     cdef int nrows=refShape[1]
@@ -936,6 +965,8 @@ def warp_volume_affine_nn(number[:,:,:] volume, int[:]refShape, floating[:,:] af
 #############################image warping##############################
 ########################################################################
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_image(floating[:,:] image, floating[:,:,:] d1, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
     cdef int nrows=image.shape[0]
     cdef int ncols=image.shape[1]
@@ -987,7 +1018,8 @@ def warp_image(floating[:,:] image, floating[:,:,:] d1, floating[:,:] affinePre=
                 warped[i,j]+=calpha*beta*image[ii,jj]
     return warped
 
-
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_image_affine(floating[:,:] image, int[:]refShape, floating[:,:] affine=None):
     cdef int nrows=refShape[0]
     cdef int ncols=refShape[1]
@@ -1032,6 +1064,8 @@ def warp_image_affine(floating[:,:] image, int[:]refShape, floating[:,:] affine=
                 warped[i,j]+=calpha*beta*image[ii,jj]
     return warped
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_image_nn(number[:,:] image, floating[:,:,:] displacement, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
     cdef int nrows=image.shape[0]
     cdef int ncols=image.shape[1]
@@ -1077,6 +1111,8 @@ def warp_image_nn(number[:,:] image, floating[:,:,:] displacement, floating[:,:]
                 warped[i,j]=image[ii,jj]
     return warped
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 def warp_image_affine_nn(number[:,:] image, int[:]refShape, floating[:,:] affine=None):
     cdef int nrows=refShape[0]
     cdef int ncols=refShape[1]
