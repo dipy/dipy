@@ -13,7 +13,13 @@ from dipy.tracking.metrics import downsample
 from dipy.data import get_data
 from dipy.bundle.descriptors import midpoints
 from nibabel import trackvis as tv
-from dipy.align.streamwarp import StreamlineRigidRegistration, compose_transformations
+from dipy.align.streamwarp import (StreamlineRigidRegistration, 
+                                   compose_transformations,
+                                   vectorize_streamlines,
+                                   unlist_streamlines,
+                                   relist_streamlines)
+from dipy.align.alispeed import bundle_minimum_distance_rigid
+from dipy.tracking.distances import bundles_distances_mdf
 
 
 def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
@@ -163,7 +169,71 @@ def test_compose_transformations():
     assert_array_equal(CBA, np.eye(4))
 
 
+def test_unlist_relist_streamlines():
+
+    streamlines = [np.random.rand(10, 3), 
+                   np.random.rand(20, 3), 
+                   np.random.rand(5, 3)]
+
+    points, offsets = unlist_streamlines(streamlines)
+
+    assert_equal(offset.dtype, np.dtype('i8'))
+
+    assert_equal(points.shape, (35, 3))
+    assert_equal(len(offsets), len(streamlines))
+
+    streamlines2 = relist_streamlines(points, offsets)
+
+    assert_equal(len(streamlines), len(streamlines2))
+
+    for i in range(len(streamlines)):
+        assert_array_equal(streamlines[i], streamlines2[i])
+
+
+def test_efficient_bmd():
+
+    # streamlines = [np.random.rand(10, 3), 
+    #                np.random.rand(20, 3), 
+    #                np.random.rand(5, 3)]
+
+    a = np.array([[1, 1, 1],
+                  [2, 2, 2],
+                  [3, 3, 3]])
+
+    streamlines = [a, a + 2, a + 4]
+
+    #streamlines = vectorize_streamlines(streamlines, 20)
+    points, offsets = unlist_streamlines(streamlines)
+    points = points.astype(np.float32)
+    points2 = points.copy()
+
+    cache = 2 + np.zeros((len(offsets), len(offsets)), dtype=np.float32)
+
+    t = np.zeros(6, dtype=np.float32)
+
+    D = bundle_minimum_distance_rigid(t, points, points2, 
+                                      len(offsets), len(offsets),
+                                      3, cache)
+
+    assert_equal(np.sum(np.diag(D)), 0)
+
+    points2 = points2 + 2
+
+    D = bundle_minimum_distance_rigid(t, points, points2, 
+                                      len(offsets), len(offsets),
+                                      3, cache)
+
+    streamlines2 = relist_streamlines(points2, offsets)
+    D2 = bundles_distances_mdf(streamlines, streamlines2)
+
+    assert_array_almost_equal(D, D2)
+
+
+
 if __name__ == '__main__':
 
-    run_module_suite()
+    #run_module_suite()
+    #test_unlist_relist_streamlines()
+    #test_efficient_bmd()
+    #test_transform_streamlines()
     
