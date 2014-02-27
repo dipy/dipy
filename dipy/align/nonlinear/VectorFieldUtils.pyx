@@ -264,16 +264,14 @@ def invert_vector_field_fixed_point_3d(floating[:,:,:,:] d, int[:] inverseShape,
         ns2, nr2, nc2=inverseShape[0], inverseShape[1], inverseShape[2]
     cdef floating[:] stats=np.empty(shape=(2,), dtype=cython.typeof(d[0,0,0,0]))
     cdef floating[:] substats=np.empty(shape=(3,), dtype=cython.typeof(d[0,0,0,0]))
-    cdef floating[:,:,:,:] p=np.ndarray((ns2, nr2, nc2, 3), dtype=cython.typeof(d[0,0,0,0]))
-    cdef floating[:,:,:,:] q=np.ndarray((ns2, nr2, nc2, 3), dtype=cython.typeof(d[0,0,0,0]))
+    cdef floating[:,:,:,:] p=np.zeros((ns2, nr2, nc2, 3), dtype=cython.typeof(d[0,0,0,0]))
+    cdef floating[:,:,:,:] q=np.zeros((ns2, nr2, nc2, 3), dtype=cython.typeof(d[0,0,0,0]))
     cdef floating error=1+tolerance
     cdef floating epsilon = 0.5
     cdef floating mag, difmag
     cdef int k, i, j, iter_count
     if start!=None:
         p[...] = start
-    else:
-        p[...] = 0
     iter_count = 0
     while (iter_count < maxIter) and (tolerance < error):
         p, q = q, p
@@ -291,6 +289,7 @@ def invert_vector_field_fixed_point_3d(floating[:,:,:,:] d, int[:] inverseShape,
                     if(difmag<mag):
                         difmag=mag
         error/=(ns2*nr2*nc2)
+        iter_count+=1
     stats[0]=error
     stats[1]=iter_count
     return p
@@ -866,7 +865,7 @@ def warp_volume_nn(number[:,:,:] volume, floating[:,:,:,:] displacement, floatin
     cdef floating dkk, dii, djj, tmp0, tmp1
     cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
     cdef int k,i,j,kk,ii,jj
-    cdef number[:,:,:] warped = np.ndarray((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
+    cdef number[:,:,:] warped = np.zeros((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
     for k in range(nslices):
         for i in range(nrows):
             for j in range(ncols):
@@ -922,7 +921,7 @@ def warp_volume_affine_nn(number[:,:,:] volume, int[:]refShape, floating[:,:] af
     cdef floating dkk, dii, djj, tmp0, tmp1
     cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
     cdef int k,i,j,kk,ii,jj
-    cdef number[:,:,:] warped = np.ndarray((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
+    cdef number[:,:,:] warped = np.zeros((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
     for k in range(nslices):
         for i in range(nrows):
             for j in range(ncols):
@@ -1077,7 +1076,7 @@ def warp_image_nn(number[:,:] image, floating[:,:,:] displacement, floating[:,:]
     if displacement!=None:
         nrows=displacement.shape[0]
         ncols=displacement.shape[1]
-    cdef number[:,:] warped = np.ndarray((nrows, ncols), dtype=np.asarray(image).dtype)
+    cdef number[:,:] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
     for i in range(nrows):
         for j in range(ncols):
             if(affinePre!=None):
@@ -1121,7 +1120,7 @@ def warp_image_affine_nn(number[:,:] image, int[:]refShape, floating[:,:] affine
     cdef floating dii, djj, tmp0
     cdef floating alpha, beta, calpha, cbeta
     cdef int i,j,ii,jj
-    cdef number[:,:] warped = np.ndarray((nrows, ncols), dtype=np.asarray(image).dtype)
+    cdef number[:,:] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
     for i in range(nrows):
         for j in range(ncols):
             if(affine!=None):

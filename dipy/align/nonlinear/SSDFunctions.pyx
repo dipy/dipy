@@ -20,6 +20,7 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y, f
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y, floating[:] out):
     r'''
     Solves the symmetric positive-definite linear system Mx = y given by 
@@ -123,7 +124,6 @@ def compute_energy_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, flo
         for c in range(ncols):
             energy+=deltaField[r,c]**2
     return energy
-
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
