@@ -308,6 +308,13 @@ class StreamlineRigidRegistration(object):
         self.bounds = bounds
         self.fast = fast
 
+        if self.similarity is None:
+            if self.fast:
+                self.similarity = bundle_min_distance_fast
+            else:
+                self.similarity = bundle_min_distance
+
+
     def optimize(self, static, moving):
 
         msg = 'need to have the same number of points.'
@@ -331,15 +338,11 @@ class StreamlineRigidRegistration(object):
 
         block_size = st_idx[0]
 
-        if self.similarity is None:
-            if self.fast:
-                args = (static_centered_pts, moving_centered_pts, block_size)
-                self.similarity = bundle_min_distance_fast
-            else:
-                args = (static_centered, moving_centered)
-                self.similarity = bundle_min_distance
+        if self.fast:
+            args = (static_centered_pts, moving_centered_pts, block_size)
         else:
             args = (static_centered, moving_centered)
+
 
         if self.algorithm == 'Powell':
 
