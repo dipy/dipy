@@ -8,7 +8,8 @@ class SymmetricDiffeomorphicRegistration(object):
                     opt_iters = [25, 100, 100],
                     opt_tol = 1e-4,
                     inv_iters = 20,
-                    inv_tol = 1e-3):
+                    inv_tol = 1e-3
+                    energy_window = 12):
         """ Symmetric Diffeomorphic Registration
 
         Parameters
@@ -20,7 +21,8 @@ class SymmetricDiffeomorphicRegistration(object):
             (multi-resolution), opt_iters[0] corresponds the finest resolution
 
         opt_tol: float
-            tolerance for the optimization algorithm
+            tolerance for the optimization algorithm, the algorithm stops when
+            the derivative of the energy profile w.r.t. time falls below opt_tol
 
         inv_iters : int
             maximum number of iterations of the displacement field inversion 
@@ -28,6 +30,10 @@ class SymmetricDiffeomorphicRegistration(object):
 
         inv_tol : float
             tolerance for the displacement field inversion algorithm
+
+        energy_window: int
+            minimum number of iterations to be considered when estimating the
+            derivative of energy over time
 
         """
 
