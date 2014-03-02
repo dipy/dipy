@@ -83,11 +83,13 @@ for modulename, other_sources in (
     ('dipy.reconst.quick_squash', []),
     ('dipy.tracking.distances', []),
     ('dipy.tracking.vox2track', []),
-    ('dipy.tracking.propspeed', [])):
+    ('dipy.tracking.propspeed', []),
+    ('dipy.denoise.denspeed', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
-                          include_dirs = [np.get_include(),
-                                         "src"]))
+                          include_dirs = [np.get_include(), "src"],
+                          extra_compile_args = ['-fopenmp'],
+                          extra_link_args = ['-fopenmp']))
 
 
 # Do our own build and install time dependency checking. setup.py gets called in
@@ -169,7 +171,9 @@ def main(**extra_args):
                           'dipy.segment',
                           'dipy.segment.tests',
                           'dipy.sims',
-                          'dipy.sims.tests'],
+                          'dipy.sims.tests',
+                          'dipy.denoise',
+                          'dipy.denoise.tests'],
           ext_modules = EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the source

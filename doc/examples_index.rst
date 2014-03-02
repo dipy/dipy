@@ -35,6 +35,11 @@ SNR estimation
 
 - :ref:`example_snr_in_cc`
 
+Denoising
+~~~~~~~~~
+
+- :ref:`example_denoise_nlmeans`
+
 Reslice
 ~~~~~~~
 
