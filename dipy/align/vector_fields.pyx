@@ -111,8 +111,8 @@ cdef void _compose_vector_fields(floating[:, :, :] d1, floating[:, :, :] d2,
             djj = j + d1[i, j, 1]
             if((dii < 0) or (nr2 - 1 < dii) or (djj < 0) or (nc2 - 1 < djj)):
                 continue
-            ii = ifloor(dii)
-            jj = ifloor(djj)
+            ii = int(dii)
+            jj = int(djj)
             if((ii < 0) or (nr2 <= ii) or (jj < 0) or (nc2 <= jj)):
                 continue
             calpha = dii - ii
@@ -239,9 +239,9 @@ cdef void _compose_vector_fields_3d(
                         (dii > nr2 - 1) or (djj > nc2 - 1) or (dkk > ns2 - 1)):
                     continue
                 #---top-left
-                kk = ifloor(dkk)
-                ii = ifloor(dii)
-                jj = ifloor(djj)
+                kk = int(dkk)
+                ii = int(dii)
+                jj = int(djj)
                 if((ii < 0) or (jj < 0) or (kk < 0) or
                         (ii >= nr2) or (jj >= nc2) or (kk >= ns2)):
                     continue
@@ -368,7 +368,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def invert_vector_field_fixed_point(floating[:, :, :] d, integral[:] inv_shape,
+def invert_vector_field_fixed_point(floating[:, :, :] d, int[:] inv_shape,
                                     int max_iter, floating tolerance,
                                     floating[:, :, :] start=None):
     r'''
@@ -445,7 +445,7 @@ def invert_vector_field_fixed_point(floating[:, :, :] d, integral[:] inv_shape,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def invert_vector_field_fixed_point_3d(
-    floating[:, :, :, :] d, int[:] inverse_shape,
+    floating[:, :, :, :] d, int[:] inv_shape,
     int max_iter, floating tolerance,
         floating[:, :, :, :] start=None):
     r'''
@@ -485,8 +485,8 @@ def invert_vector_field_fixed_point_3d(
         int nc1 = d.shape[2]
         int ns2, nr2, nc2
         int k, i, j, iter_count
-    if inverseShape != None:
-        ns2, nr2, nc2 = inverseShape[0], inverseShape[1], inverseShape[2]
+    if inv_shape != None:
+        ns2, nr2, nc2 = inv_shape[0], inv_shape[1], inv_shape[2]
     else:
         ns2, nr2, nc2 = ns1, nr1, nc1
     cdef:
@@ -686,8 +686,8 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
             # no one is affected
             if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
                 continue
-            ii = ifloor(dii)
-            jj = ifloor(djj)
+            ii = int(dii)
+            jj = int(djj)
             # no one is affected
             if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
                 continue
@@ -742,9 +742,9 @@ def upsample_displacement_field_3d(floating[:,:,:,:] field,
         int nslices=field.shape[0]
         int nrows=field.shape[1]
         int ncols=field.shape[2]
-        int ns=targetShape[0]
-        int nr=targetShape[1]
-        int nc=targetShape[2]
+        int ns=target_shape[0]
+        int nr=target_shape[1]
+        int nc=target_shape[2]
         int i,j,k,ii,jj,kk
         floating dkk, dii, djj
         floating alpha, beta, gamma, calpha, cbeta, cgamma
@@ -757,9 +757,9 @@ def upsample_displacement_field_3d(floating[:,:,:,:] field,
                 djj=0.5*j
                 if((dkk<0) or (dii<0) or (djj<0) or (dii>nrows-1) or (djj>ncols-1) or (dkk>nslices-1)):#no one is affected
                     continue
-                kk=ifloor(dkk)
-                ii=ifloor(dii)
-                jj=ifloor(djj)
+                kk=int(dkk)
+                ii=int(dii)
+                jj=int(djj)
                 if((kk<0) or (ii<0) or (jj<0) or (ii>=nrows) or (jj>=ncols) or (kk>=nslices)):#no one is affected
                     continue
                 cgamma=dkk-kk
@@ -815,3 +815,669 @@ def upsample_displacement_field_3d(floating[:,:,:,:] field,
                         up[k,i,j,2]+=calpha*beta*cgamma*field[kk,ii,jj,2]
     return up
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def accumulate_upsample_displacement_field3D(floating[:,:,:,:] field, floating[:,:,:,:] up):
+    cdef int nslices=field.shape[0]
+    cdef int nrows=field.shape[1]
+    cdef int ncols=field.shape[2]
+    cdef int ns=up.shape[0]
+    cdef int nr=up.shape[1]
+    cdef int nc=up.shape[2]
+    cdef int i,j,k,ii,jj,kk
+    cdef floating dkk, dii, djj
+    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    for k in range(ns):
+        for i in range(nr):
+            for j in range(nc):
+                dkk=0.5*k
+                dii=0.5*i
+                djj=0.5*j
+                if((dkk<0) or (dii<0) or (djj<0) or (dii>nrows-1) or (djj>ncols-1) or (dkk>nslices-1)):#no one is affected
+                    continue
+                kk=int(dkk)
+                ii=int(dii)
+                jj=int(djj)
+                if((kk<0) or (ii<0) or (jj<0) or (ii>=nrows) or (jj>=ncols) or (kk>=nslices)):#no one is affected
+                    continue
+                cgamma=dkk-kk
+                calpha=dii-ii#by definition these factors are nonnegative
+                cbeta=djj-jj
+                alpha=1-calpha
+                beta=1-cbeta
+                gamma=1-cgamma
+                #---top-left
+                up[k,i,j,0]+=alpha*beta*gamma*field[kk,ii,jj,0]
+                up[k,i,j,1]+=alpha*beta*gamma*field[kk,ii,jj,1]
+                up[k,i,j,2]+=alpha*beta*gamma*field[kk,ii,jj,2]
+                #---top-right
+                jj+=1
+                if(jj<ncols):
+                    up[k,i,j,0]+=alpha*cbeta*gamma*field[kk,ii,jj,0]
+                    up[k,i,j,1]+=alpha*cbeta*gamma*field[kk,ii,jj,1]
+                    up[k,i,j,2]+=alpha*cbeta*gamma*field[kk,ii,jj,2]
+                #---bottom-right
+                ii+=1
+                if((ii>=0)and(jj>=0)and(ii<nrows)and(jj<ncols)):
+                    up[k,i,j,0]+=calpha*cbeta*gamma*field[kk,ii,jj,0]
+                    up[k,i,j,1]+=calpha*cbeta*gamma*field[kk,ii,jj,1]
+                    up[k,i,j,2]+=calpha*cbeta*gamma*field[kk,ii,jj,2]
+                #---bottom-left
+                jj-=1
+                if((ii>=0)and(jj>=0)and(ii<nrows)and(jj<ncols)):
+                    up[k,i,j,0]+=calpha*beta*gamma*field[kk,ii,jj,0]
+                    up[k,i,j,1]+=calpha*beta*gamma*field[kk,ii,jj,1]
+                    up[k,i,j,2]+=calpha*beta*gamma*field[kk,ii,jj,2]
+                kk+=1
+                if(kk<nslices):
+                    ii-=1
+                    up[k,i,j,0]+=alpha*beta*cgamma*field[kk,ii,jj,0]
+                    up[k,i,j,1]+=alpha*beta*cgamma*field[kk,ii,jj,1]
+                    up[k,i,j,2]+=alpha*beta*cgamma*field[kk,ii,jj,2]
+                    jj+=1
+                    if(jj<ncols):
+                        up[k,i,j,0]+=alpha*cbeta*cgamma*field[kk,ii,jj,0]
+                        up[k,i,j,1]+=alpha*cbeta*cgamma*field[kk,ii,jj,1]
+                        up[k,i,j,2]+=alpha*cbeta*cgamma*field[kk,ii,jj,2]
+                    #---bottom-right
+                    ii+=1
+                    if((ii>=0)and(jj>=0)and(ii<nrows)and(jj<ncols)):
+                        up[k,i,j,0]+=calpha*cbeta*cgamma*field[kk,ii,jj,0];
+                        up[k,i,j,1]+=calpha*cbeta*cgamma*field[kk,ii,jj,1];
+                        up[k,i,j,2]+=calpha*cbeta*cgamma*field[kk,ii,jj,2];
+                    #---bottom-left
+                    jj-=1
+                    if((ii>=0)and(jj>=0)and(ii<nrows)and(jj<ncols)):
+                        up[k,i,j,0]+=calpha*beta*cgamma*field[kk,ii,jj,0]
+                        up[k,i,j,1]+=calpha*beta*cgamma*field[kk,ii,jj,1]
+                        up[k,i,j,2]+=calpha*beta*cgamma*field[kk,ii,jj,2]
+    return up
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def downsample_scalar_field3D(floating[:,:,:] field):
+    cdef int ns=field.shape[0]
+    cdef int nr=field.shape[1]
+    cdef int nc=field.shape[2]
+    cdef int nns=(ns+1)//2
+    cdef int nnr=(nr+1)//2
+    cdef int nnc=(nc+1)//2
+    cdef int i,j,k,ii,jj,kk
+    cdef floating[:,:,:] down = np.zeros((nns, nnr, nnc), dtype=cython.typeof(field[0,0,0]))
+    cdef int[:,:,:] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
+    for k in range(ns):
+        for i in range(nr):
+            for j in range(nc):
+                kk=k//2
+                ii=i//2
+                jj=j//2
+                down[kk,ii,jj]+=field[k, i, j]
+                cnt[kk,ii,jj]+=1
+    for k in range(nns):
+        for i in range(nnr):
+            for j in range(nnc):
+                if cnt[k,i,j]>0:
+                    down[k,i,j]/=cnt[k,i,j]
+    return down
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def downsample_displacement_field3D(floating[:,:,:,:] field):
+    cdef int ns=field.shape[0]
+    cdef int nr=field.shape[1]
+    cdef int nc=field.shape[2]
+    cdef int nns=(ns+1)//2
+    cdef int nnr=(nr+1)//2
+    cdef int nnc=(nc+1)//2
+    cdef int i,j,k,ii,jj,kk
+    cdef floating[:,:,:,:] down = np.zeros((nns, nnr, nnc, 3), dtype=cython.typeof(field[0,0,0,0]))
+    cdef int[:,:,:] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
+    for k in range(ns):
+        for i in range(nr):
+            for j in range(nc):
+                kk=k//2
+                ii=i//2
+                jj=j//2
+                down[kk,ii,jj,0]+=field[k, i, j,0]
+                down[kk,ii,jj,1]+=field[k, i, j,1]
+                down[kk,ii,jj,2]+=field[k, i, j,2]
+                cnt[kk,ii,jj]+=1
+    for k in range(nns):
+        for i in range(nnr):
+            for j in range(nnc):
+                if cnt[k,i,j]>0:
+                    down[k,i,j,0]/=cnt[k,i,j]
+                    down[k,i,j,1]/=cnt[k,i,j]
+                    down[k,i,j,2]/=cnt[k,i,j]
+    return down
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def downsample_scalar_field2D(floating[:,:] field):
+    cdef int nr=field.shape[0]
+    cdef int nc=field.shape[1]
+    cdef int nnr = (nr+1)//2
+    cdef int nnc = (nc+1)//2
+    cdef int i,j,ii,jj
+    cdef floating[:,:] down = np.zeros(shape=(nnr, nnc), dtype=cython.typeof(field[0,0]))
+    cdef int[:,:] cnt = np.zeros(shape=(nnr, nnc), dtype=np.int32)
+    for i in range(nr):
+        for j in range(nc):
+            ii=i//2
+            jj=j//2
+            down[ii,jj]+=field[i, j]
+            cnt[ii,jj]+=1
+    for i in range(nnr):
+        for j in range(nnc):
+            if cnt[i,j]>0:
+                down[i,j]/=cnt[i,j]
+    return down
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def downsample_displacement_field2D(floating[:,:,:] field):
+    cdef int nr=field.shape[0]
+    cdef int nc=field.shape[1]
+    cdef int nnr = (nr+1)//2
+    cdef int nnc = (nc+1)//2
+    cdef int i,j,ii,jj
+    cdef floating[:,:,:] down = np.zeros((nnr, nnc, 2), dtype=cython.typeof(field[0,0,0]))
+    cdef int[:,:] cnt = np.zeros((nnr, nnc), dtype=np.int32)
+    for i in range(nr):
+        for j in range(nc):
+            ii=i//2
+            jj=j//2
+            down[ii,jj,0]+=field[i, j,0]
+            down[ii,jj,1]+=field[i, j,1]
+            cnt[ii,jj]+=1
+    for i in range(nnr):
+        for j in range(nnc):
+            if cnt[i,j]>0:
+                down[i,j,0]/=cnt[i,j]
+                down[i,j,1]/=cnt[i,j]
+    return down
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_displacement_range(floating[:,:,:,:] d, floating[:,:] affine):
+    cdef int nslices=d.shape[0]
+    cdef int nrows=d.shape[1]
+    cdef int ncols=d.shape[2]
+    cdef int i,j,k
+    cdef floating dkk, dii, djj
+    cdef floating[:] minVal = np.ndarray((3,), dtype=cython.typeof(d[0,0,0,0]))
+    cdef floating[:] maxVal = np.ndarray((3,), dtype=cython.typeof(d[0,0,0,0]))
+    minVal[...]=d[0,0,0,:]
+    maxVal[...]=minVal[...]
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if(affine!=None):
+                    dkk=_apply_affine_3d_x0(k,i,j,affine)+d[k,i,j,0]
+                    dii=_apply_affine_3d_x1(k,i,j,affine)+d[k,i,j,1]
+                    djj=_apply_affine_3d_x2(k,i,j,affine)+d[k,i,j,2]
+                else:
+                    dkk=k+d[k,i,j,0]
+                    dii=i+d[k,i,j,1]
+                    djj=j+d[k,i,j,2]
+                if(dkk>maxVal[0]):
+                    maxVal[0]=dkk
+                if(dii>maxVal[1]):
+                    maxVal[1]=dii
+                if(djj>maxVal[2]):
+                    maxVal[2]=djj
+    return minVal, maxVal
+
+########################################################################
+#############################volume warping#############################
+########################################################################
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_volume(floating[:,:,:] volume, floating[:,:,:,:] d1, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
+    cdef int nslices=volume.shape[0]
+    cdef int nrows=volume.shape[1]
+    cdef int ncols=volume.shape[2]
+    cdef int nsVol=volume.shape[0]
+    cdef int nrVol=volume.shape[1]
+    cdef int ncVol=volume.shape[2]
+    cdef int i,j,k, ii, jj, kk
+    cdef floating dkk, dii, djj, tmp0, tmp1
+    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    if d1!=None:
+        nslices=d1.shape[0]
+        nrows=d1.shape[1]
+        ncols=d1.shape[2]
+    cdef floating[:,:,:] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=cython.typeof(volume[0,0,0]))
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if(affinePre!=None):
+                    dkk=_apply_affine_3d_x0(k,i,j,affinePre)+d1[k,i,j,0]
+                    dii=_apply_affine_3d_x1(k,i,j,affinePre)+d1[k,i,j,1]
+                    djj=_apply_affine_3d_x2(k,i,j,affinePre)+d1[k,i,j,2]
+                else:
+                    dkk=k+d1[k,i,j,0]
+                    dii=i+d1[k,i,j,1]
+                    djj=j+d1[k,i,j,2]
+                if(affinePost!=None):
+                    tmp0=_apply_affine_3d_x0(dkk,dii,djj,affinePost)
+                    tmp1=_apply_affine_3d_x1(dkk,dii,djj,affinePost)
+                    djj=_apply_affine_3d_x2(dkk,dii,djj,affinePost)
+                    dii=tmp1
+                    dkk=tmp0
+                if((dii<0) or (djj<0) or (dkk<0) or (dii>nrVol-1) or (djj>ncVol-1) or (dkk>nsVol-1)):#no one is affected
+                    continue
+                #find the top left index and the interpolation coefficients
+                kk=int(dkk)
+                ii=int(dii)
+                jj=int(djj)
+                if((ii<0) or (jj<0) or (kk<0) or (ii>=nrVol) or (jj>=ncVol) or (kk>=nsVol)):#no one is affected
+                    continue
+                cgamma=dkk-kk
+                calpha=dii-ii#by definition these factors are nonnegative
+                cbeta=djj-jj
+                alpha=1-calpha
+                beta=1-cbeta
+                gamma=1-cgamma
+                #---top-left
+                warped[k,i,j]=alpha*beta*gamma*volume[kk,ii,jj]
+                #---top-right
+                jj+=1
+                if(jj<ncVol):
+                    warped[k,i,j]+=alpha*cbeta*gamma*volume[kk,ii,jj]
+                #---bottom-right
+                ii+=1
+                if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                    warped[k,i,j]+=calpha*cbeta*gamma*volume[kk,ii,jj]
+                #---bottom-left
+                jj-=1
+                if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                    warped[k,i,j]+=calpha*beta*gamma*volume[kk,ii,jj]
+                kk+=1
+                if(kk<nsVol):
+                    ii-=1
+                    warped[k,i,j]+=alpha*beta*cgamma*volume[kk,ii,jj]
+                    jj+=1
+                    if(jj<ncVol):
+                        warped[k,i,j]+=alpha*cbeta*cgamma*volume[kk,ii,jj]
+                    #---bottom-right
+                    ii+=1
+                    if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                        warped[k,i,j]+=calpha*cbeta*cgamma*volume[kk,ii,jj]
+                    #---bottom-left
+                    jj-=1
+                    if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                        warped[k,i,j]+=calpha*beta*cgamma*volume[kk,ii,jj]
+    return warped
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_volume_affine(floating[:,:,:] volume, int[:]refShape, floating[:,:] affine):
+    cdef int nslices=refShape[0]
+    cdef int nrows=refShape[1]
+    cdef int ncols=refShape[2]
+    cdef int nsVol=volume.shape[0]
+    cdef int nrVol=volume.shape[1]
+    cdef int ncVol=volume.shape[2]
+    cdef int i,j,k, ii, jj, kk
+    cdef floating dkk, dii, djj, tmp0, tmp1
+    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef floating[:,:,:] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=cython.typeof(volume[0,0,0]))
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if(affine!=None):
+                    dkk=_apply_affine_3d_x0(k,i,j,affine)
+                    dii=_apply_affine_3d_x1(k,i,j,affine)
+                    djj=_apply_affine_3d_x2(k,i,j,affine)
+                else:
+                    dkk=k
+                    dii=i
+                    djj=j
+                if((dii<0) or (djj<0) or (dkk<0) or (dii>nrVol-1) or (djj>ncVol-1) or (dkk>nsVol-1)):#no one is affected
+                    continue
+                #find the top left index and the interpolation coefficients
+                kk=int(dkk)
+                ii=int(dii)
+                jj=int(djj)
+                if((ii<0) or (jj<0) or (kk<0) or (ii>=nrVol) or (jj>=ncVol) or (kk>=nsVol)):#no one is affected
+                    continue
+                cgamma=dkk-kk
+                calpha=dii-ii#by definition these factors are nonnegative
+                cbeta=djj-jj
+                alpha=1-calpha
+                beta=1-cbeta
+                gamma=1-cgamma
+                #---top-left
+                warped[k,i,j]=alpha*beta*gamma*volume[kk,ii,jj]
+                #---top-right
+                jj+=1
+                if(jj<ncVol):
+                    warped[k,i,j]+=alpha*cbeta*gamma*volume[kk,ii,jj]
+                #---bottom-right
+                ii+=1
+                if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                    warped[k,i,j]+=calpha*cbeta*gamma*volume[kk,ii,jj]
+                #---bottom-left
+                jj-=1
+                if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                    warped[k,i,j]+=calpha*beta*gamma*volume[kk,ii,jj]
+                kk+=1
+                if(kk<nsVol):
+                    ii-=1
+                    warped[k,i,j]+=alpha*beta*cgamma*volume[kk,ii,jj]
+                    jj+=1
+                    if(jj<ncVol):
+                        warped[k,i,j]+=alpha*cbeta*cgamma*volume[kk,ii,jj]
+                    #---bottom-right
+                    ii+=1
+                    if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                        warped[k,i,j]+=calpha*cbeta*cgamma*volume[kk,ii,jj]
+                    #---bottom-left
+                    jj-=1
+                    if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                        warped[k,i,j]+=calpha*beta*cgamma*volume[kk,ii,jj]
+    return warped
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_volume_nn(number[:,:,:] volume, floating[:,:,:,:] displacement, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
+    cdef int nslices=displacement.shape[0]
+    cdef int nrows=displacement.shape[1]
+    cdef int ncols=displacement.shape[2]
+    cdef int nsVol=volume.shape[0]
+    cdef int nrVol=volume.shape[1]
+    cdef int ncVol=volume.shape[2]
+    cdef floating dkk, dii, djj, tmp0, tmp1
+    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef int k,i,j,kk,ii,jj
+    cdef number[:,:,:] warped = np.zeros((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if(affinePre!=None):
+                    dkk=_apply_affine_3d_x0(k,i,j,affinePre)+displacement[k,i,j,0]
+                    dii=_apply_affine_3d_x1(k,i,j,affinePre)+displacement[k,i,j,1]
+                    djj=_apply_affine_3d_x2(k,i,j,affinePre)+displacement[k,i,j,2]
+                else:
+                    dkk=k+displacement[k,i,j,0]
+                    dii=i+displacement[k,i,j,1]
+                    djj=j+displacement[k,i,j,2]
+                if(affinePost!=None):
+                    tmp0=_apply_affine_3d_x0(dkk,dii,djj,affinePost)
+                    tmp1=_apply_affine_3d_x1(dkk,dii,djj,affinePost)
+                    djj=_apply_affine_3d_x2(dkk,dii,djj,affinePost)
+                    dii=tmp1
+                    dkk=tmp0
+                if((dii<0) or (djj<0) or (dkk<0) or (dii>nrVol-1) or (djj>ncVol-1) or (dkk>nsVol-1)):#no one is affected
+                    continue
+                #find the top left index and the interpolation coefficients
+                kk=int(dkk)
+                ii=int(dii)
+                jj=int(djj)
+                if((ii<0) or (jj<0) or (kk<0) or (ii>=nrVol) or (jj>=ncVol) or (kk>=nsVol)):#no one is affected
+                    continue
+                cgamma=dkk-kk
+                calpha=dii-ii#by definition these factors are nonnegative
+                cbeta=djj-jj
+                alpha=1-calpha
+                beta=1-cbeta
+                gamma=1-cgamma
+                if(gamma<cgamma):
+                    kk+=1
+                if(alpha<calpha):
+                    ii+=1
+                if(beta<cbeta):
+                    jj+=1
+                if((ii<0) or (jj<0) or (kk<0) or (ii>=nrVol) or (jj>=ncVol) or (kk>=nsVol)):#no one is affected
+                    continue
+                else:
+                    warped[k,i,j]=volume[kk,ii,jj]
+    return warped
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_volume_affine_nn(number[:,:,:] volume, int[:]refShape, floating[:,:] affine=None):
+    cdef int nslices=refShape[0]
+    cdef int nrows=refShape[1]
+    cdef int ncols=refShape[2]
+    cdef int nsVol=volume.shape[0]
+    cdef int nrVol=volume.shape[1]
+    cdef int ncVol=volume.shape[2]
+    cdef floating dkk, dii, djj, tmp0, tmp1
+    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef int k,i,j,kk,ii,jj
+    cdef number[:,:,:] warped = np.zeros((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                if(affine!=None):
+                    dkk=_apply_affine_3d_x0(k,i,j,affine)
+                    dii=_apply_affine_3d_x1(k,i,j,affine)
+                    djj=_apply_affine_3d_x2(k,i,j,affine)
+                else:
+                    dkk=k
+                    dii=i
+                    djj=j
+                if((dii<0) or (djj<0) or (dkk<0) or (dii>nrVol-1) or (djj>ncVol-1) or (dkk>nsVol-1)):#no one is affected
+                    continue
+                #find the top left index and the interpolation coefficients
+                kk=int(dkk)
+                ii=int(dii)
+                jj=int(djj)
+                if((ii<0) or (jj<0) or (kk<0) or (ii>=nrVol) or (jj>=ncVol) or (kk>=nsVol)):#no one is affected
+                    continue
+                cgamma=dkk-kk
+                calpha=dii-ii#by definition these factors are nonnegative
+                cbeta=djj-jj
+                alpha=1-calpha
+                beta=1-cbeta
+                gamma=1-cgamma
+                if(gamma<cgamma):
+                    kk+=1
+                if(alpha<calpha):
+                    ii+=1
+                if(beta<cbeta):
+                    jj+=1
+                if((ii<0) or (jj<0) or (kk<0) or (ii>=nrVol) or (jj>=ncVol) or (kk>=nsVol)):#no one is affected
+                    continue
+                else:
+                    warped[k,i,j]=volume[kk,ii,jj]
+    return warped
+
+
+########################################################################
+#############################image warping##############################
+########################################################################
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_image(floating[:,:] image, floating[:,:,:] d1, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
+    cdef int nrows=image.shape[0]
+    cdef int ncols=image.shape[1]
+    cdef int nrVol=image.shape[0]
+    cdef int ncVol=image.shape[1]
+    cdef int i,j, ii, jj
+    cdef floating dii, djj, tmp0
+    cdef floating alpha, beta, calpha, cbeta
+    if d1!=None:
+        nrows=d1.shape[0]
+        ncols=d1.shape[1]
+    cdef floating[:,:] warped = np.zeros(shape=(nrows, ncols), dtype=cython.typeof(image[0,0]))
+    for i in range(nrows):
+        for j in range(ncols):
+            if(affinePre!=None):
+                dii=_apply_affine_2d_x0(i,j,affinePre)+d1[i,j,0]
+                djj=_apply_affine_2d_x1(i,j,affinePre)+d1[i,j,1]
+            else:
+                dii=i+d1[i,j,0]
+                djj=j+d1[i,j,1]
+            if(affinePost!=None):
+                tmp0=_apply_affine_2d_x0(dii,djj,affinePost)
+                djj=_apply_affine_2d_x1(dii,djj,affinePost)
+                dii=tmp0
+            if((dii<0) or (djj<0) or (dii>nrVol-1) or (djj>ncVol-1)):#no one is affected
+                continue
+            #find the top left index and the interpolation coefficients
+            ii=int(dii)
+            jj=int(djj)
+            if((ii<0) or (jj<0) or (ii>=nrVol) or (jj>=ncVol)):#no one is affected
+                continue
+            calpha=dii-ii#by definition these factors are nonnegative
+            cbeta=djj-jj
+            alpha=1-calpha
+            beta=1-cbeta
+            #---top-left
+            warped[i,j]=alpha*beta*image[ii,jj]
+            #---top-right
+            jj+=1
+            if(jj<ncVol):
+                warped[i,j]+=alpha*cbeta*image[ii,jj]
+            #---bottom-right
+            ii+=1
+            if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                warped[i,j]+=calpha*cbeta*image[ii,jj]
+            #---bottom-left
+            jj-=1
+            if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                warped[i,j]+=calpha*beta*image[ii,jj]
+    return warped
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_image_affine(floating[:,:] image, int[:]refShape, floating[:,:] affine=None):
+    cdef int nrows=refShape[0]
+    cdef int ncols=refShape[1]
+    cdef int nrVol=image.shape[0]
+    cdef int ncVol=image.shape[1]
+    cdef int i,j, ii, jj
+    cdef floating dii, djj, tmp0
+    cdef floating alpha, beta, calpha, cbeta
+    cdef floating[:,:] warped = np.zeros(shape=(nrows, ncols), dtype=cython.typeof(image[0,0]))
+    for i in range(nrows):
+        for j in range(ncols):
+            if(affine!=None):
+                dii=_apply_affine_2d_x0(i,j,affine)
+                djj=_apply_affine_2d_x1(i,j,affine)
+            else:
+                dii=i
+                djj=j
+            if((dii<0) or (djj<0) or (dii>nrVol-1) or (djj>ncVol-1)):#no one is affected
+                continue
+            #find the top left index and the interpolation coefficients
+            ii=int(dii)
+            jj=int(djj)
+            if((ii<0) or (jj<0) or (ii>=nrVol) or (jj>=ncVol)):#no one is affected
+                continue
+            calpha=dii-ii#by definition these factors are nonnegative
+            cbeta=djj-jj
+            alpha=1-calpha
+            beta=1-cbeta
+            #---top-left
+            warped[i,j]=alpha*beta*image[ii,jj]
+            #---top-right
+            jj+=1
+            if(jj<ncVol):
+                warped[i,j]+=alpha*cbeta*image[ii,jj]
+            #---bottom-right
+            ii+=1
+            if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                warped[i,j]+=calpha*cbeta*image[ii,jj]
+            #---bottom-left
+            jj-=1
+            if((ii>=0) and (jj>=0) and (ii<nrVol) and (jj<ncVol)):
+                warped[i,j]+=calpha*beta*image[ii,jj]
+    return warped
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_image_nn(number[:,:] image, floating[:,:,:] displacement, floating[:,:] affinePre=None, floating[:,:] affinePost=None):
+    cdef int nrows=image.shape[0]
+    cdef int ncols=image.shape[1]
+    cdef int nrVol=image.shape[0]
+    cdef int ncVol=image.shape[1]
+    cdef floating dii, djj, tmp0
+    cdef floating alpha, beta, calpha, cbeta
+    cdef int i,j,ii,jj
+    if displacement!=None:
+        nrows=displacement.shape[0]
+        ncols=displacement.shape[1]
+    cdef number[:,:] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
+    for i in range(nrows):
+        for j in range(ncols):
+            if(affinePre!=None):
+                dii=_apply_affine_2d_x0(i,j,affinePre)+displacement[i,j,0]
+                djj=_apply_affine_2d_x1(i,j,affinePre)+displacement[i,j,1]
+            else:
+                dii=i+displacement[i,j,0]
+                djj=j+displacement[i,j,1]
+            if(affinePost!=None):
+                tmp0=_apply_affine_2d_x0(dii,djj,affinePost)
+                djj=_apply_affine_2d_x1(dii,djj,affinePost)
+                dii=tmp0
+            if((dii<0) or (djj<0) or (dii>nrVol-1) or (djj>ncVol-1)):#no one is affected
+                continue
+            #find the top left index and the interpolation coefficients
+            ii=int(dii)
+            jj=int(djj)
+            if((ii<0) or (jj<0) or (ii>=nrVol) or (jj>=ncVol)):#no one is affected
+                continue
+            calpha=dii-ii#by definition these factors are nonnegative
+            cbeta=djj-jj
+            alpha=1-calpha
+            beta=1-cbeta
+            if(alpha<calpha):
+                ii+=1
+            if(beta<cbeta):
+                jj+=1
+            if((ii<0) or (jj<0) or (ii>=nrVol) or (jj>=ncVol)):#no one is affected
+                continue
+            else:
+                warped[i,j]=image[ii,jj]
+    return warped
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def warp_image_affine_nn(number[:,:] image, int[:]refShape, floating[:,:] affine=None):
+    cdef int nrows=refShape[0]
+    cdef int ncols=refShape[1]
+    cdef int nrVol=image.shape[0]
+    cdef int ncVol=image.shape[1]
+    cdef floating dii, djj, tmp0
+    cdef floating alpha, beta, calpha, cbeta
+    cdef int i,j,ii,jj
+    cdef number[:,:] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
+    for i in range(nrows):
+        for j in range(ncols):
+            if(affine!=None):
+                dii=_apply_affine_2d_x0(i,j,affine)
+                djj=_apply_affine_2d_x1(i,j,affine)
+            else:
+                dii=i
+                djj=j
+            if((dii<0) or (djj<0) or (dii>nrVol-1) or (djj>ncVol-1)):#no one is affected
+                continue
+            #find the top left index and the interpolation coefficients
+            ii=int(dii)
+            jj=int(djj)
+            if((ii<0) or (jj<0) or (ii>=nrVol) or (jj>=ncVol)):#no one is affected
+                continue
+            calpha=dii-ii#by definition these factors are nonnegative
+            cbeta=djj-jj
+            alpha=1-calpha
+            beta=1-cbeta
+            if(alpha<calpha):
+                ii+=1
+            if(beta<cbeta):
+                jj+=1
+            if((ii<0) or (jj<0) or (ii>=nrVol) or (jj>=ncVol)):#no one is affected
+                continue
+            else:
+                warped[i,j]=image[ii,jj]
+    return warped
