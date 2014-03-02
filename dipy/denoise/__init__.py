@@ -1,4 +1,4 @@
-#init for denoisa aka the denoising module
+#init for denoise aka the denoising module
 
 # Test callable
 from numpy.testing import Tester

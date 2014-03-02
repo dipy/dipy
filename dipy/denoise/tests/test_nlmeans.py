@@ -6,7 +6,6 @@ from numpy.testing import (run_module_suite,
                            assert_array_almost_equal)
 from dipy.denoise.nlmeans import nlmeans
 from dipy.denoise.denspeed import add_padding_reflection, remove_padding
-from matplotlib.pyplot import *
 
 
 def test_nlmeans_padding():

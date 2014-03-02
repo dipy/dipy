@@ -10,12 +10,13 @@ from libc.stdlib cimport malloc, free
 from libc.string cimport memcpy
 
 
-def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1, block_radius=5, rician=True):
+def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
+               block_radius=5, rician=True):
     """ Non-local means for denoising 3D images
 
     Parameters
     ----------
-    arr : 3D or 4D ndarray
+    arr : 3D ndarray
         The array to be denoised
     mask : 3D ndarray
     sigma : float
@@ -108,6 +109,24 @@ def _nlmeans_3d(double [:, :, ::1] arr, double [:, :, ::1] mask,
 cdef double process_block(double [:, :, ::1] arr,
                           cnp.npy_intp i, cnp.npy_intp j, cnp.npy_intp k,
                           cnp.npy_intp B, cnp.npy_intp P, double sigma) nogil:
+    """ Process the block with center at (i, j, k)
+
+    Parameters
+    ----------
+    arr : 3D array
+        C contiguous array of doubles
+    i, j, k : int
+        center of block
+    B : int
+        block radius
+    P : int
+        patch radius
+    sigma : double
+
+    Returns
+    -------
+    new_value : double
+    """
 
     cdef:
         cnp.npy_intp m, n, o, M, N, O, a, b, c, cnt, step
@@ -182,7 +201,6 @@ cdef double process_block(double [:, :, ::1] arr,
 
 
 def add_padding_reflection(double [:, :, ::1] arr, padding):
-    #arr = np.pad(arr, (padding, padding,), mode='reflect')
     cdef:
         double [:, :, ::1] final
         cnp.npy_intp i, j, k
