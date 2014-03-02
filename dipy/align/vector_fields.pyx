@@ -468,3 +468,59 @@ def invert_vector_field_fixed_point_3d(floating[:,:,:,:] d, int[:] inverse_shape
     stats[0]=error
     stats[1]=iter_count
     return p
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def prepend_affine_to_displacement_field_2d(floating[:,:,:] d, 
+                                            floating[:,:] affine):
+    r'''
+    Modifies the given 2-D displacement field by applying the given affine
+    transformation. The resulting transformation T is of the from
+    T(x) = d(A*x), where A is the affine transformation.
+
+    Parameters
+    ----------
+    d : array, shape (R, C, 2)
+        the input 2-D displacement field with R rows and C columns
+    affine : array, shape (2, 3)
+        the matrix representation of the affine transformation to be applied
+    '''
+    if affine==None:
+        return
+    cdef int nrows=d.shape[0]
+    cdef int ncols=d.shape[1]
+    cdef int i,j
+    for i in range(nrows):
+        for j in range(ncols):
+            d[i,j,0]+=__apply_affine_2d_x0(i,j,affine)-i
+            d[i,j,1]+=__apply_affine_2d_x1(i,j,affine)-j
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def prepend_affine_to_displacement_field_3d(floating[:,:,:,:] d,
+                                            floating[:,:] affine):
+    r'''
+    Modifies thegiven 3-D displacement field by applying the given affine
+    transformation. The resulting transformation T is of the from
+    T(x) = d(A*x), where A is the affine transformation.
+
+    Parameters
+    ----------
+    d : array, shape (S, R, C, 3)
+        the input 3-D displacement field with S slices, R rows and C columns
+    affine : array, shape (3, 4)
+        the matrix representation of the affine transformation to be applied
+    '''
+    if affine==None:
+        return
+    cdef int nslices=d.shape[0]
+    cdef int nrows=d.shape[1]
+    cdef int ncols=d.shape[2]
+    cdef int i,j,k
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                d[k,i,j,0]+=__apply_affine_3d_x0(k,i,j,affine)-k
+                d[k,i,j,1]+=__apply_affine_3d_x1(k,i,j,affine)-i
+                d[k,i,j,2]+=__apply_affine_3d_x2(k,i,j,affine)-j
+
