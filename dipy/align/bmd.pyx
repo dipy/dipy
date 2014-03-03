@@ -54,7 +54,7 @@ cdef float direct_flip_dist(float *a,float *b,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def bundle_minimum_distance_rigid(float [:, ::1] static,
+def _bundle_minimum_distance_rigid(float [:, ::1] static,
                                   float [:, ::1] moving,
                                   cnp.npy_intp static_size,
                                   cnp.npy_intp moving_size,

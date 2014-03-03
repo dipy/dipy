@@ -3,7 +3,160 @@ from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
 from scipy.optimize import fmin_powell, fmin_l_bfgs_b
 from dipy.tracking.metrics import downsample
-from dipy.align.bmd import bundle_minimum_distance_rigid
+from dipy.align.bmd import _bundle_minimum_distance_rigid
+
+
+class StreamlineRigidRegistration(object):
+
+    def __init__(self, similarity=None, xtol=10 ** (-6),
+                 ftol=10 ** (-6), maxiter=10 ** 6,
+                 disp=False, algorithm='L_BFGS_B', bounds=None, fast=True):
+
+        self.similarity = similarity
+        self.xtol = xtol
+        self.ftol = ftol
+        self.maxiter = maxiter
+        self.disp = disp
+        self.initial = np.ones(6).tolist()
+        self.algorithm = algorithm
+        if self.algorithm not in ['Powell', 'L_BFGS_B']:
+            raise ValueError('Not approriate algorithm')
+        self.bounds = bounds
+        self.fast = fast
+
+        if self.similarity is None:
+            if self.fast:
+                self.similarity = bundle_min_distance_fast
+            else:
+                self.similarity = bundle_min_distance
+
+
+    def optimize(self, static, moving):
+
+        msg = 'need to have the same number of points.'
+        if static[0].shape[0] != static[-1].shape[0]:
+            raise ValueError('Static streamlines ' + msg)
+
+        if moving[0].shape[0] != moving[-1].shape[0]:
+            raise ValueError('Moving streamlines ' + msg)
+
+        if static[0].shape[0] != moving[-1].shape[0]:
+            raise ValueError('Static and moving streamlines ' + msg)
+
+        static_centered, static_shift = center_streamlines(static)
+        moving_centered, moving_shift = center_streamlines(moving)
+
+        static_centered_pts, st_idx = unlist_streamlines(static_centered)
+        static_centered_pts = np.ascontiguousarray(static_centered_pts,
+                                                   dtype=np.float32)
+
+        moving_centered_pts, mv_idx = unlist_streamlines(moving_centered)
+
+        block_size = st_idx[0]
+
+        if self.fast:
+            args = (static_centered_pts, moving_centered_pts, block_size)
+        else:
+            args = (static_centered, moving_centered)
+
+
+        if self.algorithm == 'Powell':
+
+            optimum = fmin_powell(self.similarity,
+                                  self.initial,
+                                  args,
+                                  xtol=self.xtol,
+                                  ftol=self.ftol,
+                                  maxiter=self.maxiter,
+                                  full_output=True,
+                                  disp=False,
+                                  retall=True)
+
+        if self.algorithm == 'L_BFGS_B':
+
+            optimum = fmin_l_bfgs_b(self.similarity,
+                                    self.initial,
+                                    None,
+                                    args,
+                                    approx_grad=True,
+                                    bounds=self.bounds,
+                                    m=100,
+                                    factr=10,
+                                    pgtol=1e-16,
+                                    epsilon=1e-3)
+
+
+        if self.algorithm == 'Powell':
+
+            xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
+
+            if self.disp:
+                print('Powell :')
+                print('xopt', xopt)
+                print('fopt', fopt)
+                print('iter', iterations)
+                print('funcs', funcs)
+                print('warn', warnflag)
+
+        if self.algorithm == 'L_BFGS_B':
+
+            xopt, fopt, dictionary = optimum
+            funcs = dictionary['funcalls']
+            warnflag = dictionary['warnflag']
+            iterations = dictionary['nit']
+            grad = dictionary['grad']
+
+            if self.disp:
+                print('L_BFGS_B :')
+                print('xopt', xopt)
+                print('fopt', fopt)
+                print('iter', iterations)
+                print('grad', grad)
+                print('funcs', funcs)
+                print('warn', warnflag)
+                print('msg', dictionary['task'])
+
+        #print('static_shift', static_shift)
+        #print('moving_shift', moving_shift)
+
+        opt_mat = matrix44(xopt)
+        static_mat = matrix44([static_shift[0], static_shift[1],
+                               static_shift[2], 0, 0, 0])
+
+        moving_mat = matrix44([-moving_shift[0], -moving_shift[1],
+                               -moving_shift[2], 0, 0, 0])
+
+        mat = compose_transformations(moving_mat, opt_mat, static_mat)
+
+        #print('mat', mat)
+
+        mat_history = []
+
+        if self.algorithm == 'Powell':
+
+            for vecs in allvecs:
+                mat_history.append(compose_transformations(moving_mat,
+                                                           matrix44(vecs),
+                                                           static_mat))
+
+        return StreamlineRegistrationMap(mat, xopt, fopt,
+                                            mat_history, funcs, iterations)
+
+
+class StreamlineRegistrationMap(object):
+
+    def __init__(self, matopt, xopt, fopt, matopt_history, funcs, iterations):
+
+        self.matrix = matopt
+        self.xopt = xopt
+        self.fopt = fopt
+        self.matrix_history = matopt_history
+        self.funcs = funcs
+        self.iterations = iterations
+
+    def transform(self, streamlines):
+
+        return transform_streamlines(streamlines, self.matrix)
 
 
 def rotation_vec2mat(r):
@@ -191,11 +344,11 @@ def bundle_min_distance_fast(t, static, moving, block_size):
     cols = moving.shape[0] / block_size
     d01 = np.zeros((rows, cols), dtype=np.float32)
     print(d01)
-    bundle_minimum_distance_rigid(static, moving,
-                                  rows,
-                                  cols,
-                                  block_size,
-                                  d01)
+    _bundle_minimum_distance_rigid(static, moving,
+                                   rows,
+                                   cols,
+                                   block_size,
+                                   d01)
 
     return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
                    np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
@@ -220,159 +373,6 @@ def center_streamlines(streamlines):
     """
     center = np.mean(np.concatenate(streamlines, axis=0), axis=0)
     return [s - center for s in streamlines], center
-
-
-class StreamlineRigidRegistration(object):
-
-    def __init__(self, similarity=None, xtol=10 ** (-6),
-                 ftol=10 ** (-6), maxiter=10 ** 6,
-                 disp=False, algorithm='L_BFGS_B', bounds=None, fast=True):
-
-        self.similarity = similarity
-        self.xtol = xtol
-        self.ftol = ftol
-        self.maxiter = maxiter
-        self.disp = disp
-        self.initial = np.ones(6).tolist()
-        self.algorithm = algorithm
-        if self.algorithm not in ['Powell', 'L_BFGS_B']:
-            raise ValueError('Not approriate algorithm')
-        self.bounds = bounds
-        self.fast = fast
-
-        if self.similarity is None:
-            if self.fast:
-                self.similarity = bundle_min_distance_fast
-            else:
-                self.similarity = bundle_min_distance
-
-
-    def optimize(self, static, moving):
-
-        msg = 'need to have the same number of points.'
-        if static[0].shape[0] != static[-1].shape[0]:
-            raise ValueError('Static streamlines ' + msg)
-
-        if moving[0].shape[0] != moving[-1].shape[0]:
-            raise ValueError('Moving streamlines ' + msg)
-
-        if static[0].shape[0] != moving[-1].shape[0]:
-            raise ValueError('Static and moving streamlines ' + msg)
-
-        static_centered, static_shift = center_streamlines(static)
-        moving_centered, moving_shift = center_streamlines(moving)
-
-        static_centered_pts, st_idx = unlist_streamlines(static_centered)
-        static_centered_pts = np.ascontiguousarray(static_centered_pts,
-                                                   dtype=np.float32)
-
-        moving_centered_pts, mv_idx = unlist_streamlines(moving_centered)
-
-        block_size = st_idx[0]
-
-        if self.fast:
-            args = (static_centered_pts, moving_centered_pts, block_size)
-        else:
-            args = (static_centered, moving_centered)
-
-
-        if self.algorithm == 'Powell':
-
-            optimum = fmin_powell(self.similarity,
-                                  self.initial,
-                                  args,
-                                  xtol=self.xtol,
-                                  ftol=self.ftol,
-                                  maxiter=self.maxiter,
-                                  full_output=True,
-                                  disp=False,
-                                  retall=True)
-
-        if self.algorithm == 'L_BFGS_B':
-
-            optimum = fmin_l_bfgs_b(self.similarity,
-                                    self.initial,
-                                    None,
-                                    args,
-                                    approx_grad=True,
-                                    bounds=self.bounds,
-                                    m=100,
-                                    factr=10,
-                                    pgtol=1e-16,
-                                    epsilon=1e-3)
-
-
-        if self.algorithm == 'Powell':
-
-            xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
-
-            if self.disp:
-                print('Powell :')
-                print('xopt', xopt)
-                print('fopt', fopt)
-                print('iter', iterations)
-                print('funcs', funcs)
-                print('warn', warnflag)
-
-        if self.algorithm == 'L_BFGS_B':
-
-            xopt, fopt, dictionary = optimum
-            funcs = dictionary['funcalls']
-            warnflag = dictionary['warnflag']
-            iterations = dictionary['nit']
-            grad = dictionary['grad']
-
-            if self.disp:
-                print('L_BFGS_B :')
-                print('xopt', xopt)
-                print('fopt', fopt)
-                print('iter', iterations)
-                print('grad', grad)
-                print('funcs', funcs)
-                print('warn', warnflag)
-                print('msg', dictionary['task'])
-
-        #print('static_shift', static_shift)
-        #print('moving_shift', moving_shift)
-
-        opt_mat = matrix44(xopt)
-        static_mat = matrix44([static_shift[0], static_shift[1],
-                               static_shift[2], 0, 0, 0])
-
-        moving_mat = matrix44([-moving_shift[0], -moving_shift[1],
-                               -moving_shift[2], 0, 0, 0])
-
-        mat = compose_transformations(moving_mat, opt_mat, static_mat)
-
-        #print('mat', mat)
-
-        mat_history = []
-
-        if self.algorithm == 'Powell':
-
-            for vecs in allvecs:
-                mat_history.append(compose_transformations(moving_mat,
-                                                           matrix44(vecs),
-                                                           static_mat))
-
-        return StreamlineRegistrationMap(mat, xopt, fopt,
-                                            mat_history, funcs, iterations)
-
-
-class StreamlineRegistrationMap(object):
-
-    def __init__(self, matopt, xopt, fopt, matopt_history, funcs, iterations):
-
-        self.matrix = matopt
-        self.xopt = xopt
-        self.fopt = fopt
-        self.matrix_history = matopt_history
-        self.funcs = funcs
-        self.iterations = iterations
-
-    def transform(self, streamlines):
-
-        return transform_streamlines(streamlines, self.matrix)
 
 
 def compose_transformations(*mats):

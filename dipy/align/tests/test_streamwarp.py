@@ -15,7 +15,7 @@ from dipy.align.streamwarp import (StreamlineRigidRegistration,
                                    vectorize_streamlines,
                                    unlist_streamlines,
                                    relist_streamlines)
-from dipy.align.bmd import bundle_minimum_distance_rigid
+from dipy.align.bmd import _bundle_minimum_distance_rigid
 from dipy.tracking.distances import bundles_distances_mdf
 
 
@@ -198,7 +198,7 @@ def test_efficient_bmd():
 
     D = np.zeros((len(offsets), len(offsets)), dtype='f4')
 
-    bundle_minimum_distance_rigid(points, points2,
+    _bundle_minimum_distance_rigid(points, points2,
                                   len(offsets), len(offsets),
                                   3, D)
 
@@ -206,7 +206,7 @@ def test_efficient_bmd():
 
     points2 = points2 + 2
 
-    bundle_minimum_distance_rigid(points, points2,
+    _bundle_minimum_distance_rigid(points, points2,
                                   len(offsets), len(offsets),
                                   3, D)
 
