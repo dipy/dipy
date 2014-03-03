@@ -328,7 +328,7 @@ def bundle_min_distance(t, static, moving):
     aff = matrix44(t)
     moving = transform_streamlines(moving, aff)
     d01 = bundles_distances_mdf(static, moving)
-    print(d01)
+    
     rows, cols = d01.shape
     return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
                    np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
@@ -343,7 +343,7 @@ def bundle_min_distance_fast(t, static, moving, block_size):
     rows = static.shape[0] / block_size
     cols = moving.shape[0] / block_size
     d01 = np.zeros((rows, cols), dtype=np.float32)
-    print(d01)
+    
     _bundle_minimum_distance_rigid(static, moving,
                                    rows,
                                    cols,
