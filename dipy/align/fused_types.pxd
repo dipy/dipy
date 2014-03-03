@@ -2,8 +2,8 @@ cimport cython
 
 #ctypedef cython.float floating
 ctypedef fused floating:
-#    cython.float
-    cython.double
+    cython.float
+#    cython.double
 
 ctypedef fused number:
     cython.double

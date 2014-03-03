@@ -1,8 +1,9 @@
 import numpy as np
+import numpy.linalg as linalg
 import abc
 import vector_fields as vfu
 import registration_common as rcommon
-
+floating = np.float32
 
 class UpdateRule(object):
 
@@ -54,7 +55,7 @@ def scale_affine(affine, factor):
     transformation to a downsampled version J of I, then the affine matrix
     is the same as for I but the translation is scaled.
     """
-    scaled_affine = affine.copy()
+    scaled_affine = np.array(affine, dtype = floating)
     domain_dimension = affine.shape[1] - 1
     scaled_affine[:domain_dimension, domain_dimension] *= factor
     return scaled_affine
@@ -71,11 +72,12 @@ class TransformationModel(object):
     """
 
     def __init__(self,
+                 dim,
                  forward=None,
                  backward=None,
                  affine_pre=None,
                  affine_post=None):
-        self.dim = None
+        self.dim = dim
         self.set_forward(forward)
         self.set_backward(backward)
         self.set_affine_pre(affine_pre)
@@ -87,12 +89,12 @@ class TransformationModel(object):
         transformation, computes its inverse and adjusts the dimension of
         the transformation's domain accordingly
         """
-        if affine_pre != None:
-            self.dim = affine_pre.shape[1] - 1
-            self.affine_pre_inv = linalg.inv(affine_pre).copy(order='C')
-        else:
+        if affine_pre == None:
+            self.affine_pre = None
             self.affine_pre_inv = None
-        self.affine_pre = affine_pre
+        else:
+            self.affine_pre = np.array(affine_pre, dtype = floating)
+            self.affine_pre_inv = np.array(linalg.inv(affine_pre), order='C', dtype = floating)
 
     def set_affine_post(self, affine_post):
         r"""
@@ -100,20 +102,17 @@ class TransformationModel(object):
         transformation, computes its inverse and adjusts the dimension of
         the transformation's domain accordingly
         """
-        if affine_post != None:
-            self.dim = affine_post.shape[1] - 1
-            self.affine_post_inv = linalg.inv(affine_post).copy(order='C')
-        else:
+        if affine_post == None:
+            self.affine_post = None
             self.affine_post_inv = None
-        self.affine_post = affine_post
+        else:
+            self.affine_post_inv = np.array(linalg.inv(affine_post), order='C', dtype = floating)
+            self.affine_post = np.array(affine_post, dtype = floating)
 
     def set_forward(self, forward):
         r"""
-        Establishes the forward non-linear displacement field and adjusts
-        the dimension of the transformation's domain accordingly
+        Establishes the forward non-linear displacement field
         """
-        if forward != None:
-            self.dim = len(forward.shape) - 1
         self.forward = forward
 
     def set_backward(self, backward):
@@ -121,8 +120,6 @@ class TransformationModel(object):
         Establishes the backward non-linear displacement field and adjusts
         the dimension of the transformation's domain accordingly
         """
-        if backward != None:
-            self.dim = len(backward.shape) - 1
         self.backward = backward
 
     def warp_forward(self, image):
@@ -200,10 +197,10 @@ class TransformationModel(object):
         """
         if self.affine_pre != None:
             self.affine_pre = scale_affine(self.affine_pre, factor)
-            self.affine_pre_inv = linalg.inv(self.affine_pre).copy(order='C')
+            self.affine_pre_inv = np.array(linalg.inv(self.affine_pre), order = 'C', dtype = floating)
         if self.affine_post != None:
             self.affine_post = scale_affine(self.affine_post, factor)
-            self.affine_post_inv = linalg.inv(self.affine_post).copy(order='C')
+            self.affine_post_inv = np.array(linalg.inv(self.affine_post), order = 'C', dtype = floating)
 
     def upsample(self, new_domain_forward, new_domain_backward):
         r"""
@@ -264,7 +261,7 @@ class TransformationModel(object):
         else:
             affine_prod = C.dot(B)
         if affine_prod != None:
-            affine_prod_inv = linalg.inv(affine_prod).copy(order='C')
+            affine_prod_inv = np.array(linalg.inv(affine_prod), order='C', dtype = floating)
         else:
             affine_prod_inv = None
         if self.dim == 2:
@@ -287,7 +284,8 @@ class TransformationModel(object):
                 backward, affine_prod_inv)
             backward, stats = vfu.compose_vector_fields_3d(backward,
                                                            applyFirst.backward)
-        composition = TransformationModel(forward,
+        composition = TransformationModel(self.dim,
+                                          forward,
                                           backward,
                                           applyFirst.affine_pre,
                                           self.affine_post)
@@ -298,7 +296,7 @@ class TransformationModel(object):
         Return the inverse of this transformation model. Warning: the matrices
         and displacement fields are not copied
         """
-        inv = TransformationModel(self.backward, self.forward,
+        inv = TransformationModel(self.dim, self.backward, self.forward,
                                   self.affine_post_inv, self.affine_pre_inv)
         return inv
 
@@ -345,6 +343,7 @@ class RegistrationOptimizer(object):
         """
 
     def __init__(self,
+                 dim,
                  fixed=None,
                  moving=None,
                  affine_fixed=None,
@@ -365,8 +364,8 @@ class RegistrationOptimizer(object):
         self.parameters = default_parameters
         inv_affine_moving = None
         if affine_moving != None:
-            inv_affine_moving = np.linalg.inv(affine_moving).copy(order='C')
-        self.dim = 0
+            inv_affine_moving = np.array(np.linalg.inv(affine_moving), order = 'C', dtype = floating)
+        self.dim = dim
         self.set_fixed_image(fixed)
         self.forward_model = TransformationModel(None, None, None, None)
         self.set_moving_image(moving)
@@ -381,8 +380,6 @@ class RegistrationOptimizer(object):
         Establishes the fixed image to be used by this registration optimizer.
         Updates the domain dimension information accordingly
         """
-        if fixed != None:
-            self.dim = len(fixed.shape)
         self.fixed = fixed
 
     def set_moving_image(self, moving):
@@ -390,8 +387,6 @@ class RegistrationOptimizer(object):
         Establishes the moving image to be used by this registration optimizer.
         Updates the domain dimension information accordingly
         """
-        if moving != None:
-            self.dim = len(moving.shape)
         self.moving = moving
 
     def set_max_iter(self, max_iter):
@@ -437,6 +432,7 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
                 'report_status': True}
 
     def __init__(self,
+                 dim,
                  fixed=None,
                  moving=None,
                  affine_fixed=None,
@@ -445,7 +441,7 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
                  update_rule=None,
                  parameters=None):
         super(SymmetricRegistrationOptimizer, self).__init__(
-            fixed, moving, affine_fixed, affine_moving, similarity_metric,
+            dim, fixed, moving, affine_fixed, affine_moving, similarity_metric,
             update_rule, parameters)
         self.set_max_iter(self.parameters['max_iter'])
         self.tolerance = self.parameters['tolerance']
@@ -525,19 +521,19 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
                                                        self.levels - 1)]
         starting_forward = np.zeros(
             shape=self.fixed_pyramid[self.levels - 1].shape + (self.dim,),
-            dtype=np.float64)
+            dtype=floating)
         starting_forward_inv = np.zeros(
             shape=self.fixed_pyramid[self.levels - 1].shape + (self.dim,),
-            dtype=np.float64)
+            dtype=floating)
         self.forward_model.scale_affines(0.5 ** (self.levels - 1))
         self.forward_model.set_forward(starting_forward)
         self.forward_model.set_backward(starting_forward_inv)
         starting_backward = np.zeros(
             shape=self.moving_pyramid[self.levels - 1].shape + (self.dim,),
-            dtype=np.float64)
+            dtype=floating)
         starting_backward_inverse = np.zeros(
             shape=self.fixed_pyramid[self.levels - 1].shape + (self.dim,),
-            dtype=np.float64)
+            dtype=floating)
         self.backward_model.scale_affines(0.5 ** (self.levels - 1))
         self.backward_model.set_forward(starting_backward)
         self.backward_model.set_backward(starting_backward_inverse)

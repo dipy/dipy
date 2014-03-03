@@ -7,6 +7,7 @@ from dipy.align.imwarp import Composition, SymmetricRegistrationOptimizer
 from dipy.align.metrics import SSDMetric
 import dipy.align.vector_fields as vfu
 import dipy.align.registration_common as rcommon
+floating  = np.float32
 
 def test_optimizer_monomodal_2d():
     r'''
@@ -16,10 +17,10 @@ def test_optimizer_monomodal_2d():
     fname_fixed = '../../data/C.png'
     moving = plt.imread(fname_moving)
     fixed = plt.imread(fname_fixed)
-    moving = moving[:, :, 0].astype(np.float64)
-    fixed = fixed[:, :, 0].astype(np.float64)
-    moving = np.copy(moving, order = 'C')
-    fixed = np.copy(fixed, order = 'C')
+    moving = moving[:, :, 0].astype(floating)
+    fixed = fixed[:, :, 0].astype(floating)
+    moving = np.array(moving, order = 'C', dtype = floating)
+    fixed = np.array(fixed, order = 'C', dtype = floating)
     moving = (moving-moving.min())/(moving.max() - moving.min())
     fixed = (fixed-fixed.min())/(fixed.max() - fixed.min())
     ################Configure and run the Optimizer#####################
@@ -33,7 +34,7 @@ def test_optimizer_monomodal_2d():
         'inversion_tolerance':1e-3,
         'report_status':True}
     update_rule = Composition()
-    registration_optimizer = SymmetricRegistrationOptimizer(fixed, moving,
+    registration_optimizer = SymmetricRegistrationOptimizer(2, fixed, moving,
                                                          None, None,
                                                          similarity_metric,
                                                          update_rule, optimizer_parameters)
