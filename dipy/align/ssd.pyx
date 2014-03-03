@@ -44,7 +44,7 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y, f
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def iterate_residual_displacement_field_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  floating[:,:,:] target, floating lambdaParam, floating[:,:,:] displacementField):
+cpdef double iterate_residual_displacement_field_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  floating[:,:,:] target, double lambdaParam, floating[:,:,:] displacementField):
     cdef int NUM_NEIGHBORS = 4
     cdef int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
     cdef int[:] dCol = np.array([ 0, 1, 0, -1], dtype=np.int32)
@@ -116,7 +116,7 @@ def iterate_residual_displacement_field_SSD2D(floating[:,:] deltaField, floating
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_energy_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  floating lambdaParam, floating[:,:,:] displacementField):
+cpdef double compute_energy_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  double lambdaParam, floating[:,:,:] displacementField):
     cdef int nrows=deltaField.shape[0]
     cdef int ncols=deltaField.shape[1]
     cdef floating energy = 0
@@ -127,7 +127,7 @@ def compute_energy_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, flo
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def iterate_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  floating[:,:,:,:] target, floating lambdaParam, floating[:,:,:,:] displacementField):
+cpdef double iterate_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  floating[:,:,:,:] target, double lambdaParam, floating[:,:,:,:] displacementField):
     cdef int NUM_NEIGHBORS = 6 
     cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
     cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
@@ -219,7 +219,7 @@ def iterate_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floati
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_energy_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  floating lambdaParam, floating[:,:,:,:] displacementField):
+cpdef double compute_energy_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  double lambdaParam, floating[:,:,:,:] displacementField):
     cdef int nslices=deltaField.shape[0]
     cdef int nrows=deltaField.shape[1]
     cdef int ncols=deltaField.shape[2]
@@ -232,7 +232,7 @@ def compute_energy_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  floating[:,:,:,:] target, floating lambdaParam, floating[:,:,:,:] displacementField, floating[:,:,:,:] residual):
+def compute_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floating[:,:,:] sigmaField, floating[:,:,:,:] gradientField,  floating[:,:,:,:] target, double lambdaParam, floating[:,:,:,:] displacementField, floating[:,:,:,:] residual):
     cdef int NUM_NEIGHBORS = 6 
     cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
     cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
@@ -286,7 +286,7 @@ def compute_residual_displacement_field_SSD3D(floating[:,:,:] deltaField, floati
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef compute_residual_displacement_field_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  floating[:,:,:] target, floating lambdaParam, floating[:,:,:] displacementField, floating[:,:,:] residual):
+cpdef compute_residual_displacement_field_SSD2D(floating[:,:] deltaField, floating[:,:] sigmaField, floating[:,:,:] gradientField,  floating[:,:,:] target, double lambdaParam, floating[:,:,:] displacementField, floating[:,:,:] residual):
     cdef int NUM_NEIGHBORS = 4
     cdef int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
     cdef int[:] dCol = np.array([ 0, 1, 0, -1], dtype=np.int32)
@@ -329,7 +329,7 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:,:] deltaField, floati
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_demons_step2D(floating[:,:] deltaField, floating[:,:,:] gradientField, floating maxStepSize):
+def compute_demons_step2D(floating[:,:] deltaField, floating[:,:,:] gradientField, double maxStepSize):
     cdef int nrows=deltaField.shape[0]
     cdef int ncols=deltaField.shape[1]
     cdef int r,c
@@ -359,7 +359,7 @@ def compute_demons_step2D(floating[:,:] deltaField, floating[:,:,:] gradientFiel
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_demons_step3D(floating[:,:,:] deltaField, floating[:,:,:,:] gradientField,  floating maxStepSize):
+def compute_demons_step3D(floating[:,:,:] deltaField, floating[:,:,:,:] gradientField,  double maxStepSize):
     cdef int nslices=deltaField.shape[0]
     cdef int nrows=deltaField.shape[1]
     cdef int ncols=deltaField.shape[2]

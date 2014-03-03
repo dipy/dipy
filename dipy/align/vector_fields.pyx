@@ -9,7 +9,7 @@ cdef extern from "math.h":
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline floating _apply_affine_3d_x0(number x0, number x1, number x2,
+cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
                                          floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
@@ -20,7 +20,7 @@ cdef inline floating _apply_affine_3d_x0(number x0, number x1, number x2,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline floating _apply_affine_3d_x1(number x0, number x1, number x2,
+cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2,
                                          floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
@@ -31,7 +31,7 @@ cdef inline floating _apply_affine_3d_x1(number x0, number x1, number x2,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline floating _apply_affine_3d_x2(number x0, number x1, number x2,
+cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2,
                                          floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
@@ -42,7 +42,7 @@ cdef inline floating _apply_affine_3d_x2(number x0, number x1, number x2,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline floating _apply_affine_2d_x0(number x0, number x1,
+cdef inline double _apply_affine_2d_x0(double x0, double x1,
                                          floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the aff matrix aff by
@@ -53,7 +53,7 @@ cdef inline floating _apply_affine_2d_x0(number x0, number x1,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef inline floating _apply_affine_2d_x1(number x0, number x1,
+cdef inline double _apply_affine_2d_x1(double x0, double x1,
                                          floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
@@ -370,7 +370,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2):
 @cython.wraparound(False)
 @cython.cdivision(True)
 def invert_vector_field_fixed_point(floating[:, :, :] d, int[:] inv_shape,
-                                    int max_iter, floating tolerance,
+                                    int max_iter, double tolerance,
                                     floating[:, :, :] start=None):
     r"""
     Computes the inverse of the given 2-D displacement field d using the
@@ -448,7 +448,7 @@ def invert_vector_field_fixed_point(floating[:, :, :] d, int[:] inv_shape,
 @cython.cdivision(True)
 def invert_vector_field_fixed_point_3d(
     floating[:, :, :, :] d, int[:] inv_shape,
-    int max_iter, floating tolerance,
+    int max_iter, double tolerance,
         floating[:, :, :, :] start=None):
     r"""
     Computes the inverse of the given 3-D displacement field d using the
