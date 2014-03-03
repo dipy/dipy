@@ -10,7 +10,7 @@ cdef extern from "math.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
-                                         floating[:, :] aff) nogil:
+                                       floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
@@ -21,7 +21,7 @@ cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2,
-                                         floating[:, :] aff) nogil:
+                                       floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
@@ -32,7 +32,7 @@ cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2,
-                                         floating[:, :] aff) nogil:
+                                       floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
@@ -43,7 +43,7 @@ cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef inline double _apply_affine_2d_x0(double x0, double x1,
-                                         floating[:, :] aff) nogil:
+                                       floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the aff matrix aff by
     (x0, x1, x2)
@@ -54,7 +54,7 @@ cdef inline double _apply_affine_2d_x0(double x0, double x1,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef inline double _apply_affine_2d_x1(double x0, double x1,
-                                         floating[:, :] aff) nogil:
+                                       floating[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
@@ -446,10 +446,10 @@ def invert_vector_field_fixed_point(floating[:, :, :] d, int[:] inv_shape,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def invert_vector_field_fixed_point_3d(
-    floating[:, :, :, :] d, int[:] inv_shape,
-    int max_iter, double tolerance,
-        floating[:, :, :, :] start=None):
+def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
+                                       int[:] inv_shape,
+                                       int max_iter, double tolerance,
+                                       floating[:, :, :, :] start=None):
     r"""
     Computes the inverse of the given 3-D displacement field d using the
     fixed-point algorithm.
@@ -1094,7 +1094,8 @@ def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1, floating[:, :] affinePre=None, floating[:, :] affinePost=None):
+def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
+                floating[:, :] affinePre=None, floating[:, :] affinePost=None):
     cdef int nslices = volume.shape[0]
     cdef int nrows = volume.shape[1]
     cdef int ncols = volume.shape[2]
@@ -1187,7 +1188,8 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1, floating[:, :
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def warp_volume_affine(floating[:, :, :] volume, int[:]refShape, floating[:, :] affine):
+def warp_volume_affine(floating[:, :, :] volume, int[:]refShape,
+                       floating[:, :] affine):
     cdef int nslices = refShape[0]
     cdef int nrows = refShape[1]
     cdef int ncols = refShape[2]
@@ -1268,7 +1270,8 @@ def warp_volume_affine(floating[:, :, :] volume, int[:]refShape, floating[:, :] 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
-                   floating[:, :] affinePre=None, floating[:, :] affinePost=None):
+                   floating[:, :] affinePre=None,
+                   floating[:, :] affinePost=None):
     cdef int nslices = displacement.shape[0]
     cdef int nrows = displacement.shape[1]
     cdef int ncols = displacement.shape[2]
@@ -1332,7 +1335,7 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def warp_volume_affine_nn(number[:, :, :] volume, int[:]refShape,
+def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
                           floating[:, :] affine=None):
     cdef int nslices = refShape[0]
     cdef int nrows = refShape[1]
@@ -1496,7 +1499,8 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
-                  floating[:, :] affinePre=None, floating[:, :] affinePost=None):
+                  floating[:, :] affinePre=None,
+                  floating[:, :] affinePost=None):
     cdef int nrows = image.shape[0]
     cdef int ncols = image.shape[1]
     cdef int nrVol = image.shape[0]
