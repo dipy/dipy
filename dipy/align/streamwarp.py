@@ -355,11 +355,11 @@ class StreamlineRigidRegistration(object):
                                                            matrix44(vecs),
                                                            static_mat))
 
-        return StreamlineRegistrationParams(mat, xopt, fopt,
+        return StreamlineRegistrationMap(mat, xopt, fopt,
                                             mat_history, funcs, iterations)
 
 
-class StreamlineRegistrationParams(object):
+class StreamlineRegistrationMap(object):
 
     def __init__(self, matopt, xopt, fopt, matopt_history, funcs, iterations):
 

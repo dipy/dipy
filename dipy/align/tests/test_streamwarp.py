@@ -134,11 +134,11 @@ def test_stream_rigid():
 
     srr = StreamlineRigidRegistration(disp=True)
 
-    srp = srr.optimize(static, moving)
+    srm = srr.optimize(static, moving)
 
-    moved2 = transform_streamlines(moving, srp.matrix)
+    moved2 = transform_streamlines(moving, srm.matrix)
 
-    moved3 = srp.transform(moving)
+    moved3 = srm.transform(moving)
 
     assert_array_equal(moved[0], moved2[0])
     assert_array_equal(moved2[0], moved3[0])
