@@ -3,7 +3,7 @@ from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
 from scipy.optimize import fmin_powell, fmin_l_bfgs_b
 from dipy.tracking.metrics import downsample
-from dipy.align.alispeed import bundle_minimum_distance_rigid
+from dipy.align.bmd import bundle_minimum_distance_rigid
 
 
 def rotation_vec2mat(r):
@@ -106,7 +106,7 @@ def transform_streamlines(streamlines, mat):
     return [apply_affine(mat, s) for s in streamlines]
 
 
-def mdf_optimization_sum(t, static, moving):
+def bundle_sum_distance(t, static, moving):
     """ MDF distance optimization function (SUM)
 
     We minimize the distance between moving streamlines as they align
@@ -142,42 +142,6 @@ def mdf_optimization_sum(t, static, moving):
     return np.sum(d01)
 
 
-def mdf_optimization_min(t, static, moving):
-    """ MDF distance optimization function
-
-    We minimize the distance between moving streamlines as they align
-    with the static streamlines.
-
-    Parameters
-    -----------
-    t : ndarray
-        t is a vector of of affine transformation parameters with
-        size at least 6. If size < 6, returns an error.
-        If size == 6, t is interpreted as translation + rotation.
-        If size == 7, t is interpreted as translation + rotation +
-        isotropic scaling. If 7 < size < 12, error.
-        If size >= 12, t is interpreted as translation + rotation +
-        scaling + pre-rotation.
-
-    static : list
-        Static streamlines
-
-    moving : list
-        Moving streamlines. These will be transform to align with
-        the static streamlines
-
-    Returns
-    -------
-    cost: float
-
-    """
-
-    aff = matrix44(t)
-    moving = transform_streamlines(moving, aff)
-    d01 = bundles_distances_mdf(static, moving)
-    return np.sum(np.min(d01, axis=0)) + np.sum(np.min(d01, axis=1))
-
-
 def bundle_min_distance(t, static, moving):
 
     """ MDF-based pairwise distance optimization function
@@ -211,6 +175,7 @@ def bundle_min_distance(t, static, moving):
     aff = matrix44(t)
     moving = transform_streamlines(moving, aff)
     d01 = bundles_distances_mdf(static, moving)
+    print(d01)
     rows, cols = d01.shape
     return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
                    np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
@@ -225,6 +190,7 @@ def bundle_min_distance_fast(t, static, moving, block_size):
     rows = static.shape[0] / block_size
     cols = moving.shape[0] / block_size
     d01 = np.zeros((rows, cols), dtype=np.float32)
+    print(d01)
     bundle_minimum_distance_rigid(static, moving,
                                   rows,
                                   cols,
@@ -256,42 +222,6 @@ def center_streamlines(streamlines):
     return [s - center for s in streamlines], center
 
 
-class LinearRegistration(object):
-
-    def __init__(self, cost_func, reg_type='rigid', xtol=10 ** (-6),
-                 ftol=10 ** (-6), maxiter=10 ** 6):
-
-        self.cost_func = cost_func
-        self.xopt = None
-        self.xtol = xtol
-        self.ftol = ftol
-        self.maxiter = maxiter
-
-        if reg_type == 'rigid':
-            self.initial = np.zeros(6).tolist()
-        if reg_type == 'rigid+scale':
-            self.initial = np.zeros(7).tolist()
-
-    def optimize(self):
-        self.xopt = fmin_powell(self.cost_func,
-                                self.initial,
-                                (self.static, self.moving),
-                                xtol = self.xtol,
-                                ftol = self.ftol,
-                                maxiter = self.maxiter)
-
-        return self.xopt
-
-    def transform(self, static, moving):
-        self.static = static
-        self.moving = moving
-        xopt = self.optimize()
-        mat = matrix44(xopt)
-        self.mat = mat
-        self.moved = transform_streamlines(self.moving, mat)
-        return self.moved
-
-
 class StreamlineRigidRegistration(object):
 
     def __init__(self, similarity=None, xtol=10 ** (-6),
@@ -305,6 +235,8 @@ class StreamlineRigidRegistration(object):
         self.disp = disp
         self.initial = np.ones(6).tolist()
         self.algorithm = algorithm
+        if self.algorithm not in ['Powell', 'L_BFGS_B']:
+            raise ValueError('Not approriate algorithm')
         self.bounds = bounds
         self.fast = fast
 

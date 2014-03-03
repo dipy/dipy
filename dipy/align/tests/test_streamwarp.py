@@ -3,22 +3,19 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
-from dipy.align.streamwarp import (LinearRegistration,
-                                   transform_streamlines,
+from dipy.align.streamwarp import (transform_streamlines,
                                    matrix44,
-                                   mdf_optimization_sum,
-                                   mdf_optimization_min,
+                                   bundle_sum_distance,                                   
                                    center_streamlines)
 from dipy.tracking.metrics import downsample
 from dipy.data import get_data
-from dipy.bundle.descriptors import midpoints
 from nibabel import trackvis as tv
 from dipy.align.streamwarp import (StreamlineRigidRegistration,
                                    compose_transformations,
                                    vectorize_streamlines,
                                    unlist_streamlines,
                                    relist_streamlines)
-from dipy.align.alispeed import bundle_minimum_distance_rigid
+from dipy.align.bmd import bundle_minimum_distance_rigid
 from dipy.tracking.distances import bundles_distances_mdf
 
 
@@ -46,28 +43,24 @@ def fornix_streamlines(no_pts=12):
 
 def evaluate_convergence(bundle, new_bundle2):
     pts_static = np.concatenate(bundle, axis=0)
-    pts_moved = np.concatenate(new_bundle2, axis=0)
+    pts_moved = np.concatenate(new_bundle2, axis=0)    
     assert_array_almost_equal(pts_static, pts_moved, 3)
 
 
-def test_rigid():
+def test_rigid_parallel_lines():
 
     bundle_initial = simulated_bundle()
     bundle, shift = center_streamlines(bundle_initial)
     mat = matrix44([20, 0, 10, 0, 40, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
-    lin = LinearRegistration(mdf_optimization_sum, 'rigid')
-    new_bundle2 = lin.transform(bundle, bundle2)
-
+    srr = StreamlineRigidRegistration(similarity=bundle_sum_distance, 
+                                      algorithm='L_BFGS_B', 
+                                      bounds=None, 
+                                      fast=False)
+                                      
+    new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
     evaluate_convergence(bundle, new_bundle2)
-
-    cx, cy, cz = shift
-    shift_mat = matrix44([cx, cy, cz, 0, 0, 0])
-
-    new_bundle2_initial = transform_streamlines(new_bundle2, shift_mat)
-
-    evaluate_convergence(bundle_initial, new_bundle2_initial)
 
 
 def test_rigid_real_bundles():
@@ -78,18 +71,15 @@ def test_rigid_real_bundles():
     bundle2 = transform_streamlines(bundle, mat)
 
 
-    lin = LinearRegistration(mdf_optimization_sum, 'rigid')
-    new_bundle2 = lin.transform(bundle, bundle2)
+    srr = StreamlineRigidRegistration(bundle_sum_distance, 
+                                      algorithm='Powell',
+                                      fast=False)
+    new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
     evaluate_convergence(bundle, new_bundle2)
 
-    cx, cy, cz = shift
-    new_bundle2_initial = transform_streamlines(new_bundle2, matrix44([cx, cy, cz, 0, 0, 0]))
 
-    evaluate_convergence(bundle_initial, new_bundle2_initial)
-
-
-def test_rigid_partial():
+def test_rigid_partial_real_bundles():
 
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[20:40]
@@ -98,12 +88,13 @@ def test_rigid_partial():
     mat = matrix44([0, 0, 0, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
 
-    lin = LinearRegistration(mdf_optimization_min, 'rigid')
+    srr = StreamlineRigidRegistration()
 
-    moving_center = lin.transform(static_center, moving)
+    moving_center = srr.optimize(static_center, moving).transform(moving)
 
     static_center = [downsample(s, 100) for s in static_center]
     moving_center = [downsample(s, 100) for s in moving_center]
+
     vol = np.zeros((100, 100, 100))
     spts = np.concatenate(static_center, axis=0)
     spts = np.round(spts).astype(np.int) + np.array([50, 50, 50])
@@ -121,7 +112,7 @@ def test_rigid_partial():
         vol2[i, j, k] = 1
 
     overlap = np.sum(np.logical_and(vol,vol2)) / float(np.sum(vol2))
-    print(overlap)
+    #print(overlap)
 
     assert_equal(overlap * 100 > 40, True )
 
@@ -135,13 +126,13 @@ def test_stream_rigid():
     mat = matrix44([0, 0, 0, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
 
-    srr = StreamlineRigidRegistration(mdf_optimization_min, full_output=True)
+    srr = StreamlineRigidRegistration()
 
     sr_params = srr.optimize(static, moving)
 
     moved = transform_streamlines(moving, sr_params.matrix)
 
-    srr = StreamlineRigidRegistration(mdf_optimization_min, full_output=False)
+    srr = StreamlineRigidRegistration(disp=True)
 
     srp = srr.optimize(static, moving)
 
@@ -177,7 +168,7 @@ def test_unlist_relist_streamlines():
 
     points, offsets = unlist_streamlines(streamlines)
 
-    assert_equal(offset.dtype, np.dtype('i8'))
+    assert_equal(offsets.dtype, np.dtype('i8'))
 
     assert_equal(points.shape, (35, 3))
     assert_equal(len(offsets), len(streamlines))
@@ -199,26 +190,25 @@ def test_efficient_bmd():
 
     streamlines = [a, a + 2, a + 4]
 
-    #streamlines = vectorize_streamlines(streamlines, 20)
     points, offsets = unlist_streamlines(streamlines)
     points = points.astype(np.float32)
     points2 = points.copy()
 
     cache = 2 + np.zeros((len(offsets), len(offsets)), dtype=np.float32)
 
-    t = np.zeros(6, dtype=np.float32)
+    D = np.zeros((len(offsets), len(offsets)), dtype='f4')
 
-    D = bundle_minimum_distance_rigid(t, points, points2,
-                                      len(offsets), len(offsets),
-                                      3, cache)
+    bundle_minimum_distance_rigid(points, points2,
+                                  len(offsets), len(offsets),
+                                  3, D)
 
     assert_equal(np.sum(np.diag(D)), 0)
 
     points2 = points2 + 2
 
-    D = bundle_minimum_distance_rigid(t, points, points2,
-                                      len(offsets), len(offsets),
-                                      3, cache)
+    bundle_minimum_distance_rigid(points, points2,
+                                  len(offsets), len(offsets),
+                                  3, D)
 
     streamlines2 = relist_streamlines(points2, offsets)
     D2 = bundles_distances_mdf(streamlines, streamlines2)
@@ -226,12 +216,6 @@ def test_efficient_bmd():
     assert_array_almost_equal(D, D2)
 
 
-
-
 if __name__ == '__main__':
 
     run_module_suite()
-    #test_unlist_relist_streamlines()
-    #test_efficient_bmd()
-    #test_transform_streamlines()
-
