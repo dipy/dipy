@@ -2,7 +2,7 @@ import numpy as np
 import scipy as sp
 from scipy import ndimage
 import matplotlib.pyplot as plt
-
+from dipy.align import floating
 
 def renormalizeImage(image):
     r'''
@@ -12,13 +12,16 @@ def renormalizeImage(image):
     M=np.max(image)
     if(M-m<1e-8):
         return image
-    return 127.0*(image-m)/(M-m)
+    image-=m
+    image*=127.0
+    image/=(M-m)
+    return np.array(image, dtype = floating)
 
 def pyramid_gaussian_3D(image, max_layer, mask=None):
     r'''
     Generates a 3D Gaussian Pyramid of max_layer+1 levels from image
     '''
-    yield image.copy().astype(np.float64)
+    yield image.copy().astype(floating)
     for i in range(max_layer):
         newImage=sp.ndimage.filters.gaussian_filter(image, 2.0/3.0)[::2,::2,::2].copy()
         if(mask!=None):
@@ -31,9 +34,9 @@ def pyramid_gaussian_2D(image, max_layer, mask=None):
     r'''
     Generates a 3D Gaussian Pyramid of max_layer+1 levels from image
     '''
-    yield image.copy().astype(np.float64)
+    yield image.copy().astype(floating)
     for i in range(max_layer):
-        newImage=np.empty(shape=((image.shape[0]+1)//2, (image.shape[1]+1)//2), dtype=np.float64)
+        newImage=np.empty(shape=((image.shape[0]+1)//2, (image.shape[1]+1)//2), dtype=floating)
         newImage[...]=sp.ndimage.filters.gaussian_filter(image, 2.0/3.0)[::2,::2]
         if(mask!=None):
             mask=mask[::2,::2]
@@ -65,7 +68,7 @@ def overlayImages(img0, img1, createFig=True):
     return fig
 
 def drawLattice2D(nrows, ncols, delta):
-    lattice=np.ndarray((1+(delta+1)*nrows, 1+(delta+1)*ncols), dtype=np.float64)
+    lattice=np.ndarray((1+(delta+1)*nrows, 1+(delta+1)*ncols), dtype=floating)
     lattice[...]=127
     for i in range(nrows+1):
         lattice[i*(delta+1), :]=0
@@ -151,18 +154,18 @@ def readAntsAffine(fname):
                 print 'Unknown transformation type'
                 return
         elif data[0]=='Parameters:':
-            parameters=np.array([float(s) for s in data[1:]], dtype=np.float64)
+            parameters=np.array([float(s) for s in data[1:]], dtype=floating)
             A=parameters[:9].reshape((3,3))
             b=parameters[9:]
         elif data[0]=='FixedParameters:':
-            c=np.array([float(s) for s in data[1:]], dtype=np.float64)
-    T=np.ndarray(shape=(4,4), dtype=np.float64)
+            c=np.array([float(s) for s in data[1:]], dtype=floating)
+    T=np.ndarray(shape=(4,4), dtype=floating)
     T[:3,:3]=A[...]
     T[3,:]=0
     T[3,3]=1
     T[:3,3]=b+c-A.dot(c)
     ############This conversion is necessary for compatibility between itk and nibabel#########
-    conversion=np.array([[-1,0,0,0],[0,-1,0,0],[0,0,1,0],[0,0,0,1]], dtype=np.float64)
+    conversion=np.array([[-1,0,0,0],[0,-1,0,0],[0,0,1,0],[0,0,0,1]], dtype=floating)
     T=conversion.dot(T.dot(conversion))
     ###########################################################################################
     return T

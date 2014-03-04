@@ -179,7 +179,7 @@ def compose_vector_fields(floating[:, :, :] d1, floating[:, :, :] d2):
     cdef:
         floating[:, :, :] comp = np.zeros_like(d1)
         floating[:] stats = np.zeros(shape=(3,),
-                                     dtype=cython.typeof(d1[0, 0, 0]))
+                                     dtype=np.asarray(d1).dtype)
     _compose_vector_fields(d1, d2, comp, stats)
     return comp, stats
 
@@ -361,7 +361,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2):
     """
     cdef:
         floating[:, :, :, :] comp = np.zeros_like(d1)
-        floating[:] stats = np.zeros(shape=(3,), dtype=cython.typeof(d1[0, 0, 0, 0]))
+        floating[:] stats = np.zeros(shape=(3,), dtype=np.asarray(d1).dtype)
     _compose_vector_fields_3d(d1, d2, comp, stats)
     return comp, stats
 
@@ -415,10 +415,10 @@ def invert_vector_field_fixed_point(floating[:, :, :] d, int[:] inv_shape,
     else:
         nr2, nc2 = nr1, nc1
     cdef:
-        floating[:] stats = np.zeros(shape=(2,), dtype=cython.typeof(d[0, 0, 0]))
-        floating[:] substats = np.empty(shape=(3,), dtype=cython.typeof(d[0, 0, 0]))
-        floating[:, :, :] p = np.zeros(shape=(nr2, nc2, 2), dtype=cython.typeof(d[0, 0, 0]))
-        floating[:, :, :] q = np.zeros(shape=(nr2, nc2, 2), dtype=cython.typeof(d[0, 0, 0]))
+        floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
+        floating[:] substats = np.empty(shape=(3,), dtype=np.asarray(d).dtype)
+        floating[:, :, :] p = np.zeros(shape=(nr2, nc2, 2), dtype=np.asarray(d).dtype)
+        floating[:, :, :] q = np.zeros(shape=(nr2, nc2, 2), dtype=np.asarray(d).dtype)
     if start != None:
         p[...] = start
 
@@ -492,10 +492,10 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     else:
         ns2, nr2, nc2 = ns1, nr1, nc1
     cdef:
-        floating[:] stats = np.empty(shape=(2,), dtype=cython.typeof(d[0, 0, 0, 0]))
-        floating[:] substats = np.empty(shape=(3,), dtype=cython.typeof(d[0, 0, 0, 0]))
-        floating[:, :, :, :] p = np.zeros((ns2, nr2, nc2, 3), dtype=cython.typeof(d[0, 0, 0, 0]))
-        floating[:, :, :, :] q = np.zeros((ns2, nr2, nc2, 3), dtype=cython.typeof(d[0, 0, 0, 0]))
+        floating[:] stats = np.empty(shape=(2,), dtype=np.asarray(d).dtype)
+        floating[:] substats = np.empty(shape=(3,), dtype=np.asarray(d).dtype)
+        floating[:, :, :, :] p = np.zeros((ns2, nr2, nc2, 3), dtype=np.asarray(d).dtype)
+        floating[:, :, :, :] q = np.zeros((ns2, nr2, nc2, 3), dtype=np.asarray(d).dtype)
         floating error = 1 + tolerance
         floating epsilon = 0.5
         floating mag, difmag
@@ -680,7 +680,7 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
         int i, j, ii, jj
         floating dii, djj
         floating alpha, beta, calpha, cbeta
-        floating[:, :, :] up = np.zeros(shape=(nrows, ncols, 2), dtype=cython.typeof(field[0, 0, 0]))
+        floating[:, :, :] up = np.zeros(shape=(nrows, ncols, 2), dtype=np.asarray(field).dtype)
     for i in range(nrows):
         for j in range(ncols):
             dii = 0.5 * i
@@ -751,7 +751,7 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
         int i, j, k, ii, jj, kk
         floating dkk, dii, djj
         floating alpha, beta, gamma, calpha, cbeta, cgamma
-        floating[:, :, :, :] up = np.zeros(shape=(ns, nr, nc, 3), dtype=cython.typeof(field[0, 0, 0, 0]))
+        floating[:, :, :, :] up = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(field).dtype)
     for k in range(ns):
         for i in range(nr):
             for j in range(nc):
@@ -959,7 +959,7 @@ def downsample_scalar_field3D(floating[:, :, :] field):
     cdef int nnr = (nr + 1) // 2
     cdef int nnc = (nc + 1) // 2
     cdef int i, j, k, ii, jj, kk
-    cdef floating[:, :, :] down = np.zeros((nns, nnr, nnc), dtype=cython.typeof(field[0, 0, 0]))
+    cdef floating[:, :, :] down = np.zeros((nns, nnr, nnc), dtype=np.asarray(field).dtype)
     cdef int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
     for k in range(ns):
         for i in range(nr):
@@ -988,7 +988,7 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
     cdef int nnr = (nr + 1) // 2
     cdef int nnc = (nc + 1) // 2
     cdef int i, j, k, ii, jj, kk
-    cdef floating[:, :, :, :] down = np.zeros((nns, nnr, nnc, 3), dtype=cython.typeof(field[0, 0, 0, 0]))
+    cdef floating[:, :, :, :] down = np.zeros((nns, nnr, nnc, 3), dtype=np.asarray(field).dtype)
     cdef int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
     for k in range(ns):
         for i in range(nr):
@@ -1019,7 +1019,7 @@ def downsample_scalar_field2D(floating[:, :] field):
     cdef int nnr = (nr + 1) // 2
     cdef int nnc = (nc + 1) // 2
     cdef int i, j, ii, jj
-    cdef floating[:, :] down = np.zeros(shape=(nnr, nnc), dtype=cython.typeof(field[0, 0]))
+    cdef floating[:, :] down = np.zeros(shape=(nnr, nnc), dtype=np.asarray(field).dtype)
     cdef int[:, :] cnt = np.zeros(shape=(nnr, nnc), dtype=np.int32)
     for i in range(nr):
         for j in range(nc):
@@ -1043,7 +1043,7 @@ def downsample_displacement_field2D(floating[:, :, :] field):
     cdef int nnr = (nr + 1) // 2
     cdef int nnc = (nc + 1) // 2
     cdef int i, j, ii, jj
-    cdef floating[:, :, :] down = np.zeros((nnr, nnc, 2), dtype=cython.typeof(field[0, 0, 0]))
+    cdef floating[:, :, :] down = np.zeros((nnr, nnc, 2), dtype=np.asarray(field).dtype)
     cdef int[:, :] cnt = np.zeros((nnr, nnc), dtype=np.int32)
     for i in range(nr):
         for j in range(nc):
@@ -1068,8 +1068,8 @@ def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
     cdef int ncols = d.shape[2]
     cdef int i, j, k
     cdef floating dkk, dii, djj
-    cdef floating[:] minVal = np.ndarray((3,), dtype=cython.typeof(d[0, 0, 0, 0]))
-    cdef floating[:] maxVal = np.ndarray((3,), dtype=cython.typeof(d[0, 0, 0, 0]))
+    cdef floating[:] minVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
+    cdef floating[:] maxVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
     minVal[...] = d[0, 0, 0, :]
     maxVal[...] = minVal[...]
     for k in range(nslices):
@@ -1109,7 +1109,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
         nslices = d1.shape[0]
         nrows = d1.shape[1]
         ncols = d1.shape[2]
-    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=cython.typeof(volume[0, 0, 0]))
+    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=np.asarray(volume).dype)
     for k in range(nslices):
         for i in range(nrows):
             for j in range(ncols):
@@ -1199,7 +1199,7 @@ def warp_volume_affine(floating[:, :, :] volume, int[:]refShape,
     cdef int i, j, k, ii, jj, kk
     cdef floating dkk, dii, djj, tmp0, tmp1
     cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
-    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=cython.typeof(volume[0, 0, 0]))
+    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
     for k in range(nslices):
         for i in range(nrows):
             for j in range(ncols):
@@ -1403,7 +1403,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
     if d1 != None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
-    cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), dtype=cython.typeof(image[0, 0]))
+    cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), dtype=np.asarray(image).dtype)
     for i in range(nrows):
         for j in range(ncols):
             if(affinePre != None):
@@ -1457,7 +1457,7 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
     cdef int i, j, ii, jj
     cdef floating dii, djj, tmp0
     cdef floating alpha, beta, calpha, cbeta
-    cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), dtype=cython.typeof(image[0, 0]))
+    cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), dtype=np.asarray(image).dtype)
     for i in range(nrows):
         for j in range(ncols):
             if(affine != None):

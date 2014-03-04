@@ -8,9 +8,9 @@ from dipy.align.metrics import SSDMetric
 import dipy.align.vector_fields as vfu
 import dipy.align.registration_common as rcommon
 from dipy.data import get_data
+from dipy.align import floating
 
 
-floating  = np.float32
 
 
 def test_optimizer_monomodal_2d():
@@ -57,7 +57,7 @@ def test_optimizer_monomodal_2d():
     122.65367889871, 106.44073315886713, 95.41108800097213,
     87.96182679672143, 82.61402880855695, 78.19231311503307,
     74.47642022606254, 71.15748591895019, 68.06597585727408]
-    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile))
+    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=3)
     #######################show results#################################
     displacement = registration_optimizer.get_forward()
     direct_inverse = registration_optimizer.get_backward()
@@ -72,6 +72,15 @@ def test_optimizer_monomodal_2d():
                                'inv-direct', 7)
 
 
+def test_monomodal_3d():
+	from dipy.data import read_sherbrooke_3shell
+
+	img, gtab = read_sherbrooke_3shell()
+
+	S0 = img.get_data()[..., 0]
+
+
+
 
 # def test_feature():
 
@@ -81,3 +90,4 @@ def test_optimizer_monomodal_2d():
 #     assert_array_equal(A, B)
 if __name__=='__main__':
     test_optimizer_monomodal_2d()
+    #test_monomodal_3d()

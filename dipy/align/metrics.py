@@ -7,6 +7,7 @@ import vector_fields as vfu
 import ssd
 import cc
 import em
+from dipy.align import floating
 
 class SimilarityMetric(object):
     '''
@@ -202,13 +203,13 @@ class CCMetric(SimilarityMetric):
                                                    self.radius)
         self.factors = np.array(self.factors)
         self.gradient_moving = np.empty(
-            shape = (self.moving_image.shape)+(self.dim,), dtype = np.float64)
+            shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
         self.gradient_fixed = np.empty(
-            shape = (self.fixed_image.shape)+(self.dim,), dtype = np.float64)
+            shape = (self.fixed_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.fixed_image):
             self.gradient_fixed[..., i] = grad
@@ -416,13 +417,13 @@ class EMMetric(SimilarityMetric):
         self.fixedq_sigma_field = fixedq_variances[fixedq]
         self.fixedq_means_field = fixedq_means[fixedq]
         self.gradient_moving = np.empty(
-            shape = (self.moving_image.shape)+(self.dim,), dtype = np.float64)
+            shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
         self.gradient_fixed = np.empty(
-            shape = (self.fixed_image.shape)+(self.dim,), dtype = np.float64)
+            shape = (self.fixed_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.fixed_image):
             self.gradient_fixed[..., i] = grad
@@ -501,7 +502,7 @@ class EMMetric(SimilarityMetric):
             delta = self.movingq_means_field - self.fixed_image
             sigma_field = self.movingq_sigma_field
         gradient = self.gradient_moving if forward_step else self.gradient_fixed
-        displacement = np.zeros(shape = (shape)+(self.dim,), dtype = np.float64)
+        displacement = np.zeros(shape = (shape)+(self.dim,), dtype = floating)
         self.energy = self.multi_resolution_iteration(self.levels_below,
                                                       max_inner_iter, delta,
                                                       sigma_field,
@@ -606,14 +607,14 @@ class SSDMetric(SimilarityMetric):
         computation of the forward and backward steps.
         '''
         self.gradient_moving = np.empty(
-            shape = (self.moving_image.shape)+(self.dim,), dtype = np.float64)
+            shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
         i = 0
         self.gradient_fixed = np.empty(
-            shape = (self.fixed_image.shape)+(self.dim,), dtype = np.float64)
+            shape = (self.fixed_image.shape)+(self.dim,), dtype = floating)
         for grad in gradient(self.fixed_image):
             self.gradient_fixed[..., i] = grad
             i += 1
@@ -659,7 +660,7 @@ class SSDMetric(SimilarityMetric):
             delta_field = self.moving_image - self.fixed_image
         #gradient = self.gradient_moving+self.gradient_fixed
         gradient = self.gradient_moving
-        displacement = np.zeros(shape = (shape)+(self.dim,), dtype = np.float64)
+        displacement = np.zeros(shape = (shape)+(self.dim,), dtype = floating)
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below, max_inner_iter, 
                                     delta_field, None, gradient, None, 
@@ -794,7 +795,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     shape = np.array(displacement.shape).astype(np.int32)
     #sub_displacement = np.array(vfu.downsample_displacement_field(displacement))
     sub_displacement = np.zeros(shape = ((shape[0]+1)//2, (shape[1]+1)//2, 2 ),
-                               dtype = np.float64)
+                               dtype = floating)
     sublambda_param = lambda_param*0.25
     v_cycle_2d(n-1, k, subdelta_field, subsigma_field, subgradient_field,
              sub_residual, sublambda_param, sub_displacement, depth+1)
@@ -864,7 +865,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     shape = np.array(displacement.shape).astype(np.int32)
     sub_displacement = np.zeros(
         shape = ((shape[0]+1)//2, (shape[1]+1)//2, (shape[2]+1)//2, 3 ),
-        dtype = np.float64)
+        dtype = floating)
     sublambda_param = lambda_param*0.25
     v_cycle_3d(n-1, k, subdelta_field, subsigma_field, subgradient_field,
              sub_residual, sublambda_param, sub_displacement, depth+1)

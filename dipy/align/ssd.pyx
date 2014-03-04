@@ -62,10 +62,10 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] deltaField
     cdef int nrows = deltaField.shape[0]
     cdef int ncols = deltaField.shape[1]
     cdef int r, c, dr, dc, nn, k
-    cdef floating[:] b = np.ndarray(shape=(2,), dtype=cython.typeof(deltaField[0, 0]))
-    cdef floating[:] d = np.ndarray(shape=(2,), dtype=cython.typeof(deltaField[0, 0]))
-    cdef floating[:] y = np.ndarray(shape=(2,), dtype=cython.typeof(deltaField[0, 0]))
-    cdef floating[:] A = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0, 0]))
+    cdef floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] d = np.ndarray(shape=(2,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] A = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
     cdef floating xx, yy, opt, nrm2, delta, sigma, maxDisplacement
     maxDisplacement = 0
     for r in range(nrows):
@@ -159,10 +159,10 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] deltaFi
     cdef int nrows = deltaField.shape[1]
     cdef int ncols = deltaField.shape[2]
     cdef int s, r, c, ds, dr, dc, nn
-    cdef floating[:] b = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0, 0, 0]))
-    cdef floating[:] d = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0, 0, 0]))
-    cdef floating[:] y = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0, 0, 0]))
-    cdef floating[:] A = np.ndarray(shape=(6,), dtype=cython.typeof(deltaField[0, 0, 0]))
+    cdef floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] d = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] A = np.ndarray(shape=(6,), dtype=np.asarray(deltaField).dtype)
     cdef floating xx, yy, zz, opt, nrm2, delta, sigma, maxDisplacement
     maxDisplacement = 0
     for s in range(nslices):
@@ -280,8 +280,8 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] deltaField,
     cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
     cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
     cdef int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
-    cdef floating[:] b = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0, 0, 0]))
-    cdef floating[:] y = np.ndarray(shape=(3,), dtype=cython.typeof(deltaField[0, 0, 0]))
+    cdef floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
     cdef int nslices = deltaField.shape[0]
     cdef int nrows = deltaField.shape[1]
     cdef int ncols = deltaField.shape[2]
@@ -352,14 +352,14 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] deltaField,
     cdef int NUM_NEIGHBORS = 4
     cdef int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
     cdef int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
-    cdef floating[:] b = np.ndarray(shape=(2,), dtype=cython.typeof(deltaField[0, 0]))
-    cdef floating[:] y = np.ndarray(shape=(2,), dtype=cython.typeof(deltaField[0, 0]))
+    cdef floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(deltaField).dtype)
+    cdef floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(deltaField).dtype)
     cdef int nrows = deltaField.shape[0]
     cdef int ncols = deltaField.shape[1]
     cdef floating delta, sigma, dotP
     cdef int r, c, dr, dc
     if residual == None:
-        residual = np.empty(shape=(nrows, ncols, 2), dtype=np.double)
+        residual = np.empty(shape=(nrows, ncols, 2), dtype=np.asarray(deltaField).dtype)
     for r in range(nrows):
         for c in range(ncols):
             delta = deltaField[r, c]
@@ -406,7 +406,7 @@ def compute_demons_step2D(floating[:, :] deltaField,
     cdef int ncols = deltaField.shape[1]
     cdef int r, c
     cdef floating nrm2, delta, den, factor, maxDisplacement
-    cdef floating[:, :, :] demonsStep = np.zeros(shape=(nrows, ncols, 3), dtype=cython.typeof(deltaField[0, 0]))
+    cdef floating[:, :, :] demonsStep = np.zeros(shape=(nrows, ncols, 3), dtype=np.asarray(deltaField).dtype)
     maxDisplacement = 0
     for r in range(nrows):
         for c in range(ncols):
@@ -440,7 +440,7 @@ def compute_demons_step3D(floating[:, :, :] deltaField,
     cdef int ncols = deltaField.shape[2]
     cdef int s, r, c
     cdef floating nrm2, delta, den, factor, maxDisplacement
-    cdef floating[:, :, :, :] demonsStep = np.zeros(shape=(nslices, nrows, ncols, 3), dtype=cython.typeof(deltaField[0, 0, 0]))
+    cdef floating[:, :, :, :] demonsStep = np.zeros(shape=(nslices, nrows, ncols, 3), dtype=np.asarray(deltaField).dtype)
     maxDisplacement = 0
     for s in range(nslices):
         for r in range(nrows):

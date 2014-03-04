@@ -3,7 +3,7 @@ import numpy.linalg as linalg
 import abc
 import vector_fields as vfu
 import registration_common as rcommon
-floating = np.float32
+from dipy.align import floating
 
 class UpdateRule(object):
 
@@ -127,7 +127,7 @@ class TransformationModel(object):
         Applies this transformation in the forward direction to the given image
         using tri-linear interpolation
         """
-        if len(image.shape) == 3:
+        if self.dim == 3:
             warped = vfu.warp_volume(image,
                                      self.forward,
                                      self.affine_pre,
@@ -144,7 +144,7 @@ class TransformationModel(object):
         Applies this transformation in the backward direction to the given
         image using tri-linear interpolation
         """
-        if len(image.shape) == 3:
+        if self.dim == 3:
             warped = vfu.warp_volume(image,
                                      self.backward,
                                      self.affine_post_inv,
@@ -161,7 +161,7 @@ class TransformationModel(object):
         Applies this transformation in the forward direction to the given image
         using nearest-neighbor interpolation
         """
-        if len(image.shape) == 3:
+        if self.dim == 3:
             warped = vfu.warp_volume_nn(image,
                                         self.forward,
                                         self.affine_pre,
@@ -178,7 +178,7 @@ class TransformationModel(object):
         Applies this transformation in the backward direction to the given
         image using nearest-neighbor interpolation
         """
-        if len(image.shape) == 3:
+        if self.dim == 3:
             warped = vfu.warp_volume_nn(image,
                                         self.backward,
                                         self.affine_post_inv,
@@ -222,15 +222,17 @@ class TransformationModel(object):
                         np.array(new_domain_backward).astype(np.int32)))
         else:
             if self.forward != None:
+                sh_fwd = np.array(new_domain_forward, dtype=np.int32)
+                sh_bwd = np.array(new_domain_backward, dtype=np.int32)
                 self.forward = 2 * np.array(
                     vfu.upsample_displacement_field_3d(
                         self.forward,
-                        np.array(new_domain_forward).astype(np.int32)))
+                        sh_fwd))
             if self.backward != None:
                 self.backward = 2 * np.array(
                     vfu.upsample_displacement_field_3d(
                         self.backward,
-                        np.array(new_domain_backward).astype(np.int32)))
+                        sh_bwd))
         self.scale_affines(2.0)
 
     def compute_inversion_error(self):
@@ -367,10 +369,10 @@ class RegistrationOptimizer(object):
             inv_affine_moving = np.array(np.linalg.inv(affine_moving), order = 'C', dtype = floating)
         self.dim = dim
         self.set_fixed_image(fixed)
-        self.forward_model = TransformationModel(None, None, None, None)
+        self.forward_model = TransformationModel(dim, None, None, None, None)
         self.set_moving_image(moving)
         self.backward_model = TransformationModel(
-            None, None, inv_affine_moving,
+            dim, None, None, inv_affine_moving,
             None)
         self.similarity_metric = similarity_metric
         self.update_rule = update_rule
@@ -558,6 +560,7 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
         #tic = time.time()
         wmoving = self.backward_model.warp_backward(self.current_moving)
         wfixed = self.forward_model.warp_backward(self.current_fixed)
+        
         self.similarity_metric.set_moving_image(wmoving)
         self.similarity_metric.use_moving_image_dynamics(
             self.current_moving, self.backward_model.inverse())
@@ -666,7 +669,7 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
             phi2_inv = self.backward_model.forward
             phi, mean_disp = self.update_rule.update(phi1, phi2)
             phi_inv, mean_disp = self.update_rule.update(phi2_inv, phi1_inv)
-            composition = TransformationModel(phi, phi_inv, None, None)
+            composition = TransformationModel(self.dim, phi, phi_inv, None, None)
             composition.scale_affines(0.5 ** level)
             residual, stats = composition.compute_inversion_error()
             print('Current inversion error: %0.6f (%0.6f)' %
