@@ -6,16 +6,70 @@ from dipy.tracking.metrics import downsample
 from dipy.align.bmd import _bundle_minimum_distance_rigid
 
 
+class StreamlineMetric(object):
+
+    def __init__(self):
+        self.static = None
+        self.moving = None
+
+    def feed(self, static, moving):
+        self.static = static
+        self.moving = moving
+
+    def distance(self, xopt):
+        return 0
+
+
+class BundleMinDistance(StreamlineMetric):
+
+    def distance(self, xopt):
+        return bundle_min_distance(xopt, self.static, self.moving)
+
+
+class BundleMinDistanceFast(StreamlineMetric):
+
+    def feed(self, static, moving):
+        static_centered_pts, st_idx = unlist_streamlines(static)
+        self.static_centered_pts = np.ascontiguousarray(static_centered_pts,
+                                                        dtype=np.float32)
+        self.moving_centered_pts, mv_idx = unlist_streamlines(moving)
+        self.block_size = st_idx[0]
+
+    def distance(self, xopt):
+        return bundle_min_distance_fast(xopt, 
+                                        self.static_centered_pts, 
+                                        self.moving_centered_pts, 
+                                        self.block_size)
+
+
+class BundleSumDistance(StreamlineMetric):
+
+    def distance(self, xopt):
+        return bundle_sum_distance(xopt, self.static, self.moving)
+
+
 class StreamlineRigidRegistration(object):
 
-    def __init__(self, similarity=None, xtol=10 ** (-6),
-                 ftol=10 ** (-6), maxiter=10 ** 6,
-                 disp=False, algorithm='L_BFGS_B', bounds=None, fast=True):
+    def __init__(self, similarity=None, algorithm='L_BFGS_B', bounds=None,
+                 fast=True, disp=True):
+        """ Rigid registration of 2 sets of streamlines
+
+        Parameters
+        ----------
+        similarity : StreamlineMetric
+
+        Methods
+        -------
+
+        """
 
         self.similarity = similarity
-        self.xtol = xtol
-        self.ftol = ftol
-        self.maxiter = maxiter
+        if self.similarity is None:
+            if fast:
+                self.similarity = BundleMinDistanceFast()
+            else:
+                self.similarity = BundleMinDistance()
+        
         self.disp = disp
         self.initial = np.ones(6).tolist()
         self.algorithm = algorithm
@@ -24,14 +78,7 @@ class StreamlineRigidRegistration(object):
         self.bounds = bounds
         self.fast = fast
 
-        if self.similarity is None:
-            if self.fast:
-                self.similarity = bundle_min_distance_fast
-            else:
-                self.similarity = bundle_min_distance
-
-
-    def optimize(self, static, moving):
+    def optimize(self, static, moving, similarity=None):
 
         msg = 'need to have the same number of points.'
         if static[0].shape[0] != static[-1].shape[0]:
@@ -46,45 +93,32 @@ class StreamlineRigidRegistration(object):
         static_centered, static_shift = center_streamlines(static)
         moving_centered, moving_shift = center_streamlines(moving)
 
-        static_centered_pts, st_idx = unlist_streamlines(static_centered)
-        static_centered_pts = np.ascontiguousarray(static_centered_pts,
-                                                   dtype=np.float32)
+        self.similarity.feed(static_centered, moving_centered)
 
-        moving_centered_pts, mv_idx = unlist_streamlines(moving_centered)
-
-        block_size = st_idx[0]
-
-        if self.fast:
-            args = (static_centered_pts, moving_centered_pts, block_size)
-        else:
-            args = (static_centered, moving_centered)
-
+        distance = self.similarity.distance
 
         if self.algorithm == 'Powell':
 
-            optimum = fmin_powell(self.similarity,
+            optimum = fmin_powell(distance,
                                   self.initial,
-                                  args,
-                                  xtol=self.xtol,
-                                  ftol=self.ftol,
-                                  maxiter=self.maxiter,
+                                  xtol=10 ** (-6),
+                                  ftol=10 ** (-6),
+                                  maxiter=10 ** 6,
                                   full_output=True,
                                   disp=False,
                                   retall=True)
 
         if self.algorithm == 'L_BFGS_B':
 
-            optimum = fmin_l_bfgs_b(self.similarity,
+            optimum = fmin_l_bfgs_b(distance,
                                     self.initial,
                                     None,
-                                    args,
                                     approx_grad=True,
                                     bounds=self.bounds,
                                     m=100,
                                     factr=10,
                                     pgtol=1e-16,
                                     epsilon=1e-3)
-
 
         if self.algorithm == 'Powell':
 
@@ -116,9 +150,6 @@ class StreamlineRigidRegistration(object):
                 print('warn', warnflag)
                 print('msg', dictionary['task'])
 
-        #print('static_shift', static_shift)
-        #print('moving_shift', moving_shift)
-
         opt_mat = matrix44(xopt)
         static_mat = matrix44([static_shift[0], static_shift[1],
                                static_shift[2], 0, 0, 0])
@@ -127,8 +158,6 @@ class StreamlineRigidRegistration(object):
                                -moving_shift[2], 0, 0, 0])
 
         mat = compose_transformations(moving_mat, opt_mat, static_mat)
-
-        #print('mat', mat)
 
         mat_history = []
 
@@ -140,7 +169,7 @@ class StreamlineRigidRegistration(object):
                                                            static_mat))
 
         return StreamlineRegistrationMap(mat, xopt, fopt,
-                                            mat_history, funcs, iterations)
+                                         mat_history, funcs, iterations)
 
 
 class StreamlineRegistrationMap(object):
@@ -157,6 +186,100 @@ class StreamlineRegistrationMap(object):
     def transform(self, streamlines):
 
         return transform_streamlines(streamlines, self.matrix)
+
+
+def bundle_sum_distance(t, static, moving):
+    """ MDF distance optimization function (SUM)
+
+    We minimize the distance between moving streamlines as they align
+    with the static streamlines.
+
+    Parameters
+    -----------
+    t : ndarray
+        t is a vector of of affine transformation parameters with
+        size at least 6. If size < 6, returns an error.
+        If size == 6, t is interpreted as translation + rotation.
+        If size == 7, t is interpreted as translation + rotation +
+        isotropic scaling. If 7 < size < 12, error.
+        If size >= 12, t is interpreted as translation + rotation +
+        scaling + pre-rotation.
+
+    static : list
+        Static streamlines
+
+    moving : list
+        Moving streamlines. These will be transform to align with
+        the static streamlines
+
+    Returns
+    -------
+    cost: float
+
+    """
+
+    aff = matrix44(t)
+    moving = transform_streamlines(moving, aff)
+    d01 = bundles_distances_mdf(static, moving)
+    return np.sum(d01)
+
+
+def bundle_min_distance(t, static, moving):
+    """ MDF-based pairwise distance optimization function
+
+    We minimize the distance between moving streamlines as they align
+    with the static streamlines.
+
+    Parameters
+    -----------
+    t : ndarray
+        t is a vector of of affine transformation parameters with
+        size at least 6. If size < 6, returns an error.
+        If size == 6, t is interpreted as translation + rotation.
+        If size == 7, t is interpreted as translation + rotation +
+        isotropic scaling. If 7 < size < 12, error.
+        If size >= 12, t is interpreted as translation + rotation +
+        scaling + pre-rotation.
+
+    static : list
+        Static streamlines
+
+    moving : list
+        Moving streamlines. These will be transform to align with
+        the static streamlines
+
+    Returns
+    -------
+    cost: float
+
+    """
+    aff = matrix44(t)
+    moving = transform_streamlines(moving, aff)
+    d01 = bundles_distances_mdf(static, moving)
+
+    rows, cols = d01.shape
+    return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
+                   np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
+
+
+def bundle_min_distance_fast(t, static, moving, block_size):
+
+    aff = matrix44(t)
+    moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
+    moving = np.ascontiguousarray(moving, dtype=np.float32)
+
+    rows = static.shape[0] / block_size
+    cols = moving.shape[0] / block_size
+    d01 = np.zeros((rows, cols), dtype=np.float32)
+
+    _bundle_minimum_distance_rigid(static, moving,
+                                   rows,
+                                   cols,
+                                   block_size,
+                                   d01)
+
+    return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
+                   np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
 
 
 def rotation_vec2mat(r):
@@ -259,102 +382,6 @@ def transform_streamlines(streamlines, mat):
     return [apply_affine(mat, s) for s in streamlines]
 
 
-def bundle_sum_distance(t, static, moving):
-    """ MDF distance optimization function (SUM)
-
-    We minimize the distance between moving streamlines as they align
-    with the static streamlines.
-
-    Parameters
-    -----------
-    t : ndarray
-        t is a vector of of affine transformation parameters with
-        size at least 6. If size < 6, returns an error.
-        If size == 6, t is interpreted as translation + rotation.
-        If size == 7, t is interpreted as translation + rotation +
-        isotropic scaling. If 7 < size < 12, error.
-        If size >= 12, t is interpreted as translation + rotation +
-        scaling + pre-rotation.
-
-    static : list
-        Static streamlines
-
-    moving : list
-        Moving streamlines. These will be transform to align with
-        the static streamlines
-
-    Returns
-    -------
-    cost: float
-
-    """
-
-    aff = matrix44(t)
-    moving = transform_streamlines(moving, aff)
-    d01 = bundles_distances_mdf(static, moving)
-    return np.sum(d01)
-
-
-def bundle_min_distance(t, static, moving):
-
-    """ MDF-based pairwise distance optimization function
-
-    We minimize the distance between moving streamlines as they align
-    with the static streamlines.
-
-    Parameters
-    -----------
-    t : ndarray
-        t is a vector of of affine transformation parameters with
-        size at least 6. If size < 6, returns an error.
-        If size == 6, t is interpreted as translation + rotation.
-        If size == 7, t is interpreted as translation + rotation +
-        isotropic scaling. If 7 < size < 12, error.
-        If size >= 12, t is interpreted as translation + rotation +
-        scaling + pre-rotation.
-
-    static : list
-        Static streamlines
-
-    moving : list
-        Moving streamlines. These will be transform to align with
-        the static streamlines
-
-    Returns
-    -------
-    cost: float
-
-    """
-    aff = matrix44(t)
-    moving = transform_streamlines(moving, aff)
-    d01 = bundles_distances_mdf(static, moving)
-    
-    rows, cols = d01.shape
-    return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
-                   np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
-
-
-def bundle_min_distance_fast(t, static, moving, block_size):
-
-    aff = matrix44(t)
-    moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
-    moving = np.ascontiguousarray(moving, dtype=np.float32)
-
-    rows = static.shape[0] / block_size
-    cols = moving.shape[0] / block_size
-    d01 = np.zeros((rows, cols), dtype=np.float32)
-    
-    _bundle_minimum_distance_rigid(static, moving,
-                                   rows,
-                                   cols,
-                                   block_size,
-                                   d01)
-
-    return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
-                   np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
-
-
-
 def center_streamlines(streamlines):
     """ Move streamlines to the origin
 
@@ -451,15 +478,9 @@ def relist_streamlines(points, offsets):
 
     streamlines = []
 
-    streamlines.append(points[0 : offsets[0]])
+    streamlines.append(points[0: offsets[0]])
 
     for i in range(len(offsets) - 1):
-        streamlines.append(points[offsets[i] : offsets[i + 1]])
+        streamlines.append(points[offsets[i]: offsets[i + 1]])
 
     return streamlines
-
-
-
-
-
-

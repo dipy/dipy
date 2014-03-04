@@ -5,7 +5,7 @@ from numpy.testing import (run_module_suite,
                            assert_array_almost_equal)
 from dipy.align.streamwarp import (transform_streamlines,
                                    matrix44,
-                                   bundle_sum_distance,                                   
+                                   BundleSumDistance,                                   
                                    center_streamlines)
 from dipy.tracking.metrics import downsample
 from dipy.data import get_data
@@ -54,6 +54,7 @@ def test_rigid_parallel_lines():
     mat = matrix44([20, 0, 10, 0, 40, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
+    bundle_sum_distance = BundleSumDistance()
     srr = StreamlineRigidRegistration(similarity=bundle_sum_distance, 
                                       algorithm='L_BFGS_B', 
                                       bounds=None, 
@@ -70,7 +71,7 @@ def test_rigid_real_bundles():
     mat = matrix44([0, 0, 20, 45, 0, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
-
+    bundle_sum_distance = BundleSumDistance()
     srr = StreamlineRigidRegistration(bundle_sum_distance, 
                                       algorithm='Powell',
                                       fast=False)
@@ -182,7 +183,6 @@ def test_unlist_relist_streamlines():
 
 
 def test_efficient_bmd():
-
 
     a = np.array([[1, 1, 1],
                   [2, 2, 2],
