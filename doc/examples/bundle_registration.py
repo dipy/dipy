@@ -10,6 +10,7 @@ To show the concept we will use two pre-saved cingulum bundles.
 """
 
 from dipy.viz import fvtk
+from time import sleep
 from dipy.io.pickles import load_pickle
 from dipy.data import get_data
 
@@ -61,8 +62,7 @@ def show_both_bundles(bundles, colors=None, show=False, fname=None):
         fvtk.add(ren, lines)
     if show:
         fvtk.show(ren)
-    if fname is not None:
-        from time import sleep
+    if fname is not None:        
         sleep(1)
         fvtk.record(ren, n_frames=1, out_path=fname, size=(900, 900))
 
