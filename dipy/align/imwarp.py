@@ -424,7 +424,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.energy_list = []
         self.full_energy_profile = []
 
-    def __connect_functions(self):
+    def _connect_functions(self):
         r"""
         Assigns the appropriate functions to be called for displacement field
         inversion, Gaussian pyramid, and affine/dense deformation composition
@@ -441,7 +441,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.append_affine = vfu.append_affine_to_displacement_field_3d
             self.prepend_affine = vfu.prepend_affine_to_displacement_field_3d
 
-    def __check_ready(self):
+    def _check_ready(self):
         r"""
         Verifies that the configuration of the optimizer and input data are
         consistent and the optimizer is ready to run
@@ -474,14 +474,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print('Error: Maximum number of iterations per level not set.')
         return ready
 
-    def __init_optimizer(self):
+    def _init_optimizer(self):
         r"""
         Computes the Gaussian Pyramid of the input images and allocates
         the required memory for the transformation models at the coarcest
         scale.
         """
-        ready = self.__check_ready()
-        self.__connect_functions()
+        ready = self._check_ready()
+        self._connect_functions()
         if not ready:
             print 'Not ready'
             return False
@@ -510,14 +510,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.backward_model.set_forward(starting_backward)
         self.backward_model.set_backward(starting_backward_inverse)
 
-    def __end_optimizer(self):
+    def _end_optimizer(self):
         r"""
         Frees the resources allocated during initialization
         """
         del self.moving_pyramid
         del self.fixed_pyramid
 
-    def __iterate(self, show_images=False):
+    def _iterate(self, show_images=False):
         r"""
         Performs one symmetric iteration:
             1.Compute forward
@@ -565,7 +565,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         try:
             n_iter = len(self.energy_list)
             if len(self.energy_list) >= self.energy_window:
-                der = self.__get_energy_derivative()
+                der = self._get_energy_derivative()
             print(
                 '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
                                                   fw_energy + bw_energy, der))
@@ -595,7 +595,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #print('Iter time: %f sec' % (toc - tic))
         return 1 if der == '-' else der
 
-    def __get_energy_derivative(self):
+    def _get_energy_derivative(self):
         r"""
         Returns the derivative of the estimated energy as a function of "time"
         (iterations) at the last iteration
@@ -615,7 +615,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         der = derivative(0.5 * self.energy_window)
         return der
 
-    def __report_status(self, level):
+    def _report_status(self, level):
         r"""
         Shows the current overlaid images either on the common space or the
         reference space
@@ -654,11 +654,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.similarity_metric.initialize_iteration()
             self.similarity_metric.report_status()
 
-    def __optimize(self):
+    def _optimize(self):
         r"""
         The main multi-scale symmetric optimization algorithm
         """
-        self.__init_optimizer()
+        self._init_optimizer()
         self.full_energy_profile = []
         for level in range(self.levels - 1, -1, -1):
             print 'Processing level', level
@@ -681,9 +681,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             derivative = 1
             while ((niter < self.max_iter[level]) and (self.tolerance < derivative)):
                 niter += 1
-                derivative = self.__iterate()
+                derivative = self._iterate()
             if self.report_status:
-                self.__report_status(level)
+                self._report_status(level)
         residual, stats = self.forward_model.compute_inversion_error()
         print('Forward Residual error (Symmetric diffeomorphism):%0.6f (%0.6f)'
               % (stats[1], stats[2]))
@@ -698,13 +698,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         residual, stats = self.forward_model.compute_inversion_error()
         print('Residual error (Symmetric diffeomorphism):%0.6f (%0.6f)'
               % (stats[1], stats[2]))
-        self.__end_optimizer()
+        self._end_optimizer()
 
     def optimize(self):
         print 'Optimizer parameters:\n', self.parameters
         print 'Metric:', self.similarity_metric.get_metric_name()
         print 'Metric parameters:\n', self.similarity_metric.parameters
-        self.__optimize()
+        self._optimize()
 
 # class SymmetricDiffeomorphicRegistration(object):
 

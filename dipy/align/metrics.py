@@ -362,7 +362,7 @@ class EMMetric(SimilarityMetric):
         else:
             self.iteration_type = EMMetric.VCYCLE_ITER
 
-    def __connect_functions(self):
+    def _connect_functions(self):
         r'''
         Assigns the appropriate functions to be called for image quantization,
         statistics computation and multi-resolution iterations according to the
@@ -401,7 +401,7 @@ class EMMetric(SimilarityMetric):
         diff-demons does for mono-modality images. If the flag
         self.use_double_gradient is True these garadients are averaged.
         '''
-        self.__connect_functions()
+        self._connect_functions()
         sampling_mask = self.fixed_image_mask*self.moving_image_mask
         self.sampling_mask = sampling_mask
         fixedq, self.fixedq_levels, hist = self.quantize(self.fixed_image,
