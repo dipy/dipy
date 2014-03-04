@@ -68,7 +68,7 @@ class BundleSumDistance(StreamlineDistanceMetric):
 class StreamlineRigidRegistration(object):
 
     def __init__(self, metric=None, algorithm='L_BFGS_B', bounds=None,
-                 fast=True, disp=True):
+                 fast=True, disp=False):
         r""" Rigid registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
