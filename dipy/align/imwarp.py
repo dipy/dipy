@@ -6,24 +6,56 @@ import registration_common as rcommon
 from dipy.align import floating
 
 def compose_displacements(new_displacement, current_displacement):
-        dim = len(new_displacement.shape) - 1
-        mse = np.sqrt(np.sum((current_displacement ** 2), -1)).mean()
-        if dim == 2:
-            updated, stats = vfu.compose_vector_fields(new_displacement,
-                                                       current_displacement)
-        else:
-            updated, stats = vfu.compose_vector_fields_3d(new_displacement,
-                                                          current_displacement)
-        return np.array(updated), np.array(mse)
+    r"""
+    Interpolates current displacement at the locations defined by 
+    new_displacement. Equivalently, computes the composition C of the given 
+    displacement fields as C(x) = B(A(x)), where A is new_displacement and B is 
+    currentDisplacement
+
+    Parameters
+    ----------
+    new_displacement : array, shape (R, C, 2) or (S, R, C, 3)
+        the displacement field defining where to interpolate current_displacement
+    current_displacement : array, shape (R', C', 2) or (S', R', C', 3)
+        the displacement field to be warped by new_displacement
+
+    Returns
+    -------
+    updated : array, shape (the same as new_displacement)
+        the warped displacement field
+    mse : the mean norm of all vectors in current_displacement
+    """
+    dim = len(new_displacement.shape) - 1
+    mse = np.sqrt(np.sum((current_displacement ** 2), -1)).mean()
+    if dim == 2:
+        updated, stats = vfu.compose_vector_fields(new_displacement,
+                                                   current_displacement)
+    else:
+        updated, stats = vfu.compose_vector_fields_3d(new_displacement,
+                                                      current_displacement)
+    return np.array(updated), np.array(mse)
 
 
 def scale_affine(affine, factor):
     r"""
     Multiplies the translation part of the affine transformation by a factor
-    to be used with upsampled/downsampled images (if the affine transformation)
+    to be used with upsampled/downsampled images (if the affine transformation
     corresponds to an Image I and we need to apply the corresponding
     transformation to a downsampled version J of I, then the affine matrix
-    is the same as for I but the translation is scaled.
+    is the same as for I but the translation is scaled).
+    
+    Parameters
+    ----------
+    affine : array, shape (3, 3) or (4, 4)
+        the affine matrix to be scaled
+    factor : float 
+        the scale factor to be applied to affine
+
+    Notes
+    -----
+    Internally, the affine transformation is applied component-wise instead of
+    actually evaluating a matrix-vector product, so the shape of the input
+    matrix may even be (2, 3) or (3, 4), since the last row is never accessed.  
     """
     scaled_affine = np.array(affine, dtype = floating)
     domain_dimension = affine.shape[1] - 1
@@ -31,15 +63,7 @@ def scale_affine(affine, factor):
     return scaled_affine
 
 
-class SymmetricDiffeomorficMap(object):
-
-    """
-    This class maps points between two spaces: "reference space" and "target
-    space"
-    Forward: maps target to reference, y=affine_post*forward(affine_pre*x)
-    Backward: maps reference to target,
-    x = affine_pre^{-1}*backward(affine_post^{-1}*y)
-    """
+class DiffeomorphicMap(object):
 
     def __init__(self,
                  dim,
@@ -47,6 +71,36 @@ class SymmetricDiffeomorficMap(object):
                  backward=None,
                  affine_pre=None,
                  affine_post=None):
+        r"""
+        Diffeomorphic Map
+
+        Defines the mapping between two spaces: "reference" and "target".
+        The transformations modeled are of the form B*phi(A*x), with inverse
+        given by A^{-1}*phi^{-1}(B^{-1}(x)) where A and B are affine matrices 
+        and phi is a deformation field.
+        Internally, the individual terms of the transformation can be accessed
+        through:
+        A : self.affine_pre
+        A^{-1} : self.affine_pre_inv
+        B : self.affine_post
+        B^{-1} : self.affine_post_inv
+        phi : self.forward
+        phi^{-1} : self.backward
+
+        Parameters
+        ----------
+        dim : int (either 2 or 3)
+            the dimension of the mapped spaces
+        forward : array, shape (R, C, 2) or (S, R, C, 3)
+            the forward displacement field mapping the target towards the reference
+        backward : array, shape (R', C', 2) or (S', R', C', 3)
+            the backward displacement field mapping the reference towards the 
+            target(denoted "phi^{-1}" above)
+        affine_pre : array, shape (3, 3) or (4, 4)
+            the affine matrix pre-multiplying the argument of the forward field
+        affine_post : array, shape (3, 3) or (4, 4)
+            the affine matrix post-multiplying the argument of the backward field
+        """
         self.dim = dim
         self.set_forward(forward)
         self.set_backward(backward)
@@ -56,8 +110,13 @@ class SymmetricDiffeomorficMap(object):
     def set_affine_pre(self, affine_pre):
         r"""
         Establishes the pre-multiplication affine matrix of this
-        transformation, computes its inverse and adjusts the dimension of
-        the transformation's domain accordingly
+        transformation and computes its inverse.
+
+        Parameters
+        ----------
+        affine_pre : array, shape (3, 3) or (4, 4)
+            the invertible affine matrix pre-multiplying the argument of the 
+            forward field
         """
         if affine_pre == None:
             self.affine_pre = None
@@ -69,8 +128,13 @@ class SymmetricDiffeomorficMap(object):
     def set_affine_post(self, affine_post):
         r"""
         Establishes the post-multiplication affine matrix of this
-        transformation, computes its inverse and adjusts the dimension of
-        the transformation's domain accordingly
+        transformation and computes its inverse
+
+        Parameters
+        ----------
+        affine_post : array, shape (3, 3) or (4, 4)
+            the invertible affine matrix post-multiplying the argument of the 
+            backward field
         """
         if affine_post == None:
             self.affine_post = None
@@ -81,14 +145,23 @@ class SymmetricDiffeomorficMap(object):
 
     def set_forward(self, forward):
         r"""
-        Establishes the forward non-linear displacement field
+        Establishes the forward displacement field
+
+        Notes
+        -----
+        This assignment does not compute the inverse of the provided displacement
+        field. The user must update the backward displacement field accordingly
         """
         self.forward = forward
 
     def set_backward(self, backward):
         r"""
-        Establishes the backward non-linear displacement field and adjusts
-        the dimension of the transformation's domain accordingly
+        Establishes the backward displacement field
+
+        Notes
+        -----
+        This assignment does not compute the inverse of the provided displacement
+        field. The user must update the backward displacement field accordingly
         """
         self.backward = backward
 
@@ -96,6 +169,17 @@ class SymmetricDiffeomorficMap(object):
         r"""
         Applies this transformation in the forward direction to the given image
         using tri-linear interpolation
+
+        Parameters
+        ----------
+        image : array, shape (R, C) or (S, R, C)
+            the 2D or 3D image to be warped
+
+        Returns
+        -------
+        warped : array, shape (R', C') or (S', R', C')
+            the warped image, where S', R', C' are the dimensions of the forward
+            displacement field
         """
         if self.dim == 3:
             warped = vfu.warp_volume(image,
@@ -113,6 +197,17 @@ class SymmetricDiffeomorficMap(object):
         r"""
         Applies this transformation in the backward direction to the given
         image using tri-linear interpolation
+
+        Parameters
+        ----------
+        image : array, shape (R, C) or (S, R, C)
+            the 2D or 3D image to be warped
+
+        Returns
+        -------
+        warped : array, shape (R', C') or (S', R', C')
+            the warped image, where S', R', C' are the dimensions of the backward
+            displacement field
         """
         if self.dim == 3:
             warped = vfu.warp_volume(image,
@@ -130,6 +225,17 @@ class SymmetricDiffeomorficMap(object):
         r"""
         Applies this transformation in the forward direction to the given image
         using nearest-neighbor interpolation
+
+        Parameters
+        ----------
+        image : array, shape (R, C) or (S, R, C)
+            the 2D or 3D image to be warped
+
+        Returns
+        -------
+        warped : array, shape (R', C') or (S', R', C')
+            the warped image, where S', R', C' are the dimensions of the forward
+            displacement field
         """
         if self.dim == 3:
             warped = vfu.warp_volume_nn(image,
@@ -147,6 +253,17 @@ class SymmetricDiffeomorficMap(object):
         r"""
         Applies this transformation in the backward direction to the given
         image using nearest-neighbor interpolation
+
+        Parameters
+        ----------
+        image : array, shape (R, C) or (S, R, C)
+            the 2D or 3D image to be warped
+
+        Returns
+        -------
+        warped : array, shape (R', C') or (S', R', C')
+            the warped image, where S', R', C' are the dimensions of the backward
+            displacement field
         """
         if self.dim == 3:
             warped = vfu.warp_volume_nn(image,
@@ -161,6 +278,25 @@ class SymmetricDiffeomorficMap(object):
         return np.array(warped)
 
     def transform(self, image, interpolation):
+        r"""
+        Transforms the given image under this transformation (in the forward 
+        direction, i.e. from target space to the reference space) using the
+        specified interpolation method.
+
+        Parameters
+        ----------
+        image : array, shape (R, C) or (S, R, C)
+            the image to be transformed
+        interpolation : string
+            interpolation method to be used for warping, either 'tri' for 
+            tri-linear interpolation or 'nn' for nearest-neighbor
+
+        Returns
+        -------
+        warped : array, shape (R', C') or (S', R', C')
+            the warped image, where S', R', C' are the dimensions of the forward
+            displacement field
+        """
         if interpolation == 'tri':
             return self._warp_forward(image)
         elif interpolation == 'nn':
@@ -168,7 +304,27 @@ class SymmetricDiffeomorficMap(object):
         else:
             return None
 
+
     def transform_inverse(self, image, interpolation):
+        r"""
+        Transforms the given image under this transformation (in the backward 
+        direction, i.e. from reference space to the target space) using the 
+        specified interpolation method.
+
+        Parameters
+        ----------
+        image : array, shape (R, C) or (S, R, C)
+            the image to be transformed
+        interpolation : string
+            interpolation method to be used for warping, either 'tri' for 
+            tri-linear interpolation or 'nn' for nearest-neighbor
+
+        Returns
+        -------
+        warped : array, shape (R', C') or (S', R', C')
+            the warped image, where S', R', C' are the dimensions of the backward
+            displacement field
+        """
         if interpolation == 'tri':
             return self._warp_backward(image)
         elif interpolation == 'nn':
@@ -181,13 +337,18 @@ class SymmetricDiffeomorficMap(object):
         r"""
         Scales the pre- and post-multiplication affine matrices to be used
         with a scaled domain. It updates the inverses as well.
+
+        Parameters
+        ----------
+        factor : float
+            the scale factor to be applied to the affine matrices
         """
         if self.affine_pre != None:
             self.affine_pre = scale_affine(self.affine_pre, factor)
-            self.affine_pre_inv = np.array(linalg.inv(self.affine_pre), order = 'C', dtype = floating)
+            self.affine_pre_inv = np.array(linalg.inv(self.affine_pre), dtype = floating)
         if self.affine_post != None:
             self.affine_post = scale_affine(self.affine_post, factor)
-            self.affine_post_inv = np.array(linalg.inv(self.affine_post), order = 'C', dtype = floating)
+            self.affine_post_inv = np.array(linalg.inv(self.affine_post), dtype = floating)
 
     def upsample(self, new_domain_forward, new_domain_backward):
         r"""
@@ -195,6 +356,24 @@ class SymmetricDiffeomorficMap(object):
         pre- and post-multiplication affine matrices by a factor of 2. The
         final outcome is that this transformation can be used in an upsampled
         domain.
+
+        Parameters
+        ----------
+        new_domain_forward : array, shape (2,) or (3,)
+            the shape of the intended upsampled forward displacement field 
+            (see notes)
+        new_domain_backward : array, shape (2,) or (3,)
+            the shape of the intended upsampled backward displacement field 
+            (see notes)
+
+        Notes
+        -----
+        The reason we need to receive the intended domain sizes as parameters
+        (and not simply double their size) is because the current sizes may be 
+        the result of down-sampling an original displacement field and the user 
+        may need to upsample the transformation to go back to the original 
+        domain. This way we can register arbitrary image/volume shapes instead
+        of only powers of 2. 
         """
         if self.dim == 2:
             if self.forward != None:
@@ -224,9 +403,24 @@ class SymmetricDiffeomorficMap(object):
 
     def compute_inversion_error(self):
         r"""
-        Returns the inversion error of the displacement fields
-        TO-DO: the inversion error should take into account the affine
-        transformations as well.
+        Computes the inversion error of the displacement fields
+
+        Returns
+        -------
+        residual : array, shape (R, C) or (S, R, C)
+            the displacement field resulting from composing the forward and
+            backward displacement fields of this transformation (the residual
+            should be zero for a perfect diffeomorphism)
+        stats : array, shape (3,)
+            statistics from the norms of the vectors of the residual 
+            displacement field: maximum, mean and standard deviation
+
+        Notes
+        -----
+        Currently, we only measure the error of the non-linear components of the
+        transformation. Assuming the two affine matrices are invertible, the
+        error should, in theory, be the same (although in practice, the 
+        boundaries may be problematic).
         """
         if self.dim == 2:
             residual, stats = vfu.compose_vector_fields(self.forward,
@@ -236,12 +430,22 @@ class SymmetricDiffeomorficMap(object):
                                                            self.backward)
         return residual, stats
 
-    def compose(self, applyFirst):
+    def compose(self, apply_first):
         r"""
         Computes the composition G(F(.)) where G is this transformation and
         F is the transformation given as parameter
+
+        Parameters
+        ----------
+        apply_first : DiffeomorphicMap object
+            the diffeomorphic map to be composed with this transformation
+
+        Returns
+        -------
+        composition : DiffeomorphicMap object
+            the composition of this Diffeomorphic map and the given map
         """
-        B = applyFirst.affine_post
+        B = apply_first.affine_post
         C = self.affine_pre
         if B == None:
             affine_prod = C
@@ -254,7 +458,7 @@ class SymmetricDiffeomorficMap(object):
         else:
             affine_prod_inv = None
         if self.dim == 2:
-            forward = applyFirst.forward.copy()
+            forward = apply_first.forward.copy()
             vfu.append_affine_to_displacement_field_2d(forward, affine_prod)
             forward, stats = vfu.compose_vector_fields(forward,
                                                        self.forward)
@@ -262,9 +466,9 @@ class SymmetricDiffeomorficMap(object):
             vfu.append_affine_to_displacement_field_2d(
                 backward, affine_prod_inv)
             backward, stats = vfu.compose_vector_fields(backward,
-                                                        applyFirst.backward)
+                                                        apply_first.backward)
         else:
-            forward = applyFirst.forward.copy()
+            forward = apply_first.forward.copy()
             vfu.append_affine_to_displacement_field_3d(forward, affine_prod)
             forward, stats = vfu.compose_vector_fields_3d(forward,
                                                           self.forward)
@@ -272,27 +476,28 @@ class SymmetricDiffeomorficMap(object):
             vfu.append_affine_to_displacement_field_3d(
                 backward, affine_prod_inv)
             backward, stats = vfu.compose_vector_fields_3d(backward,
-                                                           applyFirst.backward)
-        composition = SymmetricDiffeomorficMap(self.dim,
-                                          forward,
-                                          backward,
-                                          applyFirst.affine_pre,
-                                          self.affine_post)
+                                                           apply_first.backward)
+        composition = DiffeomorphicMap(self.dim,
+                                       forward,
+                                       backward,
+                                       apply_first.affine_pre,
+                                       self.affine_post)
         return composition
 
     def inverse(self):
         r"""
-        Return the inverse of this transformation model. Warning: the matrices
+        Returns the inverse of this Diffeomorphic Map. Warning: the matrices
         and displacement fields are not copied
         """
-        inv = SymmetricDiffeomorficMap(self.dim, self.backward, self.forward,
-                                  self.affine_post_inv, self.affine_pre_inv)
+        inv = DiffeomorphicMap(self.dim, self.backward, self.forward,
+                               self.affine_post_inv, self.affine_pre_inv)
         return inv
 
     def consolidate(self):
         r"""
         Eliminates the affine transformations from the representation of this
-        transformation by appending/prepending them to the deformation fields.
+        transformation by appending/prepending them to the deformation fields,
+        so that the Diffeomorphic Map is represented as a sibgle deformation field
         """
         if self.dim == 2:
             vfu.prepend_affine_to_displacement_field_2d(
@@ -337,7 +542,7 @@ class DiffeomorphicRegistration(object):
                  moving=None,
                  affine_fixed=None,
                  affine_moving=None,
-                 similarity_metric=None,
+                 metric=None,
                  update_function=None,
                  parameters=None):
         default_parameters = self.get_default_parameters()
@@ -356,12 +561,11 @@ class DiffeomorphicRegistration(object):
             inv_affine_moving = np.array(np.linalg.inv(affine_moving), order = 'C', dtype = floating)
         self.dim = dim
         self.set_fixed_image(fixed)
-        self.forward_model = SymmetricDiffeomorficMap(dim, None, None, None, None)
+        self.forward_model = DiffeomorphicMap(dim, None, None, None, None)
         self.set_moving_image(moving)
-        self.backward_model = SymmetricDiffeomorficMap(
-            dim, None, None, inv_affine_moving,
-            None)
-        self.similarity_metric = similarity_metric
+        self.backward_model = DiffeomorphicMap(dim, None, None, 
+                                               inv_affine_moving, None)
+        self.metric = metric
         self.update = update_function
 
     def set_fixed_image(self, fixed):
@@ -426,11 +630,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  moving=None,
                  affine_fixed=None,
                  affine_moving=None,
-                 similarity_metric=None,
+                 metric=None,
                  update_function=None,
                  parameters=None):
         super(SymmetricDiffeomorphicRegistration, self).__init__(
-            dim, fixed, moving, affine_fixed, affine_moving, similarity_metric,
+            dim, fixed, moving, affine_fixed, affine_moving, metric,
             update_function, parameters)
         self.set_max_iter(self.parameters['max_iter'])
         self.tolerance = self.parameters['tolerance']
@@ -480,7 +684,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print('Error: inconsistent dimensions. Last dimension update: %d.'
                   'Moving image dimension: %d.' % (self.dim,
                                                    len(self.moving.shape)))
-        if self.similarity_metric == None:
+        if self.metric == None:
             ready = False
             print('Error: Similarity metric not set.')
         if self.update == None:
@@ -548,13 +752,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         wmoving = self.backward_model.transform_inverse(self.current_moving, 'tri')
         wfixed = self.forward_model.transform_inverse(self.current_fixed, 'tri')
         
-        self.similarity_metric.set_moving_image(wmoving)
-        self.similarity_metric.use_moving_image_dynamics(
+        self.metric.set_moving_image(wmoving)
+        self.metric.use_moving_image_dynamics(
             self.current_moving, self.backward_model.inverse())
-        self.similarity_metric.set_fixed_image(wfixed)
-        self.similarity_metric.use_fixed_image_dynamics(
+        self.metric.set_fixed_image(wfixed)
+        self.metric.use_fixed_image_dynamics(
             self.current_fixed, self.forward_model.inverse())
-        self.similarity_metric.initialize_iteration()
+        self.metric.initialize_iteration()
         ff_shape = np.array(self.forward_model.forward.shape).astype(np.int32)
         fb_shape = np.array(self.forward_model.backward.shape).astype(np.int32)
         bf_shape = np.array(self.backward_model.forward.shape).astype(np.int32)
@@ -562,20 +766,20 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.backward_model.backward.shape).astype(np.int32)
         del self.forward_model.backward
         del self.backward_model.backward
-        fw_step = np.array(self.similarity_metric.compute_forward())
+        fw_step = np.array(self.metric.compute_forward())
         self.forward_model.forward, md_forward = self.update(
             self.forward_model.forward, fw_step)
         del fw_step
         try:
-            fw_energy = self.similarity_metric.energy
+            fw_energy = self.metric.energy
         except NameError:
             pass
-        bw_step = np.array(self.similarity_metric.compute_backward())
+        bw_step = np.array(self.metric.compute_backward())
         self.backward_model.forward, md_backward = self.update(
             self.backward_model.forward, bw_step)
         del bw_step
         try:
-            bw_energy = self.similarity_metric.energy
+            bw_energy = self.metric.energy
         except NameError:
             pass
         der = '-'
@@ -589,7 +793,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.energy_list.append(fw_energy + bw_energy)
         except NameError:
             pass
-        self.similarity_metric.free_iteration()
+        self.metric.free_iteration()
         inv_iter = self.inversion_iter
         inv_tol = self.inversion_tolerance
         self.forward_model.backward = np.array(
@@ -607,7 +811,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.backward_model.backward, bf_shape, inv_iter, inv_tol,
                 self.backward_model.forward))
         if show_images:
-            self.similarity_metric.report_status()
+            self.metric.report_status()
         #toc = time.time()
         #print('Iter time: %f sec' % (toc - tic))
         return 1 if der == '-' else der
@@ -641,14 +845,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if show_common_space:
             wmoving = self.backward_model.transform_inverse(self.current_moving,'tri')
             wfixed = self.forward_model.transform_inverse(self.current_fixed, 'tri')
-            self.similarity_metric.set_moving_image(wmoving)
-            self.similarity_metric.use_moving_image_dynamics(
+            self.metric.set_moving_image(wmoving)
+            self.metric.use_moving_image_dynamics(
                 self.current_moving, self.backward_model.inverse())
-            self.similarity_metric.set_fixed_image(wfixed)
-            self.similarity_metric.use_fixed_image_dynamics(
+            self.metric.set_fixed_image(wfixed)
+            self.metric.use_fixed_image_dynamics(
                 self.current_fixed, self.forward_model.inverse())
-            self.similarity_metric.initialize_iteration()
-            self.similarity_metric.report_status()
+            self.metric.initialize_iteration()
+            self.metric.report_status()
         else:
             phi1 = self.forward_model.forward
             phi2 = self.backward_model.backward
@@ -656,20 +860,20 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             phi2_inv = self.backward_model.forward
             phi, mean_disp = self.update(phi1, phi2)
             phi_inv, mean_disp = self.update(phi2_inv, phi1_inv)
-            composition = SymmetricDiffeomorficMap(self.dim, phi, phi_inv, None, None)
+            composition = DiffeomorphicMap(self.dim, phi, phi_inv, None, None)
             composition.scale_affines(0.5 ** level)
             residual, stats = composition.compute_inversion_error()
             print('Current inversion error: %0.6f (%0.6f)' %
                   (stats[1], stats[2]))
             wmoving = composition.transform(self.current_moving,'tri')
-            self.similarity_metric.set_moving_image(wmoving)
-            self.similarity_metric.use_moving_image_dynamics(
+            self.metric.set_moving_image(wmoving)
+            self.metric.use_moving_image_dynamics(
                 self.current_moving, composition)
-            self.similarity_metric.set_fixed_image(self.current_fixed)
-            self.similarity_metric.use_fixed_image_dynamics(
+            self.metric.set_fixed_image(self.current_fixed)
+            self.metric.use_fixed_image_dynamics(
                 self.current_fixed, None)
-            self.similarity_metric.initialize_iteration()
-            self.similarity_metric.report_status()
+            self.metric.initialize_iteration()
+            self.metric.report_status()
 
     def _optimize(self):
         r"""
@@ -681,12 +885,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print 'Processing level', level
             self.current_fixed = self.fixed_pyramid[level]
             self.current_moving = self.moving_pyramid[level]
-            self.similarity_metric.use_original_fixed_image(
+            self.metric.use_original_fixed_image(
                 self.fixed_pyramid[level])
-            self.similarity_metric.use_original_fixed_image(
+            self.metric.use_original_fixed_image(
                 self.moving_pyramid[level])
-            self.similarity_metric.set_levels_below(self.levels - level)
-            self.similarity_metric.set_levels_above(level)
+            self.metric.set_levels_below(self.levels - level)
+            self.metric.set_levels_above(level)
             if level < self.levels - 1:
                 self.forward_model.upsample(self.current_fixed.shape,
                                             self.current_fixed.shape)
@@ -719,8 +923,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
     def optimize(self):
         print 'Optimizer parameters:\n', self.parameters
-        print 'Metric:', self.similarity_metric.get_metric_name()
-        print 'Metric parameters:\n', self.similarity_metric.parameters
+        print 'Metric:', self.metric.get_metric_name()
+        print 'Metric parameters:\n', self.metric.parameters
         self._optimize()
 
 # class SymmetricDiffeomorphicRegistration(object):
