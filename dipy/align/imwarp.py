@@ -5,37 +5,7 @@ import vector_fields as vfu
 import registration_common as rcommon
 from dipy.align import floating
 
-class UpdateRule(object):
-
-    r"""
-    The abstract class defining the contract to be fulfilled by especialized
-    update rules.
-    """
-    __metaclass__ = abc.ABCMeta
-
-    def __init__(self):
-        pass
-
-    @abc.abstractmethod
-    def update(self, new_displacement, current_displacement):
-        """
-        Must return the updated displacement field and the mean norm of the
-        difference between the displacements before and after the update
-        """
-
-
-class Composition(UpdateRule):
-
-    r"""
-    Compositive update rule, composes the two displacement fields using
-    trilinear interpolation
-    """
-
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def update(new_displacement, current_displacement):
+def compose_displacements(new_displacement, current_displacement):
         dim = len(new_displacement.shape) - 1
         mse = np.sqrt(np.sum((current_displacement ** 2), -1)).mean()
         if dim == 2:
@@ -61,7 +31,7 @@ def scale_affine(affine, factor):
     return scaled_affine
 
 
-class TransformationModel(object):
+class SymmetricDiffeomorficMap(object):
 
     """
     This class maps points between two spaces: "reference space" and "target
@@ -286,7 +256,7 @@ class TransformationModel(object):
                 backward, affine_prod_inv)
             backward, stats = vfu.compose_vector_fields_3d(backward,
                                                            applyFirst.backward)
-        composition = TransformationModel(self.dim,
+        composition = SymmetricDiffeomorficMap(self.dim,
                                           forward,
                                           backward,
                                           applyFirst.affine_pre,
@@ -298,7 +268,7 @@ class TransformationModel(object):
         Return the inverse of this transformation model. Warning: the matrices
         and displacement fields are not copied
         """
-        inv = TransformationModel(self.dim, self.backward, self.forward,
+        inv = SymmetricDiffeomorficMap(self.dim, self.backward, self.forward,
                                   self.affine_post_inv, self.affine_pre_inv)
         return inv
 
@@ -331,11 +301,11 @@ class TransformationModel(object):
         self.affine_pre_inv = None
 
 
-class RegistrationOptimizer(object):
+class DiffeomorphicRegistration(object):
 
     r"""
     This abstract class defines the interface to be implemented by any
-    optimization algorithm for nonlinear Registration
+    optimization algorithm for diffeomorphic Registration
     """
     @abc.abstractmethod
     def get_default_parameters(self):
@@ -351,7 +321,7 @@ class RegistrationOptimizer(object):
                  affine_fixed=None,
                  affine_moving=None,
                  similarity_metric=None,
-                 update_rule=None,
+                 update_function=None,
                  parameters=None):
         default_parameters = self.get_default_parameters()
         if parameters != None:
@@ -369,13 +339,13 @@ class RegistrationOptimizer(object):
             inv_affine_moving = np.array(np.linalg.inv(affine_moving), order = 'C', dtype = floating)
         self.dim = dim
         self.set_fixed_image(fixed)
-        self.forward_model = TransformationModel(dim, None, None, None, None)
+        self.forward_model = SymmetricDiffeomorficMap(dim, None, None, None, None)
         self.set_moving_image(moving)
-        self.backward_model = TransformationModel(
+        self.backward_model = SymmetricDiffeomorficMap(
             dim, None, None, inv_affine_moving,
             None)
         self.similarity_metric = similarity_metric
-        self.update_rule = update_rule
+        self.update = update_function
 
     def set_fixed_image(self, fixed):
         r"""
@@ -420,7 +390,7 @@ class RegistrationOptimizer(object):
         return self.forward_model.backward
 
 
-class SymmetricRegistrationOptimizer(RegistrationOptimizer):
+class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
     r"""
     Performs the multi-resolution optimization algorithm for non-linear
@@ -440,11 +410,11 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
                  affine_fixed=None,
                  affine_moving=None,
                  similarity_metric=None,
-                 update_rule=None,
+                 update_function=None,
                  parameters=None):
-        super(SymmetricRegistrationOptimizer, self).__init__(
+        super(SymmetricDiffeomorphicRegistration, self).__init__(
             dim, fixed, moving, affine_fixed, affine_moving, similarity_metric,
-            update_rule, parameters)
+            update_function, parameters)
         self.set_max_iter(self.parameters['max_iter'])
         self.tolerance = self.parameters['tolerance']
         self.inversion_tolerance = self.parameters['inversion_tolerance']
@@ -496,7 +466,7 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
         if self.similarity_metric == None:
             ready = False
             print('Error: Similarity metric not set.')
-        if self.update_rule == None:
+        if self.update == None:
             ready = False
             print('Error: Update rule not set.')
         if self.max_iter == None:
@@ -576,7 +546,7 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
         del self.forward_model.backward
         del self.backward_model.backward
         fw_step = np.array(self.similarity_metric.compute_forward())
-        self.forward_model.forward, md_forward = self.update_rule.update(
+        self.forward_model.forward, md_forward = self.update(
             self.forward_model.forward, fw_step)
         del fw_step
         try:
@@ -584,7 +554,7 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
         except NameError:
             pass
         bw_step = np.array(self.similarity_metric.compute_backward())
-        self.backward_model.forward, md_backward = self.update_rule.update(
+        self.backward_model.forward, md_backward = self.update(
             self.backward_model.forward, bw_step)
         del bw_step
         try:
@@ -667,9 +637,9 @@ class SymmetricRegistrationOptimizer(RegistrationOptimizer):
             phi2 = self.backward_model.backward
             phi1_inv = self.forward_model.backward
             phi2_inv = self.backward_model.forward
-            phi, mean_disp = self.update_rule.update(phi1, phi2)
-            phi_inv, mean_disp = self.update_rule.update(phi2_inv, phi1_inv)
-            composition = TransformationModel(self.dim, phi, phi_inv, None, None)
+            phi, mean_disp = self.update(phi1, phi2)
+            phi_inv, mean_disp = self.update(phi2_inv, phi1_inv)
+            composition = SymmetricDiffeomorficMap(self.dim, phi, phi_inv, None, None)
             composition.scale_affines(0.5 ** level)
             residual, stats = composition.compute_inversion_error()
             print('Current inversion error: %0.6f (%0.6f)' %

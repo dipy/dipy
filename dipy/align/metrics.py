@@ -77,7 +77,7 @@ class SimilarityMetric(object):
         information from knowing how the current fixed image was generated
         (as the transformation of an original fixed image). This method is
         called by the optimizer just after it sets the fixed image.
-        Transformation will be an instance of TransformationModel or None if
+        Transformation will be an instance of SymmetricDiffeomorficMap or None if
         the originalMovingImage equals self.moving_image.
         '''
 
@@ -122,7 +122,7 @@ class SimilarityMetric(object):
         information from knowing how the current fixed image was generated
         (as the transformation of an original fixed image). This method is
         called by the optimizer just after it sets the fixed image.
-        Transformation will be an instance of TransformationModel or None if
+        Transformation will be an instance of SymmetricDiffeomorficMap or None if
         the originalMovingImage equals self.moving_image.
         '''
 

@@ -3,8 +3,8 @@ from numpy.testing import (assert_equal,
                            assert_array_equal,
                            assert_array_almost_equal)
 import matplotlib.pyplot as plt
-from dipy.align.imwarp import Composition, SymmetricRegistrationOptimizer
-from dipy.align.metrics import SSDMetric, CCMetric
+import dipy.align.imwarp as imwarp
+import dipy.align.metrics as metrics 
 import dipy.align.vector_fields as vfu
 import dipy.align.registration_common as rcommon
 from dipy.data import get_data
@@ -35,21 +35,21 @@ def test_ssd_2d():
     fixed = np.array(fixed, dtype = floating)
     moving = (moving-moving.min())/(moving.max() - moving.min())
     fixed = (fixed-fixed.min())/(fixed.max() - fixed.min())
-    ################Configure and run the Optimizer#####################
+    #Configure and run the Optimizer
     max_iter = [i for i in [20, 100, 100, 100]]
-    similarity_metric = SSDMetric(2, {'symmetric':True,
+    similarity_metric = metrics.SSDMetric(2, {'symmetric':True,
                                 'lambda':4.0,
-                                'stepType':SSDMetric.GAUSS_SEIDEL_STEP})
+                                'stepType':metrics.SSDMetric.GAUSS_SEIDEL_STEP})
     optimizer_parameters = {
         'max_iter':max_iter,
         'inversion_iter':40,
         'inversion_tolerance':1e-3,
         'report_status':True}
-    update_rule = Composition()
-    registration_optimizer = SymmetricRegistrationOptimizer(2, fixed, moving,
+    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(2, fixed, moving,
                                                          None, None,
                                                          similarity_metric,
-                                                         update_rule, optimizer_parameters)
+                                                         imwarp.compose_displacements, 
+                                                         optimizer_parameters)
     registration_optimizer.optimize()
     energy_profile = registration_optimizer.full_energy_profile
     expected_profile = [302.61125317089767, 297.6436794411608, 293.67260699136824,
@@ -94,7 +94,7 @@ def test_cc_3d():
     reference = np.asarray(vfu.warp_volume_affine(target, new_shape, rotation))
 
     #Create the CC metric
-    similarity_metric = CCMetric(3, {'max_step_length':0.25, 'sigma_diff':3.0, 'radius':4})
+    similarity_metric = metrics.CCMetric(3, {'max_step_length':0.25, 'sigma_diff':3.0, 'radius':4})
 
     #Create the optimizer
     max_iter = [i for i in [5, 10, 10]]
@@ -103,11 +103,11 @@ def test_cc_3d():
         'inversion_iter':20,
         'inversion_tolerance':1e-3,
         'report_status':True}
-    update_rule = Composition()
-    registration_optimizer = SymmetricRegistrationOptimizer(3, reference, target,
+    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(3, reference, target,
                                                             None, None,
                                                             similarity_metric,
-                                                            update_rule, optimizer_parameters)
+                                                            imwarp.compose_displacements, 
+                                                            optimizer_parameters)
     registration_optimizer.optimize()
     energy_profile = 1e-6 * np.array(registration_optimizer.full_energy_profile)
     
