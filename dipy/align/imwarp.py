@@ -529,42 +529,18 @@ class DiffeomorphicRegistration(object):
     This abstract class defines the interface to be implemented by any
     optimization algorithm for diffeomorphic Registration
     """
-    @abc.abstractmethod
-    def get_default_parameters(self):
-        r"""
-        Derived classes must return a dictionary containing its parameter names
-        and default values
-        """
 
     def __init__(self,
                  dim,
                  fixed=None,
                  moving=None,
-                 affine_fixed=None,
-                 affine_moving=None,
+                 affine_init=None,
                  metric=None,
-                 update_function=None,
-                 parameters=None):
-        default_parameters = self.get_default_parameters()
-        if parameters != None:
-            for key, val in parameters.iteritems():
-                if key in default_parameters:
-                    default_parameters[key] = val
-                else:
-                    print "Warning: parameter '", key, "' unknown. Ignored."
-        if affine_fixed != None:
-            print('Warning: an affine_fixed matrix was given as argument.'
-                  'This functionality has not been implemented yet.')
-        self.parameters = default_parameters
-        inv_affine_moving = None
-        if affine_moving != None:
-            inv_affine_moving = np.array(np.linalg.inv(affine_moving), order = 'C', dtype = floating)
+                 update_function=None):
         self.dim = dim
         self.set_fixed_image(fixed)
-        self.forward_model = DiffeomorphicMap(dim, None, None, None, None)
         self.set_moving_image(moving)
-        self.backward_model = DiffeomorphicMap(dim, None, None, 
-                                               inv_affine_moving, None)
+        self.set_affine_init(affine_init)
         self.metric = metric
         self.update = update_function
 
@@ -582,13 +558,26 @@ class DiffeomorphicRegistration(object):
         """
         self.moving = moving
 
-    def set_max_iter(self, max_iter):
+    def set_affine_init(self, affine_init):
+        r"""
+        Establishes the affine transformation the diffeomorphic registration
+        starts from. Initializes the appropriate Diffeomorphic transformations
+        from the given affine transformation
+        """
+        inv_affine_init = None
+        if affine_init != None:
+            inv_affine_init = np.array(np.linalg.inv(affine_init), dtype = floating)
+        self.forward_model = DiffeomorphicMap(self.dim, None, None, None, None)
+        self.backward_model = DiffeomorphicMap(self.dim, None, None, 
+                                               inv_affine_init, None)
+
+    def set_opt_iter(self, opt_iter):
         r"""
         Establishes the maximum number of iterations to be performed at each
         level of the Gaussian pyramid, similar to ANTS
         """
-        self.levels = len(max_iter) if max_iter else 0
-        self.max_iter = max_iter
+        self.levels = len(opt_iter) if opt_iter else 0
+        self.opt_iter = opt_iter
 
     @abc.abstractmethod
     def optimize(self):
@@ -619,28 +608,25 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     scheme was inspider on the ANTS package).
     """
 
-    def get_default_parameters(self):
-        return {'max_iter': [25, 50, 100], 'inversion_iter': 20,
-                'inversion_tolerance': 1e-3, 'tolerance': 1e-4,
-                'report_status': True}
-
     def __init__(self,
                  dim,
                  fixed=None,
                  moving=None,
-                 affine_fixed=None,
-                 affine_moving=None,
+                 affine_init=None,
                  metric=None,
                  update_function=None,
-                 parameters=None):
+                 opt_iter = [25, 100, 100],
+                 opt_tol = 1e-4,
+                 inv_iter = 20,
+                 inv_tol = 1e-3,
+                 report_status = False):
         super(SymmetricDiffeomorphicRegistration, self).__init__(
-            dim, fixed, moving, affine_fixed, affine_moving, metric,
-            update_function, parameters)
-        self.set_max_iter(self.parameters['max_iter'])
-        self.tolerance = self.parameters['tolerance']
-        self.inversion_tolerance = self.parameters['inversion_tolerance']
-        self.inversion_iter = self.parameters['inversion_iter']
-        self.report_status = self.parameters['report_status']
+            dim, fixed, moving, affine_init, metric, update_function)
+        self.set_opt_iter(opt_iter)
+        self.opt_tol = opt_tol
+        self.inv_tol = inv_tol
+        self.inv_iter = inv_iter
+        self.report_status = report_status
         self.energy_window = 12
         self.energy_list = []
         self.full_energy_profile = []
@@ -690,7 +676,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.update == None:
             ready = False
             print('Error: Update rule not set.')
-        if self.max_iter == None:
+        if self.opt_iter == None:
             ready = False
             print('Error: Maximum number of iterations per level not set.')
         return ready
@@ -794,8 +780,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         except NameError:
             pass
         self.metric.free_iteration()
-        inv_iter = self.inversion_iter
-        inv_tol = self.inversion_tolerance
+        inv_iter = self.inv_iter
+        inv_tol = self.inv_tol
         self.forward_model.backward = np.array(
             self.invert_vector_field(
                 self.forward_model.forward, fb_shape, inv_iter, inv_tol, None))
@@ -900,7 +886,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.full_energy_profile.extend(self.energy_list)
             self.energy_list = []
             derivative = 1
-            while ((niter < self.max_iter[level]) and (self.tolerance < derivative)):
+            while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
                 niter += 1
                 derivative = self._iterate()
             if self.report_status:
@@ -921,10 +907,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
               % (stats[1], stats[2]))
         self._end_optimizer()
 
-    def optimize(self):
-        print 'Optimizer parameters:\n', self.parameters
-        print 'Metric:', self.metric.get_metric_name()
-        print 'Metric parameters:\n', self.metric.parameters
+    def optimize(self, fixed=None, moving=None, affine_init=None):
+        if fixed!=None:
+            self.set_fixed_image(fixed)
+        if moving!=None:
+            self.set_moving_image(moving)
+        if affine_init!=None:
+            self.set_affine_init(affine_init)
         self._optimize()
 
 # class SymmetricDiffeomorphicRegistration(object):
