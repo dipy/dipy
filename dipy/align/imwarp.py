@@ -92,7 +92,7 @@ class SymmetricDiffeomorficMap(object):
         """
         self.backward = backward
 
-    def warp_forward(self, image):
+    def _warp_forward(self, image):
         r"""
         Applies this transformation in the forward direction to the given image
         using tri-linear interpolation
@@ -109,7 +109,7 @@ class SymmetricDiffeomorficMap(object):
                                     self.affine_post)
         return np.array(warped)
 
-    def warp_backward(self, image):
+    def _warp_backward(self, image):
         r"""
         Applies this transformation in the backward direction to the given
         image using tri-linear interpolation
@@ -126,7 +126,7 @@ class SymmetricDiffeomorficMap(object):
                                     self.affine_pre_inv)
         return np.array(warped)
 
-    def warp_forward_nn(self, image):
+    def _warp_forward_nn(self, image):
         r"""
         Applies this transformation in the forward direction to the given image
         using nearest-neighbor interpolation
@@ -143,7 +143,7 @@ class SymmetricDiffeomorficMap(object):
                                        self.affine_post)
         return np.array(warped)
 
-    def warp_backward_nn(self, image):
+    def _warp_backward_nn(self, image):
         r"""
         Applies this transformation in the backward direction to the given
         image using nearest-neighbor interpolation
@@ -159,6 +159,23 @@ class SymmetricDiffeomorficMap(object):
                                        self.affine_post_inv,
                                        self.affine_pre_inv)
         return np.array(warped)
+
+    def transform(self, image, interpolation):
+        if interpolation == 'tri':
+            return self._warp_forward(image)
+        elif interpolation == 'nn':
+            return self._warp_forward_nn(image)
+        else:
+            return None
+
+    def transform_inverse(self, image, interpolation):
+        if interpolation == 'tri':
+            return self._warp_backward(image)
+        elif interpolation == 'nn':
+            return self._warp_backward_nn(image)
+        else:
+            return None
+
 
     def scale_affines(self, factor):
         r"""
@@ -528,8 +545,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             6.Invert the inverses to improve invertibility
         """
         #tic = time.time()
-        wmoving = self.backward_model.warp_backward(self.current_moving)
-        wfixed = self.forward_model.warp_backward(self.current_fixed)
+        wmoving = self.backward_model.transform_inverse(self.current_moving, 'tri')
+        wfixed = self.forward_model.transform_inverse(self.current_fixed, 'tri')
         
         self.similarity_metric.set_moving_image(wmoving)
         self.similarity_metric.use_moving_image_dynamics(
@@ -622,8 +639,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         show_common_space = True
         if show_common_space:
-            wmoving = self.backward_model.warp_backward(self.current_moving)
-            wfixed = self.forward_model.warp_backward(self.current_fixed)
+            wmoving = self.backward_model.transform_inverse(self.current_moving,'tri')
+            wfixed = self.forward_model.transform_inverse(self.current_fixed, 'tri')
             self.similarity_metric.set_moving_image(wmoving)
             self.similarity_metric.use_moving_image_dynamics(
                 self.current_moving, self.backward_model.inverse())
@@ -644,7 +661,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             residual, stats = composition.compute_inversion_error()
             print('Current inversion error: %0.6f (%0.6f)' %
                   (stats[1], stats[2]))
-            wmoving = composition.warp_forward(self.current_moving)
+            wmoving = composition.transform(self.current_moving,'tri')
             self.similarity_metric.set_moving_image(wmoving)
             self.similarity_metric.use_moving_image_dynamics(
                 self.current_moving, composition)

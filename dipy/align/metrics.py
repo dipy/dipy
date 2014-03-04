@@ -292,7 +292,7 @@ class CCMetric(SimilarityMetric):
         self.fixed_image_mask = (original_fixed_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.fixed_image_mask = transformation.warp_forward_nn(self.fixed_image_mask)
+        self.fixed_image_mask = transformation.transform(self.fixed_image_mask,'nn')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r'''
@@ -303,7 +303,7 @@ class CCMetric(SimilarityMetric):
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.moving_image_mask = transformation.warp_forward_nn(self.moving_image_mask)
+        self.moving_image_mask = transformation.transform(self.moving_image_mask, 'nn')
 
     def report_status(self):
         r'''
@@ -551,7 +551,7 @@ class EMMetric(SimilarityMetric):
         self.fixed_image_mask = (original_fixed_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.fixed_image_mask = transformation.warp_forward_nn(self.fixed_image_mask)
+        self.fixed_image_mask = transformation.transform(self.fixed_image_mask,'nn')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r'''
@@ -562,7 +562,7 @@ class EMMetric(SimilarityMetric):
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.moving_image_mask = transformation.warp_forward_nn(self.moving_image_mask)
+        self.moving_image_mask = transformation.transform(self.moving_image_mask,'nn')
 
     def report_status(self):
         r'''
