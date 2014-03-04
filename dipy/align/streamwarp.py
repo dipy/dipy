@@ -6,27 +6,44 @@ from dipy.tracking.metrics import downsample
 from dipy.align.bmd import _bundle_minimum_distance_rigid
 
 
-class StreamlineMetric(object):
+class StreamlineDistanceMetric(object):
 
-    def __init__(self):
+    def __init__(self, xopt_initial):
+        """ An abstract class for the metric used for streamline registration
+
+        If the two sets of streamlines match exactly then method ``distance``
+        of this object should be minimum.
+
+        Parameters
+        ----------
+        xopt_initial : list
+            initial set of parameters for the optimizer 
+        """
+
+        self.xopt_initial = xopt_initial
         self.static = None
         self.moving = None
 
     def feed(self, static, moving):
+        """ set static and moving sets
+        """
+
         self.static = static
         self.moving = moving
 
     def distance(self, xopt):
-        return 0
+        """ calculate distance for current set of parameters
+        """
+        return None
 
 
-class BundleMinDistance(StreamlineMetric):
+class BundleMinDistance(StreamlineDistanceMetric):
 
     def distance(self, xopt):
         return bundle_min_distance(xopt, self.static, self.moving)
 
 
-class BundleMinDistanceFast(StreamlineMetric):
+class BundleMinDistanceFast(StreamlineDistanceMetric):
 
     def feed(self, static, moving):
         static_centered_pts, st_idx = unlist_streamlines(static)
@@ -42,7 +59,7 @@ class BundleMinDistanceFast(StreamlineMetric):
                                         self.block_size)
 
 
-class BundleSumDistance(StreamlineMetric):
+class BundleSumDistance(StreamlineDistanceMetric):
 
     def distance(self, xopt):
         return bundle_sum_distance(xopt, self.static, self.moving)
@@ -50,35 +67,73 @@ class BundleSumDistance(StreamlineMetric):
 
 class StreamlineRigidRegistration(object):
 
-    def __init__(self, similarity=None, algorithm='L_BFGS_B', bounds=None,
+    def __init__(self, metric=None, algorithm='L_BFGS_B', bounds=None,
                  fast=True, disp=True):
-        """ Rigid registration of 2 sets of streamlines
+        r""" Rigid registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
         ----------
-        similarity : StreamlineMetric
+        metric : StreamlineDistanceMetric,
+            if None and fast is False then the BMD distance is used. If fast
+            is True then a faster implementation of BMD is used. Otherwise,
+            use the given distance metric.
+
+        algorithm : str,
+            'L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
+
+        bounds : list of tuples or None,
+            If algorithm == 'L_BFGS_B' then we can use bounded optimization. 
+            For example for the six parameters of rigid rotation we can set 
+            the bounds = [(-30, 30), (-30, 30), (-30, 30), 
+                          (-45, 45), (-45, 45), (-45, 45)]
+            That means that we have set the bounds for the three translations
+            and three rotation axes (in degrees).
+
+        fast : boolean
+
 
         Methods
         -------
+        optimize(static, moving)
+
+        References
+        ----------
+        .. [Garyfallidis14] Garyfallidis et. al, "Direct native-space fiber 
+                            bundle alignment for group comparisons", ISMRM,
+                            2014.
 
         """
 
-        self.similarity = similarity
-        if self.similarity is None:
+        self.metric = metric
+        if self.metric is None:
             if fast:
-                self.similarity = BundleMinDistanceFast()
+                self.metric = BundleMinDistanceFast(np.ones(6).tolist())
             else:
-                self.similarity = BundleMinDistance()
+                self.metric = BundleMinDistance(np.ones(6).tolist())
         
-        self.disp = disp
-        self.initial = np.ones(6).tolist()
+        self.disp = disp        
         self.algorithm = algorithm
         if self.algorithm not in ['Powell', 'L_BFGS_B']:
             raise ValueError('Not approriate algorithm')
         self.bounds = bounds
         self.fast = fast
 
-    def optimize(self, static, moving, similarity=None):
+    def optimize(self, static, moving):
+        """ Find the minimum of the provided metric.
+
+        Parameters
+        ----------
+
+        static : streamlines
+
+        moving : streamlines
+
+        Returns
+        -------
+
+        map : StreamlineRegistrationMap
+
+        """
 
         msg = 'need to have the same number of points.'
         if static[0].shape[0] != static[-1].shape[0]:
@@ -93,14 +148,14 @@ class StreamlineRigidRegistration(object):
         static_centered, static_shift = center_streamlines(static)
         moving_centered, moving_shift = center_streamlines(moving)
 
-        self.similarity.feed(static_centered, moving_centered)
+        self.metric.feed(static_centered, moving_centered)
 
-        distance = self.similarity.distance
+        distance = self.metric.distance
 
         if self.algorithm == 'Powell':
 
             optimum = fmin_powell(distance,
-                                  self.initial,
+                                  self.metric.xopt_initial,
                                   xtol=10 ** (-6),
                                   ftol=10 ** (-6),
                                   maxiter=10 ** 6,
@@ -111,7 +166,7 @@ class StreamlineRigidRegistration(object):
         if self.algorithm == 'L_BFGS_B':
 
             optimum = fmin_l_bfgs_b(distance,
-                                    self.initial,
+                                    self.metric.xopt_initial,
                                     None,
                                     approx_grad=True,
                                     bounds=self.bounds,
@@ -175,6 +230,36 @@ class StreamlineRigidRegistration(object):
 class StreamlineRegistrationMap(object):
 
     def __init__(self, matopt, xopt, fopt, matopt_history, funcs, iterations):
+        r""" A map holding the optimum affine matrix and some other parameters
+        of the optimization
+
+        Parameters
+        ----------
+
+        matopt : array,
+            4x4 affine matrix which transforms the moving to the static 
+            streamlines
+
+        xopt : array,
+            1d array with the parameters of the transformation after centering
+
+        fopt : float,
+            final value of the metric
+
+        matopt_history : array
+            All transformation matrices created during the optimization
+
+        funcs : int,
+            Number of function evaluations of the optimizer
+
+        iterations : int
+            Number of iterations of the optimizer
+
+        Methods
+        -------
+        transform()
+
+        """
 
         self.matrix = matopt
         self.xopt = xopt
@@ -184,6 +269,8 @@ class StreamlineRegistrationMap(object):
         self.iterations = iterations
 
     def transform(self, streamlines):
+        """ Apply ``matopt`` to the streamlines
+        """
 
         return transform_streamlines(streamlines, self.matrix)
 
@@ -225,7 +312,7 @@ def bundle_sum_distance(t, static, moving):
 
 
 def bundle_min_distance(t, static, moving):
-    """ MDF-based pairwise distance optimization function
+    """ MDF-based pairwise distance optimization function (MIN)
 
     We minimize the distance between moving streamlines as they align
     with the static streamlines.
@@ -263,6 +350,8 @@ def bundle_min_distance(t, static, moving):
 
 
 def bundle_min_distance_fast(t, static, moving, block_size):
+    """ Faster implementation of the ``bundle_min_distance``
+    """
 
     aff = matrix44(t)
     moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
