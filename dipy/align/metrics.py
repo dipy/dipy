@@ -11,194 +11,170 @@ import em
 from dipy.align import floating
 
 class SimilarityMetric(object):
-    '''
+    """
     A similarity metric is in charge of keeping track of the numerical value
     of the similarity (or distance) between the two given images. It also
     computes the update field for the forward and inverse
     displacement fields to be used in a gradient-based optimization algorithm.
     Note that this metric does not depend on any transformation (affine or
     non-linear), so it assumes the fixed and reference images are already warped
-    '''
+    """
     __metaclass__ = abc.ABCMeta
-    def __init__(self, dim, parameters):
+    def __init__(self, dim):
         self.dim = dim
-        default_parameters = self.get_default_parameters()
-        for key, val in parameters.iteritems():
-            if key in default_parameters:
-                default_parameters[key] = val
-            else:
-                print "Warning: parameter '", key, "' unknown. Ignored."
-        self.parameters = default_parameters
-        self.set_fixed_image(None)
-        self.set_moving_image(None)
+        self.fixed_image = None
+        self.moving_image = None
         self.levels_above = 0
         self.levels_below = 0
         self.symmetric = False
 
     def set_levels_below(self, levels):
-        r'''
+        r"""
         Informs this metric the number of pyramid levels below the current one.
         The metric may change its behavior (e.g. number of inner iterations)
         accordingly
-        '''
+        """
         self.levels_below = levels
 
     def set_levels_above(self, levels):
-        r'''
+        r"""
         Informs this metric the number of pyramid levels above the current one.
         The metric may change its behavior (e.g. number of inner iterations)
         accordingly
-        '''
+        """
         self.levels_above = levels
 
     def set_fixed_image(self, fixed_image):
-        '''
-        Sets the fixed image. Verifies that the image dimension is consistent
-        with this metric.
-        '''
-        new_dim = len(fixed_image.shape) if fixed_image != None else self.dim
-        if new_dim!=self.dim:
-            raise AttributeError('Unexpected fixed_image dimension: '+str(new_dim))
+        """
+        Sets the fixed image.
+        """
         self.fixed_image = fixed_image
 
     @abc.abstractmethod
     def get_metric_name(self):
-        '''
+        """
         Must return the name of the metric that specializes this generic metric
-        '''
+        """
         pass
 
     @abc.abstractmethod
     def use_fixed_image_dynamics(self,
                               original_fixed_image,
                               transformation):
-        '''
+        """
         This methods provides the metric a chance to compute any useful
         information from knowing how the current fixed image was generated
         (as the transformation of an original fixed image). This method is
         called by the optimizer just after it sets the fixed image.
         Transformation will be an instance of SymmetricDiffeomorficMap or None if
         the originalMovingImage equals self.moving_image.
-        '''
+        """
 
     @abc.abstractmethod
     def use_original_fixed_image(self, original_fixed_image):
-        '''
+        """
         This methods provides the metric a chance to compute any useful
         information from the original moving image (to be used along with the
         sequence of movingImages during optimization, for example the binary
         mask delimiting the object of interest can be computed from the original
         image only and then warp this binary mask instead of thresholding
         at each iteration, which might cause artifacts due to interpolation)
-        '''
+        """
 
     def set_moving_image(self, moving_image):
-        '''
-        Sets the moving image. Verifies that the image dimension is consistent
-        with this metric.
-        '''
-        new_dim = len(moving_image.shape) if moving_image != None else self.dim
-        if new_dim!=self.dim:
-            raise AttributeError('Unexpected fixed_image dimension: '+str(new_dim))
+        """
+        Sets the moving image.
+        """
         self.moving_image = moving_image
 
     @abc.abstractmethod
     def use_original_moving_image(self, original_moving_image):
-        '''
+        """
         This methods provides the metric a chance to compute any useful
         information from the original moving image (to be used along with the
         sequence of movingImages during optimization, for example the binary
         mask delimiting the object of interest can be computed from the original
         image only and then warp this binary mask instead of thresholding
         at each iteration, which might cause artifacts due to interpolation)
-        '''
+        """
 
     @abc.abstractmethod
     def use_moving_image_dynamics(self,
                                original_moving_image,
                                transformation):
-        '''
+        """
         This methods provides the metric a chance to compute any useful
         information from knowing how the current fixed image was generated
         (as the transformation of an original fixed image). This method is
         called by the optimizer just after it sets the fixed image.
         Transformation will be an instance of SymmetricDiffeomorficMap or None if
         the originalMovingImage equals self.moving_image.
-        '''
+        """
 
     @abc.abstractmethod
     def initialize_iteration(self):
-        '''
+        """
         This method will be called before any computeUpdate or computeInverse
         call, this gives the chance to the Metric to precompute any useful
         information for speeding up the update computations. This initialization
         was needed in ANTS because the updates are called once per voxel. In
         Python this is unpractical, though.
-        '''
+        """
 
     @abc.abstractmethod
     def free_iteration(self):
-        '''
+        """
         This method is called by the RegistrationOptimizer after the required
         iterations have been computed (forward and/or backward) so that the
         SimilarityMetric can safely delete any data it computed as part of the
         initialization
-        '''
+        """
 
     @abc.abstractmethod
     def compute_forward(self):
-        '''
+        """
         Must return the forward update field for a gradient-based optimization
         algorithm
-        '''
+        """
 
     @abc.abstractmethod
     def compute_backward(self):
-        '''
+        """
         Must return the inverse update field for a gradient-based optimization
         algorithm
-        '''
+        """
 
     @abc.abstractmethod
     def get_energy(self):
-        '''
+        """
         Must return the numeric value of the similarity between the given fixed
         and moving images
-        '''
-
-    @abc.abstractmethod
-    def get_default_parameters(self):
-        r'''
-        Derived classes must return a dictionary containing its parameter names
-        and default values
-        '''
+        """
 
     @abc.abstractmethod
     def report_status(self):
-        '''
+        """
         This function is called mostly for debugging purposes. The metric
         can for example show the overlaid images or print some statistics
-        '''
+        """
 
 class CCMetric(SimilarityMetric):
-    r'''
+    r"""
     Similarity metric based on the Expectation-Maximization algorithm to handle
     multi-modal images. The transfer function is modeled as a set of hidden
     random variables that are estimated at each iteration of the algorithm.
-    '''
-    def get_default_parameters(self):
-        return {'max_step_length':0.25, 'sigma_diff':3.0, 'radius':4}
+    """
 
-    def __init__(self, dim, parameters):
-        super(CCMetric, self).__init__(dim, parameters)
-        self.radius=self.parameters['radius']
-        self.sigma_diff=self.parameters['sigma_diff']
-        self.max_step_length=self.parameters['max_step_length']
+    def __init__(self, dim, step_length = 0.25, sigma_diff = 3.0, radius = 4):
+        super(CCMetric, self).__init__(dim)
+        self.step_length = step_length
+        self.sigma_diff = sigma_diff
+        self.radius = radius
 
     def initialize_iteration(self):
-        r'''
+        r"""
         Precomputes the cross-correlation factors
-        '''
+        """
         self.factors = cc.precompute_cc_factors_3d(self.fixed_image,
                                                    self.moving_image,
                                                    self.radius)
@@ -217,18 +193,18 @@ class CCMetric(SimilarityMetric):
             i += 1
 
     def free_iteration(self):
-        r'''
+        r"""
         Frees the resources allocated during initialization
-        '''
+        """
         del self.factors
         del self.gradient_moving
         del self.gradient_fixed
 
     def compute_forward(self):
-        r'''
+        r"""
         Computes the update displacement field to be used for registration of
         the moving image towards the fixed image
-        '''
+        """
         displacement, self.energy=cc.compute_cc_forward_step_3d(self.gradient_fixed,
                                       self.gradient_moving,
                                       self.factors)
@@ -240,14 +216,14 @@ class CCMetric(SimilarityMetric):
         displacement[..., 2] = ndimage.filters.gaussian_filter(displacement[..., 2],
                                                                 self.sigma_diff)
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
-        displacement *= self.max_step_length/max_norm
+        displacement *= self.step_length/max_norm
         return displacement
 
     def compute_backward(self):
-        r'''
+        r"""
         Computes the update displacement field to be used for registration of
         the fixed image towards the moving image
-        '''
+        """
         displacement, energy=cc.compute_cc_backward_step_3d(self.gradient_fixed,
                                       self.gradient_moving,
                                       self.factors)
@@ -259,56 +235,56 @@ class CCMetric(SimilarityMetric):
         displacement[..., 2] = ndimage.filters.gaussian_filter(displacement[..., 2],
                                                                 self.sigma_diff)
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
-        displacement *= self.max_step_length/max_norm
+        displacement *= self.step_length/max_norm
         return displacement
 
 
     def get_energy(self):
-        r'''
+        r"""
         TO-DO: implement energy computation for the EM metric
-        '''
+        """
         return NotImplemented
 
     def use_original_fixed_image(self, original_fixed_image):
-        r'''
+        r"""
         CCMetric computes the object mask by thresholding the original fixed
         image
-        '''
+        """
         pass
 
     def use_original_moving_image(self, original_moving_image):
-        r'''
+        r"""
         CCMetric computes the object mask by thresholding the original moving
         image
-        '''
+        """
         pass
 
     def use_fixed_image_dynamics(self, original_fixed_image, transformation):
-        r'''
+        r"""
         CCMetric takes advantage of the image dynamics by computing the
         current fixed image mask from the originalFixedImage mask (warped
         by nearest neighbor interpolation)
-        '''
+        """
         self.fixed_image_mask = (original_fixed_image>0).astype(np.int32)
         if transformation == None:
             return
         self.fixed_image_mask = transformation.transform(self.fixed_image_mask,'nn')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
-        r'''
+        r"""
         CCMetric takes advantage of the image dynamics by computing the
         current moving image mask from the originalMovingImage mask (warped
         by nearest neighbor interpolation)
-        '''
+        """
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
             return
         self.moving_image_mask = transformation.transform(self.moving_image_mask, 'nn')
 
     def report_status(self):
-        r'''
+        r"""
         Shows the overlaid input images
-        '''
+        """
         if self.dim == 2:
             plt.figure()
             rcommon.overlayImages(self.movingq_means_field,
@@ -328,46 +304,43 @@ class CCMetric(SimilarityMetric):
         return "CCMetric"
 
 class EMMetric(SimilarityMetric):
-    r'''
+    r"""
     Similarity metric based on the Expectation-Maximization algorithm to handle
     multi-modal images. The transfer function is modeled as a set of hidden
     random variables that are estimated at each iteration of the algorithm.
-    '''
+    """
     GAUSS_SEIDEL_STEP = 0
     DEMONS_STEP = 1
     SINGLECYCLE_ITER = 0
     VCYCLE_ITER = 1
     WCYCLE_ITER = 2
-    def get_default_parameters(self):
-        return {'lambda':1.0, 'max_inner_iter':5, 'scale':1,
-                'max_step_length':0.25, 'sigma_diff':3.0, 'step_type':0,
-                'q_levels':256,'use_double_gradient':True,
-                'iteration_type':'v_cycle'}
 
-    def __init__(self, dim, parameters):
+    def __init__(self, dim, smooth=1.0, inner_iter=5, step_length=0.25, q_levels=256, double_gradient=True, iter_type='v_cycle'):
         super(EMMetric, self).__init__(dim, parameters)
-        self.step_type = self.parameters['step_type']
-        self.q_levels = self.parameters['q_levels']
-        self.use_double_gradient = self.parameters['use_double_gradient']
+        self.smooth
+        self.inner_iter = inner_iter
+        self.step_length = step_length
+        self.q_levels = q_levels
+        self.use_double_gradient = double_gradient
+        if iter_type == 'single_cycle':
+            self.iteration_type = EMMetric.SINGLECYCLE_ITER
+        elif iter_type == 'w_cycle':
+            self.iteration_type = EMMetric.WCYCLE_ITER
+        else:
+            self.iteration_type = EMMetric.VCYCLE_ITER
         self.fixed_image_mask = None
         self.moving_image_mask = None
         self.fixedq_means_field = None
         self.movingq_means_field = None
         self.movingq_levels = None
         self.fixedq_levels = None
-        if self.parameters['iteration_type'] == 'single_cycle':
-            self.iteration_type = EMMetric.SINGLECYCLE_ITER
-        elif self.parameters['iteration_type'] == 'w_cycle':
-            self.iteration_type = EMMetric.WCYCLE_ITER
-        else:
-            self.iteration_type = EMMetric.VCYCLE_ITER
 
     def _connect_functions(self):
-        r'''
+        r"""
         Assigns the appropriate functions to be called for image quantization,
         statistics computation and multi-resolution iterations according to the
         dimension of the input images
-        '''
+        """
         if self.dim == 2:
             self.quantize = em.quantize_positive_image
             self.compute_stats = em.compute_masked_image_class_stats
@@ -386,13 +359,11 @@ class EMMetric(SimilarityMetric):
                 self.multi_resolution_iteration = SSDMetric.v_cycle_3d
             else:
                 self.multi_resolution_iteration = SSDMetric.w_cycle_3d
-        if self.step_type == EMMetric.DEMONS_STEP:
-            self.compute_step = self.compute_demons_step
-        else:
-            self.compute_step = self.compute_gauss_seidel_step
+        self.compute_step = self.compute_gauss_seidel_step
+            
 
     def initialize_iteration(self):
-        r'''
+        r"""
         Precomputes the transfer functions (hidden random variables) and
         variances of the estimators. Also precomputes the gradient of both
         input images. Note that once the images are transformed to the opposite
@@ -400,7 +371,7 @@ class EMMetric(SimilarityMetric):
         gradient of the corresponding modality in the same fasion as
         diff-demons does for mono-modality images. If the flag
         self.use_double_gradient is True these garadients are averaged.
-        '''
+        """
         self._connect_functions()
         sampling_mask = self.fixed_image_mask*self.moving_image_mask
         self.sampling_mask = sampling_mask
@@ -451,9 +422,9 @@ class EMMetric(SimilarityMetric):
                 i += 1
 
     def free_iteration(self):
-        r'''
+        r"""
         Frees the resources allocated during initialization
-        '''
+        """
         del self.sampling_mask
         del self.fixedq_levels
         del self.movingq_levels
@@ -465,21 +436,21 @@ class EMMetric(SimilarityMetric):
         del self.gradient_fixed
 
     def compute_forward(self):
-        r'''
+        r"""
         Computes the update displacement field to be used for registration of
         the moving image towards the fixed image
-        '''
+        """
         return self.compute_step(True)
 
     def compute_backward(self):
-        r'''
+        r"""
         Computes the update displacement field to be used for registration of
         the fixed image towards the moving image
-        '''
+        """
         return self.compute_step(False)
 
     def compute_gauss_seidel_step(self, forward_step = True):
-        r'''
+        r"""
         Minimizes the linearized energy function with respect to the
         regularized displacement field (this step does not require
         post-smoothing, as opposed to the demons step, which does not include
@@ -489,9 +460,9 @@ class EMMetric(SimilarityMetric):
             estimation: combining highest accuracy with real-time performance",
             10th IEEE International Conference on Computer Vision, 2005.
             ICCV 2005.
-        '''
-        max_inner_iter = self.parameters['max_inner_iter']
-        max_step_length = self.parameters['max_step_length']
+        """
+        max_inner_iter = self.inner_iter
+        max_step_length = self.step_length
         if forward_step:
             shape = self.fixed_image.shape
         else:
@@ -509,7 +480,7 @@ class EMMetric(SimilarityMetric):
                                                       sigma_field,
                                                       gradient,
                                                       None,
-                                                      self.parameters['lambda'],
+                                                      self.smooth,
                                                       displacement)
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
         if max_norm > max_step_length:
@@ -517,57 +488,57 @@ class EMMetric(SimilarityMetric):
         return displacement
 
     def compute_demons_step(self, forward_step = True):
-        r'''
+        r"""
         TO-DO: implement Demons step for EM metric
-        '''
+        """
         return NotImplemented
 
     def get_energy(self):
-        r'''
+        r"""
         TO-DO: implement energy computation for the EM metric
-        '''
+        """
         return NotImplemented
 
     def use_original_fixed_image(self, original_fixed_image):
-        r'''
+        r"""
         EMMetric computes the object mask by thresholding the original fixed
         image
-        '''
+        """
         pass
 
     def use_original_moving_image(self, original_moving_image):
-        r'''
+        r"""
         EMMetric computes the object mask by thresholding the original moving
         image
-        '''
+        """
         pass
 
     def use_fixed_image_dynamics(self, original_fixed_image, transformation):
-        r'''
+        r"""
         EMMetric takes advantage of the image dynamics by computing the
         current fixed image mask from the originalFixedImage mask (warped
         by nearest neighbor interpolation)
-        '''
+        """
         self.fixed_image_mask = (original_fixed_image>0).astype(np.int32)
         if transformation == None:
             return
         self.fixed_image_mask = transformation.transform(self.fixed_image_mask,'nn')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
-        r'''
+        r"""
         EMMetric takes advantage of the image dynamics by computing the
         current moving image mask from the originalMovingImage mask (warped
         by nearest neighbor interpolation)
-        '''
+        """
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
             return
         self.moving_image_mask = transformation.transform(self.moving_image_mask,'nn')
 
     def report_status(self):
-        r'''
+        r"""
         Shows the overlaid input images
-        '''
+        """
         if self.dim == 2:
             plt.figure()
             rcommon.overlayImages(self.movingq_means_field,
@@ -587,26 +558,29 @@ class EMMetric(SimilarityMetric):
         return "EMMetric"
 
 class SSDMetric(SimilarityMetric):
-    r'''
+    r"""
     Similarity metric for (monomodal) nonlinear image registration defined by
     the sum of squared differences (SSD).
-    '''
+    """
     GAUSS_SEIDEL_STEP = 0
     DEMONS_STEP = 1
     def get_default_parameters(self):
         return {'lambda':1.0, 'max_inner_iter':5, 'scale':1,
                 'max_step_length':0.25, 'sigma_diff':3.0, 'step_type':0}
 
-    def __init__(self, dim, parameters):
-        super(SSDMetric, self).__init__(dim, parameters)
-        self.step_type = self.parameters['step_type']
+    def __init__(self, dim, smooth=3.0, inner_iter=5, step_length=0.25, step_type=0):
+        super(SSDMetric, self).__init__(dim)
+        self.smooth = smooth
+        self.inner_iter = inner_iter
+        self.step_length = step_length
+        self.step_type = step_type
         self.levels_below = 0
 
     def initialize_iteration(self):
-        r'''
+        r"""
         Precomputes the gradient of the input images to be used in the
         computation of the forward and backward steps.
-        '''
+        """
         self.gradient_moving = np.empty(
             shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
         i = 0
@@ -621,10 +595,10 @@ class SSDMetric(SimilarityMetric):
             i += 1
 
     def compute_forward(self):
-        r'''
+        r"""
         Computes the update displacement field to be used for registration of
         the moving image towards the fixed image
-        '''
+        """
         if self.step_type == SSDMetric.GAUSS_SEIDEL_STEP:
             return self.compute_gauss_seidel_step(True)
         elif self.step_type == SSDMetric.DEMONS_STEP:
@@ -632,10 +606,10 @@ class SSDMetric(SimilarityMetric):
         return None
 
     def compute_backward(self):
-        r'''
+        r"""
         Computes the update displacement field to be used for registration of
         the fixed image towards the moving image
-        '''
+        """
         if self.step_type == SSDMetric.GAUSS_SEIDEL_STEP:
             return self.compute_gauss_seidel_step(False)
         elif self.step_type == SSDMetric.DEMONS_STEP:
@@ -643,14 +617,14 @@ class SSDMetric(SimilarityMetric):
         return None
 
     def compute_gauss_seidel_step(self, forward_step = True):
-        r'''
+        r"""
         Minimizes the linearized energy function defined by the sum of squared
         differences of corresponding pixels of the input images with respect
         to the displacement field.
-        '''
-        max_inner_iter = self.parameters['max_inner_iter']
-        lambda_param = self.parameters['lambda']
-        max_step_length = self.parameters['max_step_length']
+        """
+        max_inner_iter = self.inner_iter
+        lambda_param = self.smooth
+        max_step_length = self.step_length
         if forward_step:
             shape = self.fixed_image.shape
         else:
@@ -676,16 +650,16 @@ class SSDMetric(SimilarityMetric):
         return displacement
 
     def compute_demons_step(self, forward_step = True):
-        r'''
+        r"""
         Computes the demons step proposed by Vercauteren et al.[1] for the SSD
         metric.
         [1] Tom Vercauteren, Xavier Pennec, Aymeric Perchant, Nicholas Ayache,
             "Diffeomorphic Demons: Efficient Non-parametric Image Registration",
             Neuroimage 2009
-        '''
-        sigma_diff = self.parameters['sigma_diff']
-        max_step_length = self.parameters['max_step_length']
-        scale = self.parameters['scale']
+        """
+        sigma_diff = self.smooth
+        max_step_length = self.step_length
+        scale = 1.0
         if forward_step:
             delta_field = self.fixed_image-self.moving_image
         else:
@@ -713,27 +687,27 @@ class SSDMetric(SimilarityMetric):
         return NotImplemented
 
     def use_original_fixed_image(self, originalfixed_image):
-        r'''
+        r"""
         SSDMetric does not take advantage of the original fixed image, just pass
-        '''
+        """
         pass
 
     def use_original_moving_image(self, original_moving_image):
-        r'''
+        r"""
         SSDMetric does not take advantage of the original moving image just pass
-        '''
+        """
         pass
 
     def use_fixed_image_dynamics(self, originalfixed_image, transformation):
-        r'''
+        r"""
         SSDMetric does not take advantage of the image dynamics, just pass
-        '''
+        """
         pass
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
-        r'''
+        r"""
         SSDMetric does not take advantage of the image dynamics, just pass
-        '''
+        """
         pass
 
     def report_status(self):
@@ -749,7 +723,7 @@ class SSDMetric(SimilarityMetric):
 
 def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
              lambda_param, displacement, depth = 0):
-    r'''
+    r"""
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
     filtering (GS-iterate) the current level, then solves for the residual
     at a coarcer resolution andfinally refines the solution at the current
@@ -759,7 +733,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
             combining highest accuracy with real-time performance",
             10th IEEE International Conference on Computer Vision, 2005.
             ICCV 2005.
-    '''
+    """
     #presmoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD2D(delta_field,
@@ -820,7 +794,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
 
 def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
              lambda_param, displacement, depth = 0):
-    r'''
+    r"""
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
     filtering (GS-iterate) the current level, then solves for the residual
     at a coarcer resolution andfinally refines the solution at the current 
@@ -830,7 +804,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
         combining highest accuracy with real-time performance",
         10th IEEE International Conference on Computer Vision, 2005.
         ICCV 2005.
-    '''
+    """
     #presmoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD3D(delta_field,

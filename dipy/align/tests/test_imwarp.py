@@ -36,9 +36,11 @@ def test_ssd_2d():
     moving = (moving-moving.min())/(moving.max() - moving.min())
     fixed = (fixed-fixed.min())/(fixed.max() - fixed.min())
     #Configure and run the Optimizer
-    similarity_metric = metrics.SSDMetric(2, {'symmetric':True,
-                                'lambda':4.0,
-                                'stepType':metrics.SSDMetric.GAUSS_SEIDEL_STEP})
+    smooth = 4
+    inner_iter =5
+    step_length = 0.25
+    step_type = 0
+    similarity_metric = metrics.SSDMetric(2, smooth, inner_iter, step_length, step_type) 
     opt_iter = [20, 100, 100, 100]
     opt_tol = 1e-4
     inv_iter = 40
@@ -91,7 +93,10 @@ def test_cc_3d():
     reference = np.asarray(vfu.warp_volume_affine(target, new_shape, rotation))
 
     #Create the CC metric
-    similarity_metric = metrics.CCMetric(3, {'max_step_length':0.25, 'sigma_diff':3.0, 'radius':4})
+    step_length = 0.25
+    sigma_diff = 3.0
+    radius = 4
+    similarity_metric = metrics.CCMetric(3, step_length, sigma_diff, radius)
 
     #Create the optimizer
     opt_iter = [5, 10, 10]
