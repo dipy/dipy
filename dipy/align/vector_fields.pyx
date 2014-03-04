@@ -1109,7 +1109,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
         nslices = d1.shape[0]
         nrows = d1.shape[1]
         ncols = d1.shape[2]
-    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=np.asarray(volume).dype)
+    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
     for k in range(nslices):
         for i in range(nrows):
             for j in range(ncols):

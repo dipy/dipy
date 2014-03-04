@@ -26,10 +26,10 @@ def precompute_cc_factors_3d(floating[:, :, :] fixed, floating[:, :, :] moving,
     cdef int nr = fixed.shape[1]
     cdef int nc = fixed.shape[2]
     cdef int s, r, c, k, i, j, t, q, qq, firstc, lastc, firstr, lastr
-    cdef floating Imean, Jmean
-    cdef floating[:, :, :, :] factors = np.ndarray((ns, nr, nc, 5), dtype=cython.typeof(fixed[0, 0, 0]))
-    cdef floating[:, :] lines = np.zeros((6, side), dtype=cython.typeof(fixed[0, 0, 0]))
-    cdef floating[:] sums = np.zeros((6,), dtype=cython.typeof(fixed[0, 0, 0]))
+    cdef double Imean, Jmean
+    cdef floating[:, :, :, :] factors = np.ndarray((ns, nr, nc, 5), dtype=np.asarray(fixed).dtype)
+    cdef double[:, :] lines = np.zeros((6, side), dtype=np.float64)
+    cdef double[:] sums = np.zeros((6,), dtype=np.float64)
     for r in range(nr):
         firstr = _int_max(0, r - radius)
         lastr = _int_min(nr - 1, r + radius)
@@ -99,9 +99,9 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] gradFixed,
     cdef int ns = gradFixed.shape[0]
     cdef int nr = gradFixed.shape[1]
     cdef int nc = gradFixed.shape[2]
-    cdef floating energy = 0
-    cdef floating Ii, Ji, sfm, sff, smm, localCorrelation, temp
-    cdef floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=cython.typeof(gradFixed[0, 0, 0, 0]))
+    cdef double energy = 0
+    cdef double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+    cdef floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(gradFixed).dtype)
     for s in range(ns):
         for r in range(nr):
             for c in range(nc):
@@ -129,9 +129,9 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] gradFixed,
     cdef int ns = gradFixed.shape[0]
     cdef int nr = gradFixed.shape[1]
     cdef int nc = gradFixed.shape[2]
-    cdef floating energy = 0
-    cdef floating Ii, Ji, sfm, sff, smm, localCorrelation, temp
-    cdef floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=cython.typeof(gradFixed[0, 0, 0, 0]))
+    cdef double energy = 0
+    cdef double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+    cdef floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(gradFixed).dtype)
     for s in range(ns):
         for r in range(nr):
             for c in range(nc):

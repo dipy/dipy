@@ -23,7 +23,7 @@ def pyramid_gaussian_3D(image, max_layer, mask=None):
     '''
     yield image.copy().astype(floating)
     for i in range(max_layer):
-        newImage=sp.ndimage.filters.gaussian_filter(image, 2.0/3.0)[::2,::2,::2].copy()
+        newImage=np.array(sp.ndimage.filters.gaussian_filter(image, 2.0/3.0)[::2,::2,::2], dtype = floating)
         if(mask!=None):
             mask=mask[::2,::2,::2]
             newImage*=mask

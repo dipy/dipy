@@ -4,16 +4,23 @@ from numpy.testing import (assert_equal,
                            assert_array_almost_equal)
 import matplotlib.pyplot as plt
 from dipy.align.imwarp import Composition, SymmetricRegistrationOptimizer
-from dipy.align.metrics import SSDMetric
+from dipy.align.metrics import SSDMetric, CCMetric
 import dipy.align.vector_fields as vfu
 import dipy.align.registration_common as rcommon
 from dipy.data import get_data
 from dipy.align import floating
+import nibabel as nib
 
+def getRotationMatrix(angles):
+    ca=np.cos(angles[0])
+    cb=np.cos(angles[1])
+    cg=np.cos(angles[2])
+    sa=np.sin(angles[0])
+    sb=np.sin(angles[1])
+    sg=np.sin(angles[2])
+    return np.array([[cb*cg,-ca*sg+sa*sb*cg,sa*sg+ca*sb*cg],[cb*sg,ca*cg+sa*sb*sg,-sa*cg+ca*sb*sg],[-sb,sa*cb,ca*cb]])
 
-
-
-def test_optimizer_monomodal_2d():
+def test_ssd_2d():
     r'''
     Classical Circle-To-C experiment for 2D Monomodal registration
     '''
@@ -24,8 +31,8 @@ def test_optimizer_monomodal_2d():
     fixed = plt.imread(fname_fixed)
     moving = moving[:, :, 0].astype(floating)
     fixed = fixed[:, :, 0].astype(floating)
-    moving = np.array(moving, order = 'C', dtype = floating)
-    fixed = np.array(fixed, order = 'C', dtype = floating)
+    moving = np.array(moving, dtype = floating)
+    fixed = np.array(fixed, dtype = floating)
     moving = (moving-moving.min())/(moving.max() - moving.min())
     fixed = (fixed-fixed.min())/(fixed.max() - fixed.min())
     ################Configure and run the Optimizer#####################
@@ -72,22 +79,48 @@ def test_optimizer_monomodal_2d():
                                'inv-direct', 7)
 
 
-def test_monomodal_3d():
-	from dipy.data import read_sherbrooke_3shell
+def test_cc_3d():
+    from dipy.data import read_sherbrooke_3shell
 
-	img, gtab = read_sherbrooke_3shell()
+    img, gtab = read_sherbrooke_3shell()
 
-	S0 = img.get_data()[..., 0]
+    target = np.array(img.get_data()[..., 0], dtype = floating)
+
+    #Warp the S0 with a synthetic rotation
+    degrees = np.array([2.0, 3.0, 4.0])
+    angles = degrees * (np.pi/180.0)
+    rotation = getRotationMatrix(angles).astype(floating)
+    new_shape = np.array(target.shape, dtype = np.int32)
+    reference = np.asarray(vfu.warp_volume_affine(target, new_shape, rotation))
+
+    #Create the CC metric
+    similarity_metric = CCMetric(3, {'max_step_length':0.25, 'sigma_diff':3.0, 'radius':4})
+
+    #Create the optimizer
+    max_iter = [i for i in [5, 10, 10]]
+    optimizer_parameters = {
+        'max_iter':max_iter,
+        'inversion_iter':20,
+        'inversion_tolerance':1e-3,
+        'report_status':True}
+    update_rule = Composition()
+    registration_optimizer = SymmetricRegistrationOptimizer(3, reference, target,
+                                                            None, None,
+                                                            similarity_metric,
+                                                            update_rule, optimizer_parameters)
+    registration_optimizer.optimize()
+    energy_profile = 1e-6 * np.array(registration_optimizer.full_energy_profile)
+    
+    expected_profile = 1e-6 * np.array([-15763.543499318299, -18746.625000814667, -20160.312070620796, 
+    -20951.446057415866, -21680.17488217326, -22354.501210638806, 
+    -22683.407001490395, -23244.38786732867, -23786.579623749625, 
+    -24171.656863448723, -115548.1069087715, -133171.4764221798, 
+    -136956.3675746713, -143931.32627938036, -144240.57626152827, 
+    -146812.38023202776, -147219.9288492704, -149772.61647280722, 
+    -150492.3160459624, -152611.88737725923])
+    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=5)
 
 
-
-
-# def test_feature():
-
-#     A = np.ones((3, 3))
-#     B = A + 2
-
-#     assert_array_equal(A, B)
 if __name__=='__main__':
-    test_optimizer_monomodal_2d()
-    #test_monomodal_3d()
+    #test_ssd_2d()
+    test_cc_3d()
