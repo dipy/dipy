@@ -114,7 +114,7 @@ def centers_of_mass(streamlines):
     return np.array([center_of_mass(s) for s in streamlines])
 
 
-def _dragons_hits(streamlines, avg_streamline):
+def _cross_sections(streamlines, avg_streamline):
     if not isinstance(streamlines, list):
         streamlines = [streamlines]
     hits = cut_plane(streamlines, avg_streamline)
@@ -123,7 +123,7 @@ def _dragons_hits(streamlines, avg_streamline):
     return xyz, angles
 
 
-def dragons_hits(streamlines, ref_streamline):
+def cross_sections(streamlines, ref_streamline):
     """ Intersections of streamlines by planes defined
     along a reference streamline.
     
@@ -144,7 +144,7 @@ def dragons_hits(streamlines, ref_streamline):
         Array shape (M, 2) with the deviation polar angles from each
         streamline to the reference streamline on the planes.
     """
-    xyz, angles = _dragons_hits(streamlines, ref_streamline)
+    xyz, angles = _cross_sections(streamlines, ref_streamline)
     return np.concatenate(xyz), np.concatenate(angles)
 
 

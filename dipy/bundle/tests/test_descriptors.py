@@ -9,7 +9,7 @@ from dipy.bundle.descriptors import (length_distribution,
                                      winding_angles,
                                      midpoints,
                                      centers_of_mass,
-                                     dragons_hits)
+                                     cross_sections)
 
 
 def fornix_streamlines():
@@ -51,7 +51,7 @@ def test_descriptors_fornix():
 
     assert_equal(len(cpoints), 4)
 
-    hpoints, hangles = dragons_hits(centroids, avg)
+    hpoints, hangles = cross_sections(centroids, avg)
 
     assert_equal(len(hpoints) > len(avg), True)
 
