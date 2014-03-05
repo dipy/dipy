@@ -17,7 +17,7 @@ Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3
 .. raw :: html
 
 	<div style="width: 80% max-width=800px">
-		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_images/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%">
+		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_static/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%">
         </a>		
 	</div>
 
