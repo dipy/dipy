@@ -3,14 +3,15 @@ cimport cython
 from fused_types cimport floating, number
 
 cdef extern from "math.h":
-    int isinf(double)
+    int isinf(double) nogil
     double sqrt(double x) nogil
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 cdef void solve2DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
-                                                 floating[:] out):
+                                                 floating[:] out) nogil:
     r"""
     Solves the symmetric positive-definite linear system Mx = y given by
     M=[[A[0], A[1]],
@@ -26,7 +27,7 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
 @cython.wraparound(False)
 @cython.cdivision(True)
 cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
-                                                 floating[:] out):
+                                                 floating[:] out) nogil:
     r"""
     Solves the symmetric positive-definite linear system Mx = y given by
     M=[[A[0], A[1], A[2]],
@@ -50,6 +51,7 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] deltaField,
                                                        floating[:, :] sigmaField,
                                                        floating[:, :, :] gradientField,
@@ -68,62 +70,66 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] deltaField
     cdef floating[:] A = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
     cdef floating xx, yy, opt, nrm2, delta, sigma, maxDisplacement
     maxDisplacement = 0
-    for r in range(nrows):
-        for c in range(ncols):
-            delta = deltaField[r, c]
-            sigma = sigmaField[r, c] if sigmaField != None else 1
-            if(target == None):
-                b[0] = deltaField[r, c] * gradientField[r, c, 0]
-                b[1] = deltaField[r, c] * gradientField[r, c, 1]
-            else:
-                b[0] = target[r, c, 0]
-                b[1] = target[r, c, 1]
-            nn = 0
-            y[:] = 0
-            for k in range(NUM_NEIGHBORS):
-                dr = r + dRow[k]
-                if((dr < 0) or (dr >= nrows)):
-                    continue
-                dc = c + dCol[k]
-                if((dc < 0) or (dc >= ncols)):
-                    continue
-                nn += 1
-                y[0] += displacementField[dr, dc, 0]
-                y[1] += displacementField[dr, dc, 1]
-            if(isinf(sigma)):
-                xx = displacementField[r, c, 0]
-                yy = displacementField[r, c, 1]
-                displacementField[r, c, 0] = y[0] / nn
-                displacementField[r, c, 1] = y[1] / nn
-                xx -= displacementField[r, c, 0]
-                yy -= displacementField[r, c, 1]
-                opt = xx * xx + yy * yy
-                if(maxDisplacement < opt):
-                    maxDisplacement = opt
-            elif(sigma == 0):
-                nrm2 = gradientField[r, c, 0] ** 2 + \
-                    gradientField[r, c, 1] ** 2
-                if(nrm2 == 0):
-                    displacementField[r, c, :] = 0
+
+    with nogil:
+
+        for r in range(nrows):
+            for c in range(ncols):
+                delta = deltaField[r, c]
+                sigma = sigmaField[r, c] if sigmaField != None else 1
+                if(target == None):
+                    b[0] = deltaField[r, c] * gradientField[r, c, 0]
+                    b[1] = deltaField[r, c] * gradientField[r, c, 1]
                 else:
-                    displacementField[r, c, 0] = (b[0]) / nrm2
-                    displacementField[r, c, 1] = (b[1]) / nrm2
-            else:
-                y[0] = b[0] + sigma * lambdaParam * y[0]
-                y[1] = b[1] + sigma * lambdaParam * y[1]
-                A[0] = gradientField[r, c, 0] ** 2 + sigma * lambdaParam * nn
-                A[1] = gradientField[r, c, 0] * gradientField[r, c, 1]
-                A[2] = gradientField[r, c, 1] ** 2 + sigma * lambdaParam * nn
-                xx = displacementField[r, c, 0]
-                yy = displacementField[r, c, 1]
-                solve2DSymmetricPositiveDefiniteSystem(A, y, d)
-                displacementField[r, c, 0] = d[0]
-                displacementField[r, c, 1] = d[1]
-                xx -= d[0]
-                yy -= d[1]
-                opt = xx * xx + yy * yy
-                if(maxDisplacement < opt):
-                    maxDisplacement = opt
+                    b[0] = target[r, c, 0]
+                    b[1] = target[r, c, 1]
+                nn = 0
+                y[:] = 0
+                for k in range(NUM_NEIGHBORS):
+                    dr = r + dRow[k]
+                    if((dr < 0) or (dr >= nrows)):
+                        continue
+                    dc = c + dCol[k]
+                    if((dc < 0) or (dc >= ncols)):
+                        continue
+                    nn += 1
+                    y[0] += displacementField[dr, dc, 0]
+                    y[1] += displacementField[dr, dc, 1]
+                if(isinf(sigma)):
+                    xx = displacementField[r, c, 0]
+                    yy = displacementField[r, c, 1]
+                    displacementField[r, c, 0] = y[0] / nn
+                    displacementField[r, c, 1] = y[1] / nn
+                    xx -= displacementField[r, c, 0]
+                    yy -= displacementField[r, c, 1]
+                    opt = xx * xx + yy * yy
+                    if(maxDisplacement < opt):
+                        maxDisplacement = opt
+                elif(sigma == 0):
+                    nrm2 = gradientField[r, c, 0] ** 2 + \
+                        gradientField[r, c, 1] ** 2
+                    if(nrm2 == 0):
+                        displacementField[r, c, 0] = 0
+                        displacementField[r, c, 1] = 0                        
+                    else:
+                        displacementField[r, c, 0] = (b[0]) / nrm2
+                        displacementField[r, c, 1] = (b[1]) / nrm2
+                else:
+                    y[0] = b[0] + sigma * lambdaParam * y[0]
+                    y[1] = b[1] + sigma * lambdaParam * y[1]
+                    A[0] = gradientField[r, c, 0] ** 2 + sigma * lambdaParam * nn
+                    A[1] = gradientField[r, c, 0] * gradientField[r, c, 1]
+                    A[2] = gradientField[r, c, 1] ** 2 + sigma * lambdaParam * nn
+                    xx = displacementField[r, c, 0]
+                    yy = displacementField[r, c, 1]
+                    solve2DSymmetricPositiveDefiniteSystem(A, y, d)
+                    displacementField[r, c, 0] = d[0]
+                    displacementField[r, c, 1] = d[1]
+                    xx -= d[0]
+                    yy -= d[1]
+                    opt = xx * xx + yy * yy
+                    if(maxDisplacement < opt):
+                        maxDisplacement = opt
     return sqrt(maxDisplacement)
 
 
@@ -137,14 +143,17 @@ cpdef double compute_energy_SSD2D(floating[:, :] deltaField,
     cdef int nrows = deltaField.shape[0]
     cdef int ncols = deltaField.shape[1]
     cdef floating energy = 0
-    for r in range(nrows):
-        for c in range(ncols):
-            energy += deltaField[r, c] ** 2
+
+    with nogil:
+        for r in range(nrows):
+            for c in range(ncols):
+                energy += deltaField[r, c] ** 2
     return energy
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] deltaField,
                                                        floating[:, :, :] sigmaField,
                                                        floating[:, :, :, :] gradientField,
@@ -158,94 +167,102 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] deltaFi
     cdef int nslices = deltaField.shape[0]
     cdef int nrows = deltaField.shape[1]
     cdef int ncols = deltaField.shape[2]
-    cdef int s, r, c, ds, dr, dc, nn
+    cdef int nn        
     cdef floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
     cdef floating[:] d = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
     cdef floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(deltaField).dtype)
     cdef floating[:] A = np.ndarray(shape=(6,), dtype=np.asarray(deltaField).dtype)
     cdef floating xx, yy, zz, opt, nrm2, delta, sigma, maxDisplacement
+    cdef int dr, ds, dc, s, r, c
     maxDisplacement = 0
-    for s in range(nslices):
-        for r in range(nrows):
-            for c in range(ncols):
-                delta = deltaField[s, r, c]
-                sigma = sigmaField[s, r, c] if sigmaField != None else 1
-                if(target == None):
-                    b[0] = deltaField[s, r, c] * gradientField[s, r, c, 0]
-                    b[1] = deltaField[s, r, c] * gradientField[s, r, c, 1]
-                    b[2] = deltaField[s, r, c] * gradientField[s, r, c, 2]
-                else:
-                    b[0] = target[s, r, c, 0]
-                    b[1] = target[s, r, c, 1]
-                    b[2] = target[s, r, c, 2]
-                nn = 0
-                y[:] = 0
-                for k in range(NUM_NEIGHBORS):
-                    ds = s + dSlice[k]
-                    if((ds < 0) or (ds >= nslices)):
-                        continue
-                    dr = r + dRow[k]
-                    if((dr < 0) or (dr >= nrows)):
-                        continue
-                    dc = c + dCol[k]
-                    if((dc < 0) or (dc >= ncols)):
-                        continue
-                    nn += 1
-                    y[0] += displacementField[ds, dr, dc, 0]
-                    y[1] += displacementField[ds, dr, dc, 1]
-                    y[2] += displacementField[ds, dr, dc, 2]
-                if(isinf(sigma)):
-                    xx = displacementField[s, r, c, 0]
-                    yy = displacementField[s, r, c, 1]
-                    zz = displacementField[s, r, c, 2]
-                    displacementField[s, r, c, 0] = y[0] / nn
-                    displacementField[s, r, c, 1] = y[1] / nn
-                    displacementField[s, r, c, 2] = y[2] / nn
-                    xx -= displacementField[s, r, c, 0]
-                    yy -= displacementField[s, r, c, 1]
-                    zz -= displacementField[s, r, c, 2]
-                    opt = xx * xx + yy * yy + zz * zz
-                    if(maxDisplacement < opt):
-                        maxDisplacement = opt
-                elif(sigma == 0):
-                        nrm2 = gradientField[s, r, c, 0] ** 2 + \
-                            gradientField[s, r, c, 1] ** 2 + \
-                            gradientField[s, r, c, 2] ** 2
-                        if(nrm2 == 0):
-                            displacementField[s, r, c, :] = 0
-                        else:
-                            displacementField[s, r, c, 0] = (b[0]) / nrm2
-                            displacementField[s, r, c, 1] = (b[1]) / nrm2
-                            displacementField[s, r, c, 2] = (b[2]) / nrm2
-                else:
-                    y[0] = b[0] + sigma * lambdaParam * y[0]
-                    y[1] = b[1] + sigma * lambdaParam * y[1]
-                    y[2] = b[2] + sigma * lambdaParam * y[2]
-                    A[0] = gradientField[s, r, c, 0] * \
-                        gradientField[s, r, c, 0] + sigma * lambdaParam * nn
-                    A[1] = gradientField[s, r, c, 0] * \
-                        gradientField[s, r, c, 1]
-                    A[2] = gradientField[s, r, c, 0] * \
-                        gradientField[s, r, c, 2]
-                    A[3] = gradientField[s, r, c, 1] * \
-                        gradientField[s, r, c, 1] + sigma * lambdaParam * nn
-                    A[4] = gradientField[s, r, c, 1] * \
-                        gradientField[s, r, c, 2]
-                    A[5] = gradientField[s, r, c, 2] ** 2 + \
-                        sigma * lambdaParam * nn
-                    xx = displacementField[s, r, c, 0]
-                    yy = displacementField[s, r, c, 1]
-                    zz = displacementField[s, r, c, 2]
-                    solve3DSymmetricPositiveDefiniteSystem(A, y, d)
-                    displacementField[s, r, c, 0] = d[0]
-                    displacementField[s, r, c, 1] = d[1]
-                    displacementField[s, r, c, 2] = d[2]
-                    xx -= displacementField[s, r, c, 0]
-                    yy -= displacementField[s, r, c, 1]
-                    zz -= displacementField[s, r, c, 2]
-                    opt = xx * xx + yy * yy + zz * zz
-                    if(maxDisplacement < opt):
-                        maxDisplacement = opt
+
+    with nogil:
+
+        for s in range(nslices):
+            for r in range(nrows):
+                for c in range(ncols):
+                    delta = deltaField[s, r, c]
+                    sigma = sigmaField[s, r, c] if sigmaField != None else 1
+                    if(target == None):
+                        b[0] = deltaField[s, r, c] * gradientField[s, r, c, 0]
+                        b[1] = deltaField[s, r, c] * gradientField[s, r, c, 1]
+                        b[2] = deltaField[s, r, c] * gradientField[s, r, c, 2]
+                    else:
+                        b[0] = target[s, r, c, 0]
+                        b[1] = target[s, r, c, 1]
+                        b[2] = target[s, r, c, 2]
+                    nn = 0
+                    y[0] = 0
+                    y[1] = 0
+                    y[2] = 0
+                    for k in range(NUM_NEIGHBORS):
+                        ds = s + dSlice[k]
+                        if((ds < 0) or (ds >= nslices)):
+                            continue
+                        dr = r + dRow[k]
+                        if((dr < 0) or (dr >= nrows)):
+                            continue
+                        dc = c + dCol[k]
+                        if((dc < 0) or (dc >= ncols)):
+                            continue
+                        nn += 1
+                        y[0] += displacementField[ds, dr, dc, 0]
+                        y[1] += displacementField[ds, dr, dc, 1]
+                        y[2] += displacementField[ds, dr, dc, 2]
+                    if(isinf(sigma)):
+                        xx = displacementField[s, r, c, 0]
+                        yy = displacementField[s, r, c, 1]
+                        zz = displacementField[s, r, c, 2]
+                        displacementField[s, r, c, 0] = y[0] / nn
+                        displacementField[s, r, c, 1] = y[1] / nn
+                        displacementField[s, r, c, 2] = y[2] / nn
+                        xx -= displacementField[s, r, c, 0]
+                        yy -= displacementField[s, r, c, 1]
+                        zz -= displacementField[s, r, c, 2]
+                        opt = xx * xx + yy * yy + zz * zz
+                        if(maxDisplacement < opt):
+                            maxDisplacement = opt
+                    elif(sigma == 0):
+                            nrm2 = gradientField[s, r, c, 0] ** 2 + \
+                                gradientField[s, r, c, 1] ** 2 + \
+                                gradientField[s, r, c, 2] ** 2
+                            if(nrm2 == 0):                                
+                                displacementField[s, r, c, 0] = 0
+                                displacementField[s, r, c, 1] = 0
+                                displacementField[s, r, c, 2] = 0
+                            else:
+                                displacementField[s, r, c, 0] = (b[0]) / nrm2
+                                displacementField[s, r, c, 1] = (b[1]) / nrm2
+                                displacementField[s, r, c, 2] = (b[2]) / nrm2
+                    else:
+                        y[0] = b[0] + sigma * lambdaParam * y[0]
+                        y[1] = b[1] + sigma * lambdaParam * y[1]
+                        y[2] = b[2] + sigma * lambdaParam * y[2]
+                        A[0] = gradientField[s, r, c, 0] * \
+                            gradientField[s, r, c, 0] + sigma * lambdaParam * nn
+                        A[1] = gradientField[s, r, c, 0] * \
+                            gradientField[s, r, c, 1]
+                        A[2] = gradientField[s, r, c, 0] * \
+                            gradientField[s, r, c, 2]
+                        A[3] = gradientField[s, r, c, 1] * \
+                            gradientField[s, r, c, 1] + sigma * lambdaParam * nn
+                        A[4] = gradientField[s, r, c, 1] * \
+                            gradientField[s, r, c, 2]
+                        A[5] = gradientField[s, r, c, 2] ** 2 + \
+                            sigma * lambdaParam * nn
+                        xx = displacementField[s, r, c, 0]
+                        yy = displacementField[s, r, c, 1]
+                        zz = displacementField[s, r, c, 2]
+                        solve3DSymmetricPositiveDefiniteSystem(A, y, d)
+                        displacementField[s, r, c, 0] = d[0]
+                        displacementField[s, r, c, 1] = d[1]
+                        displacementField[s, r, c, 2] = d[2]
+                        xx -= displacementField[s, r, c, 0]
+                        yy -= displacementField[s, r, c, 1]
+                        zz -= displacementField[s, r, c, 2]
+                        opt = xx * xx + yy * yy + zz * zz
+                        if(maxDisplacement < opt):
+                            maxDisplacement = opt
     return sqrt(maxDisplacement)
 
 
@@ -260,10 +277,11 @@ cpdef double compute_energy_SSD3D(floating[:, :, :] deltaField,
     cdef int nrows = deltaField.shape[1]
     cdef int ncols = deltaField.shape[2]
     cdef floating energy = 0
-    for s in range(nslices):
-        for r in range(nrows):
-            for c in range(ncols):
-                energy += deltaField[s, r, c] ** 2
+    with nogil:
+        for s in range(nslices):
+            for r in range(nrows):
+                for c in range(ncols):
+                    energy += deltaField[s, r, c] ** 2
     return energy
 
 
@@ -399,6 +417,7 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] deltaField,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 def compute_demons_step2D(floating[:, :] deltaField,
                           floating[:, :, :] gradientField,
                           double maxStepSize):
@@ -432,6 +451,7 @@ def compute_demons_step2D(floating[:, :] deltaField,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
+@cython.cdivision(True)
 def compute_demons_step3D(floating[:, :, :] deltaField,
                           floating[:, :, :, :] gradientField,
                           double maxStepSize):

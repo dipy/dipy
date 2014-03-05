@@ -168,6 +168,6 @@ def test_em_3d():
 
 if __name__=='__main__':
     
-    test_ssd_2d()
+    #test_ssd_2d()
     test_cc_3d()
-    test_em_3d()
+    #test_em_3d()

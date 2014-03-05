@@ -186,7 +186,7 @@ class CCMetric(SimilarityMetric):
         del self.factors
         del self.gradient_moving
         del self.gradient_static
-
+    
     def compute_forward(self):
         r"""
         Computes the update displacement field to be used for registration of
