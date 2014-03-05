@@ -225,8 +225,6 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
         floating dkk, dii, djj
         floating alpha, beta, gamma, calpha, cbeta, cgamma, nn
 
-
-
     for k in range(ns1):
         for i in range(nr1):
             for j in range(nc1):
@@ -1572,7 +1570,7 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
     cdef number[:, :] warped = np.zeros((nrows, ncols), 
                                         dtype=np.asarray(image).dtype)
     with nogil:
-        
+
         for i in range(nrows):
             for j in range(ncols):
                 if(affine != None):
