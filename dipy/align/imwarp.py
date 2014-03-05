@@ -5,6 +5,7 @@ import vector_fields as vfu
 import registration_common as rcommon
 from dipy.align import floating
 
+
 def compose_displacements(new_displacement, current_displacement):
     r"""
     Interpolates current displacement at the locations defined by 
@@ -525,31 +526,52 @@ class DiffeomorphicMap(object):
 
 class DiffeomorphicRegistration(object):
 
-    r"""
-    This abstract class defines the interface to be implemented by any
-    optimization algorithm for diffeomorphic Registration
-    """
-
     def __init__(self,
                  dim,
-                 fixed=None,
+                 static=None,
                  moving=None,
                  affine_init=None,
                  metric=None,
                  update_function=None):
+        r"""
+        Diffeomorphic Registration
+
+        This abstract class defines the interface to be implemented by any
+        optimization algorithm for diffeomorphic Registration.
+
+        Parameters
+        ----------
+        dim : int (either 2 or 3)
+            the dimension of the diffeomorphism domain
+        static : array, shape (R, C) or (S, R, C)
+            the static (reference) image
+        moving : array, shape (R, C) or (S, R, C)
+            the moving (target) image to be warped towards static
+        affine_init : array, shape (3, 3) or (4, 4)
+            the initial affine transformation aligning the moving towards the 
+            reference image
+        metric : SimilarityMetric object
+            the object measuring the similarity of the two images. The registration 
+            algorithm will minimize (or maximize) the provided similarity
+        update_function : function
+            the function to be applied to perform a small deformation to a 
+            displacement field (the small deformation is given as a deformation 
+            field as well). An update function may for example compute the composition
+            of the two displacement fields or the sum of them, etc.
+        """
         self.dim = dim
-        self.set_fixed_image(fixed)
+        self.set_static_image(static)
         self.set_moving_image(moving)
         self.set_affine_init(affine_init)
         self.metric = metric
         self.update = update_function
 
-    def set_fixed_image(self, fixed):
+    def set_static_image(self, static):
         r"""
-        Establishes the fixed image to be used by this registration optimizer.
+        Establishes the static image to be used by this registration optimizer.
         Updates the domain dimension information accordingly
         """
-        self.fixed = fixed
+        self.static = static
 
     def set_moving_image(self, moving):
         r"""
@@ -610,7 +632,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
     def __init__(self,
                  dim,
-                 fixed=None,
+                 static=None,
                  moving=None,
                  affine_init=None,
                  metric=None,
@@ -621,7 +643,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  inv_tol = 1e-3,
                  report_status = False):
         super(SymmetricDiffeomorphicRegistration, self).__init__(
-            dim, fixed, moving, affine_init, metric, update_function)
+            dim, static, moving, affine_init, metric, update_function)
         self.set_opt_iter(opt_iter)
         self.opt_tol = opt_tol
         self.inv_tol = inv_tol
@@ -654,14 +676,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         consistent and the optimizer is ready to run
         """
         ready = True
-        if self.fixed == None:
+        if self.static == None:
             ready = False
-            print('Error: Fixed image not set.')
-        elif self.dim != len(self.fixed.shape):
+            print('Error: static image not set.')
+        elif self.dim != len(self.static.shape):
             ready = False
             print('Error: inconsistent dimensions. Last dimension update: %d.'
-                  'Fixed image dimension: %d.' % (self.dim,
-                                                  len(self.fixed.shape)))
+                  'static image dimension: %d.' % (self.dim,
+                                                  len(self.static.shape)))
         if self.moving == None:
             ready = False
             print('Error: Moving image not set.')
@@ -695,14 +717,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_pyramid = [img for img
                                in self.generate_pyramid(self.moving,
                                                         self.levels - 1)]
-        self.fixed_pyramid = [img for img
-                              in self.generate_pyramid(self.fixed,
+        self.static_pyramid = [img for img
+                              in self.generate_pyramid(self.static,
                                                        self.levels - 1)]
         starting_forward = np.zeros(
-            shape=self.fixed_pyramid[self.levels - 1].shape + (self.dim,),
+            shape=self.static_pyramid[self.levels - 1].shape + (self.dim,),
             dtype=floating)
         starting_forward_inv = np.zeros(
-            shape=self.fixed_pyramid[self.levels - 1].shape + (self.dim,),
+            shape=self.static_pyramid[self.levels - 1].shape + (self.dim,),
             dtype=floating)
         self.forward_model.scale_affines(0.5 ** (self.levels - 1))
         self.forward_model.set_forward(starting_forward)
@@ -711,7 +733,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             shape=self.moving_pyramid[self.levels - 1].shape + (self.dim,),
             dtype=floating)
         starting_backward_inverse = np.zeros(
-            shape=self.fixed_pyramid[self.levels - 1].shape + (self.dim,),
+            shape=self.static_pyramid[self.levels - 1].shape + (self.dim,),
             dtype=floating)
         self.backward_model.scale_affines(0.5 ** (self.levels - 1))
         self.backward_model.set_forward(starting_backward)
@@ -722,7 +744,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         Frees the resources allocated during initialization
         """
         del self.moving_pyramid
-        del self.fixed_pyramid
+        del self.static_pyramid
 
     def _iterate(self, show_images=False):
         r"""
@@ -736,14 +758,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         #tic = time.time()
         wmoving = self.backward_model.transform_inverse(self.current_moving, 'tri')
-        wfixed = self.forward_model.transform_inverse(self.current_fixed, 'tri')
+        wstatic = self.forward_model.transform_inverse(self.current_static, 'tri')
         
         self.metric.set_moving_image(wmoving)
         self.metric.use_moving_image_dynamics(
             self.current_moving, self.backward_model.inverse())
-        self.metric.set_fixed_image(wfixed)
-        self.metric.use_fixed_image_dynamics(
-            self.current_fixed, self.forward_model.inverse())
+        self.metric.set_static_image(wstatic)
+        self.metric.use_static_image_dynamics(
+            self.current_static, self.forward_model.inverse())
         self.metric.initialize_iteration()
         ff_shape = np.array(self.forward_model.forward.shape).astype(np.int32)
         fb_shape = np.array(self.forward_model.backward.shape).astype(np.int32)
@@ -830,13 +852,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         show_common_space = True
         if show_common_space:
             wmoving = self.backward_model.transform_inverse(self.current_moving,'tri')
-            wfixed = self.forward_model.transform_inverse(self.current_fixed, 'tri')
+            wstatic = self.forward_model.transform_inverse(self.current_static, 'tri')
             self.metric.set_moving_image(wmoving)
             self.metric.use_moving_image_dynamics(
                 self.current_moving, self.backward_model.inverse())
-            self.metric.set_fixed_image(wfixed)
-            self.metric.use_fixed_image_dynamics(
-                self.current_fixed, self.forward_model.inverse())
+            self.metric.set_static_image(wstatic)
+            self.metric.use_static_image_dynamics(
+                self.current_static, self.forward_model.inverse())
             self.metric.initialize_iteration()
             self.metric.report_status()
         else:
@@ -855,9 +877,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.metric.set_moving_image(wmoving)
             self.metric.use_moving_image_dynamics(
                 self.current_moving, composition)
-            self.metric.set_fixed_image(self.current_fixed)
-            self.metric.use_fixed_image_dynamics(
-                self.current_fixed, None)
+            self.metric.set_static_image(self.current_static)
+            self.metric.use_static_image_dynamics(
+                self.current_static, None)
             self.metric.initialize_iteration()
             self.metric.report_status()
 
@@ -869,19 +891,19 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.full_energy_profile = []
         for level in range(self.levels - 1, -1, -1):
             print 'Processing level', level
-            self.current_fixed = self.fixed_pyramid[level]
+            self.current_static = self.static_pyramid[level]
             self.current_moving = self.moving_pyramid[level]
-            self.metric.use_original_fixed_image(
-                self.fixed_pyramid[level])
-            self.metric.use_original_fixed_image(
+            self.metric.use_original_static_image(
+                self.static_pyramid[level])
+            self.metric.use_original_static_image(
                 self.moving_pyramid[level])
             self.metric.set_levels_below(self.levels - level)
             self.metric.set_levels_above(level)
             if level < self.levels - 1:
-                self.forward_model.upsample(self.current_fixed.shape,
-                                            self.current_fixed.shape)
+                self.forward_model.upsample(self.current_static.shape,
+                                            self.current_static.shape)
                 self.backward_model.upsample(self.current_moving.shape,
-                                             self.current_fixed.shape)
+                                             self.current_static.shape)
             niter = 0
             self.full_energy_profile.extend(self.energy_list)
             self.energy_list = []
@@ -907,9 +929,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
               % (stats[1], stats[2]))
         self._end_optimizer()
 
-    def optimize(self, fixed=None, moving=None, affine_init=None):
-        if fixed!=None:
-            self.set_fixed_image(fixed)
+    def optimize(self, static=None, moving=None, affine_init=None):
+        if static!=None:
+            self.set_static_image(static)
         if moving!=None:
             self.set_moving_image(moving)
         if affine_init!=None:

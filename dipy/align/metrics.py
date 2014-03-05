@@ -10,6 +10,7 @@ import cc
 import em
 from dipy.align import floating
 
+
 class SimilarityMetric(object):
     """
     A similarity metric is in charge of keeping track of the numerical value
@@ -17,12 +18,12 @@ class SimilarityMetric(object):
     computes the update field for the forward and inverse
     displacement fields to be used in a gradient-based optimization algorithm.
     Note that this metric does not depend on any transformation (affine or
-    non-linear), so it assumes the fixed and reference images are already warped
+    non-linear), so it assumes the static and moving images are already warped
     """
     __metaclass__ = abc.ABCMeta
     def __init__(self, dim):
         self.dim = dim
-        self.fixed_image = None
+        self.static_image = None
         self.moving_image = None
         self.levels_above = 0
         self.levels_below = 0
@@ -44,11 +45,11 @@ class SimilarityMetric(object):
         """
         self.levels_above = levels
 
-    def set_fixed_image(self, fixed_image):
+    def set_static_image(self, static_image):
         """
-        Sets the fixed image.
+        Sets the static image.
         """
-        self.fixed_image = fixed_image
+        self.static_image = static_image
 
     @abc.abstractmethod
     def get_metric_name(self):
@@ -58,20 +59,20 @@ class SimilarityMetric(object):
         pass
 
     @abc.abstractmethod
-    def use_fixed_image_dynamics(self,
-                              original_fixed_image,
-                              transformation):
+    def use_static_image_dynamics(self,
+                                 original_static_image,
+                                 transformation):
         """
         This methods provides the metric a chance to compute any useful
-        information from knowing how the current fixed image was generated
-        (as the transformation of an original fixed image). This method is
-        called by the optimizer just after it sets the fixed image.
+        information from knowing how the current static image was generated
+        (as the transformation of an original static image). This method is
+        called by the optimizer just after it sets the static image.
         Transformation will be an instance of SymmetricDiffeomorficMap or None if
         the originalMovingImage equals self.moving_image.
         """
 
     @abc.abstractmethod
-    def use_original_fixed_image(self, original_fixed_image):
+    def use_original_static_image(self, original_static_image):
         """
         This methods provides the metric a chance to compute any useful
         information from the original moving image (to be used along with the
@@ -104,9 +105,9 @@ class SimilarityMetric(object):
                                transformation):
         """
         This methods provides the metric a chance to compute any useful
-        information from knowing how the current fixed image was generated
-        (as the transformation of an original fixed image). This method is
-        called by the optimizer just after it sets the fixed image.
+        information from knowing how the current static image was generated
+        (as the transformation of an original static image). This method is
+        called by the optimizer just after it sets the static image.
         Transformation will be an instance of SymmetricDiffeomorficMap or None if
         the originalMovingImage equals self.moving_image.
         """
@@ -147,7 +148,7 @@ class SimilarityMetric(object):
     @abc.abstractmethod
     def get_energy(self):
         """
-        Must return the numeric value of the similarity between the given fixed
+        Must return the numeric value of the similarity between the given static
         and moving images
         """
 
@@ -175,7 +176,7 @@ class CCMetric(SimilarityMetric):
         r"""
         Precomputes the cross-correlation factors
         """
-        self.factors = cc.precompute_cc_factors_3d(self.fixed_image,
+        self.factors = cc.precompute_cc_factors_3d(self.static_image,
                                                    self.moving_image,
                                                    self.radius)
         self.factors = np.array(self.factors)
@@ -185,11 +186,11 @@ class CCMetric(SimilarityMetric):
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
-        self.gradient_fixed = np.empty(
-            shape = (self.fixed_image.shape)+(self.dim,), dtype = floating)
+        self.gradient_static = np.empty(
+            shape = (self.static_image.shape)+(self.dim,), dtype = floating)
         i = 0
-        for grad in sp.gradient(self.fixed_image):
-            self.gradient_fixed[..., i] = grad
+        for grad in sp.gradient(self.static_image):
+            self.gradient_static[..., i] = grad
             i += 1
 
     def free_iteration(self):
@@ -198,14 +199,14 @@ class CCMetric(SimilarityMetric):
         """
         del self.factors
         del self.gradient_moving
-        del self.gradient_fixed
+        del self.gradient_static
 
     def compute_forward(self):
         r"""
         Computes the update displacement field to be used for registration of
-        the moving image towards the fixed image
+        the moving image towards the static image
         """
-        displacement, self.energy=cc.compute_cc_forward_step_3d(self.gradient_fixed,
+        displacement, self.energy=cc.compute_cc_forward_step_3d(self.gradient_static,
                                       self.gradient_moving,
                                       self.factors)
         displacement=np.array(displacement)
@@ -222,9 +223,9 @@ class CCMetric(SimilarityMetric):
     def compute_backward(self):
         r"""
         Computes the update displacement field to be used for registration of
-        the fixed image towards the moving image
+        the static image towards the moving image
         """
-        displacement, energy=cc.compute_cc_backward_step_3d(self.gradient_fixed,
+        displacement, energy=cc.compute_cc_backward_step_3d(self.gradient_static,
                                       self.gradient_moving,
                                       self.factors)
         displacement=np.array(displacement)
@@ -245,9 +246,9 @@ class CCMetric(SimilarityMetric):
         """
         return NotImplemented
 
-    def use_original_fixed_image(self, original_fixed_image):
+    def use_original_static_image(self, original_static_image):
         r"""
-        CCMetric computes the object mask by thresholding the original fixed
+        CCMetric computes the object mask by thresholding the original static
         image
         """
         pass
@@ -259,16 +260,16 @@ class CCMetric(SimilarityMetric):
         """
         pass
 
-    def use_fixed_image_dynamics(self, original_fixed_image, transformation):
+    def use_static_image_dynamics(self, original_static_image, transformation):
         r"""
         CCMetric takes advantage of the image dynamics by computing the
-        current fixed image mask from the originalFixedImage mask (warped
+        current static image mask from the originalstaticImage mask (warped
         by nearest neighbor interpolation)
         """
-        self.fixed_image_mask = (original_fixed_image>0).astype(np.int32)
+        self.static_image_mask = (original_static_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.fixed_image_mask = transformation.transform(self.fixed_image_mask,'nn')
+        self.static_image_mask = transformation.transform(self.static_image_mask,'nn')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""
@@ -288,20 +289,21 @@ class CCMetric(SimilarityMetric):
         if self.dim == 2:
             plt.figure()
             rcommon.overlayImages(self.movingq_means_field,
-                                  self.fixedq_means_field, False)
+                                  self.staticq_means_field, False)
         else:
-            fixed = self.fixed_image
+            static = self.static_image
             moving = self.moving_image
-            shape_fixed = fixed.shape
-            rcommon.overlayImages(moving[:, shape_fixed[1]//2, :],
-                                  fixed[:, shape_fixed[1]//2, :])
-            rcommon.overlayImages(moving[shape_fixed[0]//2, :, :],
-                                  fixed[shape_fixed[0]//2, :, :])
-            rcommon.overlayImages(moving[:, :, shape_fixed[2]//2],
-                                  fixed[:, :, shape_fixed[2]//2])
+            shape_static = static.shape
+            rcommon.overlayImages(moving[:, shape_static[1]//2, :],
+                                  static[:, shape_static[1]//2, :])
+            rcommon.overlayImages(moving[shape_static[0]//2, :, :],
+                                  static[shape_static[0]//2, :, :])
+            rcommon.overlayImages(moving[:, :, shape_static[2]//2],
+                                  static[:, :, shape_static[2]//2])
 
     def get_metric_name(self):
         return "CCMetric"
+
 
 class EMMetric(SimilarityMetric):
     r"""
@@ -328,12 +330,12 @@ class EMMetric(SimilarityMetric):
             self.iteration_type = EMMetric.WCYCLE_ITER
         else:
             self.iteration_type = EMMetric.VCYCLE_ITER
-        self.fixed_image_mask = None
+        self.static_image_mask = None
         self.moving_image_mask = None
-        self.fixedq_means_field = None
+        self.staticq_means_field = None
         self.movingq_means_field = None
         self.movingq_levels = None
-        self.fixedq_levels = None
+        self.staticq_levels = None
 
     def _connect_functions(self):
         r"""
@@ -373,39 +375,39 @@ class EMMetric(SimilarityMetric):
         self.use_double_gradient is True these garadients are averaged.
         """
         self._connect_functions()
-        sampling_mask = self.fixed_image_mask*self.moving_image_mask
+        sampling_mask = self.static_image_mask*self.moving_image_mask
         self.sampling_mask = sampling_mask
-        fixedq, self.fixedq_levels, hist = self.quantize(self.fixed_image,
+        staticq, self.staticq_levels, hist = self.quantize(self.static_image,
                                                       self.q_levels)
-        fixedq = np.array(fixedq, dtype = np.int32)
-        self.fixedq_levels = np.array(self.fixedq_levels)
-        fixedq_means, fixedq_variances = self.compute_stats(sampling_mask,
+        staticq = np.array(staticq, dtype = np.int32)
+        self.staticq_levels = np.array(self.staticq_levels)
+        staticq_means, staticq_variances = self.compute_stats(sampling_mask,
                                                        self.moving_image,
                                                        self.q_levels,
-                                                       fixedq)
-        fixedq_means[0] = 0
-        fixedq_means = np.array(fixedq_means)
-        fixedq_variances = np.array(fixedq_variances)
-        self.fixedq_sigma_field = fixedq_variances[fixedq]
-        self.fixedq_means_field = fixedq_means[fixedq]
+                                                       staticq)
+        staticq_means[0] = 0
+        staticq_means = np.array(staticq_means)
+        staticq_variances = np.array(staticq_variances)
+        self.staticq_sigma_field = staticq_variances[staticq]
+        self.staticq_means_field = staticq_means[staticq]
         self.gradient_moving = np.empty(
             shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
-        self.gradient_fixed = np.empty(
-            shape = (self.fixed_image.shape)+(self.dim,), dtype = floating)
+        self.gradient_static = np.empty(
+            shape = (self.static_image.shape)+(self.dim,), dtype = floating)
         i = 0
-        for grad in sp.gradient(self.fixed_image):
-            self.gradient_fixed[..., i] = grad
+        for grad in sp.gradient(self.static_image):
+            self.gradient_static[..., i] = grad
             i += 1
         movingq, self.movingq_levels, hist = self.quantize(self.moving_image,
                                                         self.q_levels)
         movingq = np.array(movingq, dtype = np.int32)
         self.movingq_levels = np.array(self.movingq_levels)
         movingq_means, movingq_variances = self.compute_stats(
-            sampling_mask, self.fixed_image, self.q_levels, movingq)
+            sampling_mask, self.static_image, self.q_levels, movingq)
         movingq_means[0] = 0
         movingq_means = np.array(movingq_means)
         movingq_variances = np.array(movingq_variances)
@@ -413,12 +415,12 @@ class EMMetric(SimilarityMetric):
         self.movingq_means_field = movingq_means[movingq]
         if self.use_double_gradient:
             i = 0
-            for grad in sp.gradient(self.fixedq_means_field):
+            for grad in sp.gradient(self.staticq_means_field):
                 self.gradient_moving[..., i] += grad
                 i += 1
             i = 0
             for grad in sp.gradient(self.movingq_means_field):
-                self.gradient_fixed[..., i] += grad
+                self.gradient_static[..., i] += grad
                 i += 1
 
     def free_iteration(self):
@@ -426,26 +428,26 @@ class EMMetric(SimilarityMetric):
         Frees the resources allocated during initialization
         """
         del self.sampling_mask
-        del self.fixedq_levels
+        del self.staticq_levels
         del self.movingq_levels
-        del self.fixedq_sigma_field
-        del self.fixedq_means_field
+        del self.staticq_sigma_field
+        del self.staticq_means_field
         del self.movingq_sigma_field
         del self.movingq_means_field
         del self.gradient_moving
-        del self.gradient_fixed
+        del self.gradient_static
 
     def compute_forward(self):
         r"""
         Computes the update displacement field to be used for registration of
-        the moving image towards the fixed image
+        the moving image towards the static image
         """
         return self.compute_step(True)
 
     def compute_backward(self):
         r"""
         Computes the update displacement field to be used for registration of
-        the fixed image towards the moving image
+        the static image towards the moving image
         """
         return self.compute_step(False)
 
@@ -464,16 +466,16 @@ class EMMetric(SimilarityMetric):
         max_inner_iter = self.inner_iter
         max_step_length = self.step_length
         if forward_step:
-            shape = self.fixed_image.shape
+            shape = self.static_image.shape
         else:
             shape = self.moving_image.shape
         if forward_step:
-            delta = self.fixedq_means_field - self.moving_image
-            sigma_field = self.fixedq_sigma_field
+            delta = self.staticq_means_field - self.moving_image
+            sigma_field = self.staticq_sigma_field
         else:
-            delta = self.movingq_means_field - self.fixed_image
+            delta = self.movingq_means_field - self.static_image
             sigma_field = self.movingq_sigma_field
-        gradient = self.gradient_moving if forward_step else self.gradient_fixed
+        gradient = self.gradient_moving if forward_step else self.gradient_static
         displacement = np.zeros(shape = (shape)+(self.dim,), dtype = floating)
         self.energy = self.multi_resolution_iteration(self.levels_below,
                                                       max_inner_iter, delta,
@@ -499,9 +501,9 @@ class EMMetric(SimilarityMetric):
         """
         return NotImplemented
 
-    def use_original_fixed_image(self, original_fixed_image):
+    def use_original_static_image(self, original_static_image):
         r"""
-        EMMetric computes the object mask by thresholding the original fixed
+        EMMetric computes the object mask by thresholding the original static
         image
         """
         pass
@@ -513,16 +515,16 @@ class EMMetric(SimilarityMetric):
         """
         pass
 
-    def use_fixed_image_dynamics(self, original_fixed_image, transformation):
+    def use_static_image_dynamics(self, original_static_image, transformation):
         r"""
         EMMetric takes advantage of the image dynamics by computing the
-        current fixed image mask from the originalFixedImage mask (warped
+        current static image mask from the originalstaticImage mask (warped
         by nearest neighbor interpolation)
         """
-        self.fixed_image_mask = (original_fixed_image>0).astype(np.int32)
+        self.static_image_mask = (original_static_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.fixed_image_mask = transformation.transform(self.fixed_image_mask,'nn')
+        self.static_image_mask = transformation.transform(self.static_image_mask,'nn')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""
@@ -542,17 +544,17 @@ class EMMetric(SimilarityMetric):
         if self.dim == 2:
             plt.figure()
             rcommon.overlayImages(self.movingq_means_field,
-                                  self.fixedq_means_field, False)
+                                  self.staticq_means_field, False)
         else:
-            fixed = self.fixed_image
+            static = self.static_image
             moving = self.moving_image
-            shape_fixed = self.fixedq_means_field.shape
-            rcommon.overlayImages(moving[:, shape_fixed[1]//2, :],
-                                  fixed[:, shape_fixed[1]//2, :])
-            rcommon.overlayImages(moving[shape_fixed[0]//2, :, :],
-                                  fixed[shape_fixed[0]//2, :, :])
-            rcommon.overlayImages(moving[:, :, shape_fixed[2]//2],
-                                  fixed[:, :, shape_fixed[2]//2])
+            shape_static = self.staticq_means_field.shape
+            rcommon.overlayImages(moving[:, shape_static[1]//2, :],
+                                  static[:, shape_static[1]//2, :])
+            rcommon.overlayImages(moving[shape_static[0]//2, :, :],
+                                  static[shape_static[0]//2, :, :])
+            rcommon.overlayImages(moving[:, :, shape_static[2]//2],
+                                  static[:, :, shape_static[2]//2])
 
     def get_metric_name(self):
         return "EMMetric"
@@ -588,16 +590,16 @@ class SSDMetric(SimilarityMetric):
             self.gradient_moving[..., i] = grad
             i += 1
         i = 0
-        self.gradient_fixed = np.empty(
-            shape = (self.fixed_image.shape)+(self.dim,), dtype = floating)
-        for grad in gradient(self.fixed_image):
-            self.gradient_fixed[..., i] = grad
+        self.gradient_static = np.empty(
+            shape = (self.static_image.shape)+(self.dim,), dtype = floating)
+        for grad in gradient(self.static_image):
+            self.gradient_static[..., i] = grad
             i += 1
 
     def compute_forward(self):
         r"""
         Computes the update displacement field to be used for registration of
-        the moving image towards the fixed image
+        the moving image towards the static image
         """
         if self.step_type == SSDMetric.GAUSS_SEIDEL_STEP:
             return self.compute_gauss_seidel_step(True)
@@ -608,7 +610,7 @@ class SSDMetric(SimilarityMetric):
     def compute_backward(self):
         r"""
         Computes the update displacement field to be used for registration of
-        the fixed image towards the moving image
+        the static image towards the moving image
         """
         if self.step_type == SSDMetric.GAUSS_SEIDEL_STEP:
             return self.compute_gauss_seidel_step(False)
@@ -626,14 +628,14 @@ class SSDMetric(SimilarityMetric):
         lambda_param = self.smooth
         max_step_length = self.step_length
         if forward_step:
-            shape = self.fixed_image.shape
+            shape = self.static_image.shape
         else:
             shape = self.moving_image.shape
         if forward_step:
-            delta_field = self.fixed_image-self.moving_image
+            delta_field = self.static_image-self.moving_image
         else:
-            delta_field = self.moving_image - self.fixed_image
-        #gradient = self.gradient_moving+self.gradient_fixed
+            delta_field = self.moving_image - self.static_image
+        #gradient = self.gradient_moving+self.gradient_static
         gradient = self.gradient_moving
         displacement = np.zeros(shape = (shape)+(self.dim,), dtype = floating)
         if self.dim == 2:
@@ -661,10 +663,10 @@ class SSDMetric(SimilarityMetric):
         max_step_length = self.step_length
         scale = 1.0
         if forward_step:
-            delta_field = self.fixed_image-self.moving_image
+            delta_field = self.static_image-self.moving_image
         else:
-            delta_field = self.moving_image - self.fixed_image
-        gradient = self.gradient_moving+self.gradient_fixed
+            delta_field = self.moving_image - self.static_image
+        gradient = self.gradient_moving+self.gradient_static
         if self.dim == 2:
             forward = ssd.compute_demons_step2D(delta_field, gradient,
                                                max_step_length, scale)
@@ -686,9 +688,9 @@ class SSDMetric(SimilarityMetric):
     def get_energy(self):
         return NotImplemented
 
-    def use_original_fixed_image(self, originalfixed_image):
+    def use_original_static_image(self, originalstatic_image):
         r"""
-        SSDMetric does not take advantage of the original fixed image, just pass
+        SSDMetric does not take advantage of the original static image, just pass
         """
         pass
 
@@ -698,7 +700,7 @@ class SSDMetric(SimilarityMetric):
         """
         pass
 
-    def use_fixed_image_dynamics(self, originalfixed_image, transformation):
+    def use_static_image_dynamics(self, originalstatic_image, transformation):
         r"""
         SSDMetric does not take advantage of the image dynamics, just pass
         """
@@ -712,7 +714,7 @@ class SSDMetric(SimilarityMetric):
 
     def report_status(self):
         plt.figure()
-        rcommon.overlayImages(self.moving_image, self.fixed_image, False)
+        rcommon.overlayImages(self.moving_image, self.static_image, False)
 
     def get_metric_name(self):
         return "SSDMetric"
