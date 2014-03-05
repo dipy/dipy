@@ -192,7 +192,10 @@ class StreamlineRigidRegistration(object):
             xopt, fopt, dictionary = optimum
             funcs = dictionary['funcalls']
             warnflag = dictionary['warnflag']
-            iterations = dictionary['nit']
+            try:
+                iterations = dictionary['nit']
+            except KeyError:
+                iterations = None
             grad = dictionary['grad']
 
             if self.disp:
