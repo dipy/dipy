@@ -52,13 +52,6 @@ class SimilarityMetric(object):
         self.static_image = static_image
 
     @abc.abstractmethod
-    def get_metric_name(self):
-        """
-        Must return the name of the metric that specializes this generic metric
-        """
-        pass
-
-    @abc.abstractmethod
     def use_static_image_dynamics(self,
                                  original_static_image,
                                  transformation):
@@ -150,13 +143,6 @@ class SimilarityMetric(object):
         """
         Must return the numeric value of the similarity between the given static
         and moving images
-        """
-
-    @abc.abstractmethod
-    def report_status(self):
-        """
-        This function is called mostly for debugging purposes. The metric
-        can for example show the overlaid images or print some statistics
         """
 
 class CCMetric(SimilarityMetric):
@@ -282,54 +268,59 @@ class CCMetric(SimilarityMetric):
             return
         self.moving_image_mask = transformation.transform(self.moving_image_mask, 'nn')
 
-    def report_status(self):
-        r"""
-        Shows the overlaid input images
-        """
-        if self.dim == 2:
-            plt.figure()
-            rcommon.overlayImages(self.movingq_means_field,
-                                  self.staticq_means_field, False)
-        else:
-            static = self.static_image
-            moving = self.moving_image
-            shape_static = static.shape
-            rcommon.overlayImages(moving[:, shape_static[1]//2, :],
-                                  static[:, shape_static[1]//2, :])
-            rcommon.overlayImages(moving[shape_static[0]//2, :, :],
-                                  static[shape_static[0]//2, :, :])
-            rcommon.overlayImages(moving[:, :, shape_static[2]//2],
-                                  static[:, :, shape_static[2]//2])
-
-    def get_metric_name(self):
-        return "CCMetric"
-
 
 class EMMetric(SimilarityMetric):
-    r"""
-    Similarity metric based on the Expectation-Maximization algorithm to handle
-    multi-modal images. The transfer function is modeled as a set of hidden
-    random variables that are estimated at each iteration of the algorithm.
-    """
     GAUSS_SEIDEL_STEP = 0
     DEMONS_STEP = 1
-    SINGLECYCLE_ITER = 0
-    VCYCLE_ITER = 1
-    WCYCLE_ITER = 2
 
-    def __init__(self, dim, smooth=1.0, inner_iter=5, step_length=0.25, q_levels=256, double_gradient=True, iter_type='v_cycle'):
-        super(EMMetric, self).__init__(dim, parameters)
-        self.smooth
+    def __init__(self,
+                 dim, 
+                 smooth=1.0, 
+                 inner_iter=5, 
+                 step_length=0.25, 
+                 q_levels=256, 
+                 double_gradient=True, 
+                 iter_type='v_cycle'):
+        r"""
+        Expectation-Maximization Metric
+        Similarity metric based on the Expectation-Maximization algorithm to handle
+        multi-modal images. The transfer function is modeled as a set of hidden
+        random variables that are estimated at each iteration of the algorithm.
+
+        Parameters
+        ----------
+        dim : int (either 2 or 3)
+            the dimension of the image domain
+        smooth : float
+            smoothness parameter, the larger the value the smoother the 
+            deformation field
+        inner_iter : int 
+            number of iterations to be performed at each level of the multi-
+            resolution Gauss-Seidel optimization algorithm (this is not the 
+            number of steps per Gaussian Pyramid level, that parameter must
+            be set for the optimizer, not the metric) 
+        step_length : float
+            the length of the largest displacement vector of the deformation
+            field at each iteration
+        q_levels : number of quantization levels (equal to the number of hidden
+            variables in the EM algorithm)
+        double_gradient : boolean
+            if True, the gradient of the expected static image under the moving 
+            modality will be added to the gradient of the moving image, similarly,
+            the gradient of the expected moving image under the static modality
+            will be added to the gradient of the static image.
+        iter_type : string ('single_cycle', 'v_cycle', 'w_cycle')
+            the optimization schedule to be used in the multi-resolution 
+            Gauss-Seidel optimization algorithm (not used if Demons Step is
+                selected)
+        """
+        super(EMMetric, self).__init__(dim)
+        self.smooth = smooth
         self.inner_iter = inner_iter
         self.step_length = step_length
         self.q_levels = q_levels
         self.use_double_gradient = double_gradient
-        if iter_type == 'single_cycle':
-            self.iteration_type = EMMetric.SINGLECYCLE_ITER
-        elif iter_type == 'w_cycle':
-            self.iteration_type = EMMetric.WCYCLE_ITER
-        else:
-            self.iteration_type = EMMetric.VCYCLE_ITER
+        self.iter_type = iter_type
         self.static_image_mask = None
         self.moving_image_mask = None
         self.staticq_means_field = None
@@ -346,21 +337,21 @@ class EMMetric(SimilarityMetric):
         if self.dim == 2:
             self.quantize = em.quantize_positive_image
             self.compute_stats = em.compute_masked_image_class_stats
-            if self.iteration_type == EMMetric.SINGLECYCLE_ITER:
-                self.multi_resolution_iteration = SSDMetric.single_cycle_2d
-            elif self.iteration_type == EMMetric.VCYCLE_ITER:
-                self.multi_resolution_iteration = SSDMetric.v_cycle_2d
+            if self.iter_type == 'single_cycle':
+                self.multi_resolution_iteration = single_cycle_2d
+            elif self.iter_type == 'v_cycle':
+                self.multi_resolution_iteration = v_cycle_2d
             else:
-                self.multi_resolution_iteration = SSDMetric.w_cycle_2d
+                self.multi_resolution_iteration = w_cycle_2d
         else:
             self.quantize = em.quantize_positive_volume
             self.compute_stats = em.compute_masked_volume_class_stats
-            if self.iteration_type == EMMetric.SINGLECYCLE_ITER:
-                self.multi_resolution_iteration = SSDMetric.single_cycle_3d
-            elif self.iteration_type == EMMetric.VCYCLE_ITER:
-                self.multi_resolution_iteration = SSDMetric.v_cycle_3d
+            if self.iter_type == 'single_cycle':
+                self.multi_resolution_iteration = single_cycle_3d
+            elif self.iter_type == 'v_cycle':
+                self.multi_resolution_iteration = v_cycle_3d
             else:
-                self.multi_resolution_iteration = SSDMetric.w_cycle_3d
+                self.multi_resolution_iteration = w_cycle_3d
         self.compute_step = self.compute_gauss_seidel_step
             
 
@@ -453,7 +444,8 @@ class EMMetric(SimilarityMetric):
 
     def compute_gauss_seidel_step(self, forward_step = True):
         r"""
-        Minimizes the linearized energy function with respect to the
+        Computes the Newton step to minimize this energy, i.e., minimizes the 
+        linearized energy function with respect to the
         regularized displacement field (this step does not require
         post-smoothing, as opposed to the demons step, which does not include
         regularization). To accelerate convergence we use the multi-grid
@@ -462,6 +454,19 @@ class EMMetric(SimilarityMetric):
             estimation: combining highest accuracy with real-time performance",
             10th IEEE International Conference on Computer Vision, 2005.
             ICCV 2005.
+
+        Parameters
+        ----------
+        forward_step : boolean
+            if True, computes the Newton step in the forward direction 
+            (warping the moving towards the static image). If False, 
+            computes the backward step (warping the static image to the
+            moving image)
+
+        Returns
+        -------
+        displacement : array, shape (R, C, 2) or (S, R, C, 3)
+            the Newton step
         """
         max_inner_iter = self.inner_iter
         max_step_length = self.step_length
@@ -520,6 +525,18 @@ class EMMetric(SimilarityMetric):
         EMMetric takes advantage of the image dynamics by computing the
         current static image mask from the originalstaticImage mask (warped
         by nearest neighbor interpolation)
+        
+        Parameters
+        ----------
+        original_static_image : array, shape (R, C) or (S, R, C)
+            the original static image from which the current static image was
+            generated, the current static image is the one that was provided 
+            via 'set_static_image(...)', which may not be the same as the
+            original static image but a warped version of it (even thestatic 
+            image changes during Symmetric Normalization, not only the moving one).
+        transformation : DiffeomorphicMap object
+            the transformation that was applied to the original_static_image 
+            to generate the current static image
         """
         self.static_image_mask = (original_static_image>0).astype(np.int32)
         if transformation == None:
@@ -531,33 +548,23 @@ class EMMetric(SimilarityMetric):
         EMMetric takes advantage of the image dynamics by computing the
         current moving image mask from the originalMovingImage mask (warped
         by nearest neighbor interpolation)
+
+        Parameters
+        ----------
+        original_moving_image : array, shape (R, C) or (S, R, C)
+            the original moving image from which the current moving image was
+            generated, the current moving image is the one that was provided 
+            via 'set_moving_image(...)', which may not be the same as the
+            original moving image but a warped version of it.
+        transformation : DiffeomorphicMap object
+            the transformation that was applied to the original_moving_image 
+            to generate the current moving image
         """
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
             return
         self.moving_image_mask = transformation.transform(self.moving_image_mask,'nn')
 
-    def report_status(self):
-        r"""
-        Shows the overlaid input images
-        """
-        if self.dim == 2:
-            plt.figure()
-            rcommon.overlayImages(self.movingq_means_field,
-                                  self.staticq_means_field, False)
-        else:
-            static = self.static_image
-            moving = self.moving_image
-            shape_static = self.staticq_means_field.shape
-            rcommon.overlayImages(moving[:, shape_static[1]//2, :],
-                                  static[:, shape_static[1]//2, :])
-            rcommon.overlayImages(moving[shape_static[0]//2, :, :],
-                                  static[shape_static[0]//2, :, :])
-            rcommon.overlayImages(moving[:, :, shape_static[2]//2],
-                                  static[:, :, shape_static[2]//2])
-
-    def get_metric_name(self):
-        return "EMMetric"
 
 class SSDMetric(SimilarityMetric):
     r"""
@@ -566,9 +573,6 @@ class SSDMetric(SimilarityMetric):
     """
     GAUSS_SEIDEL_STEP = 0
     DEMONS_STEP = 1
-    def get_default_parameters(self):
-        return {'lambda':1.0, 'max_inner_iter':5, 'scale':1,
-                'max_step_length':0.25, 'sigma_diff':3.0, 'step_type':0}
 
     def __init__(self, dim, smooth=3.0, inner_iter=5, step_length=0.25, step_type=0):
         super(SSDMetric, self).__init__(dim)
@@ -712,12 +716,6 @@ class SSDMetric(SimilarityMetric):
         """
         pass
 
-    def report_status(self):
-        plt.figure()
-        rcommon.overlayImages(self.moving_image, self.static_image, False)
-
-    def get_metric_name(self):
-        return "SSDMetric"
 
     def free_iteration(self):
         pass

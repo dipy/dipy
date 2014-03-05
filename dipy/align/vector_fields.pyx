@@ -1103,8 +1103,8 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
     cdef int nrVol = volume.shape[1]
     cdef int ncVol = volume.shape[2]
     cdef int i, j, k, ii, jj, kk
-    cdef floating dkk, dii, djj, tmp0, tmp1
-    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef double dkk, dii, djj, tmp0, tmp1
+    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
     if d1 != None:
         nslices = d1.shape[0]
         nrows = d1.shape[1]
@@ -1197,8 +1197,8 @@ def warp_volume_affine(floating[:, :, :] volume, int[:]refShape,
     cdef int nrVol = volume.shape[1]
     cdef int ncVol = volume.shape[2]
     cdef int i, j, k, ii, jj, kk
-    cdef floating dkk, dii, djj, tmp0, tmp1
-    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef double dkk, dii, djj, tmp0, tmp1
+    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
     for k in range(nslices):
         for i in range(nrows):
@@ -1278,8 +1278,8 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
     cdef int nsVol = volume.shape[0]
     cdef int nrVol = volume.shape[1]
     cdef int ncVol = volume.shape[2]
-    cdef floating dkk, dii, djj, tmp0, tmp1
-    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef double dkk, dii, djj, tmp0, tmp1
+    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
     cdef int k, i, j, kk, ii, jj
     cdef number[:, :, :] warped = np.zeros((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
     for k in range(nslices):
@@ -1343,8 +1343,8 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
     cdef int nsVol = volume.shape[0]
     cdef int nrVol = volume.shape[1]
     cdef int ncVol = volume.shape[2]
-    cdef floating dkk, dii, djj, tmp0, tmp1
-    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef double dkk, dii, djj, tmp0, tmp1
+    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
     cdef int k, i, j, kk, ii, jj
     cdef number[:, :, :] warped = np.zeros((nslices, nrows, ncols), dtype=np.asarray(volume).dtype)
     for k in range(nslices):
@@ -1398,8 +1398,8 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
     cdef int nrVol = image.shape[0]
     cdef int ncVol = image.shape[1]
     cdef int i, j, ii, jj
-    cdef floating dii, djj, tmp0
-    cdef floating alpha, beta, calpha, cbeta
+    cdef double dii, djj, tmp0
+    cdef double alpha, beta, calpha, cbeta
     if d1 != None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
@@ -1455,8 +1455,8 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
     cdef int nrVol = image.shape[0]
     cdef int ncVol = image.shape[1]
     cdef int i, j, ii, jj
-    cdef floating dii, djj, tmp0
-    cdef floating alpha, beta, calpha, cbeta
+    cdef double dii, djj, tmp0
+    cdef double alpha, beta, calpha, cbeta
     cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), dtype=np.asarray(image).dtype)
     for i in range(nrows):
         for j in range(ncols):
@@ -1505,8 +1505,8 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
     cdef int ncols = image.shape[1]
     cdef int nrVol = image.shape[0]
     cdef int ncVol = image.shape[1]
-    cdef floating dii, djj, tmp0
-    cdef floating alpha, beta, calpha, cbeta
+    cdef double dii, djj, tmp0
+    cdef double alpha, beta, calpha, cbeta
     cdef int i, j, ii, jj
     if displacement != None:
         nrows = displacement.shape[0]
@@ -1559,8 +1559,8 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
     cdef int ncols = refShape[1]
     cdef int nrVol = image.shape[0]
     cdef int ncVol = image.shape[1]
-    cdef floating dii, djj, tmp0
-    cdef floating alpha, beta, calpha, cbeta
+    cdef double dii, djj, tmp0
+    cdef double alpha, beta, calpha, cbeta
     cdef int i, j, ii, jj
     cdef number[:, :] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
     for i in range(nrows):

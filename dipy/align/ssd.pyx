@@ -17,7 +17,7 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
        [A[1], A[2]]].
     Returns the result in out
     """
-    cdef floating den = (A[0] * A[2] - A[1] * A[1])
+    cdef double den = (A[0] * A[2] - A[1] * A[1])
     out[1] = (A[0] * y[1] - A[1] * y[0]) / den
     out[0] = (y[0] - A[1] * out[1]) / A[0]
 
@@ -34,15 +34,15 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
        [A[2], A[4], A[5]]].
     Returns the result in out
     """
-    cdef floating a = A[0]
-    cdef floating b = A[1]
-    cdef floating c = A[2]
-    cdef floating d = (a * A[3] - b * b) / a
-    cdef floating e = (a * A[4] - b * c) / a
-    cdef floating f = (a * A[5] - c * c) / a - (e * e * a) / (a * A[3] - b * b)
-    cdef floating y0 = y[0]
-    cdef floating y1 = (y[1] * a - y0 * b) / a
-    cdef floating y2 = (y[2] * a - A[2] * y0) / a - (e * (y[1] * a - b * y0)) / (a * A[3] - b * b)
+    cdef double a = A[0]
+    cdef double b = A[1]
+    cdef double c = A[2]
+    cdef double d = (a * A[3] - b * b) / a
+    cdef double e = (a * A[4] - b * c) / a
+    cdef double f = (a * A[5] - c * c) / a - (e * e * a) / (a * A[3] - b * b)
+    cdef double y0 = y[0]
+    cdef double y1 = (y[1] * a - y0 * b) / a
+    cdef double y2 = (y[2] * a - A[2] * y0) / a - (e * (y[1] * a - b * y0)) / (a * A[3] - b * b)
     out[2] = y2 / f
     out[1] = (y1 - e * out[2]) / d
     out[0] = (y0 - b * out[1] - c * out[2]) / a
@@ -288,7 +288,7 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] deltaField,
     cdef floating delta, sigma, dotP
     cdef int s, r, c, ds, dr, dc
     if residual == None:
-        residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=np.double)
+        residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=np.asarray(deltaField).dtype)
     for s in range(nslices):
         for r in range(nrows):
             for c in range(ncols):

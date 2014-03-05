@@ -17,10 +17,10 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
     cdef int ncols = v.shape[1]
     cdef int npix = nrows * ncols
     cdef int i, j, l
-    cdef floating epsilon, delta
+    cdef double epsilon, delta
     cdef int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
     cdef int[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
-    cdef floating[:] levels = np.zeros(shape=(num_levels,), dtype=cython.typeof(v[0, 0]))
+    cdef floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
     num_levels -= 1  # zero is one of the levels
     if(num_levels < 1):
         return None, None, None
@@ -71,10 +71,10 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
     cdef int ncols = v.shape[2]
     cdef int nvox = nrows * ncols * nslices
     cdef int i, j, k, l
-    cdef floating epsilon, delta
+    cdef double epsilon, delta
     cdef int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
     cdef int[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols), dtype=np.int32)
-    cdef floating[:] levels = np.zeros(shape=(num_levels,), dtype=cython.typeof(v[0, 0, 0]))
+    cdef floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
     num_levels -= 1  # zero is one of the levels
     if(num_levels < 1):
         return None, None, None
@@ -127,10 +127,10 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
     cdef int nrows = v.shape[0]
     cdef int ncols = v.shape[1]
     cdef int i, j
-    cdef floating INF64 = np.inf
+    cdef double INF64 = np.inf
     cdef int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
-    cdef floating[:] means = np.zeros(shape=(numLabels,), dtype=cython.typeof(v[0, 0]))
-    cdef floating[:] variances = np.zeros(shape=(numLabels, ), dtype=cython.typeof(v[0, 0]))
+    cdef floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
+    cdef floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
     for i in range(nrows):
         for j in range(ncols):
             if(mask[i, j] != 0):
@@ -153,10 +153,10 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
     cdef int nrows = v.shape[1]
     cdef int ncols = v.shape[2]
     cdef int i, j, k
-    cdef floating INF64 = np.inf
+    cdef double INF64 = np.inf
     cdef int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
-    cdef floating[:] means = np.zeros(shape=(numLabels,), dtype=cython.typeof(v[0, 0, 0]))
-    cdef floating[:] variances = np.zeros(shape=(numLabels, ), dtype=cython.typeof(v[0, 0, 0]))
+    cdef floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
+    cdef floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
     for k in range(nslices):
         for i in range(nrows):
             for j in range(ncols):
