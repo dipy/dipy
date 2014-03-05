@@ -624,7 +624,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     r"""
     Performs the multi-resolution optimization algorithm for non-linear
     registration using a given similarity metric and update rule (this
-    scheme was inspider on the ANTS package).
+    scheme was inspider on the ANTS package).    
     """
 
     def __init__(self,

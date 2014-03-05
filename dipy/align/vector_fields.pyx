@@ -232,103 +232,106 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
         floating alpha, beta, gamma, calpha, cbeta, cgamma, nn
 
     comp[...] = 0
-    for k in range(ns1):
-        for i in range(nr1):
-            for j in range(nc1):
-                dkk = k + d1[k, i, j, 0]
-                dii = i + d1[k, i, j, 1]
-                djj = j + d1[k, i, j, 2]
-                if((dii < 0) or (djj < 0) or (dkk < 0) or (dii > nr2 - 1) or (djj > nc2 - 1) or (dkk > ns2 - 1)):
-                    continue
-                #---top-left
-                kk = int(dkk)
-                ii = int(dii)
-                jj = int(djj)
-                if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nr2) or (jj >= nc2) or (kk >= ns2)):
-                    continue
-                cgamma = dkk - kk
-                # by definition these factors are nonnegative
-                calpha = dii - ii
-                cbeta = djj - jj
-                alpha = 1 - calpha
-                beta = 1 - cbeta
-                gamma = 1 - cgamma
-                comp[k, i, j, 0] = d1[k, i, j, 0]
-                comp[k, i, j, 1] = d1[k, i, j, 1]
-                comp[k, i, j, 2] = d1[k, i, j, 2]
-                comp[k, i, j, 0] += alpha * beta * gamma * d2[kk, ii, jj, 0]
-                comp[k, i, j, 1] += alpha * beta * gamma * d2[kk, ii, jj, 1]
-                comp[k, i, j, 2] += alpha * beta * gamma * d2[kk, ii, jj, 2]
-                #---top-right
-                jj += 1
-                if(jj < nc2):
-                    comp[k, i, j, 0] += alpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += alpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += alpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 2]
-                #---bottom-right
-                ii += 1
-                if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
-                    comp[k, i, j, 0] += calpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += calpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += calpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 2]
-                #---bottom-left
-                jj -= 1
-                if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
-                    comp[k, i, j, 0] += calpha * \
-                        beta * gamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += calpha * \
-                        beta * gamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += calpha * \
-                        beta * gamma * d2[kk, ii, jj, 2]
-                kk += 1
-                if(kk < ns2):
-                    ii -= 1
-                    comp[k, i, j, 0] += alpha * beta * \
-                        cgamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += alpha * beta * \
-                        cgamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += alpha * beta * \
-                        cgamma * d2[kk, ii, jj, 2]
+
+    with nogil:
+        
+        for k in range(ns1):
+            for i in range(nr1):
+                for j in range(nc1):
+                    dkk = k + d1[k, i, j, 0]
+                    dii = i + d1[k, i, j, 1]
+                    djj = j + d1[k, i, j, 2]
+                    if((dii < 0) or (djj < 0) or (dkk < 0) or (dii > nr2 - 1) or (djj > nc2 - 1) or (dkk > ns2 - 1)):
+                        continue
+                    #---top-left
+                    kk = int(dkk)
+                    ii = int(dii)
+                    jj = int(djj)
+                    if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nr2) or (jj >= nc2) or (kk >= ns2)):
+                        continue
+                    cgamma = dkk - kk
+                    # by definition these factors are nonnegative
+                    calpha = dii - ii
+                    cbeta = djj - jj
+                    alpha = 1 - calpha
+                    beta = 1 - cbeta
+                    gamma = 1 - cgamma
+                    comp[k, i, j, 0] = d1[k, i, j, 0]
+                    comp[k, i, j, 1] = d1[k, i, j, 1]
+                    comp[k, i, j, 2] = d1[k, i, j, 2]
+                    comp[k, i, j, 0] += alpha * beta * gamma * d2[kk, ii, jj, 0]
+                    comp[k, i, j, 1] += alpha * beta * gamma * d2[kk, ii, jj, 1]
+                    comp[k, i, j, 2] += alpha * beta * gamma * d2[kk, ii, jj, 2]
+                    #---top-right
                     jj += 1
                     if(jj < nc2):
                         comp[k, i, j, 0] += alpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 0]
+                            cbeta * gamma * d2[kk, ii, jj, 0]
                         comp[k, i, j, 1] += alpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 1]
+                            cbeta * gamma * d2[kk, ii, jj, 1]
                         comp[k, i, j, 2] += alpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 2]
+                            cbeta * gamma * d2[kk, ii, jj, 2]
                     #---bottom-right
                     ii += 1
                     if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
                         comp[k, i, j, 0] += calpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 0]
+                            cbeta * gamma * d2[kk, ii, jj, 0]
                         comp[k, i, j, 1] += calpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 1]
+                            cbeta * gamma * d2[kk, ii, jj, 1]
                         comp[k, i, j, 2] += calpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 2]
+                            cbeta * gamma * d2[kk, ii, jj, 2]
                     #---bottom-left
                     jj -= 1
                     if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
                         comp[k, i, j, 0] += calpha * \
-                            beta * cgamma * d2[kk, ii, jj, 0]
+                            beta * gamma * d2[kk, ii, jj, 0]
                         comp[k, i, j, 1] += calpha * \
-                            beta * cgamma * d2[kk, ii, jj, 1]
+                            beta * gamma * d2[kk, ii, jj, 1]
                         comp[k, i, j, 2] += calpha * \
-                            beta * cgamma * d2[kk, ii, jj, 2]
-                if((0 <= dkk <= ns2 - 1) and (0 <= dii <= nr2 - 1) and (0 <= djj <= nc2 - 1)):
-                    nn = comp[k, i, j, 0] ** 2 + \
-                        comp[k, i, j, 1] ** 2 + comp[k, i, j, 2] ** 2
-                    if(maxNorm < nn):
-                        maxNorm = nn
-                    meanNorm += nn
-                    stdNorm += nn * nn
-                    cnt += 1
+                            beta * gamma * d2[kk, ii, jj, 2]
+                    kk += 1
+                    if(kk < ns2):
+                        ii -= 1
+                        comp[k, i, j, 0] += alpha * beta * \
+                            cgamma * d2[kk, ii, jj, 0]
+                        comp[k, i, j, 1] += alpha * beta * \
+                            cgamma * d2[kk, ii, jj, 1]
+                        comp[k, i, j, 2] += alpha * beta * \
+                            cgamma * d2[kk, ii, jj, 2]
+                        jj += 1
+                        if(jj < nc2):
+                            comp[k, i, j, 0] += alpha * \
+                                cbeta * cgamma * d2[kk, ii, jj, 0]
+                            comp[k, i, j, 1] += alpha * \
+                                cbeta * cgamma * d2[kk, ii, jj, 1]
+                            comp[k, i, j, 2] += alpha * \
+                                cbeta * cgamma * d2[kk, ii, jj, 2]
+                        #---bottom-right
+                        ii += 1
+                        if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
+                            comp[k, i, j, 0] += calpha * \
+                                cbeta * cgamma * d2[kk, ii, jj, 0]
+                            comp[k, i, j, 1] += calpha * \
+                                cbeta * cgamma * d2[kk, ii, jj, 1]
+                            comp[k, i, j, 2] += calpha * \
+                                cbeta * cgamma * d2[kk, ii, jj, 2]
+                        #---bottom-left
+                        jj -= 1
+                        if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
+                            comp[k, i, j, 0] += calpha * \
+                                beta * cgamma * d2[kk, ii, jj, 0]
+                            comp[k, i, j, 1] += calpha * \
+                                beta * cgamma * d2[kk, ii, jj, 1]
+                            comp[k, i, j, 2] += calpha * \
+                                beta * cgamma * d2[kk, ii, jj, 2]
+                    if((0 <= dkk <= ns2 - 1) and (0 <= dii <= nr2 - 1) and (0 <= djj <= nc2 - 1)):
+                        nn = comp[k, i, j, 0] ** 2 + \
+                            comp[k, i, j, 1] ** 2 + comp[k, i, j, 2] ** 2
+                        if(maxNorm < nn):
+                            maxNorm = nn
+                        meanNorm += nn
+                        stdNorm += nn * nn
+                        cnt += 1
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)

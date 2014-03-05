@@ -167,7 +167,7 @@ def test_em_3d():
     print energy_profile
 
 if __name__=='__main__':
-    pass
-    #test_ssd_2d()
-    #test_cc_3d()
-    #test_local()
+    
+    test_ssd_2d()
+    test_cc_3d()
+    test_em_3d()
