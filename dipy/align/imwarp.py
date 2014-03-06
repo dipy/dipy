@@ -929,6 +929,22 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self._end_optimizer()
 
     def optimize(self, static=None, moving=None, affine_init=None):
+        r"""
+        Starts the optimnization
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        forward_model : DiffeomorphicMap object
+            the diffeomorphic map that brings the moving image towards the
+            static one in the forward direction (i.e. by calling 
+            forward_model.transform) and the static image towards the
+            moving one in the backward direction (i.e. by calling 
+            forward_model.transform_inverse). 
+
+        """
         if static is not None:
             self.set_static_image(static)
         if moving is not None:
