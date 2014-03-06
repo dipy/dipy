@@ -2,6 +2,20 @@ import numpy as np
 cimport cython
 from fused_types cimport floating
 
+
+cdef inline int _int_max(int a, int b) nogil:
+    r"""
+    Returns the maximum of a and b
+    """
+    return a if a >= b else b
+
+
+cdef inline int _int_min(int a, int b) nogil:
+    r"""
+    Returns the minimum of a and b
+    """
+    return a if a <= b else b
+
 cdef enum:
     SI = 0
     SI2 = 1
@@ -10,20 +24,37 @@ cdef enum:
     SIJ = 4
     CNT = 5
 
-
-cdef inline int _int_max(int a, int b) nogil:
-    return a if a >= b else b
-
-
-cdef inline int _int_min(int a, int b) nogil:
-    return a if a <= b else b
-
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                              int radius):
+    r"""
+    Precomputes the separate terms of the cross correlation metric and image
+    norms at each voxel considering a neighborhood of the given radius to 
+    efficiently compute the gradient of the metric with respect to the 
+    deformation field.
+
+    Parameters
+    ----------
+    static : array, shape (S, R, C)
+        the static volume, which also defines the reference registration domain
+    moving : array, shape (S, R, C)
+        the moving volume (notice that both images must already be in a common
+        reference domain, i.e. the same S, R, C)
+    radius : the radius of the neighborhood (a cube of (2*radius+1)^3 voxels)
+
+    Returns
+    -------
+    factors : array, shape (S, R, C, 5)
+        the precomputed cross correlation terms: 
+        factors[:,:,:,0] : static minus its mean value along the neighborhood
+        factors[:,:,:,1] : sum of squared values of static along the neighborhood
+        factors[:,:,:,2] : moving minus its mean value along the neighborhood
+        factors[:,:,:,3] : sum of squared values of moving along the neighborhood
+        factors[:,:,:,4] : sum of the pointwise products of static and moving
+                           along the neighborhood
+    """
     cdef int side = 2 * radius + 1
     cdef int ns = static.shape[0]
     cdef int nr = static.shape[1]
@@ -105,8 +136,37 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
-                               floating[:, :, :, :] gradMoving,
+                               floating[:, :, :, :] grad_moving,
                                floating[:, :, :, :] factors):
+    r"""
+    Computes the gradient of the Cross Correlation metric for symmetric
+    registration (SyN) w.r.t. the displacement associated to the static
+    volume ('forward' step)
+
+    Parameters
+    ----------
+    grad_static : array, shape (S, R, C, 3)
+        the gradient of the static volume
+    grad_moving : array, shape (S, R, C, 3)
+        the gradient of the moving volume
+    factors : array, shape (S, R, C, 5)
+        the precomputed cross correlation terms obtained via 
+        precompute_cc_factors_3d
+
+    Returns
+    -------
+    out : array, shape (S, R, C, 3)
+        the gradient of the cross correlation metric with respect to the 
+        displacement associated to the static volume
+    energy : the cross correlation energy (data term) at this iteration
+
+    Notes
+    -----
+    Currently, the gradient of the moving image is not being used, but some
+    authors suggest that symmetrizing the gradient by including both, the moving
+    and static gradients may improve the registration quality. We are leaving 
+    this parameters as a placeholder for future investigation
+    """
     cdef int ns = grad_static.shape[0]
     cdef int nr = grad_static.shape[1]
     cdef int nc = grad_static.shape[2]
@@ -141,8 +201,37 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
-                                floating[:, :, :, :] gradMoving,
+                                floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors):
+    r"""
+    Computes the gradient of the Cross Correlation metric for symmetric
+    registration (SyN) w.r.t. the displacement associated to the moving
+    volume ('backward' step)
+
+    Parameters
+    ----------
+    grad_static : array, shape (S, R, C, 3)
+        the gradient of the static volume
+    grad_moving : array, shape (S, R, C, 3)
+        the gradient of the moving volume
+    factors : array, shape (S, R, C, 5)
+        the precomputed cross correlation terms obtained via 
+        precompute_cc_factors_3d
+
+    Returns
+    -------
+    out : array, shape (S, R, C, 3)
+        the gradient of the cross correlation metric with respect to the 
+        displacement associated to the moving volume
+    energy : the cross correlation energy (data term) at this iteration
+
+    Notes
+    -----
+    Currently, the gradient of the static image is not being used, but some
+    authors suggest that symmetrizing the gradient by including both, the moving
+    and static gradients may improve the registration quality. We are leaving 
+    this parameters as a placeholder for future investigation
+    """
     cdef int ns = grad_static.shape[0]
     cdef int nr = grad_static.shape[1]
     cdef int nc = grad_static.shape[2]
@@ -168,5 +257,5 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
                         energy -= localCorrelation
                     temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
                     for qq in range(3):
-                        out[s, r, c, qq] -= temp * gradMoving[s, r, c, qq]
+                        out[s, r, c, qq] -= temp * grad_moving[s, r, c, qq]
     return out, energy
