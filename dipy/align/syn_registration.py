@@ -116,7 +116,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
     if fname is not None:
       from time import sleep
       sleep(1)
-      savefig(fname)
+      plt.savefig(fname)
 
 plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 
