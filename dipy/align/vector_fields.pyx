@@ -844,6 +844,18 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
 
 def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
                                              floating[:, :, :, :] up):
+	r"""
+    Upsamples de input 3-D displacement field by a factor of 2. The resulting
+    upsampled field is added to 'up' rather than returning a new field.
+
+    Parameters
+    ----------
+    field : array, shape (S, R, C, 3)
+        the 3-D displacement field to be upsampled
+    up : array, shape (S', R', C', 3)
+        the starting field wich the result will be added to
+
+    """
     cdef int nslices = field.shape[0]
     cdef int nrows = field.shape[1]
     cdef int ncols = field.shape[2]
@@ -948,6 +960,22 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
 
 
 def downsample_scalar_field3D(floating[:, :, :] field):
+	r"""
+	Downsamples the input volume by a factor of 2. The value at each voxel
+	of the resulting volume is the average of its surrounding voxels in the
+	original volume.
+
+	Parameters
+	----------
+	field : array, shape (S, R, C)
+		the volume to be downsampled
+
+	Returns
+	-------
+	down : array, shape (S', R', C')
+		the downsampled displacement field, where S' = ceil(S/2), 
+		R'= ceil(R/2), C'=ceil(C/2)
+	"""
     cdef int ns = field.shape[0]
     cdef int nr = field.shape[1]
     cdef int nc = field.shape[2]
@@ -976,6 +1004,22 @@ def downsample_scalar_field3D(floating[:, :, :] field):
 
 
 def downsample_displacement_field3D(floating[:, :, :, :] field):
+	r"""
+	Downsamples the input vector field by a factor of 2. The value at each voxel
+	of the resulting volume is the average of its surrounding voxels in the
+	original volume.
+
+	Parameters
+	----------
+	field : array, shape (S, R, C)
+		the vector field to be downsampled
+
+	Returns
+	-------
+	down : array, shape (S', R', C')
+		the downsampled displacement field, where S' = ceil(S/2), 
+		R'= ceil(R/2), C'=ceil(C/2)
+	"""
     cdef int ns = field.shape[0]
     cdef int nr = field.shape[1]
     cdef int nc = field.shape[2]
@@ -1009,6 +1053,21 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
 
 
 def downsample_scalar_field2D(floating[:, :] field):
+	r"""
+	Downsamples the input image by a factor of 2. The value at each pixel
+	of the resulting image is the average of its surrounding pixels in the
+	original image.
+
+	Parameters
+	----------
+	field : array, shape (R, C)
+		the image to be downsampled
+
+	Returns
+	-------
+	down : array, shape (R', C')
+		the downsampled displacement field, where R'= ceil(R/2), C'=ceil(C/2) 
+	"""
     cdef int nr = field.shape[0]
     cdef int nc = field.shape[1]
     cdef int nnr = (nr + 1) // 2
@@ -1032,6 +1091,21 @@ def downsample_scalar_field2D(floating[:, :] field):
 
 
 def downsample_displacement_field2D(floating[:, :, :] field):
+	r"""
+	Downsamples the input vector field by a factor of 2. The value at each pixel
+	of the resulting field is the average of its surrounding pixels in the
+	original field.
+
+	Parameters
+	----------
+	field : array, shape (R, C)
+		the vector field to be downsampled
+
+	Returns
+	-------
+	down : array, shape (R', C')
+		the downsampled displacement field, where R'= ceil(R/2), C'=ceil(C/2), 
+	"""
     cdef int nr = field.shape[0]
     cdef int nc = field.shape[1]
     cdef int nnr = (nr + 1) // 2
@@ -1058,6 +1132,28 @@ def downsample_displacement_field2D(floating[:, :, :] field):
 
 
 def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
+	r"""
+	Computes the minimum and maximum values reached by the transformation
+	defined by the given displacement field and affine pre-multiplication
+	matrix. More precisely, computes max_{x\in L} x+d(A*x), and 
+	min_{x\in L} x+d(A*x), where d is the displacement field, A is the affine 
+	matrix, the interpolation used is trilinear and the maximum and minimum are 
+	taken for each vector component independently.
+
+	Parameters
+	----------
+	d : array, shape (S, R, C, 3)
+		the displacement field part of the transformation
+	affine : array, shape (4, 4)
+		the affine pre-multiplication part of the transformation
+
+	Returns
+	-------
+	minVal : array, shape (3,)
+		the minimum value reached at each coordinate
+	maxVal : array, shape (3,)
+		the maximum value reached at each coordinate
+	"""
     cdef int nslices = d.shape[0]
     cdef int nrows = d.shape[1]
     cdef int ncols = d.shape[2]
@@ -1091,6 +1187,31 @@ def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
 
 def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                 floating[:, :] affinePre=None, floating[:, :] affinePost=None):
+	r"""
+	Deforms the input volume under the transformation T of the from
+	T(x) = B*f(A*x), x\in dom(f), where 
+	A = affinePre
+	B = affinePost
+	f = d2
+	using trilinear interpolation. If either affine matrix is None, it is
+	taken as the identity.
+
+	Parameters
+	----------
+	volume : array, shape (S, R, C)
+		the input volume to be transformed
+	d1 : array, shape (S', R', C', 3)
+		the displacement field driving the transformation
+	affinePre : array, shape (4, 4)
+		the pre-multiplication affine matrix (A, in the model above)
+	affinePost : array, shape (4, 4)
+		the post-multiplication affine matrix (B, in the model above)
+
+	Returns
+	-------
+	warped : array, shape (S', R', C')
+		the transformed volume
+	"""
     cdef int nslices = volume.shape[0]
     cdef int nrows = volume.shape[1]
     cdef int ncols = volume.shape[2]
@@ -1187,6 +1308,34 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
 def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
                        floating[:, :] affine):
+	r"""
+	Deforms the input volume under the given affine transformation using 
+	trilinear interpolation. The shape of the resulting transformation
+	is given by refShape. If the affine matrix is None, it is taken as the 
+	identity.
+
+	Parameters
+	----------
+	volume : array, shape (S, R, C)
+		the input volume to be transformed
+	refShape : array, shape (3,)
+		the shape of the resulting warped volume
+	affine : array, shape (4, 4)
+		the affine matrix driving the transformation
+
+	Returns
+	-------
+	warped : array, shape (S', R', C')
+		the transformed volume
+
+	Notes
+	-----
+	The reason it is necessary to provide the intended shape of the resulting
+	warped volume is because the affine transformation is defined on all R^{3}
+	but we must sample a finite lattice. Also the resulting shape may not be
+	necessarily equal to the input shape, unless we are interested on 
+	endomorphisms only and not general diffeomorphisms.
+	"""
     cdef int nslices = refShape[0]
     cdef int nrows = refShape[1]
     cdef int ncols = refShape[2]
@@ -1270,6 +1419,31 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
 def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
                    floating[:, :] affinePre=None,
                    floating[:, :] affinePost=None):
+	r"""
+	Deforms the input volume under the transformation T of the from
+	T(x) = B*f(A*x), x\in dom(f), where 
+	A = affinePre
+	B = affinePost
+	f = d2
+	using nearest neighbor interpolation. If either affine matrix is None, it is
+	taken as the identity.
+
+	Parameters
+	----------
+	volume : array, shape (S, R, C)
+		the input volume to be transformed
+	d1 : array, shape (S', R', C', 3)
+		the displacement field driving the transformation
+	affinePre : array, shape (4, 4)
+		the pre-multiplication affine matrix (A, in the model above)
+	affinePost : array, shape (4, 4)
+		the post-multiplication affine matrix (B, in the model above)
+
+	Returns
+	-------
+	warped : array, shape (S', R', C')
+		the transformed volume
+	"""
     cdef int nslices = displacement.shape[0]
     cdef int nrows = displacement.shape[1]
     cdef int ncols = displacement.shape[2]
@@ -1337,6 +1511,34 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
 
 def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
                           floating[:, :] affine=None):
+	r"""
+	Deforms the input volume under the given affine transformation using 
+	nearest neighbor interpolation. The shape of the resulting transformation
+	is given by refShape. If the affine matrix is None, it is taken as the 
+	identity.
+
+	Parameters
+	----------
+	volume : array, shape (S, R, C)
+		the input volume to be transformed
+	refShape : array, shape (3,)
+		the shape of the resulting warped volume
+	affine : array, shape (4, 4)
+		the affine matrix driving the transformation
+
+	Returns
+	-------
+	warped : array, shape (S', R', C')
+		the transformed volume
+
+	Notes
+	-----
+	The reason it is necessary to provide the intended shape of the resulting
+	warped volume is because the affine transformation is defined on all R^{3}
+	but we must sample a finite lattice. Also the resulting shape may not be
+	necessarily equal to the input shape, unless we are interested on 
+	endomorphisms only and not general diffeomorphisms.
+	"""
     cdef int nslices = refShape[0]
     cdef int nrows = refShape[1]
     cdef int ncols = refShape[2]
@@ -1395,6 +1597,31 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
 
 def warp_image(floating[:, :] image, floating[:, :, :] d1,
                floating[:, :] affinePre=None, floating[:, :] affinePost=None):
+	r"""
+	Deforms the input image under the transformation T of the from
+	T(x) = B*f(A*x), x\in dom(f), where 
+	A = affinePre
+	B = affinePost
+	f = d2
+	using bilinear interpolation. If either affine matrix is None, it is
+	taken as the identity.
+
+	Parameters
+	----------
+	image : array, shape (R, C)
+		the input image to be transformed
+	d1 : array, shape (R', C', 2)
+		the displacement field driving the transformation
+	affinePre : array, shape (3, 3)
+		the pre-multiplication affine matrix (A, in the model above)
+	affinePost : array, shape (3, 3)
+		the post-multiplication affine matrix (B, in the model above)
+
+	Returns
+	-------
+	warped : array, shape (R', C')
+		the transformed image
+	"""
     cdef int nrows = image.shape[0]
     cdef int ncols = image.shape[1]
     cdef int nrVol = image.shape[0]
@@ -1453,6 +1680,34 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
 
 def warp_image_affine(floating[:, :] image, int[:] refShape,
                       floating[:, :] affine=None):
+	r"""
+	Deforms the input image under the given affine transformation using 
+	trilinear interpolation. The shape of the resulting transformation
+	is given by refShape. If the affine matrix is None, it is taken as the 
+	identity.
+
+	Parameters
+	----------
+	image : array, shape (R, C)
+		the input image to be transformed
+	refShape : array, shape (2,)
+		the shape of the resulting warped image
+	affine : array, shape (3, 3)
+		the affine matrix driving the transformation
+
+	Returns
+	-------
+	warped : array, shape (R', C')
+		the transformed image
+
+	Notes
+	-----
+	The reason it is necessary to provide the intended shape of the resulting
+	warped image is because the affine transformation is defined on all R^{2}
+	but we must sample a finite lattice. Also the resulting shape may not be
+	necessarily equal to the input shape, unless we are interested on 
+	endomorphisms only and not general diffeomorphisms.
+	"""
     cdef int nrows = refShape[0]
     cdef int ncols = refShape[1]
     cdef int nrVol = image.shape[0]
@@ -1505,6 +1760,31 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
 def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
                   floating[:, :] affinePre=None,
                   floating[:, :] affinePost=None):
+	r"""
+	Deforms the input image under the transformation T of the from
+	T(x) = B*f(A*x), x\in dom(f), where 
+	A = affinePre
+	B = affinePost
+	f = d2
+	using neirest neighbor interpolation. If either affine matrix is None, it is
+	taken as the identity.
+
+	Parameters
+	----------
+	image : array, shape (R, C)
+		the input image to be transformed
+	displacement : array, shape (R', C', 2)
+		the displacement field driving the transformation
+	affinePre : array, shape (3, 3)
+		the pre-multiplication affine matrix (A, in the model above)
+	affinePost : array, shape (3, 3)
+		the post-multiplication affine matrix (B, in the model above)
+
+	Returns
+	-------
+	warped : array, shape (R', C')
+		the transformed image
+	"""
     cdef int nrows = image.shape[0]
     cdef int ncols = image.shape[1]
     cdef int nrVol = image.shape[0]
@@ -1560,6 +1840,34 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
 
 def warp_image_affine_nn(number[:, :] image, int[:] refShape,
                          floating[:, :] affine=None):
+	r"""
+	Deforms the input image under the given affine transformation using 
+	nearest neighbor interpolation. The shape of the resulting transformation
+	is given by refShape. If the affine matrix is None, it is taken as the 
+	identity.
+
+	Parameters
+	----------
+	image : array, shape (R, C)
+		the input image to be transformed
+	refShape : array, shape (2,)
+		the shape of the resulting warped image
+	affine : array, shape (3, 3)
+		the affine matrix driving the transformation
+
+	Returns
+	-------
+	warped : array, shape (R', C')
+		the transformed image
+
+	Notes
+	-----
+	The reason it is necessary to provide the intended shape of the resulting
+	warped image is because the affine transformation is defined on all R^{2}
+	but we must sample a finite lattice. Also the resulting shape may not be
+	necessarily equal to the input shape, unless we are interested on 
+	endomorphisms only and not general diffeomorphisms.
+	"""
     cdef int nrows = refShape[0]
     cdef int ncols = refShape[1]
     cdef int nrVol = image.shape[0]
