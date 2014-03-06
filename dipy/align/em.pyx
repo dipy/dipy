@@ -17,6 +17,18 @@ cdef inline int ifloor(double x) nogil:
 
 
 def quantize_positive_image(floating[:, :] v, int num_levels):
+    r"""
+    Quantizes the input image at the given number of intensity levels, 
+    considering 0 as a special value: at the end, only those voxels with zero
+    intensity have label zero
+
+    Parameters
+    ----------
+    v : array, shape (R, C)
+        the image to be quantized
+    num_levels : int
+        the number of levels
+    """
     cdef int nrows = v.shape[0]
     cdef int ncols = v.shape[1]
     cdef int npix = nrows * ncols
@@ -76,6 +88,18 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
 
 
 def quantize_positive_volume(floating[:, :, :] v, int num_levels):
+    r"""
+    Quantizes the input volume at the given number of intensity levels,
+    considering 0 as a special value: at the end, only those voxels with zero
+    intensity have label zero
+
+    Parameters
+    ----------
+    v : array, shape (S, R, C)
+        the volume to be quantized
+    num_levels : int
+        the number of levels
+    """
     cdef int nslices = v.shape[0]
     cdef int nrows = v.shape[1]
     cdef int ncols = v.shape[2]
@@ -138,6 +162,26 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
 
 def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
                                      int numLabels, int[:, :] labels):
+    r"""
+    Computes the mean and standard deviation of the intensities in 'v' for
+    each corresponding label in 'labels'. In other words, for each label
+    L, it computes the mean and standard deviation of the intensities in 'v'
+    at pixels whose label in 'labels' is L. This is used by the EM metric
+    to compute statistics for each hidden variable represented by the labels.
+
+    Parameters
+    ----------
+    mask : array, shape (R, C)
+        the mask of pixels that will be taken into account for computing the 
+        statistics. All zero pixels in mask will be ignored
+    v : array, shape (R, C)
+        the image wich the statistics will be computed from
+    numLabels : int 
+        the number of diferent labels in 'labels' (equal to the
+        number of hidden variables in the EM metric)
+    labels : array, shape (R, C) 
+        the label assigned to each pixel
+    """
     cdef int nrows = v.shape[0]
     cdef int ncols = v.shape[1]
     cdef int i, j
@@ -165,6 +209,26 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
 
 def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
                                       int numLabels, int[:, :, :] labels):
+    r"""
+    Computes the mean and standard deviation of the intensities in 'v' for
+    each corresponding label in 'labels'. In other words, for each label
+    L, it computes the mean and standard deviation of the intensities in 'v'
+    at voxels whose label in 'labels' is L. This is used by the EM metric
+    to compute statistics for each hidden variable represented by the labels.
+
+    Parameters
+    ----------
+    mask : array, shape (S, R, C)
+        the mask of voxels that will be taken into account for computing the 
+        statistics. All zero voxels in mask will be ignored
+    v : array, shape (R, C)
+        the volume wich the statistics will be computed from
+    numLabels : int 
+        the number of diferent labels in 'labels' (equal to the
+        number of hidden variables in the EM metric)
+    labels : array, shape (R, C) 
+        the label assigned to each pixel
+    """
     cdef int nslices = v.shape[0]
     cdef int nrows = v.shape[1]
     cdef int ncols = v.shape[2]
