@@ -4,6 +4,7 @@ import abc
 import vector_fields as vfu
 import registration_common as rcommon
 from dipy.align import floating
+from scipy import interpolate
 
 
 def compose_displacements(new_displacement, current_displacement):
@@ -528,9 +529,6 @@ class DiffeomorphicRegistration(object):
     def __init__(self,
                  metric=None,
                  dim=3,
-                 static=None,
-                 moving=None,
-                 affine_init=None,                 
                  update_function=None):
         r""" Diffeomorphic Registration
 
@@ -544,13 +542,6 @@ class DiffeomorphicRegistration(object):
             algorithm will minimize (or maximize) the provided similarity.
         dim : int (either 2 or 3)
             the dimension of the diffeomorphism domain. Default 3.
-        static : array, shape (R, C) or (S, R, C)
-            the static (reference) image
-        moving : array, shape (R, C) or (S, R, C)
-            the moving (target) image to be warped towards static
-        affine_init : array, shape (3, 3) or (4, 4)
-            the initial affine transformation aligning the moving towards the 
-            reference image
         update_function : function
             the function to be applied to perform a small deformation to a 
             displacement field (the small deformation is given as a deformation 
@@ -558,11 +549,11 @@ class DiffeomorphicRegistration(object):
             of the two displacement fields or the sum of them, etc.
         """
         self.dim = dim
-        self.set_static_image(static)
-        self.set_moving_image(moving)
-        self.set_affine_init(affine_init)
         self.metric = metric
-        self.update = update_function
+        if update_function is None:
+            self.update = compose_displacements
+        else:
+            self.update = update_function
 
     def set_static_image(self, static):
         r"""
@@ -648,15 +639,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     def __init__(self,
                  metric=None,
                  dim=3,
-                 static=None,
-                 moving=None,
-                 affine_init=None,
                  update_function=None,
                  opt_iter = [25, 100, 100],
                  opt_tol = 1e-4,
                  inv_iter = 20,
                  inv_tol = 1e-3,
-                 report_status = False):
+                 call_back = None):
         r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
         Performs the multi-resolution optimization algorithm for non-linear
         registration using a given similarity metric and update rule (this
@@ -668,16 +656,35 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             the metric to be optimized
         dim : int (either 2 or 3)
             the dimension of the image domain
-        static : array, shape (R, C) or (S, R, C)
-            the static image (this also defines the reference)
+        update_function : function
+            the function to be applied to update the displacement field after
+            each iteration. By default, it will use the displacement field
+            composition
+        opt_iter : list of int
+            the number of iterations at each level of the Gaussian Pyramid (the
+            length of the list defines the number of pyramid levels to be 
+            used)
+        opt_tol : float
+            the optimization will stop when the estimated derivative of the
+            energy profile w.r.t. time falls below this threshold
+        inv_iter : int
+            the number of iterations to be performed by the displacement field 
+            inversion algorithm
+        inv_tol : float
+            the displacement field inversion algorithm will stop iterating
+            when the inversion error falls below this threshold
+        call_back : function(SymmetricDiffeomorphicRegistration)
+            a function receiving a SymmetricDiffeomorphicRegistration object 
+            to be called after each iteration (this optimizer will call this
+            function passing self as parameter)
         """
         super(SymmetricDiffeomorphicRegistration, self).__init__(
-                metric, dim, static, moving, affine_init, update_function)
+                metric, dim, update_function)
         self.set_opt_iter(opt_iter)
         self.opt_tol = opt_tol
         self.inv_tol = inv_tol
         self.inv_iter = inv_iter
-        self.report_status = report_status
+        self.call_back = call_back
         self.energy_window = 12
         self.energy_list = []
         self.full_energy_profile = []
@@ -775,7 +782,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         del self.moving_pyramid
         del self.static_pyramid
 
-    def _iterate(self, call_back=None):
+    def _iterate(self):
         r"""
         Performs one symmetric iteration:
             1.Compute forward
@@ -784,11 +791,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             4.Update backward
             5.Compute inverses
             6.Invert the inverses to improve invertibility
-
-        Parameters
-        ----------
-        call_back : function
-            a function to be called after each iteration
         """
         wmoving = self.backward_model.transform_inverse(self.current_moving, 'tri')
         wstatic = self.forward_model.transform_inverse(self.current_static, 'tri')
@@ -811,29 +813,20 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.forward_model.forward, md_forward = self.update(
             self.forward_model.forward, fw_step)
         del fw_step
-        try:
-            fw_energy = self.metric.energy
-        except NameError:
-            pass
+        fw_energy = self.metric.get_energy()
         bw_step = np.array(self.metric.compute_backward())
         self.backward_model.forward, md_backward = self.update(
             self.backward_model.forward, bw_step)
         del bw_step
-        try:
-            bw_energy = self.metric.energy
-        except NameError:
-            pass
+        bw_energy = self.metric.get_energy()
         der = '-'
-        try:
-            n_iter = len(self.energy_list)
-            if len(self.energy_list) >= self.energy_window:
-                der = self._get_energy_derivative()
-            print(
-                '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
+        n_iter = len(self.energy_list)
+        if len(self.energy_list) >= self.energy_window:
+            der = self._get_energy_derivative()
+        print(
+            '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
                                                   fw_energy + bw_energy, der))
-            self.energy_list.append(fw_energy + bw_energy)
-        except NameError:
-            pass
+        self.energy_list.append(fw_energy + bw_energy)
         self.metric.free_iteration()
         inv_iter = self.inv_iter
         inv_tol = self.inv_tol
@@ -851,8 +844,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.invert_vector_field(
                 self.backward_model.backward, bf_shape, inv_iter, inv_tol,
                 self.backward_model.forward))
-        if call_back is not None:
-            call_back()
+        if self.call_back is not None:
+            self.call_back(self)
         return 1 if der == '-' else der
 
     def _get_energy_derivative(self):
@@ -905,7 +898,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
                 niter += 1
                 derivative = self._iterate()
-
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.forward_model.compute_inversion_error()
         print('Forward Residual error (Symmetric diffeomorphism):%0.6f (%0.6f)'
@@ -928,13 +920,20 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
               % (stats[1], stats[2]))
         self._end_optimizer()
 
-    def optimize(self, static=None, moving=None, affine_init=None):
+    def optimize(self, static, moving, affine_init=None):
         r"""
         Starts the optimnization
 
         Parameters
         ----------
-
+        static : array, shape (R, C) or (S, R, C)
+            the static (reference) image
+        moving : array, shape (R, C) or (S, R, C)
+            the moving (target) image to be warped towards static
+        affine_init : array, shape (3, 3) or (4, 4)
+            the initial affine transformation aligning the moving towards the 
+            reference image
+        
         Returns
         -------
         forward_model : DiffeomorphicMap object
@@ -945,13 +944,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             forward_model.transform_inverse). 
 
         """
-        if static is not None:
-            self.set_static_image(static)
-        if moving is not None:
-            self.set_moving_image(moving)
-        if affine_init is not None:
-            self.set_affine_init(affine_init)
+        self.set_static_image(static)
+        self.set_moving_image(moving)
+        self.set_affine_init(affine_init)
         self._optimize()
         return self.forward_model
-
-
