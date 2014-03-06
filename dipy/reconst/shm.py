@@ -264,6 +264,29 @@ def lazy_index(index):
         return slice(index[0], index[-1] + 1, step[0])
 
 
+def _gfa_sh(coef, sh0_index=0):
+    """The gfa of the odf, computed from the spherical harmonic coefficients
+
+    This is a private function because it only works for coefficients of
+    normalized sh bases.
+
+    Parameters
+    ----------
+    coef : array
+        The coefficients, using a normalized sh basis, that represent each odf.
+    sh0_index : int
+        The index of the coefficient associated with the 0th order sh harmonic.
+
+    Returns
+    -------
+    gfa_values : array
+        The gfa of each odf.
+
+    """
+    coef_sq = coef**2
+    return np.sqrt(1. - (coef_sq[..., sh0_index] / (coef_sq).sum(-1)))
+
+
 class SphHarmModel(OdfModel, Cache):
     """The base class to sub-classed by specific spherical harmonic models of
     diffusion data"""
@@ -382,6 +405,10 @@ class SphHarmFit(OdfFit):
             sampling_matrix, m, n = real_sym_sh_basis(sh_order, theta, phi)
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return dot(self._shm_coef, sampling_matrix.T)
+
+    @auto_attr
+    def gfa(self):
+        return _gfa_sh(self._shm_coef, 0)
 
     @property
     def shm_coeff(self):
@@ -681,3 +708,47 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
     sf = np.dot(sh, B.T)
 
     return sf
+
+
+def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0):
+    """ Matrix that transforms Spherical harmonics (SH) to spherical 
+    function (SF).
+
+    Parameters
+    ----------
+    sphere : Sphere
+        The points on which to sample the spherical function.
+    sh_order : int, optional
+        Maximum SH order in the SH fit.  For `sh_order`, there will be
+        ``(sh_order + 1) * (sh_order_2) / 2`` SH coefficients (default 4).
+    basis_type : {None, 'mrtrix', 'fibernav'}
+        ``None`` for the default dipy basis,
+        ``mrtrix`` for the MRtrix basis, and
+        ``fibernav`` for the FiberNavigator basis
+        (default ``None``).
+    return_inv : bool
+        If True then the inverse of the matrix is also returned
+    smooth : float, optional
+        Lambda-regularization in the SH fit (default 0.0).
+    
+    Returns
+    -------
+    B : ndarray
+        Matrix that transforms spherical harmonics to spherical function
+        ``sf = np.dot(sh, B)``.
+    invB : ndarray
+        Inverse of B.
+
+    """
+    sph_harm_basis = sph_harm_lookup.get(basis_type)
+
+    if sph_harm_basis is None:
+        raise ValueError("Invalid basis name.")
+    B, m, n = sph_harm_basis(sh_order, sphere.theta, sphere.phi)
+
+    if return_inv:
+        L = -n * (n + 1)
+        invB = smooth_pinv(B, np.sqrt(smooth) * L)
+        return B.T, invB.T
+
+    return B.T

@@ -3,18 +3,17 @@
 Reconstruct with Generalized Q-Sampling Imaging
 ===============================================
 
-We show how to apply Generalized Q-Sampling Imaging (Yeh et al. IEEE TMI 2010)
+We show how to apply Generalized Q-Sampling Imaging [Yeh2010]_
 to diffusion MRI datasets. You can think of GQI as an analytical version of
 DSI orientation distribution function (ODF) (Garyfallidis, PhD thesis, 2012).
 
 First import the necessary modules:
 """
 
-import nibabel as nib
+import numpy as np
 from dipy.data import fetch_taiwan_ntu_dsi, read_taiwan_ntu_dsi, get_sphere
-from dipy.align.aniso2iso import resample
 from dipy.reconst.gqi import GeneralizedQSamplingModel
-from dipy.reconst.odf import peaks_from_model
+from dipy.reconst.peaks import peaks_from_model
 
 """
 Download and read the data for this tutorial.
@@ -90,8 +89,8 @@ properties.
 gqpeaks = peaks_from_model(model=gqmodel,
                            data=dataslice,
                            sphere=sphere,
-                           relative_peak_threshold=.8,
-                           min_separation_angle=45,
+                           relative_peak_threshold=.5,
+                           min_separation_angle=25,
                            mask=mask,
                            return_odf=False,
                            normalize_peaks=True)
@@ -119,8 +118,8 @@ With parameter `return_odf=True` we can obtain the ODF using gqpeaks.ODF
 gqpeaks = peaks_from_model(model=gqmodel,
                            data=dataslice,
                            sphere=sphere,
-                           relative_peak_threshold=.8,
-                           min_separation_angle=45,
+                           relative_peak_threshold=.5,
+                           min_separation_angle=25,
                            mask=mask,
                            return_odf=True,
                            normalize_peaks=True)
@@ -137,6 +136,9 @@ True
 
 The advantage of using peaks_from_models is that it calculates the ODF only once and
 saves it or deletes if it is not necessary to keep.
+
+.. [Yeh2010] Yeh, F-C et al., Generalized Q-sampling imaging, IEEE
+             Transactions on Medical Imaging, vol 29, no 9, 2010.
 
 .. include:: ../links_names.inc
 

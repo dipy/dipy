@@ -1,9 +1,11 @@
 import numpy as np
 
+from dipy.tracking import utils
 from dipy.tracking.propspeed import eudx_both_directions
 from dipy.data import get_sphere
 
 class EuDX(object):
+
     '''Euler Delta Crossings
 
     Generates tracks with termination criteria defined by a delta function [1]_
@@ -43,35 +45,40 @@ class EuDX(object):
     '''
 
     def __init__(self, a, ind,
-                 seeds=10000,
-                 odf_vertices=None,
+                 seeds,
+                 odf_vertices,
                  a_low=0.0239,
                  step_sz=0.5,
                  ang_thr=60.,
                  length_thr=0.,
                  total_weight=.5,
-                 max_points=1000):
+                 max_points=1000,
+                 affine=None):
         '''
         Euler integration with multiple stopping criteria and supporting
         multiple multiple fibres in crossings [1]_.
 
         Parameters
         ------------
-        a : array, shape(x,y,z,Np)
-            magnitude of the peak of a scalar anisotropic function e.g. QA
-            (quantitative anisotropy)  or a different function of shape(x,y,z)
-            e.g FA or GFA.
-        ind : array, shape(x,y,z,Np)
+        a : array,
+            Shape (I, J, K, Np), magnitude of the peak of a scalar anisotropic
+            function e.g. QA (quantitative anisotropy) where Np is the number of
+            peaks or a different function of shape (I, J, K) e.g FA or GFA.
+        ind : array, shape(x, y, z, Np)
             indices of orientations of the scalar anisotropic peaks found on the
             resampling sphere
-        seeds : int or sequence, optional
-            number of random seeds or list of seeds
-        odf_vertices : None or ndarray, shape (N,3) , optional
+        seeds : int or ndarray
+            If an int is specified then that number of random seeds is
+            generated in the volume. If an (N, 3) array of points is given,
+            each of the N points is used as a seed. Seed points should be given
+            in the point space of the track (see ``affine``). The latter is
+            useful when you need to track from specific regions e.g. the
+            white/gray matter interface or a specific ROI e.g. in the corpus
+            callosum.
+        odf_vertices : ndarray, shape (N, 3)
             sphere points which define a discrete representation of orientations
             for the peaks, the same for all voxels. Usually the same sphere is
             used as an input for a reconstruction algorithm e.g. DSI.
-            None results in loading the vertices from a default sphere with
-            362 points.
         a_low : float, optional
             low threshold for QA(typical 0.023)  or FA(typical 0.2) or any other
             anisotropic function
@@ -82,24 +89,39 @@ class EuDX(object):
         total_weight : float, optional
             total weighting threshold
         max_points : int, optional
-            maximum number of points in a track. Used to stop tracks from looping for ever
+            maximum number of points in a track. Used to stop tracks from
+            looping forever.
+        affine : array (4, 4) optional
+            An affine mapping from the voxel indices of the input data to the
+            point space of the streamlines. That is if ``[x, y, z, 1] ==
+            point_space * [i, j, k, 1]``, then the streamline with point
+            ``[x, y, z]`` passes though the center of voxel ``[i, j, k]``. If
+            no point_space is given, the point space will be in voxel
+            coordinates.
+
+        Returns
+        -------
+        generator : obj
+            By iterating this generator you can obtain all the streamlines.
+
 
         Examples
         --------
         >>> import nibabel as nib
         >>> from dipy.reconst.dti import TensorModel, quantize_evecs
-        >>> from dipy.data import get_data
+        >>> from dipy.data import get_data, get_sphere
         >>> from dipy.core.gradients import gradient_table
-        >>> fimg,fbvals,fbvecs=get_data('small_101D')
-        >>> img=nib.load(fimg)
-        >>> affine=img.get_affine()
-        >>> data=img.get_data()
+        >>> fimg,fbvals,fbvecs = get_data('small_101D')
+        >>> img = nib.load(fimg)
+        >>> affine = img.get_affine()
+        >>> data = img.get_data()
         >>> gtab = gradient_table(fbvals, fbvecs)
         >>> model = TensorModel(gtab)
         >>> ten = model.fit(data)
-        >>> ind = quantize_evecs(ten.evecs)
-        >>> eu=EuDX(a=ten.fa, ind=ind, seeds=100,a_low=.2)
-        >>> tracks=[e for e in eu]
+        >>> sphere = get_sphere('symmetric724')
+        >>> ind = quantize_evecs(ten.evecs, sphere.vertices)
+        >>> eu = EuDX(a=ten.fa, ind=ind, seeds=100, odf_vertices=sphere.vertices, a_low=.2)
+        >>> tracks = [e for e in eu]
 
         Notes
         -------
@@ -113,61 +135,70 @@ class EuDX(object):
                tractography", PhD thesis, University of Cambridge, UK.
 
         '''
-        self.a=np.ascontiguousarray(a.copy(), dtype='f8')
-        self.ind=np.ascontiguousarray(ind.copy(), dtype='f8')
-        self.a_low=a_low
-        self.ang_thr=ang_thr
-        self.step_sz=step_sz
-        self.length_thr=length_thr
-        self.total_weight=total_weight
-        self.max_points=max_points
-        if len(self.a.shape)==3:
-            self.a.shape=self.a.shape+(1,)
-            self.ind.shape=self.ind.shape+(1,)
-        #store number of maximum peacks
-        x,y,z,g=self.a.shape
-        self.Np=g
-        if odf_vertices==None:
-            sphere = get_sphere('symmetric724')
-            vertices, faces = sphere.vertices, sphere.faces
-            self.odf_vertices = vertices
-        else:
-            self.odf_vertices = np.ascontiguousarray(odf_vertices, dtype='f8')
+        self.a = np.array(a, dtype=np.float64, copy=True, order="C")
+        self.ind = np.array(ind, dtype=np.float64, copy=True, order="C")
+        self.a_low = a_low
+        self.ang_thr = ang_thr
+        self.step_sz = step_sz
+        self.length_thr = length_thr
+        self.total_weight = total_weight
+        self.max_points = max_points
+        self.affine = affine if affine is not None else np.eye(4)
+        if len(self.a.shape) == 3:
+            self.a.shape = self.a.shape + (1,)
+            self.ind.shape = self.ind.shape + (1,)
+        # store number of maximum peaks
+        x, y, z, g = self.a.shape
+        self.Np = g
+        self.odf_vertices = np.ascontiguousarray(odf_vertices,
+                                                 dtype='f8')
         try:
-            if len(seeds)>0:
-                self.seed_list=seeds
-                self.seed_no=len(seeds)
+            self.seed_no = len(seeds)
+            self.seed_list = seeds
         except TypeError:
-            self.seed_no=seeds
-            self.seed_list=None
-        self.ind=self.ind.astype(np.double)
+            self.seed_no = seeds
+            self.seed_list = None
 
     def __iter__(self):
+        if self.seed_list is not None:
+            inv = np.linalg.inv(self.affine)
+            seed_voxels = np.dot(self.seed_list, inv[:3, :3].T)
+            seed_voxels += inv[:3, 3]
+        else:
+            seed_voxels = None
+        voxel_tracks = self._voxel_tracks(seed_voxels)
+        return utils.move_streamlines(voxel_tracks, self.affine)
+
+    def _voxel_tracks(self, seed_voxels):
         ''' This is were all the fun starts '''
-        x,y,z,g=self.a.shape
-        #for all seeds
+        if seed_voxels is not None and seed_voxels.dtype != np.float64:
+            # This is a private method so users should never see this error. If
+            # you've reached this error, there is a bug somewhere.
+            raise ValueError("wrong dtype seeds have to be float64")
+        x, y, z, g = self.a.shape
+        edge = np.array([x, y, z], dtype=np.float64) - 1.
+
+        # for all seeds
         for i in range(self.seed_no):
-            if self.seed_list==None:
-                rx=(x-1)*np.random.rand()
-                ry=(y-1)*np.random.rand()
-                rz=(z-1)*np.random.rand()
-                seed=np.ascontiguousarray(np.array([rx,ry,rz]),dtype=np.float64)
+            if seed_voxels is None:
+                seed = np.random.rand(3) * edge
             else:
-                seed=np.ascontiguousarray(self.seed_list[i],dtype=np.float64)
-            #for all peaks
+                seed = seed_voxels[i]
+                if np.any(seed < 0.) or np.any(seed > edge):
+                    raise ValueError('Seed outside boundaries', seed)
+            seed = np.ascontiguousarray(seed)
+
+            # for all peaks
             for ref in range(g):
-                track =eudx_both_directions(seed.copy(),
-                                            ref,
-                                            self.a,
-                                            self.ind,
-                                            self.odf_vertices,
-                                            self.a_low,
-                                            self.ang_thr,
-                                            self.step_sz,
-                                            self.total_weight,
-                                            self.max_points)
-                if track == None:
-                    pass
-                else:
-                    if track.shape[0] > 1:
-                        yield track
+                track = eudx_both_directions(seed.copy(),
+                                             ref,
+                                             self.a,
+                                             self.ind,
+                                             self.odf_vertices,
+                                             self.a_low,
+                                             self.ang_thr,
+                                             self.step_sz,
+                                             self.total_weight,
+                                             self.max_points)
+                if track is not None and track.shape[0] > 1:
+                    yield track

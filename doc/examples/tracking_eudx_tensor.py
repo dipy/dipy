@@ -5,7 +5,7 @@ Deterministic Tracking with EuDX on Tensor Fields
 =================================================
 
 In this example we do deterministic fiber tracking on Tensor fields with EuDX
-(Garyfallidis, PhD thesis, 2012).
+[Garyfallidis12]_.
 
 This example requires to import example `reconst_dti.py` to run. EuDX was
 primarily made with cpu efficiency in mind. Therefore, it should be useful to
@@ -139,6 +139,8 @@ fvtk.record(ren, n_frames=1, out_path='tensor_tracks.png', size=(600, 600))
    :align: center
 
    **Deterministic streamlines with EuDX on a Tensor Field**.
+
+.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
 
 .. include:: ../links_names.inc
 

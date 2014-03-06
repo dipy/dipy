@@ -1,6 +1,7 @@
 from __future__ import division, print_function, absolute_import
 
 import numpy as np
+from dipy.tracking import utils
 from dipy.reconst.interpolate import NearestNeighborInterpolator
 from dipy.tracking.markov import (BoundaryStepper, _closest_peak,
                                   FixedSizeStepper, MarkovIntegrator,
@@ -126,6 +127,22 @@ def test_MarkovIntegrator():
     streamlines = list(gen)
     assert_equal(len(streamlines), 1)
     assert_array_almost_equal(streamlines[0], expected)
+
+    # Test tracking with affine
+    affine = np.eye(4)
+    affine[:3, :] = np.random.random((3, 4)) - .5
+
+    seeds = [np.dot(affine[:3, :3], seeds[0] - .5) + affine[:3, 3]]
+    sl_affine = KeepGoing(model=None, interpolator=data_interp, mask=mask,
+                    take_step=stepper, angle_limit=0., seeds=seeds,
+                    max_cross=1, mask_voxel_size=(.5, .5, .5), affine=affine)
+
+    default = np.eye(4)
+    default[:3, 3] = .5
+    sl_default = list(utils.move_streamlines(sl_affine, default, affine))
+
+    assert_equal(len(sl_default), 1)
+    assert_array_almost_equal(sl_default[0], expected)
 
 
 def test_closest_peak():

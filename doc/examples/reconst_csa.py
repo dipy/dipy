@@ -1,6 +1,6 @@
 """
 =================================================
-Reconstruct with Constant Solid Angle (QBall)
+Reconstruct with Constant Solid Angle (Q-Ball)
 =================================================
 
 We show how to apply a Constant Solid Angle ODF (Q-Ball) model from Aganj et.
@@ -13,7 +13,7 @@ import numpy as np
 import nibabel as nib
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
 from dipy.reconst.shm import CsaOdfModel, normalize_data
-from dipy.reconst.odf import peaks_from_model
+from dipy.reconst.peaks import peaks_from_model
 
 """
 Download and read the data for this tutorial.
@@ -41,7 +41,9 @@ Remove most of the background using dipy's mask module.
 
 from dipy.segment.mask import median_otsu
 
-maskdata, mask = median_otsu(data, 3, 2, True, range(0,10))
+
+maskdata, mask = median_otsu(data, 3, 1, True,
+                             vol_idx=range(10, 50), dilate=2)
 
 """
 We instantiate our CSA model with spherical harmonic order of 4
@@ -63,8 +65,8 @@ sphere = get_sphere('symmetric724')
 csapeaks = peaks_from_model(model=csamodel,
                             data=maskdata,
                             sphere=sphere,
-                            relative_peak_threshold=.8,
-                            min_separation_angle=45,
+                            relative_peak_threshold=.5,
+                            min_separation_angle=25,
                             mask=mask,
                             return_odf=False,
                             normalize_peaks=True)
@@ -115,3 +117,4 @@ fvtk.record(r, n_frames=1, out_path='csa_odfs.png', size=(600, 600))
 .. include:: ../links_names.inc
 
 """
+

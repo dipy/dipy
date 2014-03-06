@@ -15,7 +15,7 @@ from ..core.geometry import vector_norm
 from ..core.sphere import Sphere
 from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
-
+from .base import ReconstModel, ReconstFit
 
 def _roll_evals(evals, axis=-1):
     """
@@ -537,11 +537,13 @@ def apparent_diffusion_coef(q_form, sphere):
     
     """
     bvecs = sphere.vertices
-    D = design_matrix(bvecs.T, np.ones(bvecs.shape[0]))[:, :6]
+    bvals = np.ones(bvecs.shape[0])
+    gtab = gradient_table(bvals, bvecs)
+    D = design_matrix(gtab)[:, :6]
     return -np.dot(lower_triangular(q_form), D.T)
 
 
-class TensorModel(object):
+class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
     def __init__(self, gtab, fit_method="WLS", *args, **kwargs):
@@ -555,8 +557,12 @@ class TensorModel(object):
             str can be one of the following:
             'WLS' for weighted least squares
                 dti.wls_fit_tensor
-            'LS' for ordinary least squares
+            'LS' or 'OLS' for ordinary least squares
                 dti.ols_fit_tensor
+            'NLLS' for non-linear least-squares
+                dti.nlls_fit_tensor
+            'RT' or 'restore' or 'RESTORE' for RESTORE robust tensor fitting [3]_
+                dti.restore_fit_tensor
 
             callable has to have the signature:
               fit_method(design_matrix, data, *args, **kwargs)
@@ -572,8 +578,12 @@ class TensorModel(object):
         .. [2] Basser, P., Pierpaoli, C., 1996. Microstructural and
            physiological features of tissues elucidated by quantitative
            diffusion-tensor MRI.  Journal of Magnetic Resonance 111, 209-219.
+        .. [3] Lin-Ching C., Jones D.K., Pierpaoli, C. 2005. RESTORE: Robust
+           estimation of tensors by outlier rejection. MRM 53: 1088-1095
 
         """
+        ReconstModel.__init__(self, gtab)
+
         if not callable(fit_method):
             try:
                 self.fit_method = common_fit_methods[fit_method]
@@ -581,9 +591,8 @@ class TensorModel(object):
                 raise ValueError('"' + str(fit_method) + '" is not a known fit '
                                  'method, the fit method should either be a '
                                  'function or one of the common fit methods')
-        self.bvec = gtab.bvecs
-        self.bval = gtab.bvals
-        self.design_matrix = design_matrix(self.bvec.T, self.bval)
+
+        self.design_matrix = design_matrix(self.gtab)
         self.args = args
         self.kwargs = kwargs
 
@@ -944,6 +953,7 @@ class TensorFit(object):
         if np.iterable(S0):
             # If it's an array, we need to give it one more dimension:
             S0 = S0[...,None] 
+
         pred_sig = S0 * np.exp(-gtab.bvals * adc)
 
         # The above evaluates to nan for the b0 vectors, so we predict the mean
@@ -1214,7 +1224,6 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     if weighting is None:
        # And we return the SSE:
        return residuals
-
     se = residuals ** 2
     # If the user provided a sigma (e.g 1.5267 * std(background_noise), as
     # suggested by Chang et al.) we will use it:
@@ -1228,15 +1237,16 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     elif weighting == 'gmm':
         # We use the Geman McClure M-estimator to compute the weights on the
         # residuals:
-        C = 1.4826 * np.median(residuals - np.median(residuals))
+        C = 1.4826 * np.median(np.abs(residuals - np.median(residuals)))
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             w = 1/(se + C**2)
+            # The weights are normalized to the mean weight (see p. 1089):
+            w = w/np.mean(w)
 
     # Return the weighted residuals:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-
         return np.sqrt(w * se)
 
 
@@ -1330,13 +1340,11 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
             evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
-
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             print(vox)
             dti_params[vox, :] = start_params
-
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
@@ -1415,7 +1423,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         residuals = flat_data[vox] - pred_sig
         # If any of the residuals are outliers (using 3 sigma as a criterion
         # following Chang et al., e.g page 1089):
-        if np.any(residuals > 3 * sigma):
+        if np.any(np.abs(residuals) > 3 * sigma):
             # Do nlls with GMM-weighting:
             if jac:
                 this_tensor, status= opt.leastsq(_nlls_err_func,
@@ -1434,45 +1442,38 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
             # How are you doin' on those residuals?
             pred_sig = np.exp(np.dot(design_matrix, this_tensor))
             residuals = flat_data[vox] - pred_sig
-            if np.any(residuals > 3 * sigma):
+            if np.any(np.abs(residuals) > 3 * sigma):
                 # If you still have outliers, refit without those outliers:
-                non_outlier_idx = np.where(residuals <= 3 * sigma)
+                non_outlier_idx = np.where(np.abs(residuals) <= 3 * sigma)
                 clean_design = design_matrix[non_outlier_idx]
                 clean_sig = flat_data[vox][non_outlier_idx]
                 if np.iterable(sigma):
                     this_sigma = sigma[non_outlier_idx]
                 else:
                     this_sigma = sigma
-
+                    
                 if jac:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                                      args=(clean_design,
-                                                           clean_sig,
-                                                           'sigma',
-                                                           this_sigma),
+                                                           clean_sig),
                                                      Dfun=_nlls_jacobian_func)
                 else:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
                                                      args=(clean_design,
-                                                           clean_sig,
-                                                           'sigma',
-                                                           this_sigma))
+                                                           clean_sig))
 
         # The parameters are the evals and the evecs:
         try:
             evals,evecs=decompose_tensor(from_lower_triangular(this_tensor[:6]))
             dti_params[vox, :3] = evals
             dti_params[vox, 3:] = evecs.ravel()
-
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
             print(vox)
             dti_params[vox, :] = start_params
-
-
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params
@@ -1612,16 +1613,14 @@ def decompose_tensor(tensor, min_diffusivity=0):
     return eigenvals, eigenvecs
 
 
-def design_matrix(bvecs, bval, dtype=None):
+def design_matrix(gtab, dtype=None):
     """  Constructs design matrix for DTI weighted least squares or
     least squares fitting. (Basser et al., 1994a)
 
     Parameters
     ----------
-    bvecs : array with shape (3,g)
-        Diffusion gradient table found in DICOM header as a numpy array.
-    bval : array with shape (g,)
-        Diffusion weighting factor b for each vector in gtab.
+    gtab : A GradientTable class instance
+
     dtype : string
         Parameter to control the dtype of returned designed matrix
 
@@ -1631,18 +1630,15 @@ def design_matrix(bvecs, bval, dtype=None):
         Design matrix or B matrix assuming Gaussian distributed tensor model
         design_matrix[j, :] = (Bxx, Byy, Bzz, Bxy, Bxz, Byz, dummy)
     """
-    G = bvecs
-    B = np.zeros((bvecs.shape[1], 7), dtype=G.dtype)
-    if bvecs.shape[1] != bval.shape[0]:
-        raise ValueError('The number of b values and gradient directions must'
-                          + ' be the same')
-    B[:, 0] = G[0, :] * G[0, :] * 1. * bval   # Bxx
-    B[:, 1] = G[0, :] * G[1, :] * 2. * bval   # Bxy
-    B[:, 2] = G[1, :] * G[1, :] * 1. * bval   # Byy
-    B[:, 3] = G[0, :] * G[2, :] * 2. * bval   # Bxz
-    B[:, 4] = G[1, :] * G[2, :] * 2. * bval   # Byz
-    B[:, 5] = G[2, :] * G[2, :] * 1. * bval   # Bzz
-    B[:, 6] = np.ones(bval.size)
+    B = np.zeros((gtab.gradients.shape[0], 7))
+    B[:, 0] = gtab.bvecs[:, 0] * gtab.bvecs[:, 0] * 1. * gtab.bvals   # Bxx
+    B[:, 1] = gtab.bvecs[:, 0] * gtab.bvecs[:, 1] * 2. * gtab.bvals   # Bxy
+    B[:, 2] = gtab.bvecs[:, 1] * gtab.bvecs[:, 1] * 1. * gtab.bvals   # Byy
+    B[:, 3] = gtab.bvecs[:, 0] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Bxz
+    B[:, 4] = gtab.bvecs[:, 1] * gtab.bvecs[:, 2] * 2. * gtab.bvals   # Byz
+    B[:, 5] = gtab.bvecs[:, 2] * gtab.bvecs[:, 2] * 1. * gtab.bvals   # Bzz
+    B[:, 6] = np.ones(gtab.gradients.shape[0])
+
     return -B
 
 
@@ -1675,4 +1671,5 @@ common_fit_methods = {'WLS': wls_fit_tensor,
                       'NLLS': nlls_fit_tensor,
                       'RT': restore_fit_tensor,
                       'restore':restore_fit_tensor,
+                      'RESTORE':restore_fit_tensor
                      }

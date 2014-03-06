@@ -7,7 +7,7 @@ docs.  In setup.py in particular, we exec this file, so it cannot import dipy
 # full release.  '.dev' as a _version_extra string means this is a development
 # version
 _version_major = 0
-_version_minor = 7
+_version_minor = 8
 _version_micro = 0
 _version_extra = '.dev'
 #_version_extra = ''
@@ -60,12 +60,10 @@ You can find our sources and single-click downloads:
 * `Main repository`_ on Github.
 * Documentation_ for all releases and current development tree.
 * Download as a tar/zip file the `current trunk`_.
-* Downloads of all `available releases`_.
 
 .. _main repository: http://github.com/nipy/dipy
 .. _Documentation: http://dipy.org
 .. _current trunk: https://github.com/nipy/dipy/archive/master.zip
-.. _available releases: https://pypi.python.org/pypi/dipy
 
 License
 =======

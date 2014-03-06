@@ -225,7 +225,7 @@ def _lookup(colors):
 
 
 def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
-               lod=True, lod_points=10**4, lod_points_size=5):
+               lod=True, lod_points=10 ** 4, lod_points_size=5):
     """ Uses streamtubes to visualize polylines
 
     Parameters
@@ -287,7 +287,7 @@ def streamtube(lines, colors, opacity=1, linewidth=0.15, tube_sides=8,
         for j in range(line.shape[0]):
             points.InsertNextPoint(*line[j])
             streamlines.InsertCellPoint(j + prior_line_shape)
-            color = (255*colors[i]).astype('ubyte')
+            color = (255 * colors[i]).astype('ubyte')
             cols.InsertNextTuple3(*color)
         prior_line_shape += line.shape[0]
 
@@ -618,7 +618,6 @@ def point(points, colors, opacity=1, point_radius=0.1, theta=8, phi=8):
 
 def label(ren, text='Origin', pos=(0, 0, 0), scale=(0.2, 0.2, 0.2),
           color=(1, 1, 1)):
-
     ''' Create a label actor.
 
     This actor will always face the camera
@@ -873,7 +872,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
             changeFilter.SetInputData(reslice.GetOutput())
         # changeFilter.SetInput(im)
         if center_origin:
-            changeFilter.SetOutputOrigin(-vol.shape[0] / 2.0 + 0.5, -vol.shape[1] / 2.0 + 0.5, -vol.shape[2] / 2.0 + 0.5)
+            changeFilter.SetOutputOrigin(
+                -vol.shape[0] / 2.0 + 0.5, -vol.shape[1] / 2.0 + 0.5, -vol.shape[2] / 2.0 + 0.5)
             print('ChangeFilter ', changeFilter.GetOutputOrigin())
 
     opacity = vtk.vtkPiecewiseFunction()
@@ -882,7 +882,8 @@ def volume(vol, voxsz=(1.0, 1.0, 1.0), affine=None, center_origin=1,
 
     color = vtk.vtkColorTransferFunction()
     for i in range(colormap.shape[0]):
-        color.AddRGBPoint(colormap[i, 0], colormap[i, 1], colormap[i, 2], colormap[i, 3])
+        color.AddRGBPoint(
+            colormap[i, 0], colormap[i, 1], colormap[i, 2], colormap[i, 3])
 
     if(maptype == 0):
 
@@ -1161,7 +1162,8 @@ def create_colormap(v, name='jet', auto=True):
         # print 'jet'
 
         red = np.interp(v, [0, 0.35, 0.66, 0.89, 1], [0, 0, 1, 1, 0.5])
-        green = np.interp(v, [0, 0.125, 0.375, 0.64, 0.91, 1], [0, 0, 1, 1, 0, 0])
+        green = np.interp(
+            v, [0, 0.125, 0.375, 0.64, 0.91, 1], [0, 0, 1, 1, 0, 0])
         blue = np.interp(v, [0, 0.11, 0.34, 0.65, 1], [0.5, 1, 1, 0, 0])
 
     if name == 'blues':
@@ -1184,11 +1186,13 @@ def create_colormap(v, name='jet', auto=True):
         # print 'blue_red'
         # red=np.interp(v,[],[])
 
-        red = np.interp(v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.0, 0.125, 0.25, 0.375, 0.5,
-                        0.625, 0.75, 0.875, 1.0])
+        red = np.interp(
+            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.0, 0.125, 0.25, 0.375, 0.5,
+                                                                         0.625, 0.75, 0.875, 1.0])
         green = np.zeros(red.shape)
-        blue = np.interp(v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.875, 0.75, 0.625, 0.5,
-                         0.375, 0.25, 0.125, 0.0])
+        blue = np.interp(
+            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.875, 0.75, 0.625, 0.5,
+                                                                         0.375, 0.25, 0.125, 0.0])
 
         blue = green
 
@@ -1212,7 +1216,7 @@ def create_colormap(v, name='jet', auto=True):
 
 def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
                  scale=2.2, norm=True, radial_scale=True):
-    """Plot many morphed spheres simultaneously.
+    """Plot many morphed spherical functions simultaneously.
 
     Parameters
     ----------
@@ -1337,6 +1341,70 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     actor.SetMapper(mapper)
 
     return actor
+
+
+def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
+    """ Visualize peak directions as given from ``peaks_from_model``
+
+    Parameters
+    ----------
+    peaks_dirs : ndarray
+        Peak directions. The shape of the array can be (M, 3) or (X, M, 3) or
+        (X, Y, M, 3) or (X, Y, Z, M, 3)
+    peaks_values : ndarray
+        Peak values. The shape of the array can be (M, ) or (X, M) or
+        (X, Y, M) or (X, Y, Z, M)
+
+    scale : float
+        Distance between spheres
+
+    colors : ndarray or tuple
+        Peak colors
+
+    Returns
+    -------
+    vtkActor
+
+    See Also
+    --------
+    dipy.viz.fvtk.sphere_funcs
+    """
+    peaks_dirs = np.asarray(peaks_dirs)
+    if peaks_dirs.ndim == 2:
+        peaks_dirs = peaks_dirs[None, None, None, :]
+    if peaks_dirs.ndim == 3:
+        peaks_dirs = peaks_dirs[None, None, :]
+    if peaks_dirs.ndim == 4:
+        peaks_dirs = peaks_dirs[None, :]
+    if peaks_dirs.ndim > 5:
+        raise ValueError("Wrong shape")
+
+    grid_shape = np.array(peaks_dirs.shape[:3])
+
+    list_dirs = []
+
+    for ijk in np.ndindex(*grid_shape):
+
+        xyz = scale * (ijk - grid_shape / 2.)[:, None]
+
+        xyz = xyz.T
+
+        for i in range(peaks_dirs.shape[-2]):
+
+            if peaks_values is not None:
+
+                pv = peaks_values[ijk][i]
+
+            else:
+
+                pv = 1.
+
+            symm = np.vstack((-peaks_dirs[ijk][i] * pv + xyz,
+                               peaks_dirs[ijk][i] * pv + xyz))
+
+            list_dirs.append(symm)
+
+    return line(list_dirs, colors)
 
 
 def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
@@ -1661,7 +1729,8 @@ def camera(ren, pos=None, focal=None, viewup=None, verbose=True):
         if verbose:
             print('-------------------------------------')
             print('Camera New Position (%.2f,%.2f,%.2f)' % cam.GetPosition())
-            print('Camera New Focal Point (%.2f,%.2f,%.2f)' % cam.GetFocalPoint())
+            print('Camera New Focal Point (%.2f,%.2f,%.2f)' %
+                  cam.GetFocalPoint())
             print('Camera New View Up (%.2f,%.2f,%.2f)' % cam.GetViewUp())
 
     return cam
@@ -1721,7 +1790,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
     ren.ResetCamera()
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
-    #window.SetAAFrames(6)
+    # window.SetAAFrames(6)
     window.SetWindowName(title)
     window.SetSize(size[0], size[1])
     style = vtk.vtkInteractorStyleTrackballCamera()

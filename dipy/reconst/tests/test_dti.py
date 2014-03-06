@@ -81,7 +81,7 @@ def test_TensorModel():
     mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle / np.linalg.norm(A_squiggle))
     evecs = np.linalg.eigh(tensor)[1]
     #Design Matrix
-    X = dti.design_matrix(bvecs, bvals)
+    X = dti.design_matrix(gtab)
     #Signals
     Y = np.exp(np.dot(X, D))
     assert_almost_equal(Y[0], b0)
@@ -238,13 +238,13 @@ def test_WLS_and_LS_fit():
     md = evals.mean()
     tensor = from_lower_triangular(D)
     #Design Matrix
-    X = dti.design_matrix(bvec, bval)
+    gtab = grad.gradient_table(bval, bvec)
+    X = dti.design_matrix(gtab)
     #Signals
     Y = np.exp(np.dot(X, D))
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-    gtab = grad.gradient_table(bval, bvec)
 
     ### Testing WLS Fit on Single Voxel ###
     #Estimate tensor from test signals
@@ -394,7 +394,7 @@ def test_nnls_jacobian_fucn():
     evals = np.array([2., 1., 0.]) / B
 
     #Design Matrix
-    X = dti.design_matrix(bvecs, bval)
+    X = dti.design_matrix(gtab)
 
     #Signals
     Y = np.exp(np.dot(X,D))
@@ -433,7 +433,7 @@ def test_nlls_fit_tensor():
      tensor = from_lower_triangular(D)
 
      #Design Matrix
-     X = dti.design_matrix(bvecs, bval)
+     X = dti.design_matrix(gtab)
 
      #Signals
      Y = np.exp(np.dot(X,D))
@@ -482,51 +482,22 @@ def test_restore():
      tensor = from_lower_triangular(D)
 
      #Design Matrix
-     X = dti.design_matrix(bvecs, bval)
+     X = dti.design_matrix(gtab)
 
      #Signals
      Y = np.exp(np.dot(X,D))
      Y.shape = (-1,) + Y.shape
-     for sigma in [0.1, 1, 10, 100]:
-        for drop_this in range(1, Y.shape[-1]):
-           # RESTORE estimates should be robust to dropping
-           this_y = Y.copy()
-           this_y[:, drop_this] = 1.0
-           tensor_model = dti.TensorModel(gtab, fit_method='restore',
-                                          sigma=sigma)
-           tensor_est = tensor_model.fit(Y)
-           assert_array_almost_equal(tensor_est.evals[0], evals)
-           assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
+     for drop_this in range(1, Y.shape[-1]):
+         # RESTORE estimates should be robust to dropping
+         this_y = Y.copy()
+         this_y[:, drop_this] = 1.0
+         tensor_model = dti.TensorModel(gtab, fit_method='restore',
+                                        sigma=67.0)
 
-
-     data, bvals, bvecs = get_data('small_25')
-     dd = nib.load(data).get_data()
-     gtab = grad.gradient_table(bvals, bvecs)
-     fit_method = 'restore' # 'NLLS'
-     jac = True # False
-     dd[..., 5] = 1.0
-     tm = dti.TensorModel(gtab, fit_method=fit_method, jac=True, sigma=10)
-     tm.fit(dd)
-
-## def test_restore_data():
-##     data, bvals, bvecs = get_data('small_25')
-
-##     # We'll make two copies of the data, one has an outlier volume:
-##     d1 = nib.load(data).get_data()
-##     d2 = d1.copy()
-##     d2[..., 5] = 1.0
-
-##     gtab = grad.gradient_table(bvals, bvecs)
-
-##     # We find the params two ways, one's OLS:
-##     tm1 = dti.TensorModel(gtab, fit_method='OLS')
-##     # The other is RESTORE (let's guess that sigma is about 10):
-##     tm2 = dti.TensorModel(gtab, fit_method='restore', sigma=1000)
-
-##     f1 = tm1.fit(d1)
-##     f2 = tm2.fit(d2)
-
-##     assert_array_almost_equal(f1.fa, f2.fa)
+         tensor_est = tensor_model.fit(this_y)
+         assert_array_almost_equal(tensor_est.evals[0], evals, decimal=3)
+         assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
+                                   decimal=3)
 
 def test_adc():
     """
@@ -556,10 +527,10 @@ def test_adc():
 
 def test_predict():
     """
-    
+    Test model prediction API
     """
     psphere = get_sphere('symmetric362')
-    bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
+    bvecs = np.concatenate(([[1, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
     bvals[0] = 0
     gtab = grad.gradient_table(bvals, bvecs)

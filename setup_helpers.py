@@ -19,6 +19,8 @@ echo First line of %pyscript% does not start with "#!"
 exit /b 1
 :goodstart
 set py_exe=%line1:~2%
+REM quote exe in case of spaces in path name
+set py_exe="%py_exe%"
 call %py_exe% %pyscript% %*
 """
 

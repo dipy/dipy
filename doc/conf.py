@@ -37,13 +37,13 @@ execfile(os.path.join('..', 'dipy', 'info.py'), rel)
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 
-              'sphinx.ext.doctest', 
-              'sphinx.ext.intersphinx', 
-              'sphinx.ext.todo', 
-              'sphinx.ext.coverage', 
-              'sphinx.ext.pngmath', 
-              'sphinx.ext.ifconfig', 
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.doctest',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
+              'sphinx.ext.pngmath',
+              'sphinx.ext.ifconfig',
               'sphinx.ext.autosummary',
               'math_dollar', # has to go before numpydoc
               'numpydoc',
@@ -66,7 +66,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'dipy'
-copyright = u'2008-2013, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
+copyright = u'2008-2014, %(AUTHOR)s <%(AUTHOR_EMAIL)s>' % rel
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

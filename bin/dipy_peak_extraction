@@ -6,7 +6,7 @@ import numpy as np
 from dipy.fixes import argparse
 
 from dipy.core.ndindex import ndindex
-from dipy.reconst.odf import peak_directions
+from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere import Sphere
 
 
@@ -63,7 +63,7 @@ def buildArgsParser():
 
     p.add_argument('-t', '--peak_threshold', action='store',type=float,
                    dest='peak_thresh', metavar='float', required=False,
-                   default=0.25, help='Relative peak threshold (default 0.25)')
+                   default=0.5, help='Relative peak threshold (default 0.5)')
 
     p.add_argument('-n', '--peak_normalize', action='store', dest='peak_norm',
                    type=int, metavar='int', required=False, default=1,
@@ -71,8 +71,8 @@ def buildArgsParser():
                         'value (default 1)')
 
     p.add_argument('-a', '--angle', action='store', dest='angle', type=float,
-                   metavar='float', required=False, default=45.0,
-                   help='Minimum separation angle (default 45 degrees)')
+                   metavar='float', required=False, default=25.0,
+                   help='Minimum separation angle (default 25 degrees)')
 
     p.add_argument('-m', '--max_peak_number', action='store', type=int,
                    dest='max_peak_num', metavar='int', required=False,

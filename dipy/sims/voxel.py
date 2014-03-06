@@ -156,10 +156,8 @@ def sticks_and_ball(gtab, d=0.0015, S0=100, angles=[(0, 0), (90, 0)],
 
     for (i, g) in enumerate(gtab.bvecs[1:]):
         S[i + 1] = f0 * np.exp(-gtab.bvals[i + 1] * d) + \
-            np.sum([
-                   fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
-                   for (j, s) in enumerate(sticks)
-                   ])
+            np.sum([fractions[j] * np.exp(-gtab.bvals[i + 1] * d * np.dot(s, g) ** 2)
+                   for (j, s) in enumerate(sticks)])
 
         S[i + 1] = S0 * S[i + 1]
 
@@ -237,9 +235,9 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
     S0 : float
         Unweighted signal value (b0 signal).
     angles : array (K,2) or (K,3)
-        List of K tensor directions in polar angles (in degrees) or unit vectors  
+        List of K tensor directions in polar angles (in degrees) or unit vectors
     fractions : float
-        Percentage of the contribution of each tensor. The sum of factions 
+        Percentage of the contribution of each tensor. The sum of fractions
         should be equal to 100%.
     snr : float
         Signal to noise ratio, assuming Rician noise.  If set to None, no
@@ -285,10 +283,11 @@ def multi_tensor(gtab, mevals, S0=100, angles=[(0, 0), (90, 0)],
 
     for i in range(len(fractions)):
             S = S + fractions[i] * single_tensor(gtab, S0=S0, evals=mevals[i],
-                                                 evecs=all_tensor_evecs(sticks[i]).T,
+                                                 evecs=all_tensor_evecs(
+                                                     sticks[i]).T,
                                                  snr=None)
-    
-    return add_noise(S, snr, S0), sticks 
+
+    return add_noise(S, snr, S0), sticks
 
 
 def single_tensor_odf(r, evals=None, evecs=None):
@@ -360,21 +359,20 @@ def all_tensor_evecs(e0):
     return np.array([e0, e1, e2])
 
 
-def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
+def multi_tensor_odf(odf_verts, mevals, angles, fractions):
     r'''Simulate a Multi-Tensor ODF.
 
     Parameters
     ----------
     odf_verts : (N,3) ndarray
         Vertices of the reconstruction sphere.
-    mf : sequence of floats, bounded [0,1]
-        Percentages of the fractions for each tensor.
     mevals : sequence of 1D arrays,
-        Eigen-values for each tensor.  By default, values typical for prolate
-        white matter are used.
-    mevecs : sequence of 3D arrays,
-        Eigenvectors for each tensor.  You can also think of these
-        as the rotation matrices that align the different tensors.
+        Eigen-values for each tensor.
+    angles : sequence of 2d tuples,
+        Sequence of principal directions for each tensor in polar angles
+        or cartesian unit coordinates.
+    fractions : sequence of floats,
+        Percentages of the fractions for each tensor.
 
     Returns
     -------
@@ -390,29 +388,263 @@ def multi_tensor_odf(odf_verts, mf, mevals=None, mevecs=None):
     >>> from dipy.data import get_sphere
     >>> sphere = get_sphere('symmetric724')
     >>> vertices, faces = sphere.vertices, sphere.faces
-    >>> mevals=np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
-    >>> e0 = np.array([1, 0, 0.])
-    >>> e1 = np.array([0., 1, 0])
-    >>> mevecs=[all_tensor_evecs(e0), all_tensor_evecs(e1)]
-    >>> odf = multi_tensor_odf(vertices, [0.5,0.5], mevals, mevecs)
+    >>> mevals = np.array(([0.0015, 0.0003, 0.0003],[0.0015, 0.0003, 0.0003]))
+    >>> angles = [(0, 0), (90, 0)]
+    >>> odf = multi_tensor_odf(vertices, mevals, angles, [50, 50])
 
     '''
+
+    mf = [f / 100. for f in fractions]
+
+    angles = np.array(angles)
+    if angles.shape[-1] == 3:
+        sticks = angles
+    else:
+        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
+                  for pair in angles]
+        sticks = np.array(sticks)
+
     odf = np.zeros(len(odf_verts))
 
-    if mevals is None:
-        mevals = [None, ] * len(mf)
+    mevecs = []
+    for s in sticks:
+        mevecs += [all_tensor_evecs(s).T]
 
-    if mevecs is None:
-        mevecs = [np.eye(3) for i in range(len(mf))]
-
-    for j, f in enumerate(mf):
+    for (j, f) in enumerate(mf):
         odf += f * single_tensor_odf(odf_verts,
                                      evals=mevals[j], evecs=mevecs[j])
     return odf
 
 
+def single_tensor_rtop(evals=None, tau=1.0 / (4 * np.pi ** 2)):
+    r'''Simulate a Multi-Tensor rtop.
+
+    Parameters
+    ----------
+    evals : 1D arrays,
+        Eigen-values for the tensor.  By default, values typical for prolate
+        white matter are used.
+    tau : float,
+        diffusion time. By default the value that makes q=sqrt(b).
+
+    Returns
+    -------
+    rtop : float,
+        Return to origin probability.
+
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
+
+    '''
+    if evals is None:
+        evals = diffusion_evals
+
+    rtop = 1.0 / np.sqrt((4 * np.pi * tau) ** 3 * np.prod(evals))
+    return rtop
+
+
+def multi_tensor_rtop(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
+    r'''Simulate a Multi-Tensor rtop.
+
+    Parameters
+    ----------
+    mf : sequence of floats, bounded [0,1]
+        Percentages of the fractions for each tensor.
+    mevals : sequence of 1D arrays,
+        Eigen-values for each tensor.  By default, values typical for prolate
+        white matter are used.
+    tau : float,
+        diffusion time. By default the value that makes q=sqrt(b).
+
+    Returns
+    -------
+    rtop : float,
+        Return to origin probability.
+
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
+
+    '''
+    rtop = 0
+
+    if mevals is None:
+        mevals = [None, ] * len(mf)
+
+    for j, f in enumerate(mf):
+        rtop += f * single_tensor_rtop(mevals[j], tau=tau)
+    return rtop
+
+
+def single_tensor_pdf(r, evals=None, evecs=None, tau=1 / (4 * np.pi ** 2)):
+    """Simulated ODF with a single tensor.
+
+    Parameters
+    ----------
+    r : (N,3) or (M,N,3) ndarray
+        Measurement positions in (x, y, z), either as a list or on a grid.
+    evals : (3,)
+        Eigenvalues of diffusion tensor.  By default, use values typical for
+        prolate white matter.
+    evecs : (3, 3) ndarray
+        Eigenvectors of the tensor.  You can also think of these as the
+        rotation matrix that determines the orientation of the diffusion
+        tensor.
+    tau : float,
+        diffusion time. By default the value that makes q=sqrt(b).
+
+
+    Returns
+    -------
+    pdf : (N,) ndarray
+        The diffusion probability at ``r`` after time ``tau``.
+
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
+
+    """
+    if evals is None:
+        evals = diffusion_evals
+
+    if evecs is None:
+        evecs = np.eye(3)
+
+    out_shape = r.shape[:r.ndim - 1]
+
+    R = np.asarray(evecs)
+    D = dot(dot(R, np.diag(evals)), R.T)
+    Di = np.linalg.inv(D)
+    r = r.reshape(-1, 3)
+    P = np.zeros(len(r))
+    for (i, u) in enumerate(r):
+        P[i] = (-dot(dot(u.T, Di), u)) / (4 * tau)
+
+    pdf = (1 / np.sqrt((4 * np.pi * tau) ** 3 * np.prod(evals))) * np.exp(P)
+
+    return pdf.reshape(out_shape)
+
+
+def multi_tensor_pdf(pdf_points, mevals, angles, fractions,
+                     tau=1 / (4 * np.pi ** 2)):
+    r'''Simulate a Multi-Tensor ODF.
+
+    Parameters
+    ----------
+    pdf_points : (N, 3) ndarray
+        Points to evaluate the PDF.
+    mevals : sequence of 1D arrays,
+        Eigen-values for each tensor.  By default, values typical for prolate
+        white matter are used.
+    angles : sequence,
+        Sequence of principal directions for each tensor in polar angles
+        or cartesian unit coordinates.
+    fractions : sequence of floats,
+        Percentages of the fractions for each tensor.
+    tau : float,
+        diffusion time. By default the value that makes q=sqrt(b).
+
+    Returns
+    -------
+    pdf : (N,) ndarray,
+        Probability density function of the water displacement.
+
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator
+           and its Features in Diffusion MRI", PhD Thesis, 2012.
+
+    '''
+    mf = [f / 100. for f in fractions]
+
+    angles = np.array(angles)
+    if angles.shape[-1] == 3:
+        sticks = angles
+    else:
+        sticks = [sphere2cart(1, np.deg2rad(pair[0]), np.deg2rad(pair[1]))
+                  for pair in angles]
+        sticks = np.array(sticks)
+
+    pdf = np.zeros(len(pdf_points))
+
+    mevecs = []
+    for s in sticks:
+        mevecs += [all_tensor_evecs(s).T]
+
+    for j, f in enumerate(mf):
+        pdf += f * single_tensor_pdf(pdf_points,
+                                     evals=mevals[j], evecs=mevecs[j], tau=tau)
+    return pdf
+
+
+def single_tensor_msd(evals=None, tau=1 / (4 * np.pi ** 2)):
+    r'''Simulate a Multi-Tensor rtop.
+
+    Parameters
+    ----------
+    evals : 1D arrays,
+        Eigen-values for the tensor.  By default, values typical for prolate
+        white matter are used.
+    tau : float,
+        diffusion time. By default the value that makes q=sqrt(b).
+
+    Returns
+    -------
+    msd : float,
+        Mean square displacement.
+
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
+
+    '''
+    if evals is None:
+        evals = diffusion_evals
+
+    msd = 2 * tau * np.sum(evals)
+    return msd
+
+
+def multi_tensor_msd(mf, mevals=None, tau=1 / (4 * np.pi ** 2)):
+    r'''Simulate a Multi-Tensor rtop.
+
+    Parameters
+    ----------
+    mf : sequence of floats, bounded [0,1]
+        Percentages of the fractions for each tensor.
+    mevals : sequence of 1D arrays,
+        Eigen-values for each tensor.  By default, values typical for prolate
+        white matter are used.
+    tau : float,
+        diffusion time. By default the value that makes q=sqrt(b).
+
+    Returns
+    -------
+    msd : float,
+        Mean square displacement.
+
+    References
+    ----------
+    .. [1] Cheng J., "Estimation and Processing of Ensemble Average Propagator and
+           Its Features in Diffusion MRI", PhD Thesis, 2012.
+
+    '''
+    msd = 0
+
+    if mevals is None:
+        mevals = [None, ] * len(mf)
+
+    for j, f in enumerate(mf):
+        msd += f * single_tensor_msd(mevals[j], tau=tau)
+    return msd
+
 # Use standard naming convention, but keep old names
 # for backward compatibility
 SticksAndBall = sticks_and_ball
 SingleTensor = single_tensor
-MultiTensor  = multi_tensor
+MultiTensor = multi_tensor

@@ -112,15 +112,17 @@ def cyproc_exts(exts, cython_min_version,
     try:
         from Cython.Compiler.Version import version as cyversion
     except ImportError:
-        cython_ok = False
-    else:
-        cython_ok = LooseVersion(cyversion) >= cython_min_version
-    if cython_ok:
+        return derror_maker(build_ext,
+                            'Need cython>={0} to build extensions '
+                            'but cannot import "Cython"'.format(
+                            cython_min_version))
+    if LooseVersion(cyversion) >= cython_min_version:
         from Cython.Distutils import build_ext as extbuilder
         return extbuilder
     return derror_maker(build_ext,
-                        'Need cython>=%s to build extensions'
-                        % cython_min_version)
+                        'Need cython>={0} to build extensions'
+                        'but found cython version {1}'.format(
+                        cython_min_version, cyversion))
 
 
 def build_stamp(pyxes):
