@@ -1,4 +1,4 @@
 import numpy as np
-floating  = np.float64
+floating  = np.float32
 
 

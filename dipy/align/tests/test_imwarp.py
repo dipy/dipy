@@ -108,7 +108,7 @@ def test_cc_3d():
         similarity_metric, 3, imwarp.compose_displacements, 
         opt_iter, opt_tol, inv_iter, inv_tol, None)
     registration_optimizer.optimize(static, moving, None)
-    energy_profile = np.array(registration_optimizer.full_energy_profile) 
+    energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-6
     if floating is np.float32:
         expected_profile = np.array([-15763.543499318299, -18746.625000814667, -20160.312070620796, 
                                      -20951.446057415866, -21680.17488217326, -22354.501210638806, 
@@ -116,7 +116,7 @@ def test_cc_3d():
                                      -24171.656863448723, -115548.1069087715, -133171.4764221798, 
                                      -136956.3675746713, -143931.32627938036, -144240.57626152827, 
                                      -146812.38023202776, -147219.9288492704, -149772.61647280722, 
-                                     -150492.3160459624, -152611.88737725923])
+                                     -150492.3160459624, -152611.88737725923])*1e-6
     else:
         expected_profile = np.array([-15763.54423899, -18746.62574691, -20160.31307454,  
                                      -20951.44677417, -21680.17524703, -22354.50221778,
@@ -124,7 +124,7 @@ def test_cc_3d():
                                      -24171.65692437, -115548.11123551, -133175.89330572,
                                      -136955.33769781, -143931.25245346, -144239.90675822, 
                                      -146824.79881482, -147244.51045622, -149816.17947782,
-                                     -150527.54499074, -152670.81683311])
+                                     -150527.54499074, -152670.81683311])*1e-6
     assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
 
 
@@ -179,6 +179,6 @@ def test_em_3d():
 
 
 if __name__=='__main__':
-    test_ssd_2d()
+    #test_ssd_2d()
     test_cc_3d()
-    test_em_3d()
+    #test_em_3d()
