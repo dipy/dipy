@@ -12,16 +12,21 @@ from dipy.align import floating
 
 
 class SimilarityMetric(object):
-    """
-    A similarity metric is in charge of keeping track of the numerical value
-    of the similarity (or distance) between the two given images. It also
-    computes the update field for the forward and inverse
-    displacement fields to be used in a gradient-based optimization algorithm.
-    Note that this metric does not depend on any transformation (affine or
-    non-linear), so it assumes the static and moving images are already warped
-    """
     __metaclass__ = abc.ABCMeta
     def __init__(self, dim):
+        r""" Similarity Metric abstract class
+        A similarity metric is in charge of keeping track of the numerical value
+        of the similarity (or distance) between the two given images. It also
+        computes the update field for the forward and inverse displacement 
+        fields to be used in a gradient-based optimization algorithm. Note that
+        this metric does not depend on any transformation (affine or non-linear)
+        so it assumes the static and moving images are already warped
+
+        Parameters
+        ----------
+        dim : int (either 2 or 3)
+            the dimension of the image domain
+        """
         self.dim = dim
         self.static_image = None
         self.moving_image = None
@@ -34,6 +39,11 @@ class SimilarityMetric(object):
         Informs this metric the number of pyramid levels below the current one.
         The metric may change its behavior (e.g. number of inner iterations)
         accordingly
+
+        Parameters
+        ----------
+        levels : int
+            the number of levels below the current Gaussian Pyramid level
         """
         self.levels_below = levels
 
@@ -42,29 +52,47 @@ class SimilarityMetric(object):
         Informs this metric the number of pyramid levels above the current one.
         The metric may change its behavior (e.g. number of inner iterations)
         accordingly
+
+        Parameters
+        ----------
+        levels : int
+            the number of levels above the current Gaussian Pyramid level
         """
         self.levels_above = levels
 
     def set_static_image(self, static_image):
-        """
-        Sets the static image.
+        r"""
+        Sets the static image. The default behavior (of this abstract class) is
+        simply to assing the reference to an internal variable, but 
+        generalizations of the metric may need to perform other operations
+
+        Parameters
+        ----------
+        static_image : array, shape (R, C) or (S, R, C)
+            the static image
         """
         self.static_image = static_image
 
-    @abc.abstractmethod
     def use_static_image_dynamics(self,
                                  original_static_image,
                                  transformation):
-        """
+        r"""
         This methods provides the metric a chance to compute any useful
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
-        Transformation will be an instance of SymmetricDiffeomorficMap or None if
-        the originalMovingImage equals self.moving_image.
+        Transformation will be an instance of SymmetricDiffeomorficMap or None
+        if the originalMovingImage equals self.moving_image.
+
+        Parameters
+        ----------
+        original_static_image : array, shape (R, C) or (S, R, C)
+            the original image from which the current static image was generated
+        transformation : DiffeomorphicMap object
+            the transformation that was applied to original image to generate
+            the current static image
         """
 
-    @abc.abstractmethod
     def use_original_static_image(self, original_static_image):
         """
         This methods provides the metric a chance to compute any useful
@@ -73,15 +101,27 @@ class SimilarityMetric(object):
         mask delimiting the object of interest can be computed from the original
         image only and then warp this binary mask instead of thresholding
         at each iteration, which might cause artifacts due to interpolation)
+
+        Parameters
+        ----------
+        original_static_image : array, shape (R, C) or (S, R, C)
+            the original image from which the current static image was generated
         """
+        pass
 
     def set_moving_image(self, moving_image):
-        """
-        Sets the moving image.
+        r"""
+        Sets the moving image. The default behavior (of this abstract class) is
+        simply to assing the reference to an internal variable, but 
+        generalizations of the metric may need to perform other operations
+
+        Parameters
+        ----------
+        moving_image : array, shape (R, C) or (S, R, C)
+            the moving image
         """
         self.moving_image = moving_image
 
-    @abc.abstractmethod
     def use_original_moving_image(self, original_moving_image):
         """
         This methods provides the metric a chance to compute any useful
@@ -90,9 +130,14 @@ class SimilarityMetric(object):
         mask delimiting the object of interest can be computed from the original
         image only and then warp this binary mask instead of thresholding
         at each iteration, which might cause artifacts due to interpolation)
-        """
 
-    @abc.abstractmethod
+        Parameters
+        ----------
+        original_moving_image : array, shape (R, C) or (S, R, C)
+            the original image from which the current moving image was generated
+        """
+        pass
+
     def use_moving_image_dynamics(self,
                                original_moving_image,
                                transformation):
@@ -103,7 +148,16 @@ class SimilarityMetric(object):
         called by the optimizer just after it sets the static image.
         Transformation will be an instance of SymmetricDiffeomorficMap or None if
         the originalMovingImage equals self.moving_image.
+
+        Parameters
+        ----------
+        original_moving_image : array, shape (R, C) or (S, R, C)
+            the original image from which the current moving image was generated
+        transformation : DiffeomorphicMap object
+            the transformation that was applied to original image to generate
+            the current moving image
         """
+        pass
 
     @abc.abstractmethod
     def initialize_iteration(self):
@@ -146,13 +200,27 @@ class SimilarityMetric(object):
         """
 
 class CCMetric(SimilarityMetric):
-    r"""
-    Similarity metric based on the Expectation-Maximization algorithm to handle
-    multi-modal images. The transfer function is modeled as a set of hidden
-    random variables that are estimated at each iteration of the algorithm.
-    """
 
     def __init__(self, dim, step_length = 0.25, sigma_diff = 3.0, radius = 4):
+        r"""
+        Similarity metric based on the Expectation-Maximization algorithm to
+        handle multi-modal images. The transfer function is modeled as a set of
+        hidden random variables that are estimated at each iteration of the 
+        algorithm
+
+        Parameters
+        ----------
+        dim : int (either 2 or 3)
+            the dimension of the image domain
+        step_length : float
+            the length of the maximum displacement vector of the displacement
+            update displacement field at each iteration
+        sigma_diff : the standard deviation of the Gaussian smoothing kernel to
+            be applied to the update field at each iteration
+        radius : int
+            the radius of the squared (cubic) neighborhood at each voxel to be
+            considered to compute the cross correlation
+        """
         super(CCMetric, self).__init__(dim)
         self.step_length = step_length
         self.sigma_diff = sigma_diff
@@ -228,29 +296,24 @@ class CCMetric(SimilarityMetric):
 
     def get_energy(self):
         r"""
-        TO-DO: implement energy computation for the EM metric
+        Returns the Cross Correlation (data term) energy computed at the largest
+        iteration
         """
-        return NotImplemented
-
-    def use_original_static_image(self, original_static_image):
-        r"""
-        CCMetric computes the object mask by thresholding the original static
-        image
-        """
-        pass
-
-    def use_original_moving_image(self, original_moving_image):
-        r"""
-        CCMetric computes the object mask by thresholding the original moving
-        image
-        """
-        pass
+        return self.energy
 
     def use_static_image_dynamics(self, original_static_image, transformation):
         r"""
         CCMetric takes advantage of the image dynamics by computing the
         current static image mask from the originalstaticImage mask (warped
         by nearest neighbor interpolation)
+
+        Parameters
+        ----------
+        original_static_image : array, shape (R, C) or (S, R, C)
+            the original image from which the current static image was generated
+        transformation : DiffeomorphicMap object
+            the transformation that was applied to original image to generate
+            the current static image
         """
         self.static_image_mask = (original_static_image>0).astype(np.int32)
         if transformation == None:
@@ -262,6 +325,14 @@ class CCMetric(SimilarityMetric):
         CCMetric takes advantage of the image dynamics by computing the
         current moving image mask from the originalMovingImage mask (warped
         by nearest neighbor interpolation)
+
+        Parameters
+        ----------
+        original_moving_image : array, shape (R, C) or (S, R, C)
+            the original image from which the current moving image was generated
+        transformation : DiffeomorphicMap object
+            the transformation that was applied to original image to generate
+            the current moving image
         """
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
@@ -496,29 +567,29 @@ class EMMetric(SimilarityMetric):
 
     def compute_demons_step(self, forward_step = True):
         r"""
-        TO-DO: implement Demons step for EM metric
+        Demons step for EM metric
+
+        Parameters
+        ----------
+        forward_step : boolean
+            if True, computes the Demons step in the forward direction 
+            (warping the moving towards the static image). If False, 
+            computes the backward step (warping the static image to the
+            moving image)
+
+        Returns
+        -------
+        displacement : array, shape (R, C, 2) or (S, R, C, 3)
+            the Demons step
         """
         return NotImplemented
 
     def get_energy(self):
         r"""
-        TO-DO: implement energy computation for the EM metric
+        Returns the EM (data term) energy computed at the largest
+        iteration
         """
-        return NotImplemented
-
-    def use_original_static_image(self, original_static_image):
-        r"""
-        EMMetric computes the object mask by thresholding the original static
-        image
-        """
-        pass
-
-    def use_original_moving_image(self, original_moving_image):
-        r"""
-        EMMetric computes the object mask by thresholding the original moving
-        image
-        """
-        pass
+        return self.energy
 
     def use_static_image_dynamics(self, original_static_image, transformation):
         r"""
@@ -567,14 +638,34 @@ class EMMetric(SimilarityMetric):
 
 
 class SSDMetric(SimilarityMetric):
-    r"""
-    Similarity metric for (monomodal) nonlinear image registration defined by
-    the sum of squared differences (SSD).
-    """
+
     GAUSS_SEIDEL_STEP = 0
     DEMONS_STEP = 1
 
     def __init__(self, dim, smooth=3.0, inner_iter=5, step_length=0.25, step_type=0):
+        r"""
+        Similarity metric for (monomodal) nonlinear image registration defined by
+        the sum of squared differences (SSD)
+
+        Parameters
+        ----------
+        dim : int (either 2 or 3)
+            the dimension of the image domain
+        smooth : float
+            smoothness parameter, the larger the value the smoother the 
+            deformation field
+        inner_iter : int 
+            number of iterations to be performed at each level of the multi-
+            resolution Gauss-Seidel optimization algorithm (this is not the 
+            number of steps per Gaussian Pyramid level, that parameter must
+            be set for the optimizer, not the metric) 
+        step_length : float
+            the length of the largest displacement vector of the deformation
+            field at each iteration
+        step_type : int (either 0 or 1)
+            if step_type == 0 : Select Newton step
+            if step_type == 1 : Select Demons step
+        """
         super(SSDMetric, self).__init__(dim)
         self.smooth = smooth
         self.inner_iter = inner_iter
@@ -624,9 +715,17 @@ class SSDMetric(SimilarityMetric):
 
     def compute_gauss_seidel_step(self, forward_step = True):
         r"""
-        Minimizes the linearized energy function defined by the sum of squared
-        differences of corresponding pixels of the input images with respect
-        to the displacement field.
+        Minimizes the linearized energy function (Newton step) defined by the
+        sum of squared differences of corresponding pixels of the input images 
+        with respect to the displacement field.
+
+        Parameters
+        ----------
+        forward_step : boolean
+            if True, computes the Newton step in the forward direction 
+            (warping the moving towards the static image). If False, 
+            computes the backward step (warping the static image to the
+            moving image)
         """
         max_inner_iter = self.inner_iter
         lambda_param = self.smooth
@@ -662,6 +761,19 @@ class SSDMetric(SimilarityMetric):
         [1] Tom Vercauteren, Xavier Pennec, Aymeric Perchant, Nicholas Ayache,
             "Diffeomorphic Demons: Efficient Non-parametric Image Registration",
             Neuroimage 2009
+
+        Parameters
+        ----------
+        forward_step : boolean
+            if True, computes the Demons step in the forward direction 
+            (warping the moving towards the static image). If False, 
+            computes the backward step (warping the static image to the
+            moving image)
+
+        Returns
+        -------
+        displacement : array, shape (R, C, 2) or (S, R, C, 3)
+            the Demons step
         """
         sigma_diff = self.smooth
         max_step_length = self.step_length
@@ -690,34 +802,16 @@ class SSDMetric(SimilarityMetric):
         return forward
 
     def get_energy(self):
-        return NotImplemented
-
-    def use_original_static_image(self, originalstatic_image):
         r"""
-        SSDMetric does not take advantage of the original static image, just pass
+        Returns the Sum of Squared Differences (data term) energy computed at 
+        the largest iteration
         """
-        pass
-
-    def use_original_moving_image(self, original_moving_image):
-        r"""
-        SSDMetric does not take advantage of the original moving image just pass
-        """
-        pass
-
-    def use_static_image_dynamics(self, originalstatic_image, transformation):
-        r"""
-        SSDMetric does not take advantage of the image dynamics, just pass
-        """
-        pass
-
-    def use_moving_image_dynamics(self, original_moving_image, transformation):
-        r"""
-        SSDMetric does not take advantage of the image dynamics, just pass
-        """
-        pass
-
+        return self.energy
 
     def free_iteration(self):
+        r"""
+        Nothing to free for the SSD metric
+        """
         pass
 
 
@@ -730,35 +824,52 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     resolution. This scheme corresponds to the V-cycle proposed by Bruhn and
     Weickert[1].
     [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-            combining highest accuracy with real-time performance",
-            10th IEEE International Conference on Computer Vision, 2005.
-            ICCV 2005.
+        combining highest accuracy with real-time performance",
+        10th IEEE International Conference on Computer Vision, 2005. ICCV 2005.
+
+    Parameters
+    ----------
+    n : int
+        number of levels of the multi-resolution algorithm (it will be called
+        recursively until level n==0)
+    k : int 
+        the number of iterations at each multi-resolution level
+    delta_field : array, shape (R, C)
+        the difference between the static and moving image (the 'derivatice
+        w.r.t. time' in the optical flow model)
+    sigma_field : array, shape (R, C)
+        the variance of the gray level value at each voxel, according to the 
+        EM model (for SSD, it is 1 for all voxels). Inf and 0 values
+        are processed specially to support infinite and zero variance.
+    gradient_field : array, shape (R, C, 2)
+        the gradient of the moving image
+    target : array, shape (R, C, 2)
+        right-hand side of the linear system to be solved in the Weickert's
+        multiresolution algorithm
+    lambda_param : float
+        smoothness parameter, the larger its value the smoother the displacement
+        field
+    displacement : array, shape (R, C, 2)
     """
     #presmoothing
     for i in range(k):
-        ssd.iterate_residual_displacement_field_SSD2D(delta_field,
-                                                             sigma_field,
-                                                             gradient_field,
-                                                             target,
-                                                             lambda_param,
-                                                             displacement)
+        ssd.iterate_residual_displacement_field_SSD2D(delta_field, sigma_field,
+                                                      gradient_field, target,
+                                                      lambda_param, displacement)
     if n == 0:
-        try:
-            energy
-        except NameError:
-            energy = ssd.compute_energy_SSD2D(delta_field, sigma_field, 
-                                         gradient_field, lambda_param, 
-                                         displacement)
+        energy = ssd.compute_energy_SSD2D(delta_field, sigma_field, 
+                                          gradient_field, lambda_param, 
+                                          displacement)
         return energy
     #solve at coarcer grid
     residual = None
     residual = ssd.compute_residual_displacement_field_SSD2D(delta_field,
-                                                            sigma_field,
-                                                            gradient_field,
-                                                            target,
-                                                            lambda_param,
-                                                            displacement,
-                                                            residual)
+                                                             sigma_field,
+                                                             gradient_field,
+                                                             target,
+                                                             lambda_param,
+                                                             displacement,
+                                                             residual)
     sub_residual = np.array(vfu.downsample_displacement_field2D(residual))
     del residual
     subsigma_field = None
@@ -804,6 +915,30 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
         combining highest accuracy with real-time performance",
         10th IEEE International Conference on Computer Vision, 2005.
         ICCV 2005.
+
+    Parameters
+    ----------
+    n : int
+        number of levels of the multi-resolution algorithm (it will be called
+        recursively until level n==0)
+    k : int 
+        the number of iterations at each multi-resolution level
+    delta_field : array, shape (S, R, C)
+        the difference between the static and moving image (the 'derivatice
+        w.r.t. time' in the optical flow model)
+    sigma_field : array, shape (S, R, C)
+        the variance of the gray level value at each voxel, according to the 
+        EM model (for SSD, it is 1 for all voxels). Inf and 0 values
+        are processed specially to support infinite and zero variance.
+    gradient_field : array, shape (S, R, C, 3)
+        the gradient of the moving image
+    target : array, shape (S, R, C, 3)
+        right-hand side of the linear system to be solved in the Weickert's
+        multiresolution algorithm
+    lambda_param : float
+        smoothness parameter, the larger its value the smoother the displacement
+        field
+    displacement : array, shape (S, R, C, 3)
     """
     #presmoothing
     for i in range(k):
