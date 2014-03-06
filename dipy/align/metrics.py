@@ -850,6 +850,12 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
         smoothness parameter, the larger its value the smoother the displacement
         field
     displacement : array, shape (R, C, 2)
+        the displacement field to start the optimization from
+
+    Returns
+    -------
+    energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this 
+        iteration
     """
     #presmoothing
     for i in range(k):
@@ -939,6 +945,12 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
         smoothness parameter, the larger its value the smoother the displacement
         field
     displacement : array, shape (S, R, C, 3)
+        the displacement field to start the optimization from
+
+    Returns
+    -------
+    energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this 
+        iteration
     """
     #presmoothing
     for i in range(k):
