@@ -50,8 +50,7 @@ def test_ssd_2d():
     inv_iter = 40
     inv_tol = 1e-3
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, 2, imwarp.compose_displacements, 
-        opt_iter, opt_tol, inv_iter, inv_tol, None)
+        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
     registration_optimizer.optimize(static, moving, None)
     subsampled_energy_profile = registration_optimizer.full_energy_profile[::10]
     if floating is np.float32:
@@ -105,8 +104,7 @@ def test_cc_3d():
     inv_iter = 20
     inv_tol = 1e-3
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, 3, imwarp.compose_displacements, 
-        opt_iter, opt_tol, inv_iter, inv_tol, None)
+        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
     registration_optimizer.optimize(static, moving, None)
     energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-6
     if floating is np.float32:
@@ -159,8 +157,7 @@ def test_em_3d():
     inv_iter = 20
     inv_tol = 1e-3
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, 3, imwarp.compose_displacements, 
-        opt_iter, opt_tol, inv_iter, inv_tol, None)
+        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
     registration_optimizer.optimize(static, moving, None)
     energy_profile = registration_optimizer.full_energy_profile
     if floating is np.float32:

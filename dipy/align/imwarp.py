@@ -528,7 +528,6 @@ class DiffeomorphicRegistration(object):
 
     def __init__(self,
                  metric=None,
-                 dim=3,
                  update_function=None):
         r""" Diffeomorphic Registration
 
@@ -540,16 +539,14 @@ class DiffeomorphicRegistration(object):
         metric : SimilarityMetric object
             the object measuring the similarity of the two images. The registration 
             algorithm will minimize (or maximize) the provided similarity.
-        dim : int (either 2 or 3)
-            the dimension of the diffeomorphism domain. Default 3.
         update_function : function
             the function to be applied to perform a small deformation to a 
             displacement field (the small deformation is given as a deformation 
             field as well). An update function may for example compute the composition
             of the two displacement fields or the sum of them, etc.
         """
-        self.dim = dim
         self.metric = metric
+        self.dim = metric.dim
         if update_function is None:
             self.update = compose_displacements
         else:
@@ -638,13 +635,12 @@ class DiffeomorphicRegistration(object):
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     def __init__(self,
                  metric=None,
-                 dim=3,
-                 update_function=None,
                  opt_iter = [25, 100, 100],
                  opt_tol = 1e-4,
-                 inv_iter = 20,
+                 inv_iter = 40,
                  inv_tol = 1e-3,
-                 call_back = None):
+                 call_back = None,
+                 update_function=None):
         r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
         Performs the multi-resolution optimization algorithm for non-linear
         registration using a given similarity metric and update rule (this
@@ -654,12 +650,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         ----------
         metric : SimilarityMetric object
             the metric to be optimized
-        dim : int (either 2 or 3)
-            the dimension of the image domain
-        update_function : function
-            the function to be applied to update the displacement field after
-            each iteration. By default, it will use the displacement field
-            composition
         opt_iter : list of int
             the number of iterations at each level of the Gaussian Pyramid (the
             length of the list defines the number of pyramid levels to be 
@@ -677,9 +667,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             a function receiving a SymmetricDiffeomorphicRegistration object 
             to be called after each iteration (this optimizer will call this
             function passing self as parameter)
+        update_function : function
+            the function to be applied to update the displacement field after
+            each iteration. By default, it will use the displacement field
+            composition
         """
         super(SymmetricDiffeomorphicRegistration, self).__init__(
-                metric, dim, update_function)
+                metric, update_function)
         self.set_opt_iter(opt_iter)
         self.opt_tol = opt_tol
         self.inv_tol = inv_tol

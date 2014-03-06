@@ -128,6 +128,9 @@ def plotDiffeomorphism(GT, GTinv, GTres, titlePrefix, delta=10):
     #priorEnergy=g00**2+g01**2+g10**2+g11**2
     return [gtLattice, gtInvLattice, gtResidual, detJacobian]
 
+
+
+
 def readAntsAffine(fname):
     '''
     readAntsAffine('IBSR_01_ana_strip_t1_icbm_normal_1mm_pn0_rf0_peeledAffine.txt')
