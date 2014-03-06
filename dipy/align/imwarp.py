@@ -566,21 +566,39 @@ class DiffeomorphicRegistration(object):
 
     def set_static_image(self, static):
         r"""
-        Establishes the static image to be used by this registration optimizer.        
+        Establishes the static image to be used by this registration optimizer
+
+        Parameters
+        ----------
+        static : array, shape (R, C) or (S, R, C)
+            the static image, consisting of R rows and C columns (and S slices,
+            if 3D)
         """
         self.static = static
 
     def set_moving_image(self, moving):
         r"""
         Establishes the moving image to be used by this registration optimizer.
+
+        Parameters
+        ----------
+        static : array, shape (R, C) or (S, R, C)
+            the static image, consisting of R rows and C columns (and S slices,
+            if 3D)
         """
         self.moving = moving
 
     def set_affine_init(self, affine_init):
         r"""
         Establishes the affine transformation the diffeomorphic registration
-        starts from. Initializes the appropriate Diffeomorphic transformations
-        from the given affine transformation
+        starts from. Initializes the appropriate Diffeomorphic transformation
+        objects from the given affine transformation
+
+        Parameters
+        ----------
+        affine_init : array, shape (3, 3) or (4, 4)
+            the initial affine transformation "roughly" aligning the moving
+            image towards the static
         """
         inv_affine_init = None
         if affine_init != None:
@@ -592,7 +610,14 @@ class DiffeomorphicRegistration(object):
     def set_opt_iter(self, opt_iter):
         r"""
         Establishes the maximum number of iterations to be performed at each
-        level of the Gaussian pyramid, similar to ANTS
+        level of the Gaussian pyramid, similar to ANTS.
+
+        Parameters
+        ----------
+        opt_iter : list
+            the number of iterations at each level of the Gaussian pyramid.
+            opt_iter[0] corresponds to the finest level, opt_iter[n-1] the
+            coarcest, where n is the length of the list
         """
         self.levels = len(opt_iter) if opt_iter else 0
         self.opt_iter = opt_iter
@@ -621,12 +646,6 @@ class DiffeomorphicRegistration(object):
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
-    r"""
-    Performs the multi-resolution optimization algorithm for non-linear
-    registration using a given similarity metric and update rule (this
-    scheme was inspider on the ANTS package).
-    """
-
     def __init__(self,
                  metric=None,
                  dim=3,
@@ -639,6 +658,20 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  inv_iter = 20,
                  inv_tol = 1e-3,
                  report_status = False):
+        r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
+        Performs the multi-resolution optimization algorithm for non-linear
+        registration using a given similarity metric and update rule (this
+        scheme was inspider on the ANTS package).
+
+        Parameters
+        ----------
+        metric : SimilarityMetric object
+            the metric to be optimized
+        dim : int (either 2 or 3)
+            the dimension of the image domain
+        static : array, shape (R, C) or (S, R, C)
+            the static image (this also defines the reference)
+        """
         super(SymmetricDiffeomorphicRegistration, self).__init__(
                 metric, dim, static, moving, affine_init, update_function)
         self.set_opt_iter(opt_iter)
@@ -743,7 +776,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         del self.moving_pyramid
         del self.static_pyramid
 
-    def _iterate(self, show_images=False):
+    def _iterate(self, call_back=None):
         r"""
         Performs one symmetric iteration:
             1.Compute forward
@@ -752,8 +785,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             4.Update backward
             5.Compute inverses
             6.Invert the inverses to improve invertibility
+
+        Parameters
+        ----------
+        call_back : function
+            a function to be called after each iteration
         """
-        #tic = time.time()
         wmoving = self.backward_model.transform_inverse(self.current_moving, 'tri')
         wstatic = self.forward_model.transform_inverse(self.current_static, 'tri')
         
@@ -815,10 +852,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.invert_vector_field(
                 self.backward_model.backward, bf_shape, inv_iter, inv_tol,
                 self.backward_model.forward))
-        if show_images:
-            self.metric.report_status()
-        #toc = time.time()
-        #print('Iter time: %f sec' % (toc - tic))
+        if call_back is not None:
+            call_back()
         return 1 if der == '-' else der
 
     def _get_energy_derivative(self):
@@ -902,5 +937,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if affine_init is not None:
             self.set_affine_init(affine_init)
         self._optimize()
+        return self.forward_model
 
 
