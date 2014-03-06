@@ -645,7 +645,6 @@ class DiffeomorphicRegistration(object):
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
-
     def __init__(self,
                  metric=None,
                  dim=3,
