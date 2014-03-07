@@ -48,7 +48,7 @@ class BundleMinDistanceFast(StreamlineDistanceMetric):
     def feed(self, static, moving):
         static_centered_pts, st_idx = unlist_streamlines(static)
         self.static_centered_pts = np.ascontiguousarray(static_centered_pts,
-                                                        dtype=np.float32)
+                                                        dtype=np.float64)
         self.moving_centered_pts, mv_idx = unlist_streamlines(moving)
         self.block_size = st_idx[0]
 
@@ -358,11 +358,11 @@ def bundle_min_distance_fast(t, static, moving, block_size):
 
     aff = matrix44(t)
     moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
-    moving = np.ascontiguousarray(moving, dtype=np.float32)
+    moving = np.ascontiguousarray(moving, dtype=np.float64)
 
     rows = static.shape[0] / block_size
     cols = moving.shape[0] / block_size
-    d01 = np.zeros((rows, cols), dtype=np.float32)
+    d01 = np.zeros((rows, cols), dtype=np.float64)
 
     _bundle_minimum_distance_rigid(static, moving,
                                    rows,
