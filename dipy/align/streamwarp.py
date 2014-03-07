@@ -227,6 +227,11 @@ class StreamlineRigidRegistration(object):
                                                            matrix44(vecs),
                                                            static_mat))
 
+        imat = np.linalg.inv(mat)
+        xopt = np.array(xopt)                
+        xopt[:3] = imat[:3, 3]
+        xopt[3:] = - xopt[3:]
+
         return StreamlineRegistrationMap(mat, xopt, fopt,
                                          mat_history, funcs, iterations)
 
