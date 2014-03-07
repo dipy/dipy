@@ -3,7 +3,6 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import abc
 from scipy import gradient, ndimage
-import registration_common as rcommon
 import vector_fields as vfu
 import ssd
 import cc

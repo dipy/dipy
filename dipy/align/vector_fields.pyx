@@ -1910,3 +1910,79 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
                 else:
                     warped[i, j] = image[ii, jj]
     return warped
+
+def warp_2d_stream_line(floating[:, :] streamline, floating[:, :, :] d1,
+                        floating[:, :] affinePre=None, 
+                        floating[:, :] affinePost=None):
+    r"""
+    Deforms the input 2d stream line under the transformation T of the from
+    T(x) = B*f(A*x), x\in dom(f), where 
+    A = affinePre
+    B = affinePost
+    f = d2
+    using bilinear interpolation. If either affine matrix is None, it is
+    taken as the identity.
+
+    Parameters
+    ----------
+    streamline : array, shape (n, 2)
+        the input n-point streamline to be transformed
+    d1 : array, shape (R', C', 2)
+        the displacement field driving the transformation
+    affinePre : array, shape (3, 3)
+        the pre-multiplication affine matrix (A, in the model above)
+    affinePost : array, shape (3, 3)
+        the post-multiplication affine matrix (B, in the model above)
+
+    Returns
+    -------
+    warped : array, shape (n, 2)
+        the transformed streamline
+    """
+    cdef int nr = d1.shape[0]
+    cdef int nc = d1.shape[1]
+    cdef int n = streamline.shape[0] 
+    cdef double i0, j0, dii, djj
+    cdef int ii, jj
+    for i in range(n):
+        if affinePre is not None:
+            i0 = _apply_affine_2d_x0(streamline[i, 0], streamline[i, 1], affinePre)
+            j0 = _apply_affine_2d_x1(streamline[i, 0], streamline[i, 1], affinePre)
+        else:
+            i0 = streamline[i,0]
+            j0 = streamline[i,1]
+        if((i0 < 0) or (j0 < 0) or (i0 > nr - 1) or (j0 > nc - 1)):
+            continue
+        ii = int(i0)
+        jj = int(j0)
+        if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
+            continue
+        calpha = i0 - ii
+        cbeta = j0 - jj
+        alpha = 1 - calpha
+        beta = 1 - cbeta
+        #---top-left
+        dii= alpha * beta * d1[ii, jj, 0]
+        djj= alpha * beta * d1[ii, jj, 1]
+        #---top-right
+        jj += 1
+        if(jj < nc):
+            dii += alpha * cbeta * d1[ii, jj, 0]
+            djj += alpha * cbeta * d1[ii, jj, 1]
+        #---bottom-right
+        ii += 1
+        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+            dii += calpha * cbeta * d1[ii, jj, 0]
+            djj += calpha * cbeta * d1[ii, jj, 1]
+        #---bottom-left
+        jj -= 1
+        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+            dii += calpha * beta * d1[ii, jj, 0]
+            djj += calpha * beta * d1[ii, jj, 1]
+        dii += streamline[i,0]
+        djj += streamline[i,1]
+        if(affinePost != None):
+            streamline[i, 0] = _apply_affine_2d_x0(dii, djj, affinePost)
+            streamline[i, 1] = _apply_affine_2d_x1(dii, djj, affinePost)
+        else:
+            streamline[i, 0], streamline[i, 1] = dii, djj

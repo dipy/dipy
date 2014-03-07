@@ -1,11 +1,69 @@
 import numpy as np
+import scipy as sp
 import numpy.linalg as linalg
 import abc
 import vector_fields as vfu
-import registration_common as rcommon
 from dipy.align import floating
 from scipy import interpolate
 
+def pyramid_gaussian_3D(image, max_layer, mask=None):
+    r'''
+    Generates a 3D Gaussian Pyramid of max_layer+1 levels from image
+
+    Parameters
+    ----------
+    image : array, shape (S, R, C)
+        the base image (level zero) of the pyramid
+    max_layer : int
+        the index of the last level of the pyramid (the final pyramid will have
+        max_layer+1 levels)
+    mask : array, shape (S, R, C)
+        a binary mask to be applied to the base image (the upper levels of the
+        pyramid will be masked using subsampled versions of this mask)
+
+    Returns
+    -------
+    new_image : iterator
+        the Gaussian Pyramid as an iterator over the pyramid levels
+    '''
+    yield image.copy().astype(floating)
+    for i in range(max_layer):
+        new_image=np.array(sp.ndimage.filters.gaussian_filter(image, 2.0/3.0)[::2,::2,::2], dtype = floating)
+        if(mask!=None):
+            mask=mask[::2,::2,::2]
+            new_image*=mask
+        image=new_image.copy()
+        yield new_image
+
+def pyramid_gaussian_2D(image, max_layer, mask=None):
+    r'''
+    Generates a 3D Gaussian Pyramid of max_layer+1 levels from image
+
+    Parameters
+    ----------
+    image : array, shape (R, C)
+        the base image (level zero) of the pyramid
+    max_layer : int
+        the index of the last level of the pyramid (the final pyramid will have
+        max_layer+1 levels)
+    mask : array, shape (R, C)
+        a binary mask to be applied to the base image (the upper levels of the
+        pyramid will be masked using subsampled versions of this mask)
+
+    Returns
+    -------
+    new_image : iterator
+        the Gaussian Pyramid as an iterator over the pyramid levels
+    '''
+    yield image.copy().astype(floating)
+    for i in range(max_layer):
+        new_image=np.empty(shape=((image.shape[0]+1)//2, (image.shape[1]+1)//2), dtype=floating)
+        new_image[...]=sp.ndimage.filters.gaussian_filter(image, 2.0/3.0)[::2,::2]
+        if(mask!=None):
+            mask=mask[::2,::2]
+            new_image*=mask
+        image=new_image
+        yield new_image
 
 def compose_displacements(new_displacement, current_displacement):
     r"""
@@ -700,12 +758,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         if self.dim == 2:
             self.invert_vector_field = vfu.invert_vector_field_fixed_point
-            self.generate_pyramid = rcommon.pyramid_gaussian_2D
+            self.generate_pyramid = pyramid_gaussian_2D
             self.append_affine = vfu.append_affine_to_displacement_field_2d
             self.prepend_affine = vfu.prepend_affine_to_displacement_field_2d
         else:
             self.invert_vector_field = vfu.invert_vector_field_fixed_point_3d
-            self.generate_pyramid = rcommon.pyramid_gaussian_3D
+            self.generate_pyramid = pyramid_gaussian_3D
             self.append_affine = vfu.append_affine_to_displacement_field_3d
             self.prepend_affine = vfu.prepend_affine_to_displacement_field_3d
 
