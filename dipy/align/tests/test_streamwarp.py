@@ -238,6 +238,8 @@ def test_openmp_locks():
         static.append(s)
         moving.append(s + 2)
 
+    moving = moving[2:]
+
     points, offsets = unlist_streamlines(static)
     points2, offsets2 = unlist_streamlines(moving)
 
