@@ -6,6 +6,7 @@
 import numpy as np
 cimport numpy as cnp
 cimport cython
+cimport openmp
 from cython.parallel import parallel, prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
@@ -28,8 +29,8 @@ cdef double direct_flip_dist(double *a,double *b,
     -------
     out : double
         mininum of direct and flipped average distances
-
     """
+
     cdef:
         cnp.npy_intp i=0, j=0
         double sub=0, subf=0, distf=0, dist=0, tmprow=0, tmprowf=0
@@ -71,7 +72,19 @@ def _bundle_minimum_distance_rigid(double [:, ::1] static,
         Static streamlines
 
     moving: array
-        Moving streamlines 
+        Moving streamlines
+
+    static_size : int
+        Number of static streamlines
+
+    moving_size : int
+        Number of moving streamlines
+
+    rows : int
+        Number of points per streamline
+ 
+    D : 2D array
+        Distance matrix
 
     Returns
     -------
@@ -79,7 +92,7 @@ def _bundle_minimum_distance_rigid(double [:, ::1] static,
     """
 
     cdef:
-        cnp.npy_intp i, j, mov_i=0, mov_j=0
+        cnp.npy_intp i=0, j=0, mov_i=0, mov_j=0
 
     with nogil:
 
@@ -102,15 +115,24 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
-    points as they align with the static streamlines.
+    points as they align with the static streamlines. 
 
     Parameters
     -----------
-    static: array
+    static : array
         Static streamlines
 
-    moving: array
+    moving : array
         Moving streamlines 
+
+    static_size : int
+        Number of static streamlines
+
+    moving_size : int
+        Number of moving streamlines
+
+    rows : int
+        Number of points per streamline
 
     Returns
     -------
@@ -118,124 +140,61 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
 
     Notes
     -----
-    The difference withgit asd this function is that it is not saving the 
+    The difference with ``_bundle_minimum_distance_rigid`` it that it does not
+    save the full distance matrix and therefore needs much less memory.
     """
 
     cdef:
-        cnp.npy_intp i, j
-        double sum_i, sum_j, min_j, min_i, tmp
-        double inf = np.finfo('f4').max
-        double dist
+        cnp.npy_intp i=0, j=0
+        double sum_i=0, sum_j=0, tmp=0
+        double inf = np.finfo('f8').max
+        double dist=0
+        double * min_j 
+        double * min_i
+        openmp.omp_lock_t lock
+
 
     with nogil:
 
-        sum_i = 0
+        openmp.omp_init_lock(&lock)
+        
+        min_j = <double *> malloc(static_size * sizeof(double))
+        min_i = <double *> malloc(moving_size * sizeof(double))
 
         for i in range(static_size):
-            
-            min_j = inf
-
-            for j in range(moving_size):
-
-                tmp = <double>direct_flip_dist(&stat[i * rows, 0], 
-                                               &mov[j * rows, 0], rows)
-                if tmp < min_j:
-                    min_j = tmp
-
-            sum_i += min_j
-
-        sum_j = 0
+            min_j[i] = inf
 
         for j in range(moving_size):
-            
-            min_i = inf
+            min_i[j] = inf
 
-            for i in range(static_size):
+        for i in prange(static_size):
+
+            for j in range(moving_size):
 
                 tmp = direct_flip_dist(&stat[i * rows, 0], 
                                        &mov[j * rows, 0], rows)
 
-                if tmp < min_i:
-                    min_i = tmp
+                openmp.omp_set_lock(&lock)
+                if tmp < min_j[i]:
+                    min_j[i] = tmp
 
-            sum_j += min_i
+                if tmp < min_i[j]:
+                    min_i[j] = tmp
+                openmp.omp_unset_lock(&lock)
 
-    dist = (sum_i/<double>static_size  + sum_j/<double>moving_size)
-    
-    return 0.25 * dist * dist
+        openmp.omp_destroy_lock(&lock)
 
+        for i in range(static_size):
+            sum_i += min_j[i] 
 
-def _bundle_minimum_distance_rigid_nomat_parallel(double [:, ::1] stat,
-                                                  double [:, ::1] mov,
-                                                  cnp.npy_intp static_size,
-                                                  cnp.npy_intp moving_size,
-                                                  cnp.npy_intp rows):
-    """ MDF-based pairwise distance optimization function
+        for j in range(moving_size):
+            sum_j += min_i[j]
 
-    We minimize the distance between moving streamlines of the same number of
-    points as they align with the static streamlines.
+        free(min_j)
+        free(min_i)
 
-    Parameters
-    -----------
-    static: array
-        Static streamlines
-
-    moving: array
-        Moving streamlines 
-
-    Returns
-    -------
-    cost : double
-
-    Notes
-    -----
-    The difference withgit asd this function is that it is not saving the 
-    """
-
-    cdef:
-        cnp.npy_intp i, j
-        double sum_i, sum_j, min_j, min_i, tmp
-        double inf = np.finfo('f4').max
-        double dist
-
-
-    with nogil:
-
-        sum_i = 0
-
-        for i in prange(static_size):
-            
-            min_j = inf
-
-            for j in range(moving_size):
-
-                tmp = <double>direct_flip_dist(&stat[i * rows, 0], 
-                                               &mov[j * rows, 0], rows)
-                if tmp < min_j:
-                    min_j = tmp
-
-            sum_i += min_j
-
-        sum_j = 0
-
-        for j in prange(moving_size):
-            
-            min_i = inf
-
-            for i in range(static_size):
-
-                tmp = <double> direct_flip_dist(&stat[i * rows, 0], 
-                                                &mov[j * rows, 0], rows)
-
-                if tmp < min_i:
-                    min_i = tmp
-
-            sum_j += min_i
-
-        dist = (sum_i/<double>static_size  + sum_j/<double>moving_size)
+        dist = (sum_i/<double>static_size + sum_j/<double>moving_size)
 
         dist = 0.25 * dist * dist
     
     return dist
-
-

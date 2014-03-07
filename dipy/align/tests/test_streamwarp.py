@@ -17,8 +17,7 @@ from dipy.align.streamwarp import (StreamlineRigidRegistration,
                                    unlist_streamlines,
                                    relist_streamlines)
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
-                            _bundle_minimum_distance_rigid_nomat,
-                            _bundle_minimum_distance_rigid_nomat_parallel)
+                            _bundle_minimum_distance_rigid_nomat)
 from dipy.tracking.distances import bundles_distances_mdf
 
 
@@ -201,7 +200,7 @@ def test_efficient_bmd():
 
     _bundle_minimum_distance_rigid(points, points2,
                                   len(offsets), len(offsets),
-                                  3, D)
+                                  a.shape[0], D)
 
     assert_equal(np.sum(np.diag(D)), 0)
 
@@ -209,7 +208,7 @@ def test_efficient_bmd():
 
     _bundle_minimum_distance_rigid(points, points2,
                                   len(offsets), len(offsets),
-                                  3, D)
+                                  a.shape[0], D)
 
     streamlines2 = relist_streamlines(points2, offsets)
     D2 = bundles_distances_mdf(streamlines, streamlines2)
@@ -224,77 +223,40 @@ def test_efficient_bmd():
 
     dist2 = _bundle_minimum_distance_rigid_nomat(points, points2,
                                                 len(offsets), len(offsets),
-                                                3)
+                                                a.shape[0])
     assert_almost_equal(dist, dist2)
 
-    dist3 = _bundle_minimum_distance_rigid_nomat_parallel(points, points2,
-                                                        len(offsets), len(offsets),
-                                                        3)
-    assert_almost_equal(dist, dist2)
-    assert_almost_equal(dist, dist3)
-    
-    from time import time
+
+def test_openmp_locks():
 
     static = []
     moving = []
+    pts = 20
 
     for i in range(1000):
-        #streamline = np.tile(np.arange(20), (3, 1)).T
-        streamline = 100*np.random.rand(20, 3)
-        streamline = np.ascontiguousarray(streamline, dtype='f8')
-        static.append(streamline)
-        moving.append(streamline + 2)
+        s = np.random.rand(pts, 3)
+        static.append(s)
+        moving.append(s + 2)
 
     points, offsets = unlist_streamlines(static)
     points2, offsets2 = unlist_streamlines(moving)
 
-    t0 = time()
-
-    dist2 = _bundle_minimum_distance_rigid_nomat(points, 
-                                                 points2,
-                                                 len(offsets), 
-                                                 len(offsets2), 20)
-
-    T0 = time() - t0
-
-    t1 = time()
-
-    dist3 = _bundle_minimum_distance_rigid_nomat_parallel(points, 
-                                                          points2,
-                                                          len(offsets), 
-                                                          len(offsets2), 20)
-    T1 = time() - t1
-
-    print(T0/T1)    
-
-    t2 = time()
-
-    D = np.zeros((len(offsets), len(offsets2)))
-
-    cols = D.shape[1]
-    rows = D.shape[0]
+    D = np.zeros((len(offsets), len(offsets2)), dtype='f8')
 
     _bundle_minimum_distance_rigid(points, points2,
                                   len(offsets), len(offsets2),
-                                  20, D)
+                                  pts, D)
 
-    dist = 0.25 * (np.sum(np.min(D, axis=0)) / float(cols) +
-                   np.sum(np.min(D, axis=1)) / float(rows)) ** 2
+    dist1 = 0.25 * (np.sum(np.min(D, axis=0)) / float(D.shape[1]) +
+                   np.sum(np.min(D, axis=1)) / float(D.shape[0])) ** 2
 
-    T2 = time() - t2
+    dist2 = _bundle_minimum_distance_rigid_nomat(points, points2,
+                                  len(offsets), len(offsets2),
+                                  pts)
 
-
-    print(T2/T1)
-
-    print(dist2)
-    print(dist3)    
-    print(dist)
-    
-    #assert_almost_equal(dist2, dist3)
-    #assert_almost_equal(dist, dist3)
+    assert_equal(dist1, dist2)
 
 
 if __name__ == '__main__':
 
-    #run_module_suite()
-    test_efficient_bmd()
+    run_module_suite()

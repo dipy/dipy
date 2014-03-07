@@ -3,7 +3,8 @@ from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
 from scipy.optimize import fmin_powell, fmin_l_bfgs_b
 from dipy.tracking.metrics import downsample
-from dipy.align.bmd import _bundle_minimum_distance_rigid
+from dipy.align.bmd import (_bundle_minimum_distance_rigid,
+                            _bundle_minimum_distance_rigid_nomat)
 
 
 class StreamlineDistanceMetric(object):
@@ -362,17 +363,12 @@ def bundle_min_distance_fast(t, static, moving, block_size):
 
     rows = static.shape[0] / block_size
     cols = moving.shape[0] / block_size
-    d01 = np.zeros((rows, cols), dtype=np.float64)
 
-    _bundle_minimum_distance_rigid(static, moving,
-                                   rows,
-                                   cols,
-                                   block_size,
-                                   d01)
-
-    return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
-                   np.sum(np.min(d01, axis=1)) / float(rows)) ** 2
-
+    return _bundle_minimum_distance_rigid_nomat(static, moving,
+                                                rows,
+                                                cols,
+                                                block_size)
+    
 
 def rotation_vec2mat(r):
     """ R = rotation_vec2mat(r)
