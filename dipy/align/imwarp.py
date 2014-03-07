@@ -182,6 +182,8 @@ class DiffeomorphicMap(object):
             the warped image, where S', R', C' are the dimensions of the forward
             displacement field
         """
+        if image.dtype is not floating:
+            image = image.astype(floating)
         if self.dim == 3:
             warped = vfu.warp_volume(image,
                                      self.forward,
@@ -210,6 +212,8 @@ class DiffeomorphicMap(object):
             the warped image, where S', R', C' are the dimensions of the backward
             displacement field
         """
+        if image.dtype is not floating:
+            image = image.astype(floating)
         if self.dim == 3:
             warped = vfu.warp_volume(image,
                                      self.backward,
@@ -238,6 +242,8 @@ class DiffeomorphicMap(object):
             the warped image, where S', R', C' are the dimensions of the forward
             displacement field
         """
+        if image.dtype is np.float64 and floating is not np.float64:
+            image = image.astype(floating)
         if self.dim == 3:
             warped = vfu.warp_volume_nn(image,
                                         self.forward,
@@ -266,6 +272,8 @@ class DiffeomorphicMap(object):
             the warped image, where S', R', C' are the dimensions of the backward
             displacement field
         """
+        if image.dtype is np.float64 and floating is not np.float64:
+            image = image.astype(floating)
         if self.dim == 3:
             warped = vfu.warp_volume_nn(image,
                                         self.backward,
@@ -278,7 +286,7 @@ class DiffeomorphicMap(object):
                                        self.affine_pre_inv)
         return np.array(warped)
 
-    def transform(self, image, interpolation):
+    def transform(self, image, interpolation = 'tri'):
         r"""
         Transforms the given image under this transformation (in the forward 
         direction, i.e. from target space to the reference space) using the
@@ -306,7 +314,7 @@ class DiffeomorphicMap(object):
             return None
 
 
-    def transform_inverse(self, image, interpolation):
+    def transform_inverse(self, image, interpolation = 'tri'):
         r"""
         Transforms the given image under this transformation (in the backward 
         direction, i.e. from reference space to the target space) using the 
@@ -682,6 +690,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.energy_window = 12
         self.energy_list = []
         self.full_energy_profile = []
+        self.verbosity = 1
 
     def _connect_functions(self):
         r"""
@@ -817,8 +826,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         n_iter = len(self.energy_list)
         if len(self.energy_list) >= self.energy_window:
             der = self._get_energy_derivative()
-        print(
-            '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
+        if self.verbosity > 1:
+            print(
+                '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
                                                   fw_energy + bw_energy, der))
         self.energy_list.append(fw_energy + bw_energy)
         self.metric.free_iteration()
@@ -866,9 +876,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         r"""
         The main multi-scale symmetric optimization algorithm
         """
-        self._init_optimizer()
         self.full_energy_profile = []
         for level in range(self.levels - 1, -1, -1):
+            if self.verbosity > 0:
+                print('Optimizing level %d'%(level,))
             
             self.current_static = self.static_pyramid[level]
             self.current_moving = self.moving_pyramid[level]
@@ -894,11 +905,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 derivative = self._iterate()
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.forward_model.compute_inversion_error()
-        print('Forward Residual error (Symmetric diffeomorphism):%0.6f (%0.6f)'
-              % (stats[1], stats[2]))
+        if self.verbosity > 0:
+            print('Forward Residual error: %0.6f (%0.6f)'
+                  % (stats[1], stats[2]))
         residual, stats = self.backward_model.compute_inversion_error()
-        print('Backward Residual error (Symmetric diffeomorphism):%0.6f (%0.6f)'
-              % (stats[1], stats[2]))
+        if self.verbosity > 0:
+            print('Backward Residual error :%0.6f (%0.6f)'
+                  % (stats[1], stats[2]))
 
         # Compose the two partial transformations
         self.forward_model = self.backward_model.inverse().compose(
@@ -910,9 +923,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         
         # Report mean and std for the composed deformation field
         residual, stats = self.forward_model.compute_inversion_error()
-        print('Residual error (Symmetric diffeomorphism):%0.6f (%0.6f)'
-              % (stats[1], stats[2]))
-        self._end_optimizer()
+        if self.verbosity > 0:
+            print('Final residual error: %0.6f (%0.6f)'
+                  % (stats[1], stats[2]))
+        
 
     def optimize(self, static, moving, affine_init=None):
         r"""
@@ -938,8 +952,15 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             forward_model.transform_inverse). 
 
         """
-        self.set_static_image(static)
-        self.set_moving_image(moving)
-        self.set_affine_init(affine_init)
+        if static is not None:
+            self.set_static_image(static.astype(floating))
+        if moving is not None:
+            self.set_moving_image(moving.astype(floating))
+        if affine_init is None:
+            self.set_affine_init(None)
+        else:
+            self.set_affine_init(affine_init.astype(floating))
+        self._init_optimizer()
         self._optimize()
+        self._end_optimizer()
         return self.forward_model

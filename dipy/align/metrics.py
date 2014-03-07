@@ -642,7 +642,7 @@ class SSDMetric(SimilarityMetric):
     GAUSS_SEIDEL_STEP = 0
     DEMONS_STEP = 1
 
-    def __init__(self, dim, smooth=3.0, inner_iter=5, step_length=0.25, step_type=0):
+    def __init__(self, dim, smooth=0.5, inner_iter=10, step_length=0.25, step_type=0):
         r"""
         Similarity metric for (monomodal) nonlinear image registration defined by
         the sum of squared differences (SSD)
