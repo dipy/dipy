@@ -224,14 +224,28 @@ class CCMetric(SimilarityMetric):
         self.step_length = step_length
         self.sigma_diff = sigma_diff
         self.radius = radius
+        self._connect_functions()
+
+    def _connect_functions(self):
+        if self.dim == 2:
+            self.precompute_factors = cc.precompute_cc_factors_2d
+            self.compute_forward_step = cc.compute_cc_forward_step_2d
+            self.compute_backward_step = cc.compute_cc_backward_step_2d
+        elif self.dim == 3:
+            self.precompute_factors = cc.precompute_cc_factors_3d
+            self.compute_forward_step = cc.compute_cc_forward_step_3d
+            self.compute_backward_step = cc.compute_cc_backward_step_3d
+        else:
+            print('CC Metric not defined for dimension %d'%(self.dim))
+
 
     def initialize_iteration(self):
         r"""
         Precomputes the cross-correlation factors
         """
-        self.factors = cc.precompute_cc_factors_3d(self.static_image,
-                                                   self.moving_image,
-                                                   self.radius)
+        self.factors = self.precompute_factors(self.static_image,
+                                             self.moving_image,
+                                             self.radius)
         self.factors = np.array(self.factors)
         self.gradient_moving = np.empty(
             shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
@@ -259,16 +273,15 @@ class CCMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
         """
-        displacement, self.energy=cc.compute_cc_forward_step_3d(self.gradient_static,
+        displacement, self.energy=self.compute_forward_step(self.gradient_static,
                                       self.gradient_moving,
                                       self.factors)
         displacement=np.array(displacement)
-        displacement[..., 0] = ndimage.filters.gaussian_filter(displacement[..., 0],
-                                                               self.sigma_diff)
-        displacement[..., 1] = ndimage.filters.gaussian_filter(displacement[..., 1],
-                                                                self.sigma_diff)
-        displacement[..., 2] = ndimage.filters.gaussian_filter(displacement[..., 2],
-                                                                self.sigma_diff)
+        i = 0
+        while i < self.dim:
+            displacement[..., i] = ndimage.filters.gaussian_filter(displacement[..., i],
+                                                                   self.sigma_diff)
+            i+=1
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
         displacement *= self.step_length/max_norm
         return displacement
@@ -278,16 +291,15 @@ class CCMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
-        displacement, energy=cc.compute_cc_backward_step_3d(self.gradient_static,
+        displacement, energy=self.compute_backward_step(self.gradient_static,
                                       self.gradient_moving,
                                       self.factors)
         displacement=np.array(displacement)
-        displacement[..., 0] = ndimage.filters.gaussian_filter(displacement[..., 0],
-                                                               self.sigma_diff)
-        displacement[..., 1] = ndimage.filters.gaussian_filter(displacement[..., 1],
-                                                                self.sigma_diff)
-        displacement[..., 2] = ndimage.filters.gaussian_filter(displacement[..., 2],
-                                                                self.sigma_diff)
+        i=0
+        while i < self.dim:
+            displacement[..., i] = ndimage.filters.gaussian_filter(displacement[..., i],
+                                                                   self.sigma_diff)
+            i+=1
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
         displacement *= self.step_length/max_norm
         return displacement

@@ -78,6 +78,47 @@ def test_ssd_2d():
     assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile), decimal=6)
 
 
+def test_cc_2d():
+    r'''
+    Classical Circle-To-C experiment for 2D Monomodal registration
+    '''
+    fname_moving = get_data('reg_o')
+    fname_static = get_data('reg_c')
+
+    moving = plt.imread(fname_moving)
+    static = plt.imread(fname_static)
+    moving = moving[:, :, 0].astype(floating)
+    static = static[:, :, 0].astype(floating)
+    moving = np.array(moving, dtype = floating)
+    static = np.array(static, dtype = floating)
+    moving = (moving-moving.min())/(moving.max() - moving.min())
+    static = (static-static.min())/(static.max() - static.min())
+    #Configure and run the Optimizer
+    step_length = 0.25
+    sigma_diff = 3.0
+    radius = 4
+    similarity_metric = metrics.CCMetric(2, step_length, sigma_diff, radius)
+
+    opt_iter = [20, 100, 100, 100]
+    opt_tol = 1e-4
+    inv_iter = 40
+    inv_tol = 1e-3
+    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
+    registration_optimizer.optimize(static, moving, None)
+    subsampled_energy_profile = registration_optimizer.full_energy_profile[::10]
+    if floating is np.float32:
+        expected_profile = [-491.9733233448359, -1061.0130107920997, -1122.1800414554295, 
+                            -1159.372150515769, -1179.248795681228, -1201.2997428020465, 
+                            -2516.2704371245613, -2537.256654622942, -5554.615396725506]
+    else:
+        expected_profile = [-649.9725968853361, -1061.120349953967, -1122.4765910319247, 
+                            -1159.8521077481635, -1179.8791165046753, -1202.5597730735274, 
+                            -2532.7635644328484, -2585.092525257242, -5599.449866392625, 
+                            -5644.638638941797]
+    print subsampled_energy_profile
+    assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile), decimal=6)
+
 def test_cc_3d():
     from dipy.data import read_sherbrooke_3shell
 
@@ -176,6 +217,8 @@ def test_em_3d():
 
 
 if __name__=='__main__':
+    pass
     #test_ssd_2d()
-    test_cc_3d()
+    #test_cc_2d()
+    #test_cc_3d()
     #test_em_3d()
