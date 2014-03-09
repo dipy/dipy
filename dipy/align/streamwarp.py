@@ -18,7 +18,7 @@ class StreamlineDistanceMetric(object):
         Parameters
         ----------
         xopt_initial : list
-            initial set of parameters for the optimizer 
+            initial set of parameters for the optimizer
         """
 
         self.xopt_initial = xopt_initial
@@ -54,9 +54,9 @@ class BundleMinDistanceFast(StreamlineDistanceMetric):
         self.block_size = st_idx[0]
 
     def distance(self, xopt):
-        return bundle_min_distance_fast(xopt, 
-                                        self.static_centered_pts, 
-                                        self.moving_centered_pts, 
+        return bundle_min_distance_fast(xopt,
+                                        self.static_centered_pts,
+                                        self.moving_centered_pts,
                                         self.block_size)
 
 
@@ -68,8 +68,9 @@ class BundleSumDistance(StreamlineDistanceMetric):
 
 class StreamlineRigidRegistration(object):
 
-    def __init__(self, metric=None, algorithm='L_BFGS_B', bounds=None,
-                 fast=True, disp=False):
+    def __init__(self, metric=None, algorithm='L_BFGS_B',
+                 bounds=None, fast=True, disp=False,
+                 m=10, factr=1e7, pgtol=1e-5, epsilon=1e-8):
         r""" Rigid registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
@@ -83,14 +84,17 @@ class StreamlineRigidRegistration(object):
             'L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
 
         bounds : list of tuples or None,
-            If algorithm == 'L_BFGS_B' then we can use bounded optimization. 
-            For example for the six parameters of rigid rotation we can set 
-            the bounds = [(-30, 30), (-30, 30), (-30, 30), 
+            If algorithm == 'L_BFGS_B' then we can use bounded optimization.
+            For example for the six parameters of rigid rotation we can set
+            the bounds = [(-30, 30), (-30, 30), (-30, 30),
                           (-45, 45), (-45, 45), (-45, 45)]
             That means that we have set the bounds for the three translations
             and three rotation axes (in degrees).
 
         fast : boolean
+
+        m, factr, pgtol, epsilon : L_BFGS_B parameters
+            See ``fmin_l_bfgs_b`` manual
 
 
         Methods
@@ -99,7 +103,7 @@ class StreamlineRigidRegistration(object):
 
         References
         ----------
-        .. [Garyfallidis14] Garyfallidis et. al, "Direct native-space fiber 
+        .. [Garyfallidis14] Garyfallidis et. al, "Direct native-space fiber
                             bundle alignment for group comparisons", ISMRM,
                             2014.
 
@@ -111,13 +115,19 @@ class StreamlineRigidRegistration(object):
                 self.metric = BundleMinDistanceFast(np.ones(6).tolist())
             else:
                 self.metric = BundleMinDistance(np.ones(6).tolist())
-        
-        self.disp = disp        
+
+        self.disp = disp
         self.algorithm = algorithm
         if self.algorithm not in ['Powell', 'L_BFGS_B']:
             raise ValueError('Not approriate algorithm')
         self.bounds = bounds
         self.fast = fast
+
+        #L_BFGS_B only parameters
+        self.m = m
+        self.factr = factr
+        self.pgtol = pgtol
+        self.epsilon = epsilon
 
     def optimize(self, static, moving):
         """ Find the minimum of the provided metric.
@@ -171,10 +181,10 @@ class StreamlineRigidRegistration(object):
                                     None,
                                     approx_grad=True,
                                     bounds=self.bounds,
-                                    m=100,
-                                    factr=10,
-                                    pgtol=1e-16,
-                                    epsilon=1e-3)
+                                    m=self.m,
+                                    factr=self.factr,
+                                    pgtol=self.pgtol,
+                                    epsilon=self.epsilon)
 
         if self.algorithm == 'Powell':
 
@@ -228,7 +238,7 @@ class StreamlineRigidRegistration(object):
                                                            static_mat))
 
         imat = np.linalg.inv(mat)
-        xopt = np.array(xopt)                
+        xopt = np.array(xopt)
         xopt[:3] = imat[:3, 3]
         xopt[3:] = - xopt[3:]
 
@@ -246,7 +256,7 @@ class StreamlineRegistrationMap(object):
         ----------
 
         matopt : array,
-            4x4 affine matrix which transforms the moving to the static 
+            4x4 affine matrix which transforms the moving to the static
             streamlines
 
         xopt : array,
@@ -373,7 +383,7 @@ def bundle_min_distance_fast(t, static, moving, block_size):
                                                 rows,
                                                 cols,
                                                 block_size)
-    
+
 
 def rotation_vec2mat(r):
     """ R = rotation_vec2mat(r)

@@ -6,7 +6,7 @@ from numpy.testing import (run_module_suite,
                            assert_array_almost_equal)
 from dipy.align.streamwarp import (transform_streamlines,
                                    matrix44,
-                                   BundleSumDistance,                                   
+                                   BundleSumDistance,
                                    center_streamlines)
 from dipy.tracking.metrics import downsample
 from dipy.data import get_data
@@ -45,7 +45,7 @@ def fornix_streamlines(no_pts=12):
 
 def evaluate_convergence(bundle, new_bundle2):
     pts_static = np.concatenate(bundle, axis=0)
-    pts_moved = np.concatenate(new_bundle2, axis=0)    
+    pts_moved = np.concatenate(new_bundle2, axis=0)
     assert_array_almost_equal(pts_static, pts_moved, 3)
 
 
@@ -57,11 +57,15 @@ def test_rigid_parallel_lines():
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistance([0, 0, 0, 0, 0, 0.])
-    srr = StreamlineRigidRegistration(metric=bundle_sum_distance, 
-                                      algorithm='L_BFGS_B', 
-                                      bounds=None, 
-                                      fast=False)
-                                      
+    srr = StreamlineRigidRegistration(metric=bundle_sum_distance,
+                                      algorithm='L_BFGS_B',
+                                      bounds=None,
+                                      fast=False,
+                                      m=100,
+                                      factr=10,
+                                      pgtol=1e-16,
+                                      epsilon=1e-3)
+
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
     evaluate_convergence(bundle, new_bundle2)
 
@@ -74,7 +78,7 @@ def test_rigid_real_bundles():
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistance([0, 0, 0, 0, 0, 0.])
-    srr = StreamlineRigidRegistration(bundle_sum_distance, 
+    srr = StreamlineRigidRegistration(bundle_sum_distance,
                                       algorithm='Powell',
                                       fast=False)
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
