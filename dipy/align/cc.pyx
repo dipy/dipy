@@ -74,7 +74,8 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                 lastc = _int_min(nc - 1, c + radius)
                 # compute factors for line [:,r,c]
                 for t in range(6):
-                    sums[t] = 0
+                    for q in range(side):
+                        lines[t,q] = 0
 
                 # Compute all slices and set the sums on the fly
                 # compute each slice [k, i={r-radius..r+radius}, j={c-radius,
@@ -129,6 +130,57 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                         Imean * sums[SI] + sums[CNT] * Imean * Imean
                     factors[s, r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
                         Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
+    return factors
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def precompute_cc_factors_3d_test(floating[:, :, :] static, floating[:, :, :] moving,
+                             int radius):
+    r"""
+    This version of precompute_cc_factors_3d is for testing purposes, it directly
+    computes the local cross-correlation without any optimization.
+    """
+    cdef int ns = static.shape[0]
+    cdef int nr = static.shape[1]
+    cdef int nc = static.shape[2]
+    cdef int s, r, c, k, i, j, t, firstc, lastc, firstr, lastr, firsts, lasts
+    cdef double Imean, Jmean
+    cdef floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5), dtype=np.asarray(static).dtype)
+    cdef double[:] sums = np.zeros((6,), dtype=np.float64)
+
+    with nogil:
+        for s in range(ns):
+            firsts = _int_max(0, s - radius)
+            lasts = _int_min(ns - 1, s + radius)
+            for r in range(nr):
+                firstr = _int_max(0, r - radius)
+                lastr = _int_min(nr - 1, r + radius)
+                for c in range(nc):
+                    firstc = _int_max(0, c - radius)
+                    lastc = _int_min(nc - 1, c + radius)
+                    for t in range(6):
+                        sums[t] = 0
+                    for k in range(firsts, 1 + lasts):
+                        for i in range(firstr, 1 + lastr):
+                            for j in range(firstc, 1 + lastc):
+                                sums[SI] += static[k, i, j]
+                                sums[SI2] += static[k, i,j]**2
+                                sums[SJ] += moving[k, i,j]
+                                sums[SJ2] += moving[k, i,j]**2
+                                sums[SIJ] += static[k,i,j]*moving[k, i,j]
+                                sums[CNT] += 1
+                    Imean = sums[SI] / sums[CNT]
+                    Jmean = sums[SJ] / sums[CNT]
+                    factors[s, r, c, 0] = static[s, r, c] - Imean
+                    factors[s, r, c, 1] = moving[s, r, c] - Jmean
+                    factors[s, r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
+                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean
+                    factors[s, r, c, 3] = sums[SI2] - Imean * sums[SI] - \
+                        Imean * sums[SI] + sums[CNT] * Imean * Imean
+                    factors[s, r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
+                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean  
     return factors
 
 
@@ -312,13 +364,13 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
             lastc = _int_min(nc - 1, c + radius)
             # compute factors for row [:,c]
             for t in range(6):
-                sums[t] = 0
+                for q in range(side):
+                    lines[t,q] = 0
             # Compute all rows and set the sums on the fly
             # compute row [i, j={c-radius, c+radius}]
             for i in range(nr):
                 q = i % side
                 for t in range(6):
-                    sums[t] -= lines[t, q]
                     lines[t, q] = 0
                 for j in range(firstc, lastc + 1):
                     lines[SI, q] += static[i, j]
@@ -365,6 +417,56 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                 factors[r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
                     Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
     return factors
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
+                             int radius):
+    r"""
+    This version of precompute_cc_factors_2d is for testing purposes, it directly
+    computes the local cross-correlation without any optimization.
+    
+    """
+    cdef int nr = static.shape[0]
+    cdef int nc = static.shape[1]
+    cdef int r, c, i, j, t, firstr, lastr, firstc, lastc
+    cdef double Imean, Jmean
+    cdef floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=np.asarray(static).dtype)
+    cdef double[:] sums = np.zeros((6,), dtype=np.float64)
+
+    with nogil:
+
+        for r in range(nr):
+            firstr = _int_max(0, r - radius)
+            lastr = _int_min(nr - 1, r + radius)
+            for c in range(nc):
+                firstc = _int_max(0, c - radius)
+                lastc = _int_min(nc - 1, c + radius)
+                for t in range(6):
+                    sums[t]=0
+                for i in range(firstr, 1 + lastr):
+                    for j in range(firstc, 1+lastc):
+                        sums[SI] += static[i, j]
+                        sums[SI2] += static[i,j]**2
+                        sums[SJ] += moving[i,j]
+                        sums[SJ2] += moving[i,j]**2
+                        sums[SIJ] += static[i,j]*moving[i,j]
+                        sums[CNT] += 1
+                Imean = sums[SI] / sums[CNT]
+                Jmean = sums[SJ] / sums[CNT]
+                factors[r, c, 0] = static[r, c] - Imean
+                factors[r, c, 1] = moving[r, c] - Jmean
+                factors[r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
+                    Imean * sums[SJ] + sums[CNT] * Jmean * Imean
+                factors[r, c, 3] = sums[SI2] - Imean * sums[SI] - \
+                    Imean * sums[SI] + sums[CNT] * Imean * Imean
+                factors[r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
+                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
+    return factors
+
+
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
