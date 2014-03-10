@@ -10,7 +10,7 @@ from fused_types cimport floating, number
 
 cdef extern from "math.h":
     double floor(double x) nogil
-
+    int isinf(double) nogil
 
 cdef inline int ifloor(double x) nogil:
     return int(floor(x))
@@ -254,3 +254,133 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
             else:
                 variances[i] = INF64
     return means, variances
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_em_demons_step_2d(floating[:,:] delta_field,
+                              floating[:,:] sigma_field,
+                              floating[:,:,:] gradient_moving,
+                              double sigma_reg,
+                              floating[:,:,:] out):
+    r"""
+    Parameters
+    ----------
+    delta_field : array, shape(R, C)
+        contains, at each pixel, the difference between the moving image (warped 
+        under the current deformation s ) J and the static image I:
+        delta_field[i,j] = J(s(i,j)) - I(i,j). The order is important, changing
+        to delta_field[i,j] = I(i,j) - J(s(i,j)) yields the backward demoms step
+        warping the static image towards the moving, which may not be the
+        intended behavior unless the 'gradient_moving' passed corresponds to
+        the gradient of the static image
+    sigma_field : array, shape(R, C)
+        contains, at each pixel (i, j), the estimated variance (not std) of the
+        hidden variable associated to the intensity at static[i,j] (which must 
+        have been previously quantized)
+    gradient_moving : array, shape(R, C, 2)
+        the gradient of the moving image
+    sigma_reg : float
+        parameter controlling the amount of reguarization (under the Ridge 
+        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
+    out : array, shape(R, C, 2)
+        the resulting demons step will be writen to this array
+    """
+
+    cdef int nr = delta_field.shape[0]
+    cdef int nc = delta_field.shape[1]
+    cdef int i, j
+    cdef double neg_delta, sigma, nrm2, energy
+
+    if out is None:
+        out = np.zeros((nr, nc, 2), dtype=np.asarray(delta_field).dtype)
+
+    with nogil:
+
+        energy = 0
+        for i in range(nr):
+            for j in range(nc):
+                sigma = sigma_field[i,j]
+                neg_delta = -1 * delta_field[i,j]
+                energy += (neg_delta**2)
+                if(isinf(sigma)):
+                    out[i, j, 0], out[i, j, 1] = 0, 0 
+                else:
+                    nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
+                    if(sigma == 0):
+                        if nrm2 == 0:
+                            out[i, j, 0], out[i, j, 1] = 0, 0 
+                        else:
+                            out[i, j, 0] = neg_delta * gradient_moving[i, j, 0] / nrm2
+                            out[i, j, 1] = neg_delta * gradient_moving[i, j, 1] / nrm2
+                    else: 
+                        out[i, j, 0] = sigma_reg * neg_delta * gradient_moving[i, j, 0]/(sigma_reg * nrm2 + sigma)
+                        out[i, j, 1] = sigma_reg * neg_delta * gradient_moving[i, j, 1]/(sigma_reg * nrm2 + sigma)
+    return out, energy
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+def compute_em_demons_step_3d(floating[:,:,:] delta_field,
+                              floating[:,:,:] sigma_field,
+                              floating[:,:,:,:] gradient_moving,
+                              double sigma_reg,
+                              floating[:,:,:,:] out):
+    r"""
+    Parameters
+    ----------
+    delta_field : array, shape(S, R, C)
+        contains, at each pixel, the difference between the moving image (warped 
+        under the current deformation s ) J and the static image I:
+        delta_field[k,i,j] = J(s(k,i,j)) - I(k,i,j). The order is important, changing
+        to delta_field[k,i,j] = I(k,i,j) - J(s(k,i,j)) yields the backward demoms step
+        warping the static image towards the moving, which may not be the
+        intended behavior unless the 'gradient_moving' passed corresponds to
+        the gradient of the static image
+    sigma_field : array, shape(S, R, C)
+        contains, at each pixel (k, i, j), the estimated variance (not std) of the
+        hidden variable associated to the intensity at static[k,i,j] (which must 
+        have been previously quantized)
+    gradient_moving : array, shape(S, R, C, 2)
+        the gradient of the moving image
+    sigma_reg : float
+        parameter controlling the amount of reguarization (under the Ridge 
+        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
+    out : array, shape(S, R, C, 2)
+        the resulting demons step will be writen to this array
+    """
+
+    cdef int ns = delta_field.shape[0]
+    cdef int nr = delta_field.shape[1]
+    cdef int nc = delta_field.shape[2]
+    cdef int i, j, k
+    cdef double neg_delta, sigma, nrm2, energy
+
+    if out is None:
+        out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(delta_field).dtype)
+
+    with nogil:
+
+        energy = 0
+        for k in range(ns):
+            for i in range(nr):
+                for j in range(nc):
+                    sigma = sigma_field[k,i,j]
+                    neg_delta = -1 * delta_field[k,i,j]
+                    energy += (neg_delta**2)
+                    if(isinf(sigma)):
+                        out[k, i, j, 0], out[k, i, j, 1], out[k, i, j, 2]  = 0, 0, 0
+                    else:
+                        nrm2 = gradient_moving[k, i, j, 0]**2 + gradient_moving[k, i, j, 1]**2 + gradient_moving[k, i, j, 2]**2
+                        if(sigma == 0):
+                            if nrm2 == 0:
+                                out[k, i, j, 0], out[k, i, j, 1], out[k, i, j, 2] = 0, 0, 0 
+                            else:
+                                out[k, i, j, 0] = neg_delta * gradient_moving[k, i, j, 0] / nrm2
+                                out[k, i, j, 1] = neg_delta * gradient_moving[k, i, j, 1] / nrm2
+                                out[k, i, j, 2] = neg_delta * gradient_moving[k, i, j, 2] / nrm2
+                        else: 
+                            out[k, i, j, 0] = sigma_reg * neg_delta * gradient_moving[k, i, j, 0]/(sigma_reg * nrm2 + sigma)
+                            out[k, i, j, 1] = sigma_reg * neg_delta * gradient_moving[k, i, j, 1]/(sigma_reg * nrm2 + sigma)
+                            out[k, i, j, 2] = sigma_reg * neg_delta * gradient_moving[k, i, j, 2]/(sigma_reg * nrm2 + sigma)
+    return out, energy

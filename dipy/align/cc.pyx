@@ -575,7 +575,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
     cdef int r,c
     cdef double energy = 0
     cdef double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-    cdef floating[:, :, :] out = np.zeros((nr, nc, 3), 
+    cdef floating[:, :, :] out = np.zeros((nr, nc, 2), 
                                              dtype=np.asarray(grad_static).dtype)
 
     with nogil:

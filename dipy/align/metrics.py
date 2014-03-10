@@ -391,7 +391,7 @@ class EMMetric(SimilarityMetric):
             modality will be added to the gradient of the moving image, similarly,
             the gradient of the expected moving image under the static modality
             will be added to the gradient of the static image.
-        iter_type : string ('single_cycle', 'v_cycle', 'w_cycle')
+        iter_type : string ('single_cycle', 'v_cycle', 'w_cycle', 'demons')
             the optimization schedule to be used in the multi-resolution 
             Gauss-Seidel optimization algorithm (not used if Demons Step is
                 selected)
@@ -423,7 +423,7 @@ class EMMetric(SimilarityMetric):
                 self.multi_resolution_iteration = single_cycle_2d
             elif self.iter_type == 'v_cycle':
                 self.multi_resolution_iteration = v_cycle_2d
-            else:
+            elif self.iter_type == 'w_cycle':
                 self.multi_resolution_iteration = w_cycle_2d
         else:
             self.quantize = em.quantize_positive_volume
@@ -432,9 +432,12 @@ class EMMetric(SimilarityMetric):
                 self.multi_resolution_iteration = single_cycle_3d
             elif self.iter_type == 'v_cycle':
                 self.multi_resolution_iteration = v_cycle_3d
-            else:
+            elif self.iter_type == 'w_cycle':
                 self.multi_resolution_iteration = w_cycle_3d
-        self.compute_step = self.compute_gauss_seidel_step
+        if self.iter_type == 'demons':
+            self.compute_step = self.compute_demons_step
+        else:    
+            self.compute_step = self.compute_gauss_seidel_step
             
 
     def initialize_iteration(self):
@@ -593,7 +596,33 @@ class EMMetric(SimilarityMetric):
         displacement : array, shape (R, C, 2) or (S, R, C, 3)
             the Demons step
         """
-        return NotImplemented
+        sigma_diff = self.smooth
+        sigma_reg = 2*self.step_length
+
+        if forward_step:
+            gradient = self.gradient_moving
+            delta_field = self.moving_image - self.staticq_means_field
+            sigma_field = self.staticq_sigma_field
+        else:
+            gradient = self.gradient_static
+            delta_field = self.static_image - self.movingq_means_field
+            sigma_field = self.movingq_sigma_field
+        if self.dim == 2:
+            step, self.energy = em.compute_em_demons_step_2d(delta_field,
+                                                             sigma_field,
+                                                             gradient,
+                                                             sigma_reg,
+                                                             None)
+        else:
+            step, self.energy = em.compute_em_demons_step_3d(delta_field,
+                                                             sigma_field,
+                                                             gradient,
+                                                             sigma_reg,
+                                                             None)
+        for i in range(self.dim):
+            step[..., i] = ndimage.filters.gaussian_filter(step[..., i],
+                                                           sigma_diff)
+        return step
 
     def get_energy(self):
         r"""
@@ -1023,3 +1052,4 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
                                          gradient_field, lambda_param,
                                          displacement)
     return energy
+
