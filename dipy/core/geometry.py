@@ -143,36 +143,6 @@ def sph2latlon(theta, phi):
     return np.rad2deg(theta - np.pi / 2), np.rad2deg(phi - np.pi)
 
 
-def normalized_vector(vec, axis=-1):
-    ''' Return vector divided by its Euclidean (L2) norm
-
-    See :term:`unit vector` and :term:`Euclidean norm`
-
-    Parameters
-    ------------
-    vec : array_like shape (3,)
-
-    Returns
-    ----------
-    nvec : array shape (3,)
-       vector divided by L2 norm
-
-    Examples
-    -----------
-    >>> vec = [1, 2, 3]
-    >>> l2n = np.sqrt(np.dot(vec, vec))
-    >>> nvec = normalized_vector(vec)
-    >>> np.allclose(np.array(vec) / l2n, nvec)
-    True
-    >>> vec = np.array([[1, 2, 3]])
-    >>> vec.shape
-    (1, 3)
-    >>> normalized_vector(vec).shape
-    (1, 3)
-    '''
-    return vec / vector_norm(vec, axis, keepdims=True)
-
-
 def vector_norm(vec, axis=-1, keepdims=False):
     ''' Return vector Euclidean (L2) norm
 
@@ -216,6 +186,36 @@ def vector_norm(vec, axis=-1, keepdims=False):
             shape[axis] = 1
         vec_norm = vec_norm.reshape(shape)
     return vec_norm
+
+
+def normalized_vector(vec, axis=-1):
+    ''' Return vector divided by its Euclidean (L2) norm
+
+    See :term:`unit vector` and :term:`Euclidean norm`
+
+    Parameters
+    ------------
+    vec : array_like shape (3,)
+
+    Returns
+    ----------
+    nvec : array shape (3,)
+       vector divided by L2 norm
+
+    Examples
+    -----------
+    >>> vec = [1, 2, 3]
+    >>> l2n = np.sqrt(np.dot(vec, vec))
+    >>> nvec = normalized_vector(vec)
+    >>> np.allclose(np.array(vec) / l2n, nvec)
+    True
+    >>> vec = np.array([[1, 2, 3]])
+    >>> vec.shape
+    (1, 3)
+    >>> normalized_vector(vec).shape
+    (1, 3)
+    '''
+    return vec / vector_norm(vec, axis, keepdims=True)
 
 
 def rodrigues_axis_rotation(r, theta):
@@ -717,8 +717,6 @@ def decompose_matrix(matrix):
     >>> import numpy as np
     >>> T0=np.diag([2,1,1,1])
     >>> scale, shear, angles, trans, persp = decompose_matrix(T0)
-
-
     """
     M = np.array(matrix, dtype=np.float64, copy=True).T
     if abs(M[3, 3]) < _EPS:
@@ -798,11 +796,86 @@ def circumradius(a, b, c):
     z = np.cross(x, y)
     # test for collinearity
     if np.linalg.norm(z) == 0:
-        return np.sqrt(np.max(np.dot(x, x), np.dot(y, y), np.dot(a - b, a - b))) / 2.
+        return np.sqrt(np.max(np.dot(x, x), np.dot(y, y),
+                              np.dot(a - b, a - b))) / 2.
     else:
         m = np.vstack((x, y, z))
         w = np.dot(np.linalg.inv(m.T), np.array([xx / 2., yy / 2., 0]))
         return np.linalg.norm(w) / 2.
+
+
+def null_space(A, eps=1e-15):
+    """
+    Calculate the nullspace of the array A
+
+    Parameters
+    ----------
+    A : ndarray
+        An array for which we calculate the null-space
+    eps : float, optional
+        The tolerance in calculating 'null' eigenvalues
+    """
+    u, s, vh = npl.svd(A)
+    null_mask = (s <= eps)
+    return np.compress(null_mask, vh, axis=0)
+
+
+def quat2rot(w,x,y,z):
+    """
+    Given a quaternion, defined by w,x,y,z, return the rotation matrix
+
+    Parameters
+    ----------
+    w, x, y, z: floats
+         The quaternion coefficients
+
+    Returns
+    -------
+    3 x 3 rotation array
+
+    Notes
+    -----
+    See : http://en.wikipedia.org/wiki/Quaternions_and_spatial_rotation#From_the_rotations_to_the_quaternions
+
+    """
+    return np.array([[1-2*y*y-2*z*z, 2*x*y+2*w*z, 2*x*z-2*w*y],
+                     [2*x*y-2*w*z, 1-2*x*x-2*z*z, 2*y*z+2*w*x],
+                     [2*x*z+2*w*y, 2*y*z-2*w*x, 1-2*x*x-2*y*y]]).squeeze()
+
+
+def vector_angle(a, b):
+    """
+    Calculate the angle between two vectors.
+
+    Parameters
+    ----------
+    a, b : two 1d arrays with shape (n,)
+
+    Returns
+    -------
+    The angle (in radians) between the vectors
+
+    Examples
+    --------
+    >>> a = [1, 0, 0]
+    >>> b = [0, 0, 1]
+    >>> vector_angle(a, b)
+    1.5707963267948966
+
+    """
+    # Normalize both to unit length:
+    norm_a = normalized_vector(a)
+    norm_b = normalized_vector(b)
+
+    # If the vectors are identical, the angle is 0 per definition:
+    if np.allclose(norm_a, norm_b):
+        return 0
+    # If they are negative relative to each other, they are pointing in exactly
+    # opposite directions (180 deg = pi)
+    elif np.allclose(-norm_a, norm_b):
+        return np.pi
+    else:
+        return np.arccos(np.dot(norm_a, norm_b))
 
 
 def vec2vec_rotmat(u, v):
@@ -830,37 +903,41 @@ def vec2vec_rotmat(u, v):
     ---------
     >>> import numpy as np
     >>> from dipy.core.geometry import vec2vec_rotmat
-    >>> u=np.array([1,0,0])
-    >>> v=np.array([0,1,0])
-    >>> R=vec2vec_rotmat(u,v)
+    >>> u = np.array([1,0,0])
+    >>> v = np.array([0,1,0])
+    >>> R = vec2vec_rotmat(u,v)
     >>> np.dot(R,u)
     array([ 0.,  1.,  0.])
     >>> np.dot(R.T,v)
     array([ 1.,  0.,  0.])
 
     """
+    alpha = vector_angle(u, v)
 
-    # return eye when u is the same with v
-    if np.linalg.norm(u - v) < np.finfo(float).eps:
+    # The rotation between identical vectors is the identity:
+    if alpha == 0:
         return np.eye(3)
 
-    w = np.cross(u, v)
-    w = w / np.linalg.norm(w)
+    # The rotation between vectors that are identical up to a sign inversion is
+    # -I:
+    if np.allclose(alpha, np.pi):
+        return -1 * np.eye(3)
 
-    # vp is in plane of u,v,  perpendicular to u
-    vp = (v - (np.dot(u, v) * u))
-    vp = vp / np.linalg.norm(vp)
+    # Otherwise, we need to do some math:
+    # Find the orthonormal basis for the null-space of these two vectors:
+    u = null_space(np.vstack([u, v, [0, 0, 0]]))
 
-    # (u vp w) is an orthonormal basis
-    P = np.array([u, vp, w])
-    Pt = P.T
-    cosa = np.dot(u, v)
-    sina = np.sqrt(1 - cosa ** 2)
-    R = np.array([[cosa, -sina, 0], [sina, cosa, 0], [0, 0, 1]])
-    Rp = np.dot(Pt, np.dot(R, P))
+    # Using quaternion notation:
+    w = np.cos(alpha / 2)
+    xyz = u.T * np.sin(alpha / 2)
 
-    # make sure that you don't return any Nans
-    if np.sum(np.isnan(Rp)) > 0:
-        return np.eye(3)
+    rot = quat2rot(w, xyz[0], xyz[1], xyz[2])
 
-    return Rp
+    # This is accurate up to a sign reversal in each coordinate, so we rotate
+    # back and compare to the original:
+    rot_back = np.dot(rot, v)
+    sign_reverser = np.sign((np.sign(rot_back) == np.sign(u)) - 0.5).squeeze()
+
+    # Multiply each line by it's reverser and reassmble the matrix:
+    return np.array([np.array(rot[i,:]) *
+                     sign_reverser[i] for i in range(3)]).squeeze()

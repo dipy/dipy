@@ -940,13 +940,9 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction   
         """
-        # Get a sphere to pass to the object's ADC function. The b0 vectors
-        # will not be on the unit sphere, but we still want them to be there,
-        # so that we have a consistent index for these, so that we can fill
-        # that in later on, so we suppress the warning here:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sphere = Sphere(xyz=gtab.bvecs)
+        # The b0 vectors are not on the unit sphere, so we will not use them
+        # here. We will predict for them separately below:
+        sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
 
         adc = self.adc(sphere)
         # Predict!
@@ -954,12 +950,18 @@ class TensorFit(object):
             # If it's an array, we need to give it one more dimension:
             S0 = S0[...,None] 
 
-        pred_sig = S0 * np.exp(-gtab.bvals * adc)
+        # First do the calculation for the diffusion weighted measurements:
+        pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
 
-        # The above evaluates to nan for the b0 vectors, so we predict the mean
-        # S0 for those, which is our best guess:
-        pred_sig[...,gtab.b0s_mask] = S0
+        # Then we need to sort out what goes where:
+        pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
 
+        # These are the diffusion-weighted values
+        pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+
+        # For completeness, we predict the mean S0 for the non-diffusion
+        # weighted measurements, which is our best guess:
+        pred_sig[..., gtab.b0s_mask] = S0
         return pred_sig
 
 
