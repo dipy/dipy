@@ -11,7 +11,8 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 vector_cosine,
                                 lambert_equal_area_projection_polar,
                                 circumradius,
-                                vec2vec_rotmat
+                                vec2vec_rotmat,
+                                vector_norm
                                 )
 
 
@@ -191,7 +192,7 @@ def test_circumradius():
 
 
 def test_vec2vec_rotmat():
-    a = [1, 0, 0]
-    for b in [[0, 0, 1], [-1, 0, 0], [1, 0, 0]]:
+    a = np.array([1, 0, 0])
+    for b in np.array([[0, 0, 1], [-1, 0, 0], [1, 0, 0]]):
         R = vec2vec_rotmat(a, b)
         assert_array_almost_equal(np.dot(R, a), b)
