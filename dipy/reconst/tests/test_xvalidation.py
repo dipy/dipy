@@ -75,6 +75,6 @@ def test_csd_xval():
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
     # We'll just test for regressions:
-    my_cod = 90.51018251680635 # pre-computed by hand for this random seed
+    my_cod = 91.09995062835976 # pre-computed by hand for this random seed
     npt.assert_array_almost_equal(cod,
                                   np.ones(kf_xval.shape[:-1]) * my_cod)

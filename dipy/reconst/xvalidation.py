@@ -62,8 +62,8 @@ def coeff_of_determination(data, model, axis=-1):
 
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     """
-    Given a Model object perform iterative k-fold cross-validation of fitting
-    that model
+    Perform k-fold cross-validation to generate out-of-sample predictions for
+    each measurement.
 
     Parameters
     ----------
@@ -92,6 +92,11 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     It also assumes that the model object has `bval` and `bvec` attributes
     holding b-values and corresponding unit vectors.
 
+    References
+    ----------
+    .. [1] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
+       Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at
+       multiple b-values with cross-validation. ISMRM 2014.
     """
     # This should always be there, if the model inherits from
     # dipy.reconst.base.ReconstModel:
