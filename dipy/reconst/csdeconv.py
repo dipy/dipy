@@ -102,11 +102,12 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
-            S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
+            self.S_r = estimate_response(gtab,
+                                         np.array([0.0015, 0.0003, 0.0003]), 1)
         else:
-            S_r = estimate_response(gtab, response[0], response[1])
+            self.S_r = estimate_response(gtab, response[0], response[1])
 
-        r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
+        r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
         r_rh = sh_to_rh(r_sh, m, n)
 
         self.R = forward_sdeconv_mat(r_rh, n)
@@ -164,8 +165,8 @@ class ConstrainedSphericalDeconvFit(SphHarmFit):
         # gtab bvecs:
         sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
         odf = self.odf(sphere)
-        np.dot(odf, self.model.S_r[gtab.bvecs[~gtab.b0s_mask]])
-        return pred_sig
+        return np.dot(odf, self.model.S_r[~gtab.b0s_mask])
+
 
 class ConstrainedSDTModel(OdfModel, Cache):
 
