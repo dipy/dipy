@@ -8,13 +8,26 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import numpy.testing as npt
 import nibabel as nib
-import dipy.stats.xvalidation as xval
-import dipy.stats.utils as ut
+import dipy.reconst.xvalidation as xval
 import dipy.data as dpd
 import dipy.reconst.dti as dti
 import dipy.core.gradients as gt
 import dipy.sims.voxel as sims
 import dipy.reconst.csdeconv as csd
+
+
+def test_coeff_of_determination():
+    """
+
+    Yup
+
+    """
+
+    model = np.random.randn(10,10,10,150)
+    data = np.copy(model)
+    # If the model predicts the data perfectly, the COD is all 100s:
+    cod = xval.coeff_of_determination(data, model)
+    npt.assert_array_equal(100 * np.ones(data.shape[:3]), cod)
 
 
 def test_kfold_xval():
