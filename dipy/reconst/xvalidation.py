@@ -120,27 +120,6 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     nz_bval = gtab.bvals[~gtab.b0s_mask]
     nz_bvec = gtab.bvecs[~gtab.b0s_mask]
 
-    # I'm going to leave this cruft here, for now:
-    ## #### This is DKI-specific
-    ## len1 = 1
-    ## len2 = 2
-    ## while len1 != len2:
-    ##     # We are going to leave out some randomly chosen samples in each
-    ##     # iteration:
-    ##     order = np.random.permutation(data_d.shape[-1])
-    ##     len1 = []
-    ##     len2 = []
-    ##     for k in range(folds):
-    ##         fold_mask = np.ones(data_d.shape[-1], dtype=bool)
-    ##         fold_idx = order[k*n_in_fold:(k+1)*n_in_fold]
-    ##         fold_mask[fold_idx] = False
-    ##         len1.append(len(np.unique(nz_bval[fold_mask])))
-    ##         len2.append(len(np.unique(nz_bval[~fold_mask])))
-
-    ## print("Apparently it's possible...")
-    ## ##### Up until here
-
-
     for k in range(folds):
         fold_mask = np.ones(data_d.shape[-1], dtype=bool)
         fold_idx = order[k*n_in_fold:(k+1)*n_in_fold]
