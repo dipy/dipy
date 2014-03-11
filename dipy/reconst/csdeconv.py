@@ -11,11 +11,12 @@ from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from ..core.sphere import Sphere
 from dipy.core.ndindex import ndindex
-from dipy.sims.voxel import single_tensor
+from dipy.sims.voxel import single_tensor, all_tensor_evecs
+import dipy.core.gradients as grad
+
 from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from scipy.integrate import quad
-
 
 class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
@@ -102,10 +103,11 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
-            self.S_r = estimate_response(gtab,
-                                         np.array([0.0015, 0.0003, 0.0003]), 1)
+            self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
         else:
-            self.S_r = estimate_response(gtab, response[0], response[1])
+            self.response = response
+            
+        self.S_r = estimate_response(gtab, self.response[0], self.response[1])
 
         r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
         r_rh = sh_to_rh(r_sh, m, n)
@@ -160,17 +162,33 @@ class ConstrainedSphericalDeconvFit(SphHarmFit):
            all voxels
 
         """
+        # Initalize the prediction to be equal to S0 everywhere, we'll
+        # allocate the prediction to all the other locations:
+        prediction = np.ones(gtab.bvals.shape) * S0
+        b0s_mask = gtab.b0s_mask
         # To invert the model, we estimate the ODF on the provided sphere and
         # then convolve with the response function, rotated to each one of the
         # gtab bvecs:
-        sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-        odf = self.odf(sphere)
-        return np.dot(odf, self.model.S_r[~gtab.b0s_mask])
+        sphere = Sphere(xyz=gtab.bvecs[~b0s_mask])
+        est_odf = self.odf(sphere)
+        est_odf = est_odf/np.sum(est_odf)
+        prediction_matrix = np.zeros((est_odf.shape[0], est_odf.shape[0]))
+        pred_gtab = grad.gradient_table(gtab.bvals[~b0s_mask],
+                                        gtab.bvecs[~b0s_mask])
+        for ii in xrange(est_odf.shape[0]):
+            evals = self.model.response[0]
+            evecs = all_tensor_evecs(sphere.vertices[ii])
+            prediction_matrix[ii] = single_tensor(pred_gtab, S0,
+                                                  evals, evecs, snr=None)
+
+        prediction[~b0s_mask] = np.dot(est_odf, prediction_matrix.T)
+        return prediction
 
 
 class ConstrainedSDTModel(OdfModel, Cache):
 
-    def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1., tau=0.1):
+    def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1.,
+                 tau=0.1):
         r""" Spherical Deconvolution Transform (SDT) [1]_.
 
         The SDT computes a fiber orientation distribution (FOD) as opposed to a

@@ -15,12 +15,11 @@ import dipy.core.gradients as gt
 import dipy.sims.voxel as sims
 import dipy.reconst.csdeconv as csd
 
+np.random.seed(12345)
 
 def test_coeff_of_determination():
     """
-
-    Yup
-
+    Test the calculation of the coefficient of determination
     """
 
     model = np.random.randn(10,10,10,150)
@@ -55,11 +54,11 @@ def test_kfold_xval():
     dmfit = dm.fit(S)
 
     kf_xval = xval.kfold_xval(dm, S, 2)
-    cod = ut.coeff_of_determination(S, kf_xval)
+    cod = xval.coeff_of_determination(S, kf_xval)
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)
 
 
-def test_shm_xval():
+def test_csd_xval():
     psphere = dpd.get_sphere('symmetric362')
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
@@ -73,5 +72,9 @@ def test_shm_xval():
     sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
     smfit = sm.fit(S)
     kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2)
-    cod = ut.coeff_of_determination(S, kf_xval)
-    npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)
+    # Because of the regularization, COD is not going to be perfect here:
+    cod = xval.coeff_of_determination(S, kf_xval)
+    # We'll just test for regressions:
+    my_cod = 90.51018251680635 # pre-computed by hand for this random seed
+    npt.assert_array_almost_equal(cod,
+                                  np.ones(kf_xval.shape[:-1]) * my_cod)
