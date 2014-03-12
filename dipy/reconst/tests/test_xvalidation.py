@@ -15,7 +15,8 @@ import dipy.core.gradients as gt
 import dipy.sims.voxel as sims
 import dipy.reconst.csdeconv as csd
 
-np.random.seed(12345)
+# We'll set these globally:
+fdata, fbval, fbvec  = dpd.get_data('small_64D')
 
 def test_coeff_of_determination():
     """
@@ -33,13 +34,16 @@ def test_dti_xval():
     """
     Test k-fold cross-validation
     """
-    fdata, fbval, fbvec  = dpd.get_data('small_64D')
     data = nib.load(fdata).get_data()
     gtab = gt.gradient_table(fbval, fbvec)
     dm = dti.TensorModel(gtab, 'LS')
     # The data has 102 directions, so will not divide neatly into 10 bits
     npt.assert_raises(ValueError, xval.kfold_xval, dm, data, 10)
 
+    # But we can do this with 2 folds:
+    kf_xval = xval.kfold_xval(dm, data, 2)
+
+    # In simulation with no noise, COD should be perfect:
     psphere = dpd.get_sphere('symmetric362')
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
@@ -59,6 +63,14 @@ def test_dti_xval():
 
 
 def test_csd_xval():
+    # First, let's see that it works with some data:
+    data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Make it *small*
+    gtab = gt.gradient_table(fbval, fbvec)
+    response = ([0.0015, 0.0003, 0.0001], 1)
+    csdm = csd.ConstrainedSphericalDeconvModel(gtab, response)
+    kf_xval = xval.kfold_xval(csdm, data, 2, response, sh_order=2)
+
+    # In simulation, it should work rather well (high COD):
     psphere = dpd.get_sphere('symmetric362')
     bvecs = np.concatenate(([[0, 0, 0]], psphere.vertices))
     bvals = np.zeros(len(bvecs)) + 1000
@@ -68,9 +80,9 @@ def test_csd_xval():
     mevecs = [ np.array( [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ] ),
                np.array( [ [0, 0, 1], [0, 1, 0], [1, 0, 0] ] ) ]
     S = sims.single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
-    response = ([0.0015, 0.0003, 0.0001], 1)
     sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
     smfit = sm.fit(S)
+    np.random.seed(12345)
     kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2)
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
