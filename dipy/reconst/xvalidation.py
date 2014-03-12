@@ -137,7 +137,7 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
         this_model = model.__class__(this_gtab, *model_args, **model_kwargs)
         this_fit = this_model.fit(this_data)
-        this_predict = S0[...,None] * this_fit.predict(left_out_gtab, S0=1)
+        this_predict = S0[..., None] * this_fit.predict(left_out_gtab, S0=1)
 
         idx_to_assign = np.where(~gtab.b0s_mask)[0][~fold_mask]
         prediction[..., idx_to_assign]=this_predict[..., np.sum(gtab.b0s_mask):]
