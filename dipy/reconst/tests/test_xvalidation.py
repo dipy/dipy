@@ -29,7 +29,7 @@ def test_coeff_of_determination():
     npt.assert_array_equal(100 * np.ones(data.shape[:3]), cod)
 
 
-def test_kfold_xval():
+def test_dti_xval():
     """
     Test k-fold cross-validation
     """
