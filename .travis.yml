@@ -31,16 +31,17 @@ install:
     # https://github.com/travis-ci/travis-cookbooks/issues/155
     - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
     - cd ..
-    # Dipy
-    - $PYTHON setup.py build
-    - sudo $PYTHON setup.py install
     - if [ "${PYTHON}" == "python3" ]; then
             sudp apt-get install libblas-dev liblapack-dev ;
+	    # http://stackoverflow.com/questions/10763440/how-to-install-python3-version-of-package-via-pip
             sudo apt-get install python3-pip ;
-            sudo pip install cvxopt ;
+            sudo pip3 install cvxopt ;
        else
             sudo apt-get install python-cvxopt ;
        fi
+       # Dipy
+    - $PYTHON setup.py build
+    - sudo $PYTHON setup.py install
 script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_test
