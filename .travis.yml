@@ -33,7 +33,6 @@ install:
     - cd ..
     - if [ "${PYTHON}" == "python3" ]; then
             sudo apt-get install libblas-dev liblapack-dev ;
-            # http://stackoverflow.com/questions/10763440/how-to-install-python3-version-of-package-via-pip
             sudo apt-get install python3-pip ;
             sudo pip3 install cvxopt ;
        else
