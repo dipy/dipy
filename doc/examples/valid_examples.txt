@@ -24,4 +24,6 @@
  reconst_shore.py
  reconst_shore_metrics.py
  streamline_tools.py
+ denoise_nlmeans.py
+
 
