@@ -4,7 +4,6 @@ import numpy.linalg as linalg
 import abc
 import vector_fields as vfu
 from dipy.align import floating
-from scipy import interpolate
 
 def pyramid_gaussian_3D(image, max_layer, mask=None):
     r'''
@@ -910,6 +909,33 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.call_back(self)
         return 1 if der == '-' else der
 
+    def _approximate_derivative_direct(self, x, y):
+        r"""
+        Directly computes the derivative of the least-squares-fit quadratic
+        function estimated from (x[...],y[...]) pairs.
+
+        Parameters
+        ----------
+        x : array, shape(n,)
+            increasing array representing the x-coordinates of the points to be fit
+        y : array, shape(n,)
+            array representing the y-coordinates of the points to be fit
+
+        Returns
+        -------
+        y0 : float
+            the estimated derivative at x0 = 0.5*len(x) 
+        """
+        x = np.asarray(x)
+        y = np.asarray(y)
+        X = np.row_stack((x**2, x, np.ones_like(x)))
+        XX = (X).dot(X.T)
+        b = X.dot(y)
+        beta = np.linalg.solve(XX,b)
+        x0 = 0.5 * len(x)
+        y0 = 2.0 * beta[0] * (x0) + beta[1]
+        return y0
+
     def _get_energy_derivative(self):
         r"""
         Returns the derivative of the estimated energy as a function of "time"
@@ -925,9 +951,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if(ss > 0):
             ss *= -1
         y = [v / ss for v in y]
-        spline = interpolate.UnivariateSpline(x, y, s=1e6, k=2)
-        derivative = spline.derivative()
-        der = derivative(0.5 * self.energy_window)
+        der = self._approximate_derivative_direct(x,y)
         return der
     
     def _optimize(self):
