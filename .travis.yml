@@ -36,7 +36,7 @@ install:
     - sudo $PYTHON setup.py install
     - if [ "${PYTHON}" == "python3" ]; then
             sudp apt-get install libblas-dev liblapack-dev ;
-	    sudo apt-get install python3-pip ;
+            sudo apt-get install python3-pip ;
             sudo pip install cvxopt ;
        else
             sudo apt-get install python-cvxopt ;
