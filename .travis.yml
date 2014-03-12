@@ -35,6 +35,12 @@ install:
     # Dipy
     - $PYTHON setup.py build
     - sudo $PYTHON setup.py install
+    - if [ "${PYTHON}" == "python3" ]; then
+            apt-get install libblas-dev liblapack-dev ;
+            sudo pip$PYSUF install cvxopt ;
+       else
+            sudo apt-get install python-cvxopt ;
+       fi
 script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_test
