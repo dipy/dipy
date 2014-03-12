@@ -13,6 +13,7 @@ from ..core.sphere import Sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor, all_tensor_evecs
 import dipy.core.gradients as grad
+from dipy.utils.six.moves import range
 
 from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
@@ -175,7 +176,7 @@ class ConstrainedSphericalDeconvFit(SphHarmFit):
         prediction_matrix = np.zeros((est_odf.shape[0], est_odf.shape[0]))
         pred_gtab = grad.gradient_table(gtab.bvals[~b0s_mask],
                                         gtab.bvecs[~b0s_mask])
-        for ii in xrange(est_odf.shape[0]):
+        for ii in range(est_odf.shape[0]):
             evals = self.model.response[0]
             evecs = all_tensor_evecs(sphere.vertices[ii])
             prediction_matrix[ii] = single_tensor(pred_gtab, S0,
