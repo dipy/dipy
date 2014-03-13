@@ -68,6 +68,8 @@ class ShoreModel(Cache):
                  lambdaL=1e-8,
                  tau=1. / (4 * np.pi ** 2),
                  constrain_e0=False,
+                 pos_grid=None,
+                 pos_radius=20e-03
     ):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the SHORE basis [1,2]_.
@@ -108,6 +110,13 @@ class ShoreModel(Cache):
             square root of the b-value.
         constrain_e0 : bool,
             Constrain the optimization such that E(0) = 1.
+        pos_grid : int,
+            Grid that define the points of the EAP in which we want to enforce
+            positiveness, if None no constrain is imposed. The parameter
+            constrain_e0 must be set to True.
+        pos_radius : float,
+            Radius of the grid of the EAP in which enforce positiveness in
+            millimeters. By default 20e-03 mm.
 
         References
         ----------
@@ -164,6 +173,8 @@ class ShoreModel(Cache):
             self.tau = tau
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
+        self.pos_grid = pos_grid
+        self.pos_radius = pos_radius
 
     @multi_voxel_fit
     def fit(self, data):
@@ -215,8 +226,20 @@ class ShoreModel(Cache):
 
                 cvxopt.solvers.options['show_progress'] = False
 
-                G = None
-                h = None
+                if self.pos_grid is None:
+                    G = None
+                    h = None
+                else:
+                    G = self.cache_get('shore_matrix_G', key=(self.pos_grid, self.pos_radius))
+                    if G is None:
+                        v,t = create_rspace(self.pos_grid, self.pos_radius)
+                        lg = int(np.floor(self.pos_grid**3 / 2))
+
+                        psi = shore_matrix_pdf(self.radial_order, self.zeta, t[:lg])#2456])
+                        G = cvxopt.matrix(-1*psi)
+                        self.cache_set('shore_matrix_G', (self.pos_grid, self.pos_radius), G)
+                    h = cvxopt.matrix((1e-10)*np.ones((lg)),(lg,1))
+
 
                 A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
                 b = cvxopt.matrix(np.array([1.]))
@@ -287,7 +310,7 @@ class ShoreFit():
         eap[tuple(rgrid.astype(int).T)] = propagator
         eap *= (2 * radius_max / (gridsize - 1)) ** 3
 
-        return np.clip(eap, 0, eap.max())
+        return eap
 
     def pdf(self, r_points):
         """ Diffusion propagator on a given set of real points.

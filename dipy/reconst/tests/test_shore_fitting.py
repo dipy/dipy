@@ -11,6 +11,26 @@ from dipy.data import get_sphere
 from scipy.special import genlaguerre, gamma
 from math import factorial
 
+def test_shore_positive_constrain():
+    gtab = get_gtab_taiwan_dsi()
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+    angl = [(0, 0), (60, 0)]
+    S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
+                            fractions=[50, 50], snr=None)
+
+    radial_order = 6
+    zeta = 700
+    lambdaN = 1e-12
+    lambdaL = 1e-12
+
+    asm = ShoreModel(gtab, radial_order=radial_order,
+                     zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL,
+                     constrain_e0=True, pos_grid=11, pos_radius=20e-03)
+
+    asmfit = asm.fit(S)
+    eap = asmfit.pdf_grid(11, 20e-03)
+    assert_equal(eap[eap<0].sum(),0)
 
 def test_shore_fitting_e0():
     gtab = get_gtab_taiwan_dsi()
@@ -19,11 +39,6 @@ def test_shore_fitting_e0():
     angl = [(0, 0), (60, 0)]
     S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
                             fractions=[50, 50], snr=None)
-
-    # test shore_indices
-    n = 7
-    l = 6
-    m = -4
 
     radial_order = 8
     zeta = 700
@@ -52,3 +67,6 @@ def compute_e0(shorefit):
         ((factorial(n)) / (2 * np.pi * (shorefit.model.zeta ** 1.5) * gamma(n + 1.5))) ** 0.5)
 
     return signal_0
+
+if __name__ == '__main__':
+    run_module_suite()
