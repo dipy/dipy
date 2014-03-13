@@ -31,7 +31,15 @@ install:
     # https://github.com/travis-ci/travis-cookbooks/issues/155
     - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
     - cd ..
-    # Dipy
+    - if [ "${PYTHON}" == "python3" ]; then
+            sudo apt-get install libblas-dev liblapack-dev ;
+            sudo apt-get install python3-setuptools ;
+            sudo easy_install3 pip ;
+            sudo pip install cvxopt ;
+       else
+            sudo apt-get install python-cvxopt ;
+       fi
+       # Dipy
     - $PYTHON setup.py build
     - sudo $PYTHON setup.py install
 script:
