@@ -87,7 +87,7 @@ def compose_displacements(new_displacement, current_displacement):
     dim = len(new_displacement.shape) - 1
     mse = np.sqrt(np.sum((current_displacement ** 2), -1)).mean()
     if dim == 2:
-        updated, stats = vfu.compose_vector_fields(new_displacement,
+        updated, stats = vfu.compose_vector_fields_2d(new_displacement,
                                                    current_displacement)
     else:
         updated, stats = vfu.compose_vector_fields_3d(new_displacement,
@@ -489,7 +489,7 @@ class DiffeomorphicMap(object):
         boundaries may be problematic).
         """
         if self.dim == 2:
-            residual, stats = vfu.compose_vector_fields(self.forward,
+            residual, stats = vfu.compose_vector_fields_2d(self.forward,
                                                         self.backward)
         else:
             residual, stats = vfu.compose_vector_fields_3d(self.forward,
@@ -526,12 +526,12 @@ class DiffeomorphicMap(object):
         if self.dim == 2:
             forward = apply_first.forward.copy()
             vfu.append_affine_to_displacement_field_2d(forward, affine_prod)
-            forward, stats = vfu.compose_vector_fields(forward,
+            forward, stats = vfu.compose_vector_fields_2d(forward,
                                                        self.forward)
             backward = self.backward.copy()
             vfu.append_affine_to_displacement_field_2d(
                 backward, affine_prod_inv)
-            backward, stats = vfu.compose_vector_fields(backward,
+            backward, stats = vfu.compose_vector_fields_2d(backward,
                                                         apply_first.backward)
         else:
             forward = apply_first.forward.copy()
@@ -756,7 +756,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         according to the dimension of the input images e.g. 2D or 3D.
         """
         if self.dim == 2:
-            self.invert_vector_field = vfu.invert_vector_field_fixed_point
+            self.invert_vector_field = vfu.invert_vector_field_fixed_point_2d
             self.generate_pyramid = pyramid_gaussian_2D
             self.append_affine = vfu.append_affine_to_displacement_field_2d
             self.prepend_affine = vfu.prepend_affine_to_displacement_field_2d

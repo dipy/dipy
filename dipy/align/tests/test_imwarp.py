@@ -240,6 +240,56 @@ def test_cc_factors_3d():
     expected = np.asarray(cc.precompute_cc_factors_3d_test(a,b,3))
     assert_array_almost_equal(factors, expected)
 
+def test_compose_vector_fields_2d():
+    r"""
+    Compose a constant vector field equal to (1,1) with itself. The result
+    must be (2,2) everywhere except at the [n-1, :], [:, n-1] boundary. 
+    The maximum and average norm must be 2*\sqrt(2) with standard deviation 0.
+    """
+    import dipy.align.vector_fields as vf
+    d1 = np.ones(shape = (10,10,2), dtype = floating)
+    c, s = vf.compose_vector_fields_2d(d1, d1)
+    expected_c = np.ones_like(d1)
+    expected_c *= 2
+    expected_c[9,...] = 0
+    expected_c[:,9,...] = 0
+    assert_array_almost_equal(c, expected_c)
+    expected_s = np.array([2*np.sqrt(2), 2*np.sqrt(2), 0])
+    assert_array_almost_equal(expected_s, s)
+
+def test_compose_vector_fields_3d():
+    r"""
+    Compose a constant vector field equal to (1,1,1) with itself. The result
+    must be (2,2,2) everywhere except at the [n-1, :, :], [:, n-1, :],
+    [:, :, n-1] boundary. 
+    The maximum and average norm must be 2*\sqrt(3) with standard deviation 0.
+    """
+    import dipy.align.vector_fields as vf
+    d1 = np.ones(shape = (10, 10, 10, 3), dtype = floating)
+    c, s = vf.compose_vector_fields_3d(d1, d1)
+    expected_c = np.ones_like(d1)
+    expected_c *= 2
+    expected_c[9, ...] = 0
+    expected_c[:, 9, ...] = 0
+    expected_c[:, :, 9, ...] = 0
+    assert_array_almost_equal(c, expected_c)
+    expected_s = np.array([2*np.sqrt(3), 2*np.sqrt(3), 0])
+    assert_array_almost_equal(expected_s, s)
+
+def test_prepend_affine_to_displacement_field_2d():
+    r"""
+    Apply a 90 degrees rotation to the displacement field 
+    """
+    import dipy.align.vector_fields as vf
+    from dipy.align import floating
+    d1 = np.ones(shape = (11, 11, 2), dtype = floating)
+    aff = np.eye(3, dtype = floating)
+    aff[0, 0] = 0
+    aff[1, 1] = 0
+    aff[0, 1] = -1
+    aff[1, 0] = 1
+    vf.prepend_affine_to_displacement_field_2d(d1, aff)
+
 
 if __name__=='__main__':
     test_ssd_2d()

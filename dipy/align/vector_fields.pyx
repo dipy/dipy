@@ -57,7 +57,172 @@ cdef inline double _apply_affine_2d_x1(double x0, double x1,
     return aff[1, 0] * x0 + aff[1, 1] * x1 + aff[1, 2]
 
 
-cdef void _compose_vector_fields(floating[:, :, :] d1, floating[:, :, :] d2,
+cdef int interpolate_vector_bilinear(floating[:,:,:] field, double dii, 
+                                     double djj, floating[:] out) nogil:
+    r"""
+    Interpolates the 2D displacement field at (dii, djj) and stores the 
+    result in out. If (dkk, dii, djj) is outside the vector field's domain, a 
+    zero vector is written to out instead.
+
+    Parameters
+    ----------
+    field : array, shape (R, C)
+        the input 2D displacement field
+    dii : floating
+        the first coordinate of the interpolating position
+    djj : floating
+        the second coordinate of the interpolating position    
+    out : array, shape (2,)
+        the array which the interpolation result will be written to
+
+    Returns
+    -------
+    inside : int
+        if (dii, djj) is inside the domain of the displacement field, 
+        inside == 1, otherwise inside == 0
+    """
+    cdef:
+        int nr = field.shape[0]
+        int nc = field.shape[1]
+        int ii, jj
+        double alpha, beta, calpha, cbeta
+    if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
+        out[0] = 0
+        out[1] = 0
+        return 0
+    #---top-left
+    ii = int(dii)
+    jj = int(djj)
+    if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
+        out[0] = 0
+        out[1] = 0
+        return 0
+    calpha = dii - ii
+    cbeta = djj - jj
+    alpha = 1 - calpha
+    beta = 1 - cbeta
+    
+    out[0] = alpha * beta * field[ii, jj, 0]
+    out[1] = alpha * beta * field[ii, jj, 1]
+    #---top-right
+    jj += 1
+    if(jj < nc):
+        out[0] += alpha * cbeta * field[ii, jj, 0]
+        out[1] += alpha * cbeta * field[ii, jj, 1]
+    #---bottom-right
+    ii += 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * cbeta * field[ii, jj, 0]
+        out[1] += calpha * cbeta * field[ii, jj, 1]
+    #---bottom-left
+    jj -= 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * beta * field[ii, jj, 0]
+        out[1] += calpha * beta * field[ii, jj, 1]
+    return 1    
+
+
+cdef int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk, double dii, 
+                                      double djj, floating[:] out) nogil:
+    r"""
+    Interpolates the 3D displacement field at (dkk, dii, djj) and stores the 
+    result in out. If (dkk, dii, djj) is outside the vector field's domain, a 
+    zero vector is written to out instead.
+
+    Parameters
+    ----------
+    field : array, shape (S, R, C)
+        the input 3D displacement field
+    dkk : floating
+        the first coordinate of the interpolating position
+    dii : floating
+        the second coordinate of the interpolating position
+    djj : floating
+        the third coordinate of the interpolating position    
+    out : array, shape (3,)
+        the array which the interpolation result will be written to
+
+    Returns
+    -------
+    inside : int
+        if (dkk, dii, djj) is inside the domain of the displacement field, 
+        inside == 1, otherwise inside == 0
+    """
+    cdef:
+        int ns = field.shape[0]
+        int nr = field.shape[1]
+        int nc = field.shape[2]
+        int kk, ii, jj
+        double alpha, beta, gamma, calpha, cbeta, cgamma
+    if((dkk < 0) or (dii < 0) or (djj < 0) or (dkk > ns - 1) or (dii > nr - 1) or (djj > nc - 1)):
+        out[0] = 0
+        out[1] = 0
+        out[2] = 0
+        return 0
+    #---top-left
+    kk = int(dkk)
+    ii = int(dii)
+    jj = int(djj)
+    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
+        out[0] = 0
+        out[1] = 0
+        out[2] = 0
+        return 0
+    cgamma = dkk - kk
+    calpha = dii - ii
+    cbeta = djj - jj
+    alpha = 1 - calpha
+    beta = 1 - cbeta
+    gamma = 1 - cgamma
+    
+    out[0] = alpha * beta * gamma * field[kk, ii, jj, 0]
+    out[1] = alpha * beta * gamma * field[kk, ii, jj, 1]
+    out[2] = alpha * beta * gamma * field[kk, ii, jj, 2]
+    #---top-right
+    jj += 1
+    if(jj < nc):
+        out[0] += alpha * cbeta * gamma * field[kk, ii, jj, 0]
+        out[1] += alpha * cbeta * gamma * field[kk, ii, jj, 1]
+        out[2] += alpha * cbeta * gamma * field[kk, ii, jj, 2]
+    #---bottom-right
+    ii += 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * cbeta * gamma * field[kk, ii, jj, 0]
+        out[1] += calpha * cbeta * gamma * field[kk, ii, jj, 1]
+        out[2] += calpha * cbeta * gamma * field[kk, ii, jj, 2]
+    #---bottom-left
+    jj -= 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * beta * gamma * field[kk, ii, jj, 0]
+        out[1] += calpha * beta * gamma * field[kk, ii, jj, 1]
+        out[2] += calpha * beta * gamma * field[kk, ii, jj, 2]
+    kk += 1
+    if(kk < ns):
+        ii -= 1
+        out[0] += alpha * beta * cgamma * field[kk, ii, jj, 0]
+        out[1] += alpha * beta * cgamma * field[kk, ii, jj, 1]
+        out[2] += alpha * beta * cgamma * field[kk, ii, jj, 2]
+        jj += 1
+        if(jj < nc):
+            out[0] += alpha * cbeta * cgamma * field[kk, ii, jj, 0]
+            out[1] += alpha * cbeta * cgamma * field[kk, ii, jj, 1]
+            out[2] += alpha * cbeta * cgamma * field[kk, ii, jj, 2]
+        #---bottom-right
+        ii += 1
+        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+            out[0] += calpha * cbeta * cgamma * field[kk, ii, jj, 0]
+            out[1] += calpha * cbeta * cgamma * field[kk, ii, jj, 1]
+            out[2] += calpha * cbeta * cgamma * field[kk, ii, jj, 2]
+        #---bottom-left
+        jj -= 1
+        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+            out[0] += calpha * beta * cgamma * field[kk, ii, jj, 0]
+            out[1] += calpha * beta * cgamma * field[kk, ii, jj, 1]
+            out[2] += calpha * beta * cgamma * field[kk, ii, jj, 2]
+    return 1    
+
+
+cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                                  floating[:, :, :] comp, floating[:] stats) nogil:
     r"""
     Computes the composition of the two 2-D displacemements d1 and d2 defined by
@@ -150,7 +315,7 @@ cdef void _compose_vector_fields(floating[:, :, :] d1, floating[:, :, :] d2,
     stats[2] = sqrt(stdNorm / cnt - meanNorm * meanNorm)
 
 
-def compose_vector_fields(floating[:, :, :] d1, floating[:, :, :] d2):
+def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2):
     r"""
     Computes the composition of the two 2-D displacemements d1 and d2 defined by
     comp[r, c] = d2(d1[r, c]) for each (r,c) in the domain of d1. The evaluation
@@ -177,7 +342,7 @@ def compose_vector_fields(floating[:, :, :] d1, floating[:, :, :] d2):
         floating[:, :, :] comp = np.zeros_like(d1)
         floating[:] stats = np.zeros(shape=(3,),
                                      dtype=np.asarray(d1).dtype)
-    _compose_vector_fields(d1, d2, comp, stats)
+    _compose_vector_fields_2d(d1, d2, comp, stats)
     return comp, stats
 
 
@@ -363,7 +528,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2):
     return comp, stats
 
 
-def invert_vector_field_fixed_point(floating[:, :, :] d, int[:] inv_shape,
+def invert_vector_field_fixed_point_2d(floating[:, :, :] d, int[:] inv_shape,
                                     int max_iter, double tolerance,
                                     floating[:, :, :] start=None):
     r"""
@@ -420,7 +585,7 @@ def invert_vector_field_fixed_point(floating[:, :, :] d, int[:] inv_shape,
         iter_count = 0
         while (iter_count < max_iter) and (tolerance < error):
             p, q = q, p
-            _compose_vector_fields(q, d, p, substats)
+            _compose_vector_fields_2d(q, d, p, substats)
             difmag = 0
             error = 0
             for i in range(nr2):
@@ -538,14 +703,23 @@ def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
     cdef:
         int nrows = d.shape[0]
         int ncols = d.shape[1]
-        int i, j
-
+        int i, j, inside
+        floating dii, djj
+        floating[:,:,:] out= np.zeros_like(d)
+        floating[:] tmp = np.zeros((2,), dtype = np.asarray(d).dtype)
     with nogil:
+        for i in range(nrows):
+            for j in range(ncols):
+                dii = _apply_affine_2d_x0(i, j, affine)
+                djj = _apply_affine_2d_x1(i, j, affine)
+                inside = interpolate_vector_bilinear(d, dii, djj, tmp)
+                out[i, j, 0] = tmp[0] + dii - i
+                out[i, j, 1] = tmp[1] + djj - j
 
         for i in range(nrows):
             for j in range(ncols):
-                d[i, j, 0] += _apply_affine_2d_x0(i, j, affine) - i
-                d[i, j, 1] += _apply_affine_2d_x1(i, j, affine) - j
+                d[i, j, 0] = out[i, j, 0]
+                d[i, j, 1] = out[i, j, 1]
 
 
 def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
@@ -562,21 +736,34 @@ def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
     affine : array, shape (3, 4)
         the matrix representation of the affine transformation to be applied
     """
-    if affine == None:
+    if affine is None:
         return
     cdef:
         int nslices = d.shape[0]
         int nrows = d.shape[1]
         int ncols = d.shape[2]
-        int i, j, k
-
+        int i, j, k, inside
+        floating dkk, dii, djj
+        floating[:,:,:,:] out= np.zeros_like(d)
+        floating[:] tmp = np.zeros((3,), dtype = np.asarray(d).dtype)
     with nogil:
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    d[k, i, j, 0] += _apply_affine_3d_x0(k, i, j, affine) - k
-                    d[k, i, j, 1] += _apply_affine_3d_x1(k, i, j, affine) - i
-                    d[k, i, j, 2] += _apply_affine_3d_x2(k, i, j, affine) - j
+                    dkk = _apply_affine_3d_x0(k, i, j, affine)
+                    dii = _apply_affine_3d_x1(k, i, j, affine)
+                    djj = _apply_affine_3d_x2(k, i, j, affine)
+                    inside = interpolate_vector_trilinear(d, dkk, dii, djj, tmp)
+                    out[k, i, j, 0] = tmp[0] + dkk - k
+                    out[k, i, j, 1] = tmp[1] + dii - i
+                    out[k, i, j, 2] = tmp[2] + djj - j
+
+        for k in range(nslices):
+            for i in range(nrows):
+                for j in range(ncols):
+                    d[k, i, j, 0] = out[k, i, j, 0]
+                    d[k, i, j, 1] = out[k, i, j, 1]
+                    d[k, i, j, 2] = out[k, i, j, 2]
 
 
 def append_affine_to_displacement_field_2d(floating[:, :, :] d,
