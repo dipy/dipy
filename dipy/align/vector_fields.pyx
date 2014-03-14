@@ -57,7 +57,7 @@ cdef inline double _apply_affine_2d_x1(double x0, double x1,
     return aff[1, 0] * x0 + aff[1, 1] * x1 + aff[1, 2]
 
 
-cdef int interpolate_vector_bilinear(floating[:,:,:] field, double dii, 
+cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii, 
                                      double djj, floating[:] out) nogil:
     r"""
     Interpolates the 2D displacement field at (dii, djj) and stores the 
@@ -122,7 +122,241 @@ cdef int interpolate_vector_bilinear(floating[:,:,:] field, double dii,
     return 1    
 
 
-cdef int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk, double dii, 
+cdef inline int interpolate_scalar_bilinear(floating[:,:] image, double dii, 
+                                     double djj, floating *out) nogil:
+    r"""
+    Interpolates the 2D image at (dii, djj) and stores the 
+    result in out. If (dii, djj) is outside the image's domain,
+    zero is written to out instead.
+
+    Parameters
+    ----------
+    image : array, shape (R, C)
+        the input 2D image
+    dii : floating
+        the first coordinate of the interpolating position
+    djj : floating
+        the second coordinate of the interpolating position    
+    out : array, shape (2,)
+        the array which the interpolation result will be written to
+
+    Returns
+    -------
+    inside : int
+        if (dii, djj) is inside the domain of the image, 
+        inside == 1, otherwise inside == 0
+    """
+    cdef:
+        int nr = image.shape[0]
+        int nc = image.shape[1]
+        int ii, jj
+        double alpha, beta, calpha, cbeta
+    if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
+        out[0] = 0
+        return 0
+    #---top-left
+    ii = int(dii)
+    jj = int(djj)
+    if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
+        out[0] = 0
+        return 0
+    calpha = dii - ii
+    cbeta = djj - jj
+    alpha = 1 - calpha
+    beta = 1 - cbeta
+    
+    out[0] = alpha * beta * image[ii, jj]
+    #---top-right
+    jj += 1
+    if(jj < nc):
+        out[0] += alpha * cbeta * image[ii, jj]
+    #---bottom-right
+    ii += 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * cbeta * image[ii, jj]
+    #---bottom-left
+    jj -= 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * beta * image[ii, jj]
+    return 1
+
+
+cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii, 
+                                         double djj, number *out) nogil:
+    r"""
+    Interpolates the 2D image at (dii, djj) using nearest neighbor interpolation
+    and stores the result in out. If (dii, djj) is outside the image's domain,
+    zero is written to out instead.
+
+    Parameters
+    ----------
+    image : array, shape (R, C)
+        the input 2D image
+    dii : float
+        the first coordinate of the interpolating position
+    djj : float
+        the second coordinate of the interpolating position    
+    out : array, shape (1,)
+        the variable which the interpolation result will be written to
+
+    Returns
+    -------
+    inside : int
+        if (dii, djj) is inside the domain of the image, 
+        inside == 1, otherwise inside == 0
+    """
+    cdef:
+        int nr = image.shape[0]
+        int nc = image.shape[1]
+        int ii, jj
+        double alpha, beta, calpha, cbeta
+    if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
+        out[0] = 0
+        return 0
+    # find the top left index and the interpolation coefficients
+    ii = int(dii)
+    jj = int(djj)
+    # no one is affected
+    if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
+        out[0] = 0
+        return 0
+    calpha = dii - ii  # by definition these factors are nonnegative
+    cbeta = djj - jj
+    alpha = 1 - calpha
+    beta = 1 - cbeta
+    if(alpha < calpha):
+        ii += 1
+    if(beta < cbeta):
+        jj += 1
+    # no one is affected
+    if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
+        out[0] = 0
+        return 0
+    out[0] = image[ii, jj]
+    return 1
+
+
+cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk, 
+                                         double dii, double djj, number *out) nogil:
+    r"""
+    Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor interpolation
+    and stores the result in out. If (dkk, dii, djj) is outside the image's domain,
+    zero is written to out instead.
+
+    Parameters
+    ----------
+    image : array, shape (S, R, C)
+        the input 2D image
+    dkk : float
+        the first coordinate of the interpolating position
+    dii : float
+        the second coordinate of the interpolating position
+    djj : float
+        the third coordinate of the interpolating position    
+    out : array, shape (1,)
+        the variable which the interpolation result will be written to
+
+    Returns
+    -------
+    inside : int
+        if (dkk, dii, djj) is inside the domain of the image, 
+        inside == 1, otherwise inside == 0
+    """
+    cdef:
+        int ns = volume.shape[0]
+        int nr = volume.shape[1]
+        int nc = volume.shape[2]
+        int kk, ii, jj
+        double alpha, beta, calpha, cbeta, gamma, cgamma
+    if((dkk < 0) or (dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1) or (dkk > ns - 1)):
+        out[0] = 0
+        return 0
+    # find the top left index and the interpolation coefficients
+    kk = int(dkk)
+    ii = int(dii)
+    jj = int(djj)
+    # no one is affected
+    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
+        out[0] = 0
+        return 0
+    cgamma = dkk - kk
+    calpha = dii - ii
+    cbeta = djj - jj
+    alpha = 1 - calpha
+    beta = 1 - cbeta
+    gamma = 1 - cgamma
+    if(gamma < cgamma):
+        kk += 1
+    if(alpha < calpha):
+        ii += 1
+    if(beta < cbeta):
+        jj += 1
+    # no one is affected
+    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
+        out[0] = 0
+        return 0
+    out[0] = volume[kk, ii, jj]
+    return 1
+
+
+cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume, 
+                                             double dkk, double dii, double djj, 
+                                             floating *out) nogil:
+    cdef:
+        int ns = volume.shape[0]
+        int nr = volume.shape[1]
+        int nc = volume.shape[2]
+        int kk, ii, jj
+        double alpha, beta, calpha, cbeta, gamma, cgamma
+    if((dkk < 0) or (dii < 0) or (djj < 0) or (dkk > ns - 1) or (dii > nr - 1) or (djj > nc - 1)):
+        out[0] = 0
+        return 0
+    # find the top left index and the interpolation coefficients
+    kk = int(dkk)
+    ii = int(dii)
+    jj = int(djj)
+    # no one is affected
+    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc) ):
+        out[0] = 0
+        return 0
+    cgamma = dkk - kk
+    calpha = dii - ii
+    cbeta = djj - jj
+    alpha = 1 - calpha
+    beta = 1 - cbeta
+    gamma = 1 - cgamma
+    #---top-left
+    out[0] = alpha * beta * gamma * volume[kk, ii, jj]
+    #---top-right
+    jj += 1
+    if(jj < nc):
+        out[0] += alpha * cbeta * gamma * volume[kk, ii, jj]
+    #---bottom-right
+    ii += 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * cbeta * gamma * volume[kk, ii, jj]
+    #---bottom-left
+    jj -= 1
+    if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+        out[0] += calpha * beta * gamma * volume[kk, ii, jj]
+    kk += 1
+    if(kk < ns):
+        ii -= 1
+        out[0] += alpha * beta * cgamma * volume[kk, ii, jj]
+        jj += 1
+        if(jj < nc):
+            out[0] += alpha * cbeta * cgamma * volume[kk, ii, jj]
+        #---bottom-right
+        ii += 1
+        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+            out[0] += calpha * cbeta * cgamma * volume[kk, ii, jj]
+        #---bottom-left
+        jj -= 1
+        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
+            out[0] += calpha * beta * cgamma * volume[kk, ii, jj]
+
+
+cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk, double dii, 
                                       double djj, floating[:] out) nogil:
     r"""
     Interpolates the 3D displacement field at (dkk, dii, djj) and stores the 
@@ -259,9 +493,8 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         floating meanNorm = 0
         floating stdNorm = 0
         floating nn
-        int i, j, ii, jj
+        int i, j, ii, jj, inside
         floating dii, djj, alpha, beta, calpha, cbeta
-    
 
     for i in range(nr1):
         for j in range(nc1):
@@ -271,44 +504,16 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
 
             dii = i + d1[i, j, 0]
             djj = j + d1[i, j, 1]
-            if((dii < 0) or (nr2 - 1 < dii) or (djj < 0) or (nc2 - 1 < djj)):
-                continue
-            ii = int(dii)
-            jj = int(djj)
-            if((ii < 0) or (nr2 <= ii) or (jj < 0) or (nc2 <= jj)):
-                continue
-            calpha = dii - ii
-            cbeta = djj - jj
-            alpha = 1 - calpha
-            beta = 1 - cbeta
-            comp[i, j, 0] = d1[i, j, 0]
-            comp[i, j, 1] = d1[i, j, 1]
-            # top-left
-            comp[i, j, 0] += alpha * beta * d2[ii, jj, 0]
-            comp[i, j, 1] += alpha * beta * d2[ii, jj, 1]
-            # top-right
-            jj += 1
-            if(jj < nc2):
-                comp[i, j, 0] += alpha * cbeta * d2[ii, jj, 0]
-                comp[i, j, 1] += alpha * cbeta * d2[ii, jj, 1]
-            # bottom-right
-            ii += 1
-            if((ii >= 0) and (jj >= 0) and (ii < nr2)and (jj < nc2)):
-                comp[i, j, 0] += calpha * cbeta * d2[ii, jj, 0]
-                comp[i, j, 1] += calpha * cbeta * d2[ii, jj, 1]
-            # bottom-left
-            jj -= 1
-            if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
-                comp[i, j, 0] += calpha * beta * d2[ii, jj, 0]
-                comp[i, j, 1] += calpha * beta * d2[ii, jj, 1]
-            # consider only displacements that land inside the image
-            if((0 <= dii <= nr2 - 1) and (0 <= djj <= nc2 - 1)):
+            inside = interpolate_vector_bilinear(d2, dii, djj, comp[i,j])
+            if inside == 1:
+                comp[i,j,0] += d1[i,j,0]
+                comp[i,j,1] += d1[i,j,1]
                 nn = comp[i, j, 0] ** 2 + comp[i, j, 1] ** 2
-                if(maxNorm < nn):
-                    maxNorm = nn
                 meanNorm += nn
                 stdNorm += nn * nn
                 cnt += 1
+                if(maxNorm < nn):
+                    maxNorm = nn
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
@@ -383,7 +588,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
         int nr2 = d2.shape[1]
         int nc2 = d2.shape[2]
         int cnt = 0
-        int k, i, j, kk, ii, jj
+        int k, i, j, kk, ii, jj, inside
         floating maxNorm = 0
         floating meanNorm = 0
         floating stdNorm = 0
@@ -400,97 +605,18 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                 dkk = k + d1[k, i, j, 0]
                 dii = i + d1[k, i, j, 1]
                 djj = j + d1[k, i, j, 2]
-                if((dii < 0) or (djj < 0) or (dkk < 0) or (dii > nr2 - 1) or (djj > nc2 - 1) or (dkk > ns2 - 1)):
-                    continue
-                #---top-left
-                kk = int(dkk)
-                ii = int(dii)
-                jj = int(djj)
-                if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nr2) or (jj >= nc2) or (kk >= ns2)):
-                    continue
-                cgamma = dkk - kk
-                # by definition these factors are nonnegative
-                calpha = dii - ii
-                cbeta = djj - jj
-                alpha = 1 - calpha
-                beta = 1 - cbeta
-                gamma = 1 - cgamma
-                comp[k, i, j, 0] = d1[k, i, j, 0]
-                comp[k, i, j, 1] = d1[k, i, j, 1]
-                comp[k, i, j, 2] = d1[k, i, j, 2]
-                comp[k, i, j, 0] += alpha * beta * gamma * d2[kk, ii, jj, 0]
-                comp[k, i, j, 1] += alpha * beta * gamma * d2[kk, ii, jj, 1]
-                comp[k, i, j, 2] += alpha * beta * gamma * d2[kk, ii, jj, 2]
-                #---top-right
-                jj += 1
-                if(jj < nc2):
-                    comp[k, i, j, 0] += alpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += alpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += alpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 2]
-                #---bottom-right
-                ii += 1
-                if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
-                    comp[k, i, j, 0] += calpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += calpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += calpha * \
-                        cbeta * gamma * d2[kk, ii, jj, 2]
-                #---bottom-left
-                jj -= 1
-                if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
-                    comp[k, i, j, 0] += calpha * \
-                        beta * gamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += calpha * \
-                        beta * gamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += calpha * \
-                        beta * gamma * d2[kk, ii, jj, 2]
-                kk += 1
-                if(kk < ns2):
-                    ii -= 1
-                    comp[k, i, j, 0] += alpha * beta * \
-                        cgamma * d2[kk, ii, jj, 0]
-                    comp[k, i, j, 1] += alpha * beta * \
-                        cgamma * d2[kk, ii, jj, 1]
-                    comp[k, i, j, 2] += alpha * beta * \
-                        cgamma * d2[kk, ii, jj, 2]
-                    jj += 1
-                    if(jj < nc2):
-                        comp[k, i, j, 0] += alpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 0]
-                        comp[k, i, j, 1] += alpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 1]
-                        comp[k, i, j, 2] += alpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 2]
-                    #---bottom-right
-                    ii += 1
-                    if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
-                        comp[k, i, j, 0] += calpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 0]
-                        comp[k, i, j, 1] += calpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 1]
-                        comp[k, i, j, 2] += calpha * \
-                            cbeta * cgamma * d2[kk, ii, jj, 2]
-                    #---bottom-left
-                    jj -= 1
-                    if((ii >= 0) and (jj >= 0) and (ii < nr2) and (jj < nc2)):
-                        comp[k, i, j, 0] += calpha * \
-                            beta * cgamma * d2[kk, ii, jj, 0]
-                        comp[k, i, j, 1] += calpha * \
-                            beta * cgamma * d2[kk, ii, jj, 1]
-                        comp[k, i, j, 2] += calpha * \
-                            beta * cgamma * d2[kk, ii, jj, 2]
-                if((0 <= dkk <= ns2 - 1) and (0 <= dii <= nr2 - 1) and (0 <= djj <= nc2 - 1)):
-                    nn = comp[k, i, j, 0] ** 2 + \
-                        comp[k, i, j, 1] ** 2 + comp[k, i, j, 2] ** 2
-                    if(maxNorm < nn):
-                        maxNorm = nn
+
+                inside = interpolate_vector_trilinear(d2, dkk, dii, djj, comp[k, i, j])
+                if inside == 1:
+                    comp[k, i, j, 0] += d1[k, i, j, 0]
+                    comp[k, i, j, 1] += d1[k, i, j, 1]
+                    comp[k, i, j, 2] += d1[k, i, j, 2]
+                    nn = comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 + comp[k, i, j, 2] ** 2
                     meanNorm += nn
                     stdNorm += nn * nn
                     cnt += 1
+                    if(maxNorm < nn):
+                        maxNorm = nn
     meanNorm /= cnt
     stats[0] = sqrt(maxNorm)
     stats[1] = sqrt(meanNorm)
@@ -853,52 +979,19 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
         the upsampled displacement field
     """
     cdef:
-        int nr = field.shape[0]
-        int nc = field.shape[1]
         int nrows = target_shape[0]
         int ncols = target_shape[1]
-        int i, j, ii, jj
+        int i, j, inside
         floating dii, djj
-        floating alpha, beta, calpha, cbeta
         floating[:, :, :] up = np.zeros(shape=(nrows, ncols, 2), 
                                         dtype=np.asarray(field).dtype)
-
     with nogil:
 
         for i in range(nrows):
             for j in range(ncols):
                 dii = 0.5 * i
                 djj = 0.5 * j
-                # no one is affected
-                if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
-                    continue
-                ii = int(dii)
-                jj = int(djj)
-                # no one is affected
-                if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
-                    continue
-                calpha = dii - ii  # by definition these factors are nonnegative
-                cbeta = djj - jj
-                alpha = 1 - calpha
-                beta = 1 - cbeta
-                # top-left
-                up[i, j, 0] += alpha * beta * field[ii, jj, 0]
-                up[i, j, 1] += alpha * beta * field[ii, jj, 1]
-                # top-right
-                jj += 1
-                if(jj < nc):
-                    up[i, j, 0] += alpha * cbeta * field[ii, jj, 0]
-                    up[i, j, 1] += alpha * cbeta * field[ii, jj, 1]
-                # bottom-right
-                ii += 1
-                if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
-                    up[i, j, 0] += calpha * cbeta * field[ii, jj, 0]
-                    up[i, j, 1] += calpha * cbeta * field[ii, jj, 1]
-                # bottom-left
-                jj -= 1
-                if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
-                    up[i, j, 0] += calpha * beta * field[ii, jj, 0]
-                    up[i, j, 1] += calpha * beta * field[ii, jj, 1]
+                inside = interpolate_vector_bilinear(field, dii, djj, up[i,j])
     return up
 
 
@@ -924,15 +1017,11 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
         the upsampled displacement field
     """
     cdef:
-        int nslices = field.shape[0]
-        int nrows = field.shape[1]
-        int ncols = field.shape[2]
         int ns = target_shape[0]
         int nr = target_shape[1]
         int nc = target_shape[2]
-        int i, j, k, ii, jj, kk
+        int i, j, k
         floating dkk, dii, djj
-        floating alpha, beta, gamma, calpha, cbeta, cgamma
         floating[:, :, :, :] up = np.zeros(shape=(ns, nr, nc, 3), 
                                            dtype=np.asarray(field).dtype)
 
@@ -944,88 +1033,7 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
                     dkk = 0.5 * k
                     dii = 0.5 * i
                     djj = 0.5 * j
-                    # no one is affected
-                    if((dkk < 0) or (dii < 0) or (djj < 0) or (dii > nrows - 1) or (djj > ncols - 1) or (dkk > nslices - 1)):
-                        continue
-                    kk = int(dkk)
-                    ii = int(dii)
-                    jj = int(djj)
-                    # no one is affected
-                    if((kk < 0) or (ii < 0) or (jj < 0) or (ii >= nrows) or (jj >= ncols) or (kk >= nslices)):
-                        continue
-                    cgamma = dkk - kk
-                    # by definition these factors are nonnegative
-                    calpha = dii - ii
-                    cbeta = djj - jj
-                    alpha = 1 - calpha
-                    beta = 1 - cbeta
-                    gamma = 1 - cgamma
-                    # top-left
-                    up[k, i, j, 0] += alpha * beta * gamma * field[kk, ii, jj, 0]
-                    up[k, i, j, 1] += alpha * beta * gamma * field[kk, ii, jj, 1]
-                    up[k, i, j, 2] += alpha * beta * gamma * field[kk, ii, jj, 2]
-                    # top-right
-                    jj += 1
-                    if(jj < ncols):
-                        up[k, i, j, 0] += alpha * cbeta * \
-                            gamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += alpha * cbeta * \
-                            gamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += alpha * cbeta * \
-                            gamma * field[kk, ii, jj, 2]
-                    # bottom-right
-                    ii += 1
-                    if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                        up[k, i, j, 0] += calpha * cbeta * \
-                            gamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += calpha * cbeta * \
-                            gamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += calpha * cbeta * \
-                            gamma * field[kk, ii, jj, 2]
-                    # bottom-left
-                    jj -= 1
-                    if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                        up[k, i, j, 0] += calpha * beta * \
-                            gamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += calpha * beta * \
-                            gamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += calpha * beta * \
-                            gamma * field[kk, ii, jj, 2]
-                    kk += 1
-                    if(kk < nslices):
-                        ii -= 1
-                        up[k, i, j, 0] += alpha * beta * \
-                            cgamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += alpha * beta * \
-                            cgamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += alpha * beta * \
-                            cgamma * field[kk, ii, jj, 2]
-                        jj += 1
-                        if(jj < ncols):
-                            up[k, i, j, 0] += alpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 0]
-                            up[k, i, j, 1] += alpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 1]
-                            up[k, i, j, 2] += alpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 2]
-                        # bottom-right
-                        ii += 1
-                        if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                            up[k, i, j, 0] += calpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 0]
-                            up[k, i, j, 1] += calpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 1]
-                            up[k, i, j, 2] += calpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 2]
-                        # bottom-left
-                        jj -= 1
-                        if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                            up[k, i, j, 0] += calpha * beta * \
-                                cgamma * field[kk, ii, jj, 0]
-                            up[k, i, j, 1] += calpha * beta * \
-                                cgamma * field[kk, ii, jj, 1]
-                            up[k, i, j, 2] += calpha * beta * \
-                                cgamma * field[kk, ii, jj, 2]
+                    interpolate_vector_trilinear(field, dkk, dii, djj, up[k, i, j])
     return up
 
 
@@ -1043,16 +1051,12 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
         the starting field wich the result will be added to
 
     """
-    cdef int nslices = field.shape[0]
-    cdef int nrows = field.shape[1]
-    cdef int ncols = field.shape[2]
     cdef int ns = up.shape[0]
     cdef int nr = up.shape[1]
     cdef int nc = up.shape[2]
-    cdef int i, j, k, ii, jj, kk
+    cdef int i, j, k, inside
     cdef floating dkk, dii, djj
-    cdef floating alpha, beta, gamma, calpha, cbeta, cgamma
-
+    cdef floating[:] tmp = np.zeros((3,), dtype = np.asarray(field).dtype)
     with nogil:
 
         for k in range(ns):
@@ -1061,88 +1065,11 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
                     dkk = 0.5 * k
                     dii = 0.5 * i
                     djj = 0.5 * j
-                    # no one is affected
-                    if((dkk < 0) or (dii < 0) or (djj < 0) or (dii > nrows - 1) or (djj > ncols - 1) or (dkk > nslices - 1)):
-                        continue
-                    kk = int(dkk)
-                    ii = int(dii)
-                    jj = int(djj)
-                    # no one is affected
-                    if((kk < 0) or (ii < 0) or (jj < 0) or (ii >= nrows) or (jj >= ncols) or (kk >= nslices)):
-                        continue
-                    cgamma = dkk - kk
-                    # by definition these factors are nonnegative
-                    calpha = dii - ii
-                    cbeta = djj - jj
-                    alpha = 1 - calpha
-                    beta = 1 - cbeta
-                    gamma = 1 - cgamma
-                    #---top-left
-                    up[k, i, j, 0] += alpha * beta * gamma * field[kk, ii, jj, 0]
-                    up[k, i, j, 1] += alpha * beta * gamma * field[kk, ii, jj, 1]
-                    up[k, i, j, 2] += alpha * beta * gamma * field[kk, ii, jj, 2]
-                    #---top-right
-                    jj += 1
-                    if(jj < ncols):
-                        up[k, i, j, 0] += alpha * cbeta * \
-                            gamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += alpha * cbeta * \
-                            gamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += alpha * cbeta * \
-                            gamma * field[kk, ii, jj, 2]
-                    #---bottom-right
-                    ii += 1
-                    if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                        up[k, i, j, 0] += calpha * cbeta * \
-                            gamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += calpha * cbeta * \
-                            gamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += calpha * cbeta * \
-                            gamma * field[kk, ii, jj, 2]
-                    #---bottom-left
-                    jj -= 1
-                    if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                        up[k, i, j, 0] += calpha * beta * \
-                            gamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += calpha * beta * \
-                            gamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += calpha * beta * \
-                            gamma * field[kk, ii, jj, 2]
-                    kk += 1
-                    if(kk < nslices):
-                        ii -= 1
-                        up[k, i, j, 0] += alpha * beta * \
-                            cgamma * field[kk, ii, jj, 0]
-                        up[k, i, j, 1] += alpha * beta * \
-                            cgamma * field[kk, ii, jj, 1]
-                        up[k, i, j, 2] += alpha * beta * \
-                            cgamma * field[kk, ii, jj, 2]
-                        jj += 1
-                        if(jj < ncols):
-                            up[k, i, j, 0] += alpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 0]
-                            up[k, i, j, 1] += alpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 1]
-                            up[k, i, j, 2] += alpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 2]
-                        #---bottom-right
-                        ii += 1
-                        if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                            up[k, i, j, 0] += calpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 0]
-                            up[k, i, j, 1] += calpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 1]
-                            up[k, i, j, 2] += calpha * cbeta * \
-                                cgamma * field[kk, ii, jj, 2]
-                        #---bottom-left
-                        jj -= 1
-                        if((ii >= 0)and(jj >= 0)and(ii < nrows)and(jj < ncols)):
-                            up[k, i, j, 0] += calpha * beta * \
-                                cgamma * field[kk, ii, jj, 0]
-                            up[k, i, j, 1] += calpha * beta * \
-                                cgamma * field[kk, ii, jj, 1]
-                            up[k, i, j, 2] += calpha * beta * \
-                                cgamma * field[kk, ii, jj, 2]
+                    inside = interpolate_vector_trilinear(field, dkk, dii, djj, tmp)
+                    if inside == 1:
+                        up[k, i, j, 0] += tmp[0] 
+                        up[k, i, j, 1] += tmp[1] 
+                        up[k, i, j, 2] += tmp[2] 
     return up
 
 
@@ -1405,9 +1332,10 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
     cdef int nsVol = volume.shape[0]
     cdef int nrVol = volume.shape[1]
     cdef int ncVol = volume.shape[2]
-    cdef int i, j, k, ii, jj, kk
+    cdef int i, j, k, ii, jj, kk, inside
     cdef double dkk, dii, djj, tmp0, tmp1
     cdef double alpha, beta, gamma, calpha, cbeta, cgamma
+    cdef floating[:] tmp = np.zeros((3,), dtype = np.asarray(volume).dtype)
     if d1 is not None:
         nslices = d1.shape[0]
         nrows = d1.shape[1]
@@ -1422,11 +1350,15 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                 for j in range(ncols):
                     if(affinePre != None):
                         dkk = _apply_affine_3d_x0(
-                            k, i, j, affinePre) + d1[k, i, j, 0]
+                            k, i, j, affinePre)
                         dii = _apply_affine_3d_x1(
-                            k, i, j, affinePre) + d1[k, i, j, 1]
+                            k, i, j, affinePre)
                         djj = _apply_affine_3d_x2(
-                            k, i, j, affinePre) + d1[k, i, j, 2]
+                            k, i, j, affinePre)
+                        interpolate_vector_trilinear(d1, dkk, dii, djj, tmp)
+                        dkk = tmp[0]
+                        dii = tmp[1]
+                        djj = tmp[2]
                     else:
                         dkk = k + d1[k, i, j, 0]
                         dii = i + d1[k, i, j, 1]
@@ -1437,59 +1369,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         djj = _apply_affine_3d_x2(dkk, dii, djj, affinePost)
                         dii = tmp1
                         dkk = tmp0
-                    # no one is affected
-                    if((dii < 0) or (djj < 0) or (dkk < 0) or (dii > nrVol - 1) or (djj > ncVol - 1) or (dkk > nsVol - 1)):
-                        continue
-                    # find the top left index and the interpolation coefficients
-                    kk = int(dkk)
-                    ii = int(dii)
-                    jj = int(djj)
-                    # no one is affected
-                    if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nrVol) or (jj >= ncVol) or (kk >= nsVol)):
-                        continue
-                    cgamma = dkk - kk
-                    # by definition these factors are nonnegative
-                    calpha = dii - ii
-                    cbeta = djj - jj
-                    alpha = 1 - calpha
-                    beta = 1 - cbeta
-                    gamma = 1 - cgamma
-                    #---top-left
-                    warped[k, i, j] = alpha * beta * gamma * volume[kk, ii, jj]
-                    #---top-right
-                    jj += 1
-                    if(jj < ncVol):
-                        warped[k, i, j] += alpha * cbeta * \
-                            gamma * volume[kk, ii, jj]
-                    #---bottom-right
-                    ii += 1
-                    if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                        warped[k, i, j] += calpha * \
-                            cbeta * gamma * volume[kk, ii, jj]
-                    #---bottom-left
-                    jj -= 1
-                    if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                        warped[k, i, j] += calpha * beta * \
-                            gamma * volume[kk, ii, jj]
-                    kk += 1
-                    if(kk < nsVol):
-                        ii -= 1
-                        warped[k, i, j] += alpha * beta * \
-                            cgamma * volume[kk, ii, jj]
-                        jj += 1
-                        if(jj < ncVol):
-                            warped[k, i, j] += alpha * cbeta * \
-                                cgamma * volume[kk, ii, jj]
-                        #---bottom-right
-                        ii += 1
-                        if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                            warped[k, i, j] += calpha * cbeta * \
-                                cgamma * volume[kk, ii, jj]
-                        #---bottom-left
-                        jj -= 1
-                        if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                            warped[k, i, j] += calpha * beta * \
-                                cgamma * volume[kk, ii, jj]
+                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj, &warped[k,i,j])
     return warped
 
 
@@ -1529,7 +1409,7 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
     cdef int nsVol = volume.shape[0]
     cdef int nrVol = volume.shape[1]
     cdef int ncVol = volume.shape[2]
-    cdef int i, j, k, ii, jj, kk
+    cdef int i, j, k, ii, jj, kk, inside
     cdef double dkk, dii, djj, tmp0, tmp1
     cdef double alpha, beta, gamma, calpha, cbeta, cgamma
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
@@ -1547,59 +1427,7 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
                         dkk = k
                         dii = i
                         djj = j
-                    # no one is affected
-                    if((dii < 0) or (djj < 0) or (dkk < 0) or (dii > nrVol - 1) or (djj > ncVol - 1) or (dkk > nsVol - 1)):
-                        continue
-                    # find the top left index and the interpolation coefficients
-                    kk = int(dkk)
-                    ii = int(dii)
-                    jj = int(djj)
-                    # no one is affected
-                    if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nrVol) or (jj >= ncVol) or (kk >= nsVol)):
-                        continue
-                    cgamma = dkk - kk
-                    # by definition these factors are nonnegative
-                    calpha = dii - ii
-                    cbeta = djj - jj
-                    alpha = 1 - calpha
-                    beta = 1 - cbeta
-                    gamma = 1 - cgamma
-                    #---top-left
-                    warped[k, i, j] = alpha * beta * gamma * volume[kk, ii, jj]
-                    #---top-right
-                    jj += 1
-                    if(jj < ncVol):
-                        warped[k, i, j] += alpha * cbeta * \
-                            gamma * volume[kk, ii, jj]
-                    #---bottom-right
-                    ii += 1
-                    if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                        warped[k, i, j] += calpha * \
-                            cbeta * gamma * volume[kk, ii, jj]
-                    #---bottom-left
-                    jj -= 1
-                    if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                        warped[k, i, j] += calpha * beta * \
-                            gamma * volume[kk, ii, jj]
-                    kk += 1
-                    if(kk < nsVol):
-                        ii -= 1
-                        warped[k, i, j] += alpha * beta * \
-                            cgamma * volume[kk, ii, jj]
-                        jj += 1
-                        if(jj < ncVol):
-                            warped[k, i, j] += alpha * cbeta * \
-                                cgamma * volume[kk, ii, jj]
-                        #---bottom-right
-                        ii += 1
-                        if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                            warped[k, i, j] += calpha * cbeta * \
-                                cgamma * volume[kk, ii, jj]
-                        #---bottom-left
-                        jj -= 1
-                        if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                            warped[k, i, j] += calpha * beta * \
-                                cgamma * volume[kk, ii, jj]
+                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj, &warped[k,i,j])
     return warped
 
 
@@ -1637,11 +1465,12 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
     cdef int nsVol = volume.shape[0]
     cdef int nrVol = volume.shape[1]
     cdef int ncVol = volume.shape[2]
-    cdef double dkk, dii, djj, tmp0, tmp1
+    cdef double dkk, dii, djj
     cdef double alpha, beta, gamma, calpha, cbeta, cgamma
     cdef int k, i, j, kk, ii, jj
     cdef number[:, :, :] warped = np.zeros((nslices, nrows, ncols), 
                                             dtype=np.asarray(volume).dtype)
+    cdef floating[:] tmp = np.zeros((3,), dtype=np.asarray(displacement).dtype)
     
     with nogil:
 
@@ -1650,49 +1479,26 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
                 for j in range(ncols):
                     if(affinePre != None):
                         dkk = _apply_affine_3d_x0(
-                            k, i, j, affinePre) + displacement[k, i, j, 0]
+                            k, i, j, affinePre)
                         dii = _apply_affine_3d_x1(
-                            k, i, j, affinePre) + displacement[k, i, j, 1]
+                            k, i, j, affinePre)
                         djj = _apply_affine_3d_x2(
-                            k, i, j, affinePre) + displacement[k, i, j, 2]
+                            k, i, j, affinePre)
+                        interpolate_vector_trilinear(displacement, dkk, dii, djj, tmp)
+                        dkk = tmp[0]
+                        dii = tmp[1]
+                        djj = tmp[2]
                     else:
                         dkk = k + displacement[k, i, j, 0]
                         dii = i + displacement[k, i, j, 1]
                         djj = j + displacement[k, i, j, 2]
                     if(affinePost != None):
-                        tmp0 = _apply_affine_3d_x0(dkk, dii, djj, affinePost)
-                        tmp1 = _apply_affine_3d_x1(dkk, dii, djj, affinePost)
+                        tmp[0] = _apply_affine_3d_x0(dkk, dii, djj, affinePost)
+                        tmp[1] = _apply_affine_3d_x1(dkk, dii, djj, affinePost)
                         djj = _apply_affine_3d_x2(dkk, dii, djj, affinePost)
-                        dii = tmp1
-                        dkk = tmp0
-                    # no one is affected
-                    if((dii < 0) or (djj < 0) or (dkk < 0) or (dii > nrVol - 1) or (djj > ncVol - 1) or (dkk > nsVol - 1)):
-                        continue
-                    # find the top left index and the interpolation coefficients
-                    kk = int(dkk)
-                    ii = int(dii)
-                    jj = int(djj)
-                    # no one is affected
-                    if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nrVol) or (jj >= ncVol) or (kk >= nsVol)):
-                        continue
-                    cgamma = dkk - kk
-                    # by definition these factors are nonnegative
-                    calpha = dii - ii
-                    cbeta = djj - jj
-                    alpha = 1 - calpha
-                    beta = 1 - cbeta
-                    gamma = 1 - cgamma
-                    if(gamma < cgamma):
-                        kk += 1
-                    if(alpha < calpha):
-                        ii += 1
-                    if(beta < cbeta):
-                        jj += 1
-                    # no one is affected
-                    if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nrVol) or (jj >= ncVol) or (kk >= nsVol)):
-                        continue
-                    else:
-                        warped[k, i, j] = volume[kk, ii, jj]
+                        dii = tmp[1]
+                        dkk = tmp[0]
+                    interpolate_scalar_nn_3d(volume, dkk, dii, djj, &warped[k,i,j])
     return warped
 
 
@@ -1751,34 +1557,7 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
                         dkk = k
                         dii = i
                         djj = j
-                    # no one is affected
-                    if((dii < 0) or (djj < 0) or (dkk < 0) or (dii > nrVol - 1) or (djj > ncVol - 1) or (dkk > nsVol - 1)):
-                        continue
-                    # find the top left index and the interpolation coefficients
-                    kk = int(dkk)
-                    ii = int(dii)
-                    jj = int(djj)
-                    # no one is affected
-                    if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nrVol) or (jj >= ncVol) or (kk >= nsVol)):
-                        continue
-                    cgamma = dkk - kk
-                    # by definition these factors are nonnegative
-                    calpha = dii - ii
-                    cbeta = djj - jj
-                    alpha = 1 - calpha
-                    beta = 1 - cbeta
-                    gamma = 1 - cgamma
-                    if(gamma < cgamma):
-                        kk += 1
-                    if(alpha < calpha):
-                        ii += 1
-                    if(beta < cbeta):
-                        jj += 1
-                    # no one is affected
-                    if((ii < 0) or (jj < 0) or (kk < 0) or (ii >= nrVol) or (jj >= ncVol) or (kk >= nsVol)):
-                        continue
-                    else:
-                        warped[k, i, j] = volume[kk, ii, jj]
+                    interpolate_scalar_nn_3d(volume, dkk, dii, djj, &warped[k,i,j])
     return warped
 
 
@@ -1816,6 +1595,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
     cdef int i, j, ii, jj
     cdef double dii, djj, tmp0
     cdef double alpha, beta, calpha, cbeta
+    cdef floating[:] tmp = np.zeros((2,), dtype=np.asarray(image).dtype)
     if d1 is not None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
@@ -1826,8 +1606,13 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
         for i in range(nrows):
             for j in range(ncols):
                 if(affinePre != None):
-                    dii = _apply_affine_2d_x0(i, j, affinePre) + d1[i, j, 0]
-                    djj = _apply_affine_2d_x1(i, j, affinePre) + d1[i, j, 1]
+                    dii = _apply_affine_2d_x0(
+                        i, j, affinePre)
+                    djj = _apply_affine_2d_x1(
+                        i, j, affinePre)
+                    interpolate_vector_bilinear(d1, dii, djj, tmp)
+                    dii = tmp[0]
+                    djj = tmp[1]
                 else:
                     dii = i + d1[i, j, 0]
                     djj = j + d1[i, j, 1]
@@ -1835,33 +1620,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
                     tmp0 = _apply_affine_2d_x0(dii, djj, affinePost)
                     djj = _apply_affine_2d_x1(dii, djj, affinePost)
                     dii = tmp0
-                # no one is affected
-                if((dii < 0) or (djj < 0) or (dii > nrVol - 1) or (djj > ncVol - 1)):
-                    continue
-                # find the top left index and the interpolation coefficients
-                ii = int(dii)
-                jj = int(djj)
-                # no one is affected
-                if((ii < 0) or (jj < 0) or (ii >= nrVol) or (jj >= ncVol)):
-                    continue
-                calpha = dii - ii  # by definition these factors are nonnegative
-                cbeta = djj - jj
-                alpha = 1 - calpha
-                beta = 1 - cbeta
-                #---top-left
-                warped[i, j] = alpha * beta * image[ii, jj]
-                #---top-right
-                jj += 1
-                if(jj < ncVol):
-                    warped[i, j] += alpha * cbeta * image[ii, jj]
-                #---bottom-right
-                ii += 1
-                if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                    warped[i, j] += calpha * cbeta * image[ii, jj]
-                #---bottom-left
-                jj -= 1
-                if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                    warped[i, j] += calpha * beta * image[ii, jj]
+                interpolate_scalar_bilinear(image, dii, djj, &warped[i, j])
     return warped
 
 
@@ -1914,33 +1673,7 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
                 else:
                     dii = i
                     djj = j
-                # no one is affected
-                if((dii < 0) or (djj < 0) or (dii > nrVol - 1) or (djj > ncVol - 1)):
-                    continue
-                # find the top left index and the interpolation coefficients
-                ii = int(dii)
-                jj = int(djj)
-                # no one is affected
-                if((ii < 0) or (jj < 0) or (ii >= nrVol) or (jj >= ncVol)):
-                    continue
-                calpha = dii - ii  # by definition these factors are nonnegative
-                cbeta = djj - jj
-                alpha = 1 - calpha
-                beta = 1 - cbeta
-                #---top-left
-                warped[i, j] = alpha * beta * image[ii, jj]
-                #---top-right
-                jj += 1
-                if(jj < ncVol):
-                    warped[i, j] += alpha * cbeta * image[ii, jj]
-                #---bottom-right
-                ii += 1
-                if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                    warped[i, j] += calpha * cbeta * image[ii, jj]
-                #---bottom-left
-                jj -= 1
-                if((ii >= 0) and (jj >= 0) and (ii < nrVol) and (jj < ncVol)):
-                    warped[i, j] += calpha * beta * image[ii, jj]
+                interpolate_scalar_bilinear(image, dii, djj, &warped[i, j])
     return warped
 
 
@@ -1976,52 +1709,35 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
     cdef int ncols = image.shape[1]
     cdef int nrVol = image.shape[0]
     cdef int ncVol = image.shape[1]
-    cdef double dii, djj, tmp0
+    cdef double dii, djj
     cdef double alpha, beta, calpha, cbeta
     cdef int i, j, ii, jj
     if displacement != None:
         nrows = displacement.shape[0]
         ncols = displacement.shape[1]
     cdef number[:, :] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
+    cdef floating[:] tmp = np.zeros((2,), dtype = np.asarray(displacement).dtype )
 
     with nogil:
 
         for i in range(nrows):
             for j in range(ncols):
                 if(affinePre != None):
-                    dii = _apply_affine_2d_x0(i, j, affinePre) + \
-                        displacement[i, j, 0]
-                    djj = _apply_affine_2d_x1(i, j, affinePre) + \
-                        displacement[i, j, 1]
+                    dii = _apply_affine_2d_x0(
+                        i, j, affinePre)
+                    djj = _apply_affine_2d_x1(
+                        i, j, affinePre)
+                    interpolate_vector_bilinear(displacement, dii, djj, tmp)
+                    dii = tmp[0]
+                    djj = tmp[1]
                 else:
                     dii = i + displacement[i, j, 0]
                     djj = j + displacement[i, j, 1]
                 if(affinePost != None):
-                    tmp0 = _apply_affine_2d_x0(dii, djj, affinePost)
+                    tmp[0] = _apply_affine_2d_x0(dii, djj, affinePost)
                     djj = _apply_affine_2d_x1(dii, djj, affinePost)
-                    dii = tmp0
-                # no one is affected
-                if((dii < 0) or (djj < 0) or (dii > nrVol - 1) or (djj > ncVol - 1)):
-                    continue
-                # find the top left index and the interpolation coefficients
-                ii = int(dii)
-                jj = int(djj)
-                # no one is affected
-                if((ii < 0) or (jj < 0) or (ii >= nrVol) or (jj >= ncVol)):
-                    continue
-                calpha = dii - ii  # by definition these factors are nonnegative
-                cbeta = djj - jj
-                alpha = 1 - calpha
-                beta = 1 - cbeta
-                if(alpha < calpha):
-                    ii += 1
-                if(beta < cbeta):
-                    jj += 1
-                # no one is affected
-                if((ii < 0) or (jj < 0) or (ii >= nrVol) or (jj >= ncVol)):
-                    continue
-                else:
-                    warped[i, j] = image[ii, jj]
+                    dii = tmp[0]
+                interpolate_scalar_nn_2d(image, dii, djj, &warped[i,j])
     return warped
 
 
@@ -2074,28 +1790,7 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
                 else:
                     dii = i
                     djj = j
-                # no one is affected
-                if((dii < 0) or (djj < 0) or (dii > nrVol - 1) or (djj > ncVol - 1)):
-                    continue
-                # find the top left index and the interpolation coefficients
-                ii = int(dii)
-                jj = int(djj)
-                # no one is affected
-                if((ii < 0) or (jj < 0) or (ii >= nrVol) or (jj >= ncVol)):
-                    continue
-                calpha = dii - ii  # by definition these factors are nonnegative
-                cbeta = djj - jj
-                alpha = 1 - calpha
-                beta = 1 - cbeta
-                if(alpha < calpha):
-                    ii += 1
-                if(beta < cbeta):
-                    jj += 1
-                # no one is affected
-                if((ii < 0) or (jj < 0) or (ii >= nrVol) or (jj >= ncVol)):
-                    continue
-                else:
-                    warped[i, j] = image[ii, jj]
+                interpolate_scalar_nn_2d(image, dii, djj, &warped[i,j])
     return warped
 
 def warp_2d_stream_line(floating[:, :] streamline, floating[:, :, :] d1,
