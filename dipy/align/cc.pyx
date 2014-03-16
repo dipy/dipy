@@ -55,15 +55,17 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
         factors[:,:,:,4] : sum of the pointwise products of static and moving
                            along the neighborhood
     """
-    cdef int side = 2 * radius + 1
-    cdef int ns = static.shape[0]
-    cdef int nr = static.shape[1]
-    cdef int nc = static.shape[2]
-    cdef int s, r, c, k, i, j, t, q, qq, firstc, lastc, firstr, lastr
-    cdef double Imean, Jmean
-    cdef floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5), dtype=np.asarray(static).dtype)
-    cdef double[:, :] lines = np.zeros((6, side), dtype=np.float64)
-    cdef double[:] sums = np.zeros((6,), dtype=np.float64)
+    cdef:
+        int side = 2 * radius + 1
+        int ns = static.shape[0]
+        int nr = static.shape[1]
+        int nc = static.shape[2]
+        int s, r, c, k, i, j, t, q, qq, firstc, lastc, firstr, lastr
+        double Imean, Jmean
+        floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5), 
+                                                dtype=np.asarray(static).dtype)
+        double[:, :] lines = np.zeros((6, side), dtype=np.float64)
+        double[:] sums = np.zeros((6,), dtype=np.float64)
 
     with nogil:
         for r in range(nr):
@@ -142,13 +144,15 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static, floating[:, :, :] mo
     This version of precompute_cc_factors_3d is for testing purposes, it directly
     computes the local cross-correlation without any optimization.
     """
-    cdef int ns = static.shape[0]
-    cdef int nr = static.shape[1]
-    cdef int nc = static.shape[2]
-    cdef int s, r, c, k, i, j, t, firstc, lastc, firstr, lastr, firsts, lasts
-    cdef double Imean, Jmean
-    cdef floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5), dtype=np.asarray(static).dtype)
-    cdef double[:] sums = np.zeros((6,), dtype=np.float64)
+    cdef:
+        int ns = static.shape[0]
+        int nr = static.shape[1]
+        int nc = static.shape[2]
+        int s, r, c, k, i, j, t, firstc, lastc, firstr, lastr, firsts, lasts
+        double Imean, Jmean
+        floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5), 
+                                                dtype=np.asarray(static).dtype)
+        double[:] sums = np.zeros((6,), dtype=np.float64)
 
     with nogil:
         for s in range(ns):
@@ -219,14 +223,15 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
     and static gradients may improve the registration quality. We are leaving 
     this parameters as a placeholder for future investigation
     """
-    cdef int ns = grad_static.shape[0]
-    cdef int nr = grad_static.shape[1]
-    cdef int nc = grad_static.shape[2]
-    cdef double energy = 0
-    cdef int s,r,c
-    cdef double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-    cdef floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), 
-                                             dtype=np.asarray(grad_static).dtype)
+    cdef:
+        int ns = grad_static.shape[0]
+        int nr = grad_static.shape[1]
+        int nc = grad_static.shape[2]
+        double energy = 0
+        int s,r,c
+        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+        floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), 
+                                            dtype=np.asarray(grad_static).dtype)
     with nogil:
         for s in range(ns):
             for r in range(nr):
@@ -285,13 +290,14 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
     and static gradients may improve the registration quality. We are leaving 
     this parameters as a placeholder for future investigation
     """
-    cdef int ns = grad_static.shape[0]
-    cdef int nr = grad_static.shape[1]
-    cdef int nc = grad_static.shape[2]
-    cdef int s,r,c
-    cdef double energy = 0
-    cdef double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-    cdef floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), 
+    cdef:
+        int ns = grad_static.shape[0]
+        int nr = grad_static.shape[1]
+        int nc = grad_static.shape[2]
+        int s,r,c
+        double energy = 0
+        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+        floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), 
                                              dtype=np.asarray(grad_static).dtype)
 
     with nogil:
@@ -351,14 +357,15 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
         factors[:,:,4] : sum of the pointwise products of static and moving
                            along the neighborhood
     """
-    cdef int side = 2 * radius + 1
-    cdef int nr = static.shape[0]
-    cdef int nc = static.shape[1]
-    cdef int r, c, i, j, t, q, qq, firstc, lastc
-    cdef double Imean, Jmean
-    cdef floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=np.asarray(static).dtype)
-    cdef double[:, :] lines = np.zeros((6, side), dtype=np.float64)
-    cdef double[:] sums = np.zeros((6,), dtype=np.float64)
+    cdef:
+        int side = 2 * radius + 1
+        int nr = static.shape[0]
+        int nc = static.shape[1]
+        int r, c, i, j, t, q, qq, firstc, lastc
+        double Imean, Jmean
+        floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=np.asarray(static).dtype)
+        double[:, :] lines = np.zeros((6, side), dtype=np.float64)
+        double[:] sums = np.zeros((6,), dtype=np.float64)
 
     with nogil:
 
@@ -432,12 +439,13 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
     computes the local cross-correlation without any optimization.
     
     """
-    cdef int nr = static.shape[0]
-    cdef int nc = static.shape[1]
-    cdef int r, c, i, j, t, firstr, lastr, firstc, lastc
-    cdef double Imean, Jmean
-    cdef floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=np.asarray(static).dtype)
-    cdef double[:] sums = np.zeros((6,), dtype=np.float64)
+    cdef:
+        int nr = static.shape[0]
+        int nc = static.shape[1]
+        int r, c, i, j, t, firstr, lastr, firstc, lastc
+        double Imean, Jmean
+        floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=np.asarray(static).dtype)
+        double[:] sums = np.zeros((6,), dtype=np.float64)
 
     with nogil:
 
@@ -506,13 +514,14 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
     and static gradients may improve the registration quality. We are leaving 
     this parameters as a placeholder for future investigation
     """
-    cdef int nr = grad_static.shape[0]
-    cdef int nc = grad_static.shape[1]
-    cdef double energy = 0
-    cdef int r,c
-    cdef double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-    cdef floating[:, :, :] out = np.zeros((nr, nc, 2), 
-                                    dtype=np.asarray(grad_static).dtype)
+    cdef:
+        int nr = grad_static.shape[0]
+        int nc = grad_static.shape[1]
+        double energy = 0
+        int r,c
+        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+        floating[:, :, :] out = np.zeros((nr, nc, 2), 
+                                         dtype=np.asarray(grad_static).dtype)
     with nogil:
             
         for r in range(nr):
@@ -570,12 +579,13 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
     and static gradients may improve the registration quality. We are leaving 
     this parameters as a placeholder for future investigation
     """
-    cdef int nr = grad_static.shape[0]
-    cdef int nc = grad_static.shape[1]
-    cdef int r,c
-    cdef double energy = 0
-    cdef double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-    cdef floating[:, :, :] out = np.zeros((nr, nc, 2), 
+    cdef:
+        int nr = grad_static.shape[0]
+        int nc = grad_static.shape[1]
+        int r,c
+        double energy = 0
+        double Ii, Ji, sfm, sff, smm, localCorrelation, temp
+        floating[:, :, :] out = np.zeros((nr, nc, 2), 
                                              dtype=np.asarray(grad_static).dtype)
 
     with nogil:

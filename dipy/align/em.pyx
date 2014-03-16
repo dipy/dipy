@@ -29,19 +29,20 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
     num_levels : int
         the number of levels
     """
-    cdef int nrows = v.shape[0]
-    cdef int ncols = v.shape[1]
-    cdef int npix = nrows * ncols
-    cdef int i, j, l
-    cdef double epsilon, delta
-    cdef int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
-    cdef int[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
-    cdef floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
+    cdef:
+        int nrows = v.shape[0]
+        int ncols = v.shape[1]
+        int npix = nrows * ncols
+        int i, j, l
+        double epsilon, delta
+        double min_val = -1
+        double max_val = -1
+        int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
+        int[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
+        floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
     num_levels -= 1  # zero is one of the levels
     if(num_levels < 1):
         return None, None, None
-    cdef double min_val = -1
-    cdef double max_val = -1
 
     with nogil:
 
@@ -100,20 +101,21 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
     num_levels : int
         the number of levels
     """
-    cdef int nslices = v.shape[0]
-    cdef int nrows = v.shape[1]
-    cdef int ncols = v.shape[2]
-    cdef int nvox = nrows * ncols * nslices
-    cdef int i, j, k, l
-    cdef double epsilon, delta
-    cdef int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
-    cdef int[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols), dtype=np.int32)
-    cdef floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
+    cdef:
+        int nslices = v.shape[0]
+        int nrows = v.shape[1]
+        int ncols = v.shape[2]
+        int nvox = nrows * ncols * nslices
+        int i, j, k, l
+        double epsilon, delta
+        double min_val = -1
+        double max_val = -1
+        int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
+        int[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols), dtype=np.int32)
+        floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
     num_levels -= 1  # zero is one of the levels
     if(num_levels < 1):
         return None, None, None
-    cdef double min_val = -1
-    cdef double max_val = -1
 
     with nogil:
 
@@ -182,13 +184,14 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
     labels : array, shape (R, C) 
         the label assigned to each pixel
     """
-    cdef int nrows = v.shape[0]
-    cdef int ncols = v.shape[1]
-    cdef int i, j
-    cdef double INF64 = np.inf
-    cdef int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
-    cdef floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
-    cdef floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
+    cdef:
+        int nrows = v.shape[0]
+        int ncols = v.shape[1]
+        int i, j
+        double INF64 = np.inf
+        int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
+        floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
+        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
 
     with nogil:
         for i in range(nrows):
@@ -229,14 +232,15 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
     labels : array, shape (R, C) 
         the label assigned to each pixel
     """
-    cdef int nslices = v.shape[0]
-    cdef int nrows = v.shape[1]
-    cdef int ncols = v.shape[2]
-    cdef int i, j, k
-    cdef double INF64 = np.inf
-    cdef int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
-    cdef floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
-    cdef floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
+    cdef:
+        int nslices = v.shape[0]
+        int nrows = v.shape[1]
+        int ncols = v.shape[2]
+        int i, j, k
+        double INF64 = np.inf
+        int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
+        floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
+        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
 
     with nogil:
         for k in range(nslices):
@@ -286,11 +290,11 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
     out : array, shape(R, C, 2)
         the resulting demons step will be writen to this array
     """
-
-    cdef int nr = delta_field.shape[0]
-    cdef int nc = delta_field.shape[1]
-    cdef int i, j
-    cdef double neg_delta, sigma, nrm2, energy
+    cdef:
+        int nr = delta_field.shape[0]
+        int nc = delta_field.shape[1]
+        int i, j
+        double neg_delta, sigma, nrm2, energy
 
     if out is None:
         out = np.zeros((nr, nc, 2), dtype=np.asarray(delta_field).dtype)
@@ -349,12 +353,12 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
     out : array, shape(S, R, C, 2)
         the resulting demons step will be writen to this array
     """
-
-    cdef int ns = delta_field.shape[0]
-    cdef int nr = delta_field.shape[1]
-    cdef int nc = delta_field.shape[2]
-    cdef int i, j, k
-    cdef double neg_delta, sigma, nrm2, energy
+    cdef:
+        int ns = delta_field.shape[0]
+        int nr = delta_field.shape[1]
+        int nc = delta_field.shape[2]
+        int i, j, k
+        double neg_delta, sigma, nrm2, energy
 
     if out is None:
         out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(delta_field).dtype)

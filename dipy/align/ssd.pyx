@@ -53,15 +53,16 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
     out : array, shape (3,)
         the array the output will be stored in
     """
-    cdef double a = A[0]
-    cdef double b = A[1]
-    cdef double c = A[2]
-    cdef double d = (a * A[3] - b * b) / a
-    cdef double e = (a * A[4] - b * c) / a
-    cdef double f = (a * A[5] - c * c) / a - (e * e * a) / (a * A[3] - b * b)
-    cdef double y0 = y[0]
-    cdef double y1 = (y[1] * a - y0 * b) / a
-    cdef double y2 = (y[2] * a - A[2] * y0) / a - (e * (y[1] * a - b * y0)) / (a * A[3] - b * b)
+    cdef:
+        double a = A[0]
+        double b = A[1]
+        double c = A[2]
+        double d = (a * A[3] - b * b) / a
+        double e = (a * A[4] - b * c) / a
+        double f = (a * A[5] - c * c) / a - (e * e * a) / (a * A[3] - b * b)
+        double y0 = y[0]
+        double y1 = (y[1] * a - y0 * b) / a
+        double y2 = (y[2] * a - A[2] * y0) / a - (e * (y[1] * a - b * y0)) / (a * A[3] - b * b)
     out[2] = y2 / f
     out[1] = (y1 - e * out[2]) / d
     out[0] = (y0 - b * out[1] - c * out[2]) / a
@@ -108,17 +109,18 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
         the norm of the maximum change in the displacement field after the 
         iteration
     """
-    cdef int NUM_NEIGHBORS = 4
-    cdef int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
-    cdef int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
-    cdef int nrows = delta_field.shape[0]
-    cdef int ncols = delta_field.shape[1]
-    cdef int r, c, dr, dc, nn, k
-    cdef floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] d = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] A = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-    cdef floating xx, yy, opt, nrm2, delta, sigma, max_displacement
+    cdef:
+        int NUM_NEIGHBORS = 4
+        int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
+        int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
+        int nrows = delta_field.shape[0]
+        int ncols = delta_field.shape[1]
+        int r, c, dr, dc, nn, k
+        floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
+        floating[:] d = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
+        floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
+        floating[:] A = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+        floating xx, yy, opt, nrm2, delta, sigma, max_displacement
     max_displacement = 0
 
     with nogil:
@@ -221,9 +223,10 @@ cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
     of the EM formulation. We are leaving the extra parameters as placeholders
     for future generalization to the EM metric energy computation
     """
-    cdef int nrows = delta_field.shape[0]
-    cdef int ncols = delta_field.shape[1]
-    cdef floating energy = 0
+    cdef:
+        int nrows = delta_field.shape[0]
+        int ncols = delta_field.shape[1]
+        floating energy = 0
 
     with nogil:
         for r in range(nrows):
@@ -273,20 +276,21 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         the norm of the maximum change in the displacement field after the 
         iteration
     """
-    cdef int NUM_NEIGHBORS = 6
-    cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
-    cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
-    cdef int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
-    cdef int nslices = delta_field.shape[0]
-    cdef int nrows = delta_field.shape[1]
-    cdef int ncols = delta_field.shape[2]
-    cdef int nn        
-    cdef floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] d = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] A = np.ndarray(shape=(6,), dtype=np.asarray(delta_field).dtype)
-    cdef floating xx, yy, zz, opt, nrm2, delta, sigma, max_displacement
-    cdef int dr, ds, dc, s, r, c
+    cdef:
+        int NUM_NEIGHBORS = 6
+        int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
+        int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
+        int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
+        int nslices = delta_field.shape[0]
+        int nrows = delta_field.shape[1]
+        int ncols = delta_field.shape[2]
+        int nn        
+        floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+        floating[:] d = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+        floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+        floating[:] A = np.ndarray(shape=(6,), dtype=np.asarray(delta_field).dtype)
+        floating xx, yy, zz, opt, nrm2, delta, sigma, max_displacement
+        int dr, ds, dc, s, r, c
     max_displacement = 0
 
     with nogil:
@@ -417,10 +421,11 @@ cpdef double compute_energy_SSD3D(floating[:, :, :] delta_field,
     of the EM formulation. We are leaving the extra parameters as placeholders
     for future generalization to the EM metric energy computation
     """
-    cdef int nslices = delta_field.shape[0]
-    cdef int nrows = delta_field.shape[1]
-    cdef int ncols = delta_field.shape[2]
-    cdef floating energy = 0
+    cdef:
+        int nslices = delta_field.shape[0]
+        int nrows = delta_field.shape[1]
+        int ncols = delta_field.shape[2]
+        floating energy = 0
     with nogil:
         for s in range(nslices):
             for r in range(nrows):
@@ -474,17 +479,18 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
         the residual displacement field. If residual was None a input, then
         a new field is returned, otherwise the same array is returned
     """
-    cdef int NUM_NEIGHBORS = 6
-    cdef int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
-    cdef int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
-    cdef int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
-    cdef floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-    cdef int nslices = delta_field.shape[0]
-    cdef int nrows = delta_field.shape[1]
-    cdef int ncols = delta_field.shape[2]
-    cdef floating delta, sigma, dotP
-    cdef int s, r, c, ds, dr, dc
+    cdef:
+        int NUM_NEIGHBORS = 6
+        int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
+        int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
+        int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
+        floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+        floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+        int nslices = delta_field.shape[0]
+        int nrows = delta_field.shape[1]
+        int ncols = delta_field.shape[2]
+        floating delta, sigma, dotP
+        int s, r, c, ds, dr, dc
     if residual == None:
         residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=np.asarray(delta_field).dtype)
     for s in range(nslices):
@@ -583,15 +589,16 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
         the residual displacement field. If residual was None a input, then
         a new field is returned, otherwise the same array is returned
     """
-    cdef int NUM_NEIGHBORS = 4
-    cdef int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
-    cdef int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
-    cdef floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-    cdef floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-    cdef int nrows = delta_field.shape[0]
-    cdef int ncols = delta_field.shape[1]
-    cdef floating delta, sigma, dotP
-    cdef int r, c, dr, dc
+    cdef:
+        int NUM_NEIGHBORS = 4
+        int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
+        int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
+        floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
+        floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
+        int nrows = delta_field.shape[0]
+        int ncols = delta_field.shape[1]
+        floating delta, sigma, dotP
+        int r, c, dr, dc
     if residual == None:
         residual = np.empty(shape=(nrows, ncols, 2), dtype=np.asarray(delta_field).dtype)
     for r in range(nrows):
@@ -656,12 +663,13 @@ def compute_demons_step2D(floating[:, :] delta_field,
     demons_step:
         the demons step to be applied for updating the current displacement field
     """
-    cdef int nrows = delta_field.shape[0]
-    cdef int ncols = delta_field.shape[1]
-    cdef int r, c
-    cdef floating nrm2, delta, den, factor, max_displacement
-    cdef floating[:, :, :] demons_step = np.zeros(shape=(nrows, ncols, 3), 
-        dtype=np.asarray(delta_field).dtype)
+    cdef:
+        int nrows = delta_field.shape[0]
+        int ncols = delta_field.shape[1]
+        int r, c
+        floating nrm2, delta, den, factor, max_displacement
+        floating[:, :, :] demons_step = np.zeros(shape=(nrows, ncols, 3), 
+            dtype=np.asarray(delta_field).dtype)
     max_displacement = 0
     for r in range(nrows):
         for c in range(ncols):
@@ -710,13 +718,14 @@ def compute_demons_step3D(floating[:, :, :] delta_field,
     demons_step:
         the demons step to be applied for updating the current displacement field
     """
-    cdef int nslices = delta_field.shape[0]
-    cdef int nrows = delta_field.shape[1]
-    cdef int ncols = delta_field.shape[2]
-    cdef int s, r, c
-    cdef floating nrm2, delta, den, factor, max_displacement
-    cdef floating[:, :, :, :] demons_step = np.zeros(shape=(nslices, nrows, ncols, 3), 
-        dtype=np.asarray(delta_field).dtype)
+    cdef:
+        int nslices = delta_field.shape[0]
+        int nrows = delta_field.shape[1]
+        int ncols = delta_field.shape[2]
+        int s, r, c
+        floating nrm2, delta, den, factor, max_displacement
+        floating[:, :, :, :] demons_step = np.zeros(shape=(nslices, nrows, ncols, 3), 
+            dtype=np.asarray(delta_field).dtype)
     max_displacement = 0
     for s in range(nslices):
         for r in range(nrows):

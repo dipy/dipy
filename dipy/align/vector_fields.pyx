@@ -1051,12 +1051,13 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
         the starting field wich the result will be added to
 
     """
-    cdef int ns = up.shape[0]
-    cdef int nr = up.shape[1]
-    cdef int nc = up.shape[2]
-    cdef int i, j, k, inside
-    cdef floating dkk, dii, djj
-    cdef floating[:] tmp = np.zeros((3,), dtype = np.asarray(field).dtype)
+    cdef:
+        int ns = up.shape[0]
+        int nr = up.shape[1]
+        int nc = up.shape[2]
+        int i, j, k, inside
+        floating dkk, dii, djj
+        floating[:] tmp = np.zeros((3,), dtype = np.asarray(field).dtype)
     with nogil:
 
         for k in range(ns):
@@ -1090,15 +1091,16 @@ def downsample_scalar_field3D(floating[:, :, :] field):
         the downsampled displacement field, where S' = ceil(S/2), 
         R'= ceil(R/2), C'=ceil(C/2)
     """
-    cdef int ns = field.shape[0]
-    cdef int nr = field.shape[1]
-    cdef int nc = field.shape[2]
-    cdef int nns = (ns + 1) // 2
-    cdef int nnr = (nr + 1) // 2
-    cdef int nnc = (nc + 1) // 2
-    cdef int i, j, k, ii, jj, kk
-    cdef floating[:, :, :] down = np.zeros((nns, nnr, nnc), dtype=np.asarray(field).dtype)
-    cdef int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
+    cdef:
+        int ns = field.shape[0]
+        int nr = field.shape[1]
+        int nc = field.shape[2]
+        int nns = (ns + 1) // 2
+        int nnr = (nr + 1) // 2
+        int nnc = (nc + 1) // 2
+        int i, j, k, ii, jj, kk
+        floating[:, :, :] down = np.zeros((nns, nnr, nnc), dtype=np.asarray(field).dtype)
+        int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
 
     with nogil:
         for k in range(ns):
@@ -1134,15 +1136,16 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
         the downsampled displacement field, where S' = ceil(S/2), 
         R'= ceil(R/2), C'=ceil(C/2)
     """
-    cdef int ns = field.shape[0]
-    cdef int nr = field.shape[1]
-    cdef int nc = field.shape[2]
-    cdef int nns = (ns + 1) // 2
-    cdef int nnr = (nr + 1) // 2
-    cdef int nnc = (nc + 1) // 2
-    cdef int i, j, k, ii, jj, kk
-    cdef floating[:, :, :, :] down = np.zeros((nns, nnr, nnc, 3), dtype=np.asarray(field).dtype)
-    cdef int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
+    cdef:
+        int ns = field.shape[0]
+        int nr = field.shape[1]
+        int nc = field.shape[2]
+        int nns = (ns + 1) // 2
+        int nnr = (nr + 1) // 2
+        int nnc = (nc + 1) // 2
+        int i, j, k, ii, jj, kk
+        floating[:, :, :, :] down = np.zeros((nns, nnr, nnc, 3), dtype=np.asarray(field).dtype)
+        int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
 
     with nogil:
 
@@ -1182,13 +1185,14 @@ def downsample_scalar_field2D(floating[:, :] field):
     down : array, shape (R', C')
         the downsampled displacement field, where R'= ceil(R/2), C'=ceil(C/2) 
     """
-    cdef int nr = field.shape[0]
-    cdef int nc = field.shape[1]
-    cdef int nnr = (nr + 1) // 2
-    cdef int nnc = (nc + 1) // 2
-    cdef int i, j, ii, jj
-    cdef floating[:, :] down = np.zeros(shape=(nnr, nnc), dtype=np.asarray(field).dtype)
-    cdef int[:, :] cnt = np.zeros(shape=(nnr, nnc), dtype=np.int32)
+    cdef:
+        int nr = field.shape[0]
+        int nc = field.shape[1]
+        int nnr = (nr + 1) // 2
+        int nnc = (nc + 1) // 2
+        int i, j, ii, jj
+        floating[:, :] down = np.zeros(shape=(nnr, nnc), dtype=np.asarray(field).dtype)
+        int[:, :] cnt = np.zeros(shape=(nnr, nnc), dtype=np.int32)
     with nogil:
 
         for i in range(nr):
@@ -1220,13 +1224,14 @@ def downsample_displacement_field2D(floating[:, :, :] field):
     down : array, shape (R', C')
         the downsampled displacement field, where R'= ceil(R/2), C'=ceil(C/2), 
     """
-    cdef int nr = field.shape[0]
-    cdef int nc = field.shape[1]
-    cdef int nnr = (nr + 1) // 2
-    cdef int nnc = (nc + 1) // 2
-    cdef int i, j, ii, jj
-    cdef floating[:, :, :] down = np.zeros((nnr, nnc, 2), dtype=np.asarray(field).dtype)
-    cdef int[:, :] cnt = np.zeros((nnr, nnc), dtype=np.int32)
+    cdef:
+        int nr = field.shape[0]
+        int nc = field.shape[1]
+        int nnr = (nr + 1) // 2
+        int nnc = (nc + 1) // 2
+        int i, j, ii, jj
+        floating[:, :, :] down = np.zeros((nnr, nnc, 2), dtype=np.asarray(field).dtype)
+        int[:, :] cnt = np.zeros((nnr, nnc), dtype=np.int32)
 
     with nogil:
 
@@ -1268,13 +1273,14 @@ def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
     maxVal : array, shape (3,)
         the maximum value reached at each coordinate
     """
-    cdef int nslices = d.shape[0]
-    cdef int nrows = d.shape[1]
-    cdef int ncols = d.shape[2]
-    cdef int i, j, k
-    cdef floating dkk, dii, djj
-    cdef floating[:] minVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
-    cdef floating[:] maxVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
+    cdef:
+        int nslices = d.shape[0]
+        int nrows = d.shape[1]
+        int ncols = d.shape[2]
+        int i, j, k
+        floating dkk, dii, djj
+        floating[:] minVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
+        floating[:] maxVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
     minVal[...] = d[0, 0, 0, :]
     maxVal[...] = minVal[...]
 
@@ -1326,16 +1332,17 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
     warped : array, shape (S', R', C')
         the transformed volume
     """
-    cdef int nslices = volume.shape[0]
-    cdef int nrows = volume.shape[1]
-    cdef int ncols = volume.shape[2]
-    cdef int nsVol = volume.shape[0]
-    cdef int nrVol = volume.shape[1]
-    cdef int ncVol = volume.shape[2]
-    cdef int i, j, k, ii, jj, kk, inside
-    cdef double dkk, dii, djj, tmp0, tmp1
-    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
-    cdef floating[:] tmp = np.zeros((3,), dtype = np.asarray(volume).dtype)
+    cdef:
+        int nslices = volume.shape[0]
+        int nrows = volume.shape[1]
+        int ncols = volume.shape[2]
+        int nsVol = volume.shape[0]
+        int nrVol = volume.shape[1]
+        int ncVol = volume.shape[2]
+        int i, j, k, ii, jj, kk, inside
+        double dkk, dii, djj, tmp0, tmp1
+        double alpha, beta, gamma, calpha, cbeta, cgamma
+        cdef floating[:] tmp = np.zeros((3,), dtype = np.asarray(volume).dtype)
     if d1 is not None:
         nslices = d1.shape[0]
         nrows = d1.shape[1]
@@ -1403,17 +1410,18 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
     necessarily equal to the input shape, unless we are interested on 
     endomorphisms only and not general diffeomorphisms.
     """
-    cdef int nslices = refShape[0]
-    cdef int nrows = refShape[1]
-    cdef int ncols = refShape[2]
-    cdef int nsVol = volume.shape[0]
-    cdef int nrVol = volume.shape[1]
-    cdef int ncVol = volume.shape[2]
-    cdef int i, j, k, ii, jj, kk, inside
-    cdef double dkk, dii, djj, tmp0, tmp1
-    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
-    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
-                                             dtype=np.asarray(volume).dtype)
+    cdef:
+        int nslices = refShape[0]
+        int nrows = refShape[1]
+        int ncols = refShape[2]
+        int nsVol = volume.shape[0]
+        int nrVol = volume.shape[1]
+        int ncVol = volume.shape[2]
+        int i, j, k, ii, jj, kk, inside
+        double dkk, dii, djj, tmp0, tmp1
+        double alpha, beta, gamma, calpha, cbeta, cgamma
+        floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
+                                                 dtype=np.asarray(volume).dtype)
     with nogil:
 
         for k in range(nslices):
@@ -1459,18 +1467,19 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] displacement,
     warped : array, shape (S', R', C')
         the transformed volume
     """
-    cdef int nslices = displacement.shape[0]
-    cdef int nrows = displacement.shape[1]
-    cdef int ncols = displacement.shape[2]
-    cdef int nsVol = volume.shape[0]
-    cdef int nrVol = volume.shape[1]
-    cdef int ncVol = volume.shape[2]
-    cdef double dkk, dii, djj
-    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
-    cdef int k, i, j, kk, ii, jj
-    cdef number[:, :, :] warped = np.zeros((nslices, nrows, ncols), 
-                                            dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros((3,), dtype=np.asarray(displacement).dtype)
+    cdef:
+        int nslices = displacement.shape[0]
+        int nrows = displacement.shape[1]
+        int ncols = displacement.shape[2]
+        int nsVol = volume.shape[0]
+        int nrVol = volume.shape[1]
+        int ncVol = volume.shape[2]
+        double dkk, dii, djj
+        double alpha, beta, gamma, calpha, cbeta, cgamma
+        int k, i, j, kk, ii, jj
+        number[:, :, :] warped = np.zeros((nslices, nrows, ncols), 
+                                          dtype=np.asarray(volume).dtype)
+        floating[:] tmp = np.zeros((3,), dtype=np.asarray(displacement).dtype)
     
     with nogil:
 
@@ -1532,17 +1541,18 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
     necessarily equal to the input shape, unless we are interested on 
     endomorphisms only and not general diffeomorphisms.
     """
-    cdef int nslices = refShape[0]
-    cdef int nrows = refShape[1]
-    cdef int ncols = refShape[2]
-    cdef int nsVol = volume.shape[0]
-    cdef int nrVol = volume.shape[1]
-    cdef int ncVol = volume.shape[2]
-    cdef double dkk, dii, djj, tmp0, tmp1
-    cdef double alpha, beta, gamma, calpha, cbeta, cgamma
-    cdef int k, i, j, kk, ii, jj
-    cdef number[:, :, :] warped = np.zeros((nslices, nrows, ncols), 
-                                            dtype=np.asarray(volume).dtype)
+    cdef:
+        int nslices = refShape[0]
+        int nrows = refShape[1]
+        int ncols = refShape[2]
+        int nsVol = volume.shape[0]
+        int nrVol = volume.shape[1]
+        int ncVol = volume.shape[2]
+        double dkk, dii, djj, tmp0, tmp1
+        double alpha, beta, gamma, calpha, cbeta, cgamma
+        int k, i, j, kk, ii, jj
+        number[:, :, :] warped = np.zeros((nslices, nrows, ncols), 
+                                          dtype=np.asarray(volume).dtype)
 
     with nogil:
 
@@ -1588,18 +1598,20 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
     warped : array, shape (R', C')
         the transformed image
     """
-    cdef int nrows = image.shape[0]
-    cdef int ncols = image.shape[1]
-    cdef int nrVol = image.shape[0]
-    cdef int ncVol = image.shape[1]
-    cdef int i, j, ii, jj
-    cdef double dii, djj, tmp0
-    cdef double alpha, beta, calpha, cbeta
-    cdef floating[:] tmp = np.zeros((2,), dtype=np.asarray(image).dtype)
+    cdef:
+        int nrows = image.shape[0]
+        int ncols = image.shape[1]
+        int nrVol = image.shape[0]
+        int ncVol = image.shape[1]
+        int i, j, ii, jj
+        double dii, djj, tmp0
+        double alpha, beta, calpha, cbeta
+        floating[:] tmp = np.zeros((2,), dtype=np.asarray(image).dtype)
     if d1 is not None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
-    cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), dtype=np.asarray(image).dtype)
+    cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), 
+                                         dtype=np.asarray(image).dtype)
 
     with nogil:
 
@@ -1654,14 +1666,16 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
     necessarily equal to the input shape, unless we are interested on 
     endomorphisms only and not general diffeomorphisms.
     """
-    cdef int nrows = refShape[0]
-    cdef int ncols = refShape[1]
-    cdef int nrVol = image.shape[0]
-    cdef int ncVol = image.shape[1]
-    cdef int i, j, ii, jj
-    cdef double dii, djj, tmp0
-    cdef double alpha, beta, calpha, cbeta
-    cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), dtype=np.asarray(image).dtype)
+    cdef:
+        int nrows = refShape[0]
+        int ncols = refShape[1]
+        int nrVol = image.shape[0]
+        int ncVol = image.shape[1]
+        int i, j, ii, jj
+        double dii, djj, tmp0
+        double alpha, beta, calpha, cbeta
+        floating[:, :] warped = np.zeros(shape=(nrows, ncols), 
+                                         dtype=np.asarray(image).dtype)
 
     with nogil:
 
@@ -1705,18 +1719,20 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
     warped : array, shape (R', C')
         the transformed image
     """
-    cdef int nrows = image.shape[0]
-    cdef int ncols = image.shape[1]
-    cdef int nrVol = image.shape[0]
-    cdef int ncVol = image.shape[1]
-    cdef double dii, djj
-    cdef double alpha, beta, calpha, cbeta
-    cdef int i, j, ii, jj
+    cdef:
+        int nrows = image.shape[0]
+        int ncols = image.shape[1]
+        int nrVol = image.shape[0]
+        int ncVol = image.shape[1]
+        double dii, djj
+        double alpha, beta, calpha, cbeta
+        int i, j, ii, jj
     if displacement != None:
         nrows = displacement.shape[0]
         ncols = displacement.shape[1]
-    cdef number[:, :] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
-    cdef floating[:] tmp = np.zeros((2,), dtype = np.asarray(displacement).dtype )
+    cdef:
+        number[:, :] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
+        floating[:] tmp = np.zeros((2,), dtype = np.asarray(displacement).dtype )
 
     with nogil:
 
@@ -1771,15 +1787,16 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
     necessarily equal to the input shape, unless we are interested on 
     endomorphisms only and not general diffeomorphisms.
     """
-    cdef int nrows = refShape[0]
-    cdef int ncols = refShape[1]
-    cdef int nrVol = image.shape[0]
-    cdef int ncVol = image.shape[1]
-    cdef double dii, djj, tmp0
-    cdef double alpha, beta, calpha, cbeta
-    cdef int i, j, ii, jj
-    cdef number[:, :] warped = np.zeros((nrows, ncols), 
-                                        dtype=np.asarray(image).dtype)
+    cdef:
+        int nrows = refShape[0]
+        int ncols = refShape[1]
+        int nrVol = image.shape[0]
+        int ncVol = image.shape[1]
+        double dii, djj, tmp0
+        double alpha, beta, calpha, cbeta
+        int i, j, ii, jj
+        number[:, :] warped = np.zeros((nrows, ncols), 
+                                       dtype=np.asarray(image).dtype)
     with nogil:
 
         for i in range(nrows):
@@ -1821,11 +1838,12 @@ def warp_2d_stream_line(floating[:, :] streamline, floating[:, :, :] d1,
     warped : array, shape (n, 2)
         the transformed streamline
     """
-    cdef int nr = d1.shape[0]
-    cdef int nc = d1.shape[1]
-    cdef int n = streamline.shape[0] 
-    cdef double i0, j0, dii, djj
-    cdef int ii, jj
+    cdef:
+        int nr = d1.shape[0]
+        int nc = d1.shape[1]
+        int n = streamline.shape[0] 
+        double i0, j0, dii, djj
+        int ii, jj
     for i in range(n):
         if affinePre is not None:
             i0 = _apply_affine_2d_x0(streamline[i, 0], streamline[i, 1], affinePre)
