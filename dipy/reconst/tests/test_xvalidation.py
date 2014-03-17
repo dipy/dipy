@@ -15,6 +15,8 @@ import dipy.core.gradients as gt
 import dipy.sims.voxel as sims
 import dipy.reconst.csdeconv as csd
 import dipy.reconst.base as base
+import dipy.reconst.shm as shm
+
 
 # We'll set these globally:
 fdata, fbval, fbvec  = dpd.get_data('small_64D')
@@ -63,7 +65,7 @@ def test_dti_xval():
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)
 
 
-def test_csd_xval():
+def test_shm_xval():
     # First, let's see that it works with some data:
     data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Make it *small*
     gtab = gt.gradient_table(fbval, fbvec)
@@ -88,12 +90,19 @@ def test_csd_xval():
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
     # We'll just test for regressions:
-    my_cod = 91 # pre-computed by hand for this random seed
+    csd_cod = 91 # pre-computed by hand for this random seed
 
     # We're going to be really lenient here:
     npt.assert_array_almost_equal(np.int(cod),
-                                  np.ones(kf_xval.shape[:-1]) * my_cod)
+                                  np.ones(kf_xval.shape[:-1]) * csd_cod)
 
+    # We can do the same with other SHM-based models, for example:
+    csam = shm.CsaOdfModel(gtab, 4)
+    kf_xval = xval.kfold_xval(csam, S, 2, 4)
+    cod = xval.coeff_of_determination(S, kf_xval)
+    csa_cod = 40
+    npt.assert_array_almost_equal(np.int(cod),
+                                  np.ones(kf_xval.shape[:-1]) * csa_cod)
 
 
 def test_no_predict():

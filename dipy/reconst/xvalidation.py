@@ -139,8 +139,8 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
         this_fit = this_model.fit(this_data)
         if not hasattr(this_fit, 'predict'):
             err_str = "Models of type: %s "%this_model.__class__
-            err_str = "do not have an implementation of model prediction"
-            err_str = " and do not support cross-validation"
+            err_str += "do not have an implementation of model prediction"
+            err_str += " and do not support cross-validation"
             raise ValueError(err_str)
 
         this_predict = S0[..., None] * this_fit.predict(left_out_gtab, S0=1)

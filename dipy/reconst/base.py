@@ -16,6 +16,11 @@ class ReconstModel(object):
     """
     def __init__(self, gtab):
         """
+        Initialization of the abstract class for signal reconstruction models
+
+        Parameters
+        ----------
+        gtab : GradientTable class instance
 
         """
         self.gtab=gtab
