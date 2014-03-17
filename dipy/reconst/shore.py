@@ -230,14 +230,14 @@ class ShoreModel(Cache):
                     G = None
                     h = None
                 else:
-                    G = self.cache_get('shore_matrix_G', key=(self.pos_grid, self.pos_radius))
+                    G = self.cache_get('shore_matrix_positive_constraint', key=(self.pos_grid, self.pos_radius))
                     if G is None:
                         v,t = create_rspace(self.pos_grid, self.pos_radius)
                         lg = int(np.floor(self.pos_grid**3 / 2))
 
                         psi = shore_matrix_pdf(self.radial_order, self.zeta, t[:lg])
                         G = cvxopt.matrix(-1*psi)
-                        self.cache_set('shore_matrix_G', (self.pos_grid, self.pos_radius), G)
+                        self.cache_set('shore_matrix_positive_constraint', (self.pos_grid, self.pos_radius), G)
                     h = cvxopt.matrix((1e-10)*np.ones((lg)),(lg,1))
 
 
