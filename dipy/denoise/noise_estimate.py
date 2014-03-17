@@ -13,6 +13,7 @@ def _inv_nchi_cdf(N, K, alpha):
 
 def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
     """
+    Probabilistic Identification and Estimation of Noise (PIESNO)
     A routine for finding the underlying gaussian distribution standard
     deviation from magnitude signals.
 
@@ -22,7 +23,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
     Parameters
     -----------
 
-    data : numpy array
+    data : ndarray
         The magnitude signals to analyse. The last dimension must contain the
         same realisation of the volume, such as dMRI or fMRI data.
 
