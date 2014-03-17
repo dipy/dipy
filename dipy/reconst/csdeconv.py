@@ -10,7 +10,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
-from dipy.sims.voxel import single_tensor, all_tensor_evecs
+from dipy.sims.voxel import single_tensor
 from dipy.utils.six.moves import range
 
 from scipy.special import lpn, gamma
