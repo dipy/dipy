@@ -25,6 +25,6 @@ def test_inv_nchi():
 def test_piesno():
     # Values taken from hispeed.MedianPIESNO with the test data
     # in the package computed in matlab
-    test_piesno = nib.load(dipy.data.get_data("test_piesno")).get_data()
-    sigma = piesno(test_piesno, N=8, alpha=0.1, l=10)[0]
-    assert_almost_equal(sigma, 0.010635911195599)
+    test_piesno_data = nib.load(dipy.data.get_data("test_piesno")).get_data()
+    sigma = piesno(test_piesno_data, N=8, alpha=0.01, l=1)[0]
+    assert_almost_equal(sigma, 0.010749458025559)
