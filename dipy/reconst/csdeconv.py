@@ -9,10 +9,8 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               sph_harm_lookup, lazy_index, SphHarmFit)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
-from ..core.sphere import Sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor, all_tensor_evecs
-import dipy.core.gradients as grad
 from dipy.utils.six.moves import range
 
 from scipy.special import lpn, gamma
@@ -127,105 +125,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
         shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg,
                                      self.lambda_, self.tau)
-        return ConstrainedSphericalDeconvFit(self, shm_coeff)
-
-
-def _csd_predict(fit, gtab, S0=1):
-    """
-    Helper function for the implementation of model prediction from the
-    ConstrainedSphericalDeconvFit class. This is necessary, because in
-    multi-voxel data, the multi_vox_fit kicks in.
-
-    Parameters
-    ----------
-    fit : A ConstrainedSphericalDeconvFit class instance
-    gtab : A GradientTable class instance
-    S0 : float or ndarray (optional)
-        The mean non-diffusion weighted signal in the voxel or volume
-
-    Returns
-    -------
-    pred_sig : ndarray
-        The predicted signal in the gtab for this fit.
-    """
-    # To invert the model, we estimate the ODF on the provided sphere and
-    # then convolve with the response function, rotated to each one of the
-    # gtab bvecs:
-    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    est_odf = fit.odf(sphere)
-    est_odf = est_odf/np.sum(est_odf)
-
-    pred_sig = np.zeros(gtab.b0s_mask.shape)
-    pred_sig[gtab.b0s_mask] = S0
-
-    prediction_matrix = fit.prediction_matrix(sphere, gtab)
-
-    if np.iterable(S0):
-        S0 = S0[...,None]
-
-    pred_sig[~gtab.b0s_mask] = np.dot(est_odf, prediction_matrix)
-    return pred_sig
-
-
-class ConstrainedSphericalDeconvFit(SphHarmFit):
-    def __init__(self, model, shm_coeff):
-        """
-        Initialize a ConstrainedSphericalDeconvFit class instance
-
-        Parameters
-        ----------
-        model : A ConstrainedSphericalDeconvModel class instance
-
-        shm_coeff : ndarray
-           Spherical harmonic coefficients estimated with `csdeconv`
-
-        Returns
-        -------
-        ConstrainedSphericalDeconvFit class instance
-        """
-        SphHarmFit.__init__(self, model, shm_coeff, None)
-
-
-    def prediction_matrix(self, sphere, gtab):
-        """
-        A matrix used to predict the signal from an estimated ODF
-        """
-        prediction_matrix = self.model.cache_get("prediction_matrix", (sphere,
-                                                                       gtab))
-        if prediction_matrix is None:
-            pred_gtab = grad.gradient_table(
-                gtab.bvals[~gtab.b0s_mask],
-                gtab.bvecs[~gtab.b0s_mask])
-
-            prediction_matrix = np.zeros((sphere.vertices.shape[0],
-                                          sphere.vertices.shape[0]))
-
-            for ii in range(sphere.vertices.shape[0]):
-                evals = self.model.response[0]
-                evecs = all_tensor_evecs(sphere.vertices[ii])
-                prediction_matrix[ii] = single_tensor(pred_gtab, 1,
-                                                  evals, evecs, snr=None)
-                self.model.cache_set("prediction_matrix",
-                                     sphere,
-                                     prediction_matrix)
-        return prediction_matrix.T
-
-
-    def predict(self, gtab, S0=1):
-        """
-        Predict the diffusion signal from the model coefficients.
-
-        Parameters
-        ----------
-        gtab : a GradientTable class instance
-            The directions and bvalues on which prediction is desired
-
-        S0 : float array
-           The mean non-diffusion-weighted signal in each voxel. Default: 1 in
-           all voxels
-        """
-        return _csd_predict(self, gtab, S0)
-
+        return SphHarmFit(self, shm_coeff, None)
 
 
 class ConstrainedSDTModel(OdfModel, Cache):

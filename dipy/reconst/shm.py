@@ -30,6 +30,9 @@ from numpy.linalg import pinv, svd
 from numpy.random import randint
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.special import sph_harm, lpn
+from dipy.core.sphere import Sphere
+import dipy.core.gradients as grad
+from dipy.sims.voxel import single_tensor, all_tensor_evecs
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
@@ -353,6 +356,43 @@ class SphHarmModel(OdfModel, Cache):
         return SphHarmFit(self, coef, mask)
 
 
+def _shm_predict(fit, gtab, S0=1):
+    """
+    Helper function for the implementation of model prediction from the
+    ConstrainedSphericalDeconvFit class. This is necessary, because in
+    multi-voxel data, the multi_vox_fit kicks in.
+
+    Parameters
+    ----------
+    fit : A ConstrainedSphericalDeconvFit class instance
+    gtab : A GradientTable class instance
+    S0 : float or ndarray (optional)
+        The mean non-diffusion weighted signal in the voxel or volume
+
+    Returns
+    -------
+    pred_sig : ndarray
+        The predicted signal in the gtab for this fit.
+    """
+    # To invert the model, we estimate the ODF on the provided sphere and
+    # then convolve with the response function, rotated to each one of the
+    # gtab bvecs:
+    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+    est_odf = fit.odf(sphere)
+    est_odf = est_odf/np.sum(est_odf)
+
+    pred_sig = np.zeros(gtab.b0s_mask.shape)
+    pred_sig[gtab.b0s_mask] = S0
+
+    prediction_matrix = fit.prediction_matrix(sphere, gtab)
+
+    if np.iterable(S0):
+        S0 = S0[...,None]
+
+    pred_sig[~gtab.b0s_mask] = np.dot(est_odf, prediction_matrix)
+    return pred_sig
+
+
 class SphHarmFit(OdfFit):
     """Diffusion data fit to a spherical harmonic model"""
 
@@ -422,6 +462,45 @@ class SphHarmFit(OdfFit):
         directly
         """
         return self._shm_coef
+
+    def prediction_matrix(self, sphere, gtab):
+        """
+        A matrix used to predict the signal from an estimated ODF
+        """
+        prediction_matrix = self.model.cache_get("prediction_matrix", (sphere,
+                                                                       gtab))
+        if prediction_matrix is None:
+            pred_gtab = grad.gradient_table(
+                gtab.bvals[~gtab.b0s_mask],
+                gtab.bvecs[~gtab.b0s_mask])
+
+            prediction_matrix = np.zeros((sphere.vertices.shape[0],
+                                          sphere.vertices.shape[0]))
+
+            for ii in range(sphere.vertices.shape[0]):
+                evals = self.model.response[0]
+                evecs = all_tensor_evecs(sphere.vertices[ii])
+                prediction_matrix[ii] = single_tensor(pred_gtab, 1,
+                                                  evals, evecs, snr=None)
+                self.model.cache_set("prediction_matrix",
+                                     sphere,
+                                     prediction_matrix)
+        return prediction_matrix.T
+
+    def predict(self, gtab, S0=1):
+        """
+        Predict the diffusion signal from the model coefficients.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+            The directions and bvalues on which prediction is desired
+
+        S0 : float array
+           The mean non-diffusion-weighted signal in each voxel. Default: 1 in
+           all voxels
+        """
+        return _shm_predict(self, gtab, S0)
 
 
 class CsaOdfModel(SphHarmModel):
