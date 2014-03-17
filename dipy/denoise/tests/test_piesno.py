@@ -1,8 +1,11 @@
 from __future__ import division, print_function
 
 import numpy as np
+import nibabel as nib
+
 from numpy.testing import assert_almost_equal
-from dipy.denoise.signal_transformation_framework import _inv_nchi_cdf, piesno
+from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno
+import dipy.data
 
 
 def test_inv_nchi():
@@ -22,6 +25,6 @@ def test_inv_nchi():
 def test_piesno():
     # Values taken from hispeed.MedianPIESNO with the test data
     # in the package computed in matlab
-
-    sigma = piesno(test_piesno, N=8, alpha=0.01, l=1)
+    test_piesno = nib.load(dipy.data.get_data("test_piesno")).get_data()
+    sigma = piesno(test_piesno, N=8, alpha=0.1, l=10)[0]
     assert_almost_equal(sigma, 0.010635911195599)
