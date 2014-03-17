@@ -14,6 +14,7 @@ import dipy.reconst.dti as dti
 import dipy.core.gradients as gt
 import dipy.sims.voxel as sims
 import dipy.reconst.csdeconv as csd
+import dipy.reconst.base as base
 
 # We'll set these globally:
 fdata, fbval, fbvec  = dpd.get_data('small_64D')
@@ -92,3 +93,27 @@ def test_csd_xval():
     # We're going to be really lenient here:
     npt.assert_array_almost_equal(np.int(cod),
                                   np.ones(kf_xval.shape[:-1]) * my_cod)
+
+
+
+def test_no_predict():
+    """
+    Test that if you try to do this with a model that doesn't have a `predict`
+    method, you get something reasonable.
+    """
+    class NoPredictModel(base.ReconstModel):
+        def __init__(self, gtab):
+            base.ReconstModel.__init__(self, gtab)
+
+        def fit(self, data):
+            return NoPredictFit(self, data)
+
+    class NoPredictFit(base.ReconstFit):
+        def __init__(self, model, data):
+            base.ReconstFit.__init__(self, model, data)
+
+    gtab = gt.gradient_table(fbval, fbvec)
+    my_model = NoPredictModel(gtab)
+    data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Whatever
+
+    npt.assert_raises(ValueError,  xval.kfold_xval, my_model, data, 2)
