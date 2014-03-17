@@ -112,10 +112,10 @@ class ShoreModel(Cache):
             Constrain the optimization such that E(0) = 1.
         pos_grid : int,
             Grid that define the points of the EAP in which we want to enforce
-            positiveness, if None no constrain is imposed. The parameter
+            positivity, if None no constraint is imposed. The parameter
             constrain_e0 must be set to True.
         pos_radius : float,
-            Radius of the grid of the EAP in which enforce positiveness in
+            Radius of the grid of the EAP in which enforce positivity in
             millimeters. By default 20e-03 mm.
 
         References
@@ -235,7 +235,7 @@ class ShoreModel(Cache):
                         v,t = create_rspace(self.pos_grid, self.pos_radius)
                         lg = int(np.floor(self.pos_grid**3 / 2))
 
-                        psi = shore_matrix_pdf(self.radial_order, self.zeta, t[:lg])#2456])
+                        psi = shore_matrix_pdf(self.radial_order, self.zeta, t[:lg])
                         G = cvxopt.matrix(-1*psi)
                         self.cache_set('shore_matrix_G', (self.pos_grid, self.pos_radius), G)
                     h = cvxopt.matrix((1e-10)*np.ones((lg)),(lg,1))
