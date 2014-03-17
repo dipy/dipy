@@ -52,6 +52,12 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
     mask : ndarray
         A boolean mask indicating the voxels identified as pure noise.
 
+    Note
+    ------
+    This function assumes two things : 1. The data has a noisy, non-masked
+    background and 2. The data is a repetition of the same measurements
+    along the last axis, i.e. dMRI or fMRI data, not structural data like T1/T2.
+
     References
     ------------
 
@@ -67,14 +73,14 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
     """
 
     # Get optimal quantile for N if available, else use the median.
-    opt_quantile = {1: 0.7968,
-                    2: 0.7306,
-                    4: 0.6722,
-                    8: 0.6254,
-                   16: 0.5900,
-                   32: 0.5642,
-                   64: 0.5456,
-                  128: 0.5323}
+    opt_quantile = {1: 0.79681213002002,
+                    2: 0.7306303027491917,
+                    4: 0.6721952960782169,
+                    8: 0.6254030432343569,
+                   16: 0.5900487123737876,
+                   32: 0.5641772300866416,
+                   64: 0.5455611840489607,
+                  128: 0.5322811923303339}
 
     if N in opt_quantile:
         q = opt_quantile[N]
