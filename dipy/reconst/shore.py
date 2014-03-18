@@ -15,7 +15,6 @@ try:
 except ImportError:
     cvxopt = None
 
-
 class ShoreModel(Cache):
 
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
@@ -68,7 +67,8 @@ class ShoreModel(Cache):
                  lambdaL=1e-8,
                  tau=1. / (4 * np.pi ** 2),
                  constrain_e0=False,
-                 pos_grid=None,
+                 positive_constraint=False,
+                 pos_grid=11,
                  pos_radius=20e-03
     ):
         r""" Analytical and continuous modeling of the diffusion signal with
@@ -110,10 +110,11 @@ class ShoreModel(Cache):
             square root of the b-value.
         constrain_e0 : bool,
             Constrain the optimization such that E(0) = 1.
+        positive_constraint : bool,
+            Constrain the propagator to be positive.
         pos_grid : int,
             Grid that define the points of the EAP in which we want to enforce
-            positivity, if None no constraint is imposed. The parameter
-            constrain_e0 must be set to True.
+            positivity.
         pos_radius : float,
             Radius of the grid of the EAP in which enforce positivity in
             millimeters. By default 20e-03 mm.
@@ -173,6 +174,11 @@ class ShoreModel(Cache):
             self.tau = tau
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
+
+        if positive_constraint and not(constrain_e0):
+            msg = "Constrain_e0 must be True to enfore positivity."
+            raise ValueError(msg)
+        self.positive_constraint = positive_constraint
         self.pos_grid = pos_grid
         self.pos_radius = pos_radius
 
@@ -226,14 +232,15 @@ class ShoreModel(Cache):
 
                 cvxopt.solvers.options['show_progress'] = False
 
-                if self.pos_grid is None:
+                if not(self.positive_constraint):
                     G = None
                     h = None
                 else:
+                    lg = int(np.floor(self.pos_grid**3 / 2))
                     G = self.cache_get('shore_matrix_positive_constraint', key=(self.pos_grid, self.pos_radius))
                     if G is None:
                         v,t = create_rspace(self.pos_grid, self.pos_radius)
-                        lg = int(np.floor(self.pos_grid**3 / 2))
+                        
 
                         psi = shore_matrix_pdf(self.radial_order, self.zeta, t[:lg])
                         G = cvxopt.matrix(-1*psi)
@@ -243,7 +250,6 @@ class ShoreModel(Cache):
 
                 A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
                 b = cvxopt.matrix(np.array([1.]))
-
                 sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
 
                 if sol['status'] != 'optimal':

@@ -26,7 +26,7 @@ def test_shore_positive_constrain():
 
     asm = ShoreModel(gtab, radial_order=radial_order,
                      zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL,
-                     constrain_e0=True, pos_grid=11, pos_radius=20e-03)
+                     constrain_e0=True, positive_constraint=True, pos_grid=11, pos_radius=20e-03)
 
     asmfit = asm.fit(S)
     eap = asmfit.pdf_grid(11, 20e-03)
