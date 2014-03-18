@@ -1,4 +1,5 @@
 from __future__ import division
+from warnings import warn
 import numpy as np
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
@@ -7,6 +8,13 @@ from dipy.core.gradients import gradient_table
 from scipy.special import genlaguerre, gamma, hyp2f1
 from dipy.core.geometry import cart2sphere
 from math import factorial
+
+try:
+    import cvxopt
+    import cvxopt.solvers
+except ImportError:
+    cvxopt = None
+
 
 class ShoreModel(Cache):
 
@@ -57,7 +65,10 @@ class ShoreModel(Cache):
                  radial_order=6,
                  zeta=700,
                  lambdaN=1e-8,
-                 lambdaL=1e-8):
+                 lambdaL=1e-8,
+                 tau=1. / (4 * np.pi ** 2),
+                 constrain_e0=False,
+    ):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the SHORE basis [1,2]_.
         This implementation is a modification of SHORE presented in [1]_.
@@ -95,6 +106,8 @@ class ShoreModel(Cache):
         tau : float,
             diffusion time. By default the value that makes q equal to the
             square root of the b-value.
+        constrain_e0 : bool,
+            Constrain the optimization such that E(0) = 1.
 
         References
         ----------
@@ -138,6 +151,7 @@ class ShoreModel(Cache):
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.gtab = gtab
+        self.constrain_e0 = constrain_e0
         if radial_order > 0 and not(bool(radial_order % 2)):
             self.radial_order = radial_order
         else:
@@ -147,12 +161,13 @@ class ShoreModel(Cache):
         self.lambdaL = lambdaL
         self.lambdaN = lambdaN
         if (gtab.big_delta is None) or (gtab.small_delta is None):
-            self.tau = 1 / (4 * np.pi ** 2)
+            self.tau = tau
         else:
             self.tau = gtab.big_delta - gtab.small_delta / 3.0
 
     @multi_voxel_fit
     def fit(self, data):
+
         Lshore = l_shore(self.radial_order)
         Nshore = n_shore(self.radial_order)
         # Generate the SHORE basis
@@ -161,17 +176,59 @@ class ShoreModel(Cache):
             M = shore_matrix(self.radial_order,  self.zeta, self.gtab, self.tau)
             self.cache_set('shore_matrix', self.gtab, M)
 
+        MpseudoInv = self.cache_get('shore_matrix_reg_pinv', key=self.gtab)
+        if MpseudoInv is None:
+            MpseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
+            self.cache_set('shore_matrix_reg_pinv', self.gtab, MpseudoInv)
+
         # Compute the signal coefficients in SHORE basis
-        pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
-        coef = np.dot(pseudoInv, data)
+        if not self.constrain_e0:
+            coef = np.dot(MpseudoInv, data)
 
-        signal_0 = 0
+            signal_0 = 0
 
-        for n in range(int(self.radial_order / 2) + 1):
-            signal_0 += coef[n] * genlaguerre(n, 0.5)(0) * \
-                ((factorial(n)) / (2 * np.pi * (self.zeta ** 1.5) * gamma(n + 1.5))) ** 0.5
+            for n in range(int(self.radial_order / 2) + 1):
+                signal_0 += (
+                    coef[n] * (genlaguerre(n, 0.5)(0) * (
+                        (factorial(n)) / (2 * np.pi * (self.zeta ** 1.5) * gamma(n + 1.5))
+                    ) ** 0.5)
+                )
 
-        coef = coef / signal_0
+            coef = coef / signal_0
+        else:
+            data = data / data[self.gtab.b0s_mask].mean()
+
+            if cvxopt is not None:  # If cvxopt is not available use scipy (~100 times slower)
+                M0 = M[self.gtab.b0s_mask, :]
+                M0_mean = M0.mean(0)[None, :]
+                Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
+                Q = cvxopt.matrix(np.ascontiguousarray(
+                    np.dot(Mprime.T, Mprime)
+                    + self.lambdaN * Nshore + self.lambdaL * Lshore
+                ))
+
+                data_b0 = data[self.gtab.b0s_mask].mean()
+                data_single_b0 = np.r_[data_b0, data[~self.gtab.b0s_mask]] / data_b0
+                p = cvxopt.matrix(np.ascontiguousarray(
+                    -1 * np.dot(Mprime.T, data_single_b0))
+                )
+
+                cvxopt.solvers.options['show_progress'] = False
+
+                G = None
+                h = None
+
+                A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
+                b = cvxopt.matrix(np.array([1.]))
+
+                sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
+
+                if sol['status'] != 'optimal':
+                    warn('Optimization did not find a solution')
+
+                coef = np.array(sol['x'])[:, 0]
+            else:
+                raise ValueError('CVXOPT package needed to enforce constraints')
 
         return ShoreFit(self, coef)
 
@@ -354,6 +411,13 @@ class ShoreFit():
 
         return np.clip(msd, 0, msd.max())
 
+    def fitted_signal(self):
+        """ The fitted signal.
+        """
+        phi = self.model.cache_get('shore_matrix', key=self.model.gtab)
+        return np.dot(phi, self._shore_coef)
+
+
     @property
     def shore_coeff(self):
         """The SHORE coefficients
@@ -405,6 +469,7 @@ def shore_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
     """
 
     qvals = np.sqrt(gtab.bvals / (4 * np.pi ** 2 * tau))
+    qvals[gtab.b0s_mask] = 0
     bvecs = gtab.bvecs
 
     qgradients = qvals[:, None] * bvecs
