@@ -15,6 +15,7 @@ try:
 except ImportError:
     cvxopt = None
 
+
 class ShoreModel(Cache):
 
     r"""Simple Harmonic Oscillator based Reconstruction and Estimation
@@ -70,7 +71,7 @@ class ShoreModel(Cache):
                  positive_constraint=False,
                  pos_grid=11,
                  pos_radius=20e-03
-    ):
+                 ):
         r""" Analytical and continuous modeling of the diffusion signal with
         respect to the SHORE basis [1,2]_.
         This implementation is a modification of SHORE presented in [1]_.
@@ -190,12 +191,14 @@ class ShoreModel(Cache):
         # Generate the SHORE basis
         M = self.cache_get('shore_matrix', key=self.gtab)
         if M is None:
-            M = shore_matrix(self.radial_order,  self.zeta, self.gtab, self.tau)
+            M = shore_matrix(
+                self.radial_order,  self.zeta, self.gtab, self.tau)
             self.cache_set('shore_matrix', self.gtab, M)
 
         MpseudoInv = self.cache_get('shore_matrix_reg_pinv', key=self.gtab)
         if MpseudoInv is None:
-            MpseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
+            MpseudoInv = np.dot(
+                np.linalg.inv(np.dot(M.T, M) + self.lambdaN * Nshore + self.lambdaL * Lshore), M.T)
             self.cache_set('shore_matrix_reg_pinv', self.gtab, MpseudoInv)
 
         # Compute the signal coefficients in SHORE basis
@@ -207,7 +210,8 @@ class ShoreModel(Cache):
             for n in range(int(self.radial_order / 2) + 1):
                 signal_0 += (
                     coef[n] * (genlaguerre(n, 0.5)(0) * (
-                        (factorial(n)) / (2 * np.pi * (self.zeta ** 1.5) * gamma(n + 1.5))
+                        (factorial(n)) /
+                        (2 * np.pi * (self.zeta ** 1.5) * gamma(n + 1.5))
                     ) ** 0.5)
                 )
 
@@ -215,7 +219,8 @@ class ShoreModel(Cache):
         else:
             data = data / data[self.gtab.b0s_mask].mean()
 
-            if cvxopt is not None:  # If cvxopt is not available use scipy (~100 times slower)
+            # If cvxopt is not available use scipy (~100 times slower)
+            if cvxopt is not None:
                 M0 = M[self.gtab.b0s_mask, :]
                 M0_mean = M0.mean(0)[None, :]
                 Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
@@ -225,7 +230,8 @@ class ShoreModel(Cache):
                 ))
 
                 data_b0 = data[self.gtab.b0s_mask].mean()
-                data_single_b0 = np.r_[data_b0, data[~self.gtab.b0s_mask]] / data_b0
+                data_single_b0 = np.r_[
+                    data_b0, data[~self.gtab.b0s_mask]] / data_b0
                 p = cvxopt.matrix(np.ascontiguousarray(
                     -1 * np.dot(Mprime.T, data_single_b0))
                 )
@@ -236,17 +242,18 @@ class ShoreModel(Cache):
                     G = None
                     h = None
                 else:
-                    lg = int(np.floor(self.pos_grid**3 / 2))
-                    G = self.cache_get('shore_matrix_positive_constraint', key=(self.pos_grid, self.pos_radius))
+                    lg = int(np.floor(self.pos_grid ** 3 / 2))
+                    G = self.cache_get(
+                        'shore_matrix_positive_constraint', key=(self.pos_grid, self.pos_radius))
                     if G is None:
-                        v,t = create_rspace(self.pos_grid, self.pos_radius)
-                        
+                        v, t = create_rspace(self.pos_grid, self.pos_radius)
 
-                        psi = shore_matrix_pdf(self.radial_order, self.zeta, t[:lg])
-                        G = cvxopt.matrix(-1*psi)
-                        self.cache_set('shore_matrix_positive_constraint', (self.pos_grid, self.pos_radius), G)
-                    h = cvxopt.matrix((1e-10)*np.ones((lg)),(lg,1))
-
+                        psi = shore_matrix_pdf(
+                            self.radial_order, self.zeta, t[:lg])
+                        G = cvxopt.matrix(-1 * psi)
+                        self.cache_set(
+                            'shore_matrix_positive_constraint', (self.pos_grid, self.pos_radius), G)
+                    h = cvxopt.matrix((1e-10) * np.ones((lg)), (lg, 1))
 
                 A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
                 b = cvxopt.matrix(np.array([1.]))
@@ -257,7 +264,8 @@ class ShoreModel(Cache):
 
                 coef = np.array(sol['x'])[:, 0]
             else:
-                raise ValueError('CVXOPT package needed to enforce constraints')
+                raise ValueError(
+                    'CVXOPT package needed to enforce constraints')
 
         return ShoreFit(self, coef)
 
@@ -300,16 +308,20 @@ class ShoreFit():
 
         """
         # Create the grid in which to compute the pdf
-        rgrid_rtab = self.model.cache_get('pdf_grid', key=(gridsize, radius_max))
+        rgrid_rtab = self.model.cache_get(
+            'pdf_grid', key=(gridsize, radius_max))
         if rgrid_rtab is None:
             rgrid_rtab = create_rspace(gridsize, radius_max)
-            self.model.cache_set('pdf_grid', (gridsize, radius_max), rgrid_rtab)
+            self.model.cache_set(
+                'pdf_grid', (gridsize, radius_max), rgrid_rtab)
         rgrid, rtab = rgrid_rtab
 
-        psi = self.model.cache_get('shore_matrix_pdf', key=(gridsize, radius_max))
+        psi = self.model.cache_get(
+            'shore_matrix_pdf', key=(gridsize, radius_max))
         if psi is None:
             psi = shore_matrix_pdf(self.radial_order,  self.zeta, rtab)
-            self.model.cache_set('shore_matrix_pdf', (gridsize, radius_max), psi)
+            self.model.cache_set(
+                'shore_matrix_pdf', (gridsize, radius_max), psi)
 
         propagator = np.dot(psi, self._shore_coef)
         eap = np.empty((gridsize, gridsize, gridsize), dtype=float)
@@ -324,13 +336,15 @@ class ShoreFit():
             results are cached for faster recalculation
         """
         if not r_points.flags.writeable:
-            psi = self.model.cache_get('shore_matrix_pdf', key=hash(r_points.data))
+            psi = self.model.cache_get(
+                'shore_matrix_pdf', key=hash(r_points.data))
         else:
             psi = None
         if psi is None:
             psi = shore_matrix_pdf(self.radial_order,  self.zeta, r_points)
             if not r_points.flags.writeable:
-                self.model.cache_set('shore_matrix_pdf', hash(r_points.data), psi)
+                self.model.cache_set(
+                    'shore_matrix_pdf', hash(r_points.data), psi)
 
         eap = np.dot(psi, self._shore_coef)
 
@@ -445,7 +459,6 @@ class ShoreFit():
         """
         phi = self.model.cache_get('shore_matrix', key=self.model.gtab)
         return np.dot(phi, self._shore_coef)
-
 
     @property
     def shore_coeff(self):
@@ -675,6 +688,7 @@ def create_rspace(gridsize, radius_max):
 
     return vecs, tab
 
+
 def shore_indices(radial_order, index):
     r"""Given the basis order and the index, return the shore indices n, l, m
     for modified Merlet's 3D-SHORE
@@ -737,6 +751,7 @@ def shore_indices(radial_order, index):
                     counter += 1
     return n_i, l_i, m_i
 
+
 def shore_order(n, l, m):
     r"""Given the indices (n,l,m) of the basis, return the minimum order
     for those indices and their index for modified Merlet's 3D-SHORE.
@@ -758,7 +773,7 @@ def shore_order(n, l, m):
         index of the coefficient correspondig to (n,l,m), start from 0
 
     """
-    if l % 2 == 1 or l > n or l < 0 or n < 0  or np.abs(m) > l:
+    if l % 2 == 1 or l > n or l < 0 or n < 0 or np.abs(m) > l:
         msg = "The index l must be even and 0 <= l <= n, the index m must be -l <= m <= l."
         raise ValueError(msg)
     else:
@@ -767,7 +782,7 @@ def shore_order(n, l, m):
         else:
             radial_order = n
 
-        counter_i  = 0
+        counter_i = 0
 
         counter = 0
         for l_i in range(0, radial_order + 1, 2):
