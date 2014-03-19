@@ -78,11 +78,13 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 # Define extensions
 EXTS = []
 for modulename, other_sources, language in (
+    ('dipy.reconst._peakdg', [], 'c'),
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
     ('dipy.tracking.streamlinespeed', [], 'c'),
+    ('dipy.tracking.localtrack', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c')

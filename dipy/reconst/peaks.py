@@ -155,14 +155,15 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
-class PeaksAndMetrics(object):
+from ._peakdg import PAMDirectionGetter
+class PeaksAndMetrics(PAMDirectionGetter):
     pass
 
 
 def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
                                min_separation_angle, mask, return_odf,
-                               return_sh, gfa_thr, normalize_peaks,
-                               sh_order, sh_basis_type, npeaks, B, invB, nbr_processes):
+                               return_sh, gfa_thr, normalize_peaks, sh_order,
+                               sh_basis_type, npeaks, B, invB, nbr_processes):
 
     if nbr_processes is None:
         try:
@@ -217,6 +218,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         pool.close()
 
         pam = PeaksAndMetrics()
+        pam.sphere = sphere
         # use memmap to reduce the memory usage
         pam.gfa = np.memmap(path.join(tmpdir, 'gfa.npy'),
                             dtype=pam_res[0].gfa.dtype,
@@ -467,6 +469,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     qa_array /= global_max
 
     pam = PeaksAndMetrics()
+    pam.sphere = sphere
     pam.peak_dirs = peak_dirs
     pam.peak_values = peak_values
     pam.peak_indices = peak_indices
