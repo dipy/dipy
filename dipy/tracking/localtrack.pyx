@@ -5,20 +5,52 @@ from propspeed cimport _propagation_direction
 
 import numpy as np
 
-# cdef extern from "dpy_math.h" nogil:
-#     double round(double x)
 from libc.math cimport round
 from libc.stdio cimport printf
+
 
 cdef class TissueClassifier:
     cdef TissueClass check_point(self, double *point):
         pass
+
 
 cdef class DirectionGetter:
     cdef int get_direction(self, double *point, double *direction):
         pass
     cdef np.ndarray[np.float_t, ndim=2] initial_direction(self, double *point):
         pass
+
+
+cdef class PythonDirectionGetter(DirectionGetter):
+
+    cdef:
+        object point_array, direction_array
+        double[::1] point_v, direction_v
+
+    def __cinit__(self):
+        self.point_array = np.empty(3)
+        self.point_v = self.point_array
+        self.direction_array = np.empty(3)
+        self.direction_v = self.direction_array
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    @cython.profile(True)
+    cdef int get_direction(self, double *point, double *direction):
+
+        cdef np.ndarray[np.float_t, ndim=1] new_dir
+
+        for i in range(3):
+            self.point_v[i] = point[i]
+            self.direction_v[i] = direction[i]
+        new_dir = self._get_direction(self.point_array, self.direction_array)
+        if new_dir is None:
+            return 1
+        for i in range(3):
+            direction[i] = new_dir[i]
+        return 0
+
 
 def makeNd(array, N):
     """Makes an array that's less than then Nd - Nd
@@ -41,7 +73,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 
     def __init__(self, metric_map, threshold):
         self.metric_map = metric_map
-        self.threshold
+        self.threshold = threshold
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -118,6 +150,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
             break
     return i
 
+
 def _testGetDirection(DirectionGetter dg,
                       double[::1] point not None,
                       double[::1] dir not None):
@@ -127,3 +160,12 @@ def _testGetDirection(DirectionGetter dg,
         int state
     state = dg.get_direction(&point[0], &newdir[0])
     return (state, np.array(newdir))
+
+
+def _testCheckPoint(TissueClassifier tc, double[::1] point not None):
+
+    cdef:
+        int tissue
+    tissue = tc.check_point(&point[0])
+    return tissue
+
