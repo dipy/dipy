@@ -125,8 +125,9 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
     @multi_voxel_fit
     def fit(self, data):
-        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
-        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg,
+        dwi_data = data[self._where_dwi]
+        X = self.R.diagonal() * self.B_dwi
+        shm_coeff, num_it = csdeconv(dwi_data, self.sh_order, X, self.B_reg,
                                      self.lambda_, self.tau)
         return SphHarmFit(self, shm_coeff, None)
 
