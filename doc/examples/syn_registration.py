@@ -1,13 +1,12 @@
 """
-====================================
-Symmetric Diffeomorphic Registration
-====================================
-This examples explain how to register 2D images and 3D volumes using
-the Symmetric Normalization (SyN) algorithm proposed by Avants et al.
-[citation needed] (also implemented in the ANTS [citation needed] software)
+==========================================
+Symmetric Diffeomorphic Registration in 2D
+==========================================
+This example explains how to register 2D images using the Symmetric Normalization 
+(SyN) algorithm proposed by Avants et al. [citation needed] (also implemented in
+the ANTS software [citation needed])
 
-The first example shows how to register two 2D images. We will use the classic
-Circle-To-C experiment for diffeomorphic registration
+We will perform the classic Circle-To-C experiment for diffeomorphic registration
 """
 
 import numpy as np
@@ -82,7 +81,7 @@ It is a good idea to visualize the resulting deformation map to make sure the
 result is reasonable (at least, visually) 
 """
 
-def drawLattice2D(nrows, ncols, delta):
+def draw_lattice_2d(nrows, ncols, delta):
     lattice=np.ndarray((1+(delta+1)*nrows, 1+(delta+1)*ncols), dtype=np.float64)
     lattice[...]=127
     for i in range(nrows+1):
@@ -96,7 +95,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
     nrows_moving = mapping.forward.shape[0]
     ncols_moving = mapping.forward.shape[1]
     X1,X0=np.mgrid[0:nrows_moving, 0:ncols_moving]
-    lattice_moving=drawLattice2D((nrows_moving+delta)/(delta+1), 
+    lattice_moving=draw_lattice_2d((nrows_moving+delta)/(delta+1), 
                                  (ncols_moving+delta)/(delta+1), delta)
     lattice_moving=lattice_moving[0:nrows_moving, 0:ncols_moving]
     #Warp in the forward direction (since the lattice is in the moving domain)
@@ -106,7 +105,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
     nrows_static = mapping.backward.shape[0]
     ncols_static = mapping.backward.shape[1]
     X1,X0=np.mgrid[0:nrows_static, 0:ncols_static]
-    lattice_static=drawLattice2D((nrows_static+delta)/(delta+1), 
+    lattice_static=draw_lattice_2d((nrows_static+delta)/(delta+1), 
                                  (ncols_static+delta)/(delta+1), delta)
     lattice_static=lattice_static[0:nrows_static, 0:ncols_static]
     #Warp in the backward direction (since the lattice is in the static domain)
