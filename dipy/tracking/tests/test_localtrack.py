@@ -13,8 +13,12 @@ def test_ThresholdTissueClassifier():
     for i in range(3):
         for j in range(5):
             for k in range(7):
-                print (a[i, j, k] >= mid)
-                print _testCheckPoint(ttc, np.array([i, j, k], dtype=float))
+                tissue = _testCheckPoint(ttc, np.array([i, j, k], dtype=float))
+                if a[i, j, k] > mid:
+                    npt.assert_equal(tissue, 1)
+                else:
+                    npt.assert_equal(tissue, 2)
+
 
 def testErrorInPyDirectionGetter():
 

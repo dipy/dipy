@@ -1,7 +1,7 @@
 import numpy as np
 
 from .localtrack import local_tracker
-import utils
+from dipy.tracking import utils
 
 class LocalTracking(object):
     """A streamline generator for local tracking methods"""
