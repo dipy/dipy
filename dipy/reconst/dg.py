@@ -8,8 +8,8 @@ sign = np.array([-1., 1.]).reshape((2, 1))
 edge = np.array([1., 0.]).reshape((2, 1))
 def trilinear_weights(point):
     w = edge + sign * (point % 1.)
-    w = np.ix_(*w.T)
-    return w[0] * w[1] * w[2]
+    return w[:, None, None, 0] * w[None, :, None, 1] * w[None, None, :, 2]
+
 
 class ProbabilisticOdfWightedDirectionGetter(PythonDirectionGetter):
     """Returns a random direction from a sphere weighted by odf values
@@ -17,6 +17,7 @@ class ProbabilisticOdfWightedDirectionGetter(PythonDirectionGetter):
     """
     def __init__(self, shmFit, sphere, max_angle):
         self.shmFit = shmFit
+        self._shm_coeff = self.shmFit.shm_coeff
         self.sphere = sphere
         B = real_sym_sh_basis(shmFit.model.sh_order, sphere.theta, sphere.phi)
         self._B = B[0]
@@ -38,9 +39,9 @@ class ProbabilisticOdfWightedDirectionGetter(PythonDirectionGetter):
         index = []
         for p in np.floor(point):
             index.append(slice(p, p+2))
-        coeff = self.shmFit.shm_coeff[index]
+        coeff = self._shm_coeff[index]
         weights = trilinear_weights(point)
-        coeff *= weights[..., None]
+        coeff = weights[..., None] * coeff
         coeff = coeff.reshape((8, -1))
         return coeff.sum(0)
 

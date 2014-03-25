@@ -289,6 +289,7 @@ def _peaks_from_model_parallel(model, data, sphere, relative_peak_threshold,
         # manager in order to prevent temporary file deletion errors in windows
         pool.join()
 
+    pam._initialize()
     return pam
 
 
@@ -488,6 +489,7 @@ def peaks_from_model(model, data, sphere, relative_peak_threshold,
     else:
         pam.odf = None
 
+    pam._initialize()
     return pam
 
 
