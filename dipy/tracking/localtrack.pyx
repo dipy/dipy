@@ -37,7 +37,7 @@ cdef class PythonDirectionGetter(DirectionGetter):
     @cython.wraparound(False)
     @cython.initializedcheck(False)
     @cython.profile(True)
-    cdef int get_direction(self, double *point, double *direction):
+    cdef int get_direction(self, double *point, double *direction) except -1:
 
         cdef np.ndarray[np.float_t, ndim=1] new_dir
 
