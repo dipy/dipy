@@ -57,12 +57,15 @@ class LocalTracking(object):
         ss = self.step_size
         max_cross = self.max_cross
 
+        # Compute voxel size
+        lin = affine[:3, :3]
+        vs = (lin * lin).sum(0)
+
+        # Get inverse transform (lin/offset) for seeds
         inv_A = np.linalg.inv(self.affine)
         lin = inv_A[:3, :3]
         offset = inv_A[:3, 3]
 
-        # TODO: compute better voxel size
-        vs = self.affine.diagonal()[:3]
         F = np.empty((N + 1, 3), dtype=float)
         B = F.copy()
         for s in self.seeds:
