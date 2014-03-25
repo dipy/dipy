@@ -58,7 +58,7 @@ class LocalTracking(object):
         max_cross = self.max_cross
 
         # Compute voxel size
-        lin = affine[:3, :3]
+        lin = self.affine[:3, :3]
         vs = (lin * lin).sum(0)
 
         # Get inverse transform (lin/offset) for seeds
