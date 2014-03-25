@@ -12,6 +12,7 @@ from dipy.tracking import utils
 
 # Import a few different models as examples
 from dipy.reconst.shm import CsaOdfModel
+from dipy.core.sphere import HemiSphere
 from dipy.reconst.peaks import peaks_from_model, default_sphere
 from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel, auto_response
 
@@ -120,10 +121,12 @@ detr_tracking_example(csamodel, data, mask, N, hdr, "SolidAngle_Detr.trk")
 print time.time() - start
 
 # Constrained Spherical Deconv Probableistic
+small_sphere = HemiSphere.from_sphere(get_sphere("symmetric362"))
 r, _ = auto_response(gtab, data)
-csdmodel = ConstrainedSphericalDeconvModel(gtab, r, sh_order=10)
+csdmodel = ConstrainedSphericalDeconvModel(gtab, r, sh_order=10,
+                                           reg_sphere=small_sphere,
+                                           lambda_=np.sqrt(1./2))
 start = time.time()
 prob_tracking_example(csdmodel, data, mask, N, hdr, "SphereDeconv.trk")
 print time.time() - start
-
 
