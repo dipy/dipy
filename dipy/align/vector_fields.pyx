@@ -91,8 +91,8 @@ cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii,
         out[1] = 0
         return 0
     #---top-left
-    ii = int(dii)
-    jj = int(djj)
+    ii = <int>floor(dii)
+    jj = <int>floor(djj)
     if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
         out[0] = 0
         out[1] = 0
@@ -155,8 +155,8 @@ cdef inline int interpolate_scalar_bilinear(floating[:,:] image, double dii,
         out[0] = 0
         return 0
     #---top-left
-    ii = int(dii)
-    jj = int(djj)
+    ii = <int>floor(dii)
+    jj = <int>floor(djj)
     if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
         out[0] = 0
         return 0
@@ -214,8 +214,8 @@ cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii,
         out[0] = 0
         return 0
     # find the top left index and the interpolation coefficients
-    ii = int(dii)
-    jj = int(djj)
+    ii = <int>floor(dii)
+    jj = <int>floor(djj)
     # no one is affected
     if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
         out[0] = 0
@@ -272,9 +272,9 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
         out[0] = 0
         return 0
     # find the top left index and the interpolation coefficients
-    kk = int(dkk)
-    ii = int(dii)
-    jj = int(djj)
+    kk = <int>floor(dkk)
+    ii = <int>floor(dii)
+    jj = <int>floor(djj)
     # no one is affected
     if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
         out[0] = 0
@@ -312,9 +312,9 @@ cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume,
         out[0] = 0
         return 0
     # find the top left index and the interpolation coefficients
-    kk = int(dkk)
-    ii = int(dii)
-    jj = int(djj)
+    kk = <int>floor(dkk)
+    ii = <int>floor(dii)
+    jj = <int>floor(djj)
     # no one is affected
     if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc) ):
         out[0] = 0
@@ -394,9 +394,9 @@ cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk
         out[2] = 0
         return 0
     #---top-left
-    kk = int(dkk)
-    ii = int(dii)
-    jj = int(djj)
+    kk = <int>floor(dkk)
+    ii = <int>floor(dii)
+    jj = <int>floor(djj)
     if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
         out[0] = 0
         out[1] = 0
@@ -457,7 +457,10 @@ cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk
 
 
 cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
-                                 floating[:, :, :] comp, floating[:] stats) nogil:
+                                    floating[:, :] premult_index, 
+                                    floating[:, :] premult_disp,
+                                    double time_scaling,
+                                    floating[:, :, :] comp, floating[:] stats) nogil:
     r"""
     Computes the composition of the two 2-D displacemements d1 and d2 defined by
     comp[r, c] = d2(d1[r, c]) for each (r,c) in the domain of d1. The evaluation
@@ -472,12 +475,23 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     d2 : array, shape (R', C', 2)
         second displacement field to be applied. R', C' are the number of rows
         and columns of the displacement field d2, respectively.
+    premult_index : array, shape (3, 3)
+        since the displacement fields are operating on the physical space, the
+        composition actually applied is of the form 
+        comp[i] = d1[i] + t*d2[R2^{-1}.dot(R1) * i + R2^{-1} * d1[i]], where t
+        is the time scaling, R1 and R2 are the affine matrices that transform
+        discrete indices to physical space in the d1 and d2 discretizations,
+        respectively. premult_index corresponds to the R2^{-1}.dot(R1) matrix
+        above
+    premult_disp : array, shape (3, 3)
+        premult_disp corresponds to the R2^{-1} matrix in the above explanation
+    time_scaling : float
+        this corresponds to the time scaling 't' in the above explanation
     comp : array, shape (R, C, 2), same dimension as d1
         on output, this array will contain the composition of the two fields
     stats : array, shape (3,)
         on output, this array will contain three statistics of the vector norms
         of the composition (maximum, mean, standard_deviation)
-
     Notes
     -----
     If d1[r,c] lies outside the domain of d2, then comp[r,c] will contain a zero
@@ -494,20 +508,35 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         floating stdNorm = 0
         floating nn
         int i, j, ii, jj, inside
-        floating dii, djj, alpha, beta, calpha, cbeta
+        floating di, dj, dii, djj, alpha, beta, calpha, cbeta
 
     for i in range(nr1):
         for j in range(nc1):
             
             comp[i, j, 0] = 0
-            comp[i, j, 1] = 0            
+            comp[i, j, 1] = 0
 
-            dii = i + d1[i, j, 0]
-            djj = j + d1[i, j, 1]
+            if premult_disp is None:
+                di = d1[i, j, 0]
+                dj = d1[i, j, 1]
+            else:
+                di = _apply_affine_2d_x0(d1[i, j, 0], d1[i, j, 1], premult_disp) - premult_disp[0, 2]
+                dj = _apply_affine_2d_x1(d1[i, j, 0], d1[i, j, 1], premult_disp) - premult_disp[1, 2]
+
+            if premult_index is None:
+                dii = i
+                djj = j
+            else:
+                dii = _apply_affine_2d_x0(i, j, premult_index)
+                djj = _apply_affine_2d_x1(i, j, premult_index)
+
+            dii += di
+            djj += dj
+
             inside = interpolate_vector_bilinear(d2, dii, djj, comp[i,j])
             if inside == 1:
-                comp[i,j,0] += d1[i,j,0]
-                comp[i,j,1] += d1[i,j,1]
+                comp[i,j,0] = time_scaling * comp[i,j,0] + d1[i,j,0]
+                comp[i,j,1] = time_scaling * comp[i,j,1] + d1[i,j,1]
                 nn = comp[i, j, 0] ** 2 + comp[i, j, 1] ** 2
                 meanNorm += nn
                 stdNorm += nn * nn
@@ -520,7 +549,10 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     stats[2] = sqrt(stdNorm / cnt - meanNorm * meanNorm)
 
 
-def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2):
+def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
+                             floating[:, :] premult_index, 
+                             floating[:, :] premult_disp,
+                             double time_scaling):
     r"""
     Computes the composition of the two 2-D displacemements d1 and d2 defined by
     comp[r, c] = d2(d1[r, c]) for each (r,c) in the domain of d1. The evaluation
@@ -534,6 +566,18 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2):
     d2 : array, shape (R', C', 2)
         second displacement field to be applied. R', C' are the number of rows
         and columns of the displacement field, respectively.
+    premult_index : array, shape (3, 3)
+        since the displacement fields are operating on the physical space, the
+        composition actually applied is of the form 
+        comp[i] = d1[i] + t*d2[R2^{-1}.dot(R1) * i + R2^{-1} * d1[i]], where t
+        is the time scaling, R1 and R2 are the affine matrices that transform
+        discrete indices to physical space in the d1 and d2 discretizations,
+        respectively. premult_index corresponds to the R2^{-1}.dot(R1) matrix
+        above
+    premult_disp : array, shape (3, 3)
+        premult_disp corresponds to the R2^{-1} matrix in the above explanation
+    time_scaling : float
+        this corresponds to the time scaling 't' in the above explanation
 
     Returns
     -------
@@ -547,7 +591,7 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2):
         floating[:, :, :] comp = np.zeros_like(d1)
         floating[:] stats = np.zeros(shape=(3,),
                                      dtype=np.asarray(d1).dtype)
-    _compose_vector_fields_2d(d1, d2, comp, stats)
+    _compose_vector_fields_2d(d1, d2, premult_index, premult_disp, time_scaling, comp, stats)
     return comp, stats
 
 
@@ -654,9 +698,14 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2):
     return comp, stats
 
 
-def invert_vector_field_fixed_point_2d(floating[:, :, :] d, int[:] inv_shape,
-                                    int max_iter, double tolerance,
-                                    floating[:, :, :] start=None):
+def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
+                                       floating[:, :] affine_ref,
+                                       floating[:, :] affine_ref_inv,
+                                       int[:] target_shape,
+                                       floating[:, :] target_aff,
+                                       floating[:, :] target_aff_inv,
+                                       int max_iter, double tolerance,
+                                       floating[:, :, :] start=None):
     r"""
     Computes the inverse of the given 2-D displacement field d using the
     fixed-point algorithm.
@@ -665,8 +714,20 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d, int[:] inv_shape,
     ----------
     d : array, shape (R, C, 2)
         the 2-D displacement field to be inverted
-    inv_shape : array, shape (2,)
+    affine_ref : array, shape(3,3)
+        the matrix transforming pixel positions in the displacement lattice
+        to physical space
+    affine_ref_inv : array, shape (3,3)
+        the matrix transforming point coordinates in physical space 
+        to pixel positions in the dislacement lattice
+    target_shape : array, shape (2,)
         the expected shape of the inverse displacement field.
+    target_aff : array, shape (3, 3)
+        the matrix transforming pixel positions in the inverse displacement 
+        lattice to physical space
+    target_aff_inv : array, shape (3, 3)
+        the matrix transforming point coordinates in physical space 
+        to pixel positions in the inverse dislacement lattice
     max_iter : int
         maximum number of iterations to be performed
     tolerance : float
@@ -678,14 +739,14 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d, int[:] inv_shape,
 
     Returns
     -------
-    p : array, shape inv_shape+(2,) or (R, C, 2) if inv_shape is None
+    p : array, shape target_shape+(2,) or (R, C, 2) if target_shape is None
         the inverse displacement field
 
     Notes
     -----
     The 'inversion error' at iteration t is defined as the mean norm of the
     displacement vectors of the input displacement field composed with the
-    inverse at iteration t. If inv_shape is None, the shape of the resulting
+    inverse at iteration t. If target_shape is None, the shape of the resulting
     inverse will be the same as the input displacement field.
     """
     cdef:
@@ -695,15 +756,20 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d, int[:] inv_shape,
         floating difmag, mag
         floating epsilon = 0.25
         floating error = 1 + tolerance
-    if inv_shape is not None:
-        nr2, nc2 = inv_shape[0], inv_shape[1]
+    if target_shape is not None:
+        nr2, nc2 = target_shape[0], target_shape[1]
     else:
         nr2, nc2 = nr1, nc1
+    #compute the index and displacement pre-multiplying affine matrices to be 
+    #used in the iterated compositions: R1 = target_aff, R2 = affine_ref
+    #premult_index := affine_ref_inv.dot(target_aff)
+    #premult_disp := affine_ref_inv
     cdef:
         floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
         floating[:] substats = np.empty(shape=(3,), dtype=np.asarray(d).dtype)
         floating[:, :, :] p = np.zeros(shape=(nr2, nc2, 2), dtype=np.asarray(d).dtype)
         floating[:, :, :] q = np.zeros(shape=(nr2, nc2, 2), dtype=np.asarray(d).dtype)
+        floating[:, :] premult_index = np.eye(3, dtype = np.asarray(d).dtype)
     if start is not None:
         p[...] = start
 
@@ -711,7 +777,7 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d, int[:] inv_shape,
         iter_count = 0
         while (iter_count < max_iter) and (tolerance < error):
             p, q = q, p
-            _compose_vector_fields_2d(q, d, p, substats)
+            _compose_vector_fields_2d(q, d, premult_index, affine_ref_inv, 1.0, p, substats)
             difmag = 0
             error = 0
             for i in range(nr2):
@@ -1572,7 +1638,9 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
 
 
 def warp_image(floating[:, :] image, floating[:, :, :] d1,
-               floating[:, :] affinePre=None, floating[:, :] affinePost=None):
+               floating[:,:] affine_idx_in=None, 
+               floating[:,:] affine_idx_out=None,
+               floating[:,:] affine_disp=None):
     r"""
     Deforms the input image under the transformation T of the from
     T(x) = B*f(A*x), x\in dom(f), where 
@@ -1580,7 +1648,14 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
     B = affinePost
     f = d2
     using bilinear interpolation. If either affine matrix is None, it is
-    taken as the identity.
+    taken as the identity. After simplifying the domain transformation and
+    physical transformation products, the final warping is of the form
+    warped[i] = image[Tinv*B*A*R*i + Tinv*B*d1[Rinv*A*R*i]]
+    where Tinv is the affine transformation gringing physical points to 
+    image's discretization, and R, Rinv transform d1's discretization to 
+    physical space and physical space to discretization respectively.
+    We require affine_idx_in:=Rinv*A*R, affine_idx_out:=Tinv*B*A*R,
+    and affine_disp:=Tinv*B
 
     Parameters
     ----------
@@ -1604,8 +1679,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
         int nrVol = image.shape[0]
         int ncVol = image.shape[1]
         int i, j, ii, jj
-        double dii, djj, tmp0
-        double alpha, beta, calpha, cbeta
+        double di, dj, dii, djj
         floating[:] tmp = np.zeros((2,), dtype=np.asarray(image).dtype)
     if d1 is not None:
         nrows = d1.shape[0]
@@ -1613,25 +1687,43 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
     cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), 
                                          dtype=np.asarray(image).dtype)
 
+
     with nogil:
 
         for i in range(nrows):
             for j in range(ncols):
-                if(affinePre != None):
+                #Apply inner index premultiplication
+                if not affine_idx_in is None:
                     dii = _apply_affine_2d_x0(
-                        i, j, affinePre)
+                        i, j, affine_idx_in)
                     djj = _apply_affine_2d_x1(
-                        i, j, affinePre)
+                        i, j, affine_idx_in)
                     interpolate_vector_bilinear(d1, dii, djj, tmp)
-                    dii = tmp[0]
-                    djj = tmp[1]
                 else:
-                    dii = i + d1[i, j, 0]
-                    djj = j + d1[i, j, 1]
-                if(affinePost != None):
-                    tmp0 = _apply_affine_2d_x0(dii, djj, affinePost)
-                    djj = _apply_affine_2d_x1(dii, djj, affinePost)
-                    dii = tmp0
+                    tmp[0] = d1[i, j, 0]
+                    tmp[1] = d1[i, j, 1]
+
+                #Apply displacement multiplication (remember: the last entry
+                #of a displacement in homogenous coordinates is 0, not 1, so the
+                #translation part of the affine does not affects them)
+                if not affine_disp is None:
+                    di = _apply_affine_2d_x0(
+                        tmp[0], tmp[1], affine_disp) - affine_disp[0,2]
+                    dj = _apply_affine_2d_x1(
+                        tmp[0], tmp[1], affine_disp) - affine_disp[1,2]
+                else:
+                    di = tmp[0]
+                    dj = tmp[1]
+
+                #Apply outer index multiplization and add the displacements
+                if not affine_idx_out is None:
+                    dii = di + _apply_affine_2d_x0(i, j, affine_idx_out)
+                    djj = dj + _apply_affine_2d_x1(i, j, affine_idx_out)
+                else:
+                    dii = di + i
+                    djj = dj + j
+
+                #Interpolate the input image at the resulting location
                 interpolate_scalar_bilinear(image, dii, djj, &warped[i, j])
     return warped
 
@@ -1691,9 +1783,10 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
     return warped
 
 
-def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
-                  floating[:, :] affinePre=None,
-                  floating[:, :] affinePost=None):
+def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
+                  floating[:,:] affine_idx_in=None, 
+                  floating[:,:] affine_idx_out=None,
+                  floating[:,:] affine_disp=None):
     r"""
     Deforms the input image under the transformation T of the from
     T(x) = B*f(A*x), x\in dom(f), where 
@@ -1707,8 +1800,8 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
     ----------
     image : array, shape (R, C)
         the input image to be transformed
-    displacement : array, shape (R', C', 2)
-        the displacement field driving the transformation
+    d1 : array, shape (R', C', 2)
+        the d1 field driving the transformation
     affinePre : array, shape (3, 3)
         the pre-multiplication affine matrix (A, in the model above)
     affinePost : array, shape (3, 3)
@@ -1724,35 +1817,51 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] displacement,
         int ncols = image.shape[1]
         int nrVol = image.shape[0]
         int ncVol = image.shape[1]
-        double dii, djj
-        double alpha, beta, calpha, cbeta
         int i, j, ii, jj
-    if displacement != None:
-        nrows = displacement.shape[0]
-        ncols = displacement.shape[1]
-    cdef:
-        number[:, :] warped = np.zeros((nrows, ncols), dtype=np.asarray(image).dtype)
-        floating[:] tmp = np.zeros((2,), dtype = np.asarray(displacement).dtype )
+        double di, dj, dii, djj
+        floating[:] tmp = np.zeros((2,), dtype=np.asarray(image).dtype)
+    if d1 is not None:
+        nrows = d1.shape[0]
+        ncols = d1.shape[1]
+    cdef number[:, :] warped = np.zeros(shape=(nrows, ncols), 
+                                         dtype=np.asarray(image).dtype)
 
     with nogil:
 
         for i in range(nrows):
             for j in range(ncols):
-                if(affinePre != None):
+                #Apply inner index premultiplication
+                if not affine_idx_in is None:
                     dii = _apply_affine_2d_x0(
-                        i, j, affinePre)
+                        i, j, affine_idx_in)
                     djj = _apply_affine_2d_x1(
-                        i, j, affinePre)
-                    interpolate_vector_bilinear(displacement, dii, djj, tmp)
-                    dii = tmp[0]
-                    djj = tmp[1]
+                        i, j, affine_idx_in)
+                    interpolate_vector_bilinear(d1, dii, djj, tmp)
                 else:
-                    dii = i + displacement[i, j, 0]
-                    djj = j + displacement[i, j, 1]
-                if(affinePost != None):
-                    tmp[0] = _apply_affine_2d_x0(dii, djj, affinePost)
-                    djj = _apply_affine_2d_x1(dii, djj, affinePost)
-                    dii = tmp[0]
+                    tmp[0] = d1[i, j, 0]
+                    tmp[1] = d1[i, j, 1]
+
+                #Apply displacement multiplication (remember: the last entry
+                #of a displacement in homogenous coordinates is 0, not 1, so the
+                #translation part of the affine does not affects them)
+                if not affine_disp is None:
+                    di = _apply_affine_2d_x0(
+                        tmp[0], tmp[1], affine_disp) - affine_disp[0,2]
+                    dj = _apply_affine_2d_x1(
+                        tmp[0], tmp[1], affine_disp) - affine_disp[1,2]
+                else:
+                    di = tmp[0]
+                    dj = tmp[1]
+
+                #Apply outer index multiplization and add the displacements
+                if not affine_idx_out is None:
+                    dii = di + _apply_affine_2d_x0(i, j, affine_idx_out)
+                    djj = dj + _apply_affine_2d_x1(i, j, affine_idx_out)
+                else:
+                    dii = di + i
+                    djj = dj + j
+
+                #Interpolate the input image at the resulting location
                 interpolate_scalar_nn_2d(image, dii, djj, &warped[i,j])
     return warped
 
@@ -1886,3 +1995,96 @@ def warp_2d_stream_line(floating[:, :] streamline, floating[:, :, :] d1,
             streamline[i, 1] = _apply_affine_2d_x1(dii, djj, affinePost)
         else:
             streamline[i, 0], streamline[i, 1] = dii, djj
+
+
+def expand_displacement_field_3d(floating[:, :, :, :] field, floating[:] factors, int[:] target_shape):
+    cdef:
+        int tslices = target_shape[0]
+        int trows = target_shape[1]
+        int tcols = target_shape[2]
+        int inside, k, i, j
+        double dkk, dii, djj
+        floating[:, :, :, :] expanded = np.zeros((tslices, trows, tcols, 3), dtype=np.asarray(field).dtype)
+
+    for k in range(tslices):
+        for i in range(trows):
+            for j in range(tcols):
+                dkk = <double>k*factors[0]
+                dii = <double>i*factors[1]
+                djj = <double>j*factors[2]
+                interpolate_vector_trilinear(field, dkk, dii, djj, expanded[k, i, j])
+    return expanded
+
+def expand_displacement_field_2d(floating[:, :, :] field, floating[:] factors, int[:] target_shape):
+    cdef:
+        int trows = target_shape[0]
+        int tcols = target_shape[1]
+        int inside, i, j
+        double dii, djj
+        floating[:, :, :] expanded = np.zeros((trows, tcols, 2), dtype=np.asarray(field).dtype)
+
+    for i in range(trows):
+        for j in range(tcols):
+            dii = i*factors[0]
+            djj = j*factors[1]
+            inside = interpolate_vector_bilinear(field, dii, djj, expanded[i, j])
+    return expanded
+
+
+def create_random_displacement_2d(int[:] from_shape, floating[:,:] input_affine, int[:] to_shape, floating[:,:] output_affine):
+    r"""
+    Creates a random 2D displacement field mapping points of an input discrete domain 
+    (with dimensions given by from_shape) to points of an output discrete domain
+    (with shape given by to_shape). The affine matrices bringing discrete coordinates
+    to physical space are given by input_affine (for the displacement field
+    discretization) and output_affine (for the target discretization)
+
+    Returns
+    -------
+    output : array, shape = from_shape
+        the random displacement field in the physical domain
+    int_field : array, shape = from_shape
+        the assignment of each point in the input grid to the target grid
+    """
+    cdef:
+        int dim = len(from_shape)
+        int i, j, k
+        double di, dj, dii, djj
+        int[:,:,:] int_field = np.ndarray(tuple(from_shape) + (dim,), dtype = np.int32)
+        floating[:, :, :] output = np.zeros(tuple(from_shape) + (dim,), np.asarray(input_affine).dtype)
+        int dom_size = from_shape[0]*from_shape[1]
+
+    #compute the actual displacement field in the physical space
+    for i in range(from_shape[0]):
+        for j in range(from_shape[1]):
+            #randomly choose where each input grid point will be mapped to in the target grid
+            int_field[i, j, 0] = np.random.randint(0, to_shape[0])
+            int_field[i, j, 1] = np.random.randint(0, to_shape[1])
+            
+            #convert the input point to physical coordinates
+            if not input_affine is None:
+                di = _apply_affine_2d_x0(i, j, input_affine)
+                dj = _apply_affine_2d_x1(i, j, input_affine)
+            else:
+                di = i
+                dj = j
+            
+            #convert the output point to physical coordinates
+            if not output_affine is None:
+                dii = _apply_affine_2d_x0(int_field[i, j, 0], int_field[i, j, 1], output_affine)
+                djj = _apply_affine_2d_x1(int_field[i, j, 0], int_field[i, j, 1], output_affine)
+            else:
+                dii = int_field[i, j, 0]
+                djj = int_field[i, j, 1]
+
+            #the displacement vector at (i,j) must be the target point minus the
+            #original point, both in physical space
+
+            output[i, j, 0] = dii - di
+            output[i, j, 1] = djj - dj
+
+    return output, int_field
+
+
+
+    

@@ -30,6 +30,8 @@ the RGB images (in this case the three channels are equal)
 moving = np.array(moving[:, :, 0])
 static = np.array(static[:, :, 0])
 
+#static = moving.copy()
+
 plt.figure()
 plt.subplot(1, 2, 1)
 plt.imshow(static, cmap=plt.cm.gray)
@@ -56,7 +58,7 @@ of Squared Differences (SSD) is a good choice. We create a metric specifying
 2 as the dimension of our images' domain
 """
 
-metric = SSDMetric(dim = 2) 
+metric = SSDMetric(dim = 2, smooth=4, inner_iter=10, step_length=0.5) 
 
 """
 Now we define an instance of the optimizer of the metric. The SyN algorithm uses
@@ -65,7 +67,9 @@ optimizer to perform at most [n_0, n_1, ..., n_k] iterations at each level of
 the pyramid. The 0-th level corresponds to the finest resolution.  
 """
 
-opt_iter = [25, 100, 100, 100]
+opt_iter = [20, 100, 100, 100]
+#opt_iter = [1, 1, 1, 1]
+
 optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
 
 """
@@ -73,8 +77,28 @@ Now we execute the optimization, which returns a DiffeomorphicMap object,
 that can be used to register images back and forth between the static and moving
 domains
 """
+nr = moving.shape[0]
+nc = moving.shape[1]
+trans = np.array([[1, 0, -0.5*nr],
+                  [0, 1, -0.5*nc],
+                  [0, 0, 1]])
+trans_inv = np.linalg.inv(trans)
+scale = np.array([[1.1, 0, 0],
+                  [0, 1.1, 0],
+                  [0, 0, 1]])
+gt_affine = trans_inv.dot(scale.dot(trans))
+gt_affine_inv = np.linalg.inv(gt_affine)
 
-mapping = optimizer.optimize(static, moving)
+static_affine = scale
+moving_affine = scale
+# static_affine = np.eye(3)
+# moving_affine = np.eye(3)
+static_affine = None
+moving_affine = None
+pre_align = None
+
+optimizer.verbosity = 2
+mapping = optimizer.optimize(static, moving, static_affine, moving_affine, pre_align)
 
 """
 It is a good idea to visualize the resulting deformation map to make sure the
@@ -99,7 +123,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
                                  (ncols_moving+delta)/(delta+1), delta)
     lattice_moving=lattice_moving[0:nrows_moving, 0:ncols_moving]
     #Warp in the forward direction (since the lattice is in the moving domain)
-    warped_forward = mapping.transform(lattice_moving)
+    warped_forward = mapping.transform(lattice_moving, mapping.affine_backward_inv, 'tri')
 
     #Create a grid on the static domain
     nrows_static = mapping.backward.shape[0]
@@ -109,7 +133,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
                                  (ncols_static+delta)/(delta+1), delta)
     lattice_static=lattice_static[0:nrows_static, 0:ncols_static]
     #Warp in the backward direction (since the lattice is in the static domain)
-    warped_backward = mapping.transform_inverse(lattice_static)
+    warped_backward = mapping.transform_inverse(lattice_static, mapping.affine_forward_inv,'tri')
 
     #Now plot the grids
     plt.figure()
@@ -140,7 +164,7 @@ plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 Now let's warp the moving image and see if it gets similar to the static image
 """
 
-warped_moving = mapping.transform(moving)
+warped_moving = mapping.transform(moving, mapping.affine_backward, 'tri')
 
 """
 To visually check the overlap of the static image with the transformed moving
@@ -156,7 +180,7 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     img1_green[...,1] = img1
     overlay[...,0]=img0
     overlay[...,1]=img1
-    fig=None
+    plt.figure()
     plt.subplot(1,3,1)
     plt.imshow(img0_red)
     plt.title(title0)
@@ -187,7 +211,7 @@ And we can also apply the inverse mapping to verify that the warped static image
 is similar to the moving image 
 """
 
-warped_static = mapping.transform_inverse(static)
+warped_static = mapping.transform_inverse(static, mapping.affine_forward_inv, 'tri')
 overlay_images(warped_static, moving,'Warped static','Overlay','Moving', 
     'inverse_warp_result.png')
 
