@@ -83,18 +83,18 @@ trans = np.array([[1, 0, -0.5*nr],
                   [0, 1, -0.5*nc],
                   [0, 0, 1]])
 trans_inv = np.linalg.inv(trans)
-scale = np.array([[1.1, 0, 0],
-                  [0, 1.1, 0],
+scale = np.array([[1.5, 0, 0],
+                  [0, 1.5, 0],
                   [0, 0, 1]])
 gt_affine = trans_inv.dot(scale.dot(trans))
 gt_affine_inv = np.linalg.inv(gt_affine)
 
-static_affine = scale
-moving_affine = scale
+static_affine = trans
+moving_affine = trans
 # static_affine = np.eye(3)
 # moving_affine = np.eye(3)
-static_affine = None
-moving_affine = None
+# static_affine = None
+# moving_affine = None
 pre_align = None
 
 optimizer.verbosity = 2
@@ -164,7 +164,7 @@ plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 Now let's warp the moving image and see if it gets similar to the static image
 """
 
-warped_moving = mapping.transform(moving, mapping.affine_backward, 'tri')
+warped_moving = mapping.transform(moving, mapping.affine_backward_inv, 'tri')
 
 """
 To visually check the overlap of the static image with the transformed moving

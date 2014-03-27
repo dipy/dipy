@@ -8,7 +8,7 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 
 
-def multi_aff(A, B):
+def mult_aff(A, B):
     if A is None:
         return B
     elif B is None:
@@ -270,15 +270,6 @@ def compute_warping_affines(T_inv, R, R_inv, A, B):
     else:
         affine_index_out = out_2.dot(out_1).astype(floating)
     return affine_index_in, affine_index_out, affine_disp
-
-
-def compute_composition_affines(T1, T2_inv):
-    r"""
-    Computes the affine matrices to be passed to displacement field composition
-    functions. 
-
-    """
-    premult_disp = 
 
 
 class DiffeomorphicMap(object):
@@ -770,8 +761,8 @@ class DiffeomorphicMap(object):
         ext_fwd[:self.dim] = expand_factors_forward[...]
         ext_bwd = np.ones(self.dim+1)
         ext_bwd[:self.dim] = expand_factors_backward[...]
-        expanded_affine_forward = np.diag(ext_fwd).dot(self.affine_forward)
-        expanded_affine_backward = np.diag(ext_bwd).dot(self.affine_backward)
+        expanded_affine_forward = mult_aff(self.affine_forward, np.diag(ext_fwd))
+        expanded_affine_backward = mult_aff(self.affine_backward, np.diag(ext_bwd))
 
         self.set_forward(expanded_forward, expanded_affine_forward, target_scaling_forward)
         self.set_backward(expanded_backward, expanded_affine_backward, target_scaling_backward)
@@ -840,40 +831,19 @@ class DiffeomorphicMap(object):
         """
         #Compute the discretization matrices to be used in the forward
         #composition
-
-        #the first transformation has discretization T1 = A^{-1}R_1 
-        #the second has discretization inverse T2inv = R_2^{-1}.dot(C.dot(B)), 
-        #so the index premultiplication is 
-        #Compute the product C.dot(B)
-        C_dot_B = mult_aff(self.affine_pre, apply_first.affine_post)
         
-        Ainv = apply_first.affine_pre_inv
         R1 = apply_first.affine_forward
         R2inv = self.affine_forward_inv
-        T1 = mult_aff(Ainv, R1)
-        T2inv = mult_aff(R2inv, C_dot_B)
-
-        #finaly, the index premultiplication is T2inv.dot(T1) and the
-        #displacement premultiplication is just T2inv
-        f_premult_index = mult_aff(T2inv, T1)
-        f_premult_disp = T2inv
+        f_premult_index = mult_aff(R2inv, R1)
+        f_premult_disp = R2inv
 
         #Compute the discretization matrices to be used in the backward
         #composition (we apply inverse of self first, then inverse of apply_first)
 
-        #Compute the product B^{-1}.dot(C^{-1})
-        Binv_dot_Cinv = mult_aff(apply_first.affine_post_inv, self.affine_pre_inv)
-
-        Ainv = self.affine_post
         R1 = self.affine_backward
         R2inv = apply_first.affine_backward_inv
-        T1 = mult_aff(Ainv, R1)
-        T2_inv = mult_aff(R2inv, Binv_dot_Cinv)
-
-        #finaly, the index premultiplication is T2inv.dot(T1) and the
-        #displacement premultiplication is just T2inv
-        b_premult_index = mult_aff(T2inv, T1)
-        b_premult_disp = T2inv
+        b_premult_index = mult_aff(R2inv, R1)
+        b_premult_disp = R2inv
         
         if self.dim == 2:
             forward, stats = vfu.compose_vector_fields_2d(apply_first.forward, 
@@ -902,7 +872,7 @@ class DiffeomorphicMap(object):
                                        backward,
                                        None,
                                        None,
-                                       None,
+                                       apply_first.scalings_forward,
                                        self.scalings_backward,
                                        apply_first.affine_forward,
                                        self.affine_backward)
@@ -914,7 +884,9 @@ class DiffeomorphicMap(object):
         and displacement fields are not copied
         """
         inv = DiffeomorphicMap(self.dim, self.backward, self.forward,
-                               self.affine_post_inv, self.affine_pre_inv)
+                               self.affine_post_inv, self.affine_pre_inv,
+                               self.scalings_backward, self.scalings_forward,
+                               self.affine_backward, self.affine_forward)
         return inv
 
     def consolidate(self):
@@ -1521,10 +1493,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 derivative = self._iterate()
             plt.figure()
             plt.subplot(1,2,1)
-            wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine, 'tri')
+            wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
             plt.imshow(wmoving, cmap = plt.cm.gray)
             plt.subplot(1,2,2)
-            wstatic = self.forward_model.transform_inverse(self.static, self.static_affine, 'tri')
+            wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
             plt.imshow(wstatic, cmap = plt.cm.gray)
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.forward_model.compute_inversion_error()
@@ -1541,8 +1513,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.forward_model)
 
         # Put affines inside the deformation field
-        self.forward_model.consolidate()
-        del self.backward_model
+        # self.forward_model.consolidate()
+        # del self.backward_model
         
         # Report mean and std for the composed deformation field
         residual, stats = self.forward_model.compute_inversion_error()
