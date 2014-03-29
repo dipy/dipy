@@ -313,42 +313,44 @@ class CCMetric(SimilarityMetric):
         return self.energy
 
     def use_static_image_dynamics(self, original_static_image, transformation):
-        r"""
-        CCMetric takes advantage of the image dynamics by computing the
-        current static image mask from the originalstaticImage mask (warped
-        by nearest neighbor interpolation)
+        # r"""
+        # CCMetric takes advantage of the image dynamics by computing the
+        # current static image mask from the originalstaticImage mask (warped
+        # by nearest neighbor interpolation)
 
-        Parameters
-        ----------
-        original_static_image : array, shape (R, C) or (S, R, C)
-            the original image from which the current static image was generated
-        transformation : DiffeomorphicMap object
-            the transformation that was applied to original image to generate
-            the current static image
-        """
-        self.static_image_mask = (original_static_image>0).astype(np.int32)
-        if transformation == None:
-            return
-        self.static_image_mask = transformation.transform(self.static_image_mask,'nn')
+        # Parameters
+        # ----------
+        # original_static_image : array, shape (R, C) or (S, R, C)
+        #     the original image from which the current static image was generated
+        # transformation : DiffeomorphicMap object
+        #     the transformation that was applied to original image to generate
+        #     the current static image
+        # """
+        # self.static_image_mask = (original_static_image>0).astype(np.int32)
+        # if transformation == None:
+        #     return
+        # self.static_image_mask = transformation.transform(self.static_image_mask,'nn')
+        pass
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
-        r"""
-        CCMetric takes advantage of the image dynamics by computing the
-        current moving image mask from the originalMovingImage mask (warped
-        by nearest neighbor interpolation)
+        # r"""
+        # CCMetric takes advantage of the image dynamics by computing the
+        # current moving image mask from the originalMovingImage mask (warped
+        # by nearest neighbor interpolation)
 
-        Parameters
-        ----------
-        original_moving_image : array, shape (R, C) or (S, R, C)
-            the original image from which the current moving image was generated
-        transformation : DiffeomorphicMap object
-            the transformation that was applied to original image to generate
-            the current moving image
-        """
-        self.moving_image_mask = (original_moving_image>0).astype(np.int32)
-        if transformation == None:
-            return
-        self.moving_image_mask = transformation.transform(self.moving_image_mask, 'nn')
+        # Parameters
+        # ----------
+        # original_moving_image : array, shape (R, C) or (S, R, C)
+        #     the original image from which the current moving image was generated
+        # transformation : DiffeomorphicMap object
+        #     the transformation that was applied to original image to generate
+        #     the current moving image
+        # """
+        # self.moving_image_mask = (original_moving_image>0).astype(np.int32)
+        # if transformation == None:
+        #     return
+        # self.moving_image_mask = transformation.transform(self.moving_image_mask, 'nn')
+        pass
 
 
 class EMMetric(SimilarityMetric):

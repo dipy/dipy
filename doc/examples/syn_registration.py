@@ -30,6 +30,8 @@ the RGB images (in this case the three channels are equal)
 moving = np.array(moving[:, :, 0])
 static = np.array(static[:, :, 0])
 
+moving = moving[:240,:240]
+
 #static = moving.copy()
 
 plt.figure()
@@ -77,8 +79,9 @@ Now we execute the optimization, which returns a DiffeomorphicMap object,
 that can be used to register images back and forth between the static and moving
 domains
 """
-nr = moving.shape[0]
-nc = moving.shape[1]
+#create asynthetic transformation for the moving image
+nr = static.shape[0]
+nc = static.shape[1]
 trans = np.array([[1, 0, -0.5*nr],
                   [0, 1, -0.5*nc],
                   [0, 0, 1]])
@@ -93,9 +96,10 @@ static_affine = scale
 moving_affine = scale
 # static_affine = np.eye(3)
 # moving_affine = np.eye(3)
-# static_affine = None
-# moving_affine = None
+static_affine = None
+moving_affine = None
 pre_align = None
+
 
 optimizer.verbosity = 2
 mapping = optimizer.optimize(static, moving, static_affine, moving_affine, pre_align)

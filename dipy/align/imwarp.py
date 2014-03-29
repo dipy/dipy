@@ -38,7 +38,7 @@ def get_direction_and_scalings(affine, dim):
     return A.dot(np.diag(1.0/scalings)), scalings
 
 
-def scale_space(image, max_scale, input_affine=None):
+def scale_space(image, max_scale, input_affine, input_direction, input_spacing):
     r"""
     
     Returns
@@ -65,7 +65,6 @@ def scale_space(image, max_scale, input_affine=None):
     """
     sigma_factor = 1.2
     dim = len(image.shape)
-    input_direction, input_spacing = get_direction_and_scalings(input_affine, dim)
     
     input_size = np.array(image.shape)
     input_spacing = np.array(input_spacing)
@@ -75,11 +74,11 @@ def scale_space(image, max_scale, input_affine=None):
     for i in range(max_scale):
         scaling_factor = 2**(i+1)
         scaling = np.ndarray((dim+1,))
-        scaling = np.minimum(scaling_factor * min_spacing / input_spacing, input_size / 32)
+        #scaling = np.minimum(scaling_factor * min_spacing / input_spacing, input_size / 32)
+        scaling = scaling_factor * min_spacing / input_spacing
         output_spacing = input_spacing * scaling
         extended = np.append(scaling, [1])
         if not input_affine is None:
-            print 'extended shape:',extended.shape
             affine = input_affine.dot(np.diag(extended))
         else:
             affine = np.diag(extended)
@@ -973,12 +972,21 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print('Error: Maximum number of iterations per level not set.')
         return ready
 
-    def _init_optimizer(self):
+    def _init_optimizer(self, static, moving, static_affine, moving_affine, pre_align):
         r"""
         Computes the Gaussian Pyramid of the input images and allocates
         the required memory for the transformation models at the coarcest
         scale.
         """
+        static_direction, static_spacing = get_direction_and_scalings(static_affine, self.dim)
+        moving_direction, moving_spacing = get_direction_and_scalings(moving_affine, self.dim)
+
+        moving_affine = mult_aff(pre_align, moving_affine)
+        self.set_static_image(static, static_affine)
+        self.set_moving_image(moving, moving_affine)
+        self.forward_model = DiffeomorphicMap(self.dim)
+        self.backward_model = DiffeomorphicMap(self.dim)
+
         ready = self._check_ready()
         self._connect_functions()
         if not ready:
@@ -987,10 +995,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #build the scale space of the input images
         self.moving_ss = [(filtered, size, spacing, scaling, affine) 
             for (filtered, size, spacing, scaling, affine) in 
-                scale_space(self.moving, self.levels - 1, self.moving_affine)]
+                scale_space(self.moving, self.levels - 1, self.moving_affine, moving_direction, moving_spacing)]
         self.static_ss = [(filtered, size, spacing, scaling, affine) 
             for (filtered, size, spacing, scaling, affine) in 
-                scale_space(self.static, self.levels - 1, self.static_affine)]
+                scale_space(self.static, self.levels - 1, self.static_affine, static_direction, static_spacing)]
 
         print 'Moving scale space:'
         for scale_info in self.moving_ss:
@@ -1082,8 +1090,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compute the forward step (to be used to update the forward transform)
         #Note that fw_step's sampling is the same as the current forward model's 
         fw_step = np.array(self.metric.compute_forward())
-        nrm = np.sqrt(np.sum((fw_step/self.current_static_spacing)**2, -1)).max()
-        fw_step*=(0.25/nrm)
+        # nrm = np.sqrt(np.sum((fw_step/self.current_static_spacing)**2, -1)).max()
+        # fw_step*=(0.25/nrm)
         
         self.forward_model.forward, md_forward = self.update(
             self.forward_model.forward, fw_step, 
@@ -1096,8 +1104,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compose the backward step (to be used to update the backward transform)
         #Note that bw_step's sampling is the same as the current backward model's 
         bw_step = np.array(self.metric.compute_backward())
-        nrm = np.sqrt(np.sum((bw_step/self.current_moving_spacing)**2, -1)).max()
-        bw_step*=(0.25/nrm)
+        # nrm = np.sqrt(np.sum((bw_step/self.current_moving_spacing)**2, -1)).max()
+        # bw_step*=(0.25/nrm)
 
         self.backward_model.forward, md_backward = self.update(
             self.backward_model.forward, bw_step, 
@@ -1267,13 +1275,23 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
                 niter += 1
                 derivative = self._iterate()
-            plt.figure()
-            plt.subplot(1,2,1)
-            wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
-            plt.imshow(wmoving, cmap = plt.cm.gray)
-            plt.subplot(1,2,2)
-            wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
-            plt.imshow(wstatic, cmap = plt.cm.gray)
+            if self.dim == 2:
+                plt.figure()
+                plt.subplot(1,2,1)
+                wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
+                plt.imshow(wmoving, cmap = plt.cm.gray)
+                plt.subplot(1,2,2)
+                wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
+                plt.imshow(wstatic, cmap = plt.cm.gray)
+            else:
+                plt.figure()
+                plt.subplot(1,2,1)
+                wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
+                plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
+                plt.subplot(1,2,2)
+                wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
+                plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
+
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.forward_model.compute_inversion_error()
         if self.verbosity > 0:
@@ -1308,13 +1326,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #The forward model transforms the static image to the reference space, which is the 
         #same as the static domain, so the discretization scalings and affines are the same
-        self.forward_model = DiffeomorphicMap(self.dim)
+        
 
         #The backward model transforms moving points to reference points, so the discretization
         #of the forward direction of the backward model corresponds to the moving image zooms 
         #and affine, while the discretization of the backward direction of the backward model
         #corresponds to the static zooms and affine 
-        self.backward_model = DiffeomorphicMap(self.dim)
+        
 
     def optimize(self, static, moving, static_affine=None, moving_affine=None, pre_align=None):
         r"""
@@ -1343,13 +1361,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             forward_model.transform_inverse). 
 
         """
-        print 'pre_align:', pre_align
-        self.set_static_image(static, static_affine)
-        self.set_moving_image(moving, moving_affine)
-
-        self.initialize_transforms(static_affine, moving_affine, pre_align)
-
-        self._init_optimizer()
+        self._init_optimizer(static, moving, static_affine, moving_affine, pre_align)
         self._optimize()
         self._end_optimizer()
         return self.forward_model
