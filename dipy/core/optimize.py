@@ -2,6 +2,8 @@
 An interface class for performing and debugging optimization problems.
 """
 
+import os
+from tempfile import mkstemp
 from distutils.version import StrictVersion
 import numpy as np
 import scipy
@@ -26,7 +28,7 @@ class Optimizer(object):
 
     def __init__(self, fun,  x0, args=(), method='BFGS', jac=None, hess=None,
                  hessp=None, bounds=None, constraints=(), tol=None,
-                 callback=None, options=None, history=False):
+                 callback=None, options=None, evolution=False):
         """ A class for handling minimization of scalar function of one or more
         variables.
 
@@ -115,13 +117,16 @@ class Optimizer(object):
                     Set to True to print convergence messages.
             For method-specific options, see `show_options('minimize', method)`.
 
-        history : bool, optional
-            save history of x
+        evolution : bool, optional
+            save history of x for each iteration
 
         See also
         ---------
         scipy.optimize.minimize
         """
+
+        self.evolution_fname = None
+        self.size_of_x = len(x0)
 
         if scipy_less_0_11:
 
@@ -145,20 +150,27 @@ class Optimizer(object):
 
         if not scipy_less_0_11:
 
-            if history is True:
+            if evolution is True:
 
-                def hist(kx):
-                    print(kx)
+                _, fname = mkstemp()
+
+                if os.path.isfile(fname):
+                    os.remove(fname)
+
+                def history_of_x(kx):
+                    f = open(fname, 'a')
+                    np.savetxt(f, kx)
+                    f.close()
 
                 res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
-                               constraints, tol, callback=hist, options=options)
+                               constraints, tol, callback=history_of_x,
+                               options=options)
+                self.evolution_fname = fname
 
             else:
 
                 res = minimize(fun, x0, args, method, jac, hess, hessp, bounds,
                                constraints, tol, callback, options)
-
-
 
         self.res = res
 
@@ -192,11 +204,15 @@ class Optimizer(object):
 
         print(self.res)
 
+    @property
+    def evolution(self):
 
-
-
-
-
+        fname = self.evolution_fname
+        if fname is not None:
+            f = open(fname, 'r')
+            history = np.loadtxt(f).reshape((self.res['nit'], self.size_of_x))
+            f.close()
+            return history
 
 
 

@@ -1,5 +1,6 @@
 import numpy as np
-from numpy.testing import (assert_almost_equal,
+from numpy.testing import (assert_equal,
+                           assert_almost_equal,
                            assert_array_almost_equal)
 
 
@@ -36,7 +37,7 @@ def test_optimize():
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
                         options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8},
-                        history=True)
+                        evolution=False)
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
 
@@ -47,11 +48,12 @@ def test_optimize():
         opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
                         method='L-BFGS-B',
                         options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8},
-                        history=True)
+                        evolution=True)
         print(opt.nit)
 
-        print(opt.hist)
+        assert_equal(opt.evolution.shape, (opt.nit, 4))
 
+        print(opt.evolution)
 
     if scipy_less_0_11:
 
