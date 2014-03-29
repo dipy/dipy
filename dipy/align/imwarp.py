@@ -459,7 +459,7 @@ class DiffeomorphicMap(object):
                                     affine_disp)
         return np.array(warped)
 
-    def _warp_forward_nn(self, image):
+    def _warp_forward_nn(self, image, affine_inv):
         r"""
         Applies this transformation in the forward direction to the given image
         using nearest-neighbor interpolation
@@ -493,7 +493,7 @@ class DiffeomorphicMap(object):
                                        affine_disp)
         return np.array(warped)
 
-    def _warp_backward_nn(self, image):
+    def _warp_backward_nn(self, image, affine_inv):
         r"""
         Applies this transformation in the backward direction to the given
         image using nearest-neighbor interpolation
@@ -1090,8 +1090,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compute the forward step (to be used to update the forward transform)
         #Note that fw_step's sampling is the same as the current forward model's 
         fw_step = np.array(self.metric.compute_forward())
-        # nrm = np.sqrt(np.sum((fw_step/self.current_static_spacing)**2, -1)).max()
-        # fw_step*=(0.25/nrm)
+        nrm = np.sqrt(np.sum((fw_step/self.current_static_spacing)**2, -1)).max()
+        fw_step*=(0.25/nrm)
         
         self.forward_model.forward, md_forward = self.update(
             self.forward_model.forward, fw_step, 
@@ -1104,8 +1104,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compose the backward step (to be used to update the backward transform)
         #Note that bw_step's sampling is the same as the current backward model's 
         bw_step = np.array(self.metric.compute_backward())
-        # nrm = np.sqrt(np.sum((bw_step/self.current_moving_spacing)**2, -1)).max()
-        # bw_step*=(0.25/nrm)
+        nrm = np.sqrt(np.sum((bw_step/self.current_moving_spacing)**2, -1)).max()
+        bw_step*=(0.25/nrm)
 
         self.backward_model.forward, md_backward = self.update(
             self.backward_model.forward, bw_step, 
@@ -1243,7 +1243,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             
             self.metric.set_levels_below(self.levels - level)
             self.metric.set_levels_above(level)
-            if self.verbosity > 0:
+            if self.verbosity > 8:
                 print '***************Before***************'
                 print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
                 print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 
@@ -1260,7 +1260,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                                   self.moving_ss[level][1],
                                                   self.static_ss[level][2], 
                                                   self.static_ss[level][1])
-            if self.verbosity > 0:
+            if self.verbosity > 8:
                 print '***************After***************'
                 print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
                 print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 

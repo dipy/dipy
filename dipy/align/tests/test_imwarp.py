@@ -578,5 +578,5 @@ if __name__=='__main__':
     # test_cc_2d()
     # test_cc_factors_3d()
     # test_compose_vector_fields_3d()
-    test_cc_3d()
+    #test_cc_3d()
     # test_em_3d()

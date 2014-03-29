@@ -111,6 +111,7 @@ Registration
 ------------
 
 - :ref:`example_syn_registration`
+- :ref:`example_syn_registration_3d`
 
 ------------
 Segmentation
