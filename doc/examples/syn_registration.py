@@ -89,8 +89,8 @@ scale = np.array([[1.5, 0, 0],
 gt_affine = trans_inv.dot(scale.dot(trans))
 gt_affine_inv = np.linalg.inv(gt_affine)
 
-static_affine = trans
-moving_affine = trans
+static_affine = scale
+moving_affine = scale
 # static_affine = np.eye(3)
 # moving_affine = np.eye(3)
 # static_affine = None

@@ -65,7 +65,7 @@ def test_warping_2d():
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
     moving_image = np.ndarray(target_shape, dtype=floating)
-    moving_image[...] = np.random.randint(0, 10, size(moving_image)).reshape(tuple(target_shape))
+    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
     #set boundary values to zero so we don't test wrong interpolation due to
     #floating point precision
     moving_image[0,:] = 0
@@ -76,14 +76,11 @@ def test_warping_2d():
     #warp the moving image using the synthetic displacement field
     target_affine_inv = np.linalg.inv(target_affine)
     input_affine_inv = np.linalg.inv(input_affine)
-    affines = imwarp.compute_warping_affines(T_inv = target_affine_inv, 
-                                             R = input_affine,
-                                             R_inv = input_affine_inv, 
-                                             A = None, 
-                                             B = None)
+    affine_index = target_affine_inv.dot(input_affine).astype(floating)
+    affine_disp = target_affine_inv.astype(floating)
 
     #apply the implementation under test
-    warped = np.array(vfu.warp_image(moving_image, disp, affines[0], affines[1], affines[2]))
+    warped = np.array(vfu.warp_image(moving_image, disp, affine_index, affine_disp))
 
     #warp the moving image using the (exact) assignments
     expected = moving_image[(assign[...,0], assign[...,1])]
@@ -92,12 +89,93 @@ def test_warping_2d():
     assert_array_almost_equal(warped, expected, decimal = 5)
     
     #Now test the nearest neighbor interpolation
-    warped = np.array(vfu.warp_image_nn(moving_image, disp, affines[0], affines[1], affines[2]))
+    warped = np.array(vfu.warp_image_nn(moving_image, disp, affine_index, affine_disp))
     #compare the images (now we dont have to worry about precision, it is n.n.)
     assert_array_almost_equal(warped, expected)
 
+    #test consolidation
+    consolidated = vfu.consolidate_2d(disp, affine_index, affine_disp)
+    warped = np.array(vfu.warp_image(moving_image, consolidated, None, None))
+    assert_array_almost_equal(warped, expected, decimal = 5)
+    warped = np.array(vfu.warp_image_nn(moving_image, consolidated, None, None))
+    assert_array_almost_equal(warped, expected)
 
-def test_compose_vector_fields():
+
+def test_warping_3d():
+    from dipy.align import floating
+    import dipy.align.imwarp as imwarp
+    import dipy.align.vector_fields as vfu
+    from numpy.testing import (assert_array_almost_equal)
+    input_shape = (10, 10, 10)
+    target_shape = (10, 10, 10)
+    #create a simple affine transformation
+    ns = input_shape[0]
+    nr = input_shape[1]
+    nc = input_shape[2]
+    s = 1.5
+    t = 2.5
+    trans = np.array([[1, 0, 0, -t*ns],
+                      [0, 1, 0, -t*nr],
+                      [0, 0, 1, -t*nc],
+                      [0, 0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+    scale = np.array([[1*s, 0, 0, 0],
+                      [0, 1*s, 0, 0],
+                      [0, 0, 1*s, 0],
+                      [0, 0, 0, 1]])
+    gt_affine = trans_inv.dot(scale.dot(trans))
+    gt_affine_inv = np.linalg.inv(gt_affine)
+
+    #create the random displacement field
+    input_affine = gt_affine
+    target_affine = gt_affine
+    disp, assign = vfu.create_random_displacement_3d(np.array(input_shape, dtype=np.int32),
+                                                     np.array(input_affine).astype(floating), 
+                                                     np.array(target_shape, dtype=np.int32),
+                                                     np.array(target_affine).astype(floating))
+    disp = np.array(disp)
+    assign = np.array(assign)
+    #create a random image (with decimal digits) to warp
+    moving_image = np.ndarray(target_shape, dtype=floating)
+    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
+    #set boundary values to zero so we don't test wrong interpolation due to
+    #floating point precision
+    moving_image[0,:,:] = 0
+    moving_image[-1,:,:] = 0
+    moving_image[:,0,:] = 0
+    moving_image[:,-1,:] = 0
+    moving_image[:,:,0] = 0
+    moving_image[:,:,-1] = 0
+
+    #warp the moving image using the synthetic displacement field
+    target_affine_inv = np.linalg.inv(target_affine)
+    input_affine_inv = np.linalg.inv(input_affine)
+    affine_index = target_affine_inv.dot(input_affine).astype(floating)
+    affine_disp = target_affine_inv.astype(floating)
+
+    #apply the implementation under test
+    warped = np.array(vfu.warp_volume(moving_image, disp, affine_index, affine_disp))
+
+    #warp the moving image using the (exact) assignments
+    expected = moving_image[(assign[...,0], assign[...,1], assign[...,2])]
+
+    #compare the images
+    assert_array_almost_equal(warped, expected, decimal = 5)
+    
+    #Now test the nearest neighbor interpolation
+    warped = np.array(vfu.warp_volume_nn(moving_image, disp, affine_index, affine_disp))
+    #compare the images (now we dont have to worry about precision, it is n.n.)
+    assert_array_almost_equal(warped, expected)
+
+    #test consolidation
+    consolidated = vfu.consolidate_3d(disp, affine_index, affine_disp)
+    warped = np.array(vfu.warp_volume(moving_image, consolidated, None, None))
+    assert_array_almost_equal(warped, expected, decimal = 5)
+    warped = np.array(vfu.warp_volume_nn(moving_image, consolidated, None, None))
+    assert_array_almost_equal(warped, expected)
+
+
+def test_compose_vector_fields_2d():
     from dipy.align import floating
     import dipy.align.imwarp as imwarp
     import dipy.align.vector_fields as vfu
@@ -139,7 +217,7 @@ def test_compose_vector_fields():
 
     #create a random image (with decimal digits) to warp
     moving_image = np.ndarray(target_shape, dtype=floating)
-    moving_image[...] = np.random.randint(0, 10, size(moving_image)).reshape(tuple(target_shape))
+    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
     #set boundary values to zero so we don't test wrong interpolation due to
     #floating point precision
     moving_image[0,:] = 0
@@ -156,97 +234,108 @@ def test_compose_vector_fields():
     target_affine_inv = np.linalg.inv(target_affine)
     input_affine_inv = np.linalg.inv(input_affine)
 
-    premult_disp = input_affine_inv
-    premult_index = input_affine_inv.dot(target_affine)
+    target_affine_inv = np.linalg.inv(target_affine)
+    input_affine_inv = np.linalg.inv(input_affine)
+    premult_index = target_affine_inv.dot(input_affine).astype(floating)
+    premult_disp = target_affine_inv.astype(floating)
     
     composition, stats = vfu.compose_vector_fields_2d(disp1, disp2,
                                                np.array(premult_index, dtype=floating),
                                                np.array(premult_disp, dtype = floating),
                                                1.0)
     #apply the implementation under test
-    affines = imwarp.compute_warping_affines(T_inv = target_affine_inv, 
-                                             R = input_affine,
-                                             R_inv = input_affine_inv, 
-                                             A = None, 
-                                             B = None)
-    warped = np.array(vfu.warp_image(moving_image, composition, affines[0], affines[1], affines[2]))
+    warped = np.array(vfu.warp_image(moving_image, composition, premult_index, premult_disp))
+
+    assert_array_almost_equal(warped, expected, decimal=5)
+
+    #test also using nearest neighbor interpolation
+    warped = np.array(vfu.warp_image_nn(moving_image, composition, premult_index, premult_disp))
 
     assert_array_almost_equal(warped, expected)
-    
-
-def test_compose_vector_fields_2d_easy():
-    r"""
-    Compose a constant vector field equal to (1,1) with itself. The result
-    must be (2,2) everywhere except at the [n-1, :], [:, n-1] boundary. 
-    The maximum and average norm must be 2*\sqrt(2) with standard deviation 0.
-    """
-    import dipy.align.vector_fields as vf
-    d1 = np.ones(shape = (10,10,2), dtype = floating)
-    #test using the identity
-    identity = np.eye(3, dtype = floating)
-    c, s = vf.compose_vector_fields_2d(d1, d1, identity, identity, 1.0)
-    expected_c = np.ones_like(d1)
-    expected_c *= 2
-    expected_c[9,...] = 0
-    expected_c[:,9,...] = 0
-    assert_array_almost_equal(c, expected_c)
-    expected_s = np.array([2*np.sqrt(2), 2*np.sqrt(2), 0])
-    assert_array_almost_equal(expected_s, s)
-    #now flip the axes
-    flip = np.zeros((3,3), dtype = floating)
-    flip_inv = np.zeros((3,3), dtype = floating)
-    flip[0, 1] = 2
-    flip[1, 0] = 2
-    flip[2, 2] = 1
-    flip_inv[0, 1] = 0.5
-    flip_inv[1, 0] = 0.5
-    flip_inv[2, 2] = 1
-    #if the two affine matrices (for d1 and d2) are the same,
-    #then the point pre-multiplication  is the identity
-    c, s = vf.compose_vector_fields_2d(d1, d1, identity, flip_inv, 1.0)
-    assert_array_almost_equal(c, expected_c)
-    expected_s = np.array([2*np.sqrt(2), 2*np.sqrt(2), 0])
-    assert_array_almost_equal(expected_s, s)
-    #Now use flip as the second displacement matrix (provide the inverse
-    #as second argument), and the identity as the first displacement matrix,
-    #this means that the SECOND displacement is defined at a larger region, 
-    #so we can evaluate the result of adding the displacements along all the d1
-    #domain (i.e. with no zeros at the boundary)
-    expected_c = np.ones_like(d1)
-    expected_c *= 2
-    c, s = vf.compose_vector_fields_2d(d1, d1, flip_inv, flip_inv, 1.0)
-    assert_array_almost_equal(c, expected_c)
-    expected_s = np.array([2*np.sqrt(2), 2*np.sqrt(2), 0])
-    assert_array_almost_equal(expected_s, s)
-    #Now, if we use flip_inv as the second displacement matrix (provide 
-    #flip as the second argument), and the identity as the first 
-    #displacement matrix, this means that the SECOND displacement is defined 
-    #at a smaller region, so we'll have many more zeros at the boundary
-    #(everywhere but at the upper-left quarer)
-    expected_c = np.ones_like(d1)
-    expected_c *= 2
-    expected_c[4:,...] = 0
-    expected_c[:,4:,...] = 0
-    c, s = vf.compose_vector_fields_2d(d1, d1, flip, flip, 1.0)
-    assert_array_almost_equal(c, expected_c)
-    expected_s = np.array([2*np.sqrt(2), 2*np.sqrt(2), 0])
-    assert_array_almost_equal(expected_s, s)
 
 
-def test_prepend_affine_to_displacement_field_2d():
-    r"""
-    Apply a 90 degrees rotation to the displacement field 
-    """
-    import dipy.align.vector_fields as vf
+def test_compose_vector_fields_3d():
     from dipy.align import floating
-    d1 = np.ones(shape = (11, 11, 2), dtype = floating)
-    aff = np.eye(3, dtype = floating)
-    aff[0, 0] = 0
-    aff[1, 1] = 0
-    aff[0, 1] = -1
-    aff[1, 0] = 1
-    vf.prepend_affine_to_displacement_field_2d(d1, aff)
+    import dipy.align.imwarp as imwarp
+    import dipy.align.vector_fields as vfu
+    from numpy.testing import (assert_array_almost_equal)
+    input_shape = (10, 10, 10)
+    target_shape = (10, 10, 10)
+    #create a simple affine transformation
+    ns = input_shape[0]
+    nr = input_shape[1]
+    nc = input_shape[2]
+    s = 1.5
+    t = 2.5
+    trans = np.array([[1, 0, 0, -t*ns],
+                      [0, 1, 0, -t*nr],
+                      [0, 0, 1, -t*nc],
+                      [0, 0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+    scale = np.array([[1*s, 0, 0, 0],
+                      [0, 1*s, 0, 0],
+                      [0, 0, 1*s, 0],
+                      [0, 0, 0, 1]])
+    gt_affine = trans_inv.dot(scale.dot(trans))
+    gt_affine_inv = np.linalg.inv(gt_affine)
 
+    #create two random displacement fields
+    input_affine = gt_affine
+    target_affine = gt_affine
+
+    disp1, assign1 = vfu.create_random_displacement_3d(np.array(input_shape, dtype=np.int32),
+                                                       np.array(input_affine).astype(floating), 
+                                                       np.array(target_shape, dtype=np.int32),
+                                                       np.array(target_affine).astype(floating))
+    disp1 = np.array(disp1)
+    assign1 = np.array(assign1)
+
+    disp2, assign2 = vfu.create_random_displacement_3d(np.array(input_shape, dtype=np.int32),
+                                                       np.array(input_affine).astype(floating), 
+                                                       np.array(target_shape, dtype=np.int32),
+                                                       np.array(target_affine).astype(floating))
+    disp2 = np.array(disp2)
+    assign2 = np.array(assign2)
+
+    #create a random image (with decimal digits) to warp
+    moving_image = np.ndarray(target_shape, dtype=floating)
+    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
+    #set boundary values to zero so we don't test wrong interpolation due to
+    #floating point precision
+    moving_image[0,:,:] = 0
+    moving_image[-1,:,:] = 0
+    moving_image[:,0,:] = 0
+    moving_image[:,-1,:] = 0
+    moving_image[:,:,0] = 0
+    moving_image[:,:,-1] = 0
+
+    #evaluate the composed warping using the exact assignments (first 1 then 2)
+
+    warp1 = moving_image[(assign2[...,0], assign2[...,1], assign2[...,2])]
+    expected = warp1[(assign1[...,0], assign1[...,1], assign1[...,2])]
+
+    #compose the displacement fields 
+    target_affine_inv = np.linalg.inv(target_affine)
+    input_affine_inv = np.linalg.inv(input_affine)
+
+    target_affine_inv = np.linalg.inv(target_affine)
+    input_affine_inv = np.linalg.inv(input_affine)
+    premult_index = target_affine_inv.dot(input_affine).astype(floating)
+    premult_disp = target_affine_inv.astype(floating)
+    
+    composition, stats = vfu.compose_vector_fields_3d(disp1, disp2,
+                                               np.array(premult_index, dtype=floating),
+                                               np.array(premult_disp, dtype = floating),
+                                               1.0)
+    #apply the implementation under test
+    warped = np.array(vfu.warp_volume(moving_image, composition, premult_index, premult_disp))
+
+    assert_array_almost_equal(warped, expected, decimal=5)
+
+    #test also using nearest neighbor interpolation
+    warped = np.array(vfu.warp_volume_nn(moving_image, composition, premult_index, premult_disp))
+
+    assert_array_almost_equal(warped, expected)
 
 def test_ssd_2d():
     r'''
@@ -356,7 +445,7 @@ def test_cc_factors_3d():
     assert_array_almost_equal(factors, expected)
 
 
-def test_compose_vector_fields_3d():
+def test_compose_vector_fields_3d_easy():
     r"""
     Compose a constant vector field equal to (1,1,1) with itself. The result
     must be (2,2,2) everywhere except at the [n-1, :, :], [:, n-1, :],
@@ -478,11 +567,14 @@ def test_em_3d():
     assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
 
 if __name__=='__main__':
-    test_warping()
+    test_warping_2d()
+    test_warping_3d()
+    test_compose_vector_fields_2d()
+    test_compose_vector_fields_3d()
     # test_cc_factors_2d()
     # test_compose_vector_fields_2d()
     # test_prepend_affine_to_displacement_field_2d()
-    # test_ssd_2d()
+    test_ssd_2d()
     # test_cc_2d()
     # test_cc_factors_3d()
     # test_compose_vector_fields_3d()
