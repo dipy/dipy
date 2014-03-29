@@ -1275,22 +1275,23 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
                 niter += 1
                 derivative = self._iterate()
-            if self.dim == 2:
-                plt.figure()
-                plt.subplot(1,2,1)
-                wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
-                plt.imshow(wmoving, cmap = plt.cm.gray)
-                plt.subplot(1,2,2)
-                wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
-                plt.imshow(wstatic, cmap = plt.cm.gray)
-            else:
-                plt.figure()
-                plt.subplot(1,2,1)
-                wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
-                plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
-                plt.subplot(1,2,2)
-                wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
-                plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
+            if self.verbosity>10:
+                if self.dim == 2:
+                    plt.figure()
+                    plt.subplot(1,2,1)
+                    wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
+                    plt.imshow(wmoving, cmap = plt.cm.gray)
+                    plt.subplot(1,2,2)
+                    wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
+                    plt.imshow(wstatic, cmap = plt.cm.gray)
+                else:
+                    plt.figure()
+                    plt.subplot(1,2,1)
+                    wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
+                    plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
+                    plt.subplot(1,2,2)
+                    wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
+                    plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
 
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.forward_model.compute_inversion_error()
