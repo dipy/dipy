@@ -131,8 +131,13 @@ class Optimizer(object):
 
             if method == 'L-BFGS-B':
 
+                if jac is None:
+                    approx_grad = True
+                else:
+                    approx_grad = False
+
                 out = fmin_l_bfgs_b(fun, x0, args,
-                                    approx_grad=True,
+                                    approx_grad=approx_grad,
                                     bounds=bounds,
                                     m=options['maxcor'],
                                     factr=options['ftol'] / np.finfo(float).eps,

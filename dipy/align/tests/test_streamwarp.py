@@ -58,13 +58,11 @@ def test_rigid_parallel_lines():
 
     bundle_sum_distance = BundleSumDistance([0, 0, 0, 0, 0, 0.])
     srr = StreamlineRigidRegistration(metric=bundle_sum_distance,
-                                      algorithm='L_BFGS_B',
+                                      method='L-BFGS-B',
                                       bounds=None,
                                       fast=False,
-                                      m=100,
-                                      factr=10,
-                                      pgtol=1e-16,
-                                      epsilon=1e-3)
+                                      options={'maxcor':100, 'ftol':1e-9,
+                                               'gtol':1e-16, 'eps':1e-3})
 
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
     evaluate_convergence(bundle, new_bundle2)
@@ -79,7 +77,7 @@ def test_rigid_real_bundles():
 
     bundle_sum_distance = BundleSumDistance([0, 0, 0, 0, 0, 0.])
     srr = StreamlineRigidRegistration(bundle_sum_distance,
-                                      algorithm='Powell',
+                                      method='Powell',
                                       fast=False)
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
@@ -266,3 +264,4 @@ def test_openmp_locks():
 if __name__ == '__main__':
 
     run_module_suite()
+    #test_rigid_parallel_lines()

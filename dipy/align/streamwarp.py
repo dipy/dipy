@@ -1,7 +1,8 @@
 import numpy as np
 from nibabel.affines import apply_affine
 from dipy.tracking.distances import bundles_distances_mdf
-from scipy.optimize import fmin_powell, fmin_l_bfgs_b
+#from scipy.optimize import fmin_powell, fmin_l_bfgs_b
+from dipy.core.optimize import Optimizer
 from dipy.tracking.metrics import downsample
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
                             _bundle_minimum_distance_rigid_nomat)
@@ -68,9 +69,8 @@ class BundleSumDistance(StreamlineDistanceMetric):
 
 class StreamlineRigidRegistration(object):
 
-    def __init__(self, metric=None, algorithm='L_BFGS_B',
-                 bounds=None, fast=True, disp=False,
-                 m=10, factr=1e7, pgtol=1e-5, epsilon=1e-8):
+    def __init__(self, metric=None, method='L-BFGS-B',
+                 bounds=None, fast=True, disp=False, options=None):
         r""" Rigid registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
@@ -80,11 +80,11 @@ class StreamlineRigidRegistration(object):
             is True then a faster implementation of BMD is used. Otherwise,
             use the given distance metric.
 
-        algorithm : str,
+        method : str,
             'L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
 
         bounds : list of tuples or None,
-            If algorithm == 'L_BFGS_B' then we can use bounded optimization.
+            If method == 'L_BFGS_B' then we can use bounded optimization.
             For example for the six parameters of rigid rotation we can set
             the bounds = [(-30, 30), (-30, 30), (-30, 30),
                           (-45, 45), (-45, 45), (-45, 45)]
@@ -93,9 +93,8 @@ class StreamlineRigidRegistration(object):
 
         fast : boolean
 
-        m, factr, pgtol, epsilon : L_BFGS_B parameters
-            See ``fmin_l_bfgs_b`` manual
-
+        options : None or dict,
+            Extra options to be used with the selected method.
 
         Methods
         -------
@@ -117,17 +116,12 @@ class StreamlineRigidRegistration(object):
                 self.metric = BundleMinDistance(np.ones(6).tolist())
 
         self.disp = disp
-        self.algorithm = algorithm
-        if self.algorithm not in ['Powell', 'L_BFGS_B']:
-            raise ValueError('Not approriate algorithm')
+        self.method = method
+        if self.method not in ['Powell', 'L-BFGS-B']:
+            raise ValueError('Not approriate method')
         self.bounds = bounds
         self.fast = fast
-
-        #L_BFGS_B only parameters
-        self.m = m
-        self.factr = factr
-        self.pgtol = pgtol
-        self.epsilon = epsilon
+        self.options = options
 
     def optimize(self, static, moving):
         """ Find the minimum of the provided metric.
@@ -163,63 +157,27 @@ class StreamlineRigidRegistration(object):
 
         distance = self.metric.distance
 
-        if self.algorithm == 'Powell':
+        if self.method == 'Powell':
 
-            optimum = fmin_powell(distance,
-                                  self.metric.xopt_initial,
-                                  xtol=10 ** (-6),
-                                  ftol=10 ** (-6),
-                                  maxiter=10 ** 6,
-                                  full_output=True,
-                                  disp=False,
-                                  retall=True)
+            if self.options is None:
+                self.options = {'xtol': 1e-6, 'ftol':1e-6, 'maxiter':1e6}
 
-        if self.algorithm == 'L_BFGS_B':
+            opt = Optimizer(distance, self.metric.xopt_initial,
+                            method=self.method, options=self.options)
 
-            optimum = fmin_l_bfgs_b(distance,
-                                    self.metric.xopt_initial,
-                                    None,
-                                    approx_grad=True,
-                                    bounds=self.bounds,
-                                    m=self.m,
-                                    factr=self.factr,
-                                    pgtol=self.pgtol,
-                                    epsilon=self.epsilon)
+        if self.method == 'L-BFGS-B':
 
-        if self.algorithm == 'Powell':
+            if self.options is None:
+                self.options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8}
 
-            xopt, fopt, direc, iterations, funcs, warnflag, allvecs = optimum
+            opt = Optimizer(distance, self.metric.xopt_initial,
+                            method=self.method,
+                            bounds=self.bounds, options=self.options)
 
-            if self.disp:
-                print('Powell :')
-                print('xopt', xopt)
-                print('fopt', fopt)
-                print('iter', iterations)
-                print('funcs', funcs)
-                print('warn', warnflag)
+        if self.disp:
+            opt.info
 
-        if self.algorithm == 'L_BFGS_B':
-
-            xopt, fopt, dictionary = optimum
-            funcs = dictionary['funcalls']
-            warnflag = dictionary['warnflag']
-            try:
-                iterations = dictionary['nit']
-            except KeyError:
-                iterations = None
-            grad = dictionary['grad']
-
-            if self.disp:
-                print('L_BFGS_B :')
-                print('xopt', xopt)
-                print('fopt', fopt)
-                print('iter', iterations)
-                print('grad', grad)
-                print('funcs', funcs)
-                print('warn', warnflag)
-                print('msg', dictionary['task'])
-
-        opt_mat = matrix44(xopt)
+        opt_mat = matrix44(opt.xopt)
         static_mat = matrix44([static_shift[0], static_shift[1],
                                static_shift[2], 0, 0, 0])
 
@@ -230,20 +188,19 @@ class StreamlineRigidRegistration(object):
 
         mat_history = []
 
-        if self.algorithm == 'Powell':
-
-            for vecs in allvecs:
+        if opt.evolution is not None:
+            for vecs in opt.evolution:
                 mat_history.append(compose_transformations(moving_mat,
                                                            matrix44(vecs),
                                                            static_mat))
 
         imat = np.linalg.inv(mat)
-        xopt = np.array(xopt)
+        xopt = np.array(opt.xopt)
         xopt[:3] = imat[:3, 3]
         xopt[3:] = - xopt[3:]
 
-        return StreamlineRegistrationMap(mat, xopt, fopt,
-                                         mat_history, funcs, iterations)
+        return StreamlineRegistrationMap(mat, xopt, opt.fopt,
+                                         mat_history, opt.nfev, opt.nit)
 
 
 class StreamlineRegistrationMap(object):
