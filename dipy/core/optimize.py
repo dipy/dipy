@@ -21,7 +21,7 @@ if scipy_version >= minimize_version:
 else:
 
     scipy_less_0_11 = True
-    from scipy.optimize import fmin_l_bfgs_b
+    from scipy.optimize import fmin_l_bfgs_b, fmin_powell
 
 
 class Optimizer(object):
@@ -140,7 +140,21 @@ class Optimizer(object):
                                     pgtol=options['gtol'],
                                     epsilon=options['eps'])
 
-                res = {'x':out[0], 'fun':out[1]}
+                res = {'x':out[0], 'fun':out[1], 'nfev':out[2]['funcalls'],
+                       'nit':out[2]['nit']}
+
+            elif method == 'Powell':
+
+                out = fmin_powell(fun, x0,
+                                  xtol=options['xtol'],
+                                  ftol=options['ftol'],
+                                  maxiter=options['maxiter'],
+                                  full_output=True,
+                                  disp=False,
+                                  retall=True)
+
+                xopt, fopt, direc, iterations, funcs, warnflag, allvecs = out
+                res = {'x': xopt, 'fun':fopt, 'nfev':funcs, 'nit':iterations}
 
             else:
 
