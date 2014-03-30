@@ -131,7 +131,7 @@ class Optimizer(object):
 
             if method == 'L-BFGS-B':
 
-                out = fmin_l_bfgs_b(fun, x0, None,
+                out = fmin_l_bfgs_b(fun, x0, args,
                                     approx_grad=True,
                                     bounds=bounds,
                                     m=options['maxcor'],
@@ -139,12 +139,15 @@ class Optimizer(object):
                                     pgtol=options['gtol'],
                                     epsilon=options['eps'])
 
-                res = {'x':out[0], 'fun':out[1], 'nfev':out[2]['funcalls'],
-                       'nit':out[2]['nit']}
+                res = {'x':out[0], 'fun':out[1], 'nfev':out[2]['funcalls']}
+                try:
+                    res['nit'] = out[2]['nit']
+                except KeyError:
+                    res['nit'] = None
 
             elif method == 'Powell':
 
-                out = fmin_powell(fun, x0,
+                out = fmin_powell(fun, x0, args,
                                   xtol=options['xtol'],
                                   ftol=options['ftol'],
                                   maxiter=options['maxiter'],
