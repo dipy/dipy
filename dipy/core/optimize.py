@@ -17,7 +17,6 @@ if scipy_version >= minimize_version:
     scipy_less_0_11 = False
     from scipy.optimize import minimize
 
-
 else:
 
     scipy_less_0_11 = True

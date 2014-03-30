@@ -1,11 +1,11 @@
 import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           run_module_suite)
 
 
 from dipy.core.optimize import Optimizer, scipy_less_0_11
-
 
 
 def test_optimize():
@@ -94,8 +94,5 @@ def test_optimize():
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
 
-
-
-
-
-test_optimize()
+if __name__ == '__main__':
+    run_module_suite()
