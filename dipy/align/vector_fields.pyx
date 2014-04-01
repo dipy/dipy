@@ -756,11 +756,8 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
 
 
 def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
-                                       floating[:, :] affine_ref,
-                                       floating[:, :] affine_ref_inv,
-                                       int[:] target_shape,
-                                       floating[:, :] target_aff,
-                                       floating[:, :] target_aff_inv,
+                                       floating[:,:] w_to_img,  
+                                       floating[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :] start=None):
     r"""
@@ -807,84 +804,48 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     inverse will be the same as the input displacement field.
     """
     cdef:
-        int nr1 = d.shape[0]
-        int nc1 = d.shape[1]
-        int nr2, nc2, iter_count, current, flag
+        int nr = d.shape[0]
+        int nc = d.shape[1]
+        int iter_count, current, flag
         double difmag, mag
         double epsilon = 0.25
         double error = 1 + tolerance
         double di, dj, dii, djj
 
-    if target_shape is not None:
-        nr2, nc2 = target_shape[0], target_shape[1]
-    else:
-        nr2, nc2 = nr1, nc1
-
     cdef:
         floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
-        floating[:, :, :] p = np.zeros(shape=(nr2, nc2, 2), dtype=np.asarray(d).dtype)
-        floating[:, :, :] q = np.zeros(shape=(nr2, nc2, 2), dtype=np.asarray(d).dtype)
-        floating[:, :] premult_index = np.zeros((3, 3), dtype = np.asarray(d).dtype)
+        floating[:] substats = np.empty(shape=(3,), dtype=np.asarray(d).dtype)
+        floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
+        floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
 
     if start is not None:
         p[...] = start
     
-    flag = mult_matrices(affine_ref_inv, target_aff, premult_index)
-
-    if flag == 0:
-        premult_index = None
-
     with nogil:
         iter_count = 0
         while (iter_count < max_iter) and (tolerance < error):
             p, q = q, p
+            _compose_vector_fields_2d(q, d, None, w_to_img, 1.0, p, substats)
             difmag = 0
             error = 0
-            for i in range(nr2):
-                for j in range(nc2):
-                    p[i, j, 0] = 0
-                    p[i, j, 1] = 0
-
-                    if affine_ref_inv is None:
-                        di = q[i, j, 0]
-                        dj = q[i, j, 1]
-                    else:
-                        di = _apply_affine_2d_x0(q[i, j, 0], q[i, j, 1], 0, affine_ref_inv)
-                        dj = _apply_affine_2d_x1(q[i, j, 0], q[i, j, 1], 0, affine_ref_inv)
-
-                    if premult_index is None:
-                        dii = i
-                        djj = j
-                    else:
-                        dii = _apply_affine_2d_x0(i, j, 1, premult_index)
-                        djj = _apply_affine_2d_x1(i, j, 1, premult_index)
-
-                    dii += di
-                    djj += dj
-
-                    interpolate_vector_bilinear(d, dii, djj, p[i,j])
-
-                    p[i, j, 0] = (1.0 - epsilon) * q[i,j,0] - epsilon * p[i,j,0]
-                    p[i, j, 1] = (1.0 - epsilon) * q[i,j,1] - epsilon * p[i,j,1]
-                    di = p[i, j, 0] - q[i, j, 0]
-                    dj = p[i, j, 1] - q[i, j, 1]
-                    mag = sqrt(di ** 2 + dj ** 2)
+            for i in range(nr):
+                for j in range(nc):
+                    mag = sqrt(p[i, j, 0] ** 2 + p[i, j, 1] ** 2)
+                    p[i, j, 0] = q[i, j, 0] - epsilon * p[i, j, 0]
+                    p[i, j, 1] = q[i, j, 1] - epsilon * p[i, j, 1]
                     error += mag
                     if(difmag < mag):
                         difmag = mag
-            error /= (nr2 * nc2)            
+            error /= (nr * nc)            
             iter_count += 1
-        stats[0] = error
+        stats[0] = substats[1]
         stats[1] = iter_count
     return p
 
 
 def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
-                                       floating[:, :] affine_ref,
-                                       floating[:, :] affine_ref_inv,
-                                       int[:] target_shape,
-                                       floating[:, :] target_aff,
-                                       floating[:, :] target_aff_inv,
+                                       floating[:,:] w_to_img,  
+                                       floating[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :, :] start=None):
     r"""
@@ -919,86 +880,43 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     inverse will be the same as the input displacement field.
     """
     cdef:
-        int ns1 = d.shape[0]
-        int nr1 = d.shape[1]
-        int nc1 = d.shape[2]
-        int ns2, nr2, nc2, iter_count, current
+        int ns = d.shape[0]
+        int nr = d.shape[1]
+        int nc = d.shape[2]
+        int iter_count, current
         double dkk, dii, djj, dk, di, dj
         double difmag, mag
         double epsilon = 0.25
         double error = 1 + tolerance
-    if target_shape is not None:
-        ns2, nr2, nc2 = target_shape[0], target_shape[1], target_shape[2]
-    else:
-        ns2, nr2, nc2 = ns1, nr1, nc1
     cdef:
         floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
-        floating[:, :, :, :] p = np.zeros(shape=(ns2, nr2, nc2, 3), dtype=np.asarray(d).dtype)
-        floating[:, :, :, :] q = np.zeros(shape=(ns2, nr2, nc2, 3), dtype=np.asarray(d).dtype)
-        floating[:, :] premult_index = np.eye(4, dtype = np.asarray(d).dtype)
+        floating[:] substats = np.zeros(shape=(3,), dtype=np.asarray(d).dtype)
+        floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
+        floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
+
     if start is not None:
         p[...] = start
-
-    flag = mult_matrices(affine_ref_inv, target_aff, premult_index)
-
-    if flag == 0:
-        premult_index = None
 
     with nogil:
         iter_count = 0
         while (iter_count < max_iter) and (tolerance < error):
             p, q = q, p
+            _compose_vector_fields_3d(q, d, None, w_to_img, 1.0, p, substats)
             difmag = 0
             error = 0
-            for k in range(ns2):
-                for i in range(nr2):
-                    for j in range(nc2):
-                        
-                        p[k, i, j, 0] = 0
-                        p[k, i, j, 1] = 0
-                        p[k, i, j, 2] = 0
-
-                        dkk = q[k, i, j, 0]
-                        dii = q[k, i, j, 1]
-                        djj = q[k, i, j, 2]
-
-                        if affine_ref_inv is None:
-                            dk = dkk
-                            di = dii
-                            dj = djj
-                        else:
-                            dk = _apply_affine_3d_x0(dkk, dii, djj, 0, affine_ref_inv)
-                            di = _apply_affine_3d_x1(dkk, dii, djj, 0, affine_ref_inv)
-                            dj = _apply_affine_3d_x2(dkk, dii, djj, 0, affine_ref_inv)
-
-                        if premult_index is None:
-                            dkk = k
-                            dii = i
-                            djj = j
-                        else:
-                            dkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
-                            dii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
-                            djj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
-
-                        dkk += dk
-                        dii += di
-                        djj += dj
-
-                        inside = interpolate_vector_trilinear(d, dkk, dii, djj, p[k, i,j])
-                        
-                        p[k, i, j, 0] = (1-epsilon) * q[k, i, j, 0] - epsilon * p[k, i, j, 0]
-                        p[k, i, j, 1] = (1-epsilon) * q[k, i, j, 1] - epsilon * p[k, i, j, 1]
-                        p[k, i, j, 2] = (1-epsilon) * q[k, i, j, 2] - epsilon * p[k, i, j, 2]
-                        
-                        dk = p[k, i, j, 0] - q[k, i, j, 0]
-                        di = p[k, i, j, 1] - q[k, i, j, 1]
-                        dj = p[k, i, j, 2] - q[k, i, j, 2]
-
-                        mag = sqrt(dk ** 2 + di ** 2 + dj ** 2)
+            for k in range(ns):
+                for i in range(nr):
+                    for j in range(nc):
+                        mag = sqrt(p[k, i, j, 0] ** 2 + \
+                                   p[k, i, j, 1] ** 2 + \
+                                   p[k, i, j, 2] ** 2)
+                        p[k, i, j, 0] = q[k, i, j, 0] - epsilon * p[k, i, j, 0]
+                        p[k, i, j, 1] = q[k, i, j, 1] - epsilon * p[k, i, j, 1]
+                        p[k, i, j, 2] = q[k, i, j, 2] - epsilon * p[k, i, j, 2]
                         error += mag
                         if(difmag < mag):
                             difmag = mag
-            error /= (ns2 * nr2 * nc2)
+            error /= (ns * nr * nc)
             iter_count += 1
         stats[0] = error
         stats[1] = iter_count

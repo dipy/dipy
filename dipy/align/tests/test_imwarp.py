@@ -364,6 +364,7 @@ def test_ssd_2d():
     inv_tol = 1e-3
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
+    registration_optimizer.verbosity = 11
     registration_optimizer.optimize(static, moving, None)
     subsampled_energy_profile = registration_optimizer.full_energy_profile[::10]
     if floating is np.float32:

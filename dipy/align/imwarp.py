@@ -37,58 +37,163 @@ def get_direction_and_scalings(affine, dim):
     A = affine[:dim,:dim]
     return A.dot(np.diag(1.0/scalings)), scalings
 
+class ScaleSpace(object):
+    def __init__(self, image, num_levels, input_affine, input_spacing, sigma_factor=1.2):
+        r""" ScaleSpace
+        Implements the Scale Space representation of an image
+        """
+        self.dim = len(image.shape)
+        self.num_levels = num_levels
+        input_size = np.array(image.shape)
+        #normalize input image to [0,1]
+        img = (image - image.min())/(image.max() - image.min())
 
-def scale_space(image, max_scale, input_affine, input_direction, input_spacing):
-    r"""
-    
-    Returns
-    -------
-    An iterator to 5 properties of the scale space for each scale:
+        #The properties are saved in separate lists        
+        self.images = []
+        self.domain_shapes = []
+        self.spacings = []
+        self.scalings = []
+        self.affines = []
+        self.affine_invs = []
 
-    filtered : array, shape = image.shape
-        filtered (not subsampled) images
-    size : array, shape(dim,)
-        the shape of each image in the scale space representation
-        of the input image, where dim is the dimension of the imput 
-        image (either 2 or 3)
-    spacing : array, shape(dim,)
-        the distance between consecutive voxels along each dimension
-    scaling : array, shape(dim,)
-        the scale applied along each dimension (the target scaling 
-        is 2^k, where k=0,1,...,max_scale is the corresponding scale. 
-        If the resolution along some dimensions is lower than
-        the highest resolution dimension, then the scaling will be 
-        lower along that dimension)
-    affine : array, shape(dim+1, dim+1)
-        the affine transformation bringing voxel coordinates to physical space
-
-    """
-    sigma_factor = 1.2
-    dim = len(image.shape)
-    
-    input_size = np.array(image.shape)
-    input_spacing = np.array(input_spacing)
-    img = (image - image.min())/(image.max() - image.min())
-    yield img.astype(floating), input_size.astype(np.int32), input_spacing, np.ones(dim), input_affine
-    min_spacing = np.min(input_spacing)
-    for i in range(max_scale):
-        scaling_factor = 2**(i+1)
-        scaling = np.ndarray((dim+1,))
-        #scaling = np.minimum(scaling_factor * min_spacing / input_spacing, input_size / 32)
-        scaling = scaling_factor * min_spacing / input_spacing
-        output_spacing = input_spacing * scaling
-        extended = np.append(scaling, [1])
-        if not input_affine is None:
-            affine = input_affine.dot(np.diag(extended))
+        #insert input image properties at the first level of the scale space
+        self.images.append(img.astype(floating))
+        self.domain_shapes.append(input_size.astype(np.int32))
+        self.spacings.append(input_spacing)
+        self.scalings.append(np.ones(self.dim))
+        self.affines.append(input_affine)
+        if input_affine is not None:
+            self.affine_invs.append(np.linalg.inv(input_affine))
         else:
-            affine = np.diag(extended)
-        output_size = input_size * (input_spacing / output_spacing) + 0.5
-        output_size = output_size.astype(np.int32)
-        sigmas = sigma_factor * (output_spacing / input_spacing - 1.0)
-        #filter along each direction with the appropriate sigma
-        filtered = sp.ndimage.filters.gaussian_filter(image, sigmas)
-        filtered = (filtered - filtered.min())/(filtered.max() - filtered.min())
-        yield filtered.astype(floating), output_size, output_spacing, scaling, affine
+            self.affine_invs.append(None)
+
+        #compute the rest of the levels
+        min_spacing = np.min(input_spacing)
+        for i in range(1, num_levels):
+            scaling_factor = 2**i
+            scaling = np.ndarray((self.dim+1,))
+            #Note: the minimum below is present in ANTS to prevent the scaling from
+            #being too large (making the subsampled image to be too small),
+            #this makes the subsampled image at least 32 voxels at each direction
+            #it is risky to make this decision based on image size, though
+            #(we need to investigate more the effect of this)
+            
+            #scaling = np.minimum(scaling_factor * min_spacing / input_spacing, input_size / 32)
+
+            scaling = scaling_factor * min_spacing / input_spacing
+            output_spacing = input_spacing * scaling
+            extended = np.append(scaling, [1])
+            if not input_affine is None:
+                affine = input_affine.dot(np.diag(extended))
+            else:
+                affine = np.diag(extended)
+            output_size = input_size * (input_spacing / output_spacing) + 0.5
+            output_size = output_size.astype(np.int32)
+            sigmas = sigma_factor * (output_spacing / input_spacing - 1.0)
+            #filter along each direction with the appropriate sigma
+            filtered = sp.ndimage.filters.gaussian_filter(image, sigmas)
+            filtered = (filtered - filtered.min())/(filtered.max() - filtered.min())
+
+            #Add current level to the scale space
+            self.images.append(filtered.astype(floating))
+            self.domain_shapes.append(output_size)
+            self.spacings.append(output_spacing)
+            self.scalings.append(scaling)
+            self.affines.append(affine)
+            self.affine_invs.append(np.linalg.inv(affine))
+
+    def get_expand_factors(self, from_level, to_level):
+        factors = np.array(self.spacings[to_level]) / \
+                  np.array(self.spacings[from_level])
+        return factors
+
+    def print_level(self, level):
+        print 'Domain shape:', self.get_domain_shape(level)
+        print 'Spacing:', self.get_spacing(level)
+        print 'Scaling:', self.get_scaling(level)
+        print 'Affine:', self.get_affine(level)
+
+    def get_image(self, level):
+        if 0 <= level < self.num_levels:
+            return self.images[level]
+        return None
+
+    def get_domain_shape(self, level):
+        if 0 <= level < self.num_levels:
+            return self.domain_shapes[level]
+        return None
+
+    def get_spacing(self, level):
+        if 0 <= level < self.num_levels:
+            return self.spacings[level]
+        return None
+
+    def get_scaling(self, level):
+        if 0 <= level < self.num_levels:
+            return self.scalings[level]
+        return None
+
+    def get_affine(self, level):
+        if 0 <= level < self.num_levels:
+            return self.affines[level]
+        return None
+
+    def get_affine_inv(self, level):
+        if 0 <= level < self.num_levels:
+            return self.affine_invs[level]
+        return None        
+
+# def scale_space(image, max_scale, input_affine, input_direction, input_spacing):
+#     r"""
+    
+#     Returns
+#     -------
+#     An iterator to 5 properties of the scale space for each scale:
+
+#     filtered : array, shape = image.shape
+#         filtered (not subsampled) images
+#     size : array, shape(dim,)
+#         the shape of each image in the scale space representation
+#         of the input image, where dim is the dimension of the imput 
+#         image (either 2 or 3)
+#     spacing : array, shape(dim,)
+#         the distance between consecutive voxels along each dimension
+#     scaling : array, shape(dim,)
+#         the scale applied along each dimension (the target scaling 
+#         is 2^k, where k=0,1,...,max_scale is the corresponding scale. 
+#         If the resolution along some dimensions is lower than
+#         the highest resolution dimension, then the scaling will be 
+#         lower along that dimension)
+#     affine : array, shape(dim+1, dim+1)
+#         the affine transformation bringing voxel coordinates to physical space
+
+#     """
+#     sigma_factor = 1.2
+#     dim = len(image.shape)
+    
+#     input_size = np.array(image.shape)
+#     input_spacing = np.array(input_spacing)
+#     img = (image - image.min())/(image.max() - image.min())
+#     yield img.astype(floating), input_size.astype(np.int32), input_spacing, np.ones(dim), input_affine
+#     min_spacing = np.min(input_spacing)
+#     for i in range(max_scale):
+#         scaling_factor = 2**(i+1)
+#         scaling = np.ndarray((dim+1,))
+#         #scaling = np.minimum(scaling_factor * min_spacing / input_spacing, input_size / 32)
+#         scaling = scaling_factor * min_spacing / input_spacing
+#         output_spacing = input_spacing * scaling
+#         extended = np.append(scaling, [1])
+#         if not input_affine is None:
+#             affine = input_affine.dot(np.diag(extended))
+#         else:
+#             affine = np.diag(extended)
+#         output_size = input_size * (input_spacing / output_spacing) + 0.5
+#         output_size = output_size.astype(np.int32)
+#         sigmas = sigma_factor * (output_spacing / input_spacing - 1.0)
+#         #filter along each direction with the appropriate sigma
+#         filtered = sp.ndimage.filters.gaussian_filter(image, sigmas)
+#         filtered = (filtered - filtered.min())/(filtered.max() - filtered.min())
+#         yield filtered.astype(floating), output_size, output_spacing, scaling, affine
 
 
 def pyramid_gaussian_3D(image, max_layer, mask=None):
@@ -300,7 +405,25 @@ class DiffeomorphicMap(object):
         self.input_affine_inv = None if input_affine is None else np.linalg.inv(input_affine)
         self.input_prealign_inv = None if input_prealign is None else np.linalg.inv(input_prealign)
 
-    def transform(self, image, interpolation='tri', world_to_image=None, 
+        self.is_inverse = False
+
+    def get_forward_field(self):
+        if self.is_inverse:
+            return self.backward
+        else:
+            return self.forward
+
+    def get_backward_field(self):
+        if self.is_inverse:
+            return self.forward
+        else:
+            return self.backward
+
+    def allocate(self):
+        self.forward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
+        self.backward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
+
+    def _warp_forward(self, image, interpolation='tri', world_to_image=None, 
                       sampling_shape=None, sampling_affine=None):
         r"""
         Deforms the input image under this diffeomorphic map in the forward direction.
@@ -332,34 +455,43 @@ class DiffeomorphicMap(object):
         affine_idx_in = mult_aff(Dinv, mult_aff(P, S))
         affine_idx_out = mult_aff(W, mult_aff(P, S))
         affine_disp = W
+
+        if affine_idx_in is not None:
+            affine_idx_in = affine_idx_in.astype(floating)
+        if affine_idx_out is not None:
+            affine_idx_out = affine_idx_out.astype(floating)
+        if affine_disp is not None:
+            affine_disp = affine_disp.astype(floating)
+
         if self.dim == 2:
             if interpolation == 'tri':
-                vfw.warp_image(image, forward,
-                                affine_idx_in,
-                                affine_idx_out,
-                                affine_disp,
-                                sampling_shape)
+                warped = vfu.warp_image(image, forward,
+                                        affine_idx_in,
+                                        affine_idx_out,
+                                        affine_disp,
+                                        sampling_shape)
             else:
-                vfw.warp_image_nn(image, forward,
-                                  affine_idx_in,
-                                  affine_idx_out,
-                                  affine_disp,
-                                  sampling_shape)
+                warped = vfu.warp_image_nn(image, forward,
+                                           affine_idx_in,
+                                           affine_idx_out,
+                                           affine_disp,
+                                           sampling_shape)
         else:
             if interpolation == 'tri':
-                vfw.warp_volume(image, forward,
+                warped = vfu.warp_volume(image, forward,
                                 affine_idx_in,
                                 affine_idx_out,
                                 affine_disp,
                                 sampling_shape)
             else:
-                vfw.warp_volume_nn(image, forward,
+                warped = vfu.warp_volume_nn(image, forward,
                                   affine_idx_in,
                                   affine_idx_out,
                                   affine_disp,
                                   sampling_shape)
+        return warped
 
-    def transform_inverse(self, image, interpolation='tri', world_to_image=None, 
+    def _warp_backward(self, image, interpolation='tri', world_to_image=None, 
                        sampling_shape=None, sampling_affine=None):
         r"""
         Deforms the input image under this diffeomorphic map in the backward direction.
@@ -392,50 +524,93 @@ class DiffeomorphicMap(object):
         affine_idx_in = mult_aff(Dinv, S)
         affine_idx_out = mult_aff(W, mult_aff(Pinv, S))
         affine_disp = mult_aff(W, Pinv)
+
+        if affine_idx_in is not None:
+            affine_idx_in = affine_idx_in.astype(floating)
+        if affine_idx_out is not None:
+            affine_idx_out = affine_idx_out.astype(floating)
+        if affine_disp is not None:
+            affine_disp = affine_disp.astype(floating)
+
         if self.dim == 2:
             if interpolation == 'tri':
-                vfw.warp_image(image, forward,
-                               affine_idx_in,
-                               affine_idx_out,
-                               affine_disp,
-                               sampling_shape)
+                warped = vfu.warp_image(image, self.backward,
+                                        affine_idx_in,
+                                        affine_idx_out,
+                                        affine_disp,
+                                        sampling_shape)
             else:
-                vfw.warp_image_nn(image, forward,
-                                  affine_idx_in,
-                                  affine_idx_out,
-                                  affine_disp,
-                                  sampling_shape)
+                warped = vfu.warp_image_nn(image, self.backward,
+                                           affine_idx_in,
+                                           affine_idx_out,
+                                           affine_disp,
+                                           sampling_shape)
         else:
             if interpolation == 'tri':
-                vfw.warp_volume(image, forward,
-                                affine_idx_in,
-                                affine_idx_out,
-                                affine_disp,
-                                sampling_shape)
+                warped = vfu.warp_volume(image, self.backward,
+                                         affine_idx_in,
+                                         affine_idx_out,
+                                         affine_disp,
+                                         sampling_shape)
             else:
-                vfw.warp_volume_nn(image, forward,
-                                   affine_idx_in,
-                                   affine_idx_out,
-                                   affine_disp,
-                                   sampling_shape)
+                warped = vfu.warp_volume_nn(image, self.backward,
+                                            affine_idx_in,
+                                            affine_idx_out,
+                                            affine_disp,
+                                            sampling_shape)
+        return warped
+
+    def transform(self, image, interpolation='tri', world_to_image=None, 
+                  sampling_shape=None, sampling_affine=None):
+        if self.is_inverse:
+            warped = self._warp_backward(image, interpolation, world_to_image, 
+                                       sampling_shape, sampling_affine)
+        else:
+            warped = self._warp_forward(image, interpolation, world_to_image, 
+                                       sampling_shape, sampling_affine)
+        return np.asarray(warped)
+
+    def transform_inverse(self, image, interpolation='tri', world_to_image=None, 
+                          sampling_shape=None, sampling_affine=None):
+        if self.is_inverse:
+            warped = self._warp_forward(image, interpolation, world_to_image, 
+                                        sampling_shape, sampling_affine)
+        else:
+            warped = self._warp_backward(image, interpolation, world_to_image, 
+                                       sampling_shape, sampling_affine)
+        return np.asarray(warped)
+
+    def inverse(self):
+        inv = DiffeomorphicMap(self.dim,
+                               self.domain_shape,
+                               self.domain_affine,
+                               self.input_shape,
+                               self.input_affine,
+                               self.input_prealign)
+        inv.forward = self.forward
+        inv.backward = self.backward
+        inv.is_inverse = True
+        return inv
 
     def expand_fields(self, expand_factors, new_shape):
         if self.dim == 2:
             expanded_forward = vfu.expand_displacement_field_2d(self.forward, 
-                expand_factors, target_shape)
+                expand_factors.astype(floating), new_shape)
             expanded_backward = vfu.expand_displacement_field_2d(self.backward, 
-                expand_factors, target_shape)
+                expand_factors.astype(floating), new_shape)
         else:
             expanded_forward = vfu.expand_displacement_field_3d(self.forward, 
-                expand_factors, target_shape)
+                expand_factors.astype(floating), new_shape)
             expanded_backward = vfu.expand_displacement_field_3d(self.backward,
-                expand_factors, target_shape)
+                expand_factors.astype(floating), new_shape)
         expand_factors = np.append(expand_factors, [1])
         expanded_affine = mult_aff(self.domain_affine, np.diag(expand_factors))
+        expanded_affine_inv = np.linalg.inv(expanded_affine)
         self.forward = expanded_forward
         self.backward = expanded_backward
         self.domain_shape = new_shape
-        self.domain_affine = exoanded_affine
+        self.domain_affine = expanded_affine
+        self.domain_affine_inv = expanded_affine_inv
 
     def compute_inversion_error(self):
         r"""
@@ -460,7 +635,9 @@ class DiffeomorphicMap(object):
         """
 
         premult_index = None
-        premult_disp = self.domain_affine_inv
+        premult_disp = None 
+        if self.domain_affine_inv is not None:
+            premult_disp = self.domain_affine_inv.astype(floating)
 
         if self.dim == 2:
             residual, stats = vfu.compose_vector_fields_2d(self.forward,
@@ -476,44 +653,667 @@ class DiffeomorphicMap(object):
                                                            1.0)
         return residual, stats
 
-    def consolidate(self, static_affine=None, moving_affine=None):
+        
+
+
+class DiffeomorphicRegistration(object):
+
+    def __init__(self,
+                 metric=None,
+                 update_function=None):
+        r""" Diffeomorphic Registration
+
+        This abstract class defines the interface to be implemented by any
+        optimization algorithm for diffeomorphic Registration.
+
+        Parameters
+        ----------
+        metric : SimilarityMetric object
+            the object measuring the similarity of the two images. The registration 
+            algorithm will minimize (or maximize) the provided similarity.
+        update_function : function
+            the function to be applied to perform a small deformation to a 
+            displacement field (the small deformation is given as a deformation 
+            field as well). An update function may for example compute the composition
+            of the two displacement fields or the sum of them, etc.
+        """
+        self.metric = metric
+        self.dim = metric.dim
+        if update_function is None:
+            self.update = compose_displacements
+        else:
+            self.update = update_function
+
+    # def set_static_image(self, static, static_affine):
+    #     r"""
+    #     Establishes the static image to be used by this registration optimizer
+
+    #     Parameters
+    #     ----------
+    #     static : array, shape (R, C) or (S, R, C)
+    #         the static image, consisting of R rows and C columns (and S slices,
+    #         if 3D)
+    #     """
+    #     if static is None:
+    #         return
+    #     self.static = static.astype(floating)
+    #     self.static_affine = static_affine
+    #     if not static_affine is None:
+    #         self.static_affine_inv = np.linalg.inv(static_affine)
+    #     else:
+    #         self.static_affine_inv = None
+    #     self.static_direction, self.static_scalings = \
+    #         get_direction_and_scalings(static_affine, self.dim)
+
+    # def set_moving_image(self, moving, moving_affine):
+    #     r"""
+    #     Establishes the moving image to be used by this registration optimizer.
+
+    #     Parameters
+    #     ----------
+    #     static : array, shape (R, C) or (S, R, C)
+    #         the static image, consisting of R rows and C columns (and S slices,
+    #         if 3D)
+    #     """
+    #     if moving is None:
+    #         return
+    #     self.moving = moving.astype(floating)
+    #     self.moving_affine = moving_affine
+    #     if not moving_affine is None:
+    #         self.moving_affine_inv = np.linalg.inv(moving_affine)
+    #     else:
+    #         self.moving_affine_inv = None
+    #     self.moving_direction, self.moving_scalings = \
+    #         get_direction_and_scalings(moving_affine, self.dim)
+
+    def set_opt_iter(self, opt_iter):
         r"""
-        Since the diffeomorphism are defined on the physical space, it is 
-        necessary to specify the transformation matrices between the physical
-        space and the discretizations (both forward and backward). After
-        "consolidating" the deformation field, the diffepmorphism will operate
-        on the (continuous) voxel spaces so that warpings can be performed 
-        using only the deformation field. The transformations between the 
-        indended static and affine voxel coordinates and physical space must be
-        provided. 
+        Establishes the maximum number of iterations to be performed at each
+        level of the Gaussian pyramid, similar to ANTS.
+
+        Parameters
+        ----------
+        opt_iter : list
+            the number of iterations at each level of the Gaussian pyramid.
+            opt_iter[0] corresponds to the finest level, opt_iter[n-1] the
+            coarcest, where n is the length of the list
+        """
+        self.levels = len(opt_iter) if opt_iter else 0
+        self.opt_iter = opt_iter
+
+    @abc.abstractmethod
+    def optimize(self):
+        r"""
+        This is the main function each especialized class derived from this must
+        implement. Upon completion, the deformation field must be available from
+        the forward transformation model.
+        """
+        pass
+
+    def get_forward(self):
+        r"""
+        Returns the forward model's forward deformation field
+        """
+        return self.forward_model.forward
+
+    def get_backward(self):
+        r"""
+        Returns the forward model's backward (inverse) deformation field
+        """
+        return self.forward_model.backward
+
+
+class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
+    def __init__(self,
+                 metric=None,
+                 opt_iter = [25, 100, 100],
+                 opt_tol = 1e-4,
+                 inv_iter = 40,
+                 inv_tol = 1e-3,
+                 call_back = None,
+                 update_function=None):
+        r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
+        Performs the multi-resolution optimization algorithm for non-linear
+        registration using a given similarity metric and update rule (this
+        scheme was inspider on the ANTS package).
+
+        Parameters
+        ----------
+        metric : SimilarityMetric object
+            the metric to be optimized
+        opt_iter : list of int
+            the number of iterations at each level of the Gaussian Pyramid (the
+            length of the list defines the number of pyramid levels to be 
+            used)
+        opt_tol : float
+            the optimization will stop when the estimated derivative of the
+            energy profile w.r.t. time falls below this threshold
+        inv_iter : int
+            the number of iterations to be performed by the displacement field 
+            inversion algorithm
+        inv_tol : float
+            the displacement field inversion algorithm will stop iterating
+            when the inversion error falls below this threshold
+        call_back : function(SymmetricDiffeomorphicRegistration)
+            a function receiving a SymmetricDiffeomorphicRegistration object 
+            to be called after each iteration (this optimizer will call this
+            function passing self as parameter)
+        update_function : function
+            the function to be applied to update the displacement field after
+            each iteration. By default, it will use the displacement field
+            composition
+        """
+        super(SymmetricDiffeomorphicRegistration, self).__init__(
+                metric, update_function)
+        self.set_opt_iter(opt_iter)
+        self.opt_tol = opt_tol
+        self.inv_tol = inv_tol
+        self.inv_iter = inv_iter
+        self.call_back = call_back
+        self.energy_window = 12
+        self.energy_list = []
+        self.full_energy_profile = []
+        self.verbosity = 1
+
+    def _connect_functions(self):
+        r"""
+        Assigns the appropriate functions to be called for displacement field
+        inversion, Gaussian pyramid, and affine/dense deformation composition
+        according to the dimension of the input images e.g. 2D or 3D.
+        """
+        if self.dim == 2:
+            self.invert_vector_field = vfu.invert_vector_field_fixed_point_2d
+            self.generate_pyramid = pyramid_gaussian_2D
+            self.append_affine = vfu.append_affine_to_displacement_field_2d
+            self.prepend_affine = vfu.prepend_affine_to_displacement_field_2d
+        else:
+            self.invert_vector_field = vfu.invert_vector_field_fixed_point_3d
+            self.generate_pyramid = pyramid_gaussian_3D
+            self.append_affine = vfu.append_affine_to_displacement_field_3d
+            self.prepend_affine = vfu.prepend_affine_to_displacement_field_3d
+
+    def _check_ready(self):
+        r"""
+        Verifies that the configuration of the optimizer and input data are
+        consistent and the optimizer is ready to run
+        """
+        ready = True
+        if self.metric == None:
+            ready = False
+            print('Error: Similarity metric not set.')
+        if self.update == None:
+            ready = False
+            print('Error: Update rule not set.')
+        if self.opt_iter == None:
+            ready = False
+            print('Error: Maximum number of iterations per level not set.')
+        return ready
+
+    def _init_optimizer(self, static, moving, static_affine, moving_affine, prealign):
+        r"""
+        Computes the Gaussian Pyramid of the input images and allocates
+        the required memory for the transformation models at the coarcest
+        scale.
+        """
+        ready = self._check_ready()
+        self._connect_functions()
+        if not ready:
+            print 'Not ready'
+            return False
+        #Extract information from the affine matrices to create the scale space
+        static_direction, static_spacing = get_direction_and_scalings(static_affine, self.dim)
+        moving_direction, moving_spacing = get_direction_and_scalings(moving_affine, self.dim)
+
+        #Build the scale space of the input images
+        self.moving_ss = ScaleSpace(moving, self.levels, moving_affine, moving_spacing)
+        self.static_ss = ScaleSpace(static, self.levels, static_affine, static_spacing)
+
+        if self.verbosity>1:
+            print('Moving scale space:')
+            for level in range(self.levels):
+                self.moving_ss.print_level(level)
+
+            print('Static scale space:')
+            for level in range(self.levels):
+                self.static_ss.print_level(level)
+        
+        #Get the coarcest level's properties from the static image. These
+        #properties will be taken as the reference discretization.
+        domain_shape = self.static_ss.get_domain_shape(self.levels-1)
+        domain_affine = self.static_ss.get_affine(self.levels-1)
+
+        #Create the forward diffeomorphic transformation at the coarcest resolution
+        #The forward model transforms points from the static image to points on
+        #the reference (which is the static as well). So the input properties 
+        #are taken from the static image. Since its the same as the reference,
+        #we don't need to prealign.
+        input_shape = static.shape
+        input_affine = static_affine
+        input_prealign = None
+        self.forward_model = DiffeomorphicMap(self.dim,
+                                              domain_shape,
+                                              domain_affine,
+                                              input_shape,
+                                              input_affine,
+                                              input_prealign)
+        self.forward_model.allocate()
+        #Create the backward diffeomorphic transformation at the coarcest resolution
+        #The backward model transforms points from the moving image to points on
+        #the reference (which is the static). So the input properties 
+        #are taken from the moving image, and we need to pre-align points on the
+        #moving physical space to the reference physical space by applying the
+        #inverse of prealign. This is dome this way to make it clear for the
+        #user: the pre-align matrix is usually obtained by doing affine registration
+        #of the moving image towards the static image, which results in a matrix 
+        #transforming points in the static physical space to points in the moving 
+        #physical space
+        prealign_inv = None if prealign is None else np.linalg.inv(prealign)
+        input_shape = moving.shape
+        input_affine = moving_affine
+        input_prealign = prealign_inv
+        self.backward_model = DiffeomorphicMap(self.dim,
+                                               domain_shape,
+                                               domain_affine,
+                                               input_shape,
+                                               input_affine,
+                                               input_prealign)
+        self.backward_model.allocate()
+
+        #set the current level to the coarcest resolution
+        self.current_level = self.levels - 1
+
+    def _end_optimizer(self):
+        r"""
+        Frees the resources allocated during initialization
+        """
+        del self.moving_ss
+        del self.static_ss
+
+    def _iterate(self):
+        r"""
+        Performs one symmetric iteration:
+            1.Compute forward
+            2.Compute backward
+            3.Update forward
+            4.Update backward
+            5.Compute inverses
+            6.Invert the inverses to improve invertibility
+        """
+        #Warp the input images (smoothed to the current scale) to the common (reference) space
+        current_moving = self.moving_ss.get_image(self.current_level)
+        current_static = self.static_ss.get_image(self.current_level)
+
+        current_domain_shape = self.static_ss.get_domain_shape(self.current_level)
+        current_domain_affine = self.static_ss.get_affine(self.current_level)
+        if current_domain_affine is not None:
+            current_domain_affine = current_domain_affine.astype(floating)
+            current_domain_affine_inv = self.static_ss.get_affine_inv(self.current_level)
+            current_domain_affine_inv = current_domain_affine_inv.astype(floating)
+        else:
+            current_domain_affine_inv = None
+        current_domain_spacing = self.static_ss.get_spacing(self.current_level)
+        current_spacing = self.static_ss.get_spacing(self.current_level).astype(floating)
+
+
+        wstatic = self.forward_model.transform_inverse(current_static, 'tri')
+        wmoving = self.backward_model.transform_inverse(current_moving, 'tri')
+        
+        if self.verbosity > 10:
+            if self.dim == 2:
+                plt.figure()
+                plt.subplot(1,2,1)
+                plt.imshow(wmoving, cmap = plt.cm.gray)
+                plt.subplot(1,2,2)
+                plt.imshow(wstatic, cmap = plt.cm.gray)
+            else:
+                plt.figure()
+                plt.subplot(1,2,1)
+                wmoving = self.backward_model.transform_inverse(current_moving, 'tri')
+                plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
+                plt.subplot(1,2,2)
+                wstatic = self.forward_model.transform_inverse(current_static, 'tri')
+                plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
+        
+        #Pass both images to the metric
+        self.metric.set_moving_image(wmoving)
+        self.metric.use_moving_image_dynamics(
+            current_moving, self.backward_model.inverse())
+        self.metric.set_static_image(wstatic)
+        self.metric.use_static_image_dynamics(
+            current_static, self.forward_model.inverse())
+
+        #Initialize the metric for a new iteration
+        self.metric.initialize_iteration()
+
+        #Free some memory (useful when using double precision)
+        del self.forward_model.backward
+        del self.backward_model.backward
+
+        #Compute the forward step (to be used to update the forward transform)
+        #Note that fw_step's sampling is the same as the current forward model's 
+        fw_step = np.array(self.metric.compute_forward())
+        nrm = np.sqrt(np.sum((fw_step/current_domain_spacing)**2, -1)).max()
+        fw_step*=(0.25/nrm)
+        
+        self.forward_model.forward, md_forward = self.update(
+            self.forward_model.forward, fw_step, 
+            current_domain_affine_inv)
+        del fw_step
+
+        #Keep track of the forward energy
+        fw_energy = self.metric.get_energy()
+
+        #Compose the backward step (to be used to update the backward transform)
+        #Note that bw_step's sampling is the same as the current backward model's 
+        bw_step = np.array(self.metric.compute_backward())
+        nrm = np.sqrt(np.sum((bw_step/current_domain_spacing)**2, -1)).max()
+        bw_step*=(0.25/nrm)
+
+        self.backward_model.forward, md_backward = self.update(
+            self.backward_model.forward, bw_step, 
+            current_domain_affine_inv)
+        del bw_step
+
+        #Keep track of the energy
+        bw_energy = self.metric.get_energy()
+        der = '-'
+        n_iter = len(self.energy_list)
+        if len(self.energy_list) >= self.energy_window:
+            der = self._get_energy_derivative()
+        if self.verbosity > 1:
+            print(
+                '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
+                                                  fw_energy + bw_energy, der))
+        self.energy_list.append(fw_energy + bw_energy)
+
+        #Free resources no longer needed to compute the forward and backward steps
+        self.metric.free_iteration()
+
+        #Invert the current reformation fields
+        inv_iter = self.inv_iter
+        inv_tol = self.inv_tol
+
+        #Invert the forward model's forward field
+        self.forward_model.backward = np.array(
+            self.invert_vector_field(
+                self.forward_model.forward,
+                current_domain_affine_inv,
+                current_spacing,
+                inv_iter, inv_tol, None))
+
+        #Invert the backward model's forward field
+        self.backward_model.backward = np.array(
+            self.invert_vector_field(
+                self.backward_model.forward,
+                current_domain_affine_inv,
+                current_spacing,
+                inv_iter, inv_tol, None))
+
+        #Invert the forward model's backward field
+        self.forward_model.forward = np.array(
+            self.invert_vector_field(
+                self.forward_model.backward,
+                current_domain_affine_inv,
+                current_spacing,
+                inv_iter, inv_tol, self.forward_model.forward))
+
+        #Invert the backward model's backward field
+        self.backward_model.forward = np.array(
+            self.invert_vector_field(
+                self.backward_model.backward,
+                current_domain_affine_inv,
+                current_spacing,
+                inv_iter, inv_tol, self.backward_model.forward))
+
+        #We finished the iteration, report using the provided callback
+        if self.call_back is not None:
+            self.call_back(self)
+        return 1 if der == '-' else der
+
+    def _approximate_derivative_direct(self, x, y):
+        r"""
+        Directly computes the derivative of the least-squares-fit quadratic
+        function estimated from (x[...],y[...]) pairs.
+
+        Parameters
+        ----------
+        x : array, shape(n,)
+            increasing array representing the x-coordinates of the points to be fit
+        y : array, shape(n,)
+            array representing the y-coordinates of the points to be fit
+
+        Returns
+        -------
+        y0 : float
+            the estimated derivative at x0 = 0.5*len(x) 
+        """
+        x = np.asarray(x)
+        y = np.asarray(y)
+        X = np.row_stack((x**2, x, np.ones_like(x)))
+        XX = (X).dot(X.T)
+        b = X.dot(y)
+        beta = np.linalg.solve(XX,b)
+        x0 = 0.5 * len(x)
+        y0 = 2.0 * beta[0] * (x0) + beta[1]
+        return y0
+
+    def _get_energy_derivative(self):
+        r"""
+        Returns the derivative of the estimated energy as a function of "time"
+        (iterations) at the last iteration
+        """
+        n_iter = len(self.energy_list)
+        if n_iter < self.energy_window:
+            print 'Error: attempting to fit the energy profile with less points (', n_iter, ') than required (energy_window=', self.energy_window, ')'
+            return 1
+        x = range(self.energy_window)
+        y = self.energy_list[(n_iter - self.energy_window):n_iter]
+        ss = sum(y)
+        if(ss > 0):
+            ss *= -1
+        y = [v / ss for v in y]
+        der = self._approximate_derivative_direct(x,y)
+        return der
+    
+    def _optimize(self):
+        r"""
+        The main multi-scale symmetric optimization algorithm
+        """
+        print 'Verbosity:', self.verbosity
+        self.full_energy_profile = []
+        for level in range(self.levels - 1, -1, -1):
+            if self.verbosity > 0:
+                print('Optimizing level %d'%(level,))
+
+            self.current_level = level
+            
+            self.metric.use_original_static_image(self.static_ss.get_image(level))
+            self.metric.use_original_moving_image(self.moving_ss.get_image(level))
+            
+            self.metric.set_levels_below(self.levels - level)
+            self.metric.set_levels_above(level)
+            # if self.verbosity > 8:
+            #     print '***************Before***************'
+            #     print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
+            #     print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 
+            #     print 'bw scalings:',self.backward_model.scalings_forward, self.backward_model.scalings_backward
+            #     print 'bw affines:',self.backward_model.affine_forward, self.backward_model.affine_backward
+
+            if level < self.levels - 1:
+
+                expand_factors = self.static_ss.get_expand_factors(level+1, level) 
+                print 'Expanding with factors:', expand_factors
+                new_shape = self.static_ss.get_domain_shape(level)
+                self.forward_model.expand_fields(expand_factors, new_shape)
+                self.backward_model.expand_fields(expand_factors, new_shape)
+                residual, stats = self.forward_model.compute_inversion_error()
+                print('New Forward Residual error at level %d: %0.6f (%0.6f)'
+                  % (level, stats[1], stats[2]))
+                residual, stats = self.backward_model.compute_inversion_error()
+                print('New Backward Residual error at level %d: %0.6f (%0.6f)'
+                  % (level, stats[1], stats[2]))
+
+            # if self.verbosity > 8:
+            #     print '***************After***************'
+            #     print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
+            #     print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 
+            #     print 'bw scalings:',self.backward_model.scalings_forward, self.backward_model.scalings_backward
+            #     print 'bw affines:',self.backward_model.affine_forward, self.backward_model.affine_backward
+            #     print '***********************************'
+
+            niter = 0
+            self.full_energy_profile.extend(self.energy_list)
+            self.energy_list = []
+            derivative = 1
+            while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
+                niter += 1
+                derivative = self._iterate()
+            if self.verbosity>10:
+                residual, stats = self.forward_model.compute_inversion_error()
+                print('Forward Residual error at level %d: %0.6f (%0.6f)'
+                  % (level, stats[1], stats[2]))
+                residual, stats = self.backward_model.compute_inversion_error()
+                print('Backward Residual error at level %d: %0.6f (%0.6f)'
+                  % (level, stats[1], stats[2]))
+                if self.dim == 2:
+                    plt.figure()
+                    plt.subplot(1,2,1)
+                    wmoving = self.backward_model.transform_inverse(
+                        self.moving_ss.get_image(self.current_level), 'tri')
+                    plt.imshow(wmoving, cmap = plt.cm.gray)
+                    plt.subplot(1,2,2)
+                    wstatic = self.forward_model.transform_inverse(
+                        self.static_ss.get_image(self.current_level), 'tri')
+                    plt.imshow(wstatic, cmap = plt.cm.gray)
+                else:
+                    plt.figure()
+                    plt.subplot(1,2,1)
+                    wmoving = self.backward_model.transform_inverse(
+                        self.moving_ss.get_image(self.current_level), 'tri')
+                    plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
+                    plt.subplot(1,2,2)
+                    wstatic = self.forward_model.transform_inverse(
+                        self.static_ss.get_image(self.current_level), 'tri')
+                    plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
+
+        # Reporting mean and std in stats[1] and stats[2]
+        residual, stats = self.forward_model.compute_inversion_error()
+        if self.verbosity > 0:
+            print('Forward Residual error: %0.6f (%0.6f)'
+                  % (stats[1], stats[2]))
+        residual, stats = self.backward_model.compute_inversion_error()
+        if self.verbosity > 0:
+            print('Backward Residual error :%0.6f (%0.6f)'
+                  % (stats[1], stats[2]))
+
+        #Compose the two partial transformations
+        #Take the domain discretization info from static_ss
+        domain_shape = self.static_ss.get_domain_shape(0)
+        domain_affine = self.static_ss.get_affine(0)
+        domain_affine_inv = self.static_ss.get_affine_inv(0)
+
+        #Take the input ('moving') discretization input from the backward model
+        input_shape = self.backward_model.input_shape
+        input_affine = self.backward_model.input_affine
+        input_prealign = self.backward_model.input_prealign
+
+        disp1 = self.backward_model.forward
+        disp2 = self.forward_model.backward
+        if self.dim == 2:
+            comp_forward, stats = vfu.compose_vector_fields_2d(disp1, disp2, 
+                                                None, domain_affine_inv, 1.0)
+        else:
+            comp_forward, stats = vfu.compose_vector_fields_3d(disp1, disp2,
+                                                None, domain_affine_inv, 1.0)
+
+        disp1 = self.forward_model.forward
+        disp2 = self.backward_model.backward
+        if self.dim == 2:
+            comp_backward, stats = vfu.compose_vector_fields_2d(disp1, disp2, 
+                                                None, domain_affine_inv, 1.0)
+        else:
+            comp_backward, stats = vfu.compose_vector_fields_3d(disp1, disp2,
+                                                None, domain_affine_inv, 1.0)
+
+        self.forward_model = DiffeomorphicMap(self.dim,
+                                              domain_shape,
+                                              domain_affine,
+                                              input_shape,
+                                              input_affine,
+                                              input_prealign)
+        self.forward_model.forward = comp_forward
+        self.forward_model.backward = comp_forward
+        self.forward_model.is_inverse = True
+        
+        # Report mean and std for the composed deformation field
+        residual, stats = self.forward_model.compute_inversion_error()
+        if self.verbosity > 0:
+            print('Final residual error: %0.6f (%0.6f)'
+                  % (stats[1], stats[2]))
+
+    def optimize(self, static, moving, static_affine=None, moving_affine=None, prealign=None):
+        r"""
+        Starts the optimnization
+
+        Parameters
+        ----------
+        static : array, shape (R, C) or (S, R, C)
+            the static (reference) image
+        moving : array, shape (R, C) or (S, R, C)
+            the moving (target) image to be warped towards static
+        static_affine: array, shape (3, 3) or (4, 4)
+            the affine transformation bringing the static image to physical
+            space
+        moving_affine: array, shape (3, 3) or (4, 4)
+            the affine transformation bringing the moving image to physical
+            space
+        
+        Returns
+        -------
+        forward_model : DiffeomorphicMap object
+            the diffeomorphic map that brings the moving image towards the
+            static one in the forward direction (i.e. by calling 
+            forward_model.transform) and the static image towards the
+            moving one in the backward direction (i.e. by calling 
+            forward_model.transform_inverse). 
 
         """
-        if static_affine is None:
-            static_affine = self.affine_forward
-            static_affine_inv = self.affine_forward_inv
-        else:
-            static_affine_inv = np.linalg.inv(static_affine_inv)
+        print "Pre-align:",prealign
+        self._init_optimizer(static, moving, static_affine, moving_affine, prealign)
+        self._optimize()
+        self._end_optimizer()
+        return self.forward_model
 
-        if moving_affine is None:
-            moving_affine = self.affine_backward
-            moving_affine_inv = self.affine_backward_inv
-        else:
-            moving_affine_inv = np.linalg.inv(moving_affine) 
 
-        f_affine_idx = mult_aff(moving_affine_inv, static_affine)
-        f_affine_disp = moving_affine_inv
 
-        b_affine_idx = mult_aff(static_affine_inv, moving_affine)
-        b_affine_disp = static_affine_inv
 
-        if self.dim == 2:
-            forward = vfu.consolidate_2d(self.forward, f_affine_idx, f_affine_disp)
-            backward = vfu.consolidate_2d(self.backward, b_affine_idx, b_affine_disp)
-        else:
-            forward = vfu.consolidate_3d(self.forward, f_affine_idx, f_affine_disp)
-            backward = vfu.consolidate_3d(self.backward, b_affine_idx, b_affine_disp)
-        self.set_forward(forward, None, None)
-        self.set_backward(backward, None, None)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1007,618 +1807,3 @@ class OldDiffeomorphicMap(object):
             backward = vfu.consolidate_3d(self.backward, b_affine_idx, b_affine_disp)
         self.set_forward(forward, None, None)
         self.set_backward(backward, None, None)
-
-
-class DiffeomorphicRegistration(object):
-
-    def __init__(self,
-                 metric=None,
-                 update_function=None):
-        r""" Diffeomorphic Registration
-
-        This abstract class defines the interface to be implemented by any
-        optimization algorithm for diffeomorphic Registration.
-
-        Parameters
-        ----------
-        metric : SimilarityMetric object
-            the object measuring the similarity of the two images. The registration 
-            algorithm will minimize (or maximize) the provided similarity.
-        update_function : function
-            the function to be applied to perform a small deformation to a 
-            displacement field (the small deformation is given as a deformation 
-            field as well). An update function may for example compute the composition
-            of the two displacement fields or the sum of them, etc.
-        """
-        self.metric = metric
-        self.dim = metric.dim
-        if update_function is None:
-            self.update = compose_displacements
-        else:
-            self.update = update_function
-
-    def set_static_image(self, static, static_affine):
-        r"""
-        Establishes the static image to be used by this registration optimizer
-
-        Parameters
-        ----------
-        static : array, shape (R, C) or (S, R, C)
-            the static image, consisting of R rows and C columns (and S slices,
-            if 3D)
-        """
-        if static is None:
-            return
-        self.static = static.astype(floating)
-        self.static_affine = static_affine
-        if not static_affine is None:
-            self.static_affine_inv = np.linalg.inv(static_affine)
-        else:
-            self.static_affine_inv = None
-        self.static_direction, self.static_scalings = \
-            get_direction_and_scalings(static_affine, self.dim)
-
-    def set_moving_image(self, moving, moving_affine):
-        r"""
-        Establishes the moving image to be used by this registration optimizer.
-
-        Parameters
-        ----------
-        static : array, shape (R, C) or (S, R, C)
-            the static image, consisting of R rows and C columns (and S slices,
-            if 3D)
-        """
-        if moving is None:
-            return
-        self.moving = moving.astype(floating)
-        self.moving_affine = moving_affine
-        if not moving_affine is None:
-            self.moving_affine_inv = np.linalg.inv(moving_affine)
-        else:
-            self.moving_affine_inv = None
-        self.moving_direction, self.moving_scalings = \
-            get_direction_and_scalings(moving_affine, self.dim)
-
-    def set_opt_iter(self, opt_iter):
-        r"""
-        Establishes the maximum number of iterations to be performed at each
-        level of the Gaussian pyramid, similar to ANTS.
-
-        Parameters
-        ----------
-        opt_iter : list
-            the number of iterations at each level of the Gaussian pyramid.
-            opt_iter[0] corresponds to the finest level, opt_iter[n-1] the
-            coarcest, where n is the length of the list
-        """
-        self.levels = len(opt_iter) if opt_iter else 0
-        self.opt_iter = opt_iter
-
-    @abc.abstractmethod
-    def optimize(self):
-        r"""
-        This is the main function each especialized class derived from this must
-        implement. Upon completion, the deformation field must be available from
-        the forward transformation model.
-        """
-        pass
-
-    def get_forward(self):
-        r"""
-        Returns the forward model's forward deformation field
-        """
-        return self.forward_model.forward
-
-    def get_backward(self):
-        r"""
-        Returns the forward model's backward (inverse) deformation field
-        """
-        return self.forward_model.backward
-
-
-class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
-    def __init__(self,
-                 metric=None,
-                 opt_iter = [25, 100, 100],
-                 opt_tol = 1e-4,
-                 inv_iter = 40,
-                 inv_tol = 1e-3,
-                 call_back = None,
-                 update_function=None):
-        r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
-        Performs the multi-resolution optimization algorithm for non-linear
-        registration using a given similarity metric and update rule (this
-        scheme was inspider on the ANTS package).
-
-        Parameters
-        ----------
-        metric : SimilarityMetric object
-            the metric to be optimized
-        opt_iter : list of int
-            the number of iterations at each level of the Gaussian Pyramid (the
-            length of the list defines the number of pyramid levels to be 
-            used)
-        opt_tol : float
-            the optimization will stop when the estimated derivative of the
-            energy profile w.r.t. time falls below this threshold
-        inv_iter : int
-            the number of iterations to be performed by the displacement field 
-            inversion algorithm
-        inv_tol : float
-            the displacement field inversion algorithm will stop iterating
-            when the inversion error falls below this threshold
-        call_back : function(SymmetricDiffeomorphicRegistration)
-            a function receiving a SymmetricDiffeomorphicRegistration object 
-            to be called after each iteration (this optimizer will call this
-            function passing self as parameter)
-        update_function : function
-            the function to be applied to update the displacement field after
-            each iteration. By default, it will use the displacement field
-            composition
-        """
-        super(SymmetricDiffeomorphicRegistration, self).__init__(
-                metric, update_function)
-        self.set_opt_iter(opt_iter)
-        self.opt_tol = opt_tol
-        self.inv_tol = inv_tol
-        self.inv_iter = inv_iter
-        self.call_back = call_back
-        self.energy_window = 12
-        self.energy_list = []
-        self.full_energy_profile = []
-        self.verbosity = 1
-
-    def _connect_functions(self):
-        r"""
-        Assigns the appropriate functions to be called for displacement field
-        inversion, Gaussian pyramid, and affine/dense deformation composition
-        according to the dimension of the input images e.g. 2D or 3D.
-        """
-        if self.dim == 2:
-            self.invert_vector_field = vfu.invert_vector_field_fixed_point_2d
-            self.generate_pyramid = pyramid_gaussian_2D
-            self.append_affine = vfu.append_affine_to_displacement_field_2d
-            self.prepend_affine = vfu.prepend_affine_to_displacement_field_2d
-        else:
-            self.invert_vector_field = vfu.invert_vector_field_fixed_point_3d
-            self.generate_pyramid = pyramid_gaussian_3D
-            self.append_affine = vfu.append_affine_to_displacement_field_3d
-            self.prepend_affine = vfu.prepend_affine_to_displacement_field_3d
-
-    def _check_ready(self):
-        r"""
-        Verifies that the configuration of the optimizer and input data are
-        consistent and the optimizer is ready to run
-        """
-        ready = True
-        if self.static == None:
-            ready = False
-            print('Error: static image not set.')
-        elif self.dim != len(self.static.shape):
-            ready = False
-            print('Error: inconsistent dimensions. Last dimension update: %d.'
-                  'static image dimension: %d.' % (self.dim,
-                                                  len(self.static.shape)))
-        if self.moving == None:
-            ready = False
-            print('Error: Moving image not set.')
-        elif self.dim != len(self.moving.shape):
-            ready = False
-            print('Error: inconsistent dimensions. Last dimension update: %d.'
-                  'Moving image dimension: %d.' % (self.dim,
-                                                   len(self.moving.shape)))
-        if self.metric == None:
-            ready = False
-            print('Error: Similarity metric not set.')
-        if self.update == None:
-            ready = False
-            print('Error: Update rule not set.')
-        if self.opt_iter == None:
-            ready = False
-            print('Error: Maximum number of iterations per level not set.')
-        return ready
-
-    def _init_optimizer(self, static, moving, static_affine, moving_affine, pre_align):
-        r"""
-        Computes the Gaussian Pyramid of the input images and allocates
-        the required memory for the transformation models at the coarcest
-        scale.
-        """
-        print "Pre-align:",pre_align
-        static_direction, static_spacing = get_direction_and_scalings(static_affine, self.dim)
-        moving_direction, moving_spacing = get_direction_and_scalings(moving_affine, self.dim)
-
-        moving_affine = mult_aff(pre_align, moving_affine)
-        self.set_static_image(static, static_affine)
-        self.set_moving_image(moving, moving_affine)
-        self.forward_model = DiffeomorphicMap(self.dim)
-        self.backward_model = DiffeomorphicMap(self.dim)
-
-        ready = self._check_ready()
-        self._connect_functions()
-        if not ready:
-            print 'Not ready'
-            return False
-        #build the scale space of the input images
-        self.moving_ss = [(filtered, size, spacing, scaling, affine) 
-            for (filtered, size, spacing, scaling, affine) in 
-                scale_space(self.moving, self.levels - 1, self.moving_affine, moving_direction, moving_spacing)]
-        self.static_ss = [(filtered, size, spacing, scaling, affine) 
-            for (filtered, size, spacing, scaling, affine) in 
-                scale_space(self.static, self.levels - 1, self.static_affine, static_direction, static_spacing)]
-
-        print 'Moving scale space:'
-        for scale_info in self.moving_ss:
-            print scale_info[1], scale_info[2], scale_info[4]
-        print 'Static scale space:'
-        for scale_info in self.static_ss:
-            print scale_info[1], scale_info[2], scale_info[4]
-
-        #Create the displacement fields of the forward diffeomorphic transformation
-        #at the coarcest resolution
-        starting_forward = np.zeros(
-            shape=tuple(self.static_ss[self.levels - 1][1]) + (self.dim,),
-            dtype=floating)
-        starting_forward_inv = np.zeros(
-            shape=tuple(self.static_ss[self.levels - 1][1]) + (self.dim,),
-            dtype=floating)
-        self.forward_model.set_forward(starting_forward, 
-                                       self.static_ss[self.levels - 1][4], 
-                                       self.static_ss[self.levels - 1][2])
-        self.forward_model.set_backward(starting_forward_inv, 
-                                       self.static_ss[self.levels - 1][4], 
-                                       self.static_ss[self.levels - 1][2])
-        
-        #Create the displacement fields of the backward diffeomorphic transformation
-        #at the coarcest resolution
-        starting_backward = np.zeros(
-            shape=tuple(self.moving_ss[self.levels - 1][1]) + (self.dim,),
-            dtype=floating)
-        starting_backward_inverse = np.zeros(
-            shape=tuple(self.static_ss[self.levels - 1][1]) + (self.dim,),
-            dtype=floating)
-        self.backward_model.set_forward(starting_backward, 
-                                        self.moving_ss[self.levels - 1][4], 
-                                        self.moving_ss[self.levels - 1][2])
-        self.backward_model.set_backward(starting_backward_inverse,
-                                         self.static_ss[self.levels - 1][4], 
-                                         self.static_ss[self.levels - 1][2])
-
-    def _end_optimizer(self):
-        r"""
-        Frees the resources allocated during initialization
-        """
-        del self.moving_ss
-        del self.static_ss
-
-    def _iterate(self):
-        r"""
-        Performs one symmetric iteration:
-            1.Compute forward
-            2.Compute backward
-            3.Update forward
-            4.Update backward
-            5.Compute inverses
-            6.Invert the inverses to improve invertibility
-        """
-        #Warp the input images (smoothed to the current scale) to the common (reference) space
-        wmoving = self.backward_model.transform_inverse(self.current_moving, self.moving_affine_inv, 'tri')
-        wstatic = self.forward_model.transform_inverse(self.current_static, self.static_affine_inv, 'tri')
-        if self.verbosity > 10:
-            if self.dim == 2:
-                plt.figure()
-                plt.subplot(1,2,1)
-                plt.imshow(wmoving, cmap = plt.cm.gray)
-                plt.subplot(1,2,2)
-                plt.imshow(wstatic, cmap = plt.cm.gray)
-            else:
-                plt.figure()
-                plt.subplot(1,2,1)
-                wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
-                plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
-                plt.subplot(1,2,2)
-                wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
-                plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
-        
-        #Pass both images to the metric
-        self.metric.set_moving_image(wmoving)
-        self.metric.use_moving_image_dynamics(
-            self.current_moving, self.backward_model.inverse())
-        self.metric.set_static_image(wstatic)
-        self.metric.use_static_image_dynamics(
-            self.current_static, self.forward_model.inverse())
-
-        #Initialize the metric for a new iteration
-        self.metric.initialize_iteration()
-
-        #Allocate memory to keep the update fields (direct and inverse for 
-        #both transformations of the mid-point SyN algorithm)
-        ff_shape = np.array(self.forward_model.forward.shape).astype(np.int32)
-        fb_shape = np.array(self.forward_model.backward.shape).astype(np.int32)
-        bf_shape = np.array(self.backward_model.forward.shape).astype(np.int32)
-        bb_shape = np.array(
-            self.backward_model.backward.shape).astype(np.int32)
-
-        #Free some memory (useful when usinf double precision)
-        del self.forward_model.backward
-        del self.backward_model.backward
-
-        #Compute the forward step (to be used to update the forward transform)
-        #Note that fw_step's sampling is the same as the current forward model's 
-        fw_step = np.array(self.metric.compute_forward())
-        nrm = np.sqrt(np.sum((fw_step/self.current_static_spacing)**2, -1)).max()
-        fw_step*=(0.25/nrm)
-        
-        self.forward_model.forward, md_forward = self.update(
-            self.forward_model.forward, fw_step, 
-            self.forward_model.affine_forward_inv)
-        del fw_step
-
-        #Keep track of the forward energy
-        fw_energy = self.metric.get_energy()
-
-        #Compose the backward step (to be used to update the backward transform)
-        #Note that bw_step's sampling is the same as the current backward model's 
-        bw_step = np.array(self.metric.compute_backward())
-        nrm = np.sqrt(np.sum((bw_step/self.current_moving_spacing)**2, -1)).max()
-        bw_step*=(0.25/nrm)
-
-        self.backward_model.forward, md_backward = self.update(
-            self.backward_model.forward, bw_step, 
-            self.backward_model.affine_forward_inv)
-        del bw_step
-
-        #Keep track of the energy
-        bw_energy = self.metric.get_energy()
-        der = '-'
-        n_iter = len(self.energy_list)
-        if len(self.energy_list) >= self.energy_window:
-            der = self._get_energy_derivative()
-        if self.verbosity > 1:
-            print(
-                '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
-                                                  fw_energy + bw_energy, der))
-        self.energy_list.append(fw_energy + bw_energy)
-
-        #Free resources no longer needed to compute the forward and backward steps
-        self.metric.free_iteration()
-
-        #Invert the current reformation fields
-        inv_iter = self.inv_iter
-        inv_tol = self.inv_tol
-        self.forward_model.backward = np.array(
-            self.invert_vector_field(
-                self.forward_model.forward,
-                self.forward_model.affine_forward,
-                self.forward_model.affine_forward_inv,
-                fb_shape,
-                self.forward_model.affine_backward,
-                self.forward_model.affine_backward_inv,
-                inv_iter, inv_tol, None))
-        self.backward_model.backward = np.array(
-            self.invert_vector_field(
-                self.backward_model.forward,
-                self.backward_model.affine_forward,
-                self.backward_model.affine_forward_inv,
-                bb_shape,
-                self.backward_model.affine_backward,
-                self.backward_model.affine_backward_inv,
-                inv_iter, inv_tol, None))
-
-        #Invert the inverses
-        self.forward_model.forward = np.array(
-            self.invert_vector_field(
-                self.forward_model.backward,
-                self.forward_model.affine_backward,
-                self.forward_model.affine_backward_inv,
-                ff_shape,
-                self.forward_model.affine_forward,
-                self.forward_model.affine_forward_inv,
-                inv_iter, inv_tol, self.forward_model.forward))
-        self.backward_model.forward = np.array(
-            self.invert_vector_field(
-                self.backward_model.backward,
-                self.backward_model.affine_backward,
-                self.backward_model.affine_backward_inv,
-                bf_shape,
-                self.backward_model.affine_forward,
-                self.backward_model.affine_forward_inv,
-                inv_iter, inv_tol, self.backward_model.forward))
-
-        #We finished the iteration, report using the provided callback
-        if self.call_back is not None:
-            self.call_back(self)
-        return 1 if der == '-' else der
-
-    def _approximate_derivative_direct(self, x, y):
-        r"""
-        Directly computes the derivative of the least-squares-fit quadratic
-        function estimated from (x[...],y[...]) pairs.
-
-        Parameters
-        ----------
-        x : array, shape(n,)
-            increasing array representing the x-coordinates of the points to be fit
-        y : array, shape(n,)
-            array representing the y-coordinates of the points to be fit
-
-        Returns
-        -------
-        y0 : float
-            the estimated derivative at x0 = 0.5*len(x) 
-        """
-        x = np.asarray(x)
-        y = np.asarray(y)
-        X = np.row_stack((x**2, x, np.ones_like(x)))
-        XX = (X).dot(X.T)
-        b = X.dot(y)
-        beta = np.linalg.solve(XX,b)
-        x0 = 0.5 * len(x)
-        y0 = 2.0 * beta[0] * (x0) + beta[1]
-        return y0
-
-    def _get_energy_derivative(self):
-        r"""
-        Returns the derivative of the estimated energy as a function of "time"
-        (iterations) at the last iteration
-        """
-        n_iter = len(self.energy_list)
-        if n_iter < self.energy_window:
-            print 'Error: attempting to fit the energy profile with less points (', n_iter, ') than required (energy_window=', self.energy_window, ')'
-            return 1
-        x = range(self.energy_window)
-        y = self.energy_list[(n_iter - self.energy_window):n_iter]
-        ss = sum(y)
-        if(ss > 0):
-            ss *= -1
-        y = [v / ss for v in y]
-        der = self._approximate_derivative_direct(x,y)
-        return der
-    
-    def _optimize(self):
-        r"""
-        The main multi-scale symmetric optimization algorithm
-        """
-        self.full_energy_profile = []
-        for level in range(self.levels - 1, -1, -1):
-            if self.verbosity > 0:
-                print('Optimizing level %d'%(level,))
-                
-            #self.moving_ss[level][0] = [(filtered, size, spacing, scaling) ...
-            self.current_static = self.static_ss[level][0]
-            self.current_moving = self.moving_ss[level][0]
-
-            self.current_static_affine = self.static_ss[level][4]
-            self.current_moving_affine = self.moving_ss[level][4]
-
-            self.current_static_spacing = self.static_ss[level][2]
-            self.current_moving_spacing = self.moving_ss[level][2]
-            
-            self.metric.use_original_static_image(self.current_static)
-            self.metric.use_original_moving_image(self.current_moving)
-            
-            self.metric.set_levels_below(self.levels - level)
-            self.metric.set_levels_above(level)
-            if self.verbosity > 8:
-                print '***************Before***************'
-                print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
-                print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 
-                print 'bw scalings:',self.backward_model.scalings_forward, self.backward_model.scalings_backward
-                print 'bw affines:',self.backward_model.affine_forward, self.backward_model.affine_backward
-
-
-            if level < self.levels - 1:
-                self.forward_model.expand_fields(self.static_ss[level][2], 
-                                                 self.static_ss[level][1],
-                                                 self.static_ss[level][2], 
-                                                 self.static_ss[level][1])
-                self.backward_model.expand_fields(self.moving_ss[level][2],
-                                                  self.moving_ss[level][1],
-                                                  self.static_ss[level][2], 
-                                                  self.static_ss[level][1])
-            if self.verbosity > 8:
-                print '***************After***************'
-                print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
-                print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 
-                print 'bw scalings:',self.backward_model.scalings_forward, self.backward_model.scalings_backward
-                print 'bw affines:',self.backward_model.affine_forward, self.backward_model.affine_backward
-                print '***********************************'
-
-            niter = 0
-            self.full_energy_profile.extend(self.energy_list)
-            self.energy_list = []
-            derivative = 1
-            while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
-                niter += 1
-                derivative = self._iterate()
-            if self.verbosity>10:
-                if self.dim == 2:
-                    plt.figure()
-                    plt.subplot(1,2,1)
-                    wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
-                    plt.imshow(wmoving, cmap = plt.cm.gray)
-                    plt.subplot(1,2,2)
-                    wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
-                    plt.imshow(wstatic, cmap = plt.cm.gray)
-                else:
-                    plt.figure()
-                    plt.subplot(1,2,1)
-                    wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
-                    plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
-                    plt.subplot(1,2,2)
-                    wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
-                    plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
-
-        # Reporting mean and std in stats[1] and stats[2]
-        residual, stats = self.forward_model.compute_inversion_error()
-        if self.verbosity > 0:
-            print('Forward Residual error: %0.6f (%0.6f)'
-                  % (stats[1], stats[2]))
-        residual, stats = self.backward_model.compute_inversion_error()
-        if self.verbosity > 0:
-            print('Backward Residual error :%0.6f (%0.6f)'
-                  % (stats[1], stats[2]))
-
-        # Compose the two partial transformations
-        self.forward_model = self.backward_model.inverse().compose(
-            self.forward_model)
-        
-        # Report mean and std for the composed deformation field
-        residual, stats = self.forward_model.compute_inversion_error()
-        if self.verbosity > 0:
-            print('Final residual error: %0.6f (%0.6f)'
-                  % (stats[1], stats[2]))
-
-    def initialize_transforms(self, static_affine, moving_affine, pre_align):
-        print "Moving scalings:", self.moving_scalings
-        print "Static scalings:", self.static_scalings
-        print "Moving dir:", self.moving_direction
-        print "Static dir:", self.static_direction
-
-        pre_align = None
-        inv_pre_align = None
-        if not pre_align is None:
-            inv_pre_align = np.array(np.linalg.inv(pre_align), dtype = floating)
-            pre_align = pre_align
-
-        #The forward model transforms the static image to the reference space, which is the 
-        #same as the static domain, so the discretization scalings and affines are the same
-        
-
-        #The backward model transforms moving points to reference points, so the discretization
-        #of the forward direction of the backward model corresponds to the moving image zooms 
-        #and affine, while the discretization of the backward direction of the backward model
-        #corresponds to the static zooms and affine 
-        
-
-    def optimize(self, static, moving, static_affine=None, moving_affine=None, pre_align=None):
-        r"""
-        Starts the optimnization
-
-        Parameters
-        ----------
-        static : array, shape (R, C) or (S, R, C)
-            the static (reference) image
-        moving : array, shape (R, C) or (S, R, C)
-            the moving (target) image to be warped towards static
-        static_affine: array, shape (3, 3) or (4, 4)
-            the affine transformation bringing the static image to physical
-            space
-        moving_affine: array, shape (3, 3) or (4, 4)
-            the affine transformation bringing the moving image to physical
-            space
-        
-        Returns
-        -------
-        forward_model : DiffeomorphicMap object
-            the diffeomorphic map that brings the moving image towards the
-            static one in the forward direction (i.e. by calling 
-            forward_model.transform) and the static image towards the
-            moving one in the backward direction (i.e. by calling 
-            forward_model.transform_inverse). 
-
-        """
-        self._init_optimizer(static, moving, static_affine, moving_affine, pre_align)
-        self._optimize()
-        self._end_optimizer()
-        return self.forward_model
