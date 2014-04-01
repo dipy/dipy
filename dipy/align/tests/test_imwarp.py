@@ -80,7 +80,7 @@ def test_warping_2d():
     affine_disp = target_affine_inv.astype(floating)
 
     #apply the implementation under test
-    warped = np.array(vfu.warp_image(moving_image, disp, affine_index, affine_disp))
+    warped = np.array(vfu.warp_image(moving_image, disp, None, affine_index, affine_disp))
 
     #warp the moving image using the (exact) assignments
     expected = moving_image[(assign[...,0], assign[...,1])]
@@ -89,15 +89,15 @@ def test_warping_2d():
     assert_array_almost_equal(warped, expected, decimal = 5)
     
     #Now test the nearest neighbor interpolation
-    warped = np.array(vfu.warp_image_nn(moving_image, disp, affine_index, affine_disp))
+    warped = np.array(vfu.warp_image_nn(moving_image, disp, None, affine_index, affine_disp))
     #compare the images (now we dont have to worry about precision, it is n.n.)
     assert_array_almost_equal(warped, expected)
 
     #test consolidation
     consolidated = vfu.consolidate_2d(disp, affine_index, affine_disp)
-    warped = np.array(vfu.warp_image(moving_image, consolidated, None, None))
+    warped = np.array(vfu.warp_image(moving_image, consolidated, None, None, None))
     assert_array_almost_equal(warped, expected, decimal = 5)
-    warped = np.array(vfu.warp_image_nn(moving_image, consolidated, None, None))
+    warped = np.array(vfu.warp_image_nn(moving_image, consolidated, None, None, None))
     assert_array_almost_equal(warped, expected)
 
 
@@ -154,7 +154,7 @@ def test_warping_3d():
     affine_disp = target_affine_inv.astype(floating)
 
     #apply the implementation under test
-    warped = np.array(vfu.warp_volume(moving_image, disp, affine_index, affine_disp))
+    warped = np.array(vfu.warp_volume(moving_image, disp, None, affine_index, affine_disp))
 
     #warp the moving image using the (exact) assignments
     expected = moving_image[(assign[...,0], assign[...,1], assign[...,2])]
@@ -163,15 +163,15 @@ def test_warping_3d():
     assert_array_almost_equal(warped, expected, decimal = 5)
     
     #Now test the nearest neighbor interpolation
-    warped = np.array(vfu.warp_volume_nn(moving_image, disp, affine_index, affine_disp))
+    warped = np.array(vfu.warp_volume_nn(moving_image, disp, None, affine_index, affine_disp))
     #compare the images (now we dont have to worry about precision, it is n.n.)
     assert_array_almost_equal(warped, expected)
 
     #test consolidation
     consolidated = vfu.consolidate_3d(disp, affine_index, affine_disp)
-    warped = np.array(vfu.warp_volume(moving_image, consolidated, None, None))
+    warped = np.array(vfu.warp_volume(moving_image, consolidated, None, None, None))
     assert_array_almost_equal(warped, expected, decimal = 5)
-    warped = np.array(vfu.warp_volume_nn(moving_image, consolidated, None, None))
+    warped = np.array(vfu.warp_volume_nn(moving_image, consolidated, None, None, None))
     assert_array_almost_equal(warped, expected)
 
 
@@ -244,12 +244,12 @@ def test_compose_vector_fields_2d():
                                                np.array(premult_disp, dtype = floating),
                                                1.0)
     #apply the implementation under test
-    warped = np.array(vfu.warp_image(moving_image, composition, premult_index, premult_disp))
+    warped = np.array(vfu.warp_image(moving_image, composition, None, premult_index, premult_disp))
 
     assert_array_almost_equal(warped, expected, decimal=5)
 
     #test also using nearest neighbor interpolation
-    warped = np.array(vfu.warp_image_nn(moving_image, composition, premult_index, premult_disp))
+    warped = np.array(vfu.warp_image_nn(moving_image, composition, None, premult_index, premult_disp))
 
     assert_array_almost_equal(warped, expected)
 
@@ -328,12 +328,12 @@ def test_compose_vector_fields_3d():
                                                np.array(premult_disp, dtype = floating),
                                                1.0)
     #apply the implementation under test
-    warped = np.array(vfu.warp_volume(moving_image, composition, premult_index, premult_disp))
+    warped = np.array(vfu.warp_volume(moving_image, composition, None, premult_index, premult_disp))
 
     assert_array_almost_equal(warped, expected, decimal=5)
 
     #test also using nearest neighbor interpolation
-    warped = np.array(vfu.warp_volume_nn(moving_image, composition, premult_index, premult_disp))
+    warped = np.array(vfu.warp_volume_nn(moving_image, composition, None, premult_index, premult_disp))
 
     assert_array_almost_equal(warped, expected)
 

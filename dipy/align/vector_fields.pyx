@@ -1584,7 +1584,10 @@ def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
 
 
 def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
-                floating[:, :] affine_idx=None, floating[:, :] affine_disp=None):
+                floating[:, :] affine_idx_in=None, 
+                floating[:, :] affine_idx_out=None, 
+                floating[:, :] affine_disp=None,
+                int[:] sampling_shape=None):
     r"""
     Deforms the input volume under the transformation T of the from
     T(x) = B*f(A*x), x\in dom(f), where 
@@ -1619,21 +1622,39 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
         int ncVol = volume.shape[2]
         int i, j, k, inside
         double dkk, dii, djj, dk, di, dj
-    if d1 is not None:
+    if sampling_shape is not None:
+        nslices = sampling_shape[0]
+        nrows = sampling_shape[1]
+        ncols = sampling_shape[2]
+    elif d1 is not None:
         nslices = d1.shape[0]
         nrows = d1.shape[1]
         ncols = d1.shape[2]
+
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
                                              dtype=np.asarray(volume).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(volume).dtype)
 
     with nogil:
 
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    dkk = d1[k, i, j, 0]
-                    dii = d1[k, i, j, 1]
-                    djj = d1[k, i, j, 2]
+                    if affine_idx_in is None:
+                        dkk = d1[k, i, j, 0]
+                        dii = d1[k, i, j, 1]
+                        djj = d1[k, i, j, 2]
+                    else:
+                        dk = _apply_affine_3d_x0(
+                            k, i, j, 1, affine_idx_in)
+                        di = _apply_affine_3d_x1(
+                            k, i, j, 1, affine_idx_in)
+                        dj = _apply_affine_3d_x2(
+                            k, i, j, 1, affine_idx_in)
+                        inside = interpolate_vector_trilinear(d1, dk, di, dj, tmp)
+                        dkk = tmp[0]
+                        dii = tmp[1]
+                        djj = tmp[2]
 
                     if not affine_disp is None:
                         dk = _apply_affine_3d_x0(
@@ -1647,10 +1668,10 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         di = dii
                         dj = djj
                     
-                    if not affine_idx is None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx)
+                    if not affine_idx_out is None:
+                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx_out)
+                        dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx_out)
+                        djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx_out)
                     else:
                         dkk = dk + k
                         dii = di + i
@@ -1719,9 +1740,11 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
     return warped
 
 
-def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
-                   floating[:, :] affine_idx=None,
-                   floating[:, :] affine_disp=None):
+def warp_volume_nn(floating[:, :, :] volume, floating[:, :, :, :] d1,
+                   floating[:, :] affine_idx_in=None, 
+                   floating[:, :] affine_idx_out=None, 
+                   floating[:, :] affine_disp=None,
+                   int[:] sampling_shape=None):
     r"""
     Deforms the input volume under the transformation T of the from
     T(x) = B*f(A*x), x\in dom(f), where 
@@ -1756,21 +1779,39 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         int ncVol = volume.shape[2]
         int i, j, k, inside
         double dkk, dii, djj, dk, di, dj
-    if d1 is not None:
+    if sampling_shape is not None:
+        nslices = sampling_shape[0]
+        nrows = sampling_shape[1]
+        ncols = sampling_shape[2]
+    elif d1 is not None:
         nslices = d1.shape[0]
         nrows = d1.shape[1]
         ncols = d1.shape[2]
-    cdef number[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
+
+    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
                                              dtype=np.asarray(volume).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(volume).dtype)
 
     with nogil:
 
         for k in range(nslices):
             for i in range(nrows):
                 for j in range(ncols):
-                    dkk = d1[k, i, j, 0]
-                    dii = d1[k, i, j, 1]
-                    djj = d1[k, i, j, 2]
+                    if affine_idx_in is None:
+                        dkk = d1[k, i, j, 0]
+                        dii = d1[k, i, j, 1]
+                        djj = d1[k, i, j, 2]
+                    else:
+                        dk = _apply_affine_3d_x0(
+                            k, i, j, 1, affine_idx_in)
+                        di = _apply_affine_3d_x1(
+                            k, i, j, 1, affine_idx_in)
+                        dj = _apply_affine_3d_x2(
+                            k, i, j, 1, affine_idx_in)
+                        inside = interpolate_vector_trilinear(d1, dk, di, dj, tmp)
+                        dkk = tmp[0]
+                        dii = tmp[1]
+                        djj = tmp[2]
 
                     if not affine_disp is None:
                         dk = _apply_affine_3d_x0(
@@ -1784,15 +1825,16 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         di = dii
                         dj = djj
                     
-                    if not affine_idx is None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx)
+                    if not affine_idx_out is None:
+                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx_out)
+                        dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx_out)
+                        djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx_out)
                     else:
                         dkk = dk + k
                         dii = di + i
                         djj = dj + j
-                    interpolate_scalar_nn_3d(volume, dkk, dii, djj, &warped[k,i,j])
+
+                    inside = interpolate_scalar_nn_3d(volume, dkk, dii, djj, &warped[k,i,j])
     return warped
 
 
@@ -1857,8 +1899,10 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
 
 
 def warp_image(floating[:, :] image, floating[:, :, :] d1,
-               floating[:,:] affine_idx=None,
-               floating[:,:] affine_disp=None):
+               floating[:,:] affine_idx_in=None,
+               floating[:,:] affine_idx_out=None,
+               floating[:,:] affine_disp=None,
+               int[:] sampling_shape=None):
     r"""
     Deforms the input image under the transformation T of the from
     T(x) = B*f(A*x), x\in dom(f), where 
@@ -1898,11 +1942,15 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
         int ncVol = image.shape[1]
         int i, j, ii, jj
         double di, dj, dii, djj
-    if d1 is not None:
+    if sampling_shape is not None:
+        nrows = sampling_shape[0]
+        ncols = sampling_shape[1]
+    elif d1 is not None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
     cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), 
                                          dtype=np.asarray(image).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(image).dtype)
 
 
     with nogil:
@@ -1910,12 +1958,19 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
         for i in range(nrows):
             for j in range(ncols):
                 #Apply inner index premultiplication
-                dii = d1[i, j, 0]
-                djj = d1[i, j, 1]
+                if affine_idx_in is None:
+                    dii = d1[i, j, 0]
+                    djj = d1[i, j, 1]
+                else:
+                    di = _apply_affine_2d_x0(
+                        i, j, 1, affine_idx_in)
+                    dj = _apply_affine_2d_x1(
+                        i, j, 1, affine_idx_in)
+                    interpolate_vector_bilinear(d1, di, dj, tmp)
+                    dii = tmp[0]
+                    djj = tmp[1]
 
-                #Apply displacement multiplication (remember: the last entry
-                #of a displacement in homogenous coordinates is 0, not 1, so the
-                #translation part of the affine does not affects them)
+                #Apply displacement multiplication 
                 if not affine_disp is None:
                     di = _apply_affine_2d_x0(
                         dii, djj, 0, affine_disp)
@@ -1926,9 +1981,9 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
                     dj = djj
 
                 #Apply outer index multiplization and add the displacements
-                if not affine_idx is None:
-                    dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx)
-                    djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx)
+                if not affine_idx_out is None:
+                    dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
+                    djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
                 else:
                     dii = di + i
                     djj = dj + j
@@ -1994,8 +2049,10 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
 
 
 def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
-                  floating[:,:] affine_idx=None, 
-                  floating[:,:] affine_disp=None):
+                  floating[:,:] affine_idx_in=None,
+                  floating[:,:] affine_idx_out=None,
+                  floating[:,:] affine_disp=None,
+                  int[:] sampling_shape=None):
     r"""
     Deforms the input image under the transformation T of the from
     T(x) = B*f(A*x), x\in dom(f), where 
@@ -2028,11 +2085,15 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
         int ncVol = image.shape[1]
         int i, j, ii, jj
         double di, dj, dii, djj
-    if d1 is not None:
+    if sampling_shape is not None:
+        nrows = sampling_shape[0]
+        ncols = sampling_shape[1]
+    elif d1 is not None:
         nrows = d1.shape[0]
         ncols = d1.shape[1]
     cdef number[:, :] warped = np.zeros(shape=(nrows, ncols), 
                                          dtype=np.asarray(image).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(image).dtype)
 
 
     with nogil:
@@ -2040,12 +2101,19 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
         for i in range(nrows):
             for j in range(ncols):
                 #Apply inner index premultiplication
-                dii = d1[i, j, 0]
-                djj = d1[i, j, 1]
+                if affine_idx_in is None:
+                    dii = d1[i, j, 0]
+                    djj = d1[i, j, 1]
+                else:
+                    di = _apply_affine_2d_x0(
+                        i, j, 1, affine_idx_in)
+                    dj = _apply_affine_2d_x1(
+                        i, j, 1, affine_idx_in)
+                    interpolate_vector_bilinear(d1, di, dj, tmp)
+                    dii = tmp[0]
+                    djj = tmp[1]
 
-                #Apply displacement multiplication (remember: the last entry
-                #of a displacement in homogenous coordinates is 0, not 1, so the
-                #translation part of the affine does not affects them)
+                #Apply displacement multiplication 
                 if not affine_disp is None:
                     di = _apply_affine_2d_x0(
                         dii, djj, 0, affine_disp)
@@ -2056,15 +2124,15 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
                     dj = djj
 
                 #Apply outer index multiplization and add the displacements
-                if not affine_idx is None:
-                    dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx)
-                    djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx)
+                if not affine_idx_out is None:
+                    dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
+                    djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
                 else:
                     dii = di + i
                     djj = dj + j
 
                 #Interpolate the input image at the resulting location
-                interpolate_scalar_nn_2d(image, dii, djj, &warped[i,j])
+                interpolate_scalar_nn_2d(image, dii, djj, &warped[i, j])
     return warped
 
 

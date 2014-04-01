@@ -272,6 +272,252 @@ def compute_warping_affines(T_inv, R, R_inv, A, B):
 
 
 class DiffeomorphicMap(object):
+    def __init__(self, 
+                 dim,
+                 domain_shape=None,
+                 domain_affine=None,
+                 input_shape=None,
+                 input_affine=None,
+                 input_prealign=None):
+        r""" DiffeomorphicMap
+
+        Implements a diffeomorphic transformation on the physical space. The 
+        deformation fields share the same discretization of shape domain_shape
+        and voxel-to-space matrix domain_affine. The input coordinates (in the 
+        physical coordinates) are first aligned using input_prealign, and then 
+        displaced using the corresponding vector field interpolated at the aligned
+        coordinates (reference space).
+        """
+
+        self.dim = dim
+        self.domain_shape = domain_shape
+        self.domain_affine = domain_affine
+        self.input_shape = input_shape
+        self.input_affine = input_affine
+        self.input_prealign = input_prealign
+
+        self.domain_affine_inv = None if domain_affine is None else np.linalg.inv(domain_affine)
+        self.input_affine_inv = None if input_affine is None else np.linalg.inv(input_affine)
+        self.input_prealign_inv = None if input_prealign is None else np.linalg.inv(input_prealign)
+
+    def transform(self, image, interpolation='tri', world_to_image=None, 
+                      sampling_shape=None, sampling_affine=None):
+        r"""
+        Deforms the input image under this diffeomorphic map in the forward direction.
+        Since the mapping is defined in the physical space, the user must specify 
+        the sampling grid shape and its voxel-to-space mapping. By default, 
+        the samplig grid will be self.input_shape (exception raised if it's None), 
+        with default voxel-to-space mapping given by self.input_affine (identity, 
+        if None). If world_to_image is None, self.domain_affine_inv is used (identity,
+        if it's None as well).
+
+        The forward warping with pre-aligning P is give by the interpolation:
+        I[W*backward[Dinv*P*S*i] + W*P*S*i] where i is an index in the sampling 
+        domain, S is the sampling affine, P is the pre-aligning matrix, Dinv is 
+        the inverse of domain affine (Dinv maps world points to voxels in the 
+        displacement field discretization) and W is the world-to-image mapping. 
+        """
+        if world_to_image is None:
+            world_to_image = self.domain_affine_inv
+        if sampling_shape is None:
+            if self.input_shape is None:
+                raise Exception('DiffeomorphicMap::_warp_forward','Sampling shape is None')
+            sampling_shape = self.input_shape
+        if sampling_affine is None:
+            sampling_affine = self.input_affine
+        W = world_to_image
+        Dinv = self.domain_affine_inv
+        P = self.input_prealign 
+        S = sampling_affine
+        affine_idx_in = mult_aff(Dinv, mult_aff(P, S))
+        affine_idx_out = mult_aff(W, mult_aff(P, S))
+        affine_disp = W
+        if self.dim == 2:
+            if interpolation == 'tri':
+                vfw.warp_image(image, forward,
+                                affine_idx_in,
+                                affine_idx_out,
+                                affine_disp,
+                                sampling_shape)
+            else:
+                vfw.warp_image_nn(image, forward,
+                                  affine_idx_in,
+                                  affine_idx_out,
+                                  affine_disp,
+                                  sampling_shape)
+        else:
+            if interpolation == 'tri':
+                vfw.warp_volume(image, forward,
+                                affine_idx_in,
+                                affine_idx_out,
+                                affine_disp,
+                                sampling_shape)
+            else:
+                vfw.warp_volume_nn(image, forward,
+                                  affine_idx_in,
+                                  affine_idx_out,
+                                  affine_disp,
+                                  sampling_shape)
+
+    def transform_inverse(self, image, interpolation='tri', world_to_image=None, 
+                       sampling_shape=None, sampling_affine=None):
+        r"""
+        Deforms the input image under this diffeomorphic map in the backward direction.
+        Since the mapping is defined in the physical space, the user must specify 
+        the sampling grid shape and its voxel-to-space mapping. By default, 
+        the samplig grid will be self.domain_shape (exception raised if it's None), 
+        with default voxel-to-space mapping given by self.domain_affine (identity, 
+        if None). If world_to_image is None, self.input_affine_inv is used (identity,
+        if it's None as well).
+
+        The backward warping with post-aligning Pinv is give by the interpolation:
+        J[W*Pinv*backward[Dinv*S*i] + W*Pinv*S*i] where i is an index in the sampling domain,
+        S is the sampling affine, Pinv is the post-aligning matrix, Dinv is the
+        inverse of domain affine (Dinv maps world points to voxels in the 
+        displacement field discretization) and W is the world-to-image mapping. 
+        """
+        if world_to_image is None:
+            world_to_image = self.input_affine_inv
+        if sampling_shape is None:
+            if self.domain_shape is None:
+                raise Exception('DiffeomorphicMap::_warp_backward','Sampling shape is None')
+            sampling_shape = self.domain_shape
+        if sampling_affine is None:
+            sampling_affine = self.domain_affine
+
+        W = world_to_image
+        Dinv = self.domain_affine_inv
+        Pinv = self.input_prealign_inv
+        S = sampling_affine
+        affine_idx_in = mult_aff(Dinv, S)
+        affine_idx_out = mult_aff(W, mult_aff(Pinv, S))
+        affine_disp = mult_aff(W, Pinv)
+        if self.dim == 2:
+            if interpolation == 'tri':
+                vfw.warp_image(image, forward,
+                               affine_idx_in,
+                               affine_idx_out,
+                               affine_disp,
+                               sampling_shape)
+            else:
+                vfw.warp_image_nn(image, forward,
+                                  affine_idx_in,
+                                  affine_idx_out,
+                                  affine_disp,
+                                  sampling_shape)
+        else:
+            if interpolation == 'tri':
+                vfw.warp_volume(image, forward,
+                                affine_idx_in,
+                                affine_idx_out,
+                                affine_disp,
+                                sampling_shape)
+            else:
+                vfw.warp_volume_nn(image, forward,
+                                   affine_idx_in,
+                                   affine_idx_out,
+                                   affine_disp,
+                                   sampling_shape)
+
+    def expand_fields(self, expand_factors, new_shape):
+        if self.dim == 2:
+            expanded_forward = vfu.expand_displacement_field_2d(self.forward, 
+                expand_factors, target_shape)
+            expanded_backward = vfu.expand_displacement_field_2d(self.backward, 
+                expand_factors, target_shape)
+        else:
+            expanded_forward = vfu.expand_displacement_field_3d(self.forward, 
+                expand_factors, target_shape)
+            expanded_backward = vfu.expand_displacement_field_3d(self.backward,
+                expand_factors, target_shape)
+        expand_factors = np.append(expand_factors, [1])
+        expanded_affine = mult_aff(self.domain_affine, np.diag(expand_factors))
+        self.forward = expanded_forward
+        self.backward = expanded_backward
+        self.domain_shape = new_shape
+        self.domain_affine = exoanded_affine
+
+    def compute_inversion_error(self):
+        r"""
+        Computes the inversion error of the displacement fields
+
+        Returns
+        -------
+        residual : array, shape (R, C) or (S, R, C)
+            the displacement field resulting from composing the forward and
+            backward displacement fields of this transformation (the residual
+            should be zero for a perfect diffeomorphism)
+        stats : array, shape (3,)
+            statistics from the norms of the vectors of the residual 
+            displacement field: maximum, mean and standard deviation
+
+        Notes
+        -----
+        Currently, we only measure the error of the non-linear components of the
+        transformation. Assuming the two affine matrices are invertible, the
+        error should, in theory, be the same (although in practice, the 
+        boundaries may be problematic).
+        """
+
+        premult_index = None
+        premult_disp = self.domain_affine_inv
+
+        if self.dim == 2:
+            residual, stats = vfu.compose_vector_fields_2d(self.forward,
+                                                           self.backward,
+                                                           premult_index,
+                                                           premult_disp,
+                                                           1.0)
+        else:
+            residual, stats = vfu.compose_vector_fields_3d(self.forward,
+                                                           self.backward,
+                                                           premult_index,
+                                                           premult_disp,
+                                                           1.0)
+        return residual, stats
+
+    def consolidate(self, static_affine=None, moving_affine=None):
+        r"""
+        Since the diffeomorphism are defined on the physical space, it is 
+        necessary to specify the transformation matrices between the physical
+        space and the discretizations (both forward and backward). After
+        "consolidating" the deformation field, the diffepmorphism will operate
+        on the (continuous) voxel spaces so that warpings can be performed 
+        using only the deformation field. The transformations between the 
+        indended static and affine voxel coordinates and physical space must be
+        provided. 
+
+        """
+        if static_affine is None:
+            static_affine = self.affine_forward
+            static_affine_inv = self.affine_forward_inv
+        else:
+            static_affine_inv = np.linalg.inv(static_affine_inv)
+
+        if moving_affine is None:
+            moving_affine = self.affine_backward
+            moving_affine_inv = self.affine_backward_inv
+        else:
+            moving_affine_inv = np.linalg.inv(moving_affine) 
+
+        f_affine_idx = mult_aff(moving_affine_inv, static_affine)
+        f_affine_disp = moving_affine_inv
+
+        b_affine_idx = mult_aff(static_affine_inv, moving_affine)
+        b_affine_disp = static_affine_inv
+
+        if self.dim == 2:
+            forward = vfu.consolidate_2d(self.forward, f_affine_idx, f_affine_disp)
+            backward = vfu.consolidate_2d(self.backward, b_affine_idx, b_affine_disp)
+        else:
+            forward = vfu.consolidate_3d(self.forward, f_affine_idx, f_affine_disp)
+            backward = vfu.consolidate_3d(self.backward, b_affine_idx, b_affine_disp)
+        self.set_forward(forward, None, None)
+        self.set_backward(backward, None, None)
+
+
+
+class OldDiffeomorphicMap(object):
 
     def __init__(self,
                  dim,
@@ -978,6 +1224,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         the required memory for the transformation models at the coarcest
         scale.
         """
+        print "Pre-align:",pre_align
         static_direction, static_spacing = get_direction_and_scalings(static_affine, self.dim)
         moving_direction, moving_spacing = get_direction_and_scalings(moving_affine, self.dim)
 
@@ -1057,12 +1304,21 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Warp the input images (smoothed to the current scale) to the common (reference) space
         wmoving = self.backward_model.transform_inverse(self.current_moving, self.moving_affine_inv, 'tri')
         wstatic = self.forward_model.transform_inverse(self.current_static, self.static_affine_inv, 'tri')
-        # plt.figure()
-        # plt.subplot(1,2,1)
-        # plt.imshow(wmoving, cmap = plt.cm.gray)
-        # plt.subplot(1,2,2)
-        # plt.imshow(wstatic, cmap = plt.cm.gray)
-
+        if self.verbosity > 10:
+            if self.dim == 2:
+                plt.figure()
+                plt.subplot(1,2,1)
+                plt.imshow(wmoving, cmap = plt.cm.gray)
+                plt.subplot(1,2,2)
+                plt.imshow(wstatic, cmap = plt.cm.gray)
+            else:
+                plt.figure()
+                plt.subplot(1,2,1)
+                wmoving = self.backward_model.transform_inverse(self.moving, self.moving_affine_inv, 'tri')
+                plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
+                plt.subplot(1,2,2)
+                wstatic = self.forward_model.transform_inverse(self.static, self.static_affine_inv, 'tri')
+                plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
         
         #Pass both images to the metric
         self.metric.set_moving_image(wmoving)
