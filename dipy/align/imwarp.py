@@ -38,7 +38,7 @@ def get_direction_and_scalings(affine, dim):
     return A.dot(np.diag(1.0/scalings)), scalings
 
 class ScaleSpace(object):
-    def __init__(self, image, num_levels, input_affine, input_spacing, sigma_factor=1.2):
+    def __init__(self, image, num_levels, input_affine, input_spacing, sigma_factor=0.2):
         r""" ScaleSpace
         Implements the Scale Space representation of an image
         """
@@ -395,9 +395,9 @@ class DiffeomorphicMap(object):
         """
 
         self.dim = dim
-        self.domain_shape = domain_shape
+        self.domain_shape = np.asarray(domain_shape, dtype = np.int32)
         self.domain_affine = domain_affine
-        self.input_shape = input_shape
+        self.input_shape = np.asarray(input_shape, dtype = np.int32)
         self.input_affine = input_affine
         self.input_prealign = input_prealign
 
@@ -463,28 +463,33 @@ class DiffeomorphicMap(object):
         if affine_disp is not None:
             affine_disp = affine_disp.astype(floating)
 
+        if image.dtype is np.dtype('float64') and floating is np.float32:
+            image = image.astype(floating)
+        elif image.dtype is np.dtype('int64'):
+            image = image.astype(np.int32)
+
         if self.dim == 2:
             if interpolation == 'tri':
-                warped = vfu.warp_image(image, forward,
+                warped = vfu.warp_image(image, self.forward,
                                         affine_idx_in,
                                         affine_idx_out,
                                         affine_disp,
                                         sampling_shape)
             else:
-                warped = vfu.warp_image_nn(image, forward,
+                warped = vfu.warp_image_nn(image, self.forward,
                                            affine_idx_in,
                                            affine_idx_out,
                                            affine_disp,
                                            sampling_shape)
         else:
             if interpolation == 'tri':
-                warped = vfu.warp_volume(image, forward,
+                warped = vfu.warp_volume(image, self.forward,
                                 affine_idx_in,
                                 affine_idx_out,
                                 affine_disp,
                                 sampling_shape)
             else:
-                warped = vfu.warp_volume_nn(image, forward,
+                warped = vfu.warp_volume_nn(image, self.forward,
                                   affine_idx_in,
                                   affine_idx_out,
                                   affine_disp,
@@ -508,6 +513,7 @@ class DiffeomorphicMap(object):
         inverse of domain affine (Dinv maps world points to voxels in the 
         displacement field discretization) and W is the world-to-image mapping. 
         """
+
         if world_to_image is None:
             world_to_image = self.input_affine_inv
         if sampling_shape is None:
@@ -531,6 +537,11 @@ class DiffeomorphicMap(object):
             affine_idx_out = affine_idx_out.astype(floating)
         if affine_disp is not None:
             affine_disp = affine_disp.astype(floating)
+
+        if image.dtype is np.dtype('float64') and floating is np.float32:
+            image = image.astype(floating)
+        elif image.dtype is np.dtype('int64'):
+            image = image.astype(np.int32)
 
         if self.dim == 2:
             if interpolation == 'tri':
@@ -653,6 +664,52 @@ class DiffeomorphicMap(object):
                                                            1.0)
         return residual, stats
 
+    def shallow_copy(self):
+        new_map = DiffeomorphicMap(self.dim,
+                                   self.domain_shape,
+                                   self.domain_affine,
+                                   self.input_shape,
+                                   self.input_affine,
+                                   self.input_prealign)
+        new_map.forward = self.forward
+        new_map.backward = self.backward
+        new_map.is_inverse = self.is_inverse
+        return new_map
+
+    def warp_endomorphism(self, phi):
+        r"""
+        Creates a new DiffeomorphicMap C with the same properties as self and
+        composes its displacement fields with phi's corresponding fields. 
+        The resulting diffeomorphism is of the form C(x) = phi(self(x)) with
+        inverse C^{-1}(y) = self^{-1}(phi^{-1}(y)). We assume that phi is an 
+        endomorphism with the same discretization and domain affines as self 
+        to ensure that the composition inherits self's properties. 
+        """
+        #Compose the forward deformation fields
+        d1 = self.get_forward_field()
+        d2 = phi.get_forward_field()
+        d1_inv = self.get_backward_field()
+        d2_inv = phi.get_backward_field()
+
+        if self.domain_affine_inv is None:
+            premult_disp = None
+        else:
+            premult_disp = self.domain_affine_inv.astype(floating)
+
+        if self.dim == 2:
+            forward, stats = vfu.compose_vector_fields_2d(d1, d2, None, premult_disp, 1.0)
+            backward, stats, = vfu.compose_vector_fields_2d(d2_inv, d1_inv, None, premult_disp, 1.0)
+        else:
+            forward, stats = vfu.compose_vector_fields_3d(d1, d2, None, premult_disp, 1.0)
+            backward, stats, = vfu.compose_vector_fields_3d(d2_inv, d1_inv, None, premult_disp, 1.0)
+        composition = self.shallow_copy()
+        composition.forward = forward
+        composition.backward = backward
+        return composition
+
+    def consolidate(self):
+        pass
+
         
 
 
@@ -761,6 +818,38 @@ class DiffeomorphicRegistration(object):
         Returns the forward model's backward (inverse) deformation field
         """
         return self.forward_model.backward
+
+
+def renormalize_image(image):
+    m=np.min(image)
+    M=np.max(image)
+    if(M-m<1e-8):
+        return image
+    return 127.0*(image-m)/(M-m)
+
+def overlay_images(L, R, ltitle='Left', rtitle='Right', fname=None):
+    sh=L.shape
+
+    colorImage=np.zeros(shape=(sh[0], sh[1], 3), dtype=np.int8)
+    ll=renormalize_image(L).astype(np.int8)
+    rr=renormalize_image(R).astype(np.int8)
+    colorImage[...,0]=ll*(ll>ll[0,0])
+    colorImage[...,1]=rr*(rr>rr[0,0])
+
+    plt.figure()
+    plt.subplot(1,3,1)
+    plt.imshow(ll, cmap = plt.cm.gray)
+    plt.title(ltitle)
+    plt.subplot(1,3,2)
+    plt.imshow(colorImage)
+    plt.title('Overlay')
+    plt.subplot(1,3,3)
+    plt.imshow(rr, cmap = plt.cm.gray)
+    plt.title(rtitle)
+    if fname is not None:
+        from time import sleep
+        sleep(1)
+        plt.savefig(fname, bbox_inches='tight')
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
@@ -960,19 +1049,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         
         if self.verbosity > 10:
             if self.dim == 2:
-                plt.figure()
-                plt.subplot(1,2,1)
-                plt.imshow(wmoving, cmap = plt.cm.gray)
-                plt.subplot(1,2,2)
-                plt.imshow(wstatic, cmap = plt.cm.gray)
+                overlay_images(wmoving, wstatic, 'Moving', 'Static')
             else:
-                plt.figure()
-                plt.subplot(1,2,1)
-                wmoving = self.backward_model.transform_inverse(current_moving, 'tri')
-                plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
-                plt.subplot(1,2,2)
-                wstatic = self.forward_model.transform_inverse(current_static, 'tri')
-                plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
+                overlay_images(wmoving[:,wmoving.shape[1]//2,:], 
+                               wstatic[:,wstatic.shape[1]//2,:], 
+                               'Moving', 'Static')
         
         #Pass both images to the metric
         self.metric.set_moving_image(wmoving)
@@ -1132,34 +1213,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             
             self.metric.set_levels_below(self.levels - level)
             self.metric.set_levels_above(level)
-            # if self.verbosity > 8:
-            #     print '***************Before***************'
-            #     print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
-            #     print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 
-            #     print 'bw scalings:',self.backward_model.scalings_forward, self.backward_model.scalings_backward
-            #     print 'bw affines:',self.backward_model.affine_forward, self.backward_model.affine_backward
 
             if level < self.levels - 1:
 
                 expand_factors = self.static_ss.get_expand_factors(level+1, level) 
-                print 'Expanding with factors:', expand_factors
                 new_shape = self.static_ss.get_domain_shape(level)
                 self.forward_model.expand_fields(expand_factors, new_shape)
                 self.backward_model.expand_fields(expand_factors, new_shape)
-                residual, stats = self.forward_model.compute_inversion_error()
-                print('New Forward Residual error at level %d: %0.6f (%0.6f)'
-                  % (level, stats[1], stats[2]))
-                residual, stats = self.backward_model.compute_inversion_error()
-                print('New Backward Residual error at level %d: %0.6f (%0.6f)'
-                  % (level, stats[1], stats[2]))
-
-            # if self.verbosity > 8:
-            #     print '***************After***************'
-            #     print 'fw scalings:',self.forward_model.scalings_forward, self.forward_model.scalings_backward
-            #     print 'fw affines:',self.forward_model.affine_forward, self.forward_model.affine_backward, 
-            #     print 'bw scalings:',self.backward_model.scalings_forward, self.backward_model.scalings_backward
-            #     print 'bw affines:',self.backward_model.affine_forward, self.backward_model.affine_backward
-            #     print '***********************************'
 
             niter = 0
             self.full_energy_profile.extend(self.energy_list)
@@ -1169,32 +1229,16 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 niter += 1
                 derivative = self._iterate()
             if self.verbosity>10:
-                residual, stats = self.forward_model.compute_inversion_error()
-                print('Forward Residual error at level %d: %0.6f (%0.6f)'
-                  % (level, stats[1], stats[2]))
-                residual, stats = self.backward_model.compute_inversion_error()
-                print('Backward Residual error at level %d: %0.6f (%0.6f)'
-                  % (level, stats[1], stats[2]))
+                wmoving = self.backward_model.transform_inverse(
+                        self.moving_ss.get_image(self.current_level), 'tri')
+                wstatic = self.forward_model.transform_inverse(
+                        self.static_ss.get_image(self.current_level), 'tri')
                 if self.dim == 2:
-                    plt.figure()
-                    plt.subplot(1,2,1)
-                    wmoving = self.backward_model.transform_inverse(
-                        self.moving_ss.get_image(self.current_level), 'tri')
-                    plt.imshow(wmoving, cmap = plt.cm.gray)
-                    plt.subplot(1,2,2)
-                    wstatic = self.forward_model.transform_inverse(
-                        self.static_ss.get_image(self.current_level), 'tri')
-                    plt.imshow(wstatic, cmap = plt.cm.gray)
+                    overlay_images(wmoving, wstatic, 'Moving', 'Static')
                 else:
-                    plt.figure()
-                    plt.subplot(1,2,1)
-                    wmoving = self.backward_model.transform_inverse(
-                        self.moving_ss.get_image(self.current_level), 'tri')
-                    plt.imshow(wmoving[:,wmoving.shape[1]//2,:], cmap = plt.cm.gray)
-                    plt.subplot(1,2,2)
-                    wstatic = self.forward_model.transform_inverse(
-                        self.static_ss.get_image(self.current_level), 'tri')
-                    plt.imshow(wstatic[:,wstatic.shape[1]//2,:], cmap = plt.cm.gray)
+                    overlay_images(wmoving[:,wmoving.shape[1]//2,:], 
+                                   wstatic[:,wstatic.shape[1]//2,:], 
+                                   'Moving', 'Static')
 
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.forward_model.compute_inversion_error()
@@ -1207,49 +1251,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                   % (stats[1], stats[2]))
 
         #Compose the two partial transformations
-        #Take the domain discretization info from static_ss
-        domain_shape = self.static_ss.get_domain_shape(0)
-        domain_affine = self.static_ss.get_affine(0)
-        domain_affine_inv = self.static_ss.get_affine_inv(0)
-
-        #Take the input ('moving') discretization input from the backward model
-        input_shape = self.backward_model.input_shape
-        input_affine = self.backward_model.input_affine
-        input_prealign = self.backward_model.input_prealign
-
-        disp1 = self.backward_model.forward
-        disp2 = self.forward_model.backward
-        if self.dim == 2:
-            comp_forward, stats = vfu.compose_vector_fields_2d(disp1, disp2, 
-                                                None, domain_affine_inv, 1.0)
-        else:
-            comp_forward, stats = vfu.compose_vector_fields_3d(disp1, disp2,
-                                                None, domain_affine_inv, 1.0)
-
-        disp1 = self.forward_model.forward
-        disp2 = self.backward_model.backward
-        if self.dim == 2:
-            comp_backward, stats = vfu.compose_vector_fields_2d(disp1, disp2, 
-                                                None, domain_affine_inv, 1.0)
-        else:
-            comp_backward, stats = vfu.compose_vector_fields_3d(disp1, disp2,
-                                                None, domain_affine_inv, 1.0)
-
-        self.forward_model = DiffeomorphicMap(self.dim,
-                                              domain_shape,
-                                              domain_affine,
-                                              input_shape,
-                                              input_affine,
-                                              input_prealign)
-        self.forward_model.forward = comp_forward
-        self.forward_model.backward = comp_forward
-        self.forward_model.is_inverse = True
-        
+        self.forward_model = self.backward_model.warp_endomorphism(
+                                    self.forward_model.inverse()).inverse()
+                
         # Report mean and std for the composed deformation field
         residual, stats = self.forward_model.compute_inversion_error()
         if self.verbosity > 0:
-            print('Final residual error: %0.6f (%0.6f)'
-                  % (stats[1], stats[2]))
+            print('Final residual error: %0.6f (%0.6f)' % (stats[1], stats[2]))
 
     def optimize(self, static, moving, static_affine=None, moving_affine=None, prealign=None):
         r"""
@@ -1284,526 +1292,3 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self._end_optimizer()
         return self.forward_model
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class OldDiffeomorphicMap(object):
-
-    def __init__(self,
-                 dim,
-                 forward=None,
-                 backward=None,
-                 scalings_forward=None,
-                 scalings_backward=None,
-                 affine_forward=None,
-                 affine_backward=None):
-        r""" Diffeomorphic Map
-
-        Defines the mapping between two spaces: "reference" and "target".
-        The mapping is defined on the physical space and is discretized on
-        a regular grid whose voxels are mapped to physical space by a linear
-        transformation. The properties of the grid are the following:
-        
-        scalings_forward, scalings_backward: a vector of dim (either 2 or 3)
-            scalars specifying the size of each discrete voxel (e.g. the size
-            of each voxel in millimiters). By default, the scalings are 1 along
-            every axis.
-
-        affine_forward, affine_backward: a matrix transforming voxel coordinates
-            to physical space. By default, the identity is used.
-
-        The combination of an Identity reference matrix and unit scalings (default)
-        is equivalent to a diffeomorphic map operating on the voxel space at full
-        resolution. 
-
-        The discretization properties are accessible through:
-        self.scalings_forward, 
-        self.scalings_backward, 
-        self.affine_forward, 
-        self.affine_backward 
-
-        Parameters
-        ----------
-        dim : int (either 2 or 3)
-            the dimension of the mapped spaces
-        forward : array, shape (R, C, 2) or (S, R, C, 3)
-            the forward displacement field mapping the target towards the reference
-        backward : array, shape (R', C', 2) or (S', R', C', 3)
-            the backward displacement field mapping the reference towards the 
-            target(denoted "phi^{-1}" above)
-        scalings_forward : array, shape (2,) or (3,)
-            the voxel scalings (dimensions) in the forward field discretization
-        scalings_backward : array, shape (2,) or (3,)
-            the voxel scalings (dimensions) in the backward field discretization
-        affine_forward : array, shape (3, 3) or (4, 4)
-            the transformation bringing voxels from the forward field discretization
-            to physical space
-        affine_backward : array, shape (3, 3) or (4, 4)
-            the transformation bringing voxels from the backward field discretization
-            to physical space
-        """
-        self.dim = dim
-        self.set_forward(forward, affine_forward, scalings_forward)
-        self.set_backward(backward, affine_backward, scalings_backward)
-
-
-    def set_forward(self, forward, affine_forward, scalings_forward):
-        r"""
-        Establishes the forward displacement field with the sampling 
-        properties given by affine_forward and scalings_forward
-
-        Notes
-        -----
-        This assignment does not compute the inverse of the provided displacement
-        field. The user must update the backward displacement field accordingly
-        """
-        self.forward = forward
-
-        if affine_forward is None:
-            self.affine_forward = None
-            self.affine_forward_inv = None
-        else:
-            self.affine_forward = np.array(affine_forward, dtype=floating)
-            self.affine_forward_inv = np.array(linalg.inv(affine_forward), dtype=floating)
-
-        if scalings_forward is None:
-            self.scalings_forward = None
-        else:
-            self.scalings_forward = np.array(scalings_forward, dtype=floating)
-
-    def set_backward(self, backward, affine_backward, scalings_backward):
-        r"""
-        Establishes the backward displacement field
-
-        Notes
-        -----
-        This assignment does not compute the inverse of the provided displacement
-        field. The user must update the backward displacement field accordingly
-        """
-        self.backward = backward
-
-        if affine_backward is None:
-            self.affine_backward = None
-            self.affine_backward_inv = None
-        else:
-            self.affine_backward = np.array(affine_backward, dtype=floating)
-            self.affine_backward_inv = np.array(linalg.inv(affine_backward), dtype=floating)
-
-        if scalings_backward is None:
-            self.scalings_backward = None
-        else:
-            self.scalings_backward = np.array(scalings_backward, dtype=floating)
-
-    def _warp_forward(self, image, affine_inv):
-        r"""
-        Applies this transformation in the forward direction to the given image
-        using tri-linear interpolation
-
-        Parameters
-        ----------
-        image : array, shape (R, C) or (S, R, C)
-            the 2D (dim=2) or 3D (dim=3) image to be warped
-        affine_inv : array, shape(dim+1, dim+1)
-            the linear transformation bringing points in physical-space coordinates
-            to voxel coordinates in image 
-
-        Returns
-        -------
-        warped : array, shape (R', C') or (S', R', C')
-            the warped image, where S', R', C' are the dimensions of the forward
-            displacement field
-        """
-        if image.dtype is not floating:
-            image = image.astype(floating)
-
-        affine_index = mult_aff(affine_inv, self.affine_forward)
-        affine_disp = affine_inv
-
-        #Apply the warping
-        if self.dim == 3:
-            warped = vfu.warp_volume(image,
-                                     self.forward,
-                                     affine_index,
-                                     affine_disp)
-        else:
-            warped = vfu.warp_image(image,
-                                    self.forward,
-                                    affine_index,
-                                    affine_disp)
-        return np.array(warped)
-
-    def _warp_backward(self, image, affine_inv):
-        r"""
-        Applies this transformation in the backward direction to the given
-        image using tri-linear interpolation
-
-        Parameters
-        ----------
-        image : array, shape (R, C) or (S, R, C)
-            the 2D or 3D image to be warped
-        affine_inv : array, shape(dim+1, dim+1)
-            the linear transformation bringing points in physical-space coordinates
-            to voxel coordinates in image 
-
-        Returns
-        -------
-        warped : array, shape (R', C') or (S', R', C')
-            the warped image, where S', R', C' are the dimensions of the backward
-            displacement field
-        """
-        if image.dtype is not floating:
-            image = image.astype(floating)
-
-        affine_index = mult_aff(affine_inv, self.affine_backward)
-        affine_disp = affine_inv
-
-        if not affine_index is None:
-            affine_index = affine_index.astype(floating)
-
-        if not affine_disp is None:
-            affine_disp = affine_disp.astype(floating)
-
-        if self.dim == 3:
-            warped = vfu.warp_volume(image,
-                                     self.backward,
-                                     affine_index,
-                                     affine_disp)
-        else:
-            warped = vfu.warp_image(image,
-                                    self.backward,
-                                    affine_index,
-                                    affine_disp)
-        return np.array(warped)
-
-    def _warp_forward_nn(self, image, affine_inv):
-        r"""
-        Applies this transformation in the forward direction to the given image
-        using nearest-neighbor interpolation
-
-        Parameters
-        ----------
-        image : array, shape (R, C) or (S, R, C)
-            the 2D or 3D image to be warped
-
-        Returns
-        -------
-        warped : array, shape (R', C') or (S', R', C')
-            the warped image, where S', R', C' are the dimensions of the forward
-            displacement field
-        """
-        if image.dtype is np.float64 and floating is not np.float64:
-            image = image.astype(floating)
-
-        affine_index = mult_aff(affine_inv, self.affine_forward)
-        affine_disp = affine_inv
-
-        if self.dim == 3:
-            warped = vfu.warp_volume_nn(image,
-                                        self.forward,
-                                        affine_index,
-                                        affine_disp)
-        else:
-            warped = vfu.warp_image_nn(image,
-                                       self.forward,
-                                       affine_index,
-                                       affine_disp)
-        return np.array(warped)
-
-    def _warp_backward_nn(self, image, affine_inv):
-        r"""
-        Applies this transformation in the backward direction to the given
-        image using nearest-neighbor interpolation
-
-        Parameters
-        ----------
-        image : array, shape (R, C) or (S, R, C)
-            the 2D or 3D image to be warped
-
-        Returns
-        -------
-        warped : array, shape (R', C') or (S', R', C')
-            the warped image, where S', R', C' are the dimensions of the backward
-            displacement field
-        """
-        if image.dtype is np.float64 and floating is not np.float64:
-            image = image.astype(floating)
-
-        affine_index = mult_aff(affine_inv, self.affine_backward).astype(floating)
-        affine_disp = affine_inv.astype(floating)
-
-        if self.dim == 3:
-            warped = vfu.warp_volume_nn(image,
-                                        self.backward,
-                                        affine_index,
-                                        affine_disp)
-        else:
-            warped = vfu.warp_image_nn(image,
-                                       self.backward,
-                                       affine_index,
-                                       affine_disp)
-        return np.array(warped)
-
-    def transform(self, image, affine_inv, interpolation):
-        r"""
-        Transforms the given image under this transformation (in the forward 
-        direction, i.e. from target space to the reference space) using the
-        specified interpolation method.
-
-        Parameters
-        ----------
-        image : array, shape (R, C) or (S, R, C)
-            the image to be transformed
-        interpolation : string
-            interpolation method to be used for warping, either 'tri' for 
-            tri-linear interpolation or 'nn' for nearest-neighbor
-
-        Returns
-        -------
-        warped : array, shape (R', C') or (S', R', C')
-            the warped image, where S', R', C' are the dimensions of the forward
-            displacement field
-        """
-        if interpolation == 'tri':
-            return self._warp_forward(image, affine_inv)
-        elif interpolation == 'nn':
-            return self._warp_forward_nn(image, affine_inv)
-        else:
-            return None
-
-
-    def transform_inverse(self, image, affine_inv, interpolation):
-        r"""
-        Transforms the given image under this transformation (in the backward 
-        direction, i.e. from reference space to the target space) using the 
-        specified interpolation method.
-
-        Parameters
-        ----------
-        image : array, shape (R, C) or (S, R, C)
-            the image to be transformed
-        interpolation : string
-            interpolation method to be used for warping, either 'tri' for 
-            tri-linear interpolation or 'nn' for nearest-neighbor
-
-        Returns
-        -------
-        warped : array, shape (R', C') or (S', R', C')
-            the warped image, where S', R', C' are the dimensions of the backward
-            displacement field
-        """
-        if interpolation == 'tri':
-            return self._warp_backward(image, affine_inv)
-        elif interpolation == 'nn':
-            return self._warp_backward_nn(image, affine_inv)
-        else:
-            return None
-
-    def expand_fields(self, target_scaling_forward, target_shape_forward,
-                            target_scaling_backward, target_shape_backward):
-        expand_factors_forward = (target_scaling_forward / \
-                                  self.scalings_forward).astype(floating)
-        expand_factors_backward = (target_scaling_backward / \
-                                   self.scalings_backward).astype(floating)
-        if self.dim == 2:
-            expanded_forward = vfu.expand_displacement_field_2d(self.forward, 
-                expand_factors_forward, target_shape_forward)
-            expanded_backward = vfu.expand_displacement_field_2d(self.backward, 
-                expand_factors_backward, target_shape_backward)
-        else:
-            expanded_forward = vfu.expand_displacement_field_3d(self.forward, 
-                expand_factors_forward, target_shape_forward)
-            expanded_backward = vfu.expand_displacement_field_3d(self.backward,
-                expand_factors_backward, target_shape_backward)
-        ext_fwd = np.ones(self.dim+1)
-        ext_fwd[:self.dim] = expand_factors_forward[...]
-        ext_bwd = np.ones(self.dim+1)
-        ext_bwd[:self.dim] = expand_factors_backward[...]
-        expanded_affine_forward = mult_aff(self.affine_forward, np.diag(ext_fwd))
-        expanded_affine_backward = mult_aff(self.affine_backward, np.diag(ext_bwd))
-
-        self.set_forward(expanded_forward, expanded_affine_forward, target_scaling_forward)
-        self.set_backward(expanded_backward, expanded_affine_backward, target_scaling_backward)
-
-    def compute_inversion_error(self):
-        r"""
-        Computes the inversion error of the displacement fields
-
-        Returns
-        -------
-        residual : array, shape (R, C) or (S, R, C)
-            the displacement field resulting from composing the forward and
-            backward displacement fields of this transformation (the residual
-            should be zero for a perfect diffeomorphism)
-        stats : array, shape (3,)
-            statistics from the norms of the vectors of the residual 
-            displacement field: maximum, mean and standard deviation
-
-        Notes
-        -----
-        Currently, we only measure the error of the non-linear components of the
-        transformation. Assuming the two affine matrices are invertible, the
-        error should, in theory, be the same (although in practice, the 
-        boundaries may be problematic).
-        """
-
-        premult_index = mult_aff(self.affine_backward_inv, self.affine_forward)
-        premult_disp = self.affine_backward_inv
-
-        if self.dim == 2:
-            residual, stats = vfu.compose_vector_fields_2d(self.forward,
-                                                           self.backward,
-                                                           premult_index,
-                                                           premult_disp,
-                                                           1.0)
-        else:
-            residual, stats = vfu.compose_vector_fields_3d(self.forward,
-                                                           self.backward,
-                                                           premult_index,
-                                                           premult_disp,
-                                                           1.0)
-        return residual, stats
-
-    def compose(self, apply_first):
-        r"""
-        Computes the composition G(F(.)) where G is this transformation and
-        F is the transformation given as parameter. Since we are using the
-        model F(x) = B*phi1(A*x) and G(x) = D*phi2(C*x), the final composition
-        is of the form  H(x) = D*phi2(C*B*phi1(A*x)). In the comments below, 
-        R_1 and R_2 are the transformations bringing voxel coordinates of phi1 and
-        phi2 to physical space, respectively
-
-        Parameters
-        ----------
-        apply_first : DiffeomorphicMap object
-            the diffeomorphic map to be composed with this transformation
-
-        Returns
-        -------
-        composition : DiffeomorphicMap object
-            the composition of this Diffeomorphic map and the given map
-        """
-        #Compute the discretization matrices to be used in the forward
-        #composition
-        
-        R1 = apply_first.affine_forward
-        R2inv = self.affine_forward_inv
-        f_premult_index = mult_aff(R2inv, R1)
-        f_premult_disp = R2inv
-
-        #Compute the discretization matrices to be used in the backward
-        #composition (we apply inverse of self first, then inverse of apply_first)
-
-        R1 = self.affine_backward
-        R2inv = apply_first.affine_backward_inv
-        b_premult_index = mult_aff(R2inv, R1)
-        b_premult_disp = R2inv
-        
-        if self.dim == 2:
-            forward, stats = vfu.compose_vector_fields_2d(apply_first.forward, 
-                                                          self.forward,
-                                                          f_premult_index,
-                                                          f_premult_disp,
-                                                          1.0)
-            backward, stats = vfu.compose_vector_fields_2d(self.backward,
-                                                           apply_first.backward,
-                                                           b_premult_index,
-                                                           b_premult_disp,
-                                                           1.0)
-        else:
-            forward, stats = vfu.compose_vector_fields_3d(apply_first.forward, 
-                                                          self.forward,
-                                                          f_premult_index,
-                                                          f_premult_disp,
-                                                          1.0)
-            backward, stats = vfu.compose_vector_fields_3d(self.backward,
-                                                           apply_first.backward,
-                                                           b_premult_index,
-                                                           b_premult_disp,
-                                                           1.0)
-        composition = DiffeomorphicMap(self.dim,
-                                       forward,
-                                       backward,
-                                       apply_first.scalings_forward,
-                                       self.scalings_backward,
-                                       apply_first.affine_forward,
-                                       self.affine_backward)
-        return composition
-
-    def inverse(self):
-        r"""
-        Returns the inverse of this Diffeomorphic Map. Warning: the matrices
-        and displacement fields are not copied
-        """
-        inv = DiffeomorphicMap(self.dim, self.backward, self.forward,
-                               self.scalings_backward, self.scalings_forward,
-                               self.affine_backward, self.affine_forward)
-        return inv
-
-    def consolidate(self, static_affine=None, moving_affine=None):
-        r"""
-        Since the diffeomorphism are defined on the physical space, it is 
-        necessary to specify the transformation matrices between the physical
-        space and the discretizations (both forward and backward). After
-        "consolidating" the deformation field, the diffepmorphism will operate
-        on the (continuous) voxel spaces so that warpings can be performed 
-        using only the deformation field. The transformations between the 
-        indended static and affine voxel coordinates and physical space must be
-        provided. 
-
-        """
-        if static_affine is None:
-            static_affine = self.affine_forward
-            static_affine_inv = self.affine_forward_inv
-        else:
-            static_affine_inv = np.linalg.inv(static_affine_inv)
-
-        if moving_affine is None:
-            moving_affine = self.affine_backward
-            moving_affine_inv = self.affine_backward_inv
-        else:
-            moving_affine_inv = np.linalg.inv(moving_affine) 
-
-        f_affine_idx = mult_aff(moving_affine_inv, static_affine)
-        f_affine_disp = moving_affine_inv
-
-        b_affine_idx = mult_aff(static_affine_inv, moving_affine)
-        b_affine_disp = static_affine_inv
-
-        if self.dim == 2:
-            forward = vfu.consolidate_2d(self.forward, f_affine_idx, f_affine_disp)
-            backward = vfu.consolidate_2d(self.backward, b_affine_idx, b_affine_disp)
-        else:
-            forward = vfu.consolidate_3d(self.forward, f_affine_idx, f_affine_disp)
-            backward = vfu.consolidate_3d(self.backward, b_affine_idx, b_affine_disp)
-        self.set_forward(forward, None, None)
-        self.set_backward(backward, None, None)

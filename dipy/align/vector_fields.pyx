@@ -1658,7 +1658,7 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
     return warped
 
 
-def warp_volume_nn(floating[:, :, :] volume, floating[:, :, :, :] d1,
+def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                    floating[:, :] affine_idx_in=None, 
                    floating[:, :] affine_idx_out=None, 
                    floating[:, :] affine_disp=None,
@@ -1706,9 +1706,9 @@ def warp_volume_nn(floating[:, :, :] volume, floating[:, :, :, :] d1,
         nrows = d1.shape[1]
         ncols = d1.shape[2]
 
-    cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
+    cdef number[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
                                              dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(volume).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
 
     with nogil:
 
