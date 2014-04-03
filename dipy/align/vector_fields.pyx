@@ -885,12 +885,14 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         int nc = d.shape[2]
         int iter_count, current
         double dkk, dii, djj, dk, di, dj
-        double difmag, mag
+        double difmag, mag, maxlen, step_factor
         double epsilon = 0.5
         double error = 1 + tolerance
+        double ss=spacing[0], sr=spacing[1], sc=spacing[2]
     cdef:
         floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
         floating[:] substats = np.zeros(shape=(3,), dtype=np.asarray(d).dtype)
+        double[:, :, :] norms = np.zeros(shape=(ns, nr, nc), dtype=np.float64)
         floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
         floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
 
@@ -901,6 +903,10 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         iter_count = 0
         difmag = 1
         while (0.1<difmag) and (iter_count < max_iter) and (tolerance < error):
+            if iter_count == 0:
+                epsilon = 0.75
+            else:
+                epsilon = 0.5
             p, q = q, p
             _compose_vector_fields_3d(q, d, None, w_to_img, 1.0, p, substats)
             difmag = 0
@@ -908,15 +914,25 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
             for k in range(ns):
                 for i in range(nr):
                     for j in range(nc):
-                        mag = sqrt(p[k, i, j, 0] ** 2 + \
-                                   p[k, i, j, 1] ** 2 + \
-                                   p[k, i, j, 2] ** 2)
-                        p[k, i, j, 0] = q[k, i, j, 0] - epsilon * p[k, i, j, 0]
-                        p[k, i, j, 1] = q[k, i, j, 1] - epsilon * p[k, i, j, 1]
-                        p[k, i, j, 2] = q[k, i, j, 2] - epsilon * p[k, i, j, 2]
+                        mag = sqrt((p[k, i, j, 0]/ss) ** 2 + \
+                                   (p[k, i, j, 1]/sr) ** 2 + \
+                                   (p[k, i, j, 2]/sc) ** 2)
+                        norms[k,i,j] = mag
                         error += mag
                         if(difmag < mag):
                             difmag = mag
+            maxlen = difmag*epsilon
+            for k in range(ns):
+                for i in range(nr):
+                    for j in range(nc):
+                        if norms[k,i,j]>maxlen:
+                            step_factor = epsilon * maxlen / norms[k,i,j]
+                        else:
+                            step_factor = epsilon
+                        p[k, i, j, 0] = q[k, i, j, 0] - epsilon * p[k, i, j, 0]
+                        p[k, i, j, 1] = q[k, i, j, 1] - epsilon * p[k, i, j, 1]
+                        p[k, i, j, 2] = q[k, i, j, 2] - epsilon * p[k, i, j, 2]
+
             error /= (ns * nr * nc)
             iter_count += 1
         stats[0] = error
