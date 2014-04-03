@@ -55,6 +55,7 @@ class ScaleSpace(object):
         self.scalings = []
         self.affines = []
         self.affine_invs = []
+        self.sigmas = []
 
         #insert input image properties at the first level of the scale space
         self.images.append(img.astype(floating))
@@ -66,6 +67,7 @@ class ScaleSpace(object):
             self.affine_invs.append(np.linalg.inv(input_affine))
         else:
             self.affine_invs.append(None)
+        self.sigmas.append(np.zeros(self.dim))
 
         #compute the rest of the levels
         min_spacing = np.min(input_spacing)
@@ -90,6 +92,7 @@ class ScaleSpace(object):
             output_size = input_size * (input_spacing / output_spacing) + 0.5
             output_size = output_size.astype(np.int32)
             sigmas = sigma_factor * (output_spacing / input_spacing - 1.0)
+
             #filter along each direction with the appropriate sigma
             filtered = sp.ndimage.filters.gaussian_filter(image, sigmas)
             filtered = (filtered - filtered.min())/(filtered.max() - filtered.min())
@@ -101,6 +104,7 @@ class ScaleSpace(object):
             self.scalings.append(scaling)
             self.affines.append(affine)
             self.affine_invs.append(np.linalg.inv(affine))
+            self.sigmas.append(sigmas)
 
     def get_expand_factors(self, from_level, to_level):
         factors = np.array(self.spacings[to_level]) / \
@@ -112,6 +116,7 @@ class ScaleSpace(object):
         print 'Spacing:', self.get_spacing(level)
         print 'Scaling:', self.get_scaling(level)
         print 'Affine:', self.get_affine(level)
+        print 'Sigmas:', self.get_sigmas(level)
 
     def get_image(self, level):
         if 0 <= level < self.num_levels:
@@ -141,6 +146,11 @@ class ScaleSpace(object):
     def get_affine_inv(self, level):
         if 0 <= level < self.num_levels:
             return self.affine_invs[level]
+        return None
+
+    def get_sigmas(self, level):
+        if 0 <= level < self.num_levels:
+            return self.sigmas[level]
         return None        
 
 # def scale_space(image, max_scale, input_affine, input_direction, input_spacing):
@@ -255,7 +265,8 @@ def pyramid_gaussian_2D(image, max_layer, mask=None):
         image=new_image
         yield new_image
 
-def compose_displacements(new_displacement, current_displacement, affine_inv):
+def compose_displacements(new_displacement, current_displacement, affine_inv,
+    time_scaling):
     r"""
     Interpolates current displacement at the locations defined by 
     new_displacement. Equivalently, computes the composition C of the given
@@ -291,13 +302,13 @@ def compose_displacements(new_displacement, current_displacement, affine_inv):
                                                       current_displacement,
                                                       premult_index, 
                                                       premult_disp,
-                                                      1.0)
+                                                      time_scaling)
     else:
         updated, stats = vfu.compose_vector_fields_3d(new_displacement,
                                                       current_displacement,
                                                       premult_index, 
                                                       premult_disp,
-                                                      1.0)
+                                                      time_scaling)
     return np.array(updated), np.array(mse)
 
 
@@ -1073,12 +1084,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compute the forward step (to be used to update the forward transform)
         #Note that fw_step's sampling is the same as the current forward model's 
         fw_step = np.array(self.metric.compute_forward())
+        #fw_step /= current_domain_spacing
         nrm = np.sqrt(np.sum((fw_step/current_domain_spacing)**2, -1)).max()
-        fw_step*=(0.25/nrm)
+        fw_step /= nrm
         
         self.forward_model.forward, md_forward = self.update(
             self.forward_model.forward, fw_step, 
-            current_domain_affine_inv)
+            current_domain_affine_inv, 0.25)
         del fw_step
 
         #Keep track of the forward energy
@@ -1087,12 +1099,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compose the backward step (to be used to update the backward transform)
         #Note that bw_step's sampling is the same as the current backward model's 
         bw_step = np.array(self.metric.compute_backward())
+        #bw_step /= current_domain_spacing
         nrm = np.sqrt(np.sum((bw_step/current_domain_spacing)**2, -1)).max()
-        bw_step*=(0.25/nrm)
+        bw_step /= nrm
 
         self.backward_model.forward, md_backward = self.update(
             self.backward_model.forward, bw_step, 
-            current_domain_affine_inv)
+            current_domain_affine_inv, 0.25)
         del bw_step
 
         #Keep track of the energy
@@ -1215,7 +1228,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.metric.set_levels_above(level)
 
             if level < self.levels - 1:
-
                 expand_factors = self.static_ss.get_expand_factors(level+1, level) 
                 new_shape = self.static_ss.get_domain_shape(level)
                 self.forward_model.expand_fields(expand_factors, new_shape)
