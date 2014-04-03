@@ -807,14 +807,16 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
         int nr = d.shape[0]
         int nc = d.shape[1]
         int iter_count, current, flag
-        double difmag, mag
-        double epsilon = 0.25
+        double difmag, mag, maxlen, step_factor
+        double epsilon
         double error = 1 + tolerance
         double di, dj, dii, djj
+        double sr = spacing[0], sc = spacing[1]
 
     cdef:
         floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
         floating[:] substats = np.empty(shape=(3,), dtype=np.asarray(d).dtype)
+        floating[:, :] norms = np.zeros(shape=(nr, nc), dtype=np.asarray(d).dtype)
         floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
         floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
 
@@ -824,18 +826,30 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     with nogil:
         iter_count = 0
         while (iter_count < max_iter) and (tolerance < error):
+            if iter_count == 0:
+                epsilon = 0.75
+            else:
+                epsilon = 0.5
             p, q = q, p
             _compose_vector_fields_2d(q, d, None, w_to_img, 1.0, p, substats)
             difmag = 0
             error = 0
             for i in range(nr):
                 for j in range(nc):
-                    mag = sqrt(p[i, j, 0] ** 2 + p[i, j, 1] ** 2)
-                    p[i, j, 0] = q[i, j, 0] - epsilon * p[i, j, 0]
-                    p[i, j, 1] = q[i, j, 1] - epsilon * p[i, j, 1]
+                    mag = sqrt((p[i, j, 0]/sr) ** 2 + (p[i, j, 1]/sc) ** 2)
+                    norms[i,j] = mag
                     error += mag
                     if(difmag < mag):
                         difmag = mag
+            maxlen = difmag * epsilon
+            for i in range(nr):
+                for j in range(nc):
+                    if norms[i,j]>maxlen:
+                        step_factor = epsilon * maxlen / norms[i,j]
+                    else:
+                        step_factor = epsilon
+                    p[i, j, 0] = q[i, j, 0] - step_factor * p[i, j, 0]
+                    p[i, j, 1] = q[i, j, 1] - step_factor * p[i, j, 1]
             error /= (nr * nc)            
             iter_count += 1
         stats[0] = substats[1]
@@ -929,9 +943,9 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                             step_factor = epsilon * maxlen / norms[k,i,j]
                         else:
                             step_factor = epsilon
-                        p[k, i, j, 0] = q[k, i, j, 0] - epsilon * p[k, i, j, 0]
-                        p[k, i, j, 1] = q[k, i, j, 1] - epsilon * p[k, i, j, 1]
-                        p[k, i, j, 2] = q[k, i, j, 2] - epsilon * p[k, i, j, 2]
+                        p[k, i, j, 0] = q[k, i, j, 0] - step_factor * p[k, i, j, 0]
+                        p[k, i, j, 1] = q[k, i, j, 1] - step_factor * p[k, i, j, 1]
+                        p[k, i, j, 2] = q[k, i, j, 2] - step_factor * p[k, i, j, 2]
 
             error /= (ns * nr * nc)
             iter_count += 1
