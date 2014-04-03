@@ -886,7 +886,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         int iter_count, current
         double dkk, dii, djj, dk, di, dj
         double difmag, mag
-        double epsilon = 0.25
+        double epsilon = 0.5
         double error = 1 + tolerance
     cdef:
         floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
@@ -899,7 +899,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
 
     with nogil:
         iter_count = 0
-        while (iter_count < max_iter) and (tolerance < error):
+        difmag = 1
+        while (0.1<difmag) and (iter_count < max_iter) and (tolerance < error):
             p, q = q, p
             _compose_vector_fields_3d(q, d, None, w_to_img, 1.0, p, substats)
             difmag = 0
