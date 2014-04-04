@@ -200,20 +200,14 @@ class SimilarityMetric(object):
 
 class CCMetric(SimilarityMetric):
 
-    def __init__(self, dim, step_length = 0.25, sigma_diff = 3.0, radius = 4):
+    def __init__(self, dim, sigma_diff = 2.0, radius = 4):
         r"""
-        Similarity metric based on the Expectation-Maximization algorithm to
-        handle multi-modal images. The transfer function is modeled as a set of
-        hidden random variables that are estimated at each iteration of the 
-        algorithm
+        Normalized Cross-Correlation Similarity metric.
 
         Parameters
         ----------
         dim : int (either 2 or 3)
             the dimension of the image domain
-        step_length : float
-            the length of the maximum displacement vector of the displacement
-            update displacement field at each iteration
         sigma_diff : the standard deviation of the Gaussian smoothing kernel to
             be applied to the update field at each iteration
         radius : int
@@ -221,7 +215,6 @@ class CCMetric(SimilarityMetric):
             considered to compute the cross correlation
         """
         super(CCMetric, self).__init__(dim)
-        self.step_length = step_length
         self.sigma_diff = sigma_diff
         self.radius = radius
         self._connect_functions()
@@ -282,8 +275,6 @@ class CCMetric(SimilarityMetric):
             displacement[..., i] = ndimage.filters.gaussian_filter(displacement[..., i],
                                                                    self.sigma_diff)
             i+=1
-        max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
-        displacement *= self.step_length/max_norm
         return displacement
 
     def compute_backward(self):
@@ -300,8 +291,6 @@ class CCMetric(SimilarityMetric):
             displacement[..., i] = ndimage.filters.gaussian_filter(displacement[..., i],
                                                                    self.sigma_diff)
             i+=1
-        max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
-        displacement *= self.step_length/max_norm
         return displacement
 
 
@@ -361,7 +350,6 @@ class EMMetric(SimilarityMetric):
                  dim, 
                  smooth=1.0, 
                  inner_iter=5, 
-                 step_length=0.25, 
                  q_levels=256, 
                  double_gradient=True, 
                  iter_type='v_cycle'):
@@ -383,9 +371,6 @@ class EMMetric(SimilarityMetric):
             resolution Gauss-Seidel optimization algorithm (this is not the 
             number of steps per Gaussian Pyramid level, that parameter must
             be set for the optimizer, not the metric) 
-        step_length : float
-            the length of the largest displacement vector of the deformation
-            field at each iteration
         q_levels : number of quantization levels (equal to the number of hidden
             variables in the EM algorithm)
         double_gradient : boolean
@@ -401,7 +386,6 @@ class EMMetric(SimilarityMetric):
         super(EMMetric, self).__init__(dim)
         self.smooth = smooth
         self.inner_iter = inner_iter
-        self.step_length = step_length
         self.q_levels = q_levels
         self.use_double_gradient = double_gradient
         self.iter_type = iter_type
@@ -556,7 +540,6 @@ class EMMetric(SimilarityMetric):
             the Newton step
         """
         max_inner_iter = self.inner_iter
-        max_step_length = self.step_length
         if forward_step:
             shape = self.static_image.shape
         else:
@@ -577,8 +560,6 @@ class EMMetric(SimilarityMetric):
                                                       self.smooth,
                                                       displacement)
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
-        if max_norm > max_step_length:
-            displacement *= max_step_length/max_norm
         return displacement
 
     def compute_demons_step(self, forward_step = True):
@@ -684,7 +665,7 @@ class SSDMetric(SimilarityMetric):
     GAUSS_SEIDEL_STEP = 0
     DEMONS_STEP = 1
 
-    def __init__(self, dim, smooth=4, inner_iter=10, step_length=0.25, step_type=0):
+    def __init__(self, dim, smooth=4, inner_iter=10, step_type=0):
         r"""
         Similarity metric for (monomodal) nonlinear image registration defined by
         the sum of squared differences (SSD)
@@ -701,9 +682,6 @@ class SSDMetric(SimilarityMetric):
             resolution Gauss-Seidel optimization algorithm (this is not the 
             number of steps per Gaussian Pyramid level, that parameter must
             be set for the optimizer, not the metric) 
-        step_length : float
-            the length of the largest displacement vector of the deformation
-            field at each iteration
         step_type : int (either 0 or 1)
             if step_type == 0 : Select Newton step
             if step_type == 1 : Select Demons step
@@ -711,7 +689,6 @@ class SSDMetric(SimilarityMetric):
         super(SSDMetric, self).__init__(dim)
         self.smooth = smooth
         self.inner_iter = inner_iter
-        self.step_length = step_length
         self.step_type = step_type
         self.levels_below = 0
 
@@ -771,7 +748,6 @@ class SSDMetric(SimilarityMetric):
         """
         max_inner_iter = self.inner_iter
         lambda_param = self.smooth
-        max_step_length = self.step_length
         if forward_step:
             shape = self.static_image.shape
         else:
@@ -792,8 +768,6 @@ class SSDMetric(SimilarityMetric):
                                     delta_field, None, gradient, None, 
                                     lambda_param, displacement)
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
-        if max_norm > max_step_length:
-            displacement *= max_step_length/max_norm
         return displacement
 
     def compute_demons_step(self, forward_step = True):

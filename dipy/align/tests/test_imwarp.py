@@ -362,8 +362,9 @@ def test_ssd_2d():
     opt_tol = 1e-4
     inv_iter = 40
     inv_tol = 1e-3
+    ss_sigma_factor = 0.5
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
+        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     registration_optimizer.verbosity = 11
     registration_optimizer.optimize(static, moving, None)
     subsampled_energy_profile = registration_optimizer.full_energy_profile[::10]
@@ -411,16 +412,17 @@ def test_cc_2d():
     static = (static-static.min())/(static.max() - static.min())
     #Configure and run the Optimizer
     step_length = 0.25
-    sigma_diff = 3.0
+    sigma_diff = 2.0
     radius = 4
-    similarity_metric = metrics.CCMetric(2, step_length, sigma_diff, radius)
+    similarity_metric = metrics.CCMetric(2, sigma_diff, radius)
 
     opt_iter = [20, 100, 100, 100]
     opt_tol = 1e-4
     inv_iter = 40
     inv_tol = 1e-3
+    ss_sigma_factor = 0.5
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
+        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     registration_optimizer.optimize(static, moving, None)
     subsampled_energy_profile = registration_optimizer.full_energy_profile[::10]
     if floating is np.float32:
@@ -481,18 +483,19 @@ def test_cc_3d():
     static = np.asarray(vfu.warp_volume_affine(moving, new_shape, rotation))
 
     #Create the CC metric
-    step_length = 0.25
-    sigma_diff = 3.0
+    sigma_diff = 2.0
     radius = 4
-    similarity_metric = metrics.CCMetric(3, step_length, sigma_diff, radius)
+    similarity_metric = metrics.CCMetric(3, sigma_diff, radius)
 
     #Create the optimizer
     opt_iter = [5, 10, 10]
+    step_length = 0.25
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
+    ss_sigma_factor = 0.5
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
+        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     registration_optimizer.optimize(static, moving, None)
     energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-6
     if floating is np.float32:
@@ -546,8 +549,9 @@ def test_em_3d():
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
+    ss_sigma_factor = 0.5
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, opt_tol, inv_iter, inv_tol)
+        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     registration_optimizer.optimize(static, moving, None)
     energy_profile = registration_optimizer.full_energy_profile
     if floating is np.float32:
