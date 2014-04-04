@@ -384,6 +384,7 @@ class EMMetric(SimilarityMetric):
                 selected)
         """
         super(EMMetric, self).__init__(dim)
+        self.step_length = 0.25 #Fixme: this parameter must be given as input 
         self.smooth = smooth
         self.inner_iter = inner_iter
         self.q_levels = q_levels
@@ -792,7 +793,6 @@ class SSDMetric(SimilarityMetric):
             the Demons step
         """
         sigma_diff = self.smooth
-        max_step_length = self.step_length
         scale = 1.0
         if forward_step:
             delta_field = self.static_image-self.moving_image

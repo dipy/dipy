@@ -860,6 +860,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         fw_step = np.array(self.metric.compute_forward())
 
         #Normalize the forward step
+        fw_step /= current_domain_spacing
         nrm = np.sqrt(np.sum((fw_step/current_domain_spacing)**2, -1)).max()
         if nrm>0:
             fw_step /= nrm
@@ -875,7 +876,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Compose the backward step (to be used to update the backward transform)
         bw_step = np.array(self.metric.compute_backward())
-        
+        bw_step /= current_domain_spacing
         #Normalize the backward step
         nrm = np.sqrt(np.sum((bw_step/current_domain_spacing)**2, -1)).max()
         if nrm>0:
