@@ -27,11 +27,18 @@ class SimilarityMetric(object):
             the dimension of the image domain
         """
         self.dim = dim
+        self.levels_above = None
+        self.levels_below = None
+
         self.static_image = None
+        self.static_affine = None
+        self.static_spacing = None
+        self.static_direction = None
+
         self.moving_image = None
-        self.levels_above = 0
-        self.levels_below = 0
-        self.symmetric = False
+        self.moving_affine = None
+        self.moving_spacing = None
+        self.moving_direction = None
 
     def set_levels_below(self, levels):
         r"""
@@ -59,7 +66,7 @@ class SimilarityMetric(object):
         """
         self.levels_above = levels
 
-    def set_static_image(self, static_image):
+    def set_static_image(self, static_image, static_affine, static_spacing, static_direction):
         r"""
         Sets the static image. The default behavior (of this abstract class) is
         simply to assing the reference to an internal variable, but 
@@ -71,6 +78,9 @@ class SimilarityMetric(object):
             the static image
         """
         self.static_image = static_image
+        self.static_affine = static_affine
+        self.static_spacing = static_spacing
+        self.static_direction = static_direction
 
     def use_static_image_dynamics(self,
                                  original_static_image,
@@ -108,7 +118,7 @@ class SimilarityMetric(object):
         """
         pass
 
-    def set_moving_image(self, moving_image):
+    def set_moving_image(self, moving_image, moving_affine, moving_spacing, moving_direction):
         r"""
         Sets the moving image. The default behavior (of this abstract class) is
         simply to assing the reference to an internal variable, but 
@@ -120,6 +130,9 @@ class SimilarityMetric(object):
             the moving image
         """
         self.moving_image = moving_image
+        self.moving_affine = moving_affine
+        self.moving_spacing = moving_spacing
+        self.moving_direction = moving_direction
 
     def use_original_moving_image(self, original_moving_image):
         """
@@ -224,10 +237,12 @@ class CCMetric(SimilarityMetric):
             self.precompute_factors = cc.precompute_cc_factors_2d
             self.compute_forward_step = cc.compute_cc_forward_step_2d
             self.compute_backward_step = cc.compute_cc_backward_step_2d
+            self.reorient_vector_field = vfu.reorient_vector_field_2d
         elif self.dim == 3:
             self.precompute_factors = cc.precompute_cc_factors_3d
             self.compute_forward_step = cc.compute_cc_forward_step_3d
             self.compute_backward_step = cc.compute_cc_backward_step_3d
+            self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
             print('CC Metric not defined for dimension %d'%(self.dim))
 
@@ -240,18 +255,32 @@ class CCMetric(SimilarityMetric):
                                              self.moving_image,
                                              self.radius)
         self.factors = np.array(self.factors)
+        
         self.gradient_moving = np.empty(
             shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
+        #Convert the moving's gradient field from voxel to physical space
+        if self.moving_spacing is not None:
+            print self.moving_spacing
+            self.gradient_moving /= self.moving_spacing
+        if self.moving_direction is not None:
+            self.reorient_vector_field(self.gradient_moving, self.moving_direction.astype(floating))
+
         self.gradient_static = np.empty(
             shape = (self.static_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.static_image):
             self.gradient_static[..., i] = grad
             i += 1
+        #Convert the moving's gradient field from voxel to physical space
+        if self.static_spacing is not None:
+            print self.static_spacing
+            self.gradient_static /= self.static_spacing
+        if self.static_direction is not None:
+            self.reorient_vector_field(self.gradient_static, self.static_direction.astype(floating))
 
     def free_iteration(self):
         r"""
@@ -300,46 +329,6 @@ class CCMetric(SimilarityMetric):
         iteration
         """
         return self.energy
-
-    def use_static_image_dynamics(self, original_static_image, transformation):
-        # r"""
-        # CCMetric takes advantage of the image dynamics by computing the
-        # current static image mask from the originalstaticImage mask (warped
-        # by nearest neighbor interpolation)
-
-        # Parameters
-        # ----------
-        # original_static_image : array, shape (R, C) or (S, R, C)
-        #     the original image from which the current static image was generated
-        # transformation : DiffeomorphicMap object
-        #     the transformation that was applied to original image to generate
-        #     the current static image
-        # """
-        # self.static_image_mask = (original_static_image>0).astype(np.int32)
-        # if transformation == None:
-        #     return
-        # self.static_image_mask = transformation.transform(self.static_image_mask,'nn')
-        pass
-
-    def use_moving_image_dynamics(self, original_moving_image, transformation):
-        # r"""
-        # CCMetric takes advantage of the image dynamics by computing the
-        # current moving image mask from the originalMovingImage mask (warped
-        # by nearest neighbor interpolation)
-
-        # Parameters
-        # ----------
-        # original_moving_image : array, shape (R, C) or (S, R, C)
-        #     the original image from which the current moving image was generated
-        # transformation : DiffeomorphicMap object
-        #     the transformation that was applied to original image to generate
-        #     the current moving image
-        # """
-        # self.moving_image_mask = (original_moving_image>0).astype(np.int32)
-        # if transformation == None:
-        #     return
-        # self.moving_image_mask = transformation.transform(self.moving_image_mask, 'nn')
-        pass
 
 
 class EMMetric(SimilarityMetric):
@@ -412,6 +401,7 @@ class EMMetric(SimilarityMetric):
                 self.multi_resolution_iteration = v_cycle_2d
             elif self.iter_type == 'w_cycle':
                 self.multi_resolution_iteration = w_cycle_2d
+            self.reorient_vector_field = vfu.reorient_vector_field_2d
         else:
             self.quantize = em.quantize_positive_volume
             self.compute_stats = em.compute_masked_volume_class_stats
@@ -421,6 +411,7 @@ class EMMetric(SimilarityMetric):
                 self.multi_resolution_iteration = v_cycle_3d
             elif self.iter_type == 'w_cycle':
                 self.multi_resolution_iteration = w_cycle_3d
+            self.reorient_vector_field = vfu.reorient_vector_field_3d
         if self.iter_type == 'demons':
             self.compute_step = self.compute_demons_step
         else:    
@@ -453,18 +444,31 @@ class EMMetric(SimilarityMetric):
         staticq_variances = np.array(staticq_variances)
         self.staticq_sigma_field = staticq_variances[staticq]
         self.staticq_means_field = staticq_means[staticq]
+
         self.gradient_moving = np.empty(
             shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
+        #Convert the moving's gradient field from voxel to physical space
+        if self.moving_spacing is not None:    
+            self.gradient_moving /= self.moving_spacing
+        if self.moving_direction is not None:
+            self.reorient_vector_field(self.gradient_moving, self.moving_direction.astype(floating))
+
         self.gradient_static = np.empty(
             shape = (self.static_image.shape)+(self.dim,), dtype = floating)
         i = 0
         for grad in sp.gradient(self.static_image):
             self.gradient_static[..., i] = grad
             i += 1
+        #Convert the moving's gradient field from voxel to physical space
+        if self.static_spacing is not None:
+            self.gradient_static /= self.static_spacing
+        if self.static_direction is not None:
+            self.reorient_vector_field(self.gradient_static, self.static_direction.astype(floating))
+
         movingq, self.movingq_levels, hist = self.quantize(self.moving_image,
                                                         self.q_levels)
         movingq = np.array(movingq, dtype = np.int32)

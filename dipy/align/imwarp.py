@@ -678,13 +678,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         super(SymmetricDiffeomorphicRegistration, self).__init__(
                 metric, update_function)
-        print 'step_length:',step_length
-        print 'ss_sigma_factor:', ss_sigma_factor
-        print 'opt_tol:', opt_tol
-        print 'inv_iter:', inv_iter
-        print 'inv_tol:', inv_tol
-
-
         self.set_opt_iter(opt_iter)
         self.step_length = step_length
         self.ss_sigma_factor = ss_sigma_factor
@@ -697,6 +690,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.full_energy_profile = []
         self.verbosity = 1
 
+        self.moving_ss = None
+        self.static_ss = None
+        self.static_direction = None
+        self.moving_direction = None
+        
     def _connect_functions(self):
         r"""
         Assigns the appropriate functions to be called for displacement field
@@ -743,6 +741,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Extract information from the affine matrices to create the scale space
         static_direction, static_spacing = get_direction_and_scalings(static_affine, self.dim)
         moving_direction, moving_spacing = get_direction_and_scalings(moving_affine, self.dim)
+
+        #the images' directions don't change with scale
+        self.static_direction = static_direction
+        self.moving_direction = moving_direction
 
         #Build the scale space of the input images
         self.moving_ss = ScaleSpace(moving, self.levels, moving_affine, moving_spacing, self.ss_sigma_factor)
@@ -841,11 +843,16 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                wstatic[:,wstatic.shape[1]//2,:], 
                                'Moving', 'Static')
         
-        #Pass both images to the metric
-        self.metric.set_moving_image(wmoving)
+        #Pass both images to the metric. Now both images are sampled on the
+        #reference grid (equal to the static's grid) and the direction doesn't
+        #change across scales
+        self.metric.set_moving_image(wmoving, current_domain_affine, 
+            current_domain_spacing, self.static_direction)
         self.metric.use_moving_image_dynamics(
             current_moving, self.backward_model.inverse())
-        self.metric.set_static_image(wstatic)
+
+        self.metric.set_static_image(wstatic, current_domain_affine, 
+            current_domain_spacing, self.static_direction)
         self.metric.use_static_image_dynamics(
             current_static, self.forward_model.inverse())
 
@@ -858,9 +865,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Compute the forward step (to be used to update the forward transform) 
         fw_step = np.array(self.metric.compute_forward())
-
         #Normalize the forward step
-        fw_step /= current_domain_spacing
         nrm = np.sqrt(np.sum((fw_step/current_domain_spacing)**2, -1)).max()
         if nrm>0:
             fw_step /= nrm
@@ -876,7 +881,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Compose the backward step (to be used to update the backward transform)
         bw_step = np.array(self.metric.compute_backward())
-        bw_step /= current_domain_spacing
         #Normalize the backward step
         nrm = np.sqrt(np.sum((bw_step/current_domain_spacing)**2, -1)).max()
         if nrm>0:

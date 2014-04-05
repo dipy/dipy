@@ -1069,6 +1069,50 @@ def append_affine_to_displacement_field_2d(floating[:, :, :] d,
                 d[i, j, 1] = _apply_affine_2d_x1(dii, djj, 1, affine) - j
 
 
+def reorient_vector_field_2d(floating[:, :, :] d,
+                             floating[:, :] affine):
+    cdef:
+        int nrows = d.shape[0]
+        int ncols = d.shape[1]
+        int i,j
+        double di, dj
+    
+    if affine is None:
+        return
+
+    with nogil:
+        for i in range(nrows):
+            for j in range(ncols):
+                di = d[i, j, 0]
+                dj = d[i, j, 1]
+                d[i, j, 0] = _apply_affine_2d_x0(di, dj, 0, affine)
+                d[i, j, 1] = _apply_affine_2d_x1(di, dj, 0, affine)
+
+
+def reorient_vector_field_3d(floating[:, :, :, :] d,
+                             floating[:, :] affine):
+    cdef:
+        int nslices = d.shape[0]
+        int nrows = d.shape[1]
+        int ncols = d.shape[2]
+        int i, j, k
+        double di, dj, dk
+
+    if affine is None:
+        return
+
+    with nogil:
+        for k in range(nslices):
+            for i in range(nrows):
+                for j in range(ncols):
+                    dk = d[k, i, j, 0]
+                    di = d[k, i, j, 1]
+                    dj = d[k, i, j, 2]
+                    d[k, i, j, 0] = _apply_affine_3d_x0(dk, di, dj, 0, affine)
+                    d[k, i, j, 1] = _apply_affine_3d_x1(dk, di, dj, 0, affine)
+                    d[k, i, j, 2] = _apply_affine_3d_x2(dk, di, dj, 0, affine)
+
+    
 def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
                                            floating[:, :] affine):
     r"""
