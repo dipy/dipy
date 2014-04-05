@@ -107,6 +107,13 @@ Streamline analysis
 - :ref:`example_streamline_length`
 
 ------------
+Registration
+------------
+
+- :ref:`example_syn_registration`
+- :ref:`example_syn_registration_3d`
+
+------------
 Segmentation
 ------------
 

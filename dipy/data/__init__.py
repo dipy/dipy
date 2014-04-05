@@ -182,6 +182,8 @@ def get_data(name='small_64D'):
         'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
         'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
         'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
+        'reg_c' small 2D image used for validating registration
+        'reg_o' small 2D image used for validation registration
 
     Returns
     -------
@@ -248,6 +250,10 @@ def get_data(name='small_64D'):
         fbvecs = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bvec')
         fimg = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.nii.gz')
         return fimg, fbvals, fbvecs
+    if name == "reg_c":
+        return pjoin(THIS_DIR, 'C.png')
+    if name == "reg_o":
+        return pjoin(THIS_DIR, 'circle.png')
 
 
 def _gradient_from_file(filename):
