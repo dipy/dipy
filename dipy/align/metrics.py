@@ -264,7 +264,6 @@ class CCMetric(SimilarityMetric):
             i += 1
         #Convert the moving's gradient field from voxel to physical space
         if self.moving_spacing is not None:
-            print self.moving_spacing
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
             self.reorient_vector_field(self.gradient_moving, self.moving_direction.astype(floating))
@@ -277,7 +276,6 @@ class CCMetric(SimilarityMetric):
             i += 1
         #Convert the moving's gradient field from voxel to physical space
         if self.static_spacing is not None:
-            print self.static_spacing
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
             self.reorient_vector_field(self.gradient_static, self.static_direction.astype(floating))
