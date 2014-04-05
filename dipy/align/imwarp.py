@@ -39,20 +39,22 @@ def get_direction_and_scalings(affine, dim):
     affine4x4[:dim, 3] = affine[:dim, dim-1]
     nib_nifti = nib.Nifti1Image(empty_volume, affine4x4)
     scalings = np.asarray(nib_nifti.get_header().get_zooms())
-    scalings = scalings[:dim]
+    scalings = np.asarray(scalings[:dim], dtype = np.float64)
     A = affine[:dim,:dim]
     return A.dot(np.diag(1.0/scalings)), scalings
 
 class ScaleSpace(object):
-    def __init__(self, image, num_levels, input_affine, input_spacing, sigma_factor=0.2):
+    def __init__(self, image, num_levels, input_affine, input_spacing, sigma_factor=0.2, mask0 = False):
         r""" ScaleSpace
         Implements the Scale Space representation of an image
         """
         self.dim = len(image.shape)
         self.num_levels = num_levels
         input_size = np.array(image.shape)
+        if mask0:
+            mask = np.asarray(image>0, dtype=np.int32)
         #normalize input image to [0,1]
-        img = (image - image.min())/(image.max() - image.min())
+        img = (image - image.min())/(image.max() - image.min())        
 
         #The properties are saved in separate lists        
         self.images = []
@@ -102,6 +104,8 @@ class ScaleSpace(object):
             #filter along each direction with the appropriate sigma
             filtered = sp.ndimage.filters.gaussian_filter(image, sigmas)
             filtered = (filtered - filtered.min())/(filtered.max() - filtered.min())
+            if mask0:
+                filtered *= mask
 
             #Add current level to the scale space
             self.images.append(as_type(filtered, floating))
@@ -287,10 +291,6 @@ class DiffeomorphicMap(object):
         affine_idx_out = mult_aff(W, mult_aff(P, S))
         affine_disp = W
 
-        affine_idx_in = as_type(affine_idx_in, floating)
-        affine_idx_out = as_type(affine_idx_out, floating)
-        affine_disp = as_type(affine_disp, floating)
-
         if image.dtype is np.dtype('float64') and floating is np.float32:
             image = image.astype(floating)
         elif image.dtype is np.dtype('int64'):
@@ -358,10 +358,6 @@ class DiffeomorphicMap(object):
         affine_idx_in = mult_aff(Dinv, S)
         affine_idx_out = mult_aff(W, mult_aff(Pinv, S))
         affine_disp = mult_aff(W, Pinv)
-
-        affine_idx_in = as_type(affine_idx_in, floating)
-        affine_idx_out = as_type(affine_idx_out, floating)
-        affine_disp = as_type(affine_disp, floating)
 
         if image.dtype is np.dtype('float64') and floating is np.float32:
             image = image.astype(floating)
@@ -431,14 +427,14 @@ class DiffeomorphicMap(object):
     def expand_fields(self, expand_factors, new_shape):
         if self.dim == 2:
             expanded_forward = vfu.expand_displacement_field_2d(self.forward, 
-                expand_factors.astype(floating), new_shape)
+                expand_factors, new_shape)
             expanded_backward = vfu.expand_displacement_field_2d(self.backward, 
-                expand_factors.astype(floating), new_shape)
+                expand_factors, new_shape)
         else:
             expanded_forward = vfu.expand_displacement_field_3d(self.forward, 
-                expand_factors.astype(floating), new_shape)
+                expand_factors, new_shape)
             expanded_backward = vfu.expand_displacement_field_3d(self.backward,
-                expand_factors.astype(floating), new_shape)
+                expand_factors, new_shape)
         expand_factors = np.append(expand_factors, [1])
         expanded_affine = mult_aff(self.domain_affine, np.diag(expand_factors))
         expanded_affine_inv = np.linalg.inv(expanded_affine)
@@ -473,7 +469,7 @@ class DiffeomorphicMap(object):
         premult_index = None
         premult_disp = None 
         if self.domain_affine_inv is not None:
-            premult_disp = self.domain_affine_inv.astype(floating)
+            premult_disp = self.domain_affine_inv
 
         if self.dim == 2:
             residual, stats = vfu.compose_vector_fields_2d(self.forward,
@@ -516,7 +512,7 @@ class DiffeomorphicMap(object):
         d1_inv = self.get_backward_field()
         d2_inv = phi.get_backward_field()
 
-        premult_disp = as_type(self.domain_affine_inv, floating)
+        premult_disp = self.domain_affine_inv
 
         if self.dim == 2:
             forward, stats = vfu.compose_vector_fields_2d(d1, d2, None, premult_disp, 1.0)
@@ -694,6 +690,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.static_ss = None
         self.static_direction = None
         self.moving_direction = None
+        self.mask0 = metric.mask0
         
     def _connect_functions(self):
         r"""
@@ -747,8 +744,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_direction = moving_direction
 
         #Build the scale space of the input images
-        self.moving_ss = ScaleSpace(moving, self.levels, moving_affine, moving_spacing, self.ss_sigma_factor)
-        self.static_ss = ScaleSpace(static, self.levels, static_affine, static_spacing, self.ss_sigma_factor)
+        if self.mask0:
+            print ('Applying zero mask')
+        self.moving_ss = ScaleSpace(moving, self.levels, moving_affine, moving_spacing, self.ss_sigma_factor, self.mask0)
+        self.static_ss = ScaleSpace(static, self.levels, static_affine, static_spacing, self.ss_sigma_factor, self.mask0)
 
         if self.verbosity>1:
             print('Moving scale space:')
@@ -827,11 +826,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         current_domain_affine = self.static_ss.get_affine(self.current_level)
         current_domain_affine_inv = self.static_ss.get_affine_inv(self.current_level)
         current_domain_spacing = self.static_ss.get_spacing(self.current_level)
-        
-        current_domain_affine = as_type(current_domain_affine, floating)
-        current_domain_affine_inv = as_type(current_domain_affine_inv, floating)
-        current_domain_spacing = as_type(current_domain_spacing, floating)
-            
+                    
         #Warp the input images (smoothed to the current scale) to the common (reference) space
         wstatic = self.forward_model.transform_inverse(current_static, 'tri')
         wmoving = self.backward_model.transform_inverse(current_moving, 'tri')

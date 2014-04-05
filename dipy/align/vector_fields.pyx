@@ -13,7 +13,7 @@ cdef extern from "math.h":
 
 
 cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2, double h,
-                                       floating[:, :] aff) nogil:
+                                       double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
@@ -22,7 +22,7 @@ cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2, double h
 
 
 cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2, double h,
-                                       floating[:, :] aff) nogil:
+                                       double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
@@ -31,7 +31,7 @@ cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2, double h
 
 
 cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2, double h,
-                                       floating[:, :] aff) nogil:
+                                       double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
@@ -40,7 +40,7 @@ cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2, double h
 
 
 cdef inline double _apply_affine_2d_x0(double x0, double x1, double h,
-                                       floating[:, :] aff) nogil:
+                                       double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the aff matrix aff by
     (x0, x1, x2)
@@ -49,14 +49,14 @@ cdef inline double _apply_affine_2d_x0(double x0, double x1, double h,
 
 
 cdef inline double _apply_affine_2d_x1(double x0, double x1, double h,
-                                       floating[:, :] aff) nogil:
+                                       double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the affine matrix aff by
     (x0, x1, x2)
     """
     return aff[1, 0] * x0 + aff[1, 1] * x1 + h*aff[1, 2]
 
-cdef int mult_matrices(floating[:,:] A, floating[:,:] B, floating[:,:] out) nogil:
+cdef int mult_matrices(double[:,:] A, double[:,:] B, double[:,:] out) nogil:
     cdef:
         int nrA = A.shape[0]
         int ncA = A.shape[1]
@@ -485,10 +485,10 @@ cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk
 
 
 cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
-                                    floating[:, :] premult_index, 
-                                    floating[:, :] premult_disp,
+                                    double[:, :] premult_index, 
+                                    double[:, :] premult_disp,
                                     double time_scaling,
-                                    floating[:, :, :] comp, floating[:] stats) nogil:
+                                    floating[:, :, :] comp, double[:] stats) nogil:
     r"""
     Computes the composition of the two 2-D displacemements d1 and d2 defined by
     comp[r, c] = d2(d1[r, c]) for each (r,c) in the domain of d1. The evaluation
@@ -531,12 +531,12 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         int nr2 = d2.shape[0]
         int nc2 = d2.shape[1]
         int cnt = 0
-        floating maxNorm = 0
-        floating meanNorm = 0
-        floating stdNorm = 0
-        floating nn
+        double maxNorm = 0
+        double meanNorm = 0
+        double stdNorm = 0
+        double nn
         int i, j, inside
-        floating di, dj, dii, djj
+        double di, dj, dii, djj
 
     for i in range(nr1):
         for j in range(nc1):
@@ -578,8 +578,8 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
 
 
 def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
-                             floating[:, :] premult_index, 
-                             floating[:, :] premult_disp,
+                             double[:, :] premult_index, 
+                             double[:, :] premult_disp,
                              double time_scaling):
     r"""
     Computes the composition of the two 2-D displacemements d1 and d2 defined by
@@ -617,19 +617,19 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     """
     cdef:
         floating[:, :, :] comp = np.zeros_like(d1)
-        floating[:] stats = np.zeros(shape=(3,),
-                                     dtype=np.asarray(d1).dtype)
+        double[:] stats = np.zeros(shape=(3,),
+                                     dtype=np.float64)
     _compose_vector_fields_2d(d1, d2, premult_index, premult_disp, time_scaling, comp, stats)
     return comp, stats
 
 
 cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     floating[:, :, :, :] d2,
-                                    floating[:, :] premult_index, 
-                                    floating[:, :] premult_disp,
+                                    double[:, :] premult_index, 
+                                    double[:, :] premult_disp,
                                     double t,
                                     floating[:, :, :, :] comp,
-                                    floating[:] stats) nogil:
+                                    double[:] stats) nogil:
     r"""
     Computes the composition of the two 3-D displacemements d1 and d2 defined by
     comp[s, r, c] = d2(d1[s, r, c]) for each (s,r,c) in the domain of d1.
@@ -663,12 +663,12 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
         int nr2 = d2.shape[1]
         int nc2 = d2.shape[2]
         int cnt = 0
-        floating maxNorm = 0
-        floating meanNorm = 0
-        floating stdNorm = 0
-        floating nn
+        double maxNorm = 0
+        double meanNorm = 0
+        double stdNorm = 0
+        double nn
         int i, j, k, inside
-        floating di, dj, dk, dii, djj, dkk
+        double di, dj, dk, dii, djj, dkk
     for k in range(ns1):
         for i in range(nr1):
             for j in range(nc1):
@@ -721,8 +721,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
 
 
 def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
-                             floating[:, :] premult_index, 
-                             floating[:, :] premult_disp,
+                             double[:, :] premult_index, 
+                             double[:, :] premult_disp,
                              double time_scaling):
     r"""
     Computes the composition of the two 3-D displacemements d1 and d2 defined by
@@ -749,15 +749,15 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
     """
     cdef:
         floating[:, :, :, :] comp = np.zeros_like(d1)
-        floating[:] stats = np.zeros(shape=(3,), dtype=np.asarray(d1).dtype)
+        double[:] stats = np.zeros(shape=(3,), dtype=np.float64)
     _compose_vector_fields_3d(d1, d2, premult_index, premult_disp, time_scaling,
                               comp, stats)
     return comp, stats
 
 
 def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
-                                       floating[:,:] w_to_img,  
-                                       floating[:] spacing,
+                                       double[:,:] w_to_img,  
+                                       double[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :] start=None):
     r"""
@@ -814,9 +814,9 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
         double sr = spacing[0], sc = spacing[1]
 
     cdef:
-        floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
-        floating[:] substats = np.empty(shape=(3,), dtype=np.asarray(d).dtype)
-        floating[:, :] norms = np.zeros(shape=(nr, nc), dtype=np.asarray(d).dtype)
+        double[:] stats = np.zeros(shape=(2,), dtype=np.float64)
+        double[:] substats = np.empty(shape=(3,), dtype=np.float64)
+        double[:, :] norms = np.zeros(shape=(nr, nc), dtype=np.float64)
         floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
         floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
 
@@ -858,8 +858,8 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
 
 
 def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
-                                       floating[:,:] w_to_img,  
-                                       floating[:] spacing,
+                                       double[:,:] w_to_img,  
+                                       double[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :, :] start=None):
     r"""
@@ -904,8 +904,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         double error = 1 + tolerance
         double ss=spacing[0], sr=spacing[1], sc=spacing[2]
     cdef:
-        floating[:] stats = np.zeros(shape=(2,), dtype=np.asarray(d).dtype)
-        floating[:] substats = np.zeros(shape=(3,), dtype=np.asarray(d).dtype)
+        double[:] stats = np.zeros(shape=(2,), dtype=np.float64)
+        double[:] substats = np.zeros(shape=(3,), dtype=np.float64)
         double[:, :, :] norms = np.zeros(shape=(ns, nr, nc), dtype=np.float64)
         floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
         floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
@@ -955,7 +955,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
 
 
 def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
-                                            floating[:, :] affine):
+                                            double[:, :] affine):
     r"""
     Modifies the given 2-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
@@ -974,7 +974,7 @@ def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
         int nrows = d.shape[0]
         int ncols = d.shape[1]
         int i, j, inside
-        floating dii, djj
+        double dii, djj
         floating[:,:,:] out= np.zeros_like(d)
         floating[:] tmp = np.zeros((3,), dtype = np.asarray(d).dtype)
     
@@ -995,7 +995,7 @@ def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
 
 
 def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
-                                            floating[:, :] affine):
+                                            double[:, :] affine):
     r"""
     Modifies thegiven 3-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
@@ -1015,7 +1015,7 @@ def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
         int nrows = d.shape[1]
         int ncols = d.shape[2]
         int i, j, k, inside
-        floating dkk, dii, djj
+        double dkk, dii, djj
         floating[:,:,:,:] out= np.zeros_like(d)
         floating[:] tmp = np.zeros((3,), dtype = np.asarray(d).dtype)
     with nogil:
@@ -1039,7 +1039,7 @@ def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
 
 
 def append_affine_to_displacement_field_2d(floating[:, :, :] d,
-                                           floating[:, :] affine):
+                                           double[:, :] affine):
     r"""
     Modifies the given 2-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
@@ -1057,7 +1057,7 @@ def append_affine_to_displacement_field_2d(floating[:, :, :] d,
     cdef:
         int nrows = d.shape[0]
         int ncols = d.shape[1]
-        floating dii, djj
+        double dii, djj
         int i, j
 
     with nogil:
@@ -1070,7 +1070,7 @@ def append_affine_to_displacement_field_2d(floating[:, :, :] d,
 
 
 def reorient_vector_field_2d(floating[:, :, :] d,
-                             floating[:, :] affine):
+                             double[:, :] affine):
     cdef:
         int nrows = d.shape[0]
         int ncols = d.shape[1]
@@ -1090,7 +1090,7 @@ def reorient_vector_field_2d(floating[:, :, :] d,
 
 
 def reorient_vector_field_3d(floating[:, :, :, :] d,
-                             floating[:, :] affine):
+                             double[:, :] affine):
     cdef:
         int nslices = d.shape[0]
         int nrows = d.shape[1]
@@ -1114,7 +1114,7 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
 
     
 def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
-                                           floating[:, :] affine):
+                                           double[:, :] affine):
     r"""
     Modifies thegiven 3-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
@@ -1133,7 +1133,7 @@ def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
         int nslices = d.shape[0]
         int nrows = d.shape[1]
         int ncols = d.shape[2]
-        floating dkk, dii, djj
+        double dkk, dii, djj
         int i, j, k
 
     with nogil:
@@ -1148,8 +1148,8 @@ def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
                     d[k, i, j, 2] = _apply_affine_3d_x2(dkk, dii, djj, 1, affine) - j
 
 
-def consolidate_2d(floating[:,:,:] field, floating[:,:] affine_idx, 
-                   floating[:,:] affine_disp):
+def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx, 
+                   double[:,:] affine_disp):
     cdef:
         int nrows = field.shape[0]
         int ncols = field.shape[1]
@@ -1185,8 +1185,8 @@ def consolidate_2d(floating[:,:,:] field, floating[:,:] affine_idx,
     return output
 
 
-def consolidate_3d(floating[:,:,:,:] field, floating[:,:] affine_idx, 
-                   floating[:,:] affine_disp):
+def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx, 
+                   double[:,:] affine_disp):
     cdef:
         int nslices = field.shape[0]
         int nrows = field.shape[1]
@@ -1253,7 +1253,7 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
         int nrows = target_shape[0]
         int ncols = target_shape[1]
         int i, j, inside
-        floating dii, djj
+        double dii, djj
         floating[:, :, :] up = np.zeros(shape=(nrows, ncols, 2), 
                                         dtype=np.asarray(field).dtype)
     with nogil:
@@ -1292,7 +1292,7 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
         int nr = target_shape[1]
         int nc = target_shape[2]
         int i, j, k
-        floating dkk, dii, djj
+        double dkk, dii, djj
         floating[:, :, :, :] up = np.zeros(shape=(ns, nr, nc, 3), 
                                            dtype=np.asarray(field).dtype)
 
@@ -1327,7 +1327,7 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
         int nr = up.shape[1]
         int nc = up.shape[2]
         int i, j, k, inside
-        floating dkk, dii, djj
+        double dkk, dii, djj
         floating[:] tmp = np.zeros((3,), dtype = np.asarray(field).dtype)
     with nogil:
 
@@ -1521,7 +1521,7 @@ def downsample_displacement_field2D(floating[:, :, :] field):
     return down
 
 
-def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
+def get_displacement_range(floating[:, :, :, :] d, double[:, :] affine):
     r"""
     Computes the minimum and maximum values reached by the transformation
     defined by the given displacement field and affine pre-multiplication
@@ -1549,7 +1549,7 @@ def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
         int nrows = d.shape[1]
         int ncols = d.shape[2]
         int i, j, k
-        floating dkk, dii, djj
+        double dkk, dii, djj
         floating[:] minVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
         floating[:] maxVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
     minVal[...] = d[0, 0, 0, :]
@@ -1577,9 +1577,9 @@ def get_displacement_range(floating[:, :, :, :] d, floating[:, :] affine):
 
 
 def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
-                floating[:, :] affine_idx_in=None, 
-                floating[:, :] affine_idx_out=None, 
-                floating[:, :] affine_disp=None,
+                double[:, :] affine_idx_in=None, 
+                double[:, :] affine_idx_out=None, 
+                double[:, :] affine_disp=None,
                 int[:] sampling_shape=None):
     r"""
     Deforms the input volume under the transformation T of the from
@@ -1626,7 +1626,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
     cdef floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
                                              dtype=np.asarray(volume).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(volume).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
 
     with nogil:
 
@@ -1675,7 +1675,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
 
 def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
-                       floating[:, :] affine):
+                       double[:, :] affine):
     r"""
     Deforms the input volume under the given affine transformation using 
     trilinear interpolation. The shape of the resulting transformation
@@ -1734,9 +1734,9 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
 
 
 def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
-                   floating[:, :] affine_idx_in=None, 
-                   floating[:, :] affine_idx_out=None, 
-                   floating[:, :] affine_disp=None,
+                   double[:, :] affine_idx_in=None, 
+                   double[:, :] affine_idx_out=None, 
+                   double[:, :] affine_disp=None,
                    int[:] sampling_shape=None):
     r"""
     Deforms the input volume under the transformation T of the from
@@ -1832,7 +1832,7 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
 
 def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
-                          floating[:, :] affine=None):
+                          double[:, :] affine=None):
     r"""
     Deforms the input volume under the given affine transformation using 
     nearest neighbor interpolation. The shape of the resulting transformation
@@ -1892,9 +1892,9 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
 
 
 def warp_image(floating[:, :] image, floating[:, :, :] d1,
-               floating[:,:] affine_idx_in=None,
-               floating[:,:] affine_idx_out=None,
-               floating[:,:] affine_disp=None,
+               double[:,:] affine_idx_in=None,
+               double[:,:] affine_idx_out=None,
+               double[:,:] affine_disp=None,
                int[:] sampling_shape=None):
     r"""
     Deforms the input image under the transformation T of the from
@@ -1943,7 +1943,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
         ncols = d1.shape[1]
     cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), 
                                          dtype=np.asarray(image).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(image).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(d1).dtype)
 
 
     with nogil:
@@ -1987,7 +1987,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
 
 
 def warp_image_affine(floating[:, :] image, int[:] refShape,
-                      floating[:, :] affine=None):
+                      double[:, :] affine=None):
     r"""
     Deforms the input image under the given affine transformation using 
     trilinear interpolation. The shape of the resulting transformation
@@ -2042,9 +2042,9 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
 
 
 def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
-                  floating[:,:] affine_idx_in=None,
-                  floating[:,:] affine_idx_out=None,
-                  floating[:,:] affine_disp=None,
+                  double[:,:] affine_idx_in=None,
+                  double[:,:] affine_idx_out=None,
+                  double[:,:] affine_disp=None,
                   int[:] sampling_shape=None):
     r"""
     Deforms the input image under the transformation T of the from
@@ -2086,7 +2086,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
         ncols = d1.shape[1]
     cdef number[:, :] warped = np.zeros(shape=(nrows, ncols), 
                                          dtype=np.asarray(image).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(image).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(d1).dtype)
 
 
     with nogil:
@@ -2130,7 +2130,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
 
 
 def warp_image_affine_nn(number[:, :] image, int[:] refShape,
-                         floating[:, :] affine=None):
+                         double[:, :] affine=None):
     r"""
     Deforms the input image under the given affine transformation using 
     nearest neighbor interpolation. The shape of the resulting transformation
@@ -2183,8 +2183,8 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
     return warped
 
 def warp_2d_stream_line(floating[:, :] streamline, floating[:, :, :] d1,
-                        floating[:, :] affinePre=None, 
-                        floating[:, :] affinePost=None):
+                        double[:, :] affinePre=None, 
+                        double[:, :] affinePost=None):
     r"""
     Deforms the input 2d stream line under the transformation T of the from
     T(x) = B*f(A*x), x\in dom(f), where 
@@ -2260,7 +2260,7 @@ def warp_2d_stream_line(floating[:, :] streamline, floating[:, :, :] d1,
             streamline[i, 0], streamline[i, 1] = dii, djj
 
 
-def expand_displacement_field_3d(floating[:, :, :, :] field, floating[:] factors, int[:] target_shape):
+def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, int[:] target_shape):
     cdef:
         int tslices = target_shape[0]
         int trows = target_shape[1]
@@ -2278,7 +2278,7 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, floating[:] factors
                 interpolate_vector_trilinear(field, dkk, dii, djj, expanded[k, i, j])
     return expanded
 
-def expand_displacement_field_2d(floating[:, :, :] field, floating[:] factors, int[:] target_shape):
+def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int[:] target_shape):
     cdef:
         int trows = target_shape[0]
         int tcols = target_shape[1]
@@ -2294,7 +2294,7 @@ def expand_displacement_field_2d(floating[:, :, :] field, floating[:] factors, i
     return expanded
 
 
-def create_random_displacement_2d(int[:] from_shape, floating[:,:] input_affine, int[:] to_shape, floating[:,:] output_affine):
+def create_random_displacement_2d(int[:] from_shape, double[:,:] input_affine, int[:] to_shape, double[:,:] output_affine):
     r"""
     Creates a random 2D displacement field mapping points of an input discrete domain 
     (with dimensions given by from_shape) to points of an output discrete domain
@@ -2313,7 +2313,7 @@ def create_random_displacement_2d(int[:] from_shape, floating[:,:] input_affine,
         int i, j, ri, rj
         double di, dj, dii, djj
         int[:,:,:] int_field = np.ndarray(tuple(from_shape) + (2,), dtype = np.int32)
-        floating[:, :, :] output = np.zeros(tuple(from_shape) + (2,), np.asarray(input_affine).dtype)
+        double[:, :, :] output = np.zeros(tuple(from_shape) + (2,), dtype = np.float64)
         int dom_size = from_shape[0]*from_shape[1]
 
     #compute the actual displacement field in the physical space
@@ -2351,8 +2351,8 @@ def create_random_displacement_2d(int[:] from_shape, floating[:,:] input_affine,
 
 
 def create_linear_displacement_field_2d(int[:] shape, 
-                                        floating[:,:] input_affine,
-                                        floating[:,:] transform):
+                                        double[:,:] input_affine,
+                                        double[:,:] transform):
     r"""
     Creates a 2D displacement field mapping mapping points from the given grid
     shape to themselves after a linear, invertible transformation is applied 
@@ -2369,7 +2369,7 @@ def create_linear_displacement_field_2d(int[:] shape,
         int ncols = shape[1]
         int i, j
         double di, dj, dii, djj
-        floating[:, :, :] output = np.zeros(tuple(shape) + (2,), np.asarray(input_affine).dtype)
+        double[:, :, :] output = np.zeros(tuple(shape) + (2,), dtype = np.float64)
 
     #compute the actual displacement field in the physical space
     for i in range(nrows):
@@ -2401,7 +2401,7 @@ def create_linear_displacement_field_2d(int[:] shape,
     return output
 
 
-def create_random_displacement_3d(int[:] from_shape, floating[:,:] input_affine, int[:] to_shape, floating[:,:] output_affine):
+def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, int[:] to_shape, double[:,:] output_affine):
     r"""
     Creates a random 3D displacement field mapping points of an input discrete domain 
     (with dimensions given by from_shape) to points of an output discrete domain
@@ -2420,7 +2420,7 @@ def create_random_displacement_3d(int[:] from_shape, floating[:,:] input_affine,
         int i, j, k, ri, rj, rk
         double di, dj, dii, djj
         int[:,:,:,:] int_field = np.ndarray(tuple(from_shape) + (3,), dtype = np.int32)
-        floating[:,:,:,:] output = np.zeros(tuple(from_shape) + (3,), np.asarray(input_affine).dtype)
+        double[:,:,:,:] output = np.zeros(tuple(from_shape) + (3,), dtype=np.float64)
         int dom_size = from_shape[0]*from_shape[1]*from_shape[2]
 
     #compute the actual displacement field in the physical space

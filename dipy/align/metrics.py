@@ -39,6 +39,7 @@ class SimilarityMetric(object):
         self.moving_affine = None
         self.moving_spacing = None
         self.moving_direction = None
+        self.mask0 = False
 
     def set_levels_below(self, levels):
         r"""
@@ -266,7 +267,7 @@ class CCMetric(SimilarityMetric):
         if self.moving_spacing is not None:
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
-            self.reorient_vector_field(self.gradient_moving, self.moving_direction.astype(floating))
+            self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
             shape = (self.static_image.shape)+(self.dim,), dtype = floating)
@@ -278,7 +279,7 @@ class CCMetric(SimilarityMetric):
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
-            self.reorient_vector_field(self.gradient_static, self.static_direction.astype(floating))
+            self.reorient_vector_field(self.gradient_static, self.static_direction)
 
     def free_iteration(self):
         r"""
@@ -453,7 +454,7 @@ class EMMetric(SimilarityMetric):
         if self.moving_spacing is not None:    
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
-            self.reorient_vector_field(self.gradient_moving, self.moving_direction.astype(floating))
+            self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
             shape = (self.static_image.shape)+(self.dim,), dtype = floating)
@@ -465,7 +466,7 @@ class EMMetric(SimilarityMetric):
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
-            self.reorient_vector_field(self.gradient_static, self.static_direction.astype(floating))
+            self.reorient_vector_field(self.gradient_static, self.static_direction)
 
         movingq, self.movingq_levels, hist = self.quantize(self.moving_image,
                                                         self.q_levels)
@@ -582,7 +583,8 @@ class EMMetric(SimilarityMetric):
         displacement : array, shape (R, C, 2) or (S, R, C, 3)
             the Demons step
         """
-        sigma_reg_2 = (2*self.step_length)**2
+        #sigma_reg_2 = (2*self.step_length)**2
+        sigma_reg_2 = 0.5
 
         if forward_step:
             gradient = self.gradient_moving
@@ -721,7 +723,7 @@ class SSDMetric(SimilarityMetric):
         if self.moving_spacing is not None:    
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
-            self.reorient_vector_field(self.gradient_moving, self.moving_direction.astype(floating))
+            self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
             shape = (self.static_image.shape)+(self.dim,), dtype = floating)
@@ -733,7 +735,7 @@ class SSDMetric(SimilarityMetric):
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
-            self.reorient_vector_field(self.gradient_static, self.static_direction.astype(floating))
+            self.reorient_vector_field(self.gradient_static, self.static_direction)
 
     def compute_forward(self):
         r"""
