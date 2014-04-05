@@ -641,9 +641,10 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_demons_step2D(floating[:, :] delta_field,
-                          floating[:, :, :] gradient_field,
-                          double max_step_size):
+def compute_ssd_demons_step_2d(floating[:,:] delta_field,
+                               floating[:,:,:] gradient_moving,
+                               double sigma_reg_2,
+                               floating[:,:,:] out):
     r"""
     Computes the demons step for SSD-driven registration.
 
@@ -664,41 +665,41 @@ def compute_demons_step2D(floating[:, :] delta_field,
         the demons step to be applied for updating the current displacement field
     """
     cdef:
-        int nrows = delta_field.shape[0]
-        int ncols = delta_field.shape[1]
-        int r, c
-        floating nrm2, delta, den, factor, max_displacement
-        floating[:, :, :] demons_step = np.zeros(shape=(nrows, ncols, 3), 
-            dtype=np.asarray(delta_field).dtype)
-    max_displacement = 0
-    for r in range(nrows):
-        for c in range(ncols):
-            nrm2 = gradient_field[r, c, 0] ** 2 + gradient_field[r, c, 1] * 2
-            delta = delta_field[r, c]
-            den = (nrm2 + delta * delta)
-            factor = 0
-            if(den != 0):
-                factor = delta / den
-            demons_step[r, c, 0] = factor * gradient_field[r, c, 0]
-            demons_step[r, c, 1] = factor * gradient_field[r, c, 1]
-            nrm2 = demons_step[r, c, 0] ** 2 + demons_step[r, c, 1] ** 2
-            if(max_displacement < nrm2):
-                max_displacement = nrm2
-    max_displacement = sqrt(max_displacement)
-    factor = max_step_size / max_displacement
-    for r in range(nrows):
-        for c in range(ncols):
-            demons_step[r, c, 0] *= factor
-            demons_step[r, c, 1] *= factor
-    return demons_step
+        int nr = delta_field.shape[0]
+        int nc = delta_field.shape[1]
+        int i, j
+        double neg_delta, delta_2, nrm2, energy, den
+
+    if out is None:
+        out = np.zeros((nr, nc, 2), dtype=np.asarray(delta_field).dtype)
+
+    with nogil:
+
+        energy = 0
+        for i in range(nr):
+            for j in range(nc):
+                neg_delta = -1 * delta_field[i,j]
+                delta_2 = neg_delta**2 
+                energy += delta_2
+                nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
+                den = delta_2/sigma_reg_2 + nrm2
+                if den <1e-9:
+                    out[i, j, 0] = 0
+                    out[i, j, 1] = 0
+                else:
+                    out[i, j, 0] = neg_delta * gradient_moving[i, j, 0] / den
+                    out[i, j, 1] = neg_delta * gradient_moving[i, j, 1] / den
+
+    return out, energy
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_demons_step3D(floating[:, :, :] delta_field,
-                          floating[:, :, :, :] gradient_field,
-                          double max_step_size):
+def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
+                               floating[:,:,:,:] gradient_moving,
+                               double sigma_reg_2,
+                               floating[:,:,:,:] out):
     r"""
     Computes the demons step for SSD-driven registration.
 
@@ -719,38 +720,33 @@ def compute_demons_step3D(floating[:, :, :] delta_field,
         the demons step to be applied for updating the current displacement field
     """
     cdef:
-        int nslices = delta_field.shape[0]
-        int nrows = delta_field.shape[1]
-        int ncols = delta_field.shape[2]
-        int s, r, c
-        floating nrm2, delta, den, factor, max_displacement
-        floating[:, :, :, :] demons_step = np.zeros(shape=(nslices, nrows, ncols, 3), 
-            dtype=np.asarray(delta_field).dtype)
-    max_displacement = 0
-    for s in range(nslices):
-        for r in range(nrows):
-            for c in range(ncols):
-                nrm2 = gradient_field[s, r, c, 0] ** 2 + \
-                    gradient_field[s, r, c, 1] * 2 + \
-                    gradient_field[s, r, c, 2] ** 2
-                delta = delta_field[s, r, c]
-                den = (nrm2 + delta * delta)
-                factor = 0
-                if(den != 0):
-                    factor = delta / den
-                demons_step[s, r, c, 0] = factor * gradient_field[s, r, c, 0]
-                demons_step[s, r, c, 1] = factor * gradient_field[s, r, c, 1]
-                demons_step[s, r, c, 2] = factor * gradient_field[s, r, c, 2]
-                nrm2 = demons_step[s, r, c, 0] ** 2 + \
-                    demons_step[s, r, c, 1] ** 2 + demons_step[s, r, c, 2] ** 2
-                if(max_displacement < nrm2):
-                    max_displacement = nrm2
-    max_displacement = sqrt(max_displacement)
-    factor = max_step_size / max_displacement
-    for s in range(nslices):
-        for r in range(nrows):
-            for c in range(ncols):
-                demons_step[s, r, c, 0] *= factor
-                demons_step[s, r, c, 1] *= factor
-                demons_step[s, r, c, 2] *= factor
-    return demons_step
+        int ns = delta_field.shape[0]
+        int nr = delta_field.shape[1]
+        int nc = delta_field.shape[2]
+        int i, j, k
+        double neg_delta, delta_2, nrm2, energy, den
+
+    if out is None:
+        out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(delta_field).dtype)
+
+    with nogil:
+
+        energy = 0
+        for k in range(ns):
+            for i in range(nr):
+                for j in range(nc):
+                    neg_delta = -1 * delta_field[k,i,j]
+                    delta_2 = neg_delta**2 
+                    energy += delta_2
+                    nrm2 = gradient_moving[k, i, j, 0]**2 + gradient_moving[k, i, j, 1]**2 + gradient_moving[k, i, j, 2]**2
+                    den = delta_2/sigma_reg_2 + nrm2
+                    if den < 1e-9:
+                        out[k, i, j, 0] = 0
+                        out[k, i, j, 1] = 0
+                        out[k, i, j, 2] = 0
+                    else: 
+                        out[k, i, j, 0] = neg_delta * gradient_moving[k, i, j, 0] / den
+                        out[k, i, j, 1] = neg_delta * gradient_moving[k, i, j, 1] / den
+                        out[k, i, j, 2] = neg_delta * gradient_moving[k, i, j, 2] / den
+
+    return out, energy

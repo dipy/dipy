@@ -383,6 +383,7 @@ class EMMetric(SimilarityMetric):
         self.movingq_means_field = None
         self.movingq_levels = None
         self.staticq_levels = None
+        self._connect_functions()
 
     def _connect_functions(self):
         r"""
@@ -426,7 +427,6 @@ class EMMetric(SimilarityMetric):
         diff-demons does for mono-modality images. If the flag
         self.use_double_gradient is True these garadients are averaged.
         """
-        self._connect_functions()
         sampling_mask = self.static_image_mask*self.moving_image_mask
         self.sampling_mask = sampling_mask
         staticq, self.staticq_levels, hist = self.quantize(self.static_image,
@@ -582,8 +582,7 @@ class EMMetric(SimilarityMetric):
         displacement : array, shape (R, C, 2) or (S, R, C, 3)
             the Demons step
         """
-        sigma_diff = self.smooth
-        sigma_reg = 2*self.step_length
+        sigma_reg_2 = (2*self.step_length)**2
 
         if forward_step:
             gradient = self.gradient_moving
@@ -597,17 +596,17 @@ class EMMetric(SimilarityMetric):
             step, self.energy = em.compute_em_demons_step_2d(delta_field,
                                                              sigma_field,
                                                              gradient,
-                                                             sigma_reg,
+                                                             sigma_reg_2,
                                                              None)
         else:
             step, self.energy = em.compute_em_demons_step_3d(delta_field,
                                                              sigma_field,
                                                              gradient,
-                                                             sigma_reg,
+                                                             sigma_reg_2,
                                                              None)
         for i in range(self.dim):
             step[..., i] = ndimage.filters.gaussian_filter(step[..., i],
-                                                           sigma_diff)
+                                                           self.smooth)
         return step
 
     def get_energy(self):
@@ -694,6 +693,18 @@ class SSDMetric(SimilarityMetric):
         self.inner_iter = inner_iter
         self.step_type = step_type
         self.levels_below = 0
+        self._connect_functions()
+
+    def _connect_functions(self):
+        r"""
+        Assigns the appropriate functions to be called for image quantization,
+        statistics computation and multi-resolution iterations according to the
+        dimension of the input images
+        """
+        if self.dim == 2:
+            self.reorient_vector_field = vfu.reorient_vector_field_2d
+        else:
+            self.reorient_vector_field = vfu.reorient_vector_field_3d
 
     def initialize_iteration(self):
         r"""
@@ -706,12 +717,23 @@ class SSDMetric(SimilarityMetric):
         for grad in gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
-        i = 0
+        #Convert the static's gradient field from voxel to physical space
+        if self.moving_spacing is not None:    
+            self.gradient_moving /= self.moving_spacing
+        if self.moving_direction is not None:
+            self.reorient_vector_field(self.gradient_moving, self.moving_direction.astype(floating))
+
         self.gradient_static = np.empty(
             shape = (self.static_image.shape)+(self.dim,), dtype = floating)
+        i = 0
         for grad in gradient(self.static_image):
             self.gradient_static[..., i] = grad
             i += 1
+        #Convert the moving's gradient field from voxel to physical space
+        if self.static_spacing is not None:
+            self.gradient_static /= self.static_spacing
+        if self.static_direction is not None:
+            self.reorient_vector_field(self.gradient_static, self.static_direction.astype(floating))
 
     def compute_forward(self):
         r"""
@@ -794,30 +816,27 @@ class SSDMetric(SimilarityMetric):
         displacement : array, shape (R, C, 2) or (S, R, C, 3)
             the Demons step
         """
-        sigma_diff = self.smooth
-        scale = 1.0
+        sigma_reg_2 = np.sum(self.static_spacing**2)/self.dim
+
         if forward_step:
             delta_field = self.static_image-self.moving_image
         else:
             delta_field = self.moving_image - self.static_image
         gradient = self.gradient_moving+self.gradient_static
         if self.dim == 2:
-            forward = ssd.compute_demons_step2D(delta_field, gradient,
-                                               max_step_length, scale)
-            forward[..., 0] = ndimage.filters.gaussian_filter(forward[..., 0],
-                                                                sigma_diff)
-            forward[..., 1] = ndimage.filters.gaussian_filter(forward[..., 1],
-                                                                sigma_diff)
+            step, self.energy = ssd.compute_ssd_demons_step_2d(delta_field,
+                                                             gradient,
+                                                             sigma_reg_2,
+                                                             None)
         else:
-            forward = ssd.compute_demons_step3D(delta_field, gradient,
-                                               max_step_length, scale)
-            forward[..., 0] = ndimage.filters.gaussian_filter(forward[..., 0],
-                                                                sigma_diff)
-            forward[..., 1] = ndimage.filters.gaussian_filter(forward[..., 1],
-                                                                sigma_diff)
-            forward[..., 2] = ndimage.filters.gaussian_filter(forward[..., 2],
-                                                                sigma_diff)
-        return forward
+            step, self.energy = ssd.compute_ssd_demons_step_3d(delta_field,
+                                                             gradient,
+                                                             sigma_reg_2,
+                                                             None)
+        for i in range(self.dim):
+            step[..., i] = ndimage.filters.gaussian_filter(step[..., i],
+                                                           self.smooth)
+        return step
 
     def get_energy(self):
         r"""

@@ -634,7 +634,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  step_length = 0.25,
                  ss_sigma_factor = 0.5,
                  opt_tol = 1e-4,
-                 inv_iter = 20,
+                 inv_iter = 40,
                  inv_tol = 1e-3,
                  call_back = None,
                  update_function=None):
@@ -830,6 +830,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         
         current_domain_affine = as_type(current_domain_affine, floating)
         current_domain_affine_inv = as_type(current_domain_affine_inv, floating)
+        current_domain_spacing = as_type(current_domain_spacing, floating)
             
         #Warp the input images (smoothed to the current scale) to the common (reference) space
         wstatic = self.forward_model.transform_inverse(current_static, 'tri')

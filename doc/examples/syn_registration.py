@@ -30,7 +30,7 @@ the RGB images (in this case the three channels are equal)
 moving = np.array(moving[:, :, 0])
 static = np.array(static[:, :, 0])
 
-moving = moving[:240,:240]
+#moving = moving[:240,:240]
 
 #static = moving.copy()
 
@@ -60,7 +60,7 @@ of Squared Differences (SSD) is a good choice. We create a metric specifying
 2 as the dimension of our images' domain
 """
 
-metric = SSDMetric(dim = 2, smooth=4, inner_iter=10, step_length=0.5) 
+metric = SSDMetric(dim = 2, smooth=4, inner_iter=10) 
 
 """
 Now we define an instance of the optimizer of the metric. The SyN algorithm uses
