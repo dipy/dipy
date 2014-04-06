@@ -1,31 +1,39 @@
 import numpy as np
-import scipy as sp
 import numpy.linalg as linalg
-import abc
-import vector_fields as vfu
-from dipy.align import floating
+import scipy as sp
 import nibabel as nib
-import matplotlib.pyplot as plt
+import abc
+import dipy.align.vector_fields as vfu
+from dipy.align import floating
+from dipy.align import VerbosityLevels
+from dipy.align import enum
 
+
+
+RegistrationStages = enum(INIT_START=0, 
+                          INIT_END=1,
+                          OPT_START=2,
+                          OPT_END=3,
+                          SCALE_START=4,
+                          SCALE_END=5,
+                          ITER_START=6,
+                          ITER_END=7)
+r"""
+RegistrationStages
+This enum defines the different stages which the Volumentric Registration
+may be in. The value of the stage is passed as a parameter to the call-back
+function so that it can react accordingly.  
+"""
 
 def mult_aff(A, B):
+    r"""
+    Returns the matrix product A.dot(B) considering None as the identity
+    """
     if A is None:
         return B
     elif B is None:
         return A
     return A.dot(B)
-
-
-def inv_aff(A):
-    if A is None:
-        return None
-    return np.linalg.inv(A)
-
-
-def as_type(obj, t):
-    if obj is None:
-        return None
-    return obj.astype(t)
 
 
 def get_direction_and_scalings(affine, dim):
@@ -66,8 +74,8 @@ class ScaleSpace(object):
         self.sigmas = []
 
         #insert input image properties at the first level of the scale space
-        self.images.append(as_type(img, floating))
-        self.domain_shapes.append(as_type(input_size, np.int32))
+        self.images.append(img.astype(floating))
+        self.domain_shapes.append(input_size.astype(np.int32))
         self.spacings.append(input_spacing)
         self.scalings.append(np.ones(self.dim))
         self.affines.append(input_affine)
@@ -108,7 +116,7 @@ class ScaleSpace(object):
                 filtered *= mask
 
             #Add current level to the scale space
-            self.images.append(as_type(filtered, floating))
+            self.images.append(filtered.astype(floating))
             self.domain_shapes.append(output_size)
             self.spacings.append(output_spacing)
             self.scalings.append(scaling)
@@ -590,39 +598,6 @@ class DiffeomorphicRegistration(object):
         """
         return self.forward_model.backward
 
-
-def renormalize_image(image):
-    m=np.min(image)
-    M=np.max(image)
-    if(M-m<1e-8):
-        return image
-    return 127.0*(image-m)/(M-m)
-
-def overlay_images(L, R, ltitle='Left', rtitle='Right', fname=None):
-    sh=L.shape
-
-    colorImage=np.zeros(shape=(sh[0], sh[1], 3), dtype=np.int8)
-    ll=renormalize_image(L).astype(np.int8)
-    rr=renormalize_image(R).astype(np.int8)
-    colorImage[...,0]=ll*(ll>ll[0,0])
-    colorImage[...,1]=rr*(rr>rr[0,0])
-
-    plt.figure()
-    plt.subplot(1,3,1)
-    plt.imshow(ll, cmap = plt.cm.gray)
-    plt.title(ltitle)
-    plt.subplot(1,3,2)
-    plt.imshow(colorImage)
-    plt.title('Overlay')
-    plt.subplot(1,3,3)
-    plt.imshow(rr, cmap = plt.cm.gray)
-    plt.title(rtitle)
-    if fname is not None:
-        from time import sleep
-        sleep(1)
-        plt.savefig(fname, bbox_inches='tight')
-
-
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     def __init__(self,
                  metric=None,
@@ -632,7 +607,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  opt_tol = 1e-4,
                  inv_iter = 20,
                  inv_tol = 1e-3,
-                 call_back = None,
+                 callback = None,
                  update_function=None):
         r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
         Performs the multi-resolution optimization algorithm for non-linear
@@ -663,7 +638,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         inv_tol : float
             the displacement field inversion algorithm will stop iterating
             when the inversion error falls below this threshold
-        call_back : function(SymmetricDiffeomorphicRegistration)
+        callback : function(SymmetricDiffeomorphicRegistration)
             a function receiving a SymmetricDiffeomorphicRegistration object 
             to be called after each iteration (this optimizer will call this
             function passing self as parameter)
@@ -680,11 +655,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.opt_tol = opt_tol
         self.inv_tol = inv_tol
         self.inv_iter = inv_iter
-        self.call_back = call_back
+        self.callback = callback
         self.energy_window = 12
         self.energy_list = []
         self.full_energy_profile = []
-        self.verbosity = 1
+        self.verbosity = VerbosityLevels.STATUS
 
         self.moving_ss = None
         self.static_ss = None
@@ -744,12 +719,22 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_direction = moving_direction
 
         #Build the scale space of the input images
-        if self.mask0:
-            print ('Applying zero mask')
+        if self.verbosity >= VerbosityLevels.DIAGNOSE:
+            if self.mask0:
+                print('Applying zero mask')
+            else:
+                print('Mask disabled')
+        if self.verbosity >= VerbosityLevels.STATUS:
+            print('Creating scale space from the moving image. Levels: %d. Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
+        
         self.moving_ss = ScaleSpace(moving, self.levels, moving_affine, moving_spacing, self.ss_sigma_factor, self.mask0)
+
+        if self.verbosity >= VerbosityLevels.STATUS:
+            print('Creating scale space from the static image. Levels: %d. Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
+        
         self.static_ss = ScaleSpace(static, self.levels, static_affine, static_spacing, self.ss_sigma_factor, self.mask0)
 
-        if self.verbosity>1:
+        if self.verbosity >= VerbosityLevels.DEBUG:
             print('Moving scale space:')
             for level in range(self.levels):
                 self.moving_ss.print_level(level)
@@ -831,14 +816,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         wstatic = self.forward_model.transform_inverse(current_static, 'tri')
         wmoving = self.backward_model.transform_inverse(current_moving, 'tri')
         
-        if self.verbosity > 10:
-            if self.dim == 2:
-                overlay_images(wmoving, wstatic, 'Moving', 'Static')
-            else:
-                overlay_images(wmoving[:,wmoving.shape[1]//2,:], 
-                               wstatic[:,wstatic.shape[1]//2,:], 
-                               'Moving', 'Static')
-        
         #Pass both images to the metric. Now both images are sampled on the
         #reference grid (equal to the static's grid) and the direction doesn't
         #change across scales
@@ -854,6 +831,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Initialize the metric for a new iteration
         self.metric.initialize_iteration()
+        if self.callback is not None:
+            self.callback(self, RegistrationStages.ITER_START)
 
         #Free some memory (useful when using double precision)
         del self.forward_model.backward
@@ -894,13 +873,16 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         n_iter = len(self.energy_list)
         if len(self.energy_list) >= self.energy_window:
             der = self._get_energy_derivative()
-        if self.verbosity > 1:
-            print(
-                '%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % (n_iter, fw_energy, bw_energy,
-                                                  fw_energy + bw_energy, der))
+
+        if self.verbosity >= VerbosityLevels.DIAGNOSE:
+            print('%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % 
+                    (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, der))
+
         self.energy_list.append(fw_energy + bw_energy)
 
         #Free resources no longer needed to compute the forward and backward steps
+        if self.callback is not None:
+            self.callback(self, RegistrationStages.ITER_END)
         self.metric.free_iteration()
 
         #Invert the forward model's forward field
@@ -935,9 +917,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 current_domain_spacing,
                 self.inv_iter, self.inv_tol, self.backward_model.forward))
 
-        #We finished the iteration, report using the provided callback
-        if self.call_back is not None:
-            self.call_back(self)
         return 1 if der == '-' else der
 
     def _approximate_derivative_direct(self, x, y):
@@ -989,10 +968,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         r"""
         The main multi-scale symmetric optimization algorithm
         """
-        print 'Verbosity:', self.verbosity
         self.full_energy_profile = []
         for level in range(self.levels - 1, -1, -1):
-            if self.verbosity > 0:
+            if self.verbosity >= VerbosityLevels.STATUS:
                 print('Optimizing level %d'%(level,))
 
             self.current_level = level
@@ -1013,28 +991,27 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.full_energy_profile.extend(self.energy_list)
             self.energy_list = []
             derivative = 1
-            while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
-                niter += 1
-                derivative = self._iterate()
-            if self.verbosity>10:
-                wmoving = self.backward_model.transform_inverse(
-                        self.moving_ss.get_image(self.current_level), 'tri')
-                wstatic = self.forward_model.transform_inverse(
-                        self.static_ss.get_image(self.current_level), 'tri')
-                if self.dim == 2:
-                    overlay_images(wmoving, wstatic, 'Moving', 'Static')
-                else:
-                    overlay_images(wmoving[:,wmoving.shape[1]//2,:], 
-                                   wstatic[:,wstatic.shape[1]//2,:], 
-                                   'Moving', 'Static')
 
+            if self.callback is not None:
+                self.callback(self, RegistrationStages.SCALE_START)
+
+            while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
+                derivative = self._iterate()
+                niter += 1
+            
+            if self.callback is not None:
+                self.callback(self, RegistrationStages.SCALE_END)
+            
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.forward_model.compute_inversion_error()
-        if self.verbosity > 0:
+        
+        if self.verbosity >= VerbosityLevels.DIAGNOSE:
             print('Forward Residual error: %0.6f (%0.6f)'
                   % (stats[1], stats[2]))
+        
         residual, stats = self.backward_model.compute_inversion_error()
-        if self.verbosity > 0:
+
+        if self.verbosity >= VerbosityLevels.DIAGNOSE:
             print('Backward Residual error :%0.6f (%0.6f)'
                   % (stats[1], stats[2]))
 
@@ -1044,7 +1021,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 
         # Report mean and std for the composed deformation field
         residual, stats = self.forward_model.compute_inversion_error()
-        if self.verbosity > 0:
+        if self.verbosity >= VerbosityLevels.DIAGNOSE:
             print('Final residual error: %0.6f (%0.6f)' % (stats[1], stats[2]))
 
     def optimize(self, static, moving, static_affine=None, moving_affine=None, prealign=None):
@@ -1074,7 +1051,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             forward_model.transform_inverse). 
 
         """
-        print "Pre-align:",prealign
+        if self.verbosity >= VerbosityLevels.DEBUG:
+            print "Pre-align:",prealign
+
         self._init_optimizer(static, moving, static_affine, moving_affine, prealign)
         self._optimize()
         self._end_optimizer()

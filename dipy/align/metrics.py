@@ -587,13 +587,14 @@ class EMMetric(SimilarityMetric):
         sigma_reg_2 = 0.5
 
         if forward_step:
-            gradient = self.gradient_moving
-            delta_field = self.moving_image - self.staticq_means_field
-            sigma_field = self.staticq_sigma_field
-        else:
             gradient = self.gradient_static
-            delta_field = self.static_image - self.movingq_means_field
+            delta_field = self.movingq_means_field - self.static_image
             sigma_field = self.movingq_sigma_field
+        else:
+            gradient = self.gradient_moving
+            delta_field = self.staticq_means_field - self.moving_image
+            sigma_field = self.staticq_sigma_field
+
         if self.dim == 2:
             step, self.energy = em.compute_em_demons_step_2d(delta_field,
                                                              sigma_field,
