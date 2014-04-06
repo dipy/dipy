@@ -630,7 +630,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                  step_length = 0.25,
                  ss_sigma_factor = 0.5,
                  opt_tol = 1e-4,
-                 inv_iter = 40,
+                 inv_iter = 20,
                  inv_tol = 1e-3,
                  call_back = None,
                  update_function=None):
