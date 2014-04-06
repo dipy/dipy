@@ -1,11 +1,19 @@
 import numpy as np
 from nibabel.affines import apply_affine
+from nibabel.quaternions import quat2angle_axis, mat2quat
 from dipy.tracking.distances import bundles_distances_mdf
-#from scipy.optimize import fmin_powell, fmin_l_bfgs_b
+from scipy.linalg import det
 from dipy.core.optimize import Optimizer
 from dipy.tracking.metrics import downsample
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
                             _bundle_minimum_distance_rigid_nomat)
+
+MAX_DIST = 1e10
+LOG_MAX_DIST = np.log(MAX_DIST)
+
+
+def threshold(x, th):
+    return np.maximum(np.minimum(x, th), -th)
 
 
 class StreamlineDistanceMetric(object):
@@ -381,6 +389,24 @@ def rotation_vec2mat(r):
     return R
 
 
+def rotation_mat2vec(R):
+    """ Rotation vector from rotation matrix `R`
+
+    Parameters
+    ----------
+    R : (3,3) array-like
+        Rotation matrix
+
+    Returns
+    -------
+    vec : (3,) array
+        Rotation vector, where norm of `vec` is the angle ``theta``, and the
+        axis of rotation is given by ``vec / theta``
+    """
+    ax, angle = quat2angle_axis(mat2quat(R))
+    return ax * angle
+
+
 def matrix44(t, dtype=np.double):
     """ Compose a 4x4 transformation matrix
 
@@ -417,12 +443,30 @@ def matrix44(t, dtype=np.double):
     elif size == 7:
         T[0:3, 0:3] = t[6] * R
     else:
-        S = np.diag(np.exp(t[6:9]))
+        S = np.diag(np.exp(threshold(t[6:9], LOG_MAX_DIST)))
         Q = rotation_vec2mat(t[9:12])
         # Beware: R*s*Q
         T[0:3, 0:3] = np.dot(R, np.dot(S, Q))
-    T[0:3, 3] = t[0:3]
+    T[0:3, 3] = threshold(t[0:3], MAX_DIST)
+
     return T
+
+
+def from_matrix44_rigid(mat):
+    """ Given a 4x4 rigid matrix return vector with 3 translations and 3
+    rotation angles in degrees.
+    """
+
+    vec = np.zeros(6)
+    vec[:3] = mat[:3, 3]
+
+    R = mat[:3, :3]
+    if det(R) < 0:
+        R = -R
+    vec[3:6] = rotation_mat2vec(R)
+    vec[3:6] = np.rad2deg(vec[3:6])
+
+    return vec
 
 
 def transform_streamlines(streamlines, mat):

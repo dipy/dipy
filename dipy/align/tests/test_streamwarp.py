@@ -6,6 +6,7 @@ from numpy.testing import (run_module_suite,
                            assert_array_almost_equal)
 from dipy.align.streamwarp import (transform_streamlines,
                                    matrix44,
+                                   from_matrix44_rigid,
                                    BundleSumDistance,
                                    center_streamlines)
 from dipy.tracking.metrics import downsample
@@ -19,6 +20,7 @@ from dipy.align.streamwarp import (StreamlineRigidRegistration,
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
                             _bundle_minimum_distance_rigid_nomat)
 from dipy.tracking.distances import bundles_distances_mdf
+import scipy
 
 
 def simulated_bundle(no_streamlines=10, waves=False, no_pts=12):
@@ -261,7 +263,20 @@ def test_openmp_locks():
     assert_equal(dist1, dist2)
 
 
+
+
+
+def test_from_to_rigid():
+
+    t = np.array([10, 2, 3, 0.1, 20., 30.])
+
+    mat = matrix44(t)
+
+    vec = from_matrix44_rigid(mat)
+
+    assert_array_almost_equal(t, vec)
+
 if __name__ == '__main__':
 
     run_module_suite()
-    #test_rigid_parallel_lines()
+
