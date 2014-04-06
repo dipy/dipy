@@ -248,10 +248,10 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                         localCorrelation = sfm * sfm / (sff * smm)
                     if(localCorrelation < 1):  # avoid bad values...
                         energy -= localCorrelation
-                    temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
-                    out[s, r, c, 0] += temp * grad_moving[s, r, c, 0]
-                    out[s, r, c, 1] += temp * grad_moving[s, r, c, 1]
-                    out[s, r, c, 2] += temp * grad_moving[s, r, c, 2]
+                    temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
+                    out[s, r, c, 0] -= temp * grad_static[s, r, c, 0]
+                    out[s, r, c, 1] -= temp * grad_static[s, r, c, 1]
+                    out[s, r, c, 2] -= temp * grad_static[s, r, c, 2]
     return out, energy
 
 @cython.boundscheck(False)
@@ -291,9 +291,9 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
     this parameters as a placeholder for future investigation
     """
     cdef:
-        int ns = grad_static.shape[0]
-        int nr = grad_static.shape[1]
-        int nc = grad_static.shape[2]
+        int ns = grad_moving.shape[0]
+        int nr = grad_moving.shape[1]
+        int nc = grad_moving.shape[2]
         int s,r,c
         double energy = 0
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
@@ -317,10 +317,10 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
                         localCorrelation = sfm * sfm / (sff * smm)
                     if(localCorrelation < 1):  # avoid bad values...
                         energy -= localCorrelation
-                    temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
-                    out[s, r, c, 0] += temp * grad_static[s, r, c, 0]
-                    out[s, r, c, 1] += temp * grad_static[s, r, c, 1]
-                    out[s, r, c, 2] += temp * grad_static[s, r, c, 2]
+                    temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
+                    out[s, r, c, 0] -= temp * grad_moving[s, r, c, 0]
+                    out[s, r, c, 1] -= temp * grad_moving[s, r, c, 1]
+                    out[s, r, c, 2] -= temp * grad_moving[s, r, c, 2]
     return out, energy
 
 
@@ -538,9 +538,9 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                     localCorrelation = sfm * sfm / (sff * smm)
                 if(localCorrelation < 1):  # avoid bad values...
                     energy -= localCorrelation
-                temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
-                out[r, c, 0] += temp * grad_moving[r, c, 0]
-                out[r, c, 1] += temp * grad_moving[r, c, 1]
+                temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
+                out[r, c, 0] -= temp * grad_static[r, c, 0]
+                out[r, c, 1] -= temp * grad_static[r, c, 1]
     return out, energy
 
 
@@ -580,8 +580,8 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
     this parameters as a placeholder for future investigation
     """
     cdef:
-        int nr = grad_static.shape[0]
-        int nc = grad_static.shape[1]
+        int nr = grad_moving.shape[0]
+        int nc = grad_moving.shape[1]
         int r,c
         double energy = 0
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
@@ -604,7 +604,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
                     localCorrelation = sfm * sfm / (sff * smm)
                 if(localCorrelation < 1):  # avoid bad values...
                     energy -= localCorrelation
-                temp = 2.0 * sfm / (sff * smm) * (Ji - sfm / sff * Ii)
-                out[r, c, 0] += temp * grad_static[r, c, 0]
-                out[r, c, 1] += temp * grad_static[r, c, 1]
+                temp = 2.0 * sfm / (sff * smm) * (Ii - sfm / smm * Ji)
+                out[r, c, 0] -= temp * grad_moving[r, c, 0]
+                out[r, c, 1] -= temp * grad_moving[r, c, 1]
     return out, energy

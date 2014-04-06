@@ -24,6 +24,11 @@ def getRotationMatrix(angles):
 
 
 def test_cc_factors_2d():
+    r"""
+    Compares the output of the optimized function to compute the cross-
+    correlation factors against a direct (not optimized, but less error prone)
+    implementation. 
+    """
     import dipy.align.cc as cc
     a = np.array(range(20*20), dtype = floating).reshape(20,20)
     b = np.array(range(20*20)[::-1], dtype = floating).reshape(20,20)
@@ -33,6 +38,16 @@ def test_cc_factors_2d():
 
 
 def test_warping_2d():
+    r"""
+    Creates a random displacement field that exactly maps pixels from an input
+    image to an output image. First a discrete random assignment between the 
+    images is generated, then each pair of mapped points are transformed to
+    the physical space by assigning a pair of arbitrary, fixed affine matrices
+    to input and output images, and finaly the diference between their positions
+    is taken as the displacement vector. The resulting displacement, although 
+    operating in physical space, maps the points exactly (up to numerical 
+    precision).
+    """
     from dipy.align import floating
     import dipy.align.imwarp as imwarp
     import dipy.align.vector_fields as vfu
@@ -58,10 +73,10 @@ def test_warping_2d():
     input_affine = gt_affine
     target_affine = gt_affine
     disp, assign = vfu.create_random_displacement_2d(np.array(input_shape, dtype=np.int32),
-                                                     np.array(input_affine).astype(floating), 
+                                                     input_affine, 
                                                      np.array(target_shape, dtype=np.int32),
-                                                     np.array(target_affine).astype(floating))
-    disp = np.array(disp)
+                                                     target_affine)
+    disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
     moving_image = np.ndarray(target_shape, dtype=floating)
@@ -76,8 +91,8 @@ def test_warping_2d():
     #warp the moving image using the synthetic displacement field
     target_affine_inv = np.linalg.inv(target_affine)
     input_affine_inv = np.linalg.inv(input_affine)
-    affine_index = target_affine_inv.dot(input_affine).astype(floating)
-    affine_disp = target_affine_inv.astype(floating)
+    affine_index = target_affine_inv.dot(input_affine)
+    affine_disp = target_affine_inv
 
     #apply the implementation under test
     warped = np.array(vfu.warp_image(moving_image, disp, None, affine_index, affine_disp))
@@ -102,6 +117,16 @@ def test_warping_2d():
 
 
 def test_warping_3d():
+    r"""
+    Creates a random displacement field that exactly maps pixels from an input
+    image to an output image. First a discrete random assignment between the 
+    images is generated, then each pair of mapped points are transformed to
+    the physical space by assigning a pair of arbitrary, fixed affine matrices
+    to input and output images, and finaly the diference between their positions
+    is taken as the displacement vector. The resulting displacement, although 
+    operating in physical space, maps the points exactly (up to numerical 
+    precision).
+    """
     from dipy.align import floating
     import dipy.align.imwarp as imwarp
     import dipy.align.vector_fields as vfu
@@ -130,9 +155,9 @@ def test_warping_3d():
     input_affine = gt_affine
     target_affine = gt_affine
     disp, assign = vfu.create_random_displacement_3d(np.array(input_shape, dtype=np.int32),
-                                                     np.array(input_affine).astype(floating), 
+                                                     input_affine, 
                                                      np.array(target_shape, dtype=np.int32),
-                                                     np.array(target_affine).astype(floating))
+                                                     target_affine)
     disp = np.array(disp)
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
@@ -176,6 +201,9 @@ def test_warping_3d():
 
 
 def test_compose_vector_fields_2d():
+    r"""
+    Creates two random displacement fields
+    """
     from dipy.align import floating
     import dipy.align.imwarp as imwarp
     import dipy.align.vector_fields as vfu
