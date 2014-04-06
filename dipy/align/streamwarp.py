@@ -1,3 +1,4 @@
+import abc
 import numpy as np
 from nibabel.affines import apply_affine
 from nibabel.quaternions import quat2angle_axis, mat2quat
@@ -18,29 +19,24 @@ def threshold(x, th):
 
 class StreamlineDistanceMetric(object):
 
-    def __init__(self, xopt_initial):
+    def __init__(self):
         """ An abstract class for the metric used for streamline registration
 
         If the two sets of streamlines match exactly then method ``distance``
         of this object should be minimum.
-
-        Parameters
-        ----------
-        xopt_initial : list
-            initial set of parameters for the optimizer
         """
-
-        self.xopt_initial = xopt_initial
         self.static = None
         self.moving = None
 
-    def feed(self, static, moving):
-        """ set static and moving sets
-        """
-
+    @abc.abstractmethod
+    def set_static(self, static):
         self.static = static
+
+    @abc.abstractmethod
+    def set_moving(self, moving):
         self.moving = moving
 
+    @abc.abstractmethod
     def distance(self, xopt):
         """ calculate distance for current set of parameters
         """
@@ -55,12 +51,14 @@ class BundleMinDistance(StreamlineDistanceMetric):
 
 class BundleMinDistanceFast(StreamlineDistanceMetric):
 
-    def feed(self, static, moving):
+    def set_static(self, static):
         static_centered_pts, st_idx = unlist_streamlines(static)
         self.static_centered_pts = np.ascontiguousarray(static_centered_pts,
                                                         dtype=np.float64)
-        self.moving_centered_pts, mv_idx = unlist_streamlines(moving)
         self.block_size = st_idx[0]
+
+    def set_moving(self, moving):
+        self.moving_centered_pts, mv_idx = unlist_streamlines(moving)
 
     def distance(self, xopt):
         return bundle_min_distance_fast(xopt,
@@ -77,7 +75,7 @@ class BundleSumDistance(StreamlineDistanceMetric):
 
 class StreamlineRigidRegistration(object):
 
-    def __init__(self, metric=None, method='L-BFGS-B',
+    def __init__(self, metric=None, x0=None, method='L-BFGS-B',
                  bounds=None, fast=True, disp=False, options=None):
         r""" Rigid registration of 2 sets of streamlines [Garyfallidis14]_.
 
@@ -87,6 +85,9 @@ class StreamlineRigidRegistration(object):
             if None and fast is False then the BMD distance is used. If fast
             is True then a faster implementation of BMD is used. Otherwise,
             use the given distance metric.
+
+        x0 : None or array
+            Initial parametrization. If None ``x0=np.ones(6)``.
 
         method : str,
             'L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
@@ -117,11 +118,15 @@ class StreamlineRigidRegistration(object):
         """
 
         self.metric = metric
+        self.x0 = x0
+        if self.x0 is None:
+            self.x0 = np.ones(6)
+
         if self.metric is None:
             if fast:
-                self.metric = BundleMinDistanceFast(np.ones(6).tolist())
+                self.metric = BundleMinDistanceFast()
             else:
-                self.metric = BundleMinDistance(np.ones(6).tolist())
+                self.metric = BundleMinDistance()
 
         self.disp = disp
         self.method = method
@@ -161,7 +166,8 @@ class StreamlineRigidRegistration(object):
         static_centered, static_shift = center_streamlines(static)
         moving_centered, moving_shift = center_streamlines(moving)
 
-        self.metric.feed(static_centered, moving_centered)
+        self.metric.set_static(static_centered)
+        self.metric.set_moving(moving_centered)
 
         distance = self.metric.distance
 
@@ -170,7 +176,7 @@ class StreamlineRigidRegistration(object):
             if self.options is None:
                 self.options = {'xtol': 1e-6, 'ftol':1e-6, 'maxiter':1e6}
 
-            opt = Optimizer(distance, self.metric.xopt_initial,
+            opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method, options=self.options)
 
         if self.method == 'L-BFGS-B':
@@ -178,7 +184,7 @@ class StreamlineRigidRegistration(object):
             if self.options is None:
                 self.options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8}
 
-            opt = Optimizer(distance, self.metric.xopt_initial,
+            opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method,
                             bounds=self.bounds, options=self.options)
 

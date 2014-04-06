@@ -58,8 +58,9 @@ def test_rigid_parallel_lines():
     mat = matrix44([20, 0, 10, 0, 40, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
-    bundle_sum_distance = BundleSumDistance([0, 0, 0, 0, 0, 0.])
+    bundle_sum_distance = BundleSumDistance()
     srr = StreamlineRigidRegistration(metric=bundle_sum_distance,
+                                      x0=np.zeros(6),
                                       method='L-BFGS-B',
                                       bounds=None,
                                       fast=False,
@@ -77,8 +78,9 @@ def test_rigid_real_bundles():
     mat = matrix44([0, 0, 20, 45, 0, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
-    bundle_sum_distance = BundleSumDistance([0, 0, 0, 0, 0, 0.])
+    bundle_sum_distance = BundleSumDistance()
     srr = StreamlineRigidRegistration(bundle_sum_distance,
+                                      x0=np.zeros(6),
                                       method='Powell',
                                       fast=False)
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
