@@ -14,6 +14,54 @@ import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric
+import dipy.align.imwarp as imwarp
+from dipy.align import VerbosityLevels
+
+
+def renormalize_image(image):
+    m=np.min(image)
+    M=np.max(image)
+    if(M-m<1e-8):
+        return image
+    return 127.0*(image-m)/(M-m)
+
+def overlay_images(L, R, ltitle='Left', rtitle='Right', fname=None):
+    sh=L.shape
+
+    colorImage=np.zeros(shape=(sh[0], sh[1], 3), dtype=np.int8)
+    ll=renormalize_image(L).astype(np.int8)
+    rr=renormalize_image(R).astype(np.int8)
+    colorImage[...,0]=ll*(ll>ll[0,0])
+    colorImage[...,1]=rr*(rr>rr[0,0])
+
+    plt.figure()
+    plt.subplot(1,3,1)
+    plt.imshow(ll, cmap = plt.cm.gray)
+    plt.title(ltitle)
+    plt.subplot(1,3,2)
+    plt.imshow(colorImage)
+    plt.title('Overlay')
+    plt.subplot(1,3,3)
+    plt.imshow(rr, cmap = plt.cm.gray)
+    plt.title(rtitle)
+    if fname is not None:
+        from time import sleep
+        sleep(1)
+        plt.savefig(fname, bbox_inches='tight')
+
+
+def callback_CC(optimizer, status):
+    if status == imwarp.RegistrationStages.SCALE_END:
+        wmoving = optimizer.metric.moving_image
+        wstatic = optimizer.metric.static_image
+        if optimizer.dim == 2:
+            overlay_images(wmoving, wstatic, 'Moving', 'Static')
+        else:
+            overlay_images(wmoving[:,wmoving.shape[1]//2,:], 
+                           wstatic[:,wstatic.shape[1]//2,:], 
+                           'Moving', 'Static')
+
+
 
 
 fname_moving = get_data('reg_o')
@@ -60,7 +108,7 @@ of Squared Differences (SSD) is a good choice. We create a metric specifying
 2 as the dimension of our images' domain
 """
 
-metric = SSDMetric(dim = 2, smooth=4, inner_iter=10) 
+metric = SSDMetric(dim = 2, step_type='demons') 
 
 """
 Now we define an instance of the optimizer of the metric. The SyN algorithm uses
@@ -72,37 +120,17 @@ the pyramid. The 0-th level corresponds to the finest resolution.
 opt_iter = [25, 50, 100, 200]
 #opt_iter = [1, 1, 1, 1]
 
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
+optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25, inv_iter=40)
+optimizer.callback = callback_CC
 
 """
 Now we execute the optimization, which returns a DiffeomorphicMap object,
 that can be used to register images back and forth between the static and moving
 domains
 """
-#create asynthetic transformation for the moving image
-nr = static.shape[0]
-nc = static.shape[1]
-trans = np.array([[1, 0, -0.5*nr],
-                  [0, 1, -0.5*nc],
-                  [0, 0, 1]])
-trans_inv = np.linalg.inv(trans)
-scale = np.array([[1.5, 0, 0],
-                  [0, 1.5, 0],
-                  [0, 0, 1]])
-gt_affine = trans_inv.dot(scale.dot(trans))
-gt_affine_inv = np.linalg.inv(gt_affine)
 
-static_affine = scale
-moving_affine = scale
-# static_affine = np.eye(3)
-# moving_affine = np.eye(3)
-static_affine = None
-moving_affine = None
-pre_align = None
-
-
-optimizer.verbosity = 2
-mapping = optimizer.optimize(static, moving, static_affine, moving_affine, pre_align)
+optimizer.verbosity = VerbosityLevels.DEBUG
+mapping = optimizer.optimize(static, moving)
 
 """
 It is a good idea to visualize the resulting deformation map to make sure the
