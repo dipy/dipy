@@ -78,19 +78,6 @@ the RGB images (in this case the three channels are equal)
 moving = np.array(moving[:, :, 0])
 static = np.array(static[:, :, 0])
 
-#moving = moving[:240,:240]
-
-#static = moving.copy()
-
-plt.figure()
-plt.subplot(1, 2, 1)
-plt.imshow(static, cmap=plt.cm.gray)
-plt.title('Static')
-plt.subplot(1, 2, 2)
-plt.imshow(moving, cmap=plt.cm.gray)
-plt.title('Moving')
-plt.savefig('input_images.png', bbox_inches='tight')
-
 """
 .. figure:: input_images.png
    :align: center
@@ -118,7 +105,6 @@ the pyramid. The 0-th level corresponds to the finest resolution.
 """
 
 opt_iter = [25, 50, 100, 200]
-#opt_iter = [1, 1, 1, 1]
 
 optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25, inv_iter=40)
 optimizer.callback = callback_CC

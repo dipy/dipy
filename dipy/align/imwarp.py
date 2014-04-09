@@ -9,7 +9,6 @@ from dipy.align import VerbosityLevels
 from dipy.align import enum
 
 
-
 RegistrationStages = enum(INIT_START=0, 
                           INIT_END=1,
                           OPT_START=2,
@@ -22,12 +21,32 @@ r"""
 RegistrationStages
 This enum defines the different stages which the Volumentric Registration
 may be in. The value of the stage is passed as a parameter to the call-back
-function so that it can react accordingly.  
+function so that it can react accordingly.
+
+INIT_START: optimizer initialization starts
+INIT_END: optimizer initialization ends
+OPT_START: optimization starts
+OPT_END: optimization ends
+SCALE_START: optimization at a new scale space resolution starts
+SCALE_END: optimization at the current scale space resolution ends
+ITER_START: a new iteration starts
+ITER_END: the current iteration ends
+
 """
 
 def mult_aff(A, B):
     r"""
     Returns the matrix product A.dot(B) considering None as the identity
+
+    Parameters
+    ----------
+    A : array, shape (n,k)
+    B : array, shape (k,m)
+
+    Returns 
+    -------
+    The matrix product A.dot(B). If any of the input matrices is None, it is 
+    treated as the identity matrix. If both matrices are None, None is returned.
     """
     if A is None:
         return B
@@ -36,7 +55,30 @@ def mult_aff(A, B):
     return A.dot(B)
 
 
-def get_direction_and_scalings(affine, dim):
+def get_direction_and_spacings(affine, dim):
+    r"""
+    Extracts the rotational and spacing (voxel dimensions) components from a 
+    matrix. An image gradient represents the local variation of the image's gray
+    values per voxel. Since we are iterating on the physical space, we need to
+    compute the gradients as variation per millimiter, so we need to divide each
+    gradient's component by the voxel size along the corresponding axis, that's
+    what the spacings are used for. Since the image's gradients are oriented 
+    along the grid axes, we also need to re-orient the gradients to be given
+    in physical space coordinates.
+
+    Parameters
+    ----------
+    affine : array, shape (k, k), k=3,4
+        the matrix transforming grid coordinates to physical space.
+
+    Returns
+    -------
+    direction : array, shape (k-1, k-1)
+        the rotational component of the input matrix
+    spacings : array, shape (k-1,)
+        the scaling component (voxel size) of the matrix
+
+    """
     if affine == None:
         return np.eye(dim), np.ones(dim)
     dim = affine.shape[1]-1
@@ -51,16 +93,48 @@ def get_direction_and_scalings(affine, dim):
     A = affine[:dim,:dim]
     return A.dot(np.diag(1.0/scalings)), scalings
 
+
 class ScaleSpace(object):
-    def __init__(self, image, num_levels, input_affine, input_spacing, sigma_factor=0.2, mask0 = False):
+    def __init__(self, image, num_levels,
+                 input_affine = None,
+                 input_spacing = None,
+                 sigma_factor = 0.2,
+                 mask0 = False):
         r""" ScaleSpace
-        Implements the Scale Space representation of an image
+        Computes the Scale Space representation of an image. The scale space is
+        simply a list of images produced by smoothing the input image with a
+        Gaussian kernel with increasing smoothing parameter. If the image's
+        voxels are isotropic, the smoothing will be the same along all 
+        directions: at level L=0,1,..., the sigma is given by s * ( 2^L - 1 ).
+        If the voxel dimensions are not isotropic, then the smoothing is
+        weaker along low resolution directions.
+
+        Parameters
+        ----------
+        image : array, shape (r,c) or (s, r, c) where s is the number of slices,
+            r is the number of rows and c is the number of columns of the input
+            image.
+        num_levels : int
+            the desired number of levels (resolutions) of the scale space
+        input_affine : array, shape (k, k), k=3,4 (for either 2D or 3D images)
+            the matrix transforming voxel coordinates to space coordinates in
+            the input image discretization
+        input_spacing : array, shape (k-1,)
+            the spacing (voxel size) between voxels in physical space 
+        sigma_factor : float
+            the smoothing factor to be used in the construction of the scale
+            space.
+        mask0 : Boolean
+            if True, all smoothed images will be zero at all voxels that are
+            zero in the input image. 
+
         """
         self.dim = len(image.shape)
         self.num_levels = num_levels
         input_size = np.array(image.shape)
         if mask0:
             mask = np.asarray(image>0, dtype=np.int32)
+        
         #normalize input image to [0,1]
         img = (image - image.min())/(image.max() - image.min())        
 
@@ -125,11 +199,38 @@ class ScaleSpace(object):
             self.sigmas.append(sigmas)
 
     def get_expand_factors(self, from_level, to_level):
+        r"""
+        Given two scale space resolutions a = from_level, b = to_level, 
+        returns the ratio of voxels size at level b to voxel size at level a
+        (the factor that must be used to multiply voxels at level a to
+        'expand' them to level b).
+        
+        Parameters
+        ----------
+        from_level : int, 0 <= from_level < L, (L = number of resolutions)
+            the resolution to expand voxels from
+        to_level : int, 0 <= to_level < from_level
+            the resolution to expand voxels to
+
+        Returns
+        -------
+        factors : array, shape (k,), k=2,3
+            the expand factors (a scalar for each voxel dimension)
+
+        """
         factors = np.array(self.spacings[to_level]) / \
                   np.array(self.spacings[from_level])
         return factors
 
     def print_level(self, level):
+        r"""
+        Prints the properties of a level of this scale space to standard output
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to be printed 
+        """
         print 'Domain shape:', self.get_domain_shape(level)
         print 'Spacing:', self.get_spacing(level)
         print 'Scaling:', self.get_scaling(level)
@@ -137,36 +238,143 @@ class ScaleSpace(object):
         print 'Sigmas:', self.get_sigmas(level)
 
     def get_image(self, level):
+        r"""
+        Returns the smoothed image at the requested level in the Scale Space.
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to get the smooth image from
+
+        Returns
+        -------
+            the smooth image at the requested resolution or None if an invalid
+            level was requested
+        """
         if 0 <= level < self.num_levels:
             return self.images[level]
         return None
 
     def get_domain_shape(self, level):
+        r"""
+        Returns the shape the subsampled image must have at a particular
+        resolution of the scale space (note that this object does not explicitly
+        subsample the smoothed images, but only provides the properties
+        the subsampled images must have).
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to get the subsampled shape from
+
+        Returns
+        -------
+            the subsampled shape at the requested resolution or None if an invalid
+            level was requested
+        """
         if 0 <= level < self.num_levels:
             return self.domain_shapes[level]
         return None
 
     def get_spacing(self, level):
+        r"""
+        Returns the spacings (voxel sizes) the subsampled image must have at a
+        particular resolution of the scale space (note that this object does 
+        not explicitly subsample the smoothed images, but only provides the
+        properties the subsampled images must have).
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to get the subsampled shape from
+
+        Returns
+        -------
+        the spacings (voxel sizes) at the requested resolution or None if an
+        invalid level was requested
+        """
         if 0 <= level < self.num_levels:
             return self.spacings[level]
         return None
 
     def get_scaling(self, level):
+        r"""
+        Returns the scaling factor that needs to be applied to the input spacing
+        (the voxel sizes of the image at level 0 of the scale space) to
+        transform them to voxel sizes at the requested level.
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to get the scalings from
+
+        Returns
+        -------
+        the scaling factors from the original spacing to the spacings at the 
+        requested level
+
+        """
         if 0 <= level < self.num_levels:
             return self.scalings[level]
         return None
 
     def get_affine(self, level):
+        r"""
+        Returns the voxel-to-space transformation associated to the subsampled
+        image at a particular resolution of the scale space (note that this 
+        object does not explicitly subsample the smoothed images, but only 
+        provides the properties the subsampled images must have).
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to get affine transform from
+
+        Returns
+        -------
+            the affine (voxel-to-space) transform at the requested resolution or
+            None if an invalid level was requested
+        """
         if 0 <= level < self.num_levels:
             return self.affines[level]
         return None
 
     def get_affine_inv(self, level):
+        r"""
+        Returns the space-to-voxel transformation associated to the subsampled
+        image at a particular resolution of the scale space (note that this 
+        object does not explicitly subsample the smoothed images, but only 
+        provides the properties the subsampled images must have).
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to get the inverse transform from
+
+        Returns
+        -------
+        the inverse (space-to-voxel) transform at the requested resolution or 
+        None if an invalid level was requested
+        """
         if 0 <= level < self.num_levels:
             return self.affine_invs[level]
         return None
 
     def get_sigmas(self, level):
+        r"""
+        Returns the smoothing parameters (a scalar for each axis) used at the
+        requested level of the scale space 
+
+        Parameters
+        ----------
+        level : int, 0 <= from_level < L, (L = number of resolutions)
+            the scale space level to get the smoothing parameters from
+
+        Returns
+        -------
+        the smoothing parameters at the requested level
+
+        """
         if 0 <= level < self.num_levels:
             return self.sigmas[level]
         return None        
@@ -230,11 +438,37 @@ class DiffeomorphicMap(object):
         r""" DiffeomorphicMap
 
         Implements a diffeomorphic transformation on the physical space. The 
-        deformation fields share the same discretization of shape domain_shape
-        and voxel-to-space matrix domain_affine. The input coordinates (in the 
-        physical coordinates) are first aligned using input_prealign, and then 
-        displaced using the corresponding vector field interpolated at the aligned
-        coordinates (reference space).
+        deformation fields encoding the direct and iverse transformations
+        share the same domain discretization (both the discretization grid shape
+        and voxel-to-space matrix). The input coordinates (physical coordinates)
+        are first aligned using input_prealign, and then displaced using the 
+        corresponding vector field interpolated at the aligned coordinates.
+
+        Parameters
+        ----------
+        dim : int, 2 or 3
+            the transformation's dimension
+        domain_shape : array, shape (dim,)
+            the number of slices (if 3D), rows and columns of the defformation
+            field's discretization
+        domain_affine : array, shape (dim+1, dim+1)
+            the voxel-to-space transformation betwen the deformation firld's grid
+            and space
+        input_shape : array, shape (dim,)
+            the number of slices (if 3D), rows and columns of the images that are
+            'normally' warped using this transformation in the forward direction
+            (this will provide default transformation parameters to warp 
+            images under this transformation). By default, we asume that the
+            inverse transformation is 'normally' used to warp images with the
+            same discretization and voxed-to-space transformation as the 
+            deformation field grid.
+        input_affine : array, shape (dim+1, dim+1)
+            the voxel-to-space transformation of images that are 'normally'
+            warped using this transformation (in the forward direction).
+        input_prealign : array, shape (dim+1, dim+1)
+            the linear transformation to be applied to align input images to
+            the reference space before warping under the deformation field.
+
         """
 
         self.dim = dim
@@ -251,18 +485,31 @@ class DiffeomorphicMap(object):
         self.is_inverse = False
 
     def get_forward_field(self):
+        r"""
+        Returns the deformation field that must be used to warp an image under
+        this transformation in the forward direction (note the 'is_inverse'
+        flag). 
+        """
         if self.is_inverse:
             return self.backward
         else:
             return self.forward
 
     def get_backward_field(self):
+        r"""
+        Returns the deformation field that must be used to warp an image under
+        this transformation in the backward direction (note the 'is_inverse'
+        flag). 
+        """
         if self.is_inverse:
             return self.forward
         else:
             return self.backward
 
     def allocate(self):
+        r"""
+        Creates a zero displacement field (the identity transformation).
+        """
         self.forward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
         self.backward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
 
@@ -271,18 +518,12 @@ class DiffeomorphicMap(object):
         r"""
         Deforms the input image under this diffeomorphic map in the forward direction.
         Since the mapping is defined in the physical space, the user must specify 
-        the sampling grid shape and its voxel-to-space mapping. By default, 
-        the samplig grid will be self.input_shape (exception raised if it's None), 
-        with default voxel-to-space mapping given by self.input_affine (identity, 
-        if None). If world_to_image is None, self.domain_affine_inv is used (identity,
-        if it's None as well).
+        the sampling grid shape and its space-to-voxel mapping. By default,
+        the transformation will use the discretization information given at 
+        initialization.
 
-        The forward warping with pre-aligning P is give by the interpolation:
-        I[W*backward[Dinv*P*S*i] + W*P*S*i] where i is an index in the sampling 
-        domain, S is the sampling affine, P is the pre-aligning matrix, Dinv is 
-        the inverse of domain affine (Dinv maps world points to voxels in the 
-        displacement field discretization) and W is the world-to-image mapping. 
         """
+        #if no world-to-image transform is provided, 
         if world_to_image is None:
             world_to_image = self.domain_affine_inv
         if sampling_shape is None:
@@ -711,8 +952,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print 'Not ready'
             return False
         #Extract information from the affine matrices to create the scale space
-        static_direction, static_spacing = get_direction_and_scalings(static_affine, self.dim)
-        moving_direction, moving_spacing = get_direction_and_scalings(moving_affine, self.dim)
+        static_direction, static_spacing = get_direction_and_spacings(static_affine, self.dim)
+        moving_direction, moving_spacing = get_direction_and_spacings(moving_affine, self.dim)
 
         #the images' directions don't change with scale
         self.static_direction = static_direction
