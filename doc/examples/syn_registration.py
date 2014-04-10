@@ -141,7 +141,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
                                  (ncols_moving+delta)/(delta+1), delta)
     lattice_moving=lattice_moving[0:nrows_moving, 0:ncols_moving]
     #Warp in the forward direction (since the lattice is in the moving domain)
-    warped_forward = mapping.transform(lattice_moving, 'tri')
+    warped_forward = mapping.transform(lattice_moving, 'lin')
 
     #Create a grid on the static domain
     nrows_static = mapping.backward.shape[0]
@@ -151,7 +151,7 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
                                  (ncols_static+delta)/(delta+1), delta)
     lattice_static=lattice_static[0:nrows_static, 0:ncols_static]
     #Warp in the backward direction (since the lattice is in the static domain)
-    warped_backward = mapping.transform_inverse(lattice_static, 'tri')
+    warped_backward = mapping.transform_inverse(lattice_static, 'lin')
 
     #Now plot the grids
     plt.figure()
@@ -182,7 +182,7 @@ plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 Now let's warp the moving image and see if it gets similar to the static image
 """
 
-warped_moving = mapping.transform(moving, 'tri')
+warped_moving = mapping.transform(moving, 'lin')
 
 """
 To visually check the overlap of the static image with the transformed moving
@@ -229,7 +229,7 @@ And we can also apply the inverse mapping to verify that the warped static image
 is similar to the moving image 
 """
 
-warped_static = mapping.transform_inverse(static, 'tri')
+warped_static = mapping.transform_inverse(static, 'lin')
 overlay_images(warped_static, moving,'Warped static','Overlay','Moving', 
     'inverse_warp_result.png')
 

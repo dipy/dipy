@@ -56,34 +56,6 @@ cdef inline double _apply_affine_2d_x1(double x0, double x1, double h,
     """
     return aff[1, 0] * x0 + aff[1, 1] * x1 + h*aff[1, 2]
 
-cdef int mult_matrices(double[:,:] A, double[:,:] B, double[:,:] out) nogil:
-    cdef:
-        int nrA = A.shape[0]
-        int ncA = A.shape[1]
-        int nrB = B.shape[0]
-        int ncB = B.shape[1]
-        double s
-    if A is None:
-        if B is None:
-            return 0
-        else:
-            for i in range(nrB):
-                for j in  range(ncB):
-                    out[i,j] = B[i, j]
-    elif B is None:
-        for i in range(nrA):
-            for j in  range(ncA):
-                out[i,j] = A[i, j]
-    else:
-        for i in range(nrA):
-            for j in  range(ncB):
-                s = 0
-                for k in range(ncA):
-                    s += A[i,k]*B[k,j]
-                out[i,j] = s
-    return 1
-
-
 
 cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii, 
                                      double djj, floating[:] out) nogil:
@@ -330,6 +302,30 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
 cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume, 
                                              double dkk, double dii, double djj, 
                                              floating *out) nogil:
+    r"""
+    Interpolates the 3D image at (dkk, dii, djj) and stores the 
+    result in out. If (dkk, dii, djj) is outside the image's domain,
+    zero is written to out instead.
+
+    Parameters
+    ----------
+    image : array, shape (R, C)
+        the input 2D image
+    dkk : floating
+        the first coordinate of the interpolating position
+    dii : floating
+        the second coordinate of the interpolating position
+    djj : floating
+        the third coordinate of the interpolating position    
+    out : array, shape (2,)
+        the array which the interpolation result will be written to
+
+    Returns
+    -------
+    inside : int
+        if (dkk, dii, djj) is inside the domain of the image, 
+        inside == 1, otherwise inside == 0
+    """
     cdef:
         int ns = volume.shape[0]
         int nr = volume.shape[1]
@@ -490,29 +486,37 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                                     double time_scaling,
                                     floating[:, :, :] comp, double[:] stats) nogil:
     r"""
-    Computes the composition of the two 2-D displacemements d1 and d2 defined by
-    comp[r, c] = d2(d1[r, c]) for each (r,c) in the domain of d1. The evaluation
-    of d2 at non-lattice points is computed using trilinear interpolation. The
-    result is stored in comp.
+    Computes the composition of the two 2-D displacemements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using trilinear 
+    interpolation. The actual composition is computed as:
+
+    comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
+
+    where t = time_scaling, A = premult_index and B=premult_disp and i denotes
+    the voxel coordinates of a voxel in d1's grid. Using this parameters it is
+    possible to compose vector fields with arbitrary discretizations: let R and
+    S be the voxel-to-space transformation associated to d1 and d2, respectively
+    then the composition at a voxel with coordinates i in d1's grid is given
+    by:
+
+    comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
+
+    (the A*i terms cancel each other) where Sinv = S^{-1}
+    we can then define A = Sinv * R and B = Sinv to compute the composition using 
+    this function.
 
     Parameters
     ----------
     d1 : array, shape (R, C, 2)
-        first 2-D displacement field to be applied. R, C are the number of rows
-        and columns of the displacement field d1, respectively.
+        first displacement field to be applied. R, C are the number of rows
+        and columns of the displacement field, respectively.
     d2 : array, shape (R', C', 2)
         second displacement field to be applied. R', C' are the number of rows
-        and columns of the displacement field d2, respectively.
+        and columns of the displacement field, respectively.
     premult_index : array, shape (3, 3)
-        since the displacement fields are operating on the physical space, the
-        composition actually applied is of the form 
-        comp[i] = d1[i] + t*d2[R2^{-1}.dot(R1) * i + R2^{-1} * d1[i]], where t
-        is the time scaling, R1 and R2 are the affine matrices that transform
-        discrete indices to physical space in the d1 and d2 discretizations,
-        respectively. premult_index corresponds to the R2^{-1}.dot(R1) matrix
-        above
+        the matrix A in the explanation above
     premult_disp : array, shape (3, 3)
-        premult_disp corresponds to the R2^{-1} matrix in the above explanation
+        the matrix B in the explanation above
     time_scaling : float
         this corresponds to the time scaling 't' in the above explanation
     comp : array, shape (R, C, 2), same dimension as d1
@@ -520,6 +524,15 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     stats : array, shape (3,)
         on output, this array will contain three statistics of the vector norms
         of the composition (maximum, mean, standard_deviation)
+
+    Returns
+    -------
+    comp : array, shape (R, C, 2), same dimension as d1
+        on output, this array will contain the composition of the two fields
+    stats : array, shape (3,)
+        on output, this array will contain three statistics of the vector norms
+        of the composition (maximum, mean, standard_deviation)
+
     Notes
     -----
     If d1[r,c] lies outside the domain of d2, then comp[r,c] will contain a zero
@@ -582,9 +595,24 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                              double[:, :] premult_disp,
                              double time_scaling):
     r"""
-    Computes the composition of the two 2-D displacemements d1 and d2 defined by
-    comp[r, c] = d2(d1[r, c]) for each (r,c) in the domain of d1. The evaluation
-    of d2 at non-lattice points is computed using trilinear interpolation.
+    Computes the composition of the two 2-D displacemements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using trilinear 
+    interpolation. The actual composition is computed as:
+
+    comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
+
+    where t = time_scaling, A = premult_index and B=premult_disp and i denotes
+    the voxel coordinates of a voxel in d1's grid. Using this parameters it is
+    possible to compose vector fields with arbitrary discretizations: let R and
+    S be the voxel-to-space transformation associated to d1 and d2, respectively
+    then the composition at a voxel with coordinates i in d1's grid is given
+    by:
+
+    comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
+
+    (the A*i terms cancel each other) where Sinv = S^{-1}
+    we can then define A = Sinv * R and B = Sinv to compute the composition using 
+    this function.
 
     Parameters
     ----------
@@ -595,15 +623,9 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         second displacement field to be applied. R', C' are the number of rows
         and columns of the displacement field, respectively.
     premult_index : array, shape (3, 3)
-        since the displacement fields are operating on the physical space, the
-        composition actually applied is of the form 
-        comp[i] = d1[i] + t*d2[R2^{-1}.dot(R1) * i + R2^{-1} * d1[i]], where t
-        is the time scaling, R1 and R2 are the affine matrices that transform
-        discrete indices to physical space in the d1 and d2 discretizations,
-        respectively. premult_index corresponds to the R2^{-1}.dot(R1) matrix
-        above
+        the matrix A in the explanation above
     premult_disp : array, shape (3, 3)
-        premult_disp corresponds to the R2^{-1} matrix in the above explanation
+        the matrix B in the explanation above
     time_scaling : float
         this corresponds to the time scaling 't' in the above explanation
 
@@ -631,19 +653,47 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     floating[:, :, :, :] comp,
                                     double[:] stats) nogil:
     r"""
-    Computes the composition of the two 3-D displacemements d1 and d2 defined by
-    comp[s, r, c] = d2(d1[s, r, c]) for each (s,r,c) in the domain of d1.
-    The evaluation of d2 at non-lattice points is computed using trilinear
-    interpolation. The result is stored in comp.
+    Computes the composition of the two 3-D displacemements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using trilinear 
+    interpolation. The actual composition is computed as:
+
+    comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
+
+    where t = time_scaling, A = premult_index and B=premult_disp and i denotes
+    the voxel coordinates of a voxel in d1's grid. Using this parameters it is
+    possible to compose vector fields with arbitrary discretizations: let R and
+    S be the voxel-to-space transformation associated to d1 and d2, respectively
+    then the composition at a voxel with coordinates i in d1's grid is given
+    by:
+
+    comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
+
+    (the A*i terms cancel each other) where Sinv = S^{-1}
+    we can then define A = Sinv * R and B = Sinv to compute the composition using 
+    this function.
 
     Parameters
     ----------
     d1 : array, shape (S, R, C, 3)
-        first 3-D displacement field to be applied. S, R, C are the number of
-        slices, rows and columns of the displacement field d1, respectively.
+        first displacement field to be applied. S, R, C are the number of
+        slices, rows and columns of the displacement field, respectively.
     d2 : array, shape (S', R', C', 3)
-        second displacement field to be applied. S', R', C' are the number of
-        slices, rows and columns of the displacement field d2, respectively.
+        second displacement field to be applied. R', C' are the number of rows
+        and columns of the displacement field, respectively.
+    premult_index : array, shape (4, 4)
+        the matrix A in the explanation above
+    premult_disp : array, shape (4, 4)
+        the matrix B in the explanation above
+    time_scaling : float
+        this corresponds to the time scaling 't' in the above explanation
+    comp : array, shape (S, R, C, 3), same dimension as d1
+        on output, this array will contain the composition of the two fields
+    stats : array, shape (3,)
+        on output, this array will contain three statistics of the vector norms
+        of the composition (maximum, mean, standard_deviation)
+
+    Returns
+    -------
     comp : array, shape (S, R, C, 3), same dimension as d1
         on output, this array will contain the composition of the two fields
     stats : array, shape (3,)
@@ -652,8 +702,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
 
     Notes
     -----
-    If d1[s,r,c] lies outside the domain of d2, then comp[s,r,c] will contain a
-    zero vector.
+    If d1[s,r,c] lies outside the domain of d2, then comp[s,r,c] will contain
+    a zero vector.
     """
     cdef:
         int ns1 = d1.shape[0]
@@ -725,19 +775,39 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
                              double[:, :] premult_disp,
                              double time_scaling):
     r"""
-    Computes the composition of the two 3-D displacemements d1 and d2 defined by
-    comp[s, r, c] = d2(d1[s, r, c]) for each (s,r,c) in the domain of d1. The
-    evaluation of d2 at non-lattice points is computed using trilinear
-    interpolation.
+    Computes the composition of the two 3-D displacemements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using trilinear 
+    interpolation. The actual composition is computed as:
+
+    comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
+
+    where t = time_scaling, A = premult_index and B=premult_disp and i denotes
+    the voxel coordinates of a voxel in d1's grid. Using this parameters it is
+    possible to compose vector fields with arbitrary discretizations: let R and
+    S be the voxel-to-space transformation associated to d1 and d2, respectively
+    then the composition at a voxel with coordinates i in d1's grid is given
+    by:
+
+    comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
+
+    (the A*i terms cancel each other) where Sinv = S^{-1}
+    we can then define A = Sinv * R and B = Sinv to compute the composition using 
+    this function.
 
     Parameters
     ----------
     d1 : array, shape (S, R, C, 3)
-        first 3-D displacement field to be applied. S, R, C are the number of
+        first displacement field to be applied. S, R, C are the number of
         slices, rows and columns of the displacement field, respectively.
     d2 : array, shape (S', R', C', 3)
-        second displacement field to be applied. S', R', C' are the number of
-        slices, rows and columns of the displacement field, respectively.
+        second displacement field to be applied. R', C' are the number of rows
+        and columns of the displacement field, respectively.
+    premult_index : array, shape (4, 4)
+        the matrix A in the explanation above
+    premult_disp : array, shape (4, 4)
+        the matrix B in the explanation above
+    time_scaling : float
+        this corresponds to the time scaling 't' in the above explanation
 
     Returns
     -------
@@ -746,6 +816,11 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
     stats : array, shape (3,)
         on output, this array will contain three statistics of the vector norms
         of the composition (maximum, mean, standard_deviation)
+
+    Notes
+    -----
+    If d1[s,r,c] lies outside the domain of d2, then comp[s,r,c] will contain
+    a zero vector.
     """
     cdef:
         floating[:, :, :, :] comp = np.zeros_like(d1)
@@ -768,40 +843,33 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     ----------
     d : array, shape (R, C, 2)
         the 2-D displacement field to be inverted
-    affine_ref : array, shape(3,3)
-        the matrix transforming pixel positions in the displacement lattice
-        to physical space
-    affine_ref_inv : array, shape (3,3)
-        the matrix transforming point coordinates in physical space 
-        to pixel positions in the dislacement lattice
-    target_shape : array, shape (2,)
-        the expected shape of the inverse displacement field.
-    target_aff : array, shape (3, 3)
-        the matrix transforming pixel positions in the inverse displacement 
-        lattice to physical space
-    target_aff_inv : array, shape (3, 3)
-        the matrix transforming point coordinates in physical space 
-        to pixel positions in the inverse dislacement lattice
+    w_to_img : array, shape (3, 3)
+        the world-to-image transformation associated to the displacement field d
+        (transforming physical space coordinates to voxel coordinates of the
+        displacement field grid)
+    spacing :array, shape (2,)
+        the spacing between voxels (voxel size along each axis)
     max_iter : int
         maximum number of iterations to be performed
     tolerance : float
         maximum tolerated inversion error
-    start : array, shape (R', C')
+    start : array, shape (R, C)
         an aproximation to the inverse displacemnet field (if no aproximation
         is available, None can be provided and the start displacement fieldwill
         be zero)
 
     Returns
     -------
-    p : array, shape target_shape+(2,) or (R, C, 2) if target_shape is None
+    p : array, shape (R, C, 2)
         the inverse displacement field
 
     Notes
     -----
-    The 'inversion error' at iteration t is defined as the mean norm of the
-    displacement vectors of the input displacement field composed with the
-    inverse at iteration t. If target_shape is None, the shape of the resulting
-    inverse will be the same as the input displacement field.
+    We assume that the displacement field is an endomorphism so that the shape
+    and voxel-to-space transformation of the inverse's discretization is the
+    same as those of the input displacementfield. The 'inversion error' at 
+    iteration t is defined as the mean norm of the displacement vectors of the
+    input displacement field composed with the inverse at iteration t. 
     """
     cdef:
         int nr = d.shape[0]
@@ -870,28 +938,33 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     ----------
     d : array, shape (S, R, C, 3)
         the 3-D displacement field to be inverted
-    inv_shape : array, shape (3,)
-        the expected shape of the inverse displacement field.
+    w_to_img : array, shape (4, 4)
+        the world-to-image transformation associated to the displacement field d
+        (transforming physical space coordinates to voxel coordinates of the
+        displacement field grid)
+    spacing :array, shape (3,)
+        the spacing between voxels (voxel size along each axis)
     max_iter : int
         maximum number of iterations to be performed
     tolerance : float
         maximum tolerated inversion error
-    start : array, shape (R', C')
+    start : array, shape (S, R, C)
         an aproximation to the inverse displacemnet field (if no aproximation
-        is available, None can be provided and the start displacement fieldwill
+        is available, None can be provided and the start displacement field will
         be zero)
 
     Returns
     -------
-    p : array, shape inv_shape+(2,) or (S, R, C, 2) if inv_shape is None
+    p : array, shape (S, R, C, 3)
         the inverse displacement field
 
     Notes
     -----
-    The 'inversion error' at iteration t is defined as the mean norm of the
-    displacement vectors of the input displacement field composed with the
-    inverse at iteration t. If inv_shape is None, the shape of the resulting
-    inverse will be the same as the input displacement field.
+    We assume that the displacement field is an endomorphism so that the shape
+    and voxel-to-space transformation of the inverse's discretization is the
+    same as those of the input displacementfield. The 'inversion error' at 
+    iteration t is defined as the mean norm of the displacement vectors of the
+    input displacement field composed with the inverse at iteration t. 
     """
     cdef:
         int ns = d.shape[0]
@@ -1071,6 +1144,17 @@ def append_affine_to_displacement_field_2d(floating[:, :, :] d,
 
 def reorient_vector_field_2d(floating[:, :, :] d,
                              double[:, :] affine):
+    r"""
+    Modifies the input displacement field by multiplying each displacement
+    vector by the given matrix.
+
+    Parameters
+    ----------
+    d : array, shape (R, C, 2)
+        the displacement field to be re-oriented
+    affine: array, shape (3, 3)
+        the matrix to be applied
+    """
     cdef:
         int nrows = d.shape[0]
         int ncols = d.shape[1]
@@ -1091,6 +1175,17 @@ def reorient_vector_field_2d(floating[:, :, :] d,
 
 def reorient_vector_field_3d(floating[:, :, :, :] d,
                              double[:, :] affine):
+    r"""
+    Modifies the input displacement field by multiplying each displacement
+    vector by the given matrix.
+
+    Parameters
+    ----------
+    d : array, shape (S, R, C, 3)
+        the displacement field to be re-oriented
+    affine: array, shape (4, 4)
+        the matrix to be applied
+    """
     cdef:
         int nslices = d.shape[0]
         int nrows = d.shape[1]
@@ -1582,13 +1677,11 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                 double[:, :] affine_disp=None,
                 int[:] sampling_shape=None):
     r"""
-    Deforms the input volume under the transformation T of the from
-    T(x) = B*f(A*x), x\in dom(f), where 
-    A = affinePre
-    B = affinePost
-    f = d2
-    using trilinear interpolation. If either affine matrix is None, it is
-    taken as the identity.
+    Deforms the input volume under the given transformation. The final image
+    is given by:
+
+    warped[i] = volume[ C * d1[A*i] + B*i]
+    
 
     Parameters
     ----------
