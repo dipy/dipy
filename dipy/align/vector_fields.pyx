@@ -1245,6 +1245,47 @@ def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
 
 def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx, 
                    double[:,:] affine_disp):
+    r"""
+    Defines a new displacement C field defined by
+
+    (1) C[i] = A * field[i] + B * i - i
+
+    where i denotes the coordinates of a voxel in field's grid, A =  affine_disp
+    and B = affine_idx. To illustrate how to use this function, consider a 
+    displacement field with grid-to-space matrix S, and let's say we need to
+    warp an image J with grid-to-space matrix R. For each voxel i in the
+    displacement field grid, the warped image is given by:
+
+    (2) warped[i] = J[ Rinv * (S * i + field[i]) ]
+
+    where Rinv =  R^{-1}. Therefore, whenever we need to warp an image we need
+    to keep track of S and Rinv. After "consolidating" the displacement field,
+    it will operate drectly on the grid by incorporating the linear 
+    transformations into the displacement field, so that the warped image at
+    voxel i can be computed by:
+
+    (3) warped[i] = J[ i + field[i] ]
+
+    We accomplish this by defining A = Rinv and B = Rinv * S, by plugging these
+    A, B, into eq. (1) we can see that the resulting mapping C satisfies eq. (3)
+
+    The downside of consolidating a displacement field is that now we can only
+    warp images with the same voxel-to-space transformation: R.
+
+    Parameters
+    ----------
+    field : array, shape (R, C, 2)
+        the displacement field to be consolidated
+    affine_idx : array, shape (3, 3)
+        the matrix B, defined above
+    affine_disp : array, shape (3, 3)
+        the matrix A, defined above
+
+    Returns
+    -------
+    output : array (R, C, 2)
+        the consolidated displacement field
+    """
     cdef:
         int nrows = field.shape[0]
         int ncols = field.shape[1]
@@ -1282,6 +1323,47 @@ def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx,
 
 def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx, 
                    double[:,:] affine_disp):
+    r"""
+    Defines a new displacement C field defined by
+
+    (1) C[i] = A * field[i] + B * i - i
+
+    where i denotes the coordinates of a voxel in field's grid, A =  affine_disp
+    and B = affine_idx. To illustrate how to use this function, consider a 
+    displacement field with grid-to-space matrix S, and let's say we need to
+    warp an image J with grid-to-space matrix R. For each voxel i in the
+    displacement field grid, the warped image is given by:
+
+    (2) warped[i] = J[ Rinv * (S * i + field[i]) ]
+
+    where Rinv =  R^{-1}. Therefore, whenever we need to warp an image we need
+    to keep track of S and Rinv. After "consolidating" the displacement field,
+    it will operate drectly on the grid by incorporating the linear 
+    transformations into the displacement field, so that the warped image at
+    voxel i can be computed by:
+
+    (3) warped[i] = J[ i + field[i] ]
+
+    We accomplish this by defining A = Rinv and B = Rinv * S, by plugging these
+    A, B, into eq. (1) we can see that the resulting mapping C satisfies eq. (3)
+
+    The downside of consolidating a displacement field is that now we can only
+    warp images with the same voxel-to-space transformation: R.
+
+    Parameters
+    ----------
+    field : array, shape (S, R, C, 3)
+        the displacement field to be consolidated
+    affine_idx : array, shape (4, 4)
+        the matrix B, defined above
+    affine_disp : array, shape (4, 4)
+        the matrix A, defined above
+
+    Returns
+    -------
+    output : array (S, R, C, 3)
+        the consolidated displacement field
+    """
     cdef:
         int nslices = field.shape[0]
         int nrows = field.shape[1]
@@ -1677,11 +1759,26 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                 double[:, :] affine_disp=None,
                 int[:] sampling_shape=None):
     r"""
-    Deforms the input volume under the given transformation. The final image
-    is given by:
+    Deforms the input volume under the given transformation. The warped volume
+    is computed using tri-linear interpolation and is given by:
 
-    warped[i] = volume[ C * d1[A*i] + B*i]
-    
+    (1) warped[i] = volume[ C * d1[A*i] + B*i ]
+
+    where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
+    the discrete coordinates of a voxel in the sampling grid of 
+    shape = sampling_shape. To illustrate the use of this function, consider a
+    displacement field d1 with grid-to-space transformation R, a volume with
+    grid-to-space transformation T and let's say we want to sample the warped
+    volume on a grid with grid-to-space transformation S (sampling grid). For
+    each voxel in the sampling grid with discrete coordinates i, the warped
+    volume is given by:
+
+    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ] 
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the 
+    input image.
+
 
     Parameters
     ----------
@@ -1689,14 +1786,18 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
         the input volume to be transformed
     d1 : array, shape (S', R', C', 3)
         the displacement field driving the transformation
-    affinePre : array, shape (4, 4)
-        the pre-multiplication affine matrix (A, in the model above)
-    affinePost : array, shape (4, 4)
-        the post-multiplication affine matrix (B, in the model above)
-
+    affine_idx_in : array, shape (4, 4) 
+        the matrix A in eq. (1) above
+    affine_idx_out : array, shape (4, 4) 
+        the matrix B in eq. (1) above
+    affine_disp : array, shape (4, 4) 
+        the matrix C in eq. (1) above
+    sampling_shape : array, shape (3,)
+        the number of slices, rows and columns of the sampling grid
+    
     Returns
     -------
-    warped : array, shape (S', R', C')
+    warped : array, shape = sampling_shape
         the transformed volume
     """
     cdef:
@@ -1832,13 +1933,26 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                    double[:, :] affine_disp=None,
                    int[:] sampling_shape=None):
     r"""
-    Deforms the input volume under the transformation T of the from
-    T(x) = B*f(A*x), x\in dom(f), where 
-    A = affinePre
-    B = affinePost
-    f = d2
-    using nearest neighbor interpolation. If either affine matrix is None, it is
-    taken as the identity.
+    Deforms the input volume under the given transformation. The warped volume
+    is computed using nearest-neighbor interpolation and is given by:
+
+    (1) warped[i] = volume[ C * d1[A*i] + B*i ]
+
+    where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
+    the discrete coordinates of a voxel in the sampling grid of 
+    shape = sampling_shape. To illustrate the use of this function, consider a
+    displacement field d1 with grid-to-space transformation R, a volume with
+    grid-to-space transformation T and let's say we want to sample the warped
+    volume on a grid with grid-to-space transformation S (sampling grid). For
+    each voxel in the sampling grid with discrete coordinates i, the warped
+    volume is given by:
+
+    (2) warped[i] = volume[Tinv * ( d1[Rinv * S * i] + S * i ) ] 
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the 
+    input image.
+
 
     Parameters
     ----------
@@ -1846,14 +1960,18 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         the input volume to be transformed
     d1 : array, shape (S', R', C', 3)
         the displacement field driving the transformation
-    affinePre : array, shape (4, 4)
-        the pre-multiplication affine matrix (A, in the model above)
-    affinePost : array, shape (4, 4)
-        the post-multiplication affine matrix (B, in the model above)
-
+    affine_idx_in : array, shape (4, 4) 
+        the matrix A in eq. (1) above
+    affine_idx_out : array, shape (4, 4) 
+        the matrix B in eq. (1) above
+    affine_disp : array, shape (4, 4) 
+        the matrix C in eq. (1) above
+    sampling_shape : array, shape (3,)
+        the number of slices, rows and columns of the sampling grid
+    
     Returns
     -------
-    warped : array, shape (S', R', C')
+    warped : array, shape = sampling_shape
         the transformed volume
     """
     cdef:
@@ -1990,20 +2108,26 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
                double[:,:] affine_disp=None,
                int[:] sampling_shape=None):
     r"""
-    Deforms the input image under the transformation T of the from
-    T(x) = B*f(A*x), x\in dom(f), where 
-    A = affinePre
-    B = affinePost
-    f = d2
-    using bilinear interpolation. If either affine matrix is None, it is
-    taken as the identity. After simplifying the domain transformation and
-    physical transformation products, the final warping is of the form
-    warped[i] = image[Tinv*B*A*R*i + Tinv*B*d1[Rinv*A*R*i]]
-    where Tinv is the affine transformation bringing physical points to 
-    image's discretization, and R, Rinv transform d1's discretization to 
-    physical space and physical space to discretization respectively.
-    We require affine_idx_in:=Rinv*A*R, affine_idx_out:=Tinv*B*A*R,
-    and affine_disp:=Tinv*B
+    Deforms the input image under the given transformation. The warped image
+    is computed using bi-linear interpolation and is given by:
+
+    (1) warped[i] = image[ C * d1[A*i] + B*i ]
+
+    where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
+    the discrete coordinates of a voxel in the sampling grid of 
+    shape = sampling_shape. To illustrate the use of this function, consider a
+    displacement field d1 with grid-to-space transformation R, an image with
+    grid-to-space transformation T and let's say we want to sample the warped
+    image on a grid with grid-to-space transformation S (sampling grid). For
+    each voxel in the sampling grid with discrete coordinates i, the warped
+    image is given by:
+
+    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ] 
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the 
+    input image.
+
 
     Parameters
     ----------
@@ -2011,14 +2135,18 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
         the input image to be transformed
     d1 : array, shape (R', C', 2)
         the displacement field driving the transformation
-    affinePre : array, shape (3, 3)
-        the pre-multiplication affine matrix (A, in the model above)
-    affinePost : array, shape (3, 3)
-        the post-multiplication affine matrix (B, in the model above)
-
+    affine_idx_in : array, shape (3, 3)
+        the matrix A in eq. (1) above
+    affine_idx_out : array, shape (3, 3)
+        the matrix B in eq. (1) above
+    affine_disp : array, shape (3, 3)
+        the matrix C in eq. (1) above
+    sampling_shape : array, shape (2,)
+        the number of rows and columns of the sampling grid
+    
     Returns
     -------
-    warped : array, shape (R', C')
+    warped : array, shape = sampling_shape
         the transformed image
     """
     cdef:
@@ -2140,28 +2268,45 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
                   double[:,:] affine_disp=None,
                   int[:] sampling_shape=None):
     r"""
-    Deforms the input image under the transformation T of the from
-    T(x) = B*f(A*x), x\in dom(f), where 
-    A = affinePre
-    B = affinePost
-    f = d2
-    using neirest neighbor interpolation. If either affine matrix is None, it is
-    taken as the identity.
+    Deforms the input image under the given transformation. The warped image
+    is computed using nearest-neighbor interpolation and is given by:
+
+    (1) warped[i] = image[ C * d1[A*i] + B*i ]
+
+    where A = affine_idx_in, B = affine_idx_out, C = affine_disp and i denotes
+    the discrete coordinates of a voxel in the sampling grid of 
+    shape = sampling_shape. To illustrate the use of this function, consider a
+    displacement field d1 with grid-to-space transformation R, an image with
+    grid-to-space transformation T and let's say we want to sample the warped
+    image on a grid with grid-to-space transformation S (sampling grid). For
+    each voxel in the sampling grid with discrete coordinates i, the warped
+    image is given by:
+
+    (2) warped[i] = image[Tinv * ( d1[Rinv * S * i] + S * i ) ] 
+
+    where Tinv = T^{-1} and Rinv = R^{-1}. By identifying A = Rinv * S,
+    B = Tinv * S, C = Tinv we can use this function to efficiently warp the 
+    input image.
+
 
     Parameters
     ----------
     image : array, shape (R, C)
         the input image to be transformed
     d1 : array, shape (R', C', 2)
-        the d1 field driving the transformation
-    affinePre : array, shape (3, 3)
-        the pre-multiplication affine matrix (A, in the model above)
-    affinePost : array, shape (3, 3)
-        the post-multiplication affine matrix (B, in the model above)
-
+        the displacement field driving the transformation
+    affine_idx_in : array, shape (3, 3)
+        the matrix A in eq. (1) above
+    affine_idx_out : array, shape (3, 3)
+        the matrix B in eq. (1) above
+    affine_disp : array, shape (3, 3)
+        the matrix C in eq. (1) above
+    sampling_shape : array, shape (2,)
+        the number of rows and columns of the sampling grid
+    
     Returns
     -------
-    warped : array, shape (R', C')
+    warped : array, shape = sampling_shape
         the transformed image
     """
     cdef:
@@ -2275,85 +2420,25 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
                 interpolate_scalar_nn_2d(image, dii, djj, &warped[i,j])
     return warped
 
-def warp_2d_stream_line(floating[:, :] streamline, floating[:, :, :] d1,
-                        double[:, :] affinePre=None, 
-                        double[:, :] affinePost=None):
+
+def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, int[:] target_shape):
     r"""
-    Deforms the input 2d stream line under the transformation T of the from
-    T(x) = B*f(A*x), x\in dom(f), where 
-    A = affinePre
-    B = affinePost
-    f = d2
-    using bilinear interpolation. If either affine matrix is None, it is
-    taken as the identity.
+    Upsamples the discretization of the displacement fields to be of 
+    target_shape shape.
 
     Parameters
     ----------
-    streamline : array, shape (n, 2)
-        the input n-point streamline to be transformed
-    d1 : array, shape (R', C', 2)
-        the displacement field driving the transformation
-    affinePre : array, shape (3, 3)
-        the pre-multiplication affine matrix (A, in the model above)
-    affinePost : array, shape (3, 3)
-        the post-multiplication affine matrix (B, in the model above)
+    factors : array, shape (3,)
+        the factors scaling current spacings (voxel sizes) to spacings in
+        the expanded discretization.
+    target_shape : array, shape (3,)
+        the shape of the arrays holding the upsampled discretization
 
     Returns
     -------
-    warped : array, shape (n, 2)
-        the transformed streamline
+    expanded : array, shape = target_shape + (3, )
+        the expanded displacement field
     """
-    cdef:
-        int nr = d1.shape[0]
-        int nc = d1.shape[1]
-        int n = streamline.shape[0] 
-        double i0, j0, dii, djj
-        int ii, jj
-    for i in range(n):
-        if affinePre is not None:
-            i0 = _apply_affine_2d_x0(streamline[i, 0], streamline[i, 1], 1, affinePre)
-            j0 = _apply_affine_2d_x1(streamline[i, 0], streamline[i, 1], 1, affinePre)
-        else:
-            i0 = streamline[i,0]
-            j0 = streamline[i,1]
-        if((i0 < 0) or (j0 < 0) or (i0 > nr - 1) or (j0 > nc - 1)):
-            continue
-        ii = int(i0)
-        jj = int(j0)
-        if((ii < 0) or (jj < 0) or (ii >= nr) or (jj >= nc)):
-            continue
-        calpha = i0 - ii
-        cbeta = j0 - jj
-        alpha = 1 - calpha
-        beta = 1 - cbeta
-        #---top-left
-        dii= alpha * beta * d1[ii, jj, 0]
-        djj= alpha * beta * d1[ii, jj, 1]
-        #---top-right
-        jj += 1
-        if(jj < nc):
-            dii += alpha * cbeta * d1[ii, jj, 0]
-            djj += alpha * cbeta * d1[ii, jj, 1]
-        #---bottom-right
-        ii += 1
-        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
-            dii += calpha * cbeta * d1[ii, jj, 0]
-            djj += calpha * cbeta * d1[ii, jj, 1]
-        #---bottom-left
-        jj -= 1
-        if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
-            dii += calpha * beta * d1[ii, jj, 0]
-            djj += calpha * beta * d1[ii, jj, 1]
-        dii += streamline[i,0]
-        djj += streamline[i,1]
-        if(affinePost != None):
-            streamline[i, 0] = _apply_affine_2d_x0(dii, djj, 1, affinePost)
-            streamline[i, 1] = _apply_affine_2d_x1(dii, djj, 1, affinePost)
-        else:
-            streamline[i, 0], streamline[i, 1] = dii, djj
-
-
-def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, int[:] target_shape):
     cdef:
         int tslices = target_shape[0]
         int trows = target_shape[1]
@@ -2372,6 +2457,23 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, 
     return expanded
 
 def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int[:] target_shape):
+    r"""
+    Upsamples the discretization of the displacement fields to be of 
+    target_shape shape.
+
+    Parameters
+    ----------
+    factors : array, shape (2,)
+        the factors scaling current spacings (voxel sizes) to spacings in
+        the expanded discretization.
+    target_shape : array, shape (2,)
+        the shape of the arrays holding the upsampled discretization
+
+    Returns
+    -------
+    expanded : array, shape = target_shape + (2, )
+        the expanded displacement field
+    """
     cdef:
         int trows = target_shape[0]
         int tcols = target_shape[1]
@@ -2389,11 +2491,23 @@ def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int
 
 def create_random_displacement_2d(int[:] from_shape, double[:,:] input_affine, int[:] to_shape, double[:,:] output_affine):
     r"""
-    Creates a random 2D displacement field mapping points of an input discrete domain 
-    (with dimensions given by from_shape) to points of an output discrete domain
-    (with shape given by to_shape). The affine matrices bringing discrete coordinates
-    to physical space are given by input_affine (for the displacement field
-    discretization) and output_affine (for the target discretization)
+    Creates a random 2D displacement field mapping points of an input discrete
+    domain (with dimensions given by from_shape) to points of an output discrete 
+    domain (with shape given by to_shape). The affine matrices bringing discrete 
+    coordinates to physical space are given by input_affine (for the 
+    displacement field discretization) and output_affine (for the target 
+    discretization)
+
+    Parameters
+    ----------
+    from_shape : array, shape (2,)
+        the grid shape where the displacement field will be defined on.
+    input_affine : array, shape (3,3)
+        the grid-to-space transformation of the displacemnet field 
+    to_shape : array, shape (2,)
+        the grid shape where the deformation field will map the input grid to.
+    output_affine : array, shape (3,3)
+        the grid-to-space transformation of the mapped grid
 
     Returns
     -------
@@ -2452,6 +2566,16 @@ def create_linear_displacement_field_2d(int[:] shape,
     to them. The resulting displacement field is an invertible endomorphism and 
     may be used to test inversion algorithms.
 
+    Parameters
+    ----------
+    shape : array, shape (2,)
+        the grid shape where the displacement field will be defined on.
+    input_affine : array, shape (3,3)
+        the grid-to-space transformation of the displacemnet field 
+    transform : array, shape (3,3)
+        the linear, invertible transformation to be applied to the points of the
+        input grid
+
     Returns
     -------
     output : array, shape = from_shape
@@ -2496,11 +2620,23 @@ def create_linear_displacement_field_2d(int[:] shape,
 
 def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, int[:] to_shape, double[:,:] output_affine):
     r"""
-    Creates a random 3D displacement field mapping points of an input discrete domain 
-    (with dimensions given by from_shape) to points of an output discrete domain
-    (with shape given by to_shape). The affine matrices bringing discrete coordinates
-    to physical space are given by input_affine (for the displacement field
-    discretization) and output_affine (for the target discretization)
+    Creates a random 3D displacement field mapping points of an input discrete
+    domain (with dimensions given by from_shape) to points of an output discrete 
+    domain (with shape given by to_shape). The affine matrices bringing discrete 
+    coordinates to physical space are given by input_affine (for the 
+    displacement field discretization) and output_affine (for the target 
+    discretization)
+
+    Parameters
+    ----------
+    from_shape : array, shape (3,)
+        the grid shape where the displacement field will be defined on.
+    input_affine : array, shape (4,4)
+        the grid-to-space transformation of the displacemnet field 
+    to_shape : array, shape (3,)
+        the grid shape where the deformation field will map the input grid to.
+    output_affine : array, shape (4,4)
+        the grid-to-space transformation of the mapped grid
 
     Returns
     -------
