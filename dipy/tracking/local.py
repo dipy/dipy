@@ -21,9 +21,11 @@ class LocalTracking(object):
             space of the track (see ``affine``).
         affine : array (4, 4)
             Coordinate space for the streamline point with respect to voxel
-            indices of input data. An identity matrix can be used to generate
-            streamlines in "voxel coordinates" as long as isotropic voxels were
-            used to acquire the data.
+            indices of input data. This affine can contain scaling, rotational,
+            and translational components but should not contain any sheering.
+            An identity matrix can be used to generate streamlines in "voxel
+            coordinates" as long as isotropic voxels were used to acquire the
+            data.
         step_size : float
             Step size used for tracking.
         max_cross : int or None
@@ -49,6 +51,23 @@ class LocalTracking(object):
         track = self._generate_streamlines()
         return utils.move_streamlines(track, self.affine)
 
+    def _get_voxel_size(self, affine):
+        """Computes the voxel sizes of an image from the affine.
+
+        Checks that the affine does not have any sheer because local_tracker
+        assumes that the data is sampled on a regular grid.
+
+        """
+        lin = self.affine[:3, :3]
+        dotlin = np.dot(lin.T, lin)
+        # Check that the affine is well behaved
+        if not np.allclose(np.triu(dotlin, 1), 0.):
+            msg = ("The affine provided seems to contain sheering, data must "
+                   "be acquired or interpolated on a regular grid to be used "
+                   "with `LocalTracking`.")
+            raise ValueError(msg)
+        return np.sqrt(dotlin.diagonal())
+
     def _generate_streamlines(self):
         """A streamline generator"""
         N = self.maxlen
@@ -58,8 +77,7 @@ class LocalTracking(object):
         max_cross = self.max_cross
 
         # Compute voxel size
-        lin = self.affine[:3, :3]
-        vs = (lin * lin).sum(0)
+        vs = self._get_voxel_size(self.affine)
 
         # Get inverse transform (lin/offset) for seeds
         inv_A = np.linalg.inv(self.affine)
