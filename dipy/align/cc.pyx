@@ -33,7 +33,14 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
     Precomputes the separate terms of the cross correlation metric and image
     norms at each voxel considering a neighborhood of the given radius to 
     efficiently compute the gradient of the metric with respect to the 
-    deformation field.
+    deformation field [1][2]
+
+    [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+        Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+        Evaluating Automated Labeling of Elderly and Neurodegenerative 
+        Brain, 12(1), 26–41.
+    [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
+        Advanced Normalization Tools ( ANTS ), 1–35.
 
     Parameters
     ----------
@@ -142,7 +149,7 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static, floating[:, :, :] mo
                                   int radius):
     r"""
     This version of precompute_cc_factors_3d is for testing purposes, it directly
-    computes the local cross-correlation without any optimization.
+    computes the local cross-correlation factors without any optimization.
     """
     cdef:
         int ns = static.shape[0]
@@ -196,8 +203,15 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                                floating[:, :, :, :] factors):
     r"""
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) w.r.t. the displacement associated to the moving
-    volume ('forward' step)
+    registration (SyN) [1] w.r.t. the displacement associated to the moving
+    volume ('forward' step) as in [2]
+
+    [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+        Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+        Evaluating Automated Labeling of Elderly and Neurodegenerative 
+        Brain, 12(1), 26–41.
+    [2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization 
+        Tools ( ANTS ), 1–35.
 
     Parameters
     ----------
@@ -263,8 +277,15 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
                                 floating[:, :, :, :] factors):
     r"""
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) w.r.t. the displacement associated to the static
-    volume ('backward' step)
+    registration (SyN) [1] w.r.t. the displacement associated to the static
+    volume ('backward' step) as in [2]
+
+    [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+        Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+        Evaluating Automated Labeling of Elderly and Neurodegenerative 
+        Brain, 12(1), 26–41.
+    [2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization 
+        Tools ( ANTS ), 1–35.
 
     Parameters
     ----------
@@ -332,10 +353,17 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                              int radius):
     r"""
-    Precomputes the separate terms of the cross correlation metric and image
+    Precomputes the separate terms of the cross correlation metric [1] and image
     norms at each voxel considering a neighborhood of the given radius to 
-    efficiently compute the gradient of the metric with respect to the 
+    efficiently [2] compute the gradient of the metric with respect to the 
     deformation field.
+
+    [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+        Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+        Evaluating Automated Labeling of Elderly and Neurodegenerative 
+        Brain, 12(1), 26–41.
+    [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
+        Advanced Normalization Tools ( ANTS ), 1–35.
 
     Parameters
     ----------
@@ -487,8 +515,15 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                floating[:, :, :] factors):
     r"""
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) w.r.t. the displacement associated to the moving
-    image ('backward' step)
+    registration (SyN) [1] w.r.t. the displacement associated to the moving
+    image ('backward' step) as in [2]
+
+    [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+        Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+        Evaluating Automated Labeling of Elderly and Neurodegenerative 
+        Brain, 12(1), 26–41.
+    [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
+        Advanced Normalization Tools ( ANTS ), 1–35.
 
     Parameters
     ----------
@@ -552,8 +587,15 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
                                 floating[:, :, :] factors):
     r"""
     Computes the gradient of the Cross Correlation metric for symmetric
-    registration (SyN) w.r.t. the displacement associated to the static
-    image ('forward' step)
+    registration (SyN) [1] w.r.t. the displacement associated to the static
+    image ('forward' step) as in [2]
+
+    [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+        Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+        Evaluating Automated Labeling of Elderly and Neurodegenerative 
+        Brain, 12(1), 26–41.
+    [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
+        Advanced Normalization Tools ( ANTS ), 1–35.
 
     Parameters
     ----------

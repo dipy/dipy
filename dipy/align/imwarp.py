@@ -383,7 +383,7 @@ class ScaleSpace(object):
 class DiffeomorphicMap(object):
     def __init__(self, 
                  dim,
-                 domain_shape=None,
+                 domain_shape,
                  domain_affine=None,
                  input_shape=None,
                  input_affine=None,
@@ -427,6 +427,8 @@ class DiffeomorphicMap(object):
         self.dim = dim
         self.domain_shape = np.asarray(domain_shape, dtype = np.int32)
         self.domain_affine = domain_affine
+        if input_shape is None:
+            input_shape = domain_shape
         self.input_shape = np.asarray(input_shape, dtype = np.int32)
         self.input_affine = input_affine
         self.input_prealign = input_prealign
@@ -855,7 +857,7 @@ class DiffeomorphicMap(object):
         Since the forward and backward displacement fields have the same 
         discretization, the final composition is given by
 
-        comp[i] = backward[ i + Dinv * forward[i]]
+        comp[i] = forward[ i + Dinv * backward[i]]
 
         where Dinv is the space-to-grid transformation of the displacement fields
 
@@ -863,18 +865,18 @@ class DiffeomorphicMap(object):
         Dinv = self.domain_affine_inv
 
         if self.dim == 2:
-            residual, stats = vfu.compose_vector_fields_2d(self.forward,
-                                                           self.backward,
+            residual, stats = vfu.compose_vector_fields_2d(self.backward,
+                                                           self.forward,
                                                            None,
                                                            Dinv,
                                                            1.0)
         else:
-            residual, stats = vfu.compose_vector_fields_3d(self.forward,
-                                                           self.backward,
+            residual, stats = vfu.compose_vector_fields_3d(self.backward,
+                                                           self.forward,
                                                            None,
                                                            Dinv,
                                                            1.0)
-        return residual, stats
+        return np.asarray(residual), np.asarray(stats)
 
     def shallow_copy(self):
         r"""

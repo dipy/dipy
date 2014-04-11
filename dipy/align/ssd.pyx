@@ -80,9 +80,10 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
     r"""
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
     solver proposed by Bruhn and Weickert[1].
-    [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-        combining highest accuracy with real-time performance",
-        10th IEEE International Conference on Computer Vision, 2005. ICCV 2005.
+    
+    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
+        Highest Accuracy with Real-Time Performance Faculty of Mathematics
+        and Computer Science.
 
     Parameters
     ----------
@@ -247,9 +248,10 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
     r"""
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
     solver proposed by Bruhn and Weickert[1].
-    [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-        combining highest accuracy with real-time performance",
-        10th IEEE International Conference on Computer Vision, 2005. ICCV 2005.
+    
+    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
+        Highest Accuracy with Real-Time Performance Faculty of Mathematics
+        and Computer Science.
 
     Parameters
     ----------
@@ -447,10 +449,10 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
     Computes the residual displacement field corresponding to the current 
     displacement field (given by 'displacement_field') in the Multi-resolution 
     Gauss-Seidel solver proposed by Bruhn and Weickert[1].
-    [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-        combining highest accuracy with real-time performance",
-        10th IEEE International Conference on Computer Vision, 2005.
-        ICCV 2005.
+    
+    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
+        Highest Accuracy with Real-Time Performance Faculty of Mathematics
+        and Computer Science.
     
     Parameters
     ----------
@@ -557,10 +559,10 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
     Computes the residual displacement field corresponding to the current 
     displacement field in the Multi-resolution Gauss-Seidel solver proposed by 
     Bruhn and Weickert[1].
-    [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-        combining highest accuracy with real-time performance",
-        10th IEEE International Conference on Computer Vision, 2005.
-        ICCV 2005.
+
+    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
+        Highest Accuracy with Real-Time Performance Faculty of Mathematics
+        and Computer Science.
     
     Parameters
     ----------
@@ -646,18 +648,26 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                                double sigma_reg_2,
                                floating[:,:,:] out):
     r"""
-    Computes the demons step for SSD-driven registration.
+    Computes the demons step for SSD-driven registration ( eq. 4 in [1] )
+
+    [1] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
+        Diffeomorphic demons: efficient non-parametric image registration. 
+        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
 
     Parameters
     ----------
     delta_field : array, shape (R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     gradient_field : array, shape (R, C, 2)
         the gradient of the moving image
-    max_step_size : float
-        the length of the maximum displacement vector of the update displacement
-        field corresponding to the demons step
+    sigma_reg_2 : float
+        parameter controlling the amount of reguarization (under the Ridge 
+        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
+        (also, it is \sigma_x in eq. 4 of [1])
+    out : array, shape (R, C, 2)
+        if None, a new array will be created to store the demons step. Otherwise
+        the provided array will be used.
 
     Returns
     -------
@@ -701,7 +711,11 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                                double sigma_reg_2,
                                floating[:,:,:,:] out):
     r"""
-    Computes the demons step for SSD-driven registration.
+    Computes the demons step for SSD-driven registration ( eq. 4 in [1] )
+
+    [1] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
+        Diffeomorphic demons: efficient non-parametric image registration. 
+        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
 
     Parameters
     ----------
@@ -710,9 +724,13 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         w.r.t. time' in the optical flow model)
     gradient_field : array, shape (S, R, C, 2)
         the gradient of the moving image
-    max_step_size : float
-        the length of the maximum displacement vector of the update displacement
-        field corresponding to the demons step
+    sigma_reg_2 : float
+        parameter controlling the amount of reguarization (under the Ridge 
+        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
+        (also, it is \sigma_x in eq. 4 of [1])
+    out : array, shape (S, R, C, 2)
+        if None, a new array will be created to store the demons step. Otherwise
+        the provided array will be used.
 
     Returns
     -------

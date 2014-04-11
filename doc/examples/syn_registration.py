@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
-from dipy.align.metrics import SSDMetric
+from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
 import dipy.align.imwarp as imwarp
 from dipy.align import VerbosityLevels
 
@@ -27,7 +27,6 @@ def renormalize_image(image):
 
 def overlay_images(L, R, ltitle='Left', rtitle='Right', fname=None):
     sh=L.shape
-
     colorImage=np.zeros(shape=(sh[0], sh[1], 3), dtype=np.int8)
     ll=renormalize_image(L).astype(np.int8)
     rr=renormalize_image(R).astype(np.int8)
@@ -240,3 +239,63 @@ overlay_images(warped_static, moving,'Warped static','Overlay','Moving',
 **Static image transformed under the (inverse) transformation in red
 on top of the moving image (in green)**.
 """
+
+from dipy.data import read_sherbrooke_3shell
+
+img, gtab = read_sherbrooke_3shell()
+
+data = np.array(img.get_data()[..., 0], dtype = floating)
+
+static = data[:,:,30]
+moving = data[:,:,33]
+
+moving = (moving-moving.min())/(moving.max() - moving.min())
+static = (static-static.min())/(static.max() - static.min())
+
+
+sigma_diff = 3.0
+radius = 4
+metric = CCMetric(2, sigma_diff, radius)
+
+opt_iter = [25, 50, 100]
+optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25)
+optimizer.callback = callback_CC
+
+"""
+Now we execute the optimization, which returns a DiffeomorphicMap object,
+that can be used to register images back and forth between the static and moving
+domains
+"""
+
+optimizer.verbosity = VerbosityLevels.DEBUG
+mapping = optimizer.optimize(static, moving)
+
+
+
+
+
+
+img, gtab = read_sherbrooke_3shell()
+
+data = np.array(img.get_data()[..., 0], dtype = floating)
+
+static = data[:,:,30]
+moving = data[:,:,33]
+
+moving = (moving-moving.min())/(moving.max() - moving.min())
+static = (static-static.min())/(static.max() - static.min())
+
+smooth=25.0
+inner_iter=20
+step_length=0.25
+q_levels=256
+double_gradient=False
+iter_type='gauss_newton'
+metric = EMMetric(2, smooth, inner_iter, q_levels, double_gradient, iter_type)
+
+opt_iter = [25, 50, 100]
+optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25)
+optimizer.callback = callback_CC
+
+optimizer.verbosity = VerbosityLevels.DEBUG
+mapping = optimizer.optimize(static, moving)

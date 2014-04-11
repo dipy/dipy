@@ -268,6 +268,21 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                               double sigma_reg,
                               floating[:,:,:] out):
     r"""
+    Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
+    using the EM algorithm [1] to handle multimodality images.
+
+    [1] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
+        Non-rigid Multimodal Image Registration Based on the 
+        Expectation-Maximization Algorithm, (168140), 36–47.
+
+    [2] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
+        Diffeomorphic demons: efficient non-parametric image registration. 
+        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
+
+    In this case, \sigma_i in eq. 4 of [1] is estimated using the EM algorithm,
+    while in the original version of diffeomorphic demons it is estimated by the
+    difference between the image values at each pixel.
+
     Parameters
     ----------
     delta_field : array, shape(R, C)
@@ -331,6 +346,21 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                               double sigma_reg,
                               floating[:,:,:,:] out):
     r"""
+    Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
+    using the EM algorithm [1] to handle multimodality images.
+
+    [1] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
+        Non-rigid Multimodal Image Registration Based on the 
+        Expectation-Maximization Algorithm, (168140), 36–47.
+
+    [2] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
+        Diffeomorphic demons: efficient non-parametric image registration. 
+        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
+
+    In this case, \sigma_i in eq. 4 of [1] is estimated using the EM algorithm,
+    while in the original version of diffeomorphic demons it is estimated by the
+    difference between the image values at each pixel.
+    
     Parameters
     ----------
     delta_field : array, shape(S, R, C)

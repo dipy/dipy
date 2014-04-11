@@ -837,7 +837,11 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                                        floating[:, :, :] start=None):
     r"""
     Computes the inverse of the given 2-D displacement field d using the
-    fixed-point algorithm.
+    fixed-point algorithm [1].
+
+    [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008). 
+        A simple fixed-point approach to invert a deformation field. 
+        Medical Physics, 35(1), 81. doi:10.1118/1.2816107
 
     Parameters
     ----------
@@ -932,7 +936,11 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                        floating[:, :, :, :] start=None):
     r"""
     Computes the inverse of the given 3-D displacement field d using the
-    fixed-point algorithm.
+    fixed-point algorithm [1].
+
+    [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008). 
+        A simple fixed-point approach to invert a deformation field. 
+        Medical Physics, 35(1), 81. doi:10.1118/1.2816107
 
     Parameters
     ----------
@@ -2489,14 +2497,19 @@ def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int
     return expanded
 
 
-def create_random_displacement_2d(int[:] from_shape, double[:,:] input_affine, int[:] to_shape, double[:,:] output_affine):
+def create_random_displacement_2d(int[:] from_shape, 
+                                  double[:,:] input_affine, 
+                                  int[:] to_shape, 
+                                  double[:,:] output_affine):
     r"""
     Creates a random 2D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output discrete 
     domain (with shape given by to_shape). The affine matrices bringing discrete 
     coordinates to physical space are given by input_affine (for the 
     displacement field discretization) and output_affine (for the target 
-    discretization)
+    discretization). Since this function is intended to be used for testing,
+    voxels in the input domain will never be assigned to boundary voxels on the
+    output domain.
 
     Parameters
     ----------
@@ -2527,8 +2540,8 @@ def create_random_displacement_2d(int[:] from_shape, double[:,:] input_affine, i
     for i in range(from_shape[0]):
         for j in range(from_shape[1]):
             #randomly choose where each input grid point will be mapped to in the target grid
-            ri = np.random.randint(0, to_shape[0])
-            rj = np.random.randint(0, to_shape[1])
+            ri = np.random.randint(1, to_shape[0]-1)
+            rj = np.random.randint(1, to_shape[1]-1)
             int_field[i, j, 0] = ri
             int_field[i, j, 1] = rj
             
@@ -2625,7 +2638,9 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
     domain (with shape given by to_shape). The affine matrices bringing discrete 
     coordinates to physical space are given by input_affine (for the 
     displacement field discretization) and output_affine (for the target 
-    discretization)
+    discretization). Since this function is intended to be used for testing,
+    voxels in the input domain will never be assigned to boundary voxels on the
+    output domain.
 
     Parameters
     ----------
@@ -2657,9 +2672,9 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
         for i in range(from_shape[1]):
             for j in range(from_shape[2]):
                 #randomly choose where each input grid point will be mapped to in the target grid
-                rk = np.random.randint(0, to_shape[0])
-                ri = np.random.randint(0, to_shape[1])
-                rj = np.random.randint(0, to_shape[2])
+                rk = np.random.randint(1, to_shape[0]-1)
+                ri = np.random.randint(1, to_shape[1]-1)
+                rj = np.random.randint(1, to_shape[2]-1)
                 int_field[k, i, j, 0] = rk
                 int_field[k, i, j, 1] = ri
                 int_field[k, i, j, 2] = rj
@@ -2693,4 +2708,69 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
 
     return output, int_field
 
+
+def create_harmonic_fields_2d(int nrows, int ncols, 
+                             double b, double m):
+    r"""
+    Creates the invertible displacement fields used in Chen et al. eqs. 
+    9 and 10 [1]
+
+    [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008). 
+        A simple fixed-point approach to invert a deformation field. 
+        Medical Physics, 35(1), 81. doi:10.1118/1.2816107
+    """
+    cdef:
+        int mid_row = nrows/2
+        int mid_col = ncols/2
+        int i, j, ii, jj
+        double theta
+        double[:,:,:] d = np.zeros( (nrows, ncols, 2), dtype=np.float64)
+        double[:,:,:] inv = np.zeros( (nrows, ncols, 2), dtype=np.float64)
+    for i in range(nrows):
+        for j in range(ncols):
+            ii = i - mid_row
+            jj = j - mid_col
+            theta = np.arctan2(ii, jj)
+            d[i, j, 0]=ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+            d[i, j, 1]=jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+            inv[i,j,0] = b * np.cos(m * theta) * ii
+            inv[i,j,1] = b * np.cos(m * theta) * jj
+
+    return d, inv 
+
+
+def create_harmonic_fields_3d(int nslices, int nrows, int ncols, 
+                             double b, double m):
+    r"""
+    Creates the invertible displacement fields used in Chen et al. eqs. 
+    9 and 10 [1] computing the angle theta along z-slides.
     
+    [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008). 
+        A simple fixed-point approach to invert a deformation field. 
+        Medical Physics, 35(1), 81. doi:10.1118/1.2816107
+    """
+    cdef:
+        int mid_slice = nslices / 2
+        int mid_row = nrows / 2
+        int mid_col = ncols / 2
+        int i, j, k, ii, jj, kk
+        double theta
+        double[:,:,:,:] d = np.zeros( (nslices, nrows, ncols, 3), dtype=np.float64)
+        double[:,:,:,:] inv = np.zeros( (nslices, nrows, ncols, 3), dtype=np.float64)
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                kk = k - mid_slice
+                ii = i - mid_row
+                jj = j - mid_col
+                theta = np.arctan2(ii, jj)
+                d[k, i, j, 0]=kk * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                d[k, i, j, 1]=ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                d[k, i, j, 2]=jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                inv[k, i, j, 0] = b * np.cos(m * theta) * kk
+                inv[k, i, j, 1] = b * np.cos(m * theta) * ii
+                inv[k, i, j, 2] = b * np.cos(m * theta) * jj
+
+    return d, inv 
+
+
