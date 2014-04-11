@@ -7,8 +7,8 @@
 language: erlang
 env:
     # Enable python 2 and python 3 builds. Python3 available in Ubuntu 12.04.
-    - PYTHON=python PYSUF=''
-    - PYTHON=python3 PYSUF=3
+    - PYTHON=python PYSUF='' EASY_INSTALL=easy_install PIP=pip COVERAGE=--with-coverage
+    - PYTHON=python3 PYSUF=3 EASY_INSTALL=easy_install3 PIP=pip3.2
 install:
    # Add takluyver's python3 matplotlib PPA: 
     - sudo add-apt-repository -y ppa:takluyver/python3
@@ -19,14 +19,14 @@ install:
     - sudo apt-get install $PYTHON-setuptools
     - sudo apt-get install $PYTHON-nose
     - sudo apt-get install $PYTHON-matplotlib
-    - sudo easy_install$PYSUF nibabel # Latest pypi
+    - sudo $EASY_INSTALL nibabel # Latest pypi
     # Cython easy_install breaks with error about refnanny.c; maybe something
     # to do with having a previous cython version;
     # http://mail.python.org/pipermail//cython-devel/2012-April/002344.html
     - curl -O http://www.cython.org/release/Cython-0.18.zip
     - unzip Cython-0.18.zip
     - cd Cython-0.18
-    - sudo python$PYSUF setup.py install
+    - sudo $PYTHON setup.py install
     # Temporary solution to travis issue #155
     # https://github.com/travis-ci/travis-cookbooks/issues/155
     - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
@@ -46,4 +46,5 @@ script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_test
     - cd for_test
-    - nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    - if [ "${COVERAGE}" == "--with-coverage" ]; then cp ../.coveragerc .; fi
+    - nosetests$PYSUF --with-doctest ` $COVERAGE $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
