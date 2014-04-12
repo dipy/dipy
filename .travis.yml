@@ -47,8 +47,8 @@ script:
     - mkdir for_test
     - cd for_test
     - if [ "${PYTHON}" == "python3" ]; then
-	- nosetests$PYSUF --with-doctest ` $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
-       else
-        - cp ../.coveragerc .;
-	- nosetests$PYSUF --with-doctest --with-coverage` $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
-       fi
+    nosetests$PYSUF --with-doctest ` $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    else
+    cp ../.coveragerc .;
+    nosetests$PYSUF --with-doctest --with-coverage` $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    fi
