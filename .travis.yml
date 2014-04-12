@@ -46,5 +46,9 @@ script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_test
     - cd for_test
-    - if [ "${COVERAGE}" == "--with-coverage" ]; then cp ../.coveragerc .; fi
-    - nosetests$PYSUF --with-doctest ` $COVERAGE $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    - if [ "${PYTHON}" == "python3" ]; then
+	- nosetests$PYSUF --with-doctest ` $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+       else
+        - cp ../.coveragerc .;
+	- nosetests$PYSUF --with-doctest --with-coverage` $PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+       fi
