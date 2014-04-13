@@ -10,6 +10,7 @@ import dipy.align.vector_fields as vfu
 from dipy.data import get_data
 from dipy.align import floating
 import nibabel as nib
+from dipy.align.imwarp import DiffeomorphicMap
 
 
 def getRotationMatrix(angles):
@@ -404,29 +405,61 @@ def test_ssd_2d():
     ss_sigma_factor = 0.2
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    registration_optimizer.optimize(static, moving, None)
-    subsampled_energy_profile = registration_optimizer.full_energy_profile[::10]
+    mapping = registration_optimizer.optimize(static, moving, None)
+    subsampled_energy_profile = np.array(registration_optimizer.full_energy_profile[::10])
     if floating is np.float32:
-        expected_profile = [312.68133330313657, 164.59050263180393, 103.73623002323137, 
-                            82.11648490159492, 63.318887939731574, 57.02372298083006,
-                            48.88254135529228, 45.4015576044856, 42.458175894395374,
-                            174.94422108434813, 92.43030985225451, 58.73123346962446,
-                            43.70869017524925, 15.792076588788733, 20.300399590591233,
-                            41.990692318305285, 37.158731502418554, 33.196326703572694,
-                            32.89163671093136]
+        expected_profile = np.array([ 312.6813333 ,  164.59050263,  103.73623002,   82.1164849 ,
+         63.31888794,   57.02372298,   48.88254136,   45.4015576 ,
+         42.45817589,  174.94422108,   92.43030985,   58.73123347,
+         43.70869018,   15.79207659,   20.30039959,   41.99069232,
+         37.1587315 ,   33.1963267 ,   32.89163671,   87.82289011,
+         78.28761195])
     else:
-        expected_profile = [312.68133361375715, 164.59049074753798, 103.736352184813,
-                            82.11638224407756, 63.318836798898616, 57.023756943619546,
-                            48.88245595553537, 45.40144749845953, 42.457996601384224,
-                            174.94167955106752, 92.42725190908986, 58.72655198707222,
-                            43.7195526751881, 15.785794912626038, 20.454971177705318,
-                            41.925978619294945, 37.6053152641555, 33.258779694884204,
-                            30.638574002639203]
+        expected_profile = np.array([ 312.68133361,  164.59049075,  103.73635218,   82.11638224,
+         63.3188368 ,   57.02375694,   48.88245596,   45.4014475 ,
+         42.4579966 ,  174.94167955,   92.42725191,   58.72655199,
+         43.71955268,   15.78579491,   20.45497118,   41.92597862,
+         37.60531526,   33.25877969,   30.638574  ,   91.49825032,
+         80.524506  ])
     assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile))
+
+
+def get_synthetic_warped_circle(nslices):
+    #get a subsampled circle
+    fname_cicle = get_data('reg_o')
+    circle = plt.imread(fname_cicle)[::4,::4,0].astype(floating)
+    
+    #create a synthetic invertible map and warp the circle
+    d, dinv = vfu.create_harmonic_fields_2d(64, 64, 0.1, 4)
+    d = np.asarray(d, dtype = floating)
+    dinv = np.asarray(dinv, dtype = floating)
+    mapping = DiffeomorphicMap(2, (64, 64))
+    mapping.forward, mapping.backward = d, dinv
+    wcircle = mapping.transform(circle)
+
+    if(nslices == 1):
+        return circle, wcircle
+
+    #normalize and form the 3d by piling slices
+    circle = (circle-circle.min())/(circle.max() - circle.min())
+    circle_3d = np.ndarray(circle.shape + (nslices,), dtype = floating)
+    circle_3d[...] = circle[...,None]
+    circle_3d[...,0] = 0
+    circle_3d[...,-1] = 0
+
+    #do the same with the warped circle
+    wcircle = (wcircle-wcircle.min())/(wcircle.max() - wcircle.min())
+    wcircle_3d = np.ndarray(wcircle.shape + (nslices,), dtype = floating)
+    wcircle_3d[...] = wcircle[...,None]
+    wcircle_3d[...,0] = 0
+    wcircle_3d[...,-1] = 0
+
+    return circle_3d, wcircle_3d
+
 
 def test_ssd_3d():
     r'''
-    Register a B0 image against itself after a linear transformation. This test
+    Register a stack of circle and c images. This test
     is intended to detect regressions only: we saved the energy profile (the
     sequence of energy values at each iteration) of a working version of SSD in
     3D, and this test checks that the current energy profile matches the saved
@@ -435,18 +468,7 @@ def test_ssd_3d():
     with each other and computing the jaccard index for all 31 common anatomical
     regions. 
     '''
-    from dipy.data import read_sherbrooke_3shell
-
-    img, gtab = read_sherbrooke_3shell()
-
-    moving = np.array(img.get_data()[..., 0], dtype = floating)
-
-    #Warp the S0 with a synthetic rotation
-    degrees = np.array([2.0, 3.0, 4.0])
-    angles = degrees * (np.pi/180.0)
-    rotation = getRotationMatrix(angles)
-    new_shape = np.array(moving.shape, dtype = np.int32)
-    static = np.asarray(vfu.warp_volume_affine(moving, new_shape, rotation))
+    moving, static = get_synthetic_warped_circle(20)
 
     #Create the SSD metric
     smooth = 4
@@ -455,7 +477,7 @@ def test_ssd_3d():
     similarity_metric = metrics.SSDMetric(3, smooth, inner_iter, step_type) 
 
     #Create the optimizer
-    opt_iter = [5, 10, 10]
+    opt_iter = [5, 10]
     step_length = 0.25
     opt_tol = 1e-4
     inv_iter = 20
@@ -463,24 +485,19 @@ def test_ssd_3d():
     ss_sigma_factor = 0.5
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    registration_optimizer.optimize(static, moving, None)
+    registration_optimizer.verbosity = 10
+    mapping = registration_optimizer.optimize(static, moving, None)
     energy_profile = np.array(registration_optimizer.full_energy_profile)
     if floating is np.float32:
-        expected_profile = np.array([89.90622614, 59.17855102, 42.74823811,
-                                     32.03280596, 25.57576981, 20.53462398,
-                                     17.31927042, 15.81617853, 15.58714397,
-                                     15.79245671, 110.6181378, 86.68461346,
-                                     73.85097571, 66.12964541, 62.44040318, 
-                                     59.95437311, 58.41602419, 57.58576527,
-                                     57.18839396, 57.22796409])
+        expected_profile = np.array([  601.17342436,   468.94537817,   418.67267847,   393.0580613 ,
+         367.8863422 ,   319.61865314,   272.3558511 ,   269.57838565,
+         254.63664301,   266.9605625 ,  2541.47438277,  2033.988534  ,
+        1779.69793906,  1693.11368711,  1653.95419258])
     else:
-        expected_profile = np.array([89.90622638, 59.17855087, 42.74823914,
-                                     32.03280675, 25.57577089, 20.53462478,
-                                     17.31927101, 15.81617887, 15.58714426,
-                                     15.79245702, 110.61813147, 86.68461034,
-                                     73.85097358, 66.12964501, 62.44040252,
-                                     59.9543727, 58.41602413, 57.58576517,
-                                     57.18839377, 57.22796444])
+        expected_profile = np.array([  601.17344986,   468.97523898,   418.73047322,   393.0534384 ,
+         367.80005903,   319.44987629,   272.62769902,   268.10394736,
+         254.30487935,   267.7249719 ,  2547.05251526,  2035.19403818,
+        1780.21839845,  1692.64443559,  1653.6224987 ])
     assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
 
 
@@ -492,17 +509,8 @@ def test_cc_2d():
     2D, and this test checks that the current energy profile matches the saved
     one.
     '''
-    from dipy.data import read_sherbrooke_3shell
 
-    img, gtab = read_sherbrooke_3shell()
-
-    data = np.array(img.get_data()[..., 0], dtype = floating)
-
-    static = data[:,:,30]
-    moving = data[:,:,33]
-
-    moving = (moving-moving.min())/(moving.max() - moving.min())
-    static = (static-static.min())/(static.max() - static.min())
+    moving, static = get_synthetic_warped_circle(1)
 
     #Configure the metric
     sigma_diff = 3.0
@@ -510,26 +518,37 @@ def test_cc_2d():
     metric = metrics.CCMetric(2, sigma_diff, radius)
 
     #Configure and run the Optimizer
-    opt_iter = [25, 50, 100]
+    opt_iter = [10, 20, 40]
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, opt_iter)
     mapping = optimizer.optimize(static, moving, None)
-    subsampled_energy_profile = optimizer.full_energy_profile[::5]
+    energy_profile = np.array(optimizer.full_energy_profile)
     
     if floating is np.float32:
-        expected_profile = [-980.5516704079644, -1072.261161206346, -1103.8685455764867,
-                            -1117.6115363057233, -1113.3258340702514, -1119.0483736679764,
-                            -1119.355168844521, -2568.897038646955, -2808.4292225881754,
-                            -2913.4903113092396, -2953.2785987089596, -2989.5050840994772,
-                            -3028.706810600274, -3075.9169639536844, -3084.7444879075288,
-                            -3121.0133127512822, -3139.0963683496484]
+        expected_profile = np.array([ -435.79559516,  -460.80739355,  -469.88508346,  -486.87396486,
+        -486.04298263,  -484.30780055,  -489.19779192,  -484.44738633,
+        -489.17020371,  -485.6637196 ,  -488.70801039,  -487.46399496,
+        -489.71671264,  -488.09117139,  -490.42271222,  -488.27909614,
+        -490.28857064,  -487.60445667,  -490.03035784,  -485.72591888,
+        -490.60729319, -1260.19301574, -1327.14719131, -1309.49160837,
+       -1342.19150863, -1356.90061164, -1275.25601701, -1317.07887913,
+       -1343.0784944 , -1301.45605487, -1336.04013439, -1366.93546512,
+       -1328.10275902, -1317.85372622, -1317.62486769, -1274.53697105,
+       -1337.79152122, -2801.90904108, -2857.68596628, -2849.56767541,
+       -2867.77931765, -2846.8404648 , -2875.67021308, -2851.85228212,
+       -2879.43368375, -2861.36274169, -2889.69112071])
     else:
-        expected_profile = [-980.551647721365, -1072.2611770607534, -1103.8685374990507, 
-                            -1117.6115406679749, -1113.3258036795055, -1119.0483485626748, 
-                            -1119.3551281328932, -2568.897086240164, -2808.42923678202,
-                            -2913.4903027936844, -2953.278656195647, -2989.505113986426, 
-                            -3028.7068130016064, -3075.9169915865714, -3084.7445328739173, 
-                            -3121.0133491212946, -3139.09637501727]
-    assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile))
+        expected_profile = np.array([ -435.7955967 ,  -460.80739935,  -469.88508352,  -486.87396919,
+        -486.0429746 ,  -484.30780608,  -489.19779364,  -484.44739074,
+        -489.17020447,  -485.66372153,  -488.7080131 ,  -487.46399372,
+        -489.71671982,  -488.09117245,  -490.42271431,  -488.27909883,
+        -490.28856556,  -487.60445041,  -490.03035556,  -485.72592274,
+        -490.60729406, -1258.19305758, -1358.34000624, -1348.08308818,
+       -1376.5332102 , -1361.61634539, -1371.62866869, -1354.9690168 ,
+       -1356.56553571, -1365.8866856 , -1308.45095778, -1366.49097861,
+       -1330.98891026, -1353.73575477, -2765.92375447, -2871.07572026,
+       -2885.22181863, -2873.25158879, -2883.36175689, -2882.74507256,
+       -2892.91338306, -2891.84375023, -2894.12822118, -2890.7756098 ])
+    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile))
 
 
 def test_cc_factors_3d():
@@ -560,18 +579,7 @@ def test_cc_3d():
     iterations. Any modification that produces a change in the energy profile
     should be carefully validated to ensure no accuracy loss.
     '''
-    from dipy.data import read_sherbrooke_3shell
-
-    img, gtab = read_sherbrooke_3shell()
-
-    moving = np.array(img.get_data()[..., 0], dtype = floating)
-
-    #Warp the S0 with a synthetic rotation
-    degrees = np.array([2.0, 3.0, 4.0])
-    angles = degrees * (np.pi/180.0)
-    rotation = getRotationMatrix(angles)
-    new_shape = np.array(moving.shape, dtype = np.int32)
-    static = np.asarray(vfu.warp_volume_affine(moving, new_shape, rotation))
+    moving, static = moving, static = get_synthetic_warped_circle(20)
 
     #Create the CC metric
     sigma_diff = 2.0
@@ -579,7 +587,7 @@ def test_cc_3d():
     similarity_metric = metrics.CCMetric(3, sigma_diff, radius)
 
     #Create the optimizer
-    opt_iter = [5, 10, 10]
+    opt_iter = [5, 10, 20]
     step_length = 0.25
     opt_tol = 1e-4
     inv_iter = 20
@@ -587,24 +595,22 @@ def test_cc_3d():
     ss_sigma_factor = 0.5
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    registration_optimizer.optimize(static, moving, None)
-    energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-6
+    mapping = registration_optimizer.optimize(static, moving, None)
+    energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-4
     if floating is np.float32:
-        expected_profile = np.array([-0.01433875, -0.01651356, -0.01688335,
-                                     -0.01792773, -0.01791432, -0.01861407,
-                                     -0.01898663, -0.01958575, -0.01967341, 
-                                     -0.02049394, -0.0640203,  -0.06774939,
-                                     -0.07179282, -0.07436513, -0.07631286, 
-                                     -0.07866266, -0.07978836, -0.08150028,
-                                     -0.08202129, -0.08336826])
+        expected_profile = np.array([-0.23135541, -0.22171793, -0.23767394, -0.24236032, -0.22654608,
+       -0.19675488, -0.24164528, -0.24076027, -0.22999321, -0.22685398,
+       -0.20686259, -0.23939138, -0.24139779, -1.32298218, -1.37421899,
+       -1.37280958, -1.38166606, -1.37794505, -1.38500984, -1.38071534,
+       -1.37929357, -1.37501299, -1.38839658, -6.12090669, -6.19221629,
+       -6.19314241, -6.13668367, -6.11476345])
     else:
-        expected_profile = np.array([-0.01433875, -0.01651356, -0.01688335,
-                                     -0.01792773, -0.01791432, -0.01861407,
-                                     -0.01898663, -0.01958575, -0.01967341,
-                                     -0.02049394, -0.06402031, -0.0677494,
-                                     -0.07179282, -0.07436513, -0.07631286,
-                                     -0.07866266, -0.07978836, -0.08150029,
-                                     -0.08202129, -0.08336826])
+        expected_profile = np.array([-0.23135541, -0.22171793, -0.23767394, -0.24236032, -0.22654608,
+       -0.19675488, -0.24164527, -0.24076027, -0.22999321, -0.22685398,
+       -0.20686259, -0.23939137, -0.24139779, -1.32178231, -1.37421862,
+       -1.37280946, -1.38166568, -1.37794478, -1.38500996, -1.38071547,
+       -1.37928428, -1.37501037, -1.38838905, -6.11733785, -6.4959287 ,
+       -6.63564872, -6.6980932 , -6.74961869])
     assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
 
 
@@ -622,20 +628,8 @@ def test_em_3d():
     a change in the energy profile should be carefully validated to ensure no 
     accuracy loss.
     '''
-    from dipy.data import read_sherbrooke_3shell
+    moving, static = moving, static = get_synthetic_warped_circle(20)
 
-    img, gtab = read_sherbrooke_3shell()
-
-    moving = np.array(img.get_data()[..., 0], dtype = floating)
-
-    #Warp the S0 with a synthetic rotation
-    degrees = np.array([2.0, 3.0, 4.0])
-    angles = degrees * (np.pi/180.0)
-    rotation = getRotationMatrix(angles)
-    new_shape = np.array(moving.shape, dtype = np.int32)
-    static = np.asarray(vfu.warp_volume_affine(moving, new_shape, rotation))
-    moving = (moving - moving.min())/(moving.max() - moving.min())
-    static = (static -static.min())/ (static.max() - static.min())
     #Create the EM metric
     smooth=25.0
     inner_iter=20
@@ -647,27 +641,29 @@ def test_em_3d():
         3, smooth, inner_iter, q_levels, double_gradient, iter_type)
 
     #Create the optimizer
-    opt_iter = [1, 5, 10]
+    opt_iter = [2, 5, 10]
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
     registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
         similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    registration_optimizer.optimize(static, moving, None)
-    energy_profile = registration_optimizer.full_energy_profile
+    mapping = registration_optimizer.optimize(static, moving, None)
+    energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-3
     if floating is np.float32:
-        expected_profile = [66.8847885131836, 54.29118347167969, 40.54933738708496, 
-                            27.369705200195312, 18.024410247802734, 10.493958950042725,
-                            6.5725555419921875, 3.5759841203689575, 3.182631254196167,
-                            2.946118712425232, 28.103188514709473, 22.814631462097168,
-                            18.84000587463379, 15.05379867553711, 12.480103492736816]
+        expected_profile = np.array([  1.43656316e-02,   1.60135407e-02,   1.65427418e-02,
+         2.03429403e-02,   2.30559626e-02,   2.11856403e-02,
+         1.42458258e-02,   8.64275515e-03,   8.33457708e-03,
+         1.02794735e-02,   2.04303673e-01,   1.61742622e-01,
+         1.63019783e-01,   1.48859322e-01,   1.48795532e-01,
+         2.62520447e+01,   2.18337886e+01])
     else:
-        expected_profile = [66.8861055278503, 54.291890244496564, 40.55012047483241,
-                            27.37006218812411, 18.02331933450858, 10.49541670206046,
-                            6.596505536350229, 3.567458641841514, 3.198956972821441,
-                            2.920064943954684, 29.525329153333253, 24.402373025155605, 
-                            20.027218533112965, 15.817854037365548, 13.503856639081103]
+        expected_profile = np.array([  1.43656285e-02,   1.59238234e-02,   1.65779725e-02,
+         1.98081392e-02,   1.94982952e-02,   2.15197208e-02,
+         1.38253150e-02,   1.04429025e-02,   1.35234400e-02,
+         9.21913082e-03,   2.11519503e-01,   1.86257761e-01,
+         1.86538648e-01,   1.53222573e-01,   1.59835528e-01,
+         2.67523821e+01,   1.94538666e+01])
     assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
 
 
@@ -679,17 +675,8 @@ def test_em_2d():
     2D, and this test checks that the current energy profile matches the saved
     one.
     '''
-    from dipy.data import read_sherbrooke_3shell
 
-    img, gtab = read_sherbrooke_3shell()
-
-    data = np.array(img.get_data()[..., 0], dtype = floating)
-
-    static = data[:,:,30]
-    moving = data[:,:,33]
-
-    moving = (moving-moving.min())/(moving.max() - moving.min())
-    static = (static-static.min())/(static.max() - static.min())
+    moving, static = get_synthetic_warped_circle(1)
 
     #Configure the metric
     smooth=25.0
@@ -702,31 +689,38 @@ def test_em_2d():
         2, smooth, inner_iter, q_levels, double_gradient, iter_type)
 
     #Configure and run the Optimizer
-    opt_iter = [25, 50, 100]
+    opt_iter = [10, 20, 40]
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, opt_iter)
     mapping = optimizer.optimize(static, moving, None)
-    subsampled_energy_profile = optimizer.full_energy_profile[::2]
+    energy_profile = np.array(optimizer.full_energy_profile)
     
     if floating is np.float32:
-        expected_profile = [9.29666519165039, 8.840325832366943, 8.403895616531372,
-                            9.217527627944946, 8.205434799194336, 8.004725933074951,
-                            7.5680084228515625, 7.995570421218872, 8.856264591217041,
-                            45.529253005981445, 44.46803855895996, 40.56655502319336,
-                            39.50901794433594, 36.85078048706055, 35.39692401885986,
-                            34.85632801055908, 35.41213321685791, 32.592201232910156,
-                            32.75309371948242, 32.96829891204834, 33.156304359436035,
-                            32.72635364532471, 31.77465057373047, 31.539039611816406,
-                            32.992366790771484, 31.77255153656006, 32.799750328063965]
+        expected_profile = np.array([    5.07521038,     3.85801816,     3.62394243,     3.34811198,
+           3.00624034,     2.72018113,     2.63478592,     2.7936472 ,
+           2.92318225,     2.6157892 ,     2.51011077,     2.62440899,
+           2.68817791,     2.89652365,     2.50406319,     3.78818488,
+           3.45390534,    99.18659401,    74.6229744 ,    64.09078789,
+          69.01992416,    58.42120171,    69.20737267,    58.37458324,
+          53.61078644,    66.57945728,    59.71329784,    54.3897047 ,
+          45.40669155,    38.95014477,    40.46437645,    38.89031315,
+          45.31602287,    49.25625038,    23.68274498,    27.68768597,
+          20.4745121 ,  1406.37990189,  1262.33969498,  1139.53244781,
+        1010.52179337,  1075.52775955,  1040.64184952,   982.98088455,
+         896.89818954,   723.24193192,   634.29199982])
     else:
-        expected_profile = [9.29666548784764, 8.840335993722759, 8.40389920311196,
-                            9.217560274293554, 8.217516709578959, 7.9898629536621595,
-                            7.818460722068478, 7.478561704964592, 7.698365075963448,
-                            8.070323670985568, 41.743818149321484, 40.63616644077951,
-                            37.31836508598798, 35.03585845856205, 34.657958343192,
-                            34.40429714707601, 33.58123879840137, 33.753932257877516,
-                            32.67009554981988, 34.2049633831725, 34.57927805161205,
-                            33.954154589484304]
-    assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile))
+        expected_profile = np.array([   5.07521878,    3.85800199,    3.6239301 ,    3.3481309 ,
+          3.01210333,    2.74506291,    2.53923509,    2.70308067,
+          2.56536905,    2.43899028,    2.22859222,    2.20692294,
+          2.44995661,    2.43933628,    3.71727011,    2.72983738,
+        103.95299745,   82.85215148,   48.57418885,   42.20932002,
+         43.36162648,   21.53416567,   22.7587274 ,   15.52892072,
+         15.0085294 ,   13.50509862,   11.98182061,   15.26312404,
+         11.44581538,   10.87602659,   11.69346951,   10.66371745,
+         11.01152779,   11.11890406,   10.62128561,   11.92621734,
+        722.5427506 ,  696.7656346 ,  944.74943684,  610.29530423,
+        565.06123932,  503.72437706,  551.15546174,  530.49991948,
+         56.54027481,   55.97779424])
+    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile))
 
 
 def test_invert_vector_field_2d():

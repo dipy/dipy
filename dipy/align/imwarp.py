@@ -1454,7 +1454,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.backward_model.expand_fields(expand_factors, new_shape)
 
             niter = 0
-            self.full_energy_profile.extend(self.energy_list)
             self.energy_list = []
             derivative = 1
 
@@ -1464,6 +1463,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
                 derivative = self._iterate()
                 niter += 1
+
+            self.full_energy_profile.extend(self.energy_list)
             
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_END)
