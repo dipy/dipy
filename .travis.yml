@@ -38,6 +38,7 @@ install:
             sudo pip install cvxopt ;
        else
             sudo apt-get install python-cvxopt ;
+            sudo pip install coverage ;
        fi
        # Dipy
     - $PYTHON setup.py build
