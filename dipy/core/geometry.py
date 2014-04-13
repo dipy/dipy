@@ -839,11 +839,14 @@ def vec2vec_rotmat(u, v):
     array([ 1.,  0.,  0.])
 
     """
-
+    norm_u_v = np.linalg.norm(u - v)
     # return eye when u is the same with v
     if np.linalg.norm(u - v) < np.finfo(float).eps:
         return np.eye(3)
-
+    # This is the case of two antipodal vectors:
+    if norm_u_v == 2.0:
+        return -np.eye(3)
+    
     w = np.cross(u, v)
     w = w / np.linalg.norm(w)
 
@@ -862,5 +865,11 @@ def vec2vec_rotmat(u, v):
     # make sure that you don't return any Nans
     if np.sum(np.isnan(Rp)) > 0:
         return np.eye(3)
+
+    # Everything's fine, up to a sign reversal:
+    rot_back = np.dot(Rp, v)
+    sign_reverser = np.sign((np.sign(rot_back) == np.sign(u)) - 0.5).squeeze()
+    # Multiply each line by it's reverser and reassemble the matrix:
+    Rp = Rp * sign_reverser[:, np.newaxis]
 
     return Rp

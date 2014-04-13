@@ -31,11 +31,25 @@ install:
     # https://github.com/travis-ci/travis-cookbooks/issues/155
     - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
     - cd ..
-    # Dipy
+    - if [ "${PYTHON}" == "python3" ]; then
+            sudo apt-get install libblas-dev liblapack-dev ;
+            sudo apt-get install python3-setuptools ;
+            sudo easy_install3 pip ;
+            sudo pip install cvxopt ;
+       else
+            sudo apt-get install python-cvxopt ;
+            sudo pip install coverage ;
+       fi
+       # Dipy
     - $PYTHON setup.py build
     - sudo $PYTHON setup.py install
 script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_test
     - cd for_test
-    - nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    - if [ "${PYTHON}" == "python3" ]; then
+        nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`	;
+      else
+        cp ../.coveragerc . ;
+        nosetests$PYSUF --with-doctest --with-coverage `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"` ;
+      fi
