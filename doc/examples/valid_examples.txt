@@ -26,4 +26,4 @@
 # streamline_tools.py
 # denoise_nlmeans.py
  syn_registration.py
-
+ syn_registration_3d.py

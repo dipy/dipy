@@ -552,10 +552,13 @@ class DiffeomorphicMap(object):
         affine_disp = W
 
         #Convert the data to the required types to use the cythonized functions  
-        if image.dtype is np.dtype('float64') and floating is np.float32:
-            image = image.astype(floating)
-        elif image.dtype is np.dtype('int64'):
-            image = image.astype(np.int32)
+        if interpolation == 'nn':
+            if image.dtype is np.dtype('float64') and floating is np.float32:
+                image = image.astype(floating)
+            elif image.dtype is np.dtype('int64'):
+                image = image.astype(np.int32)
+        else:
+            image = np.asarray(image, dtype = floating)
 
         if self.dim == 2:
             if interpolation == 'lin':
@@ -667,11 +670,14 @@ class DiffeomorphicMap(object):
         #this is the matrix which we need to multiply the displacement vector
         #prior to adding to the transformed input point
         affine_disp = mult_aff(W, Pinv)
-
-        if image.dtype is np.dtype('float64') and floating is np.float32:
-            image = image.astype(floating)
-        elif image.dtype is np.dtype('int64'):
-            image = image.astype(np.int32)
+        
+        if interpolation == 'nn':
+            if image.dtype is np.dtype('float64') and floating is np.float32:
+                image = image.astype(floating)
+            elif image.dtype is np.dtype('int64'):
+                image = image.astype(np.int32)
+        else:
+            image = np.asarray(image, dtype = floating)
 
         if self.dim == 2:
             if interpolation == 'lin':
@@ -1522,7 +1528,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.verbosity >= VerbosityLevels.DEBUG:
             print "Pre-align:",prealign
 
-        self._init_optimizer(static, moving, static_affine, moving_affine, prealign)
+        self._init_optimizer(static.astype(floating), moving.astype(floating), 
+                             static_affine, moving_affine, prealign)
         self._optimize()
         self._end_optimizer()
         return self.forward_model

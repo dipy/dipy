@@ -18,51 +18,6 @@ import dipy.align.imwarp as imwarp
 from dipy.align import VerbosityLevels
 
 
-def renormalize_image(image):
-    m=np.min(image)
-    M=np.max(image)
-    if(M-m<1e-8):
-        return image
-    return 127.0*(image-m)/(M-m)
-
-def overlay_images(L, R, ltitle='Left', rtitle='Right', fname=None):
-    sh=L.shape
-    colorImage=np.zeros(shape=(sh[0], sh[1], 3), dtype=np.int8)
-    ll=renormalize_image(L).astype(np.int8)
-    rr=renormalize_image(R).astype(np.int8)
-    colorImage[...,0]=ll*(ll>ll[0,0])
-    colorImage[...,1]=rr*(rr>rr[0,0])
-
-    plt.figure()
-    plt.subplot(1,3,1)
-    plt.imshow(ll, cmap = plt.cm.gray)
-    plt.title(ltitle)
-    plt.subplot(1,3,2)
-    plt.imshow(colorImage)
-    plt.title('Overlay')
-    plt.subplot(1,3,3)
-    plt.imshow(rr, cmap = plt.cm.gray)
-    plt.title(rtitle)
-    if fname is not None:
-        from time import sleep
-        sleep(1)
-        plt.savefig(fname, bbox_inches='tight')
-
-
-def callback_CC(optimizer, status):
-    if status == imwarp.RegistrationStages.SCALE_END:
-        wmoving = optimizer.metric.moving_image
-        wstatic = optimizer.metric.static_image
-        if optimizer.dim == 2:
-            overlay_images(wmoving, wstatic, 'Moving', 'Static')
-        else:
-            overlay_images(wmoving[:,wmoving.shape[1]//2,:], 
-                           wstatic[:,wstatic.shape[1]//2,:], 
-                           'Moving', 'Static')
-
-
-
-
 fname_moving = get_data('reg_o')
 fname_static = get_data('reg_c')
 
@@ -76,6 +31,43 @@ the RGB images (in this case the three channels are equal)
 
 moving = np.array(moving[:, :, 0])
 static = np.array(static[:, :, 0])
+
+moving = (moving-moving.min())/(moving.max() - moving.min())
+static = (static-static.min())/(static.max() - static.min())
+
+"""
+To visually check the overlap of the static image with the transformed moving
+image, we can plot them on top of each other with different channels to see
+where the differences are located
+"""
+
+def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
+    #Normalize the input images to [0,127]
+    img0 = 255*((img0 - img0.min())/(img0.max() - img0.min()))
+    img1 = 255*((img1 - img1.min())/(img1.max() - img1.min()))
+    img0_red=np.zeros(shape=(img0.shape)+(3,), dtype=np.uint8)
+    img1_green=np.zeros(shape=(img0.shape)+(3,), dtype=np.uint8)
+    overlay=np.zeros(shape=(img0.shape)+(3,), dtype=np.uint8)
+    img0_red[...,0] = img0
+    img1_green[...,1] = img1
+    overlay[...,0]=img0
+    overlay[...,1]=img1
+    plt.figure()
+    plt.subplot(1,3,1).set_axis_off()
+    plt.imshow(img0_red)
+    plt.title(title0)
+    plt.subplot(1,3,2).set_axis_off()
+    plt.imshow(overlay)
+    plt.title(title_mid)
+    plt.subplot(1,3,3).set_axis_off()
+    plt.imshow(img1_green)
+    plt.title(title1)
+    if fname is not None:
+      from time import sleep
+      sleep(1)
+      plt.savefig(fname, bbox_inches='tight')
+
+overlay_images(static, moving, 'Static', 'Overlay', 'Moving', 'input_images.png')
 
 """
 .. figure:: input_images.png
@@ -94,7 +86,7 @@ of Squared Differences (SSD) is a good choice. We create a metric specifying
 2 as the dimension of our images' domain
 """
 
-metric = SSDMetric(dim = 2, step_type='demons') 
+metric = SSDMetric(dim = 2, step_type='gauss_newton') 
 
 """
 Now we define an instance of the optimizer of the metric. The SyN algorithm uses
@@ -106,7 +98,6 @@ the pyramid. The 0-th level corresponds to the finest resolution.
 opt_iter = [25, 50, 100, 200]
 
 optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25, inv_iter=40)
-optimizer.callback = callback_CC
 
 """
 Now we execute the optimization, which returns a DiffeomorphicMap object,
@@ -114,7 +105,6 @@ that can be used to register images back and forth between the static and moving
 domains
 """
 
-optimizer.verbosity = VerbosityLevels.DEBUG
 mapping = optimizer.optimize(static, moving)
 
 """
@@ -154,13 +144,13 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
 
     #Now plot the grids
     plt.figure()
-    plt.subplot(1, 3, 1)
+    plt.subplot(1, 3, 1).set_axis_off()
     plt.imshow(warped_forward, cmap=plt.cm.gray)
     plt.title('Direct transform')
-    plt.subplot(1, 3, 2)
+    plt.subplot(1, 3, 2).set_axis_off()
     plt.imshow(lattice_moving, cmap=plt.cm.gray)
     plt.title('Original grid')
-    plt.subplot(1, 3, 3)
+    plt.subplot(1, 3, 3).set_axis_off()
     plt.imshow(warped_backward, cmap=plt.cm.gray)
     plt.title('Inverse transform')
     if fname is not None:
@@ -182,36 +172,6 @@ Now let's warp the moving image and see if it gets similar to the static image
 """
 
 warped_moving = mapping.transform(moving, 'lin')
-
-"""
-To visually check the overlap of the static image with the transformed moving
-image, we can plot them on top of each other with different channels to see
-where the differences are located
-"""
-
-def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
-    img0_red=np.zeros(shape=(img0.shape)+(3,), dtype=np.int8)
-    img1_green=np.zeros(shape=(img0.shape)+(3,), dtype=np.int8)
-    overlay=np.zeros(shape=(img0.shape)+(3,), dtype=np.int8)
-    img0_red[...,0] = img0
-    img1_green[...,1] = img1
-    overlay[...,0]=img0
-    overlay[...,1]=img1
-    plt.figure()
-    plt.subplot(1,3,1)
-    plt.imshow(img0_red)
-    plt.title(title0)
-    plt.subplot(1,3,2)
-    plt.imshow(overlay)
-    plt.title(title_mid)
-    plt.subplot(1,3,3)
-    plt.imshow(img1_green)
-    plt.title(title1)
-    if fname is not None:
-      from time import sleep
-      sleep(1)
-      plt.savefig(fname, bbox_inches='tight')
-
 overlay_images(static, warped_moving, 'Static','Overlay','Warped moving',
     'direct_warp_result.png')
 
@@ -240,62 +200,129 @@ overlay_images(warped_static, moving,'Warped static','Overlay','Moving',
 on top of the moving image (in green)**.
 """
 
-from dipy.data import read_sherbrooke_3shell
+"""
+Now let's register a couple of slices from a T1 image using the Cross
+Correlation metric. Also, let's inspect the evolution of the registration.
+To do this we will define a function that will be called by the optimizer
+at each stage of the optimization process. We will draw the current warped
+images after finishing each resolution.
+"""
 
-img, gtab = read_sherbrooke_3shell()
+def callback_CC(optimizer, status):
+    #Status indicates at which stage of the optimization we currently are
+    #For now, we will only react at the end of each resolution of the scale
+    #space
+    if status == imwarp.RegistrationStages.SCALE_END:
+        #get the current images from the metric
+        wmoving = optimizer.metric.moving_image
+        wstatic = optimizer.metric.static_image
+        #draw the images on top of each other with different colors
+        overlay_images(wmoving, wstatic, 'Warped moving', 'Overlay', 'Warped static')
 
-data = np.array(img.get_data()[..., 0], dtype = floating)
+"""
+Now we are ready to configure and run the registration. First load the data
+"""
 
-static = data[:,:,30]
-moving = data[:,:,33]
+from dipy.data.fetcher import fetch_syn_data, read_syn_data
+from dipy.segment.mask import median_otsu
 
-moving = (moving-moving.min())/(moving.max() - moving.min())
-static = (static-static.min())/(static.max() - static.min())
+fetch_syn_data()
 
+t1, b0 = read_syn_data()
+data = np.array(b0.get_data(), dtype = np.float64)
+
+"""
+We first remove the skull from the b0's
+"""
+
+b0_mask, mask = median_otsu(data, 4, 4)
+
+"""
+And select two slices to try the 2D registration
+"""
+
+static = b0_mask[:,:,40]
+moving = b0_mask[:,:,38]
+
+"""
+After loading the data, we instanciate the Cross Correlation metric. The metric
+receives three parameters: de dimension of the input images, the standard 
+deviation of the Gaussian Kernel to be used to regularize the gradient and the
+radius of the window to be used for evaluating the local normalized cross
+correlation.
+"""
 
 sigma_diff = 3.0
 radius = 4
 metric = CCMetric(2, sigma_diff, radius)
 
+"""
+Let's use a scale space of 3 levels
+"""
+
 opt_iter = [25, 50, 100]
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25)
+optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
 optimizer.callback = callback_CC
 
 """
-Now we execute the optimization, which returns a DiffeomorphicMap object,
-that can be used to register images back and forth between the static and moving
-domains
+And execute the optimization
 """
 
-optimizer.verbosity = VerbosityLevels.DEBUG
 mapping = optimizer.optimize(static, moving)
 
+warped = mapping.transform(moving)
 
+'''
+We can see the effect of the warping by switching between the images before and
+after registration
+'''
 
+overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
+               't1_slices_input.png')
 
+"""
+.. figure:: t1_slices_input.png
+    :align: center
 
+**Input images.**.
+"""
 
-img, gtab = read_sherbrooke_3shell()
+overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
+               't1_slices_res.png')
 
-data = np.array(img.get_data()[..., 0], dtype = floating)
+"""
+.. figure:: t1_slices_res.png
+    :align: center
 
-static = data[:,:,30]
-moving = data[:,:,33]
+**Moving image transformed under the (direct) transformation in green
+on top of the static image (in red)**.
+"""
 
-moving = (moving-moving.min())/(moving.max() - moving.min())
-static = (static-static.min())/(static.max() - static.min())
+'''
+And we can apply the inverse warping too
+'''
 
-smooth=25.0
-inner_iter=20
-step_length=0.25
-q_levels=256
-double_gradient=False
-iter_type='gauss_newton'
-metric = EMMetric(2, smooth, inner_iter, q_levels, double_gradient, iter_type)
+inv_warped = mapping.transform_inverse(static)
+overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving',
+               't1_slices_res2.png')
 
-opt_iter = [25, 50, 100]
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25)
-optimizer.callback = callback_CC
+"""
+.. figure:: t1_slices_res2.png
+    :align: center
 
-optimizer.verbosity = VerbosityLevels.DEBUG
-mapping = optimizer.optimize(static, moving)
+**Static image transformed under the (inverse) transformation in red
+on top of the moving image (in green)**.
+"""
+
+'''
+Finally, let's see the deformation
+'''
+
+plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
+
+"""
+.. figure:: diffeomorphic_map_b0s.png
+   :align: center
+
+**Deformed lattice under the resulting diffeomorhic map**.
+"""

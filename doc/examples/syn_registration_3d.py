@@ -18,60 +18,77 @@ from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align.metrics import CCMetric
 import os.path
 
-fname_static = '/opt/registration/data/RGB_T1_ROI/1.5T/Maxime.Gagnon/t1_nlm.nii.gz'
-fname_moving = '/opt/registration/data/RGB_T1_ROI/1.5T/Maxime.Gagnon/fa.nii.gz'
-
-nib_static = nib.load(fname_static)
-nib_moving = nib.load(fname_moving)
-
 """
-First we need an initial affine registration that brings the moving volume to
-the static's domain
+Let's fetch two b0 volumes, the first one will be the standard Sherbrooke dwi
+data
 """
 
-def affine_registration(static, moving):
-    from nipy.io.files import nipy2nifti, nifti2nipy
-    from nipy.algorithms.registration import HistogramRegistration, resample
-    nipy_static = nifti2nipy(static)
-    nipy_moving = nifti2nipy(moving)
-    similarity = 'crl1' #'crl1' 'cc', 'mi', 'nmi', 'cr', 'slr'
-    interp = 'tri' #'pv', 'tri',
-    renormalize = True
-    optimizer = 'powell'
-    R = HistogramRegistration(nipy_static, nipy_moving, similarity=similarity,
-                          interp=interp, renormalize=renormalize)
-    T = R.optimize('affine', optimizer=optimizer)
-    warped= resample(nipy_moving, T, reference=nipy_static, interp_order=1)
-    warped = nipy2nifti(warped, strict=True)
-    return warped, T
+from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+fetch_stanford_hardi()
+nib_stanford, gtab_stanford = read_stanford_hardi()
+stanford_b0 = np.squeeze(nib_stanford.get_data())[...,0]
 
-warped, affine_init = affine_registration(nib_static, nib_moving)
-static = nib_static.get_data().squeeze().astype(np.float32)
-moving = warped.get_data().squeeze().astype(np.float32)
+"""
+The second one will be the b0 we used for the 2D registration tutorial
+"""
 
-def renormalize_image(image):
-    m=np.min(image)
-    M=np.max(image)
-    if(M-m<1e-8):
-        return image
-    return 127.0*(image-m)/(M-m)
+from dipy.data.fetcher import fetch_syn_data, read_syn_data
+from dipy.segment.mask import median_otsu
+fetch_syn_data()
+nib_syn_t1, nib_syn_b0 = read_syn_data()
+syn_b0 = np.array(nib_syn_b0.get_data())
 
+"""
+We first remove the skull from the b0's
+"""
+
+stanford_b0_masked, stanford_b0_mask = median_otsu(stanford_b0, 4, 4)
+syn_b0_masked, syn_b0_mask = median_otsu(syn_b0, 4, 4)
+
+static = stanford_b0_masked
+static_affine = nib_stanford.get_affine()
+moving = syn_b0_masked
+moving_affine = nib_syn_b0.get_affine()
+
+"""
+Supose we have already done a linear registration to roughly align the two
+images
+"""
+
+pre_align = np.array([[1.02783543e+00, -4.83019053e-02, -6.07735639e-02, -2.57654118e+00],
+                      [4.34051706e-03, 9.41918267e-01, -2.66525861e-01, 3.23579799e+01],
+                      [5.34288908e-02, 2.90262026e-01, 9.80820307e-01, -1.46216651e+01],
+                      [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
+
+"""
+Let's first resample the moving image on the static grid
+"""
+
+import dipy.align.vector_fields as vfu
+
+transform = np.linalg.inv(moving_affine).dot(pre_align.dot(static_affine))
+resampled = vfu.warp_volume_affine(moving.astype(np.float32), 
+                                   np.asarray(static.shape, dtype=np.int32), 
+                                   transform)
+resampled = np.asarray(resampled)
 
 def plot_middle_slices(V, fname=None):
+    V = np.asarray(V, dtype = np.float64)
     sh=V.shape
-    axial = renormalize_image(V[sh[0]//2, :, :]).astype(np.int8)
-    coronal = renormalize_image(V[:, sh[1]//2, :]).astype(np.int8)
-    sagital = renormalize_image(V[:, :, sh[2]//2]).astype(np.int8)
+    V = 255 * (V - V.min())/(V.max() - V.min())
+    axial = np.asarray(V[sh[0]//2, :, :]).astype(np.uint8).T
+    coronal = np.asarray(V[:, sh[1]//2, :]).astype(np.uint8).T
+    sagital = np.asarray(V[:, :, sh[2]//2]).astype(np.uint8).T
 
     plt.figure()
-    plt.subplot(1,3,1)
-    plt.imshow(axial, cmap = plt.cm.gray)
+    plt.subplot(1,3,1).set_axis_off()
+    plt.imshow(axial, cmap = plt.cm.gray, origin='lower')
     plt.title('Axial')
-    plt.subplot(1,3,2)
-    plt.imshow(coronal, cmap = plt.cm.gray)
+    plt.subplot(1,3,2).set_axis_off()
+    plt.imshow(coronal, cmap = plt.cm.gray, origin='lower')
     plt.title('Coronal')
-    plt.subplot(1,3,3)
-    plt.imshow(sagital, cmap = plt.cm.gray)
+    plt.subplot(1,3,3).set_axis_off()
+    plt.imshow(sagital, cmap = plt.cm.gray, origin='lower')
     plt.title('Sagital')
     if fname is not None:
         from time import sleep
@@ -79,151 +96,68 @@ def plot_middle_slices(V, fname=None):
         plt.savefig(fname, bbox_inches='tight')
 
 
-def plot_middle_slices_coronal(L, R, ltitle='Left', rtitle='Right', fname=None):
+def overlay_middle_slices_coronal(L, R, ltitle='Left', rtitle='Right', fname=None):
+    L = np.asarray(L, dtype = np.float64)
+    R = np.asarray(R, dtype = np.float64)
+    L = 255 * (L - L.min())/(L.max() - L.min())
+    R = 255 * (R - R.min())/(R.max() - R.min())
     sh=L.shape
-
-    colorImage=np.zeros(shape=(sh[0], sh[2], 3), dtype=np.int8)
-    ll=renormalize_image(L[:,sh[1]//2,:]).astype(np.int8)
-    rr=renormalize_image(R[:,sh[1]//2,:]).astype(np.int8)
+    colorImage=np.zeros(shape=(sh[2], sh[0], 3), dtype=np.uint8)
+    ll=np.asarray(L[:,sh[1]//2,:]).astype(np.uint8).T
+    rr=np.asarray(R[:,sh[1]//2,:]).astype(np.uint8).T
     colorImage[...,0]=ll*(ll>ll[0,0])
     colorImage[...,1]=rr*(rr>rr[0,0])
 
     plt.figure()
-    plt.subplot(1,3,1)
-    plt.imshow(ll, cmap = plt.cm.gray)
+    plt.subplot(1,3,1).set_axis_off()
+    plt.imshow(ll, cmap = plt.cm.gray, origin='lower')
     plt.title(ltitle)
-    plt.subplot(1,3,2)
-    plt.imshow(colorImage)
+    plt.subplot(1,3,2).set_axis_off()
+    plt.imshow(colorImage, origin='lower')
     plt.title('Overlay')
-    plt.subplot(1,3,3)
-    plt.imshow(rr, cmap = plt.cm.gray)
+    plt.subplot(1,3,3).set_axis_off()
+    plt.imshow(rr, cmap = plt.cm.gray, origin='lower')
     plt.title(rtitle)
     if fname is not None:
         from time import sleep
         sleep(1)
         plt.savefig(fname, bbox_inches='tight')
 
-plot_middle_slices_coronal(static,moving, 'Static', 'Moving', 'input_coronal.png')
+overlay_middle_slices_coronal(static, resampled, 'Static', 'Moving', 'input_3d.png')
 
 """
-.. figure:: input_coronal.png
-   :align: center
+.. figure:: input_3d.png
+    :align: center
 
-**Pre-aligned input images. Left: static (T1). Right: moving (FA)**.
+**Static image in red on top of the pre-aligned moving image (in green)**.
 """
 
-
-forward_fname = 'forward_field.npy'
-backward_fname = 'backward_field.npy'
-
-
-if os.path.isfile(forward_fname) and os.path.isfile(backward_fname):
-    print("Diffeomorphic maps found [forward:%s], [backward:%s]."%(forward_fname, backward_fname))
-    print("Optimization skipped.")
-    forward = np.load(forward_fname)
-    backward = np.load(backward_fname)
-    mapping = DiffeomorphicMap(3, forward, backward, None, None)
-else:
-
-    """
-    We want to find an invertible map that transforms the moving image into the
-    static image. Let's use the Cross Correlation metric, since it works well
-    for monomodal and some multi-modal registration tasks.
-    """
-
-    metric = CCMetric(3)
-
-    """
-    Now we define an instance of the optimizer of the metric. The SyN algorithm uses
-    a multi-resolution approach by building a Gaussian Pyramid. We instruct the
-    optimizer to perform at most [n_0, n_1, ..., n_k] iterations at each level of
-    the pyramid. The 0-th level corresponds to the finest resolution.  
-    """
-
-    opt_iter = [5, 10, 10]
-    registration_optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
-    registration_optimizer.verbosity = 2
-
-    """
-    Execute the optimization, which returns a DiffeomorphicMap object,
-    that can be used to register images back and forth between the static and moving
-    domains
-    """
-
-    mapping = registration_optimizer.optimize(static, moving, None)
-
-    np.save(forward_fname, mapping.forward)
-    np.save(backward_fname, mapping.backward)
-
 """
-It is a good idea to visualize the resulting deformation map to make sure the
-result is reasonable (visually, at least). You can visualize the whole 3D grid 
-using your favorite visualization tool (e.g. the fiber navigator)
+We want to find an invertible map that transforms the moving image into the
+static image. Let's use the Cross Correlation metric, since it works well
+for monomodal and some multi-modal registration tasks.
 """
 
-def draw_lattice_3d(dims, delta=10):
-    dims=np.array(dims)
-    nsquares=(dims-1)/(delta+1)
-    lattice=np.zeros(shape=dims[:3], dtype=np.float32)
-    lattice[...]=127
-    for i in range(nsquares[0]+1):
-        lattice[i*(delta+1), :, :]=0
-    for j in range(nsquares[1]+1):
-        lattice[:, j*(delta+1), :]=0
-    for k in range(nsquares[2]+1):
-        lattice[:, :, k*(delta+1)]=0
-    return lattice
-
-def save_deformed_lattice_3d(mapping, apply_inverse, oname, img_fname=None):
-    r"""
-    Plots a regular grid deformed under the action of the given mapping.
-
-    Parameters
-    ----------
-    mapping : DiffeomorphicMap object
-        the mapping acting on the regular grid
-    apply_inverse : boolean
-        if True, plots grid under the action of the inverse mapping, else
-        plots the action of the direct mapping
-    oname : string
-        the file name to be used to store the resulting deformed lattice 
-        (in nifti format)
-    """
-    if apply_inverse:
-        shape = mapping.forward.shape
-        grid=draw_lattice_3d(shape)
-        warped=mapping.transform_inverse(grid).astype(np.int16)
-    else:
-        shape = mapping.backward.shape
-        grid=draw_lattice_3d(shape)
-        warped=mapping.transform(grid).astype(np.int16)
-    
-    img=nib.Nifti1Image(warped, np.eye(4))
-    img.to_filename(oname)
-    if img_fname is not None:
-        from time import sleep
-        plot_middle_slices(warped)
-        sleep(1)
-        plt.savefig(img_fname, bbox_inches='tight')
-
-
-save_deformed_lattice_3d(mapping, False, 'deformed_lattice.nii.gz', 'def_grid_coronal.png')
+metric = CCMetric(3)
 
 """
-.. figure:: def_grid_coronal.png
-   :align: center
-
-**Deformed grid under the action of the (direct) mapping**.
+Now we define an instance of the optimizer of the metric. The SyN algorithm uses
+a multi-resolution approach by building a Gaussian Pyramid. We instruct the
+optimizer to perform at most [n_0, n_1, ..., n_k] iterations at each level of
+the pyramid. The 0-th level corresponds to the finest resolution.  
 """
 
-save_deformed_lattice_3d(mapping, True, 'inv_deformed_lattice.nii.gz', 'invdef_grid_coronal.png')
+opt_iter = [5, 10, 10]
+registration_optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
 
 """
-.. figure:: invdef_grid_coronal.png
-   :align: center
-
-**Deformed grid under the action of the (inverse) mapping**.
+Execute the optimization, which returns a DiffeomorphicMap object,
+that can be used to register images back and forth between the static and moving
+domains
 """
+
+mapping = registration_optimizer.optimize(static, moving, 
+                                          static_affine, moving_affine, pre_align)
 
 """
 Now let's warp the moving image and see if it gets similar to the static image
@@ -237,7 +171,7 @@ image, we can plot them on top of each other with different channels to see
 where the differences are located
 """
 
-plot_middle_slices_coronal(static, warped_moving, 'Static', 'Warped moving', 'warped_moving.png')
+overlay_middle_slices_coronal(static, warped_moving, 'Static', 'Warped moving', 'warped_moving.png')
 
 """
 .. figure:: warped_moving.png
@@ -254,12 +188,13 @@ is similar to the moving image
 
 warped_static = mapping.transform_inverse(static)
 
-plot_middle_slices_coronal(warped_static, moving, 'Warped static', 'Moving', 'warped_static.png')
+overlay_middle_slices_coronal(warped_static, moving, 'Warped static', 'Moving', 'warped_static.png')
 
 """
 .. figure:: warped_static.png
     :align: center
 
 **Static image transformed under the (inverse) transformation in red
-on top of the moving image (in green)**.
+on top of the moving image (in green). Note that the moving image has lower 
+resolution**.
 """

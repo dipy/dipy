@@ -39,7 +39,9 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_sherbrooke_3shell,
                                fetch_isbi2013_2shell,
                                read_isbi2013_2shell,
-                               read_stanford_labels)
+                               read_stanford_labels,
+                               fetch_syn_data,
+                               read_syn_data)
 
 from ..utils.arrfuncs import as_native_array
 
