@@ -1308,7 +1308,7 @@ def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx,
             dj = field[i, j, 1]
 
             #premultiply displacement
-            if not affine_disp is None:
+            if affine_disp is not None:
                 dii = _apply_affine_2d_x0(di, dj, 0, affine_disp)
                 djj = _apply_affine_2d_x1(di, dj, 0, affine_disp)
             else:
@@ -1316,7 +1316,7 @@ def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx,
                 djj = dj
 
             #premultiply index
-            if not affine_idx is None:
+            if affine_idx is not None:
                 di = _apply_affine_2d_x0(i, j, 1, affine_idx)
                 dj = _apply_affine_2d_x1(i, j, 1, affine_idx)
             else:
@@ -1388,7 +1388,7 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
                 dj = field[k, i, j, 2]
 
                 #premultiply displacement
-                if not affine_disp is None:
+                if affine_disp is not None:
                     dkk = _apply_affine_3d_x0(dk, di, dj, 0, affine_disp)
                     dii = _apply_affine_3d_x1(dk ,di, dj, 0, affine_disp)
                     djj = _apply_affine_3d_x2(dk, di, dj, 0, affine_disp)
@@ -1398,7 +1398,7 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
                     djj = dj
 
                 #premultiply index
-                if not affine_idx is None:
+                if affine_idx is not None:
                     dk = _apply_affine_3d_x0(k, i, j, 1, affine_idx)
                     di = _apply_affine_3d_x1(k, i, j, 1, affine_idx)
                     dj = _apply_affine_3d_x2(k, i, j, 1, affine_idx)
@@ -1851,7 +1851,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         dii = tmp[1]
                         djj = tmp[2]
 
-                    if not affine_disp is None:
+                    if affine_disp is not None:
                         dk = _apply_affine_3d_x0(
                             dkk, dii, djj, 0, affine_disp)
                         di = _apply_affine_3d_x1(
@@ -1863,7 +1863,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         di = dii
                         dj = djj
                     
-                    if not affine_idx_out is None:
+                    if affine_idx_out is not None:
                         dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx_out)
                         dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx_out)
                         djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx_out)
@@ -2025,7 +2025,7 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dii = tmp[1]
                         djj = tmp[2]
 
-                    if not affine_disp is None:
+                    if affine_disp is not None:
                         dk = _apply_affine_3d_x0(
                             dkk, dii, djj, 0, affine_disp)
                         di = _apply_affine_3d_x1(
@@ -2037,7 +2037,7 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         di = dii
                         dj = djj
                     
-                    if not affine_idx_out is None:
+                    if affine_idx_out is not None:
                         dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx_out)
                         dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx_out)
                         djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx_out)
@@ -2193,7 +2193,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
                     djj = tmp[1]
 
                 #Apply displacement multiplication 
-                if not affine_disp is None:
+                if affine_disp is not None:
                     di = _apply_affine_2d_x0(
                         dii, djj, 0, affine_disp)
                     dj = _apply_affine_2d_x1(
@@ -2203,7 +2203,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
                     dj = djj
 
                 #Apply outer index multiplization and add the displacements
-                if not affine_idx_out is None:
+                if affine_idx_out is not None:
                     dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
                     djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
                 else:
@@ -2353,7 +2353,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
                     djj = tmp[1]
 
                 #Apply displacement multiplication 
-                if not affine_disp is None:
+                if affine_disp is not None:
                     di = _apply_affine_2d_x0(
                         dii, djj, 0, affine_disp)
                     dj = _apply_affine_2d_x1(
@@ -2363,7 +2363,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
                     dj = djj
 
                 #Apply outer index multiplization and add the displacements
-                if not affine_idx_out is None:
+                if affine_idx_out is not None:
                     dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
                     djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
                 else:
@@ -2546,7 +2546,7 @@ def create_random_displacement_2d(int[:] from_shape,
             int_field[i, j, 1] = rj
             
             #convert the input point to physical coordinates
-            if not input_affine is None:
+            if input_affine is not None:
                 di = _apply_affine_2d_x0(i, j, 1, input_affine)
                 dj = _apply_affine_2d_x1(i, j, 1, input_affine)
             else:
@@ -2554,7 +2554,7 @@ def create_random_displacement_2d(int[:] from_shape,
                 dj = j
             
             #convert the output point to physical coordinates
-            if not output_affine is None:
+            if output_affine is not None:
                 dii = _apply_affine_2d_x0(ri, rj, 1, output_affine)
                 djj = _apply_affine_2d_x1(ri, rj, 1, output_affine)
             else:
@@ -2606,7 +2606,7 @@ def create_linear_displacement_field_2d(int[:] shape,
         for j in range(ncols):
             
             #convert the input point to physical coordinates
-            if not input_affine is None:
+            if input_affine is not None:
                 di = _apply_affine_2d_x0(i, j, 1, input_affine)
                 dj = _apply_affine_2d_x1(i, j, 1, input_affine)
             else:
@@ -2615,7 +2615,7 @@ def create_linear_displacement_field_2d(int[:] shape,
 
             #transform the point
             
-            if not transform is None:
+            if transform is not None:
                 dii = _apply_affine_2d_x0(di, dj, 1, transform)
                 djj = _apply_affine_2d_x1(di, dj, 1, transform)
             else:
@@ -2680,7 +2680,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
                 int_field[k, i, j, 2] = rj
                 
                 #convert the input point to physical coordinates
-                if not input_affine is None:
+                if input_affine is not None:
                     dk = _apply_affine_3d_x0(k, i, j, 1, input_affine)
                     di = _apply_affine_3d_x1(k, i, j, 1, input_affine)
                     dj = _apply_affine_3d_x2(k, i, j, 1, input_affine)
@@ -2690,7 +2690,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
                     dj = j
 
                 #convert the output point to physical coordinates
-                if not output_affine is None:
+                if output_affine is not None:
                     dkk = _apply_affine_3d_x0(rk, ri, rj, 1, output_affine)
                     dii = _apply_affine_3d_x1(rk, ri, rj, 1, output_affine)
                     djj = _apply_affine_3d_x2(rk, ri, rj, 1, output_affine)

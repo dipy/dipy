@@ -19,14 +19,14 @@ from dipy.align.metrics import CCMetric
 import os.path
 
 """
-Let's fetch two b0 volumes, the first one will be the standard Sherbrooke dwi
+Let's fetch two b0 volumes, the first one will be the standard Sherbrooke DWI
 data
 """
 
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 fetch_stanford_hardi()
 nib_stanford, gtab_stanford = read_stanford_hardi()
-stanford_b0 = np.squeeze(nib_stanford.get_data())[...,0]
+stanford_b0 = np.squeeze(nib_stanford.get_data())[..., 0]
 
 """
 The second one will be the b0 we used for the 2D registration tutorial
@@ -51,7 +51,7 @@ moving = syn_b0_masked
 moving_affine = nib_syn_b0.get_affine()
 
 """
-Supose we have already done a linear registration to roughly align the two
+Suppose we have already done a linear registration to roughly align the two
 images
 """
 
@@ -61,7 +61,7 @@ pre_align = np.array([[1.02783543e+00, -4.83019053e-02, -6.07735639e-02, -2.5765
                       [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
 
 """
-Let's first resample the moving image on the static grid
+Let's first re-sample the moving image on the static grid
 """
 
 import dipy.align.vector_fields as vfu
@@ -75,21 +75,21 @@ resampled = np.asarray(resampled)
 def plot_middle_slices(V, fname=None):
     V = np.asarray(V, dtype = np.float64)
     sh=V.shape
-    V = 255 * (V - V.min())/(V.max() - V.min())
+    V = 255 * (V - V.min()) / (V.max() - V.min())
     axial = np.asarray(V[sh[0]//2, :, :]).astype(np.uint8).T
     coronal = np.asarray(V[:, sh[1]//2, :]).astype(np.uint8).T
     sagital = np.asarray(V[:, :, sh[2]//2]).astype(np.uint8).T
 
     plt.figure()
-    plt.subplot(1,3,1).set_axis_off()
+    plt.subplot(1, 3, 1).set_axis_off()
     plt.imshow(axial, cmap = plt.cm.gray, origin='lower')
     plt.title('Axial')
-    plt.subplot(1,3,2).set_axis_off()
+    plt.subplot(1, 3, 2).set_axis_off()
     plt.imshow(coronal, cmap = plt.cm.gray, origin='lower')
     plt.title('Coronal')
-    plt.subplot(1,3,3).set_axis_off()
+    plt.subplot(1, 3, 3).set_axis_off()
     plt.imshow(sagital, cmap = plt.cm.gray, origin='lower')
-    plt.title('Sagital')
+    plt.title('Sagittal')
     if fname is not None:
         from time import sleep
         sleep(1)
@@ -99,29 +99,29 @@ def plot_middle_slices(V, fname=None):
 def overlay_middle_slices_coronal(L, R, ltitle='Left', rtitle='Right', fname=None):
     L = np.asarray(L, dtype = np.float64)
     R = np.asarray(R, dtype = np.float64)
-    L = 255 * (L - L.min())/(L.max() - L.min())
-    R = 255 * (R - R.min())/(R.max() - R.min())
-    sh=L.shape
-    colorImage=np.zeros(shape=(sh[2], sh[0], 3), dtype=np.uint8)
-    ll=np.asarray(L[:,sh[1]//2,:]).astype(np.uint8).T
-    rr=np.asarray(R[:,sh[1]//2,:]).astype(np.uint8).T
-    colorImage[...,0]=ll*(ll>ll[0,0])
-    colorImage[...,1]=rr*(rr>rr[0,0])
+    L = 255 * (L - L.min()) / (L.max() - L.min())
+    R = 255 * (R - R.min()) / (R.max() - R.min())
+    sh = L.shape
+    colorImage = np.zeros(shape = (sh[2], sh[0], 3), dtype = np.uint8)
+    ll = np.asarray(L[:, sh[1]//2, :]).astype(np.uint8).T
+    rr = np.asarray(R[:, sh[1]//2, :]).astype(np.uint8).T
+    colorImage[..., 0] = ll * (ll > ll[0, 0])
+    colorImage[..., 1] = rr * (rr > rr[0, 0])
 
     plt.figure()
-    plt.subplot(1,3,1).set_axis_off()
-    plt.imshow(ll, cmap = plt.cm.gray, origin='lower')
+    plt.subplot(1, 3, 1).set_axis_off()
+    plt.imshow(ll, cmap = plt.cm.gray, origin = 'lower')
     plt.title(ltitle)
-    plt.subplot(1,3,2).set_axis_off()
-    plt.imshow(colorImage, origin='lower')
+    plt.subplot(1, 3, 2).set_axis_off()
+    plt.imshow(colorImage, origin = 'lower')
     plt.title('Overlay')
-    plt.subplot(1,3,3).set_axis_off()
-    plt.imshow(rr, cmap = plt.cm.gray, origin='lower')
+    plt.subplot(1, 3, 3).set_axis_off()
+    plt.imshow(rr, cmap = plt.cm.gray, origin = 'lower')
     plt.title(rtitle)
     if fname is not None:
         from time import sleep
         sleep(1)
-        plt.savefig(fname, bbox_inches='tight')
+        plt.savefig(fname, bbox_inches = 'tight')
 
 overlay_middle_slices_coronal(static, resampled, 'Static', 'Moving', 'input_3d.png')
 
@@ -135,7 +135,7 @@ overlay_middle_slices_coronal(static, resampled, 'Static', 'Moving', 'input_3d.p
 """
 We want to find an invertible map that transforms the moving image into the
 static image. Let's use the Cross Correlation metric, since it works well
-for monomodal and some multi-modal registration tasks.
+for mono-modal and some multi-modal registration tasks.
 """
 
 metric = CCMetric(3)

@@ -32,8 +32,8 @@ the RGB images (in this case the three channels are equal)
 moving = np.array(moving[:, :, 0])
 static = np.array(static[:, :, 0])
 
-moving = (moving-moving.min())/(moving.max() - moving.min())
-static = (static-static.min())/(static.max() - static.min())
+moving = (moving - moving.min()) / (moving.max() - moving.min())
+static = (static - static.min()) / (static.max() - static.min())
 
 """
 To visually check the overlap of the static image with the transformed moving
@@ -43,23 +43,23 @@ where the differences are located
 
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     #Normalize the input images to [0,127]
-    img0 = 255*((img0 - img0.min())/(img0.max() - img0.min()))
-    img1 = 255*((img1 - img1.min())/(img1.max() - img1.min()))
-    img0_red=np.zeros(shape=(img0.shape)+(3,), dtype=np.uint8)
-    img1_green=np.zeros(shape=(img0.shape)+(3,), dtype=np.uint8)
-    overlay=np.zeros(shape=(img0.shape)+(3,), dtype=np.uint8)
-    img0_red[...,0] = img0
-    img1_green[...,1] = img1
-    overlay[...,0]=img0
-    overlay[...,1]=img1
+    img0 = 255*((img0 - img0.min()) / (img0.max() - img0.min()))
+    img1 = 255*((img1 - img1.min()) / (img1.max() - img1.min()))
+    img0_red=np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
+    img1_green=np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
+    overlay=np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
+    img0_red[..., 0] = img0
+    img1_green[..., 1] = img1
+    overlay[..., 0]=img0
+    overlay[..., 1]=img1
     plt.figure()
-    plt.subplot(1,3,1).set_axis_off()
+    plt.subplot(1, 3, 1).set_axis_off()
     plt.imshow(img0_red)
     plt.title(title0)
-    plt.subplot(1,3,2).set_axis_off()
+    plt.subplot(1, 3, 2).set_axis_off()
     plt.imshow(overlay)
     plt.title(title_mid)
-    plt.subplot(1,3,3).set_axis_off()
+    plt.subplot(1, 3, 3).set_axis_off()
     plt.imshow(img1_green)
     plt.title(title1)
     if fname is not None:
@@ -86,7 +86,7 @@ of Squared Differences (SSD) is a good choice. We create a metric specifying
 2 as the dimension of our images' domain
 """
 
-metric = SSDMetric(dim = 2, step_type='gauss_newton') 
+metric = SSDMetric(dim = 2, step_type = 'gauss_newton') 
 
 """
 Now we define an instance of the optimizer of the metric. The SyN algorithm uses
@@ -97,7 +97,7 @@ the pyramid. The 0-th level corresponds to the finest resolution.
 
 opt_iter = [25, 50, 100, 200]
 
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25, inv_iter=40)
+optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25, inv_iter = 40)
 
 """
 Now we execute the optimization, which returns a DiffeomorphicMap object,
@@ -113,21 +113,21 @@ result is reasonable (at least, visually)
 """
 
 def draw_lattice_2d(nrows, ncols, delta):
-    lattice=np.ndarray((1+(delta+1)*nrows, 1+(delta+1)*ncols), dtype=np.float64)
-    lattice[...]=127
-    for i in range(nrows+1):
-        lattice[i*(delta+1), :]=0
-    for j in range(ncols+1):
-        lattice[:, j*(delta+1)]=0
+    lattice=np.ndarray((1 + (delta + 1) * nrows, 1 + (delta + 1) * ncols), dtype = np.float64)
+    lattice[...] = 127
+    for i in range(nrows + 1):
+        lattice[i*(delta + 1), :] = 0
+    for j in range(ncols + 1):
+        lattice[:, j * (delta + 1)] = 0
     return lattice
 
-def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
+def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None):
     #Create a grid on the moving domain
     nrows_moving = mapping.forward.shape[0]
     ncols_moving = mapping.forward.shape[1]
-    X1,X0=np.mgrid[0:nrows_moving, 0:ncols_moving]
-    lattice_moving=draw_lattice_2d((nrows_moving+delta)/(delta+1), 
-                                 (ncols_moving+delta)/(delta+1), delta)
+    X1,X0 = np.mgrid[0:nrows_moving, 0:ncols_moving]
+    lattice_moving=draw_lattice_2d((nrows_moving + delta) / (delta + 1), 
+                                 (ncols_moving + delta) / (delta + 1), delta)
     lattice_moving=lattice_moving[0:nrows_moving, 0:ncols_moving]
     #Warp in the forward direction (since the lattice is in the moving domain)
     warped_forward = mapping.transform(lattice_moving, 'lin')
@@ -135,9 +135,9 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
     #Create a grid on the static domain
     nrows_static = mapping.backward.shape[0]
     ncols_static = mapping.backward.shape[1]
-    X1,X0=np.mgrid[0:nrows_static, 0:ncols_static]
-    lattice_static=draw_lattice_2d((nrows_static+delta)/(delta+1), 
-                                 (ncols_static+delta)/(delta+1), delta)
+    X1,X0 = np.mgrid[0:nrows_static, 0:ncols_static]
+    lattice_static = draw_lattice_2d((nrows_static + delta) / (delta + 1), 
+                                     (ncols_static + delta) / (delta + 1), delta)
     lattice_static=lattice_static[0:nrows_static, 0:ncols_static]
     #Warp in the backward direction (since the lattice is in the static domain)
     warped_backward = mapping.transform_inverse(lattice_static, 'lin')
@@ -145,18 +145,18 @@ def plot_2d_diffeomorphic_map(mapping, delta=10, fname = None):
     #Now plot the grids
     plt.figure()
     plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(warped_forward, cmap=plt.cm.gray)
+    plt.imshow(warped_forward, cmap = plt.cm.gray)
     plt.title('Direct transform')
     plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(lattice_moving, cmap=plt.cm.gray)
+    plt.imshow(lattice_moving, cmap = plt.cm.gray)
     plt.title('Original grid')
     plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(warped_backward, cmap=plt.cm.gray)
+    plt.imshow(warped_backward, cmap = plt.cm.gray)
     plt.title('Inverse transform')
     if fname is not None:
       from time import sleep
       sleep(1)
-      plt.savefig(fname, bbox_inches='tight')
+      plt.savefig(fname, bbox_inches = 'tight')
 
 plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 
@@ -164,7 +164,7 @@ plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 .. figure:: diffeomorphic_map.png
    :align: center
 
-**Deformed lattice under the resulting diffeomorhic map**.
+**Deformed lattice under the resulting diffeomorphic map**.
 """
 
 """
@@ -241,12 +241,12 @@ b0_mask, mask = median_otsu(data, 4, 4)
 And select two slices to try the 2D registration
 """
 
-static = b0_mask[:,:,40]
-moving = b0_mask[:,:,38]
+static = b0_mask[:, :, 40]
+moving = b0_mask[:, :, 38]
 
 """
-After loading the data, we instanciate the Cross Correlation metric. The metric
-receives three parameters: de dimension of the input images, the standard 
+After loading the data, we instantiate the Cross Correlation metric. The metric
+receives three parameters: the dimension of the input images, the standard 
 deviation of the Gaussian Kernel to be used to regularize the gradient and the
 radius of the window to be used for evaluating the local normalized cross
 correlation.
@@ -324,5 +324,5 @@ plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
 .. figure:: diffeomorphic_map_b0s.png
    :align: center
 
-**Deformed lattice under the resulting diffeomorhic map**.
+**Deformed lattice under the resulting diffeomorphic map**.
 """
