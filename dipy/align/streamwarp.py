@@ -192,6 +192,8 @@ class StreamlineRigidRegistration(object):
             opt.info
 
         opt_mat = matrix44(opt.xopt)
+
+
         static_mat = matrix44([static_shift[0], static_shift[1],
                                static_shift[2], 0, 0, 0])
 
@@ -449,7 +451,7 @@ def matrix44(t, dtype=np.double):
     elif size == 7:
         T[0:3, 0:3] = t[6] * R
     else:
-        S = np.diag(np.exp(threshold(t[6:9], LOG_MAX_DIST)))
+        S = np.diag(threshold(t[6:9], LOG_MAX_DIST))
         Q = rotation_vec2mat(t[9:12])
         # Beware: R*s*Q
         T[0:3, 0:3] = np.dot(R, np.dot(S, Q))

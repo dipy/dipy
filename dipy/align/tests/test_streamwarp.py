@@ -8,6 +8,7 @@ from dipy.align.streamwarp import (transform_streamlines,
                                    matrix44,
                                    from_matrix44_rigid,
                                    BundleSumDistance,
+                                   BundleMinDistance,
                                    center_streamlines)
 from dipy.tracking.metrics import downsample
 from dipy.data import get_data
@@ -275,8 +276,123 @@ def test_from_to_rigid():
 
     assert_array_almost_equal(t, vec)
 
+
+def test_similarity_real_bundles():
+
+    bundle_initial = fornix_streamlines()[:20]
+    bundle, shift = center_streamlines(bundle_initial)
+    xgold = [0, 0, 10, 0, 0, 0, 1.5]
+    mat = matrix44(xgold)
+    bundle2 = transform_streamlines(bundle, mat)
+
+    from dipy.viz import fvtk
+
+    ren = fvtk.ren()
+    fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
+    fvtk.add(ren, fvtk.line(bundle2, fvtk.colors.green))
+    fvtk.show(ren)
+
+    bundle_sum_distance = BundleSumDistance()
+    x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
+
+    bounds = [(-5, 5), (-5, 5), (-5, 5),
+              (-5, 5), (-5, 5), (-5, 5), (0.1, 1.5)]
+
+    options = {'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8}
+
+    metric = BundleMinDistance()
+
+    srr = StreamlineRigidRegistration(metric=metric,
+                                      x0=x0,
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      fast=False,
+                                      disp=True,
+                                      options=options)
+
+    srm = srr.optimize(bundle, bundle2)
+    np.set_printoptions(3, suppress=True)
+    print('xgold')
+    print(np.array(xgold))
+    print('x0')
+    print(x0)
+    print('xopt')
+    print(srm.xopt)
+
+    new_bundle2 = srm.transform(bundle2)
+    evaluate_convergence(bundle, new_bundle2)
+    fvtk.add(ren, fvtk.line(new_bundle2, fvtk.colors.yellow))
+    fvtk.show(ren)
+
+
+def test_affine_real_bundles():
+
+    bundle_initial = fornix_streamlines()[:20]
+    bundle, shift = center_streamlines(bundle_initial)
+    #xgold = [0, 0, 10, 0, 0, 0, 1.5, 1.2, 1.2, 0.2, 0, 0]
+    xgold = [0, 0, 10, 0, 10, 0, 1.2, 1., 1., 0., 0.6, 0]
+    mat = matrix44(xgold)
+    bundle2 = transform_streamlines(bundle, mat)
+    from dipy.viz import fvtk
+
+    ren = fvtk.ren()
+    fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
+    fvtk.add(ren, fvtk.line(bundle2, fvtk.colors.green))
+    fvtk.add(ren, fvtk.axes())
+    fvtk.show(ren)
+
+    bundle_sum_distance = BundleSumDistance()
+    x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
+
+    x = 25
+
+    bounds = [(-x, x), (-x, x), (-x, x),
+              (-x, x), (-x, x), (-x, x),
+              (0.1, 1.5), (0.1, 1.5), (0.1, 1.5),
+              (-1, 1), (-1, 1), (-1, 1)]
+
+    options = {'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8}
+
+    metric = BundleMinDistance()
+
+    # srr = StreamlineRigidRegistration(metric=metric,
+    #                                   x0=x0,
+    #                                   method='L-BFGS-B',
+    #                                   bounds=bounds,
+    #                                   fast=False,
+    #                                   disp=True,
+    #                                   options=options)
+
+    srr = StreamlineRigidRegistration(metric=metric,
+                                      x0=x0,
+                                      method='Powell',
+                                      bounds=None,
+                                      fast=False,
+                                      disp=True,
+                                      options=None)
+
+
+
+    srm = srr.optimize(bundle, bundle2)
+    np.set_printoptions(3, suppress=True)
+    print('xgold')
+    print(np.array(xgold))
+    print('x0')
+    print(x0)
+    print('xopt')
+    print(srm.xopt)
+
+    new_bundle2 = srm.transform(bundle2)
+    #evaluate_convergence(bundle, new_bundle2)
+    fvtk.clear(ren)
+    fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
+    fvtk.add(ren, fvtk.line(new_bundle2, fvtk.colors.yellow))
+    fvtk.show(ren)
+
 if __name__ == '__main__':
 
-    run_module_suite()
+    #run_module_suite()
+    #test_similarity_real_bundles()
+    test_affine_real_bundles()
 
 
