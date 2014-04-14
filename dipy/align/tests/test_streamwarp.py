@@ -265,9 +265,6 @@ def test_openmp_locks():
     assert_equal(dist1, dist2)
 
 
-
-
-
 def test_from_to_rigid():
 
     t = np.array([10, 2, 3, 0.1, 20., 30.])
@@ -281,4 +278,5 @@ def test_from_to_rigid():
 if __name__ == '__main__':
 
     run_module_suite()
+
 

@@ -14,18 +14,18 @@ minimize_version = StrictVersion('0.11')
 
 if scipy_version >= minimize_version:
 
-    scipy_less_0_11 = False
+    SCIPY_LESS_0_11 = False
     from scipy.optimize import minimize
 
 else:
 
-    scipy_less_0_11 = True
+    SCIPY_LESS_0_11 = True
     from scipy.optimize import fmin_l_bfgs_b, fmin_powell
 
 
 class Optimizer(object):
 
-    def __init__(self, fun,  x0, args=(), method='BFGS', jac=None, hess=None,
+    def __init__(self, fun,  x0, args=(), method='L-BFGS-B', jac=None, hess=None,
                  hessp=None, bounds=None, constraints=(), tol=None,
                  callback=None, options=None, evolution=False):
         """ A class for handling minimization of scalar function of one or more
@@ -127,7 +127,7 @@ class Optimizer(object):
         self.evolution_fname = None
         self.size_of_x = len(x0)
 
-        if scipy_less_0_11:
+        if SCIPY_LESS_0_11:
 
             if method == 'L-BFGS-B':
 
@@ -165,11 +165,11 @@ class Optimizer(object):
 
             else:
 
-                msg = 'Only L-BFGS-B is supported in this class for versions'
-                msg += 'Scipy < 0.11.'
+                msg = 'Only L-BFGS-B and Powell is supported in this class '
+                msg += 'for versions of Scipy < 0.11.'
                 raise ValueError(msg)
 
-        if not scipy_less_0_11:
+        if not SCIPY_LESS_0_11:
 
             if evolution is True:
 
