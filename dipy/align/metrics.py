@@ -1,12 +1,11 @@
+from __future__ import print_function
 import numpy as np
 import scipy as sp
 import matplotlib.pyplot as plt
 import abc
 from scipy import gradient, ndimage
-import vector_fields as vfu
-import ssd
-import cc
-import em
+import dipy.align.vector_fields as vfu
+from dipy.align import ssd, cc, em
 from dipy.align import floating
 
 

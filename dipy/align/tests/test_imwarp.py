@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal, 

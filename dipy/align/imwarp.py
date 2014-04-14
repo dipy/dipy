@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import numpy.linalg as linalg
 import scipy as sp
@@ -231,11 +232,11 @@ class ScaleSpace(object):
         level : int, 0 <= from_level < L, (L = number of resolutions)
             the scale space level to be printed 
         """
-        print 'Domain shape:', self.get_domain_shape(level)
-        print 'Spacing:', self.get_spacing(level)
-        print 'Scaling:', self.get_scaling(level)
-        print 'Affine:', self.get_affine(level)
-        print 'Sigmas:', self.get_sigmas(level)
+        print('Domain shape: ', self.get_domain_shape(level)) 
+        print('Spacing: ', self.get_spacing(level))
+        print('Scaling: ', self.get_scaling(level)) 
+        print('Affine: ', self.get_affine(level))
+        print('Sigmas: ', self.get_sigmas(level))
 
     def get_image(self, level):
         r"""
@@ -1174,7 +1175,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         ready = self._check_ready()
         self._connect_functions()
         if not ready:
-            print 'Not ready'
+            print('Not ready')
             return False
         #Extract information from the affine matrices to create the scale space
         static_direction, static_spacing = get_direction_and_spacings(static_affine, self.dim)
@@ -1419,7 +1420,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         n_iter = len(self.energy_list)
         if n_iter < self.energy_window:
-            print 'Error: attempting to fit the energy profile with less points (', n_iter, ') than required (energy_window=', self.energy_window, ')'
+            print('Error: attempting to fit the energy profile with less points (', 
+                n_iter, ') than required (energy_window=', self.energy_window, ')')
             return 1
         x = range(self.energy_window)
         y = self.energy_list[(n_iter - self.energy_window):n_iter]
@@ -1465,7 +1467,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 niter += 1
 
             self.full_energy_profile.extend(self.energy_list)
-            
+
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_END)
             
@@ -1527,7 +1529,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         """
         if self.verbosity >= VerbosityLevels.DEBUG:
-            print "Pre-align:",prealign
+            print("Pre-align:", prealign)
 
         self._init_optimizer(static.astype(floating), moving.astype(floating), 
                              static_affine, moving_affine, prealign)
