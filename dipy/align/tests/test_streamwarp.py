@@ -89,6 +89,13 @@ def test_rigid_real_bundles():
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
     evaluate_convergence(bundle, new_bundle2)
+    
+    srr = StreamlineLinearRegistration(x0=np.zeros(6),
+                                      method='Powell',
+                                      fast=False)
+    new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
+
+    evaluate_convergence(bundle, new_bundle2)
 
 
 def test_rigid_partial_real_bundles():
