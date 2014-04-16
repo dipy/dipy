@@ -9,11 +9,13 @@ from dipy.align.streamwarp import (transform_streamlines,
                                    from_matrix44_rigid,
                                    BundleSumDistance,
                                    BundleMinDistance,
+                                   BundleMinDistanceFast,
                                    center_streamlines)
 from dipy.tracking.metrics import downsample
 from dipy.data import get_data
 from nibabel import trackvis as tv
-from dipy.align.streamwarp import (StreamlineRigidRegistration,
+from dipy.align.streamwarp import (StreamlineLinearRegistration,
+                                   StreamlineDistanceMetric,
                                    compose_transformations,
                                    vectorize_streamlines,
                                    unlist_streamlines,
@@ -60,7 +62,7 @@ def test_rigid_parallel_lines():
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistance()
-    srr = StreamlineRigidRegistration(metric=bundle_sum_distance,
+    srr = StreamlineLinearRegistration(metric=bundle_sum_distance,
                                       x0=np.zeros(6),
                                       method='L-BFGS-B',
                                       bounds=None,
@@ -80,7 +82,7 @@ def test_rigid_real_bundles():
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistance()
-    srr = StreamlineRigidRegistration(bundle_sum_distance,
+    srr = StreamlineLinearRegistration(bundle_sum_distance,
                                       x0=np.zeros(6),
                                       method='Powell',
                                       fast=False)
@@ -98,7 +100,7 @@ def test_rigid_partial_real_bundles():
     mat = matrix44([0, 0, 0, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
 
-    srr = StreamlineRigidRegistration()
+    srr = StreamlineLinearRegistration()
 
     moving_center = srr.optimize(static_center, moving).transform(moving)
 
@@ -136,13 +138,13 @@ def test_stream_rigid():
     mat = matrix44([0, 0, 0, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
 
-    srr = StreamlineRigidRegistration()
+    srr = StreamlineLinearRegistration()
 
     sr_params = srr.optimize(static, moving)
 
     moved = transform_streamlines(moving, sr_params.matrix)
 
-    srr = StreamlineRigidRegistration(disp=True)
+    srr = StreamlineLinearRegistration(disp=True, fast=True)
 
     srm = srr.optimize(static, moving)
 
@@ -152,6 +154,29 @@ def test_stream_rigid():
 
     assert_array_equal(moved[0], moved2[0])
     assert_array_equal(moved2[0], moved3[0])
+
+
+def test_min_vs_min_fast_precision():
+
+    static = fornix_streamlines()[:20]
+    moving = fornix_streamlines()[:20]
+
+    static = [s.astype('f8') for s in static]
+    moving = [m.astype('f8') for m in moving]
+
+    bmd = BundleMinDistance()
+    bmd.set_static(static)
+    bmd.set_moving(moving)
+
+    bmdf = BundleMinDistanceFast()
+    bmdf.set_static(static)
+    bmdf.set_moving(moving)
+
+    x_test = [0.01, 0, 0, 0, 0, 0]
+
+    print(bmd.distance(x_test))
+    print(bmdf.distance(x_test))
+    assert_equal(bmd.distance(x_test), bmdf.distance(x_test))
 
 
 def test_compose_transformations():
@@ -277,6 +302,13 @@ def test_from_to_rigid():
     assert_array_almost_equal(t, vec)
 
 
+def test_abstract_metric_class():
+
+    s = StreamlineDistanceMetric()
+    assert_equal(s.distance(np.ones(6)), None)
+
+
+"""
 def test_similarity_real_bundles():
 
     bundle_initial = fornix_streamlines()
@@ -303,7 +335,7 @@ def test_similarity_real_bundles():
 
     metric = BundleMinDistance()
 
-    srr = StreamlineRigidRegistration(metric=metric,
+    srr = StreamlineLinearRegistration(metric=metric,
                                       x0=x0,
                                       method='L-BFGS-B',
                                       bounds=bounds,
@@ -357,7 +389,7 @@ def test_affine_real_bundles():
 
     metric = BundleMinDistance()
 
-    srr = StreamlineRigidRegistration(metric=metric,
+    srr = StreamlineLinearRegistration(metric=metric,
                                       x0=x0,
                                       method='L-BFGS-B',
                                       bounds=bounds,
@@ -366,7 +398,7 @@ def test_affine_real_bundles():
                                       options=options)
     srm = srr.optimize(bundle, bundle2)
 
-    srr = StreamlineRigidRegistration(metric=metric,
+    srr = StreamlineLinearRegistration(metric=metric,
                                       x0=x0,
                                       method='Powell',
                                       bounds=None,
@@ -440,11 +472,15 @@ def test_affine_real_bundles_check_shears():
 
         fvtk.show(ren, size=(600, 600))
         fvtk.rm(ren, actor)
+"""
+
 
 if __name__ == '__main__':
 
     #run_module_suite()
-    test_similarity_real_bundles()
+    test_min_vs_min_fast_precision()
+    #test_efficient_bmd()
+    #test_similarity_real_bundles()
     #test_affine_real_bundles()
     #test_affine_real_bundles_check_shears()
 

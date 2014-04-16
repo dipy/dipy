@@ -153,7 +153,6 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         double * min_i
         openmp.omp_lock_t lock
 
-
     with nogil:
 
         openmp.omp_init_lock(&lock)

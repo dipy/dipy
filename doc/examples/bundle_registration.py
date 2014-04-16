@@ -21,7 +21,7 @@ cb_subj1 = cingulum_bundles[0]
 cb_subj2 = cingulum_bundles[1]
 
 
-from dipy.align.streamwarp import (StreamlineRigidRegistration, 
+from dipy.align.streamwarp import (StreamlineLinearRegistration, 
                                    vectorize_streamlines)
 
 """
@@ -38,7 +38,7 @@ Let's say now that we want to move the ``cb_subj2`` (moving) so that it can be
 aligned with ``cb_subj1`` (static). Here is how this is done.
 """
 
-srr = StreamlineRigidRegistration()
+srr = StreamlineLinearRegistration()
 
 srm = srr.optimize(static=cb_subj1, moving=cb_subj2)
 

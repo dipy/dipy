@@ -73,11 +73,11 @@ class BundleSumDistance(StreamlineDistanceMetric):
         return bundle_sum_distance(xopt, self.static, self.moving)
 
 
-class StreamlineRigidRegistration(object):
+class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0=None, method='L-BFGS-B',
                  bounds=None, fast=True, disp=False, options=None):
-        r""" Rigid registration of 2 sets of streamlines [Garyfallidis14]_.
+        r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
         ----------
@@ -88,6 +88,10 @@ class StreamlineRigidRegistration(object):
 
         x0 : None or array
             Initial parametrization. If None ``x0=np.ones(6)``.
+            If x0 has 6 elements then only translation and rotation is performed
+            (rigid). If x0 has 7 elements also isotropic scaling is performed 
+            (similarity). If x0 has 12 elements then translation, rotation, 
+            scaling and shearing is performed (affine).
 
         method : str,
             'L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
@@ -101,6 +105,8 @@ class StreamlineRigidRegistration(object):
             and three rotation axes (in degrees).
 
         fast : boolean
+            Allows faster execution. Currently works only with rigid 
+            registration.
 
         options : None or dict,
             Extra options to be used with the selected method.
@@ -131,7 +137,7 @@ class StreamlineRigidRegistration(object):
         self.disp = disp
         self.method = method
         if self.method not in ['Powell', 'L-BFGS-B']:
-            raise ValueError('Not approriate method')
+            raise ValueError('Not appropriate method')
         self.bounds = bounds
         self.fast = fast
         self.options = options
@@ -210,11 +216,6 @@ class StreamlineRigidRegistration(object):
                                                            matrix44(vecs),
                                                            static_mat))
 
-        # imat = np.linalg.inv(mat)
-        # xopt = np.array(opt.xopt)
-        # xopt[:3] = imat[:3, 3]
-        # xopt[3: 6] = - xopt[3: 6]
-
         return StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
                                          mat_history, opt.nfev, opt.nit)
 
@@ -265,12 +266,17 @@ class StreamlineRegistrationMap(object):
         xopt = self.xopt
         ixopt = np.array(xopt)
         ixopt[:6] = -xopt[:6]
-        ixopt[6:9] = 1/xopt[6:9]
-        ixopt[9:] = -xopt[9:]
+        if xopt.shape[0] > 6:
+            if xopt.shape[0] == 7:
+                ixopt[6] = 1/xopt[6]
+            else:
+                ixopt[6:9] = 1/xopt[6:9]
+        if xopt.shape[0] > 9:
+            ixopt[9:] = -xopt[9:]
         return ixopt
 
     def transform(self, streamlines):
-        """ Apply ``matopt`` to the streamlines
+        """ Apply ``self.matrix`` to the streamlines
         """
 
         return transform_streamlines(streamlines, self.matrix)
