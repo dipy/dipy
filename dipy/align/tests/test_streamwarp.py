@@ -279,11 +279,12 @@ def test_from_to_rigid():
 
 def test_similarity_real_bundles():
 
-    bundle_initial = fornix_streamlines()[:20]
-    bundle, shift = center_streamlines(bundle_initial)
+    bundle_initial = fornix_streamlines()
+    bundle_initial, shift = center_streamlines(bundle_initial)
+    bundle = bundle_initial[:20]
     xgold = [0, 0, 10, 0, 0, 0, 1.5]
     mat = matrix44(xgold)
-    bundle2 = transform_streamlines(bundle, mat)
+    bundle2 = transform_streamlines(bundle_initial[:20], mat)
 
     from dipy.viz import fvtk
 
@@ -327,12 +328,13 @@ def test_similarity_real_bundles():
 
 def test_affine_real_bundles():
 
-    bundle_initial = fornix_streamlines()[:20]
-    bundle, shift = center_streamlines(bundle_initial)
+    bundle_initial = fornix_streamlines()#[:20]
+    bundle_initial, shift = center_streamlines(bundle_initial)
+    bundle = bundle_initial[:20]
     #xgold = [0, 0, 10, 0, 0, 0, 1.5, 1.2, 1.2, 0.2, 0, 0]
-    xgold = [0, 0, 10, 0, 10, 0, 1.2, 1., 1., 0., 0.6, 0]
+    xgold = [0, 4, 2, 0, 10, 10, 1.2, 1.1, 1., 0., 0., 0.]
     mat = matrix44(xgold)
-    bundle2 = transform_streamlines(bundle, mat)
+    bundle2 = transform_streamlines(bundle_initial[:20], mat)
     from dipy.viz import fvtk
 
     ren = fvtk.ren()
@@ -355,13 +357,14 @@ def test_affine_real_bundles():
 
     metric = BundleMinDistance()
 
-    # srr = StreamlineRigidRegistration(metric=metric,
-    #                                   x0=x0,
-    #                                   method='L-BFGS-B',
-    #                                   bounds=bounds,
-    #                                   fast=False,
-    #                                   disp=True,
-    #                                   options=options)
+    srr = StreamlineRigidRegistration(metric=metric,
+                                      x0=x0,
+                                      method='L-BFGS-B',
+                                      bounds=bounds,
+                                      fast=False,
+                                      disp=True,
+                                      options=options)
+    srm = srr.optimize(bundle, bundle2)
 
     srr = StreamlineRigidRegistration(metric=metric,
                                       x0=x0,
@@ -371,16 +374,17 @@ def test_affine_real_bundles():
                                       disp=True,
                                       options=None)
 
-
-
     srm = srr.optimize(bundle, bundle2)
-    np.set_printoptions(3, suppress=True)
+    np.set_printoptions(2, suppress=True)
     print('xgold')
     print(np.array(xgold))
     print('x0')
     print(x0)
     print('xopt')
     print(srm.xopt)
+    print('ixopt')
+    print(srm.ixopt)
+
 
     new_bundle2 = srm.transform(bundle2)
     #evaluate_convergence(bundle, new_bundle2)
@@ -389,10 +393,59 @@ def test_affine_real_bundles():
     fvtk.add(ren, fvtk.line(new_bundle2, fvtk.colors.yellow))
     fvtk.show(ren)
 
+
+def test_affine_real_bundles_check_shears():
+
+    #bundle_initial = fornix_streamlines()[:20]
+    atom = 10 * np.array([[0, -1, 0], [0, 0, 0], [0, 1., 0]])
+    bundle_initial = [atom + np.array([-2, 0, 0]),
+                      atom + np.array([ 0, 0, -2]),
+                      atom + np.array([ -2, 0, -2]),
+                      atom + np.array([ 0, 0,  2]),
+                      atom + np.array([ 2, 0, 2]),
+                      atom + np.array([ -2, 0, 2]),
+                      atom + np.array([ 2, 0, -2]),
+                      atom,
+                      atom + np.array([2, 0, 0])]
+    bundle, shift = center_streamlines(bundle_initial)
+    #xgold = [0, 0, 10, 0, 0, 0, 1.5, 1.2, 1.2, 0.2, 0, 0]
+
+    from dipy.viz import fvtk
+    ren = fvtk.ren()
+    #fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
+    fvtk.add(ren, fvtk.axes(scale=(5, 5, 5)))
+
+    kx, ky, kz = (.5, 0, .5)
+
+    for ky in np.arange(0, 1, 1):
+
+        mat = np.array([[1, kx*kz, kx, 0],
+                        [ky, 1, 0, 0],
+                        [0, kz, 1, 0],
+                        [0, 0, 0, 1]])
+
+        # print(ky)
+        # mat = np.array([[1, kx, kz, 0],
+        #                  [0, 1, ky, 0],
+        #                  [0, 0, 1, 0],
+        #                  [0, 0, 0, 1]])
+
+        # print(mat)
+
+        #mat[0, -1] = 10
+        bundle2 = transform_streamlines(bundle, mat)
+
+        actor = fvtk.line(bundle2, fvtk.colors.green)
+        fvtk.add(ren, actor)
+
+        fvtk.show(ren, size=(600, 600))
+        fvtk.rm(ren, actor)
+
 if __name__ == '__main__':
 
     #run_module_suite()
-    #test_similarity_real_bundles()
-    test_affine_real_bundles()
+    test_similarity_real_bundles()
+    #test_affine_real_bundles()
+    #test_affine_real_bundles_check_shears()
 
 
