@@ -12,6 +12,9 @@ from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
 
 
+cdef cnp.dtype f64_dt = np.dtype(np.float64)
+
+
 cdef double direct_flip_dist(double *a,double *b,
                              cnp.npy_intp rows) nogil:
     r""" Direct and flip average distance between two streamlines
@@ -197,3 +200,69 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         dist = 0.25 * dist * dist
     
     return dist
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def bundles_distance_matrix_mdf(streamlines_a, streamlines_b):
+    r''' Calculate distance matrix between two sets of streamlines using the
+    minimum direct flipped distance.
+
+    All streamlines need to have the same number of points
+
+    Parameters
+    ----------
+    streamlines_a : sequence
+       of streamlines as arrays, [(N, 3) .. (N, 3)]
+    streamlines_b : sequence
+       of streamlines as arrays, [(N, 3) .. (N, 3)]
+
+    Returns
+    -------
+    DM : array, shape (len(streamlines_a), len(streamlines_b))
+        distance matrix
+    
+    '''
+    cdef:
+        size_t i, j, lentA, lentB
+    # preprocess tracks
+    cdef:
+        size_t longest_track_len = 0, track_len
+        longest_track_lenA, longest_track_lenB
+        cnp.ndarray[object, ndim=1] tracksA64
+        cnp.ndarray[object, ndim=1] tracksB64
+        cnp.ndarray[cnp.double_t, ndim=2] DM
+    lentA = len(streamlines_a)
+    lentB = len(streamlines_b)
+    tracksA64 = np.zeros((lentA,), dtype=object)
+    tracksB64 = np.zeros((lentB,), dtype=object)
+    DM = np.zeros((lentA,lentB), dtype=np.double)
+    if streamlines_a[0].shape[0] != streamlines_b[0].shape[0]:
+        msg = 'Streamlines should have the same number of points as required'
+        msg += 'by the MDF distance'
+        raise ValueError(msg)
+    # process tracks to predictable memory layout
+    for i in range(lentA):
+        tracksA64[i] = np.ascontiguousarray(streamlines_a[i], dtype=f64_dt)
+    for i in range(lentB):
+        tracksB64[i] = np.ascontiguousarray(streamlines_b[i], dtype=f64_dt)
+    # preallocate buffer array for track distance calculations
+    cdef:
+        cnp.float64_t *t1_ptr, *t2_ptr, *min_buffer
+    # cycle over tracks
+    cdef:
+        cnp.ndarray [cnp.float64_t, ndim=2] t1, t2
+        size_t t1_len, t2_len
+        double d[2]
+    t_len = tracksA64[0].shape[0]
+
+    for i from 0 <= i < lentA:
+        t1 = tracksA64[i]
+        t1_ptr = <cnp.float64_t *>t1.data
+        for j from 0 <= j < lentB:
+            t2 = tracksB64[j]            
+            t2_ptr = <cnp.float64_t *>t2.data
+            
+            DM[i, j] = direct_flip_dist(t1_ptr, t2_ptr,t_len)
+            
+    return DM

@@ -2,12 +2,12 @@ import abc
 import numpy as np
 from nibabel.affines import apply_affine
 from nibabel.quaternions import quat2angle_axis, mat2quat
-from dipy.tracking.distances import bundles_distances_mdf
 from scipy.linalg import det
 from dipy.core.optimize import Optimizer
 from dipy.tracking.metrics import downsample
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
-                            _bundle_minimum_distance_rigid_nomat)
+                            _bundle_minimum_distance_rigid_nomat,
+                            bundles_distance_matrix_mdf)
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -314,7 +314,7 @@ def bundle_sum_distance(t, static, moving):
 
     aff = matrix44(t)
     moving = transform_streamlines(moving, aff)
-    d01 = bundles_distances_mdf(static, moving)
+    d01 = bundles_distance_matrix_mdf(static, moving)
     return np.sum(d01)
 
 
@@ -349,7 +349,7 @@ def bundle_min_distance(t, static, moving):
     """
     aff = matrix44(t)
     moving = transform_streamlines(moving, aff)
-    d01 = bundles_distances_mdf(static, moving)
+    d01 = bundles_distance_matrix_mdf(static, moving)
 
     rows, cols = d01.shape
     return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +

@@ -21,8 +21,8 @@ from dipy.align.streamwarp import (StreamlineLinearRegistration,
                                    unlist_streamlines,
                                    relist_streamlines)
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
-                            _bundle_minimum_distance_rigid_nomat)
-from dipy.tracking.distances import bundles_distances_mdf
+                            _bundle_minimum_distance_rigid_nomat,
+                            bundles_distance_matrix_mdf)
 import scipy
 
 
@@ -243,7 +243,7 @@ def test_efficient_bmd():
                                   a.shape[0], D)
 
     streamlines2 = relist_streamlines(points2, offsets)
-    D2 = bundles_distances_mdf(streamlines, streamlines2)
+    D2 = bundles_distance_matrix_mdf(streamlines, streamlines2)
 
     assert_array_almost_equal(D, D2)
 
