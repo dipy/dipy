@@ -137,7 +137,7 @@ class StreamlineLinearRegistration(object):
         self.disp = disp
         self.method = method
         if self.method not in ['Powell', 'L-BFGS-B']:
-            raise ValueError('Not appropriate method')
+            raise ValueError('Only Powell and L-BFGS-B can be used')
         self.bounds = bounds
         self.fast = fast
         self.options = options

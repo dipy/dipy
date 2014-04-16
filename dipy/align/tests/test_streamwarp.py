@@ -3,7 +3,8 @@ from numpy.testing import (run_module_suite,
                            assert_equal,
                            assert_almost_equal,
                            assert_array_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           assert_raises)
 from dipy.align.streamwarp import (transform_streamlines,
                                    matrix44,
                                    from_matrix44_rigid,
@@ -97,6 +98,8 @@ def test_rigid_real_bundles():
 
     evaluate_convergence(bundle, new_bundle2)
 
+    assert_raises(ValueError, StreamlineLinearRegistration, method='Whatever')
+
 
 def test_rigid_partial_real_bundles():
 
@@ -184,6 +187,19 @@ def test_min_vs_min_fast_precision():
     print(bmd.distance(x_test))
     print(bmdf.distance(x_test))
     assert_equal(bmd.distance(x_test), bmdf.distance(x_test))
+
+
+def test_same_number_of_points():
+
+    A = [np.random.rand(10, 3), np.random.rand(20, 3)]
+    B = [np.random.rand(21, 3), np.random.rand(30, 3)]
+    C = [np.random.rand(10, 3), np.random.rand(10, 3)]
+    D = [np.random.rand(20, 3), np.random.rand(20, 3)]
+
+    slr = StreamlineLinearRegistration()
+    assert_raises(ValueError, slr.optimize, A, B)    
+    assert_raises(ValueError, slr.optimize, C, D)
+    assert_raises(ValueError, slr.optimize, C, B)
 
 
 def test_compose_transformations():
