@@ -90,7 +90,7 @@ def test_rigid_real_bundles():
     new_bundle2 = srr.optimize(bundle, bundle2).transform(bundle2)
 
     evaluate_convergence(bundle, new_bundle2)
-    
+
     srr = StreamlineLinearRegistration(x0=np.zeros(6),
                                       method='Powell',
                                       fast=False)
@@ -197,7 +197,7 @@ def test_same_number_of_points():
     D = [np.random.rand(20, 3), np.random.rand(20, 3)]
 
     slr = StreamlineLinearRegistration()
-    assert_raises(ValueError, slr.optimize, A, B)    
+    assert_raises(ValueError, slr.optimize, A, B)
     assert_raises(ValueError, slr.optimize, C, D)
     assert_raises(ValueError, slr.optimize, C, B)
 
@@ -331,7 +331,24 @@ def test_abstract_metric_class():
     assert_equal(s.distance(np.ones(6)), None)
 
 
-"""
+def test_evolution_of_previous_iterations():
+
+    static = fornix_streamlines()[:20]
+    moving = fornix_streamlines()[:20]
+
+    moving = [m + np.array([10., 0., 0.]) for m in moving]
+
+    slr = StreamlineLinearRegistration(evolution=True)
+
+    from dipy.core.optimize import SCIPY_LESS_0_11
+
+    if not SCIPY_LESS_0_11:
+
+        slm = slr.optimize(static, moving)
+
+        assert_equal(len(slm.matrix_history), slm.iterations)
+
+
 def test_similarity_real_bundles():
 
     bundle_initial = fornix_streamlines()
@@ -341,46 +358,33 @@ def test_similarity_real_bundles():
     mat = matrix44(xgold)
     bundle2 = transform_streamlines(bundle_initial[:20], mat)
 
-    from dipy.viz import fvtk
-
-    ren = fvtk.ren()
-    fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
-    fvtk.add(ren, fvtk.line(bundle2, fvtk.colors.green))
-    fvtk.show(ren)
-
-    bundle_sum_distance = BundleSumDistance()
-    x0 = np.array([0, 0, 0, 0, 0, 0, 1.])
-
-    bounds = [(-5, 5), (-5, 5), (-5, 5),
-              (-5, 5), (-5, 5), (-5, 5), (0.1, 1.5)]
-
-    options = {'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8}
-
     metric = BundleMinDistance()
+    x0 = np.array([0, 0, 0, 0, 0, 0, 1], 'f8')
 
-    srr = StreamlineLinearRegistration(metric=metric,
+    slr = StreamlineLinearRegistration(metric=metric,
                                       x0=x0,
-                                      method='L-BFGS-B',
-                                      bounds=bounds,
+                                      method='Powell',
+                                      bounds=None,
                                       fast=False,
-                                      disp=True,
-                                      options=options)
+                                      disp=False)
 
-    srm = srr.optimize(bundle, bundle2)
+    slm = slr.optimize(bundle, bundle2)
     np.set_printoptions(3, suppress=True)
     print('xgold')
     print(np.array(xgold))
     print('x0')
     print(x0)
     print('xopt')
-    print(srm.xopt)
+    print(slm.xopt)
+    print('ixopt')
+    print(slm.ixopt)
 
-    new_bundle2 = srm.transform(bundle2)
+    new_bundle2 = slm.transform(bundle2)
     evaluate_convergence(bundle, new_bundle2)
-    fvtk.add(ren, fvtk.line(new_bundle2, fvtk.colors.yellow))
-    fvtk.show(ren)
 
+    assert_array_almost_equal(xgold, slm.ixopt)
 
+"""
 def test_affine_real_bundles():
 
     bundle_initial = fornix_streamlines()#[:20]
@@ -501,7 +505,8 @@ def test_affine_real_bundles_check_shears():
 if __name__ == '__main__':
 
     #run_module_suite()
-    test_min_vs_min_fast_precision()
+    #test_min_vs_min_fast_precision()
+    test_evolution_of_previous_iterations()
     #test_efficient_bmd()
     #test_similarity_real_bundles()
     #test_affine_real_bundles()

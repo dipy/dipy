@@ -76,7 +76,8 @@ class BundleSumDistance(StreamlineDistanceMetric):
 class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0=None, method='L-BFGS-B',
-                 bounds=None, fast=True, disp=False, options=None):
+                 bounds=None, fast=True, disp=False, options=None,
+                 evolution=False):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
 
         Parameters
@@ -89,8 +90,8 @@ class StreamlineLinearRegistration(object):
         x0 : None or array
             Initial parametrization. If None ``x0=np.ones(6)``.
             If x0 has 6 elements then only translation and rotation is performed
-            (rigid). If x0 has 7 elements also isotropic scaling is performed 
-            (similarity). If x0 has 12 elements then translation, rotation, 
+            (rigid). If x0 has 7 elements also isotropic scaling is performed
+            (similarity). If x0 has 12 elements then translation, rotation,
             scaling and shearing is performed (affine).
 
         method : str,
@@ -105,11 +106,15 @@ class StreamlineLinearRegistration(object):
             and three rotation axes (in degrees).
 
         fast : boolean
-            Allows faster execution. Currently works only with rigid 
-            registration.
+            Allows faster execution. Currently works only with rigid
+            registration. Default True.
 
         options : None or dict,
             Extra options to be used with the selected method.
+
+        evolution : boolean
+            If True save the transformation for each iteration of the
+            optimizer. Default is False. Supported only with Scipy >= 0.11.
 
         Methods
         -------
@@ -141,6 +146,7 @@ class StreamlineLinearRegistration(object):
         self.bounds = bounds
         self.fast = fast
         self.options = options
+        self.evolution = evolution
 
     def optimize(self, static, moving):
         """ Find the minimum of the provided metric.
@@ -192,13 +198,13 @@ class StreamlineLinearRegistration(object):
 
             opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method,
-                            bounds=self.bounds, options=self.options)
+                            bounds=self.bounds, options=self.options,
+                            evolution=self.evolution)
 
         if self.disp:
             opt.info
 
         opt_mat = matrix44(opt.xopt)
-
 
         static_mat = matrix44([static_shift[0], static_shift[1],
                                static_shift[2], 0, 0, 0])
@@ -229,7 +235,7 @@ class StreamlineRegistrationMap(object):
         Parameters
         ----------
 
-        matopt : array,
+        matrix : array,
             4x4 affine matrix which transforms the moving to the static
             streamlines
 
@@ -239,7 +245,7 @@ class StreamlineRegistrationMap(object):
         fopt : float,
             final value of the metric
 
-        matopt_history : array
+        matrix_history : array
             All transformation matrices created during the optimization
 
         funcs : int,
