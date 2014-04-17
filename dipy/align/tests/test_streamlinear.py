@@ -432,12 +432,13 @@ def test_affine_real_bundles():
     slm2 = slr2.optimize(bundle, new_bundle2)
 
     new_bundle2 = slm2.transform(new_bundle2)
-    
+
     evaluate_convergence(bundle, new_bundle2)
 
 
 def test_vectorize_streamlines():
     fname = get_data('cb_2')
+    print(fname)
     cingulum_bundles = load_pickle(fname)
 
     cb_subj1 = cingulum_bundles[0]
@@ -450,4 +451,4 @@ def test_vectorize_streamlines():
 if __name__ == '__main__':
 
     run_module_suite()
-    
+
