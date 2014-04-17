@@ -83,7 +83,7 @@ class StreamlineLinearRegistration(object):
         Parameters
         ----------
         metric : StreamlineDistanceMetric,
-            if None and fast is False then the BMD distance is used. If fast
+            If None and fast is False then the BMD distance is used. If fast
             is True then a faster implementation of BMD is used. Otherwise,
             use the given distance metric.
 
@@ -134,7 +134,7 @@ class StreamlineLinearRegistration(object):
             self.x0 = np.ones(6)
 
         if self.metric is None:
-            if fast:
+            if fast and (len(self.x0) == 6):
                 self.metric = BundleMinDistanceFast()
             else:
                 self.metric = BundleMinDistance()
@@ -267,19 +267,6 @@ class StreamlineRegistrationMap(object):
         self.funcs = funcs
         self.iterations = iterations
 
-    @property
-    def ixopt(self):
-        xopt = self.xopt
-        ixopt = np.array(xopt)
-        ixopt[:6] = -xopt[:6]
-        if xopt.shape[0] > 6:
-            if xopt.shape[0] == 7:
-                ixopt[6] = 1/xopt[6]
-            else:
-                ixopt[6:9] = 1/xopt[6:9]
-        if xopt.shape[0] > 9:
-            ixopt[9:] = -xopt[9:]
-        return ixopt
 
     def transform(self, streamlines):
         """ Apply ``self.matrix`` to the streamlines
@@ -298,12 +285,12 @@ def bundle_sum_distance(t, static, moving):
     -----------
     t : ndarray
         t is a vector of of affine transformation parameters with
-        size at least 6. If size < 6, returns an error.
-        If size == 6, t is interpreted as translation + rotation.
-        If size == 7, t is interpreted as translation + rotation +
-        isotropic scaling. If 7 < size < 12, error.
-        If size >= 12, t is interpreted as translation + rotation +
-        scaling + pre-rotation.
+        size at least 6. 
+        If size is 6, t is interpreted as translation + rotation.
+        If size is 7, t is interpreted as translation + rotation +
+        isotropic scaling. 
+        If size is 12, t is interpreted as translation + rotation +
+        scaling + shearing.
 
     static : list
         Static streamlines
@@ -334,12 +321,12 @@ def bundle_min_distance(t, static, moving):
     -----------
     t : ndarray
         t is a vector of of affine transformation parameters with
-        size at least 6. If size < 6, returns an error.
-        If size == 6, t is interpreted as translation + rotation.
-        If size == 7, t is interpreted as translation + rotation +
-        isotropic scaling. If 7 < size < 12, error.
-        If size >= 12, t is interpreted as translation + rotation +
-        scaling + pre-rotation.
+        size at least 6. 
+        If size is 6, t is interpreted as translation + rotation.
+        If size is 7, t is interpreted as translation + rotation +
+        isotropic scaling. 
+        If size is 12, t is interpreted as translation + rotation +
+        scaling + shearing.
 
     static : list
         Static streamlines
@@ -398,7 +385,7 @@ def rotation_vec2mat(r):
     to numerical instabilities. We instead use a Taylor expansion
     around theta=0:
 
-    R = I + sin(theta)/theta Sr + (1-cos(theta))/teta2 Sr^2
+    R = I + sin(theta)/theta Sr + (1-cos(theta))/theta2 Sr^2
 
     leading to:
 
@@ -444,13 +431,11 @@ def matrix44(t, dtype=np.double):
     t : ndarray
         t is a vector of of affine transformation parameters with
         size at least 6.
-        If size < 6, error.
-        If size == 6, t is interpreted as translation + rotation.
-        If size == 7, t is interpreted as translation + rotation +
-        isotropic scaling.
-        If 7 < size < 12, error.
-        If size >= 12, t is interpreted as translation + rotation +
-        scaling + pre-rotation.
+        If size is 6, t is interpreted as translation + rotation.
+        If size is 7, t is interpreted as translation + rotation +
+        isotropic scaling.        
+        If size is 12, t is interpreted as translation + rotation +
+        scaling + shearing.
 
     Returns
     -------
@@ -460,29 +445,32 @@ def matrix44(t, dtype=np.double):
     if isinstance(t, list):
         t = np.array(t)
     size = t.size
+
+    if size not in [6, 7, 12]:
+        raise ValueError('Accepted number of parameters is 6, 7 and 12')
+
     T = np.eye(4, dtype=dtype)
 
-    # Degrees to radians
+    # Degrees to radians    
     rads = np.deg2rad(t[3:6])
 
+    T[0:3, 3] = threshold(t[0:3], MAX_DIST)
     R = rotation_vec2mat(rads)
-
     if size == 6:
         T[0:3, 0:3] = R
     elif size == 7:
         T[0:3, 0:3] = t[6] * R
-    else:
+    elif size == 12:
         S = np.diag(threshold(t[6:9], MAX_DIST))
-        Q = rotation_vec2mat(t[9:12])
-        # kx, ky, kz = t[9:12]
-        # #shear matrix
-        # Q = np.array([[1, kx * kz, kx],
-        #               [ky, 1, 0],
-        #               [0, kz, 1]])
+        # Q = rotation_vec2mat(t[9:12])
+        kx, ky, kz = t[9:12]
+        #shear matrix
+        Q = np.array([[1, kx * kz, kx],
+                      [ky, 1, 0],
+                      [0, kz, 1]])
         # Beware: R*s*Q
         T[0:3, 0:3] = np.dot(R, np.dot(S, Q))
-    T[0:3, 3] = threshold(t[0:3], MAX_DIST)
-
+    
     return T
 
 

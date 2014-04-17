@@ -24,6 +24,7 @@ from dipy.align.streamwarp import (StreamlineLinearRegistration,
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
                             _bundle_minimum_distance_rigid_nomat,
                             bundles_distance_matrix_mdf)
+from dipy.io.pickles import load_pickle
 import scipy
 
 
@@ -317,12 +318,26 @@ def test_openmp_locks():
 def test_from_to_rigid():
 
     t = np.array([10, 2, 3, 0.1, 20., 30.])
-
     mat = matrix44(t)
+    vec = from_matrix44_rigid(mat)
+
+    assert_array_almost_equal(t, vec)
+
+    t = np.array([0, 0, 0, 180, 0., 0.])
+
+    mat = np.eye(4)
+    mat[0, 0] = -1
 
     vec = from_matrix44_rigid(mat)
 
     assert_array_almost_equal(t, vec)
+
+
+def test_matrix44():
+
+    assert_raises(ValueError, matrix44, np.ones(5))
+    assert_raises(ValueError, matrix44, np.ones(9))
+    assert_raises(ValueError, matrix44, np.ones(16))
 
 
 def test_abstract_metric_class():
@@ -369,40 +384,19 @@ def test_similarity_real_bundles():
                                       disp=False)
 
     slm = slr.optimize(bundle, bundle2)
-    np.set_printoptions(3, suppress=True)
-    print('xgold')
-    print(np.array(xgold))
-    print('x0')
-    print(x0)
-    print('xopt')
-    print(slm.xopt)
-    print('ixopt')
-    print(slm.ixopt)
-
     new_bundle2 = slm.transform(bundle2)
     evaluate_convergence(bundle, new_bundle2)
 
-    assert_array_almost_equal(xgold, slm.ixopt)
 
-"""
 def test_affine_real_bundles():
 
-    bundle_initial = fornix_streamlines()#[:20]
+    bundle_initial = fornix_streamlines()
     bundle_initial, shift = center_streamlines(bundle_initial)
     bundle = bundle_initial[:20]
-    #xgold = [0, 0, 10, 0, 0, 0, 1.5, 1.2, 1.2, 0.2, 0, 0]
-    xgold = [0, 4, 2, 0, 10, 10, 1.2, 1.1, 1., 0., 0., 0.]
+    xgold = [0, 4, 2, 0, 10, 10, 1.2, 1.1, 1., 0., 0.2, 0.]
     mat = matrix44(xgold)
     bundle2 = transform_streamlines(bundle_initial[:20], mat)
-    from dipy.viz import fvtk
 
-    ren = fvtk.ren()
-    fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
-    fvtk.add(ren, fvtk.line(bundle2, fvtk.colors.green))
-    fvtk.add(ren, fvtk.axes())
-    fvtk.show(ren)
-
-    bundle_sum_distance = BundleSumDistance()
     x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
 
     x = 25
@@ -416,16 +410,18 @@ def test_affine_real_bundles():
 
     metric = BundleMinDistance()
 
-    srr = StreamlineLinearRegistration(metric=metric,
+    slr = StreamlineLinearRegistration(metric=metric,
                                       x0=x0,
                                       method='L-BFGS-B',
                                       bounds=bounds,
                                       fast=False,
                                       disp=True,
                                       options=options)
-    srm = srr.optimize(bundle, bundle2)
+    slm = slr.optimize(bundle, bundle2)
 
-    srr = StreamlineLinearRegistration(metric=metric,
+    new_bundle2 = slm.transform(bundle2)
+
+    slr2 = StreamlineLinearRegistration(metric=metric,
                                       x0=x0,
                                       method='Powell',
                                       bounds=None,
@@ -433,83 +429,25 @@ def test_affine_real_bundles():
                                       disp=True,
                                       options=None)
 
-    srm = srr.optimize(bundle, bundle2)
-    np.set_printoptions(2, suppress=True)
-    print('xgold')
-    print(np.array(xgold))
-    print('x0')
-    print(x0)
-    print('xopt')
-    print(srm.xopt)
-    print('ixopt')
-    print(srm.ixopt)
+    slm2 = slr2.optimize(bundle, new_bundle2)
+
+    new_bundle2 = slm2.transform(new_bundle2)
+    
+    evaluate_convergence(bundle, new_bundle2)
 
 
-    new_bundle2 = srm.transform(bundle2)
-    #evaluate_convergence(bundle, new_bundle2)
-    fvtk.clear(ren)
-    fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
-    fvtk.add(ren, fvtk.line(new_bundle2, fvtk.colors.yellow))
-    fvtk.show(ren)
+def test_vectorize_streamlines():
+    fname = get_data('cb_2')
+    cingulum_bundles = load_pickle(fname)
 
+    cb_subj1 = cingulum_bundles[0]
+    cb_subj1 = vectorize_streamlines(cb_subj1, 10)
+    cb_subj1_pts_no = np.array([s.shape[0] for s in cb_subj1])
 
-def test_affine_real_bundles_check_shears():
-
-    #bundle_initial = fornix_streamlines()[:20]
-    atom = 10 * np.array([[0, -1, 0], [0, 0, 0], [0, 1., 0]])
-    bundle_initial = [atom + np.array([-2, 0, 0]),
-                      atom + np.array([ 0, 0, -2]),
-                      atom + np.array([ -2, 0, -2]),
-                      atom + np.array([ 0, 0,  2]),
-                      atom + np.array([ 2, 0, 2]),
-                      atom + np.array([ -2, 0, 2]),
-                      atom + np.array([ 2, 0, -2]),
-                      atom,
-                      atom + np.array([2, 0, 0])]
-    bundle, shift = center_streamlines(bundle_initial)
-    #xgold = [0, 0, 10, 0, 0, 0, 1.5, 1.2, 1.2, 0.2, 0, 0]
-
-    from dipy.viz import fvtk
-    ren = fvtk.ren()
-    #fvtk.add(ren, fvtk.line(bundle, fvtk.colors.red))
-    fvtk.add(ren, fvtk.axes(scale=(5, 5, 5)))
-
-    kx, ky, kz = (.5, 0, .5)
-
-    for ky in np.arange(0, 1, 1):
-
-        mat = np.array([[1, kx*kz, kx, 0],
-                        [ky, 1, 0, 0],
-                        [0, kz, 1, 0],
-                        [0, 0, 0, 1]])
-
-        # print(ky)
-        # mat = np.array([[1, kx, kz, 0],
-        #                  [0, 1, ky, 0],
-        #                  [0, 0, 1, 0],
-        #                  [0, 0, 0, 1]])
-
-        # print(mat)
-
-        #mat[0, -1] = 10
-        bundle2 = transform_streamlines(bundle, mat)
-
-        actor = fvtk.line(bundle2, fvtk.colors.green)
-        fvtk.add(ren, actor)
-
-        fvtk.show(ren, size=(600, 600))
-        fvtk.rm(ren, actor)
-"""
+    assert_equal(np.all(cb_subj1_pts_no == 10), True)
 
 
 if __name__ == '__main__':
 
-    #run_module_suite()
-    #test_min_vs_min_fast_precision()
-    test_evolution_of_previous_iterations()
-    #test_efficient_bmd()
-    #test_similarity_real_bundles()
-    #test_affine_real_bundles()
-    #test_affine_real_bundles_check_shears()
-
-
+    run_module_suite()
+    
