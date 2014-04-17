@@ -31,6 +31,7 @@ def save_pickle(fname,dix):
     dipy.io.pickles.load_pickle
     
     '''
+    fname = fname.encode('latin1')
     out=open(fname,'wb')
     cPickle.dump(dix,out,protocol=cPickle.HIGHEST_PROTOCOL)
     out.close()
@@ -53,6 +54,7 @@ def load_pickle(fname):
     ----------
     dipy.io.pickles.save_pickle
     '''
+    fname = fname.encode('latin1')
     inp=open(fname,'rb')
     dix=cPickle.load(inp)
     inp.close()
