@@ -21,8 +21,8 @@ cb_subj1 = cingulum_bundles[0]
 cb_subj2 = cingulum_bundles[1]
 
 
-from dipy.align.streamwarp import (StreamlineLinearRegistration, 
-                                   vectorize_streamlines)
+from dipy.align.streamlinear import (StreamlineLinearRegistration, 
+                                     vectorize_streamlines)
 
 """
 An important step before running the registration is to resample the streamlines

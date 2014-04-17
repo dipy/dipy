@@ -5,22 +5,22 @@ from numpy.testing import (run_module_suite,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from dipy.align.streamwarp import (transform_streamlines,
-                                   matrix44,
-                                   from_matrix44_rigid,
-                                   BundleSumDistance,
-                                   BundleMinDistance,
-                                   BundleMinDistanceFast,
-                                   center_streamlines)
+from dipy.align.streamlinear import (transform_streamlines,
+                                     matrix44,
+                                     from_matrix44_rigid,
+                                     BundleSumDistance,
+                                     BundleMinDistance,
+                                     BundleMinDistanceFast,
+                                     center_streamlines)
 from dipy.tracking.metrics import downsample
 from dipy.data import get_data
 from nibabel import trackvis as tv
-from dipy.align.streamwarp import (StreamlineLinearRegistration,
-                                   StreamlineDistanceMetric,
-                                   compose_transformations,
-                                   vectorize_streamlines,
-                                   unlist_streamlines,
-                                   relist_streamlines)
+from dipy.align.streamlinear import (StreamlineLinearRegistration,
+                                     StreamlineDistanceMetric,
+                                     compose_transformations,
+                                     vectorize_streamlines,
+                                     unlist_streamlines,
+                                     relist_streamlines)
 from dipy.align.bmd import (_bundle_minimum_distance_rigid,
                             _bundle_minimum_distance_rigid_nomat,
                             bundles_distance_matrix_mdf)
