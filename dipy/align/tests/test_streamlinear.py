@@ -438,7 +438,7 @@ def test_affine_real_bundles():
 
 def test_vectorize_streamlines():
     fname = get_data('cb_2')
-    print(fname)
+
     cingulum_bundles = load_pickle(fname)
 
     cb_subj1 = cingulum_bundles[0]
