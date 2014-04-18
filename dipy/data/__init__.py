@@ -42,6 +42,8 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_stanford_labels)
 
 from ..utils.arrfuncs import as_native_array
+from dipy.align.streamlinear import relist_streamlines
+
 
 THIS_DIR = dirname(__file__)
 SPHERE_FILES = {
@@ -182,6 +184,7 @@ def get_data(name='small_64D'):
         'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
         'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
         'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
+        'cb_2' two vectorized cingulum bundles
 
     Returns
     -------
@@ -248,6 +251,8 @@ def get_data(name='small_64D'):
         fbvecs = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bvec')
         fimg = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.nii.gz')
         return fimg, fbvals, fbvecs
+    if name == 'cb_2':
+        return pjoin(THIS_DIR, 'cb_2.npz')
 
 
 def _gradient_from_file(filename):
@@ -348,3 +353,11 @@ def three_shells_voxels(xmin,xmax,ymin,ymax,zmin,zmax):
     data = data[xmin:xmax,ymin:ymax,zmin:zmax,1:]/b0[xmin:xmax,ymin:ymax,zmin:zmax,None]
     affine = img.get_affine()
     return data, affine, gtab
+
+
+def two_cingulum_bundles():
+    fname = get_data('cb_2')
+    res = np.load(fname)
+    cb1 = relist_streamlines(res['points'], res['offsets'])
+    cb2 = relist_streamlines(res['points2'], res['offsets2'])
+    return cb1, cb2

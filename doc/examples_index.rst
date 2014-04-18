@@ -107,6 +107,12 @@ Streamline analysis
 - :ref:`example_streamline_length`
 
 ------------
+Registration
+------------
+
+- :ref:`example_bundle_registration`
+
+------------
 Segmentation
 ------------
 
