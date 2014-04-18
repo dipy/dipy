@@ -63,6 +63,6 @@ def load_pickle(fname):
         try:
             dix = cPickle.load(inp)
         except UnicodeDecodeError:
-            dix = cPickle.load(inp, encoding='latin1')
+            dix = cPickle.load(inp, encoding='latin-1')
     inp.close()
     return dix
