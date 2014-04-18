@@ -64,7 +64,7 @@ def load_pickle(fname):
             dix = cPickle.load(inp)
         except UnicodeDecodeError:
             import pickle
-            u = pickle._Unpickler(fname)
+            u = pickle._Unpickler(inp)
             u.encoding = 'latin1'
             dix = u.load()
     inp.close()
