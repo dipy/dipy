@@ -1,7 +1,6 @@
 """ Load and save pickles """
 # Python 3 merged cPickle into pickle
 from ..utils.six.moves import cPickle
-import sys
 
 
 def save_pickle(fname,dix):
@@ -56,16 +55,6 @@ def load_pickle(fname):
     dipy.io.pickles.save_pickle
     '''
     inp=open(fname,'rb')
-
-    if sys.version_info[0] < 3:
-        dix = cPickle.load(inp)
-    else:
-        try:
-            dix = cPickle.load(inp)
-        except UnicodeDecodeError:
-            import pickle
-            u = pickle._Unpickler(inp)
-            u.encoding = 'latin1'
-            dix = u.load()
+    dix = cPickle.load(inp)
     inp.close()
     return dix
