@@ -91,7 +91,7 @@ def test_optimize():
         print(opt.nit)
         print(opt.fopt)
         print(opt.nfev)
-        print(opt.message)
+
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
 
