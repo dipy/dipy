@@ -13,7 +13,7 @@ from dipy.align.streamlinear import (transform_streamlines,
                                      BundleMinDistanceFast,
                                      center_streamlines)
 from dipy.tracking.metrics import downsample
-from dipy.data import get_data
+from dipy.data import get_data, two_cingulum_bundles
 from nibabel import trackvis as tv
 from dipy.align.streamlinear import (StreamlineLinearRegistration,
                                      StreamlineDistanceMetric,
@@ -437,9 +437,8 @@ def test_affine_real_bundles():
 
 
 def test_vectorize_streamlines():
-    fname = get_data('cb_2')
 
-    cingulum_bundles = load_pickle(fname)
+    cingulum_bundles = two_cingulum_bundles()
 
     cb_subj1 = cingulum_bundles[0]
     cb_subj1 = vectorize_streamlines(cb_subj1, 10)
