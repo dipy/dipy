@@ -69,7 +69,7 @@ class SimilarityMetric(object):
     def set_static_image(self, static_image, static_affine, static_spacing, static_direction):
         r"""
         Sets the static image. The default behavior (of this abstract class) is
-        simply to assign the reference to an internal variable, but 
+        simply to assign the reference to an attribute, but 
         generalizations of the metric may need to perform other operations
 
         Parameters
@@ -86,12 +86,12 @@ class SimilarityMetric(object):
                                  original_static_image,
                                  transformation):
         r"""
-        This method provides the metric a chance to compute any useful
+        This method allows the metric to compute any useful
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
-        Transformation will be an instance of SymmetricDiffeomorficMap or None
-        if the originalMovingImage equals self.moving_image.
+        Transformation will be an instance of DiffeomorficMap or None
+        if the original_static_image equals self.moving_image.
 
         Parameters
         ----------
@@ -104,7 +104,7 @@ class SimilarityMetric(object):
 
     def use_original_static_image(self, original_static_image):
         """
-        This method provides the metric a chance to compute any useful
+        This method allows the metric to compute any useful
         information from the original moving image (to be used along with the
         sequence of movingImages during optimization, for example the binary
         mask delimiting the object of interest can be computed from the original
@@ -121,7 +121,7 @@ class SimilarityMetric(object):
     def set_moving_image(self, moving_image, moving_affine, moving_spacing, moving_direction):
         r"""
         Sets the moving image. The default behavior (of this abstract class) is
-        simply to assign the reference to an internal variable, but 
+        simply to assign the reference to an attribute, but 
         generalizations of the metric may need to perform other operations
 
         Parameters
@@ -136,7 +136,7 @@ class SimilarityMetric(object):
 
     def use_original_moving_image(self, original_moving_image):
         """
-        This method provides the metric a chance to compute any useful
+        This method allows the metric to compute any useful
         information from the original moving image (to be used along with the
         sequence of movingImages during optimization, for example the binary
         mask delimiting the object of interest can be computed from the original
@@ -154,12 +154,12 @@ class SimilarityMetric(object):
                                original_moving_image,
                                transformation):
         """
-        This method provides the metric a chance to compute any useful
+        This method allows the metric to compute any useful
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
-        Transformation will be an instance of SymmetricDiffeomorficMap or None if
-        the originalMovingImage equals self.moving_image.
+        Transformation will be an instance of DiffeomorficMap or None if
+        the original_moving_image equals self.moving_image.
 
         Parameters
         ----------
@@ -174,8 +174,8 @@ class SimilarityMetric(object):
     @abc.abstractmethod
     def initialize_iteration(self):
         """
-        This method will be called before any computeUpdate or computeInverse
-        call, this gives the chance to the Metric to pre-compute any useful
+        This method will be called before any compute_forward or compute_backward
+        call, this allows the Metric to pre-compute any useful
         information for speeding up the update computations. This initialization
         was needed in ANTS because the updates are called once per voxel. In
         Python this is unpractical, though.
@@ -637,7 +637,7 @@ class EMMetric(SimilarityMetric):
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""
         EMMetric takes advantage of the image dynamics by computing the
-        current moving image mask from the originalMovingImage mask (warped
+        current moving image mask from the original_moving_image mask (warped
         by nearest neighbor interpolation)
 
         Parameters
