@@ -177,9 +177,9 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
         the mask of pixels that will be taken into account for computing the 
         statistics. All zero pixels in mask will be ignored
     v : array, shape (R, C)
-        the image wich the statistics will be computed from
+        the image which the statistics will be computed from
     numLabels : int 
-        the number of diferent labels in 'labels' (equal to the
+        the number of different labels in 'labels' (equal to the
         number of hidden variables in the EM metric)
     labels : array, shape (R, C) 
         the label assigned to each pixel
@@ -225,9 +225,9 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
         the mask of voxels that will be taken into account for computing the 
         statistics. All zero voxels in mask will be ignored
     v : array, shape (R, C)
-        the volume wich the statistics will be computed from
+        the volume which the statistics will be computed from
     numLabels : int 
-        the number of diferent labels in 'labels' (equal to the
+        the number of different labels in 'labels' (equal to the
         number of hidden variables in the EM metric)
     labels : array, shape (R, C) 
         the label assigned to each pixel
@@ -269,15 +269,15 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                               floating[:,:,:] out):
     r"""
     Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
-    using the EM algorithm [1] to handle multimodality images.
+    using the EM algorithm [1] to handle multi-modality images.
 
     [1] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
         Non-rigid Multimodal Image Registration Based on the 
-        Expectation-Maximization Algorithm, (168140), 36–47.
+        Expectation-Maximization Algorithm, (168140), 36-47.
 
     [2] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
         Diffeomorphic demons: efficient non-parametric image registration. 
-        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
+        NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
 
     In this case, \sigma_i in eq. 4 of [1] is estimated using the EM algorithm,
     while in the original version of diffeomorphic demons it is estimated by the
@@ -287,9 +287,9 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
     ----------
     delta_field : array, shape(R, C)
         contains, at each pixel, the difference between the moving image (warped 
-        under the current deformation s ) J and the static image I:
+        under the current deformation s(. , .) ) J and the static image I:
         delta_field[i,j] = J(s(i,j)) - I(i,j). The order is important, changing
-        to delta_field[i,j] = I(i,j) - J(s(i,j)) yields the backward demoms step
+        to delta_field[i,j] = I(i,j) - J(s(i,j)) yields the backward demons step
         warping the static image towards the moving, which may not be the
         intended behavior unless the 'gradient_moving' passed corresponds to
         the gradient of the static image
@@ -300,10 +300,10 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
     gradient_moving : array, shape(R, C, 2)
         the gradient of the moving image
     sigma_reg : float
-        parameter controlling the amount of reguarization (under the Ridge 
+        parameter controlling the amount of regularization (under the Ridge 
         regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
     out : array, shape(R, C, 2)
-        the resulting demons step will be writen to this array
+        the resulting demons step will be written to this array
     """
     cdef:
         int nr = delta_field.shape[0]
@@ -347,15 +347,15 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                               floating[:,:,:,:] out):
     r"""
     Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
-    using the EM algorithm [1] to handle multimodality images.
+    using the EM algorithm [1] to handle multi-modality images.
 
     [1] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
         Non-rigid Multimodal Image Registration Based on the 
-        Expectation-Maximization Algorithm, (168140), 36–47.
+        Expectation-Maximization Algorithm, (168140), 36-47.
 
     [2] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
         Diffeomorphic demons: efficient non-parametric image registration. 
-        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
+        NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
 
     In this case, \sigma_i in eq. 4 of [1] is estimated using the EM algorithm,
     while in the original version of diffeomorphic demons it is estimated by the
@@ -367,7 +367,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         contains, at each pixel, the difference between the moving image (warped 
         under the current deformation s ) J and the static image I:
         delta_field[k,i,j] = J(s(k,i,j)) - I(k,i,j). The order is important, changing
-        to delta_field[k,i,j] = I(k,i,j) - J(s(k,i,j)) yields the backward demoms step
+        to delta_field[k,i,j] = I(k,i,j) - J(s(k,i,j)) yields the backward demons step
         warping the static image towards the moving, which may not be the
         intended behavior unless the 'gradient_moving' passed corresponds to
         the gradient of the static image
@@ -378,10 +378,10 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
     gradient_moving : array, shape(S, R, C, 2)
         the gradient of the moving image
     sigma_reg : float
-        parameter controlling the amount of reguarization (under the Ridge 
+        parameter controlling the amount of regularization (under the Ridge 
         regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
     out : array, shape(S, R, C, 2)
-        the resulting demons step will be writen to this array
+        the resulting demons step will be written to this array
     """
     cdef:
         int ns = delta_field.shape[0]

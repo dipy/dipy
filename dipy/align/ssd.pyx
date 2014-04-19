@@ -88,7 +88,7 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
     Parameters
     ----------
     delta_field : array, shape (R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -98,7 +98,7 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
         the gradient of the moving image
     target : array, shape (R, C, 2)
         right-hand side of the linear system to be solved in the Weickert's
-        multiresolution algorithm
+        multi-resolution algorithm
     lambda_param : float
         smoothness parameter of the objective function
     displacement_field : array, shape (R, C, 2)
@@ -200,7 +200,7 @@ cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
     Parameters
     ----------
     delta_field : array, shape (R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -256,7 +256,7 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
     Parameters
     ----------
     delta_field : array, shape (S, R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (S, R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -266,7 +266,7 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         the gradient of the moving image
     target : array, shape (S, R, C, 3)
         right-hand side of the linear system to be solved in the Weickert's
-        multiresolution algorithm
+        multi-resolution algorithm
     lambda_param : float
         smoothness parameter of the objective function
     displacement_field : array, shape (S, R, C, 3)
@@ -399,7 +399,7 @@ cpdef double compute_energy_SSD3D(floating[:, :, :] delta_field,
     Parameters
     ----------
     delta_field : array, shape (R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -457,7 +457,7 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
     Parameters
     ----------
     delta_field : array, shape (S, R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (S, R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -467,7 +467,7 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
         the gradient of the moving image
     target : array, shape (S, R, C, 3)
         right-hand side of the linear system to be solved in the Weickert's
-        multiresolution algorithm
+        multi-resolution algorithm
     lambda_param : float
         smoothness parameter in the objective function
     displacement_field : array, shape (S, R, C, 3)
@@ -530,10 +530,9 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
                     residual[s, r, c, 1] = -lambda_param * y[1]
                     residual[s, r, c, 2] = -lambda_param * y[2]
                 else:
-                    dotP = gradient_field[s, r, c, 0] * displacement_field[s, r, c, 0] + gradient_field[s, r, c, 1] * \
-                        displacement_field[s, r, c, 1] + \
-                        gradient_field[s, r, c, 2] * \
-                        displacement_field[s, r, c, 2]
+                    dotP = gradient_field[s, r, c, 0] * displacement_field[s, r, c, 0] +\
+                           gradient_field[s, r, c, 1] * displacement_field[s, r, c, 1] +\
+                           gradient_field[s, r, c, 2] * displacement_field[s, r, c, 2]
                     residual[s, r, c, 0] = b[0] - \
                         (gradient_field[s, r, c, 0]
                          * dotP + sigma * lambda_param * y[0])
@@ -567,7 +566,7 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
     Parameters
     ----------
     delta_field : array, shape (R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -577,7 +576,7 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
         the gradient of the moving image
     target : array, shape (R, C, 2)
         right-hand side of the linear system to be solved in the Weickert's
-        multiresolution algorithm
+        multi-resolution algorithm
     lambda_param : float
         smoothness parameter in the objective function
     displacement_field : array, shape (R, C, 2)
@@ -662,7 +661,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
     gradient_field : array, shape (R, C, 2)
         the gradient of the moving image
     sigma_reg_2 : float
-        parameter controlling the amount of reguarization (under the Ridge 
+        parameter controlling the amount of regularization (under the Ridge 
         regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
         (also, it is \sigma_x in eq. 4 of [1])
     out : array, shape (R, C, 2)
@@ -720,12 +719,12 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
     Parameters
     ----------
     delta_field : array, shape (S, R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     gradient_field : array, shape (S, R, C, 2)
         the gradient of the moving image
     sigma_reg_2 : float
-        parameter controlling the amount of reguarization (under the Ridge 
+        parameter controlling the amount of regularization (under the Ridge 
         regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
         (also, it is \sigma_x in eq. 4 of [1])
     out : array, shape (S, R, C, 2)
@@ -756,7 +755,9 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                     neg_delta = -1 * delta_field[k,i,j]
                     delta_2 = neg_delta**2 
                     energy += delta_2
-                    nrm2 = gradient_moving[k, i, j, 0]**2 + gradient_moving[k, i, j, 1]**2 + gradient_moving[k, i, j, 2]**2
+                    nrm2 = gradient_moving[k, i, j, 0]**2 +\
+                           gradient_moving[k, i, j, 1]**2 +\
+                           gradient_moving[k, i, j, 2]**2
                     den = delta_2/sigma_reg_2 + nrm2
                     if den < 1e-9:
                         out[k, i, j, 0] = 0

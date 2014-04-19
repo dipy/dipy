@@ -69,7 +69,7 @@ class SimilarityMetric(object):
     def set_static_image(self, static_image, static_affine, static_spacing, static_direction):
         r"""
         Sets the static image. The default behavior (of this abstract class) is
-        simply to assing the reference to an internal variable, but 
+        simply to assign the reference to an internal variable, but 
         generalizations of the metric may need to perform other operations
 
         Parameters
@@ -86,7 +86,7 @@ class SimilarityMetric(object):
                                  original_static_image,
                                  transformation):
         r"""
-        This methods provides the metric a chance to compute any useful
+        This method provides the metric a chance to compute any useful
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
@@ -104,7 +104,7 @@ class SimilarityMetric(object):
 
     def use_original_static_image(self, original_static_image):
         """
-        This methods provides the metric a chance to compute any useful
+        This method provides the metric a chance to compute any useful
         information from the original moving image (to be used along with the
         sequence of movingImages during optimization, for example the binary
         mask delimiting the object of interest can be computed from the original
@@ -121,7 +121,7 @@ class SimilarityMetric(object):
     def set_moving_image(self, moving_image, moving_affine, moving_spacing, moving_direction):
         r"""
         Sets the moving image. The default behavior (of this abstract class) is
-        simply to assing the reference to an internal variable, but 
+        simply to assign the reference to an internal variable, but 
         generalizations of the metric may need to perform other operations
 
         Parameters
@@ -136,7 +136,7 @@ class SimilarityMetric(object):
 
     def use_original_moving_image(self, original_moving_image):
         """
-        This methods provides the metric a chance to compute any useful
+        This method provides the metric a chance to compute any useful
         information from the original moving image (to be used along with the
         sequence of movingImages during optimization, for example the binary
         mask delimiting the object of interest can be computed from the original
@@ -154,7 +154,7 @@ class SimilarityMetric(object):
                                original_moving_image,
                                transformation):
         """
-        This methods provides the metric a chance to compute any useful
+        This method provides the metric a chance to compute any useful
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
         called by the optimizer just after it sets the static image.
@@ -175,7 +175,7 @@ class SimilarityMetric(object):
     def initialize_iteration(self):
         """
         This method will be called before any computeUpdate or computeInverse
-        call, this gives the chance to the Metric to precompute any useful
+        call, this gives the chance to the Metric to pre-compute any useful
         information for speeding up the update computations. This initialization
         was needed in ANTS because the updates are called once per voxel. In
         Python this is unpractical, though.
@@ -185,7 +185,7 @@ class SimilarityMetric(object):
     def free_iteration(self):
         """
         This method is called by the RegistrationOptimizer after the required
-        iterations have been computed (forward and/or backward) so that the
+        iterations have been computed (forward and / or backward) so that the
         SimilarityMetric can safely delete any data it computed as part of the
         initialization
         """
@@ -249,7 +249,7 @@ class CCMetric(SimilarityMetric):
 
     def initialize_iteration(self):
         r"""
-        Precomputes the cross-correlation factors
+        Pre-computes the cross-correlation factors
         """
         self.factors = self.precompute_factors(self.static_image,
                                              self.moving_image,
@@ -262,7 +262,7 @@ class CCMetric(SimilarityMetric):
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
-        #Convert the moving's gradient field from voxel to physical space
+        #Convert the moving image's gradient field from voxel to physical space
         if self.moving_spacing is not None:
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
@@ -274,7 +274,7 @@ class CCMetric(SimilarityMetric):
         for grad in sp.gradient(self.static_image):
             self.gradient_static[..., i] = grad
             i += 1
-        #Convert the moving's gradient field from voxel to physical space
+        #Convert the moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -368,7 +368,6 @@ class EMMetric(SimilarityMetric):
             selected)
         """
         super(EMMetric, self).__init__(dim)
-        self.step_length = 0.25 #Fixme: this parameter must be given as input 
         self.smooth = smooth
         self.inner_iter = inner_iter
         self.q_levels = q_levels
@@ -405,13 +404,13 @@ class EMMetric(SimilarityMetric):
 
     def initialize_iteration(self):
         r"""
-        Precomputes the transfer functions (hidden random variables) and
-        variances of the estimators. Also precomputes the gradient of both
+        Pre-computes the transfer functions (hidden random variables) and
+        variances of the estimators. Also pre-computes the gradient of both
         input images. Note that once the images are transformed to the opposite
         modality, the gradient of the transformed images can be used with the
-        gradient of the corresponding modality in the same fasion as
+        gradient of the corresponding modality in the same fashion as
         diff-demons does for mono-modality images. If the flag
-        self.use_double_gradient is True these garadients are averaged.
+        self.use_double_gradient is True these gradients are averaged.
         """
         sampling_mask = self.static_image_mask*self.moving_image_mask
         self.sampling_mask = sampling_mask
@@ -435,7 +434,7 @@ class EMMetric(SimilarityMetric):
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
-        #Convert the moving's gradient field from voxel to physical space
+        #Convert the moving image's gradient field from voxel to physical space
         if self.moving_spacing is not None:    
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
@@ -447,7 +446,7 @@ class EMMetric(SimilarityMetric):
         for grad in sp.gradient(self.static_image):
             self.gradient_static[..., i] = grad
             i += 1
-        #Convert the moving's gradient field from voxel to physical space
+        #Convert the moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -624,7 +623,7 @@ class EMMetric(SimilarityMetric):
             the original static image from which the current static image was
             generated, the current static image is the one that was provided 
             via 'set_static_image(...)', which may not be the same as the
-            original static image but a warped version of it (even thestatic 
+            original static image but a warped version of it (even the static 
             image changes during Symmetric Normalization, not only the moving one).
         transformation : DiffeomorphicMap object
             the transformation that was applied to the original_static_image 
@@ -662,7 +661,7 @@ class SSDMetric(SimilarityMetric):
 
     def __init__(self, dim, smooth=4, inner_iter=10, step_type='demons'):
         r"""
-        Similarity metric for (monomodal) nonlinear image registration defined by
+        Similarity metric for (mono-modal) nonlinear image registration defined by
         the sum of squared differences (SSD)
 
         Parameters
@@ -706,7 +705,7 @@ class SSDMetric(SimilarityMetric):
 
     def initialize_iteration(self):
         r"""
-        Precomputes the gradient of the input images to be used in the
+        Pre-computes the gradient of the input images to be used in the
         computation of the forward and backward steps.
         """
         self.gradient_moving = np.empty(
@@ -715,7 +714,7 @@ class SSDMetric(SimilarityMetric):
         for grad in gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
             i += 1
-        #Convert the static's gradient field from voxel to physical space
+        #Convert the static image's gradient field from voxel to physical space
         if self.moving_spacing is not None:    
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
@@ -727,7 +726,7 @@ class SSDMetric(SimilarityMetric):
         for grad in gradient(self.static_image):
             self.gradient_static[..., i] = grad
             i += 1
-        #Convert the moving's gradient field from voxel to physical space
+        #Convert the moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
@@ -847,7 +846,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     r"""
     Multi-resolution Gauss-Seidel solver: solves the Gauss-Newton linear system
     by first filtering (GS-iterate) the current level, then solves for the residual
-    at a coarcer resolution andfinally refines the solution at the current
+    at a coarser resolution and finally refines the solution at the current
     resolution. This scheme corresponds to the V-cycle proposed by Bruhn and
     Weickert[1].
     [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
@@ -858,11 +857,11 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     ----------
     n : int
         number of levels of the multi-resolution algorithm (it will be called
-        recursively until level n==0)
+        recursively until level n == 0)
     k : int 
         the number of iterations at each multi-resolution level
     delta_field : array, shape (R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -872,7 +871,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
         the gradient of the moving image
     target : array, shape (R, C, 2)
         right-hand side of the linear system to be solved in the Weickert's
-        multiresolution algorithm
+        multi-resolution algorithm
     lambda_param : float
         smoothness parameter, the larger its value the smoother the displacement
         field
@@ -884,7 +883,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this 
         iteration
     """
-    #presmoothing
+    #pre-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD2D(delta_field, sigma_field,
                                                       gradient_field, target,
@@ -895,7 +894,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
                                           displacement)
         return energy
 
-    #solve at coarcer grid
+    #solve at coarser grid
     residual = None
     residual = ssd.compute_residual_displacement_field_SSD2D(delta_field,
                                                              sigma_field,
@@ -939,7 +938,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     r"""
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
     filtering (GS-iterate) the current level, then solves for the residual
-    at a coarcer resolution andfinally refines the solution at the current 
+    at a coarser resolution and finally refines the solution at the current 
     resolution. This scheme corresponds to the V-cycle proposed by Bruhn and 
     Weickert[1].
     [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
@@ -951,11 +950,11 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     ----------
     n : int
         number of levels of the multi-resolution algorithm (it will be called
-        recursively until level n==0)
+        recursively until level n == 0)
     k : int 
         the number of iterations at each multi-resolution level
     delta_field : array, shape (S, R, C)
-        the difference between the static and moving image (the 'derivatice
+        the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (S, R, C)
         the variance of the gray level value at each voxel, according to the 
@@ -965,7 +964,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
         the gradient of the moving image
     target : array, shape (S, R, C, 3)
         right-hand side of the linear system to be solved in the Weickert's
-        multiresolution algorithm
+        multi-resolution algorithm
     lambda_param : float
         smoothness parameter, the larger its value the smoother the displacement
         field
@@ -977,7 +976,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this 
         iteration
     """
-    #presmoothing
+    #pre-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD3D(delta_field,
                                                              sigma_field,
@@ -990,7 +989,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
                                           gradient_field, lambda_param,
                                           displacement)
         return energy
-    #solve at coarcer grid
+    #solve at coarser grid
     residual = ssd.compute_residual_displacement_field_SSD3D(delta_field,
                                                             sigma_field,
                                                             gradient_field,

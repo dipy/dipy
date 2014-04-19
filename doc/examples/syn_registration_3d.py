@@ -3,11 +3,11 @@
 Symmetric Diffeomorphic Registration in 3D
 ==========================================
 This example explains how to register 3D volumes using the Symmetric Normalization 
-(SyN) algorithm proposed by Avants et al. [citation needed] (also implemented in
-the ANTS software [citation needed])
+(SyN) algorithm proposed by Avants et al. [1] (also implemented in
+the ANTS software [2])
 
-We'll register two 3D volumes from different modalities (FA computed from
-diffusion MRI and T1) using SyN with the Cross Correlation (CC) metric.
+We'll register two 3D volumes from the same modality using SyN with the Cross
+Correlation (CC) metric.
 """
 
 import numpy as np
@@ -19,8 +19,8 @@ from dipy.align.metrics import CCMetric
 import os.path
 
 """
-Let's fetch two b0 volumes, the first one will be the standard Sherbrooke DWI
-data
+Let's fetch two b0 volumes, the first one will be the b0 from the Stanford
+HARDI dataset 
 """
 
 from dipy.data import fetch_stanford_hardi, read_stanford_hardi
@@ -29,11 +29,10 @@ nib_stanford, gtab_stanford = read_stanford_hardi()
 stanford_b0 = np.squeeze(nib_stanford.get_data())[..., 0]
 
 """
-The second one will be the b0 we used for the 2D registration tutorial
+The second one will be the same b0 we used for the 2D registration tutorial
 """
 
 from dipy.data.fetcher import fetch_syn_data, read_syn_data
-from dipy.segment.mask import median_otsu
 fetch_syn_data()
 nib_syn_t1, nib_syn_b0 = read_syn_data()
 syn_b0 = np.array(nib_syn_b0.get_data())
@@ -42,6 +41,7 @@ syn_b0 = np.array(nib_syn_b0.get_data())
 We first remove the skull from the b0's
 """
 
+from dipy.segment.mask import median_otsu
 stanford_b0_masked, stanford_b0_mask = median_otsu(stanford_b0, 4, 4)
 syn_b0_masked, syn_b0_mask = median_otsu(syn_b0, 4, 4)
 
@@ -61,7 +61,10 @@ pre_align = np.array([[1.02783543e+00, -4.83019053e-02, -6.07735639e-02, -2.5765
                       [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 1.00000000e+00]])
 
 """
-Let's first re-sample the moving image on the static grid
+As we did in the 2D example, we would like to visualize (some slices of) the two
+volumes by overlapping them over two channels of a color image. To do that we
+need them to be sampled on the same grid, so let's first re-sample the moving
+image on the static grid
 """
 
 import dipy.align.vector_fields as vfu
@@ -71,6 +74,10 @@ resampled = vfu.warp_volume_affine(moving.astype(np.float32),
                                    np.asarray(static.shape, dtype=np.int32), 
                                    transform)
 resampled = np.asarray(resampled)
+
+"""
+And define the functions to plot the overlapped middle slices of the volumes
+"""
 
 def plot_middle_slices(V, fname=None):
     V = np.asarray(V, dtype = np.float64)
@@ -134,8 +141,7 @@ overlay_middle_slices_coronal(static, resampled, 'Static', 'Moving', 'input_3d.p
 
 """
 We want to find an invertible map that transforms the moving image into the
-static image. Let's use the Cross Correlation metric, since it works well
-for mono-modal and some multi-modal registration tasks.
+static image. We will use the Cross Correlation metric
 """
 
 metric = CCMetric(3)
@@ -148,16 +154,16 @@ the pyramid. The 0-th level corresponds to the finest resolution.
 """
 
 opt_iter = [5, 10, 10]
-registration_optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
+optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
 
 """
 Execute the optimization, which returns a DiffeomorphicMap object,
 that can be used to register images back and forth between the static and moving
-domains
+domains. We provide the pre-aligning matrix that brings the moving image closer
+to the static image
 """
 
-mapping = registration_optimizer.optimize(static, moving, 
-                                          static_affine, moving_affine, pre_align)
+mapping = optimizer.optimize(static, moving, static_affine, moving_affine, pre_align)
 
 """
 Now let's warp the moving image and see if it gets similar to the static image
@@ -166,9 +172,7 @@ Now let's warp the moving image and see if it gets similar to the static image
 warped_moving = mapping.transform(moving)
 
 """
-To visually check the overlap of the static image with the transformed moving
-image, we can plot them on top of each other with different channels to see
-where the differences are located
+We plot the overlapped middle slices
 """
 
 overlay_middle_slices_coronal(static, warped_moving, 'Static', 'Warped moving', 'warped_moving.png')
@@ -197,4 +201,14 @@ overlay_middle_slices_coronal(warped_static, moving, 'Warped static', 'Moving', 
 **Static image transformed under the (inverse) transformation in red
 on top of the moving image (in green). Note that the moving image has lower 
 resolution**.
+"""
+
+"""
+[1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+    Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+    Evaluating Automated Labeling of Elderly and Neurodegenerative 
+    Brain, 12(1), 26-41.
+
+[2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced 
+    Normalization Tools ( ANTS ), 1-35.
 """

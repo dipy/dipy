@@ -3,8 +3,8 @@
 Symmetric Diffeomorphic Registration in 2D
 ==========================================
 This example explains how to register 2D images using the Symmetric Normalization 
-(SyN) algorithm proposed by Avants et al. [citation needed] (also implemented in
-the ANTS software [citation needed])
+(SyN) algorithm proposed by Avants et al. [1] (also implemented in
+the ANTS software [2])
 
 We will perform the classic Circle-To-C experiment for diffeomorphic registration
 """
@@ -15,7 +15,6 @@ from dipy.data import get_data
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
 import dipy.align.imwarp as imwarp
-from dipy.align import VerbosityLevels
 
 
 fname_moving = get_data('reg_o')
@@ -42,7 +41,7 @@ where the differences are located
 """
 
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
-    #Normalize the input images to [0,127]
+    #Normalize the input images to [0,255]
     img0 = 255*((img0 - img0.min()) / (img0.max() - img0.min()))
     img1 = 255*((img1 - img1.min()) / (img1.max() - img1.min()))
     img0_red=np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
@@ -97,7 +96,7 @@ the pyramid. The 0-th level corresponds to the finest resolution.
 
 opt_iter = [25, 50, 100, 200]
 
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, step_length = 0.25, inv_iter = 40)
+optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, inv_iter = 40)
 
 """
 Now we execute the optimization, which returns a DiffeomorphicMap object,
@@ -201,7 +200,7 @@ on top of the moving image (in green)**.
 """
 
 """
-Now let's register a couple of slices from a T1 image using the Cross
+Now let's register a couple of slices from a B0 image using the Cross
 Correlation metric. Also, let's inspect the evolution of the registration.
 To do this we will define a function that will be called by the optimizer
 at each stage of the optimization process. We will draw the current warped
@@ -232,7 +231,7 @@ t1, b0 = read_syn_data()
 data = np.array(b0.get_data(), dtype = np.float64)
 
 """
-We first remove the skull from the b0's
+We first remove the skull from the B0 volume
 """
 
 b0_mask, mask = median_otsu(data, 4, 4)
@@ -325,4 +324,14 @@ plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
    :align: center
 
 **Deformed lattice under the resulting diffeomorphic map**.
+"""
+
+"""
+[1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
+    Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+    Evaluating Automated Labeling of Elderly and Neurodegenerative 
+    Brain, 12(1), 26-41.
+
+[2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced 
+    Normalization Tools ( ANTS ), 1-35.
 """

@@ -30,17 +30,17 @@ cdef enum:
 def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                              int radius):
     r"""
-    Precomputes the separate terms of the cross correlation metric and image
+    Pre-computes the separate terms of the cross correlation metric and image
     norms at each voxel considering a neighborhood of the given radius to 
     efficiently compute the gradient of the metric with respect to the 
     deformation field [1][2]
 
     [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
-        Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
+        Symmetric Diffeomorphic Image Registration with Cross-Correlation: 
         Evaluating Automated Labeling of Elderly and Neurodegenerative 
-        Brain, 12(1), 26–41.
+        Brain, 12(1), 26-41.
     [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
-        Advanced Normalization Tools ( ANTS ), 1–35.
+        Advanced Normalization Tools ( ANTS ), 1-35.
 
     Parameters
     ----------
@@ -49,7 +49,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
     moving : array, shape (S, R, C)
         the moving volume (notice that both images must already be in a common
         reference domain, i.e. the same S, R, C)
-    radius : the radius of the neighborhood (a cube of (2*radius+1)^3 voxels)
+    radius : the radius of the neighborhood (a cube of (2 * radius + 1)^3 voxels)
 
     Returns
     -------
@@ -109,7 +109,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                             sums[t] += lines[t, qq]
                     if(k >= radius):
                         # s is the voxel that is affected by the cube with slices
-                        # [s-radius..s+radius, :, :]
+                        # [s - radius..s + radius, :, :]
                         s = k - radius
                         Imean = sums[SI] / sums[CNT]
                         Jmean = sums[SJ] / sums[CNT]
@@ -124,7 +124,7 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                 # Finally set the values at the end of the line
                 for s in range(ns - radius, ns):
                     # this would be the last slice to be processed for voxel
-                    # [s,r,c], if it existed
+                    # [s, r, c], if it existed
                     k = s + radius
                     q = k % side
                     for t in range(6):
@@ -149,7 +149,8 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static, floating[:, :, :] mo
                                   int radius):
     r"""
     This version of precompute_cc_factors_3d is for testing purposes, it directly
-    computes the local cross-correlation factors without any optimization.
+    computes the local cross-correlation factors without any optimization, so
+    it is less error-prone than the accelerated version.
     """
     cdef:
         int ns = static.shape[0]
@@ -209,9 +210,9 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
     [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
         Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
         Evaluating Automated Labeling of Elderly and Neurodegenerative 
-        Brain, 12(1), 26–41.
+        Brain, 12(1), 26-41.
     [2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization 
-        Tools ( ANTS ), 1–35.
+        Tools ( ANTS ), 1-35.
 
     Parameters
     ----------
@@ -283,9 +284,9 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
     [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
         Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
         Evaluating Automated Labeling of Elderly and Neurodegenerative 
-        Brain, 12(1), 26–41.
+        Brain, 12(1), 26-41.
     [2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization 
-        Tools ( ANTS ), 1–35.
+        Tools ( ANTS ), 1-35.
 
     Parameters
     ----------
@@ -353,7 +354,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                              int radius):
     r"""
-    Precomputes the separate terms of the cross correlation metric [1] and image
+    Pre-computes the separate terms of the cross correlation metric [1] and image
     norms at each voxel considering a neighborhood of the given radius to 
     efficiently [2] compute the gradient of the metric with respect to the 
     deformation field.
@@ -361,9 +362,9 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
         Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
         Evaluating Automated Labeling of Elderly and Neurodegenerative 
-        Brain, 12(1), 26–41.
+        Brain, 12(1), 26-41.
     [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
-        Advanced Normalization Tools ( ANTS ), 1–35.
+        Advanced Normalization Tools ( ANTS ), 1-35.
 
     Parameters
     ----------
@@ -372,7 +373,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     moving : array, shape (R, C)
         the moving volume (notice that both images must already be in a common
         reference domain, i.e. the same R, C)
-    radius : the radius of the neighborhood (a square of (2*radius+1)^2 voxels)
+    radius : the radius of the neighborhood (a square of (2 * radius + 1)^2 voxels)
 
     Returns
     -------
@@ -405,7 +406,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                 for q in range(side):
                     lines[t,q] = 0
             # Compute all rows and set the sums on the fly
-            # compute row [i, j={c-radius, c+radius}]
+            # compute row [i, j = {c-radius, c + radius}]
             for i in range(nr):
                 q = i % side
                 for t in range(6):
@@ -424,7 +425,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                         sums[t] += lines[t, qq]
                 if(i >= radius):
                     # r is the pixel that is affected by the cube with slices
-                    # [r-radius..r+radius, :]
+                    # [r - radius.. r + radius, :]
                     r = i - radius
                     Imean = sums[SI] / sums[CNT]
                     Jmean = sums[SJ] / sums[CNT]
@@ -439,7 +440,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
             # Finally set the values at the end of the line
             for r in range(nr - radius, nr):
                 # this would be the last slice to be processed for pixel
-                # [r,c], if it existed
+                # [r, c], if it existed
                 i = r + radius
                 q = i % side
                 for t in range(6):
@@ -521,9 +522,9 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
     [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
         Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
         Evaluating Automated Labeling of Elderly and Neurodegenerative 
-        Brain, 12(1), 26–41.
+        Brain, 12(1), 26-41.
     [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
-        Advanced Normalization Tools ( ANTS ), 1–35.
+        Advanced Normalization Tools ( ANTS ), 1-35.
 
     Parameters
     ----------
@@ -593,9 +594,9 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
     [1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
         Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
         Evaluating Automated Labeling of Elderly and Neurodegenerative 
-        Brain, 12(1), 26–41.
+        Brain, 12(1), 26-41.
     [2] Avants, B. B., Tustison, N., & Song, G. (2011). 
-        Advanced Normalization Tools ( ANTS ), 1–35.
+        Advanced Normalization Tools ( ANTS ), 1-35.
 
     Parameters
     ----------

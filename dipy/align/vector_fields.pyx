@@ -15,8 +15,8 @@ cdef extern from "math.h":
 cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2, double h,
                                        double[:, :] aff) nogil:
     r"""
-    Returns the first component of the product of the affine matrix aff by
-    (x0, x1, x2)
+    Returns the first component of the product of the homogeneous matrix aff by
+    (x0, x1, x2, h)
     """
     return aff[0, 0] * x0 + aff[0, 1] * x1 + aff[0, 2] * x2 + h*aff[0, 3]
 
@@ -24,8 +24,8 @@ cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2, double h
 cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2, double h,
                                        double[:, :] aff) nogil:
     r"""
-    Returns the first component of the product of the affine matrix aff by
-    (x0, x1, x2)
+    Returns the first component of the product of the homogeneous matrix aff by
+    (x0, x1, x2, h)
     """
     return aff[1, 0] * x0 + aff[1, 1] * x1 + aff[1, 2] * x2 + h*aff[1, 3]
 
@@ -33,8 +33,8 @@ cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2, double h
 cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2, double h,
                                        double[:, :] aff) nogil:
     r"""
-    Returns the first component of the product of the affine matrix aff by
-    (x0, x1, x2)
+    Returns the first component of the product of the homogeneous matrix aff by
+    (x0, x1, x2, h)
     """
     return aff[2, 0] * x0 + aff[2, 1] * x1 + aff[2, 2] * x2 + h*aff[2, 3]
 
@@ -42,8 +42,8 @@ cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2, double h
 cdef inline double _apply_affine_2d_x0(double x0, double x1, double h,
                                        double[:, :] aff) nogil:
     r"""
-    Returns the first component of the product of the aff matrix aff by
-    (x0, x1, x2)
+    Returns the first component of the product of the homogeneous matrix aff by
+    (x0, x1, h)
     """
     return aff[0, 0] * x0 + aff[0, 1] * x1 + h*aff[0, 2]
 
@@ -51,8 +51,8 @@ cdef inline double _apply_affine_2d_x0(double x0, double x1, double h,
 cdef inline double _apply_affine_2d_x1(double x0, double x1, double h,
                                        double[:, :] aff) nogil:
     r"""
-    Returns the first component of the product of the affine matrix aff by
-    (x0, x1, x2)
+    Returns the first component of the product of the homogeneous matrix aff by
+    (x0, x1, h)
     """
     return aff[1, 0] * x0 + aff[1, 1] * x1 + h*aff[1, 2]
 
@@ -486,15 +486,15 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                                     double time_scaling,
                                     floating[:, :, :] comp, double[:] stats) nogil:
     r"""
-    Computes the composition of the two 2-D displacemements d1 and d2. The
-    evaluation of d2 at non-lattice points is computed using trilinear 
+    Computes the composition of the two 2-D displacements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using tri-linear 
     interpolation. The actual composition is computed as:
 
     comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
 
     where t = time_scaling, A = premult_index and B=premult_disp and i denotes
     the voxel coordinates of a voxel in d1's grid. Using this parameters it is
-    possible to compose vector fields with arbitrary discretizations: let R and
+    possible to compose vector fields with arbitrary discretization: let R and
     S be the voxel-to-space transformation associated to d1 and d2, respectively
     then the composition at a voxel with coordinates i in d1's grid is given
     by:
@@ -653,15 +653,15 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     floating[:, :, :, :] comp,
                                     double[:] stats) nogil:
     r"""
-    Computes the composition of the two 3-D displacemements d1 and d2. The
-    evaluation of d2 at non-lattice points is computed using trilinear 
+    Computes the composition of the two 3-D displacements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using tri-linear 
     interpolation. The actual composition is computed as:
 
     comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
 
     where t = time_scaling, A = premult_index and B=premult_disp and i denotes
     the voxel coordinates of a voxel in d1's grid. Using this parameters it is
-    possible to compose vector fields with arbitrary discretizations: let R and
+    possible to compose vector fields with arbitrary discretization: let R and
     S be the voxel-to-space transformation associated to d1 and d2, respectively
     then the composition at a voxel with coordinates i in d1's grid is given
     by:
@@ -775,15 +775,15 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
                              double[:, :] premult_disp,
                              double time_scaling):
     r"""
-    Computes the composition of the two 3-D displacemements d1 and d2. The
-    evaluation of d2 at non-lattice points is computed using trilinear 
+    Computes the composition of the two 3-D displacements d1 and d2. The
+    evaluation of d2 at non-lattice points is computed using tri-linear 
     interpolation. The actual composition is computed as:
 
     comp[i] = d1[i] + t * d2[ A * i + B * d1[i] ]
 
     where t = time_scaling, A = premult_index and B=premult_disp and i denotes
     the voxel coordinates of a voxel in d1's grid. Using this parameters it is
-    possible to compose vector fields with arbitrary discretizations: let R and
+    possible to compose vector fields with arbitrary discretization: let R and
     S be the voxel-to-space transformation associated to d1 and d2, respectively
     then the composition at a voxel with coordinates i in d1's grid is given
     by:
@@ -858,8 +858,8 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     tolerance : float
         maximum tolerated inversion error
     start : array, shape (R, C)
-        an aproximation to the inverse displacemnet field (if no aproximation
-        is available, None can be provided and the start displacement fieldwill
+        an approximation to the inverse displacement field (if no approximation
+        is available, None can be provided and the start displacement field will
         be zero)
 
     Returns
@@ -870,8 +870,8 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     Notes
     -----
     We assume that the displacement field is an endomorphism so that the shape
-    and voxel-to-space transformation of the inverse's discretization is the
-    same as those of the input displacementfield. The 'inversion error' at 
+    and voxel-to-space transformation of the inverse field's discretization is
+    the same as those of the input displacement field. The 'inversion error' at 
     iteration t is defined as the mean norm of the displacement vectors of the
     input displacement field composed with the inverse at iteration t. 
     """
@@ -957,7 +957,7 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     tolerance : float
         maximum tolerated inversion error
     start : array, shape (S, R, C)
-        an aproximation to the inverse displacemnet field (if no aproximation
+        an approximation to the inverse displacement field (if no approximation
         is available, None can be provided and the start displacement field will
         be zero)
 
@@ -969,8 +969,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     Notes
     -----
     We assume that the displacement field is an endomorphism so that the shape
-    and voxel-to-space transformation of the inverse's discretization is the
-    same as those of the input displacementfield. The 'inversion error' at 
+    and voxel-to-space transformation of the inverse field's discretization is the
+    same as those of the input displacement field. The 'inversion error' at 
     iteration t is defined as the mean norm of the displacement vectors of the
     input displacement field composed with the inverse at iteration t. 
     """
@@ -1078,7 +1078,7 @@ def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
 def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
                                             double[:, :] affine):
     r"""
-    Modifies thegiven 3-D displacement field by applying the given affine
+    Modifies the given 3-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
     T(x) = d(A*x), where A is the affine transformation.
 
@@ -1219,7 +1219,7 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
 def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
                                            double[:, :] affine):
     r"""
-    Modifies thegiven 3-D displacement field by applying the given affine
+    Modifies the given 3-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
     T(x) = A*d(x), where A is the affine transformation.
 
@@ -1268,7 +1268,7 @@ def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx,
 
     where Rinv =  R^{-1}. Therefore, whenever we need to warp an image we need
     to keep track of S and Rinv. After "consolidating" the displacement field,
-    it will operate drectly on the grid by incorporating the linear 
+    it will operate directly on the grid by incorporating the linear 
     transformations into the displacement field, so that the warped image at
     voxel i can be computed by:
 
@@ -1346,7 +1346,7 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
 
     where Rinv =  R^{-1}. Therefore, whenever we need to warp an image we need
     to keep track of S and Rinv. After "consolidating" the displacement field,
-    it will operate drectly on the grid by incorporating the linear 
+    it will operate directly on the grid by incorporating the linear 
     transformations into the displacement field, so that the warped image at
     voxel i can be computed by:
 
@@ -1387,7 +1387,7 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
                 di = field[k, i, j, 1]
                 dj = field[k, i, j, 2]
 
-                #premultiply displacement
+                #pre-multiply displacement
                 if affine_disp is not None:
                     dkk = _apply_affine_3d_x0(dk, di, dj, 0, affine_disp)
                     dii = _apply_affine_3d_x1(dk ,di, dj, 0, affine_disp)
@@ -1397,7 +1397,7 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
                     dii = di
                     djj = dj
 
-                #premultiply index
+                #pre-multiply index
                 if affine_idx is not None:
                     dk = _apply_affine_3d_x0(k, i, j, 1, affine_idx)
                     di = _apply_affine_3d_x1(k, i, j, 1, affine_idx)
@@ -1416,23 +1416,23 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
 
 def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
     r"""
-    Upsamples de input 2-D displacement field by a factor of 2. The target shape
-    (the shape of the resulting upsampled displacement field) must be specified
+    Up-samples the input 2-D displacement field by a factor of 2. The target shape
+    (the shape of the resulting up-sampled displacement field) must be specified
     to ensure the resulting field has the required dimensions (the input field
-    might be the result of subsampling a larger array with odd or even
+    might be the result of sub-sampling a larger array with odd or even
     dimensions, which cannot be determined from the input dimensions alone).
 
     Parameters
     ----------
     field : array, shape (R, C, 2)
-        the 2-D displacement field to be upsampled
+        the 2-D displacement field to be up-sampled
     target_shape : array, shape (2,)
-        the intended shape of the resulting upsampled field
+        the intended shape of the resulting up-sampled field
 
     Returns
     -------
     up : array, shape target_shape + (2,)
-        the upsampled displacement field
+        the up-sampled displacement field
     """
     cdef:
         int nrows = target_shape[0]
@@ -1454,23 +1454,23 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
 def upsample_displacement_field_3d(floating[:, :, :, :] field,
                                    int[:] target_shape):
     r"""
-    Upsamples de input 3-D displacement field by a factor of 2. The target shape
-    (the shape of the resulting upsampled displacement field) must be specified
+    Up-samples the input 3-D displacement field by a factor of 2. The target shape
+    (the shape of the resulting up-sampled displacement field) must be specified
     to ensure the resulting field has the required dimensions (the input field
-    might be the result of subsampling a larger array with odd or even
+    might be the result of sub-sampling a larger array with odd or even
     dimensions, which cannot be determined from the input dimensions alone).
 
     Parameters
     ----------
     field : array, shape (S, R, C, 3)
-        the 3-D displacement field to be upsampled
+        the 3-D displacement field to be up-sampled
     target_shape : array, shape (3,)
-        the intended shape of the resulting upsampled field
+        the intended shape of the resulting up-sampled field
 
     Returns
     -------
     up : array, shape target_shape + (3,)
-        the upsampled displacement field
+        the up-sampled displacement field
     """
     cdef:
         int ns = target_shape[0]
@@ -1496,15 +1496,15 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
 def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
                                              floating[:, :, :, :] up):
     r"""
-    Upsamples de input 3-D displacement field by a factor of 2. The resulting
-    upsampled field is added to 'up' rather than returning a new field.
+    Up-samples the input 3-D displacement field by a factor of 2. The resulting
+    up-sampled field is added to 'up' rather than returning a new field.
 
     Parameters
     ----------
     field : array, shape (S, R, C, 3)
-        the 3-D displacement field to be upsampled
+        the 3-D displacement field to be up-sampled
     up : array, shape (S', R', C', 3)
-        the starting field wich the result will be added to
+        the starting field which the result will be added to
 
     """
     cdef:
@@ -1532,19 +1532,19 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
 
 def downsample_scalar_field3D(floating[:, :, :] field):
     r"""
-    Downsamples the input volume by a factor of 2. The value at each voxel
+    Down-samples the input volume by a factor of 2. The value at each voxel
     of the resulting volume is the average of its surrounding voxels in the
     original volume.
 
     Parameters
     ----------
     field : array, shape (S, R, C)
-        the volume to be downsampled
+        the volume to be down-sampled
 
     Returns
     -------
     down : array, shape (S', R', C')
-        the downsampled displacement field, where S' = ceil(S/2), 
+        the down-sampled displacement field, where S' = ceil(S/2), 
         R'= ceil(R/2), C'=ceil(C/2)
     """
     cdef:
@@ -1577,19 +1577,19 @@ def downsample_scalar_field3D(floating[:, :, :] field):
 
 def downsample_displacement_field3D(floating[:, :, :, :] field):
     r"""
-    Downsamples the input vector field by a factor of 2. The value at each voxel
+    Down-samples the input vector field by a factor of 2. The value at each voxel
     of the resulting volume is the average of its surrounding voxels in the
     original volume.
 
     Parameters
     ----------
     field : array, shape (S, R, C)
-        the vector field to be downsampled
+        the vector field to be down-sampled
 
     Returns
     -------
     down : array, shape (S', R', C')
-        the downsampled displacement field, where S' = ceil(S/2), 
+        the down-sampled displacement field, where S' = ceil(S/2), 
         R'= ceil(R/2), C'=ceil(C/2)
     """
     cdef:
@@ -1627,19 +1627,19 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
 
 def downsample_scalar_field2D(floating[:, :] field):
     r"""
-    Downsamples the input image by a factor of 2. The value at each pixel
+    Down-samples the input image by a factor of 2. The value at each pixel
     of the resulting image is the average of its surrounding pixels in the
     original image.
 
     Parameters
     ----------
     field : array, shape (R, C)
-        the image to be downsampled
+        the image to be down-sampled
 
     Returns
     -------
     down : array, shape (R', C')
-        the downsampled displacement field, where R'= ceil(R/2), C'=ceil(C/2) 
+        the down-sampled displacement field, where R'= ceil(R/2), C'=ceil(C/2) 
     """
     cdef:
         int nr = field.shape[0]
@@ -1666,19 +1666,19 @@ def downsample_scalar_field2D(floating[:, :] field):
 
 def downsample_displacement_field2D(floating[:, :, :] field):
     r"""
-    Downsamples the input vector field by a factor of 2. The value at each pixel
+    Down-samples the input vector field by a factor of 2. The value at each pixel
     of the resulting field is the average of its surrounding pixels in the
     original field.
 
     Parameters
     ----------
     field : array, shape (R, C)
-        the vector field to be downsampled
+        the vector field to be down-sampled
 
     Returns
     -------
     down : array, shape (R', C')
-        the downsampled displacement field, where R'= ceil(R/2), C'=ceil(C/2), 
+        the down-sampled displacement field, where R'= ceil(R/2), C'=ceil(C/2), 
     """
     cdef:
         int nr = field.shape[0]
@@ -1710,9 +1710,9 @@ def get_displacement_range(floating[:, :, :, :] d, double[:, :] affine):
     r"""
     Computes the minimum and maximum values reached by the transformation
     defined by the given displacement field and affine pre-multiplication
-    matrix. More precisely, computes max_{x\in L} x+d(A*x), and 
-    min_{x\in L} x+d(A*x), where d is the displacement field, A is the affine 
-    matrix, the interpolation used is trilinear and the maximum and minimum are 
+    matrix. More precisely, computes max_{x\in L} x + d(A * x), and 
+    min_{x\in L} x + d(A * x), where d is the displacement field, A is the affine 
+    matrix, the interpolation used is tri-linear and the maximum and minimum are 
     taken for each vector component independently.
 
     Parameters
@@ -1880,7 +1880,7 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
                        double[:, :] affine):
     r"""
     Deforms the input volume under the given affine transformation using 
-    trilinear interpolation. The shape of the resulting transformation
+    tri-linear interpolation. The shape of the resulting transformation
     is given by refShape. If the affine matrix is None, it is taken as the 
     identity.
 
@@ -2179,7 +2179,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
 
         for i in range(nrows):
             for j in range(ncols):
-                #Apply inner index premultiplication
+                #Apply inner index pre-multiplication
                 if affine_idx_in is None:
                     dii = d1[i, j, 0]
                     djj = d1[i, j, 1]
@@ -2202,7 +2202,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
                     di = dii
                     dj = djj
 
-                #Apply outer index multiplization and add the displacements
+                #Apply outer index multiplication and add the displacements
                 if affine_idx_out is not None:
                     dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
                     djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
@@ -2219,7 +2219,7 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
                       double[:, :] affine=None):
     r"""
     Deforms the input image under the given affine transformation using 
-    trilinear interpolation. The shape of the resulting transformation
+    tri-linear interpolation. The shape of the resulting transformation
     is given by refShape. If the affine matrix is None, it is taken as the 
     identity.
 
@@ -2339,7 +2339,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
 
         for i in range(nrows):
             for j in range(ncols):
-                #Apply inner index premultiplication
+                #Apply inner index pre-multiplication
                 if affine_idx_in is None:
                     dii = d1[i, j, 0]
                     djj = d1[i, j, 1]
@@ -2362,7 +2362,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
                     di = dii
                     dj = djj
 
-                #Apply outer index multiplization and add the displacements
+                #Apply outer index multiplication and add the displacements
                 if affine_idx_out is not None:
                     dii = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out)
                     djj = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out)
@@ -2431,7 +2431,7 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
 
 def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, int[:] target_shape):
     r"""
-    Upsamples the discretization of the displacement fields to be of 
+    Up-samples the discretization of the displacement fields to be of 
     target_shape shape.
 
     Parameters
@@ -2440,7 +2440,7 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, 
         the factors scaling current spacings (voxel sizes) to spacings in
         the expanded discretization.
     target_shape : array, shape (3,)
-        the shape of the arrays holding the upsampled discretization
+        the shape of the arrays holding the up-sampled discretization
 
     Returns
     -------
@@ -2466,7 +2466,7 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, 
 
 def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int[:] target_shape):
     r"""
-    Upsamples the discretization of the displacement fields to be of 
+    Up-samples the discretization of the displacement fields to be of 
     target_shape shape.
 
     Parameters
@@ -2475,7 +2475,7 @@ def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int
         the factors scaling current spacings (voxel sizes) to spacings in
         the expanded discretization.
     target_shape : array, shape (2,)
-        the shape of the arrays holding the upsampled discretization
+        the shape of the arrays holding the up-sampled discretization
 
     Returns
     -------
@@ -2516,7 +2516,7 @@ def create_random_displacement_2d(int[:] from_shape,
     from_shape : array, shape (2,)
         the grid shape where the displacement field will be defined on.
     input_affine : array, shape (3,3)
-        the grid-to-space transformation of the displacemnet field 
+        the grid-to-space transformation of the displacement field 
     to_shape : array, shape (2,)
         the grid shape where the deformation field will map the input grid to.
     output_affine : array, shape (3,3)
@@ -2584,7 +2584,7 @@ def create_linear_displacement_field_2d(int[:] shape,
     shape : array, shape (2,)
         the grid shape where the displacement field will be defined on.
     input_affine : array, shape (3,3)
-        the grid-to-space transformation of the displacemnet field 
+        the grid-to-space transformation of the displacement field 
     transform : array, shape (3,3)
         the linear, invertible transformation to be applied to the points of the
         input grid
@@ -2647,7 +2647,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
     from_shape : array, shape (3,)
         the grid shape where the displacement field will be defined on.
     input_affine : array, shape (4,4)
-        the grid-to-space transformation of the displacemnet field 
+        the grid-to-space transformation of the displacement field 
     to_shape : array, shape (3,)
         the grid shape where the deformation field will map the input grid to.
     output_affine : array, shape (4,4)
