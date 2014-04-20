@@ -29,6 +29,8 @@ See :ref:`older highlights <old_highlights>`.
 *************
 Announcements
 *************
+
+- The creators of Dipy will attend both ISMRM and HBM 2014. Come and meet us!
 - A new **hands on Dipy** seminar to 50 neuroscientists from Canada, as part of QBIN's "Do's and dont's of diffusion MRI" workshop, 8 April, 2014.
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
 - **Dipy 0.7.1** Released!, 16 January, 2014.
