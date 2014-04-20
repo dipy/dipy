@@ -17,18 +17,21 @@ Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3
 .. raw :: html
 
 	<div style="width: 80% max-width=800px">
-		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_images/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%">
-        </a>		
+		<a href="http://www.frontiersin.org/Neuroinformatics/10.3389/fninf.2014.00008/abstract" target="_blank"><img alt=" " class="align-center" src="_static/dipy_paper_logo.jpg" style="width: 90%;max-height: 90%">
+        </a>
 	</div>
 
-So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.  
+So, how similar are your bundles to the real anatomy? Learn how to optimize your analysis as we did to create the fornix of the figure above, by reading the tutorials in our :ref:`gallery <examples>`.
 
-See :ref:`older highlights <old_highlights>`. 
+See :ref:`older highlights <old_highlights>`.
 
 
 *************
 Announcements
 *************
+
+- The creators of Dipy will attend both ISMRM and HBM 2014. Come and meet us!
+- A new **hands on Dipy** seminar to 50 neuroscientists from Canada, as part of QBIN's "Do's and dont's of diffusion MRI" workshop, 8 April, 2014.
 - `Dipy paper`_ accepted in Frontiers of Neuroinformatics, 22 January, 2014.
 - **Dipy 0.7.1** Released!, 16 January, 2014.
 - **Dipy 0.7.0** Released!, 23 December, 2013.
