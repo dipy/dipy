@@ -110,6 +110,7 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
         the norm of the maximum change in the displacement field after the 
         iteration
     """
+    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 4
         int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
@@ -117,10 +118,11 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
         int nrows = delta_field.shape[0]
         int ncols = delta_field.shape[1]
         int r, c, dr, dc, nn, k
-        floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-        floating[:] d = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-        floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-        floating[:] A = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+
+        floating[:] b = np.ndarray(shape=(2,), dtype=ftype)
+        floating[:] d = np.ndarray(shape=(2,), dtype=ftype)
+        floating[:] y = np.ndarray(shape=(2,), dtype=ftype)
+        floating[:] A = np.ndarray(shape=(3,), dtype=ftype)
         floating xx, yy, opt, nrm2, delta, sigma, max_displacement
     max_displacement = 0
 
@@ -278,6 +280,7 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         the norm of the maximum change in the displacement field after the 
         iteration
     """
+    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 6
         int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
@@ -287,10 +290,10 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         int nrows = delta_field.shape[1]
         int ncols = delta_field.shape[2]
         int nn        
-        floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-        floating[:] d = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-        floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-        floating[:] A = np.ndarray(shape=(6,), dtype=np.asarray(delta_field).dtype)
+        floating[:] b = np.ndarray(shape=(3,), dtype=ftype)
+        floating[:] d = np.ndarray(shape=(3,), dtype=ftype)
+        floating[:] y = np.ndarray(shape=(3,), dtype=ftype)
+        floating[:] A = np.ndarray(shape=(6,), dtype=ftype)
         floating xx, yy, zz, opt, nrm2, delta, sigma, max_displacement
         int dr, ds, dc, s, r, c
     max_displacement = 0
@@ -481,20 +484,21 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
         the residual displacement field. If residual was None a input, then
         a new field is returned, otherwise the same array is returned
     """
+    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 6
         int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
         int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
         int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
-        floating[:] b = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
-        floating[:] y = np.ndarray(shape=(3,), dtype=np.asarray(delta_field).dtype)
+        floating[:] b = np.ndarray(shape=(3,), dtype=ftype)
+        floating[:] y = np.ndarray(shape=(3,), dtype=ftype)
         int nslices = delta_field.shape[0]
         int nrows = delta_field.shape[1]
         int ncols = delta_field.shape[2]
         floating delta, sigma, dotP
         int s, r, c, ds, dr, dc
     if residual == None:
-        residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=np.asarray(delta_field).dtype)
+        residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=ftype)
     for s in range(nslices):
         for r in range(nrows):
             for c in range(ncols):
@@ -590,18 +594,19 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
         the residual displacement field. If residual was None a input, then
         a new field is returned, otherwise the same array is returned
     """
+    ftype = np.asarray(delta_field).dtype
     cdef:
         int NUM_NEIGHBORS = 4
         int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
         int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
-        floating[:] b = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
-        floating[:] y = np.ndarray(shape=(2,), dtype=np.asarray(delta_field).dtype)
+        floating[:] b = np.ndarray(shape=(2,), dtype=ftype)
+        floating[:] y = np.ndarray(shape=(2,), dtype=ftype)
         int nrows = delta_field.shape[0]
         int ncols = delta_field.shape[1]
         floating delta, sigma, dotP
         int r, c, dr, dc
     if residual == None:
-        residual = np.empty(shape=(nrows, ncols, 2), dtype=np.asarray(delta_field).dtype)
+        residual = np.empty(shape=(nrows, ncols, 2), dtype=ftype)
     for r in range(nrows):
         for c in range(ncols):
             delta = delta_field[r, c]

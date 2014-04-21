@@ -400,7 +400,6 @@ class EMMetric(SimilarityMetric):
             self.compute_step = self.compute_demons_step
         elif self.iter_type == 'gauss_newton':
             self.compute_step = self.compute_gauss_newton_step
-            
 
     def initialize_iteration(self):
         r"""

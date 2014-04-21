@@ -712,8 +712,9 @@ class DiffeomorphicMap(object):
                   sampling_shape=None, sampling_affine=None):
         r"""
         Transforms the input image under this transformation in the forward
-        direction. The "is_inverse" flag simply switches the "forward" and 
-        "backward" meaning of this transformation.
+        direction. It uses the "is_inverse" flag to switch between "forward"
+        and "backward" (if is_inverse is False, then transform(...) warps the
+        image forwards, else it warps the image backwards).
 
         Parameters
         ----------
@@ -753,8 +754,9 @@ class DiffeomorphicMap(object):
                           sampling_shape=None, sampling_affine=None):
         r"""
         Transforms the input image under this transformation in the backward
-        direction. The "is_inverse" flag simply switches the "forward" and 
-        "backward" meaning of this transformation.
+        direction. It uses the "is_inverse" flag to switch between "forward"
+        and "backward" (if is_inverse is False, then transform_inverse(...) 
+        warps the image backwards, else it warps the image forwards)
 
         Parameters
         ----------
@@ -1347,11 +1349,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         self.energy_list.append(fw_energy + bw_energy)
 
-        #Free resources no longer needed to compute the forward and backward steps
-        if self.callback is not None:
-            self.callback(self, RegistrationStages.ITER_END)
-        self.metric.free_iteration()
-
         #Invert the forward model's forward field
         self.forward_model.backward = np.array(
             self.invert_vector_field(
@@ -1383,6 +1380,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 current_domain_affine_inv,
                 current_domain_spacing,
                 self.inv_iter, self.inv_tol, self.backward_model.forward))
+
+        #Free resources no longer needed to compute the forward and backward steps
+        if self.callback is not None:
+            self.callback(self, RegistrationStages.ITER_END)
+        self.metric.free_iteration()
 
         return 1 if der == '-' else der
 
@@ -1455,16 +1457,16 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.forward_model.expand_fields(expand_factors, new_shape)
                 self.backward_model.expand_fields(expand_factors, new_shape)
 
-            niter = 0
+            self.niter = 0
             self.energy_list = []
             derivative = 1
 
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_START)
 
-            while ((niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
+            while ((self.niter < self.opt_iter[level]) and (self.opt_tol < derivative)):
                 derivative = self._iterate()
-                niter += 1
+                self.niter += 1
 
             self.full_energy_profile.extend(self.energy_list)
 

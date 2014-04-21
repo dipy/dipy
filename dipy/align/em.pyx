@@ -184,14 +184,15 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
     labels : array, shape (R, C) 
         the label assigned to each pixel
     """
+    ftype=np.asarray(v).dtype
     cdef:
         int nrows = v.shape[0]
         int ncols = v.shape[1]
         int i, j
         double INF64 = np.inf
         int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
-        floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
-        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
+        floating[:] means = np.zeros(shape=(numLabels,), dtype=ftype)
+        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=ftype)
 
     with nogil:
         for i in range(nrows):
@@ -232,6 +233,7 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
     labels : array, shape (R, C) 
         the label assigned to each pixel
     """
+    ftype=np.asarray(v).dtype
     cdef:
         int nslices = v.shape[0]
         int nrows = v.shape[1]
@@ -239,8 +241,8 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
         int i, j, k
         double INF64 = np.inf
         int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
-        floating[:] means = np.zeros(shape=(numLabels,), dtype=np.asarray(v).dtype)
-        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=np.asarray(v).dtype)
+        floating[:] means = np.zeros(shape=(numLabels,), dtype=ftype)
+        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=ftype)
 
     with nogil:
         for k in range(nslices):
