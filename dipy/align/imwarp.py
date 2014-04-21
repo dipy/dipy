@@ -518,7 +518,16 @@ class DiffeomorphicMap(object):
         is the world-to-grid transformation of the deformation field 
         discretization, P is the pre-aligning matrix (transforming input
         points to reference points), S is the voxel-to-space transformation of
-        the image and forward is the forward deformation field
+        the sampling grid (see comment below) and forward is the forward
+        deformation field.
+        
+        If we want to warp an image, we also must specify on what grid we
+        want to sample the resulting warped image (the images are considered as
+        points in space and its representation on a grid depends on its
+        grid-to-space transform telling us for each grid voxel what point in
+        space we need to bring via interpolation). So, S is the matrix that
+        converts the sampling grid (whose shape is given as parameter
+        'sampling_shape' ) to space coordinates.
 
         """
         #if no world-to-image transform is provided, we assume the image given as
@@ -636,8 +645,17 @@ class DiffeomorphicMap(object):
         the world-to-grid transformation of the image given as input, Dinv
         is the world-to-grid transformation of the deformation field 
         discretization, Pinv is the pre-aligning matrix's inverse (transforming
-        reference points to input points), S is the voxel-to-space transformation of
-        the image and backward is the backward deformation field
+        reference points to input points), S is the grid-to-space transformation
+        of the sampling grid (see comment below) and backward is the backward
+        deformation field.
+
+        If we want to warp an image, we also must specify on what grid we
+        want to sample the resulting warped image (the images are considered as
+        points in space and its representation on a grid depends on its
+        grid-to-space transform telling us for each grid voxel what point in
+        space we need to bring via interpolation). So, S is the matrix that
+        converts the sampling grid (whose shape is given as parameter
+        'sampling_shape' ) to space coordinates.
 
         """
         #if no world-to-image transform is provided, we assume the image given as
