@@ -469,8 +469,8 @@ class DiffeomorphicMap(object):
         self.forward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
         self.backward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
 
-    def _warp_forward(self, image, interpolation='lin', world_to_image=None, 
-                      sampling_shape=None, sampling_affine=None):
+    def _warp_forward(self, image, interpolation='lin', world_to_image=-1, 
+                      sampling_shape=None, sampling_affine=-1):
         r"""
         Deforms the input image under this diffeomorphic map in the forward direction.
         Since the mapping is defined in the physical space, the user must specify 
@@ -501,6 +501,12 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
+        The default value for the affine transformations is "-1" to handle the case
+        in which the user provides "None" as input meaning "identity". If we used
+        None as default, we wouldn't know if the user specifically wants to use
+        the identity (specifically passing None) or if it was left unspecified,
+        meaning to use the appropriate default matrix
+
         A diffeomorphic map must be thought as a mapping between points
         in space. Warping an image J towards an image I means transforming
         each voxel with (discrete) coordinates i in I to (floating-point) voxel
@@ -533,13 +539,13 @@ class DiffeomorphicMap(object):
         #if no world-to-image transform is provided, we assume the image given as
         #input has the same discretization as the displacement fields (the
         #reference grid)
-        if world_to_image is None:
+        if world_to_image is -1:
             world_to_image = self.domain_affine_inv
         if sampling_shape is None:
             if self.input_shape is None:
                 raise Exception('DiffeomorphicMap::_warp_forward','Sampling shape is None')
             sampling_shape = self.input_shape
-        if sampling_affine is None:
+        if sampling_affine is -1:
             sampling_affine = self.input_affine
 
         W = world_to_image
@@ -598,8 +604,8 @@ class DiffeomorphicMap(object):
                                   sampling_shape)
         return warped
 
-    def _warp_backward(self, image, interpolation='lin', world_to_image=None, 
-                       sampling_shape=None, sampling_affine=None):
+    def _warp_backward(self, image, interpolation='lin', world_to_image=-1, 
+                       sampling_shape=None, sampling_affine=-1):
         r"""
         Deforms the input image under this diffeomorphic map in the backward 
         direction. Since the mapping is defined in the physical space, the user
@@ -630,6 +636,12 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
+        The default value for the affine transformations is "-1" to handle the case
+        in which the user provides "None" as input meaning "identity". If we used
+        None as default, we wouldn't know if the user specifically wants to use
+        the identity (specifically passing None) or if it was left unspecified,
+        meaning to use the appropriate default matrix
+
         A diffeomorphic map must be thought as a mapping between points
         in space. Warping an image J towards an image I means transforming
         each voxel with (discrete) coordinates i in I to (floating-point) voxel
@@ -661,14 +673,14 @@ class DiffeomorphicMap(object):
         #if no world-to-image transform is provided, we assume the image given as
         #input has the same discretization as the input discretization given
         #at initialization
-        if world_to_image is None:
+        if world_to_image is -1:
             world_to_image = self.input_affine_inv
 
         if sampling_shape is None:
             if self.domain_shape is None:
                 raise Exception('DiffeomorphicMap::_warp_backward','Sampling shape is None')
             sampling_shape = self.domain_shape
-        if sampling_affine is None:
+        if sampling_affine is -1:
             sampling_affine = self.domain_affine
 
         W = world_to_image
@@ -726,8 +738,8 @@ class DiffeomorphicMap(object):
                                             sampling_shape)
         return warped
 
-    def transform(self, image, interpolation='lin', world_to_image=None, 
-                  sampling_shape=None, sampling_affine=None):
+    def transform(self, image, interpolation='lin', world_to_image=-1, 
+                  sampling_shape=None, sampling_affine=-1):
         r"""
         Transforms the input image under this transformation in the forward
         direction. It uses the "is_inverse" flag to switch between "forward"
@@ -768,8 +780,8 @@ class DiffeomorphicMap(object):
                                        sampling_shape, sampling_affine)
         return np.asarray(warped)
 
-    def transform_inverse(self, image, interpolation='lin', world_to_image=None, 
-                          sampling_shape=None, sampling_affine=None):
+    def transform_inverse(self, image, interpolation='lin', world_to_image=-1, 
+                          sampling_shape=None, sampling_affine=-1):
         r"""
         Transforms the input image under this transformation in the backward
         direction. It uses the "is_inverse" flag to switch between "forward"
@@ -1457,6 +1469,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         The main multi-scale symmetric optimization algorithm
         """
         self.full_energy_profile = []
+        if self.callback is not None:
+            self.callback(self, RegistrationStages.OPT_START)
         for level in range(self.levels - 1, -1, -1):
             if self.verbosity >= VerbosityLevels.STATUS:
                 print('Optimizing level %d'%(level,))
@@ -1512,6 +1526,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         residual, stats = self.forward_model.compute_inversion_error()
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             print('Final residual error: %0.6f (%0.6f)' % (stats[1], stats[2]))
+        if self.callback is not None:
+            self.callback(self, RegistrationStages.OPT_END)
 
     def optimize(self, static, moving, static_affine=None, moving_affine=None, prealign=None):
         r"""

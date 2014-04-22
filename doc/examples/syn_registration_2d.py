@@ -15,6 +15,7 @@ from dipy.data import get_data
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
 import dipy.align.imwarp as imwarp
+from dipy.viz import regtools
 
 
 fname_moving = get_data('reg_o')
@@ -40,33 +41,7 @@ image, we can plot them on top of each other with different channels to see
 where the differences are located
 """
 
-def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
-    #Normalize the input images to [0,255]
-    img0 = 255*((img0 - img0.min()) / (img0.max() - img0.min()))
-    img1 = 255*((img1 - img1.min()) / (img1.max() - img1.min()))
-    img0_red=np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
-    img1_green=np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
-    overlay=np.zeros(shape=(img0.shape) + (3,), dtype=np.uint8)
-    img0_red[..., 0] = img0
-    img1_green[..., 1] = img1
-    overlay[..., 0]=img0
-    overlay[..., 1]=img1
-    plt.figure()
-    plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(img0_red)
-    plt.title(title0)
-    plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(overlay)
-    plt.title(title_mid)
-    plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(img1_green)
-    plt.title(title1)
-    if fname is not None:
-      from time import sleep
-      sleep(1)
-      plt.savefig(fname, bbox_inches='tight')
-
-overlay_images(static, moving, 'Static', 'Overlay', 'Moving', 'input_images.png')
+regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving', 'input_images.png')
 
 """
 .. figure:: input_images.png
@@ -111,53 +86,7 @@ It is a good idea to visualize the resulting deformation map to make sure the
 result is reasonable (at least, visually) 
 """
 
-def draw_lattice_2d(nrows, ncols, delta):
-    lattice=np.ndarray((1 + (delta + 1) * nrows, 1 + (delta + 1) * ncols), dtype = np.float64)
-    lattice[...] = 127
-    for i in range(nrows + 1):
-        lattice[i*(delta + 1), :] = 0
-    for j in range(ncols + 1):
-        lattice[:, j * (delta + 1)] = 0
-    return lattice
-
-def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None):
-    #Create a grid on the moving domain
-    nrows_moving = mapping.forward.shape[0]
-    ncols_moving = mapping.forward.shape[1]
-    X1,X0 = np.mgrid[0:nrows_moving, 0:ncols_moving]
-    lattice_moving=draw_lattice_2d((nrows_moving + delta) / (delta + 1), 
-                                 (ncols_moving + delta) / (delta + 1), delta)
-    lattice_moving=lattice_moving[0:nrows_moving, 0:ncols_moving]
-    #Warp in the forward direction (since the lattice is in the moving domain)
-    warped_forward = mapping.transform(lattice_moving, 'lin')
-
-    #Create a grid on the static domain
-    nrows_static = mapping.backward.shape[0]
-    ncols_static = mapping.backward.shape[1]
-    X1,X0 = np.mgrid[0:nrows_static, 0:ncols_static]
-    lattice_static = draw_lattice_2d((nrows_static + delta) / (delta + 1), 
-                                     (ncols_static + delta) / (delta + 1), delta)
-    lattice_static=lattice_static[0:nrows_static, 0:ncols_static]
-    #Warp in the backward direction (since the lattice is in the static domain)
-    warped_backward = mapping.transform_inverse(lattice_static, 'lin')
-
-    #Now plot the grids
-    plt.figure()
-    plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(warped_forward, cmap = plt.cm.gray)
-    plt.title('Direct transform')
-    plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(lattice_moving, cmap = plt.cm.gray)
-    plt.title('Original grid')
-    plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(warped_backward, cmap = plt.cm.gray)
-    plt.title('Inverse transform')
-    if fname is not None:
-      from time import sleep
-      sleep(1)
-      plt.savefig(fname, bbox_inches = 'tight')
-
-plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
+regtools.plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 
 """
 .. figure:: diffeomorphic_map.png
@@ -171,7 +100,7 @@ Now let's warp the moving image and see if it gets similar to the static image
 """
 
 warped_moving = mapping.transform(moving, 'lin')
-overlay_images(static, warped_moving, 'Static','Overlay','Warped moving',
+regtools.overlay_images(static, warped_moving, 'Static','Overlay','Warped moving',
     'direct_warp_result.png')
 
 """
@@ -188,7 +117,7 @@ is similar to the moving image
 """
 
 warped_static = mapping.transform_inverse(static, 'lin')
-overlay_images(warped_static, moving,'Warped static','Overlay','Moving', 
+regtools.overlay_images(warped_static, moving,'Warped static','Overlay','Moving', 
     'inverse_warp_result.png')
 
 """
@@ -216,7 +145,7 @@ def callback_CC(optimizer, status):
         wmoving = optimizer.metric.moving_image
         wstatic = optimizer.metric.static_image
         #draw the images on top of each other with different colors
-        overlay_images(wmoving, wstatic, 'Warped moving', 'Overlay', 'Warped static')
+        regtools.overlay_images(wmoving, wstatic, 'Warped moving', 'Overlay', 'Warped static')
 
 """
 Now we are ready to configure and run the registration. First load the data
@@ -276,7 +205,7 @@ We can see the effect of the warping by switching between the images before and
 after registration
 '''
 
-overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
+regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
                't1_slices_input.png')
 
 """
@@ -286,7 +215,7 @@ overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
 **Input images.**.
 """
 
-overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
+regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
                't1_slices_res.png')
 
 """
@@ -302,7 +231,7 @@ And we can apply the inverse warping too
 '''
 
 inv_warped = mapping.transform_inverse(static)
-overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving',
+regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving',
                't1_slices_res2.png')
 
 """
@@ -317,7 +246,7 @@ on top of the moving image (in green)**.
 Finally, let's see the deformation
 '''
 
-plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
+regtools.plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
 
 """
 .. figure:: diffeomorphic_map_b0s.png

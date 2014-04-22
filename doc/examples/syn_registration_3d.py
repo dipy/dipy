@@ -17,6 +17,7 @@ from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align.metrics import CCMetric
 import os.path
+from dipy.viz import regtools
 
 """
 Let's fetch two b0 volumes, the first one will be the b0 from the Stanford
@@ -79,58 +80,8 @@ resampled = np.asarray(resampled)
 And define the functions to plot the overlapped middle slices of the volumes
 """
 
-def plot_middle_slices(V, fname=None):
-    V = np.asarray(V, dtype = np.float64)
-    sh=V.shape
-    V = 255 * (V - V.min()) / (V.max() - V.min())
-    axial = np.asarray(V[sh[0]//2, :, :]).astype(np.uint8).T
-    coronal = np.asarray(V[:, sh[1]//2, :]).astype(np.uint8).T
-    sagital = np.asarray(V[:, :, sh[2]//2]).astype(np.uint8).T
 
-    plt.figure()
-    plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(axial, cmap = plt.cm.gray, origin='lower')
-    plt.title('Axial')
-    plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(coronal, cmap = plt.cm.gray, origin='lower')
-    plt.title('Coronal')
-    plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(sagital, cmap = plt.cm.gray, origin='lower')
-    plt.title('Sagittal')
-    if fname is not None:
-        from time import sleep
-        sleep(1)
-        plt.savefig(fname, bbox_inches='tight')
-
-
-def overlay_middle_slices_coronal(L, R, ltitle='Left', rtitle='Right', fname=None):
-    L = np.asarray(L, dtype = np.float64)
-    R = np.asarray(R, dtype = np.float64)
-    L = 255 * (L - L.min()) / (L.max() - L.min())
-    R = 255 * (R - R.min()) / (R.max() - R.min())
-    sh = L.shape
-    colorImage = np.zeros(shape = (sh[2], sh[0], 3), dtype = np.uint8)
-    ll = np.asarray(L[:, sh[1]//2, :]).astype(np.uint8).T
-    rr = np.asarray(R[:, sh[1]//2, :]).astype(np.uint8).T
-    colorImage[..., 0] = ll * (ll > ll[0, 0])
-    colorImage[..., 1] = rr * (rr > rr[0, 0])
-
-    plt.figure()
-    plt.subplot(1, 3, 1).set_axis_off()
-    plt.imshow(ll, cmap = plt.cm.gray, origin = 'lower')
-    plt.title(ltitle)
-    plt.subplot(1, 3, 2).set_axis_off()
-    plt.imshow(colorImage, origin = 'lower')
-    plt.title('Overlay')
-    plt.subplot(1, 3, 3).set_axis_off()
-    plt.imshow(rr, cmap = plt.cm.gray, origin = 'lower')
-    plt.title(rtitle)
-    if fname is not None:
-        from time import sleep
-        sleep(1)
-        plt.savefig(fname, bbox_inches = 'tight')
-
-overlay_middle_slices_coronal(static, resampled, 'Static', 'Moving', 'input_3d.png')
+regtools.overlay_middle_slices(static, resampled, 1, 'Static', 'Moving', 'input_3d.png')
 
 """
 .. figure:: input_3d.png
@@ -175,7 +126,7 @@ warped_moving = mapping.transform(moving)
 We plot the overlapped middle slices
 """
 
-overlay_middle_slices_coronal(static, warped_moving, 'Static', 'Warped moving', 'warped_moving.png')
+regtools.overlay_middle_slices(static, warped_moving, 1, 'Static', 'Warped moving', 'warped_moving.png')
 
 """
 .. figure:: warped_moving.png
@@ -192,7 +143,7 @@ is similar to the moving image
 
 warped_static = mapping.transform_inverse(static)
 
-overlay_middle_slices_coronal(warped_static, moving, 'Warped static', 'Moving', 'warped_static.png')
+regtools.overlay_middle_slices(warped_static, moving, 1, 'Warped static', 'Moving', 'warped_static.png')
 
 """
 .. figure:: warped_static.png
