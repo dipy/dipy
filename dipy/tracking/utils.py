@@ -45,6 +45,7 @@ And the letters A-D represent the following points in
     D = [ 2.5,  5.]
 
 """
+from __future__ import division, print_function, absolute_import
 
 # Import tools writen in cython
 from .vox2track import *
@@ -291,7 +292,7 @@ def subsegment(streamlines, max_segment_length):
 
     Examples
     --------
-    >>> streamlines = [array([[0,0,0],[2,0,0],[5,0,0]])]
+    >>> streamlines = [np.array([[0,0,0],[2,0,0],[5,0,0]])]
     >>> list(subsegment(streamlines, 3.))
     [array([[ 0.,  0.,  0.],
            [ 2.,  0.,  0.],
@@ -363,7 +364,7 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
 
     Examples
     --------
-    >>> mask = zeros((3,3,3), 'bool')
+    >>> mask = np.zeros((3,3,3), 'bool')
     >>> mask[0,0,0] = 1
     >>> seeds_from_mask(mask, [1,1,1], [1,1,1])
     array([[ 0.5,  0.5,  0.5]])
