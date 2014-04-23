@@ -158,11 +158,8 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
         volume map to anatomical structures.
     voxel_size :
         This argument is deprecated.
-    affine : array_like (4, 4), optional
-        The mapping from voxel coordinates to streamline coordinates. If
-        `affine` is not set, the streamline values are
-        assumed to be in voxel coordinates. IE ``[0, 0, 0]`` is the center of
-        the first voxel and the voxel size is ``[1, 1, 1]``.
+    affine : array_like (4, 4)
+        The mapping from voxel coordinates to streamline coordinates.
     symmetric : bool, False by default
         Symmetric means we don't distinguish between start and end points. If
         symmetric is True, ``matrix[i, j] == matrix[j, i]``.
@@ -373,11 +370,10 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
         total of 8 seeds per voxel.
     voxel_size :
         This argument is deprecated.
-    affine : array, (4, 4), optional
+    affine : array, (4, 4)
         The mapping between voxel indices and the point space for seeds. A
         seed point at the center the voxel ``[i, j, k]`` will be represented as
         ``[x, y, z]`` where ``[x, y, z, 1] == np.dot(affine, [i, j, k , 1])``.
-        ``affine`` is ``np.eye(4)`` by default.
 
     Examples
     --------
@@ -452,7 +448,7 @@ def _with_initialize(generator):
 
 
 @_with_initialize
-def target(streamlines, target_mask, affine=None, include=True):
+def target(streamlines, target_mask, affine, include=True):
     """Filters streamlines based on whether or not they pass through an ROI.
 
     Parameters
@@ -462,10 +458,8 @@ def target(streamlines, target_mask, affine=None, include=True):
         where N is the length of the streamline.
     target_mask : array-like
         A mask used as a target.
-    affine : array (4, 4), optional
-        The affine transform from voxel indices to streamline points. If
-        neither `affine` nor `voxel_size` are specified, the streamline is
-        assumed to be in voxel coordinates.
+    affine : array (4, 4)
+        The affine transform from voxel indices to streamline points.
     include : bool, default True
         If True, streamlines passing though `target_mask` are kept. If False,
         the streamlines not passing thought `target_mask` are kept.
@@ -654,10 +648,9 @@ def length(streamlines, affine=None):
     ----------
     streamlines : list
         Each item in the list is an array with 3D coordinates of a streamline.
-
-    affine : 4 x 4 array (optional)
+    affine : 4 x 4 array
         An affine transformation to move the fibers by, before computing their
-        lengths 
+        lengths.
 
     Returns
     -------
