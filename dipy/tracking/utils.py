@@ -9,34 +9,41 @@ Important Note:
 Some functions in this module use an affine matrix to represent the coordinate
 system associated with the points of a streamline. Dipy uses a similar
 convention to nifti files when interpreting this affine matrix. This convention
-is that the point at the center of voxel ``[i, j, k`]` is represented by the
+is that the point at the center of voxel ``[i, j, k]`` is represented by the
 point ``[x, y, z]`` where ``[x, y, z, 1] = affine * [i, j, k, 1]``.
 Also when the phrase "voxel coordinates" is used, it is understood to be the
 same as ``affine = eye(4)``.
 
-As an example, lets take a 2d image where the affine is
-``[[1., 0., 0.],
-   [0., 2., 0.],
-   [0., 0., 1.]]``:
+As an example, lets take a 2d image where the affine is::
 
-A------------
-|   |   |   |
-| C |   |   |
-|   |   |   |
-----B--------
-|   |   |   |
-|   |   |   |
-|   |   |   |
--------------
-|   |   |   |
-|   |   |   |
-|   |   |   |
-------------D
+    [[1., 0., 0.],
+     [0., 2., 0.],
+     [0., 0., 1.]]
 
-A = [-.5, -1.]
-B = [ .5,  1.]
-C = [ 0.,  0.]
-D = [ 2.5,  5.]
+The pixels of an image with this affine would look something like:
+
+    A------------
+    |   |   |   |
+    | C |   |   |
+    |   |   |   |
+    ----B--------
+    |   |   |   |
+    |   |   |   |
+    |   |   |   |
+    -------------
+    |   |   |   |
+    |   |   |   |
+    |   |   |   |
+    ------------D
+
+And the letters A-D represent the following points in
+"real world coordinates"::
+
+    A = [-.5, -1.]
+    B = [ .5,  1.]
+    C = [ 0.,  0.]
+    D = [ 2.5,  5.]
+
 """
 
 # In order to avoid circular imports, this module was split into two parts.
