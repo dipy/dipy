@@ -51,8 +51,8 @@ def test_nlmeans_boundary():
     print(S0[9, 9, 9])
     print(S0[10, 10, 10])
 
-    assert_(S0[9, 9, 9] > 295)
-    assert_(S0[10, 10, 10] < 105)
+    assert_(S0[9, 9, 9] > 290)
+    assert_(S0[10, 10, 10] < 110)
 
 
 def test_nlmeans_4D_and_mask():
