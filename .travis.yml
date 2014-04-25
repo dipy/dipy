@@ -38,6 +38,7 @@ install:
             sudo pip install cvxopt ;
        else
             sudo apt-get install python-cvxopt ;
+            sudo pip install coverage ;
        fi
        # Dipy
     - $PYTHON setup.py build
@@ -46,4 +47,9 @@ script:
     # Change into an innocuous directory and find tests from installation
     - mkdir for_test
     - cd for_test
-    - nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+    - if [ "${PYTHON}" == "python3" ]; then
+        nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`	;
+      else
+        cp ../.coveragerc . ;
+        nosetests$PYSUF --with-doctest --with-coverage `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"` ;
+      fi

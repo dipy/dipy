@@ -353,9 +353,9 @@ def all_tensor_evecs(e0):
 
     """
     axes = np.eye(3)
-    mat = vec2vec_rotmat(axes[2], e0)
-    e1 = np.dot(mat, axes[0])
-    e2 = np.dot(mat, axes[1])
+    mat = vec2vec_rotmat(e0, axes[0])
+    e1 = np.dot(mat, axes[1])
+    e2 = np.dot(mat, axes[2])
     return np.array([e0, e1, e2])
 
 
