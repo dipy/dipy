@@ -33,9 +33,17 @@ help:
 	@echo "  linkcheck to check all external links for integrity"
 	@echo "  doctest   to run all doctests embedded in the documentation (if enabled)"
 
-clean: examples-clean
+clean: api-clean examples-clean
 	-rm -rf _build/*
 	-rm *-stamp
+
+api-clean:
+	cd reference && rm -rf *.rst
+
+api:
+	@mkdir -p reference
+	$(PYTHON) tools/build_modref_templates.py
+	@echo "Build API docs...done."
 
 examples-clean:
 	-cd examples_built && rm -rf *.py *.rst *.png fig
@@ -51,7 +59,7 @@ gitwash-update:
             --project-url=http://nipy.org/dipy \
             --project-ml-url=http://mail.scipy.org/mailman/listinfo/nipy-devel
 
-html: rstexamples html-after-examples
+html: html-after-examples
 	# build full docs including examples
 
 html-after-examples:
