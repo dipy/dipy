@@ -59,6 +59,9 @@ if __name__ == '__main__':
                                         r'\.utils.*$',
                                         r'\.viz.*$',
                                         r'\.boots\.resampling.*$',
+                                        r'\.fixes.*$',
+                                        r'\.info.*$',
+                                        r'\.pkg_info.*$',
                                         ]
     docwriter.write_api_docs(outdir)
     docwriter.write_index(outdir, 'index', relative_to='reference')

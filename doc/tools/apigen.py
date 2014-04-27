@@ -256,54 +256,58 @@ class ApiDocWriter(object):
 
         Returns
         -------
-        S : string
-            Contents of API doc
+        head : string
+            Module name, table of contents.
+        body : string
+            Function and class docstrings.
         '''
         # get the names of all classes and functions
         functions, classes = self._parse_module_with_import(uri)
         if not len(functions) and not len(classes) and DEBUG:
             print('WARNING: Empty -', uri)  # dbg
-            return ''
 
         # Make a shorter version of the uri that omits the package name for
         # titles
         uri_short = re.sub(r'^%s\.' % self.package_name,'',uri)
 
-        ad = '.. AUTO-GENERATED FILE -- DO NOT EDIT!\n\n'
+        head = '.. AUTO-GENERATED FILE -- DO NOT EDIT!\n\n'
+        body = ''
 
         # Set the chapter title to read 'module' for all modules except for the
         # main packages
-        if '.' in uri:
+        if '.' in uri_short:
             title = 'Module: :mod:`' + uri_short + '`'
+            head += title + '\n' + self.rst_section_levels[2] * len(title)
         else:
             title = ':mod:`' + uri_short + '`'
-        ad += title + '\n' + self.rst_section_levels[1] * len(title)
+            head += title + '\n' + self.rst_section_levels[1] * len(title)
 
-        ad += '\n.. automodule:: ' + uri + '\n'
-        ad += '\n.. currentmodule:: ' + uri + '\n'
+        head += '\n.. automodule:: ' + uri + '\n'
+        head += '\n.. currentmodule:: ' + uri + '\n'
+        body += '\n.. currentmodule:: ' + uri + '\n'
         for c in classes:
-            ad += '\n:class:`' + c + '`\n' \
-                  + self.rst_section_levels[2] * \
+            body += '\n:class:`' + c + '`\n' \
+                  + self.rst_section_levels[3] * \
                   (len(c)+9) + '\n\n'
-            ad += '\n.. autoclass:: ' + c + '\n'
+            body += '\n.. autoclass:: ' + c + '\n'
             # must NOT exclude from index to keep cross-refs working
-            ad += '  :members:\n' \
+            body += '  :members:\n' \
                   '  :undoc-members:\n' \
                   '  :show-inheritance:\n' \
                   '\n' \
-                  '  .. automethod:: __init__\n'
-        ad += '.. autosummary::\n\n'
-        for f in functions:
-            ad += '   ' + uri + '.' + f + '\n'
-        ad += '\n'
+                  '  .. automethod:: __init__\n\n'
+        head += '.. autosummary::\n\n'
+        for f in classes + functions:
+            head += '   ' + f + '\n'
+        head += '\n'
 
         for f in functions:
             # must NOT exclude from index to keep cross-refs working
-            full_f = uri + '.' + f
-            ad += f + '\n'
-            ad += self.rst_section_levels[2] * len(f) + '\n'
-            ad += '\n.. autofunction:: ' + full_f + '\n\n'
-        return ad
+            body += f + '\n'
+            body += self.rst_section_levels[3] * len(f) + '\n'
+            body += '\n.. autofunction:: ' + f + '\n\n'
+
+        return head, body
 
     def _survives_exclude(self, matchstr, match_type):
         ''' Returns True if *matchstr* does not match patterns
@@ -396,20 +400,42 @@ class ApiDocWriter(object):
         return sorted(modules)
 
     def write_modules_api(self, modules, outdir):
-        # write the list
+        # upper-level modules
+        main_module = modules[0].split('.')[0]
+        ulms = ['.'.join(m.split('.')[:2]) if m.count('.') >= 1
+                else m.split('.')[0] for m in modules]
+
+        from collections import OrderedDict
+        module_by_ulm = OrderedDict()
+
+        for v, k in zip(modules, ulms):
+            if k in module_by_ulm:
+                module_by_ulm[k].append(v)
+            else:
+                module_by_ulm[k] = [v]
+
         written_modules = []
-        for m in modules:
-            print "Generating docs for %s" % m
-            api_str = self.generate_api_doc(m)
-            if not api_str:
-                continue
-            # write out to file
-            outfile = os.path.join(outdir,
-                                   m + self.rst_extension)
+
+        for ulm, mods in module_by_ulm.items():
+            print "Generating docs for %s:" % ulm
+            document_head = []
+            document_body = []
+
+            for m in mods:
+                print "  -> " + m
+                head, body = self.generate_api_doc(m)
+
+                document_head.append(head)
+                document_body.append(body)
+
+            out_module = ulm + self.rst_extension
+            outfile = os.path.join(outdir, out_module)
             fileobj = open(outfile, 'wt')
-            fileobj.write(api_str)
+
+            fileobj.writelines(document_head + document_body)
             fileobj.close()
-            written_modules.append(m)
+            written_modules.append(out_module)
+
         self.written_modules = written_modules
 
     def write_api_docs(self, outdir):
@@ -462,7 +488,6 @@ class ApiDocWriter(object):
             relpath = (outdir + os.path.sep).replace(relative_to + os.path.sep, '')
         else:
             relpath = outdir
-        print("outdir: ", relpath)
         idx = open(path,'wt')
         w = idx.write
         w('.. AUTO-GENERATED FILE -- DO NOT EDIT!\n\n')
