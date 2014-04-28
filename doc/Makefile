@@ -38,7 +38,7 @@ clean: api-clean examples-clean
 	-rm *-stamp
 
 api-clean:
-	cd reference && rm -rf *.rst
+	rm -rf reference/*.rst
 
 api:
 	@mkdir -p reference
