@@ -189,7 +189,8 @@ class StreamlineLinearRegistration(object):
                 self.options = {'xtol': 1e-6, 'ftol':1e-6, 'maxiter':1e6}
 
             opt = Optimizer(distance, self.x0.tolist(),
-                            method=self.method, options=self.options)
+                            method=self.method, options=self.options,
+                            evolution=self.evolution)
 
         if self.method == 'L-BFGS-B':
 
