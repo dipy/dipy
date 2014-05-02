@@ -21,7 +21,7 @@ Where $\mathbf{g}$ is a unit vector in 3 space indicating the direction of
 measurement and b are the parameters of measurement, such as the strength and
 duration of diffusion-weighting gradient. $S(\mathbf{g}, b)$ is the
 diffusion-weighted signal measured and $S_0$ is the signal conducted in a
-measurement with no diffusion weighting. \mathbf{D} is a positive-definite quadratic
+measurement with no diffusion weighting. $\mathbf{D}$ is a positive-definite quadratic
 form, which contains six free parameters to be fit. These six parameters are:
 
 .. math::
