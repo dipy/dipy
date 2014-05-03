@@ -14,13 +14,13 @@ import nibabel as nib
 from dipy.align.imwarp import DiffeomorphicMap
 
 
-def test_ssd_2d():
+def test_ssd_2d_demons():
     r'''
     Classical Circle-To-C experiment for 2D Monomodal registration. This test
     is intended to detect regressions only: we saved the energy profile (the
     sequence of energy values at each iteration) of a working version of SSD in
-    2D, and this test checks that the current energy profile matches the saved
-    one.
+    2D using the Demons step, and this test checks that the current energy profile 
+    matches the saved one.
     '''
     fname_moving = get_data('reg_o')
     fname_static = get_data('reg_c')
@@ -35,9 +35,8 @@ def test_ssd_2d():
     static = (static-static.min())/(static.max() - static.min())
     #Create the SSD metric
     smooth = 4
-    inner_iter = 20
     step_type = 'demons'
-    similarity_metric = metrics.SSDMetric(2, smooth, inner_iter, step_type) 
+    similarity_metric = metrics.SSDMetric(2, smooth=smooth, step_type=step_type) 
 
     #Configure and run the Optimizer
     opt_iter = [25, 50, 100, 200]
@@ -64,6 +63,55 @@ def test_ssd_2d():
          43.71955268,   15.78579491,   20.45497118,   41.92597862,
          37.60531526,   33.25877969,   30.638574  ,   91.49825032,
          80.524506  ])
+    assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile))
+
+
+def test_ssd_2d_gauss_newton():
+    r'''
+    Classical Circle-To-C experiment for 2D Monomodal registration. This test
+    is intended to detect regressions only: we saved the energy profile (the
+    sequence of energy values at each iteration) of a working version of SSD in
+    2D using the Gauss Newton step, and this test checks that the current energy 
+    profile matches the saved one.
+    '''
+    fname_moving = get_data('reg_o')
+    fname_static = get_data('reg_c')
+
+    moving = plt.imread(fname_moving)
+    static = plt.imread(fname_static)
+    moving = moving[:, :, 0].astype(floating)
+    static = static[:, :, 0].astype(floating)
+    moving = np.array(moving, dtype = floating)
+    static = np.array(static, dtype = floating)
+    moving = (moving-moving.min())/(moving.max() - moving.min())
+    static = (static-static.min())/(static.max() - static.min())
+    #Create the SSD metric
+    smooth = 4
+    inner_iter = 5
+    step_type = 'gauss_newton'
+    similarity_metric = metrics.SSDMetric(2, smooth, inner_iter, step_type) 
+
+    #Configure and run the Optimizer
+    opt_iter = [25, 50, 100, 200]
+    step_length = 0.5
+    opt_tol = 1e-4
+    inv_iter = 40
+    inv_tol = 1e-3
+    ss_sigma_factor = 0.2
+    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = registration_optimizer.optimize(static, moving, None)
+    subsampled_energy_profile = np.array(registration_optimizer.full_energy_profile[::10])
+    if floating is np.float32:
+        expected_profile = \
+            np.array([ 312.6812439 ,   79.81321716,   29.4981842 ,   23.73673058,
+                       13.95810223,   11.10529518,    8.67893696,   24.40695   ,
+                       44.27229309,  209.3054657 ,  140.49143982,  130.50695801])
+    else:
+        expected_profile = \
+            np.array([ 312.68133361,   79.8132289 ,   27.28523819,   24.22883738,
+                       56.71942103,   30.20320996,   19.4766414 ,   74.72561337,
+                       108.0512537 ,  106.37445697])
     assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile))
 
 
@@ -100,24 +148,23 @@ def get_synthetic_warped_circle(nslices):
     return circle_3d, wcircle_3d
 
 
-def test_ssd_3d():
+def test_ssd_3d_demons():
     r'''
-    Register a stack of circle and c images. This test
-    is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of SSD in
-    3D, and this test checks that the current energy profile matches the saved
-    one. The validation of the "working version" was
-    done by registering the 18 manually annotated T1 brain MRI database IBSR 
-    with each other and computing the jaccard index for all 31 common anatomical
-    regions. 
+    Register a stack of circles ('cylinder') before and after warping them with 
+    a synthetic diffeomorphism. This test is intended to detect regressions only:
+    we saved the energy profile (the sequence of energy values at each iteration)
+    of a working version of SSD in 3D using the Demons step, and this test checks 
+    that the current energy profile matches the saved one. The validation of the
+    "working version" was done by registering the 18 manually annotated T1 brain
+    MRI database IBSR with each other and computing the jaccard index for all 31
+    common anatomical regions. 
     '''
     moving, static = get_synthetic_warped_circle(20)
 
     #Create the SSD metric
     smooth = 4
-    inner_iter = 20
     step_type = 'demons'
-    similarity_metric = metrics.SSDMetric(3, smooth, inner_iter, step_type) 
+    similarity_metric = metrics.SSDMetric(3, smooth=smooth, step_type=step_type) 
 
     #Create the optimizer
     opt_iter = [5, 10]
@@ -140,6 +187,52 @@ def test_ssd_3d():
          367.80005903,   319.44987629,   272.62769902,   268.10394736,
          254.30487935,   267.7249719 ,  2547.05251526,  2035.19403818,
         1780.21839845,  1692.64443559,  1653.6224987 ])
+    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
+
+
+def test_ssd_3d_gauss_newton():
+    r'''
+    Register a stack of circles ('cylinder') before and after warping them with 
+    a synthetic diffeomorphism. This test is intended to detect regressions 
+    only: we saved the energy profile (the sequence of energy values at each
+    iteration) of a working version of SSD in 3D using the Gauss-Newton step,
+    and this test checks that the current energy profile matches the saved
+    one. The validation of the "working version" was
+    done by registering the 18 manually annotated T1 brain MRI database IBSR 
+    with each other and computing the jaccard index for all 31 common anatomical
+    regions. 
+    '''
+    moving, static = get_synthetic_warped_circle(20)
+
+    #Create the SSD metric
+    smooth = 4
+    inner_iter = 5
+    step_type = 'gauss_newton'
+    similarity_metric = metrics.SSDMetric(3, smooth, inner_iter, step_type) 
+
+    #Create the optimizer
+    opt_iter = [5, 10]
+    step_length = 0.25
+    opt_tol = 1e-4
+    inv_iter = 20
+    inv_tol = 1e-3
+    ss_sigma_factor = 0.5
+    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
+        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = registration_optimizer.optimize(static, moving, None)
+    energy_profile = np.array(registration_optimizer.full_energy_profile)
+    if floating is np.float32:
+        expected_profile = \
+            np.array([601.16271973, 398.625, 300.30075073, 263.11785889,
+                      279.67877197, 280.86755371, 292.32565308, 288.95178223,
+                      296.05157471, 290.73156738, 2724.07958984, 2400.07128906,
+                      2235.60766602, 2151.84008789, 2127.78125])
+    else:
+        expected_profile = \
+            np.array([601.17344986,   398.62218184,   300.29775583,   263.11445705,
+                      279.67625651,   280.86396779,   292.32201095,   288.94831954,
+                      296.04799876,   290.72802577,  2723.60787772,  2400.0456365 ,
+                      2235.94286635,  2152.33001603,  2128.32545284])
     assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
 
 
@@ -352,8 +445,10 @@ def test_em_2d():
 
 
 if __name__=='__main__':
-    test_ssd_2d()
-    test_ssd_3d()
+    test_ssd_2d_demons()
+    test_ssd_2d_gauss_newton()
+    test_ssd_3d_demons()
+    test_ssd_3d_gauss_newton()
     test_cc_2d()
     test_cc_3d()
     test_em_2d()

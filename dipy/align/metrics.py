@@ -675,9 +675,10 @@ class SSDMetric(SimilarityMetric):
             resolution Gauss-Seidel optimization algorithm (this is not the 
             number of steps per Gaussian Pyramid level, that parameter must
             be set for the optimizer, not the metric) 
-        step_type : int (either 0 or 1)
-            if step_type == 0 : Select Newton step
-            if step_type == 1 : Select Demons step
+        step_type : string
+            the displacement field step to be computed when 'compute_forward' and
+            'compute_backward' are called. Either 'demons' or 'gauss_newton'.
+            
         """
         super(SSDMetric, self).__init__(dim)
         self.smooth = smooth
