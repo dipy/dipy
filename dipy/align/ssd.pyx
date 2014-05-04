@@ -10,8 +10,8 @@ cdef extern from "math.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void solve2DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
-                                                 floating[:] out) nogil:
+cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y, double det,
+                                                 double[:] out) nogil:
     r"""
     Solves the symmetric positive-definite linear system Mx = y given by
     M=[[A[0], A[1]],
@@ -27,16 +27,15 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
     out : array, shape (2,)
         the array the output will be stored in
     """
-    cdef double den = (A[0] * A[2] - A[1] * A[1])
-    out[1] = (A[0] * y[1] - A[1] * y[0]) / den
+    out[1] = (A[0] * y[1] - A[1] * y[0]) / det
     out[0] = (y[0] - A[1] * out[1]) / A[0]
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
-                                                 floating[:] out) nogil:
+cdef void solve3DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
+                                                 double[:] out) nogil:
     r"""
     Solves the symmetric positive-definite linear system Mx = y given by
     M=[[A[0], A[1], A[2]],
@@ -47,7 +46,7 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
     Parameters
     ----------
     A : array, shape (6,)
-        the array containing the entries of the symmetric 2x2 matrix
+        the array containing the entries of the symmetric 3x3 matrix
     y : array, shape (3,)
         right-hand side of the system to be solved
     out : array, shape (3,)
@@ -62,10 +61,58 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(floating[:] A, floating[:] y,
         double f = (a * A[5] - c * c) / a - (e * e * a) / (a * A[3] - b * b)
         double y0 = y[0]
         double y1 = (y[1] * a - y0 * b) / a
-        double y2 = (y[2] * a - A[2] * y0) / a - (e * (y[1] * a - b * y0)) / (a * A[3] - b * b)
+        double y2 = (y[2] * a - c * y0) / a - (e * (y[1] * a - b * y0)) / (a * A[3] - b * b)
     out[2] = y2 / f
     out[1] = (y1 - e * out[2]) / d
     out[0] = (y0 - b * out[1] - c * out[2]) / a
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
+                                         double[:] out) nogil:
+    r"""
+    Solves the symmetric positive-definite linear system Mx = y given by
+    M = (g*g^{T} + tau*I)
+    Returns the result in out.
+
+    Parameters
+    ----------
+    g : array, shape (3,)
+        the vector in the outer product above
+    y : array, shape (3,)
+        right-hand side of the system to be solved
+    out : array, shape (3,)
+        the array the output will be stored in
+
+    Returns
+    -------
+    is_singular : int
+        1 if M is singular, otherwise 0
+    """
+    cdef:
+        double a,b,c,d,e,f, y0, y1, y2, sub_det
+    a = g[0] ** 2 + tau
+    if a < 1e-9:
+        return 1
+    b = g[0] * g[1]
+    sub_det = (a * (g[1] ** 2 + tau) - b * b)
+    if sub_det < 1e-9:
+        return 1
+    c = g[0] * g[2]
+    d = (a * (g[1] ** 2 + tau) - b * b) / a
+    e = (a * (g[1] * g[2]) - b * c) / a
+    f = (a * (g[2] ** 2 + tau) - c * c) / a - (e * e * a) / sub_det
+    if f < 1e-9:
+        return 1
+    y0 = y[0]
+    y1 = (y[1] * a - y0 * b) / a
+    y2 = (y[2] * a - c * y0) / a - (e * (y[1] * a - b * y0)) / sub_det
+    out[2] = y2 / f
+    out[1] = (y1 - e * out[2]) / d
+    out[0] = (y0 - b * out[1] - c * out[2]) / a
+    return 0
 
 
 @cython.boundscheck(False)
@@ -119,11 +166,11 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
         int ncols = delta_field.shape[1]
         int r, c, dr, dc, nn, k
 
-        floating[:] b = np.ndarray(shape=(2,), dtype=ftype)
-        floating[:] d = np.ndarray(shape=(2,), dtype=ftype)
-        floating[:] y = np.ndarray(shape=(2,), dtype=ftype)
-        floating[:] A = np.ndarray(shape=(3,), dtype=ftype)
-        floating xx, yy, opt, nrm2, delta, sigma, max_displacement
+        double[:] b = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] d = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] y = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] A = np.ndarray(shape=(3,), dtype=np.float64)
+        double xx, yy, opt, nrm2, delta, sigma, max_displacement, det
     max_displacement = 0
 
     with nogil:
@@ -160,31 +207,31 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
                     opt = xx * xx + yy * yy
                     if(max_displacement < opt):
                         max_displacement = opt
-                elif(sigma == 0):
-                    nrm2 = gradient_field[r, c, 0] ** 2 + \
-                        gradient_field[r, c, 1] ** 2
-                    if(nrm2 == 0):
-                        displacement_field[r, c, 0] = 0
-                        displacement_field[r, c, 1] = 0                        
-                    else:
-                        displacement_field[r, c, 0] = (b[0]) / nrm2
-                        displacement_field[r, c, 1] = (b[1]) / nrm2
                 else:
-                    y[0] = b[0] + sigma * lambda_param * y[0]
-                    y[1] = b[1] + sigma * lambda_param * y[1]
                     A[0] = gradient_field[r, c, 0] ** 2 + sigma * lambda_param * nn
                     A[1] = gradient_field[r, c, 0] * gradient_field[r, c, 1]
                     A[2] = gradient_field[r, c, 1] ** 2 + sigma * lambda_param * nn
-                    xx = displacement_field[r, c, 0]
-                    yy = displacement_field[r, c, 1]
-                    solve2DSymmetricPositiveDefiniteSystem(A, y, d)
-                    displacement_field[r, c, 0] = d[0]
-                    displacement_field[r, c, 1] = d[1]
-                    xx -= d[0]
-                    yy -= d[1]
-                    opt = xx * xx + yy * yy
-                    if(max_displacement < opt):
-                        max_displacement = opt
+                    det = A[0] * A[2] - A[1] * A[1]
+                    if(det < 1e-9):
+                        nrm2 = gradient_field[r, c, 0] ** 2 + \
+                            gradient_field[r, c, 1] ** 2
+                        if(nrm2 < 1e-9):
+                            displacement_field[r, c, 0] = 0
+                            displacement_field[r, c, 1] = 0                        
+                        else:
+                            displacement_field[r, c, 0] = (b[0]) / nrm2
+                            displacement_field[r, c, 1] = (b[1]) / nrm2
+                    else:
+                        y[0] = b[0] + sigma * lambda_param * y[0]
+                        y[1] = b[1] + sigma * lambda_param * y[1]
+                        solve2DSymmetricPositiveDefiniteSystem(A, y, det, d)
+                        xx = displacement_field[r, c, 0] - d[0]
+                        yy = displacement_field[r, c, 1] - d[1]
+                        displacement_field[r, c, 0] = d[0]
+                        displacement_field[r, c, 1] = d[1]
+                        opt = xx * xx + yy * yy
+                        if(max_displacement < opt):
+                            max_displacement = opt
     return sqrt(max_displacement)
 
 
@@ -229,7 +276,7 @@ cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
     cdef:
         int nrows = delta_field.shape[0]
         int ncols = delta_field.shape[1]
-        floating energy = 0
+        double energy = 0
 
     with nogil:
         for r in range(nrows):
@@ -289,12 +336,13 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         int nslices = delta_field.shape[0]
         int nrows = delta_field.shape[1]
         int ncols = delta_field.shape[2]
-        int nn        
-        floating[:] b = np.ndarray(shape=(3,), dtype=ftype)
-        floating[:] d = np.ndarray(shape=(3,), dtype=ftype)
-        floating[:] y = np.ndarray(shape=(3,), dtype=ftype)
-        floating[:] A = np.ndarray(shape=(6,), dtype=ftype)
-        floating xx, yy, zz, opt, nrm2, delta, sigma, max_displacement
+        int nn
+        double[:] g = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] b = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] d = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] y = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] A = np.ndarray(shape=(6,), dtype=np.float64)
+        double xx, yy, zz, opt, nrm2, delta, sigma, max_displacement
         int dr, ds, dc, s, r, c
     max_displacement = 0
 
@@ -303,12 +351,15 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         for s in range(nslices):
             for r in range(nrows):
                 for c in range(ncols):
+                    g[0] = gradient_field[s, r, c, 0]
+                    g[1] = gradient_field[s, r, c, 1]
+                    g[2] = gradient_field[s, r, c, 2]
                     delta = delta_field[s, r, c]
                     sigma = sigma_field[s, r, c] if sigma_field != None else 1
                     if(target == None):
-                        b[0] = delta_field[s, r, c] * gradient_field[s, r, c, 0]
-                        b[1] = delta_field[s, r, c] * gradient_field[s, r, c, 1]
-                        b[2] = delta_field[s, r, c] * gradient_field[s, r, c, 2]
+                        b[0] = delta_field[s, r, c] * g[0]
+                        b[1] = delta_field[s, r, c] * g[1]
+                        b[2] = delta_field[s, r, c] * g[2]
                     else:
                         b[0] = target[s, r, c, 0]
                         b[1] = target[s, r, c, 1]
@@ -344,11 +395,9 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
                         opt = xx * xx + yy * yy + zz * zz
                         if(max_displacement < opt):
                             max_displacement = opt
-                    elif(sigma == 0):
-                            nrm2 = gradient_field[s, r, c, 0] ** 2 + \
-                                gradient_field[s, r, c, 1] ** 2 + \
-                                gradient_field[s, r, c, 2] ** 2
-                            if(nrm2 == 0):                                
+                    elif(sigma < 1e-9):
+                            nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
+                            if(nrm2 < 1e-9):                                
                                 displacement_field[s, r, c, 0] = 0
                                 displacement_field[s, r, c, 1] = 0
                                 displacement_field[s, r, c, 2] = 0
@@ -357,31 +406,27 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
                                 displacement_field[s, r, c, 1] = (b[1]) / nrm2
                                 displacement_field[s, r, c, 2] = (b[2]) / nrm2
                     else:
+                        tau = sigma * lambda_param * nn
                         y[0] = b[0] + sigma * lambda_param * y[0]
                         y[1] = b[1] + sigma * lambda_param * y[1]
                         y[2] = b[2] + sigma * lambda_param * y[2]
-                        A[0] = gradient_field[s, r, c, 0] * \
-                            gradient_field[s, r, c, 0] + sigma * lambda_param * nn
-                        A[1] = gradient_field[s, r, c, 0] * \
-                            gradient_field[s, r, c, 1]
-                        A[2] = gradient_field[s, r, c, 0] * \
-                            gradient_field[s, r, c, 2]
-                        A[3] = gradient_field[s, r, c, 1] * \
-                            gradient_field[s, r, c, 1] + sigma * lambda_param * nn
-                        A[4] = gradient_field[s, r, c, 1] * \
-                            gradient_field[s, r, c, 2]
-                        A[5] = gradient_field[s, r, c, 2] ** 2 + \
-                            sigma * lambda_param * nn
-                        xx = displacement_field[s, r, c, 0]
-                        yy = displacement_field[s, r, c, 1]
-                        zz = displacement_field[s, r, c, 2]
-                        solve3DSymmetricPositiveDefiniteSystem(A, y, d)
+                        is_singular = solve_3d_semi_positive_definite(g, y, tau, d)
+                        if is_singular == 1:
+                            nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
+                            if(nrm2 < 1e-9):
+                                displacement_field[s, r, c, 0] = 0
+                                displacement_field[s, r, c, 1] = 0
+                                displacement_field[s, r, c, 2] = 0
+                            else:
+                                displacement_field[s, r, c, 0] = (b[0]) / nrm2
+                                displacement_field[s, r, c, 1] = (b[1]) / nrm2
+                                displacement_field[s, r, c, 2] = (b[2]) / nrm2
+                        xx = displacement_field[s, r, c, 0] - d[0] 
+                        yy = displacement_field[s, r, c, 1] - d[1]
+                        zz = displacement_field[s, r, c, 2] - d[2]
                         displacement_field[s, r, c, 0] = d[0]
                         displacement_field[s, r, c, 1] = d[1]
                         displacement_field[s, r, c, 2] = d[2]
-                        xx -= displacement_field[s, r, c, 0]
-                        yy -= displacement_field[s, r, c, 1]
-                        zz -= displacement_field[s, r, c, 2]
                         opt = xx * xx + yy * yy + zz * zz
                         if(max_displacement < opt):
                             max_displacement = opt
@@ -430,7 +475,7 @@ cpdef double compute_energy_SSD3D(floating[:, :, :] delta_field,
         int nslices = delta_field.shape[0]
         int nrows = delta_field.shape[1]
         int ncols = delta_field.shape[2]
-        floating energy = 0
+        double energy = 0
     with nogil:
         for s in range(nslices):
             for r in range(nrows):
@@ -490,12 +535,12 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
         int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
         int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
         int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
-        floating[:] b = np.ndarray(shape=(3,), dtype=ftype)
-        floating[:] y = np.ndarray(shape=(3,), dtype=ftype)
+        double[:] b = np.ndarray(shape=(3,), dtype=np.float64)
+        double[:] y = np.ndarray(shape=(3,), dtype=np.float64)
         int nslices = delta_field.shape[0]
         int nrows = delta_field.shape[1]
         int ncols = delta_field.shape[2]
-        floating delta, sigma, dotP
+        double delta, sigma, dotP
         int s, r, c, ds, dr, dc
     if residual == None:
         residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=ftype)
@@ -599,11 +644,11 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
         int NUM_NEIGHBORS = 4
         int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
         int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
-        floating[:] b = np.ndarray(shape=(2,), dtype=ftype)
-        floating[:] y = np.ndarray(shape=(2,), dtype=ftype)
+        double[:] b = np.ndarray(shape=(2,), dtype=np.float64)
+        double[:] y = np.ndarray(shape=(2,), dtype=np.float64)
         int nrows = delta_field.shape[0]
         int ncols = delta_field.shape[1]
-        floating delta, sigma, dotP
+        double delta, sigma, dotP
         int r, c, dr, dc
     if residual == None:
         residual = np.empty(shape=(nrows, ncols, 2), dtype=ftype)

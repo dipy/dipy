@@ -199,13 +199,18 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
             for j in range(ncols):
                 if(mask[i, j] != 0):
                     means[labels[i, j]] += v[i, j]
-                    variances[labels[i, j]] += v[i, j] ** 2
                     counts[labels[i, j]] += 1
         for i in range(numLabels):
             if(counts[i] > 0):
                 means[i] /= counts[i]
+        for i in range(nrows):
+            for j in range(ncols):
+                if(mask[i, j] != 0):
+                    variances[labels[i, j]] += (v[i, j] - means[labels[i, j]]) ** 2
+
+        for i in range(numLabels):
             if(counts[i] > 1):
-                variances[i] = variances[i] / counts[i] - means[i] ** 2
+                variances[i] /= counts[i]
             else:
                 variances[i] = INF64
     return means, variances
@@ -225,12 +230,12 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
     mask : array, shape (S, R, C)
         the mask of voxels that will be taken into account for computing the 
         statistics. All zero voxels in mask will be ignored
-    v : array, shape (R, C)
+    v : array, shape (S, R, C)
         the volume which the statistics will be computed from
     numLabels : int 
         the number of different labels in 'labels' (equal to the
         number of hidden variables in the EM metric)
-    labels : array, shape (R, C) 
+    labels : array, shape (S, R, C) 
         the label assigned to each pixel
     """
     ftype=np.asarray(v).dtype
@@ -250,13 +255,18 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
                 for j in range(ncols):
                     if(mask[k, i, j] != 0):
                         means[labels[k, i, j]] += v[k, i, j]
-                        variances[labels[k, i, j]] += v[k, i, j] ** 2
                         counts[labels[k, i, j]] += 1
         for i in range(numLabels):
             if(counts[i] > 0):
                 means[i] /= counts[i]
+        for k in range(nslices):
+            for i in range(nrows):
+                for j in range(ncols):
+                    if(mask[k, i, j] != 0):
+                        variances[labels[k, i, j]] += (means[labels[k, i, j]] - v[k, i, j]) ** 2
+        for i in range(numLabels):
             if(counts[i] > 1):
-                variances[i] = variances[i] / counts[i] - means[i] ** 2
+                variances[i] /= counts[i]
             else:
                 variances[i] = INF64
     return means, variances
