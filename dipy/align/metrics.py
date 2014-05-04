@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 import abc
 from scipy import gradient, ndimage
 import dipy.align.vector_fields as vfu
-from dipy.align import ssd, cc, em
+from dipy.align import sumsqdiff as ssd
+from dipy.align import crosscorr as cc
+from dipy.align import expectmax as em
 from dipy.align import floating
 
 

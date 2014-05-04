@@ -86,9 +86,9 @@ for modulename, other_sources in (
     ('dipy.tracking.propspeed', []),
     ('dipy.denoise.denspeed', []),
     ('dipy.align.vector_fields', []),
-    ('dipy.align.ssd', []),
-    ('dipy.align.em', []),
-    ('dipy.align.cc', [])):
+    ('dipy.align.sumsqdiff', []),
+    ('dipy.align.expectmax', []),
+    ('dipy.align.crosscorr', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
                           include_dirs = [np.get_include(), "src"],

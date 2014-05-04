@@ -12,7 +12,7 @@ def test_cc_factors_2d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation. 
     """
-    import dipy.align.cc as cc
+    import dipy.align.crosscorr as cc
     a = np.array(range(20*20), dtype = floating).reshape(20,20)
     b = np.array(range(20*20)[::-1], dtype = floating).reshape(20,20)
     factors = np.asarray(cc.precompute_cc_factors_2d(a,b,3))
@@ -26,7 +26,7 @@ def test_cc_factors_3d():
     correlation factors against a direct (not optimized, but less error prone)
     implementation. 
     """
-    import dipy.align.cc as cc
+    import dipy.align.crosscorr as cc
     a = np.array(range(20*20*20), dtype = floating).reshape(20,20,20)
     b = np.array(range(20*20*20)[::-1], dtype = floating).reshape(20,20,20)
     factors = np.asarray(cc.precompute_cc_factors_3d(a,b,3))
