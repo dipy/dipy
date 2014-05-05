@@ -231,6 +231,23 @@ class ScaleSpace(object):
         print('Affine: ', self.get_affine(level))
         print('Sigmas: ', self.get_sigmas(level))
 
+    def _get_attribute(self, attribute, level):
+        r"""
+        Returns the level-th element of attribute if level is a valid level
+        of this scale space. Otherwise, returns None.
+
+        Parameters
+        ----------
+        attribute : list
+            the attribute to retrieve the level-th element from
+        level : int,
+            the index of the required element from attribute. 
+
+        """
+        if 0 <= level < self.num_levels:
+            return attribute[level]
+        return None
+
     def get_image(self, level):
         r"""
         Returns the smoothed image at the requested level in the Scale Space.
@@ -245,9 +262,7 @@ class ScaleSpace(object):
             the smooth image at the requested resolution or None if an invalid
             level was requested
         """
-        if 0 <= level < self.num_levels:
-            return self.images[level]
-        return None
+        return self._get_attribute(self.images, level)
 
     def get_domain_shape(self, level):
         r"""
@@ -266,9 +281,7 @@ class ScaleSpace(object):
             the sub-sampled shape at the requested resolution or None if an invalid
             level was requested
         """
-        if 0 <= level < self.num_levels:
-            return self.domain_shapes[level]
-        return None
+        return self._get_attribute(self.domain_shapes, level)
 
     def get_spacing(self, level):
         r"""
@@ -287,9 +300,7 @@ class ScaleSpace(object):
         the spacings (voxel sizes) at the requested resolution or None if an
         invalid level was requested
         """
-        if 0 <= level < self.num_levels:
-            return self.spacings[level]
-        return None
+        return self._get_attribute(self.spacings, level)
 
     def get_scaling(self, level):
         r"""
@@ -308,9 +319,7 @@ class ScaleSpace(object):
         requested level
 
         """
-        if 0 <= level < self.num_levels:
-            return self.scalings[level]
-        return None
+        return self._get_attribute(self.scalings, level)
 
     def get_affine(self, level):
         r"""
@@ -329,9 +338,7 @@ class ScaleSpace(object):
             the affine (voxel-to-space) transform at the requested resolution or
             None if an invalid level was requested
         """
-        if 0 <= level < self.num_levels:
-            return self.affines[level]
-        return None
+        return self._get_attribute(self.affines, level)
 
     def get_affine_inv(self, level):
         r"""
@@ -350,9 +357,7 @@ class ScaleSpace(object):
         the inverse (space-to-voxel) transform at the requested resolution or 
         None if an invalid level was requested
         """
-        if 0 <= level < self.num_levels:
-            return self.affine_invs[level]
-        return None
+        return self._get_attribute(self.affine_invs, level)
 
     def get_sigmas(self, level):
         r"""
@@ -369,9 +374,7 @@ class ScaleSpace(object):
         the smoothing parameters at the requested level
 
         """
-        if 0 <= level < self.num_levels:
-            return self.sigmas[level]
-        return None        
+        return self._get_attribute(self.sigmas, level)
 
 
 class DiffeomorphicMap(object):
