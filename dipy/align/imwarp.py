@@ -465,6 +465,22 @@ class DiffeomorphicMap(object):
         self.forward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype=floating)
         self.backward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype=floating)
 
+    def _get_warping_function(self, interpolation):
+        r"""
+        Returns the right warping function from vector_fields that must be called
+        for the specified data dimension and interpolation type
+        """
+        if self.dim == 2:
+            if interpolation == 'lin':
+                return vfu.warp_image
+            else:
+                return vfu.warp_image_nn
+        else:
+            if interpolation == 'lin':
+                return vfu.warp_volume
+            else:
+                return vfu.warp_volume_nn
+
     def _warp_forward(self, image, interpolation='lin', world_to_image=-1, 
                       sampling_shape=None, sampling_affine=-1):
         r"""
@@ -572,32 +588,10 @@ class DiffeomorphicMap(object):
         else:
             image = np.asarray(image, dtype=floating)
 
-        if self.dim == 2:
-            if interpolation == 'lin':
-                warped = vfu.warp_image(image, self.forward,
-                                        affine_idx_in,
-                                        affine_idx_out,
-                                        affine_disp,
-                                        sampling_shape)
-            else:
-                warped = vfu.warp_image_nn(image, self.forward,
-                                           affine_idx_in,
-                                           affine_idx_out,
-                                           affine_disp,
-                                           sampling_shape)
-        else:
-            if interpolation == 'lin':
-                warped = vfu.warp_volume(image, self.forward,
-                                affine_idx_in,
-                                affine_idx_out,
-                                affine_disp,
-                                sampling_shape)
-            else:
-                warped = vfu.warp_volume_nn(image, self.forward,
-                                  affine_idx_in,
-                                  affine_idx_out,
-                                  affine_disp,
-                                  sampling_shape)
+        warp_f = self._get_warping_function(interpolation)
+
+        warped = warp_f(image, self.forward, affine_idx_in, affine_idx_out,
+                        affine_disp, sampling_shape)
         return warped
 
     def _warp_backward(self, image, interpolation='lin', world_to_image=-1, 
@@ -706,32 +700,11 @@ class DiffeomorphicMap(object):
         else:
             image = np.asarray(image, dtype=floating)
 
-        if self.dim == 2:
-            if interpolation == 'lin':
-                warped = vfu.warp_image(image, self.backward,
-                                        affine_idx_in,
-                                        affine_idx_out,
-                                        affine_disp,
-                                        sampling_shape)
-            else:
-                warped = vfu.warp_image_nn(image, self.backward,
-                                           affine_idx_in,
-                                           affine_idx_out,
-                                           affine_disp,
-                                           sampling_shape)
-        else:
-            if interpolation == 'lin':
-                warped = vfu.warp_volume(image, self.backward,
-                                         affine_idx_in,
-                                         affine_idx_out,
-                                         affine_disp,
-                                         sampling_shape)
-            else:
-                warped = vfu.warp_volume_nn(image, self.backward,
-                                            affine_idx_in,
-                                            affine_idx_out,
-                                            affine_disp,
-                                            sampling_shape)
+        warp_f = self._get_warping_function(interpolation)
+        
+        warped = warp_f(image, self.backward, affine_idx_in, affine_idx_out,
+                        affine_disp, sampling_shape)
+
         return warped
 
     def transform(self, image, interpolation='lin', world_to_image=-1, 
@@ -855,15 +828,13 @@ class DiffeomorphicMap(object):
 
         """
         if self.dim == 2:
-            expanded_forward = vfu.expand_displacement_field_2d(self.forward, 
-                expand_factors, new_shape)
-            expanded_backward = vfu.expand_displacement_field_2d(self.backward, 
-                expand_factors, new_shape)
+            expand_f = vfu.expand_displacement_field_2d
         else:
-            expanded_forward = vfu.expand_displacement_field_3d(self.forward, 
-                expand_factors, new_shape)
-            expanded_backward = vfu.expand_displacement_field_3d(self.backward,
-                expand_factors, new_shape)
+            expand_f = vfu.expand_displacement_field_3d
+
+        expanded_forward = expand_f(self.forward, expand_factors, new_shape)
+        expanded_backward = expand_f(self.backward, expand_factors, new_shape)
+
         expand_factors = np.append(expand_factors, [1])
         expanded_affine = mult_aff(self.domain_affine, np.diag(expand_factors))
         expanded_affine_inv = np.linalg.inv(expanded_affine)
@@ -898,19 +869,13 @@ class DiffeomorphicMap(object):
 
         """
         Dinv = self.domain_affine_inv
-
         if self.dim == 2:
-            residual, stats = vfu.compose_vector_fields_2d(self.backward,
-                                                           self.forward,
-                                                           None,
-                                                           Dinv,
-                                                           1.0)
+            compose_f = vfu.compose_vector_fields_2d
         else:
-            residual, stats = vfu.compose_vector_fields_3d(self.backward,
-                                                           self.forward,
-                                                           None,
-                                                           Dinv,
-                                                           1.0)
+            compose_f = vfu.compose_vector_fields_3d
+
+        residual, stats = compose_f(self.backward, self.forward, None, Dinv, 1.0)
+
         return np.asarray(residual), np.asarray(stats)
 
     def shallow_copy(self):
@@ -976,11 +941,13 @@ class DiffeomorphicMap(object):
         premult_disp = self.domain_affine_inv
 
         if self.dim == 2:
-            forward, stats = vfu.compose_vector_fields_2d(d1, d2, None, premult_disp, 1.0)
-            backward, stats, = vfu.compose_vector_fields_2d(d2_inv, d1_inv, None, premult_disp, 1.0)
+            compose_f = vfu.compose_vector_fields_2d
         else:
-            forward, stats = vfu.compose_vector_fields_3d(d1, d2, None, premult_disp, 1.0)
-            backward, stats, = vfu.compose_vector_fields_3d(d2_inv, d1_inv, None, premult_disp, 1.0)
+            compose_f = vfu.compose_vector_fields_3d
+
+        forward, stats = compose_f(d1, d2, None, premult_disp, 1.0)
+        backward, stats, = compose_f(d2_inv, d1_inv, None, premult_disp, 1.0)
+
         composition = self.shallow_copy()
         composition.forward = forward
         composition.backward = backward
@@ -1120,22 +1087,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         -------
         updated : array, shape (the same as new_displacement)
             the warped displacement field
-        mse : the mean norm of all vectors in current_displacement
+        mean_norm : the mean norm of all vectors in current_displacement
         """        
-        mse = np.sqrt(np.sum((current_displacement ** 2), -1)).mean()
-        if self.dim == 2:
-            updated, stats = vfu.compose_vector_fields_2d(new_displacement,
-                                                          current_displacement,
-                                                          None, 
-                                                          affine_inv,
-                                                          time_scaling)
-        else:
-            updated, stats = vfu.compose_vector_fields_3d(new_displacement,
-                                                          current_displacement,
-                                                          None, 
-                                                          affine_inv,
-                                                          time_scaling)
-        return np.array(updated), np.array(mse)
+        mean_norm = np.sqrt(np.sum((current_displacement ** 2), -1)).mean()
+        updated, stats = self.compose(new_displacement, current_displacement,
+                                      None, affine_inv, time_scaling)
+
+        return np.array(updated), np.array(mean_norm)
 
     def get_map(self):
         r"""
@@ -1153,10 +1111,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.invert_vector_field = vfu.invert_vector_field_fixed_point_2d
             self.append_affine = vfu.append_affine_to_displacement_field_2d
             self.prepend_affine = vfu.prepend_affine_to_displacement_field_2d
+            self.compose = vfu.compose_vector_fields_2d
         else:
             self.invert_vector_field = vfu.invert_vector_field_fixed_point_3d
             self.append_affine = vfu.append_affine_to_displacement_field_3d
             self.prepend_affine = vfu.prepend_affine_to_displacement_field_3d
+            self.compose = vfu.compose_vector_fields_3d
 
     def _check_ready(self):
         r"""
