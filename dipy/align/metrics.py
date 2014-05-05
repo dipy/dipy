@@ -426,7 +426,7 @@ class EMMetric(SimilarityMetric):
         staticq_means[0] = 0
         staticq_means = np.array(staticq_means)
         staticq_variances = np.array(staticq_variances)
-        self.staticq_sigma_field = staticq_variances[staticq]
+        self.staticq_sigma_sq_field = staticq_variances[staticq]
         self.staticq_means_field = staticq_means[staticq]
 
         self.gradient_moving = np.empty(
@@ -462,7 +462,7 @@ class EMMetric(SimilarityMetric):
         movingq_means[0] = 0
         movingq_means = np.array(movingq_means)
         movingq_variances = np.array(movingq_variances)
-        self.movingq_sigma_field = movingq_variances[movingq]
+        self.movingq_sigma_sq_field = movingq_variances[movingq]
         self.movingq_means_field = movingq_means[movingq]
         if self.use_double_gradient:
             i = 0
@@ -481,9 +481,9 @@ class EMMetric(SimilarityMetric):
         del self.sampling_mask
         del self.staticq_levels
         del self.movingq_levels
-        del self.staticq_sigma_field
+        del self.staticq_sigma_sq_field
         del self.staticq_means_field
-        del self.movingq_sigma_field
+        del self.movingq_sigma_sq_field
         del self.movingq_means_field
         del self.gradient_moving
         del self.gradient_static
@@ -533,18 +533,18 @@ class EMMetric(SimilarityMetric):
         if forward_step:
             gradient = self.gradient_static
             delta = self.staticq_means_field - self.moving_image
-            sigma_field = self.staticq_sigma_field
+            sigma_sq_field = self.staticq_sigma_sq_field
         else:
             gradient = self.gradient_moving
             delta = self.movingq_means_field - self.static_image
-            sigma_field = self.movingq_sigma_field
+            sigma_sq_field = self.movingq_sigma_sq_field
         
         displacement = np.zeros(shape = (reference_shape)+(self.dim,), dtype = floating)
 
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below,
                                           self.inner_iter, delta,
-                                          sigma_field,
+                                          sigma_sq_field,
                                           gradient,
                                           None,
                                           self.smooth,
@@ -552,7 +552,7 @@ class EMMetric(SimilarityMetric):
         else:
             self.energy = v_cycle_3d(self.levels_below,
                                           self.inner_iter, delta,
-                                          sigma_field,
+                                          sigma_sq_field,
                                           gradient,
                                           None,
                                           self.smooth,
@@ -582,21 +582,21 @@ class EMMetric(SimilarityMetric):
         if forward_step:
             gradient = self.gradient_static
             delta_field = self.movingq_means_field - self.static_image
-            sigma_field = self.movingq_sigma_field
+            sigma_sq_field = self.movingq_sigma_sq_field
         else:
             gradient = self.gradient_moving
             delta_field = self.staticq_means_field - self.moving_image
-            sigma_field = self.staticq_sigma_field
+            sigma_sq_field = self.staticq_sigma_sq_field
 
         if self.dim == 2:
             step, self.energy = em.compute_em_demons_step_2d(delta_field,
-                                                             sigma_field,
+                                                             sigma_sq_field,
                                                              gradient,
                                                              sigma_reg_2,
                                                              None)
         else:
             step, self.energy = em.compute_em_demons_step_3d(delta_field,
-                                                             sigma_field,
+                                                             sigma_sq_field,
                                                              gradient,
                                                              sigma_reg_2,
                                                              None)
@@ -843,7 +843,7 @@ class SSDMetric(SimilarityMetric):
         pass
 
 
-def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
+def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
              lambda_param, displacement, depth = 0):
     r"""
     Multi-resolution Gauss-Seidel solver: solves the Gauss-Newton linear system
@@ -865,7 +865,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     delta_field : array, shape (R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (R, C)
+    sigma_sq_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the 
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
@@ -887,11 +887,11 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     """
     #pre-smoothing
     for i in range(k):
-        ssd.iterate_residual_displacement_field_SSD2D(delta_field, sigma_field,
+        ssd.iterate_residual_displacement_field_SSD2D(delta_field, sigma_sq_field,
                                                       gradient_field, target,
                                                       lambda_param, displacement)
     if n == 0:
-        energy = ssd.compute_energy_SSD2D(delta_field, sigma_field, 
+        energy = ssd.compute_energy_SSD2D(delta_field, sigma_sq_field, 
                                           gradient_field, lambda_param, 
                                           displacement)
         return energy
@@ -899,7 +899,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     #solve at coarser grid
     residual = None
     residual = ssd.compute_residual_displacement_field_SSD2D(delta_field,
-                                                             sigma_field,
+                                                             sigma_sq_field,
                                                              gradient_field,
                                                              target,
                                                              lambda_param,
@@ -907,9 +907,9 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
                                                              residual)
     sub_residual = np.array(vfu.downsample_displacement_field2D(residual))
     del residual
-    subsigma_field = None
-    if sigma_field != None:
-        subsigma_field = vfu.downsample_scalar_field2D(sigma_field)
+    subsigma_sq_field = None
+    if sigma_sq_field != None:
+        subsigma_sq_field = vfu.downsample_scalar_field2D(sigma_sq_field)
     subdelta_field = vfu.downsample_scalar_field2D(delta_field)
     subgradient_field = np.array(
         vfu.downsample_displacement_field2D(gradient_field))
@@ -917,7 +917,7 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     sub_displacement = np.zeros(shape = ((shape[0]+1)//2, (shape[1]+1)//2, 2 ),
                                dtype = floating)
     sublambda_param = lambda_param*0.25
-    v_cycle_2d(n-1, k, subdelta_field, subsigma_field, subgradient_field,
+    v_cycle_2d(n-1, k, subdelta_field, subsigma_sq_field, subgradient_field,
              sub_residual, sublambda_param, sub_displacement, depth+1)
     displacement += np.array(
         vfu.upsample_displacement_field(sub_displacement, shape))
@@ -925,17 +925,17 @@ def v_cycle_2d(n, k, delta_field, sigma_field, gradient_field, target,
     #post-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD2D(delta_field,
-                                                             sigma_field,
+                                                             sigma_sq_field,
                                                              gradient_field,
                                                              target,
                                                              lambda_param,
                                                              displacement)
-    energy = ssd.compute_energy_SSD2D(delta_field, sigma_field, 
+    energy = ssd.compute_energy_SSD2D(delta_field, sigma_sq_field, 
                                       gradient_field, lambda_param, 
                                       displacement)
     return energy
 
-def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
+def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
              lambda_param, displacement, depth = 0):
     r"""
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
@@ -958,7 +958,7 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     delta_field : array, shape (S, R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (S, R, C)
+    sigma_sq_field : array, shape (S, R, C)
         the variance of the gray level value at each voxel, according to the 
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
@@ -981,19 +981,19 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     #pre-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD3D(delta_field,
-                                                             sigma_field,
+                                                             sigma_sq_field,
                                                              gradient_field,
                                                              target,
                                                              lambda_param,
                                                              displacement)
     if n == 0:
-        energy = ssd.compute_energy_SSD3D(delta_field, sigma_field,
+        energy = ssd.compute_energy_SSD3D(delta_field, sigma_sq_field,
                                           gradient_field, lambda_param,
                                           displacement)
         return energy
     #solve at coarser grid
     residual = ssd.compute_residual_displacement_field_SSD3D(delta_field,
-                                                            sigma_field,
+                                                            sigma_sq_field,
                                                             gradient_field,
                                                             target,
                                                             lambda_param,
@@ -1001,9 +1001,9 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
                                                             None)
     sub_residual = np.array(vfu.downsample_displacement_field3D(residual))
     del residual
-    subsigma_field = None
-    if sigma_field != None:
-        subsigma_field = vfu.downsample_scalar_field3D(sigma_field)
+    subsigma_sq_field = None
+    if sigma_sq_field != None:
+        subsigma_sq_field = vfu.downsample_scalar_field3D(sigma_sq_field)
     subdelta_field = vfu.downsample_scalar_field3D(delta_field)
     subgradient_field = np.array(
         vfu.downsample_displacement_field3D(gradient_field))
@@ -1012,10 +1012,10 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
         shape = ((shape[0]+1)//2, (shape[1]+1)//2, (shape[2]+1)//2, 3 ),
         dtype = floating)
     sublambda_param = lambda_param*0.25
-    v_cycle_3d(n-1, k, subdelta_field, subsigma_field, subgradient_field,
+    v_cycle_3d(n-1, k, subdelta_field, subsigma_sq_field, subgradient_field,
              sub_residual, sublambda_param, sub_displacement, depth+1)
     del subdelta_field
-    del subsigma_field
+    del subsigma_sq_field
     del subgradient_field
     del sub_residual
     vfu.accumulate_upsample_displacement_field3D(sub_displacement, displacement)
@@ -1023,12 +1023,12 @@ def v_cycle_3d(n, k, delta_field, sigma_field, gradient_field, target,
     #post-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD3D(delta_field,
-                                                             sigma_field,
+                                                             sigma_sq_field,
                                                              gradient_field,
                                                              target,
                                                              lambda_param,
                                                              displacement)
-    energy = ssd.compute_energy_SSD3D(delta_field, sigma_field,
+    energy = ssd.compute_energy_SSD3D(delta_field, sigma_sq_field,
                                       gradient_field, lambda_param,
                                       displacement)
     return energy

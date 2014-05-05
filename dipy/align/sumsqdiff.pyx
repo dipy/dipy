@@ -694,7 +694,7 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
 @cython.cdivision(True)
 def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                                floating[:,:,:] gradient_moving,
-                               double sigma_reg_2,
+                               double sigma_sq_x,
                                floating[:,:,:] out):
     r"""
     Computes the demons step for SSD-driven registration ( eq. 4 in [1] )
@@ -710,10 +710,9 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         w.r.t. time' in the optical flow model)
     gradient_field : array, shape (R, C, 2)
         the gradient of the moving image
-    sigma_reg_2 : float
-        parameter controlling the amount of regularization (under the Ridge 
-        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
-        (also, it is \sigma_x in eq. 4 of [1])
+    sigma_sq_x : float
+        parameter controlling the amount of regularization. It corresponds to 
+        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
     out : array, shape (R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -741,7 +740,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                 delta_2 = neg_delta**2 
                 energy += delta_2
                 nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
-                den = delta_2/sigma_reg_2 + nrm2
+                den = delta_2/sigma_sq_x + nrm2
                 if den <1e-9:
                     out[i, j, 0] = 0
                     out[i, j, 1] = 0
@@ -757,7 +756,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
 @cython.cdivision(True)
 def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                                floating[:,:,:,:] gradient_moving,
-                               double sigma_reg_2,
+                               double sigma_sq_x,
                                floating[:,:,:,:] out):
     r"""
     Computes the demons step for SSD-driven registration ( eq. 4 in [1] )
@@ -773,10 +772,9 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         w.r.t. time' in the optical flow model)
     gradient_field : array, shape (S, R, C, 2)
         the gradient of the moving image
-    sigma_reg_2 : float
-        parameter controlling the amount of regularization (under the Ridge 
-        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
-        (also, it is \sigma_x in eq. 4 of [1])
+    sigma_sq_x : float
+        parameter controlling the amount of regularization. It corresponds to 
+        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
     out : array, shape (S, R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -808,7 +806,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                     nrm2 = gradient_moving[k, i, j, 0]**2 +\
                            gradient_moving[k, i, j, 1]**2 +\
                            gradient_moving[k, i, j, 2]**2
-                    den = delta_2/sigma_reg_2 + nrm2
+                    den = delta_2/sigma_sq_x + nrm2
                     if den < 1e-9:
                         out[k, i, j, 0] = 0
                         out[k, i, j, 1] = 0

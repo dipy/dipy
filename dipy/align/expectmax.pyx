@@ -275,9 +275,9 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def compute_em_demons_step_2d(floating[:,:] delta_field,
-                              floating[:,:] sigma_field,
+                              floating[:,:] sigma_sq_field,
                               floating[:,:,:] gradient_moving,
-                              double sigma_reg,
+                              double sigma_sq_x,
                               floating[:,:,:] out):
     r"""
     Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
@@ -291,7 +291,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         Diffeomorphic demons: efficient non-parametric image registration. 
         NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
 
-    In this case, \sigma_i in eq. 4 of [1] is estimated using the EM algorithm,
+    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM algorithm,
     while in the original version of diffeomorphic demons it is estimated by the
     difference between the image values at each pixel.
 
@@ -305,15 +305,15 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         warping the static image towards the moving, which may not be the
         intended behavior unless the 'gradient_moving' passed corresponds to
         the gradient of the static image
-    sigma_field : array, shape(R, C)
+    sigma_sq_field : array, shape(R, C)
         contains, at each pixel (i, j), the estimated variance (not std) of the
         hidden variable associated to the intensity at static[i,j] (which must 
         have been previously quantized)
     gradient_moving : array, shape(R, C, 2)
         the gradient of the moving image
-    sigma_reg : float
-        parameter controlling the amount of regularization (under the Ridge 
-        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
+    sigma_sq_x : float
+        parameter controlling the amount of regularization. It corresponds to 
+        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
     out : array, shape(R, C, 2)
         the resulting demons step will be written to this array
     """
@@ -321,7 +321,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         int nr = delta_field.shape[0]
         int nc = delta_field.shape[1]
         int i, j
-        double neg_delta, sigma, nrm2, energy
+        double neg_delta, sigma_sq_i, nrm2, energy
 
     if out is None:
         out = np.zeros((nr, nc, 2), dtype=np.asarray(delta_field).dtype)
@@ -331,31 +331,31 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         energy = 0
         for i in range(nr):
             for j in range(nc):
-                sigma = sigma_field[i,j]
+                sigma_sq_i = sigma_sq_field[i,j]
                 neg_delta = -1 * delta_field[i,j]
                 energy += (neg_delta**2)
-                if(isinf(sigma)):
+                if(isinf(sigma_sq_i)):
                     out[i, j, 0], out[i, j, 1] = 0, 0 
                 else:
                     nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
-                    if(sigma == 0):
+                    if(sigma_sq_i == 0):
                         if nrm2 == 0:
                             out[i, j, 0], out[i, j, 1] = 0, 0 
                         else:
                             out[i, j, 0] = neg_delta * gradient_moving[i, j, 0] / nrm2
                             out[i, j, 1] = neg_delta * gradient_moving[i, j, 1] / nrm2
                     else: 
-                        out[i, j, 0] = sigma_reg * neg_delta * gradient_moving[i, j, 0]/(sigma_reg * nrm2 + sigma)
-                        out[i, j, 1] = sigma_reg * neg_delta * gradient_moving[i, j, 1]/(sigma_reg * nrm2 + sigma)
+                        out[i, j, 0] = sigma_sq_x * neg_delta * gradient_moving[i, j, 0]/(sigma_sq_x * nrm2 + sigma_sq_i)
+                        out[i, j, 1] = sigma_sq_x * neg_delta * gradient_moving[i, j, 1]/(sigma_sq_x * nrm2 + sigma_sq_i)
     return out, energy
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 def compute_em_demons_step_3d(floating[:,:,:] delta_field,
-                              floating[:,:,:] sigma_field,
+                              floating[:,:,:] sigma_sq_field,
                               floating[:,:,:,:] gradient_moving,
-                              double sigma_reg,
+                              double sigma_sq_x,
                               floating[:,:,:,:] out):
     r"""
     Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
@@ -369,7 +369,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         Diffeomorphic demons: efficient non-parametric image registration. 
         NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
 
-    In this case, \sigma_i in eq. 4 of [1] is estimated using the EM algorithm,
+    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM algorithm,
     while in the original version of diffeomorphic demons it is estimated by the
     difference between the image values at each pixel.
     
@@ -383,15 +383,15 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         warping the static image towards the moving, which may not be the
         intended behavior unless the 'gradient_moving' passed corresponds to
         the gradient of the static image
-    sigma_field : array, shape(S, R, C)
+    sigma_sq_field : array, shape(S, R, C)
         contains, at each pixel (k, i, j), the estimated variance (not std) of the
         hidden variable associated to the intensity at static[k,i,j] (which must 
         have been previously quantized)
     gradient_moving : array, shape(S, R, C, 2)
         the gradient of the moving image
-    sigma_reg : float
-        parameter controlling the amount of regularization (under the Ridge 
-        regression model: \min_{x} ||Ax - y||^2 + \frac{1}{'sigmadiff'}||x||^2)
+    sigma_sq_x : float
+        parameter controlling the amount of regularization. It corresponds to 
+        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2].
     out : array, shape(S, R, C, 2)
         the resulting demons step will be written to this array
     """
@@ -400,7 +400,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         int nr = delta_field.shape[1]
         int nc = delta_field.shape[2]
         int i, j, k
-        double neg_delta, sigma, nrm2, energy
+        double neg_delta, sigma_sq_i, nrm2, energy
 
     if out is None:
         out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(delta_field).dtype)
@@ -411,14 +411,14 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         for k in range(ns):
             for i in range(nr):
                 for j in range(nc):
-                    sigma = sigma_field[k,i,j]
+                    sigma_sq_i = sigma_sq_field[k,i,j]
                     neg_delta = -1 * delta_field[k,i,j]
                     energy += (neg_delta**2)
-                    if(isinf(sigma)):
+                    if(isinf(sigma_sq_i)):
                         out[k, i, j, 0], out[k, i, j, 1], out[k, i, j, 2]  = 0, 0, 0
                     else:
                         nrm2 = gradient_moving[k, i, j, 0]**2 + gradient_moving[k, i, j, 1]**2 + gradient_moving[k, i, j, 2]**2
-                        if(sigma == 0):
+                        if(sigma_sq_i == 0):
                             if nrm2 == 0:
                                 out[k, i, j, 0], out[k, i, j, 1], out[k, i, j, 2] = 0, 0, 0 
                             else:
@@ -426,7 +426,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                                 out[k, i, j, 1] = neg_delta * gradient_moving[k, i, j, 1] / nrm2
                                 out[k, i, j, 2] = neg_delta * gradient_moving[k, i, j, 2] / nrm2
                         else: 
-                            out[k, i, j, 0] = sigma_reg * neg_delta * gradient_moving[k, i, j, 0]/(sigma_reg * nrm2 + sigma)
-                            out[k, i, j, 1] = sigma_reg * neg_delta * gradient_moving[k, i, j, 1]/(sigma_reg * nrm2 + sigma)
-                            out[k, i, j, 2] = sigma_reg * neg_delta * gradient_moving[k, i, j, 2]/(sigma_reg * nrm2 + sigma)
+                            out[k, i, j, 0] = sigma_sq_x * neg_delta * gradient_moving[k, i, j, 0]/(sigma_sq_x * nrm2 + sigma_sq_i)
+                            out[k, i, j, 1] = sigma_sq_x * neg_delta * gradient_moving[k, i, j, 1]/(sigma_sq_x * nrm2 + sigma_sq_i)
+                            out[k, i, j, 2] = sigma_sq_x * neg_delta * gradient_moving[k, i, j, 2]/(sigma_sq_x * nrm2 + sigma_sq_i)
     return out, energy

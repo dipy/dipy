@@ -1710,8 +1710,8 @@ def get_displacement_range(floating[:, :, :, :] d, double[:, :] affine):
     r"""
     Computes the minimum and maximum values reached by the transformation
     defined by the given displacement field and affine pre-multiplication
-    matrix. More precisely, computes max_{x\in L} x + d(A * x), and 
-    min_{x\in L} x + d(A * x), where d is the displacement field, A is the affine 
+    matrix. More precisely, computes $\max_{x\in L} x + d(Ax)$, and 
+    $\min_{x\in L} x + d(Ax)$, where d is the displacement field, A is the affine 
     matrix, the interpolation used is tri-linear and the maximum and minimum are 
     taken for each vector component independently.
 
