@@ -139,26 +139,19 @@ class ScaleSpace(object):
         #normalize input image to [0,1]
         img = (image - image.min())/(image.max() - image.min())        
 
-        #The properties are saved in separate lists        
-        self.images = []
-        self.domain_shapes = []
-        self.spacings = []
-        self.scalings = []
-        self.affines = []
-        self.affine_invs = []
-        self.sigmas = []
+        #The properties are saved in separate lists. Insert input image
+        #properties at the first level of the scale space
+        self.images = [img.astype(floating)]
+        self.domain_shapes = [input_size.astype(np.int32)]
+        self.spacings = [input_spacing]
+        self.scalings = [np.ones(self.dim)]
+        self.affines = [input_affine]
+        self.sigmas = [np.zeros(self.dim)]
 
-        #insert input image properties at the first level of the scale space
-        self.images.append(img.astype(floating))
-        self.domain_shapes.append(input_size.astype(np.int32))
-        self.spacings.append(input_spacing)
-        self.scalings.append(np.ones(self.dim))
-        self.affines.append(input_affine)
         if input_affine is not None:
-            self.affine_invs.append(np.linalg.inv(input_affine))
+            self.affine_invs = [np.linalg.inv(input_affine)]
         else:
-            self.affine_invs.append(None)
-        self.sigmas.append(np.zeros(self.dim))
+            self.affine_invs = [None]
 
         #compute the rest of the levels
         min_spacing = np.min(input_spacing)
