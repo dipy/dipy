@@ -29,8 +29,8 @@ def test_ssd_2d_demons():
     static = plt.imread(fname_static)
     moving = moving[:, :, 0].astype(floating)
     static = static[:, :, 0].astype(floating)
-    moving = np.array(moving, dtype = floating)
-    static = np.array(static, dtype = floating)
+    moving = np.array(moving, dtype=floating)
+    static = np.array(static, dtype=floating)
     moving = (moving-moving.min())/(moving.max() - moving.min())
     static = (static-static.min())/(static.max() - static.min())
     #Create the SSD metric
@@ -81,8 +81,8 @@ def test_ssd_2d_gauss_newton():
     static = plt.imread(fname_static)
     moving = moving[:, :, 0].astype(floating)
     static = static[:, :, 0].astype(floating)
-    moving = np.array(moving, dtype = floating)
-    static = np.array(static, dtype = floating)
+    moving = np.array(moving, dtype=floating)
+    static = np.array(static, dtype=floating)
     moving = (moving-moving.min())/(moving.max() - moving.min())
     static = (static-static.min())/(static.max() - static.min())
     #Create the SSD metric
@@ -122,8 +122,8 @@ def get_synthetic_warped_circle(nslices):
     
     #create a synthetic invertible map and warp the circle
     d, dinv = vfu.create_harmonic_fields_2d(64, 64, 0.1, 4)
-    d = np.asarray(d, dtype = floating)
-    dinv = np.asarray(dinv, dtype = floating)
+    d = np.asarray(d, dtype=floating)
+    dinv = np.asarray(dinv, dtype=floating)
     mapping = DiffeomorphicMap(2, (64, 64))
     mapping.forward, mapping.backward = d, dinv
     wcircle = mapping.transform(circle)
@@ -133,14 +133,14 @@ def get_synthetic_warped_circle(nslices):
 
     #normalize and form the 3d by piling slices
     circle = (circle-circle.min())/(circle.max() - circle.min())
-    circle_3d = np.ndarray(circle.shape + (nslices,), dtype = floating)
+    circle_3d = np.ndarray(circle.shape + (nslices,), dtype=floating)
     circle_3d[...] = circle[...,None]
     circle_3d[...,0] = 0
     circle_3d[...,-1] = 0
 
     #do the same with the warped circle
     wcircle = (wcircle-wcircle.min())/(wcircle.max() - wcircle.min())
-    wcircle_3d = np.ndarray(wcircle.shape + (nslices,), dtype = floating)
+    wcircle_3d = np.ndarray(wcircle.shape + (nslices,), dtype=floating)
     wcircle_3d[...] = wcircle[...,None]
     wcircle_3d[...,0] = 0
     wcircle_3d[...,-1] = 0

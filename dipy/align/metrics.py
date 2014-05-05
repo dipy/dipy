@@ -215,7 +215,7 @@ class SimilarityMetric(object):
 
 class CCMetric(SimilarityMetric):
 
-    def __init__(self, dim, sigma_diff = 2.0, radius = 4):
+    def __init__(self, dim, sigma_diff=2.0, radius=4):
         r"""
         Normalized Cross-Correlation Similarity metric.
 
@@ -259,7 +259,7 @@ class CCMetric(SimilarityMetric):
         self.factors = np.array(self.factors)
         
         self.gradient_moving = np.empty(
-            shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
+            shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
         i = 0
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
@@ -271,7 +271,7 @@ class CCMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape = (self.static_image.shape)+(self.dim,), dtype = floating)
+            shape=(self.static_image.shape)+(self.dim,), dtype=floating)
         i = 0
         for grad in sp.gradient(self.static_image):
             self.gradient_static[..., i] = grad
@@ -417,7 +417,7 @@ class EMMetric(SimilarityMetric):
         self.sampling_mask = sampling_mask
         staticq, self.staticq_levels, hist = self.quantize(self.static_image,
                                                       self.q_levels)
-        staticq = np.array(staticq, dtype = np.int32)
+        staticq = np.array(staticq, dtype=np.int32)
         self.staticq_levels = np.array(self.staticq_levels)
         staticq_means, staticq_variances = self.compute_stats(sampling_mask,
                                                        self.moving_image,
@@ -430,7 +430,7 @@ class EMMetric(SimilarityMetric):
         self.staticq_means_field = staticq_means[staticq]
 
         self.gradient_moving = np.empty(
-            shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
+            shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
         i = 0
         for grad in sp.gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
@@ -442,7 +442,7 @@ class EMMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape = (self.static_image.shape)+(self.dim,), dtype = floating)
+            shape=(self.static_image.shape)+(self.dim,), dtype=floating)
         i = 0
         for grad in sp.gradient(self.static_image):
             self.gradient_static[..., i] = grad
@@ -455,7 +455,7 @@ class EMMetric(SimilarityMetric):
 
         movingq, self.movingq_levels, hist = self.quantize(self.moving_image,
                                                            self.q_levels)
-        movingq = np.array(movingq, dtype = np.int32)
+        movingq = np.array(movingq, dtype=np.int32)
         self.movingq_levels = np.array(self.movingq_levels)
         movingq_means, movingq_variances = self.compute_stats(
             sampling_mask, self.static_image, self.q_levels, movingq)
@@ -502,7 +502,7 @@ class EMMetric(SimilarityMetric):
         """
         return self.compute_step(False)
 
-    def compute_gauss_newton_step(self, forward_step = True):
+    def compute_gauss_newton_step(self, forward_step=True):
         r"""
         Computes the Newton step to minimize this energy, i.e., minimizes the 
         linearized energy function with respect to the
@@ -539,7 +539,7 @@ class EMMetric(SimilarityMetric):
             delta = self.movingq_means_field - self.static_image
             sigma_sq_field = self.movingq_sigma_sq_field
         
-        displacement = np.zeros(shape = (reference_shape)+(self.dim,), dtype = floating)
+        displacement = np.zeros(shape=(reference_shape)+(self.dim,), dtype=floating)
 
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below,
@@ -560,7 +560,7 @@ class EMMetric(SimilarityMetric):
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
         return displacement
 
-    def compute_demons_step(self, forward_step = True):
+    def compute_demons_step(self, forward_step=True):
         r"""
         Demons step for EM metric
 
@@ -711,7 +711,7 @@ class SSDMetric(SimilarityMetric):
         computation of the forward and backward steps.
         """
         self.gradient_moving = np.empty(
-            shape = (self.moving_image.shape)+(self.dim,), dtype = floating)
+            shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
         i = 0
         for grad in gradient(self.moving_image):
             self.gradient_moving[..., i] = grad
@@ -723,7 +723,7 @@ class SSDMetric(SimilarityMetric):
             self.reorient_vector_field(self.gradient_moving, self.moving_direction)
 
         self.gradient_static = np.empty(
-            shape = (self.static_image.shape)+(self.dim,), dtype = floating)
+            shape=(self.static_image.shape)+(self.dim,), dtype=floating)
         i = 0
         for grad in gradient(self.static_image):
             self.gradient_static[..., i] = grad
@@ -748,7 +748,7 @@ class SSDMetric(SimilarityMetric):
         """
         return self.compute_step(False)
 
-    def compute_gauss_newton_step(self, forward_step = True):
+    def compute_gauss_newton_step(self, forward_step=True):
         r"""
         Minimizes the linearized energy function (Newton step) defined by the
         sum of squared differences of corresponding pixels of the input images 
@@ -771,7 +771,7 @@ class SSDMetric(SimilarityMetric):
             gradient = self.gradient_moving
             delta_field = self.moving_image - self.static_image
  
-        displacement = np.zeros(shape = (reference_shape)+(self.dim,), dtype = floating)
+        displacement = np.zeros(shape=(reference_shape)+(self.dim,), dtype=floating)
 
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below, self.inner_iter, 
@@ -784,7 +784,7 @@ class SSDMetric(SimilarityMetric):
         max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
         return displacement
 
-    def compute_demons_step(self, forward_step = True):
+    def compute_demons_step(self, forward_step=True):
         r"""
         Computes the demons step proposed by Vercauteren et al.[1] for the SSD
         metric.
@@ -844,7 +844,7 @@ class SSDMetric(SimilarityMetric):
 
 
 def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
-             lambda_param, displacement, depth = 0):
+             lambda_param, displacement, depth=0):
     r"""
     Multi-resolution Gauss-Seidel solver: solves the Gauss-Newton linear system
     by first filtering (GS-iterate) the current level, then solves for the residual
@@ -914,8 +914,8 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     subgradient_field = np.array(
         vfu.downsample_displacement_field2D(gradient_field))
     shape = np.array(displacement.shape).astype(np.int32)
-    sub_displacement = np.zeros(shape = ((shape[0]+1)//2, (shape[1]+1)//2, 2 ),
-                               dtype = floating)
+    sub_displacement = np.zeros(shape=((shape[0]+1)//2, (shape[1]+1)//2, 2 ),
+                               dtype=floating)
     sublambda_param = lambda_param*0.25
     v_cycle_2d(n-1, k, subdelta_field, subsigma_sq_field, subgradient_field,
              sub_residual, sublambda_param, sub_displacement, depth+1)
@@ -936,7 +936,7 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     return energy
 
 def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
-             lambda_param, displacement, depth = 0):
+             lambda_param, displacement, depth=0):
     r"""
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
     filtering (GS-iterate) the current level, then solves for the residual
@@ -1009,8 +1009,8 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
         vfu.downsample_displacement_field3D(gradient_field))
     shape = np.array(displacement.shape).astype(np.int32)
     sub_displacement = np.zeros(
-        shape = ((shape[0]+1)//2, (shape[1]+1)//2, (shape[2]+1)//2, 3 ),
-        dtype = floating)
+        shape=((shape[0]+1)//2, (shape[1]+1)//2, (shape[2]+1)//2, 3 ),
+        dtype=floating)
     sublambda_param = lambda_param*0.25
     v_cycle_3d(n-1, k, subdelta_field, subsigma_sq_field, subgradient_field,
              sub_residual, sublambda_param, sub_displacement, depth+1)

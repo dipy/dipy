@@ -1009,8 +1009,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
             for k in range(ns):
                 for i in range(nr):
                     for j in range(nc):
-                        mag = sqrt((p[k, i, j, 0]/ss) ** 2 + \
-                                   (p[k, i, j, 1]/sr) ** 2 + \
+                        mag = sqrt((p[k, i, j, 0]/ss) ** 2 +
+                                   (p[k, i, j, 1]/sr) ** 2 +
                                    (p[k, i, j, 2]/sc) ** 2)
                         norms[k,i,j] = mag
                         error += mag
@@ -1057,7 +1057,7 @@ def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
         int i, j, inside
         double dii, djj
         floating[:,:,:] out= np.zeros_like(d)
-        floating[:] tmp = np.zeros((3,), dtype = np.asarray(d).dtype)
+        floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
     
     with nogil:
     
@@ -1098,7 +1098,7 @@ def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
         int i, j, k, inside
         double dkk, dii, djj
         floating[:,:,:,:] out= np.zeros_like(d)
-        floating[:] tmp = np.zeros((3,), dtype = np.asarray(d).dtype)
+        floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
     with nogil:
         for k in range(nslices):
             for i in range(nrows):
@@ -1379,7 +1379,7 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
         int i, j, k
         double di, dj, dk, dii, djj, dkk
         floating[:, :, :, :] output = np.zeros(shape=(nslices, nrows, ncols, 3), 
-                                        dtype=np.asarray(field).dtype)
+                                               dtype=np.asarray(field).dtype)
     for k in range(nslices):    
         for i in range(nrows):
             for j in range(ncols):
@@ -1513,7 +1513,7 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
         int nc = up.shape[2]
         int i, j, k, inside
         double dkk, dii, djj
-        floating[:] tmp = np.zeros((3,), dtype = np.asarray(field).dtype)
+        floating[:] tmp = np.zeros((3,), dtype=np.asarray(field).dtype)
     with nogil:
 
         for k in range(ns):
@@ -1917,7 +1917,7 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
         double dkk, dii, djj, tmp0, tmp1
         double alpha, beta, gamma, calpha, cbeta, cgamma
         floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
-                                                 dtype=np.asarray(volume).dtype)
+                                            dtype=np.asarray(volume).dtype)
     with nogil:
 
         for k in range(nslices):
@@ -2001,7 +2001,7 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         ncols = d1.shape[2]
 
     cdef number[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
-                                             dtype=np.asarray(volume).dtype)
+                                           dtype=np.asarray(volume).dtype)
     cdef floating[:] tmp = np.zeros(shape=(3,), dtype = np.asarray(d1).dtype)
 
     with nogil:
@@ -2172,7 +2172,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
         ncols = d1.shape[1]
     cdef floating[:, :] warped = np.zeros(shape=(nrows, ncols), 
                                          dtype=np.asarray(image).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(d1).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(2,), dtype=np.asarray(d1).dtype)
 
 
     with nogil:
@@ -2332,7 +2332,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
         ncols = d1.shape[1]
     cdef number[:, :] warped = np.zeros(shape=(nrows, ncols), 
                                          dtype=np.asarray(image).dtype)
-    cdef floating[:] tmp = np.zeros(shape=(2,), dtype = np.asarray(d1).dtype)
+    cdef floating[:] tmp = np.zeros(shape=(2,), dtype=np.asarray(d1).dtype)
 
 
     with nogil:
@@ -2532,8 +2532,8 @@ def create_random_displacement_2d(int[:] from_shape,
     cdef:
         int i, j, ri, rj
         double di, dj, dii, djj
-        int[:,:,:] int_field = np.ndarray(tuple(from_shape) + (2,), dtype = np.int32)
-        double[:, :, :] output = np.zeros(tuple(from_shape) + (2,), dtype = np.float64)
+        int[:,:,:] int_field = np.ndarray(tuple(from_shape) + (2,), dtype=np.int32)
+        double[:, :, :] output = np.zeros(tuple(from_shape) + (2,), dtype=np.float64)
         int dom_size = from_shape[0]*from_shape[1]
 
     #compute the actual displacement field in the physical space
@@ -2599,7 +2599,7 @@ def create_linear_displacement_field_2d(int[:] shape,
         int ncols = shape[1]
         int i, j
         double di, dj, dii, djj
-        double[:, :, :] output = np.zeros(tuple(shape) + (2,), dtype = np.float64)
+        double[:, :, :] output = np.zeros(tuple(shape) + (2,), dtype=np.float64)
 
     #compute the actual displacement field in the physical space
     for i in range(nrows):
@@ -2631,7 +2631,8 @@ def create_linear_displacement_field_2d(int[:] shape,
     return output
 
 
-def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, int[:] to_shape, double[:,:] output_affine):
+def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, 
+                                  int[:] to_shape, double[:,:] output_affine):
     r"""
     Creates a random 3D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output discrete 
@@ -2663,7 +2664,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
     cdef:
         int i, j, k, ri, rj, rk
         double di, dj, dii, djj
-        int[:,:,:,:] int_field = np.ndarray(tuple(from_shape) + (3,), dtype = np.int32)
+        int[:,:,:,:] int_field = np.ndarray(tuple(from_shape) + (3,), dtype=np.int32)
         double[:,:,:,:] output = np.zeros(tuple(from_shape) + (3,), dtype=np.float64)
         int dom_size = from_shape[0]*from_shape[1]*from_shape[2]
 
@@ -2671,7 +2672,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, i
     for k in range(from_shape[0]):
         for i in range(from_shape[1]):
             for j in range(from_shape[2]):
-                #randomly choose where each input grid point will be mapped to in the target grid
+                #randomly choose the location of each point on the target grid
                 rk = np.random.randint(1, to_shape[0]-1)
                 ri = np.random.randint(1, to_shape[1]-1)
                 rj = np.random.randint(1, to_shape[2]-1)

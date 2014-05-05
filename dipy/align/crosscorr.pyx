@@ -115,12 +115,12 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                         Jmean = sums[SJ] / sums[CNT]
                         factors[s, r, c, 0] = static[s, r, c] - Imean
                         factors[s, r, c, 1] = moving[s, r, c] - Jmean
-                        factors[s, r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
-                            Imean * sums[SJ] + sums[CNT] * Jmean * Imean
-                        factors[s, r, c, 3] = sums[SI2] - Imean * sums[SI] - \
-                            Imean * sums[SI] + sums[CNT] * Imean * Imean
-                        factors[s, r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
-                            Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
+                        factors[s, r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
+                            Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
+                        factors[s, r, c, 3] = (sums[SI2] - Imean * sums[SI] -
+                            Imean * sums[SI] + sums[CNT] * Imean * Imean)
+                        factors[s, r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
+                            Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
                 # Finally set the values at the end of the line
                 for s in range(ns - radius, ns):
                     # this would be the last slice to be processed for voxel
@@ -133,12 +133,12 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                     Jmean = sums[SJ] / sums[CNT]
                     factors[s, r, c, 0] = static[s, r, c] - Imean
                     factors[s, r, c, 1] = moving[s, r, c] - Jmean
-                    factors[s, r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
-                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean
-                    factors[s, r, c, 3] = sums[SI2] - Imean * sums[SI] - \
-                        Imean * sums[SI] + sums[CNT] * Imean * Imean
-                    factors[s, r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
-                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
+                    factors[s, r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
+                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
+                    factors[s, r, c, 3] = (sums[SI2] - Imean * sums[SI] -
+                        Imean * sums[SI] + sums[CNT] * Imean * Imean)
+                    factors[s, r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
+                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
     return factors
 
 
@@ -187,12 +187,12 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static, floating[:, :, :] mo
                     Jmean = sums[SJ] / sums[CNT]
                     factors[s, r, c, 0] = static[s, r, c] - Imean
                     factors[s, r, c, 1] = moving[s, r, c] - Jmean
-                    factors[s, r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
-                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean
-                    factors[s, r, c, 3] = sums[SI2] - Imean * sums[SI] - \
-                        Imean * sums[SI] + sums[CNT] * Imean * Imean
-                    factors[s, r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
-                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean  
+                    factors[s, r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
+                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
+                    factors[s, r, c, 3] = (sums[SI2] - Imean * sums[SI] -
+                        Imean * sums[SI] + sums[CNT] * Imean * Imean)
+                    factors[s, r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
+                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean) 
     return factors
 
 
@@ -431,12 +431,12 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                     Jmean = sums[SJ] / sums[CNT]
                     factors[r, c, 0] = static[r, c] - Imean
                     factors[r, c, 1] = moving[r, c] - Jmean
-                    factors[r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
-                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean
-                    factors[r, c, 3] = sums[SI2] - Imean * sums[SI] - \
-                        Imean * sums[SI] + sums[CNT] * Imean * Imean
-                    factors[r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
-                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
+                    factors[r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
+                        Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
+                    factors[r, c, 3] = (sums[SI2] - Imean * sums[SI] -
+                        Imean * sums[SI] + sums[CNT] * Imean * Imean)
+                    factors[r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
+                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
             # Finally set the values at the end of the line
             for r in range(nr - radius, nr):
                 # this would be the last slice to be processed for pixel
@@ -449,12 +449,12 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                 Jmean = sums[SJ] / sums[CNT]
                 factors[r, c, 0] = static[r, c] - Imean
                 factors[r, c, 1] = moving[r, c] - Jmean
-                factors[r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
-                    Imean * sums[SJ] + sums[CNT] * Jmean * Imean
-                factors[r, c, 3] = sums[SI2] - Imean * sums[SI] - \
-                    Imean * sums[SI] + sums[CNT] * Imean * Imean
-                factors[r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
-                    Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
+                factors[r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
+                    Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
+                factors[r, c, 3] = (sums[SI2] - Imean * sums[SI] -
+                    Imean * sums[SI] + sums[CNT] * Imean * Imean)
+                factors[r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
+                    Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
     return factors
 
 
@@ -498,12 +498,12 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
                 Jmean = sums[SJ] / sums[CNT]
                 factors[r, c, 0] = static[r, c] - Imean
                 factors[r, c, 1] = moving[r, c] - Jmean
-                factors[r, c, 2] = sums[SIJ] - Jmean * sums[SI] - \
-                    Imean * sums[SJ] + sums[CNT] * Jmean * Imean
-                factors[r, c, 3] = sums[SI2] - Imean * sums[SI] - \
-                    Imean * sums[SI] + sums[CNT] * Imean * Imean
-                factors[r, c, 4] = sums[SJ2] - Jmean * sums[SJ] - \
-                        Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean
+                factors[r, c, 2] = (sums[SIJ] - Jmean * sums[SI] -
+                    Imean * sums[SJ] + sums[CNT] * Jmean * Imean)
+                factors[r, c, 3] = (sums[SI2] - Imean * sums[SI] -
+                    Imean * sums[SI] + sums[CNT] * Imean * Imean)
+                factors[r, c, 4] = (sums[SJ2] - Jmean * sums[SJ] -
+                    Jmean * sums[SJ] + sums[CNT] * Jmean * Jmean)
     return factors
 
 

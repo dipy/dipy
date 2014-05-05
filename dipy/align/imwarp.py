@@ -97,10 +97,10 @@ def get_direction_and_spacings(affine, dim):
 
 class ScaleSpace(object):
     def __init__(self, image, num_levels,
-                 input_affine = None,
-                 input_spacing = None,
-                 sigma_factor = 0.2,
-                 mask0 = False):
+                 input_affine=None,
+                 input_spacing=None,
+                 sigma_factor=0.2,
+                 mask0=False):
         r""" ScaleSpace
         Computes the Scale Space representation of an image. The scale space is
         simply a list of images produced by smoothing the input image with a
@@ -219,8 +219,8 @@ class ScaleSpace(object):
             the expand factors (a scalar for each voxel dimension)
 
         """
-        factors = np.array(self.spacings[to_level]) / \
-                  np.array(self.spacings[from_level])
+        factors = (np.array(self.spacings[to_level]) /
+                  np.array(self.spacings[from_level]) )
         return factors
 
     def print_level(self, level):
@@ -466,8 +466,8 @@ class DiffeomorphicMap(object):
         r"""
         Creates a zero displacement field (the identity transformation).
         """
-        self.forward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
-        self.backward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype = floating)
+        self.forward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype=floating)
+        self.backward = np.zeros(tuple(self.domain_shape)+(self.dim,), dtype=floating)
 
     def _warp_forward(self, image, interpolation='lin', world_to_image=-1, 
                       sampling_shape=None, sampling_affine=-1):
@@ -574,7 +574,7 @@ class DiffeomorphicMap(object):
             elif image.dtype is np.dtype('int64'):
                 image = image.astype(np.int32)
         else:
-            image = np.asarray(image, dtype = floating)
+            image = np.asarray(image, dtype=floating)
 
         if self.dim == 2:
             if interpolation == 'lin':
@@ -708,7 +708,7 @@ class DiffeomorphicMap(object):
             elif image.dtype is np.dtype('int64'):
                 image = image.astype(np.int32)
         else:
-            image = np.asarray(image, dtype = floating)
+            image = np.asarray(image, dtype=floating)
 
         if self.dim == 2:
             if interpolation == 'lin':
@@ -1044,13 +1044,13 @@ class DiffeomorphicRegistration(object):
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     def __init__(self,
                  metric=None,
-                 opt_iter = [25, 100, 100],
-                 step_length = 0.25,
-                 ss_sigma_factor = 0.2,
-                 opt_tol = 1e-5,
-                 inv_iter = 20,
-                 inv_tol = 1e-3,
-                 callback = None):
+                 opt_iter=[25, 100, 100],
+                 step_length=0.25,
+                 ss_sigma_factor=0.2,
+                 opt_tol=1e-5,
+                 inv_iter=20,
+                 inv_tol=1e-3,
+                 callback=None):
         r""" Symmetric Diffeomorphic Registration (SyN) Algorithm
         Performs the multi-resolution optimization algorithm for non-linear
         registration using a given similarity metric.

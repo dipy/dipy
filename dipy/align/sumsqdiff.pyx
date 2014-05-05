@@ -213,8 +213,8 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
                     A[2] = gradient_field[r, c, 1] ** 2 + sigma * lambda_param * nn
                     det = A[0] * A[2] - A[1] * A[1]
                     if(det < 1e-9):
-                        nrm2 = gradient_field[r, c, 0] ** 2 + \
-                            gradient_field[r, c, 1] ** 2
+                        nrm2 = (gradient_field[r, c, 0] ** 2 +
+                                gradient_field[r, c, 1] ** 2)
                         if(nrm2 < 1e-9):
                             displacement_field[r, c, 0] = 0
                             displacement_field[r, c, 1] = 0                        
@@ -568,29 +568,29 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
                     dc = c + dCol[k]
                     if((dc < 0) or (dc >= ncols)):
                         continue
-                    y[0] += displacement_field[s, r, c, 0] - \
-                        displacement_field[ds, dr, dc, 0]
-                    y[1] += displacement_field[s, r, c, 1] - \
-                        displacement_field[ds, dr, dc, 1]
-                    y[2] += displacement_field[s, r, c, 2] - \
-                        displacement_field[ds, dr, dc, 2]
+                    y[0] += (displacement_field[s, r, c, 0] -
+                             displacement_field[ds, dr, dc, 0])
+                    y[1] += (displacement_field[s, r, c, 1] -
+                             displacement_field[ds, dr, dc, 1])
+                    y[2] += (displacement_field[s, r, c, 2] -
+                             displacement_field[ds, dr, dc, 2])
                 if(isinf(sigma)):
                     residual[s, r, c, 0] = -lambda_param * y[0]
                     residual[s, r, c, 1] = -lambda_param * y[1]
                     residual[s, r, c, 2] = -lambda_param * y[2]
                 else:
-                    dotP = gradient_field[s, r, c, 0] * displacement_field[s, r, c, 0] +\
-                           gradient_field[s, r, c, 1] * displacement_field[s, r, c, 1] +\
-                           gradient_field[s, r, c, 2] * displacement_field[s, r, c, 2]
-                    residual[s, r, c, 0] = b[0] - \
-                        (gradient_field[s, r, c, 0]
-                         * dotP + sigma * lambda_param * y[0])
-                    residual[s, r, c, 1] = b[1] - \
-                        (gradient_field[s, r, c, 1]
-                         * dotP + sigma * lambda_param * y[1])
-                    residual[s, r, c, 2] = b[2] - \
-                        (gradient_field[s, r, c, 2]
-                         * dotP + sigma * lambda_param * y[2])
+                    dotP = (gradient_field[s, r, c, 0] * displacement_field[s, r, c, 0] +
+                           gradient_field[s, r, c, 1] * displacement_field[s, r, c, 1] +
+                           gradient_field[s, r, c, 2] * displacement_field[s, r, c, 2])
+                    residual[s, r, c, 0] = (b[0] -
+                                            (gradient_field[s, r, c, 0] * dotP +
+                                             sigma * lambda_param * y[0]))
+                    residual[s, r, c, 1] = (b[1] -
+                                            (gradient_field[s, r, c, 1] * dotP +
+                                             sigma * lambda_param * y[1]))
+                    residual[s, r, c, 2] = (b[2] -
+                                            (gradient_field[s, r, c, 2] * dotP +
+                                             sigma * lambda_param * y[2]))
     return residual
 
 
@@ -670,22 +670,22 @@ cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
                 dc = c + dCol[k]
                 if((dc < 0) or (dc >= ncols)):
                     continue
-                y[0] += displacement_field[r, c, 0] - \
-                    displacement_field[dr, dc, 0]
-                y[1] += displacement_field[r, c, 1] - \
-                    displacement_field[dr, dc, 1]
+                y[0] += (displacement_field[r, c, 0] -
+                         displacement_field[dr, dc, 0])
+                y[1] += (displacement_field[r, c, 1] -
+                         displacement_field[dr, dc, 1])
             if(isinf(sigma)):
                 residual[r, c, 0] = -lambda_param * y[0]
                 residual[r, c, 1] = -lambda_param * y[1]
             else:
-                dotP = gradient_field[r, c, 0] * displacement_field[r, c, 0] + \
-                    gradient_field[r, c, 1] * displacement_field[r, c, 1]
-                residual[r, c, 0] = b[0] - \
-                    (gradient_field[r, c, 0] * dotP +
-                     sigma * lambda_param * y[0])
-                residual[r, c, 1] = b[1] - \
-                    (gradient_field[r, c, 1] * dotP +
-                     sigma * lambda_param * y[1])
+                dotP = (gradient_field[r, c, 0] * displacement_field[r, c, 0] +
+                        gradient_field[r, c, 1] * displacement_field[r, c, 1])
+                residual[r, c, 0] = (b[0] -
+                                     (gradient_field[r, c, 0] * dotP +
+                                     sigma * lambda_param * y[0]))
+                residual[r, c, 1] = (b[1] -
+                                     (gradient_field[r, c, 1] * dotP +
+                                     sigma * lambda_param * y[1]))
     return residual
 
 
@@ -803,9 +803,9 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                     neg_delta = -1 * delta_field[k,i,j]
                     delta_2 = neg_delta**2 
                     energy += delta_2
-                    nrm2 = gradient_moving[k, i, j, 0]**2 +\
-                           gradient_moving[k, i, j, 1]**2 +\
-                           gradient_moving[k, i, j, 2]**2
+                    nrm2 = (gradient_moving[k, i, j, 0]**2 +
+                            gradient_moving[k, i, j, 1]**2 +
+                            gradient_moving[k, i, j, 2]**2)
                     den = delta_2/sigma_sq_x + nrm2
                     if den < 1e-9:
                         out[k, i, j, 0] = 0

@@ -65,7 +65,7 @@ def test_warping_2d():
     expected = moving_image[(assign[...,0], assign[...,1])]
 
     #compare the images
-    assert_array_almost_equal(warped, expected, decimal = 5)
+    assert_array_almost_equal(warped, expected, decimal=5)
     
     #Now test the nearest neighbor interpolation
     warped = np.array(vfu.warp_image_nn(moving_image, disp, None, affine_index, affine_disp))
@@ -75,7 +75,7 @@ def test_warping_2d():
     #test consolidation
     consolidated = vfu.consolidate_2d(disp, affine_index, affine_disp)
     warped = np.array(vfu.warp_image(moving_image, consolidated, None, None, None))
-    assert_array_almost_equal(warped, expected, decimal = 5)
+    assert_array_almost_equal(warped, expected, decimal=5)
     warped = np.array(vfu.warp_image_nn(moving_image, consolidated, None, None, None))
     assert_array_almost_equal(warped, expected)
 
@@ -118,7 +118,7 @@ def test_warping_3d():
                                                      input_affine, 
                                                      np.array(target_shape, dtype=np.int32),
                                                      target_affine)
-    disp = np.array(disp, dtype = floating)
+    disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
     moving_image = np.ndarray(target_shape, dtype=floating)
@@ -145,7 +145,7 @@ def test_warping_3d():
     expected = moving_image[(assign[...,0], assign[...,1], assign[...,2])]
 
     #compare the images
-    assert_array_almost_equal(warped, expected, decimal = 5)
+    assert_array_almost_equal(warped, expected, decimal=5)
     
     #Now test the nearest neighbor interpolation
     warped = np.array(vfu.warp_volume_nn(moving_image, disp, None, affine_index, affine_disp))
@@ -155,7 +155,7 @@ def test_warping_3d():
     #test consolidation
     consolidated = vfu.consolidate_3d(disp, affine_index, affine_disp)
     warped = np.array(vfu.warp_volume(moving_image, consolidated, None, None, None))
-    assert_array_almost_equal(warped, expected, decimal = 5)
+    assert_array_almost_equal(warped, expected, decimal=5)
     warped = np.array(vfu.warp_volume_nn(moving_image, consolidated, None, None, None))
     assert_array_almost_equal(warped, expected)
 
