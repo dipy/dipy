@@ -414,9 +414,9 @@ def test_seeds_from_mask():
 def test_connectivity_matrix_shape():
     
     # Labels: z-planes have labels 0,1,2
-    labels = np.zeros((3,3,3))
-    labels[:,:,1] = 1
-    labels[:,:,2] = 2  
+    labels = np.zeros((3, 3, 3), dtype=int)
+    labels[:, :, 1] = 1
+    labels[:, :, 2] = 2  
     # Streamline set, only moves between first two z-planes.
     streamlines = [np.array([[0., 0., 0.],
                              [0., 0., 0.5],
@@ -424,5 +424,6 @@ def test_connectivity_matrix_shape():
                    np.array([[0., 1., 1.],
                              [0., 1., 0.5],
                              [0., 1., 0.]])]
-    matrix = connectivity_matrix(streamlines,labels.astype('int'),affine=np.eye(4))
-    assert_equal(matrix.shape,(3,3))
+    matrix = connectivity_matrix(streamlines, labels, affine=np.eye(4))
+    assert_equal(matrix.shape, (3, 3))
+
