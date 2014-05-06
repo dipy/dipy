@@ -210,7 +210,7 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     endlabels = label_volume[i, j, k]
     if symmetric:
         endlabels.sort(0)
-    mx = endlabels.max() + 1
+    mx = label_volume.max() + 1
     matrix = ndbincount(endlabels, shape=(mx, mx))
     if symmetric:
         matrix = np.maximum(matrix, matrix.T)
