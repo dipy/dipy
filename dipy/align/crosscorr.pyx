@@ -49,16 +49,16 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
     moving : array, shape (S, R, C)
         the moving volume (notice that both images must already be in a common
         reference domain, i.e. the same S, R, C)
-    radius : the radius of the neighborhood (a cube of (2 * radius + 1)^3 voxels)
+    radius : the radius of the neighborhood (cube of (2 * radius + 1)^3 voxels)
 
     Returns
     -------
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms: 
         factors[:,:,:,0] : static minus its mean value along the neighborhood
-        factors[:,:,:,1] : sum of squared values of static along the neighborhood
+        factors[:,:,:,1] : sum of sq. values of static along the neighborhood
         factors[:,:,:,2] : moving minus its mean value along the neighborhood
-        factors[:,:,:,3] : sum of squared values of moving along the neighborhood
+        factors[:,:,:,3] : sum of sq. values of moving along the neighborhood
         factors[:,:,:,4] : sum of the pointwise products of static and moving
                            along the neighborhood
     """
@@ -108,8 +108,8 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                         for qq in range(side):
                             sums[t] += lines[t, qq]
                     if(k >= radius):
-                        # s is the voxel that is affected by the cube with slices
-                        # [s - radius..s + radius, :, :]
+                        # s is the voxel that is affected by the cube with
+                        # slices [s - radius..s + radius, :, :]
                         s = k - radius
                         Imean = sums[SI] / sums[CNT]
                         Jmean = sums[SJ] / sums[CNT]
@@ -145,12 +145,12 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def precompute_cc_factors_3d_test(floating[:, :, :] static, floating[:, :, :] moving,
-                                  int radius):
+def precompute_cc_factors_3d_test(floating[:, :, :] static, 
+                                  floating[:, :, :] moving, int radius):
     r"""
-    This version of precompute_cc_factors_3d is for testing purposes, it directly
-    computes the local cross-correlation factors without any optimization, so
-    it is less error-prone than the accelerated version.
+    This version of precompute_cc_factors_3d is for testing purposes, it
+    directly computes the local cross-correlation factors without any
+    optimization, so it is less error-prone than the accelerated version.
     """
     cdef:
         int ns = static.shape[0]
@@ -312,6 +312,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
     and static gradients may improve the registration quality. We are leaving 
     this parameters as a placeholder for future investigation
     """
+    ftype = np.asarray(grad_static).dtype
     cdef:
         int ns = grad_moving.shape[0]
         int nr = grad_moving.shape[1]
@@ -319,8 +320,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
         int s,r,c
         double energy = 0
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
-        floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), 
-                                             dtype=np.asarray(grad_static).dtype)
+        floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=ftype)
 
     with nogil:
 
@@ -354,8 +354,8 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                              int radius):
     r"""
-    Pre-computes the separate terms of the cross correlation metric [1] and image
-    norms at each voxel considering a neighborhood of the given radius to 
+    Pre-computes the separate terms of the cross correlation metric [1] and
+    image norms at each voxel considering a neighborhood of the given radius to 
     efficiently [2] compute the gradient of the metric with respect to the 
     deformation field.
 
@@ -373,7 +373,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     moving : array, shape (R, C)
         the moving volume (notice that both images must already be in a common
         reference domain, i.e. the same R, C)
-    radius : the radius of the neighborhood (a square of (2 * radius + 1)^2 voxels)
+    radius : the radius of the neighborhood(square of (2 * radius + 1)^2 voxels)
 
     Returns
     -------
@@ -386,13 +386,14 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
         factors[:,:,4] : sum of the pointwise products of static and moving
                            along the neighborhood
     """
+    ftype = np.asarray(static).dtype
     cdef:
         int side = 2 * radius + 1
         int nr = static.shape[0]
         int nc = static.shape[1]
         int r, c, i, j, t, q, qq, firstc, lastc
         double Imean, Jmean
-        floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=np.asarray(static).dtype)
+        floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=ftype)
         double[:, :] lines = np.zeros((6, side), dtype=np.float64)
         double[:] sums = np.zeros((6,), dtype=np.float64)
 
@@ -464,16 +465,16 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
 def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
                                   int radius):
     r"""
-    This version of precompute_cc_factors_2d is for testing purposes, it directly
-    computes the local cross-correlation without any optimization.
-    
+    This version of precompute_cc_factors_2d is for testing purposes, it
+    directly computes the local cross-correlation without any optimization.
     """
+    ftype = np.asarray(static).dtype
     cdef:
         int nr = static.shape[0]
         int nc = static.shape[1]
         int r, c, i, j, t, firstr, lastr, firstc, lastc
         double Imean, Jmean
-        floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=np.asarray(static).dtype)
+        floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=ftype)
         double[:] sums = np.zeros((6,), dtype=np.float64)
 
     with nogil:
@@ -622,6 +623,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
     and static gradients may improve the registration quality. We are leaving 
     this parameters as a placeholder for future investigation
     """
+    ftype = np.asarray(grad_static).dtype
     cdef:
         int nr = grad_moving.shape[0]
         int nc = grad_moving.shape[1]
@@ -629,7 +631,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
         double energy = 0
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :] out = np.zeros((nr, nc, 2), 
-                                             dtype=np.asarray(grad_static).dtype)
+                                             dtype=ftype)
 
     with nogil:
 

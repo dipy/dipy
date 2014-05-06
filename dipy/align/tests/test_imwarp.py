@@ -19,8 +19,8 @@ def test_ssd_2d_demons():
     Classical Circle-To-C experiment for 2D Monomodal registration. This test
     is intended to detect regressions only: we saved the energy profile (the
     sequence of energy values at each iteration) of a working version of SSD in
-    2D using the Demons step, and this test checks that the current energy profile 
-    matches the saved one.
+    2D using the Demons step, and this test checks that the current energy
+    profile matches the saved one.
     '''
     fname_moving = get_data('reg_o')
     fname_static = get_data('reg_c')
@@ -45,25 +45,27 @@ def test_ssd_2d_demons():
     inv_iter = 40
     inv_tol = 1e-3
     ss_sigma_factor = 0.2
-    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    mapping = registration_optimizer.optimize(static, moving, None)
-    subsampled_energy_profile = np.array(registration_optimizer.full_energy_profile[::10])
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric, 
+        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = optimizer.optimize(static, moving, None)
+    subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
-        expected_profile = np.array([ 312.6813333 ,  164.59050263,  103.73623002,   82.1164849 ,
-         63.31888794,   57.02372298,   48.88254136,   45.4015576 ,
-         42.45817589,  174.94422108,   92.43030985,   58.73123347,
-         43.70869018,   15.79207659,   20.30039959,   41.99069232,
-         37.1587315 ,   33.1963267 ,   32.89163671,   87.82289011,
-         78.28761195])
+        expected_profile = \
+            np.array([ 312.6813333 ,  164.59050263,  103.73623002,   82.1164849,
+                       63.31888794,   57.02372298,   48.88254136,   45.4015576 ,
+                       42.45817589,  174.94422108,   92.43030985,   58.73123347,
+                       43.70869018,   15.79207659,   20.30039959,   41.99069232,
+                       37.1587315 ,   33.1963267 ,   32.89163671,   87.82289011,
+                       78.28761195])
     else:
-        expected_profile = np.array([ 312.68133361,  164.59049075,  103.73635218,   82.11638224,
-         63.3188368 ,   57.02375694,   48.88245596,   45.4014475 ,
-         42.4579966 ,  174.94167955,   92.42725191,   58.72655199,
-         43.71955268,   15.78579491,   20.45497118,   41.92597862,
-         37.60531526,   33.25877969,   30.638574  ,   91.49825032,
-         80.524506  ])
-    assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile))
+        expected_profile = \
+            np.array([ 312.68133361,  164.59049075,  103.73635218,  82.11638224,
+                       63.3188368 ,   57.02375694,   48.88245596,   45.4014475 ,
+                       42.4579966 ,  174.94167955,   92.42725191,   58.72655199,
+                       43.71955268,   15.78579491,   20.45497118,   41.92597862,
+                       37.60531526,   33.25877969,   30.638574  ,   91.49825032,
+                       80.524506  ])
+    assert_array_almost_equal(subsampled_energy_profile, expected_profile)
 
 
 def test_ssd_2d_gauss_newton():
@@ -98,21 +100,21 @@ def test_ssd_2d_gauss_newton():
     inv_iter = 40
     inv_tol = 1e-3
     ss_sigma_factor = 0.2
-    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    mapping = registration_optimizer.optimize(static, moving, None)
-    subsampled_energy_profile = np.array(registration_optimizer.full_energy_profile[::10])
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
+        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = optimizer.optimize(static, moving, None)
+    subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
         expected_profile = \
-            np.array([ 312.68133316,   79.81322732,   28.37105316,   24.3985506 ,
+            np.array([ 312.68133316,   79.81322732,   28.37105316,   24.3985506,
                        13.92768078,   11.52267765,    9.11339687,   27.28819896,
-                       42.9770759 ,  237.44444211,  153.43258717,  137.2169711 ])
+                       42.9770759 ,  237.44444211,  153.43258717,  137.2169711])
     else:
         expected_profile = \
-            np.array([ 312.68133361,   79.8132289 ,   27.28523819,   24.22883738,
+            np.array([ 312.68133361,   79.8132289 ,   27.28523819,  24.22883738,
                        56.71942103,   30.20320996,   19.4766414 ,   74.72561337,
                        108.0512537 ,  106.37445697])
-    assert_array_almost_equal(np.array(subsampled_energy_profile), np.array(expected_profile))
+    assert_array_almost_equal(subsampled_energy_profile, expected_profile)
 
 
 def get_synthetic_warped_circle(nslices):
@@ -151,13 +153,13 @@ def get_synthetic_warped_circle(nslices):
 def test_ssd_3d_demons():
     r'''
     Register a stack of circles ('cylinder') before and after warping them with 
-    a synthetic diffeomorphism. This test is intended to detect regressions only:
-    we saved the energy profile (the sequence of energy values at each iteration)
-    of a working version of SSD in 3D using the Demons step, and this test checks 
-    that the current energy profile matches the saved one. The validation of the
-    "working version" was done by registering the 18 manually annotated T1 brain
-    MRI database IBSR with each other and computing the jaccard index for all 31
-    common anatomical regions. 
+    a synthetic diffeomorphism. This test is intended to detect regressions
+    only: we saved the energy profile (the sequence of energy values at each
+    iteration) of a working version of SSD in 3D using the Demons step, and this
+    test checks that the current energy profile matches the saved one. The
+    validation of the "working version" was done by registering the 18 manually
+    annotated T1 brain MRI database IBSR with each other and computing the
+    jaccard index for all 31 common anatomical regions. 
     '''
     moving, static = get_synthetic_warped_circle(20)
 
@@ -173,21 +175,23 @@ def test_ssd_3d_demons():
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
-    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    mapping = registration_optimizer.optimize(static, moving, None)
-    energy_profile = np.array(registration_optimizer.full_energy_profile)
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
+        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = optimizer.optimize(static, moving, None)
+    energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
-        expected_profile = np.array([  601.17342436,   468.94537817,   418.67267847,   393.0580613 ,
-         367.8863422 ,   319.61865314,   272.3558511 ,   269.57838565,
-         254.63664301,   266.9605625 ,  2541.47438277,  2033.988534  ,
-        1779.69793906,  1693.11368711,  1653.95419258])
+        expected_profile = \
+        np.array([601.17342436,   468.94537817,   418.67267847,   393.0580613,
+                  367.8863422 ,   319.61865314,   272.3558511 ,   269.57838565,
+                  254.63664301,   266.9605625 ,  2541.47438277,  2033.988534,
+                  1779.69793906,  1693.11368711,  1653.95419258])
     else:
-        expected_profile = np.array([  601.17344986,   468.97523898,   418.73047322,   393.0534384 ,
-         367.80005903,   319.44987629,   272.62769902,   268.10394736,
-         254.30487935,   267.7249719 ,  2547.05251526,  2035.19403818,
-        1780.21839845,  1692.64443559,  1653.6224987 ])
-    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
+        expected_profile = \
+            np.array([  601.17344986, 468.97523898, 418.73047322, 393.0534384,
+                        367.80005903, 319.44987629, 272.62769902, 268.10394736,
+                        254.30487935, 267.7249719, 2547.05251526, 2035.19403818,
+                        1780.21839845,  1692.64443559,  1653.6224987 ])
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
 def test_ssd_3d_gauss_newton():
@@ -217,23 +221,23 @@ def test_ssd_3d_gauss_newton():
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
-    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    mapping = registration_optimizer.optimize(static, moving, None)
-    energy_profile = np.array(registration_optimizer.full_energy_profile)
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
+        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = optimizer.optimize(static, moving, None)
+    energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
-            np.array([  601.17342027,   398.62217561,   300.29774716,   263.11446187,
-                        279.6762572 ,   280.86396456,   292.32200297,   288.94831405,
-                        296.04799   ,   290.72802694,  2723.60750459,  2400.04528908,
-                        2235.94249224,  2152.32966366,  2128.3250948 ])
+            np.array([601.17342027, 398.62217561, 300.29774716, 263.11446187,
+                      279.6762572 , 280.86396456, 292.32200297, 288.94831405,
+                      296.04799   , 290.72802694, 2723.60750459, 2400.04528908,
+                      2235.94249224, 2152.32966366, 2128.3250948])
     else:
         expected_profile = \
-            np.array([  601.17344986,   398.62218184,   300.29775583,   263.11445705,
-                        279.67625651,   280.86396779,   292.32201095,   288.94831954,
-                        296.04799876,   290.72802577,  2723.60787772,  2400.0456365 ,
-                        2235.94286635,  2152.33001603,  2128.32545284])
-    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
+            np.array([601.17344986, 398.62218184, 300.29775583, 263.11445705,
+                      279.67625651, 280.86396779, 292.32201095, 288.94831954,
+                      296.04799876, 290.72802577, 2723.60787772, 2400.0456365,
+                      2235.94286635, 2152.33001603, 2128.32545284])
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
 def test_cc_2d():
@@ -259,31 +263,34 @@ def test_cc_2d():
     energy_profile = np.array(optimizer.full_energy_profile)
     
     if floating is np.float32:
-        expected_profile = np.array([ -435.79559516,  -460.80739355,  -469.88508346,  -486.87396486,
-        -486.04298263,  -484.30780055,  -489.19779192,  -484.44738633,
-        -489.17020371,  -485.6637196 ,  -488.70801039,  -487.46399496,
-        -489.71671264,  -488.09117139,  -490.42271222,  -488.27909614,
-        -490.28857064,  -487.60445667,  -490.03035784,  -485.72591888,
-        -490.60729319, -1260.19301574, -1327.14719131, -1309.49160837,
-       -1342.19150863, -1356.90061164, -1275.25601701, -1317.07887913,
-       -1343.0784944 , -1301.45605487, -1336.04013439, -1366.93546512,
-       -1328.10275902, -1317.85372622, -1317.62486769, -1274.53697105,
-       -1337.79152122, -2801.90904108, -2857.68596628, -2849.56767541,
-       -2867.77931765, -2846.8404648 , -2875.67021308, -2851.85228212,
-       -2879.43368375, -2861.36274169, -2889.69112071])
+        expected_profile = \
+            [   -435.79559516,  -460.80739355,  -469.88508346,  -486.87396486,
+                -486.04298263,  -484.30780055,  -489.19779192,  -484.44738633,
+                -489.17020371,  -485.6637196 ,  -488.70801039,  -487.46399496,
+                -489.71671264,  -488.09117139,  -490.42271222,  -488.27909614,
+                -490.28857064,  -487.60445667,  -490.03035784,  -485.72591888,
+                -490.60729319, -1260.19301574, -1327.14719131, -1309.49160837,
+                -1342.19150863, -1356.90061164, -1275.25601701, -1317.07887913,
+                -1343.0784944 , -1301.45605487, -1336.04013439, -1366.93546512,
+                -1328.10275902, -1317.85372622, -1317.62486769, -1274.53697105,
+                -1337.79152122, -2801.90904108, -2857.68596628, -2849.56767541,
+                -2867.77931765, -2846.8404648 , -2875.67021308, -2851.85228212,
+                -2879.43368375, -2861.36274169, -2889.69112071]
     else:
-        expected_profile = np.array([ -435.7955967 ,  -460.80739935,  -469.88508352,  -486.87396919,
-        -486.0429746 ,  -484.30780608,  -489.19779364,  -484.44739074,
-        -489.17020447,  -485.66372153,  -488.7080131 ,  -487.46399372,
-        -489.71671982,  -488.09117245,  -490.42271431,  -488.27909883,
-        -490.28856556,  -487.60445041,  -490.03035556,  -485.72592274,
-        -490.60729406, -1258.19305758, -1358.34000624, -1348.08308818,
-       -1376.5332102 , -1361.61634539, -1371.62866869, -1354.9690168 ,
-       -1356.56553571, -1365.8866856 , -1308.45095778, -1366.49097861,
-       -1330.98891026, -1353.73575477, -2765.92375447, -2871.07572026,
-       -2885.22181863, -2873.25158879, -2883.36175689, -2882.74507256,
-       -2892.91338306, -2891.84375023, -2894.12822118, -2890.7756098 ])
-    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile))
+        expected_profile = \
+            [   -435.7955967 ,  -460.80739935,  -469.88508352,  -486.87396919,
+                -486.0429746 ,  -484.30780608,  -489.19779364,  -484.44739074,
+                -489.17020447,  -485.66372153,  -488.7080131 ,  -487.46399372,
+                -489.71671982,  -488.09117245,  -490.42271431,  -488.27909883,
+                -490.28856556,  -487.60445041,  -490.03035556,  -485.72592274,
+                -490.60729406, -1258.19305758, -1358.34000624, -1348.08308818,
+                -1376.5332102 , -1361.61634539, -1371.62866869, -1354.9690168 ,
+                -1356.56553571, -1365.8866856 , -1308.45095778, -1366.49097861,
+                -1330.98891026, -1353.73575477, -2765.92375447, -2871.07572026,
+                -2885.22181863, -2873.25158879, -2883.36175689, -2882.74507256,
+                -2892.91338306, -2891.84375023, -2894.12822118, -2890.7756098 ]
+    expected_profile = np.asarray(expected_profile)
+    assert_array_almost_equal(energy_profile, expected_profile)
 
 
 def test_cc_3d():
@@ -315,25 +322,28 @@ def test_cc_3d():
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
-    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    mapping = registration_optimizer.optimize(static, moving, None)
-    energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-4
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
+        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = optimizer.optimize(static, moving, None)
+    energy_profile = np.array(optimizer.full_energy_profile)*1e-4
     if floating is np.float32:
-        expected_profile = np.array([-0.23135541, -0.22171793, -0.23767394, -0.24236032, -0.22654608,
-       -0.19675488, -0.24164528, -0.24076027, -0.22999321, -0.22685398,
-       -0.20686259, -0.23939138, -0.24139779, -1.32298218, -1.37421899,
-       -1.37280958, -1.38166606, -1.37794505, -1.38500984, -1.38071534,
-       -1.37929357, -1.37501299, -1.38839658, -6.12090669, -6.19221629,
-       -6.19314241, -6.13668367, -6.11476345])
+        expected_profile = \
+            [   -0.23135541, -0.22171793, -0.23767394, -0.24236032, -0.22654608,
+                -0.19675488, -0.24164528, -0.24076027, -0.22999321, -0.22685398,
+                -0.20686259, -0.23939138, -0.24139779, -1.32298218, -1.37421899,
+                -1.37280958, -1.38166606, -1.37794505, -1.38500984, -1.38071534,
+                -1.37929357, -1.37501299, -1.38839658, -6.12090669, -6.19221629,
+                -6.19314241, -6.13668367, -6.11476345]
     else:
-        expected_profile = np.array([-0.23135541, -0.22171793, -0.23767394, -0.24236032, -0.22654608,
-       -0.19675488, -0.24164527, -0.24076027, -0.22999321, -0.22685398,
-       -0.20686259, -0.23939137, -0.24139779, -1.32178231, -1.37421862,
-       -1.37280946, -1.38166568, -1.37794478, -1.38500996, -1.38071547,
-       -1.37928428, -1.37501037, -1.38838905, -6.11733785, -6.4959287 ,
-       -6.63564872, -6.6980932 , -6.74961869])
-    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
+        expected_profile = \
+            [   -0.23135541, -0.22171793, -0.23767394, -0.24236032, -0.22654608,
+                -0.19675488, -0.24164527, -0.24076027, -0.22999321, -0.22685398,
+                -0.20686259, -0.23939137, -0.24139779, -1.32178231, -1.37421862,
+                -1.37280946, -1.38166568, -1.37794478, -1.38500996, -1.38071547,
+                -1.37928428, -1.37501037, -1.38838905, -6.11733785, -6.4959287,
+                -6.63564872, -6.6980932 , -6.74961869]
+    expected_profile = np.asarray(expected_profile)
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
 def test_em_3d():
@@ -369,10 +379,10 @@ def test_em_3d():
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
-    registration_optimizer = imwarp.SymmetricDiffeomorphicRegistration(
-        similarity_metric, opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    mapping = registration_optimizer.optimize(static, moving, None)
-    energy_profile = np.array(registration_optimizer.full_energy_profile)*1e-3
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
+        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    mapping = optimizer.optimize(static, moving, None)
+    energy_profile = np.array(optimizer.full_energy_profile)*1e-3
     if floating is np.float32:
         expected_profile = \
             np.array([  1.43656283e-02,   1.59238212e-02,   1.65779722e-02,
@@ -389,7 +399,7 @@ def test_em_3d():
                         1.17727709e-02,   2.99312690e-01,   1.76228197e-01,
                         2.40907927e-01,   1.70675610e-01,   1.64373533e-01,
                         2.48934851e+01,   2.14020096e+01])
-    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile), decimal=6)
+    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
 def test_em_2d():
@@ -421,17 +431,17 @@ def test_em_2d():
     
     if floating is np.float32:
         expected_profile = \
-            np.array([   5.07521773,    3.93179134,    3.85313489,    4.16914495,
-                         2.90004982,    3.16738105,    2.69627741,    2.59370897,
-                         2.5180502 ,    2.51041629,    2.69912632,    2.55035876,
-                         2.46371317,    2.67660867,    2.49318511,    2.94369408,
-                         2.77158745,    2.82379763,   17.11120265,   16.58076545,
-                         14.0681015 ,   14.54551446,   14.65197388,   13.49130845,
-                         13.09843029,   13.35734757,   13.48209453,   13.74433992,
-                         13.94080819,   14.07583289,   14.13893569,   14.82990374,
-                         14.49082004,  106.04095586,  101.70510575,   99.77728753,
-                         102.36543498,  101.1531505 ,  102.85582307,  104.86979379,
-                         103.71664918,  103.46962525,  103.90057054])
+            np.array([   5.07521773, 3.93179134, 3.85313489, 4.16914495,
+                         2.90004982, 3.16738105, 2.69627741, 2.59370897,
+                         2.5180502 , 2.51041629, 2.69912632, 2.55035876,
+                         2.46371317, 2.67660867, 2.49318511, 2.94369408,
+                         2.77158745, 2.82379763, 17.11120265, 16.58076545,
+                         14.0681015 , 14.54551446, 14.65197388, 13.49130845,
+                         13.09843029, 13.35734757, 13.48209453, 13.74433992,
+                         13.94080819, 14.07583289, 14.13893569, 14.82990374,
+                         14.49082004, 106.04095586, 101.70510575, 99.77728753,
+                         102.36543498, 101.1531505 , 102.85582307, 104.86979379,
+                         103.71664918, 103.46962525, 103.90057054])
     else:
         expected_profile = \
             np.array([  5.07521878,   3.93179259,   3.85313625,   4.16914645,
@@ -446,7 +456,7 @@ def test_em_2d():
                         12.76274505,  91.88512699,  86.77080544,  85.61197959,
                         84.63291853,  83.49849488,  84.96890764,  87.67030269,
                         87.3451905 ,  86.08676152,  84.24546416])
-    assert_array_almost_equal(np.array(energy_profile), np.array(expected_profile))
+    assert_array_almost_equal(energy_profile, expected_profile)
 
 
 if __name__=='__main__':

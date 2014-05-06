@@ -12,8 +12,8 @@ cdef extern from "math.h":
     double floor(double x) nogil
 
 
-cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2, double h,
-                                       double[:, :] aff) nogil:
+cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
+                                       double h, double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, x2, h)
@@ -21,8 +21,8 @@ cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2, double h
     return aff[0, 0] * x0 + aff[0, 1] * x1 + aff[0, 2] * x2 + h*aff[0, 3]
 
 
-cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2, double h,
-                                       double[:, :] aff) nogil:
+cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2,
+                                       double h, double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, x2, h)
@@ -30,8 +30,8 @@ cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2, double h
     return aff[1, 0] * x0 + aff[1, 1] * x1 + aff[1, 2] * x2 + h*aff[1, 3]
 
 
-cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2, double h,
-                                       double[:, :] aff) nogil:
+cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2,
+                                       double h, double[:, :] aff) nogil:
     r"""
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, x2, h)
@@ -237,11 +237,12 @@ cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii,
 
 
 cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk, 
-                                         double dii, double djj, number *out) nogil:
+                                         double dii, double djj, 
+                                         number *out) nogil:
     r"""
-    Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor interpolation
-    and stores the result in out. If (dkk, dii, djj) is outside the image's domain,
-    zero is written to out instead.
+    Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor
+    interpolation and stores the result in out. If (dkk, dii, djj) is outside
+    the image's domain, zero is written to out instead.
 
     Parameters
     ----------
@@ -268,7 +269,7 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
         int nc = volume.shape[2]
         int kk, ii, jj
         double alpha, beta, calpha, cbeta, gamma, cgamma
-    if((dkk < 0) or (dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1) or (dkk > ns - 1)):
+    if not (0 <= dkk <= ns - 1 and 0 <= dii <= nr - 1 and 0 <= djj <= nc - 1):
         out[0] = 0
         return 0
     # find the top left index and the interpolation coefficients
@@ -276,7 +277,7 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
     ii = <int>floor(dii)
     jj = <int>floor(djj)
     # no one is affected
-    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
+    if not ((0 <= kk < ns) and (0 <= ii < nr) and (0 <= jj < nc)):
         out[0] = 0
         return 0
     cgamma = dkk - kk
@@ -292,7 +293,7 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
     if(beta < cbeta):
         jj += 1
     # no one is affected
-    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
+    if not ((0 <= kk < ns) and (0 <= ii < nr) and (0 <= jj < nc)):
         out[0] = 0
         return 0
     out[0] = volume[kk, ii, jj]
@@ -332,7 +333,7 @@ cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume,
         int nc = volume.shape[2]
         int kk, ii, jj
         double alpha, beta, calpha, cbeta, gamma, cgamma
-    if((dkk < 0) or (dii < 0) or (djj < 0) or (dkk > ns - 1) or (dii > nr - 1) or (djj > nc - 1)):
+    if not (0 <= dkk <= ns - 1 and 0 <= dii <= nr - 1 and 0 <= djj <= nc - 1):
         out[0] = 0
         return 0
     # find the top left index and the interpolation coefficients
@@ -340,7 +341,7 @@ cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume,
     ii = <int>floor(dii)
     jj = <int>floor(djj)
     # no one is affected
-    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc) ):
+    if not ((0 <= kk < ns) and (0 <= ii < nr) and (0 <= jj < nc)):
         out[0] = 0
         return 0
     cgamma = dkk - kk
@@ -380,8 +381,8 @@ cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume,
             out[0] += calpha * beta * cgamma * volume[kk, ii, jj]
 
 
-cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk, double dii, 
-                                      double djj, floating[:] out) nogil:
+cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field,
+                    double dkk, double dii, double djj, floating[:] out) nogil:
     r"""
     Interpolates the 3D displacement field at (dkk, dii, djj) and stores the 
     result in out. If (dkk, dii, djj) is outside the vector field's domain, a 
@@ -412,7 +413,7 @@ cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk
         int nc = field.shape[2]
         int kk, ii, jj
         double alpha, beta, gamma, calpha, cbeta, cgamma
-    if((dkk < 0) or (dii < 0) or (djj < 0) or (dkk > ns - 1) or (dii > nr - 1) or (djj > nc - 1)):
+    if not (0 <= dkk <= ns - 1 and 0 <= dii <= nr - 1 and 0 <= djj <= nc - 1):
         out[0] = 0
         out[1] = 0
         out[2] = 0
@@ -421,7 +422,7 @@ cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field, double dkk
     kk = <int>floor(dkk)
     ii = <int>floor(dii)
     jj = <int>floor(djj)
-    if((kk < 0) or (ii < 0) or (jj < 0) or (kk >= ns) or (ii >= nr) or (jj >= nc)):
+    if not ((0 <= kk < ns) and (0 <= ii < nr) and (0 <= jj < nc)):
         out[0] = 0
         out[1] = 0
         out[2] = 0
@@ -484,7 +485,8 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                                     double[:, :] premult_index, 
                                     double[:, :] premult_disp,
                                     double time_scaling,
-                                    floating[:, :, :] comp, double[:] stats) nogil:
+                                    floating[:, :, :] comp, 
+                                    double[:] stats) nogil:
     r"""
     Computes the composition of the two 2-D displacements d1 and d2. The
     evaluation of d2 at non-lattice points is computed using tri-linear 
@@ -561,8 +563,10 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                 di = d1[i, j, 0]
                 dj = d1[i, j, 1]
             else:
-                di = _apply_affine_2d_x0(d1[i, j, 0], d1[i, j, 1], 0, premult_disp)
-                dj = _apply_affine_2d_x1(d1[i, j, 0], d1[i, j, 1], 0, premult_disp)
+                di = _apply_affine_2d_x0(d1[i, j, 0], d1[i, j, 1], 0, 
+                                         premult_disp)
+                dj = _apply_affine_2d_x1(d1[i, j, 0], d1[i, j, 1], 0, 
+                                         premult_disp)
 
             if premult_index is None:
                 dii = i
@@ -611,8 +615,8 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
 
     (the A*i terms cancel each other) where Sinv = S^{-1}
-    we can then define A = Sinv * R and B = Sinv to compute the composition using 
-    this function.
+    we can then define A = Sinv * R and B = Sinv to compute the composition
+    using this function.
 
     Parameters
     ----------
@@ -641,7 +645,8 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         floating[:, :, :] comp = np.zeros_like(d1)
         double[:] stats = np.zeros(shape=(3,),
                                      dtype=np.float64)
-    _compose_vector_fields_2d(d1, d2, premult_index, premult_disp, time_scaling, comp, stats)
+    _compose_vector_fields_2d(d1, d2, premult_index, premult_disp,
+                              time_scaling, comp, stats)
     return comp, stats
 
 
@@ -669,8 +674,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
 
     (the A*i terms cancel each other) where Sinv = S^{-1}
-    we can then define A = Sinv * R and B = Sinv to compute the composition using 
-    this function.
+    we can then define A = Sinv * R and B = Sinv to compute the composition
+    using this function.
 
     Parameters
     ----------
@@ -753,12 +758,14 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                 dii += di
                 djj += dj
 
-                inside = interpolate_vector_trilinear(d2, dkk, dii, djj, comp[k, i,j])
+                inside = interpolate_vector_trilinear(d2, dkk, dii, djj,
+                                                      comp[k, i,j])
                 if inside == 1:
                     comp[k, i, j, 0] = t * comp[k, i, j, 0] + d1[k, i, j, 0]
                     comp[k, i, j, 1] = t * comp[k, i, j, 1] + d1[k, i, j, 1]
                     comp[k, i, j, 2] = t * comp[k, i, j, 2] + d1[k, i, j, 2]
-                    nn = comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 + comp[k, i, j, 2]**2
+                    nn = (comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 +
+                          comp[k, i, j, 2]**2)
                     meanNorm += nn
                     stdNorm += nn * nn
                     cnt += 1
@@ -791,8 +798,8 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
     comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
 
     (the A*i terms cancel each other) where Sinv = S^{-1}
-    we can then define A = Sinv * R and B = Sinv to compute the composition using 
-    this function.
+    we can then define A = Sinv * R and B = Sinv to compute the composition
+    using this function.
 
     Parameters
     ----------
@@ -885,12 +892,13 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
         double di, dj, dii, djj
         double sr = spacing[0], sc = spacing[1]
 
+    ftype=np.asarray(d).dtype
     cdef:
         double[:] stats = np.zeros(shape=(2,), dtype=np.float64)
         double[:] substats = np.empty(shape=(3,), dtype=np.float64)
         double[:, :] norms = np.zeros(shape=(nr, nc), dtype=np.float64)
-        floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
-        floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=np.asarray(d).dtype)
+        floating[:, :, :] p = np.zeros(shape=(nr, nc, 2), dtype=ftype)
+        floating[:, :, :] q = np.zeros(shape=(nr, nc, 2), dtype=ftype)
 
     if start is not None:
         p[...] = start
@@ -969,8 +977,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     Notes
     -----
     We assume that the displacement field is an endomorphism so that the shape
-    and voxel-to-space transformation of the inverse field's discretization is the
-    same as those of the input displacement field. The 'inversion error' at 
+    and voxel-to-space transformation of the inverse field's discretization is
+    the same as those of the input displacement field. The 'inversion error' at 
     iteration t is defined as the mean norm of the displacement vectors of the
     input displacement field composed with the inverse at iteration t. 
     """
@@ -984,12 +992,14 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
         double epsilon = 0.5
         double error = 1 + tolerance
         double ss=spacing[0], sr=spacing[1], sc=spacing[2]
+
+    ftype=np.asarray(d).dtype
     cdef:
         double[:] stats = np.zeros(shape=(2,), dtype=np.float64)
         double[:] substats = np.zeros(shape=(3,), dtype=np.float64)
         double[:, :, :] norms = np.zeros(shape=(ns, nr, nc), dtype=np.float64)
-        floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
-        floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=np.asarray(d).dtype)
+        floating[:, :, :, :] p = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
+        floating[:, :, :, :] q = np.zeros(shape=(ns, nr, nc, 3), dtype=ftype)
 
     if start is not None:
         p[...] = start
@@ -1024,9 +1034,12 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                             step_factor = epsilon * maxlen / norms[k,i,j]
                         else:
                             step_factor = epsilon
-                        p[k, i, j, 0] = q[k, i, j, 0] - step_factor * p[k, i, j, 0]
-                        p[k, i, j, 1] = q[k, i, j, 1] - step_factor * p[k, i, j, 1]
-                        p[k, i, j, 2] = q[k, i, j, 2] - step_factor * p[k, i, j, 2]
+                        p[k, i, j, 0] = (q[k, i, j, 0] -
+                                         step_factor * p[k, i, j, 0])
+                        p[k, i, j, 1] = (q[k, i, j, 1] -
+                                         step_factor * p[k, i, j, 1])
+                        p[k, i, j, 2] = (q[k, i, j, 2] -
+                                         step_factor * p[k, i, j, 2])
 
             error /= (ns * nr * nc)
             iter_count += 1
@@ -1246,9 +1259,12 @@ def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
                     dkk = d[k, i, j, 0] + k
                     dii = d[k, i, j, 1] + i
                     djj = d[k, i, j, 2] + j
-                    d[k, i, j, 0] = _apply_affine_3d_x0(dkk, dii, djj, 1, affine) - k
-                    d[k, i, j, 1] = _apply_affine_3d_x1(dkk, dii, djj, 1, affine) - i
-                    d[k, i, j, 2] = _apply_affine_3d_x2(dkk, dii, djj, 1, affine) - j
+                    d[k, i, j, 0] = \
+                        _apply_affine_3d_x0(dkk, dii, djj, 1, affine) - k
+                    d[k, i, j, 1] = \
+                        _apply_affine_3d_x1(dkk, dii, djj, 1, affine) - i
+                    d[k, i, j, 2] = \
+                        _apply_affine_3d_x2(dkk, dii, djj, 1, affine) - j
 
 
 def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx, 
@@ -1416,11 +1432,12 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
 
 def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
     r"""
-    Up-samples the input 2-D displacement field by a factor of 2. The target shape
-    (the shape of the resulting up-sampled displacement field) must be specified
-    to ensure the resulting field has the required dimensions (the input field
-    might be the result of sub-sampling a larger array with odd or even
-    dimensions, which cannot be determined from the input dimensions alone).
+    Up-samples the input 2-D displacement field by a factor of 2. The target
+    shape (the shape of the resulting up-sampled displacement field) must be
+    specified to ensure the resulting field has the required dimensions (the
+    input field might be the result of sub-sampling a larger array with odd or
+    even dimensions, which cannot be determined from the input dimensions
+    alone).
 
     Parameters
     ----------
@@ -1454,11 +1471,12 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
 def upsample_displacement_field_3d(floating[:, :, :, :] field,
                                    int[:] target_shape):
     r"""
-    Up-samples the input 3-D displacement field by a factor of 2. The target shape
-    (the shape of the resulting up-sampled displacement field) must be specified
-    to ensure the resulting field has the required dimensions (the input field
-    might be the result of sub-sampling a larger array with odd or even
-    dimensions, which cannot be determined from the input dimensions alone).
+    Up-samples the input 3-D displacement field by a factor of 2. The target
+    shape (the shape of the resulting up-sampled displacement field) must be
+    specified to ensure the resulting field has the required dimensions (the
+    input field might be the result of sub-sampling a larger array with odd or
+    even dimensions, which cannot be determined from the input dimensions
+    alone).
 
     Parameters
     ----------
@@ -1489,7 +1507,8 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
                     dkk = 0.5 * k
                     dii = 0.5 * i
                     djj = 0.5 * j
-                    interpolate_vector_trilinear(field, dkk, dii, djj, up[k, i, j])
+                    interpolate_vector_trilinear(field, dkk, dii, djj, 
+                                                 up[k, i, j])
     return up
 
 
@@ -1522,7 +1541,8 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
                     dkk = 0.5 * k
                     dii = 0.5 * i
                     djj = 0.5 * j
-                    inside = interpolate_vector_trilinear(field, dkk, dii, djj, tmp)
+                    inside = interpolate_vector_trilinear(field, dkk, dii, djj,
+                                                          tmp)
                     if inside == 1:
                         up[k, i, j, 0] += tmp[0] 
                         up[k, i, j, 1] += tmp[1] 
@@ -1547,6 +1567,7 @@ def downsample_scalar_field3D(floating[:, :, :] field):
         the down-sampled displacement field, where S' = ceil(S/2), 
         R'= ceil(R/2), C'=ceil(C/2)
     """
+    ftype=np.asarray(field).dtype
     cdef:
         int ns = field.shape[0]
         int nr = field.shape[1]
@@ -1555,7 +1576,7 @@ def downsample_scalar_field3D(floating[:, :, :] field):
         int nnr = (nr + 1) // 2
         int nnc = (nc + 1) // 2
         int i, j, k, ii, jj, kk
-        floating[:, :, :] down = np.zeros((nns, nnr, nnc), dtype=np.asarray(field).dtype)
+        floating[:, :, :] down = np.zeros((nns, nnr, nnc), dtype=ftype)
         int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
 
     with nogil:
@@ -1577,9 +1598,9 @@ def downsample_scalar_field3D(floating[:, :, :] field):
 
 def downsample_displacement_field3D(floating[:, :, :, :] field):
     r"""
-    Down-samples the input vector field by a factor of 2. The value at each voxel
-    of the resulting volume is the average of its surrounding voxels in the
-    original volume.
+    Down-samples the input vector field by a factor of 2. The value at each
+    voxel of the resulting volume is the average of its surrounding voxels in
+    the original volume.
 
     Parameters
     ----------
@@ -1592,6 +1613,7 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
         the down-sampled displacement field, where S' = ceil(S/2), 
         R'= ceil(R/2), C'=ceil(C/2)
     """
+    ftype = np.asarray(field).dtype
     cdef:
         int ns = field.shape[0]
         int nr = field.shape[1]
@@ -1600,7 +1622,7 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
         int nnr = (nr + 1) // 2
         int nnc = (nc + 1) // 2
         int i, j, k, ii, jj, kk
-        floating[:, :, :, :] down = np.zeros((nns, nnr, nnc, 3), dtype=np.asarray(field).dtype)
+        floating[:, :, :, :] down = np.zeros((nns, nnr, nnc, 3), dtype=ftype)
         int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
 
     with nogil:
@@ -1641,13 +1663,14 @@ def downsample_scalar_field2D(floating[:, :] field):
     down : array, shape (R', C')
         the down-sampled displacement field, where R'= ceil(R/2), C'=ceil(C/2) 
     """
+    ftype = np.asarray(field).dtype
     cdef:
         int nr = field.shape[0]
         int nc = field.shape[1]
         int nnr = (nr + 1) // 2
         int nnc = (nc + 1) // 2
         int i, j, ii, jj
-        floating[:, :] down = np.zeros(shape=(nnr, nnc), dtype=np.asarray(field).dtype)
+        floating[:, :] down = np.zeros(shape=(nnr, nnc), dtype=ftype)
         int[:, :] cnt = np.zeros(shape=(nnr, nnc), dtype=np.int32)
     with nogil:
 
@@ -1666,8 +1689,8 @@ def downsample_scalar_field2D(floating[:, :] field):
 
 def downsample_displacement_field2D(floating[:, :, :] field):
     r"""
-    Down-samples the input vector field by a factor of 2. The value at each pixel
-    of the resulting field is the average of its surrounding pixels in the
+    Down-samples the input vector field by a factor of 2. The value at each
+    pixel of the resulting field is the average of its surrounding pixels in the
     original field.
 
     Parameters
@@ -1680,13 +1703,14 @@ def downsample_displacement_field2D(floating[:, :, :] field):
     down : array, shape (R', C')
         the down-sampled displacement field, where R'= ceil(R/2), C'=ceil(C/2), 
     """
+    ftype = np.asarray(field).dtype
     cdef:
         int nr = field.shape[0]
         int nc = field.shape[1]
         int nnr = (nr + 1) // 2
         int nnc = (nc + 1) // 2
         int i, j, ii, jj
-        floating[:, :, :] down = np.zeros((nnr, nnc, 2), dtype=np.asarray(field).dtype)
+        floating[:, :, :] down = np.zeros((nnr, nnc, 2), dtype=ftype)
         int[:, :] cnt = np.zeros((nnr, nnc), dtype=np.int32)
 
     with nogil:
@@ -1711,9 +1735,9 @@ def get_displacement_range(floating[:, :, :, :] d, double[:, :] affine):
     Computes the minimum and maximum values reached by the transformation
     defined by the given displacement field and affine pre-multiplication
     matrix. More precisely, computes $\max_{x\in L} x + d(Ax)$, and 
-    $\min_{x\in L} x + d(Ax)$, where d is the displacement field, A is the affine 
-    matrix, the interpolation used is tri-linear and the maximum and minimum are 
-    taken for each vector component independently.
+    $\min_{x\in L} x + d(Ax)$, where d is the displacement field, A is the
+    affine matrix, the interpolation used is tri-linear and the maximum and
+    minimum are taken for each vector component independently.
 
     Parameters
     ----------
@@ -1745,9 +1769,12 @@ def get_displacement_range(floating[:, :, :, :] d, double[:, :] affine):
             for i in range(nrows):
                 for j in range(ncols):
                     if(affine != None):
-                        dkk = _apply_affine_3d_x0(k, i, j, 1, affine) + d[k, i, j, 0]
-                        dii = _apply_affine_3d_x1(k, i, j, 1, affine) + d[k, i, j, 1]
-                        djj = _apply_affine_3d_x2(k, i, j, 1, affine) + d[k, i, j, 2]
+                        dkk = (_apply_affine_3d_x0(k, i, j, 1, affine) +
+                               d[k, i, j, 0])
+                        dii = (_apply_affine_3d_x1(k, i, j, 1, affine) +
+                               d[k, i, j, 1])
+                        djj = (_apply_affine_3d_x2(k, i, j, 1, affine) +
+                               d[k, i, j, 2])
                     else:
                         dkk = k + d[k, i, j, 0]
                         dii = i + d[k, i, j, 1]
@@ -1846,7 +1873,8 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                             k, i, j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
-                        inside = interpolate_vector_trilinear(d1, dk, di, dj, tmp)
+                        inside = interpolate_vector_trilinear(d1, dk, di, dj, 
+                                                              tmp)
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -1864,15 +1892,19 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = djj
                     
                     if affine_idx_out is not None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx_out)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx_out)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx_out)
+                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
+                                                       affine_idx_out)
+                        dii = di + _apply_affine_3d_x1(k, i, j, 1,
+                                                       affine_idx_out)
+                        djj = dj + _apply_affine_3d_x2(k, i, j, 1,
+                                                       affine_idx_out)
                     else:
                         dkk = dk + k
                         dii = di + i
                         djj = dj + j
 
-                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj, &warped[k,i,j])
+                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj,
+                                                          &warped[k,i,j])
     return warped
 
 
@@ -1931,7 +1963,8 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
                         dkk = k
                         dii = i
                         djj = j
-                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj, &warped[k,i,j])
+                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj,
+                                                          &warped[k,i,j])
     return warped
 
 
@@ -2020,7 +2053,8 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                             k, i, j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
-                        inside = interpolate_vector_trilinear(d1, dk, di, dj, tmp)
+                        inside = interpolate_vector_trilinear(d1, dk, di, dj, 
+                                                              tmp)
                         dkk = tmp[0]
                         dii = tmp[1]
                         djj = tmp[2]
@@ -2038,15 +2072,19 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dj = djj
                     
                     if affine_idx_out is not None:
-                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1, affine_idx_out)
-                        dii = di + _apply_affine_3d_x1(k, i, j, 1, affine_idx_out)
-                        djj = dj + _apply_affine_3d_x2(k, i, j, 1, affine_idx_out)
+                        dkk = dk + _apply_affine_3d_x0(k, i, j, 1,
+                                                       affine_idx_out)
+                        dii = di + _apply_affine_3d_x1(k, i, j, 1,
+                                                       affine_idx_out)
+                        djj = dj + _apply_affine_3d_x2(k, i, j, 1,
+                                                       affine_idx_out)
                     else:
                         dkk = dk + k
                         dii = di + i
                         djj = dj + j
 
-                    inside = interpolate_scalar_nn_3d(volume, dkk, dii, djj, &warped[k,i,j])
+                    inside = interpolate_scalar_nn_3d(volume, dkk, dii, djj,
+                                                      &warped[k,i,j])
     return warped
 
 
@@ -2106,7 +2144,8 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
                         dkk = k
                         dii = i
                         djj = j
-                    interpolate_scalar_nn_3d(volume, dkk, dii, djj, &warped[k,i,j])
+                    interpolate_scalar_nn_3d(volume, dkk, dii, djj,
+                                             &warped[k,i,j])
     return warped
 
 
@@ -2429,7 +2468,8 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
     return warped
 
 
-def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, int[:] target_shape):
+def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors,
+                                 int[:] target_shape):
     r"""
     Up-samples the discretization of the displacement fields to be of 
     target_shape shape.
@@ -2447,13 +2487,15 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, 
     expanded : array, shape = target_shape + (3, )
         the expanded displacement field
     """
+    ftype = np.asarray(field).dtype
     cdef:
         int tslices = target_shape[0]
         int trows = target_shape[1]
         int tcols = target_shape[2]
         int inside, k, i, j
         double dkk, dii, djj
-        floating[:, :, :, :] expanded = np.zeros((tslices, trows, tcols, 3), dtype=np.asarray(field).dtype)
+        floating[:, :, :, :] expanded = np.zeros((tslices, trows, tcols, 3),
+                                                 dtype=ftype)
 
     for k in range(tslices):
         for i in range(trows):
@@ -2461,10 +2503,12 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors, 
                 dkk = <double>k*factors[0]
                 dii = <double>i*factors[1]
                 djj = <double>j*factors[2]
-                interpolate_vector_trilinear(field, dkk, dii, djj, expanded[k, i, j])
+                interpolate_vector_trilinear(field, dkk, dii, djj,
+                                             expanded[k, i, j])
     return expanded
 
-def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int[:] target_shape):
+def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors,
+                                 int[:] target_shape):
     r"""
     Up-samples the discretization of the displacement fields to be of 
     target_shape shape.
@@ -2482,18 +2526,20 @@ def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors, int
     expanded : array, shape = target_shape + (2, )
         the expanded displacement field
     """
+    ftype = np.asarray(field).dtype
     cdef:
         int trows = target_shape[0]
         int tcols = target_shape[1]
         int inside, i, j
         double dii, djj
-        floating[:, :, :] expanded = np.zeros((trows, tcols, 2), dtype=np.asarray(field).dtype)
+        floating[:, :, :] expanded = np.zeros((trows, tcols, 2), dtype=ftype)
 
     for i in range(trows):
         for j in range(tcols):
             dii = i*factors[0]
             djj = j*factors[1]
-            inside = interpolate_vector_bilinear(field, dii, djj, expanded[i, j])
+            inside = interpolate_vector_bilinear(field, dii, djj,
+                                                 expanded[i, j])
     return expanded
 
 
@@ -2532,14 +2578,17 @@ def create_random_displacement_2d(int[:] from_shape,
     cdef:
         int i, j, ri, rj
         double di, dj, dii, djj
-        int[:,:,:] int_field = np.ndarray(tuple(from_shape) + (2,), dtype=np.int32)
-        double[:, :, :] output = np.zeros(tuple(from_shape) + (2,), dtype=np.float64)
+        int[:,:,:] int_field = np.ndarray(tuple(from_shape) + (2,), 
+                                          dtype=np.int32)
+        double[:, :, :] output = np.zeros(tuple(from_shape) + (2,),
+                                          dtype=np.float64)
         int dom_size = from_shape[0]*from_shape[1]
 
     #compute the actual displacement field in the physical space
     for i in range(from_shape[0]):
         for j in range(from_shape[1]):
-            #randomly choose where each input grid point will be mapped to in the target grid
+            #randomly choose where each input grid point will be mapped to in
+            #the target grid
             ri = np.random.randint(1, to_shape[0]-1)
             rj = np.random.randint(1, to_shape[1]-1)
             int_field[i, j, 0] = ri
@@ -2664,8 +2713,10 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine,
     cdef:
         int i, j, k, ri, rj, rk
         double di, dj, dii, djj
-        int[:,:,:,:] int_field = np.ndarray(tuple(from_shape) + (3,), dtype=np.int32)
-        double[:,:,:,:] output = np.zeros(tuple(from_shape) + (3,), dtype=np.float64)
+        int[:,:,:,:] int_field = np.ndarray(tuple(from_shape) + (3,),
+                                            dtype=np.int32)
+        double[:,:,:,:] output = np.zeros(tuple(from_shape) + (3,),
+                                          dtype=np.float64)
         int dom_size = from_shape[0]*from_shape[1]*from_shape[2]
 
     #compute the actual displacement field in the physical space
@@ -2700,8 +2751,8 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine,
                     dii = ri
                     djj = rj
 
-                #the displacement vector at (i,j) must be the target point minus the
-                #original point, both in physical space
+                #the displacement vector at (i,j) must be the target point minus
+                #the original point, both in physical space
 
                 output[k, i, j, 0] = dkk - dk
                 output[k, i, j, 1] = dii - di
@@ -2756,8 +2807,10 @@ def create_harmonic_fields_3d(int nslices, int nrows, int ncols,
         int mid_col = ncols / 2
         int i, j, k, ii, jj, kk
         double theta
-        double[:,:,:,:] d = np.zeros( (nslices, nrows, ncols, 3), dtype=np.float64)
-        double[:,:,:,:] inv = np.zeros( (nslices, nrows, ncols, 3), dtype=np.float64)
+        double[:,:,:,:] d = np.zeros((nslices, nrows, ncols, 3),
+                                     dtype=np.float64)
+        double[:,:,:,:] inv = np.zeros((nslices, nrows, ncols, 3),
+                                     dtype=np.float64)
     for k in range(nslices):
         for i in range(nrows):
             for j in range(ncols):

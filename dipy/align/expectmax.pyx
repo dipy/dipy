@@ -29,6 +29,7 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
     num_levels : int
         the number of levels
     """
+    ftype = np.asarray(v).dtype
     cdef:
         int nrows = v.shape[0]
         int ncols = v.shape[1]
@@ -39,7 +40,7 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
         double max_val = -1
         int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
         int[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
-        floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
+        floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
     num_levels -= 1  # zero is one of the levels
     if(num_levels < 1):
         return None, None, None
@@ -101,6 +102,7 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
     num_levels : int
         the number of levels
     """
+    ftype = np.asarray(v).dtype
     cdef:
         int nslices = v.shape[0]
         int nrows = v.shape[1]
@@ -111,8 +113,9 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
         double min_val = -1
         double max_val = -1
         int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
-        int[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols), dtype=np.int32)
-        floating[:] levels = np.zeros(shape=(num_levels,), dtype=np.asarray(v).dtype)
+        int[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols),
+                                    dtype=np.int32)
+        floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
     num_levels -= 1  # zero is one of the levels
     if(num_levels < 1):
         return None, None, None
@@ -191,6 +194,7 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
         int i, j
         double INF64 = np.inf
         int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
+        floating diff
         floating[:] means = np.zeros(shape=(numLabels,), dtype=ftype)
         floating[:] variances = np.zeros(shape=(numLabels, ), dtype=ftype)
 
@@ -206,7 +210,8 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
         for i in range(nrows):
             for j in range(ncols):
                 if(mask[i, j] != 0):
-                    variances[labels[i, j]] += (v[i, j] - means[labels[i, j]]) ** 2
+                    diff = v[i, j] - means[labels[i, j]]
+                    variances[labels[i, j]] += diff ** 2
 
         for i in range(numLabels):
             if(counts[i] > 1):
@@ -245,6 +250,7 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
         int ncols = v.shape[2]
         int i, j, k
         double INF64 = np.inf
+        floating diff
         int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
         floating[:] means = np.zeros(shape=(numLabels,), dtype=ftype)
         floating[:] variances = np.zeros(shape=(numLabels, ), dtype=ftype)
@@ -263,7 +269,8 @@ def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
             for i in range(nrows):
                 for j in range(ncols):
                     if(mask[k, i, j] != 0):
-                        variances[labels[k, i, j]] += (means[labels[k, i, j]] - v[k, i, j]) ** 2
+                        diff = means[labels[k, i, j]] - v[k, i, j]
+                        variances[labels[k, i, j]] += diff ** 2
         for i in range(numLabels):
             if(counts[i] > 1):
                 variances[i] /= counts[i]
@@ -291,9 +298,9 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         Diffeomorphic demons: efficient non-parametric image registration. 
         NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
 
-    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM algorithm,
-    while in the original version of diffeomorphic demons it is estimated by the
-    difference between the image values at each pixel.
+    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM
+    algorithm, while in the original version of diffeomorphic demons it is
+    estimated by the difference between the image values at each pixel.
 
     Parameters
     ----------
@@ -321,7 +328,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         int nr = delta_field.shape[0]
         int nc = delta_field.shape[1]
         int i, j
-        double neg_delta, sigma_sq_i, nrm2, energy
+        double neg_delta, sigma_sq_i, nrm2, energy, den, prod
 
     if out is None:
         out = np.zeros((nr, nc, 2), dtype=np.asarray(delta_field).dtype)
@@ -337,16 +344,21 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                 if(isinf(sigma_sq_i)):
                     out[i, j, 0], out[i, j, 1] = 0, 0 
                 else:
-                    nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
+                    nrm2 = (gradient_moving[i, j, 0]**2 +
+                            gradient_moving[i, j, 1]**2)
                     if(sigma_sq_i == 0):
                         if nrm2 == 0:
                             out[i, j, 0], out[i, j, 1] = 0, 0 
                         else:
-                            out[i, j, 0] = neg_delta * gradient_moving[i, j, 0] / nrm2
-                            out[i, j, 1] = neg_delta * gradient_moving[i, j, 1] / nrm2
-                    else: 
-                        out[i, j, 0] = sigma_sq_x * neg_delta * gradient_moving[i, j, 0]/(sigma_sq_x * nrm2 + sigma_sq_i)
-                        out[i, j, 1] = sigma_sq_x * neg_delta * gradient_moving[i, j, 1]/(sigma_sq_x * nrm2 + sigma_sq_i)
+                            out[i, j, 0] = (neg_delta *
+                                            gradient_moving[i, j, 0] / nrm2)
+                            out[i, j, 1] = (neg_delta *
+                                            gradient_moving[i, j, 1] / nrm2)
+                    else:
+                        den = (sigma_sq_x * nrm2 + sigma_sq_i)
+                        prod = sigma_sq_x * neg_delta
+                        out[i, j, 0] = prod * gradient_moving[i, j, 0] / den
+                        out[i, j, 1] = prod * gradient_moving[i, j, 1] / den
     return out, energy
 
 @cython.boundscheck(False)
@@ -369,24 +381,24 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         Diffeomorphic demons: efficient non-parametric image registration. 
         NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
 
-    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM algorithm,
-    while in the original version of diffeomorphic demons it is estimated by the
-    difference between the image values at each pixel.
+    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM
+    algorithm, while in the original version of diffeomorphic demons it is
+    estimated by the difference between the image values at each pixel.
     
     Parameters
     ----------
     delta_field : array, shape(S, R, C)
         contains, at each pixel, the difference between the moving image (warped 
         under the current deformation s ) J and the static image I:
-        delta_field[k,i,j] = J(s(k,i,j)) - I(k,i,j). The order is important, changing
-        to delta_field[k,i,j] = I(k,i,j) - J(s(k,i,j)) yields the backward demons step
-        warping the static image towards the moving, which may not be the
-        intended behavior unless the 'gradient_moving' passed corresponds to
-        the gradient of the static image
+        delta_field[k,i,j] = J(s(k,i,j)) - I(k,i,j). The order is important,
+        changing to delta_field[k,i,j] = I(k,i,j) - J(s(k,i,j)) yields the
+        backward demons step warping the static image towards the moving, which
+        may not be the intended behavior unless the 'gradient_moving' passed
+        corresponds to the gradient of the static image
     sigma_sq_field : array, shape(S, R, C)
-        contains, at each pixel (k, i, j), the estimated variance (not std) of the
-        hidden variable associated to the intensity at static[k,i,j] (which must 
-        have been previously quantized)
+        contains, at each pixel (k, i, j), the estimated variance (not std) of
+        the hidden variable associated to the intensity at static[k,i,j] (which
+        must have been previously quantized)
     gradient_moving : array, shape(S, R, C, 2)
         the gradient of the moving image
     sigma_sq_x : float
@@ -400,7 +412,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         int nr = delta_field.shape[1]
         int nc = delta_field.shape[2]
         int i, j, k
-        double neg_delta, sigma_sq_i, nrm2, energy
+        double neg_delta, sigma_sq_i, nrm2, energy, den
 
     if out is None:
         out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(delta_field).dtype)
@@ -415,18 +427,31 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                     neg_delta = -1 * delta_field[k,i,j]
                     energy += (neg_delta**2)
                     if(isinf(sigma_sq_i)):
-                        out[k, i, j, 0], out[k, i, j, 1], out[k, i, j, 2]  = 0, 0, 0
+                        out[k, i, j, 0] = 0
+                        out[k, i, j, 1] = 0
+                        out[k, i, j, 2] = 0
                     else:
-                        nrm2 = gradient_moving[k, i, j, 0]**2 + gradient_moving[k, i, j, 1]**2 + gradient_moving[k, i, j, 2]**2
+                        nrm2 = (gradient_moving[k, i, j, 0]**2 +
+                                gradient_moving[k, i, j, 1]**2 +
+                                gradient_moving[k, i, j, 2]**2)
                         if(sigma_sq_i == 0):
                             if nrm2 == 0:
-                                out[k, i, j, 0], out[k, i, j, 1], out[k, i, j, 2] = 0, 0, 0 
+                                out[k, i, j, 0] = 0
+                                out[k, i, j, 1] = 0
+                                out[k, i, j, 2] = 0
                             else:
-                                out[k, i, j, 0] = neg_delta * gradient_moving[k, i, j, 0] / nrm2
-                                out[k, i, j, 1] = neg_delta * gradient_moving[k, i, j, 1] / nrm2
-                                out[k, i, j, 2] = neg_delta * gradient_moving[k, i, j, 2] / nrm2
+                                out[k, i, j, 0] = (neg_delta * 
+                                    gradient_moving[k, i, j, 0] / nrm2)
+                                out[k, i, j, 1] = (neg_delta *
+                                    gradient_moving[k, i, j, 1] / nrm2)
+                                out[k, i, j, 2] = (neg_delta *
+                                    gradient_moving[k, i, j, 2] / nrm2)
                         else: 
-                            out[k, i, j, 0] = sigma_sq_x * neg_delta * gradient_moving[k, i, j, 0]/(sigma_sq_x * nrm2 + sigma_sq_i)
-                            out[k, i, j, 1] = sigma_sq_x * neg_delta * gradient_moving[k, i, j, 1]/(sigma_sq_x * nrm2 + sigma_sq_i)
-                            out[k, i, j, 2] = sigma_sq_x * neg_delta * gradient_moving[k, i, j, 2]/(sigma_sq_x * nrm2 + sigma_sq_i)
+                            den = (sigma_sq_x * nrm2 + sigma_sq_i)
+                            out[k, i, j, 0] = (sigma_sq_x * neg_delta *
+                                gradient_moving[k, i, j, 0] / den)
+                            out[k, i, j, 1] = (sigma_sq_x * neg_delta *
+                                gradient_moving[k, i, j, 1] / den)
+                            out[k, i, j, 2] = (sigma_sq_x * neg_delta *
+                                gradient_moving[k, i, j, 2] / den)
     return out, energy

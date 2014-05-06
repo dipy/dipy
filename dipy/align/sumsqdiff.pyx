@@ -10,7 +10,8 @@ cdef extern from "math.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y, double det,
+cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y, 
+                                                 double det,
                                                  double[:] out) nogil:
     r"""
     Solves the symmetric positive-definite linear system Mx = y given by
@@ -37,6 +38,8 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y, doubl
 cdef void solve3DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
                                                  double[:] out) nogil:
     r"""
+    THIS FUNCTION IS DEPRECATED: NOW USING solve_3d_semi_positive_definite
+
     Solves the symmetric positive-definite linear system Mx = y given by
     M=[[A[0], A[1], A[2]],
        [A[1], A[3], A[4]],
@@ -61,7 +64,8 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
         double f = (a * A[5] - c * c) / a - (e * e * a) / (a * A[3] - b * b)
         double y0 = y[0]
         double y1 = (y[1] * a - y0 * b) / a
-        double y2 = (y[2] * a - c * y0) / a - (e * (y[1] * a - b * y0)) / (a * A[3] - b * b)
+        double y2 = ((y[2] * a - c * y0) / a - 
+                     (e * (y[1] * a - b * y0)) / (a * A[3] - b * b))
     out[2] = y2 / f
     out[1] = (y1 - e * out[2]) / d
     out[0] = (y0 - b * out[1] - c * out[2]) / a
@@ -73,7 +77,7 @@ cdef void solve3DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
 cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
                                          double[:] out) nogil:
     r"""
-    Solves the symmetric positive-definite linear system Mx = y given by
+    Solves the symmetric semi-positive-definite linear system Mx = y given by
     M = (g*g^{T} + tau*I)
     Returns the result in out.
 
@@ -118,12 +122,10 @@ cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_field,
-                                                       floating[:, :] sigma_field,
-                                                       floating[:, :, :] gradient_field,
-                                                       floating[:, :, :] target,
-                                                       double lambda_param,
-                                                       floating[:, :, :] displacement_field):
+cpdef double iterate_residual_displacement_field_SSD2D(
+                floating[:, :] delta_field, floating[:, :] sigma_field,
+                floating[:, :, :] grad, floating[:, :, :] target,
+                double lambda_param, floating[:, :, :] displacement_field):
     r"""
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
     solver proposed by Bruhn and Weickert[1].
@@ -141,7 +143,7 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
         the variance of the gray level value at each voxel, according to the 
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
-    gradient_field : array, shape (R, C, 2)
+    grad : array, shape (R, C, 2)
         the gradient of the moving image
     target : array, shape (R, C, 2)
         right-hand side of the linear system to be solved in the Weickert's
@@ -180,8 +182,8 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
                 delta = delta_field[r, c]
                 sigma = sigma_field[r, c] if sigma_field != None else 1
                 if(target == None):
-                    b[0] = delta_field[r, c] * gradient_field[r, c, 0]
-                    b[1] = delta_field[r, c] * gradient_field[r, c, 1]
+                    b[0] = delta_field[r, c] * grad[r, c, 0]
+                    b[1] = delta_field[r, c] * grad[r, c, 1]
                 else:
                     b[0] = target[r, c, 0]
                     b[1] = target[r, c, 1]
@@ -208,13 +210,13 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
                     if(max_displacement < opt):
                         max_displacement = opt
                 else:
-                    A[0] = gradient_field[r, c, 0] ** 2 + sigma * lambda_param * nn
-                    A[1] = gradient_field[r, c, 0] * gradient_field[r, c, 1]
-                    A[2] = gradient_field[r, c, 1] ** 2 + sigma * lambda_param * nn
+                    A[0] = grad[r, c, 0] ** 2 + sigma * lambda_param * nn
+                    A[1] = grad[r, c, 0] * grad[r, c, 1]
+                    A[2] = grad[r, c, 1] ** 2 + sigma * lambda_param * nn
                     det = A[0] * A[2] - A[1] * A[1]
                     if(det < 1e-9):
-                        nrm2 = (gradient_field[r, c, 0] ** 2 +
-                                gradient_field[r, c, 1] ** 2)
+                        nrm2 = (grad[r, c, 0] ** 2 +
+                                grad[r, c, 1] ** 2)
                         if(nrm2 < 1e-9):
                             displacement_field[r, c, 0] = 0
                             displacement_field[r, c, 1] = 0                        
@@ -239,7 +241,7 @@ cpdef double iterate_residual_displacement_field_SSD2D(floating[:, :] delta_fiel
 @cython.wraparound(False)
 cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
                                   floating[:, :] sigma_field,
-                                  floating[:, :, :] gradient_field,
+                                  floating[:, :, :] grad,
                                   double lambda_param,
                                   floating[:, :, :] displacement_field):
     r"""
@@ -255,7 +257,7 @@ cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
         the variance of the gray level value at each voxel, according to the 
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
-    gradient_field : array, shape (R, C, 2)
+    grad : array, shape (R, C, 2)
         the gradient of the moving image
     lambda_param : float
         smoothness parameter of the objective function
@@ -288,12 +290,10 @@ cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
-                                                       floating[:, :, :] sigma_field,
-                                                       floating[:, :, :, :] gradient_field,
-                                                       floating[:, :, :, :] target,
-                                                       double lambda_param,
-                                                       floating[:, :, :, :] displacement_field):
+cpdef double iterate_residual_displacement_field_SSD3D(
+                floating[:, :, :] delta_field, floating[:, :, :] sigma_field,
+                floating[:, :, :, :] grad, floating[:, :, :, :] target,
+                double lambda_param, floating[:, :, :, :] disp):
     r"""
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
     solver proposed by Bruhn and Weickert[1].
@@ -311,14 +311,14 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         the variance of the gray level value at each voxel, according to the 
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
-    gradient_field : array, shape (S, R, C, 3)
+    grad : array, shape (S, R, C, 3)
         the gradient of the moving image
     target : array, shape (S, R, C, 3)
         right-hand side of the linear system to be solved in the Weickert's
         multi-resolution algorithm
     lambda_param : float
         smoothness parameter of the objective function
-    displacement_field : array, shape (S, R, C, 3)
+    disp : array, shape (S, R, C, 3)
         the displacement field to start the optimization from
 
     Returns
@@ -351,9 +351,9 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
         for s in range(nslices):
             for r in range(nrows):
                 for c in range(ncols):
-                    g[0] = gradient_field[s, r, c, 0]
-                    g[1] = gradient_field[s, r, c, 1]
-                    g[2] = gradient_field[s, r, c, 2]
+                    g[0] = grad[s, r, c, 0]
+                    g[1] = grad[s, r, c, 1]
+                    g[2] = grad[s, r, c, 2]
                     delta = delta_field[s, r, c]
                     sigma = sigma_field[s, r, c] if sigma_field != None else 1
                     if(target == None):
@@ -379,54 +379,55 @@ cpdef double iterate_residual_displacement_field_SSD3D(floating[:, :, :] delta_f
                         if((dc < 0) or (dc >= ncols)):
                             continue
                         nn += 1
-                        y[0] += displacement_field[ds, dr, dc, 0]
-                        y[1] += displacement_field[ds, dr, dc, 1]
-                        y[2] += displacement_field[ds, dr, dc, 2]
+                        y[0] += disp[ds, dr, dc, 0]
+                        y[1] += disp[ds, dr, dc, 1]
+                        y[2] += disp[ds, dr, dc, 2]
                     if(isinf(sigma)):
-                        xx = displacement_field[s, r, c, 0]
-                        yy = displacement_field[s, r, c, 1]
-                        zz = displacement_field[s, r, c, 2]
-                        displacement_field[s, r, c, 0] = y[0] / nn
-                        displacement_field[s, r, c, 1] = y[1] / nn
-                        displacement_field[s, r, c, 2] = y[2] / nn
-                        xx -= displacement_field[s, r, c, 0]
-                        yy -= displacement_field[s, r, c, 1]
-                        zz -= displacement_field[s, r, c, 2]
+                        xx = disp[s, r, c, 0]
+                        yy = disp[s, r, c, 1]
+                        zz = disp[s, r, c, 2]
+                        disp[s, r, c, 0] = y[0] / nn
+                        disp[s, r, c, 1] = y[1] / nn
+                        disp[s, r, c, 2] = y[2] / nn
+                        xx -= disp[s, r, c, 0]
+                        yy -= disp[s, r, c, 1]
+                        zz -= disp[s, r, c, 2]
                         opt = xx * xx + yy * yy + zz * zz
                         if(max_displacement < opt):
                             max_displacement = opt
                     elif(sigma < 1e-9):
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
                             if(nrm2 < 1e-9):                                
-                                displacement_field[s, r, c, 0] = 0
-                                displacement_field[s, r, c, 1] = 0
-                                displacement_field[s, r, c, 2] = 0
+                                disp[s, r, c, 0] = 0
+                                disp[s, r, c, 1] = 0
+                                disp[s, r, c, 2] = 0
                             else:
-                                displacement_field[s, r, c, 0] = (b[0]) / nrm2
-                                displacement_field[s, r, c, 1] = (b[1]) / nrm2
-                                displacement_field[s, r, c, 2] = (b[2]) / nrm2
+                                disp[s, r, c, 0] = (b[0]) / nrm2
+                                disp[s, r, c, 1] = (b[1]) / nrm2
+                                disp[s, r, c, 2] = (b[2]) / nrm2
                     else:
                         tau = sigma * lambda_param * nn
                         y[0] = b[0] + sigma * lambda_param * y[0]
                         y[1] = b[1] + sigma * lambda_param * y[1]
                         y[2] = b[2] + sigma * lambda_param * y[2]
-                        is_singular = solve_3d_semi_positive_definite(g, y, tau, d)
+                        is_singular = solve_3d_semi_positive_definite(g, y, 
+                                                                      tau, d)
                         if is_singular == 1:
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
                             if(nrm2 < 1e-9):
-                                displacement_field[s, r, c, 0] = 0
-                                displacement_field[s, r, c, 1] = 0
-                                displacement_field[s, r, c, 2] = 0
+                                disp[s, r, c, 0] = 0
+                                disp[s, r, c, 1] = 0
+                                disp[s, r, c, 2] = 0
                             else:
-                                displacement_field[s, r, c, 0] = (b[0]) / nrm2
-                                displacement_field[s, r, c, 1] = (b[1]) / nrm2
-                                displacement_field[s, r, c, 2] = (b[2]) / nrm2
-                        xx = displacement_field[s, r, c, 0] - d[0] 
-                        yy = displacement_field[s, r, c, 1] - d[1]
-                        zz = displacement_field[s, r, c, 2] - d[2]
-                        displacement_field[s, r, c, 0] = d[0]
-                        displacement_field[s, r, c, 1] = d[1]
-                        displacement_field[s, r, c, 2] = d[2]
+                                disp[s, r, c, 0] = (b[0]) / nrm2
+                                disp[s, r, c, 1] = (b[1]) / nrm2
+                                disp[s, r, c, 2] = (b[2]) / nrm2
+                        xx = disp[s, r, c, 0] - d[0] 
+                        yy = disp[s, r, c, 1] - d[1]
+                        zz = disp[s, r, c, 2] - d[2]
+                        disp[s, r, c, 0] = d[0]
+                        disp[s, r, c, 1] = d[1]
+                        disp[s, r, c, 2] = d[2]
                         opt = xx * xx + yy * yy + zz * zz
                         if(max_displacement < opt):
                             max_displacement = opt
@@ -486,16 +487,14 @@ cpdef double compute_energy_SSD3D(floating[:, :, :] delta_field,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
-                                              floating[:, :, :] sigma_field,
-                                              floating[:, :, :, :] gradient_field,
-                                              floating[:, :, :, :] target,
-                                              double lambda_param,
-                                              floating[:, :, :, :] displacement_field,
-                                              floating[:, :, :, :] residual):
+def compute_residual_displacement_field_SSD3D(
+        floating[:, :, :] delta_field, floating[:, :, :] sigma_field,
+        floating[:, :, :, :] gradient_field, floating[:, :, :, :] target,
+        double lambda_param, floating[:, :, :, :] disp,
+        floating[:, :, :, :] residual):
     r"""
     Computes the residual displacement field corresponding to the current 
-    displacement field (given by 'displacement_field') in the Multi-resolution 
+    displacement field (given by 'disp') in the Multi-resolution 
     Gauss-Seidel solver proposed by Bruhn and Weickert[1].
     
     [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
@@ -518,7 +517,7 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
         multi-resolution algorithm
     lambda_param : float
         smoothness parameter in the objective function
-    displacement_field : array, shape (S, R, C, 3)
+    disp : array, shape (S, R, C, 3)
         the current displacement field to compute the residual from
     residual : array, shape (S, R, C, 3)
         the displacement field to put the residual to
@@ -568,20 +567,17 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
                     dc = c + dCol[k]
                     if((dc < 0) or (dc >= ncols)):
                         continue
-                    y[0] += (displacement_field[s, r, c, 0] -
-                             displacement_field[ds, dr, dc, 0])
-                    y[1] += (displacement_field[s, r, c, 1] -
-                             displacement_field[ds, dr, dc, 1])
-                    y[2] += (displacement_field[s, r, c, 2] -
-                             displacement_field[ds, dr, dc, 2])
+                    y[0] += (disp[s, r, c, 0] - disp[ds, dr, dc, 0])
+                    y[1] += (disp[s, r, c, 1] - disp[ds, dr, dc, 1])
+                    y[2] += (disp[s, r, c, 2] - disp[ds, dr, dc, 2])
                 if(isinf(sigma)):
                     residual[s, r, c, 0] = -lambda_param * y[0]
                     residual[s, r, c, 1] = -lambda_param * y[1]
                     residual[s, r, c, 2] = -lambda_param * y[2]
                 else:
-                    dotP = (gradient_field[s, r, c, 0] * displacement_field[s, r, c, 0] +
-                           gradient_field[s, r, c, 1] * displacement_field[s, r, c, 1] +
-                           gradient_field[s, r, c, 2] * displacement_field[s, r, c, 2])
+                    dotP = (gradient_field[s, r, c, 0] * disp[s, r, c, 0] +
+                            gradient_field[s, r, c, 1] * disp[s, r, c, 1] +
+                            gradient_field[s, r, c, 2] * disp[s, r, c, 2])
                     residual[s, r, c, 0] = (b[0] -
                                             (gradient_field[s, r, c, 0] * dotP +
                                              sigma * lambda_param * y[0]))
@@ -596,13 +592,11 @@ def compute_residual_displacement_field_SSD3D(floating[:, :, :] delta_field,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef compute_residual_displacement_field_SSD2D(floating[:, :] delta_field,
-                                                floating[:, :] sigma_field,
-                                                floating[:, :, :] gradient_field,
-                                                floating[:, :, :] target,
-                                                double lambda_param,
-                                                floating[:, :, :] displacement_field,
-                                                floating[:, :, :] residual):
+cpdef compute_residual_displacement_field_SSD2D(
+        floating[:, :] delta_field, floating[:, :] sigma_field,
+        floating[:, :, :] gradient_field, floating[:, :, :] target,
+        double lambda_param, floating[:, :, :] displacement_field,
+        floating[:, :, :] residual):
     r"""
     Computes the residual displacement field corresponding to the current 
     displacement field in the Multi-resolution Gauss-Seidel solver proposed by 
@@ -720,7 +714,8 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
     Returns
     -------
     demons_step:
-        the demons step to be applied for updating the current displacement field
+        the demons step to be applied for updating the current displacement
+        field
     """
     cdef:
         int nr = delta_field.shape[0]
@@ -782,7 +777,8 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
     Returns
     -------
     demons_step:
-        the demons step to be applied for updating the current displacement field
+        the demons step to be applied for updating the current displacement
+        field
     """
     cdef:
         int ns = delta_field.shape[0]
@@ -812,8 +808,11 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                         out[k, i, j, 1] = 0
                         out[k, i, j, 2] = 0
                     else: 
-                        out[k, i, j, 0] = neg_delta * gradient_moving[k, i, j, 0] / den
-                        out[k, i, j, 1] = neg_delta * gradient_moving[k, i, j, 1] / den
-                        out[k, i, j, 2] = neg_delta * gradient_moving[k, i, j, 2] / den
+                        out[k, i, j, 0] = (neg_delta *
+                                           gradient_moving[k, i, j, 0] / den)
+                        out[k, i, j, 1] = (neg_delta *
+                                           gradient_moving[k, i, j, 1] / den)
+                        out[k, i, j, 2] = (neg_delta *
+                                           gradient_moving[k, i, j, 2] / den)
 
     return out, energy

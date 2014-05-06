@@ -68,7 +68,8 @@ class SimilarityMetric(object):
         """
         self.levels_above = levels
 
-    def set_static_image(self, static_image, static_affine, static_spacing, static_direction):
+    def set_static_image(self, static_image, static_affine, static_spacing,
+                         static_direction):
         r"""
         Sets the static image. The default behavior (of this abstract class) is
         simply to assign the reference to an attribute, but 
@@ -120,7 +121,8 @@ class SimilarityMetric(object):
         """
         pass
 
-    def set_moving_image(self, moving_image, moving_affine, moving_spacing, moving_direction):
+    def set_moving_image(self, moving_image, moving_affine, moving_spacing,
+                         moving_direction):
         r"""
         Sets the moving image. The default behavior (of this abstract class) is
         simply to assign the reference to an attribute, but 
@@ -176,8 +178,8 @@ class SimilarityMetric(object):
     @abc.abstractmethod
     def initialize_iteration(self):
         """
-        This method will be called before any compute_forward or compute_backward
-        call, this allows the Metric to pre-compute any useful
+        This method will be called before any compute_forward or
+        compute_backward call, this allows the Metric to pre-compute any useful
         information for speeding up the update computations. This initialization
         was needed in ANTS because the updates are called once per voxel. In
         Python this is unpractical, though.
@@ -260,27 +262,27 @@ class CCMetric(SimilarityMetric):
         
         self.gradient_moving = np.empty(
             shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
-        i = 0
-        for grad in sp.gradient(self.moving_image):
+        for i, grad in enumerate(sp.gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
-            i += 1
+
         #Convert the moving image's gradient field from voxel to physical space
         if self.moving_spacing is not None:
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
-            self.reorient_vector_field(self.gradient_moving, self.moving_direction)
+            self.reorient_vector_field(self.gradient_moving, 
+                                       self.moving_direction)
 
         self.gradient_static = np.empty(
             shape=(self.static_image.shape)+(self.dim,), dtype=floating)
-        i = 0
-        for grad in sp.gradient(self.static_image):
+        for i, grad in enumerate(sp.gradient(self.static_image)):
             self.gradient_static[..., i] = grad
-            i += 1
+
         #Convert the moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
-            self.reorient_vector_field(self.gradient_static, self.static_direction)
+            self.reorient_vector_field(self.gradient_static, 
+                                       self.static_direction)
 
     def free_iteration(self):
         r"""
@@ -295,15 +297,12 @@ class CCMetric(SimilarityMetric):
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
         """
-        displacement, self.energy=self.compute_forward_step(self.gradient_static,
-                                      self.gradient_moving,
-                                      self.factors)
+        displacement, self.energy = self.compute_forward_step(
+            self.gradient_static, self.gradient_moving, self.factors)
         displacement=np.array(displacement)
-        i = 0
-        while i < self.dim:
-            displacement[..., i] = ndimage.filters.gaussian_filter(displacement[..., i],
-                                                                   self.sigma_diff)
-            i+=1
+        for i in range(self.dim):
+            displacement[..., i] = ndimage.filters.gaussian_filter(
+                                        displacement[..., i], self.sigma_diff)
         return displacement
 
     def compute_backward(self):
@@ -315,11 +314,9 @@ class CCMetric(SimilarityMetric):
                                       self.gradient_moving,
                                       self.factors)
         displacement=np.array(displacement)
-        i=0
-        while i < self.dim:
-            displacement[..., i] = ndimage.filters.gaussian_filter(displacement[..., i],
-                                                                   self.sigma_diff)
-            i+=1
+        for i in range(self.dim):
+            displacement[..., i] = ndimage.filters.gaussian_filter(
+                                        displacement[..., i], self.sigma_diff)
         return displacement
 
 
@@ -341,9 +338,10 @@ class EMMetric(SimilarityMetric):
                  iter_type='gauss_newton'):
         r"""
         Expectation-Maximization Metric
-        Similarity metric based on the Expectation-Maximization algorithm to handle
-        multi-modal images. The transfer function is modeled as a set of hidden
-        random variables that are estimated at each iteration of the algorithm.
+        Similarity metric based on the Expectation-Maximization algorithm to
+        handle multi-modal images. The transfer function is modeled as a set of
+        hidden random variables that are estimated at each iteration of the
+        algorithm.
 
         Parameters
         ----------
@@ -361,9 +359,9 @@ class EMMetric(SimilarityMetric):
             variables in the EM algorithm)
         double_gradient : boolean
             if True, the gradient of the expected static image under the moving 
-            modality will be added to the gradient of the moving image, similarly,
-            the gradient of the expected moving image under the static modality
-            will be added to the gradient of the static image.
+            modality will be added to the gradient of the moving image,
+            similarly, the gradient of the expected moving image under the
+            static modality will be added to the gradient of the static image.
         iter_type : string ('gauss_newton', 'demons')
             the optimization schedule to be used in the multi-resolution 
             Gauss-Seidel optimization algorithm (not used if Demons Step is
@@ -431,27 +429,29 @@ class EMMetric(SimilarityMetric):
 
         self.gradient_moving = np.empty(
             shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
-        i = 0
-        for grad in sp.gradient(self.moving_image):
+
+        for i, grad in enumerate(sp.gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
-            i += 1
+
         #Convert the moving image's gradient field from voxel to physical space
         if self.moving_spacing is not None:    
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
-            self.reorient_vector_field(self.gradient_moving, self.moving_direction)
+            self.reorient_vector_field(self.gradient_moving,
+                                       self.moving_direction)
 
         self.gradient_static = np.empty(
             shape=(self.static_image.shape)+(self.dim,), dtype=floating)
-        i = 0
-        for grad in sp.gradient(self.static_image):
+
+        for i, grad in enumerate(sp.gradient(self.static_image)):
             self.gradient_static[..., i] = grad
-            i += 1
+
         #Convert the moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
-            self.reorient_vector_field(self.gradient_static, self.static_direction)
+            self.reorient_vector_field(self.gradient_static,
+                                       self.static_direction)
 
         movingq, self.movingq_levels, hist = self.quantize(self.moving_image,
                                                            self.q_levels)
@@ -465,14 +465,11 @@ class EMMetric(SimilarityMetric):
         self.movingq_sigma_sq_field = movingq_variances[movingq]
         self.movingq_means_field = movingq_means[movingq]
         if self.use_double_gradient:
-            i = 0
-            for grad in sp.gradient(self.staticq_means_field):
+            for i, grad in enumerate(sp.gradient(self.staticq_means_field)):
                 self.gradient_moving[..., i] += grad
-                i += 1
-            i = 0
-            for grad in sp.gradient(self.movingq_means_field):
+
+            for i, grad in enumerate(sp.gradient(self.movingq_means_field)):
                 self.gradient_static[..., i] += grad
-                i += 1
 
     def free_iteration(self):
         r"""
@@ -539,7 +536,8 @@ class EMMetric(SimilarityMetric):
             delta = self.movingq_means_field - self.static_image
             sigma_sq_field = self.movingq_sigma_sq_field
         
-        displacement = np.zeros(shape=(reference_shape)+(self.dim,), dtype=floating)
+        displacement = np.zeros(shape=(reference_shape)+(self.dim,),
+                                dtype=floating)
 
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below,
@@ -625,7 +623,8 @@ class EMMetric(SimilarityMetric):
             generated, the current static image is the one that was provided 
             via 'set_static_image(...)', which may not be the same as the
             original static image but a warped version of it (even the static 
-            image changes during Symmetric Normalization, not only the moving one).
+            image changes during Symmetric Normalization, not only the moving
+            one).
         transformation : DiffeomorphicMap object
             the transformation that was applied to the original_static_image 
             to generate the current static image
@@ -633,7 +632,8 @@ class EMMetric(SimilarityMetric):
         self.static_image_mask = (original_static_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.static_image_mask = transformation.transform(self.static_image_mask,'nn')
+        self.static_image_mask = \
+            transformation.transform(self.static_image_mask,'nn')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""
@@ -655,15 +655,16 @@ class EMMetric(SimilarityMetric):
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
             return
-        self.moving_image_mask = transformation.transform(self.moving_image_mask,'nn')
+        self.moving_image_mask = \
+            transformation.transform(self.moving_image_mask,'nn')
 
 
 class SSDMetric(SimilarityMetric):
 
     def __init__(self, dim, smooth=4, inner_iter=10, step_type='demons'):
         r"""
-        Similarity metric for (mono-modal) nonlinear image registration defined by
-        the sum of squared differences (SSD)
+        Similarity metric for (mono-modal) nonlinear image registration defined
+        by the sum of squared differences (SSD)
 
         Parameters
         ----------
@@ -678,8 +679,8 @@ class SSDMetric(SimilarityMetric):
             number of steps per Gaussian Pyramid level, that parameter must
             be set for the optimizer, not the metric) 
         step_type : string
-            the displacement field step to be computed when 'compute_forward' and
-            'compute_backward' are called. Either 'demons' or 'gauss_newton'.
+            the displacement field step to be computed when 'compute_forward'
+            and 'compute_backward' are called. Either 'demons' or 'gauss_newton'
             
         """
         super(SSDMetric, self).__init__(dim)
@@ -712,27 +713,27 @@ class SSDMetric(SimilarityMetric):
         """
         self.gradient_moving = np.empty(
             shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
-        i = 0
-        for grad in gradient(self.moving_image):
+        for i, grad in enumerate(gradient(self.moving_image)):
             self.gradient_moving[..., i] = grad
-            i += 1
+
         #Convert the static image's gradient field from voxel to physical space
         if self.moving_spacing is not None:    
             self.gradient_moving /= self.moving_spacing
         if self.moving_direction is not None:
-            self.reorient_vector_field(self.gradient_moving, self.moving_direction)
+            self.reorient_vector_field(self.gradient_moving,
+                                       self.moving_direction)
 
         self.gradient_static = np.empty(
             shape=(self.static_image.shape)+(self.dim,), dtype=floating)
-        i = 0
-        for grad in gradient(self.static_image):
+        for i, grad in enumerate(gradient(self.static_image)):
             self.gradient_static[..., i] = grad
-            i += 1
+
         #Convert the moving image's gradient field from voxel to physical space
         if self.static_spacing is not None:
             self.gradient_static /= self.static_spacing
         if self.static_direction is not None:
-            self.reorient_vector_field(self.gradient_static, self.static_direction)
+            self.reorient_vector_field(self.gradient_static,
+                                       self.static_direction)
 
     def compute_forward(self):
         r"""
@@ -771,7 +772,8 @@ class SSDMetric(SimilarityMetric):
             gradient = self.gradient_moving
             delta_field = self.moving_image - self.static_image
  
-        displacement = np.zeros(shape=(reference_shape)+(self.dim,), dtype=floating)
+        displacement = np.zeros(shape=(reference_shape)+(self.dim,),
+                                dtype=floating)
 
         if self.dim == 2:
             self.energy = v_cycle_2d(self.levels_below, self.inner_iter, 
@@ -847,10 +849,10 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
              lambda_param, displacement, depth=0):
     r"""
     Multi-resolution Gauss-Seidel solver: solves the Gauss-Newton linear system
-    by first filtering (GS-iterate) the current level, then solves for the residual
-    at a coarser resolution and finally refines the solution at the current
-    resolution. This scheme corresponds to the V-cycle proposed by Bruhn and
-    Weickert[1].
+    by first filtering (GS-iterate) the current level, then solves for the
+    residual at a coarser resolution and finally refines the solution at the
+    current resolution. This scheme corresponds to the V-cycle proposed by Bruhn
+    and Weickert[1].
     [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
         combining highest accuracy with real-time performance",
         10th IEEE International Conference on Computer Vision, 2005. ICCV 2005.
@@ -887,9 +889,12 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     """
     #pre-smoothing
     for i in range(k):
-        ssd.iterate_residual_displacement_field_SSD2D(delta_field, sigma_sq_field,
-                                                      gradient_field, target,
-                                                      lambda_param, displacement)
+        ssd.iterate_residual_displacement_field_SSD2D(delta_field,
+                                                      sigma_sq_field,
+                                                      gradient_field,
+                                                      target,
+                                                      lambda_param,
+                                                      displacement)
     if n == 0:
         energy = ssd.compute_energy_SSD2D(delta_field, sigma_sq_field, 
                                           gradient_field, lambda_param, 
