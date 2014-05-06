@@ -1026,7 +1026,7 @@ class DiffeomorphicRegistration(object):
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     def __init__(self,
-                 metric=None,
+                 metric,
                  opt_iter=[25, 100, 100],
                  step_length=0.25,
                  ss_sigma_factor=0.2,
@@ -1068,6 +1068,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             function passing self as parameter)
         """
         super(SymmetricDiffeomorphicRegistration, self).__init__(metric)
+        if metric is None:
+            raise Exception('SymmetricDiffeomorphicRegistration',
+                            'The metric cannot be None')
+        if (opt_iter is None) or (len(opt_iter) == 0):
+            raise Exception('SymmetricDiffeomorphicRegistration',
+                            'The iterations list cannot be None nor empty')
         self.set_opt_iter(opt_iter)
         self.step_length = step_length
         self.ss_sigma_factor = ss_sigma_factor
@@ -1139,20 +1145,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.prepend_affine = vfu.prepend_affine_to_displacement_field_3d
             self.compose = vfu.compose_vector_fields_3d
 
-    def _check_ready(self):
-        r"""
-        Verifies that the configuration of the optimizer and input data are
-        consistent and the optimizer is ready to run
-        """
-        ready = True
-        if self.metric == None:
-            ready = False
-            print('Error: Similarity metric not set.')
-        if self.opt_iter == None:
-            ready = False
-            print('Error: Maximum number of iterations per level not set.')
-        return ready
-
     def _init_optimizer(self, static, moving, 
                         static_affine, moving_affine, prealign):
         r"""
@@ -1182,11 +1174,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             pre-aligning the moving image towards the static
 
         """
-        ready = self._check_ready()
         self._connect_functions()
-        if not ready:
-            print('Not ready')
-            return False
         #Extract information from the affine matrices to create the scale space
         static_direction, static_spacing = \
             get_direction_and_spacings(static_affine, self.dim)
