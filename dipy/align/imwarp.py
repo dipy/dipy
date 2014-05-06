@@ -1275,6 +1275,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             4.Update backward
             5.Compute inverses
             6.Invert the inverses
+        
+        Returns
+        -------
+        der : float
+            the derivative of the energy profile, computed by fitting a
+            quadratic function to the energy values at the latest T iterations,
+            where T = self.energy_window. If the current iteration is less than
+            T then np.inf is returned instead. 
         """
         #Acquire current resolution information from scale spaces
         current_moving = self.moving_ss.get_image(self.current_level)
@@ -1347,14 +1355,15 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Keep track of the energy
         bw_energy = self.metric.get_energy()
-        der = '-'
+        der = np.inf
         n_iter = len(self.energy_list)
         if len(self.energy_list) >= self.energy_window:
             der = self._get_energy_derivative()
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
+            ch = '-' if np.isnan(der) else der
             print('%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % 
-                    (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, der))
+                    (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, ch))
 
         self.energy_list.append(fw_energy + bw_energy)
 
@@ -1396,7 +1405,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.callback(self, RegistrationStages.ITER_END)
         self.metric.free_iteration()
 
-        return 1 if der == '-' else der
+        return der
 
     def _approximate_derivative_direct(self, x, y):
         r"""
@@ -1455,7 +1464,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.callback(self, RegistrationStages.OPT_START)
         for level in range(self.levels - 1, -1, -1):
             if self.verbosity >= VerbosityLevels.STATUS:
-                print('Optimizing level %d'%(level,))
+                print('Optimizing level %d'%level)
 
             self.current_level = level
             current_static = self.static_ss.get_image(level)
@@ -1476,7 +1485,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
             self.niter = 0
             self.energy_list = []
-            derivative = 1
+            derivative = np.inf
 
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_START)

@@ -104,6 +104,7 @@ class SimilarityMetric(object):
             the transformation that was applied to original image to generate
             the current static image
         """
+        pass
 
     def use_original_static_image(self, original_static_image):
         """
@@ -555,7 +556,6 @@ class EMMetric(SimilarityMetric):
                                           None,
                                           self.smooth,
                                           displacement)
-        max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
         return displacement
 
     def compute_demons_step(self, forward_step=True):
@@ -783,7 +783,6 @@ class SSDMetric(SimilarityMetric):
             self.energy = v_cycle_3d(self.levels_below, self.inner_iter,
                                     delta_field, None, gradient, None, 
                                     self.smooth, displacement)
-        max_norm = np.sqrt(np.sum(displacement**2, -1)).max()
         return displacement
 
     def compute_demons_step(self, forward_step=True):
