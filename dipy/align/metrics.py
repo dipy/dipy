@@ -423,10 +423,10 @@ class EMMetric(SimilarityMetric):
                                                        self.q_levels,
                                                        staticq)
         staticq_means[0] = 0
-        staticq_means = np.array(staticq_means)
-        staticq_variances = np.array(staticq_variances)
-        self.staticq_sigma_sq_field = staticq_variances[staticq]
-        self.staticq_means_field = staticq_means[staticq]
+        self.staticq_means = np.array(staticq_means)
+        self.staticq_variances = np.array(staticq_variances)
+        self.staticq_sigma_sq_field = self.staticq_variances[staticq]
+        self.staticq_means_field = self.staticq_means[staticq]
 
         self.gradient_moving = np.empty(
             shape=(self.moving_image.shape)+(self.dim,), dtype=floating)
@@ -461,10 +461,10 @@ class EMMetric(SimilarityMetric):
         movingq_means, movingq_variances = self.compute_stats(
             sampling_mask, self.static_image, self.q_levels, movingq)
         movingq_means[0] = 0
-        movingq_means = np.array(movingq_means)
-        movingq_variances = np.array(movingq_variances)
-        self.movingq_sigma_sq_field = movingq_variances[movingq]
-        self.movingq_means_field = movingq_means[movingq]
+        self.movingq_means = np.array(movingq_means)
+        self.movingq_variances = np.array(movingq_variances)
+        self.movingq_sigma_sq_field = self.movingq_variances[movingq]
+        self.movingq_means_field = self.movingq_means[movingq]
         if self.use_double_gradient:
             for i, grad in enumerate(sp.gradient(self.staticq_means_field)):
                 self.gradient_moving[..., i] += grad
