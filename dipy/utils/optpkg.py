@@ -73,8 +73,9 @@ def optional_package(name, trip_msg=None):
     """
     # fromlist=[''] results in submodule being returned, rather than the top
     # level module.  See help(__import__)
+    fromlist = [''] if '.' in name else []
     try:
-        pkg = __import__(name, fromlist=[''])
+        pkg = __import__(name, fromlist=fromlist)
     except ImportError:
         pass
     else: # import worked

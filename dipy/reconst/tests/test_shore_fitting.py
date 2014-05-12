@@ -1,62 +1,75 @@
-import numpy as np
-from dipy.data import get_gtab_taiwan_dsi
-from numpy.testing import (assert_almost_equal,
-                           assert_equal,
-                           run_module_suite)
-from dipy.reconst.shore import ShoreModel, shore_matrix, shore_indices, shore_order
-from dipy.sims.voxel import (
-    MultiTensor, all_tensor_evecs, multi_tensor_odf, single_tensor_odf,
-    multi_tensor_rtop, multi_tensor_msd, multi_tensor_pdf)
-from dipy.data import get_sphere
-from scipy.special import genlaguerre, gamma
+# Tests for shore fitting
 from math import factorial
 
+import numpy as np
+
+from scipy.special import genlaguerre, gamma
+
+from ...data import get_gtab_taiwan_dsi
+from ..shore import ShoreModel
+from ...sims.voxel import MultiTensor
+
+from numpy.testing import (assert_almost_equal,
+                           assert_equal,
+                           run_module_suite,
+                           dec)
+
+from ...utils.optpkg import optional_package
+cvxopt, have_cvxopt, _ = optional_package("cvxopt")
+
+needs_cvxopt = dec.skipif(not have_cvxopt)
+
+
+# Object to hold module global data
+class _C(object): pass
+data = _C()
+
+def setup():
+    data.gtab = get_gtab_taiwan_dsi()
+    data.mevals = np.array(([0.0015, 0.0003, 0.0003],
+                             [0.0015, 0.0003, 0.0003]))
+    data.angl = [(0, 0), (60, 0)]
+    data.S, sticks = MultiTensor(
+        data.gtab, data.mevals, S0=100.0, angles=data.angl,
+        fractions=[50, 50], snr=None)
+    data.radial_order = 6
+    data.zeta = 700
+    data.lambdaN = 1e-12
+    data.lambdaL = 1e-12
+
+
+@needs_cvxopt
 def test_shore_positive_constrain():
-    gtab = get_gtab_taiwan_dsi()
-    mevals = np.array(([0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]))
-    angl = [(0, 0), (60, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
-                            fractions=[50, 50], snr=None)
-
-    radial_order = 6
-    zeta = 700
-    lambdaN = 1e-12
-    lambdaL = 1e-12
-
-    asm = ShoreModel(gtab, radial_order=radial_order,
-                     zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL,
-                     constrain_e0=True, positive_constraint=True, pos_grid=11, pos_radius=20e-03)
-
-    asmfit = asm.fit(S)
+    asm = ShoreModel(data.gtab,
+                     radial_order=data.radial_order,
+                     zeta=data.zeta,
+                     lambdaN=data.lambdaN,
+                     lambdaL=data.lambdaL,
+                     constrain_e0=True,
+                     positive_constraint=True,
+                     pos_grid=11,
+                     pos_radius=20e-03)
+    asmfit = asm.fit(data.S)
     eap = asmfit.pdf_grid(11, 20e-03)
-    assert_equal(eap[eap<0].sum(),0)
+    assert_equal(eap[eap<0].sum(), 0)
 
-def test_shore_fitting_e0():
-    gtab = get_gtab_taiwan_dsi()
-    mevals = np.array(([0.0015, 0.0003, 0.0003],
-                       [0.0015, 0.0003, 0.0003]))
-    angl = [(0, 0), (60, 0)]
-    S, sticks = MultiTensor(gtab, mevals, S0=100.0, angles=angl,
-                            fractions=[50, 50], snr=None)
 
-    radial_order = 8
-    zeta = 700
-    lambdaN = 1e-12
-    lambdaL = 1e-12
-
-    asm = ShoreModel(gtab, radial_order=radial_order,
-                     zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL)
-    asmfit = asm.fit(S)
-
+def test_shore_fitting_no_constrain_e0():
+    asm = ShoreModel(data.gtab, radial_order=data.radial_order,
+                     zeta=data.zeta, lambdaN=data.lambdaN,
+                     lambdaL=data.lambdaL)
+    asmfit = asm.fit(data.S)
     assert_almost_equal(compute_e0(asmfit), 1)
 
-    asm = ShoreModel(gtab, radial_order=radial_order,
-                     zeta=zeta, lambdaN=lambdaN, lambdaL=lambdaL,
-                     constrain_e0=True)
-    asmfit = asm.fit(S)
 
-    assert_almost_equal(compute_e0(asmfit), 1.)
+@needs_cvxopt
+def test_shore_fitting_constrain_e0():
+    asm = ShoreModel(data.gtab, radial_order=data.radial_order,
+                     zeta=data.zeta, lambdaN=data.lambdaN,
+                     lambdaL=data.lambdaL,
+                     constrain_e0 = True)
+    asmfit = asm.fit(data.S)
+    assert_almost_equal(compute_e0(asmfit), 1)
 
 
 def compute_e0(shorefit):
@@ -67,6 +80,7 @@ def compute_e0(shorefit):
         ((factorial(n)) / (2 * np.pi * (shorefit.model.zeta ** 1.5) * gamma(n + 1.5))) ** 0.5)
 
     return signal_0
+
 
 if __name__ == '__main__':
     run_module_suite()
