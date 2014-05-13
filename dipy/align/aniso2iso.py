@@ -4,7 +4,7 @@ import numpy as np
 from scipy.ndimage import affine_transform
 
 
-def resample(data, affine, zooms, new_zooms, order=1, mode='constant'):
+def resample(data, affine, zooms, new_zooms, order=1, mode='constant', cval=0):
     """Resample data from anisotropic to isotropic voxel size
 
     Parameters
@@ -24,6 +24,9 @@ def resample(data, affine, zooms, new_zooms, order=1, mode='constant'):
     mode : string ('constant', 'nearest', 'reflect' or 'wrap')
         Points outside the boundaries of the input are filled according
         to the given mode.
+    cval : float
+        Value used for points outside the boundaries of the input if
+        mode='constant'.
 
     Returns
     -------
@@ -67,14 +70,14 @@ def resample(data, affine, zooms, new_zooms, order=1, mode='constant'):
     if data.ndim == 3:
         data2 = affine_transform(input=data, matrix=R, offset=np.zeros(3,),
                                  output_shape=tuple(new_shape),
-                                 order=order, mode=mode)
+                                 order=order, mode=mode, cval=cval)
     if data.ndim == 4:
         data2l=[] 
         for i in range(data.shape[-1]):
-            tmp=affine_transform(input=data[..., i], matrix=R,
-                                 offset=np.zeros(3,),
-                                 output_shape=tuple(new_shape),
-                                 order=order, mode=mode)
+            tmp = affine_transform(input=data[..., i], matrix=R,
+                                   offset=np.zeros(3,),
+                                   output_shape=tuple(new_shape),
+                                   order=order, mode=mode, cval=cval)
             data2l.append(tmp)        
         data2 = np.zeros(tmp.shape+(data.shape[-1],), data.dtype)
         for i in range(data.shape[-1]):
