@@ -84,7 +84,10 @@ for modulename, other_sources, language in (
     ('dipy.reconst.quick_squash', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
     ('dipy.tracking.streamlinespeed', [], 'c'),
-    ('dipy.tracking.localtrack', [], 'c'),
+    ('dipy.tracking.local.localtrack', [], 'c'),
+    ('dipy.tracking.local.direction_getter', [], 'c'),
+    ('dipy.tracking.local.tissue_classifier', [], 'c'),
+    ('dipy.tracking.local.interpolation', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c')

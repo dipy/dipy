@@ -5,9 +5,8 @@ import numpy as np
 import nibabel as nib
 
 # Import tracking stuff
-from dipy.tracking.localtrack import ThresholdTissueClassifier, local_tracker
-from dipy.tracking.local import LocalTracking
-from dipy.reconst.dg import ProbabilisticOdfWightedDirectionGetter
+from dipy.tracking.local import (ProbabilisticOdfWightedDirectionGetter,
+                                 ThresholdTissueClassifier, LocalTracking)
 from dipy.tracking import utils
 
 # Import a few different models as examples
@@ -129,4 +128,5 @@ csdmodel = ConstrainedSphericalDeconvModel(gtab, r, sh_order=10,
 start = time.time()
 prob_tracking_example(csdmodel, data, mask, N, hdr, "SphereDeconv.trk")
 print time.time() - start
+
 

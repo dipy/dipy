@@ -1,17 +1,13 @@
 import numpy as np
-from .shm import real_sym_sh_basis
-from .peaks import peak_directions
-from ..tracking.localtrack import PythonDirectionGetter
+from dipy.reconst.peaks import peak_directions, default_sphere
+from dipy.reconst.shm import (bootstrap_data_voxel, cart2sphere, hat,
+                              lazy_index, lcr_matrix, normalize_data,
+                              real_sym_sh_basis)
+from ..markov import _closest_peak
+from .direction_getter import DirectionGetter
+from .interpolation import trilinear_interpolate4d
 
-
-sign = np.array([-1., 1.]).reshape((2, 1))
-edge = np.array([1., 0.]).reshape((2, 1))
-def trilinear_weights(point):
-    w = edge + sign * (point % 1.)
-    return w[:, None, None, 0] * w[None, :, None, 1] * w[None, None, :, 2]
-
-
-class ProbabilisticOdfWightedDirectionGetter(PythonDirectionGetter):
+class ProbabilisticOdfWightedDirectionGetter(DirectionGetter):
     """Returns a random direction from a sphere weighted by odf values
 
     """
@@ -35,18 +31,8 @@ class ProbabilisticOdfWightedDirectionGetter(PythonDirectionGetter):
         adj_matrix.update(zip(keys, matrix))
         self._adj_matrix = adj_matrix
 
-    def _interpolate_shm_coeff(self, point):
-        index = []
-        for p in np.floor(point):
-            index.append(slice(p, p+2))
-        coeff = self._shm_coeff[index]
-        weights = trilinear_weights(point)
-        coeff = weights[..., None] * coeff
-        coeff = coeff.reshape((8, -1))
-        return coeff.sum(0)
-
     def _odf_at(self, point):
-        coeff = self._interpolate_shm_coeff(point)
+        coeff = trilinear_interpolate4d(self._shm_coeff, point)
         odf = np.dot(self._B, coeff)
         odf.clip(0, out=odf)
         return odf
@@ -55,16 +41,24 @@ class ProbabilisticOdfWightedDirectionGetter(PythonDirectionGetter):
         odf = self._odf_at(point)
         return peak_directions(odf, self.sphere)[0]
 
-    def _get_direction(self, point, prev_dir):
+    def get_direction(self, point, direction):
+        # get direction gets memory views as inputs
+        point = np.array(point, copy=False)
+        direction = np.array(direction, copy=False)
+
         odf = self._odf_at(point)
-        cdf = (self._adj_matrix[tuple(prev_dir)] * odf).cumsum()
+        cdf = (self._adj_matrix[tuple(direction)] * odf).cumsum()
         if cdf[-1] == 0:
-            return None
+            return 1
         random_sample = np.random.random() * cdf[-1]
         idx = cdf.searchsorted(random_sample, 'right')
-        direction = self.sphere.vertices[idx]
-        if np.dot(direction, prev_dir) > 0:
-            return direction
+
+        newdir = self.sphere.vertices[idx]
+        tmp = float(direction[0])
+        # Update direction and return 0 for error
+        if np.dot(newdir, direction) > 0:
+            direction[:] = newdir
         else:
-            return -direction
+            direction[:] = -newdir
+        return 0
 

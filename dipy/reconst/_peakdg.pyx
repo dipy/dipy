@@ -3,9 +3,8 @@ cimport numpy as np
 import numpy as np
 
 from dipy.tracking.propspeed cimport _propagation_direction
-from dipy.tracking.localtrack cimport DirectionGetter
+from dipy.tracking.local.direction_getter cimport DirectionGetter
 
-from libc.stdio cimport printf
 from libc.math cimport round
 
 
@@ -47,7 +46,7 @@ cdef class PAMDirectionGetter(DirectionGetter):
 
         self.initialized = 1
 
-    def initial_direction(self, double[:] point):
+    def initial_direction(self, double[::1] point):
 
         cdef np.npy_intp ijk[3], numpeaks, i
 
@@ -71,7 +70,7 @@ cdef class PAMDirectionGetter(DirectionGetter):
     @cython.initializedcheck(False)
     @cython.boundscheck(False)
     @cython.wraparound(False)
-    cdef int get_direction(self, double *point, double *direction):
+    cpdef int get_direction(self, double[::1] point, double[::1] direction):
 
         cdef:
             np.npy_intp s
@@ -85,7 +84,8 @@ cdef class PAMDirectionGetter(DirectionGetter):
             qa_shape[i] = self._qa.shape[i]
             qa_strides[i] = self._qa.strides[i]
 
-        s = _propagation_direction(point, direction, &self._qa[0, 0, 0, 0],
+        s = _propagation_direction(&point[0], &direction[0],
+                                   &self._qa[0, 0, 0, 0],
                                    &self._ind[0, 0, 0, 0],
                                    &self._odf_vertices[0, 0], self.qa_thr,
                                    self.ang_thr, qa_shape, qa_strides,
@@ -96,3 +96,4 @@ cdef class PAMDirectionGetter(DirectionGetter):
             return 0
         else:
             return 1
+
