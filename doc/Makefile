@@ -43,7 +43,7 @@ api-clean:
 
 api:
 	@mkdir -p reference
-	$(PYTHON) tools/build_modref_templates.py
+	$(PYTHON) tools/build_modref_templates.py dipy reference
 	@echo "Build API docs...done."
 
 examples-clean:
