@@ -20,7 +20,7 @@ is an MIT-licensed project.
 # Stdlib imports
 import os
 import re
-import glob
+from inspect import getmodule
 
 from types import BuiltinFunctionType
 
@@ -40,6 +40,7 @@ class ApiDocWriter(object):
                  rst_extension='.txt',
                  package_skip_patterns=None,
                  module_skip_patterns=None,
+                 other_defines = True
                  ):
         ''' Initialize package for parsing
 
@@ -55,7 +56,7 @@ class ApiDocWriter(object):
             Operates on the package path, starting at (including) the
             first dot in the package path, after *package_name* - so,
             if *package_name* is ``sphinx``, then ``sphinx.util`` will
-            result in ``.util`` being passed for earching by these
+            result in ``.util`` being passed for searching by these
             regexps.  If is None, gives default. Default is:
             ['\.tests$']
         module_skip_patterns : None or sequence
@@ -66,6 +67,9 @@ class ApiDocWriter(object):
             ``.util.console``
             If is None, gives default. Default is:
             ['\.setup$', '\._']
+        other_defines : {True, False}, optional
+            Whether to include classes and functions that are imported in a
+            particular module but not defined there.
         '''
         if package_skip_patterns is None:
             package_skip_patterns = ['\\.tests$']
@@ -75,6 +79,7 @@ class ApiDocWriter(object):
         self.rst_extension = rst_extension
         self.package_skip_patterns = package_skip_patterns
         self.module_skip_patterns = module_skip_patterns
+        self.other_defines = other_defines
 
     def get_package_name(self):
         return self._package_name
@@ -212,6 +217,9 @@ class ApiDocWriter(object):
             if obj_str not in mod.__dict__:
                 continue
             obj = mod.__dict__[obj_str]
+            # Check if function / class defined in module
+            if not self.other_defines and not getmodule(obj) == mod:
+                continue
             # figure out if obj is a function or class
             if hasattr(obj, 'func_name') or \
                isinstance(obj, BuiltinFunctionType):
@@ -284,7 +292,7 @@ class ApiDocWriter(object):
 
         head += '\n.. automodule:: ' + uri + '\n'
         head += '\n.. currentmodule:: ' + uri + '\n'
-        body += '\n.. currentmodule:: ' + uri + '\n'
+        body += '\n.. currentmodule:: ' + uri + '\n\n'
         for c in classes:
             body += '\n:class:`' + c + '`\n' \
                   + self.rst_section_levels[3] * \
