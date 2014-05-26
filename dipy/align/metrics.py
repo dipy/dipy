@@ -507,12 +507,8 @@ class EMMetric(SimilarityMetric):
         regularized displacement field (this step does not require
         post-smoothing, as opposed to the demons step, which does not include
         regularization). To accelerate convergence we use the multi-grid
-        Gauss-Seidel algorithm proposed by Bruhn and Weickert et al [1]
-        [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-            estimation: combining highest accuracy with real-time performance",
-            10th IEEE International Conference on Computer Vision, 2005.
-            ICCV 2005.
-
+        Gauss-Seidel algorithm proposed by Bruhn and Weickert et al [Bruhn05]
+        
         Parameters
         ----------
         forward_step : boolean
@@ -525,6 +521,13 @@ class EMMetric(SimilarityMetric):
         -------
         displacement : array, shape (R, C, 2) or (S, R, C, 3)
             the Newton step
+
+        References
+        ----------
+        [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+                  estimation: combining highest accuracy with real-time
+                  performance", 10th IEEE International Conference on Computer
+                  Vision, 2005. ICCV 2005.
         """
         reference_shape = self.static_image.shape
 
@@ -579,11 +582,11 @@ class EMMetric(SimilarityMetric):
 
         if forward_step:
             gradient = self.gradient_static
-            delta_field = self.movingq_means_field - self.static_image
+            delta_field = self.static_image - self.movingq_means_field
             sigma_sq_field = self.movingq_sigma_sq_field
         else:
             gradient = self.gradient_moving
-            delta_field = self.staticq_means_field - self.moving_image
+            delta_field = self.moving_image - self.staticq_means_field
             sigma_sq_field = self.staticq_sigma_sq_field
 
         if self.dim == 2:
@@ -787,11 +790,8 @@ class SSDMetric(SimilarityMetric):
 
     def compute_demons_step(self, forward_step=True):
         r"""
-        Computes the demons step proposed by Vercauteren et al.[1] for the SSD
-        metric.
-        [1] Tom Vercauteren, Xavier Pennec, Aymeric Perchant, Nicholas Ayache,
-            "Diffeomorphic Demons: Efficient Non-parametric Image Registration",
-            Neuroimage 2009
+        Computes the demons step proposed by Vercauteren et al.[Vercauteren09]
+        for the SSD metric.
 
         Parameters
         ----------
@@ -805,15 +805,21 @@ class SSDMetric(SimilarityMetric):
         -------
         displacement : array, shape (R, C, 2) or (S, R, C, 3)
             the Demons step
+
+        References
+        ----------
+        [Vercauteren09] Tom Vercauteren, Xavier Pennec, Aymeric Perchant,
+                        Nicholas Ayache, "Diffeomorphic Demons: Efficient
+                        Non-parametric Image Registration", Neuroimage 2009
         """
         sigma_reg_2 = np.sum(self.static_spacing**2)/self.dim
 
         if forward_step:
             gradient = self.gradient_static
-            delta_field = self.moving_image - self.static_image
+            delta_field = self.static_image - self.moving_image
         else:
             gradient = self.gradient_moving
-            delta_field = self.static_image - self.moving_image
+            delta_field = self.moving_image - self.static_image
 
         if self.dim == 2:
             step, self.energy = ssd.compute_ssd_demons_step_2d(delta_field,
@@ -851,10 +857,7 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     by first filtering (GS-iterate) the current level, then solves for the
     residual at a coarser resolution and finally refines the solution at the
     current resolution. This scheme corresponds to the V-cycle proposed by Bruhn
-    and Weickert[1].
-    [1] Andres Bruhn and Joachim Weickert, "Towards ultimate motion estimation:
-        combining highest accuracy with real-time performance",
-        10th IEEE International Conference on Computer Vision, 2005. ICCV 2005.
+    and Weickert[Bruhn05].
 
     Parameters
     ----------
@@ -885,6 +888,13 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     -------
     energy : the energy of the EM (or SSD if sigmafield[...]==1) metric at this 
         iteration
+
+    References
+    ----------
+    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+              estimation: combining highest accuracy with real-time
+              performance", 10th IEEE International Conference on Computer
+              Vision, 2005. ICCV 2005.
     """
     #pre-smoothing
     for i in range(k):

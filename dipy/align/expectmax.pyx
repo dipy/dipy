@@ -287,18 +287,11 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                               double sigma_sq_x,
                               floating[:,:,:] out):
     r"""
-    Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
-    using the EM algorithm [1] to handle multi-modality images.
+    Computes the demons step [Vercauteren09] for SSD-driven registration
+    ( eq. 4 in [Vercauteren09] ) using the EM algorithm [Arce14] to handle
+    multi-modality images.    
 
-    [1] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
-        Non-rigid Multimodal Image Registration Based on the 
-        Expectation-Maximization Algorithm, (168140), 36-47.
-
-    [2] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
-        Diffeomorphic demons: efficient non-parametric image registration. 
-        NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
-
-    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM
+    In this case, $\sigma_i$ in eq. 4 of [Vercauteren] is estimated using the EM
     algorithm, while in the original version of diffeomorphic demons it is
     estimated by the difference between the image values at each pixel.
 
@@ -323,12 +316,23 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
     out : array, shape(R, C, 2)
         the resulting demons step will be written to this array
+
+    References
+    ----------
+    [Arce14] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
+             Non-rigid Multimodal Image Registration Based on the 
+             Expectation-Maximization Algorithm, (168140), 36-47.
+
+    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
+                    (2009). Diffeomorphic demons: efficient non-parametric
+                    image registration. NeuroImage, 45(1 Suppl), S61-72.
+                    doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
         int nr = delta_field.shape[0]
         int nc = delta_field.shape[1]
         int i, j
-        double neg_delta, sigma_sq_i, nrm2, energy, den, prod
+        double delta, sigma_sq_i, nrm2, energy, den, prod
 
     if out is None:
         out = np.zeros((nr, nc, 2), dtype=np.asarray(delta_field).dtype)
@@ -339,8 +343,8 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         for i in range(nr):
             for j in range(nc):
                 sigma_sq_i = sigma_sq_field[i,j]
-                neg_delta = -1 * delta_field[i,j]
-                energy += (neg_delta**2)
+                delta = delta_field[i,j]
+                energy += (delta**2)
                 if(isinf(sigma_sq_i)):
                     out[i, j, 0], out[i, j, 1] = 0, 0 
                 else:
@@ -350,13 +354,13 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                         if nrm2 == 0:
                             out[i, j, 0], out[i, j, 1] = 0, 0 
                         else:
-                            out[i, j, 0] = (neg_delta *
+                            out[i, j, 0] = (delta *
                                             gradient_moving[i, j, 0] / nrm2)
-                            out[i, j, 1] = (neg_delta *
+                            out[i, j, 1] = (delta *
                                             gradient_moving[i, j, 1] / nrm2)
                     else:
                         den = (sigma_sq_x * nrm2 + sigma_sq_i)
-                        prod = sigma_sq_x * neg_delta
+                        prod = sigma_sq_x * delta
                         out[i, j, 0] = prod * gradient_moving[i, j, 0] / den
                         out[i, j, 1] = prod * gradient_moving[i, j, 1] / den
     return out, energy
@@ -370,20 +374,13 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                               double sigma_sq_x,
                               floating[:,:,:,:] out):
     r"""
-    Computes the demons step [2] for SSD-driven registration ( eq. 4 in [1] )
-    using the EM algorithm [1] to handle multi-modality images.
+    Computes the demons step [Vercauteren09] for SSD-driven registration
+    ( eq. 4 in [Vercauteren09] ) using the EM algorithm [Arce14] to handle
+    multi-modality images.
 
-    [1] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
-        Non-rigid Multimodal Image Registration Based on the 
-        Expectation-Maximization Algorithm, (168140), 36-47.
-
-    [2] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
-        Diffeomorphic demons: efficient non-parametric image registration. 
-        NeuroImage, 45(1 Suppl), S61-72. doi:10.1016/j.neuroimage.2008.10.040
-
-    In this case, $\sigma_i$ in eq. 4 of [2] is estimated using the EM
-    algorithm, while in the original version of diffeomorphic demons it is
-    estimated by the difference between the image values at each pixel.
+    In this case, $\sigma_i$ in eq. 4 of [Vercauteren09] is estimated using
+    the EM algorithm, while in the original version of diffeomorphic demons
+    it is estimated by the difference between the image values at each pixel.
     
     Parameters
     ----------
@@ -406,13 +403,24 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2].
     out : array, shape(S, R, C, 2)
         the resulting demons step will be written to this array
+
+    References
+    ----------
+    [Arce14] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
+             Non-rigid Multimodal Image Registration Based on the 
+             Expectation-Maximization Algorithm, (168140), 36-47.
+
+    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
+                    (2009). Diffeomorphic demons: efficient non-parametric
+                    image registration. NeuroImage, 45(1 Suppl), S61-72.
+                    doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
         int ns = delta_field.shape[0]
         int nr = delta_field.shape[1]
         int nc = delta_field.shape[2]
         int i, j, k
-        double neg_delta, sigma_sq_i, nrm2, energy, den
+        double delta, sigma_sq_i, nrm2, energy, den
 
     if out is None:
         out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(delta_field).dtype)
@@ -424,8 +432,8 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
             for i in range(nr):
                 for j in range(nc):
                     sigma_sq_i = sigma_sq_field[k,i,j]
-                    neg_delta = -1 * delta_field[k,i,j]
-                    energy += (neg_delta**2)
+                    delta = delta_field[k,i,j]
+                    energy += (delta**2)
                     if(isinf(sigma_sq_i)):
                         out[k, i, j, 0] = 0
                         out[k, i, j, 1] = 0
@@ -440,18 +448,18 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                                 out[k, i, j, 1] = 0
                                 out[k, i, j, 2] = 0
                             else:
-                                out[k, i, j, 0] = (neg_delta * 
+                                out[k, i, j, 0] = (delta * 
                                     gradient_moving[k, i, j, 0] / nrm2)
-                                out[k, i, j, 1] = (neg_delta *
+                                out[k, i, j, 1] = (delta *
                                     gradient_moving[k, i, j, 1] / nrm2)
-                                out[k, i, j, 2] = (neg_delta *
+                                out[k, i, j, 2] = (delta *
                                     gradient_moving[k, i, j, 2] / nrm2)
                         else: 
                             den = (sigma_sq_x * nrm2 + sigma_sq_i)
-                            out[k, i, j, 0] = (sigma_sq_x * neg_delta *
+                            out[k, i, j, 0] = (sigma_sq_x * delta *
                                 gradient_moving[k, i, j, 0] / den)
-                            out[k, i, j, 1] = (sigma_sq_x * neg_delta *
+                            out[k, i, j, 1] = (sigma_sq_x * delta *
                                 gradient_moving[k, i, j, 1] / den)
-                            out[k, i, j, 2] = (sigma_sq_x * neg_delta *
+                            out[k, i, j, 2] = (sigma_sq_x * delta *
                                 gradient_moving[k, i, j, 2] / den)
     return out, energy

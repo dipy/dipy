@@ -1,4 +1,4 @@
-import numpy as np
+﻿import numpy as np
 cimport cython
 from fused_types cimport floating, number
 
@@ -17,7 +17,6 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
     Solves the symmetric positive-definite linear system Mx = y given by
     M=[[A[0], A[1]],
        [A[1], A[2]]].
-    Returns the result in out
 
     Parameters
     ----------
@@ -35,51 +34,11 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void solve3DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
-                                                 double[:] out) nogil:
-    r"""
-    THIS FUNCTION IS DEPRECATED: NOW USING solve_3d_semi_positive_definite
-
-    Solves the symmetric positive-definite linear system Mx = y given by
-    M=[[A[0], A[1], A[2]],
-       [A[1], A[3], A[4]],
-       [A[2], A[4], A[5]]].
-    Returns the result in out
-
-    Parameters
-    ----------
-    A : array, shape (6,)
-        the array containing the entries of the symmetric 3x3 matrix
-    y : array, shape (3,)
-        right-hand side of the system to be solved
-    out : array, shape (3,)
-        the array the output will be stored in
-    """
-    cdef:
-        double a = A[0]
-        double b = A[1]
-        double c = A[2]
-        double d = (a * A[3] - b * b) / a
-        double e = (a * A[4] - b * c) / a
-        double f = (a * A[5] - c * c) / a - (e * e * a) / (a * A[3] - b * b)
-        double y0 = y[0]
-        double y1 = (y[1] * a - y0 * b) / a
-        double y2 = ((y[2] * a - c * y0) / a - 
-                     (e * (y[1] * a - b * y0)) / (a * A[3] - b * b))
-    out[2] = y2 / f
-    out[1] = (y1 - e * out[2]) / d
-    out[0] = (y0 - b * out[1] - c * out[2]) / a
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
-@cython.cdivision(True)
 cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
                                          double[:] out) nogil:
     r"""
-    Solves the symmetric semi-positive-definite linear system Mx = y given by
-    M = (g*g^{T} + tau*I)
-    Returns the result in out.
+    Solves the symmetric semi-positive-definite linear system $Mx = y$ given by
+    $M = (g g^{T} + \tau I)$
 
     Parameters
     ----------
@@ -128,11 +87,7 @@ cpdef double iterate_residual_displacement_field_SSD2D(
                 double lambda_param, floating[:, :, :] displacement_field):
     r"""
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
-    solver proposed by Bruhn and Weickert[1].
-    
-    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
-        Highest Accuracy with Real-Time Performance Faculty of Mathematics
-        and Computer Science.
+    solver proposed by Bruhn and Weickert [Bruhn05].
 
     Parameters
     ----------
@@ -158,6 +113,13 @@ cpdef double iterate_residual_displacement_field_SSD2D(
     max_displacement : float
         the norm of the maximum change in the displacement field after the 
         iteration
+
+    References
+    ----------
+    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+              estimation: combining highest accuracy with real-time
+              performance", 10th IEEE International Conference on Computer
+              Vision, 2005. ICCV 2005.
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -296,11 +258,7 @@ cpdef double iterate_residual_displacement_field_SSD3D(
                 double lambda_param, floating[:, :, :, :] disp):
     r"""
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
-    solver proposed by Bruhn and Weickert[1].
-    
-    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
-        Highest Accuracy with Real-Time Performance Faculty of Mathematics
-        and Computer Science.
+    solver proposed by Bruhn and Weickert [Bruhn05].
 
     Parameters
     ----------
@@ -326,6 +284,13 @@ cpdef double iterate_residual_displacement_field_SSD3D(
     max_displacement : float
         the norm of the maximum change in the displacement field after the 
         iteration
+
+    References
+    ----------
+    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+              estimation: combining highest accuracy with real-time
+              performance", 10th IEEE International Conference on Computer
+              Vision, 2005. ICCV 2005.
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -495,11 +460,7 @@ def compute_residual_displacement_field_SSD3D(
     r"""
     Computes the residual displacement field corresponding to the current 
     displacement field (given by 'disp') in the Multi-resolution 
-    Gauss-Seidel solver proposed by Bruhn and Weickert[1].
-    
-    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
-        Highest Accuracy with Real-Time Performance Faculty of Mathematics
-        and Computer Science.
+    Gauss-Seidel solver proposed by Bruhn and Weickert [Bruhn].
     
     Parameters
     ----------
@@ -527,6 +488,13 @@ def compute_residual_displacement_field_SSD3D(
     residual : array, shape (S, R, C, 3)
         the residual displacement field. If residual was None a input, then
         a new field is returned, otherwise the same array is returned
+
+    References
+    ----------
+    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+              estimation: combining highest accuracy with real-time
+              performance", 10th IEEE International Conference on Computer
+              Vision, 2005. ICCV 2005.
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -600,11 +568,7 @@ cpdef compute_residual_displacement_field_SSD2D(
     r"""
     Computes the residual displacement field corresponding to the current 
     displacement field in the Multi-resolution Gauss-Seidel solver proposed by 
-    Bruhn and Weickert[1].
-
-    [1] Weickert, J. (2005). Towards Ultimate Motion Estimation : Combining
-        Highest Accuracy with Real-Time Performance Faculty of Mathematics
-        and Computer Science.
+    Bruhn and Weickert [Bruhn05].
     
     Parameters
     ----------
@@ -632,6 +596,13 @@ cpdef compute_residual_displacement_field_SSD2D(
     residual : array, shape (R, C, 2)
         the residual displacement field. If residual was None a input, then
         a new field is returned, otherwise the same array is returned
+
+    References
+    ----------
+    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+              estimation: combining highest accuracy with real-time
+              performance", 10th IEEE International Conference on Computer
+              Vision, 2005. ICCV 2005.
     """
     ftype = np.asarray(delta_field).dtype
     cdef:
@@ -691,11 +662,8 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                                double sigma_sq_x,
                                floating[:,:,:] out):
     r"""
-    Computes the demons step for SSD-driven registration ( eq. 4 in [1] )
-
-    [1] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
-        Diffeomorphic demons: efficient non-parametric image registration. 
-        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
+    Computes the demons step for SSD-driven registration
+    ( eq. 4 in [Bruhn05] )
 
     Parameters
     ----------
@@ -706,7 +674,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to 
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
+        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
     out : array, shape (R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -716,12 +684,23 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
     demons_step:
         the demons step to be applied for updating the current displacement
         field
+
+    References
+    ----------
+    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+              estimation: combining highest accuracy with real-time
+              performance", 10th IEEE International Conference on Computer
+              Vision, 2005. ICCV 2005.
+    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
+                    (2009). Diffeomorphic demons: efficient non-parametric
+                    image registration. NeuroImage, 45(1 Suppl), S61-72.
+                    doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
         int nr = delta_field.shape[0]
         int nc = delta_field.shape[1]
         int i, j
-        double neg_delta, delta_2, nrm2, energy, den
+        double delta, delta_2, nrm2, energy, den
 
     if out is None:
         out = np.zeros((nr, nc, 2), dtype=np.asarray(delta_field).dtype)
@@ -731,8 +710,8 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         energy = 0
         for i in range(nr):
             for j in range(nc):
-                neg_delta = -1 * delta_field[i,j]
-                delta_2 = neg_delta**2 
+                delta = delta_field[i,j]
+                delta_2 = delta**2 
                 energy += delta_2
                 nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
                 den = delta_2/sigma_sq_x + nrm2
@@ -740,8 +719,8 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                     out[i, j, 0] = 0
                     out[i, j, 1] = 0
                 else:
-                    out[i, j, 0] = neg_delta * gradient_moving[i, j, 0] / den
-                    out[i, j, 1] = neg_delta * gradient_moving[i, j, 1] / den
+                    out[i, j, 0] = delta * gradient_moving[i, j, 0] / den
+                    out[i, j, 1] = delta * gradient_moving[i, j, 1] / den
 
     return out, energy
 
@@ -754,11 +733,8 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                                double sigma_sq_x,
                                floating[:,:,:,:] out):
     r"""
-    Computes the demons step for SSD-driven registration ( eq. 4 in [1] )
-
-    [1] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N. (2009).
-        Diffeomorphic demons: efficient non-parametric image registration. 
-        NeuroImage, 45(1 Suppl), S61–72. doi:10.1016/j.neuroimage.2008.10.040
+    Computes the demons step for SSD-driven registration 
+    ( eq. 4 in [Bruhn05] )
 
     Parameters
     ----------
@@ -769,7 +745,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         the gradient of the moving image
     sigma_sq_x : float
         parameter controlling the amount of regularization. It corresponds to 
-        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
+        $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
     out : array, shape (S, R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
         the provided array will be used.
@@ -779,13 +755,24 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
     demons_step:
         the demons step to be applied for updating the current displacement
         field
+
+    References
+    ----------
+    [Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
+              estimation: combining highest accuracy with real-time
+              performance", 10th IEEE International Conference on Computer
+              Vision, 2005. ICCV 2005.
+    [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
+                    (2009). Diffeomorphic demons: efficient non-parametric
+                    image registration. NeuroImage, 45(1 Suppl), S61-72.
+                    doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
         int ns = delta_field.shape[0]
         int nr = delta_field.shape[1]
         int nc = delta_field.shape[2]
         int i, j, k
-        double neg_delta, delta_2, nrm2, energy, den
+        double delta, delta_2, nrm2, energy, den
 
     if out is None:
         out = np.zeros((ns, nr, nc, 3), dtype=np.asarray(delta_field).dtype)
@@ -796,8 +783,8 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
         for k in range(ns):
             for i in range(nr):
                 for j in range(nc):
-                    neg_delta = -1 * delta_field[k,i,j]
-                    delta_2 = neg_delta**2 
+                    delta = delta_field[k,i,j]
+                    delta_2 = delta**2 
                     energy += delta_2
                     nrm2 = (gradient_moving[k, i, j, 0]**2 +
                             gradient_moving[k, i, j, 1]**2 +
@@ -808,11 +795,11 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                         out[k, i, j, 1] = 0
                         out[k, i, j, 2] = 0
                     else: 
-                        out[k, i, j, 0] = (neg_delta *
+                        out[k, i, j, 0] = (delta *
                                            gradient_moving[k, i, j, 0] / den)
-                        out[k, i, j, 1] = (neg_delta *
+                        out[k, i, j, 1] = (delta *
                                            gradient_moving[k, i, j, 1] / den)
-                        out[k, i, j, 2] = (neg_delta *
+                        out[k, i, j, 2] = (delta *
                                            gradient_moving[k, i, j, 2] / den)
 
     return out, energy
