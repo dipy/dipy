@@ -1,4 +1,4 @@
-﻿import numpy as np
+import numpy as np
 cimport cython
 from fused_types cimport floating, number
 
