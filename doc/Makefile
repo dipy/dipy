@@ -60,7 +60,7 @@ gitwash-update:
             --project-url=http://nipy.org/dipy \
             --project-ml-url=http://mail.scipy.org/mailman/listinfo/nipy-devel
 
-html: api html-after-examples
+html: api rstexamples html-after-examples
 	# build full docs including examples
 
 html-after-examples:
