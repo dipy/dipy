@@ -11,7 +11,25 @@ import dipy.align.vector_fields as vfu
 from dipy.data import get_data
 from dipy.align import floating
 import nibabel as nib
+import nibabel.eulerangles as eulerangles
 from dipy.align.imwarp import DiffeomorphicMap
+
+def test_get_direction_and_spacings():
+    xrot = 0.5
+    yrot = 0.75
+    zrot = 1.0
+    direction_gt = eulerangles.euler2mat(zrot, yrot, xrot)
+    spacings_gt = np.array([1.1, 1.2, 1.3])
+    scaling_gt = np.diag(spacings_gt) 
+    translation_gt = np.array([1,2,3])
+    
+    affine = np.eye(4)
+    affine[:3, :3] = direction_gt.dot(scaling_gt)
+    affine[:3, 3] = translation_gt
+
+    direction, spacings = imwarp.get_direction_and_spacings(affine, 3)
+    assert_array_almost_equal(direction, direction_gt)
+    assert_array_almost_equal(spacings, spacings_gt)
 
 
 def test_ssd_2d_demons():
@@ -460,6 +478,7 @@ def test_em_2d():
 
 
 if __name__=='__main__':
+    tes_get_direction_and_spacings()
     test_ssd_2d_demons()
     test_ssd_2d_gauss_newton()
     test_ssd_3d_demons()
