@@ -92,7 +92,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
         q = 0.5
 
     # prevent overflow in sum_m2
-    data = data.astype(np.float32)
+    # build test --> this should still be in <-- data = data.astype(np.float32)
 
     # Initial estimation of sigma
     denom = np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
