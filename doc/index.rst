@@ -12,7 +12,7 @@ Dipy_ is a **free** and **open source** software project for
 Highlights
 **********
 
-Wow! **Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0!!! In addition, a `journal paper`_ focusing on teaching the fundamentals of Dipy is now available in Frontiers of Neuroinformatics!
+**Dipy 0.7.1** is now available for :ref:`download <installation>` with **3X** more tutorials than 0.6.0! In addition, a `journal paper`_ focusing on teaching the fundamentals of Dipy is now available in Frontiers of Neuroinformatics.
 
 .. raw :: html
 
