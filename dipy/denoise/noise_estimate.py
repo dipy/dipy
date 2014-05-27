@@ -11,7 +11,7 @@ def _inv_nchi_cdf(N, K, alpha):
     return gammainccinv(N * K, 1 - alpha) / K
 
 
-def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
+def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO)
     A routine for finding the underlying gaussian distribution standard
@@ -43,13 +43,17 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
     eps : float
         Tolerance for the convergence criterion. Convergence is
         reached if two subsequent estimates are smaller than eps.
+    
+    return_mask : bool
+        If True, return a mask identyfing all the pure noise voxel
+        that were found.
 
     Returns
     --------
     sigma : float
         The estimated standard deviation of the gaussian noise.
 
-    mask : ndarray
+    mask (optional): ndarray
         A boolean mask indicating the voxels identified as pure noise.
 
     Note
@@ -87,10 +91,13 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
     else:
         q = 0.5
 
+    # prevent overflow in sum_m2
+    data = data.astype(np.float32)
+
     # Initial estimation of sigma
     denom = np.sqrt(2 * _inv_nchi_cdf(N, 1, q))
-    m = np.percentile(data, q*100) / denom
-    phi = np.arange(1, l + 1) * m/l
+    m = np.percentile(data, q * 100) / denom
+    phi = np.arange(1, l + 1) * m / l
     K = data.shape[-1]
     sum_m2 = np.sum(data**2, axis=-1)
 
@@ -114,7 +121,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
             if np.abs(sig - sig_prev) < eps:
                 break
 
-            s = sum_m2 / (2*K*sig**2)
+            s = sum_m2 / (2 * K * sig**2)
             idx = np.logical_and(lambda_minus <= s, s <= lambda_plus)
             omega = data[idx, :]
 
@@ -125,8 +132,8 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
 
             sig_prev = sig
             # Numpy percentile must range in 0 to 100, hence q*100
-            sig = np.percentile(omega, q*100) / denom
-            omega_size = omega.size/K
+            sig = np.percentile(omega, q * 100) / denom
+            omega_size = omega.size / K
 
         # Remember the biggest omega array as giving the optimal
         # sigma amongst all initial estimates from phi
@@ -136,4 +143,8 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-10):
         sigma[num] = sig
         mask[num] = idx
 
-    return sigma[pos], mask[pos]
+    if return_mask:
+        return sigma[pos], mask[pos]
+    
+    return sigma[pos]
+    

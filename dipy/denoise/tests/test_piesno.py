@@ -7,6 +7,7 @@ from numpy.testing import assert_almost_equal
 from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno
 import dipy.data
 
+# See page 5 of the reference paper for tested values
 
 def test_inv_nchi():
     # Values taken from hispeed.MedianPIESNO.lambdaPlus
