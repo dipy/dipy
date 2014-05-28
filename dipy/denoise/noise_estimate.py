@@ -22,7 +22,6 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
 
     Parameters
     -----------
-
     data : ndarray
         The magnitude signals to analyse. The last dimension must contain the
         same realisation of the volume, such as dMRI or fMRI data.
@@ -65,7 +64,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
     References
     ------------
 
-    .. [1]. Koay CG, Ozarslan E and Pierpaoli C.
+    .. [1] Koay CG, Ozarslan E and Pierpaoli C.
     "Probabilistic Identification and Estimation of Noise (PIESNO):
     A self-consistent approach and its applications in MRI."
     Journal of Magnetic Resonance 2009; 199: 94-103.
