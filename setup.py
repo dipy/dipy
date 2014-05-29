@@ -74,8 +74,16 @@ from distutils.command import build_py, build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
 from setup_helpers import install_scripts_bat
+from check_flags import check_flags
 
 # Define extensions
+if check_flags(['-fopenmp'], sys.argv[0], sys.argv[1:]):
+    compile_args = ['-fopenmp']
+    link_args = ['-fopenmp']
+else:
+    compile_args = []
+    link_args = []
+
 EXTS = []
 for modulename, other_sources in (
     ('dipy.reconst.recspeed', []),
@@ -88,8 +96,8 @@ for modulename, other_sources in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
                           include_dirs = [np.get_include(), "src"],
-                          extra_compile_args = ['-fopenmp'],
-                          extra_link_args = ['-fopenmp']))
+                          extra_compile_args = compile_args,
+                          extra_link_args = link_args))
 
 
 # Do our own build and install time dependency checking. setup.py gets called in
