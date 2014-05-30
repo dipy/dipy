@@ -11,6 +11,7 @@ from dipy.sims.voxel import (multi_tensor,
                              multi_tensor_odf,
                              all_tensor_evecs)
 from dipy.core.gradients import gradient_table
+from dipy.core.sphere import HemiSphere
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    forward_sdeconv_mat,
@@ -19,7 +20,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    csd_predict)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel, 
+from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel,
                               CsaOdfModel, sph_harm_ind_list)
 
 
@@ -276,6 +277,38 @@ def test_csd_predict():
     # Roundtrip tests (quite inaccurate, because of regularization): 
     assert_array_almost_equal(csd_fit.predict(gtab, S0=S0),S,decimal=1)
     assert_array_almost_equal(csd.predict(csd_fit.shm_coeff, S0=S0),S,decimal=1)
+
+def test_sphere_scaling_csdmodel():
+    """Check that mirroring regulization sphere does not change the result of
+    csddeconv model"""
+    sphere = get_sphere('symmetric362')
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+
+    angles = [(0, 0), (60, 0)]
+
+    S, sticks = multi_tensor(gtab, mevals, 100., angles=angles,
+                             fractions=[50, 50], snr=None)
+
+    sphere = get_sphere('symmetric362')
+    hemi = HemiSphere.from_sphere(sphere)
+
+    response = (np.array([0.0015, 0.0003, 0.0003]), 100)
+    model_full = ConstrainedSphericalDeconvModel(gtab, response,
+                                                reg_sphere=sphere)
+    model_hemi = ConstrainedSphericalDeconvModel(gtab, response,
+                                                reg_sphere=hemi)
+    csd_fit_full = model_full.fit(S)
+    csd_fit_hemi = model_hemi.fit(S)
+
+    assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
 
 
 if __name__ == '__main__':
