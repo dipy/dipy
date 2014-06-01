@@ -77,11 +77,11 @@ resampled = vfu.warp_volume_affine(moving.astype(np.float32),
 resampled = np.asarray(resampled)
 
 """
-And define the functions to plot the overlapped middle slices of the volumes
+plot the overlapped middle slices of the volumes
 """
 
 
-regtools.overlay_middle_slices(static, resampled, 1, 'Static', 'Moving', 'input_3d.png')
+regtools.overlay_slices(static, resampled, None, 1, 'Static', 'Moving', 'input_3d.png')
 
 """
 .. figure:: input_3d.png
@@ -126,7 +126,7 @@ warped_moving = mapping.transform(moving)
 We plot the overlapped middle slices
 """
 
-regtools.overlay_middle_slices(static, warped_moving, 1, 'Static', 'Warped moving', 'warped_moving.png')
+regtools.overlay_slices(static, warped_moving, None, 1, 'Static', 'Warped moving', 'warped_moving.png')
 
 """
 .. figure:: warped_moving.png
@@ -143,7 +143,7 @@ is similar to the moving image
 
 warped_static = mapping.transform_inverse(static)
 
-regtools.overlay_middle_slices(warped_static, moving, 1, 'Warped static', 'Moving', 'warped_static.png')
+regtools.overlay_slices(warped_static, moving, None, 1, 'Warped static', 'Moving', 'warped_static.png')
 
 """
 .. figure:: warped_static.png

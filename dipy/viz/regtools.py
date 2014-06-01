@@ -251,28 +251,36 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
     return warped_forward, warped_backward
 
 
-def plot_middle_slices(V, fname=None):
+def plot_slices(V, slice_indices=None, fname=None):
     r"""
-    Creates a figure showing the axial, coronal and sagital middle slices of
-    the given volume.
+    Creates a figure showing the axial, coronal and sagital slices at the
+    requested positions of the given volume. The requested slices are specified
+    by slice_indices.
 
     Parameters
     ----------
     V : array, shape (S, R, C)
-        the 3D volume to get the middle slices from
+        the 3D volume to extract the slices from
+    slice_indices : array, shape (3,) (optional)
+        the indices of the sagital (slice_indices[0]), coronal (slice_indices[1])
+        and axial (slice_indices[2]) slices to be displayed. If None, the
+        middle slices along each direction are displayed.
     fname : string (optional)
         the name of the file to save the figure to. If None (default), the
         figure is not saved to disk.
     """
+    if slice_indices is None:
+        slice_indices = np.array(V.shape)//2
+
     #Normalize the intensities to [0, 255]
     sh=V.shape
     V = np.asarray(V, dtype = np.float64)
     V = 255 * (V - V.min()) / (V.max() - V.min())
 
     #Extract the middle slices
-    axial = np.asarray(V[:, :, sh[2]//2]).astype(np.uint8).T
-    coronal = np.asarray(V[:, sh[1]//2, :]).astype(np.uint8).T
-    sagital = np.asarray(V[sh[0]//2, :, :]).astype(np.uint8).T
+    axial = np.asarray(V[:, :, slice_indices[2]]).astype(np.uint8).T
+    coronal = np.asarray(V[:, slice_indices[1], :]).astype(np.uint8).T
+    sagital = np.asarray(V[slice_indices[0], :, :]).astype(np.uint8).T
     
     #Plot the slices
     plt.figure()
@@ -293,23 +301,26 @@ def plot_middle_slices(V, fname=None):
         plt.savefig(fname, bbox_inches='tight')
 
 
-def overlay_middle_slices(L, R, slice_type=1, ltitle='Left', rtitle='Right', 
-                          fname=None):
+def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left', 
+                   rtitle='Right', fname=None):
     r"""
-    Creates a figure containing three images: the gray scale middle slice of
-    the first volume (L) to the left, the middle slice of the second volume (R)
-    to the right and the middle slices of the two given images on top of each
-    other using the red channel for the first volume and the green channel for
-    the second one. It is assumed that both volumes have the same shape. The
-    intended use of this function is to visually assess the quality of a
-    registration result.
+    Creates a figure containing three images: the gray scale k-th slice of
+    the first volume (L) to the left, where k=slice_index, the k-th slice of
+    the second volume (R) to the right and the k-th slices of the two given
+    images on top of each other using the red channel for the first volume and
+    the green channel for the second one. It is assumed that both volumes have
+    the same shape. The intended use of this function is to visually assess the
+    quality of a registration result.
 
     Parameters
     ----------
     L : array, shape (S, R, C)
-        the first volume to extract the middle slice from, plottet to the left
+        the first volume to extract the slice from, plottet to the left
     R : array, shape (S, R, C)
-        the second volume to extract the middle slice from, plotted to the right
+        the second volume to extract the slice from, plotted to the right
+    slice_index : int (optional)
+        the index of the slices (along the axis given by slice_type) to be
+        overlaid. If None, the slice along the specified axis is used
     slice_type : int (optional)
         the type of slice to be extracted: 
         0=sagital, 1=coronal (default), 2=axial.
@@ -334,17 +345,24 @@ def overlay_middle_slices(L, R, slice_type=1, ltitle='Left', rtitle='Right',
     #Create the color image to draw the overlapped slices into, and extract
     #the slices (note the transpositions)
     if slice_type is 0:
+        if slice_index is None:
+            slice_index = sh[0]//2
         colorImage = np.zeros(shape = (sh[2], sh[1], 3), dtype = np.uint8)
-        ll = np.asarray(L[sh[0]//2, :, :]).astype(np.uint8).T
-        rr = np.asarray(R[sh[0]//2, :, :]).astype(np.uint8).T
+        ll = np.asarray(L[slice_index, :, :]).astype(np.uint8).T
+        rr = np.asarray(R[slice_index, :, :]).astype(np.uint8).T
     elif slice_type is 1:
+        if slice_index is None:
+            slice_index = sh[1]//2
         colorImage = np.zeros(shape = (sh[2], sh[0], 3), dtype = np.uint8)
-        ll = np.asarray(L[:, sh[1]//2, :]).astype(np.uint8).T
-        rr = np.asarray(R[:, sh[1]//2, :]).astype(np.uint8).T
+        ll = np.asarray(L[:, slice_index, :]).astype(np.uint8).T
+        rr = np.asarray(R[:, slice_index, :]).astype(np.uint8).T
     elif slice_type is 2:
+        if slice_index is None:
+            slice_index = sh[2]//2
+        slice_index = sh[2]//2
         colorImage = np.zeros(shape = (sh[1], sh[0], 3), dtype = np.uint8)
-        ll = np.asarray(L[:, :, sh[2]//2]).astype(np.uint8).T
-        rr = np.asarray(R[:, :, sh[2]//2]).astype(np.uint8).T
+        ll = np.asarray(L[:, :, slice_index]).astype(np.uint8).T
+        rr = np.asarray(R[:, :, slice_index]).astype(np.uint8).T
     else:
         print("Slice type must be 0, 1 or 2.")
         return
