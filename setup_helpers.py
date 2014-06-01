@@ -3,8 +3,11 @@
 '''
 import os
 from os.path import join as pjoin, split as psplit, splitext
+import tempfile
+import shutil
 
 from distutils.command.install_scripts import install_scripts
+from distutils.errors import CompileError, LinkError
 
 from distutils import log
 
@@ -64,3 +67,66 @@ class install_scripts_bat(install_scripts):
                 continue
             with open(bat_file, 'wt') as fobj:
                 fobj.write(bat_contents)
+
+TEST_C = """
+int main(int argc, char** argv) { return(0); }
+"""
+
+def add_flag_checking(build_ext_class, input_flags):
+    """ Override input `build_ext_class` to check compiler `input_flags`
+
+    Parameters
+    ----------
+    build_ext_class : class
+        Class implementing ``distutils.command.build_ext.build_ext`` interface,
+        with a ``build_extensions`` method.
+    input_flags : sequence
+        A sequence of compiler flags.  We check each to see whether a simple C
+        source file will compile, and omit flags that cause a compile error
+
+    Returns
+    -------
+    checker_class : class
+        A class with similar interface to
+        ``distutils.command.build_ext.build_ext``, that adds all working
+        `input_flag` values to the ``extra_compile_args`` and
+        ``extra_link_args`` attributes of extensions, before compiling.
+    """
+    class Checker(build_ext_class):
+        flags = tuple(input_flags)
+
+        def can_compile_link(self, flags):
+            cc = self.compiler
+            fname = 'test.c'
+            cwd = os.getcwd()
+            tmpdir = tempfile.mkdtemp()
+            try:
+                os.chdir(tmpdir)
+                with open(fname, 'wt') as fobj:
+                    fobj.write(TEST_C)
+                try:
+                    objects = cc.compile([fname], extra_postargs=flags)
+                except CompileError:
+                    return False
+                try:
+                    cc.link_executable(objects, "a.out", extra_postargs=flags)
+                except (LinkError, TypeError):
+                    return False
+            finally:
+                os.chdir(cwd)
+                shutil.rmtree(tmpdir)
+            return True
+
+        def build_extensions(self):
+            """ Hook into extension building to check compiler flags """
+            for flag in self.flags:
+                if not self.can_compile_link([flag]):
+                    log.warn("Flag {0} omitted because of compile or link "
+                             "error".format(flag))
+                    continue
+                for ext in self.extensions:
+                    ext.extra_compile_args.append(flag)
+                    ext.extra_link_args.append(flag)
+            build_ext_class.build_extensions(self)
+
+    return Checker
