@@ -1,6 +1,7 @@
 import numpy as np
-import matplotlib.pyplot as plt
-
+from ..utils.optpkg import optional_package
+matplotlib, has_mpl, setup_module = optional_package("matplotlib")
+plt, _, _ = optional_package("matplotlib.pyplot")
 
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     r"""
@@ -9,24 +10,27 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
     green channel of a color image and the two given images on top of each other
     using the red channel for the first image and the green channel for the 
     second one. It is assumed that both images have the same shape. The intended
-    use of this function is to visually asses the quality of a registration
+    use of this function is to visually assess the quality of a registration
     result.
 
     Parameters
     ----------
     img0 : array, shape(R, C)
-        the image to be plotted on the red channel
-    img0 : array, shape(R, C)
-        the image to be plotted on the green channel
-    title0 : string
-        the title to be written on top of the first gray-level image
-    title_mid : string
-        the title to be written on top of the middle, color image
-    title1 : string
-        the title to be written on top of the second gray-level image
-    fname : string
-        the file name to write the resulting figure. If None, the image is not
-        written
+        the image to be plotted on the red channel, to the left of the figure
+    img1 : array, shape(R, C)
+        the image to be plotted on the green channel, to the right of the figure
+    title0 : string (optional)
+        the title to be written on top of the image to the left. By default, no
+        title is displayed.
+    title_mid : string (optional)
+        the title to be written on top of the middle image. By default, no
+        title is displayed.
+    title1 : string (optional)
+        the title to be written on top of the image to the right. By default, no
+        title is displayed.
+    fname : string (optional)
+        the file name to write the resulting figure. If None (default), the image
+        is not saved.
     """
     #Normalize the input images to [0,255]
     img0 = 255*((img0 - img0.min()) / (img0.max() - img0.min()))
@@ -65,9 +69,9 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
 
 def draw_lattice_2d(nrows, ncols, delta):
     r"""
-    Creates a figure of a regular lattice of nrows x ncols squares. The size of
-    each square is delta x delta pixels (not counting the separation lines).
-    The lines are one pixel width.
+    Creates an image (2D array) of a regular lattice of nrows x ncols squares.
+    The size of each square is delta x delta pixels (not counting the
+    separation lines). The lines are one pixel width.
 
     Parameters
     ----------
@@ -76,7 +80,15 @@ def draw_lattice_2d(nrows, ncols, delta):
     ncols : int
         the number of squares to be drawn horizontally
     delta : int
-        the size of each square of the grid (delta x delta pixels) 
+        the size of each square of the grid. Each square is delta x delta pixels
+
+    Returns
+    -------
+    lattice : array, shape (R, C)
+        the image (2D array) of the segular lattice. The shape (R, C) of the
+        array is given by
+        R = 1 + (delta + 1) * nrows
+        C = 1 + (delta + 1) * ncols
     """
     lattice=np.ndarray((1 + (delta + 1) * nrows, 
                         1 + (delta + 1) * ncols), 
@@ -97,42 +109,55 @@ def draw_lattice_2d(nrows, ncols, delta):
 
 
 def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
-                              input_shape=None, input_affine=-1,
-                              output_shape=None, output_affine=-1,
+                              direct_grid_shape=None, direct_grid_affine=-1,
+                              inverse_grid_shape=None, inverse_grid_affine=-1,
                               show_figure = True):
     r"""
     Draws a diffeomorphic map by showing the effect of the deformation on a
     regular grid. The resulting figure contains two images: the direct
     transformation is plotted to the left, and the inverse transformation is 
-    plotted to the right
+    plotted to the right.
 
     Parameters
     ----------
     mapping : DiffeomorphicMap object
         the diffeomorphic map to be drawn
-    delta : int
-        the size of the squares of the regular lattice to be used to plot the
-        warping effects. Each square will be deta x delta pixels
-    fname : string
-        the name of the file the figure will be written to. If None, the figure
-        will not be saved to disk
-    input_shape : tuple, shape (2,)
-        the shape of the grid to be used to sample the direct transformation (
-        the shape of the grid will be output_shape, and the warped grid will be
-        sampled on the input_shape grid)
-    input_affine : array, shape (3, 3)
-        the affine transformation mapping input grid's coordinates to physical
-        space
-    output_shape : tuple, shape (2,)
-        the shape of the grid to be used to sample the inverse transformation (
-        the shape of the grid will be input_shape, and the warped grid will be
-        sampled on the output_shape grid)
-    output_affine : array, shape (3, 3)
-        the affine transformation mapping output grid's coordinates to physical
-        space
-    show_figure : Boolean
-        if True, the deformed grids will be ploted using matplotlib, else the
-        grids are just returned
+    delta : int (optional)
+        the size (in pixels) of the squares of the regular lattice to be used
+        to plot the warping effects. Each square will be delta x delta pixels.
+        By default, the size will be 10 pixels.
+    fname : string (optional)
+        the name of the file the figure will be written to. If None (default),
+        the figure will not be saved to disk.
+    direct_grid_shape : tuple, shape (2,) (optional)
+        the shape of the grid image after being deformed by the direct
+        transformation. By default, the shape of the deformed grid is the
+        same as the grid of the displacement field, which is by default
+        equal to the shape of the fixed image. In other words, the resulting
+        deformed grid (deformed by the direct transformation) will normally
+        have the same shape as the fixed image.
+    direct_grid_affine : array, shape (3, 3) (optional)
+        the affine transformation mapping the direct grid's coordinates to
+        physical space. By default, this transformation will correspond to
+        the image-to-world transformation corresponding to the default 
+        direct_grid_shape (in general, if users specify a direct_grid_shape,
+        they should also specify direct_grid_affine).
+    inverse_grid_shape : tuple, shape (2,) (optional)
+        the shape of the grid image after being deformed by the inverse
+        transformation. By default, the shape of the deformed grid under the
+        inverse transform is the same as the image used as "moving" when
+        the diffeomorphic map was generated by a registration algorithm
+        (so it corresponds to the effect of warping the static image towards
+        the moving).
+    inverse_grid_affine : array, shape (3, 3) (optional)
+        the affine transformation mapping inverse grid's coordinates to
+        physical space. By default, this transformation will correspond to
+        the image-to-world transformation corresponding to the default 
+        inverse_grid_shape (in general, if users specify an inverse_grid_shape,
+        they should also specify inverse_grid_affine).
+    show_figure : Boolean (optional)
+        if True (default), the deformed grids will be ploted using matplotlib,
+        else the grids are just returned
 
     Note
     ----
@@ -144,59 +169,65 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
 
     """
     if mapping.is_inverse:
-        #By default, the input grid is the domain grid, because it's inverse
-        if input_shape is None:
-            input_shape = mapping.domain_shape
-        if input_affine is -1:
-            input_affine = mapping.domain_affine
+        #By default, direct_grid_shape is the domain grid
+        if direct_grid_shape is None:
+            direct_grid_shape = mapping.domain_shape
+        if direct_grid_affine is -1:
+            direct_grid_affine = mapping.domain_affine
 
-        #By default, the output grid is the mapping's input grid because it's 
+        #By default, the output grid is the mapping's input grid  
         #inverse
-        if output_shape is None:
-            output_shape = mapping.input_shape
-        if output_affine is -1:
-            output_affine = mapping.input_affine
+        if inverse_grid_shape is None:
+            inverse_grid_shape = mapping.input_shape
+        if inverse_grid_affine is -1:
+            inverse_grid_affine = mapping.input_affine
     else:
-        #By default, the input grid is the mapping's input grid
-        if input_shape is None:
-            input_shape = mapping.input_shape
-        if input_affine is -1:
-            input_affine = mapping.input_affine
+        #Now by default, direct_grid_shape is the mapping's input grid
+        if direct_grid_shape is None:
+            direct_grid_shape = mapping.input_shape
+        if direct_grid_affine is -1:
+            direct_grid_affine = mapping.input_affine
 
         #By default, the output grid is the mapping's domain grid
-        if output_shape is None:
-            output_shape = mapping.domain_shape
-        if output_affine is -1:
-            output_affine = mapping.domain_affine
+        if inverse_grid_shape is None:
+            inverse_grid_shape = mapping.domain_shape
+        if inverse_grid_affine is -1:
+            inverse_grid_affine = mapping.domain_affine
 
     #The world-to-image (image = drawn lattice on the output grid)
     #transformation is the inverse of the output affine
-    world_to_image = None if output_affine is None else np.linalg.inv(output_affine) 
+    world_to_image = None
+    if inverse_grid_affine is not None:
+        world_to_image = np.linalg.inv(inverse_grid_affine) 
 
     #Draw the squares on the output grid
-    X1,X0 = np.mgrid[0:output_shape[0], 0:output_shape[1]]
-    lattice_out=draw_lattice_2d((output_shape[0] + delta) / (delta + 1), 
-                                 (output_shape[1] + delta) / (delta + 1), delta)
-    lattice_out=lattice_out[0:output_shape[0], 0:output_shape[1]]
+    X1,X0 = np.mgrid[0:inverse_grid_shape[0], 0:inverse_grid_shape[1]]
+    lattice_out=draw_lattice_2d((inverse_grid_shape[0] + delta) / (delta + 1), 
+                                (inverse_grid_shape[1] + delta) / (delta + 1),
+                                delta)
+    lattice_out=lattice_out[0:inverse_grid_shape[0], 0:inverse_grid_shape[1]]
 
     #Warp in the forward direction (sampling it on the input grid)
     warped_forward = mapping.transform(lattice_out, 'lin', world_to_image,
-                                       input_shape, input_affine)
+                                       direct_grid_shape, direct_grid_affine)
 
     
     #Now, the world-to-image (image = drawn lattice on the input grid) 
     #transformation is the inverse of the input affine
-    world_to_image = None if input_affine is None else np.linalg.inv(input_affine) 
+    world_to_image = None 
+    if direct_grid_affine is not None:
+        world_to_image = np.linalg.inv(direct_grid_affine) 
 
     #Draw the squares on the input grid
-    X1,X0 = np.mgrid[0:input_shape[0], 0:input_shape[1]]
-    lattice_in=draw_lattice_2d((input_shape[0] + delta) / (delta + 1), 
-                                 (input_shape[1] + delta) / (delta + 1), delta)
-    lattice_in=lattice_in[0:input_shape[0], 0:input_shape[1]]
+    X1,X0 = np.mgrid[0:direct_grid_shape[0], 0:direct_grid_shape[1]]
+    lattice_in=draw_lattice_2d((direct_grid_shape[0] + delta) / (delta + 1), 
+                               (direct_grid_shape[1] + delta) / (delta + 1),
+                               delta)
+    lattice_in=lattice_in[0:direct_grid_shape[0], 0:direct_grid_shape[1]]
 
     #Warp in the backward direction (sampling it on the output grid)
-    warped_backward = mapping.transform_inverse(lattice_in, 'lin', world_to_image,
-                                       output_shape, output_affine)
+    warped_backward = mapping.transform_inverse(lattice_in, 'lin',
+        world_to_image, inverse_grid_shape, inverse_grid_affine)
 
     #Now plot the grids
     if show_figure:
@@ -222,15 +253,16 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
 
 def plot_middle_slices(V, fname=None):
     r"""
-    Creates a figure showing the axial, coronal and sagital middle slices of the
-    given volume.
+    Creates a figure showing the axial, coronal and sagital middle slices of
+    the given volume.
 
     Parameters
     ----------
     V : array, shape (S, R, C)
         the 3D volume to get the middle slices from
-    fname : string
-        the name of the file to save the figure to
+    fname : string (optional)
+        the name of the file to save the figure to. If None (default), the
+        figure is not saved to disk.
     """
     #Normalize the intensities to [0, 255]
     sh=V.shape
@@ -266,11 +298,11 @@ def overlay_middle_slices(L, R, slice_type=1, ltitle='Left', rtitle='Right',
     r"""
     Creates a figure containing three images: the gray scale middle slice of
     the first volume (L) to the left, the middle slice of the second volume (R)
-    to the right and the middle slices of the two given images on top of each other
-    using the red channel for the first volume and the green channel for the 
-    second one. It is assumed that both volumes have the same shape. The intended
-    use of this function is to visually asses the quality of a registration
-    result.
+    to the right and the middle slices of the two given images on top of each
+    other using the red channel for the first volume and the green channel for
+    the second one. It is assumed that both volumes have the same shape. The
+    intended use of this function is to visually assess the quality of a
+    registration result.
 
     Parameters
     ----------
@@ -278,14 +310,18 @@ def overlay_middle_slices(L, R, slice_type=1, ltitle='Left', rtitle='Right',
         the first volume to extract the middle slice from, plottet to the left
     R : array, shape (S, R, C)
         the second volume to extract the middle slice from, plotted to the right
-    slice_type : int
-        the type of slice to be extracted: 0=sagital, 1=coronal, 2=axial
-    ltitle : string
-        the string to be written as title of the left image
-    rtitle : string
-        the string to be written as title of the right image
-    fname : string
-        the name of the file to write the image to
+    slice_type : int (optional)
+        the type of slice to be extracted: 
+        0=sagital, 1=coronal (default), 2=axial.
+    ltitle : string (optional)
+        the string to be written as title of the left image. By default,
+        no title is displayed.
+    rtitle : string (optional)
+        the string to be written as title of the right image. By default,
+        no title is displayed.
+    fname : string (optional)
+        the name of the file to write the image to. If None (default), the
+        figure is not saved to disk.
     """
 
     #Normalize the intensities to [0,255]
@@ -314,7 +350,7 @@ def overlay_middle_slices(L, R, slice_type=1, ltitle='Left', rtitle='Right',
         return
 
     #Draw the intensity images to the appropriate channels of the color image
-    #The "(ll > ll[0, 0])" condition is just an attempt ro eliminate the 
+    #The "(ll > ll[0, 0])" condition is just an attempt to eliminate the 
     #background when its intensity is not exactly zero (the [0,0] corner is
     #usually background)
     colorImage[..., 0] = ll * (ll > ll[0, 0])

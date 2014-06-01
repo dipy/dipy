@@ -63,15 +63,15 @@ of Squared Differences (SSD) is a good choice. We create a metric specifying
 metric = SSDMetric(dim = 2, step_type = 'gauss_newton') 
 
 """
-Now we define an instance of the optimizer of the metric. The SyN algorithm uses
+Now we define an instance of the registration class. The SyN algorithm uses
 a multi-resolution approach by building a Gaussian Pyramid. We instruct the
-optimizer to perform at most [n_0, n_1, ..., n_k] iterations at each level of
-the pyramid. The 0-th level corresponds to the finest resolution.  
+registration instance to perform at most [n_0, n_1, ..., n_k] iterations at
+each level of the pyramid. The 0-th level corresponds to the finest resolution.  
 """
 
 opt_iter = [25, 50, 100, 200]
 
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter, inv_iter = 40)
+sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter, inv_iter = 40)
 
 """
 Now we execute the optimization, which returns a DiffeomorphicMap object,
@@ -79,7 +79,7 @@ that can be used to register images back and forth between the static and moving
 domains
 """
 
-mapping = optimizer.optimize(static, moving)
+mapping = sdr.optimize(static, moving)
 
 """
 It is a good idea to visualize the resulting deformation map to make sure the
@@ -131,19 +131,19 @@ on top of the moving image (in green)**.
 """
 Now let's register a couple of slices from a B0 image using the Cross
 Correlation metric. Also, let's inspect the evolution of the registration.
-To do this we will define a function that will be called by the optimizer
-at each stage of the optimization process. We will draw the current warped
-images after finishing each resolution.
+To do this we will define a function that will be called by the registration
+object at each stage of the optimization process. We will draw the current
+warped images after finishing each resolution.
 """
 
-def callback_CC(optimizer, status):
+def callback_CC(sdr, status):
     #Status indicates at which stage of the optimization we currently are
     #For now, we will only react at the end of each resolution of the scale
     #space
     if status == imwarp.RegistrationStages.SCALE_END:
         #get the current images from the metric
-        wmoving = optimizer.metric.moving_image
-        wstatic = optimizer.metric.static_image
+        wmoving = sdr.metric.moving_image
+        wstatic = sdr.metric.static_image
         #draw the images on top of each other with different colors
         regtools.overlay_images(wmoving, wstatic, 'Warped moving', 'Overlay', 'Warped static')
 
@@ -189,14 +189,14 @@ Let's use a scale space of 3 levels
 """
 
 opt_iter = [25, 50, 100]
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
-optimizer.callback = callback_CC
+sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter)
+sdr.callback = callback_CC
 
 """
 And execute the optimization
 """
 
-mapping = optimizer.optimize(static, moving)
+mapping = sdr.optimize(static, moving)
 
 warped = mapping.transform(moving)
 

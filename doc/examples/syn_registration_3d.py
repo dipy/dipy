@@ -98,14 +98,14 @@ static image. We will use the Cross Correlation metric
 metric = CCMetric(3)
 
 """
-Now we define an instance of the optimizer of the metric. The SyN algorithm uses
+Now we define an instance of the registration class. The SyN algorithm uses
 a multi-resolution approach by building a Gaussian Pyramid. We instruct the
-optimizer to perform at most [n_0, n_1, ..., n_k] iterations at each level of
-the pyramid. The 0-th level corresponds to the finest resolution.  
+registration object to perform at most [n_0, n_1, ..., n_k] iterations at
+each level of the pyramid. The 0-th level corresponds to the finest resolution.  
 """
 
 opt_iter = [5, 10, 10]
-optimizer = SymmetricDiffeomorphicRegistration(metric, opt_iter)
+sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter)
 
 """
 Execute the optimization, which returns a DiffeomorphicMap object,
@@ -114,7 +114,7 @@ domains. We provide the pre-aligning matrix that brings the moving image closer
 to the static image
 """
 
-mapping = optimizer.optimize(static, moving, static_affine, moving_affine, pre_align)
+mapping = sdr.optimize(static, moving, static_affine, moving_affine, pre_align)
 
 """
 Now let's warp the moving image and see if it gets similar to the static image
