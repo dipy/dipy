@@ -222,7 +222,8 @@ def add_padding_reflection(double [:, :, ::1] arr, padding):
 def correspond_indices(dim_size, padding):
     return np.ascontiguousarray(np.hstack((np.arange(1, padding + 1)[::-1],
                                 np.arange(dim_size),
-                                np.arange(dim_size - padding - 1, dim_size - 1)[::-1])))
+                                np.arange(dim_size - padding - 1, dim_size - 1)[::-1])),
+                                dtype=np.intp)
 
 
 def remove_padding(arr, padding):
