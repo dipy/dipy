@@ -73,7 +73,7 @@ from distutils.extension import Extension
 from distutils.command import build_py, build_ext
 
 from cythexts import cyproc_exts, get_pyx_sdist, derror_maker
-from setup_helpers import install_scripts_bat
+from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
@@ -91,9 +91,7 @@ for modulename, other_sources in (
     ('dipy.align.crosscorr', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
-                          include_dirs = [np.get_include(), "src"],
-                          extra_compile_args = ['-fopenmp'],
-                          extra_link_args = ['-fopenmp']))
+                          include_dirs = [np.get_include(), "src"]))
 
 
 # Do our own build and install time dependency checking. setup.py gets called in
@@ -114,7 +112,9 @@ else: # We have nibabel
     pybuilder = get_comrec_build('dipy')
     # Cython is a dependency for building extensions, iff we don't have stamped
     # up pyx and c files.
-    extbuilder = cyproc_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
+    build_ext = cyproc_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
+    # Add openmp flags if they work
+    extbuilder = add_flag_checking(build_ext, ['-fopenmp'])
 
 # Installer that checks for install-time dependencies
 class installer(install.install):

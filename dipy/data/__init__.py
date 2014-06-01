@@ -184,6 +184,7 @@ def get_data(name='small_64D'):
         'fornix' 300 tracks in Trackvis format (from Pittsburgh Brain Competition)
         'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
         'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
+        'test_piesno' slice of N=8, K=14 diffusion data
         'reg_c' small 2D image used for validating registration
         'reg_o' small 2D image used for validation registration
 
@@ -252,6 +253,9 @@ def get_data(name='small_64D'):
         fbvecs = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.bvec')
         fimg = pjoin(THIS_DIR, '3shells-1000-2000-3500-N193.nii.gz')
         return fimg, fbvals, fbvecs
+    if name == "test_piesno":
+        fimg = pjoin(THIS_DIR, 'test_piesno.nii.gz')
+        return fimg
     if name == "reg_c":
         return pjoin(THIS_DIR, 'C.png')
     if name == "reg_o":

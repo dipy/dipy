@@ -1,19 +1,20 @@
 from __future__ import division
+
 from warnings import warn
-import numpy as np
-from dipy.reconst.cache import Cache
-from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import real_sph_harm
-from dipy.core.gradients import gradient_table
-from scipy.special import genlaguerre, gamma, hyp2f1
-from dipy.core.geometry import cart2sphere
 from math import factorial
 
-try:
-    import cvxopt
-    import cvxopt.solvers
-except ImportError:
-    cvxopt = None
+import numpy as np
+
+from scipy.special import genlaguerre, gamma, hyp2f1
+
+from .cache import Cache
+from .multi_voxel import multi_voxel_fit
+from .shm import real_sph_harm
+from ..core.geometry import cart2sphere
+
+from ..utils.optpkg import optional_package
+
+cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
 class ShoreModel(Cache):
@@ -219,53 +220,53 @@ class ShoreModel(Cache):
         else:
             data = data / data[self.gtab.b0s_mask].mean()
 
-            # If cvxopt is not available use scipy (~100 times slower)
-            if cvxopt is not None:
-                M0 = M[self.gtab.b0s_mask, :]
-                M0_mean = M0.mean(0)[None, :]
-                Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
-                Q = cvxopt.matrix(np.ascontiguousarray(
-                    np.dot(Mprime.T, Mprime)
-                    + self.lambdaN * Nshore + self.lambdaL * Lshore
-                ))
-
-                data_b0 = data[self.gtab.b0s_mask].mean()
-                data_single_b0 = np.r_[
-                    data_b0, data[~self.gtab.b0s_mask]] / data_b0
-                p = cvxopt.matrix(np.ascontiguousarray(
-                    -1 * np.dot(Mprime.T, data_single_b0))
-                )
-
-                cvxopt.solvers.options['show_progress'] = False
-
-                if not(self.positive_constraint):
-                    G = None
-                    h = None
-                else:
-                    lg = int(np.floor(self.pos_grid ** 3 / 2))
-                    G = self.cache_get(
-                        'shore_matrix_positive_constraint', key=(self.pos_grid, self.pos_radius))
-                    if G is None:
-                        v, t = create_rspace(self.pos_grid, self.pos_radius)
-
-                        psi = shore_matrix_pdf(
-                            self.radial_order, self.zeta, t[:lg])
-                        G = cvxopt.matrix(-1 * psi)
-                        self.cache_set(
-                            'shore_matrix_positive_constraint', (self.pos_grid, self.pos_radius), G)
-                    h = cvxopt.matrix((1e-10) * np.ones((lg)), (lg, 1))
-
-                A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
-                b = cvxopt.matrix(np.array([1.]))
-                sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
-
-                if sol['status'] != 'optimal':
-                    warn('Optimization did not find a solution')
-
-                coef = np.array(sol['x'])[:, 0]
-            else:
+            # If cvxopt is not available, bail (scipy is ~100 times slower)
+            if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
+            import cvxopt.solvers
+            M0 = M[self.gtab.b0s_mask, :]
+            M0_mean = M0.mean(0)[None, :]
+            Mprime = np.r_[M0_mean, M[~self.gtab.b0s_mask, :]]
+            Q = cvxopt.matrix(np.ascontiguousarray(
+                np.dot(Mprime.T, Mprime)
+                + self.lambdaN * Nshore + self.lambdaL * Lshore
+            ))
+
+            data_b0 = data[self.gtab.b0s_mask].mean()
+            data_single_b0 = np.r_[
+                data_b0, data[~self.gtab.b0s_mask]] / data_b0
+            p = cvxopt.matrix(np.ascontiguousarray(
+                -1 * np.dot(Mprime.T, data_single_b0))
+            )
+
+            cvxopt.solvers.options['show_progress'] = False
+
+            if not(self.positive_constraint):
+                G = None
+                h = None
+            else:
+                lg = int(np.floor(self.pos_grid ** 3 / 2))
+                G = self.cache_get(
+                    'shore_matrix_positive_constraint', key=(self.pos_grid, self.pos_radius))
+                if G is None:
+                    v, t = create_rspace(self.pos_grid, self.pos_radius)
+
+                    psi = shore_matrix_pdf(
+                        self.radial_order, self.zeta, t[:lg])
+                    G = cvxopt.matrix(-1 * psi)
+                    self.cache_set(
+                        'shore_matrix_positive_constraint', (self.pos_grid, self.pos_radius), G)
+                h = cvxopt.matrix((1e-10) * np.ones((lg)), (lg, 1))
+
+            A = cvxopt.matrix(np.ascontiguousarray(M0_mean))
+            b = cvxopt.matrix(np.array([1.]))
+            sol = cvxopt.solvers.qp(Q, p, G, h, A, b)
+
+            if sol['status'] != 'optimal':
+                warn('Optimization did not find a solution')
+
+            coef = np.array(sol['x'])[:, 0]
 
         return ShoreFit(self, coef)
 
