@@ -39,7 +39,9 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_sherbrooke_3shell,
                                fetch_isbi2013_2shell,
                                read_isbi2013_2shell,
-                               read_stanford_labels)
+                               read_stanford_labels,
+                               fetch_syn_data,
+                               read_syn_data)
 
 from ..utils.arrfuncs import as_native_array
 
@@ -183,6 +185,8 @@ def get_data(name='small_64D'):
         'gqi_vectors' the scanner wave vectors needed for a GQI acquisitions of 101 directions tested on Siemens 3T Trio
         'small_25' small ROI (10x8x2) DTI data (b value 2000, 25 directions)
         'test_piesno' slice of N=8, K=14 diffusion data
+        'reg_c' small 2D image used for validating registration
+        'reg_o' small 2D image used for validation registration
 
     Returns
     -------
@@ -252,6 +256,10 @@ def get_data(name='small_64D'):
     if name == "test_piesno":
         fimg = pjoin(THIS_DIR, 'test_piesno.nii.gz')
         return fimg
+    if name == "reg_c":
+        return pjoin(THIS_DIR, 'C.png')
+    if name == "reg_o":
+        return pjoin(THIS_DIR, 'circle.png')
 
 
 def _gradient_from_file(filename):

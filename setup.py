@@ -84,7 +84,11 @@ for modulename, other_sources in (
     ('dipy.tracking.distances', []),
     ('dipy.tracking.vox2track', []),
     ('dipy.tracking.propspeed', []),
-    ('dipy.denoise.denspeed', [])):
+    ('dipy.denoise.denspeed', []),
+    ('dipy.align.vector_fields', []),
+    ('dipy.align.sumsqdiff', []),
+    ('dipy.align.expectmax', []),
+    ('dipy.align.crosscorr', [])):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
                           include_dirs = [np.get_include(), "src"]))
@@ -148,6 +152,7 @@ def main(**extra_args):
           packages     = ['dipy',
                           'dipy.tests',
                           'dipy.align',
+                          'dipy.align.tests',
                           'dipy.core',
                           'dipy.core.tests',
                           'dipy.tracking',
