@@ -3,10 +3,10 @@
 Symmetric Diffeomorphic Registration in 3D
 ==========================================
 This example explains how to register 3D volumes using the Symmetric Normalization 
-(SyN) algorithm proposed by Avants et al. [1] (also implemented in
-the ANTS software [2])
+(SyN) algorithm proposed by Avants et al. [Avants09]_ (also implemented in
+the ANTS software [Avants11]_)
 
-We'll register two 3D volumes from the same modality using SyN with the Cross
+We will register two 3D volumes from the same modality using SyN with the Cross
 Correlation (CC) metric.
 """
 
@@ -80,14 +80,13 @@ resampled = np.asarray(resampled)
 plot the overlapped middle slices of the volumes
 """
 
-
 regtools.overlay_slices(static, resampled, None, 1, 'Static', 'Moving', 'input_3d.png')
 
 """
 .. figure:: input_3d.png
-    :align: center
+   :align: center
 
-**Static image in red on top of the pre-aligned moving image (in green)**.
+   **Static image in red on top of the pre-aligned moving image (in green)**.
 """
 
 """
@@ -130,10 +129,9 @@ regtools.overlay_slices(static, warped_moving, None, 1, 'Static', 'Warped moving
 
 """
 .. figure:: warped_moving.png
-    :align: center
+   :align: center
 
-**Moving image transformed under the (direct) transformation in green
-on top of the static image (in red)**.
+   **Moving image transformed under the (direct) transformation in green on top of the static image (in red)**.
 """
 
 """
@@ -142,24 +140,17 @@ is similar to the moving image
 """
 
 warped_static = mapping.transform_inverse(static)
-
 regtools.overlay_slices(warped_static, moving, None, 1, 'Warped static', 'Moving', 'warped_static.png')
 
 """
 .. figure:: warped_static.png
-    :align: center
+   :align: center
 
-**Static image transformed under the (inverse) transformation in red
-on top of the moving image (in green). Note that the moving image has lower 
-resolution**.
-"""
+   **Static image transformed under the (inverse) transformation in red on top of the moving image (in green). Note that the moving image has lower resolution**.
 
-"""
-[1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
-    Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
-    Evaluating Automated Labeling of Elderly and Neurodegenerative 
-    Brain, 12(1), 26-41.
+.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009). Symmetric Diffeomorphic Image Registration with Cross- Correlation: Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1), 26-41.
+.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization Tools ( ANTS ), 1-35.
 
-[2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced 
-    Normalization Tools ( ANTS ), 1-35.
+.. include:: ../links_names.inc
+
 """

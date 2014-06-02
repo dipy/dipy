@@ -3,8 +3,8 @@
 Symmetric Diffeomorphic Registration in 2D
 ==========================================
 This example explains how to register 2D images using the Symmetric Normalization 
-(SyN) algorithm proposed by Avants et al. [1] (also implemented in
-the ANTS software [2])
+(SyN) algorithm proposed by Avants et al. [Avants09]_ (also implemented in
+the ANTS software [Avants11]_)
 
 We will perform the classic Circle-To-C experiment for diffeomorphic registration
 """
@@ -47,7 +47,7 @@ regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving', 'input_im
 .. figure:: input_images.png
    :align: center
 
-**Input images**.
+   **Input images**.
 """
 
 """
@@ -92,7 +92,7 @@ regtools.plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 .. figure:: diffeomorphic_map.png
    :align: center
 
-**Deformed lattice under the resulting diffeomorphic map**.
+   **Deformed lattice under the resulting diffeomorphic map**.
 """
 
 """
@@ -101,14 +101,13 @@ Now let's warp the moving image and see if it gets similar to the static image
 
 warped_moving = mapping.transform(moving, 'lin')
 regtools.overlay_images(static, warped_moving, 'Static','Overlay','Warped moving',
-    'direct_warp_result.png')
+   'direct_warp_result.png')
 
 """
 .. figure:: direct_warp_result.png
-    :align: center
+   :align: center
 
-**Moving image transformed under the (direct) transformation in green
-on top of the static image (in red)**.
+   **Moving image transformed under the (direct) transformation in green on top of the static image (in red)**.
 """
 
 """
@@ -118,14 +117,13 @@ is similar to the moving image
 
 warped_static = mapping.transform_inverse(static, 'lin')
 regtools.overlay_images(warped_static, moving,'Warped static','Overlay','Moving', 
-    'inverse_warp_result.png')
+   'inverse_warp_result.png')
 
 """
 .. figure:: inverse_warp_result.png
-    :align: center
+   :align: center
 
-**Static image transformed under the (inverse) transformation in red
-on top of the moving image (in green)**.
+   **Static image transformed under the (inverse) transformation in red on top of the moving image (in green)**.
 """
 
 """
@@ -210,9 +208,9 @@ regtools.overlay_images(static, moving, 'Static', 'Overlay', 'Moving',
 
 """
 .. figure:: t1_slices_input.png
-    :align: center
+   :align: center
 
-**Input images.**.
+   **Input images**.
 """
 
 regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
@@ -220,10 +218,9 @@ regtools.overlay_images(static, warped, 'Static', 'Overlay', 'Warped moving',
 
 """
 .. figure:: t1_slices_res.png
-    :align: center
+   :align: center
 
-**Moving image transformed under the (direct) transformation in green
-on top of the static image (in red)**.
+   **Moving image transformed under the (direct) transformation in green on top of the static image (in red)**.
 """
 
 '''
@@ -236,10 +233,9 @@ regtools.overlay_images(inv_warped, moving, 'Warped static', 'Overlay', 'moving'
 
 """
 .. figure:: t1_slices_res2.png
-    :align: center
+   :align: center
 
-**Static image transformed under the (inverse) transformation in red
-on top of the moving image (in green)**.
+   **Static image transformed under the (inverse) transformation in red on top of the moving image (in green)**.
 """
 
 '''
@@ -252,15 +248,11 @@ regtools.plot_2d_diffeomorphic_map(mapping, 5, 'diffeomorphic_map_b0s.png')
 .. figure:: diffeomorphic_map_b0s.png
    :align: center
 
-**Deformed lattice under the resulting diffeomorphic map**.
-"""
+   **Deformed lattice under the resulting diffeomorphic map**.
 
-"""
-[1] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009).
-    Symmetric Diffeomorphic Image Registration with Cross- Correlation: 
-    Evaluating Automated Labeling of Elderly and Neurodegenerative 
-    Brain, 12(1), 26-41.
+.. [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009). Symmetric Diffeomorphic Image Registration with Cross- Correlation: Evaluating Automated Labeling of Elderly and Neurodegenerative Brain, 12(1), 26-41.\
+.. [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced Normalization Tools ( ANTS ), 1-35.
 
-[2] Avants, B. B., Tustison, N., & Song, G. (2011). Advanced 
-    Normalization Tools ( ANTS ), 1-35.
+.. include:: ../links_names.inc
+
 """
