@@ -217,7 +217,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
           _, bvecs = io.read_bvals_bvecs(None, bvecs)
 
     bvals = np.asarray(bvals)
-    # If bvals is None we expect bvals to be an (N, 3) or (3, N) array
+    # If bvecs is None we expect bvals to be an (N, 4) or (4, N) array.
     if bvecs is None:
         if bvals.shape[-1] == 4:
             bvecs = bvals[:, 1:]
@@ -227,7 +227,7 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
             bvals = np.squeeze(bvals[0, :])
         else:
             raise ValueError("input should be bvals and bvecs OR an (N, 4)"
-                             "array containing both bvals and bvecs")
+                             " array containing both bvals and bvecs")
     else:
         bvecs = np.asarray(bvecs)
         if (bvecs.shape[1] > bvecs.shape[0])  and bvecs.shape[0]>1:
@@ -235,4 +235,4 @@ def gradient_table(bvals, bvecs=None, big_delta=None, small_delta=None,
     return gradient_table_from_bvals_bvecs(bvals, bvecs, big_delta=big_delta,
                                            small_delta=small_delta,
                                            b0_threshold=b0_threshold,
-                                           atol=1e-2)
+                                           atol=atol)
