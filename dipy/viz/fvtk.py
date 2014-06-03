@@ -1372,15 +1372,20 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
     peaks_dirs = np.asarray(peaks_dirs)
     if peaks_dirs.ndim == 2:
         peaks_dirs = peaks_dirs[None, None, None, :]
+        if peaks_values is not None:
+            peaks_values = peaks_values[None, None, None, :]
     if peaks_dirs.ndim == 3:
         peaks_dirs = peaks_dirs[None, None, :]
+        if peaks_values is not None:
+            peaks_values = peaks_values[None, None, :]
     if peaks_dirs.ndim == 4:
         peaks_dirs = peaks_dirs[None, :]
+        if peaks_values is not None:
+            peaks_values = peaks_values[None, :]
     if peaks_dirs.ndim > 5:
         raise ValueError("Wrong shape")
 
     grid_shape = np.array(peaks_dirs.shape[:3])
-
     list_dirs = []
 
     for ijk in np.ndindex(*grid_shape):
