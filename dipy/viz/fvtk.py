@@ -1115,8 +1115,9 @@ def create_colormap(v, name='jet', auto=True):
     ----------
     v : (N,) array
         vector of values to be mapped in RGB colors according to colormap
-    name : str. 'jet', 'blues', 'blue_red', 'accent'
-        name of the colourmap
+    name : str. 
+        name of the colourmap. Currently implemented: 'jet', 'blues',
+        'blue_red', 'accent', 'bone'
     auto : bool,
         if auto is True then v is interpolated to [0, 10] from v.min()
         to v.max()
@@ -1166,7 +1167,7 @@ def create_colormap(v, name='jet', auto=True):
             v, [0, 0.125, 0.375, 0.64, 0.91, 1], [0, 0, 1, 1, 0, 0])
         blue = np.interp(v, [0, 0.11, 0.34, 0.65, 1], [0.5, 1, 1, 0, 0])
 
-    if name == 'blues':
+    elif name == 'blues':
         # cm.datad['Blues']
         # print 'blues'
 
@@ -1182,7 +1183,7 @@ def create_colormap(v, name='jet', auto=True):
             v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.96862745285, 0.937254905701, 0.882352948189,
                                                                          0.839215695858, 0.776470601559, 0.709803938866, 0.611764729023, 0.419607847929])
 
-    if name == 'blue_red':
+    elif name == 'blue_red':
         # print 'blue_red'
         # red=np.interp(v,[],[])
 
@@ -1196,7 +1197,7 @@ def create_colormap(v, name='jet', auto=True):
 
         blue = green
 
-    if name == 'accent':
+    elif name == 'accent':
         # print 'accent'
         red = np.interp(
             v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
@@ -1209,7 +1210,21 @@ def create_colormap(v, name='jet', auto=True):
         blue = np.interp(
             v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
                 0.7142857142857143, 0.8571428571428571, 1.0],
-            [0.49803921580314636, 0.83137255907058716, 0.52549022436141968, 0.60000002384185791, 0.69019609689712524, 0.49803921580314636, 0.090196080505847931, 0.40000000596046448])
+            [0.49803921580314636, 0.83137255907058716, 0.52549022436141968,
+    0.60000002384185791, 0.69019609689712524, 0.49803921580314636,
+    0.090196080505847931, 0.40000000596046448])
+
+    elif name == 'bone':
+        red = np.interp(v, [ 0., 0.746032, 1.],
+                           [ 0., 0.652778, 1.])
+        blue = np.interp(v, [ 0. , 0.365079, 1.],
+                            [ 0., 0.444444,  1.])
+        green = np.interp(v, [ 0.      ,  0.365079,  0.746032,  1.      ],
+                             [ 0.      ,  0.319444,  0.777778,  1.      ])
+
+    else:
+        e_s = "Colormap '%s' is not yet implemented "%name
+        raise ValueError(e_s)
 
     return np.vstack((red, green, blue)).T
 
