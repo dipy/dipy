@@ -31,6 +31,9 @@ from ..utils.optpkg import optional_package
 # Allow import, but disable doctests if we don't have vtk
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
+matplotlib, has_mpl, setup_module = optional_package("matplotlib")
+pylab, has_pylab, _ = optional_package("matplotlib.pylab")
+
 
 # a track buffer used only with picking tracks
 track_buffer = []
@@ -1086,20 +1089,18 @@ def _cm2colors(colormap='Blues'):
     'Blues_r', 'YlOrBr_r', 'Purples', 'autumn_r', 'Set1_r', 'PuOr', 'PuBuGn']
 
     '''
-    try:
-        from pylab import cm
-    except ImportError:
+    if not has_pylab:
         ImportError('pylab is not installed')
 
-    blue = cm.datad[colormap]['blue']
+    blue = pylab.cm.datad[colormap]['blue']
     blue1 = [b[0] for b in blue]
     blue2 = [b[1] for b in blue]
 
-    red = cm.datad[colormap]['red']
+    red = pylab.cm.datad[colormap]['red']
     red1 = [b[0] for b in red]
     red2 = [b[1] for b in red]
 
-    green = cm.datad[colormap]['green']
+    green = pylab.cm.datad[colormap]['green']
     green1 = [b[0] for b in green]
     green2 = [b[1] for b in green]
 
@@ -1291,7 +1292,12 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
 
         list_sq.append(xyz)
         if colormap is not None:
-            cols = create_colormap(m, colormap)
+            if isinstance(colormap, str):
+                cols = create_colormap(m, colormap)
+            elif has_mpl and isinstance(colormap, matplotlib.cm.colors.Colormap):
+                cols = colormap(m)[:, :3]
+            else:
+                ValueError("colormap must be a string or Colormap object")
             cols = np.interp(cols, [0, 1], [0, 255]).astype('ubyte')
             list_cols.append(cols)
 
