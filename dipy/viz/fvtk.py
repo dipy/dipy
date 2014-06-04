@@ -1098,7 +1098,8 @@ def create_colormap(v, name='jet', auto=True):
     """
 
     if v.ndim > 1:
-        ValueError('This function works only with 1d arrays. Use ravel()')
+        msg = 'This function works only with 1d arrays. Use ravel()'
+        raise ValueError(msg)
 
     if auto:
         v = np.interp(v, [v.min(), v.max()], [0, 1])
