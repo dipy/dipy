@@ -1343,6 +1343,11 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     return actor
 
 
+def _makeNd(array, ndim):
+    new_shape = (1,) * (ndim - array.ndim) + array.shape
+    return array.reshape(new_shape)
+
+
 def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
     """ Visualize peak directions as given from ``peaks_from_model``
 
@@ -1368,16 +1373,15 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
     See Also
     --------
     dipy.viz.fvtk.sphere_funcs
+
     """
     peaks_dirs = np.asarray(peaks_dirs)
-    if peaks_dirs.ndim == 2:
-        peaks_dirs = peaks_dirs[None, None, None, :]
-    if peaks_dirs.ndim == 3:
-        peaks_dirs = peaks_dirs[None, None, :]
-    if peaks_dirs.ndim == 4:
-        peaks_dirs = peaks_dirs[None, :]
     if peaks_dirs.ndim > 5:
         raise ValueError("Wrong shape")
+
+    peaks_dirs = _makeNd(peaks_dirs, 5)
+    if peaks_values is not None:
+        peaks_values = _makeNd(peaks_values, 4)
 
     grid_shape = np.array(peaks_dirs.shape[:3])
 
