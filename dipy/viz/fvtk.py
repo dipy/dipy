@@ -1119,6 +1119,13 @@ def create_colormap(v, name='jet', auto=True):
     return rgb
 
 
+def _makeNd(array, ndim):
+    """Pads 1s at the beginning of array's shape so that array until array is
+    ndim"""
+    new_shape = (1,) * (ndim - array.ndim) + array.shape
+    return array.reshape(new_shape)
+
+
 def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
                  scale=2.2, norm=True, radial_scale=True):
     """Plot many morphed spherical functions simultaneously.
@@ -1158,14 +1165,9 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     """
 
     sphere_values = np.asarray(sphere_values)
-    if sphere_values.ndim == 1:
-        sphere_values = sphere_values[None, None, None, :]
-    if sphere_values.ndim == 2:
-        sphere_values = sphere_values[None, None, :]
-    if sphere_values.ndim == 3:
-        sphere_values = sphere_values[None, :]
     if sphere_values.ndim > 4:
         raise ValueError("Wrong shape")
+    sphere_values = _makeNd(sphere_values, 4)
 
     grid_shape = np.array(sphere_values.shape[:3])
     faces = np.asarray(sphere.faces, dtype=int)
@@ -1246,11 +1248,6 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     actor.SetMapper(mapper)
 
     return actor
-
-
-def _makeNd(array, ndim):
-    new_shape = (1,) * (ndim - array.ndim) + array.shape
-    return array.reshape(new_shape)
 
 
 def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
@@ -1355,17 +1352,10 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     """
 
     evals = np.asarray(evals)
-    if evals.ndim == 1:
-        evals = evals[None, None, None, :]
-        evecs = evecs[None, None, None, :, :]
-    if evals.ndim == 2:
-        evals = evals[None, None, :]
-        evecs = evecs[None, None, :, :]
-    if evals.ndim == 3:
-        evals = evals[None, :]
-        evecs = evecs[None, :, :]
     if evals.ndim > 4:
         raise ValueError("Wrong shape")
+    evals = _makeNd(evals, 4)
+    evecs = _makeNd(evecs, 5)
 
     grid_shape = np.array(evals.shape[:3])
 
