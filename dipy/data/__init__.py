@@ -4,8 +4,8 @@ Read test or example data
 
 from __future__ import division, print_function, absolute_import
 
-
 import sys
+import json
 
 from nibabel import load
 from dipy.io.bvectxt import read_bvec_file
@@ -352,3 +352,31 @@ def three_shells_voxels(xmin,xmax,ymin,ymax,zmin,zmax):
     data = data[xmin:xmax,ymin:ymax,zmin:zmax,1:]/b0[xmin:xmax,ymin:ymax,zmin:zmax,None]
     affine = img.get_affine()
     return data, affine, gtab
+
+
+dipy_cmaps = None
+def get_cmap(name):
+    """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
+    global dipy_cmaps
+    if dipy_cmaps is None:
+        filename = pjoin(THIS_DIR, "dipy_colormaps.json")
+        with open(filename) as f:
+            dipy_cmaps = json.load(f)
+
+    desc = dipy_cmaps.get(name)
+    if desc is None:
+        return None
+
+    def simple_cmap(v):
+        """Emulates matplotlib colormap callable"""
+        rgba = np.ones((len(v), 4))
+        for i, color in enumerate(('red', 'green', 'blue')):
+            x, y0, y1 = zip(*desc[color])
+            # Matplotlib allows more complex colormaps, but for users who do
+            # not have Matplotlib dipy makes a few simple colormaps available.
+            # These colormaps are simple because y0 == y1, and therefor we
+            # ignore y1 here.
+            rgba[:, i] = np.interp(v, x, y0)
+        return rgba
+
+    return simple_cmap
