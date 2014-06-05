@@ -1072,7 +1072,7 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
     return ass
 
 
-dipy_cm_name = {'blues':'Blues', 'accent':'Accent'}
+lowercase_cm_name = {'blues':'Blues', 'accent':'Accent'}
 def create_colormap(v, name='jet', auto=True):
     """Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
@@ -1082,9 +1082,9 @@ def create_colormap(v, name='jet', auto=True):
     ----------
     v : (N,) array
         vector of values to be mapped in RGB colors according to colormap
-    name : str. 
-        name of the colormap. Currently implemented: 'jet', 'blues',
-        'accent', 'bone' and matplotlib colormaps if you have mapplotlib
+    name : str.
+        Name of the colormap. Currently implemented: 'jet', 'blues',
+        'accent', 'bone' and matplotlib colormaps if you have matplotlib
         installed.
     auto : bool,
         if auto is True then v is interpolated to [0, 10] from v.min()
@@ -1106,8 +1106,8 @@ def create_colormap(v, name='jet', auto=True):
     else:
         v = np.clip(v, 0, 1)
 
-    # The names a few colormaps are different in dipy
-    newname = dipy_cm_name.get(name) or name
+    # For backwards compatibility with lowercase names
+    newname = lowercase_cm_name.get(name) or name
 
     colormap = get_cmap(newname)
     if colormap is None:
@@ -1120,8 +1120,8 @@ def create_colormap(v, name='jet', auto=True):
 
 
 def _makeNd(array, ndim):
-    """Pads 1s at the beginning of array's shape so that array until array is
-    ndim"""
+    """Pads as many 1s at the beginning of array's shape as are need to give
+    array ndim dimensions."""
     new_shape = (1,) * (ndim - array.ndim) + array.shape
     return array.reshape(new_shape)
 

@@ -104,7 +104,7 @@ def test_colormaps_matplotlib():
 
     v = np.random.random(1000)
     for name in 'jet', 'Blues', 'Accent', 'bone':
-        # Matplot lib version of get_cmap
+        # Matplotlib version of get_cmap
         rgba1 = fvtk.get_cmap(name)(v)
         # Dipy version of get_cmap
         rgba2 = data.get_cmap(name)(v)
