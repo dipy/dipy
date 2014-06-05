@@ -6,13 +6,14 @@ allow streamlines to interact with image data.
 
 Important Note:
 ---------------
-Some functions in this module use an affine matrix to represent the coordinate
-system associated with the points of a streamline. Dipy uses a similar
-convention to nifti files when interpreting this affine matrix. This convention
-is that the point at the center of voxel ``[i, j, k]`` is represented by the
-point ``[x, y, z]`` where ``[x, y, z, 1] = affine * [i, j, k, 1]``.
-Also when the phrase "voxel coordinates" is used, it is understood to be the
-same as ``affine = eye(4)``.
+Dipy uses affine matrices to represent the relationship between streamline
+points, which are defined as points in a continuous 3d space, and image voxels,
+which are typically arranged in a discrete 3d grid. Dipy uses a convention
+similar to nifti files to interpret these affine matrices. This convention is
+that the point at the center of voxel ``[i, j, k]`` is represented by the point
+``[x, y, z]`` where ``[x, y, z, 1] = affine * [i, j, k, 1]``.  Also when the
+phrase "voxel coordinates" is used, it is understood to be the same as ``affine
+= eye(4)``.
 
 As an example, lets take a 2d image where the affine is::
 
@@ -171,10 +172,10 @@ def connectivity_matrix(streamlines, label_volume, voxel_size=None,
     """
     # Error checking on label_volume
     kind = label_volume.dtype.kind
-    labels_possitive = ((kind == 'u') or
-                        ((kind == 'i') and (label_volume.min() >= 0))
-                       )
-    valid_label_volume = (labels_possitive and label_volume.ndim == 3)
+    labels_positive = ((kind == 'u') or
+                       ((kind == 'i') and (label_volume.min() >= 0))
+                      )
+    valid_label_volume = (labels_positive and label_volume.ndim == 3)
     if not valid_label_volume:
         raise ValueError("label_volume must be a 3d integer array with"
                          "non-negative label values")
