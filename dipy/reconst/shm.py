@@ -550,7 +550,7 @@ def bootstrap_data_array(data, H, R, permute=None):
 
     data must be normalized, ie 0 < data <= 1
 
-    This function, and the bootstrap_data_voxel function, calculat
+    This function, and the bootstrap_data_voxel function, calculate
     residual-bootsrap samples given a Hat matrix and a Residual matrix. These
     samples can be used for non-parametric statistics or for bootstrap
     probabilistic tractography:
@@ -610,7 +610,7 @@ class ResidualBootstrapWrapper(object):
         signal_object : some object that can be indexed
             This object should return diffusion weighted signals when indexed.
         B : ndarray, ndim=2
-            The design matrix of spherical hormonic model usded to fit the
+            The design matrix of the spherical harmonics model used to fit the
             data. This is the model that will be used to compute the residuals
             and sample the residual bootstrap distribution
         where_dwi :
@@ -711,7 +711,7 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
 
 
 def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0):
-    """ Matrix that transforms Spherical harmonics (SH) to spherical 
+    """ Matrix that transforms Spherical harmonics (SH) to spherical
     function (SF).
 
     Parameters
@@ -730,7 +730,7 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
         If True then the inverse of the matrix is also returned
     smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
-    
+
     Returns
     -------
     B : ndarray
