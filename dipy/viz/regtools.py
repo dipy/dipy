@@ -62,8 +62,6 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
 
     #If a file name was given, save the figure
     if fname is not None:
-      from time import sleep
-      sleep(1)
       plt.savefig(fname, bbox_inches='tight')
 
 
@@ -243,8 +241,6 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
 
     #Finally, save the figure to disk
     if fname is not None:
-        from time import sleep
-        sleep(1)
         plt.savefig(fname, bbox_inches = 'tight')
 
     #Return the deformed grids
@@ -296,8 +292,6 @@ def plot_slices(V, slice_indices=None, fname=None):
     
     #Save the figure if requested
     if fname is not None:
-        from time import sleep
-        sleep(1)
         plt.savefig(fname, bbox_inches='tight')
 
 
@@ -388,6 +382,4 @@ def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left',
 
     #Save the figure to disk, if requested
     if fname is not None:
-        from time import sleep
-        sleep(1)
         plt.savefig(fname, bbox_inches = 'tight')

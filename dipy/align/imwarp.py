@@ -486,17 +486,17 @@ class DiffeomorphicMap(object):
         called for the specified data dimension and interpolation type
         """
         if self.dim == 2:
-            if interpolation == 'lin':
+            if interpolation == 'linear':
                 return vfu.warp_image
             else:
                 return vfu.warp_image_nn
         else:
-            if interpolation == 'lin':
+            if interpolation == 'linear':
                 return vfu.warp_volume
             else:
                 return vfu.warp_volume_nn
 
-    def _warp_forward(self, image, interpolation='lin', world_to_image=-1, 
+    def _warp_forward(self, image, interpolation='linear', world_to_image=-1, 
                       sampling_shape=None, sampling_affine=-1):
         r"""
         Deforms the input image under this diffeomorphic map in the forward 
@@ -510,9 +510,9 @@ class DiffeomorphicMap(object):
         image : array, shape (s, r, c) if dim = 3 or (r, c) if dim = 2
             the image to be warped under this transformation in the forward 
             direction
-        interpolation : string, either 'lin' or 'nn'
-            the type of interpolation to be used for warping, either 'lin'
-            (for k-linear interpolation) or 'nn' for nearest neighbor
+        interpolation : string, either 'linear' or 'nearest'
+            the type of interpolation to be used for warping, either 'linear'
+            (for k-linear interpolation) or 'nearest' for nearest neighbor
         world_to_image : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
@@ -596,7 +596,7 @@ class DiffeomorphicMap(object):
         affine_disp = W
 
         #Convert the data to the required types to use the cythonized functions  
-        if interpolation == 'nn':
+        if interpolation == 'nearest':
             if image.dtype is np.dtype('float64') and floating is np.float32:
                 image = image.astype(floating)
             elif image.dtype is np.dtype('int64'):
@@ -610,7 +610,7 @@ class DiffeomorphicMap(object):
                         affine_disp, sampling_shape)
         return warped
 
-    def _warp_backward(self, image, interpolation='lin', world_to_image=-1, 
+    def _warp_backward(self, image, interpolation='linear', world_to_image=-1, 
                        sampling_shape=None, sampling_affine=-1):
         r"""
         Deforms the input image under this diffeomorphic map in the backward 
@@ -624,9 +624,9 @@ class DiffeomorphicMap(object):
         image : array, shape (s, r, c) if dim = 3 or (r, c) if dim = 2
             the image to be warped under this transformation in the backward
             direction
-        interpolation : string, either 'lin' or 'nn'
-            the type of interpolation to be used for warping, either 'lin'
-            (for k-linear interpolation) or 'nn' for nearest neighbor
+        interpolation : string, either 'linear' or 'nearest'
+            the type of interpolation to be used for warping, either 'linear'
+            (for k-linear interpolation) or 'nearest' for nearest neighbor
         world_to_image : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
@@ -709,7 +709,7 @@ class DiffeomorphicMap(object):
         #prior to adding to the transformed input point
         affine_disp = mult_aff(W, Pinv)
         
-        if interpolation == 'nn':
+        if interpolation == 'nearest':
             if image.dtype is np.dtype('float64') and floating is np.float32:
                 image = image.astype(floating)
             elif image.dtype is np.dtype('int64'):
@@ -724,7 +724,7 @@ class DiffeomorphicMap(object):
 
         return warped
 
-    def transform(self, image, interpolation='lin', world_to_image=-1, 
+    def transform(self, image, interpolation='linear', world_to_image=-1, 
                   sampling_shape=None, sampling_affine=-1):
         r"""
         Transforms the input image under this transformation in the forward
@@ -737,9 +737,9 @@ class DiffeomorphicMap(object):
         image : array, shape (s, r, c) if dim = 3 or (r, c) if dim = 2
             the image to be warped under this transformation in the forward 
             direction
-        interpolation : string, either 'lin' or 'nn'
-            the type of interpolation to be used for warping, either 'lin'
-            (for k-linear interpolation) or 'nn' for nearest neighbor
+        interpolation : string, either 'linear' or 'nearest'
+            the type of interpolation to be used for warping, either 'linear'
+            (for k-linear interpolation) or 'nearest' for nearest neighbor
         world_to_image : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
@@ -766,7 +766,7 @@ class DiffeomorphicMap(object):
                                        sampling_shape, sampling_affine)
         return np.asarray(warped)
 
-    def transform_inverse(self, image, interpolation='lin', world_to_image=-1, 
+    def transform_inverse(self, image, interpolation='linear', world_to_image=-1, 
                           sampling_shape=None, sampling_affine=-1):
         r"""
         Transforms the input image under this transformation in the backward
@@ -779,9 +779,9 @@ class DiffeomorphicMap(object):
         image : array, shape (s, r, c) if dim = 3 or (r, c) if dim = 2
             the image to be warped under this transformation in the forward 
             direction
-        interpolation : string, either 'lin' or 'nn'
-            the type of interpolation to be used for warping, either 'lin'
-            (for k-linear interpolation) or 'nn' for nearest neighbor
+        interpolation : string, either 'linear' or 'nearest'
+            the type of interpolation to be used for warping, either 'linear'
+            (for k-linear interpolation) or 'nearest' for nearest neighbor
         world_to_image : array, shape (dim+1, dim+1)
             the transformation bringing world (space) coordinates to voxel
             coordinates of the image given as input
@@ -1299,8 +1299,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                     
         #Warp the input images (smoothed to the current scale) to the common 
         #(reference) space
-        wstatic = self.forward_model.transform_inverse(current_static, 'lin')
-        wmoving = self.backward_model.transform_inverse(current_moving, 'lin')
+        wstatic = self.forward_model.transform_inverse(current_static, 'linear')
+        wmoving = self.backward_model.transform_inverse(current_moving, 'linear')
         
         #Pass both images to the metric. Now both images are sampled on the
         #reference grid (equal to the static image's grid) and the direction

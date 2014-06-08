@@ -25,17 +25,6 @@ moving = plt.imread(fname_moving)
 static = plt.imread(fname_static)
 
 """
-We need to use 2D scalar images, so let's take only the first channel of
-the RGB images (in this case the three channels are equal)
-"""
-
-moving = np.array(moving[:, :, 0])
-static = np.array(static[:, :, 0])
-
-moving = (moving - moving.min()) / (moving.max() - moving.min())
-static = (static - static.min()) / (static.max() - static.min())
-
-"""
 To visually check the overlap of the static image with the transformed moving
 image, we can plot them on top of each other with different channels to see
 where the differences are located
@@ -56,11 +45,11 @@ into the static image (the C letter)
 
 The first decision we need to make is what similarity metric is appropriate
 for our problem. In this example we are using two binary images, so the Sum
-of Squared Differences (SSD) is a good choice. We create a metric specifying
-2 as the dimension of our images' domain
+of Squared Differences (SSD) is a good choice.
 """
 
-metric = SSDMetric(dim = 2, step_type = 'gauss_newton') 
+dim = static.ndim
+metric = SSDMetric(dim) 
 
 """
 Now we define an instance of the registration class. The SyN algorithm uses
@@ -71,7 +60,7 @@ each level of the pyramid. The 0-th level corresponds to the finest resolution.
 
 opt_iter = [25, 50, 100, 200]
 
-sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter, inv_iter = 40)
+sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter, inv_iter = 50)
 
 """
 Now we execute the optimization, which returns a DiffeomorphicMap object,
@@ -99,7 +88,7 @@ regtools.plot_2d_diffeomorphic_map(mapping, 10, 'diffeomorphic_map.png')
 Now let's warp the moving image and see if it gets similar to the static image
 """
 
-warped_moving = mapping.transform(moving, 'lin')
+warped_moving = mapping.transform(moving, 'linear')
 regtools.overlay_images(static, warped_moving, 'Static','Overlay','Warped moving',
    'direct_warp_result.png')
 
@@ -115,7 +104,7 @@ And we can also apply the inverse mapping to verify that the warped static image
 is similar to the moving image 
 """
 
-warped_static = mapping.transform_inverse(static, 'lin')
+warped_static = mapping.transform_inverse(static, 'linear')
 regtools.overlay_images(warped_static, moving,'Warped static','Overlay','Moving', 
    'inverse_warp_result.png')
 

@@ -1,7 +1,6 @@
 from __future__ import print_function
 import numpy as np
 import scipy as sp
-import matplotlib.pyplot as plt
 import abc
 from scipy import gradient, ndimage
 import dipy.align.vector_fields as vfu
@@ -636,7 +635,7 @@ class EMMetric(SimilarityMetric):
         if transformation == None:
             return
         self.static_image_mask = \
-            transformation.transform(self.static_image_mask,'nn')
+            transformation.transform(self.static_image_mask,'nearest')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""
@@ -659,7 +658,7 @@ class EMMetric(SimilarityMetric):
         if transformation == None:
             return
         self.moving_image_mask = \
-            transformation.transform(self.moving_image_mask,'nn')
+            transformation.transform(self.moving_image_mask,'nearest')
 
 
 class SSDMetric(SimilarityMetric):
