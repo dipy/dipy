@@ -1,8 +1,9 @@
 ''' Fvtk module implements simple visualization functions using VTK.
 
-The main idea is the following:
-A window can have one or more renderers. A renderer can have none, one or more actors. Examples of actors are a sphere, line, point etc.
-You basically add actors in a renderer and in that way you can visualize the forementioned objects e.g. sphere, line ...
+The main idea is the following: A window can have one or more renderers. A
+renderer can have none, one or more actors. Examples of actors are a sphere,
+line, point etc.  You basically add actors in a renderer and in that way you
+can visualize the forementioned objects e.g. sphere, line ...
 
 Examples
 ---------
@@ -1170,52 +1171,66 @@ def create_colormap(v, name='jet', auto=True):
         # cm.datad['Blues']
         # print 'blues'
 
-        red = np.interp(
-            v, [
-                0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.96862745285, 0.870588243008, 0.776470601559, 0.61960786581,
-                                                                         0.419607847929, 0.258823543787, 0.129411771894, 0.0313725508749, 0.0313725508749])
-        green = np.interp(
-            v, [
-                0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.984313726425, 0.921568632126, 0.858823537827, 0.792156875134,
-                                                                         0.68235296011, 0.572549045086, 0.443137258291, 0.317647069693, 0.188235297799])
-        blue = np.interp(
-            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.96862745285, 0.937254905701, 0.882352948189,
-                                                                         0.839215695858, 0.776470601559, 0.709803938866, 0.611764729023, 0.419607847929])
+        red = np.interp(v, [0.0, 0.125, 0.25, 0.375, 0.5,
+                            0.625, 0.75, 0.875, 1.0],
+                            [0.96862745285, 0.870588243008, 0.776470601559,
+                              0.61960786581, 0.419607847929, 0.258823543787,
+                              0.129411771894, 0.0313725508749, 0.0313725508749])
+        green = np.interp(v, [0.0, 0.125, 0.25, 0.375, 0.5,
+                               0.625, 0.75, 0.875, 1.0],
+                               [0.984313726425, 0.921568632126, 0.858823537827,
+                                 0.792156875134, 0.68235296011, 0.572549045086,
+                                 0.443137258291, 0.317647069693, 0.188235297799])
+        blue = np.interp(v, [0.0, 0.125, 0.25, 0.375, 0.5,
+                              0.625, 0.75, 0.875, 1.0],
+                            [1.0, 0.96862745285, 0.937254905701, 0.882352948189,
+                             0.839215695858, 0.776470601559, 0.709803938866,
+                             0.611764729023, 0.419607847929])
 
     if name == 'blue_red':
         # print 'blue_red'
         # red=np.interp(v,[],[])
 
-        red = np.interp(
-            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.0, 0.125, 0.25, 0.375, 0.5,
-                                                                         0.625, 0.75, 0.875, 1.0])
+        red = np.interp(v,
+                        [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0],
+                        [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0])
         green = np.zeros(red.shape)
-        blue = np.interp(
-            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.875, 0.75, 0.625, 0.5,
-                                                                         0.375, 0.25, 0.125, 0.0])
+        blue = np.interp(v,
+                         [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0],
+                         [1.0, 0.875, 0.75, 0.625, 0.5, 0.375, 0.25, 0.125, 0.0])
 
         blue = green
 
     if name == 'accent':
         # print 'accent'
-        red = np.interp(
-            v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
-                0.7142857142857143, 0.8571428571428571, 1.0],
-            [0.49803921580314636, 0.7450980544090271, 0.99215686321258545, 1.0, 0.21960784494876862, 0.94117647409439087, 0.74901962280273438, 0.40000000596046448])
-        green = np.interp(
-            v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
-                0.7142857142857143, 0.8571428571428571, 1.0],
-            [0.78823530673980713, 0.68235296010971069, 0.75294119119644165, 1.0, 0.42352941632270813, 0.0078431377187371254, 0.35686275362968445, 0.40000000596046448])
-        blue = np.interp(
-            v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
-                0.7142857142857143, 0.8571428571428571, 1.0],
-            [0.49803921580314636, 0.83137255907058716, 0.52549022436141968, 0.60000002384185791, 0.69019609689712524, 0.49803921580314636, 0.090196080505847931, 0.40000000596046448])
+        red = np.interp(v,
+                        [0.0, 0.14285714285714285, 0.2857142857142857,
+                         0.42857142857142855, 0.5714285714285714,
+                         0.7142857142857143, 0.8571428571428571, 1.0],
+                         [0.49803921580314636, 0.7450980544090271,
+                          0.99215686321258545, 1.0, 0.21960784494876862,
+                          0.94117647409439087, 0.74901962280273438,
+                          0.40000000596046448])
+        green = np.interp(v, [0.0, 0.14285714285714285, 0.2857142857142857,
+                              0.42857142857142855, 0.5714285714285714,
+                              0.7142857142857143, 0.8571428571428571, 1.0],
+                              [0.78823530673980713, 0.68235296010971069,
+                               0.75294119119644165, 1.0, 0.42352941632270813,
+                               0.0078431377187371254, 0.35686275362968445,
+                               0.40000000596046448])
+        blue = np.interp(v, [0.0, 0.14285714285714285, 0.2857142857142857,
+                             0.42857142857142855, 0.5714285714285714,
+                             0.7142857142857143, 0.8571428571428571, 1.0],
+                             [0.49803921580314636, 0.83137255907058716,
+                              0.52549022436141968, 0.60000002384185791,
+                              0.69019609689712524, 0.49803921580314636,
+                              0.090196080505847931, 0.40000000596046448])
 
     return np.vstack((red, green, blue)).T
 
 
 def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
-                 scale=2.2, norm=True, radial_scale=True):
+                 scale=2.2, norm=True, radial_scale=True, origin=None):
     """Plot many morphed spherical functions simultaneously.
 
     Parameters
@@ -1233,7 +1248,9 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
         Normalize `sphere_values`.
     radial_scale : bool,
         Scale sphere points according to odf values.
-
+    origin : 3-element array, optional
+        Moves the sphere_funcs to be centered on this xyz coordinate in the
+        volume. Default : [0, 0, 0]
     Returns
     -------
     actor : vtkActor
@@ -1265,7 +1282,6 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     grid_shape = np.array(sphere_values.shape[:3])
     faces = np.asarray(sphere.faces, dtype=int)
     vertices = sphere.vertices
-
     if sphere_values.shape[-1] != sphere.vertices.shape[0]:
         msg = 'Sphere.vertices.shape[0] should be the same as the '
         msg += 'last dimensions of sphere_values i.e. sphere_values.shape[-1]'
@@ -1276,7 +1292,6 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
 
     for ijk in np.ndindex(*grid_shape):
         m = sphere_values[ijk].copy()
-
         if norm:
             m /= abs(m).max()
 
@@ -1288,6 +1303,8 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
         xyz += scale * (ijk - grid_shape / 2.)[:, None]
 
         xyz = xyz.T
+        if origin is not None:
+            xyz = xyz + origin
 
         list_sq.append(xyz)
         if colormap is not None:
@@ -1343,7 +1360,8 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     return actor
 
 
-def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
+def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0),
+          origin=None):
     """ Visualize peak directions as given from ``peaks_from_model``
 
     Parameters
@@ -1369,16 +1387,20 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
     --------
     dipy.viz.fvtk.sphere_funcs
     """
-    peaks_dirs = np.asarray(peaks_dirs)
-    if peaks_dirs.ndim == 2:
-        peaks_dirs = peaks_dirs[None, None, None, :]
-    if peaks_dirs.ndim == 3:
-        peaks_dirs = peaks_dirs[None, None, :]
-    if peaks_dirs.ndim == 4:
-        peaks_dirs = peaks_dirs[None, :]
-    if peaks_dirs.ndim > 5:
-        raise ValueError("Wrong shape")
-
+    # We need a helper function here to reshape the inputs so that we have the
+    # right number of dimensions on peak_dirs and on peak_values (and the same
+    # number on both... 
+    def _reshaper(thing, dims=5):
+        np.asarray(thing)
+        # We can't handle stuff with more than 5D:
+        if thing.ndim > 5:
+            raise ValueError("Wrong shape")
+        while thing.ndim<dims:
+            thing = thing[None, :]
+        return thing
+        
+    peaks_dirs = _reshaper(peaks_dirs)
+    peaks_values = _reshaper(peaks_values, 4)
     grid_shape = np.array(peaks_dirs.shape[:3])
 
     list_dirs = []
@@ -1388,6 +1410,9 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
         xyz = scale * (ijk - grid_shape / 2.)[:, None]
 
         xyz = xyz.T
+
+        if origin is not None:
+            xyz = xyz + origin
 
         for i in range(peaks_dirs.shape[-2]):
 
@@ -1787,7 +1812,7 @@ def show(ren, title='Dipy', size=(300, 300), png_magnify=1):
 
     """
 
-    ren.ResetCamera()
+    #ren.ResetCamera()
     window = vtk.vtkRenderWindow()
     window.AddRenderer(ren)
     # window.SetAAFrames(6)
@@ -1879,7 +1904,7 @@ def record(ren=None, cam_pos=None, cam_focal=None, cam_view=None,
 
     # ren.GetActiveCamera().Azimuth(180)
 
-    ren.ResetCamera()
+    # ren.ResetCamera()
 
     renderLarge = vtk.vtkRenderLargeImage()
     if major_version <= 5:
