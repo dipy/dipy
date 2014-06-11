@@ -3,9 +3,10 @@
 import numpy as np
 
 from dipy.viz import fvtk
+from dipy import data
 
-from numpy.testing import assert_equal
 import numpy.testing as npt
+import nose
 
 @npt.dec.skipif(not fvtk.have_vtk)
 @npt.dec.skipif(not fvtk.have_vtk_colors)
@@ -83,5 +84,30 @@ def test_fvtk_ellipsoid():
 
     fvtk.add(ren, fvtk.tensor(mevals, mevecs, np.ones(mevals.shape), sphere=sphere))
 
-    assert_equal(ren.GetActors().GetNumberOfItems(), 2)
+    npt.assert_equal(ren.GetActors().GetNumberOfItems(), 2)
+
+
+def test_colormap():
+    v = np.linspace(0., .5)
+    map1 = fvtk.create_colormap(v, 'bone', auto=True)
+    map2 = fvtk.create_colormap(v, 'bone', auto=False)
+    npt.assert_(not np.allclose(map1, map2))
+
+    npt.assert_raises(ValueError, fvtk.create_colormap, np.ones((2, 3)))
+    npt.assert_raises(ValueError, fvtk.create_colormap, v, 'no such map')
+
+
+def test_colormaps_matplotlib():
+    # Skip this test if no matplotlib
+    if not fvtk.have_matplotlib:
+        raise npt.SkipTest
+
+    v = np.random.random(1000)
+    for name in 'jet', 'Blues', 'Accent', 'bone':
+        # Matplotlib version of get_cmap
+        rgba1 = fvtk.get_cmap(name)(v)
+        # Dipy version of get_cmap
+        rgba2 = data.get_cmap(name)(v)
+        # dipy's colormaps are close to matplotlibs colormaps, but not perfect
+        npt.assert_array_almost_equal(rgba1, rgba2, 1)
 
