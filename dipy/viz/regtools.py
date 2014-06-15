@@ -4,7 +4,8 @@ matplotlib, has_mpl, setup_module = optional_package("matplotlib")
 plt, _, _ = optional_package("matplotlib.pyplot")
 
 def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
-    r"""
+    r""" Plot two images one on top of the other using red and green channels.
+
     Creates a figure containing three images: the first image to the left plotted
     on the red channel of a color image, the second to the right plotted on the 
     green channel of a color image and the two given images on top of each other
@@ -66,7 +67,8 @@ def overlay_images(img0, img1, title0='', title_mid='', title1='', fname=None):
 
 
 def draw_lattice_2d(nrows, ncols, delta):
-    r"""
+    r"""Create a regular lattice of nrows x ncols squares.
+
     Creates an image (2D array) of a regular lattice of nrows x ncols squares.
     The size of each square is delta x delta pixels (not counting the
     separation lines). The lines are one pixel width.
@@ -110,7 +112,8 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
                               direct_grid_shape=None, direct_grid_affine=-1,
                               inverse_grid_shape=None, inverse_grid_affine=-1,
                               show_figure = True):
-    r"""
+    r"""Draw the effect of warping a regular lattice by a diffeomorphic map.
+
     Draws a diffeomorphic map by showing the effect of the deformation on a
     regular grid. The resulting figure contains two images: the direct
     transformation is plotted to the left, and the inverse transformation is 
@@ -206,7 +209,7 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
     lattice_out=lattice_out[0:inverse_grid_shape[0], 0:inverse_grid_shape[1]]
 
     #Warp in the forward direction (sampling it on the input grid)
-    warped_forward = mapping.transform(lattice_out, 'lin', world_to_image,
+    warped_forward = mapping.transform(lattice_out, 'linear', world_to_image,
                                        direct_grid_shape, direct_grid_affine)
 
     
@@ -224,7 +227,7 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
     lattice_in=lattice_in[0:direct_grid_shape[0], 0:direct_grid_shape[1]]
 
     #Warp in the backward direction (sampling it on the output grid)
-    warped_backward = mapping.transform_inverse(lattice_in, 'lin',
+    warped_backward = mapping.transform_inverse(lattice_in, 'linear',
         world_to_image, inverse_grid_shape, inverse_grid_affine)
 
     #Now plot the grids
@@ -248,7 +251,8 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
 
 
 def plot_slices(V, slice_indices=None, fname=None):
-    r"""
+    r"""Plot 3 slices from the given volume: 1 sagital, 1 coronal and 1 axial
+
     Creates a figure showing the axial, coronal and sagital slices at the
     requested positions of the given volume. The requested slices are specified
     by slice_indices.
@@ -297,7 +301,8 @@ def plot_slices(V, slice_indices=None, fname=None):
 
 def overlay_slices(L, R, slice_index=None, slice_type=1, ltitle='Left', 
                    rtitle='Right', fname=None):
-    r"""
+    r"""Plot three overlaid slices from the given volumes.
+
     Creates a figure containing three images: the gray scale k-th slice of
     the first volume (L) to the left, where k=slice_index, the k-th slice of
     the second volume (R) to the right and the k-th slices of the two given

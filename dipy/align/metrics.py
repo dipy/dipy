@@ -14,6 +14,7 @@ class SimilarityMetric(object):
     __metaclass__ = abc.ABCMeta
     def __init__(self, dim):
         r""" Similarity Metric abstract class
+
         A similarity metric is in charge of keeping track of the numerical value
         of the similarity (or distance) between the two given images. It also
         computes the update field for the forward and inverse displacement 
@@ -42,7 +43,8 @@ class SimilarityMetric(object):
         self.mask0 = False
 
     def set_levels_below(self, levels):
-        r"""
+        r"""Informs the metric how many pyramid levels are below the current one
+
         Informs this metric the number of pyramid levels below the current one.
         The metric may change its behavior (e.g. number of inner iterations)
         accordingly
@@ -55,7 +57,8 @@ class SimilarityMetric(object):
         self.levels_below = levels
 
     def set_levels_above(self, levels):
-        r"""
+        r"""Informs the metric how many pyramid levels are above the current one
+
         Informs this metric the number of pyramid levels above the current one.
         The metric may change its behavior (e.g. number of inner iterations)
         accordingly
@@ -69,7 +72,8 @@ class SimilarityMetric(object):
 
     def set_static_image(self, static_image, static_affine, static_spacing,
                          static_direction):
-        r"""
+        r"""Sets the static image being compared against the moving one.
+
         Sets the static image. The default behavior (of this abstract class) is
         simply to assign the reference to an attribute, but 
         generalizations of the metric may need to perform other operations
@@ -87,7 +91,8 @@ class SimilarityMetric(object):
     def use_static_image_dynamics(self,
                                  original_static_image,
                                  transformation):
-        r"""
+        r"""This is called by the optimizer just after setting the static image.
+
         This method allows the metric to compute any useful
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
@@ -105,25 +110,10 @@ class SimilarityMetric(object):
         """
         pass
 
-    def use_original_static_image(self, original_static_image):
-        """
-        This method allows the metric to compute any useful
-        information from the original moving image (to be used along with the
-        sequence of movingImages during optimization, for example the binary
-        mask delimiting the object of interest can be computed from the original
-        image only and then warp this binary mask instead of thresholding
-        at each iteration, which might cause artifacts due to interpolation)
-
-        Parameters
-        ----------
-        original_static_image : array, shape (R, C) or (S, R, C)
-            the original image from which the current static image was generated
-        """
-        pass
-
     def set_moving_image(self, moving_image, moving_affine, moving_spacing,
                          moving_direction):
-        r"""
+        r"""Sets the moving image being compared against the static one.
+
         Sets the moving image. The default behavior (of this abstract class) is
         simply to assign the reference to an attribute, but 
         generalizations of the metric may need to perform other operations
@@ -138,26 +128,11 @@ class SimilarityMetric(object):
         self.moving_spacing = moving_spacing
         self.moving_direction = moving_direction
 
-    def use_original_moving_image(self, original_moving_image):
-        """
-        This method allows the metric to compute any useful
-        information from the original moving image (to be used along with the
-        sequence of movingImages during optimization, for example the binary
-        mask delimiting the object of interest can be computed from the original
-        image only and then warp this binary mask instead of thresholding
-        at each iteration, which might cause artifacts due to interpolation)
-
-        Parameters
-        ----------
-        original_moving_image : array, shape (R, C) or (S, R, C)
-            the original image from which the current moving image was generated
-        """
-        pass
-
     def use_moving_image_dynamics(self,
                                original_moving_image,
                                transformation):
-        """
+        r"""This is called by the optimizer just after setting the moving image.
+
         This method allows the metric to compute any useful
         information from knowing how the current static image was generated
         (as the transformation of an original static image). This method is
@@ -177,7 +152,8 @@ class SimilarityMetric(object):
 
     @abc.abstractmethod
     def initialize_iteration(self):
-        """
+        r"""Prepares the metric to compute one displacement field iteration.
+
         This method will be called before any compute_forward or
         compute_backward call, this allows the Metric to pre-compute any useful
         information for speeding up the update computations. This initialization
@@ -187,7 +163,8 @@ class SimilarityMetric(object):
 
     @abc.abstractmethod
     def free_iteration(self):
-        """
+        r"""Releases the resources no longer needed by the metric
+
         This method is called by the RegistrationOptimizer after the required
         iterations have been computed (forward and / or backward) so that the
         SimilarityMetric can safely delete any data it computed as part of the
@@ -196,21 +173,24 @@ class SimilarityMetric(object):
 
     @abc.abstractmethod
     def compute_forward(self):
-        """
-        Must return the forward update field for a gradient-based optimization
-        algorithm
+        r"""Computes one step bringing the reference image towards the static.
+
+        Computes the forward update field to register the moving image towards
+        the static image in a gradient-based optimization algorithm
         """
 
     @abc.abstractmethod
     def compute_backward(self):
-        """
-        Must return the inverse update field for a gradient-based optimization
-        algorithm
+        r"""Computes one step bringing the static image towards the moving.
+
+        Computes the backward update field to register the static image towards
+        the moving image in a gradient-based optimization algorithm
         """
 
     @abc.abstractmethod
     def get_energy(self):
-        """
+        r"""The numerical value assigned by this metric to the current image pair
+
         Must return the numeric value of the similarity between the given static
         and moving images
         """
@@ -218,8 +198,7 @@ class SimilarityMetric(object):
 class CCMetric(SimilarityMetric):
 
     def __init__(self, dim, sigma_diff=2.0, radius=4):
-        r"""
-        Normalized Cross-Correlation Similarity metric.
+        r"""Normalized Cross-Correlation Similarity metric.
 
         Parameters
         ----------
@@ -237,6 +216,12 @@ class CCMetric(SimilarityMetric):
         self._connect_functions()
 
     def _connect_functions(self):
+        r"""Assign the methods to be called according to the image dimension
+
+        Assigns the appropriate functions to be called for precomputing the
+        cross-correlation factors according to the dimension of the input
+        images
+        """
         if self.dim == 2:
             self.precompute_factors = cc.precompute_cc_factors_2d
             self.compute_forward_step = cc.compute_cc_forward_step_2d
@@ -252,8 +237,13 @@ class CCMetric(SimilarityMetric):
 
 
     def initialize_iteration(self):
-        r"""
-        Pre-computes the cross-correlation factors
+        r"""Prepares the metric to compute one displacement field iteration.
+
+        Pre-computes the cross-correlation factors for efficient computation
+        of the gradient of the Cross Correlation w.r.t. the displacement field.
+        It also pre-computes the image gradients in the physical space by
+        re-orienting the gradients in the voxel space using the corresponding
+        affine transformations.
         """
         self.factors = self.precompute_factors(self.static_image,
                                              self.moving_image,
@@ -285,15 +275,15 @@ class CCMetric(SimilarityMetric):
                                        self.static_direction)
 
     def free_iteration(self):
-        r"""
-        Frees the resources allocated during initialization
+        r"""Frees the resources allocated during initialization
         """
         del self.factors
         del self.gradient_moving
         del self.gradient_static
     
     def compute_forward(self):
-        r"""
+        r"""Computes one step bringing the moving image towards the static.
+
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
         """
@@ -306,7 +296,8 @@ class CCMetric(SimilarityMetric):
         return displacement
 
     def compute_backward(self):
-        r"""
+        r"""Computes one step bringing the static image towards the moving.
+
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
@@ -321,7 +312,8 @@ class CCMetric(SimilarityMetric):
 
 
     def get_energy(self):
-        r"""
+        r"""The numerical value assigned by this metric to the current image pair
+
         Returns the Cross Correlation (data term) energy computed at the largest
         iteration
         """
@@ -336,8 +328,8 @@ class EMMetric(SimilarityMetric):
                  q_levels=256, 
                  double_gradient=True, 
                  iter_type='gauss_newton'):
-        r"""
-        Expectation-Maximization Metric
+        r"""Expectation-Maximization Metric
+        
         Similarity metric based on the Expectation-Maximization algorithm to
         handle multi-modal images. The transfer function is modeled as a set of
         hidden random variables that are estimated at each iteration of the
@@ -382,7 +374,8 @@ class EMMetric(SimilarityMetric):
         self._connect_functions()
 
     def _connect_functions(self):
-        r"""
+        r"""Assign the methods to be called according to the image dimension
+
         Assigns the appropriate functions to be called for image quantization,
         statistics computation and multi-resolution iterations according to the
         dimension of the input images
@@ -402,7 +395,8 @@ class EMMetric(SimilarityMetric):
             self.compute_step = self.compute_gauss_newton_step
 
     def initialize_iteration(self):
-        r"""
+        r"""Prepares the metric to compute one displacement field iteration.
+
         Pre-computes the transfer functions (hidden random variables) and
         variances of the estimators. Also pre-computes the gradient of both
         input images. Note that once the images are transformed to the opposite
@@ -486,21 +480,24 @@ class EMMetric(SimilarityMetric):
         del self.gradient_static
 
     def compute_forward(self):
-        r"""
-        Computes the update displacement field to be used for registration of
-        the moving image towards the static image
+        """Computes one step bringing the reference image towards the static.
+
+        Computes the forward update field to register the moving image towards
+        the static image in a gradient-based optimization algorithm
         """
         return self.compute_step(True)
 
     def compute_backward(self):
-        r"""
+        r"""Computes one step bringing the static image towards the moving.
+
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
         return self.compute_step(False)
 
     def compute_gauss_newton_step(self, forward_step=True):
-        r"""
+        r"""Computes the Gauss-Newton energy minimization step
+
         Computes the Newton step to minimize this energy, i.e., minimizes the 
         linearized energy function with respect to the
         regularized displacement field (this step does not require
@@ -561,8 +558,7 @@ class EMMetric(SimilarityMetric):
         return displacement
 
     def compute_demons_step(self, forward_step=True):
-        r"""
-        Demons step for EM metric
+        r"""Demons step for EM metric
 
         Parameters
         ----------
@@ -606,14 +602,16 @@ class EMMetric(SimilarityMetric):
         return step
 
     def get_energy(self):
-        r"""
+        r"""The numerical value assigned by this metric to the current image pair
+
         Returns the EM (data term) energy computed at the largest
         iteration
         """
         return self.energy
 
     def use_static_image_dynamics(self, original_static_image, transformation):
-        r"""
+        r"""This is called by the optimizer just after setting the static image.
+
         EMMetric takes advantage of the image dynamics by computing the
         current static image mask from the originalstaticImage mask (warped
         by nearest neighbor interpolation)
@@ -638,7 +636,8 @@ class EMMetric(SimilarityMetric):
             transformation.transform(self.static_image_mask,'nearest')
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
-        r"""
+        r"""This is called by the optimizer just after setting the moving image.
+
         EMMetric takes advantage of the image dynamics by computing the
         current moving image mask from the original_moving_image mask (warped
         by nearest neighbor interpolation)
@@ -664,7 +663,8 @@ class EMMetric(SimilarityMetric):
 class SSDMetric(SimilarityMetric):
 
     def __init__(self, dim, smooth=4, inner_iter=10, step_type='demons'):
-        r"""
+        r"""Sum of Squared Differences (SSD) Metric
+
         Similarity metric for (mono-modal) nonlinear image registration defined
         by the sum of squared differences (SSD)
 
@@ -693,10 +693,12 @@ class SSDMetric(SimilarityMetric):
         self._connect_functions()
 
     def _connect_functions(self):
-        r"""
-        Assigns the appropriate functions to be called for image quantization,
-        statistics computation and multi-resolution iterations according to the
-        dimension of the input images
+        r"""Assign the methods to be called according to the image dimension
+
+        Assigns the appropriate functions to be called for vector field 
+        reorientation and displacement field steps according to the
+        dimension of the input images and the select type of step (either
+        Demons or Gauss Newton)
         """
         if self.dim == 2:
             self.reorient_vector_field = vfu.reorient_vector_field_2d
@@ -709,7 +711,8 @@ class SSDMetric(SimilarityMetric):
             self.compute_step = self.compute_demons_step
 
     def initialize_iteration(self):
-        r"""
+        r"""Prepares the metric to compute one displacement field iteration.
+
         Pre-computes the gradient of the input images to be used in the
         computation of the forward and backward steps.
         """
@@ -738,21 +741,24 @@ class SSDMetric(SimilarityMetric):
                                        self.static_direction)
 
     def compute_forward(self):
-        r"""
+        r"""Computes one step bringing the reference image towards the static.
+
         Computes the update displacement field to be used for registration of
         the moving image towards the static image
         """
         return self.compute_step(True)
 
     def compute_backward(self):
-        r"""
+        r"""Computes one step bringing the static image towards the moving.
+
         Computes the update displacement field to be used for registration of
         the static image towards the moving image
         """
         return self.compute_step(False)
 
     def compute_gauss_newton_step(self, forward_step=True):
-        r"""
+        r"""Computes the Gauss-Newton energy minimization step
+
         Minimizes the linearized energy function (Newton step) defined by the
         sum of squared differences of corresponding pixels of the input images 
         with respect to the displacement field.
@@ -788,7 +794,8 @@ class SSDMetric(SimilarityMetric):
         return displacement
 
     def compute_demons_step(self, forward_step=True):
-        r"""
+        r"""Demons step for SSD metric
+
         Computes the demons step proposed by Vercauteren et al.[Vercauteren09]
         for the SSD metric.
 
@@ -836,7 +843,8 @@ class SSDMetric(SimilarityMetric):
         return step
 
     def get_energy(self):
-        r"""
+        r"""The numerical value assigned by this metric to the current image pair
+
         Returns the Sum of Squared Differences (data term) energy computed at 
         the largest iteration
         """
@@ -851,7 +859,8 @@ class SSDMetric(SimilarityMetric):
 
 def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
              lambda_param, displacement, depth=0):
-    r"""
+    r"""Multi-resolution Gauss-Seidel solver using V-type cycles
+
     Multi-resolution Gauss-Seidel solver: solves the Gauss-Newton linear system
     by first filtering (GS-iterate) the current level, then solves for the
     residual at a coarser resolution and finally refines the solution at the
@@ -950,7 +959,8 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
 
 def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
              lambda_param, displacement, depth=0):
-    r"""
+    r"""Multi-resolution Gauss-Seidel solver using V-type cycles
+
     Multi-resolution Gauss-Seidel solver: solves the linear system by first
     filtering (GS-iterate) the current level, then solves for the residual
     at a coarser resolution and finally refines the solution at the current 
