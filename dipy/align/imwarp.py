@@ -1,6 +1,6 @@
 from __future__ import print_function
 import numpy as np
-import numpy.linalg as linalg
+import numpy.linalg as npl
 import scipy as sp
 import nibabel as nib
 import abc
@@ -18,8 +18,8 @@ RegistrationStages = Bunch(INIT_START=0,
                           SCALE_END=5,
                           ITER_START=6,
                           ITER_END=7)
-r"""
-RegistrationStages
+r"""Registration Stages
+
 This enum defines the different stages which the Volumetric Registration
 may be in. The value of the stage is passed as a parameter to the call-back
 function so that it can react accordingly.
@@ -150,7 +150,7 @@ class ScaleSpace(object):
         self.sigmas = [np.zeros(self.dim)]
 
         if input_affine is not None:
-            self.affine_invs = [np.linalg.inv(input_affine)]
+            self.affine_invs = [npl.inv(input_affine)]
         else:
             self.affine_invs = [None]
 
@@ -192,7 +192,7 @@ class ScaleSpace(object):
             self.spacings.append(output_spacing)
             self.scalings.append(scaling)
             self.affines.append(affine)
-            self.affine_invs.append(np.linalg.inv(affine))
+            self.affine_invs.append(npl.inv(affine))
             self.sigmas.append(sigmas)
 
     def get_expand_factors(self, from_level, to_level):
@@ -446,17 +446,17 @@ class DiffeomorphicMap(object):
         if domain_affine is None:
             self.domain_affine_inv = None
         else:
-            self.domain_affine_inv = np.linalg.inv(domain_affine)
+            self.domain_affine_inv = npl.inv(domain_affine)
 
         if input_affine is None:
             self.input_affine_inv = None
         else:
-            self.input_affine_inv = np.linalg.inv(input_affine)
+            self.input_affine_inv = npl.inv(input_affine)
 
         if input_prealign is None:
             self.input_prealign_inv = None
         else:
-            self.input_prealign_inv = np.linalg.inv(input_prealign)
+            self.input_prealign_inv = npl.inv(input_prealign)
 
         self.is_inverse = False
 
@@ -875,7 +875,7 @@ class DiffeomorphicMap(object):
 
         expand_factors = np.append(expand_factors, [1])
         expanded_affine = mult_aff(self.domain_affine, np.diag(expand_factors))
-        expanded_affine_inv = np.linalg.inv(expanded_affine)
+        expanded_affine_inv = npl.inv(expanded_affine)
         self.forward = expanded_forward
         self.backward = expanded_backward
         self.domain_shape = new_shape
@@ -1280,7 +1280,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #affine registration of the moving image towards the static image, which
         #results in a matrix transforming points in the static physical space to
         #points in the moving physical space
-        prealign_inv = None if prealign is None else np.linalg.inv(prealign)
+        prealign_inv = None if prealign is None else npl.inv(prealign)
         input_shape = moving.shape
         input_affine = moving_affine
         input_prealign = prealign_inv
@@ -1464,7 +1464,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         X = np.row_stack((x**2, x, np.ones_like(x)))
         XX = (X).dot(X.T)
         b = X.dot(y)
-        beta = np.linalg.solve(XX,b)
+        beta = npl.solve(XX,b)
         x0 = 0.5 * len(x)
         y0 = 2.0 * beta[0] * (x0) + beta[1]
         return y0
