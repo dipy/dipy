@@ -17,7 +17,8 @@ cdef inline int ifloor(double x) nogil:
 
 
 def quantize_positive_image(floating[:, :] v, int num_levels):
-    r"""
+    r"""Quantizes a 2D image to the requested number or quantization levels
+
     Quantizes the input image at the given number of intensity levels, 
     considering 0 as a special value: at the end, only those voxels with zero
     intensity have label zero
@@ -90,7 +91,8 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
 
 
 def quantize_positive_volume(floating[:, :, :] v, int num_levels):
-    r"""
+    r"""Quantizes a 3D volume to the requested number or quantization levels
+
     Quantizes the input volume at the given number of intensity levels,
     considering 0 as a special value: at the end, only those voxels with zero
     intensity have label zero
@@ -167,7 +169,8 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
 
 def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
                                      int numLabels, int[:, :] labels):
-    r"""
+    r"""Computes the mean and std. for each quantization level.
+
     Computes the mean and standard deviation of the intensities in 'v' for
     each corresponding label in 'labels'. In other words, for each label
     L, it computes the mean and standard deviation of the intensities in 'v'
@@ -223,7 +226,8 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
 
 def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
                                       int numLabels, int[:, :, :] labels):
-    r"""
+    r"""Computes the mean and std. for each quantization level.
+
     Computes the mean and standard deviation of the intensities in 'v' for
     each corresponding label in 'labels'. In other words, for each label
     L, it computes the mean and standard deviation of the intensities in 'v'
@@ -286,7 +290,8 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                               floating[:,:,:] gradient_moving,
                               double sigma_sq_x,
                               floating[:,:,:] out):
-    r"""
+    r"""Demons step for EM metric in 2D
+
     Computes the demons step [Vercauteren09] for SSD-driven registration
     ( eq. 4 in [Vercauteren09] ) using the EM algorithm [Arce14] to handle
     multi-modality images.    
@@ -373,7 +378,8 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                               floating[:,:,:,:] gradient_moving,
                               double sigma_sq_x,
                               floating[:,:,:,:] out):
-    r"""
+    r"""Demons step for EM metric in 3D
+
     Computes the demons step [Vercauteren09] for SSD-driven registration
     ( eq. 4 in [Vercauteren09] ) using the EM algorithm [Arce14] to handle
     multi-modality images.

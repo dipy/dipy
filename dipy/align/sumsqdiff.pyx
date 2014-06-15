@@ -13,7 +13,8 @@ cdef extern from "math.h":
 cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y, 
                                                  double det,
                                                  double[:] out) nogil:
-    r"""
+    r"""Solves a 2-variable symmetric positive-definite linear system
+
     Solves the symmetric positive-definite linear system Mx = y given by
     M=[[A[0], A[1]],
        [A[1], A[2]]].
@@ -36,7 +37,8 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
 @cython.cdivision(True)
 cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
                                          double[:] out) nogil:
-    r"""
+    r"""Solves a 3-variable symmetric positive-definite linear system
+
     Solves the symmetric semi-positive-definite linear system $Mx = y$ given by
     $M = (g g^{T} + \tau I)$
 
@@ -85,7 +87,8 @@ cpdef double iterate_residual_displacement_field_SSD2D(
                 floating[:, :] delta_field, floating[:, :] sigma_field,
                 floating[:, :, :] grad, floating[:, :, :] target,
                 double lambda_param, floating[:, :, :] displacement_field):
-    r"""
+    r"""One iteration of a large linear system solver for 2D SSD registration
+
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
     solver proposed by Bruhn and Weickert [Bruhn05].
 
@@ -206,7 +209,8 @@ cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
                                   floating[:, :, :] grad,
                                   double lambda_param,
                                   floating[:, :, :] displacement_field):
-    r"""
+    r"""Sum of squared differences between two 2D images
+
     Computes the Sum of Squared Differences between the static and moving image.
     Those differences are given by delta_field
 
@@ -256,7 +260,8 @@ cpdef double iterate_residual_displacement_field_SSD3D(
                 floating[:, :, :] delta_field, floating[:, :, :] sigma_field,
                 floating[:, :, :, :] grad, floating[:, :, :, :] target,
                 double lambda_param, floating[:, :, :, :] disp):
-    r"""
+    r"""One iteration of a large linear system solver for 3D SSD registration
+
     Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
     solver proposed by Bruhn and Weickert [Bruhn05].
 
@@ -406,7 +411,8 @@ cpdef double compute_energy_SSD3D(floating[:, :, :] delta_field,
                                   floating[:, :, :, :] gradient_field,
                                   double lambda_param,
                                   floating[:, :, :, :] displacement_field):
-    r"""
+    r"""Sum of squared differences between two 3D volumes
+
     Computes the Sum of Squared Differences between the static and moving volume
     Those differences are given by delta_field
 
@@ -457,7 +463,8 @@ def compute_residual_displacement_field_SSD3D(
         floating[:, :, :, :] gradient_field, floating[:, :, :, :] target,
         double lambda_param, floating[:, :, :, :] disp,
         floating[:, :, :, :] residual):
-    r"""
+    r"""The residual displacement field to be fit on the next iteration
+
     Computes the residual displacement field corresponding to the current 
     displacement field (given by 'disp') in the Multi-resolution 
     Gauss-Seidel solver proposed by Bruhn and Weickert [Bruhn].
@@ -565,7 +572,8 @@ cpdef compute_residual_displacement_field_SSD2D(
         floating[:, :, :] gradient_field, floating[:, :, :] target,
         double lambda_param, floating[:, :, :] displacement_field,
         floating[:, :, :] residual):
-    r"""
+    r"""The residual displacement field to be fit on the next iteration
+
     Computes the residual displacement field corresponding to the current 
     displacement field in the Multi-resolution Gauss-Seidel solver proposed by 
     Bruhn and Weickert [Bruhn05].
@@ -661,7 +669,8 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                                floating[:,:,:] gradient_moving,
                                double sigma_sq_x,
                                floating[:,:,:] out):
-    r"""
+    r"""Demons step for 2D SSD-driven registration
+
     Computes the demons step for SSD-driven registration
     ( eq. 4 in [Bruhn05] )
 
@@ -732,7 +741,8 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                                floating[:,:,:,:] gradient_moving,
                                double sigma_sq_x,
                                floating[:,:,:,:] out):
-    r"""
+    r"""Demons step for 3D SSD-driven registration
+
     Computes the demons step for SSD-driven registration 
     ( eq. 4 in [Bruhn05] )
 
