@@ -29,7 +29,8 @@ cdef enum:
 @cython.cdivision(True)
 def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                              int radius):
-    r"""
+    r"""Precomputations to quickly compute the gradient of the CC Metric
+
     Pre-computes the separate terms of the cross correlation metric and image
     norms at each voxel considering a neighborhood of the given radius to 
     efficiently compute the gradient of the metric with respect to the 
@@ -149,7 +150,8 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
 @cython.cdivision(True)
 def precompute_cc_factors_3d_test(floating[:, :, :] static, 
                                   floating[:, :, :] moving, int radius):
-    r"""
+    r"""Precomputations to quickly compute the gradient of the CC Metric
+
     This version of precompute_cc_factors_3d is for testing purposes, it
     directly computes the local cross-correlation factors without any
     optimization, so it is less error-prone than the accelerated version.
@@ -204,7 +206,8 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                                floating[:, :, :, :] grad_moving,
                                floating[:, :, :, :] factors):
-    r"""
+    r"""Gradient of the CC Metric w.r.t. the forward transformation
+
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) [Avants09] w.r.t. the displacement associated to
     the moving volume ('forward' step) as in [Avants11]
@@ -280,7 +283,8 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
                                 floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors):
-    r"""
+    r"""Gradient of the CC Metric w.r.t. the backward transformation
+
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) [Avants09] w.r.t. the displacement associated to
     the static volume ('backward' step) as in [Avants11]
@@ -352,14 +356,13 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
     return out, energy
 
 
-
-
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
                              int radius):
-    r"""
+    r"""Precomputations to quickly compute the gradient of the CC Metric
+
     Pre-computes the separate terms of the cross correlation metric [Avants09]
     and image norms at each voxel considering a neighborhood of the given
     radius to efficiently [Avants11] compute the gradient of the metric with
@@ -472,7 +475,8 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
 @cython.cdivision(True)
 def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
                                   int radius):
-    r"""
+    r"""Precomputations to quickly compute the gradient of the CC Metric
+
     This version of precompute_cc_factors_2d is for testing purposes, it
     directly computes the local cross-correlation without any optimization.
     """
@@ -523,7 +527,8 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                floating[:, :, :] grad_moving,
                                floating[:, :, :] factors):
-    r"""
+    r"""Gradient of the CC Metric w.r.t. the forward transformation
+
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) [Avants09] w.r.t. the displacement associated to
     the moving image ('backward' step) as in [Avants11]
@@ -597,7 +602,8 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
                                 floating[:, :, :] grad_moving,
                                 floating[:, :, :] factors):
-    r"""
+    r"""Gradient of the CC Metric w.r.t. the backward transformation
+
     Computes the gradient of the Cross Correlation metric for symmetric
     registration (SyN) [Avants09] w.r.t. the displacement associated to
     the static image ('forward' step) as in [Avants11]

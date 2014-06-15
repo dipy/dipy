@@ -14,7 +14,8 @@ cdef extern from "math.h":
 
 cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
                                        double h, double[:, :] aff) nogil:
-    r"""
+    r"""Multiplies aff by (x0, x1, x2, h), returns the 1st element of product
+
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, x2, h)
     """
@@ -23,7 +24,8 @@ cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
 
 cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2,
                                        double h, double[:, :] aff) nogil:
-    r"""
+    r"""Multiplies aff by (x0, x1, x2, h), returns the 2nd element of product
+
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, x2, h)
     """
@@ -32,7 +34,8 @@ cdef inline double _apply_affine_3d_x1(double x0, double x1, double x2,
 
 cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2,
                                        double h, double[:, :] aff) nogil:
-    r"""
+    r"""Multiplies aff by (x0, x1, x2, h), returns the 3d element of product
+
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, x2, h)
     """
@@ -41,7 +44,7 @@ cdef inline double _apply_affine_3d_x2(double x0, double x1, double x2,
 
 cdef inline double _apply_affine_2d_x0(double x0, double x1, double h,
                                        double[:, :] aff) nogil:
-    r"""
+    r"""Multiplies aff by (x0, x1, h), returns the 1st element of product
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, h)
     """
@@ -50,7 +53,8 @@ cdef inline double _apply_affine_2d_x0(double x0, double x1, double h,
 
 cdef inline double _apply_affine_2d_x1(double x0, double x1, double h,
                                        double[:, :] aff) nogil:
-    r"""
+    r"""Multiplies aff by (x0, x1, h), returns the 2nd element of product
+
     Returns the first component of the product of the homogeneous matrix aff by
     (x0, x1, h)
     """
@@ -59,7 +63,8 @@ cdef inline double _apply_affine_2d_x1(double x0, double x1, double h,
 
 cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii, 
                                      double djj, floating[:] out) nogil:
-    r"""
+    r"""Bilinear interpolation of a 2D vector field
+
     Interpolates the 2D displacement field at (dii, djj) and stores the 
     result in out. If (dkk, dii, djj) is outside the vector field's domain, a 
     zero vector is written to out instead.
@@ -124,7 +129,8 @@ cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii,
 
 cdef inline int interpolate_scalar_bilinear(floating[:,:] image, double dii, 
                                      double djj, floating *out) nogil:
-    r"""
+    r"""Bilinear interpolation of a 2D scalar image
+
     Interpolates the 2D image at (dii, djj) and stores the 
     result in out. If (dii, djj) is outside the image's domain,
     zero is written to out instead.
@@ -183,7 +189,8 @@ cdef inline int interpolate_scalar_bilinear(floating[:,:] image, double dii,
 
 cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii, 
                                          double djj, number *out) nogil:
-    r"""
+    r"""Nearest-neighbor interpolation of a 2D scalar image
+
     Interpolates the 2D image at (dii, djj) using nearest neighbor interpolation
     and stores the result in out. If (dii, djj) is outside the image's domain,
     zero is written to out instead.
@@ -239,7 +246,8 @@ cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii,
 cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk, 
                                          double dii, double djj, 
                                          number *out) nogil:
-    r"""
+    r"""Nearest-neighbor interpolation of a 3D scalar image
+
     Interpolates the 3D image at (dkk, dii, djj) using nearest neighbor
     interpolation and stores the result in out. If (dkk, dii, djj) is outside
     the image's domain, zero is written to out instead.
@@ -303,7 +311,8 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
 cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume, 
                                              double dkk, double dii, double djj, 
                                              floating *out) nogil:
-    r"""
+    r"""Trilinear interpolation of a 3D scalar image
+
     Interpolates the 3D image at (dkk, dii, djj) and stores the 
     result in out. If (dkk, dii, djj) is outside the image's domain,
     zero is written to out instead.
@@ -383,7 +392,8 @@ cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume,
 
 cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field,
                     double dkk, double dii, double djj, floating[:] out) nogil:
-    r"""
+    r"""Trilinear interpolation of a 3D vector field
+
     Interpolates the 3D displacement field at (dkk, dii, djj) and stores the 
     result in out. If (dkk, dii, djj) is outside the vector field's domain, a 
     zero vector is written to out instead.
@@ -487,7 +497,8 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                                     double time_scaling,
                                     floating[:, :, :] comp, 
                                     double[:] stats) nogil:
-    r"""
+    r"""Computes the composition of two 2D displacement fields
+
     Computes the composition of the two 2-D displacements d1 and d2. The
     evaluation of d2 at non-lattice points is computed using tri-linear 
     interpolation. The actual composition is computed as:
@@ -598,7 +609,8 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                              double[:, :] premult_index, 
                              double[:, :] premult_disp,
                              double time_scaling):
-    r"""
+    r"""Computes the composition of two 2D displacement fields
+
     Computes the composition of the two 2-D displacemements d1 and d2. The
     evaluation of d2 at non-lattice points is computed using trilinear 
     interpolation. The actual composition is computed as:
@@ -657,7 +669,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                                     double t,
                                     floating[:, :, :, :] comp,
                                     double[:] stats) nogil:
-    r"""
+    r"""Computes the composition of two 3D displacement fields
+
     Computes the composition of the two 3-D displacements d1 and d2. The
     evaluation of d2 at non-lattice points is computed using tri-linear 
     interpolation. The actual composition is computed as:
@@ -781,7 +794,8 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
                              double[:, :] premult_index, 
                              double[:, :] premult_disp,
                              double time_scaling):
-    r"""
+    r"""Computes the composition of two 3D displacement fields
+
     Computes the composition of the two 3-D displacements d1 and d2. The
     evaluation of d2 at non-lattice points is computed using tri-linear 
     interpolation. The actual composition is computed as:
@@ -842,7 +856,8 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                                        double[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :] start=None):
-    r"""
+    r"""Computes the inverse of a 2D displacement fields
+
     Computes the inverse of the given 2-D displacement field d using the
     fixed-point algorithm [1].
 
@@ -942,7 +957,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                                        double[:] spacing,
                                        int max_iter, double tolerance,
                                        floating[:, :, :, :] start=None):
-    r"""
+    r"""Computes the inverse of a 3D displacement fields
+
     Computes the inverse of the given 3-D displacement field d using the
     fixed-point algorithm [1].
 
@@ -1050,7 +1066,8 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
 
 def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
                                             double[:, :] affine):
-    r"""
+    r"""Composition of a 2D displacement field with a linear transform
+
     Modifies the given 2-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
     T(x) = d(A*x), where A is the affine transformation.
@@ -1090,7 +1107,8 @@ def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
 
 def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
                                             double[:, :] affine):
-    r"""
+    r"""Composition of a 3D displacement field with a linear transform
+
     Modifies the given 3-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
     T(x) = d(A*x), where A is the affine transformation.
@@ -1134,7 +1152,8 @@ def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
 
 def append_affine_to_displacement_field_2d(floating[:, :, :] d,
                                            double[:, :] affine):
-    r"""
+    r"""Composition of a 2D displacement field with a linear transform
+
     Modifies the given 2-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
     T(x) = A*d(x), where A is the affine transformation.
@@ -1165,7 +1184,8 @@ def append_affine_to_displacement_field_2d(floating[:, :, :] d,
 
 def reorient_vector_field_2d(floating[:, :, :] d,
                              double[:, :] affine):
-    r"""
+    r"""Linearly transforms all vectors of a 2D displacement field
+
     Modifies the input displacement field by multiplying each displacement
     vector by the given matrix.
 
@@ -1196,7 +1216,8 @@ def reorient_vector_field_2d(floating[:, :, :] d,
 
 def reorient_vector_field_3d(floating[:, :, :, :] d,
                              double[:, :] affine):
-    r"""
+    r"""Linearly transforms all vectors of a 3D displacement field
+
     Modifies the input displacement field by multiplying each displacement
     vector by the given matrix.
 
@@ -1231,7 +1252,8 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
     
 def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
                                            double[:, :] affine):
-    r"""
+    r"""Composition of a 3D displacement field with a linear transform
+
     Modifies the given 3-D displacement field by applying the given affine
     transformation. The resulting transformation T is of the from
     T(x) = A*d(x), where A is the affine transformation.
@@ -1269,8 +1291,9 @@ def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
 
 def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx, 
                    double[:,:] affine_disp):
-    r"""
-    Defines a new displacement C field defined by
+    r"""Composition of a 2D displacement field with two linear transforms
+
+    Defines a new displacement field C defined by
 
     (1) C[i] = A * field[i] + B * i - i
 
@@ -1347,7 +1370,8 @@ def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx,
 
 def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx, 
                    double[:,:] affine_disp):
-    r"""
+    r"""Composition of a 3D displacement field with two linear transforms
+
     Defines a new displacement C field defined by
 
     (1) C[i] = A * field[i] + B * i - i
@@ -1431,7 +1455,8 @@ def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx,
 
 
 def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
-    r"""
+    r"""Up-samples the input 2-D displacement field by a factor of 2
+
     Up-samples the input 2-D displacement field by a factor of 2. The target
     shape (the shape of the resulting up-sampled displacement field) must be
     specified to ensure the resulting field has the required dimensions (the
@@ -1470,7 +1495,8 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
 
 def upsample_displacement_field_3d(floating[:, :, :, :] field,
                                    int[:] target_shape):
-    r"""
+    r"""Up-samples the input 3-D displacement field by a factor of 2
+
     Up-samples the input 3-D displacement field by a factor of 2. The target
     shape (the shape of the resulting up-sampled displacement field) must be
     specified to ensure the resulting field has the required dimensions (the
@@ -1514,7 +1540,8 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
 
 def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
                                              floating[:, :, :, :] up):
-    r"""
+    r"""Up-samples the input 3-D displacement field by a factor of 2
+
     Up-samples the input 3-D displacement field by a factor of 2. The resulting
     up-sampled field is added to 'up' rather than returning a new field.
 
@@ -1551,7 +1578,8 @@ def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
 
 
 def downsample_scalar_field3D(floating[:, :, :] field):
-    r"""
+    r"""Down-samples the input volume by a factor of 2
+
     Down-samples the input volume by a factor of 2. The value at each voxel
     of the resulting volume is the average of its surrounding voxels in the
     original volume.
@@ -1597,7 +1625,8 @@ def downsample_scalar_field3D(floating[:, :, :] field):
 
 
 def downsample_displacement_field3D(floating[:, :, :, :] field):
-    r"""
+    r"""Down-samples the input 3D vector field by a factor of 2
+
     Down-samples the input vector field by a factor of 2. The value at each
     voxel of the resulting volume is the average of its surrounding voxels in
     the original volume.
@@ -1648,7 +1677,8 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
 
 
 def downsample_scalar_field2D(floating[:, :] field):
-    r"""
+    r"""Down-samples the input 2D image by a factor of 2
+
     Down-samples the input image by a factor of 2. The value at each pixel
     of the resulting image is the average of its surrounding pixels in the
     original image.
@@ -1688,7 +1718,7 @@ def downsample_scalar_field2D(floating[:, :] field):
 
 
 def downsample_displacement_field2D(floating[:, :, :] field):
-    r"""
+    r"""Down-samples the 2D input vector field by a factor of 2
     Down-samples the input vector field by a factor of 2. The value at each
     pixel of the resulting field is the average of its surrounding pixels in the
     original field.
@@ -1731,7 +1761,8 @@ def downsample_displacement_field2D(floating[:, :, :] field):
 
 
 def get_displacement_range(floating[:, :, :, :] d, double[:, :] affine):
-    r"""
+    r"""Minimum and maximum values reached by the given transformation
+
     Computes the minimum and maximum values reached by the transformation
     defined by the given displacement field and affine pre-multiplication
     matrix. More precisely, computes $\max_{x\in L} x + d(Ax)$, and 
@@ -1793,7 +1824,8 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
                 double[:, :] affine_idx_out=None, 
                 double[:, :] affine_disp=None,
                 int[:] sampling_shape=None):
-    r"""
+    r"""Warps a 3D volume using trilinear interpolation
+
     Deforms the input volume under the given transformation. The warped volume
     is computed using tri-linear interpolation and is given by:
 
@@ -1910,7 +1942,8 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
 
 def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
                        double[:, :] affine):
-    r"""
+    r"""Warps a 3D volume by a linear transform using trilinear interpolation
+
     Deforms the input volume under the given affine transformation using 
     tri-linear interpolation. The shape of the resulting transformation
     is given by refShape. If the affine matrix is None, it is taken as the 
@@ -1973,7 +2006,8 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                    double[:, :] affine_idx_out=None, 
                    double[:, :] affine_disp=None,
                    int[:] sampling_shape=None):
-    r"""
+    r"""Warps a 3D volume using using nearest-neighbor interpolation
+
     Deforms the input volume under the given transformation. The warped volume
     is computed using nearest-neighbor interpolation and is given by:
 
@@ -2090,7 +2124,8 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
 
 def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
                           double[:, :] affine=None):
-    r"""
+    r"""Warps a 3D volume by a linear transform using NN interpolation
+
     Deforms the input volume under the given affine transformation using 
     nearest neighbor interpolation. The shape of the resulting transformation
     is given by refShape. If the affine matrix is None, it is taken as the 
@@ -2154,7 +2189,8 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
                double[:,:] affine_idx_out=None,
                double[:,:] affine_disp=None,
                int[:] sampling_shape=None):
-    r"""
+    r"""Warps a 2D image using bilinear interpolation
+
     Deforms the input image under the given transformation. The warped image
     is computed using bi-linear interpolation and is given by:
 
@@ -2256,7 +2292,8 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
 
 def warp_image_affine(floating[:, :] image, int[:] refShape,
                       double[:, :] affine=None):
-    r"""
+    r"""Warps a 2D image by a linear transform using bilinear interpolation
+
     Deforms the input image under the given affine transformation using 
     tri-linear interpolation. The shape of the resulting transformation
     is given by refShape. If the affine matrix is None, it is taken as the 
@@ -2314,7 +2351,8 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
                   double[:,:] affine_idx_out=None,
                   double[:,:] affine_disp=None,
                   int[:] sampling_shape=None):
-    r"""
+    r"""Warps a 2D image using nearest neighbor interpolation
+
     Deforms the input image under the given transformation. The warped image
     is computed using nearest-neighbor interpolation and is given by:
 
@@ -2416,7 +2454,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
 
 def warp_image_affine_nn(number[:, :] image, int[:] refShape,
                          double[:, :] affine=None):
-    r"""
+    r"""Warps a 2D image by a linear transform using NN interpolation
     Deforms the input image under the given affine transformation using 
     nearest neighbor interpolation. The shape of the resulting transformation
     is given by refShape. If the affine matrix is None, it is taken as the 
@@ -2470,7 +2508,8 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
 
 def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors,
                                  int[:] target_shape):
-    r"""
+    r"""Upsamples a 3D vector field to a custom target shape
+
     Up-samples the discretization of the displacement fields to be of 
     target_shape shape.
 
@@ -2509,7 +2548,8 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors,
 
 def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors,
                                  int[:] target_shape):
-    r"""
+    r"""Upsamples a 2D vector field to a custom target shape
+
     Up-samples the discretization of the displacement fields to be of 
     target_shape shape.
 
@@ -2547,7 +2587,8 @@ def create_random_displacement_2d(int[:] from_shape,
                                   double[:,:] input_affine, 
                                   int[:] to_shape, 
                                   double[:,:] output_affine):
-    r"""
+    r"""Creates a random 2D displacement 'exactly' mapping points of two grids
+
     Creates a random 2D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output discrete 
     domain (with shape given by to_shape). The affine matrices bringing discrete 
@@ -2622,7 +2663,8 @@ def create_random_displacement_2d(int[:] from_shape,
 def create_linear_displacement_field_2d(int[:] shape, 
                                         double[:,:] input_affine,
                                         double[:,:] transform):
-    r"""
+    r"""Creates a 2D linear displacement field
+
     Creates a 2D displacement field mapping mapping points from the given grid
     shape to themselves after a linear, invertible transformation is applied 
     to them. The resulting displacement field is an invertible endomorphism and 
@@ -2682,7 +2724,8 @@ def create_linear_displacement_field_2d(int[:] shape,
 
 def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, 
                                   int[:] to_shape, double[:,:] output_affine):
-    r"""
+    r"""Creates a random 3D displacement 'exactly' mapping points of two grids
+
     Creates a random 3D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output discrete 
     domain (with shape given by to_shape). The affine matrices bringing discrete 
@@ -2763,7 +2806,8 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine,
 
 def create_harmonic_fields_2d(int nrows, int ncols, 
                              double b, double m):
-    r"""
+    r"""Creates an invertible 2D displacement field
+
     Creates the invertible displacement fields used in Chen et al. eqs. 
     9 and 10 [1]
 
@@ -2793,7 +2837,8 @@ def create_harmonic_fields_2d(int nrows, int ncols,
 
 def create_harmonic_fields_3d(int nslices, int nrows, int ncols, 
                              double b, double m):
-    r"""
+    r"""Creates an invertible 3D displacement field
+
     Creates the invertible displacement fields used in Chen et al. eqs. 
     9 and 10 [1] computing the angle theta along z-slides.
     
@@ -2826,5 +2871,3 @@ def create_harmonic_fields_3d(int nslices, int nrows, int ncols,
                 inv[k, i, j, 2] = b * np.cos(m * theta) * jj
 
     return d, inv 
-
-
