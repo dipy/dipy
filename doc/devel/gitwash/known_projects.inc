@@ -27,7 +27,7 @@
 
 .. dipy
 .. _dipy: http://nipy.org/dipy
-.. _`dipy github`: http://github.com/Garyfallidis/dipy
+.. _`dipy github`: https://github.com/nipy/dipy
 .. _`dipy mailing list`: http://mail.scipy.org/mailman/listinfo/nipy-devel
 
 .. nibabel
