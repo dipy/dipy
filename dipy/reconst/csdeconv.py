@@ -119,7 +119,9 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         # scale lambda_ to account for differences in the number of
         # SH coefficients and number of mapped directions
         # This is exactly what is done in [4]_
-        self.lambda_ = lambda_ * self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
+        self.lambda_ = (lambda_  * self.R.shape[0] * r_rh[0] /
+                        (np.sqrt(self.B_reg.shape[0]) * np.sqrt(362.))
+                       )
         self.sh_order = sh_order
         self.tau = tau
 

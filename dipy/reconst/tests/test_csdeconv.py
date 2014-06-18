@@ -281,8 +281,6 @@ def test_csd_predict():
 def test_sphere_scaling_csdmodel():
     """Check that mirroring regulization sphere does not change the result of
     csddeconv model"""
-    sphere = get_sphere('symmetric362')
-
     _, fbvals, fbvecs = get_data('small_64D')
 
     bvals = np.load(fbvals)
@@ -309,6 +307,30 @@ def test_sphere_scaling_csdmodel():
     csd_fit_hemi = model_hemi.fit(S)
 
     assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
+
+expected_lambda = {4:27.5230088, 8:82.5713865, 16:216.0843135}
+def test_default_lambda_csdmodel():
+    """We check that the default value of lambda is the expected value with
+    the symmetric362 sphere. This value has empirically been found to work well
+    and changes to this default value should be discusses with the dipy team.
+
+    """
+    sphere = get_sphere('symmetric362')
+
+    # Create gradient table
+    _, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+
+    # Some response function
+    response = (np.array([0.0015, 0.0003, 0.0003]), 100)
+
+    for sh_order, expected in expected_lambda.items():
+        model_full = ConstrainedSphericalDeconvModel(gtab, response,
+                                                     sh_order=sh_order,
+                                                     reg_sphere=sphere)
+        assert_almost_equal(model_full.lambda_, expected)
 
 
 if __name__ == '__main__':
