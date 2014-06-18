@@ -543,6 +543,39 @@ def apparent_diffusion_coef(q_form, sphere):
     return -np.dot(lower_triangular(q_form), D.T)
 
 
+def tensor_prediction(dti_params, gtab, S0):
+    """
+    Predict a tensor signal given DTI parameters.
+
+    Parameters
+    ----------
+
+    """
+    evals = dti_params[..., :3]
+    evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
+    qform = vec_val_vect(evecs, evals)
+    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+    adc = apparent_diffusion_coef(qform, sphere)
+
+    if np.iterable(S0):
+        # If it's an array, we need to give it one more dimension:
+        S0 = S0[..., None]
+
+    # First do the calculation for the diffusion weighted measurements:
+    pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
+
+    # Then we need to sort out what goes where:
+    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+
+    # These are the diffusion-weighted values
+    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+
+    # For completeness, we predict the mean S0 for the non-diffusion
+    # weighted measurements, which is our best guess:
+    pred_sig[..., gtab.b0s_mask] = S0
+    return pred_sig
+
+
 class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
@@ -625,6 +658,23 @@ class TensorModel(ReconstModel):
         dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
+
+
+    def predict(self, dti_params, S0=1):
+        """
+        Predict a signal for this TensorModel class instance given parameters.
+
+        Parameters
+        ----------
+        dti_params : ndarray
+            The last dimension should have 12 tensor parameters: 3
+            eigenvalues, followed by the 3 eigenvectors
+
+        S0 : float or ndarray
+            The non diffusion-weighted signal in every voxel, or across all
+            voxels. Default: 1
+        """
+        pass
 
 
 class TensorFit(object):
@@ -940,30 +990,7 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction   
         """
-        # The b0 vectors are not on the unit sphere, so we will not use them
-        # here. We will predict for them separately below:
-        sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-
-        adc = self.adc(sphere)
-        # Predict!
-        if np.iterable(S0):
-            # If it's an array, we need to give it one more dimension:
-            S0 = S0[...,None] 
-
-        # First do the calculation for the diffusion weighted measurements:
-        pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
-
-        # Then we need to sort out what goes where:
-        pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
-
-        # These are the diffusion-weighted values
-        pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-
-        # For completeness, we predict the mean S0 for the non-diffusion
-        # weighted measurements, which is our best guess:
-        pred_sig[..., gtab.b0s_mask] = S0
-        return pred_sig
-
+        return tensor_prediction(self.model_params, gtab, S0=S0)
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""

@@ -90,7 +90,7 @@ def test_shm_xval():
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
     # We'll just test for regressions:
-    csd_cod = 91 # pre-computed by hand for this random seed
+    csd_cod = 93 # pre-computed by hand for this random seed
 
     # We're going to be really lenient here:
     npt.assert_array_almost_equal(np.int(cod),
@@ -100,7 +100,7 @@ def test_shm_xval():
     csam = shm.CsaOdfModel(gtab, 4)
     kf_xval = xval.kfold_xval(csam, S, 2, 4)
     cod = xval.coeff_of_determination(S, kf_xval)
-    csa_cod = 40
+    csa_cod = 54
     npt.assert_array_almost_equal(np.int(cod),
                                   np.ones(kf_xval.shape[:-1]) * csa_cod)
 

@@ -476,7 +476,8 @@ class SphHarmFit(OdfFit):
         sphere : a Sphere class instance
         gtab : a GradientTable class instance
         response_evals : list/ndarray (optional)
-            The eigenvalues of the response function. Default: [0.0015, 0.0003, 0.0003]
+            The eigenvalues of the response function. Default: [0.0015, 0.0003,
+            0.0003]
         """
         prediction_matrix = self.model.cache_get("prediction_matrix", (sphere,
                                                                        gtab))
