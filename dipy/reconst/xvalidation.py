@@ -1,9 +1,5 @@
 """
 Cross-validation analysis of diffusion models
-
-
-
-
 """
 from __future__ import division, print_function, absolute_import
 from dipy.utils.six.moves import range
