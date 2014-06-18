@@ -15,8 +15,7 @@ class ReconstModel(object):
     """ Abstract class for signal reconstruction models
     """
     def __init__(self, gtab):
-        """
-        Initialization of the abstract class for signal reconstruction models
+        """Initialization of the abstract class for signal reconstruction models
 
         Parameters
         ----------

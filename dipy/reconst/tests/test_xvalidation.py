@@ -25,11 +25,11 @@ def test_coeff_of_determination():
     Test the calculation of the coefficient of determination
     """
 
-    model = np.random.randn(10,10,10,150)
+    model = np.random.randn(10, 10, 10, 150)
     data = np.copy(model)
     # If the model predicts the data perfectly, the COD is all 100s:
     cod = xval.coeff_of_determination(data, model)
-    npt.assert_array_equal(100 , cod)
+    npt.assert_array_equal(100, cod)
 
 
 def test_dti_xval():
