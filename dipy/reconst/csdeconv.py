@@ -311,34 +311,36 @@ def forward_sdt_deconv_mat(ratio, n, r2_term=False):
     return np.diag(b), np.diag(bb)
 
 
-def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
+def csdeconv(dwsignal, sh_order, X, B_reg, lambda_=1., tau=0.1):
     r""" Constrained-regularized spherical deconvolution (CSD) [1]_
 
-    Deconvolves the axially symmetric single fiber response
-    function `r_rh` in rotational harmonics coefficients from the spherical
-    function `s_sh` in SH coefficients.
+    Deconvolves the axially symmetric single fiber response function `r_rh` in
+    rotational harmonics coefficients from the diffusion weighted signal in
+    `dwsignal`.
 
     Parameters
     ----------
-    s_sh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
-         ndarray of SH coefficients for the spherical function to be deconvolved
+    dwsignal, : array
+        Diffusion weighted signals to be deconvolved.
     sh_order : int
          maximal SH order of the SH representation
-    R : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
-        forward spherical harmonics matrix
-    B_reg : ndarray (``(sh_order + 1)*(sh_order + 2)/2``, ``(sh_order + 1)*(sh_order + 2)/2``)
-         SH basis matrix used for deconvolution
+    X : array
+        Prediction matrix which estimates diffusion weighted signals from FOD
+        coefficients.
+    B_reg : array (N, B)
+        SH basis matrix which maps FOD coefficients to FOD values on the
+        surface of the sphere.
     lambda_ : float
-         lambda parameter in minimization equation (default 1.0)
+        lambda parameter in minimization equation (default 1.0)
     tau : float
-         threshold controlling the amplitude below which the corresponding fODF
-         is assumed to be zero.  Ideally, tau should be set to zero. However,
-         to improve the stability of the algorithm, tau is set to tau*100 % of
-         the max fODF amplitude (here, 10% by default). This is similar to peak
-         detection where peaks below 0.1 amplitude are usually considered noise
-         peaks. Because SDT is based on a q-ball ODF deconvolution, and not
-         signal deconvolution, using the max instead of mean (as in CSD), is
-         more stable.
+        Threshold controlling the amplitude below which the corresponding fODF
+        is assumed to be zero.  Ideally, tau should be set to zero. However, to
+        improve the stability of the algorithm, tau is set to tau*100 % of the
+        max fODF amplitude (here, 10% by default). This is similar to peak
+        detection where peaks below 0.1 amplitude are usually considered noise
+        peaks. Because SDT is based on a q-ball ODF deconvolution, and not
+        signal deconvolution, using the max instead of mean (as in CSD), is
+        more stable.
 
     Returns
     -------
@@ -351,20 +353,18 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
     References
     ----------
-
     .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
            fibre orientation distribution in diffusion MRI: Non-negativity
            constrained super-resolved spherical deconvolution.
-    """
 
+    """
     # generate initial fODF estimate, truncated at SH order 4
-    fodf_sh = np.linalg.lstsq(R, s_sh)[0]
+    fodf_sh = np.linalg.lstsq(X, dwsignal)[0]
     fodf_sh[15:] = 0
 
     fodf = np.dot(B_reg, fodf_sh)
     # set threshold on FOD amplitude used to identify 'negative' values
     threshold = tau * np.mean(np.dot(B_reg, fodf_sh))
-    #print(np.min(fodf), np.max(fodf), np.mean(fodf), threshold, tau)
 
     k = []
     convergence = 50
@@ -373,7 +373,7 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
 
         k2 = np.nonzero(fodf < threshold)[0]
 
-        if (k2.shape[0] + R.shape[0]) < B_reg.shape[1]:
+        if (k2.shape[0] + X.shape[0]) < B_reg.shape[1]:
             warnings.warn(
             'too few negative directions identified - failed to converge')
             return fodf_sh, num_it
@@ -390,8 +390,8 @@ def csdeconv(s_sh, sh_order, R, B_reg, lambda_=1., tau=0.1):
         # focus on trying to eliminate it. In a sense, this "adds" a
         # measurement, which can help to better estimate the fodf_sh, even if
         # you have more SH coeffcients to estimate than actual S measurements.
-        M = np.concatenate((R, lambda_ * B_reg[k, :]))
-        S = np.concatenate((s_sh, np.zeros(k.shape)))
+        M = np.concatenate((X, lambda_ * B_reg[k, :]))
+        S = np.concatenate((dwsignal, np.zeros(k.shape)))
         try:
             fodf_sh = np.linalg.lstsq(M, S)[0]
         except np.linalg.LinAlgError as lae:
