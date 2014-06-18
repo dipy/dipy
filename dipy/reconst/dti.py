@@ -549,7 +549,33 @@ def tensor_prediction(dti_params, gtab, S0):
 
     Parameters
     ----------
+    dti_params : ndarray
+        The last dimension should have 12 tensor parameters: 3
+        eigenvalues, followed by the 3 eigenvectors
 
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+
+    S0 : float or ndarray
+        The non diffusion-weighted signal in every voxel, or across all
+        voxels. Default: 1
+
+    Notes
+    -----
+    The predicted signal is given by:
+
+    .. math ::
+
+        S(\theta, b) = S_0 * e^{-b ADC}
+
+    Where:
+    .. math ::
+        ADC = \theta Q \theta^T
+
+    $\theta$ is a unit vector pointing at any direction on the sphere for
+    which a signal is to be predicted, $b$ is the b value provided in
+    the GradientTable input for that direction, $Q$ is the quadratic form of
+    the tensor determined by the input parameters
     """
     evals = dti_params[..., :3]
     evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
@@ -674,7 +700,7 @@ class TensorModel(ReconstModel):
             The non diffusion-weighted signal in every voxel, or across all
             voxels. Default: 1
         """
-        pass
+        return tensor_prediction(dti_params, self.gtab, S0)
 
 
 class TensorFit(object):

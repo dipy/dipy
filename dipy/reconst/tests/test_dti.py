@@ -541,8 +541,8 @@ def test_predict():
 
     dm = dti.TensorModel(gtab, 'LS')
     dmfit = dm.fit(S)
-    
     assert_array_almost_equal(dmfit.predict(gtab, S0=100), S)
+    assert_array_almost_equal(dm.predict(dmfit.model_params, S0=100), S)
 
     data, gtab = dsi_voxels()
     dtim = dti.TensorModel(gtab)
