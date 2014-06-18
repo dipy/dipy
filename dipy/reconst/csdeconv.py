@@ -7,8 +7,8 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm, order_from_ncoef,
                               sph_harm_lookup, lazy_index, SphHarmFit,
-                              real_sym_sh_basis, estimate_response, sh_to_rh,
-                              gen_dirac, forward_sdeconv_mat)
+                              real_sym_sh_basis, sh_to_rh, gen_dirac,
+                              forward_sdeconv_mat)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
@@ -18,6 +18,28 @@ from dipy.utils.six.moves import range
 from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from scipy.integrate import quad
+
+
+def estimate_response(gtab, evals, S0):
+    """ Estimate single fiber response function
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    evals : ndarray
+    S0 : float
+        non diffusion weighted
+
+    Returns
+    -------
+    S : estimated signal
+
+    """
+    evecs = np.array([[0, 0, 1],
+                      [0, 1, 0],
+                      [1, 0, 0]])
+
+    return single_tensor(gtab, S0, evals, evecs, snr=None)
 
 
 def forward_sdt_deconv_mat(ratio, n, r2_term=False):

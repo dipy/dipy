@@ -11,6 +11,7 @@ from dipy.utils.six.moves import range
 import numpy as np
 import dipy.core.gradients as gt
 
+
 def coeff_of_determination(data, model, axis=-1):
     """
     Parameters
@@ -57,7 +58,6 @@ def coeff_of_determination(data, model, axis=-1):
         return np.nan
 
     return 100 * (1 - (ss_err/ss_tot))
-
 
 
 def kfold_xval(model, data, folds, *model_args, **model_kwargs):
@@ -142,7 +142,6 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
             err_str += "do not have an implementation of model prediction"
             err_str += " and do not support cross-validation"
             raise ValueError(err_str)
-
         this_predict = S0[..., None] * this_fit.predict(left_out_gtab, S0=1)
 
         idx_to_assign = np.where(~gtab.b0s_mask)[0][~fold_mask]
@@ -150,5 +149,4 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
     # For the b0 measurements
     prediction[..., gtab.b0s_mask] = S0[..., None]
-
     return prediction

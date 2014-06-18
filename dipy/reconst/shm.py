@@ -148,28 +148,6 @@ def gen_dirac(m, n, theta, phi):
     return real_sph_harm(m, n, theta, phi)
 
 
-def estimate_response(gtab, evals, S0):
-    """ Estimate single fiber response function
-
-    Parameters
-    ----------
-    gtab : GradientTable
-    evals : ndarray
-    S0 : float
-        non diffusion weighted
-
-    Returns
-    -------
-    S : estimated signal
-
-    """
-    evecs = np.array([[0, 0, 1],
-                      [0, 1, 0],
-                      [1, 0, 0]])
-
-    return single_tensor(gtab, S0, evals, evecs, snr=None)
-
-
 def real_sph_harm(m, n, theta, phi):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
@@ -491,7 +469,7 @@ class SphHarmModel(OdfModel, Cache):
         return SphHarmFit(self, coef, mask)
 
 
-def _shm_predict(fit, gtab, S0=1, response_evals=None):
+def _shm_predict(fit, gtab, S0=1):
     """
     Helper function for the implementation of model prediction from the
     ConstrainedSphericalDeconvFit class. This is necessary, because in
@@ -503,8 +481,6 @@ def _shm_predict(fit, gtab, S0=1, response_evals=None):
     gtab : A GradientTable class instance
     S0 : float or ndarray (optional)
         The mean non-diffusion weighted signal in the voxel or volume
-    response_evals : ndarray
-        The eigenvalues of a single fiber response function
 
     Returns
     -------
@@ -512,8 +488,7 @@ def _shm_predict(fit, gtab, S0=1, response_evals=None):
         The predicted signal in the gtab for this fit.
     """
     sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    prediction_matrix = fit.prediction_matrix(sphere, gtab,
-                                              response_evals=response_evals)
+    prediction_matrix = fit.prediction_matrix(sphere, gtab)
 
     if np.iterable(S0):
         # If it's an array, we need to give it one more dimension:
@@ -521,32 +496,12 @@ def _shm_predict(fit, gtab, S0=1, response_evals=None):
 
     # This is the key operation: convolve and multiply by S0:
     pre_pred_sig = S0 * np.dot(prediction_matrix, fit._shm_coef)
-
     # Now put everything in its right place:
     pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
     pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
     pred_sig[..., gtab.b0s_mask] = S0
 
     return pred_sig
-
-
-    # To invert the model, we estimate the ODF on the provided sphere and
-    # then convolve with the response function, rotated to each one of the
-    # gtab bvecs:
-    ## est_odf = fit.odf(sphere)
-    ## est_odf = est_odf/np.sum(est_odf)
-
-    ## pred_sig = np.zeros(gtab.b0s_mask.shape)
-    ## pred_sig[gtab.b0s_mask] = S0
-
-    ## prediction_matrix = fit.prediction_matrix(sphere, gtab,
-    ##                                           response_evals=response_evals)
-
-    ## if np.iterable(S0):
-    ##     S0 = S0[...,None]
-
-    ## pred_sig[~gtab.b0s_mask] = np.dot(est_odf, prediction_matrix)
-    ## return pred_sig
 
 
 class SphHarmFit(OdfFit):
@@ -619,7 +574,8 @@ class SphHarmFit(OdfFit):
         """
         return self._shm_coef
 
-    def prediction_matrix(self, sphere, gtab, response_evals=None):
+
+    def prediction_matrix(self, sphere, gtab):
         """
         A matrix used to predict the signal from an estimated ODF
 
@@ -627,9 +583,6 @@ class SphHarmFit(OdfFit):
         ----------
         sphere : a Sphere class instance
         gtab : a GradientTable class instance
-        response_evals : list/ndarray (optional)
-            The eigenvalues of the response function. Default: [0.0015, 0.0003,
-            0.0003]
         """
         prediction_matrix = self.model.cache_get("prediction_matrix", (sphere,
                                                                        gtab))
@@ -640,28 +593,14 @@ class SphHarmFit(OdfFit):
             x, y, z = pred_gtab.gradients.T
             r, theta, phi = cart2sphere(x, y, z)
             SH_basis, m, n = real_sym_sh_basis(self.model.sh_order, theta, phi)
-
-            B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
-
-            S_r = np.zeros((sphere.vertices.shape[0],
-                                          sphere.vertices.shape[0]))
-
-            if response_evals is None:
-                if hasattr(self.model, 'response'):
-                    response_evals = self.model.response[0]
-                else:
-                    response_evals = np.array([0.0015, 0.0003, 0.0003])
-
-            S_r = estimate_response(pred_gtab, response_evals, 1.0)
-            r_sh = np.linalg.lstsq(B_dwi, S_r)[0]
-            r_rh = sh_to_rh(r_sh, m, n)
-            R = forward_sdeconv_mat(r_rh, n)
-
-            prediction_matrix = np.dot(SH_basis, R)
+            # The prediction matrix needs to be normalized to the response S0:
+            prediction_matrix = (np.dot(SH_basis, self.model.R) /
+                                 self.model.response[1])
 
         return prediction_matrix
 
-    def predict(self, gtab, S0=1, response_evals=None):
+
+    def predict(self, gtab, S0=1.0):
         """
         Predict the diffusion signal from the model coefficients.
 
@@ -675,7 +614,7 @@ class SphHarmFit(OdfFit):
            all voxels
 
         """
-        return _shm_predict(self, gtab, S0, response_evals=None)
+        return _shm_predict(self, gtab, S0)
 
 
 class CsaOdfModel(SphHarmModel):

@@ -2,7 +2,6 @@
 
 Testing cross-validation analysis
 
-
 """
 from __future__ import division, print_function, absolute_import
 import numpy as np
@@ -69,7 +68,8 @@ def test_shm_xval():
     # First, let's see that it works with some data:
     data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Make it *small*
     gtab = gt.gradient_table(fbval, fbvec)
-    response = ([0.0015, 0.0003, 0.0001], 1)
+    S0 = np.mean(data[..., gtab.b0s_mask])
+    response = ([0.0015, 0.0003, 0.0001], S0)
     csdm = csd.ConstrainedSphericalDeconvModel(gtab, response)
     kf_xval = xval.kfold_xval(csdm, data, 2, response, sh_order=2)
 
@@ -82,27 +82,21 @@ def test_shm_xval():
     mevals = np.array(([0.0015, 0.0003, 0.0001], [0.0015, 0.0003, 0.0003]))
     mevecs = [ np.array( [ [1, 0, 0], [0, 1, 0], [0, 0, 1] ] ),
                np.array( [ [0, 0, 1], [0, 1, 0], [1, 0, 0] ] ) ]
-    S = sims.single_tensor( gtab, 100, mevals[0], mevecs[0], snr=None )
+    S0 = 100
+    S = sims.single_tensor( gtab, S0, mevals[0], mevecs[0], snr=None )
     sm = csd.ConstrainedSphericalDeconvModel(gtab, response)
     smfit = sm.fit(S)
     np.random.seed(12345)
+    response = ([0.0015, 0.0003, 0.0001], S0)
     kf_xval = xval.kfold_xval(sm, S, 2, response, sh_order=2)
     # Because of the regularization, COD is not going to be perfect here:
     cod = xval.coeff_of_determination(S, kf_xval)
     # We'll just test for regressions:
-    csd_cod = 93 # pre-computed by hand for this random seed
+    csd_cod = 96 # pre-computed by hand for this random seed
 
     # We're going to be really lenient here:
     npt.assert_array_almost_equal(np.int(cod),
                                   np.ones(kf_xval.shape[:-1]) * csd_cod)
-
-    # We can do the same with other SHM-based models, for example:
-    csam = shm.CsaOdfModel(gtab, 4)
-    kf_xval = xval.kfold_xval(csam, S, 2, 4)
-    cod = xval.coeff_of_determination(S, kf_xval)
-    csa_cod = 54
-    npt.assert_array_almost_equal(np.int(cod),
-                                  np.ones(kf_xval.shape[:-1]) * csa_cod)
 
 
 def test_no_predict():
