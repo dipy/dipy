@@ -5,8 +5,10 @@ from scipy.integrate import quad
 from dipy.reconst.odf import OdfModel
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
-from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
-                              sph_harm_lookup, lazy_index, SphHarmFit)
+from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm, order_from_ncoef,
+                              sph_harm_lookup, lazy_index, SphHarmFit,
+                              real_sym_sh_basis, estimate_response, sh_to_rh,
+                              gen_dirac, forward_sdeconv_mat)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
@@ -16,335 +18,6 @@ from dipy.utils.six.moves import range
 from scipy.special import lpn, gamma
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from scipy.integrate import quad
-
-class ConstrainedSphericalDeconvModel(OdfModel, Cache):
-
-    def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
-                 tau=0.1):
-        r""" Constrained Spherical Deconvolution (CSD) [1]_.
-
-        Spherical deconvolution computes a fiber orientation distribution
-        (FOD), also called fiber ODF (fODF) [2]_, as opposed to a diffusion ODF
-        as the QballModel or the CsaOdfModel. This results in a sharper angular
-        profile with better angular resolution that is the best object to be
-        used for later deterministic and probabilistic tractography [3]_.
-
-        A sharp fODF is obtained because a single fiber *response* function is
-        injected as *a priori* knowledge. The response function is often
-        data-driven and thus, comes as input to the
-        ConstrainedSphericalDeconvModel. It will be used as deconvolution
-        kernel, as described in [1]_.
-
-        Parameters
-        ----------
-        gtab : GradientTable
-        response : tuple
-            A tuple with two elements. The first is the eigen-values as an (3,)
-            ndarray and the second is the signal value for the response
-            function without diffusion weighting.  This is to be able to
-            generate a single fiber synthetic signal. The response function
-            will be used as deconvolution kernel ([1]_)
-        reg_sphere : Sphere (optional)
-            sphere used to build the regularization B matrix.
-            Default: 'symmetric362'.
-        sh_order : int (optional)
-            maximal spherical harmonics order. Default: 8
-        lambda_ : float (optional)
-            weight given to the constrained-positivity regularization part of the
-            deconvolution equation (see [1]_). Default: 1
-        tau : float (optional)
-            threshold controlling the amplitude below which the corresponding
-            fODF is assumed to be zero.  Ideally, tau should be set to
-            zero. However, to improve the stability of the algorithm, tau is
-            set to tau*100 % of the mean fODF amplitude (here, 10% by default)
-            (see [1]_). Default: 0.1
-
-        References
-        ----------
-        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
-               the fibre orientation distribution in diffusion MRI:
-               Non-negativity constrained super-resolved spherical
-               deconvolution
-        .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
-               Probabilistic Tractography Based on Complex Fibre Orientation
-               Distributions
-        .. [3] C\^ot\'e, M-A., et al. Medical Image Analysis 2013. Tractometer:
-               Towards validation of tractography pipelines
-        .. [4] Tournier, J.D, et al. Imaging Systems and Technology
-               2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
-        """
-        # Initialize the parent class:
-        OdfModel.__init__(self, gtab)
-        m, n = sph_harm_ind_list(sh_order)
-        self.m, self.n = m, n
-        self._where_b0s = lazy_index(gtab.b0s_mask)
-        self._where_dwi = lazy_index(~gtab.b0s_mask)
-
-        no_params = ((sh_order + 1) * (sh_order + 2)) / 2
-
-        if no_params > np.sum(gtab.b0s_mask == False):
-            msg = "Number of parameters required for the fit are more "
-            msg += "than the actual data points"
-            warnings.warn(msg, UserWarning)
-
-        x, y, z = gtab.gradients[self._where_dwi].T
-        r, theta, phi = cart2sphere(x, y, z)
-        # for the gradient sphere
-        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
-
-        # for the sphere used in the regularization positivity constraint
-        if reg_sphere is None:
-            self.sphere = get_sphere('symmetric362')
-        else:
-            self.sphere = reg_sphere
-
-        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
-
-        if response is None:
-            self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
-        else:
-            self.response = response
-
-        self.S_r = estimate_response(gtab, self.response[0], self.response[1])
-
-        r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
-        r_rh = sh_to_rh(r_sh, m, n)
-
-        self.R = forward_sdeconv_mat(r_rh, n)
-
-        # scale lambda_ to account for differences in the number of
-        # SH coefficients and number of mapped directions
-        # This is exactly what is done in [4]_
-        self.lambda_ = lambda_ * self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
-        self.sh_order = sh_order
-        self.tau = tau
-
-    @multi_voxel_fit
-    def fit(self, data):
-        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
-        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg,
-                                     self.lambda_, self.tau)
-        return SphHarmFit(self, shm_coeff, None)
-
-
-class ConstrainedSDTModel(OdfModel, Cache):
-
-    def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1.,
-                 tau=0.1):
-        r""" Spherical Deconvolution Transform (SDT) [1]_.
-
-        The SDT computes a fiber orientation distribution (FOD) as opposed to a
-        diffusion ODF as the QballModel or the CsaOdfModel. This results in a
-        sharper angular profile with better angular resolution. The Contrained
-        SDTModel is similar to the Constrained CSDModel but mathematically it
-        deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
-        for a comparison and a through discussion).
-
-        A sharp fODF is obtained because a single fiber *response* function is
-        injected as *a priori* knowledge. In the SDTModel, this response is a
-        single fiber q-ball ODF as opposed to a single fiber signal function
-        for the CSDModel. The response function will be used as deconvolution
-        kernel.
-
-        Parameters
-        ----------
-        gtab : GradientTable
-        ratio : float
-            ratio of the smallest vs the largest eigenvalue of the single
-            prolate tensor response function
-        reg_sphere : Sphere
-            sphere used to build the regularization B matrix
-        sh_order : int
-            maximal spherical harmonics order
-        lambda_ : float
-            weight given to the constrained-positivity regularization part of the
-            deconvolution equation
-        tau : float
-            threshold (tau *mean(fODF)) controlling the amplitude below
-            which the corresponding fODF is assumed to be zero.
-
-        References
-        ----------
-        .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
-               Probabilistic Tractography Based on Complex Fibre Orientation
-               Distributions.
-        """
-
-        m, n = sph_harm_ind_list(sh_order)
-        self.m, self.n = m, n
-        self._where_b0s = lazy_index(gtab.b0s_mask)
-        self._where_dwi = lazy_index(~gtab.b0s_mask)
-
-        no_params = ((sh_order + 1) * (sh_order + 2)) / 2
-
-        if no_params > np.sum(gtab.b0s_mask == False):
-            msg = "Number of parameters required for the fit are more "
-            msg += "than the actual data points"
-            warnings.warn(msg, UserWarning)
-
-        x, y, z = gtab.gradients[self._where_dwi].T
-        r, theta, phi = cart2sphere(x, y, z)
-        # for the gradient sphere
-        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
-
-        # for the odf sphere
-        if reg_sphere is None:
-            self.sphere = get_sphere('symmetric362')
-        else:
-            self.sphere = reg_sphere
-
-        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
-        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
-
-        self.R, self.P = forward_sdt_deconv_mat(ratio, n)
-
-        # scale lambda_ to account for differences in the number of
-        # SH coefficients and number of mapped directions
-        self.lambda_ = (lambda_ * self.R.shape[0] * self.R[0, 0] /
-                        self.B_reg.shape[0])
-        self.tau = tau
-        self.sh_order = sh_order
-
-    @multi_voxel_fit
-    def fit(self, data):
-        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
-        # initial ODF estimation
-        odf_sh = np.dot(self.P, s_sh)
-        qball_odf = np.dot(self.B_reg, odf_sh)
-        Z = np.linalg.norm(qball_odf)
-        # normalize ODF
-        odf_sh /= Z
-        shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
-                                       self.lambda_, self.tau)
-        # print 'SDT CSD converged after %d iterations' % num_it
-        return SphHarmFit(self, shm_coeff, None)
-
-
-def estimate_response(gtab, evals, S0):
-    """ Estimate single fiber response function
-
-    Parameters
-    ----------
-    gtab : GradientTable
-    evals : ndarray
-    S0 : float
-        non diffusion weighted
-
-    Returns
-    -------
-    S : estimated signal
-
-    """
-    evecs = np.array([[0, 0, 1],
-                      [0, 1, 0],
-                      [1, 0, 0]])
-
-    return single_tensor(gtab, S0, evals, evecs, snr=None)
-
-
-def sh_to_rh(r_sh, m, n):
-    """ Spherical harmonics (SH) to rotational harmonics (RH)
-
-    Calculate the rotational harmonic decomposition up to
-    harmonic sh_order for an axially and antipodally
-    symmetric function. Note that all ``m != 0`` coefficients
-    will be ignored as axial symmetry is assumed. Hence, there
-    will be ``(sh_order/2 + 1)`` non-zero coefficients.
-
-    Parameters
-    ----------
-    r_sh : ndarray (N,)
-        ndarray of SH coefficients for the single fiber response function.
-        These coefficients must correspond to the real spherical harmonic
-        functions produced by `shm.real_sph_harm`.
-    m : ndarray (N,)
-        The order of the spherical harmonic function associated with each
-        coefficient.
-    n : ndarray (N,)
-        The degree of the spherical harmonic function associated with each
-        coefficient.
-
-    Returns
-    -------
-    r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
-        Rotational harmonics coefficients representing the input `r_sh`
-
-    See Also
-    --------
-    shm.real_sph_harm, shm.real_sym_sh_basis
-
-    References
-    ----------
-    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
-        fibre orientation distribution in diffusion MRI: Non-negativity
-        constrained super-resolved spherical deconvolution
-
-    """
-    mask = m == 0
-    # The delta function at theta = phi = 0 is known to have zero coefficients
-    # where m != 0, therefore we need only compute the coefficients at m=0.
-    dirac_sh = gen_dirac(0, n[mask], 0, 0)
-    r_rh = r_sh[mask] / dirac_sh
-    return r_rh
-
-
-def gen_dirac(m, n, theta, phi):
-    """ Generate Dirac delta function orientated in (theta, phi) on the sphere
-
-    The spherical harmonics (SH) representation of this Dirac is returned as
-    coefficients to spherical harmonic functions produced by
-    `shm.real_sph_harm`.
-
-    Parameters
-    ----------
-    m : ndarray (N,)
-        The order of the spherical harmonic function associated with each
-        coefficient.
-    n : ndarray (N,)
-        The degree of the spherical harmonic function associated with each
-        coefficient.
-    theta : float [0, 2*pi]
-        The azimuthal (longitudinal) coordinate.
-    phi : float [0, pi]
-        The polar (colatitudinal) coordinate.
-
-    See Also
-    --------
-    shm.real_sph_harm, shm.real_sym_sh_basis
-
-    Returns
-    -------
-    dirac : ndarray
-        SH coefficients representing the Dirac function
-
-    """
-    return real_sph_harm(m, n, theta, phi)
-
-
-def forward_sdeconv_mat(r_rh, n):
-    """ Build forward spherical deconvolution matrix
-
-    Parameters
-    ----------
-    r_rh : ndarray
-        ndarray of rotational harmonics coefficients for the single fiber
-        response function. Each element `rh[i]` is associated with spherical
-        harmonics of degree `2*i`.
-    n : ndarray
-        The degree of spherical harmonic function associated with each row of
-        the deconvolution matrix. Only even degrees are allowed
-
-    Returns
-    -------
-    R : ndarray (N, N)
-        Deconvolution matrix with shape (N, N)
-
-    """
-
-    if np.any(n % 2):
-        raise ValueError("n has odd degrees, expecting only even degrees")
-    return np.diag(r_rh[n // 2])
 
 
 def forward_sdt_deconv_mat(ratio, n, r2_term=False):
@@ -722,3 +395,277 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     response = (evals, S0)
     ratio = evals[1]/evals[0]
     return response, ratio
+
+
+def csd_predict(sh_coeff, gtab, response=None, S0=1, R=None):
+    """
+    Compute a signal prediction given spherical harmonic coefficients and
+    (optionally) a response function for the provided GradientTable class
+    instance
+
+    Parameters
+    ----------
+    sh_coeff : ndarray
+       Spherical harmonic coefficients
+
+    gtab : GradientTable class instance
+
+    response : tuple
+        A tuple with two elements. The first is the eigen-values as an (3,)
+        ndarray and the second is the signal value for the response
+        function without diffusion weighting.
+        Default: (np.array([0.0015, 0.0003, 0.0003]), 1)
+
+    S0 : ndarray or float
+        The non diffusion-weighted signal value.
+
+    R : ndarray
+        Optionally, provide an R matrix. If not provided, calculated from the
+        gtab, response function, etc.
+    """
+    n_coeff = sh_coeff.shape[-1]
+    sh_order = order_from_ncoef(n_coeff)
+    x, y, z = gtab.gradients[~gtab.b0s_mask].T
+    r, theta, phi = cart2sphere(x, y, z)
+    SH_basis, m, n = real_sym_sh_basis(sh_order, theta, phi)
+    if R is None:
+        # for the gradient sphere
+        B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+        if response is None:
+            response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+        else:
+            response = response
+
+        S_r = estimate_response(gtab, response[0], response[1])
+        r_sh = np.linalg.lstsq(B_dwi, S_r[~gtab.b0s_mask])[0]
+        r_rh = sh_to_rh(r_sh, m, n)
+        R = forward_sdeconv_mat(r_rh, n)
+
+    predict_matrix = np.dot(SH_basis, R)
+
+    if np.iterable(S0):
+        # If it's an array, we need to give it one more dimension:
+        S0 = S0[..., None]
+
+    # This is the key operation: convolve and multiply by S0:
+    pre_pred_sig = S0 * np.dot(predict_matrix, sh_coeff)
+
+    # Now put everything in its right place:
+    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+    pred_sig[..., gtab.b0s_mask] = S0
+
+    return pred_sig
+
+
+class ConstrainedSphericalDeconvModel(OdfModel, Cache):
+
+    def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
+                 tau=0.1):
+        r""" Constrained Spherical Deconvolution (CSD) [1]_.
+
+        Spherical deconvolution computes a fiber orientation distribution
+        (FOD), also called fiber ODF (fODF) [2]_, as opposed to a diffusion ODF
+        as the QballModel or the CsaOdfModel. This results in a sharper angular
+        profile with better angular resolution that is the best object to be
+        used for later deterministic and probabilistic tractography [3]_.
+
+        A sharp fODF is obtained because a single fiber *response* function is
+        injected as *a priori* knowledge. The response function is often
+        data-driven and is thus provided as input to the
+        ConstrainedSphericalDeconvModel. It will be used as deconvolution
+        kernel, as described in [1]_.
+
+        Parameters
+        ----------
+        gtab : GradientTable
+        response : tuple
+            A tuple with two elements. The first is the eigen-values as an (3,)
+            ndarray and the second is the signal value for the response
+            function without diffusion weighting.  This is to be able to
+            generate a single fiber synthetic signal. The response function
+            will be used as deconvolution kernel ([1]_)
+        reg_sphere : Sphere (optional)
+            sphere used to build the regularization B matrix.
+            Default: 'symmetric362'.
+        sh_order : int (optional)
+            maximal spherical harmonics order. Default: 8
+        lambda_ : float (optional)
+            weight given to the constrained-positivity regularization part of the
+            deconvolution equation (see [1]_). Default: 1
+        tau : float (optional)
+            threshold controlling the amplitude below which the corresponding
+            fODF is assumed to be zero.  Ideally, tau should be set to
+            zero. However, to improve the stability of the algorithm, tau is
+            set to tau*100 % of the mean fODF amplitude (here, 10% by default)
+            (see [1]_). Default: 0.1
+
+        References
+        ----------
+        .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of
+               the fibre orientation distribution in diffusion MRI:
+               Non-negativity constrained super-resolved spherical
+               deconvolution
+        .. [2] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
+               Probabilistic Tractography Based on Complex Fibre Orientation
+               Distributions
+        .. [3] C\^ot\'e, M-A., et al. Medical Image Analysis 2013. Tractometer:
+               Towards validation of tractography pipelines
+        .. [4] Tournier, J.D, et al. Imaging Systems and Technology
+               2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
+        """
+        # Initialize the parent class:
+        OdfModel.__init__(self, gtab)
+        m, n = sph_harm_ind_list(sh_order)
+        self.m, self.n = m, n
+        self._where_b0s = lazy_index(gtab.b0s_mask)
+        self._where_dwi = lazy_index(~gtab.b0s_mask)
+
+        no_params = ((sh_order + 1) * (sh_order + 2)) / 2
+
+        if no_params > np.sum(gtab.b0s_mask == False):
+            msg = "Number of parameters required for the fit are more "
+            msg += "than the actual data points"
+            warnings.warn(msg, UserWarning)
+
+        x, y, z = gtab.gradients[self._where_dwi].T
+        r, theta, phi = cart2sphere(x, y, z)
+        # for the gradient sphere
+        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+        # for the sphere used in the regularization positivity constraint
+        if reg_sphere is None:
+            self.sphere = get_sphere('symmetric362')
+        else:
+            self.sphere = reg_sphere
+
+        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+        if response is None:
+            self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+        else:
+            self.response = response
+
+        self.S_r = estimate_response(gtab, self.response[0], self.response[1])
+
+        r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
+        r_rh = sh_to_rh(r_sh, m, n)
+
+        self.R = forward_sdeconv_mat(r_rh, n)
+
+        # scale lambda_ to account for differences in the number of
+        # SH coefficients and number of mapped directions
+        # This is exactly what is done in [4]_
+        self.lambda_ = lambda_ * self.R.shape[0] * r_rh[0] / self.B_reg.shape[0]
+        self.sh_order = sh_order
+        self.tau = tau
+
+    @multi_voxel_fit
+    def fit(self, data):
+        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
+        shm_coeff, num_it = csdeconv(s_sh, self.sh_order, self.R, self.B_reg,
+                                     self.lambda_, self.tau)
+        return SphHarmFit(self, shm_coeff, None)
+
+
+    def predict(self, sh_coeff, S0=1):
+        """
+        Predict a signal from sh coefficients for this model
+        """
+        return csd_predict(sh_coeff, self.gtab, response=self.response, S0=S0,
+                           R=self.R)
+
+
+class ConstrainedSDTModel(OdfModel, Cache):
+
+    def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1.,
+                 tau=0.1):
+        r""" Spherical Deconvolution Transform (SDT) [1]_.
+
+        The SDT computes a fiber orientation distribution (FOD) as opposed to a
+        diffusion ODF as the QballModel or the CsaOdfModel. This results in a
+        sharper angular profile with better angular resolution. The Contrained
+        SDTModel is similar to the Constrained CSDModel but mathematically it
+        deconvolves the q-ball ODF as oppposed to the HARDI signal (see [1]_
+        for a comparison and a through discussion).
+
+        A sharp fODF is obtained because a single fiber *response* function is
+        injected as *a priori* knowledge. In the SDTModel, this response is a
+        single fiber q-ball ODF as opposed to a single fiber signal function
+        for the CSDModel. The response function will be used as deconvolution
+        kernel.
+
+        Parameters
+        ----------
+        gtab : GradientTable
+        ratio : float
+            ratio of the smallest vs the largest eigenvalue of the single
+            prolate tensor response function
+        reg_sphere : Sphere
+            sphere used to build the regularization B matrix
+        sh_order : int
+            maximal spherical harmonics order
+        lambda_ : float
+            weight given to the constrained-positivity regularization part of the
+            deconvolution equation
+        tau : float
+            threshold (tau *mean(fODF)) controlling the amplitude below
+            which the corresponding fODF is assumed to be zero.
+
+        References
+        ----------
+        .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
+               Probabilistic Tractography Based on Complex Fibre Orientation
+               Distributions.
+        """
+
+        m, n = sph_harm_ind_list(sh_order)
+        self.m, self.n = m, n
+        self._where_b0s = lazy_index(gtab.b0s_mask)
+        self._where_dwi = lazy_index(~gtab.b0s_mask)
+
+        no_params = ((sh_order + 1) * (sh_order + 2)) / 2
+
+        if no_params > np.sum(gtab.b0s_mask == False):
+            msg = "Number of parameters required for the fit are more "
+            msg += "than the actual data points"
+            warnings.warn(msg, UserWarning)
+
+        x, y, z = gtab.gradients[self._where_dwi].T
+        r, theta, phi = cart2sphere(x, y, z)
+        # for the gradient sphere
+        self.B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+        # for the odf sphere
+        if reg_sphere is None:
+            self.sphere = get_sphere('symmetric362')
+        else:
+            self.sphere = reg_sphere
+
+        r, theta, phi = cart2sphere(self.sphere.x, self.sphere.y, self.sphere.z)
+        self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+        self.R, self.P = forward_sdt_deconv_mat(ratio, n)
+
+        # scale lambda_ to account for differences in the number of
+        # SH coefficients and number of mapped directions
+        self.lambda_ = (lambda_ * self.R.shape[0] * self.R[0, 0] /
+                        self.B_reg.shape[0])
+        self.tau = tau
+        self.sh_order = sh_order
+
+    @multi_voxel_fit
+    def fit(self, data):
+        s_sh = np.linalg.lstsq(self.B_dwi, data[self._where_dwi])[0]
+        # initial ODF estimation
+        odf_sh = np.dot(self.P, s_sh)
+        qball_odf = np.dot(self.B_reg, odf_sh)
+        Z = np.linalg.norm(qball_odf)
+        # normalize ODF
+        odf_sh /= Z
+        shm_coeff, num_it = odf_deconv(odf_sh, self.R, self.B_reg,
+                                       self.lambda_, self.tau)
+        # print 'SDT CSD converged after %d iterations' % num_it
+        return SphHarmFit(self, shm_coeff, None)

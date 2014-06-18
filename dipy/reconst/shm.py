@@ -45,6 +45,131 @@ def _copydoc(obj):
     return bandit
 
 
+def forward_sdeconv_mat(r_rh, n):
+    """ Build forward spherical deconvolution matrix
+
+    Parameters
+    ----------
+    r_rh : ndarray
+        ndarray of rotational harmonics coefficients for the single fiber
+        response function. Each element `rh[i]` is associated with spherical
+        harmonics of degree `2*i`.
+    n : ndarray
+        The degree of spherical harmonic function associated with each row of
+        the deconvolution matrix. Only even degrees are allowed
+
+    Returns
+    -------
+    R : ndarray (N, N)
+        Deconvolution matrix with shape (N, N)
+
+    """
+
+    if np.any(n % 2):
+        raise ValueError("n has odd degrees, expecting only even degrees")
+    return np.diag(r_rh[n // 2])
+
+def sh_to_rh(r_sh, m, n):
+    """ Spherical harmonics (SH) to rotational harmonics (RH)
+
+    Calculate the rotational harmonic decomposition up to
+    harmonic sh_order for an axially and antipodally
+    symmetric function. Note that all ``m != 0`` coefficients
+    will be ignored as axial symmetry is assumed. Hence, there
+    will be ``(sh_order/2 + 1)`` non-zero coefficients.
+
+    Parameters
+    ----------
+    r_sh : ndarray (N,)
+        ndarray of SH coefficients for the single fiber response function.
+        These coefficients must correspond to the real spherical harmonic
+        functions produced by `shm.real_sph_harm`.
+    m : ndarray (N,)
+        The order of the spherical harmonic function associated with each
+        coefficient.
+    n : ndarray (N,)
+        The degree of the spherical harmonic function associated with each
+        coefficient.
+
+    Returns
+    -------
+    r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
+        Rotational harmonics coefficients representing the input `r_sh`
+
+    See Also
+    --------
+    shm.real_sph_harm, shm.real_sym_sh_basis
+
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
+        fibre orientation distribution in diffusion MRI: Non-negativity
+        constrained super-resolved spherical deconvolution
+
+    """
+    mask = m == 0
+    # The delta function at theta = phi = 0 is known to have zero coefficients
+    # where m != 0, therefore we need only compute the coefficients at m=0.
+    dirac_sh = gen_dirac(0, n[mask], 0, 0)
+    r_rh = r_sh[mask] / dirac_sh
+    return r_rh
+
+
+def gen_dirac(m, n, theta, phi):
+    """ Generate Dirac delta function orientated in (theta, phi) on the sphere
+
+    The spherical harmonics (SH) representation of this Dirac is returned as
+    coefficients to spherical harmonic functions produced by
+    `shm.real_sph_harm`.
+
+    Parameters
+    ----------
+    m : ndarray (N,)
+        The order of the spherical harmonic function associated with each
+        coefficient.
+    n : ndarray (N,)
+        The degree of the spherical harmonic function associated with each
+        coefficient.
+    theta : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+    phi : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    See Also
+    --------
+    shm.real_sph_harm, shm.real_sym_sh_basis
+
+    Returns
+    -------
+    dirac : ndarray
+        SH coefficients representing the Dirac function
+
+    """
+    return real_sph_harm(m, n, theta, phi)
+
+
+def estimate_response(gtab, evals, S0):
+    """ Estimate single fiber response function
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    evals : ndarray
+    S0 : float
+        non diffusion weighted
+
+    Returns
+    -------
+    S : estimated signal
+
+    """
+    evecs = np.array([[0, 0, 1],
+                      [0, 1, 0],
+                      [1, 0, 0]])
+
+    return single_tensor(gtab, S0, evals, evecs, snr=None)
+
+
 def real_sph_harm(m, n, theta, phi):
     """
     Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
@@ -182,7 +307,7 @@ sph_harm_lookup = {None: real_sym_sh_basis,
 def sph_harm_ind_list(sh_order):
     """
     Returns the degree (n) and order (m) of all the symmetric spherical
-    harmonics of degree less then or equal it sh_order. The results, m_list
+    harmonics of degree less then or equal to sh_order. The results, m_list
     and n_list are kx1 arrays, where k depends on sh_order. They can be
     passed to real_sph_harm.
 
@@ -217,6 +342,15 @@ def sph_harm_ind_list(sh_order):
 
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
     return (m_list, n_list)
+
+
+def order_from_ncoef(ncoef):
+    """
+    Given a number n of coefficients, calculate back the sh_order
+    """
+    # Solve the quadratic equation derived from :
+    # ncoef = (sh_order + 2) * (sh_order + 1) / 2
+    return int(-3 + np.sqrt(9 - 4 * (2-2*ncoef)))/2
 
 
 def smooth_pinv(B, L):
@@ -377,24 +511,42 @@ def _shm_predict(fit, gtab, S0=1, response_evals=None):
     pred_sig : ndarray
         The predicted signal in the gtab for this fit.
     """
-    # To invert the model, we estimate the ODF on the provided sphere and
-    # then convolve with the response function, rotated to each one of the
-    # gtab bvecs:
     sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    est_odf = fit.odf(sphere)
-    est_odf = est_odf/np.sum(est_odf)
-
-    pred_sig = np.zeros(gtab.b0s_mask.shape)
-    pred_sig[gtab.b0s_mask] = S0
-
     prediction_matrix = fit.prediction_matrix(sphere, gtab,
                                               response_evals=response_evals)
 
     if np.iterable(S0):
-        S0 = S0[...,None]
+        # If it's an array, we need to give it one more dimension:
+        S0 = S0[..., None]
 
-    pred_sig[~gtab.b0s_mask] = np.dot(est_odf, prediction_matrix)
+    # This is the key operation: convolve and multiply by S0:
+    pre_pred_sig = S0 * np.dot(prediction_matrix, fit._shm_coef)
+
+    # Now put everything in its right place:
+    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+    pred_sig[..., gtab.b0s_mask] = S0
+
     return pred_sig
+
+
+    # To invert the model, we estimate the ODF on the provided sphere and
+    # then convolve with the response function, rotated to each one of the
+    # gtab bvecs:
+    ## est_odf = fit.odf(sphere)
+    ## est_odf = est_odf/np.sum(est_odf)
+
+    ## pred_sig = np.zeros(gtab.b0s_mask.shape)
+    ## pred_sig[gtab.b0s_mask] = S0
+
+    ## prediction_matrix = fit.prediction_matrix(sphere, gtab,
+    ##                                           response_evals=response_evals)
+
+    ## if np.iterable(S0):
+    ##     S0 = S0[...,None]
+
+    ## pred_sig[~gtab.b0s_mask] = np.dot(est_odf, prediction_matrix)
+    ## return pred_sig
 
 
 class SphHarmFit(OdfFit):
@@ -485,25 +637,29 @@ class SphHarmFit(OdfFit):
             pred_gtab = grad.gradient_table(
                 gtab.bvals[~gtab.b0s_mask],
                 gtab.bvecs[~gtab.b0s_mask])
+            x, y, z = pred_gtab.gradients.T
+            r, theta, phi = cart2sphere(x, y, z)
+            SH_basis, m, n = real_sym_sh_basis(self.model.sh_order, theta, phi)
 
-            prediction_matrix = np.zeros((sphere.vertices.shape[0],
+            B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+
+            S_r = np.zeros((sphere.vertices.shape[0],
                                           sphere.vertices.shape[0]))
 
             if response_evals is None:
                 if hasattr(self.model, 'response'):
                     response_evals = self.model.response[0]
                 else:
-                    response_evals = [0.0015, 0.0003, 0.0003]
+                    response_evals = np.array([0.0015, 0.0003, 0.0003])
 
-            for ii in range(sphere.vertices.shape[0]):
-                evecs = all_tensor_evecs(sphere.vertices[ii])
-                prediction_matrix[ii] = single_tensor(pred_gtab, 1,
-                                                      response_evals,
-                                                      evecs, snr=None)
-                self.model.cache_set("prediction_matrix",
-                                     sphere,
-                                     prediction_matrix)
-        return prediction_matrix.T
+            S_r = estimate_response(pred_gtab, response_evals, 1.0)
+            r_sh = np.linalg.lstsq(B_dwi, S_r)[0]
+            r_rh = sh_to_rh(r_sh, m, n)
+            R = forward_sdeconv_mat(r_rh, n)
+
+            prediction_matrix = np.dot(SH_basis, R)
+
+        return prediction_matrix
 
     def predict(self, gtab, S0=1, response_evals=None):
         """

@@ -545,13 +545,13 @@ def apparent_diffusion_coef(q_form, sphere):
 
 def tensor_prediction(dti_params, gtab, S0):
     """
-    Predict a tensor signal given DTI parameters.
+    Predict a signal given tensor parameters.
 
     Parameters
     ----------
     dti_params : ndarray
-        The last dimension should have 12 tensor parameters: 3
-        eigenvalues, followed by the 3 eigenvectors
+        Tensor parameters. The last dimension should have 12 tensor parameters: 3
+        eigenvalues, followed by the 3 corresponding eigenvectors
 
     gtab : a GradientTable class instance
         The gradient table for this prediction
@@ -1018,6 +1018,7 @@ class TensorFit(object):
         """
         return tensor_prediction(self.model_params, gtab, S0=S0)
 
+
 def wls_fit_tensor(design_matrix, data, min_signal=1):
     r"""
     Computes weighted least squares (WLS) fit to calculate self-diffusion
@@ -1398,8 +1399,8 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            print(vox)
             dti_params[vox, :] = start_params
+
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 
