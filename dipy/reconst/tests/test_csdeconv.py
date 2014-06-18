@@ -1,10 +1,8 @@
 import warnings
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           assert_array_almost_equal,
-                           run_module_suite)
+from numpy.testing import (assert_, assert_equal, assert_almost_equal,
+                           assert_array_almost_equal, run_module_suite)
 from dipy.data import get_sphere, get_data
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
@@ -18,7 +16,7 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    odf_sh_to_sharp,
                                    auto_response,
                                    csd_predict)
-from dipy.reconst.peaks import peak_directions
+from dipy.reconst.peaks import peak_directions, default_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel,
                               CsaOdfModel, sph_harm_ind_list)
@@ -331,6 +329,36 @@ def test_default_lambda_csdmodel():
                                                      sh_order=sh_order,
                                                      reg_sphere=sphere)
         assert_almost_equal(model_full.lambda_, expected)
+
+
+def test_csd_superres():
+    """ Check the quality of csdfit with high SH order. """
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+
+    # img, gtab = read_stanford_hardi()
+    evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
+    S, sticks = multi_tensor(gtab, evals, snr=None)
+
+    model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.), sh_order=16)
+    fit16 = model16.fit(S)
+
+    # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)
+    d, v, ind = peak_directions(fit16.odf(default_sphere), default_sphere,
+                                relative_peak_threshold=.2,
+                                min_separation_angle=0)
+
+    # Check that there are two peaks
+    assert_equal(len(d), 2)
+
+    # Check that peaks line up with sticks
+    cos_sim = abs((d * sticks).sum(1)) ** .5
+    assert_(all(cos_sim > .99))
 
 
 if __name__ == '__main__':
