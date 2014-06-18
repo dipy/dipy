@@ -6,6 +6,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 from nose.tools import (assert_true, assert_equal,
                         assert_almost_equal, assert_raises)
+import numpy.testing as npt
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_
 import nibabel as nib
 
@@ -27,6 +28,14 @@ import dipy.core.gradients as grad
 import dipy.core.sphere as dps
 
 from dipy.sims.voxel import single_tensor
+
+def test_roll_evals():
+    """
+
+    """
+    # Just making sure this never passes through
+    weird_evals = np.array([1, 0.5])
+    npt.assert_raises(ValueError, dti._roll_evals, weird_evals)
 
 
 def test_tensor_algebra():
@@ -177,8 +186,11 @@ def test_color_fa():
     fa = fractional_anisotropy(dmfit.evals)
     cfa = color_fa(fa, dmfit.evecs)
 
-    # evecs should be of shape (fa, 3, 3)
     fa = np.ones((3, 3, 3))
+    # evecs should be of shape (fa, 3, 3)
+    evecs = np.zeros(fa.shape + (3,2))
+    npt.assert_raises(ValueError, color_fa, fa, evecs)
+
     evecs = np.zeros(fa.shape + (3, 3))
     evecs[..., :, :] = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
@@ -245,8 +257,12 @@ def test_WLS_and_LS_fit():
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
 
-
     ### Testing WLS Fit on Single Voxel ###
+    # If you do something wonky, you should get an error:
+    #Estimate tensor from test signals
+    model = TensorModel(gtab, min_signal=-1, fit_method='WLS')
+    npt.assert_raises(ValueError, model.fit, Y)
+
     #Estimate tensor from test signals
     model = TensorModel(gtab, min_signal=1e-8, fit_method='WLS')
     tensor_est = model.fit(Y)
@@ -383,6 +399,7 @@ def test_mask():
     # Except for the one voxel that was selected by the mask:
     assert_almost_equal(dtifit_w_mask.fa[0, 0, 0], dtifit.fa[0, 0, 0])
 
+
 def test_nnls_jacobian_fucn():
     b0 = 1000.
     bvecs, bval = read_bvec_file(get_data('55dir_grad.bvec'))
@@ -448,12 +465,26 @@ def test_nlls_fit_tensor():
      assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
      assert_almost_equal(tensor_est.md[0], md)
 
-     # Using the gmm weighting scheme:
-     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='gmm')
+     # You can also do this without the Jacobian (though it's slower):
+     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', jac=False)
+     tensor_est = tensor_model.fit(Y)
      assert_equal(tensor_est.shape, Y.shape[:-1])
      assert_array_almost_equal(tensor_est.evals[0], evals)
      assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
      assert_almost_equal(tensor_est.md[0], md)
+
+
+     # Using the gmm weighting scheme:
+     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='gmm')
+     tensor_est = tensor_model.fit(Y)
+     assert_equal(tensor_est.shape, Y.shape[:-1])
+     assert_array_almost_equal(tensor_est.evals[0], evals)
+     assert_array_almost_equal(tensor_est.quadratic_form[0], tensor)
+     assert_almost_equal(tensor_est.md[0], md)
+
+     # If you use sigma weighting, you'd better provide a sigma:
+     tensor_model = dti.TensorModel(gtab, fit_method='NLLS', weighting='sigma')
+     npt.assert_raises(ValueError, tensor_model.fit, Y)
 
      # Use NLLS with some actual 4D data:
      data, bvals, bvecs = get_data('small_25')
@@ -524,6 +555,7 @@ def test_adc():
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
     assert_array_almost_equal(dtifit.adc(sphere_pdd0),
                         dtifit.ad, decimal=5)
+
 
 def test_predict():
     """
