@@ -19,7 +19,7 @@ help:
 all: ext cython-html test
 
 ext: recspeed.so propspeed.so vox2track.so \
-    distances.so
+    distances.so streamlinespeed.so
 
 test: ext
 	nosetests .
@@ -30,6 +30,7 @@ recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
 propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
 vox2track.so: ${PKGDIR}/tracking/vox2track.pyx
 distances.so: ${PKGDIR}/tracking/distances.pyx
+streamlinespeed.so: ${PKGDIR}/core/streamlinespeed.pyx
 
 	$(PYTHON) setup.py build_ext --inplace
 
