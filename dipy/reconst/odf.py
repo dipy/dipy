@@ -21,10 +21,6 @@ class OdfModel(ReconstModel):
 
 
 class OdfFit(ReconstFit):
-
-    def __init__(self, model, data):
-        ReconstFit.__init__(self, model, data)
-
     def odf(self, sphere):
         """To be implemented but specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")
