@@ -1,167 +1,171 @@
 # distutils: language = c++
 
 import numpy as np
-import cython
 cimport numpy as np
-from cython.parallel import prange
+import cython
 
-from libc.math cimport sqrt, pow, abs
+from libcpp.vector cimport vector
+from libc.math cimport sqrt, pow
 
+cdef extern from "stdlib.h" nogil:
+    ctypedef unsigned long size_t
+    void free(void *ptr)
+    void *malloc(size_t size)
 
-ctypedef float[:] float_array_1d_t
-ctypedef double[:] double_array_1d_t
+ctypedef float[:,:] float2d
+ctypedef double[:,:] double2d
 
-ctypedef float[:, :] float_array_2d_t
-ctypedef double[:, :] double_array_2d_t
+ctypedef fused Streamline:
+    float2d
+    double2d
 
-ctypedef fused floating:
-    float
-    double
-
-ctypedef fused floating_array_1d_t:
-    float_array_1d_t
-    double_array_1d_t
-
-ctypedef fused floating_array_2d_t:
-    float_array_2d_t
-    double_array_2d_t
+ctypedef vector[Streamline] Streamlines
 
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef void _arclengths(floating_array_2d_t points, floating_array_1d_t out) nogil:
+cdef void _length(Streamlines streamlines, double[:] out) nogil:
+    cdef unsigned int i
+    cdef unsigned int idx
+    cdef Streamline streamline
+
+    for idx in range(streamlines.size()):
+        streamline = streamlines[idx]
+        out[idx] = 0.0
+
+        for i in range(1, streamline.shape[0]):
+            out[idx] += sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
+                             pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
+                             pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
+
+
+def length(streamlines):
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
+
+    dtype = streamlines[0].dtype
+    for streamline in streamlines:
+        if streamline.dtype != dtype:
+            raise ValueError("All streamlines must have the same dtype.")
+
+    # TODO: Support any number of coordinates?
+    nb_coords = streamlines[0].shape[1]
+    if nb_coords != 3:
+        raise ValueError("Streamlines must have 3 coordinates (i.e. X,Y,Z).")
+
+    # Allocate memory for each resampled streamline
+    streamlines_length = np.empty(len(streamlines), dtype=np.float64)
+
+    if dtype == np.float32:
+        _length[float2d](streamlines, streamlines_length)
+    else:
+        _length[double2d](streamlines, streamlines_length)
+
+    if only_one_streamlines:
+        return streamlines_length[0]
+    else:
+        return streamlines_length
+
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+cdef void _arclengths(Streamline streamlines, double* out) nogil:
     cdef int i = 0
     out[0] = 0.0
-    for i in range(1, points.shape[0]):
-        out[i] = out[i-1] + sqrt(pow(points[i, 0] - points[i - 1, 0], 2.0) +
-                                 pow(points[i, 1] - points[i - 1, 1], 2.0) +
-                                 pow(points[i, 2] - points[i - 1, 2], 2.0))
-
-cdef void _arclengths_float(float[:,:] points, float[:] out) nogil:
-    _arclengths(points, out)
-
-cdef void _arclengths_double(double[:,:] points, double[:] out) nogil:
-    _arclengths(points, out)
-
-
-
-#@cython.wraparound(False)
-#@cython.cdivision(True)
-#@cython.boundscheck(False)
-#cdef void _extrap(double[:, :] xyz, double[:] cumlen, double distance, double[:] xyz2) nogil:
-
-#    cdef int ind = 0
-
-#    for ind in range(cumlen.shape[0]):
-#        if cumlen[ind] > distance:
-#            break
-
-#    #cdef int ind = np.where((cumlen - distance) > 0)[0][0]
-#    cdef double len0 = cumlen[ind - 1]
-#    cdef double len1 = cumlen[ind]
-#    cdef double Ds = distance - len0
-#    cdef double Lambda = Ds / (len1 - len0)
-
-#    cdef double x,y,z
-
-#    xyz2[0] = Lambda * xyz[ind, 0] + (1 - Lambda) * xyz[ind - 1, 0]
-#    xyz2[1] = Lambda * xyz[ind, 1] + (1 - Lambda) * xyz[ind - 1, 1]
-#    xyz2[2] = Lambda * xyz[ind, 2] + (1 - Lambda) * xyz[ind - 1, 2]
-
-#    return
-
-#@cython.wraparound(False)
-#@cython.cdivision(True)
-#@cython.boundscheck(False)
-#cdef void _resample(double[:,:] xyz, double[:] cumlen, double[:] distances, double[:,:] xyz2) nogil:
-#    for i in range(distances.shape[0]):
-#        _extrap(xyz, cumlen, distances[i], xyz2[i])
-
-#def resample(p_xyz, n_pols=3):
-#    cdef double[:,:] xyz = np.asarray(p_xyz)
-#    cdef int n_pts = xyz.shape[0]
-#    if n_pts == 0:
-#        raise ValueError('xyz array cannot be empty')
-#    if n_pts == 1:
-#        return xyz.copy().squeeze()
-
-#    cumlen = np.zeros(n_pts)
-#    #get_cum_sum(xyz, cumlen[1:])
-#    cdef double step = cumlen[-1] / (n_pols - 1)
-#    if cumlen[-1] < step:
-#        raise ValueError('Given number of points n_pols is incorrect. ')
-#    if n_pols <= 2:
-#        raise ValueError('Given number of points n_pols needs to be'
-#                         ' higher than 2. ')
-
-#    ar = np.arange(0, cumlen[-1], step)
-#    if np.abs(ar[-1] - cumlen[-1]) < np.finfo('f4').eps:
-#        ar = ar[:-1]
-
-#    cdef double[:,:] xyz2 = np.zeros((len(ar), 3))
-#    _resample(xyz, cumlen, ar, xyz2)
-
-#    return np.vstack((np.array(xyz2), xyz[-1]))
+    for i in range(1, streamlines.shape[0]):
+        out[i] = out[i-1] + sqrt(pow(streamlines[i, 0] - streamlines[i-1, 0], 2.0) +
+                                 pow(streamlines[i, 1] - streamlines[i-1, 1], 2.0) +
+                                 pow(streamlines[i, 2] - streamlines[i-1, 2], 2.0))
 
 @cython.wraparound(False)
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef void _resample(floating[:,:] points, floating[:] arclengths, floating[:,:] out) nogil:
-
-    _arclengths(points, arclengths)
-
+cdef void _resample(Streamlines streamlines, Streamlines out) nogil:
+    cdef unsigned int N
+    cdef unsigned int newN = out[0].shape[0]
     cdef double ratio
-    cdef int N = points.shape[0]
-    cdef int newN = out.shape[0]
-    cdef double step = arclengths[N-1] / (newN-1)
+    cdef double step
+    cdef double nextPoint
+    cdef unsigned int i
+    cdef unsigned int j
+    cdef unsigned int k
+    cdef unsigned int idx
 
-    cdef double nextPoint = 0.0
-    cdef unsigned int i = 0
-    cdef unsigned int j = 0
-    cdef unsigned int k = 0
+    cdef Streamline streamline
 
-    while nextPoint < arclengths[N-1]:
-        if nextPoint == arclengths[k]:
-            out[i,0] = points[j,0];
-            out[i,1] = points[j,1];
-            out[i,2] = points[j,2];
+    for idx in range(streamlines.size()):
+        streamline = streamlines[idx]
 
-            nextPoint += step
-            i += 1
-            j += 1
-            k += 1
-        elif nextPoint < arclengths[k]:
-            ratio = 1 - ((arclengths[k]-nextPoint) / (arclengths[k]-arclengths[k-1]))
+        # Get arclength at each point.
+        arclengths = <double*> malloc(streamline.shape[0] * sizeof(double))
+        _arclengths(streamline, arclengths)
 
-            out[i,0]   = points[j-1,0] + ratio * (points[j,0] - points[j-1,0])
-            out[i,1] = points[j-1,1] + ratio * (points[j,1] - points[j-1,1])
-            out[i,2] = points[j-1,2] + ratio * (points[j,2] - points[j-1,2])
+        N = streamline.shape[0]
+        step = arclengths[N-1] / (newN-1)
 
-            nextPoint += step
-            i += 1
-        else:
-            j += 1
-            k += 1
+        nextPoint = 0.0
+        i = 0
+        j = 0
+        k = 0
 
-    out[newN-1,0] = points[N-1,0]
-    out[newN-1,1] = points[N-1,1]
-    out[newN-1,2] = points[N-1,2]
+        while nextPoint < arclengths[N-1]:
+            if nextPoint == arclengths[k]:
+                out[idx][i,0] = streamline[j,0];
+                out[idx][i,1] = streamline[j,1];
+                out[idx][i,2] = streamline[j,2];
+
+                nextPoint += step
+                i += 1
+                j += 1
+                k += 1
+            elif nextPoint < arclengths[k]:
+                ratio = 1 - ((arclengths[k]-nextPoint) / (arclengths[k]-arclengths[k-1]))
+
+                out[idx][i,0] = streamline[j-1,0] + ratio * (streamline[j,0] - streamline[j-1,0])
+                out[idx][i,1] = streamline[j-1,1] + ratio * (streamline[j,1] - streamline[j-1,1])
+                out[idx][i,2] = streamline[j-1,2] + ratio * (streamline[j,2] - streamline[j-1,2])
+
+                nextPoint += step
+                i += 1
+            else:
+                j += 1
+                k += 1
+
+        # Last resampled point always the one from orignal streamline.
+        out[idx][newN-1,0] = streamline[N-1,0]
+        out[idx][newN-1,1] = streamline[N-1,1]
+        out[idx][newN-1,2] = streamline[N-1,2]
+
+        free(arclengths)
 
 
+def resample(streamlines, nb_points=3):
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
 
-#cdef void _downsample_float(float[:,:] points, float[:] arclengths, float[:,:] out) nogil:
-#    _downsample(points, arclengths, out)
+    dtype = streamlines[0].dtype
+    for streamline in streamlines:
+        if streamline.dtype != dtype:
+            raise ValueError("All streamlines must have the same dtype.")
 
-#cdef void _downsample_double(double[:,:] points, double[:] arclengths, double[:,:] out) nogil:
-#    _downsample(points, arclengths, out)
+    # TODO: Support any number of coordinates?
+    nb_coords = streamlines[0].shape[1]
+    if nb_coords != 3:
+        raise ValueError("Streamlines must have 3 coordinates (i.e. X,Y,Z).")
 
-def resample(points, nb_points=3):
-    arclengths = np.empty(points.shape[0], dtype=points.dtype)
-    resampled_points = np.empty((nb_points, points.shape[1]), dtype=points.dtype)
+    # Allocate memory for each resampled streamline
+    resampled_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=dtype) for streamline in streamlines]
 
-    if points.dtype == np.float32:
-        _resample[float](points, arclengths, resampled_points)
+    if dtype == np.float32:
+        _resample[float2d](streamlines, resampled_streamlines)
     else:
-        _resample[double](points, arclengths, resampled_points)
+        _resample[double2d](streamlines, resampled_streamlines)
 
-    return resampled_points
+    if only_one_streamlines:
+        return resampled_streamlines[0]
+    else:
+        return resampled_streamlines

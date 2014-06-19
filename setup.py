@@ -89,6 +89,7 @@ for modulename, other_sources in (
     ):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
+                          language = "c++",
                           include_dirs = [np.get_include(), "src"]))
 
 
