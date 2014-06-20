@@ -39,7 +39,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         raise ValueError('arr needs to be a 3D ndarray')
 
     if mask is None:
-        mask = np.ones_like(arr, dtype='f8')
+        mask = np.ones(arr.shape, dtype='f8')
     else:
         mask = np.ascontiguousarray(mask, dtype='f8')
 

@@ -113,7 +113,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
 
         sig_prev = 0
         omega_size = 1
-        idx = np.zeros_like(sum_m2, dtype=np.bool)
+        idx = np.zeros(sum_m2.shape, dtype=np.bool)
 
         for n in range(itermax):
 
