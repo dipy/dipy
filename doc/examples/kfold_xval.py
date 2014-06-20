@@ -13,15 +13,14 @@ approximates the diffusion pattern as a 3D Gaussian distribution, and has only
 models aare also not nested, so they cannot be compared using the
 log-likelihood ratio.
 
-A general way to perform model comparison is cross-validation [1]_. In this
-method, a model is fit to some of the data (a *learning set*) and the model is
-then used to predict a held-out set (a *testing set*). The model predictions
-can then be compared to estimate prediction error on the held out set. This
-method has been used for comparison of models such as DTI and CSD [2]_, and has
-the advantage that it is imprevious to the effects of over-fitting to noise in
-the data, because the model predictions are always compared to data that was
-not used in fitting the model. Cross-validation can be used to compare models
-with different numbers of parameters, that are not nested.
+A general way to perform model comparison is cross-validation [Hastie2008]_. In
+this method, a model is fit to some of the data (a *learning set*) and the
+model is then used to predict a held-out set (a *testing set*). The model
+predictions can then be compared to estimate prediction error on the held out
+set. This method has been used for comparison of models such as DTI and CSD
+[Rokem2014]_, and has the advantage that it the comparison is imprevious to
+differences in the number of parameters in the model, and it can be used to
+compare models that are not nested.
 
 In `dipy`, we include an implementation of k-fold cross-validation. In this
 method, the data is divided into $k$ different segments. In each iteration
@@ -130,53 +129,41 @@ cc_csd_r2=stats.pearsonr(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask])[0]**2
 cso_dti_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask])[0]**2
 cso_csd_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask])[0]**2
 
-print("""
-         Corpus callosum
-         ---------------
-         DTI R2 : %s
-         CSD R2 : %s
-
-         Centrum Semiovale
-         -----------------
-         DTI R2 : %s
-         CSD R2 : %s
-
-      """%(cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2))
+print("Corpus callosum\n---------------\nDTI R2 : %s\nCSD R2 : %s\n\nCentrum Semiovale\n-----------------\nDTI R2 : %s\nCSD R2 : %s\n"%(cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2))
 
 
 """
 
-..
+This should look something like this:
 
      Corpus callosum
+
      ---------------
+
      DTI R2 : 0.782881752597
+
      CSD R2 : 0.739356154507
 
      Centrum Semiovale
+
      -----------------
+
      DTI R2 : 0.431921832012
+
      CSD R2 : 0.578207214953
 
 
 As you can see, DTI is a better model for describing the signal in the CC,
 while CSD better describes the signal in regions of multiple crossing fibers.
 
-"""
-
-
-
-"""
 
 References
 ----------
 
-.. [1] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements of
-       Statistical Learning: Data Mining, Inference and
-       Prediction. Springer-Verlag, Berlin
+.. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements of Statistical Learning: Data Mining, Inference and Prediction. Springer-Verlag, Berlin
 
-.. [2] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
-       Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at
-       multiple b-values with cross-validation. ISMRM 2014.
+.. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A., Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at multiple b-values with cross-validation. ISMRM 2014.
+
+.. include:: ../links_names.inc
 
 """
