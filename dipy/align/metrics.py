@@ -1,7 +1,8 @@
 from __future__ import print_function
+import abc
+from dipy.utils.six import with_metaclass
 import numpy as np
 import scipy as sp
-import abc
 from scipy import gradient, ndimage
 import dipy.align.vector_fields as vfu
 from dipy.align import sumsqdiff as ssd
@@ -10,8 +11,7 @@ from dipy.align import expectmax as em
 from dipy.align import floating
 
 
-class SimilarityMetric(object):
-    __metaclass__ = abc.ABCMeta
+class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
     def __init__(self, dim):
         r""" Similarity Metric abstract class
 

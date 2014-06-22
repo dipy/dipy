@@ -1,14 +1,14 @@
 from __future__ import print_function
+import abc
+from dipy.utils.six import with_metaclass
 import numpy as np
 import numpy.linalg as npl
 import scipy as sp
 import nibabel as nib
-import abc
 import dipy.align.vector_fields as vfu
 from dipy.align import floating
 from dipy.align import VerbosityLevels
 from dipy.align import Bunch
-
 
 RegistrationStages = Bunch(INIT_START=0, 
                           INIT_END=1,
@@ -999,10 +999,8 @@ class DiffeomorphicMap(object):
         return composition
 
 
-class DiffeomorphicRegistration(object):
-
-    def __init__(self,
-                 metric=None):
+class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
+    def __init__(self, metric=None):
         r""" Diffeomorphic Registration
 
         This abstract class defines the interface to be implemented by any
