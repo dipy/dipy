@@ -1016,7 +1016,7 @@ class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
         self.metric = metric
         self.dim = metric.dim
 
-    def set_opt_iter(self, opt_iter):
+    def set_level_iters(self, level_iters):
         r"""Sets the number of iterations at each pyramid level
 
         Establishes the maximum number of iterations to be performed at each
@@ -1024,13 +1024,13 @@ class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
 
         Parameters
         ----------
-        opt_iter : list
+        level_iters : list
             the number of iterations at each level of the Gaussian pyramid.
-            opt_iter[0] corresponds to the finest level, opt_iter[n-1] the
+            level_iters[0] corresponds to the finest level, level_iters[n-1] the
             coarsest, where n is the length of the list
         """
-        self.levels = len(opt_iter) if opt_iter else 0
-        self.opt_iter = opt_iter
+        self.levels = len(level_iters) if level_iters else 0
+        self.level_iters = level_iters
 
     @abc.abstractmethod
     def optimize(self):
@@ -1053,7 +1053,7 @@ class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
     def __init__(self,
                  metric,
-                 opt_iter=[25, 100, 100],
+                 level_iters=None,
                  step_length=0.25,
                  ss_sigma_factor=0.2,
                  opt_tol=1e-5,
@@ -1069,7 +1069,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         ----------
         metric : SimilarityMetric object
             the metric to be optimized
-        opt_iter : list of int
+        level_iters : list of int
             the number of iterations at each level of the Gaussian Pyramid (the
             length of the list defines the number of pyramid levels to be 
             used)
@@ -1098,10 +1098,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if metric is None:
             raise Exception('SymmetricDiffeomorphicRegistration',
                             'The metric cannot be None')
-        if (opt_iter is None) or (len(opt_iter) == 0):
+        if level_iters is None:
+            level_iters = [25, 100, 100]
+        if len(level_iters) == 0:
             raise Exception('SymmetricDiffeomorphicRegistration',
                             'The iterations list cannot be None nor empty')
-        self.set_opt_iter(opt_iter)
+        self.set_level_iters(level_iters)
         self.step_length = step_length
         self.ss_sigma_factor = ss_sigma_factor
         self.opt_tol = opt_tol
@@ -1521,7 +1523,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_START)
 
-            while ((self.niter < self.opt_iter[level]) and 
+            while ((self.niter < self.level_iters[level]) and 
                    (self.opt_tol < derivative)):
                 derivative = self._iterate()
                 self.niter += 1
