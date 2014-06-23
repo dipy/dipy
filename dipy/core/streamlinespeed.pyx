@@ -40,22 +40,65 @@ cdef void _length(Streamlines streamlines, double[:] out) nogil:
 
 
 def length(streamlines):
+    ''' Euclidean length of streamlines
+
+    This will give length in mm if streamlines are expressed in world coordinates.
+
+    Parameters
+    ------------
+    streamlines : one or a list of array-like shape (N,3)
+       array representing x,y,z of N points in a streamline
+
+    Returns
+    ---------
+    lengths : scalar or array shape (N,)
+       scalar representing the length of one streamline, or
+       array representing the lengths of multiple streamlines.
+
+    Examples
+    ----------
+    >>> from dipy.core.streamline import length
+    >>> streamline = np.array([[1, 1, 1], [2, 3, 4], [0, 0, 0]])
+    >>> expected_length = np.sqrt([1+2**2+3**2, 2**2+3**2+4**2]).sum()
+    >>> length(streamline) == expected_length
+    True
+    >>> streamlines = [streamline, np.vstack([streamline, streamline[:-1]])]
+    >>> expected_lengths = [expected_length, 2*expected_length]
+    >>> np.allclose(expected_lengths, [length(streamlines[0]), length(streamlines[1])])
+    True
+    >>> length([])
+    0
+    >>> length(np.array([[1, 2, 3]]))
+    0
+    '''
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True
         streamlines = [streamlines]
+
+    if len(streamlines) == 0:
+        return 0.0
 
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:
             raise ValueError("All streamlines must have the same dtype.")
 
+    # Cast any integer array into float.
+    if dtype != np.float32 and dtype != np.float64:
+        if dtype == np.int64 or dtype == np.uint64:
+            dtype = np.float64
+            streamlines = [streamline.astype(np.float64) for streamline in streamlines]
+        else:  # Integer using less than 64bits
+            dtype = np.float32
+            streamlines = [streamline.astype(np.float32) for streamline in streamlines]
+
     # TODO: Support any number of coordinates?
     nb_coords = streamlines[0].shape[1]
     if nb_coords != 3:
         raise ValueError("Streamlines must have 3 coordinates (i.e. X,Y,Z).")
 
-    # Allocate memory for each resampled streamline
+    # Allocate memory for each streamline length.
     streamlines_length = np.empty(len(streamlines), dtype=np.float64)
 
     if dtype == np.float32:
@@ -142,15 +185,68 @@ cdef void _resample(Streamlines streamlines, Streamlines out) nogil:
 
 
 def resample(streamlines, nb_points=3):
+    ''' resample streamlines for a specific number of points
+        (either downsampling or upsampling)
+
+    Resamples streamlines in order to obtain `nb_points`-1 segments
+    of equal length. Points of streamlines will be modified along the curve.
+
+    Parameters
+    ----------
+    streamlines : one or a list of array-like shape (N,3)
+       array representing x,y,z of N points in a streamline
+    nb_points : int
+       integer representing number of points wanted along the curve.
+
+    Returns
+    -------
+    resampled_streamlines : one or a list of array-like shape (`nb_points`,3)
+       array representing x,y,z of `nb_points` points that where interpolated.
+
+    Examples
+    --------
+    >>> from dipy.core.streamline import resample
+    >>> import numpy as np
+    >>> # One streamline: a semi-circle
+    >>> theta = np.pi*np.linspace(0, 1, 100)
+    >>> x = np.cos(theta)
+    >>> y = np.sin(theta)
+    >>> z = 0 * x
+    >>> streamline = np.vstack((x, y, z)).T
+    >>> resampled_streamline = resample(streamline, 3)
+    >>> len(resampled_streamline)
+    3
+    >>> # Multiple streamlines
+    >>> streamlines = [streamline, streamline[::2]]
+    >>> resampled_streamlines = resample(streamlines, 10)
+    >>> map(len, streamlines)
+    [100, 50]
+    >>> map(len, resampled_streamlines)
+    [10, 10]
+    '''
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True
         streamlines = [streamlines]
 
+    if len(streamlines) == 0:
+        return []
+
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:
             raise ValueError("All streamlines must have the same dtype.")
+        if len(streamline) < 2:
+            raise ValueError("All streamlines must have at least 2 points.")
+
+    # Cast any integer array into float.
+    if dtype != np.float32 and dtype != np.float64:
+        if dtype == np.int64 or dtype == np.uint64:
+            dtype = np.float64
+            streamlines = [streamline.astype(np.float64) for streamline in streamlines]
+        else:  # Integer using less than 64bits
+            dtype = np.float32
+            streamlines = [streamline.astype(np.float32) for streamline in streamlines]
 
     # TODO: Support any number of coordinates?
     nb_coords = streamlines[0].shape[1]

@@ -208,7 +208,7 @@ def frenet_serret(xyz):
 
     Calculates the 3 vector and 2 scalar invariants of a space curve
     defined by vectors r = (x,y,z).  If z is omitted (i.e. the array xyz has
-    shape (N,2), then the curve is
+    shape (N,2)), then the curve is
     only 2D (planar), but the equations are still valid.
 
     Similar to

@@ -218,9 +218,24 @@ class TestStreamline(unittest.TestCase):
         # Test streamline with shape not Nx3
         assert_raises(ValueError, dipystreamline.resample, self.streamline.T, nb_points)
 
+        # Test streamline with integer dtype
+        resampled_streamline = dipystreamline.resample(self.streamline.astype(np.int32))
+        assert_true(resampled_streamline.dtype == np.float32)
+        resampled_streamline = dipystreamline.resample(self.streamline.astype(np.int64))
+        assert_true(resampled_streamline.dtype == np.float64)
+
+        # Test empty list
+        assert_equal(dipystreamline.resample([]), [])
+
+        # Test streamline having only one point
+        assert_raises(ValueError, dipystreamline.resample, np.array([[1, 2, 3]]))
+
+        # We do not support list of lists, it should be numpy ndarray.
+        streamline = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
+        assert_raises(AttributeError, dipystreamline.resample, streamline)
+
     def test_length(self):
         # Test length of only one streamline
-        nb_points = 12
         length_streamline_cython = dipystreamline.length(self.streamline)
         length_streamline_python = length_python(self.streamline)
         assert_equal(length_streamline_cython, length_streamline_python)
@@ -230,25 +245,38 @@ class TestStreamline(unittest.TestCase):
         assert_equal(length_streamline_cython, length_streamline_python)
 
         # Test computing length of multiple streamlines of different nb_points
-        nb_points = 12
         length_streamlines_cython = dipystreamline.length(self.streamlines)
 
         for i, s in enumerate(self.streamlines):
             length_streamline_python = length_python(s)
             assert_array_almost_equal(length_streamlines_cython[i], length_streamline_python)
 
-        length_streamlines_cython = dipystreamline.resample(self.streamlines_64bit, nb_points)
+        length_streamlines_cython = dipystreamline.length(self.streamlines_64bit)
 
         for i, s in enumerate(self.streamlines_64bit):
-            resampled_streamline_python = resample_python(s, nb_points)
-            assert_array_almost_equal(length_streamlines_cython[i], resampled_streamline_python)
+            length_streamline_python = length_python(s)
+            assert_array_almost_equal(length_streamlines_cython[i], length_streamline_python)
 
-        # Test streamlines with mixed dtype
+        # Test streamlines having mixed dtype
         streamlines = [self.streamline, self.streamline.astype(np.float64)]
-        assert_raises(ValueError, dipystreamline.resample, streamlines, nb_points)
+        assert_raises(ValueError, dipystreamline.length, streamlines)
 
-        # Test streamline with shape not Nx3
-        assert_raises(ValueError, dipystreamline.resample, self.streamline.T, nb_points)
+        # Test streamline having a shape not Nx3
+        assert_raises(ValueError, dipystreamline.length, self.streamline.T)
+
+        # Test streamline having integer dtype
+        length_streamline = dipystreamline.length(self.streamline.astype('int'))
+        assert_true(length_streamline.dtype == np.float64)
+
+        # Test empty list
+        assert_equal(dipystreamline.length([]), 0.0)
+
+        # Test streamline having only one point
+        assert_equal(dipystreamline.length(np.array([[1, 2, 3]])), 0.0)
+
+        # We do not support list of lists, it should be numpy ndarray.
+        streamline = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
+        assert_raises(AttributeError, dipystreamline.length, streamline)
 
 
 def speedup_resample():
