@@ -152,6 +152,7 @@ def main(**extra_args):
                           'dipy.tests',
                           'dipy.align',
                           'dipy.core',
+                          'dipy.core.benchmarks',
                           'dipy.core.tests',
                           'dipy.tracking',
                           'dipy.tracking.tests',
