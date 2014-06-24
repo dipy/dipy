@@ -608,7 +608,7 @@ def odf_sh_to_sharp(odfs_sh, sphere, basis=None, ratio=3 / 15., sh_order=8, lamb
     real_sym_sh = sph_harm_lookup[basis]
 
     B_reg, m, n = real_sym_sh(sh_order, theta, phi)
-    R, P = forward_sdt_deconv_mat(ratio, n)
+    R, P = forward_sdt_deconv_mat(ratio, n, r2_term=r2_term)
 
     # scale lambda to account for differences in the number of
     # SH coefficients and number of mapped directions

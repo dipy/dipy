@@ -206,7 +206,7 @@ def test_forward_sdeconv_mat():
 def test_r2_term_odf_sharp():
     SNR = None
     S0 = 1
-    angle = 75
+    angle = 45 #45 degrees is a very tight angle to disentangle
 
     _, fbvals, fbvecs = get_data('small_64D')  #get_data('small_64D')
 
@@ -232,6 +232,17 @@ def test_r2_term_odf_sharp():
     directions_gt, _, _ = peak_directions(odf_gt, sphere)
     directions, _, _ = peak_directions(fodf, sphere)
 
+    ang_sim = angular_similarity(directions_gt, directions)
+    assert_equal(ang_sim > 1.9, True)
+    assert_equal(directions.shape[0], 2)
+
+    # This should pass as well
+    sdt_model = ConstrainedSDTModel(gtab, ratio=3/15., sh_order=8)
+    sdt_fit = sdt_model.fit(S)
+    fodf = sdt_fit.odf(sphere)
+    
+    directions_gt, _, _ = peak_directions(odf_gt, sphere)
+    directions, _, _ = peak_directions(fodf, sphere)
     ang_sim = angular_similarity(directions_gt, directions)
     assert_equal(ang_sim > 1.9, True)
     assert_equal(directions.shape[0], 2)
