@@ -250,5 +250,5 @@ def test_r2_term_odf_sharp():
 
 
 if __name__ == '__main__':
-#    run_module_suite()
-    test_r2_term_odf_sharp()
+    run_module_suite()
+
