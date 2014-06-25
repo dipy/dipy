@@ -24,7 +24,7 @@ ext: recspeed.so propspeed.so vox2track.so \
 test: ext
 	nosetests .
 
-cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html 
+cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html ${PKGDIR}/tracking/streamlinespeed.html
 
 recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
 propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
