@@ -16,6 +16,7 @@ import dipy.reconst.dti as dti
 import dipy.data as dpd
 import dipy.core.gradients as gt
 
+
 def test_DKIModel():
     fdata, fbval, fbvec = dpd.get_data('small2bval')
     data = nib.load(fdata).get_data()
@@ -24,8 +25,8 @@ def test_DKIModel():
     gtab = gt.gradient_table(fbval, fbvec)
     dkim = dki.DiffusionKurtosisModel(gtab)
     dkif = dkim.fit(data)
-    dtim = dti.TensorModel(gtab)
-    dtif = dtim.fit(data)
+    #dtim = dti.TensorModel(gtab)
+    #dtif = dtim.fit(data)
     S0 = np.mean(data[..., gtab.b0s_mask], -1)
-    pt = dtif.predict(gtab, S0)
+    #pt = dtif.predict(gtab, S0)
     pk = dkif.predict(gtab, S0)

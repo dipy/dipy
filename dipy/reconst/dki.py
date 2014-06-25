@@ -9,6 +9,11 @@ import dipy.reconst.dti as dti
 import dipy.core.sphere as dps
 import dipy.core.gradients as grad
 
+from ..utils.optpkg import optional_package
+sympy, has_sympy, setup_module = optional_package("sympy")
+mpmath, _, _ = optional_package("sympy.mpmath")
+
+
 
 def dk_design_matrix(gtab):
     """
@@ -53,6 +58,62 @@ def dk_design_matrix(gtab):
 
     return D
 
+def _calc_F1(l1, l2, l3):
+    """
+    Calculate F1 on a scalar
+    """
+    return ( ((l1 + l2 + l3)**2)/(18 * (l1 - l2) * (l1-l3)) *
+             ( (np.sqrt(l2 * l3)/l1) * mpmath.elliprf(l1/l2, l1/l3, 1) +
+        ( (3 * l1 ** 2 - l1*l2 - l2*l3 - l1*l3)/(3 * l1 * np.sqrt(l2 * l3)) *
+          mpmath.elliprd(l1/l2, l1/l3, 1)) - 1 ) )
+
+
+def F1(l1, l2, l3):
+    """
+    Notes
+    -----
+    Equation 56 in [1]_.
+
+    .. [1] Jensen, JH and Helpern JA (2010). MRI quantification of non-Gaussian
+    water diffusion by kurtosis analysis. NMR in Biomedicine 23: 698-710.
+    """
+    # Because our return values are sympy `mpf` class instances, we need to
+    # separate into cases where we are
+
+    if isinstance(l1, np.ndarray):
+        # It might have a lot of dimensions, so we'll ravel 'em all and
+        # loop over the ravel-ed arrays, reshaping back in the end:
+        l1_shape = l1.shape
+        resultrav = np.zeros(np.prod(l1_shape))
+        l1rav = l1.ravel()
+        l2rav = l2.ravel()
+        l3rav = l3.ravel()
+        for ii in xrange(l1rav.shape[0]):
+            resultrav[ii] = np.float(_calc_F1(l1rav[ii], l2rav[ii], l3rav[ii]))
+        return np.reshape(resultrav, l1_shape)
+
+    else:
+        # Otherwise, assume they're all scalars:
+        return np.float(_calc_F1(l1, l2, l3))
+
+
+
+def F2(l1, l2, l3):
+    """
+
+
+
+    Notes
+    -----
+    Equation 57 in [1]_.
+
+    .. [1] Jensen, JH and Helpern JA (2010). MRI quantification of non-Gaussian
+    water diffusion by kurtosis analysis. NMR in Biomedicine 23: 698-710.
+
+    """
+
+
+
 
 class DiffusionKurtosisModel(object):
     """
@@ -60,11 +121,11 @@ class DiffusionKurtosisModel(object):
 
     Notes
     -----
-    [1] Lu, H, Jensen, JH, Ramani, A, Helpern, JA (2006). Three-dimensional
+    .. [1] Lu, H, Jensen, JH, Ramani, A, Helpern, JA (2006). Three-dimensional
     characterization of non-gaussian water diffusion in  humans using diffusion
     kurtosis imaging. NMR in Biomedicine 19: 236-247
 
-    [2] Jensen, JH and Helpern JA (2010). MRI quantification of non-Gaussian
+    .. [2] Jensen, JH and Helpern JA (2010). MRI quantification of non-Gaussian
     water diffusion by kurtosis analysis. NMR in Biomedicine 23: 698-710.
 
     """
@@ -98,9 +159,10 @@ class DiffusionKurtosisModel(object):
 
         self.dk_design_matrix = dk_design_matrix(gtab)
 
+
     def fit(self, data, mask=None):
         """
-
+        Fit a DKI model
         """
         # If a mask is provided, we will use it to access the data
         if mask is not None:
@@ -176,6 +238,7 @@ class DiffusionKurtosisFit(object):
         # XXX This needs more work
         #np.mean(np.concatenate([self.model_params[..., :3],
         #                       self.model_params[..., 9:12]]), -1)
+
 
     def predict(self, gtab, S0=1):
         """
