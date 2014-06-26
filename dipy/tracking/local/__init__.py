@@ -104,5 +104,9 @@ class LocalTracking(object):
                 stepsB = local_tracker(dg, tc, s, first_step, vs, B, ss, 1)
                 if stepsB < 0:
                     continue
-                yield np.concatenate((B[stepsB-1:0:-1], F[:stepsF]), axis=0)
+                    
+                if stepsB == 0:
+                    yield F[:stepsF]
+                else:
+                    yield np.concatenate((B[stepsB-1:0:-1], F[:stepsF]), axis=0)
 
