@@ -22,6 +22,7 @@ from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 
 
+
 def test_csdeconv():
     SNR = 100
     S0 = 1
