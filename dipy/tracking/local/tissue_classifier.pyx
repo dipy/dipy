@@ -3,6 +3,7 @@ cimport numpy as np
 
 from libc.math cimport round
 
+from .interpolation import trilinear_interpolate4d
 
 cdef class TissueClassifier:
     cpdef TissueClass check_point(self, double[::1] point):
@@ -26,14 +27,13 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
     cpdef TissueClass check_point(self, double[::1] point):
         cdef:
             np.npy_intp ijk[3]
+            double result
+        try:
+            result = trilinear_interpolate4d(self.metric_map[..., None], point)[0]
+        except IndexError:
+            return OUTSIDEIMAGE
 
-        for i in range(3):
-            # TODO: replace this with trilinear interpolation
-            ijk[i] = <np.npy_intp> round(point[i])
-            if ijk[i] < 0 or ijk[i] >= self.metric_map.shape[i]:
-                return OUTSIDEIMAGE
-
-        if self.metric_map[ijk[0], ijk[1], ijk[2]] > self.threshold:
+        if result > self.threshold:
             return TRACKPOINT
         else:
             return ENDPOINT
