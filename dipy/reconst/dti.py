@@ -562,20 +562,11 @@ def tensor_prediction(dti_params, gtab, S0):
 
     Notes
     -----
-    The predicted signal is given by:
-
-    .. math ::
-
-        S(\theta, b) = S_0 * e^{-b ADC}
-
-    Where:
-    .. math ::
-        ADC = \theta Q \theta^T
-
-    $\theta$ is a unit vector pointing at any direction on the sphere for
-    which a signal is to be predicted, $b$ is the b value provided in
-    the GradientTable input for that direction, $Q$ is the quadratic form of
-    the tensor determined by the input parameters
+    The predicted signal is given by: $S(\theta, b) = S_0 * e^{-b ADC}$, where
+    $ADC = \theta Q \theta^T$, $\theta$ is a unit vector pointing at any
+    direction on the sphere for which a signal is to be predicted, $b$ is the b
+    value provided in the GradientTable input for that direction, $Q$ is the
+    quadratic form of the tensor determined by the input parameters
     """
     evals = dti_params[..., :3]
     evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
