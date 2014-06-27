@@ -479,9 +479,12 @@ def _shm_predict(fit, gtab, S0=1):
     Parameters
     ----------
     fit : A ConstrainedSphericalDeconvFit class instance
+        The prediction will be done using the parameters in this object.
     gtab : A GradientTable class instance
+        The prediction will be done for the bval/bvec combinations in this
+        object.
     S0 : float or ndarray (optional)
-        The mean non-diffusion weighted signal in the voxel or volume
+        The mean non-diffusion weighted signal in the voxel or volume.
 
     Returns
     -------
