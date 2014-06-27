@@ -444,6 +444,14 @@ def csd_predict(sh_coeff, gtab, response=None, S0=1, R=None):
     R : ndarray
         Optionally, provide an R matrix. If not provided, calculated from the
         gtab, response function, etc.
+
+    Returns
+    -------
+    pred_sig : ndarray
+        The signal predicted from the provided SH coefficients for a
+        measurement with the provided GradientTable. The last dimension of the
+        resulting array is the same as the number of bvals/bvecs in the
+        GradientTable. The first dimensions have shape: `sh_coeff.shape[:-1]`.
     """
     n_coeff = sh_coeff.shape[-1]
     sh_order = order_from_ncoef(n_coeff)
