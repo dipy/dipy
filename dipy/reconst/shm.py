@@ -142,7 +142,8 @@ def gen_dirac(m, n, theta, phi):
     Returns
     -------
     dirac : ndarray
-        SH coefficients representing the Dirac function
+        SH coefficients representing the Dirac function. The shape of this is
+        `(m + 2) * (m + 1) / 2`.
 
     """
     return real_sph_harm(m, n, theta, phi)
