@@ -51,9 +51,9 @@ def forward_sdeconv_mat(r_rh, n):
     Parameters
     ----------
     r_rh : ndarray
-        ndarray of rotational harmonics coefficients for the single fiber
-        response function. Each element `rh[i]` is associated with spherical
-        harmonics of degree `2*i`.
+        Rotational harmonics coefficients for the single fiber response
+        function. Each element `rh[i]` is associated with spherical harmonics
+        of degree `2*i`.
     n : ndarray
         The degree of spherical harmonic function associated with each row of
         the deconvolution matrix. Only even degrees are allowed
