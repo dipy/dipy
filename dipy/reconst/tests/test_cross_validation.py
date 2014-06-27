@@ -7,7 +7,7 @@ from __future__ import division, print_function, absolute_import
 import numpy as np
 import numpy.testing as npt
 import nibabel as nib
-import dipy.reconst.xvalidation as xval
+import dipy.reconst.cross_validation as xval
 import dipy.data as dpd
 import dipy.reconst.dti as dti
 import dipy.core.gradients as gt

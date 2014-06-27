@@ -30,7 +30,7 @@ and recorded. At the end of $k$ iterations a prediction of all of the data will
 have been conducted, and this can be compared directly to all of the data.
 
 First, we import that modules needed for this example. In particular, the
-`xvalidation` module implements k-fold cross-validation
+:mod:`reconst.cross_validation` module implements k-fold cross-validation
 
 """
 
@@ -39,7 +39,7 @@ np.random.seed(2014)
 import matplotlib.pyplot as plt
 
 import dipy.data as dpd
-import dipy.reconst.xvalidation as xval
+import dipy.reconst.cross_validation as xval
 import dipy.reconst.dti as dti
 import dipy.reconst.csdeconv as csd
 import scipy.stats as stats
