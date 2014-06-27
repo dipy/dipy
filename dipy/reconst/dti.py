@@ -574,7 +574,7 @@ def tensor_prediction(dti_params, gtab, S0):
     sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
     adc = apparent_diffusion_coef(qform, sphere)
 
-    if np.iterable(S0):
+    if isinstance(S0, np.ndarray):
         # If it's an array, we need to give it one more dimension:
         S0 = S0[..., None]
 
