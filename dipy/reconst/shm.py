@@ -73,7 +73,7 @@ def sh_to_rh(r_sh, m, n):
     """ Spherical harmonics (SH) to rotational harmonics (RH)
 
     Calculate the rotational harmonic decomposition up to
-    harmonic sh_order for an axially and antipodally
+    harmonic order `m`, degree `n` for an axially and antipodally
     symmetric function. Note that all ``m != 0`` coefficients
     will be ignored as axial symmetry is assumed. Hence, there
     will be ``(sh_order/2 + 1)`` non-zero coefficients.
