@@ -26,8 +26,8 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
     @cython.initializedcheck(False)
     cpdef TissueClass check_point(self, double[::1] point):
         cdef:
-            np.npy_intp ijk[3]
             double result
+            
         try:
             result = trilinear_interpolate4d(self.metric_map[..., None], point)[0]
         except IndexError:
