@@ -273,6 +273,9 @@ def test_csd_predict():
     npt.assert_equal(prediction.shape[0], S.shape[0])
     model_prediction = csd.predict(csd_fit.shm_coeff)
     npt.assert_equal(prediction, model_prediction)
+    # Roundtrip tests (quite inaccurate, because of regularization): 
+    assert_array_almost_equal(csd_fit.predict(gtab, S0=S0),S,decimal=1)
+    assert_array_almost_equal(csd.predict(csd_fit.shm_coeff, S0=S0),S,decimal=1)
 
 
 if __name__ == '__main__':

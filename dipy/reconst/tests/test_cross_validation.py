@@ -64,7 +64,7 @@ def test_dti_xval():
     npt.assert_array_almost_equal(cod, np.ones(kf_xval.shape[:-1])*100)
 
 
-def test_shm_xval():
+def test_csd_xval():
     # First, let's see that it works with some data:
     data = nib.load(fdata).get_data()[1:3, 1:3, 1:3]  # Make it *small*
     gtab = gt.gradient_table(fbval, fbvec)

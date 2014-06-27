@@ -582,3 +582,4 @@ def test_predict():
     S0 = np.mean(data[...,gtab.b0s_mask], -1)
     p = dtif.predict(gtab, S0)
 
+    
