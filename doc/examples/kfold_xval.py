@@ -73,8 +73,8 @@ csd_model = csd.ConstrainedSphericalDeconvModel(gtab, response)
 
 """
 
-Next, we perform cross-validation for each kind of model, with each one of the
-voxel's data.
+Next, we perform cross-validation for each kind of model, comparing model
+predictions to the diffusion MRI data in each one of these voxels.
 
 Note that we use 2-fold cross-validation, which means that in each iteration,
 the model will be fit to half of the data, and used to predict the other half.
