@@ -106,7 +106,7 @@ class LocalTracking(object):
                     continue
                     
                 if stepsB == 0:
-                    yield F[:stepsF]
+                    streamline = F[:stepsF].copy()
                 else:
-                    yield np.concatenate((B[stepsB-1:0:-1], F[:stepsF]), axis=0)
-
+                    streamline = np.concatenate((B[stepsB-1:0:-1], F[:stepsF]), axis=0)
+                yield streamline
