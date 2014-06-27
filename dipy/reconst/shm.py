@@ -286,9 +286,9 @@ sph_harm_lookup = {None: real_sym_sh_basis,
 def sph_harm_ind_list(sh_order):
     """
     Returns the degree (n) and order (m) of all the symmetric spherical
-    harmonics of degree less then or equal to sh_order. The results, m_list
-    and n_list are kx1 arrays, where k depends on sh_order. They can be
-    passed to real_sph_harm.
+    harmonics of degree less then or equal to `sh_order`. The results, `m_list`
+    and `n_list` are kx1 arrays, where k depends on sh_order. They can be
+    passed to :func:`real_sph_harm`.
 
     Parameters
     ----------
