@@ -10,21 +10,22 @@ import dipy.core.gradients as gt
 
 def coeff_of_determination(data, model, axis=-1):
     """
+    Calculate the coefficient of determination for a model prediction, relative
+    to data.
+
     Parameters
     ----------
     data : ndarray
-        The real data
-
+        The data
     model : ndarray
-        The predictions of a model
-
+        The predictions of a model for this data. Same shape as the data.
     axis: int, optional
-        The axis along which samples are organized (default: -1)
+        The axis along which different samples are laid out (default: -1).
 
     Returns
     -------
     COD : ndarray
-       The coefficient of determination. This has shape data.shape[:-1]
+       The coefficient of determination. This has shape `data.shape[:-1]`
 
 
     Notes
@@ -40,7 +41,7 @@ def coeff_of_determination(data, model, axis=-1):
 
     where SSE is the sum of the squared error between the model and the data
     (sum of the squared residuals) and SSD is the sum of the squares of the
-    deviations of the (variance * N)
+    deviations of the data from the mean of the data (variance * N).
     """
 
     residuals = data - model
@@ -63,18 +64,20 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
 
     Parameters
     ----------
-    model : class instance of a Model
-
+    model : Model class instance
+        The type of the model to use for prediction. The corresponding Fit
+        object must have a `predict` function implementd One of the following:
+        `reconst.dti.TensorModel` or
+        `reconst.csdeconv.ConstrainedSphericalDeconvModel`. 
     data : ndarray
-        Diffusion MRI data acquired with the gtab of the model
-
+        Diffusion MRI data acquired with the GradientTable of the model. Shape
+        will typically be `(x, y, z, b)` where `xyz` are spatial dimensions and
+        b is the number of bvals/bvecs in the GradientTable. 
     folds : int
         The number of divisions to apply to the data
-
-    model_args :
+    model_args : list
         Additional arguments to the model initialization
-
-    model_kwargs :
+    model_kwargs : dict
         Additional key-word arguments to the model initialization
 
     Notes
@@ -97,30 +100,30 @@ def kfold_xval(model, data, folds, *model_args, **model_kwargs):
     # This should always be there, if the model inherits from
     # dipy.reconst.base.ReconstModel:
     gtab = model.gtab
-    data_d = data[..., ~gtab.b0s_mask]
-    modder =  np.mod(data_d.shape[-1], folds)
+    data_b = data[..., ~gtab.b0s_mask]
+    div_by_folds =  np.mod(data_b.shape[-1], folds)
     # Make sure that an equal number of samples get left out in each fold:
-    if modder!= 0:
+    if div_by_folds!= 0:
         msg = "The number of folds must divide the diffusion-weighted "
         msg += "data equally, but "
-        msg = "np.mod(%s, %s) is %s"%(data_d.shape[-1], folds, modder)
+        msg = "np.mod(%s, %s) is %s"%(data_b.shape[-1], folds, div_by_folds)
         raise ValueError(msg)
 
     data_0 = data[..., gtab.b0s_mask]
     S0 = np.mean(data_0, -1)
-    n_in_fold = data_d.shape[-1]/folds
+    n_in_fold = data_b.shape[-1]/folds
     prediction = np.zeros(data.shape)
     # We are going to leave out some randomly chosen samples in each iteration:
-    order = np.random.permutation(data_d.shape[-1])
+    order = np.random.permutation(data_b.shape[-1])
 
     nz_bval = gtab.bvals[~gtab.b0s_mask]
     nz_bvec = gtab.bvecs[~gtab.b0s_mask]
 
     for k in range(folds):
-        fold_mask = np.ones(data_d.shape[-1], dtype=bool)
+        fold_mask = np.ones(data_b.shape[-1], dtype=bool)
         fold_idx = order[k*n_in_fold:(k+1)*n_in_fold]
         fold_mask[fold_idx] = False
-        this_data = np.concatenate([data_0, data_d[..., fold_mask]], -1)
+        this_data = np.concatenate([data_0, data_b[..., fold_mask]], -1)
 
         this_gtab = gt.gradient_table(np.hstack([gtab.bvals[gtab.b0s_mask],
                                                  nz_bval[fold_mask]]),

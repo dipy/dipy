@@ -103,8 +103,8 @@ ax[1].plot(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask], 'o', color='b', lab
 ax[1].plot(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask], 'o', color='r', label='CSD')
 plt.legend(loc='upper left')
 for this_ax in ax:
-    this_ax.set_xlabel('Data')
-    this_ax.set_ylabel('Model prediction')
+    this_ax.set_xlabel('Data (relative to S0)')
+    this_ax.set_ylabel('Model prediction (relative to S0)')
 fig.savefig("model_predictions.png")
 
 """
@@ -129,28 +129,36 @@ cc_csd_r2=stats.pearsonr(cc_vox[~gtab.b0s_mask], csd_cc[~gtab.b0s_mask])[0]**2
 cso_dti_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask])[0]**2
 cso_csd_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask])[0]**2
 
-print("Corpus callosum\n---------------\nDTI R2 : %s\nCSD R2 : %s\n\nCentrum Semiovale\n-----------------\nDTI R2 : %s\nCSD R2 : %s\n"%(cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2))
+print("Corpus callosum\n"
+      "---------------\n"
+      "DTI R2 : %s\n"
+      "CSD R2 : %s\n"
+      "\n"
+      "Centrum Semiovale\n"
+      "-----------------\n"
+      "DTI R2 : %s\n"
+      "CSD R2 : %s\n" % (cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2))
 
 
 """
 
-This should look something like this:
+This should look something like this::
 
-     Corpus callosum
+Corpus callosum
 
-     ---------------
+---------------
 
-     DTI R2 : 0.782881752597
+DTI R2 : 0.782881752597
 
-     CSD R2 : 0.739356154507
+CSD R2 : 0.739356154507
 
-     Centrum Semiovale
+Centrum Semiovale
 
-     -----------------
+-----------------
 
-     DTI R2 : 0.431921832012
+DTI R2 : 0.431921832012
 
-     CSD R2 : 0.578207214953
+CSD R2 : 0.578207214953
 
 
 As you can see, DTI is a better model for describing the signal in the CC,
@@ -160,9 +168,13 @@ while CSD better describes the signal in regions of multiple crossing fibers.
 References
 ----------
 
-.. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements of Statistical Learning: Data Mining, Inference and Prediction. Springer-Verlag, Berlin
+.. [Hastie2008] Hastie, T., Tibshirani, R., Friedman, J. (2008). The Elements
+   of Statistical Learning: Data Mining, Inference and
+   Prediction. Springer-Verlag, Berlin  
 
-.. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A., Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at multiple b-values with cross-validation. ISMRM 2014.
+.. [Rokem2014] Rokem, A., Chan, K.L. Yeatman, J.D., Pestilli, F., Mezer, A.,
+   Wandell, B.A., 2014. Evaluating the accuracy of diffusion models at multiple
+   b-values with cross-validation. ISMRM 2014.
 
 .. include:: ../links_names.inc
 
