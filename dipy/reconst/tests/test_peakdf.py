@@ -1,7 +1,6 @@
 import numpy as np
 import numpy.testing as npt
 
-#from dipy.tracking.localtrack import _testGetDirection
 from dipy.reconst.peaks import default_sphere, peaks_from_model
 
 
@@ -22,7 +21,7 @@ def test_PAMDirectionGetter():
             odf[r] = 1
             return odf
 
-    def _testGetDirection(dg, point, dir):
+    def getDirection(dg, point, dir):
         newdir = dir.copy()    
         state = dg.get_direction(point, newdir)
         return (state, np.array(newdir))
@@ -44,22 +43,22 @@ def test_PAMDirectionGetter():
 
                 # Test that the angle threshold rejects points
                 peaks.ang_thr = 0.
-                state, nd = _testGetDirection(peaks, point, up)
+                state, nd = getDirection(peaks, point, up)
                 npt.assert_equal(state, 1)
 
                 # Here we leverage the fact that we know Hemispheres project
                 # all their vertices into the z >= 0 half of the sphere.
                 peaks.ang_thr = 90.
-                state, nd = _testGetDirection(peaks, point, up)
+                state, nd = getDirection(peaks, point, up)
                 npt.assert_equal(state, 0)
                 expected_dir = peaks.peak_dirs[i, j, k, 0]
                 npt.assert_array_almost_equal(nd, expected_dir)
-                state, nd = _testGetDirection(peaks, point, down)
+                state, nd = getDirection(peaks, point, down)
                 npt.assert_array_almost_equal(nd, -expected_dir)
 
                 # Check that we can get directions at non-integer points
                 point += np.random.random(3)
-                state, nd = _testGetDirection(peaks, point, up)
+                state, nd = getDirection(peaks, point, up)
                 npt.assert_equal(state, 0)
 
                 # Check that points are rounded to get initial direction
