@@ -58,9 +58,9 @@ registration instance to perform at most [n_0, n_1, ..., n_k] iterations at
 each level of the pyramid. The 0-th level corresponds to the finest resolution.  
 """
 
-opt_iter = [25, 50, 100, 200]
+level_iters = [200, 100, 50, 25]
 
-sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter, inv_iter = 50)
+sdr = SymmetricDiffeomorphicRegistration(metric, level_iters, inv_iter = 50)
 
 """
 Now we execute the optimization, which returns a DiffeomorphicMap object,
@@ -175,8 +175,8 @@ metric = CCMetric(2, sigma_diff, radius)
 Let's use a scale space of 3 levels
 """
 
-opt_iter = [25, 50, 100]
-sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter)
+level_iters = [100, 50, 25]
+sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
 sdr.callback = callback_CC
 
 """

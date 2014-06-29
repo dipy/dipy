@@ -103,8 +103,8 @@ registration object to perform at most [n_0, n_1, ..., n_k] iterations at
 each level of the pyramid. The 0-th level corresponds to the finest resolution.  
 """
 
-opt_iter = [5, 10, 10]
-sdr = SymmetricDiffeomorphicRegistration(metric, opt_iter)
+level_iters = [10, 10, 5]
+sdr = SymmetricDiffeomorphicRegistration(metric, level_iters)
 
 """
 Execute the optimization, which returns a DiffeomorphicMap object,

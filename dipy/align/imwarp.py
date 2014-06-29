@@ -1099,7 +1099,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             raise Exception('SymmetricDiffeomorphicRegistration',
                             'The metric cannot be None')
         if level_iters is None:
-            level_iters = [25, 100, 100]
+            level_iters = [100, 100, 25]
         if len(level_iters) == 0:
             raise Exception('SymmetricDiffeomorphicRegistration',
                             'The iterations list cannot be None nor empty')
@@ -1523,7 +1523,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_START)
 
-            while ((self.niter < self.level_iters[level]) and 
+            while ((self.niter < self.level_iters[self.levels - 1 - level]) and 
                    (self.opt_tol < derivative)):
                 derivative = self._iterate()
                 self.niter += 1

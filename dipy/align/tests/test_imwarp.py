@@ -55,14 +55,14 @@ def test_ssd_2d_demons():
     similarity_metric = metrics.SSDMetric(2, smooth=smooth, step_type=step_type) 
 
     #Configure and run the Optimizer
-    opt_iter = [25, 50, 100, 200]
+    level_iters = [200, 100, 50, 25]
     step_length = 0.25
     opt_tol = 1e-4
     inv_iter = 40
     inv_tol = 1e-3
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric, 
-        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+        level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     mapping = optimizer.optimize(static, moving, None)
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
@@ -108,14 +108,14 @@ def test_ssd_2d_gauss_newton():
     similarity_metric = metrics.SSDMetric(2, smooth, inner_iter, step_type) 
 
     #Configure and run the Optimizer
-    opt_iter = [25, 50, 100, 200]
+    level_iters = [200, 100, 50, 25]
     step_length = 0.5
     opt_tol = 1e-4
     inv_iter = 40
     inv_tol = 1e-3
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
-        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+        level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     mapping = optimizer.optimize(static, moving, None)
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
@@ -183,14 +183,14 @@ def test_ssd_3d_demons():
     similarity_metric = metrics.SSDMetric(3, smooth=smooth, step_type=step_type) 
 
     #Create the optimizer
-    opt_iter = [5, 10]
+    level_iters = [10, 5]
     step_length = 0.25
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
-        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+        level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
@@ -229,14 +229,14 @@ def test_ssd_3d_gauss_newton():
     similarity_metric = metrics.SSDMetric(3, smooth, inner_iter, step_type) 
 
     #Create the optimizer
-    opt_iter = [5, 10]
+    level_iters = [10, 5]
     step_length = 0.25
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
-        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+        level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
@@ -271,8 +271,8 @@ def test_cc_2d():
     metric = metrics.CCMetric(2, sigma_diff, radius)
 
     #Configure and run the Optimizer
-    opt_iter = [10, 20, 40]
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, opt_iter)
+    level_iters = [40, 20, 10]
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
@@ -330,14 +330,14 @@ def test_cc_3d():
     similarity_metric = metrics.CCMetric(3, sigma_diff, radius)
 
     #Create the optimizer
-    opt_iter = [5, 10, 20]
+    level_iters = [20, 10, 5]
     step_length = 0.25
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
-        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+        level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)*1e-4
     if floating is np.float32:
@@ -390,13 +390,13 @@ def test_em_3d():
         3, smooth, inner_iter, q_levels, double_gradient, iter_type)
 
     #Create the optimizer
-    opt_iter = [2, 5, 10]
+    level_iters = [10, 5, 2]
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
-        opt_iter, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+        level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)*1e-3
     if floating is np.float32:
@@ -436,8 +436,8 @@ def test_em_2d():
         2, smooth, inner_iter, q_levels, double_gradient, iter_type)
 
     #Configure and run the Optimizer
-    opt_iter = [10, 20, 40]
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, opt_iter)
+    level_iters = [40, 20, 10]
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
