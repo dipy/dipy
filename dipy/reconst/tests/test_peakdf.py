@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.testing as npt
 
-from dipy.tracking.localtrack import _testGetDirection
+#from dipy.tracking.localtrack import _testGetDirection
 from dipy.reconst.peaks import default_sphere, peaks_from_model
 
 
@@ -21,6 +21,11 @@ def test_PAMDirectionGetter():
             r = np.random.randint(0, len(odf))
             odf[r] = 1
             return odf
+
+    def _testGetDirection(dg, point, dir):
+        newdir = dir.copy()    
+        state = dg.get_direction(point, newdir)
+        return (state, np.array(newdir))
 
     data = np.random.random((3, 4, 5, 2))
     peaks = peaks_from_model(SillyModel(), data, default_sphere,
