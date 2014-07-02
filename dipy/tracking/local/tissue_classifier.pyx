@@ -39,10 +39,6 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
         except IndexError:
             return OUTSIDEIMAGE
         """
-
-        if point.shape[0] != 3:
-            raise ValueError()
-
         err = _trilinear_interpolate_c_4d(self.metric_map[..., None], point,
                                           self.interp_out_view)
         if err == -1:
