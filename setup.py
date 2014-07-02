@@ -77,19 +77,19 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
-for modulename, other_sources in (
-    ('dipy.reconst.recspeed', []),
-    ('dipy.reconst.vec_val_sum', []),
-    ('dipy.reconst.quick_squash', []),
-    ('dipy.tracking.distances', []),
-    ('dipy.core.streamlinespeed', []),
-    ('dipy.tracking.vox2track', []),
-    ('dipy.tracking.propspeed', []),
-    ('dipy.denoise.denspeed', [])
+for modulename, other_sources, language in (
+    ('dipy.reconst.recspeed', [], 'c'),
+    ('dipy.reconst.vec_val_sum', [], 'c'),
+    ('dipy.reconst.quick_squash', [], 'c'),
+    ('dipy.tracking.distances', [], 'c'),
+    ('dipy.core.streamlinespeed', [], 'c++'),
+    ('dipy.tracking.vox2track', [], 'c'),
+    ('dipy.tracking.propspeed', [], 'c'),
+    ('dipy.denoise.denspeed', [], 'c')
     ):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename,[pyx_src] + other_sources,
-                          language = "c++",
+                          language = language,
                           include_dirs = [np.get_include(), "src"]))
 
 
