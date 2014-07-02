@@ -4,6 +4,7 @@ import numpy.linalg as npl
 
 from nose.tools import assert_equal, assert_raises, assert_true
 from numpy.testing import assert_array_equal, assert_array_almost_equal
+import numpy.testing as npt
 
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
@@ -18,10 +19,21 @@ from dipy.reconst import odf
 
 from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               real_sym_sh_mrtrix, sph_harm_ind_list,
+                              order_from_ncoef,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
                               CsaOdfModel, QballModel, SphHarmFit)
+
+def test_order_from_ncoeff():
+    """
+
+    """
+    # Just try some out:
+    for sh_order in [2, 4, 6, 8, 12, 24]:
+        m, n = sph_harm_ind_list(sh_order)
+        n_coef = m.shape[0]
+        npt.assert_equal(order_from_ncoef(n_coef), sh_order)
 
 
 def test_sph_harm_ind_list():

@@ -12,6 +12,8 @@ class OdfModel(ReconstModel):
     All odf models should provide a fit method which may take data as it's
     first and only argument.
     """
+    def __init__(self, gtab):
+        ReconstModel.__init__(self, gtab)
 
     def fit(self, data):
         """To be implemented by specific odf models"""
@@ -19,7 +21,6 @@ class OdfModel(ReconstModel):
 
 
 class OdfFit(ReconstFit):
-
     def odf(self, sphere):
         """To be implemented but specific odf models"""
         raise NotImplementedError("To be implemented in sub classes")

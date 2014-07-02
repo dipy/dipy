@@ -543,6 +543,56 @@ def apparent_diffusion_coef(q_form, sphere):
     return -np.dot(lower_triangular(q_form), D.T)
 
 
+def tensor_prediction(dti_params, gtab, S0):
+    """
+    Predict a signal given tensor parameters.
+
+    Parameters
+    ----------
+    dti_params : ndarray
+        Tensor parameters. The last dimension should have 12 tensor parameters: 3
+        eigenvalues, followed by the 3 corresponding eigenvectors
+
+    gtab : a GradientTable class instance
+        The gradient table for this prediction
+
+    S0 : float or ndarray
+        The non diffusion-weighted signal in every voxel, or across all
+        voxels. Default: 1
+
+    Notes
+    -----
+    The predicted signal is given by: $S(\theta, b) = S_0 * e^{-b ADC}$, where
+    $ADC = \theta Q \theta^T$, $\theta$ is a unit vector pointing at any
+    direction on the sphere for which a signal is to be predicted, $b$ is the b
+    value provided in the GradientTable input for that direction, $Q$ is the
+    quadratic form of the tensor determined by the input parameters.
+    """
+    evals = dti_params[..., :3]
+    evecs = dti_params[..., 3:].reshape(dti_params.shape[:-1] + (3, 3))
+    qform = vec_val_vect(evecs, evals)
+    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+    adc = apparent_diffusion_coef(qform, sphere)
+
+    if isinstance(S0, np.ndarray):
+        # If it's an array, we need to give it one more dimension:
+        S0 = S0[..., None]
+
+    # First do the calculation for the diffusion weighted measurements:
+    pre_pred_sig = S0 * np.exp(-gtab.bvals[~gtab.b0s_mask] * adc)
+
+    # Then we need to sort out what goes where:
+    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+
+    # These are the diffusion-weighted values
+    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+
+    # For completeness, we predict the mean S0 for the non-diffusion
+    # weighted measurements, which is our best guess:
+    pred_sig[..., gtab.b0s_mask] = S0
+    return pred_sig
+
+
 class TensorModel(ReconstModel):
     """ Diffusion Tensor
     """
@@ -625,6 +675,23 @@ class TensorModel(ReconstModel):
         dti_params[mask, :] = params_in_mask
 
         return TensorFit(self, dti_params)
+
+
+    def predict(self, dti_params, S0=1):
+        """
+        Predict a signal for this TensorModel class instance given parameters.
+
+        Parameters
+        ----------
+        dti_params : ndarray
+            The last dimension should have 12 tensor parameters: 3
+            eigenvalues, followed by the 3 eigenvectors
+
+        S0 : float or ndarray
+            The non diffusion-weighted signal in every voxel, or across all
+            voxels. Default: 1
+        """
+        return tensor_prediction(dti_params, self.gtab, S0)
 
 
 class TensorFit(object):
@@ -940,27 +1007,7 @@ class TensorFit(object):
         which a signal is to be predicted and $b$ is the b value provided in
         the GradientTable input for that direction   
         """
-        # Get a sphere to pass to the object's ADC function. The b0 vectors
-        # will not be on the unit sphere, but we still want them to be there,
-        # so that we have a consistent index for these, so that we can fill
-        # that in later on, so we suppress the warning here:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sphere = Sphere(xyz=gtab.bvecs)
-
-        adc = self.adc(sphere)
-        # Predict!
-        if np.iterable(S0):
-            # If it's an array, we need to give it one more dimension:
-            S0 = S0[...,None] 
-
-        pred_sig = S0 * np.exp(-gtab.bvals * adc)
-
-        # The above evaluates to nan for the b0 vectors, so we predict the mean
-        # S0 for those, which is our best guess:
-        pred_sig[...,gtab.b0s_mask] = S0
-
-        return pred_sig
+        return tensor_prediction(self.model_params, gtab, S0=S0)
 
 
 def wls_fit_tensor(design_matrix, data, min_signal=1):
@@ -1343,8 +1390,8 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            print(vox)
             dti_params[vox, :] = start_params
+
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
 

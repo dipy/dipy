@@ -15,7 +15,8 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    forward_sdeconv_mat,
                                    odf_sh_to_sharp,
-                                   auto_response)
+                                   auto_response,
+                                   csd_predict)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel, 
@@ -247,6 +248,34 @@ def test_r2_term_odf_sharp():
     assert_equal(ang_sim > 1.9, True)
     assert_equal(directions.shape[0], 2)
 
+def test_csd_predict():
+    """
+
+    """
+    SNR = 100
+    S0 = 1
+    _, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+    angles = [(0, 0), (60, 0)]
+    S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
+                             fractions=[50, 50], snr=SNR)
+    sphere = get_sphere('symmetric362')
+    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+    response = (np.array([0.0015, 0.0003, 0.0003]), S0)
+
+    csd = ConstrainedSphericalDeconvModel(gtab, response)
+    csd_fit = csd.fit(S)
+    prediction = csd_predict(csd_fit.shm_coeff, gtab)
+    npt.assert_equal(prediction.shape[0], S.shape[0])
+    model_prediction = csd.predict(csd_fit.shm_coeff)
+    npt.assert_equal(prediction, model_prediction)
+    # Roundtrip tests (quite inaccurate, because of regularization): 
+    assert_array_almost_equal(csd_fit.predict(gtab, S0=S0),S,decimal=1)
+    assert_array_almost_equal(csd.predict(csd_fit.shm_coeff, S0=S0),S,decimal=1)
 
 
 if __name__ == '__main__':
