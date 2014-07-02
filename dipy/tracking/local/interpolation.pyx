@@ -8,7 +8,7 @@ from libc.math cimport floor
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef int trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
+cdef int _trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
                                      double[::1] result) nogil:
     """Tri-linear interpolation along the last dimension of a 4d array
 
@@ -22,23 +22,24 @@ cpdef int trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
     result : 1d array
         The result of interpolation. Should have length equal to the
         ``data.shape[3]``.
-
     Returns
     -------
     err : int
          0 : successful interpolation.
         -1 : point is outside the data area, meaning round(point) is not a
              valid index to data.
-        -2 : mismatch between data, result and/or point.
+        -2 : point has the wrong shape
+        -3 : shape of data and result do not match
 
     """
     cdef:
         np.npy_intp index[3][2], flr, N
         double weight[3][2], w, rem
 
-    N = result.shape[0]
-    if data.shape[3] != N or point.shape[0] != 3:
+    if point.shape[0] != 3:
         return -2
+    if data.shape[3] != result.shape[0]:
+        return -3
 
     for i in range(3):
         if point[i] < -.5 or point[i] >= (data.shape[i] - .5):
@@ -52,6 +53,7 @@ cpdef int trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
         weight[i][0] = 1 - rem
         weight[i][1] = rem
 
+    N = result.shape[0]
     for i in range(N):
         result[i] = 0
 
@@ -65,7 +67,8 @@ cpdef int trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
     return 0
 
 
-def trilinear_interpolate4d(double[:, :, :, :] data, double[:] point):
+cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
+                              double[::1] out=None):
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
@@ -75,26 +78,36 @@ def trilinear_interpolate4d(double[:, :, :, :] data, double[:] point):
         ``[i, j, k]``, the result will be the same as ``data[i, j, k]``.
     data : 4d array
         Data to be interpolated.
+    out : 1d array, optional
+        The output array for the result of the interpolation.
 
     Returns
     -------
-    result : 1d array
+    out : 1d array
         The result of interpolation.
 
     """
-    cdef int err
+    cdef:
+        int err
 
-    result = np.empty(data.shape[3])
-    err = trilinear_interpolate_c_4d(data, point, result)
+    if out is None:
+        out = np.empty(data.shape[3])
+
+    err = _trilinear_interpolate_c_4d(data, point, out)
+
     if err == 0:
-        return result
+        return out
     elif err == -1:
         raise IndexError("The point point is outside data")
     elif err == -2:
-        # We know result has the right shape, so the error must be due to point
-        raise ValueError("Point must be a 1d array with shape (3,)")
+        raise ValueError("Point must be a 1d array with shape (3,).")
+    elif err == -3:
+        # This should only happen if the user passes an bad out array
+        msg = "out array must have same size as the last dimension of data."
+        raise ValueError(msg)
 
 
 def nearestneighbor_interpolate(data, point):
     index = tuple(np.round(point))
     return data[index]
+
