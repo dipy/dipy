@@ -29,14 +29,14 @@ def resample_python(xyz, n_pols=3):
         len1 = cumlen[ind]
         Ds = distance-len0
         Lambda = Ds/(len1-len0)
-        return Lambda*xyz[ind]+(1-Lambda)*xyz[ind-1]
+        return Lambda*xyz[ind] + (1-Lambda)*xyz[ind-1]
 
     cumlen = np.zeros(xyz.shape[0])
     cumlen[1:] = length_python(xyz, along=True)
     step = cumlen[-1]/(n_pols-1)
 
     ar = np.arange(0, cumlen[-1], step)
-    if np.abs(ar[-1]-cumlen[-1]) < np.finfo('f4').eps:
+    if np.abs(ar[-1] - cumlen[-1]) < np.finfo('f4').eps:
         ar = ar[:-1]
 
     xyz2 = [_extrap(xyz, cumlen, distance) for distance in ar]
