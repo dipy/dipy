@@ -25,9 +25,10 @@ ctypedef vector[Streamline] Streamlines
 @cython.wraparound(False)
 @cython.boundscheck(False)
 cdef void _length(Streamlines streamlines, double[:] out) nogil:
-    cdef unsigned int i
-    cdef unsigned int idx
-    cdef Streamline streamline
+    cdef:
+        unsigned int i
+        unsigned int idx
+        Streamline streamline
 
     for idx in range(streamlines.size()):
         streamline = streamlines[idx]
@@ -126,17 +127,17 @@ cdef void _arclengths(Streamline streamlines, double* out) nogil:
 @cython.cdivision(True)
 @cython.boundscheck(False)
 cdef void _set_number_of_points(Streamlines streamlines, Streamlines out) nogil:
-    cdef unsigned int N
-    cdef unsigned int newN = out[0].shape[0]
-    cdef double ratio
-    cdef double step
-    cdef double nextPoint
-    cdef unsigned int i
-    cdef unsigned int j
-    cdef unsigned int k
-    cdef unsigned int idx
-
-    cdef Streamline streamline
+    cdef:
+        unsigned int N
+        unsigned int newN = out[0].shape[0]
+        double ratio
+        double step
+        double nextPoint
+        unsigned int i
+        unsigned int j
+        unsigned int k
+        unsigned int idx
+        Streamline streamline
 
     for idx in range(streamlines.size()):
         streamline = streamlines[idx]
