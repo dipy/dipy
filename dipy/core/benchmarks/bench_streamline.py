@@ -15,8 +15,8 @@ Run this benchmark with:
 """
 import numpy as np
 
-from dipy.core.streamline import resample, length
-from dipy.core.tests.test_streamline import resample_python, length_python
+from dipy.core.streamline import set_number_of_points, length
+from dipy.core.tests.test_streamline import set_number_of_points_python, length_python
 
 from numpy.testing import measure
 
@@ -26,11 +26,11 @@ def bench_resample():
     nb_points = 42
     streamline = np.random.rand(1000, 3)
 
-    print("Timing resample() in Cython")
-    cython_time = measure("resample(streamline, nb_points)", repeat)
+    print("Timing set_number_of_points() in Cython")
+    cython_time = measure("set_number_of_points(streamline, nb_points)", repeat)
     print("Cython time: {0:.2}sec".format(cython_time))
 
-    python_time = measure("resample_python(streamline, nb_points)", repeat)
+    python_time = measure("set_number_of_points_python(streamline, nb_points)", repeat)
     print("Python time: {0:.2}sec".format(python_time))
     print("Speed up of {0}x".format(python_time/cython_time))
 

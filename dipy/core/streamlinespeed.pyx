@@ -125,7 +125,7 @@ cdef void _arclengths(Streamline streamlines, double* out) nogil:
 @cython.wraparound(False)
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef void _resample(Streamlines streamlines, Streamlines out) nogil:
+cdef void _set_number_of_points(Streamlines streamlines, Streamlines out) nogil:
     cdef unsigned int N
     cdef unsigned int newN = out[0].shape[0]
     cdef double ratio
@@ -184,12 +184,13 @@ cdef void _resample(Streamlines streamlines, Streamlines out) nogil:
         free(arclengths)
 
 
-def resample(streamlines, nb_points=3):
-    ''' resample streamlines for a specific number of points
-        (either downsampling or upsampling)
+def set_number_of_points(streamlines, nb_points=3):
+    ''' change the number of points of streamlines
+        (either by downsampling or upsampling)
 
-    Resamples streamlines in order to obtain `nb_points`-1 segments
-    of equal length. Points of streamlines will be modified along the curve.
+    Change the number of points of streamlines in order to obtain
+    `nb_points`-1 segments of equal length. Points of streamlines will be
+    modified along the curve.
 
     Parameters
     ----------
@@ -200,12 +201,12 @@ def resample(streamlines, nb_points=3):
 
     Returns
     -------
-    resampled_streamlines : one or a list of array-like shape (`nb_points`,3)
+    modified_streamlines : one or a list of array-like shape (`nb_points`,3)
        array representing x,y,z of `nb_points` points that where interpolated.
 
     Examples
     --------
-    >>> from dipy.core.streamline import resample
+    >>> from dipy.core.streamline import set_number_of_points
     >>> import numpy as np
     >>> # One streamline: a semi-circle
     >>> theta = np.pi*np.linspace(0, 1, 100)
@@ -213,15 +214,15 @@ def resample(streamlines, nb_points=3):
     >>> y = np.sin(theta)
     >>> z = 0 * x
     >>> streamline = np.vstack((x, y, z)).T
-    >>> resampled_streamline = resample(streamline, 3)
-    >>> len(resampled_streamline)
+    >>> modified_streamline = set_number_of_points(streamline, 3)
+    >>> len(modified_streamline)
     3
     >>> # Multiple streamlines
     >>> streamlines = [streamline, streamline[::2]]
-    >>> resampled_streamlines = resample(streamlines, 10)
+    >>> modified_streamlines = set_number_of_points(streamlines, 10)
     >>> map(len, streamlines)
     [100, 50]
-    >>> map(len, resampled_streamlines)
+    >>> map(len, modified_streamlines)
     [10, 10]
     '''
     only_one_streamlines = False
@@ -253,15 +254,15 @@ def resample(streamlines, nb_points=3):
     if nb_coords != 3:
         raise ValueError("Streamlines must have 3 coordinates (i.e. X,Y,Z).")
 
-    # Allocate memory for each resampled streamline
-    resampled_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=dtype) for streamline in streamlines]
+    # Allocate memory for each modified streamline
+    modified_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=dtype) for streamline in streamlines]
 
     if dtype == np.float32:
-        _resample[float2d](streamlines, resampled_streamlines)
+        _set_number_of_points[float2d](streamlines, modified_streamlines)
     else:
-        _resample[double2d](streamlines, resampled_streamlines)
+        _set_number_of_points[double2d](streamlines, modified_streamlines)
 
     if only_one_streamlines:
-        return resampled_streamlines[0]
+        return modified_streamlines[0]
     else:
-        return resampled_streamlines
+        return modified_streamlines

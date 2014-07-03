@@ -21,7 +21,7 @@ def length_python(xyz, along=False):
     return np.sum(dists)
 
 
-def resample_python(xyz, n_pols=3):
+def set_number_of_points_python(xyz, n_pols=3):
     def _extrap(xyz, cumlen, distance):
         ''' Helper function for extrapolate '''
         ind = np.where((cumlen-distance) > 0)[0][0]
@@ -174,65 +174,65 @@ class TestStreamline(unittest.TestCase):
                                   self.streamline_64bit[::2], self.streamline_64bit[::3],
                                   self.streamline_64bit[::4], self.streamline_64bit[::5]]
 
-    def test_resample(self):
+    def test_set_number_of_points(self):
         # Test resampling of only one streamline
         nb_points = 12
-        resampled_streamline_cython = dipystreamline.resample(self.streamline, nb_points)
-        resampled_streamline_python = resample_python(self.streamline, nb_points)
-        assert_equal(len(resampled_streamline_cython), nb_points)
+        modified_streamline_cython = dipystreamline.set_number_of_points(self.streamline, nb_points)
+        modified_streamline_python = set_number_of_points_python(self.streamline, nb_points)
+        assert_equal(len(modified_streamline_cython), nb_points)
         # Using a 5 digits precision because of streamline is in float32.
-        assert_array_almost_equal(resampled_streamline_cython, resampled_streamline_python, 5)
+        assert_array_almost_equal(modified_streamline_cython, modified_streamline_python, 5)
 
-        resampled_streamline_cython = dipystreamline.resample(self.streamline_64bit, nb_points)
-        resampled_streamline_python = resample_python(self.streamline_64bit, nb_points)
-        assert_equal(len(resampled_streamline_cython), nb_points)
-        assert_array_almost_equal(resampled_streamline_cython, resampled_streamline_python)
+        modified_streamline_cython = dipystreamline.set_number_of_points(self.streamline_64bit, nb_points)
+        modified_streamline_python = set_number_of_points_python(self.streamline_64bit, nb_points)
+        assert_equal(len(modified_streamline_cython), nb_points)
+        assert_array_almost_equal(modified_streamline_cython, modified_streamline_python)
 
         res = []
         simple_streamline = np.array([[0, 0, 0], [1, 1, 1], [2, 2, 2]], 'f4')
         for nb_points in range(2, 200):
-            resampled_streamline_cython = dipystreamline.resample(simple_streamline, nb_points)
-            res.append(nb_points - len(resampled_streamline_cython))
+            modified_streamline_cython = dipystreamline.set_number_of_points(simple_streamline, nb_points)
+            res.append(nb_points - len(modified_streamline_cython))
 
         assert_equal(np.sum(res), 0)
 
         # Test resampling of multiple streamlines of different nb_points
         nb_points = 12
-        resampled_streamlines_cython = dipystreamline.resample(self.streamlines, nb_points)
+        modified_streamlines_cython = dipystreamline.set_number_of_points(self.streamlines, nb_points)
 
         for i, s in enumerate(self.streamlines):
-            resampled_streamline_python = resample_python(s, nb_points)
+            modified_streamline_python = set_number_of_points_python(s, nb_points)
             # Using a 5 digits precision because of streamline is in float32.
-            assert_array_almost_equal(resampled_streamlines_cython[i], resampled_streamline_python, 5)
+            assert_array_almost_equal(modified_streamlines_cython[i], modified_streamline_python, 5)
 
-        resampled_streamlines_cython = dipystreamline.resample(self.streamlines_64bit, nb_points)
+        modified_streamlines_cython = dipystreamline.set_number_of_points(self.streamlines_64bit, nb_points)
 
         for i, s in enumerate(self.streamlines_64bit):
-            resampled_streamline_python = resample_python(s, nb_points)
-            assert_array_almost_equal(resampled_streamlines_cython[i], resampled_streamline_python)
+            modified_streamline_python = set_number_of_points_python(s, nb_points)
+            assert_array_almost_equal(modified_streamlines_cython[i], modified_streamline_python)
 
         # Test streamlines with mixed dtype
         streamlines = [self.streamline, self.streamline.astype(np.float64)]
-        assert_raises(ValueError, dipystreamline.resample, streamlines, nb_points)
+        assert_raises(ValueError, dipystreamline.set_number_of_points, streamlines, nb_points)
 
         # Test streamline with shape not Nx3
-        assert_raises(ValueError, dipystreamline.resample, self.streamline.T, nb_points)
+        assert_raises(ValueError, dipystreamline.set_number_of_points, self.streamline.T, nb_points)
 
         # Test streamline with integer dtype
-        resampled_streamline = dipystreamline.resample(self.streamline.astype(np.int32))
-        assert_true(resampled_streamline.dtype == np.float32)
-        resampled_streamline = dipystreamline.resample(self.streamline.astype(np.int64))
-        assert_true(resampled_streamline.dtype == np.float64)
+        modified_streamline = dipystreamline.set_number_of_points(self.streamline.astype(np.int32))
+        assert_true(modified_streamline.dtype == np.float32)
+        modified_streamline = dipystreamline.set_number_of_points(self.streamline.astype(np.int64))
+        assert_true(modified_streamline.dtype == np.float64)
 
         # Test empty list
-        assert_equal(dipystreamline.resample([]), [])
+        assert_equal(dipystreamline.set_number_of_points([]), [])
 
         # Test streamline having only one point
-        assert_raises(ValueError, dipystreamline.resample, np.array([[1, 2, 3]]))
+        assert_raises(ValueError, dipystreamline.set_number_of_points, np.array([[1, 2, 3]]))
 
         # We do not support list of lists, it should be numpy ndarray.
         streamline = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
-        assert_raises(AttributeError, dipystreamline.resample, streamline)
+        assert_raises(AttributeError, dipystreamline.set_number_of_points, streamline)
 
     def test_length(self):
         # Test length of only one streamline
