@@ -33,7 +33,7 @@ def resample_python(xyz, n_pols=3):
 
     cumlen = np.zeros(xyz.shape[0])
     cumlen[1:] = length_python(xyz, along=True)
-    step = cumlen[-1]/(n_pols-1)
+    step = cumlen[-1] / (n_pols-1)
 
     ar = np.arange(0, cumlen[-1], step)
     if np.abs(ar[-1] - cumlen[-1]) < np.finfo('f4').eps:
