@@ -130,12 +130,10 @@ cso_dti_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], dti_cso[~gtab.b0s_mask])[0]**
 cso_csd_r2=stats.pearsonr(cso_vox[~gtab.b0s_mask], csd_cso[~gtab.b0s_mask])[0]**2
 
 print("Corpus callosum\n"
-      "---------------\n"
       "DTI R2 : %s\n"
       "CSD R2 : %s\n"
       "\n"
       "Centrum Semiovale\n"
-      "-----------------\n"
       "DTI R2 : %s\n"
       "CSD R2 : %s\n" % (cc_dti_r2, cc_csd_r2, cso_dti_r2, cso_csd_r2))
 
@@ -146,15 +144,11 @@ This should look something like this::
 
 Corpus callosum
 
----------------
-
 DTI R2 : 0.782881752597
 
 CSD R2 : 0.739356154507
 
 Centrum Semiovale
-
------------------
 
 DTI R2 : 0.431921832012
 
