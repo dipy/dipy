@@ -35,6 +35,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         If your scanner does a GRAPPA reconstruction, set N as the number
         of phase array coils.
 
+
     alpha : float
         Probabilistic estimation threshold for the gamma function.
 
@@ -87,6 +88,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     if data.ndim < 3:
         e_s = "This function only works on datasets of at least 3 dimensions."
         raise ValueError(e_s)
+by iterating slice by slice along the direction of acquisition
 
     if data.ndim == 4:
 
