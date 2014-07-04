@@ -80,10 +80,13 @@ nib.save(nib.Nifti1Image(mask, img.get_affine(), img.get_header()),
 
 print('The noise standard deviation is sigma= ', sigma)
 
+sigma_gaussian = np.std(data[mask[...,None].astype(np.bool)])
 
 """
 
-Here, we obtained a noise standard deviation of 7.26.
+Here, we obtained a noise standard deviation of 7.26. For comparison, a simple
+standard deviation of all voxels in the estimated mask (as done in the previous example)
+gives a value of 6.3.
 
 """
 
