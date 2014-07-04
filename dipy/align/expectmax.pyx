@@ -74,7 +74,7 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
                 return out, levels, hist
 
         levels[0] = 0
-        levels[1] = delta * 0.5
+        levels[1] = min_val + delta * 0.5
         for i in range(2, 1 + num_levels):
             levels[i] = levels[i - 1] + delta
         for i in range(nrows):
@@ -151,7 +151,7 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
             with gil:
                 return out, levels, hist
         levels[0] = 0
-        levels[1] = delta * 0.5
+        levels[1] = min_val + delta * 0.5
         for i in range(2, 1 + num_levels):
             levels[i] = levels[i - 1] + delta
         for k in range(nslices):

@@ -152,6 +152,82 @@ def test_compute_em_demons_step_3d():
     
     assert_array_almost_equal(actual, expected)
 
+def test_quantize_positive_image():
+    num_levels = 11 # an arbitrary number of quantization levels
+    img_shape = (15, 20) # arbitrary test image shape (must contain at least 3 elements)
+    min_positive = 0.1
+    max_positive = 1.0
+    epsilon = 1e-8
+
+    delta = (max_positive - min_positive + epsilon) / (num_levels - 1)
+    true_levels = np.zeros((num_levels,), dtype = np.float32)
+    # put the intensities at the centers of the bins
+    true_levels[1:] = np.linspace(min_positive+delta*0.5, max_positive-delta*0.5, num_levels-1)
+    true_quantization = np.empty(img_shape, dtype = np.int32) # generate a target quantization image
+    random_labels = np.random.randint(0, num_levels, np.size(true_quantization))
+    
+    # make sure there is at least one element equal to 0, 1 and num_levels-1
+    random_labels[0] = 0
+    random_labels[1] = 1
+    random_labels[2] = num_levels-1
+    true_quantization[...] = random_labels.reshape(img_shape)
+
+    noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive nose doesn't change the quantization result
+    noise = np.random.ranf(np.size(true_quantization)).reshape(img_shape) * noise_amplitude
+    noise = noise.astype(floating)
+    input_image = np.ndarray(img_shape, dtype = np.float32)
+    input_image[...] = true_levels[true_quantization] + noise # assign intensities plus noise
+    input_image[true_quantization == 0] = 0 # preserve original zeros
+    input_image[true_quantization == 1] = min_positive # preserve min positive value
+    input_image[true_quantization == num_levels-1] = max_positive # preserve max positive value
+
+    out, levels, hist = em.quantize_positive_image(input_image, num_levels)
+    levels = np.asarray(levels)
+    assert_array_equal(out, true_quantization)
+    assert_array_almost_equal(levels, true_levels)
+    for i in range(num_levels):
+        current_bin = np.asarray(true_quantization == i).sum()
+        assert_equal(hist[i], current_bin)
+
+def test_quantize_positive_volume():
+    num_levels = 11 # an arbitrary number of quantization levels
+    img_shape = (5, 10, 15) # arbitrary test image shape (must contain at least 3 elements)
+    min_positive = 0.1
+    max_positive = 1.0
+    epsilon = 1e-8
+
+    delta = (max_positive - min_positive + epsilon) / (num_levels - 1)
+    true_levels = np.zeros((num_levels,), dtype = np.float32)
+    # put the intensities at the centers of the bins
+    true_levels[1:] = np.linspace(min_positive+delta*0.5, max_positive-delta*0.5, num_levels-1)
+    true_quantization = np.empty(img_shape, dtype = np.int32) # generate a target quantization image
+    random_labels = np.random.randint(0, num_levels, np.size(true_quantization))
+    
+    # make sure there is at least one element equal to 0, 1 and num_levels-1
+    random_labels[0] = 0
+    random_labels[1] = 1
+    random_labels[2] = num_levels-1
+    true_quantization[...] = random_labels.reshape(img_shape)
+
+    noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive nose doesn't change the quantization result
+    noise = np.random.ranf(np.size(true_quantization)).reshape(img_shape) * noise_amplitude
+    noise = noise.astype(floating)
+    input_image = np.ndarray(img_shape, dtype = np.float32)
+    input_image[...] = true_levels[true_quantization] + noise # assign intensities plus noise
+    input_image[true_quantization == 0] = 0 # preserve original zeros
+    input_image[true_quantization == 1] = min_positive # preserve min positive value
+    input_image[true_quantization == num_levels-1] = max_positive # preserve max positive value
+
+    out, levels, hist = em.quantize_positive_volume(input_image, num_levels)
+    levels = np.asarray(levels)
+    assert_array_equal(out, true_quantization)
+    assert_array_almost_equal(levels, true_levels)
+    for i in range(num_levels):
+        current_bin = np.asarray(true_quantization == i).sum()
+        assert_equal(hist[i], current_bin)
+
+
 if __name__=='__main__':
-    test_compute_em_demons_step_2d()
+    test_quantize_positive_image()
+    test_quantize_positive_volume()
 
