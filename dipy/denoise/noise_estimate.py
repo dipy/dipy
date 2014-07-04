@@ -3,6 +3,7 @@ from __future__ import division, print_function
 import numpy as np
 
 from scipy.special import gammainccinv
+from scipy.stats import mode
 
 
 def _inv_nchi_cdf(N, K, alpha):
@@ -11,7 +12,7 @@ def _inv_nchi_cdf(N, K, alpha):
     return gammainccinv(N * K, 1 - alpha) / K
 
 
-def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False):
+def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False):
     """
     Probabilistic Identification and Estimation of Noise (PIESNO)
     A routine for finding the underlying gaussian distribution standard
@@ -33,6 +34,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
         If your scanner does a GRAPPA reconstruction, set N as the number
         of phase array coils.
 
+
     alpha : float
         Probabilistic estimation threshold for the gamma function.
 
@@ -46,7 +48,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
     eps : float
         Tolerance for the convergence criterion. Convergence is
         reached if two subsequent estimates are smaller than eps.
-    
+
     return_mask : bool
         If True, return a mask identyfing all the pure noise voxel
         that were found.
@@ -57,6 +59,96 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
         The estimated standard deviation of the gaussian noise.
 
     mask (optional): ndarray
+        A boolean mask indicating the voxels identified as pure noise.
+
+    Note
+    ------
+    This function assumes two things : 1. The data has a noisy, non-masked
+    background and 2. The data is a repetition of the same measurements
+    along the last axis, i.e. dMRI or fMRI data, not structural data like T1/T2.
+
+    References
+    ------------
+
+    .. [1] Koay CG, Ozarslan E and Pierpaoli C.
+    "Probabilistic Identification and Estimation of Noise (PIESNO):
+    A self-consistent approach and its applications in MRI."
+    Journal of Magnetic Resonance 2009; 199: 94-103.
+
+    .. [2] Koay CG, Ozarslan E and Basser PJ.
+    "A signal transformational framework for breaking the noise floor
+    and its applications in MRI."
+    Journal of Magnetic Resonance 2009; 197: 108-119.
+    """
+
+    # This method works on a 2D array with repetitions as the third dimension,
+    # so process the dataset slice by slice.
+
+    if data.ndim < 3:
+        raise ValueError("This function only works on datasets of at least 3 dimensions.")
+
+    if data.ndim == 4:
+
+        sigma = np.zeros(data.shape[-2], dtype=np.float32)
+        mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
+
+        for idx in range(data.shape[-2]):
+            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N, 
+                                                          alpha=alpha, l=l, itermax=itermax, eps=eps)
+
+        # Take the mode of all the sigmas from each slice as the best estimate,
+        # this should be stable with more or less 50% of the guesses at the same value.
+        print(sigma)
+        sigma, num = mode(sigma, axis=None)
+        print(sigma, num)
+
+    else:
+        sigma, mask_noise = _piesno_3D(data, N, alpha=alpha, l=l, itermax=itermax, eps=eps)
+
+    if return_mask:
+        return sigma, mask_noise
+
+    return sigma
+
+
+def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5):
+    """
+    Probabilistic Identification and Estimation of Noise (PIESNO)
+    This is the slice by slice version.
+
+    Parameters
+    -----------
+    data : ndarray
+        The magnitude signals to analyse. The last dimension must contain the
+        same realisation of the volume, such as dMRI or fMRI data.
+
+    N : int
+        The number of phase array coils of the MRI scanner.
+
+    alpha : float
+        Probabilistic estimation threshold for the gamma function.
+
+    l : int
+        number of initial estimates for sigma to try.
+
+    itermax : int
+        Maximum number of iterations to execute if convergence
+        is not reached.
+
+    eps : float
+        Tolerance for the convergence criterion. Convergence is
+        reached if two subsequent estimates are smaller than eps.
+
+    return_mask : bool
+        If True, return a mask identyfing all the pure noise voxel
+        that were found.
+
+    Returns
+    --------
+    sigma : float
+        The estimated standard deviation of the gaussian noise.
+
+    mask : ndarray
         A boolean mask indicating the voxels identified as pure noise.
 
     Note
@@ -104,7 +196,7 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
     K = data.shape[-1]
     sum_m2 = np.sum(data**2, axis=-1)
 
-    sigma = np.zeros_like(phi)
+    sigma = np.zeros(phi.shape, dtype=phi.dtype)
     mask = np.zeros(phi.shape + data.shape[:-1])
 
     lambda_minus = _inv_nchi_cdf(N, K, alpha/2)
@@ -141,13 +233,9 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
         # Remember the biggest omega array as giving the optimal
         # sigma amongst all initial estimates from phi
         if omega_size > max_length_omega:
-            pos, max_length_omega, best_mask = num, omega_size, idx
+            pos, max_length_omega = num, omega_size
 
         sigma[num] = sig
         mask[num] = idx
 
-    if return_mask:
-        return sigma[pos], mask[pos]
-    
-    return sigma[pos]
-    
+    return sigma[pos], mask[pos]
