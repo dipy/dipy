@@ -13,6 +13,7 @@ from dipy.align import floating
 import nibabel as nib
 import nibabel.eulerangles as eulerangles
 from dipy.align.imwarp import DiffeomorphicMap
+from dipy.align import VerbosityLevels
 
 def test_get_direction_and_spacings():
     xrot = 0.5
@@ -63,6 +64,8 @@ def test_ssd_2d_demons():
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric, 
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    optimizer.verbosity = VerbosityLevels.DEBUG
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
@@ -116,6 +119,7 @@ def test_ssd_2d_gauss_newton():
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
@@ -191,6 +195,7 @@ def test_ssd_3d_demons():
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
@@ -237,6 +242,7 @@ def test_ssd_3d_gauss_newton():
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
@@ -273,6 +279,7 @@ def test_cc_2d():
     #Configure and run the Optimizer
     level_iters = [40, 20, 10]
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
@@ -338,6 +345,7 @@ def test_cc_3d():
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)*1e-4
     if floating is np.float32:
@@ -397,6 +405,7 @@ def test_em_3d():
     ss_sigma_factor = 0.5
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)*1e-3
     if floating is np.float32:
@@ -438,6 +447,7 @@ def test_em_2d():
     #Configure and run the Optimizer
     level_iters = [40, 20, 10]
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
+    optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
