@@ -30,7 +30,7 @@ recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
 propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
 vox2track.so: ${PKGDIR}/tracking/vox2track.pyx
 distances.so: ${PKGDIR}/tracking/distances.pyx
-streamlinespeed.so: ${PKGDIR}/core/streamlinespeed.pyx
+streamlinespeed.so: ${PKGDIR}/tracking/streamlinespeed.pyx
 
 	$(PYTHON) setup.py build_ext --inplace
 

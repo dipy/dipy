@@ -82,15 +82,15 @@ for modulename, other_sources, language in (
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
-    ('dipy.core.streamlinespeed', [], 'c++'),
+    ('dipy.tracking.streamlinespeed', [], 'c++'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
     ('dipy.denoise.denspeed', [], 'c')
     ):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
-    EXTS.append(Extension(modulename,[pyx_src] + other_sources,
-                          language = language,
-                          include_dirs = [np.get_include(), "src"]))
+    EXTS.append(Extension(modulename, [pyx_src] + other_sources,
+                          language=language,
+                          include_dirs=[np.get_include(), "src"]))
 
 
 # Do our own build and install time dependency checking. setup.py gets called in

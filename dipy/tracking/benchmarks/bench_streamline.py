@@ -2,8 +2,8 @@
 
 Run all benchmarks with::
 
-    import dipy.core as dicore
-    dicore.bench()
+    import dipy.tracking as dipytracking
+    dipytracking.bench()
 
 If you have doctests enabled by default in nose (with a noserc file or
 environment variable), and you have a numpy version <= 1.6.1, this will also run
@@ -15,8 +15,8 @@ Run this benchmark with:
 """
 import numpy as np
 
-from dipy.core.streamline import set_number_of_points, length
-from dipy.core.tests.test_streamline import set_number_of_points_python, length_python
+from dipy.tracking.streamline import set_number_of_points, length
+from dipy.tracking.tests.test_streamline import set_number_of_points_python, length_python
 
 from numpy.testing import measure
 

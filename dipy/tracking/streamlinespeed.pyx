@@ -58,7 +58,7 @@ def length(streamlines):
 
     Examples
     ----------
-    >>> from dipy.core.streamline import length
+    >>> from dipy.tracking.streamline import length
     >>> streamline = np.array([[1, 1, 1], [2, 3, 4], [0, 0, 0]])
     >>> expected_length = np.sqrt([1+2**2+3**2, 2**2+3**2+4**2]).sum()
     >>> length(streamline) == expected_length
@@ -207,7 +207,7 @@ def set_number_of_points(streamlines, nb_points=3):
 
     Examples
     --------
-    >>> from dipy.core.streamline import set_number_of_points
+    >>> from dipy.tracking.streamline import set_number_of_points
     >>> import numpy as np
     >>> # One streamline: a semi-circle
     >>> theta = np.pi*np.linspace(0, 1, 100)
