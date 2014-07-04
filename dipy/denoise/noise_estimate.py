@@ -28,6 +28,10 @@ def piesno(data, N=1, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=Fals
 
     N : int
         The number of phase array coils of the MRI scanner.
+        If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the noise
+        profile is always Rician. 
+        If your scanner does a GRAPPA reconstruction, set N as the number
+        of phase array coils.
 
     alpha : float
         Probabilistic estimation threshold for the gamma function.
