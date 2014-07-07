@@ -92,13 +92,18 @@ def test_diffeomorphic_map_2d():
     #warp using a DiffeomorphicMap instance
     diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine, target_shape, target_affine, None)
     diff_map.forward = disp
-    warped = diff_map.transform(moving_image, 'linear', target_affine_inv, np.array(target_shape), input_affine)
+    warped = diff_map.transform(moving_image, 'linear')
 
     #warp the moving image using the (exact) assignments
     expected = moving_image[(assign[...,0], assign[...,1])]
 
     #compare the images
     assert_array_almost_equal(warped, expected, decimal=5)
+
+    #Now test the nearest neighbor interpolation
+    warped = diff_map.transform(moving_image, 'nearest')
+    #compare the images (now we dont have to worry about precision, it is n.n.)
+    assert_array_almost_equal(warped, expected)
 
 
 def test_get_direction_and_spacings():
