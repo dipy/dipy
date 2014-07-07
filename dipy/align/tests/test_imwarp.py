@@ -123,6 +123,24 @@ def test_get_direction_and_spacings():
     assert_array_almost_equal(direction, direction_gt)
     assert_array_almost_equal(spacings, spacings_gt)
 
+def simple_callback(sdr, status):
+    if status == imwarp.RegistrationStages.INIT_START:
+        sdr.INIT_START_CALLED = 1
+    if status == imwarp.RegistrationStages.INIT_END:
+        sdr.INIT_END_CALLED = 1
+    if status == imwarp.RegistrationStages.OPT_START:
+        sdr.OPT_START_CALLED = 1
+    if status == imwarp.RegistrationStages.OPT_END:
+        sdr.OPT_END_CALLED = 1
+    if status == imwarp.RegistrationStages.SCALE_START:
+        sdr.SCALE_START_CALLED = 1
+    if status == imwarp.RegistrationStages.SCALE_END:
+        sdr.SCALE_END_CALLED = 1
+    if status == imwarp.RegistrationStages.ITER_START:
+        sdr.ITER_START_CALLED = 1
+    if status == imwarp.RegistrationStages.ITER_END:
+        sdr.ITER_END_CALLED = 1
+
 
 def test_ssd_2d_demons():
     r'''
@@ -155,9 +173,23 @@ def test_ssd_2d_demons():
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric, 
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    optimizer.verbosity = VerbosityLevels.DEBUG
+
+    #test callback being called
+    optimizer.INIT_START_CALLED = 0
+    optimizer.INIT_END_CALLED = 0
+    optimizer.OPT_START_CALLED = 0
+    optimizer.OPT_END_CALLED = 0
+    optimizer.SCALE_START_CALLED = 0
+    optimizer.SCALE_END_CALLED = 0
+    optimizer.ITER_START_CALLED = 0
+    optimizer.ITER_END_CALLED = 0
+
+    optimizer.callback_counter_test = 0
+    optimizer.callback = simple_callback
+
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
         expected_profile = \
@@ -176,6 +208,13 @@ def test_ssd_2d_demons():
                        37.60531526,   33.25877969,   30.638574  ,   91.49825032,
                        80.524506  ])
     assert_array_almost_equal(subsampled_energy_profile, expected_profile)
+    assert_equal(optimizer.OPT_START_CALLED, 1)
+    assert_equal(optimizer.OPT_END_CALLED, 1)
+    assert_equal(optimizer.SCALE_START_CALLED, 1)
+    assert_equal(optimizer.SCALE_END_CALLED, 1)
+    assert_equal(optimizer.ITER_START_CALLED, 1)
+    assert_equal(optimizer.ITER_END_CALLED, 1)
+
 
 
 def test_ssd_2d_gauss_newton():
@@ -210,6 +249,17 @@ def test_ssd_2d_gauss_newton():
     ss_sigma_factor = 0.2
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
+
+    #test callback not being called
+    optimizer.INIT_START_CALLED = 0
+    optimizer.INIT_END_CALLED = 0
+    optimizer.OPT_START_CALLED = 0
+    optimizer.OPT_END_CALLED = 0
+    optimizer.SCALE_START_CALLED = 0
+    optimizer.SCALE_END_CALLED = 0
+    optimizer.ITER_START_CALLED = 0
+    optimizer.ITER_END_CALLED = 0
+
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, np.eye(3), np.eye(3), np.eye(3))
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
@@ -224,6 +274,12 @@ def test_ssd_2d_gauss_newton():
                        56.71942103,   30.20320996,   19.4766414 ,   74.72561337,
                        108.0512537 ,  106.37445697])
     assert_array_almost_equal(subsampled_energy_profile, expected_profile)
+    assert_equal(optimizer.OPT_START_CALLED, 0)
+    assert_equal(optimizer.OPT_END_CALLED, 0)
+    assert_equal(optimizer.SCALE_START_CALLED, 0)
+    assert_equal(optimizer.SCALE_END_CALLED, 0)
+    assert_equal(optimizer.ITER_START_CALLED, 0)
+    assert_equal(optimizer.ITER_END_CALLED, 0)
 
 
 def get_synthetic_warped_circle(nslices):
@@ -575,14 +631,14 @@ def test_em_2d():
     assert_array_almost_equal(energy_profile, np.array(expected_profile))
 
 if __name__=='__main__':
-    test_mult_aff()
-    test_diffeomorphic_map_2d
-    test_get_direction_and_spacings()
+    #test_mult_aff()
+    #test_diffeomorphic_map_2d
+    #test_get_direction_and_spacings()
     test_ssd_2d_demons()
-    test_ssd_2d_gauss_newton()
-    test_ssd_3d_demons()
-    test_ssd_3d_gauss_newton()
-    test_cc_2d()
-    test_cc_3d()
-    test_em_2d()
-    test_em_3d()
+    #test_ssd_2d_gauss_newton()
+    #test_ssd_3d_demons()
+    #test_ssd_3d_gauss_newton()
+    #test_cc_2d()
+    #test_cc_3d()
+    #test_em_2d()
+    #test_em_3d()
