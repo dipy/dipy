@@ -15,6 +15,92 @@ import nibabel.eulerangles as eulerangles
 from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align import VerbosityLevels
 
+def test_mult_aff():
+    r"""mult_aff from imwarp returns the matrix product A.dot(B) considering None 
+    as the identity
+    """
+    A = np.array([[1.0, 2.0], [3.0, 4.0]])
+    B = np.array([[2.0, 0.0], [0.0, 2.0]])
+    
+    C = imwarp.mult_aff(A, B)
+    expected_mult = np.array([[2.0, 4.0], [6.0, 8.0]])
+    assert_array_almost_equal(C, expected_mult)
+
+    C = imwarp.mult_aff(A, None)
+    assert_array_almost_equal(C, A)
+
+    C = imwarp.mult_aff(None, B)
+    assert_array_almost_equal(C, B)
+
+    C = imwarp.mult_aff(None, None)
+    assert_equal(C, None)
+
+
+def test_diffeomorphic_map_2d():
+    r"""
+    Creates a random displacement field that exactly maps pixels from an input
+    image to an output image. First a discrete random assignment between the 
+    images is generated, then each pair of mapped points are transformed to
+    the physical space by assigning a pair of arbitrary, fixed affine matrices
+    to input and output images, and finaly the difference between their positions
+    is taken as the displacement vector. The resulting displacement, although 
+    operating in physical space, maps the points exactly (up to numerical 
+    precision).
+    """
+    input_shape = (10, 10)
+    target_shape = (10, 10)
+    #create a simple affine transformation
+    nr = input_shape[0]
+    nc = input_shape[1]
+    s = 1.1
+    t = 0.25
+    trans = np.array([[1, 0, -t*nr],
+                      [0, 1, -t*nc],
+                      [0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+    scale = np.array([[1*s, 0, 0],
+                      [0, 1*s, 0],
+                      [0, 0, 1]])
+    gt_affine = trans_inv.dot(scale.dot(trans))
+    gt_affine_inv = np.linalg.inv(gt_affine)
+
+    #create the random displacement field
+    input_affine = gt_affine
+    target_affine = gt_affine
+    disp, assign = vfu.create_random_displacement_2d(np.array(input_shape, dtype=np.int32),
+                                                     input_affine, 
+                                                     np.array(target_shape, dtype=np.int32),
+                                                     target_affine)
+    disp = np.array(disp, dtype=floating)
+    assign = np.array(assign)
+    #create a random image (with decimal digits) to warp
+    moving_image = np.ndarray(target_shape, dtype=floating)
+    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
+    #set boundary values to zero so we don't test wrong interpolation due to
+    #floating point precision
+    moving_image[0,:] = 0
+    moving_image[-1,:] = 0
+    moving_image[:,0] = 0
+    moving_image[:,-1] = 0
+
+    #warp the moving image using the synthetic displacement field
+    target_affine_inv = np.linalg.inv(target_affine)
+    input_affine_inv = np.linalg.inv(input_affine)
+    affine_index = target_affine_inv.dot(input_affine)
+    affine_disp = target_affine_inv
+
+    #warp using a DiffeomorphicMap instance
+    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine, target_shape, target_affine, None)
+    diff_map.forward = disp
+    warped = diff_map.transform(moving_image, 'linear', target_affine_inv, np.array(target_shape), input_affine)
+
+    #warp the moving image using the (exact) assignments
+    expected = moving_image[(assign[...,0], assign[...,1])]
+
+    #compare the images
+    assert_array_almost_equal(warped, expected, decimal=5)
+
+
 def test_get_direction_and_spacings():
     xrot = 0.5
     yrot = 0.75
@@ -120,7 +206,7 @@ def test_ssd_2d_gauss_newton():
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
+    mapping = optimizer.optimize(static, moving, np.eye(3), np.eye(3), np.eye(3))
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
         expected_profile = \
@@ -483,8 +569,9 @@ def test_em_2d():
              4.46509266e+01, 4.63176665e+01]
     assert_array_almost_equal(energy_profile, np.array(expected_profile))
 
-
 if __name__=='__main__':
+    test_mult_aff()
+    test_diffeomorphic_map_2d
     test_get_direction_and_spacings()
     test_ssd_2d_demons()
     test_ssd_2d_gauss_newton()
