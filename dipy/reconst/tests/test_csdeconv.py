@@ -343,7 +343,7 @@ def test_csd_superres():
 
     # img, gtab = read_stanford_hardi()
     evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
-    S, sticks = multi_tensor(gtab, evals, snr=None)
+    S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
 
     model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.), sh_order=16)
     fit16 = model16.fit(S)
