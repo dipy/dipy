@@ -95,12 +95,13 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         for idx in range(data.shape[-2]):
             sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N, 
                                                           alpha=alpha, l=l, itermax=itermax, eps=eps)
-
+            
         # Take the mode of all the sigmas from each slice as the best estimate,
         # this should be stable with more or less 50% of the guesses at the same value.
-        print(sigma)
+        #print(sigma)
+        
         sigma, num = mode(sigma, axis=None)
-        print(sigma, num)
+        #print(sigma, num)
 
     else:
         sigma, mask_noise = _piesno_3D(data, N, alpha=alpha, l=l, itermax=itermax, eps=eps)
