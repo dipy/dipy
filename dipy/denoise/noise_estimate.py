@@ -102,9 +102,10 @@ by iterating slice by slice along the direction of acquisition
 
         # Take the mode of all the sigmas from each slice as the best estimate,
         # this should be stable with more or less 50% of the guesses at the same value.
-        print(sigma)
+        #print(sigma)
+
         sigma, num = mode(sigma, axis=None)
-        print(sigma, num)
+        #print(sigma, num)
 
     else:
         sigma, mask_noise = _piesno_3D(data, N, alpha=alpha, l=l, itermax=itermax, eps=eps)

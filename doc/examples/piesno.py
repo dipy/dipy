@@ -28,6 +28,7 @@ e.g., if the readout bandwidth is maintained at the same level for all the image
 """
 
 import nibabel as nib
+import numpy as np
 from dipy.denoise.noise_estimate import piesno
 from dipy.data import fetch_sherbrooke_3shell, read_sherbrooke_3shell
 
@@ -79,14 +80,13 @@ nib.save(nib.Nifti1Image(mask, img.get_affine(), img.get_header()),
          'mask_piesno.nii.gz')
 
 print('The noise standard deviation is sigma= ', sigma)
-
-sigma_gaussian = np.std(data[mask[...,None].astype(np.bool)])
+print('The std of the background is =', np.std(data[mask[...,None].astype(np.bool)]))
 
 """
 
 Here, we obtained a noise standard deviation of 7.26. For comparison, a simple
 standard deviation of all voxels in the estimated mask (as done in the previous example)
-gives a value of 6.3.
+gives a value of 6.1.
 
 """
 
