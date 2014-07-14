@@ -175,8 +175,8 @@ class Optimizer(object):
 
                 _, fname = mkstemp()
 
-                if os.path.isfile(fname):
-                    os.remove(fname)
+                # if os.path.isfile(fname):
+                #     os.remove(fname)
 
                 def history_of_x(kx):
                     f = open(fname, 'a')
