@@ -15,12 +15,57 @@ from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    forward_sdeconv_mat,
                                    odf_deconv,
                                    odf_sh_to_sharp,
-                                   auto_response)
+                                   auto_response, recursive_response)
 from dipy.reconst.peaks import peak_directions
 from dipy.core.sphere_stats import angular_similarity
+
 from dipy.reconst.shm import (CsaOdfModel, QballModel, sf_to_sh, sh_to_sf,
                               real_sym_sh_basis, sph_harm_ind_list)
 
+
+def test_recursive_response_calibration():
+    SNR = 100
+    S0 = 1
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+    evals = np.array([0.0015, 0.0003, 0.0003])
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+    evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
+
+    angles = [(0, 0), (90, 0)]
+
+    S_cross, sticks_cross = multi_tensor(gtab, mevals, S0, angles=angles,
+                                         fractions=[50, 50], snr=SNR)
+
+    S_single = single_tensor(gtab, S0, evals, evecs, snr=SNR)
+
+    data = np.concatenate((np.tile(S_cross, (8, 1)), np.tile(S_single, (2, 1))), axis=0)
+    data = np.concatenate(np.tile(S_single, (2, 1)), axis=0)
+#    where_dwi = lazy_index(~gtab.b0s_mask)
+
+    sphere = get_sphere('symmetric362')
+
+#    ren = fvtk.ren()
+#    response_actor = fvtk.sphere_funcs(data[:, where_dwi], bvecs)
+#    fvtk.add(ren, response_actor)
+#    fvtk.show(ren)
+
+
+    odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
+
+    response = recursive_response(gtab, data, mask=None, sh_order=8,
+                                  peak_thr=0.01, init_fa=0.05,
+                                  init_trace=0.0021, iter=8, convergence=0.01)
+
+    csd = ConstrainedSphericalDeconvModel(gtab, response)
+
+    csd_fit = csd.fit(data)
 
 
 def test_csdeconv():
