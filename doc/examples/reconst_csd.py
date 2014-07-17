@@ -74,6 +74,12 @@ We can double check that we have a good response function by visualizing the
 response's function's ODF. Here is how:
 """
 
+data_small = data[20:30, 55:65, 38:39]
+
+from dipy.reconst.csdeconv import recursive_response
+
+response = recursive_response(gtab, data_small, mask=None, sh_order=8, peak_thr=0.01, init_fa=0.05, init_trace=0.0021, iter=8, convergence=0.01)
+
 from dipy.viz import fvtk
 
 ren = fvtk.ren()
@@ -120,7 +126,7 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 For illustration purposes we will fit only a slice of the datasets.
 """
 
-data_small = data[20:50, 55:85, 38:39]
+data_small = data[20:30, 55:65, 38:39]
 
 csd_fit = csd_model.fit(data_small)
 
