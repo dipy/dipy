@@ -20,6 +20,13 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
                               real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
                               SphHarmModel)
 
+from dipy.reconst.peaks import peaks_from_model
+from dipy.core.geometry import vec2vec_rotmat
+from dipy.reconst.shm import sh_to_sf
+from dipy.viz import fvtk
+from dipy.sims.voxel import single_tensor_odf
+
+
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
 
@@ -106,15 +113,15 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
         self.B_reg = real_sph_harm(m, n, theta[:, None], phi[:, None])
 
         if response is None:
-            self.response = (np.array([0.0015, 0.0003, 0.0003]), 1)
+            S_r = estimate_response(gtab, np.array([0.0015, 0.0003, 0.0003]), 1)
+            r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
+            r_rh = sh_to_rh(r_sh, m, n)
+        elif isinstance(response, tuple):
+            S_r = estimate_response(gtab, response[0], response[1])
+            r_sh = np.linalg.lstsq(self.B_dwi, S_r[self._where_dwi])[0]
+            r_rh = sh_to_rh(r_sh, m, n)
         else:
-            self.response = response
-
-        self.S_r = estimate_response(gtab, self.response[0], self.response[1])
-        self.response_scaling = self.response[1]
-
-        r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
-        r_rh = sh_to_rh(r_sh, m, n)
+            r_rh = sh_to_rh(response, m, n)
 
         self.R = forward_sdeconv_mat(r_rh, n)
 
@@ -761,7 +768,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
     returned, which can be used to judge the fidelity of the response function.
     As a rule of thumb, at least 300 voxels should be used to estimate a good
     response function (see [1]_).
-    
+
     References
     ----------
     .. [1] Tournier, J.D., et al. NeuroImage 2004. Direct estimation of the
@@ -798,3 +805,154 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
         return response, ratio, indices[0].size
 
     return response, ratio
+
+
+def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
+                       init_fa=0.08, init_trace=0.0021, iter=8,
+                       convergence=0.001):
+    """ Recursive calibration of response function using peak threshold
+
+    Parameters
+    ----------
+    gtab : GradientTable
+    data : ndarray
+        diffusion data
+    mask : ndarray
+        mask for recursive calibration, for example a white matter mask. It has
+        shape `data.shape[0:3]` and dtype=bool.
+    sh_order : int
+        maximal spherical harmonics order
+    peak_thr : float
+        peak threshold, how large the second peak can be relative to the first
+        peak in order to call it a single fiber population [1]
+    init_fa : float
+        FA of the initial 'fat' response function (tensor)
+    init_trace : fload
+        trace of the initial 'fat' response function (tensor)
+    iter : int
+        maximum number of iterations for calibration
+    convergence : float
+        convergence criterion, maximum relative change of SH coefficients
+
+    Returns
+    -------
+    response : ndarray
+        response function in SH coefficients
+
+    Notes
+    -----
+    In CSD there is an important pre-processing step: the estimation of the
+    fiber response function. Using an FA threshold is not a very robust method.
+    It is dependent on the dataset (non-informed used subjectivity), and still
+    depends on the diffusion tensor (FA and first eigenvector),
+    which has low accuracy at high b-value. This function recursively
+    calibrates the response function, for more information see [1].
+
+    References
+        ----------
+        .. [1] Tax, C.M.W., et al. NeuroImage 2014. Recursive calibration of
+               the fiber response function for spherical deconvolution of
+               diffusion MRI data
+    """
+    vis = True
+
+    S0 = 1
+    evals = fa_trace_to_lambdas(init_fa, init_trace)
+#    evals = np.array([0.0015, 0.0003, 0.0003])
+    response = (evals, S0)
+
+    if vis is True:
+        sphere = get_sphere('symmetric724')
+        ren = fvtk.ren()
+        evals = response[0]
+        evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
+        response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
+        response_actor = fvtk.sphere_funcs(response_odf, sphere)
+        fvtk.add(ren, response_actor)
+        fvtk.show(ren)
+
+    no_params = ((sh_order + 1) * (sh_order + 2)) / 2
+    response_p = np.ones(no_params)
+    r_sh_all = np.zeros(no_params)
+    if mask is None:
+        data = data[np.ones(data.shape[0:(data.ndim-1)], dtype=bool)]
+    else:
+        data = data[mask]
+
+    rot_gradients = np.zeros(gtab.gradients.shape)
+    m, n = sph_harm_ind_list(sh_order)
+    where_dwi = lazy_index(~gtab.b0s_mask)
+
+    for num_it in range(1, iter):
+        print(num_it)
+        csd_model = ConstrainedSphericalDeconvModel(gtab, response,
+                                                    None, sh_order)
+
+        if vis is True:
+            fvtk.clear(ren)
+            csd_fit = csd_model.fit(data)
+            csd_odf = csd_fit.odf(sphere)
+            fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3,
+                                             norm=True)
+            fvtk.add(ren, fodf_spheres)
+            fvtk.show(ren)
+
+        csd_peaks = peaks_from_model(model=csd_model,
+                                     data=data,
+                                     sphere=sphere,
+                                     relative_peak_threshold=peak_thr,
+                                     min_separation_angle=25,
+                                     parallel=False)
+
+        if vis is True:
+            fvtk.clear(ren)
+            fodf_peaks = fvtk.peaks(csd_peaks.peak_dirs, csd_peaks.peak_values,
+                                    scale=1.3)
+            fvtk.add(ren, fodf_peaks)
+            fvtk.show(ren)
+
+        dirs = csd_peaks.peak_dirs
+        vals = csd_peaks.peak_values
+        single_peak_mask = (vals[:, 1] / vals[:, 0]) < peak_thr
+        data = data[single_peak_mask]
+        dirs = dirs[single_peak_mask]
+
+        for num_vox in range(0, data.shape[0]):
+            rotmat = vec2vec_rotmat(dirs[num_vox, 0], np.array([0, 0, 1]))
+            for num_grad in range(0, gtab.gradients.shape[0]):
+                rot_gradients[num_grad] = np.dot(rotmat,
+                                                 gtab.gradients[num_grad])
+
+            x, y, z = rot_gradients[where_dwi].T
+            r, theta, phi = cart2sphere(x, y, z)
+            # for the gradient sphere
+            B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
+            r_sh_all = r_sh_all + np.linalg.lstsq(B_dwi,
+                                                  data[num_vox, where_dwi])[0]
+
+        response = r_sh_all/data.shape[0]
+#        response = sh_to_rh(response, m, n)
+
+        if vis is True:
+            fvtk.clear(ren)
+            response_odf = sh_to_sf(response, sphere, sh_order,
+                                    basis_type=None)
+            response_actor = fvtk.sphere_funcs(response_odf, sphere)
+            ren = fvtk.ren()
+            fvtk.add(ren, response_actor)
+            fvtk.show(ren)
+
+        change = abs((response_p - response)/response_p)
+        if change.all() < convergence:
+            break
+
+        response_p = response
+
+    return response
+
+
+def fa_trace_to_lambdas(fa=0.08, trace=0.0021):
+    lambda1 = (trace / 3.) * (1 + 2 * fa / (3 - 2 * fa ** 2) ** (1 / 2.))
+    lambda2 = (trace / 3.) * (1 - fa / (3 - 2 * fa ** 2) ** (1 / 2.))
+    evals = np.array([lambda1, lambda2, lambda2])
+    return evals
