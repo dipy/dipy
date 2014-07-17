@@ -849,20 +849,20 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     calibrates the response function, for more information see [1].
 
     References
-        ----------
-        .. [1] Tax, C.M.W., et al. NeuroImage 2014. Recursive calibration of
-               the fiber response function for spherical deconvolution of
-               diffusion MRI data
+    ----------
+    .. [1] Tax, C.M.W., et al. NeuroImage 2014. Recursive calibration of
+           the fiber response function for spherical deconvolution of
+           diffusion MRI data.
     """
-    vis = True
+    vis = False
 
     S0 = 1
     evals = fa_trace_to_lambdas(init_fa, init_trace)
 #    evals = np.array([0.0015, 0.0003, 0.0003])
     response = (evals, S0)
-
+    sphere = get_sphere('symmetric724')
     if vis is True:
-        sphere = get_sphere('symmetric724')
+
         ren = fvtk.ren()
         evals = response[0]
         evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
@@ -919,9 +919,11 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
 
         for num_vox in range(0, data.shape[0]):
             rotmat = vec2vec_rotmat(dirs[num_vox, 0], np.array([0, 0, 1]))
-            for num_grad in range(0, gtab.gradients.shape[0]):
-                rot_gradients[num_grad] = np.dot(rotmat,
-                                                 gtab.gradients[num_grad])
+            #for num_grad in range(0, gtab.gradients.shape[0]):
+            #    rot_gradients[num_grad] = np.dot(rotmat,
+            #                                    gtab.gradients[num_grad])
+
+            rot_gradients = np.dot(rotmat, gtab.gradients.T).T
 
             x, y, z = rot_gradients[where_dwi].T
             r, theta, phi = cart2sphere(x, y, z)
