@@ -96,11 +96,13 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
             sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N, 
                                                           alpha=alpha, l=l, itermax=itermax, eps=eps)
             
+        #debug    
         # Take the mode of all the sigmas from each slice as the best estimate,
         # this should be stable with more or less 50% of the guesses at the same value.
         #print(sigma)
         
         sigma, num = mode(sigma, axis=None)
+        #debug
         #print(sigma, num)
 
     else:
@@ -125,6 +127,10 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5):
 
     N : int
         The number of phase array coils of the MRI scanner.
+        If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the noise
+        profile is always Rician. 
+        If your scanner does a GRAPPA reconstruction, set N as the number
+        of phase array coils.
 
     alpha : float
         Probabilistic estimation threshold for the gamma function.
