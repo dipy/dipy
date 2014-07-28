@@ -873,17 +873,17 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
 
     no_params = ((sh_order + 1) * (sh_order + 2)) / 2
     response_p = np.ones(no_params)
-    r_sh_all = np.zeros(no_params)
     if mask is None:
         data = data[np.ones(data.shape[0:(data.ndim-1)], dtype=bool)]
     else:
         data = data[mask]
 
-    rot_gradients = np.zeros(gtab.gradients.shape)
+#    rot_gradients = np.zeros(gtab.gradients.shape)
     m, n = sph_harm_ind_list(sh_order)
     where_dwi = lazy_index(~gtab.b0s_mask)
 
     for num_it in range(1, iter):
+        r_sh_all = np.zeros(no_params)
         print(num_it)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response,
                                                     None, sh_order)
