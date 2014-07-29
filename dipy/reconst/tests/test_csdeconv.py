@@ -269,7 +269,7 @@ def test_csd_predict():
 
     csd = ConstrainedSphericalDeconvModel(gtab, response)
     csd_fit = csd.fit(S)
-    prediction = csd_predict(csd_fit.shm_coeff, gtab)
+    prediction = csd_predict(csd_fit.shm_coeff, gtab, response=response, S0=S0)
     npt.assert_equal(prediction.shape[0], S.shape[0])
     model_prediction = csd.predict(csd_fit.shm_coeff)
     assert_array_almost_equal(prediction, model_prediction)
