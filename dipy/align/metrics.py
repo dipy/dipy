@@ -233,7 +233,7 @@ class CCMetric(SimilarityMetric):
             self.compute_backward_step = cc.compute_cc_backward_step_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('CC Metric not defined for dimension %d'%(self.dim));
+            print('CC Metric not defined for dimension %d'%(self.dim))
 
 
     def initialize_iteration(self):
@@ -327,7 +327,7 @@ class EMMetric(SimilarityMetric):
                  inner_iter=5, 
                  q_levels=256, 
                  double_gradient=True, 
-                 step_type='gauss_newton'):
+                 iter_type='gauss_newton'):
         r"""Expectation-Maximization Metric
         
         Similarity metric based on the Expectation-Maximization algorithm to
@@ -354,7 +354,7 @@ class EMMetric(SimilarityMetric):
             modality will be added to the gradient of the moving image,
             similarly, the gradient of the expected moving image under the
             static modality will be added to the gradient of the static image.
-        step_type : string ('gauss_newton', 'demons')
+        iter_type : string ('gauss_newton', 'demons')
             the optimization schedule to be used in the multi-resolution 
             Gauss-Seidel optimization algorithm (not used if Demons Step is
             selected)
@@ -364,7 +364,7 @@ class EMMetric(SimilarityMetric):
         self.inner_iter = inner_iter
         self.q_levels = q_levels
         self.use_double_gradient = double_gradient
-        self.step_type = step_type
+        self.iter_type = iter_type
         self.static_image_mask = None
         self.moving_image_mask = None
         self.staticq_means_field = None
@@ -384,19 +384,15 @@ class EMMetric(SimilarityMetric):
             self.quantize = em.quantize_positive_image
             self.compute_stats = em.compute_masked_image_class_stats
             self.reorient_vector_field = vfu.reorient_vector_field_2d
-        elif self.dim == 3:
+        else:
             self.quantize = em.quantize_positive_volume
             self.compute_stats = em.compute_masked_volume_class_stats
             self.reorient_vector_field = vfu.reorient_vector_field_3d
-        else:
-            raise ValueError('EM Metric not defined for dimension %d'%(self.dim));
 
-        if self.step_type == 'demons':
+        if self.iter_type == 'demons':
             self.compute_step = self.compute_demons_step
-        elif self.step_type == 'gauss_newton':
+        elif self.iter_type == 'gauss_newton':
             self.compute_step = self.compute_gauss_newton_step
-        else:
-            raise ValueError('Optimization step %s not defined'%(self.step_type))
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.
@@ -706,17 +702,13 @@ class SSDMetric(SimilarityMetric):
         """
         if self.dim == 2:
             self.reorient_vector_field = vfu.reorient_vector_field_2d
-        elif self.dim == 3:
-            self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
-            raise ValueError('SSD Metric not defined for dimension %d'%(self.dim))
+            self.reorient_vector_field = vfu.reorient_vector_field_3d
 
         if self.step_type == 'gauss_newton':
             self.compute_step = self.compute_gauss_newton_step
         elif self.step_type == 'demons':
             self.compute_step = self.compute_demons_step
-        else:
-            raise ValueError('Optimization step %s not defined'%(self.step_type))
 
     def initialize_iteration(self):
         r"""Prepares the metric to compute one displacement field iteration.

@@ -175,7 +175,7 @@ def test_quantize_positive_image():
     noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive nose doesn't change the quantization result
     noise = np.random.ranf(np.size(true_quantization)).reshape(img_shape) * noise_amplitude
     noise = noise.astype(floating)
-    input_image = np.ndarray(img_shape, dtype = floating)
+    input_image = np.ndarray(img_shape, dtype = np.float32)
     input_image[...] = true_levels[true_quantization] + noise # assign intensities plus noise
     input_image[true_quantization == 0] = 0 # preserve original zeros
     input_image[true_quantization == 1] = min_positive # preserve min positive value
@@ -212,7 +212,7 @@ def test_quantize_positive_volume():
     noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive nose doesn't change the quantization result
     noise = np.random.ranf(np.size(true_quantization)).reshape(img_shape) * noise_amplitude
     noise = noise.astype(floating)
-    input_image = np.ndarray(img_shape, dtype = floating)
+    input_image = np.ndarray(img_shape, dtype = np.float32)
     input_image[...] = true_levels[true_quantization] + noise # assign intensities plus noise
     input_image[true_quantization == 0] = 0 # preserve original zeros
     input_image[true_quantization == 1] = min_positive # preserve min positive value

@@ -409,11 +409,11 @@ def test_ssd_3d_gauss_newton():
 
 def test_cc_2d():
     r'''
-    Register a circle to itself after warping it under a synthetic invertible 
-	map. This test is intended to detect regressions only: we saved the energy
-	profile (the sequence of energy values at each iteration) of a working
-	version of CC in 2D, and this test checks that the current energy profile
-	matches the saved one.
+    Register two slices from the Sherbrooke database. This test
+    is intended to detect regressions only: we saved the energy profile (the
+    sequence of energy values at each iteration) of a working version of CC in
+    2D, and this test checks that the current energy profile matches the saved
+    one.
     '''
 
     moving, static = get_synthetic_warped_circle(1)
@@ -572,11 +572,11 @@ def test_em_3d():
 
 def test_em_2d():
     r'''
-    Register a circle to itself after warping it under a synthetic invertible 
-	map. This test is intended to detect regressions only: we saved the energy
-	profile (the sequence of energy values at each iteration) of a working
-	version of EM in 2D, and this test checks that the current energy profile
-	matches the saved one.
+    Register two slices from the Sherbrooke database. This test
+    is intended to detect regressions only: we saved the energy profile (the
+    sequence of energy values at each iteration) of a working version of CC in
+    2D, and this test checks that the current energy profile matches the saved
+    one.
     '''
 
     moving, static = get_synthetic_warped_circle(1)
@@ -630,126 +630,15 @@ def test_em_2d():
              4.46509266e+01, 4.63176665e+01]
     assert_array_almost_equal(energy_profile, np.array(expected_profile))
 
-
-def test_em_3d_demons():
-    r'''
-    Register a stack of circles ('cylinder') before and after warping them with 
-    a synthetic diffeomorphism. This test
-    is intended to detect regressions only: we saved the energy profile (the
-    sequence of energy values at each iteration) of a working version of EM in
-    3D, and this test checks that the current energy profile matches the saved
-    one. The validation of the "working version" was
-    done by registering the 18 manually annotated T1 brain MRI database IBSR 
-    with each other and computing the jaccard index for all 31 common anatomical
-    regions. The "working version" of EM in 3D obtains very similar results as
-    those reported for ANTS on the same database. Any modification that produces
-    a change in the energy profile should be carefully validated to ensure no 
-    accuracy loss.
-    '''
-    moving, static = moving, static = get_synthetic_warped_circle(20)
-
-    #Create the EM metric
-    smooth=25.0
-    inner_iter=20
-    step_length=0.25
-    q_levels=256
-    double_gradient=True
-    iter_type='demons'
-    similarity_metric = metrics.EMMetric(
-        3, smooth, inner_iter, q_levels, double_gradient, iter_type)
-
-    #Create the optimizer
-    level_iters = [10, 5, 2]
-    opt_tol = 1e-4
-    inv_iter = 20
-    inv_tol = 1e-3
-    ss_sigma_factor = 0.5
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(similarity_metric,
-        level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
-    optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
-    energy_profile = np.array(optimizer.full_energy_profile)*1e-3
-    if floating is np.float32:
-        expected_profile = \
-            np.array([4.35425306e-03, 3.41080923e-03, 5.68638232e-03,
-                      8.49876602e-03, 3.44713359e-02, 8.04287771e-03,
-                      6.63319925e-02, 3.18628773e-02, 5.59754920e-03,
-                      2.51800195e-02, 2.38294092e-01, 2.12284541e-01,
-                      1.89159004e-01, 1.85445524e-01, 2.10568869e-01,
-                      4.58700183e+00, 4.65788895e+00])
-    else:
-        expected_profile = \
-            np.array([4.35425305e-03, 3.41081111e-03, 5.68638229e-03,
-                      8.49873360e-03, 3.44715416e-02, 8.04286633e-03,
-                      6.63320214e-02, 3.18629431e-02, 5.59754886e-03,
-                      2.51800141e-02, 2.38268293e-01, 2.15299085e-01,
-                      1.98889632e-01, 2.04714053e-01, 2.01402902e-01,
-                      4.45895513e+00, 4.59735285e+00])
-    assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
-
-
-def test_em_2d_demons():
-    r'''
-    Register a circle to itself after warping it under a synthetic invertible 
-	map. This test is intended to detect regressions only: we saved the energy
-	profile (the sequence of energy values at each iteration) of a working
-	version of EM in 2D, and this test checks that the current energy profile
-	matches the saved one.
-    '''
-
-    moving, static = get_synthetic_warped_circle(1)
-
-    #Configure the metric
-    smooth=25.0
-    inner_iter=20
-    step_length=0.25
-    q_levels=256
-    double_gradient=False
-    iter_type='demons'
-    metric = metrics.EMMetric(
-        2, smooth, inner_iter, q_levels, double_gradient, iter_type)
-
-    #Configure and run the Optimizer
-    level_iters = [40, 20, 10]
-    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
-    optimizer.verbosity = VerbosityLevels.DEBUG
-    mapping = optimizer.optimize(static, moving, None)
-    energy_profile = np.array(optimizer.full_energy_profile)
-    if floating is np.float32:
-        expected_profile = \
-            [2.50773393, 3.73145783, 5.40504231, 2.40535998, 3.55940621,
-             4.4547173, 5.49395654, 3.81368295, 2.13862014, 2.82826264,
-             3.38060606, 3.78130601, 1.67064668, 3.38399353, 5.36355581,
-             0.90105923, 38.18281603, 32.05473537, 25.13158733, 25.87968985,
-             32.33134566, 29.48797557, 34.31334813, 32.71613773, 22.27334974,
-             28.88625101, 26.34424393, 28.36712306, 30.93762419, 34.60418468,
-             30.14407462, 179.69094699, 200.19956179, 201.27681693, 188.1983909,
-             205.2271774, 197.86160568, 194.02926529, 201.00884584, 199.63156892,
-             188.87939733]
-    else:
-        expected_profile = \
-            [2.50773436, 3.73145924, 5.40505096, 2.40536245, 3.55940816,
-             4.45472925, 5.4939637, 3.81367048, 2.13862585, 2.8282605,
-             3.38060737, 3.78130285, 1.67064774, 3.3839928, 5.3635572,
-             0.90106199, 38.18281287, 32.05476963, 25.13158948, 25.87968899,
-             32.33134182, 28.46797943, 28.27341656, 26.19940397, 25.11322278,
-             22.76430642, 27.08316401, 24.03250357, 27.41708423, 24.08874854,
-             27.1707052, 30.44080513, 29.84499709, 184.33256832, 201.98870559,
-             209.61305411, 226.29310316, 209.52645064, 192.75257157, 192.68933774,
-             196.74400394, 183.32843833, 189.89789045]
-    assert_array_almost_equal(energy_profile, np.array(expected_profile))
-
 if __name__=='__main__':
-    test_mult_aff()
-    test_diffeomorphic_map_2d
-    test_get_direction_and_spacings()
+    #test_mult_aff()
+    #test_diffeomorphic_map_2d
+    #test_get_direction_and_spacings()
     test_ssd_2d_demons()
-    test_ssd_2d_gauss_newton()
-    test_ssd_3d_demons()
-    test_ssd_3d_gauss_newton()
-    test_cc_2d()
-    test_cc_3d()
-    test_em_2d()
-    test_em_3d()
-    test_em_3d_demons()
-    test_em_2d_demons()
+    #test_ssd_2d_gauss_newton()
+    #test_ssd_3d_demons()
+    #test_ssd_3d_gauss_newton()
+    #test_cc_2d()
+    #test_cc_3d()
+    #test_em_2d()
+    #test_em_3d()
