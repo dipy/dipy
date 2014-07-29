@@ -30,6 +30,9 @@ from numpy.linalg import pinv, svd
 from numpy.random import randint
 from dipy.reconst.odf import OdfModel, OdfFit
 from scipy.special import sph_harm, lpn
+from dipy.core.sphere import Sphere
+import dipy.core.gradients as grad
+from dipy.sims.voxel import single_tensor, all_tensor_evecs
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
@@ -40,6 +43,110 @@ def _copydoc(obj):
         f.__doc__ = obj.__doc__
         return f
     return bandit
+
+
+def forward_sdeconv_mat(r_rh, n):
+    """ Build forward spherical deconvolution matrix
+
+    Parameters
+    ----------
+    r_rh : ndarray
+        Rotational harmonics coefficients for the single fiber response
+        function. Each element `rh[i]` is associated with spherical harmonics
+        of degree `2*i`.
+    n : ndarray
+        The degree of spherical harmonic function associated with each row of
+        the deconvolution matrix. Only even degrees are allowed
+
+    Returns
+    -------
+    R : ndarray (N, N)
+        Deconvolution matrix with shape (N, N)
+
+    """
+
+    if np.any(n % 2):
+        raise ValueError("n has odd degrees, expecting only even degrees")
+    return np.diag(r_rh[n // 2])
+
+def sh_to_rh(r_sh, m, n):
+    """ Spherical harmonics (SH) to rotational harmonics (RH)
+
+    Calculate the rotational harmonic decomposition up to
+    harmonic order `m`, degree `n` for an axially and antipodally
+    symmetric function. Note that all ``m != 0`` coefficients
+    will be ignored as axial symmetry is assumed. Hence, there
+    will be ``(sh_order/2 + 1)`` non-zero coefficients.
+
+    Parameters
+    ----------
+    r_sh : ndarray (N,)
+        ndarray of SH coefficients for the single fiber response function.
+        These coefficients must correspond to the real spherical harmonic
+        functions produced by `shm.real_sph_harm`.
+    m : ndarray (N,)
+        The order of the spherical harmonic function associated with each
+        coefficient.
+    n : ndarray (N,)
+        The degree of the spherical harmonic function associated with each
+        coefficient.
+
+    Returns
+    -------
+    r_rh : ndarray (``(sh_order + 1)*(sh_order + 2)/2``,)
+        Rotational harmonics coefficients representing the input `r_sh`
+
+    See Also
+    --------
+    shm.real_sph_harm, shm.real_sym_sh_basis
+
+    References
+    ----------
+    .. [1] Tournier, J.D., et al. NeuroImage 2007. Robust determination of the
+        fibre orientation distribution in diffusion MRI: Non-negativity
+        constrained super-resolved spherical deconvolution
+
+    """
+    mask = m == 0
+    # The delta function at theta = phi = 0 is known to have zero coefficients
+    # where m != 0, therefore we need only compute the coefficients at m=0.
+    dirac_sh = gen_dirac(0, n[mask], 0, 0)
+    r_rh = r_sh[mask] / dirac_sh
+    return r_rh
+
+
+def gen_dirac(m, n, theta, phi):
+    """ Generate Dirac delta function orientated in (theta, phi) on the sphere
+
+    The spherical harmonics (SH) representation of this Dirac is returned as
+    coefficients to spherical harmonic functions produced by
+    `shm.real_sph_harm`.
+
+    Parameters
+    ----------
+    m : ndarray (N,)
+        The order of the spherical harmonic function associated with each
+        coefficient.
+    n : ndarray (N,)
+        The degree of the spherical harmonic function associated with each
+        coefficient.
+    theta : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+    phi : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    See Also
+    --------
+    shm.real_sph_harm, shm.real_sym_sh_basis
+
+    Returns
+    -------
+    dirac : ndarray
+        SH coefficients representing the Dirac function. The shape of this is
+        `(m + 2) * (m + 1) / 2`.
+
+    """
+    return real_sph_harm(m, n, theta, phi)
 
 
 def real_sph_harm(m, n, theta, phi):
@@ -179,9 +286,9 @@ sph_harm_lookup = {None: real_sym_sh_basis,
 def sph_harm_ind_list(sh_order):
     """
     Returns the degree (n) and order (m) of all the symmetric spherical
-    harmonics of degree less then or equal it sh_order. The results, m_list
-    and n_list are kx1 arrays, where k depends on sh_order. They can be
-    passed to real_sph_harm.
+    harmonics of degree less then or equal to `sh_order`. The results, `m_list`
+    and `n_list` are kx1 arrays, where k depends on sh_order. They can be
+    passed to :func:`real_sph_harm`.
 
     Parameters
     ----------
@@ -214,6 +321,15 @@ def sph_harm_ind_list(sh_order):
 
     # makes the arrays ncoef by 1, allows for easy broadcasting later in code
     return (m_list, n_list)
+
+
+def order_from_ncoef(ncoef):
+    """
+    Given a number n of coefficients, calculate back the sh_order
+    """
+    # Solve the quadratic equation derived from :
+    # ncoef = (sh_order + 2) * (sh_order + 1) / 2
+    return int(-3 + np.sqrt(9 - 4 * (2-2*ncoef)))/2
 
 
 def smooth_pinv(B, L):
@@ -316,6 +432,7 @@ class SphHarmModel(OdfModel, Cache):
         normalize_data
 
         """
+        OdfModel.__init__(self, gtab)
         self._where_b0s = lazy_index(gtab.b0s_mask)
         self._where_dwi = lazy_index(~gtab.b0s_mask)
         self.assume_normed = assume_normed
@@ -353,6 +470,44 @@ class SphHarmModel(OdfModel, Cache):
         return SphHarmFit(self, coef, mask)
 
 
+def _shm_predict(fit, gtab, S0=1):
+    """
+    Helper function for the implementation of model prediction from the
+    ConstrainedSphericalDeconvFit class. This is necessary, because in
+    multi-voxel data, the multi_vox_fit kicks in.
+
+    Parameters
+    ----------
+    fit : A ConstrainedSphericalDeconvFit class instance
+        The prediction will be done using the parameters in this object.
+    gtab : A GradientTable class instance
+        The prediction will be done for the bval/bvec combinations in this
+        object.
+    S0 : float or ndarray (optional)
+        The mean non-diffusion weighted signal in the voxel or volume.
+
+    Returns
+    -------
+    pred_sig : ndarray
+        The predicted signal in the gtab for this fit.
+    """
+    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
+    prediction_matrix = fit.prediction_matrix(sphere, gtab)
+
+    if np.iterable(S0):
+        # If it's an array, we need to give it one more dimension:
+        S0 = S0[..., None]
+
+    # This is the key operation: convolve and multiply by S0:
+    pre_pred_sig = S0 * np.dot(prediction_matrix, fit._shm_coef)
+    # Now put everything in its right place:
+    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+    pred_sig[..., gtab.b0s_mask] = S0
+
+    return pred_sig
+
+
 class SphHarmFit(OdfFit):
     """Diffusion data fit to a spherical harmonic model"""
 
@@ -383,6 +538,7 @@ class SphHarmFit(OdfFit):
 
         return SphHarmFit(self.model, new_coef, new_mask)
 
+
     def odf(self, sphere):
         """Samples the odf function on the points of a sphere
 
@@ -406,9 +562,11 @@ class SphHarmFit(OdfFit):
             self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
         return dot(self._shm_coef, sampling_matrix.T)
 
+
     @auto_attr
     def gfa(self):
         return _gfa_sh(self._shm_coef, 0)
+
 
     @property
     def shm_coeff(self):
@@ -417,9 +575,50 @@ class SphHarmFit(OdfFit):
         Make this a property for now, if there is a usecase for modifying
         the coefficients we can add a setter or expose the coefficients more
         directly
-
         """
         return self._shm_coef
+
+
+    def prediction_matrix(self, sphere, gtab):
+        """
+        A matrix used to predict the signal from an estimated ODF
+
+        Parameters
+        ----------
+        sphere : a Sphere class instance
+        gtab : a GradientTable class instance
+        """
+        prediction_matrix = self.model.cache_get("prediction_matrix", (sphere,
+                                                                       gtab))
+        if prediction_matrix is None:
+            pred_gtab = grad.gradient_table(
+                gtab.bvals[~gtab.b0s_mask],
+                gtab.bvecs[~gtab.b0s_mask])
+            x, y, z = pred_gtab.gradients.T
+            r, theta, phi = cart2sphere(x, y, z)
+            SH_basis, m, n = real_sym_sh_basis(self.model.sh_order, theta, phi)
+            # The prediction matrix needs to be normalized to the response S0:
+            prediction_matrix = (np.dot(SH_basis, self.model.R) /
+                                 self.model.response[1])
+
+        return prediction_matrix
+
+
+    def predict(self, gtab, S0=1.0):
+        """
+        Predict the diffusion signal from the model coefficients.
+
+        Parameters
+        ----------
+        gtab : a GradientTable class instance
+            The directions and bvalues on which prediction is desired
+
+        S0 : float array
+           The mean non-diffusion-weighted signal in each voxel. Default: 1 in
+           all voxels
+
+        """
+        return _shm_predict(self, gtab, S0)
 
 
 class CsaOdfModel(SphHarmModel):
@@ -550,7 +749,7 @@ def bootstrap_data_array(data, H, R, permute=None):
 
     data must be normalized, ie 0 < data <= 1
 
-    This function, and the bootstrap_data_voxel function, calculat
+    This function, and the bootstrap_data_voxel function, calculate
     residual-bootsrap samples given a Hat matrix and a Residual matrix. These
     samples can be used for non-parametric statistics or for bootstrap
     probabilistic tractography:
@@ -610,7 +809,7 @@ class ResidualBootstrapWrapper(object):
         signal_object : some object that can be indexed
             This object should return diffusion weighted signals when indexed.
         B : ndarray, ndim=2
-            The design matrix of spherical hormonic model usded to fit the
+            The design matrix of the spherical harmonics model used to fit the
             data. This is the model that will be used to compute the residuals
             and sample the residual bootstrap distribution
         where_dwi :
@@ -711,7 +910,7 @@ def sh_to_sf(sh, sphere, sh_order, basis_type=None):
 
 
 def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0):
-    """ Matrix that transforms Spherical harmonics (SH) to spherical 
+    """ Matrix that transforms Spherical harmonics (SH) to spherical
     function (SF).
 
     Parameters
@@ -730,7 +929,7 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
         If True then the inverse of the matrix is also returned
     smooth : float, optional
         Lambda-regularization in the SH fit (default 0.0).
-    
+
     Returns
     -------
     B : ndarray

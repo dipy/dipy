@@ -39,7 +39,7 @@ def nlmeans_3d(arr, mask=None, sigma=None, patch_radius=1,
         raise ValueError('arr needs to be a 3D ndarray')
 
     if mask is None:
-        mask = np.ones_like(arr, dtype='f8')
+        mask = np.ones(arr.shape, dtype='f8')
     else:
         mask = np.ascontiguousarray(mask, dtype='f8')
 
@@ -222,7 +222,8 @@ def add_padding_reflection(double [:, :, ::1] arr, cnp.npy_intp padding):
 def correspond_indices(dim_size, padding):
     return np.ascontiguousarray(np.hstack((np.arange(1, padding + 1)[::-1],
                                 np.arange(dim_size),
-                                np.arange(dim_size - padding - 1, dim_size - 1)[::-1])))
+                                np.arange(dim_size - padding - 1, dim_size - 1)[::-1])),
+                                dtype=np.intp)
 
 
 def remove_padding(arr, padding):

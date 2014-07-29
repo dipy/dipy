@@ -2,6 +2,7 @@
 *.pyd
 *.so
 *.c
+*.cpp
 *.png
 *.gz
 *.dpy

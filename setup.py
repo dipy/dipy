@@ -77,21 +77,24 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
-for modulename, other_sources in (
-    ('dipy.reconst.recspeed', []),
-    ('dipy.reconst.vec_val_sum', []),
-    ('dipy.reconst.quick_squash', []),
-    ('dipy.tracking.distances', []),
-    ('dipy.tracking.vox2track', []),
-    ('dipy.tracking.propspeed', []),
-    ('dipy.denoise.denspeed', []),
-    ('dipy.align.vector_fields', []),
+for modulename, other_sources, language in (
+    ('dipy.reconst.recspeed', [], 'c'),
+    ('dipy.reconst.vec_val_sum', [], 'c'),
+    ('dipy.reconst.quick_squash', [], 'c'),
+    ('dipy.tracking.distances', [], 'c'),
+    ('dipy.tracking.streamlinespeed', [], 'c++'),
+    ('dipy.tracking.vox2track', [], 'c'),
+    ('dipy.tracking.propspeed', [], 'c'),
+    ('dipy.denoise.denspeed', [], 'c'),
+	('dipy.align.vector_fields', []),
     ('dipy.align.sumsqdiff', []),
     ('dipy.align.expectmax', []),
-    ('dipy.align.crosscorr', [])):
+    ('dipy.align.crosscorr', [])
+    ):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
-    EXTS.append(Extension(modulename,[pyx_src] + other_sources,
-                          include_dirs = [np.get_include(), "src"]))
+    EXTS.append(Extension(modulename, [pyx_src] + other_sources,
+                          language=language,
+                          include_dirs=[np.get_include(), "src"]))
 
 
 # Do our own build and install time dependency checking. setup.py gets called in
@@ -157,6 +160,7 @@ def main(**extra_args):
                           'dipy.core.tests',
                           'dipy.tracking',
                           'dipy.tracking.tests',
+                          'dipy.tracking.benchmarks',
                           'dipy.reconst',
                           'dipy.reconst.benchmarks',
                           'dipy.reconst.tests',

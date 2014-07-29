@@ -32,6 +32,12 @@ from ..utils.optpkg import optional_package
 vtk, have_vtk, setup_module = optional_package('vtk')
 colors, have_vtk_colors, _ = optional_package('vtk.util.colors')
 
+cm, have_matplotlib, _ = optional_package('matplotlib.cm')
+if have_matplotlib:
+    get_cmap = cm.get_cmap
+else:
+    import dipy.data.get_cmap as get_cmap
+
 # a track buffer used only with picking tracks
 track_buffer = []
 # indices buffer for the tracks
@@ -1066,48 +1072,9 @@ def contour(vol, voxsz=(1.0, 1.0, 1.0), affine=None, levels=[50],
     return ass
 
 
-def _cm2colors(colormap='Blues'):
-    '''
-    Colormaps from matplotlib
-    ['Spectral', 'summer', 'RdBu', 'gist_earth', 'Set1', 'Set2', 'Set3', 'Dark2',
-    'hot', 'PuOr_r', 'PuBuGn_r', 'RdPu', 'gist_ncar_r', 'gist_yarg_r', 'Dark2_r',
-    'YlGnBu', 'RdYlBu', 'hot_r', 'gist_rainbow_r', 'gist_stern', 'cool_r', 'cool',
-    'gray', 'copper_r', 'Greens_r', 'GnBu', 'gist_ncar', 'spring_r', 'gist_rainbow',
-    'RdYlBu_r', 'gist_heat_r', 'OrRd_r', 'bone', 'gist_stern_r', 'RdYlGn', 'Pastel2_r',
-    'spring', 'Accent', 'YlOrRd_r', 'Set2_r', 'PuBu', 'RdGy_r', 'spectral', 'flag_r', 'jet_r',
-    'RdPu_r', 'gist_yarg', 'BuGn', 'Paired_r', 'hsv_r', 'YlOrRd', 'Greens', 'PRGn',
-    'gist_heat', 'spectral_r', 'Paired', 'hsv', 'Oranges_r', 'prism_r', 'Pastel2', 'Pastel1_r',
-     'Pastel1', 'gray_r', 'PuRd_r', 'Spectral_r', 'BuGn_r', 'YlGnBu_r', 'copper',
-    'gist_earth_r', 'Set3_r', 'OrRd', 'PuBu_r', 'winter_r', 'jet', 'bone_r', 'BuPu',
-    'Oranges', 'RdYlGn_r', 'PiYG', 'YlGn', 'binary_r', 'gist_gray_r', 'BuPu_r',
-    'gist_gray', 'flag', 'RdBu_r', 'BrBG', 'Reds', 'summer_r', 'GnBu_r', 'BrBG_r',
-    'Reds_r', 'RdGy', 'PuRd', 'Accent_r', 'Blues', 'Greys', 'autumn', 'PRGn_r', 'Greys_r',
-    'pink', 'binary', 'winter', 'pink_r', 'prism', 'YlOrBr', 'Purples_r', 'PiYG_r', 'YlGn_r',
-    'Blues_r', 'YlOrBr_r', 'Purples', 'autumn_r', 'Set1_r', 'PuOr', 'PuBuGn']
-
-    '''
-    try:
-        from pylab import cm
-    except ImportError:
-        ImportError('pylab is not installed')
-
-    blue = cm.datad[colormap]['blue']
-    blue1 = [b[0] for b in blue]
-    blue2 = [b[1] for b in blue]
-
-    red = cm.datad[colormap]['red']
-    red1 = [b[0] for b in red]
-    red2 = [b[1] for b in red]
-
-    green = cm.datad[colormap]['green']
-    green1 = [b[0] for b in green]
-    green2 = [b[1] for b in green]
-
-    return red1, red2, green1, green2, blue1, blue2
-
-
+lowercase_cm_name = {'blues':'Blues', 'accent':'Accent'}
 def create_colormap(v, name='jet', auto=True):
-    ''' Create colors from a specific colormap and return it
+    """Create colors from a specific colormap and return it
     as an array of shape (N,3) where every row gives the corresponding
     r,g,b value. The colormaps we use are similar with those of pylab.
 
@@ -1115,103 +1082,48 @@ def create_colormap(v, name='jet', auto=True):
     ----------
     v : (N,) array
         vector of values to be mapped in RGB colors according to colormap
-    name : str. 'jet', 'blues', 'blue_red', 'accent'
-        name of the colourmap
+    name : str.
+        Name of the colormap. Currently implemented: 'jet', 'blues',
+        'accent', 'bone' and matplotlib colormaps if you have matplotlib
+        installed.
     auto : bool,
         if auto is True then v is interpolated to [0, 10] from v.min()
         to v.max()
 
     Notes
     -----
-    If you want to add more colormaps here is what you could do. Go to
-    this website http://www.scipy.org/Cookbook/Matplotlib/Show_colormaps
-    see which colormap you need and then get in pylab using the cm.datad
-    dictionary.
+    Dipy supports a few colormaps for those who do not use Matplotlib, for
+    more colormaps consider downloading Matplotlib.
 
-    e.g.::
+    """
 
-          cm.datad['jet']
-
-          {'blue': ((0.0, 0.5, 0.5),
-                    (0.11, 1, 1),
-                    (0.34000000000000002, 1, 1),
-                    (0.65000000000000002, 0, 0),
-                    (1, 0, 0)),
-           'green': ((0.0, 0, 0),
-                    (0.125, 0, 0),
-                    (0.375, 1, 1),
-                    (0.64000000000000001, 1, 1),
-                    (0.91000000000000003, 0, 0),
-                    (1, 0, 0)),
-           'red': ((0.0, 0, 0),
-                   (0.34999999999999998, 0, 0),
-                   (0.66000000000000003, 1, 1),
-                   (0.89000000000000001, 1, 1),
-                   (1, 0.5, 0.5))}
-
-    '''
     if v.ndim > 1:
-        ValueError('This function works only with 1d arrays. Use ravel()')
+        msg = 'This function works only with 1d arrays. Use ravel()'
+        raise ValueError(msg)
 
     if auto:
         v = np.interp(v, [v.min(), v.max()], [0, 1])
     else:
-        v = np.interp(v, [0, 1], [0, 1])
+        v = np.clip(v, 0, 1)
 
-    if name == 'jet':
-        # print 'jet'
+    # For backwards compatibility with lowercase names
+    newname = lowercase_cm_name.get(name) or name
 
-        red = np.interp(v, [0, 0.35, 0.66, 0.89, 1], [0, 0, 1, 1, 0.5])
-        green = np.interp(
-            v, [0, 0.125, 0.375, 0.64, 0.91, 1], [0, 0, 1, 1, 0, 0])
-        blue = np.interp(v, [0, 0.11, 0.34, 0.65, 1], [0.5, 1, 1, 0, 0])
+    colormap = get_cmap(newname)
+    if colormap is None:
+        e_s = "Colormap '%s' is not yet implemented " % name
+        raise ValueError(e_s)
 
-    if name == 'blues':
-        # cm.datad['Blues']
-        # print 'blues'
+    rgba = colormap(v)
+    rgb = rgba[:, :3].copy()
+    return rgb
 
-        red = np.interp(
-            v, [
-                0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.96862745285, 0.870588243008, 0.776470601559, 0.61960786581,
-                                                                         0.419607847929, 0.258823543787, 0.129411771894, 0.0313725508749, 0.0313725508749])
-        green = np.interp(
-            v, [
-                0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.984313726425, 0.921568632126, 0.858823537827, 0.792156875134,
-                                                                         0.68235296011, 0.572549045086, 0.443137258291, 0.317647069693, 0.188235297799])
-        blue = np.interp(
-            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.96862745285, 0.937254905701, 0.882352948189,
-                                                                         0.839215695858, 0.776470601559, 0.709803938866, 0.611764729023, 0.419607847929])
 
-    if name == 'blue_red':
-        # print 'blue_red'
-        # red=np.interp(v,[],[])
-
-        red = np.interp(
-            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [0.0, 0.125, 0.25, 0.375, 0.5,
-                                                                         0.625, 0.75, 0.875, 1.0])
-        green = np.zeros(red.shape)
-        blue = np.interp(
-            v, [0.0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0], [1.0, 0.875, 0.75, 0.625, 0.5,
-                                                                         0.375, 0.25, 0.125, 0.0])
-
-        blue = green
-
-    if name == 'accent':
-        # print 'accent'
-        red = np.interp(
-            v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
-                0.7142857142857143, 0.8571428571428571, 1.0],
-            [0.49803921580314636, 0.7450980544090271, 0.99215686321258545, 1.0, 0.21960784494876862, 0.94117647409439087, 0.74901962280273438, 0.40000000596046448])
-        green = np.interp(
-            v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
-                0.7142857142857143, 0.8571428571428571, 1.0],
-            [0.78823530673980713, 0.68235296010971069, 0.75294119119644165, 1.0, 0.42352941632270813, 0.0078431377187371254, 0.35686275362968445, 0.40000000596046448])
-        blue = np.interp(
-            v, [0.0, 0.14285714285714285, 0.2857142857142857, 0.42857142857142855, 0.5714285714285714,
-                0.7142857142857143, 0.8571428571428571, 1.0],
-            [0.49803921580314636, 0.83137255907058716, 0.52549022436141968, 0.60000002384185791, 0.69019609689712524, 0.49803921580314636, 0.090196080505847931, 0.40000000596046448])
-
-    return np.vstack((red, green, blue)).T
+def _makeNd(array, ndim):
+    """Pads as many 1s at the beginning of array's shape as are need to give
+    array ndim dimensions."""
+    new_shape = (1,) * (ndim - array.ndim) + array.shape
+    return array.reshape(new_shape)
 
 
 def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
@@ -1253,14 +1165,9 @@ def sphere_funcs(sphere_values, sphere, image=None, colormap='jet',
     """
 
     sphere_values = np.asarray(sphere_values)
-    if sphere_values.ndim == 1:
-        sphere_values = sphere_values[None, None, None, :]
-    if sphere_values.ndim == 2:
-        sphere_values = sphere_values[None, None, :]
-    if sphere_values.ndim == 3:
-        sphere_values = sphere_values[None, :]
     if sphere_values.ndim > 4:
         raise ValueError("Wrong shape")
+    sphere_values = _makeNd(sphere_values, 4)
 
     grid_shape = np.array(sphere_values.shape[:3])
     faces = np.asarray(sphere.faces, dtype=int)
@@ -1368,16 +1275,15 @@ def peaks(peaks_dirs, peaks_values=None, scale=2.2, colors=(1, 0, 0)):
     See Also
     --------
     dipy.viz.fvtk.sphere_funcs
+
     """
     peaks_dirs = np.asarray(peaks_dirs)
-    if peaks_dirs.ndim == 2:
-        peaks_dirs = peaks_dirs[None, None, None, :]
-    if peaks_dirs.ndim == 3:
-        peaks_dirs = peaks_dirs[None, None, :]
-    if peaks_dirs.ndim == 4:
-        peaks_dirs = peaks_dirs[None, :]
     if peaks_dirs.ndim > 5:
         raise ValueError("Wrong shape")
+
+    peaks_dirs = _makeNd(peaks_dirs, 5)
+    if peaks_values is not None:
+        peaks_values = _makeNd(peaks_values, 4)
 
     grid_shape = np.array(peaks_dirs.shape[:3])
 
@@ -1446,17 +1352,10 @@ def tensor(evals, evecs, scalar_colors=None, sphere=None, scale=2.2, norm=True):
     """
 
     evals = np.asarray(evals)
-    if evals.ndim == 1:
-        evals = evals[None, None, None, :]
-        evecs = evecs[None, None, None, :, :]
-    if evals.ndim == 2:
-        evals = evals[None, None, :]
-        evecs = evecs[None, None, :, :]
-    if evals.ndim == 3:
-        evals = evals[None, :]
-        evecs = evecs[None, :, :]
     if evals.ndim > 4:
         raise ValueError("Wrong shape")
+    evals = _makeNd(evals, 4)
+    evecs = _makeNd(evecs, 5)
 
     grid_shape = np.array(evals.shape[:3])
 
