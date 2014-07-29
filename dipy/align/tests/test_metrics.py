@@ -3,11 +3,37 @@ from dipy.align import floating
 from numpy.testing import (assert_equal,
                            assert_almost_equal, 
                            assert_array_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           assert_raises)
 from dipy.align.metrics import EMMetric
 import dipy.align.expectmax as em
 from scipy import gradient, ndimage
+from dipy.align.metrics import SSDMetric, CCMetric, EMMetric;
 
+def test_exceptions():
+    for invalid_dim in [-1,0,1,4,5]:
+        assert_raises(ValueError, CCMetric, invalid_dim)
+        assert_raises(ValueError, EMMetric, invalid_dim)
+        assert_raises(ValueError, SSDMetric, invalid_dim)
+    assert_raises(ValueError, SSDMetric, 3, step_type='unknown_metric_name')
+    assert_raises(ValueError, EMMetric, 3, step_type='unknown_metric_name')
+
+
+def test_EMMetric_image_dynamics():
+    metric = EMMetric(2)
+
+    target_shape = (10, 10)
+    #create a random image
+    image = np.ndarray(target_shape, dtype=floating)
+    image[...] = np.random.randint(0, 10, np.size(image)).reshape(tuple(target_shape))
+    #compute the expected binary mask
+    expected = (image > 0).astype(np.int32)
+
+    metric.use_static_image_dynamics(image, None)
+    assert_array_equal(expected, metric.static_image_mask)
+
+    metric.use_moving_image_dynamics(image, None)
+    assert_array_equal(expected, metric.moving_image_mask)
 
 def test_em_demons_step_2d():
     r"""
@@ -196,4 +222,5 @@ def test_em_demons_step_3d():
 if __name__=='__main__':
     test_em_demons_step_2d()
     test_em_demons_step_3d()
-
+    test_exceptions()
+    test_EMMetric_image_dynamics()
