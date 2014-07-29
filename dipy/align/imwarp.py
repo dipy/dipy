@@ -435,14 +435,25 @@ class DiffeomorphicMap(object):
         """
 
         self.dim = dim
-        self.domain_shape = np.asarray(domain_shape, dtype = np.int32)
-        self.domain_affine = domain_affine
+
+        # If input shape was not provided, we assume it is an endomorphism:
+        # use the same domain_shape and input_affine as the field domain
         if input_shape is None:
             input_shape = domain_shape
-        self.input_shape = np.asarray(input_shape, dtype = np.int32)
-        self.input_affine = input_affine
-        self.input_prealign = input_prealign
 
+        if(domain_shape is None):
+            self.domain_shape = None
+        else:
+            self.domain_shape = np.asarray(domain_shape, dtype = np.int32)
+        self.domain_affine = domain_affine
+        
+        if(input_shape is None):
+            self.input_shape = None
+        else:
+            self.input_shape = np.asarray(input_shape, dtype = np.int32)
+        self.input_affine = input_affine
+
+        
         if domain_affine is None:
             self.domain_affine_inv = None
         else:
@@ -453,6 +464,7 @@ class DiffeomorphicMap(object):
         else:
             self.input_affine_inv = npl.inv(input_affine)
 
+        self.input_prealign = input_prealign
         if input_prealign is None:
             self.input_prealign_inv = None
         else:
@@ -586,8 +598,7 @@ class DiffeomorphicMap(object):
             world_to_image = self.domain_affine_inv
         if sampling_shape is None:
             if self.input_shape is None:
-                raise Exception('DiffeomorphicMap::_warp_forward',
-                                'Sampling shape is None')
+                raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
             sampling_shape = self.input_shape
         if sampling_affine is -1:
             sampling_affine = self.input_affine
@@ -701,8 +712,7 @@ class DiffeomorphicMap(object):
 
         if sampling_shape is None:
             if self.domain_shape is None:
-                raise Exception('DiffeomorphicMap::_warp_backward',
-                                'Sampling shape is None')
+                raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
             sampling_shape = self.domain_shape
         if sampling_affine is -1:
             sampling_affine = self.domain_affine
@@ -1013,6 +1023,8 @@ class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
             registration algorithm will minimize (or maximize) the provided
             similarity.
         """
+        if metric is None:
+            raise ValueError('The metric cannot be None')
         self.metric = metric
         self.dim = metric.dim
 
@@ -1040,14 +1052,12 @@ class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
         implement. Upon completion, the deformation field must be available from
         the forward transformation model.
         """
-        pass
 
     @abc.abstractmethod
     def get_map(self):
         r"""
         Returns the resulting diffeomorphic map after optimization
         """
-        pass
 
 
 class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
@@ -1095,14 +1105,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             function passing self as parameter)
         """
         super(SymmetricDiffeomorphicRegistration, self).__init__(metric)
-        if metric is None:
-            raise Exception('SymmetricDiffeomorphicRegistration',
-                            'The metric cannot be None')
         if level_iters is None:
             level_iters = [100, 100, 25]
+
         if len(level_iters) == 0:
-            raise Exception('SymmetricDiffeomorphicRegistration',
-                            'The iterations list cannot be None nor empty')
+            raise ValueError('The iterations list cannot be empty')
+
         self.set_level_iters(level_iters)
         self.step_length = step_length
         self.ss_sigma_factor = ss_sigma_factor
@@ -1477,10 +1485,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         n_iter = len(self.energy_list)
         if n_iter < self.energy_window:
-            print('Error: attempting to fit the profile with less points (', 
-                n_iter, ') than required (energy_window=', 
-                self.energy_window, ')')
-            return 1
+            raise ValueError('Not enough data to fit the energy profile')
         x = range(self.energy_window)
         y = self.energy_list[(n_iter - self.energy_window):n_iter]
         ss = sum(y)

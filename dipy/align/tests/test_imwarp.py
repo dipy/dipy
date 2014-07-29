@@ -3,7 +3,8 @@ import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal, 
                            assert_array_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           assert_raises)
 import matplotlib.pyplot as plt
 import dipy.align.imwarp as imwarp
 import dipy.align.metrics as metrics 
@@ -76,8 +77,7 @@ def test_diffeomorphic_map_2d():
     #create a random image (with decimal digits) to warp
     moving_image = np.ndarray(target_shape, dtype=floating)
     moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
-    #set boundary values to zero so we don't test wrong interpolation due to
-    #floating point precision
+    #set boundary values to zero so we don't test wrong interpolation due to floating point precision
     moving_image[0,:] = 0
     moving_image[-1,:] = 0
     moving_image[:,0] = 0
@@ -89,21 +89,68 @@ def test_diffeomorphic_map_2d():
     affine_index = target_affine_inv.dot(input_affine)
     affine_disp = target_affine_inv
 
-    #warp using a DiffeomorphicMap instance
-    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine, target_shape, target_affine, None)
-    diff_map.forward = disp
-    warped = diff_map.transform(moving_image, 'linear')
-
     #warp the moving image using the (exact) assignments
     expected = moving_image[(assign[...,0], assign[...,1])]
 
-    #compare the images
-    assert_array_almost_equal(warped, expected, decimal=5)
+    #warp using a DiffeomorphicMap instance
+    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine, target_shape, target_affine, None)
+    diff_map.forward = disp
 
-    #Now test the nearest neighbor interpolation
-    warped = diff_map.transform(moving_image, 'nearest')
-    #compare the images (now we dont have to worry about precision, it is n.n.)
-    assert_array_almost_equal(warped, expected)
+    #Verify that the transform method accepts different image types (note that
+    #the actual image contained integer values, we don't want to test rounding)
+    for type in [floating, np.float64, np.int64, np.int32]:
+        moving_image = moving_image.astype(type)
+
+        #warp using linear interpolation
+        warped = diff_map.transform(moving_image, 'linear')
+        #compare the images (the linear interpolation may introduce slight precision errors)
+        assert_array_almost_equal(warped, expected, decimal=5)
+
+        #Now test the nearest neighbor interpolation
+        warped = diff_map.transform(moving_image, 'nearest')
+        #compare the images (now we dont have to worry about precision, it is n.n.)
+        assert_array_almost_equal(warped, expected)
+
+    #Verify that DiffeomorphicMap raises the appropriate exceptions when
+    #the sampling information is undefined
+    diff_map = imwarp.DiffeomorphicMap(2, None, input_affine, None, target_affine, None)
+    diff_map.forward = disp
+    #If we don't provide the sampling info, it should try to use the map's info, but it's None...
+    assert_raises(ValueError, diff_map.transform, moving_image, 'linear')
+
+    #Same test for diff_map.transform_inverse
+    diff_map = imwarp.DiffeomorphicMap(2, None, input_affine, None, target_affine, None)
+    diff_map.forward = disp
+    #If we don't provide the sampling info, it should try to use the map's info, but it's None...
+    assert_raises(ValueError, diff_map.transform_inverse, moving_image, 'linear')
+
+
+def test_optimizer_exceptions():
+    #             metric,
+    #             level_iters=None,
+    #             step_length=0.25,
+    #             ss_sigma_factor=0.2,
+    #             opt_tol=1e-5,
+    #             inv_iter=20,
+    #             inv_tol=1e-3,
+    #             callback=None):
+
+    #An arbitrary valid metric
+    metric = metrics.SSDMetric(2)
+    # The metric must not be None
+    assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration, None)
+    # The iterations list must not be empty
+    assert_raises(ValueError, imwarp.SymmetricDiffeomorphicRegistration, metric, [])
+
+    optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, None)
+    #Verify the default iterations list
+    assert_array_equal(optimizer.level_iters, [100,100,25])
+
+    #Verify exception thrown when attepting to fit the energy profile without enough data
+    assert_raises(ValueError, optimizer._get_energy_derivative)
+
+
+    
 
 
 def test_get_direction_and_spacings():
@@ -740,8 +787,9 @@ def test_em_2d_demons():
     assert_array_almost_equal(energy_profile, np.array(expected_profile))
 
 if __name__=='__main__':
+    test_optimizer_exceptions()
     test_mult_aff()
-    test_diffeomorphic_map_2d
+    test_diffeomorphic_map_2d()
     test_get_direction_and_spacings()
     test_ssd_2d_demons()
     test_ssd_2d_gauss_newton()
