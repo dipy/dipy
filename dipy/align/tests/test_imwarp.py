@@ -111,6 +111,30 @@ def test_diffeomorphic_map_2d():
         #compare the images (now we dont have to worry about precision, it is n.n.)
         assert_array_almost_equal(warped, expected)
 
+        #verify the is_inverse flag
+        inv = diff_map.inverse()
+        warped = inv.transform_inverse(moving_image, 'linear')
+        assert_array_almost_equal(warped, expected, decimal=5)
+
+        warped = inv.transform_inverse(moving_image, 'nearest')
+        assert_array_almost_equal(warped, expected)
+
+    #Now test the inverse functionality
+    diff_map = imwarp.DiffeomorphicMap(2, target_shape, target_affine, input_shape, input_affine, None)
+    diff_map.backward = disp
+    for type in [floating, np.float64, np.int64, np.int32]:
+        moving_image = moving_image.astype(type)
+
+        #warp using linear interpolation
+        warped = diff_map.transform_inverse(moving_image, 'linear')
+        #compare the images (the linear interpolation may introduce slight precision errors)
+        assert_array_almost_equal(warped, expected, decimal=5)
+
+        #Now test the nearest neighbor interpolation
+        warped = diff_map.transform_inverse(moving_image, 'nearest')
+        #compare the images (now we dont have to worry about precision, it is n.n.)
+        assert_array_almost_equal(warped, expected)
+
     #Verify that DiffeomorphicMap raises the appropriate exceptions when
     #the sampling information is undefined
     diff_map = imwarp.DiffeomorphicMap(2, None, input_affine, None, target_affine, None)
@@ -147,10 +171,19 @@ def test_scale_space_exceptions():
     #create a random image
     image = np.ndarray(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(tuple(target_shape))
+    zeros = (image == 0).astype(np.int32)
+
     ss = imwarp.ScaleSpace(image,3)
 
     for invalid_level in [-1, 3, 4]:
         assert_raises(ValueError, ss.get_image, invalid_level)
+
+    # Verify that the mask is correctly applied, when requested
+    ss = imwarp.ScaleSpace(image,3, mask0=True)
+    for level in range(3):
+        img = ss.get_image(level)
+        z = (img == 0).astype(np.int32)
+        assert_array_equal(zeros, z)
 
 
 def test_get_direction_and_spacings():
@@ -236,6 +269,8 @@ def test_ssd_2d_demons():
 
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
 
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
@@ -309,6 +344,8 @@ def test_ssd_2d_gauss_newton():
 
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, np.eye(3), np.eye(3), np.eye(3))
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     subsampled_energy_profile = np.array(optimizer.full_energy_profile[::10])
     if floating is np.float32:
         expected_profile = \
@@ -391,6 +428,8 @@ def test_ssd_3d_demons():
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
@@ -438,6 +477,8 @@ def test_ssd_3d_gauss_newton():
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
@@ -475,6 +516,8 @@ def test_cc_2d():
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
@@ -541,6 +584,8 @@ def test_cc_3d():
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)*1e-4
     if floating is np.float32:
         expected_profile = \
@@ -601,6 +646,8 @@ def test_em_3d():
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)*1e-3
     if floating is np.float32:
         expected_profile = \
@@ -643,6 +690,8 @@ def test_em_2d():
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
@@ -715,6 +764,8 @@ def test_em_3d_demons():
         level_iters, step_length, ss_sigma_factor, opt_tol, inv_iter, inv_tol)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)*1e-3
     if floating is np.float32:
         expected_profile = \
@@ -761,6 +812,8 @@ def test_em_2d_demons():
     optimizer = imwarp.SymmetricDiffeomorphicRegistration(metric, level_iters)
     optimizer.verbosity = VerbosityLevels.DEBUG
     mapping = optimizer.optimize(static, moving, None)
+    m = optimizer.get_map()
+    assert_equal(mapping, m)
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
@@ -788,17 +841,17 @@ def test_em_2d_demons():
 
 if __name__=='__main__':
     test_scale_space_exceptions()
-    #test_optimizer_exceptions()
-    #test_mult_aff()
-    #test_diffeomorphic_map_2d()
-    #test_get_direction_and_spacings()
-    #test_ssd_2d_demons()
-    #test_ssd_2d_gauss_newton()
-    #test_ssd_3d_demons()
-    #test_ssd_3d_gauss_newton()
-    #test_cc_2d()
-    #test_cc_3d()
-    #test_em_2d()
-    #test_em_3d()
-    #test_em_3d_demons()
-    #test_em_2d_demons()
+    test_optimizer_exceptions()
+    test_mult_aff()
+    test_diffeomorphic_map_2d()
+    test_get_direction_and_spacings()
+    test_ssd_2d_demons()
+    test_ssd_2d_gauss_newton()
+    test_ssd_3d_demons()
+    test_ssd_3d_gauss_newton()
+    test_cc_2d()
+    test_cc_3d()
+    test_em_2d()
+    test_em_3d()
+    test_em_3d_demons()
+    test_em_2d_demons()

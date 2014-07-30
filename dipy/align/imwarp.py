@@ -473,6 +473,8 @@ class DiffeomorphicMap(object):
             self.input_prealign_inv = npl.inv(input_prealign)
 
         self.is_inverse = False
+        self.forward = None
+        self.backward = None
 
     def get_forward_field(self):
         r"""Deformation field to transform an image in the forward direction
@@ -1230,10 +1232,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Build the scale space of the input images
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            if self.mask0:
-                print('Applying zero mask')
-            else:
-                print('Mask disabled')
+            print('Applying zero mask: ' + str(self.mask0))
+
         if self.verbosity >= VerbosityLevels.STATUS:
             print('Creating scale space from the moving image. Levels: %d. '
                   'Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
