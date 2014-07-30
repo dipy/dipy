@@ -27,9 +27,7 @@ from dipy.viz import fvtk
 from dipy.sims.voxel import single_tensor_odf
 
 
-
 class ConstrainedSphericalDeconvModel(SphHarmModel):
-
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
                  tau=0.1):
         r""" Constrained Spherical Deconvolution (CSD) [1]_.
@@ -809,7 +807,7 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7,
 
 def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                        init_fa=0.08, init_trace=0.0021, iter=8,
-                       convergence=0.001):
+                       convergence=0.001, parallel=True):
     """ Recursive calibration of response function using peak threshold
 
     Parameters
@@ -854,22 +852,10 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
            the fiber response function for spherical deconvolution of
            diffusion MRI data.
     """
-    vis = False
-
     S0 = 1
     evals = fa_trace_to_lambdas(init_fa, init_trace)
-#    evals = np.array([0.0015, 0.0003, 0.0003])
     response = (evals, S0)
     sphere = get_sphere('symmetric724')
-    if vis is True:
-
-        ren = fvtk.ren()
-        evals = response[0]
-        evecs = np.array([[0, 1, 0], [0, 0, 1], [1, 0, 0]]).T
-        response_odf = single_tensor_odf(sphere.vertices, evals, evecs)
-        response_actor = fvtk.sphere_funcs(response_odf, sphere)
-        fvtk.add(ren, response_actor)
-        fvtk.show(ren)
 
     no_params = ((sh_order + 1) * (sh_order + 2)) / 2
     response_p = np.ones(no_params)
@@ -878,38 +864,20 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     else:
         data = data[mask]
 
-#    rot_gradients = np.zeros(gtab.gradients.shape)
     m, n = sph_harm_ind_list(sh_order)
     where_dwi = lazy_index(~gtab.b0s_mask)
 
     for num_it in range(1, iter):
         r_sh_all = np.zeros(no_params)
-        print(num_it)
         csd_model = ConstrainedSphericalDeconvModel(gtab, response,
                                                     None, sh_order)
-
-        if vis is True:
-            fvtk.clear(ren)
-            csd_fit = csd_model.fit(data)
-            csd_odf = csd_fit.odf(sphere)
-            fodf_spheres = fvtk.sphere_funcs(csd_odf, sphere, scale=1.3,
-                                             norm=True)
-            fvtk.add(ren, fodf_spheres)
-            fvtk.show(ren)
 
         csd_peaks = peaks_from_model(model=csd_model,
                                      data=data,
                                      sphere=sphere,
                                      relative_peak_threshold=peak_thr,
                                      min_separation_angle=25,
-                                     parallel=False)
-
-        if vis is True:
-            fvtk.clear(ren)
-            fodf_peaks = fvtk.peaks(csd_peaks.peak_dirs, csd_peaks.peak_values,
-                                    scale=1.3)
-            fvtk.add(ren, fodf_peaks)
-            fvtk.show(ren)
+                                     parallel=parallel)
 
         dirs = csd_peaks.peak_dirs
         vals = csd_peaks.peak_values
@@ -919,9 +887,6 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
 
         for num_vox in range(0, data.shape[0]):
             rotmat = vec2vec_rotmat(dirs[num_vox, 0], np.array([0, 0, 1]))
-            #for num_grad in range(0, gtab.gradients.shape[0]):
-            #    rot_gradients[num_grad] = np.dot(rotmat,
-            #                                    gtab.gradients[num_grad])
 
             rot_gradients = np.dot(rotmat, gtab.gradients.T).T
 
@@ -933,16 +898,6 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                                                   data[num_vox, where_dwi])[0]
 
         response = r_sh_all/data.shape[0]
-#        response = sh_to_rh(response, m, n)
-
-        if vis is True:
-            fvtk.clear(ren)
-            response_odf = sh_to_sf(response, sphere, sh_order,
-                                    basis_type=None)
-            response_actor = fvtk.sphere_funcs(response_odf, sphere)
-            ren = fvtk.ren()
-            fvtk.add(ren, response_actor)
-            fvtk.show(ren)
 
         change = abs((response_p - response)/response_p)
         if change.all() < convergence:
