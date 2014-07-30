@@ -146,17 +146,18 @@ Corpus callosum
 
 DTI R2 : 0.782881752597
 
-CSD R2 : 0.739356154507
+CSD R2 : 0.805764364116
 
 Centrum Semiovale
 
 DTI R2 : 0.431921832012
 
-CSD R2 : 0.578207214953
+CSD R2 : 0.604806420501
 
 
-As you can see, DTI is a better model for describing the signal in the CC,
-while CSD better describes the signal in regions of multiple crossing fibers.
+As you can see, DTI is a pretty good model for describing the signal in the CC,
+while CSD is much better in describing the signal in regions of multiple
+crossing fibers.
 
 
 References
