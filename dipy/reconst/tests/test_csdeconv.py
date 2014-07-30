@@ -1,25 +1,24 @@
 import warnings
 import numpy as np
 import numpy.testing as npt
-from numpy.testing import (assert_equal,
-                           assert_almost_equal,
-                           assert_array_almost_equal,
-                           run_module_suite)
+from numpy.testing import (assert_, assert_equal, assert_almost_equal,
+                           assert_array_almost_equal, run_module_suite)
 from dipy.data import get_sphere, get_data
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
                              multi_tensor_odf,
                              all_tensor_evecs)
 from dipy.core.gradients import gradient_table
+from dipy.core.sphere import HemiSphere
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    forward_sdeconv_mat,
                                    odf_sh_to_sharp,
                                    auto_response,
                                    csd_predict)
-from dipy.reconst.peaks import peak_directions
+from dipy.reconst.peaks import peak_directions, default_sphere
 from dipy.core.sphere_stats import angular_similarity
-from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel, 
+from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel,
                               CsaOdfModel, sph_harm_ind_list)
 
 
@@ -276,6 +275,90 @@ def test_csd_predict():
     # Roundtrip tests (quite inaccurate, because of regularization): 
     assert_array_almost_equal(csd_fit.predict(gtab, S0=S0),S,decimal=1)
     assert_array_almost_equal(csd.predict(csd_fit.shm_coeff, S0=S0),S,decimal=1)
+
+def test_sphere_scaling_csdmodel():
+    """Check that mirroring regulization sphere does not change the result of
+    csddeconv model"""
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+    mevals = np.array(([0.0015, 0.0003, 0.0003],
+                       [0.0015, 0.0003, 0.0003]))
+
+    angles = [(0, 0), (60, 0)]
+
+    S, sticks = multi_tensor(gtab, mevals, 100., angles=angles,
+                             fractions=[50, 50], snr=None)
+
+    sphere = get_sphere('symmetric362')
+    hemi = HemiSphere.from_sphere(sphere)
+
+    response = (np.array([0.0015, 0.0003, 0.0003]), 100)
+    model_full = ConstrainedSphericalDeconvModel(gtab, response,
+                                                reg_sphere=sphere)
+    model_hemi = ConstrainedSphericalDeconvModel(gtab, response,
+                                                reg_sphere=hemi)
+    csd_fit_full = model_full.fit(S)
+    csd_fit_hemi = model_hemi.fit(S)
+
+    assert_array_almost_equal(csd_fit_full.shm_coeff, csd_fit_hemi.shm_coeff)
+
+expected_lambda = {4:27.5230088, 8:82.5713865, 16:216.0843135}
+def test_default_lambda_csdmodel():
+    """We check that the default value of lambda is the expected value with
+    the symmetric362 sphere. This value has empirically been found to work well
+    and changes to this default value should be discusses with the dipy team.
+
+    """
+    sphere = get_sphere('symmetric362')
+
+    # Create gradient table
+    _, fbvals, fbvecs = get_data('small_64D')
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+    gtab = gradient_table(bvals, bvecs)
+
+    # Some response function
+    response = (np.array([0.0015, 0.0003, 0.0003]), 100)
+
+    for sh_order, expected in expected_lambda.items():
+        model_full = ConstrainedSphericalDeconvModel(gtab, response,
+                                                     sh_order=sh_order,
+                                                     reg_sphere=sphere)
+        assert_almost_equal(model_full.lambda_, expected)
+
+
+def test_csd_superres():
+    """ Check the quality of csdfit with high SH order. """
+
+    _, fbvals, fbvecs = get_data('small_64D')
+
+    bvals = np.load(fbvals)
+    bvecs = np.load(fbvecs)
+
+    gtab = gradient_table(bvals, bvecs)
+
+    # img, gtab = read_stanford_hardi()
+    evals = np.array([[1.5, .3, .3]]) * [[1.], [1.]] / 1000.
+    S, sticks = multi_tensor(gtab, evals, snr=None, fractions=[55., 45.])
+
+    model16 = ConstrainedSphericalDeconvModel(gtab, (evals[0], 3.), sh_order=16)
+    fit16 = model16.fit(S)
+
+    # print local_maxima(fit16.odf(default_sphere), default_sphere.edges)
+    d, v, ind = peak_directions(fit16.odf(default_sphere), default_sphere,
+                                relative_peak_threshold=.2,
+                                min_separation_angle=0)
+
+    # Check that there are two peaks
+    assert_equal(len(d), 2)
+
+    # Check that peaks line up with sticks
+    cos_sim = abs((d * sticks).sum(1)) ** .5
+    assert_(all(cos_sim > .99))
 
 
 if __name__ == '__main__':
