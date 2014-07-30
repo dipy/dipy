@@ -52,7 +52,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             ndarray and the second is the signal value for the response
             function without diffusion weighting.  This is to be able to
             generate a single fiber synthetic signal. The response function
-            will be used as deconvolution kernel ([1]_)
+            will be used as deconvolution git pull nipy-dipy masterkernel ([1]_)
         reg_sphere : Sphere (optional)
             sphere used to build the regularization B matrix.
             Default: 'symmetric362'.
