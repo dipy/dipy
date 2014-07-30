@@ -36,7 +36,7 @@ cm, have_matplotlib, _ = optional_package('matplotlib.cm')
 if have_matplotlib:
     get_cmap = cm.get_cmap
 else:
-    import dipy.data.get_cmap as get_cmap
+    from dipy.data import get_cmap
 
 # a track buffer used only with picking tracks
 track_buffer = []
