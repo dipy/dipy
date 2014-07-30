@@ -144,6 +144,8 @@ class ScaleSpace(object):
         #properties at the first level of the scale space
         self.images = [img.astype(floating)]
         self.domain_shapes = [input_size.astype(np.int32)]
+        if input_spacing == None:
+            input_spacing = np.ones((self.dim,), dtype = np.int32)
         self.spacings = [input_spacing]
         self.scalings = [np.ones(self.dim)]
         self.affines = [input_affine]
@@ -252,7 +254,7 @@ class ScaleSpace(object):
         """
         if 0 <= level < self.num_levels:
             return attribute[level]
-        return None
+        raise ValueError('Invalid pyramid level: '+str(level))
 
     def get_image(self, level):
         r"""Smoothed image at a given level

@@ -126,15 +126,6 @@ def test_diffeomorphic_map_2d():
 
 
 def test_optimizer_exceptions():
-    #             metric,
-    #             level_iters=None,
-    #             step_length=0.25,
-    #             ss_sigma_factor=0.2,
-    #             opt_tol=1e-5,
-    #             inv_iter=20,
-    #             inv_tol=1e-3,
-    #             callback=None):
-
     #An arbitrary valid metric
     metric = metrics.SSDMetric(2)
     # The metric must not be None
@@ -150,7 +141,16 @@ def test_optimizer_exceptions():
     assert_raises(ValueError, optimizer._get_energy_derivative)
 
 
-    
+def test_scale_space_exceptions():
+    target_shape = (32, 32)
+
+    #create a random image
+    image = np.ndarray(target_shape, dtype=floating)
+    image[...] = np.random.randint(0, 10, np.size(image)).reshape(tuple(target_shape))
+    ss = imwarp.ScaleSpace(image,3)
+
+    for invalid_level in [-1, 3, 4]:
+        assert_raises(ValueError, ss.get_image, invalid_level)
 
 
 def test_get_direction_and_spacings():
@@ -787,17 +787,18 @@ def test_em_2d_demons():
     assert_array_almost_equal(energy_profile, np.array(expected_profile))
 
 if __name__=='__main__':
-    test_optimizer_exceptions()
-    test_mult_aff()
-    test_diffeomorphic_map_2d()
-    test_get_direction_and_spacings()
-    test_ssd_2d_demons()
-    test_ssd_2d_gauss_newton()
-    test_ssd_3d_demons()
-    test_ssd_3d_gauss_newton()
-    test_cc_2d()
-    test_cc_3d()
-    test_em_2d()
-    test_em_3d()
-    test_em_3d_demons()
-    test_em_2d_demons()
+    test_scale_space_exceptions()
+    #test_optimizer_exceptions()
+    #test_mult_aff()
+    #test_diffeomorphic_map_2d()
+    #test_get_direction_and_spacings()
+    #test_ssd_2d_demons()
+    #test_ssd_2d_gauss_newton()
+    #test_ssd_3d_demons()
+    #test_ssd_3d_gauss_newton()
+    #test_cc_2d()
+    #test_cc_3d()
+    #test_em_2d()
+    #test_em_3d()
+    #test_em_3d_demons()
+    #test_em_2d_demons()
