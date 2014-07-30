@@ -52,12 +52,6 @@ def test_recursive_response_calibration():
 
     S_single = single_tensor(gtab, S0, evals, evecs, snr=SNR)
 
-    m, n = sph_harm_ind_list(sh_order)
-    x, y, z = gtab.gradients[where_dwi].T
-    r, theta, phi = cart2sphere(x, y, z)
-    B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
-    sh = np.linalg.lstsq(B_dwi, S_single[where_dwi])[0]
-
     data = np.concatenate((np.tile(S_cross, (8, 1)), np.tile(S_single, (2, 1))),
                           axis=0)
 
