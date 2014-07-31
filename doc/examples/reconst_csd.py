@@ -74,12 +74,6 @@ We can double check that we have a good response function by visualizing the
 response's function's ODF. Here is how:
 """
 
-data_small = data[20:30, 55:65, 38:39]
-
-from dipy.reconst.csdeconv import recursive_response
-
-response = recursive_response(gtab, data_small, mask=None, sh_order=8, peak_thr=0.01, init_fa=0.05, init_trace=0.0021, iter=8, convergence=0.01)
-
 from dipy.viz import fvtk
 
 ren = fvtk.ren()
@@ -114,6 +108,56 @@ fvtk.record(ren, out_path='csd_response.png', size=(200, 200))
 fvtk.rm(ren, response_actor)
 
 """
+However, using an FA threshold is not a very robust method. It is dependent on
+the dataset (non-informed used subjectivity), and still depends on the diffusion tensor
+(FA and first eigenvector), which has low accuracy at high b-value. Alternatively,
+one can calibrate the response function directly from the data according to [Tax2014]_.
+First, the data is deconvolved with a 'fat' response function. All voxels that
+contain only one peak (as determined by the peak threshold which gives an upper
+limit of the ratio of the second peak to the first peak) are maintained, and from
+these voxels a new response function is determined. This process is repeated
+until convergence is reached. Here we calibrate the response function on a small
+part of the data.
+"""
+
+data_small = data[20:50, 55:85, 38:39]
+
+from dipy.reconst.csdeconv import recursive_response
+
+response = recursive_response(gtab, data_small, mask=None, sh_order=8,
+                              peak_thr=0.01, init_fa=0.08,
+                              init_trace=0.0021, iter=8, convergence=0.001,
+                              parallel=False)
+
+
+"""
+We can check the shape of the signal of the response function, which should be like
+a pancake:
+"""
+
+from dipy.reconst.shm import sh_to_sf
+
+response_signal = sh_to_sf(response, sphere, sh_order=8, basis_type=None)
+
+response_actor = fvtk.sphere_funcs(response_signal, sphere)
+
+ren = fvtk.ren()
+
+fvtk.add(ren, response_actor)
+
+fvtk.record(ren, out_path='csd_recursive_response.png', size=(200, 200))
+
+"""
+.. figure:: csd_recursive_response.png
+   :align: center
+
+   **Estimated response function using recursive calibration**.
+
+"""
+
+fvtk.rm(ren, response_actor)
+
+"""
 Now, that we have the response function, we are ready to start the deconvolution
 process. Let's import the CSD model and fit the datasets.
 """
@@ -125,8 +169,6 @@ csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 """
 For illustration purposes we will fit only a slice of the datasets.
 """
-
-data_small = data[20:30, 55:65, 38:39]
 
 csd_fit = csd_model.fit(data_small)
 
@@ -199,6 +241,7 @@ fvtk.record(ren, out_path='csd_both.png', size=(600, 600))
    **CSD Peaks and ODFs**.
 
 .. [Tournier2007] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+.. [Tax2014] C.M.W. Tax, B. Jeurissen, S.B. Vos, M.A. Viergever, A. Leemans, "Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data", Neuroimage, vol. 86, pp. 67-80, 2014.
 
 .. include:: ../links_names.inc
 
