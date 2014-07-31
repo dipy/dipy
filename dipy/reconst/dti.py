@@ -17,6 +17,7 @@ from .vec_val_sum import vec_val_vect
 from ..core.onetime import auto_attr
 from .base import ReconstModel, ReconstFit
 
+
 def _roll_evals(evals, axis=-1):
     """
     Helper function to check that the evals provided to functions calculating
@@ -84,7 +85,7 @@ def fractional_anisotropy(evals, axis=-1):
 
 def mean_diffusivity(evals, axis=-1):
     r"""
-    Mean Diffusivity (MD) of a diffusion tensor. 
+    Mean Diffusivity (MD) of a diffusion tensor.
 
     Parameters
     ----------
@@ -516,7 +517,7 @@ def apparent_diffusion_coef(q_form, sphere):
     r"""
     Calculate the apparent diffusion coefficient (ADC) in each direction of a
     sphere.
-        
+
     Parameters
     ----------
     q_form : ndarray
@@ -525,7 +526,7 @@ def apparent_diffusion_coef(q_form, sphere):
 
     sphere : a Sphere class instance
         The ADC will be calculated for each of the vertices in the sphere
-        
+
     Notes
     -----
     The calculation of ADC, relies on the following relationship:
@@ -534,7 +535,7 @@ def apparent_diffusion_coef(q_form, sphere):
             ADC = \vec{b} Q \vec{b}^T
 
     Where Q is the quadratic form of the tensor.
-    
+
     """
     bvecs = sphere.vertices
     bvals = np.ones(bvecs.shape[0])
@@ -661,6 +662,11 @@ class TensorModel(ReconstModel):
         """
         # If a mask is provided, we will use it to access the data
         if mask is not None:
+
+            # Check for valid shape of the mask
+            if mask.shape != data.shape[:-1]:
+                raise ValueError("Mask is not the same shape as data.")
+
             # Make sure it's boolean, so that it can be used to mask
             mask = np.array(mask, dtype=bool, copy=False)
             data_in_mask = data[mask]
@@ -935,7 +941,7 @@ class TensorFit(object):
         odf : ndarray
             The diffusion distance in every direction of the sphere in every
             voxel in the input data.
-        
+
         """
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
         projection = np.dot(sphere.vertices, self.evecs)
@@ -980,7 +986,7 @@ class TensorFit(object):
 
     def predict(self, gtab, S0=1):
         r"""
-        Given a model fit, predict the signal on the vertices of a sphere 
+        Given a model fit, predict the signal on the vertices of a sphere
 
         Parameters
         ----------
@@ -990,7 +996,7 @@ class TensorFit(object):
         S0 : float array
            The mean non-diffusion weighted signal in each voxel. Default: 1 in
            all voxels.
-           
+
         Notes
         -----
         The predicted signal is given by:
@@ -1005,7 +1011,7 @@ class TensorFit(object):
 
         $\theta$ is a unit vector pointing at any direction on the sphere for
         which a signal is to be predicted and $b$ is the b value provided in
-        the GradientTable input for that direction   
+        the GradientTable input for that direction
         """
         return tensor_prediction(self.model_params, gtab, S0=S0)
 
@@ -1247,13 +1253,13 @@ def _nlls_err_func(tensor, design_matrix, data, weighting=None,
     outliers having a 50% breakdown point (6,7). The explicit formula for C
     using the MAD estimator is:
 
-    .. math :: 
+    .. math ::
 
             C = 1.4826 x MAD = 1.4826 x median{|r1-\hat{r}|,... |r_n-\hat{r}|}
 
     where $\hat{r} = median{r_1, r_2, ..., r_3}$ and n is the number of data
     points. The multiplicative constant 1.4826 makes this an approximately
-    unbiased estimate of scale when the error model is Gaussian." 
+    unbiased estimate of scale when the error model is Gaussian."
 
 
     References
@@ -1498,7 +1504,7 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
                     this_sigma = sigma[non_outlier_idx]
                 else:
                     this_sigma = sigma
-                    
+
                 if jac:
                     this_tensor, status= opt.leastsq(_nlls_err_func,
                                                      start_params,
