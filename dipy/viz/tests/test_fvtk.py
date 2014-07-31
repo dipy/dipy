@@ -6,7 +6,6 @@ from dipy.viz import fvtk
 from dipy import data
 
 import numpy.testing as npt
-import nose
 
 @npt.dec.skipif(not fvtk.have_vtk)
 @npt.dec.skipif(not fvtk.have_vtk_colors)
@@ -97,11 +96,8 @@ def test_colormap():
     npt.assert_raises(ValueError, fvtk.create_colormap, v, 'no such map')
 
 
+@npt.dec.skipif(not fvtk.have_matplotlib)
 def test_colormaps_matplotlib():
-    # Skip this test if no matplotlib
-    if not fvtk.have_matplotlib:
-        raise npt.SkipTest
-
     v = np.random.random(1000)
     for name in 'jet', 'Blues', 'Accent', 'bone':
         # Matplotlib version of get_cmap
@@ -110,4 +106,3 @@ def test_colormaps_matplotlib():
         rgba2 = data.get_cmap(name)(v)
         # dipy's colormaps are close to matplotlibs colormaps, but not perfect
         npt.assert_array_almost_equal(rgba1, rgba2, 1)
-
