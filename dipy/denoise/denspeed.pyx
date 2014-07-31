@@ -200,7 +200,7 @@ cdef double process_block(double [:, :, ::1] arr,
     return sum_out
 
 
-def add_padding_reflection(double [:, :, ::1] arr, padding):
+def add_padding_reflection(double [:, :, ::1] arr, cnp.npy_intp padding):
     cdef:
         double [:, :, ::1] final
         cnp.npy_intp i, j, k
