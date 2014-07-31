@@ -12,7 +12,7 @@ from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, all_tensor_evecs, multi_tensor_odf
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
-from nose.tools import assert_equal, assert_true
+from nose.tools import assert_equal, assert_true, assert_
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
 
@@ -219,7 +219,7 @@ def test_peak_directions_thorough():
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
     AE = np.rad2deg(np.arccos(np.dot(directions[0], sticks[0])))
-    assert_equal(AE < 2., True)
+    assert_(abs(AE) < 2. or abs(AE - 180) < 2.)
 
     # two equal fibers and one small noisy one
     mevals = np.array([[0.0015, 0.0003, 0.0003],
