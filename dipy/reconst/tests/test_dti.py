@@ -64,6 +64,7 @@ def test_TensorModel():
 
     # Check that the multivoxel case works:
     dtifit = dm.fit(data)
+
     # And smoke-test that all these operations return sensibly-shaped arrays:
     assert_equal(dtifit.fa.shape, data.shape[:3])
     assert_equal(dtifit.ad.shape, data.shape[:3])
@@ -74,14 +75,17 @@ def test_TensorModel():
     assert_equal(dtifit.linearity.shape, data.shape[:3])
     assert_equal(dtifit.planarity.shape, data.shape[:3])
     assert_equal(dtifit.sphericity.shape, data.shape[:3])
-    
+
+    # Test for the shape of the mask
+    assert_raises(ValueError, dm.fit, np.ones((10, 10, 3)), np.ones((3,3)))
+
     # Make some synthetic data
     b0 = 1000.
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
     # The first b value is 0., so we take the second one:
     B = bvals[1]
-    #Scale the eigenvalues and tensor by the B value so the units match
+    # Scale the eigenvalues and tensor by the B value so the units match
     D = np.array([1., 1., 1., 0., 0., 1., -np.log(b0) * B]) / B
     evals = np.array([2., 1., 0.]) / B
     md = evals.mean()
@@ -89,9 +93,9 @@ def test_TensorModel():
     A_squiggle = tensor - (1 / 3.0) * np.trace(tensor) * np.eye(3)
     mode = 3 * np.sqrt(6) * np.linalg.det(A_squiggle / np.linalg.norm(A_squiggle))
     evecs = np.linalg.eigh(tensor)[1]
-    #Design Matrix
+    # Design Matrix
     X = dti.design_matrix(gtab)
-    #Signals
+    # Signals
     Y = np.exp(np.dot(X, D))
     assert_almost_equal(Y[0], b0)
     Y.shape = (-1,) + Y.shape
@@ -169,7 +173,7 @@ def test_diffusivities():
     lin = linearity(dmfit.evals)
     plan = planarity(dmfit.evals)
     spher = sphericity(dmfit.evals)
-    
+
     assert_almost_equal(md, (0.0015 + 0.0003 + 0.0001) / 3)
     assert_almost_equal(Trace, (0.0015 + 0.0003 + 0.0001))
     assert_almost_equal(ad, 0.0015)
@@ -371,9 +375,6 @@ def test_from_lower_triangular():
 
 
 def test_all_constant():
-    """
-
-    """
     bvecs, bvals = read_bvec_file(get_data('55dir_grad.bvec'))
     gtab = grad.gradient_table_from_bvals_bvecs(bvals, bvecs.T)
     fit_methods = ['LS', 'OLS', 'NNLS']
@@ -540,7 +541,7 @@ def test_adc():
     mask[0, 0, 0] = True
     dtifit = dm.fit(data)
     sphere = create_unit_sphere(4)
-    
+
     # The ADC in the principal diffusion direction should be equal to the AD in
     # each voxel:
 
@@ -548,8 +549,8 @@ def test_adc():
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
     assert_array_almost_equal(dtifit.adc(sphere_pdd0)[0,0,0],
                             dtifit.ad[0,0,0], decimal=5)
-        
-    
+
+
     # Test that it works for cases in which the data is 1D
     dtifit = dm.fit(data[0,0,0])
     sphere_pdd0 = dps.Sphere(x=pdd0[0], y=pdd0[1], z=pdd0[2])
@@ -581,5 +582,3 @@ def test_predict():
     dtif = dtim.fit(data)
     S0 = np.mean(data[...,gtab.b0s_mask], -1)
     p = dtif.predict(gtab, S0)
-
-    
