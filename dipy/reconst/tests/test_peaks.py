@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.testing import (assert_array_equal, assert_array_almost_equal,
-                           assert_almost_equal, run_module_suite)
+                           assert_almost_equal, run_module_suite,
+                           assert_equal, assert_)
 from dipy.reconst.odf import (OdfFit, OdfModel, gfa)
 
 from dipy.reconst.peaks import (peaks_from_model,
@@ -12,7 +13,6 @@ from dipy.core.sphere import unit_icosahedron
 from dipy.sims.voxel import multi_tensor, all_tensor_evecs, multi_tensor_odf
 from dipy.data import get_data, get_sphere
 from dipy.core.gradients import gradient_table, GradientTable
-from nose.tools import assert_equal, assert_true
 from dipy.core.sphere_stats import angular_similarity
 from dipy.core.sphere import HemiSphere
 
@@ -219,7 +219,7 @@ def test_peak_directions_thorough():
     assert_almost_equal(angular_similarity(directions, sticks), 1, 2)
 
     AE = np.rad2deg(np.arccos(np.dot(directions[0], sticks[0])))
-    assert_equal(AE < 2., True)
+    assert_(abs(AE) < 2. or abs(AE - 180) < 2.)
 
     # two equal fibers and one small noisy one
     mevals = np.array([[0.0015, 0.0003, 0.0003],
@@ -403,7 +403,7 @@ def test_degenerative_cases():
     odf = np.ones(sphere.vertices.shape[0])
     odf += 0.1 * np.random.rand(odf.shape[0])
     directions, values, indices = peak_directions(odf, sphere, .5, 25)
-    assert_true(all(values > values[0] * .5))
+    assert_(all(values > values[0] * .5))
     assert_array_equal(values, odf[indices])
 
     odf = np.ones(sphere.vertices.shape[0])
@@ -435,7 +435,7 @@ def test_peaksFromModel():
     pam = peaks_from_model(model, data, _sphere, .5, 45, return_odf=True)
     expected_shape = (len(data), len(_odf))
     assert_equal(pam.odf.shape, expected_shape)
-    assert_true((_odf == pam.odf).all())
+    assert_((_odf == pam.odf).all())
     assert_array_equal(pam.peak_values[:, 0], _odf.max())
 
     # Test mask
