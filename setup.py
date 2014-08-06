@@ -85,11 +85,7 @@ for modulename, other_sources, language in (
     ('dipy.tracking.streamlinespeed', [], 'c++'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
-    ('dipy.denoise.denspeed', [], 'c'),
-	('dipy.align.vector_fields', [], 'c'),
-    ('dipy.align.sumsqdiff', [], 'c'),
-    ('dipy.align.expectmax', [], 'c'),
-    ('dipy.align.crosscorr', [], 'c')
+    ('dipy.denoise.denspeed', [], 'c')
     ):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
@@ -155,7 +151,6 @@ def main(**extra_args):
           packages     = ['dipy',
                           'dipy.tests',
                           'dipy.align',
-                          'dipy.align.tests',
                           'dipy.core',
                           'dipy.core.tests',
                           'dipy.tracking',
