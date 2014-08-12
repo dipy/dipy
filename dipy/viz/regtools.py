@@ -170,30 +170,29 @@ def plot_2d_diffeomorphic_map(mapping, delta = 10, fname = None,
 
     """
     if mapping.is_inverse:
-        #By default, direct_grid_shape is the domain grid
+        #By default, direct_grid_shape is the codomain grid
+        if direct_grid_shape is None:
+            direct_grid_shape = mapping.codomain_shape
+        if direct_grid_affine is -1:
+            direct_grid_affine = mapping.codomain_affine
+
+        #By default, the inverse grid is the domain grid
+        if inverse_grid_shape is None:
+            inverse_grid_shape = mapping.domain_shape
+        if inverse_grid_affine is -1:
+            inverse_grid_affine = mapping.domain_affine
+    else:
+        #Now by default, direct_grid_shape is the mapping's input grid
         if direct_grid_shape is None:
             direct_grid_shape = mapping.domain_shape
         if direct_grid_affine is -1:
             direct_grid_affine = mapping.domain_affine
 
-        #By default, the output grid is the mapping's input grid  
-        #inverse
-        if inverse_grid_shape is None:
-            inverse_grid_shape = mapping.input_shape
-        if inverse_grid_affine is -1:
-            inverse_grid_affine = mapping.input_affine
-    else:
-        #Now by default, direct_grid_shape is the mapping's input grid
-        if direct_grid_shape is None:
-            direct_grid_shape = mapping.input_shape
-        if direct_grid_affine is -1:
-            direct_grid_affine = mapping.input_affine
-
         #By default, the output grid is the mapping's domain grid
         if inverse_grid_shape is None:
-            inverse_grid_shape = mapping.domain_shape
+            inverse_grid_shape = mapping.codomain_shape
         if inverse_grid_affine is -1:
-            inverse_grid_affine = mapping.domain_affine
+            inverse_grid_affine = mapping.codomain_affine
 
     #The world-to-image (image = drawn lattice on the output grid)
     #transformation is the inverse of the output affine

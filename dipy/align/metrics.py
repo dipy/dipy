@@ -636,8 +636,10 @@ class EMMetric(SimilarityMetric):
         self.static_image_mask = (original_static_image>0).astype(np.int32)
         if transformation == None:
             return
+        shape = np.array(self.static_image.shape, dtype = np.int32)
+        affine = self.static_affine
         self.static_image_mask = \
-            transformation.transform(self.static_image_mask,'nearest')
+            transformation.transform(self.static_image_mask,'nearest', -1, shape, affine)
 
     def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""This is called by the optimizer just after setting the moving image.
@@ -660,8 +662,10 @@ class EMMetric(SimilarityMetric):
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
         if transformation == None:
             return
+        shape = np.array(self.moving_image.shape, dtype = np.int32)
+        affine = self.moving_affine
         self.moving_image_mask = \
-            transformation.transform(self.moving_image_mask,'nearest')
+            transformation.transform(self.moving_image_mask,'nearest', -1, shape, affine)
 
 
 class SSDMetric(SimilarityMetric):

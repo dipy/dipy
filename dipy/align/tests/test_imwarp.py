@@ -93,7 +93,10 @@ def test_diffeomorphic_map_2d():
     expected = moving_image[(assign[...,0], assign[...,1])]
 
     #warp using a DiffeomorphicMap instance
-    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine, target_shape, target_affine, None)
+    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine, 
+                                          input_shape, input_affine, 
+                                          target_shape, target_affine, 
+                                          None)
     diff_map.forward = disp
 
     #Verify that the transform method accepts different image types (note that
@@ -120,7 +123,9 @@ def test_diffeomorphic_map_2d():
         assert_array_almost_equal(warped, expected)
 
     #Now test the inverse functionality
-    diff_map = imwarp.DiffeomorphicMap(2, target_shape, target_affine, input_shape, input_affine, None)
+    diff_map = imwarp.DiffeomorphicMap(2, target_shape, target_affine,
+                                          target_shape, target_affine, 
+                                          input_shape, input_affine, None)
     diff_map.backward = disp
     for type in [floating, np.float64, np.int64, np.int32]:
         moving_image = moving_image.astype(type)
@@ -137,14 +142,22 @@ def test_diffeomorphic_map_2d():
 
     #Verify that DiffeomorphicMap raises the appropriate exceptions when
     #the sampling information is undefined
-    diff_map = imwarp.DiffeomorphicMap(2, None, input_affine, None, target_affine, None)
+    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine,
+                                          input_shape, input_affine, 
+                                          target_shape, target_affine, 
+                                          None)
     diff_map.forward = disp
+    diff_map.domain_shape = None
     #If we don't provide the sampling info, it should try to use the map's info, but it's None...
     assert_raises(ValueError, diff_map.transform, moving_image, 'linear')
 
     #Same test for diff_map.transform_inverse
-    diff_map = imwarp.DiffeomorphicMap(2, None, input_affine, None, target_affine, None)
+    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine,
+                                          input_shape, input_affine, 
+                                          target_shape, target_affine, 
+                                          None)
     diff_map.forward = disp
+    diff_map.codomain_shape = None
     #If we don't provide the sampling info, it should try to use the map's info, but it's None...
     assert_raises(ValueError, diff_map.transform_inverse, moving_image, 'linear')
 

@@ -97,7 +97,7 @@ def get_direction_and_spacings(affine, dim):
 
 class ScaleSpace(object):
     def __init__(self, image, num_levels,
-                 input_affine=None,
+                 codomain_affine=None,
                  input_spacing=None,
                  sigma_factor=0.2,
                  mask0=False):
@@ -118,7 +118,7 @@ class ScaleSpace(object):
             image.
         num_levels : int
             the desired number of levels (resolutions) of the scale space
-        input_affine : array, shape (k, k), k=3,4 (for either 2D or 3D images)
+        codomain_affine : array, shape (k, k), k=3,4 (for either 2D or 3D images)
             the matrix transforming voxel coordinates to space coordinates in
             the input image discretization
         input_spacing : array, shape (k-1,)
@@ -148,11 +148,11 @@ class ScaleSpace(object):
             input_spacing = np.ones((self.dim,), dtype = np.int32)
         self.spacings = [input_spacing]
         self.scalings = [np.ones(self.dim)]
-        self.affines = [input_affine]
+        self.affines = [codomain_affine]
         self.sigmas = [np.zeros(self.dim)]
 
-        if input_affine is not None:
-            self.affine_invs = [npl.inv(input_affine)]
+        if codomain_affine is not None:
+            self.affine_invs = [npl.inv(codomain_affine)]
         else:
             self.affine_invs = [None]
 
@@ -173,8 +173,8 @@ class ScaleSpace(object):
             scaling = scaling_factor * min_spacing / input_spacing
             output_spacing = input_spacing * scaling
             extended = np.append(scaling, [1])
-            if not input_affine is None:
-                affine = input_affine.dot(np.diag(extended))
+            if not codomain_affine is None:
+                affine = codomain_affine.dot(np.diag(extended))
             else:
                 affine = np.diag(extended)
             output_size = input_size * (input_spacing / output_spacing) + 0.5
@@ -395,31 +395,38 @@ class ScaleSpace(object):
 class DiffeomorphicMap(object):
     def __init__(self, 
                  dim,
-                 domain_shape,
+                 disc_shape,
+                 disc_affine=None,
+                 domain_shape=None,
                  domain_affine=None,
-                 input_shape=None,
-                 input_affine=None,
-                 input_prealign=None):
+                 codomain_shape=None,
+                 codomain_affine=None,
+                 prealign=None):
         r""" DiffeomorphicMap
 
         Implements a diffeomorphic transformation on the physical space. The 
         deformation fields encoding the direct and inverse transformations
         share the same domain discretization (both the discretization grid shape
         and voxel-to-space matrix). The input coordinates (physical coordinates)
-        are first aligned using input_prealign, and then displaced using the 
+        are first aligned using prealign, and then displaced using the 
         corresponding vector field interpolated at the aligned coordinates.
 
         Parameters
         ----------
         dim : int, 2 or 3
             the transformation's dimension
-        domain_shape : array, shape (dim,)
+        disc_shape : array, shape (dim,)
             the number of slices (if 3D), rows and columns of the deformation
             field's discretization
-        domain_affine : array, shape (dim+1, dim+1)
-            the voxel-to-space transformation between the deformation field's
+        disc_affine : the voxel-to-space transformation between the deformation field's
             grid and space
-        input_shape : array, shape (dim,)
+        domain_shape : array, shape (dim,)
+            the number of slices (if 3D), rows and columns of the default
+            discretizatio of this map's domain
+        domain_affine : array, shape (dim+1, dim+1)
+            the default voxel-to-space transformation between this map's
+            discretization and physical space
+        codomain_shape : array, shape (dim,)
             the number of slices (if 3D), rows and columns of the images that
             are 'normally' warped using this transformation in the forward
             direction (this will provide default transformation parameters to
@@ -427,10 +434,10 @@ class DiffeomorphicMap(object):
             the inverse transformation is 'normally' used to warp images with
             the same discretization and voxel-to-space transformation as the 
             deformation field grid.
-        input_affine : array, shape (dim+1, dim+1)
+        codomain_affine : array, shape (dim+1, dim+1)
             the voxel-to-space transformation of images that are 'normally'
             warped using this transformation (in the forward direction).
-        input_prealign : array, shape (dim+1, dim+1)
+        prealign : array, shape (dim+1, dim+1)
             the linear transformation to be applied to align input images to
             the reference space before warping under the deformation field.
 
@@ -438,39 +445,46 @@ class DiffeomorphicMap(object):
 
         self.dim = dim
 
-        # If input shape was not provided, we assume it is an endomorphism:
-        # use the same domain_shape and input_affine as the field domain
-        if input_shape is None:
-            input_shape = domain_shape
+        if(disc_shape is None):
+            raise ValueError("Invalid displacement field discretization")
 
+        self.disc_shape = np.asarray(disc_shape, dtype = np.int32)
+
+        # If the discretization affine is None, we assume it's the identity 
+        self.disc_affine = disc_affine
+        if(self.disc_affine is None):
+            self.disc_affine_inv = None
+        else:
+            self.disc_affine_inv = npl.inv(self.disc_affine)
+
+        # If domain_shape is not provided, we use the map's discretization shape
         if(domain_shape is None):
-            self.domain_shape = None
+            self.domain_shape = self.disc_shape
         else:
             self.domain_shape = np.asarray(domain_shape, dtype = np.int32)
         self.domain_affine = domain_affine
-        
-        if(input_shape is None):
-            self.input_shape = None
-        else:
-            self.input_shape = np.asarray(input_shape, dtype = np.int32)
-        self.input_affine = input_affine
-
-        
-        if domain_affine is None:
+        if(domain_affine is None):
             self.domain_affine_inv = None
         else:
             self.domain_affine_inv = npl.inv(domain_affine)
 
-        if input_affine is None:
-            self.input_affine_inv = None
+        # If codomain shape was not provided, we assume it is an endomorphism:
+        # use the same domain_shape and codomain_affine as the field domain
+        if codomain_shape is None:
+            self.codomain_shape = self.domain_shape
         else:
-            self.input_affine_inv = npl.inv(input_affine)
+            self.codomain_shape = np.asarray(codomain_shape, dtype = np.int32)
+        self.codomain_affine = codomain_affine
+        if codomain_affine is None:
+            self.codomain_affine_inv = None
+        else:
+            self.codomain_affine_inv = npl.inv(codomain_affine)
 
-        self.input_prealign = input_prealign
-        if input_prealign is None:
-            self.input_prealign_inv = None
+        self.prealign = prealign
+        if prealign is None:
+            self.prealign_inv = None
         else:
-            self.input_prealign_inv = npl.inv(input_prealign)
+            self.prealign_inv = npl.inv(prealign)
 
         self.is_inverse = False
         self.forward = None
@@ -505,9 +519,9 @@ class DiffeomorphicMap(object):
 
         Creates a zero displacement field (the identity transformation).
         """
-        self.forward = np.zeros(tuple(self.domain_shape)+(self.dim,), 
+        self.forward = np.zeros(tuple(self.disc_shape)+(self.dim,), 
                                 dtype=floating)
-        self.backward = np.zeros(tuple(self.domain_shape)+(self.dim,),
+        self.backward = np.zeros(tuple(self.disc_shape)+(self.dim,),
                                 dtype=floating)
 
     def _get_warping_function(self, interpolation):
@@ -555,7 +569,7 @@ class DiffeomorphicMap(object):
 
         Returns
         -------
-        warped : array, shape = sampling_shape or self.input_shape if None
+        warped : array, shape = sampling_shape or self.codomain_shape if None
             the warped image under this transformation in the forward direction
 
         Notes
@@ -595,21 +609,20 @@ class DiffeomorphicMap(object):
         'sampling_shape' ) to space coordinates.
 
         """
-        #if no world-to-image transform is provided, we assume the image given
-        #as input has the same discretization as the displacement fields (the
-        #reference grid)
+        #if no world-to-image transform is provided, we use the codomain info
         if world_to_image is -1:
-            world_to_image = self.domain_affine_inv
+            world_to_image = self.codomain_affine_inv
+        #if no sampling info is provided, we use the domain info 
         if sampling_shape is None:
-            if self.input_shape is None:
+            if self.domain_shape is None:
                 raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
-            sampling_shape = self.input_shape
+            sampling_shape = self.domain_shape
         if sampling_affine is -1:
-            sampling_affine = self.input_affine
+            sampling_affine = self.domain_affine
 
         W = world_to_image
-        Dinv = self.domain_affine_inv
-        P = self.input_prealign 
+        Dinv = self.disc_affine_inv
+        P = self.prealign 
         S = sampling_affine
 
         #this is the matrix which we need to multiply the voxel coordinates
@@ -708,22 +721,21 @@ class DiffeomorphicMap(object):
         'sampling_shape' ) to space coordinates.
 
         """
-        #if no world-to-image transform is provided, we assume the image given
-        #as input has the same discretization as the input discretization given
-        #at initialization
+        #if no world-to-image transform is provided, we use the domain info
         if world_to_image is -1:
-            world_to_image = self.input_affine_inv
+            world_to_image = self.domain_affine_inv
 
+        #if no sampling info is provided, we use the codomain info
         if sampling_shape is None:
-            if self.domain_shape is None:
+            if self.codomain_shape is None:
                 raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
-            sampling_shape = self.domain_shape
+            sampling_shape = self.codomain_shape
         if sampling_affine is -1:
-            sampling_affine = self.domain_affine
+            sampling_affine = self.codomain_affine
 
         W = world_to_image
-        Dinv = self.domain_affine_inv
-        Pinv = self.input_prealign_inv
+        Dinv = self.disc_affine_inv
+        Pinv = self.prealign_inv
         S = sampling_affine
 
         #this is the matrix which we need to multiply the voxel coordinates
@@ -782,7 +794,7 @@ class DiffeomorphicMap(object):
 
         Returns
         -------
-        warped : array, shape = sampling_shape or self.input_shape if None
+        warped : array, shape = sampling_shape or self.codomain_shape if None
             the warped image under this transformation in the forward direction
 
         Notes
@@ -825,7 +837,7 @@ class DiffeomorphicMap(object):
 
         Returns
         -------
-        warped : array, shape = sampling_shape or self.input_shape if None
+        warped : array, shape = sampling_shape or self.codomain_shape if None
             the warped image under this transformation in the backward direction
 
         Notes
@@ -854,11 +866,13 @@ class DiffeomorphicMap(object):
 
         """
         inv = DiffeomorphicMap(self.dim,
+                               self.disc_shape,
+                               self.disc_affine,
                                self.domain_shape,
                                self.domain_affine,
-                               self.input_shape,
-                               self.input_affine,
-                               self.input_prealign)
+                               self.codomain_shape,
+                               self.codomain_affine,
+                               self.prealign)
         inv.forward = self.forward
         inv.backward = self.backward
         inv.is_inverse = True
@@ -888,13 +902,13 @@ class DiffeomorphicMap(object):
         expanded_backward = expand_f(self.backward, expand_factors, new_shape)
 
         expand_factors = np.append(expand_factors, [1])
-        expanded_affine = mult_aff(self.domain_affine, np.diag(expand_factors))
+        expanded_affine = mult_aff(self.disc_affine, np.diag(expand_factors))
         expanded_affine_inv = npl.inv(expanded_affine)
         self.forward = expanded_forward
         self.backward = expanded_backward
-        self.domain_shape = new_shape
-        self.domain_affine = expanded_affine
-        self.domain_affine_inv = expanded_affine_inv
+        self.disc_shape = new_shape
+        self.disc_affine = expanded_affine
+        self.disc_affine_inv = expanded_affine_inv
 
     def compute_inversion_error(self):
         r"""Inversion error of the displacement fields
@@ -924,7 +938,7 @@ class DiffeomorphicMap(object):
         fields
 
         """
-        Dinv = self.domain_affine_inv
+        Dinv = self.disc_affine_inv
         if self.dim == 2:
             compose_f = vfu.compose_vector_fields_2d
         else:
@@ -948,11 +962,13 @@ class DiffeomorphicMap(object):
 
         """
         new_map = DiffeomorphicMap(self.dim,
+                                   self.disc_shape,
+                                   self.disc_affine,
                                    self.domain_shape,
                                    self.domain_affine,
-                                   self.input_shape,
-                                   self.input_affine,
-                                   self.input_prealign)
+                                   self.codomain_shape,
+                                   self.codomain_affine,
+                                   self.prealign)
         new_map.forward = self.forward
         new_map.backward = self.backward
         new_map.is_inverse = self.is_inverse
@@ -997,7 +1013,7 @@ class DiffeomorphicMap(object):
         d1_inv = self.get_backward_field()
         d2_inv = phi.get_backward_field()
 
-        premult_disp = self.domain_affine_inv
+        premult_disp = self.disc_affine_inv
 
         if self.dim == 2:
             compose_f = vfu.compose_vector_fields_2d
@@ -1261,45 +1277,52 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         
         #Get the properties of the coarsest level from the static image. These
         #properties will be taken as the reference discretization.
-        domain_shape = self.static_ss.get_domain_shape(self.levels-1)
-        domain_affine = self.static_ss.get_affine(self.levels-1)
+        disc_shape = self.static_ss.get_domain_shape(self.levels-1)
+        disc_affine = self.static_ss.get_affine(self.levels-1)
 
-        #Create the forward diffeomorphic transformation at the coarsest 
-        #resolution. The forward model transforms points from the static image
-        #to points on the reference (which is the static as well). So the input
+        # The codomain discretization of both diffeomorphic maps is
+        # precisely the discretization of the static image
+        codomain_shape = static.shape
+        codomain_affine = static_affine
+
+        #The forward model transforms points from the static image
+        #to points on the reference (which is the static as well). So the domain
         #properties are taken from the static image. Since its the same as the
         #reference, we don't need to pre-align.
-        input_shape = static.shape
-        input_affine = static_affine
-        input_prealign = None
+        domain_shape = static.shape
+        domain_affine = static_affine
+        prealign = None
         self.forward_model = DiffeomorphicMap(self.dim,
+                                              disc_shape,
+                                              disc_affine,
                                               domain_shape,
                                               domain_affine,
-                                              input_shape,
-                                              input_affine,
-                                              input_prealign)
+                                              codomain_shape,
+                                              codomain_affine,
+                                              prealign)
         self.forward_model.allocate()
 
-        #Create the backward diffeomorphic transformation at the coarsest
-        #resolution. The backward model transforms points from the moving image
+        #The backward model transforms points from the moving image
         #to points on the reference (which is the static). So the input
         #properties are taken from the moving image, and we need to pre-align
         #points on the moving physical space to the reference physical space by
-        #applying the inverse of pre-align. This is dome this way to make it
+        #applying the inverse of pre-align. This is done this way to make it
         #clear for the user: the pre-align matrix is usually obtained by doing
         #affine registration of the moving image towards the static image, which
         #results in a matrix transforming points in the static physical space to
         #points in the moving physical space
         prealign_inv = None if prealign is None else npl.inv(prealign)
-        input_shape = moving.shape
-        input_affine = moving_affine
-        input_prealign = prealign_inv
+        domain_shape = moving.shape
+        domain_affine = moving_affine
+        prealign = prealign_inv
         self.backward_model = DiffeomorphicMap(self.dim,
+                                               disc_shape,
+                                               disc_affine,
                                                domain_shape,
                                                domain_affine,
-                                               input_shape,
-                                               input_affine,
-                                               input_prealign)
+                                               codomain_shape,
+                                               codomain_affine,
+                                               prealign)
         self.backward_model.allocate()
 
     def _end_optimizer(self):
@@ -1331,30 +1354,39 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         current_moving = self.moving_ss.get_image(self.current_level)
         current_static = self.static_ss.get_image(self.current_level)
 
-        current_domain_shape = \
+        current_static_affine_inv = self.static_ss.get_affine_inv(0)
+        current_moving_affine_inv = self.moving_ss.get_affine_inv(0)
+
+        current_disc_shape = \
             self.static_ss.get_domain_shape(self.current_level)
-        current_domain_affine = \
+        current_disc_affine = \
             self.static_ss.get_affine(self.current_level)
-        current_domain_affine_inv = \
+        current_disc_affine_inv = \
             self.static_ss.get_affine_inv(self.current_level)
-        current_domain_spacing = \
+        current_disc_spacing = \
             self.static_ss.get_spacing(self.current_level)
-                    
+        
         #Warp the input images (smoothed to the current scale) to the common 
-        #(reference) space
-        wstatic = self.forward_model.transform_inverse(current_static, 'linear')
-        wmoving = self.backward_model.transform_inverse(current_moving, 'linear')
+        #(reference) space at the current resolution
+        wstatic = self.forward_model.transform_inverse(current_static, 'linear', 
+                                                       -1,
+                                                       current_disc_shape,
+                                                       current_disc_affine)
+        wmoving = self.backward_model.transform_inverse(current_moving, 'linear',
+                                                        -1,
+                                                        current_disc_shape,
+                                                        current_disc_affine)
         
         #Pass both images to the metric. Now both images are sampled on the
         #reference grid (equal to the static image's grid) and the direction
         #doesn't change across scales
-        self.metric.set_moving_image(wmoving, current_domain_affine, 
-            current_domain_spacing, self.static_direction)
+        self.metric.set_moving_image(wmoving, current_disc_affine, 
+            current_disc_spacing, self.static_direction)
         self.metric.use_moving_image_dynamics(
             current_moving, self.backward_model.inverse())
 
-        self.metric.set_static_image(wstatic, current_domain_affine, 
-            current_domain_spacing, self.static_direction)
+        self.metric.set_static_image(wstatic, current_disc_affine, 
+            current_disc_spacing, self.static_direction)
         self.metric.use_static_image_dynamics(
             current_static, self.forward_model.inverse())
 
@@ -1370,14 +1402,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compute the forward step (to be used to update the forward transform) 
         fw_step = np.array(self.metric.compute_forward())
         #Normalize the forward step
-        nrm = np.sqrt(np.sum((fw_step/current_domain_spacing)**2, -1)).max()
+        nrm = np.sqrt(np.sum((fw_step/current_disc_spacing)**2, -1)).max()
         if nrm>0:
             fw_step /= nrm
         
         #Add to current total field
         self.forward_model.forward, md_forward = self.update(
             self.forward_model.forward, fw_step, 
-            current_domain_affine_inv, self.step_length)
+            current_disc_affine_inv, self.step_length)
         del fw_step
 
         #Keep track of the forward energy
@@ -1386,14 +1418,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compose the backward step (to be used to update the backward transform)
         bw_step = np.array(self.metric.compute_backward())
         #Normalize the backward step
-        nrm = np.sqrt(np.sum((bw_step/current_domain_spacing)**2, -1)).max()
+        nrm = np.sqrt(np.sum((bw_step/current_disc_spacing)**2, -1)).max()
         if nrm>0:
             bw_step /= nrm
 
         #Add to current total field
         self.backward_model.forward, md_backward = self.update(
             self.backward_model.forward, bw_step, 
-            current_domain_affine_inv, self.step_length)
+            current_disc_affine_inv, self.step_length)
         del bw_step
 
         #Keep track of the energy
@@ -1414,32 +1446,32 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.forward_model.backward = np.array(
             self.invert_vector_field(
                 self.forward_model.forward,
-                current_domain_affine_inv,
-                current_domain_spacing,
+                current_disc_affine_inv,
+                current_disc_spacing,
                 self.inv_iter, self.inv_tol, None))
 
         #Invert the backward model's forward field
         self.backward_model.backward = np.array(
             self.invert_vector_field(
                 self.backward_model.forward,
-                current_domain_affine_inv,
-                current_domain_spacing,
+                current_disc_affine_inv,
+                current_disc_spacing,
                 self.inv_iter, self.inv_tol, None))
 
         #Invert the forward model's backward field
         self.forward_model.forward = np.array(
             self.invert_vector_field(
                 self.forward_model.backward,
-                current_domain_affine_inv,
-                current_domain_spacing,
+                current_disc_affine_inv,
+                current_disc_spacing,
                 self.inv_iter, self.inv_tol, self.forward_model.forward))
 
         #Invert the backward model's backward field
         self.backward_model.forward = np.array(
             self.invert_vector_field(
                 self.backward_model.backward,
-                current_domain_affine_inv,
-                current_domain_spacing,
+                current_disc_affine_inv,
+                current_disc_spacing,
                 self.inv_iter, self.inv_tol, self.backward_model.forward))
 
         #Free resources no longer needed to compute the forward and backward
