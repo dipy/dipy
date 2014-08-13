@@ -1291,7 +1291,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #reference, we don't need to pre-align.
         domain_shape = static.shape
         domain_affine = static_affine
-        prealign = None
         self.forward_model = DiffeomorphicMap(self.dim,
                                               disc_shape,
                                               disc_affine,
@@ -1299,7 +1298,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                               domain_affine,
                                               codomain_shape,
                                               codomain_affine,
-                                              prealign)
+                                              None)
         self.forward_model.allocate()
 
         #The backward model transforms points from the moving image
@@ -1314,7 +1313,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         prealign_inv = None if prealign is None else npl.inv(prealign)
         domain_shape = moving.shape
         domain_affine = moving_affine
-        prealign = prealign_inv
         self.backward_model = DiffeomorphicMap(self.dim,
                                                disc_shape,
                                                disc_affine,
@@ -1322,7 +1320,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                                domain_affine,
                                                codomain_shape,
                                                codomain_affine,
-                                               prealign)
+                                               prealign_inv)
         self.backward_model.allocate()
 
     def _end_optimizer(self):
