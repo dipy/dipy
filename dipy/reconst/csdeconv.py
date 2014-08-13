@@ -450,6 +450,8 @@ def odf_deconv(odf_sh, R, B_reg, lambda_=1., tau=0.1, r2_term=False):
            Distributions
     .. [3] Descoteaux, M, PhD thesis, INRIA Sophia-Antipolis, 2008.
     """
+    # In ConstrainedSDTModel, odf_sh is divided by its norm (Z) and sometimes
+    # the norm is 0 which creates NaNs.
     if np.any(np.isnan(odf_sh)):
         return np.zeros_like(odf_sh), 0
 
