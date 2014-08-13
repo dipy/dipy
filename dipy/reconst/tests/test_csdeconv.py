@@ -2,7 +2,8 @@ import warnings
 import numpy as np
 import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
-                           assert_array_almost_equal, run_module_suite)
+                           assert_array_almost_equal, run_module_suite,
+                           assert_array_equal)
 from dipy.data import get_sphere, get_data
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
@@ -13,6 +14,7 @@ from dipy.core.sphere import HemiSphere
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    forward_sdeconv_mat,
+                                   odf_deconv,
                                    odf_sh_to_sharp,
                                    auto_response,
                                    csd_predict)
@@ -139,6 +141,16 @@ def test_odfdeconv():
 
         ConstrainedSDTModel(gtab, ratio, sh_order=8)
         assert_equal(len(w) > 0, False)
+
+    csd_fit = csd.fit(np.zeros_like(S))
+    fodf = csd_fit.odf(sphere)
+    assert_array_equal(fodf, np.zeros_like(fodf))
+
+    odf_sh = np.zeros_like(fodf)
+    odf_sh[1] = np.nan
+
+    fodf, it = odf_deconv(odf_sh, csd.R, csd.B_reg)
+    assert_array_equal(fodf, np.zeros_like(fodf))
 
 
 def test_odf_sh_to_sharp():
