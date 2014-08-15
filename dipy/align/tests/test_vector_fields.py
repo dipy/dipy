@@ -3,6 +3,7 @@ from dipy.align import floating
 import dipy.align.vector_fields as vfu
 from numpy.testing import (assert_array_almost_equal,
                            assert_almost_equal)
+import dipy.align.imwarp as imwarp
 
 
 def test_warping_2d():
@@ -74,15 +75,6 @@ def test_warping_2d():
     warped = np.array(vfu.warp_image_nn(moving_image, disp, None, affine_index,
                       affine_disp))
     #compare the images (now we dont have to worry about precision, it is n.n.)
-    assert_array_almost_equal(warped, expected)
-
-    #test consolidation
-    consolidated = vfu.consolidate_2d(disp, affine_index, affine_disp)
-    warped = np.array(vfu.warp_image(moving_image, consolidated, 
-                                     None, None, None))
-    assert_array_almost_equal(warped, expected, decimal=5)
-    warped = np.array(vfu.warp_image_nn(moving_image, consolidated,
-                                        None, None, None))
     assert_array_almost_equal(warped, expected)
 
 
@@ -162,13 +154,127 @@ def test_warping_3d():
     #compare the images (now we dont have to worry about precision, it is n.n.)
     assert_array_almost_equal(warped, expected)
 
-    #test consolidation
-    consolidated = vfu.consolidate_3d(disp, affine_index, affine_disp)
-    warped = np.array(vfu.warp_volume(moving_image, consolidated,
-                                      None, None, None))
-    assert_array_almost_equal(warped, expected, decimal=5)
-    warped = np.array(vfu.warp_volume_nn(moving_image, consolidated,
-                                         None, None, None))
+
+def test_affine_warping_2d():
+    r"""
+    Affine (and invertible) warping can be performed using a Diffeomorphic Map
+    with zero displacement fields. We test affine warping by verifying that
+    the result of the warping under the DiffeomorphicMap is equivalent to
+    call the warping affine cython routine with the product of the
+    DiffeomorphicMap's transforms. Note that if this case fails, either
+    DiffeomorphicMap is wrong or the affine warping is wrong (or both),
+    but the intention of this test is to detect regressions only.
+    """
+    # Create a simple invertible affine transform
+    domain_shape = (64, 64)
+    codomain_shape = (80, 80)
+    nr = domain_shape[0]
+    nc = domain_shape[1]
+    s = 1.1
+    t = 0.25
+    trans = np.array([[1, 0, -t*nr],
+                      [0, 1, -t*nc],
+                      [0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+    scale = np.array([[1*s, 0, 0],
+                      [0, 1*s, 0],
+                      [0, 0, 1]])
+    gt_affine = trans_inv.dot(scale.dot(trans))
+    # Create an image of a circle
+    radius = 16
+    circle = vfu.create_circle(codomain_shape[0], codomain_shape[1], radius)
+    circle = np.array(circle, dtype = floating)
+    #Define different voxel-to-space transforms for domain, codomain and reference grid,
+    #also, use a non-identity pre-align transform
+    D = gt_affine
+    C = imwarp.mult_aff(gt_affine, gt_affine)
+    R = np.eye(3)
+    P = gt_affine
+    
+    #Create the diffeomorphic map
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, R,
+                                          domain_shape, D, 
+                                          codomain_shape, C, 
+                                          P)
+    #Assign zero displacements
+    diff_map.forward = np.zeros(shape=domain_shape+(2,), dtype = floating)
+    diff_map.backward = np.zeros(shape=domain_shape+(2,), dtype = floating)
+
+    # Test affine warping with bilinear interpolation
+    expected = diff_map.transform(circle, 'linear')
+    composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
+                                  imwarp.mult_aff(P, D))
+    warped = vfu.warp_image_affine(circle, np.array(domain_shape, dtype = np.int32), composition)
+    assert_array_almost_equal(warped, expected)
+
+    # Test affine warping with nearest-neighbor interpolation
+    expected = diff_map.transform(circle, 'nearest')
+    composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
+                                  imwarp.mult_aff(P, D))
+    warped = vfu.warp_image_affine_nn(circle, np.array(domain_shape, dtype = np.int32), composition)
+    assert_array_almost_equal(warped, expected)
+
+
+def test_affine_warping_3d():
+    r"""
+    Affine (and invertible) warping can be performed using a Diffeomorphic Map
+    with zero displacement fields. We test affine warping by verifying that
+    the result of the warping under the DiffeomorphicMap is equivalent to
+    call the warping affine cython routine with the product of the
+    DiffeomorphicMap's transforms. Note that if this case fails, either
+    DiffeomorphicMap is wrong or the affine warping is wrong (or both),
+    but the intention of this test is to detect regressions only.
+    """
+    # Create a simple invertible affine transform
+    domain_shape = (64, 64, 64)
+    codomain_shape = (80, 80, 80)
+    ns = domain_shape[0]
+    nr = domain_shape[1]
+    nc = domain_shape[2]
+    s = 1.1
+    t = 0.25
+    trans = np.array([[1, 0, 0, -t*ns],
+                      [0, 1, 0, -t*nr],
+                      [0, 0, 1, -t*nc],
+                      [0, 0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+    scale = np.array([[1*s, 0, 0, 0],
+                      [0, 1*s, 0, 0],
+                      [0, 0, 1*s, 0],
+                      [0, 0, 0, 1]])
+    gt_affine = trans_inv.dot(scale.dot(trans))
+    # Create an image of a circle
+    radius = 16
+    sphere = vfu.create_sphere(codomain_shape[0], codomain_shape[1], codomain_shape[2], radius)
+    sphere = np.array(sphere, dtype = floating)
+    #Define different voxel-to-space transforms for domain, codomain and reference grid,
+    #also, use a non-identity pre-align transform
+    D = gt_affine
+    C = imwarp.mult_aff(gt_affine, gt_affine)
+    R = np.eye(4)
+    P = gt_affine
+    
+    #Create the diffeomorphic map
+    diff_map = imwarp.DiffeomorphicMap(3, domain_shape, R,
+                                          domain_shape, D, 
+                                          codomain_shape, C, 
+                                          P)
+    #Assign zero displacements
+    diff_map.forward = np.zeros(shape=domain_shape+(3,), dtype = floating)
+    diff_map.backward = np.zeros(shape=domain_shape+(3,), dtype = floating)
+
+    # Test affine warping with trilinear interpolation
+    expected = diff_map.transform(sphere, 'linear')
+    composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
+                                  imwarp.mult_aff(P, D))
+    warped = vfu.warp_volume_affine(sphere, np.array(domain_shape, dtype = np.int32), composition)
+    assert_array_almost_equal(warped, expected)
+
+    # Test affine warping with nearest-neighbor interpolation
+    expected = diff_map.transform(sphere, 'nearest')
+    composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
+                                  imwarp.mult_aff(P, D))
+    warped = vfu.warp_volume_affine_nn(sphere, np.array(domain_shape, dtype = np.int32), composition)
     assert_array_almost_equal(warped, expected)
 
 
@@ -391,6 +497,8 @@ def test_invert_vector_field_3d():
 if __name__=='__main__':
     test_warping_2d()
     test_warping_3d()
+    test_affine_warping_2d()
+    test_affine_warping_3d()
     test_compose_vector_fields_2d()
     test_compose_vector_fields_3d()
     test_invert_vector_field_2d()

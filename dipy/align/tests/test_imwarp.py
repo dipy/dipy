@@ -48,11 +48,11 @@ def test_diffeomorphic_map_2d():
     operating in physical space, maps the points exactly (up to numerical 
     precision).
     """
-    input_shape = (10, 10)
-    target_shape = (10, 10)
+    domain_shape = (10, 10)
+    codomain_shape = (10, 10)
     #create a simple affine transformation
-    nr = input_shape[0]
-    nc = input_shape[1]
+    nr = domain_shape[0]
+    nc = domain_shape[1]
     s = 1.1
     t = 0.25
     trans = np.array([[1, 0, -t*nr],
@@ -66,17 +66,17 @@ def test_diffeomorphic_map_2d():
     gt_affine_inv = np.linalg.inv(gt_affine)
 
     #create the random displacement field
-    input_affine = gt_affine
-    target_affine = gt_affine
-    disp, assign = vfu.create_random_displacement_2d(np.array(input_shape, dtype=np.int32),
-                                                     input_affine, 
-                                                     np.array(target_shape, dtype=np.int32),
-                                                     target_affine)
+    domain_affine = gt_affine
+    codomain_affine = gt_affine
+    disp, assign = vfu.create_random_displacement_2d(np.array(domain_shape, dtype=np.int32),
+                                                     domain_affine, 
+                                                     np.array(codomain_shape, dtype=np.int32),
+                                                     codomain_affine)
     disp = np.array(disp, dtype=floating)
     assign = np.array(assign)
     #create a random image (with decimal digits) to warp
-    moving_image = np.ndarray(target_shape, dtype=floating)
-    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
+    moving_image = np.ndarray(codomain_shape, dtype=floating)
+    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(codomain_shape))
     #set boundary values to zero so we don't test wrong interpolation due to floating point precision
     moving_image[0,:] = 0
     moving_image[-1,:] = 0
@@ -84,18 +84,18 @@ def test_diffeomorphic_map_2d():
     moving_image[:,-1] = 0
 
     #warp the moving image using the synthetic displacement field
-    target_affine_inv = np.linalg.inv(target_affine)
-    input_affine_inv = np.linalg.inv(input_affine)
-    affine_index = target_affine_inv.dot(input_affine)
-    affine_disp = target_affine_inv
+    codomain_affine_inv = np.linalg.inv(codomain_affine)
+    domain_affine_inv = np.linalg.inv(domain_affine)
+    affine_index = codomain_affine_inv.dot(domain_affine)
+    affine_disp = codomain_affine_inv
 
     #warp the moving image using the (exact) assignments
     expected = moving_image[(assign[...,0], assign[...,1])]
 
     #warp using a DiffeomorphicMap instance
-    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine, 
-                                          input_shape, input_affine, 
-                                          target_shape, target_affine, 
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine, 
+                                          domain_shape, domain_affine, 
+                                          codomain_shape, codomain_affine, 
                                           None)
     diff_map.forward = disp
 
@@ -123,9 +123,9 @@ def test_diffeomorphic_map_2d():
         assert_array_almost_equal(warped, expected)
 
     #Now test the inverse functionality
-    diff_map = imwarp.DiffeomorphicMap(2, target_shape, target_affine,
-                                          target_shape, target_affine, 
-                                          input_shape, input_affine, None)
+    diff_map = imwarp.DiffeomorphicMap(2, codomain_shape, codomain_affine,
+                                          codomain_shape, codomain_affine, 
+                                          domain_shape, domain_affine, None)
     diff_map.backward = disp
     for type in [floating, np.float64, np.int64, np.int32]:
         moving_image = moving_image.astype(type)
@@ -142,9 +142,9 @@ def test_diffeomorphic_map_2d():
 
     #Verify that DiffeomorphicMap raises the appropriate exceptions when
     #the sampling information is undefined
-    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine,
-                                          input_shape, input_affine, 
-                                          target_shape, target_affine, 
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
+                                          domain_shape, domain_affine, 
+                                          codomain_shape, codomain_affine, 
                                           None)
     diff_map.forward = disp
     diff_map.domain_shape = None
@@ -152,15 +152,142 @@ def test_diffeomorphic_map_2d():
     assert_raises(ValueError, diff_map.transform, moving_image, 'linear')
 
     #Same test for diff_map.transform_inverse
-    diff_map = imwarp.DiffeomorphicMap(2, input_shape, input_affine,
-                                          input_shape, input_affine, 
-                                          target_shape, target_affine, 
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, domain_affine,
+                                          domain_shape, domain_affine, 
+                                          codomain_shape, codomain_affine, 
                                           None)
     diff_map.forward = disp
     diff_map.codomain_shape = None
     #If we don't provide the sampling info, it should try to use the map's info, but it's None...
     assert_raises(ValueError, diff_map.transform_inverse, moving_image, 'linear')
 
+    
+
+def test_diffeomorphic_map_simplification_2d():
+    r"""
+    Create an invertible deformation field, and define a DiffeomorphicMap
+    using different voxel-to-space transforms for domain, codomain, and 
+    reference discretizations, also use a non-identity pre-aligning matrix.
+    Warp a circle using the diffeomorphic map to obtain the expected warped
+    circle. Now simplify the DiffeomorphicMap and warp the same circle using
+    this simplified map. Verify that the two warped circles are equal up to
+    numerical precision.
+    """
+    #create a simple affine transformation
+    domain_shape = (64, 64)
+    codomain_shape = (80, 80)
+    nr = domain_shape[0]
+    nc = domain_shape[1]
+    s = 1.1
+    t = 0.25
+    trans = np.array([[1, 0, -t*nr],
+                      [0, 1, -t*nc],
+                      [0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+    scale = np.array([[1*s, 0, 0],
+                      [0, 1*s, 0],
+                      [0, 0, 1]])
+    gt_affine = trans_inv.dot(scale.dot(trans))
+    # Create the invertible displacement fields and the circle
+    radius = 16
+    circle = vfu.create_circle(codomain_shape[0], codomain_shape[1], radius)
+    d, dinv = vfu.create_harmonic_fields_2d(domain_shape[0], domain_shape[1], 0.3, 6)
+    #Define different voxel-to-space transforms for domain, codomain and reference grid,
+    #also, use a non-identity pre-align transform
+    D = gt_affine
+    C = imwarp.mult_aff(gt_affine, gt_affine)
+    R = np.eye(3)
+    P = gt_affine
+    
+    #Create the original diffeomorphic map
+    diff_map = imwarp.DiffeomorphicMap(2, domain_shape, R,
+                                          domain_shape, D, 
+                                          codomain_shape, C, 
+                                          P)
+    diff_map.forward = np.array(d, dtype = floating)
+    diff_map.backward = np.array(dinv, dtype = floating)
+    #Warp the circle to obtain the expected image
+    expected = diff_map.transform(circle, 'linear')
+    
+    #Simplify
+    simplified = diff_map.get_simplified_transform()
+    #warp the circle
+    warped = simplified.transform(circle, 'linear')
+    #verify that the simplified map is equivalent to the 
+    #original one
+    assert_array_almost_equal(warped, expected)
+    #And of course, it must be simpler...
+    assert_equal(simplified.domain_affine, None)
+    assert_equal(simplified.codomain_affine, None)
+    assert_equal(simplified.disc_affine, None)
+    assert_equal(simplified.domain_affine_inv, None)
+    assert_equal(simplified.codomain_affine_inv, None)
+    assert_equal(simplified.disc_affine_inv, None)
+
+
+def test_diffeomorphic_map_simplification_3d():
+    r"""
+    Create an invertible deformation field, and define a DiffeomorphicMap
+    using different voxel-to-space transforms for domain, codomain, and 
+    reference discretizations, also use a non-identity pre-aligning matrix.
+    Warp a sphere using the diffeomorphic map to obtain the expected warped
+    sphere. Now simplify the DiffeomorphicMap and warp the same sphere using
+    this simplified map. Verify that the two warped spheres are equal up to
+    numerical precision.
+    """
+    #create a simple affine transformation
+    domain_shape = (64, 64, 64)
+    codomain_shape = (80, 80, 80)
+    nr = domain_shape[0]
+    nc = domain_shape[1]
+    ns = domain_shape[2]
+    s = 1.1
+    t = 0.25
+    trans = np.array([[1, 0, 0, -t*ns],
+                      [0, 1, 0, -t*nr],
+                      [0, 0, 1, -t*nc],
+                      [0, 0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+    scale = np.array([[1*s, 0, 0, 0],
+                      [0, 1*s, 0, 0],
+                      [0, 0, 1*s, 0],
+                      [0, 0, 0, 1]])
+    gt_affine = trans_inv.dot(scale.dot(trans))
+    # Create the invertible displacement fields and the sphere
+    radius = 16
+    sphere = vfu.create_sphere(codomain_shape[0], codomain_shape[1], codomain_shape[2], radius)
+    d, dinv = vfu.create_harmonic_fields_3d(domain_shape[0], domain_shape[1], domain_shape[2], 0.3, 6)
+    #Define different voxel-to-space transforms for domain, codomain and reference grid,
+    #also, use a non-identity pre-align transform
+    D = gt_affine
+    C = imwarp.mult_aff(gt_affine, gt_affine)
+    R = np.eye(4)
+    P = gt_affine
+    
+    #Create the original diffeomorphic map
+    diff_map = imwarp.DiffeomorphicMap(3, domain_shape, R,
+                                          domain_shape, D, 
+                                          codomain_shape, C, 
+                                          P)
+    diff_map.forward = np.array(d, dtype = floating)
+    diff_map.backward = np.array(dinv, dtype = floating)
+    #Warp the sphere to obtain the expected image
+    expected = diff_map.transform(sphere, 'linear')
+    
+    #Simplify
+    simplified = diff_map.get_simplified_transform()
+    #warp the sphere
+    warped = simplified.transform(sphere, 'linear')
+    #verify that the simplified map is equivalent to the 
+    #original one
+    assert_array_almost_equal(warped, expected)
+    #And of course, it must be simpler...
+    assert_equal(simplified.domain_affine, None)
+    assert_equal(simplified.codomain_affine, None)
+    assert_equal(simplified.disc_affine, None)
+    assert_equal(simplified.domain_affine_inv, None)
+    assert_equal(simplified.codomain_affine_inv, None)
+    assert_equal(simplified.disc_affine_inv, None)
 
 def test_optimizer_exceptions():
     #An arbitrary valid metric
@@ -857,6 +984,8 @@ if __name__=='__main__':
     test_optimizer_exceptions()
     test_mult_aff()
     test_diffeomorphic_map_2d()
+    test_diffeomorphic_map_simplification_2d()
+    test_diffeomorphic_map_simplification_3d()
     test_get_direction_and_spacings()
     test_ssd_2d_demons()
     test_ssd_2d_gauss_newton()

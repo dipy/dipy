@@ -1064,122 +1064,190 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     return p
 
 
-def prepend_affine_to_displacement_field_2d(floating[:, :, :] d,
-                                            double[:, :] affine):
-    r"""Composition of a 2D displacement field with a linear transform
+def simplify_warp_function_2d(floating[:,:,:] d,
+                              double[:, :] affine_idx_in,
+                              double[:, :] affine_idx_out, 
+                              double[:, :] affine_disp,
+                              int[:] sampling_shape):
+    r"""
+    Simplifies a nonlinear warping function combined with an affine transform
 
-    Modifies the given 2-D displacement field by applying the given affine
-    transformation. The resulting transformation T is of the from
-    T(x) = d(A*x), where A is the affine transformation.
+    Modifies the given deformation field by incorporating into it a
+    an affine transformation and voxel-to-space transforms associated to
+    the discretization of its domain and codomain.
+    The resulting transformation may be regarded as operating on the 
+    image spaces given by the domain and codomain discretization.
+    More precisely, the resulting transform is of the form:
 
-    Parameters
-    ----------
-    d : array, shape (R, C, 2)
-        the input 2-D displacement field with R rows and C columns
-    affine : array, shape (2, 3)
-        the matrix representation of the affine transformation to be applied
+    T[i] = W * d[U * i] + V * i 
+
+    Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
+    Both the direct and inverse transforms of a DiffeomorphicMap can be written
+    in this form:
+
+    Direct:  Let D be the voxel-to-space transform of the domain's discretization,
+             P be the pre-align matrix, Rinv the space-to-voxel transform of the
+             reference grid (the grid the displacement field is defined on) and
+             Cinv be the space-to-voxel transform of the codomain's discretization.
+             Then, for each i in the domain's grid, the direct transform is given by
+             
+             T[i] = Cinv * d[Rinv * P * D * i] + Cinv * P * D * i
+             
+             and we identify U = Rinv * P * D, V = Cinv * P * D, W = Cinv
+
+    Inverse: Let C be the voxel-to-space transform of the codomain's discretization,
+             Pinv be the inverse of the pre-align matrix, Rinv the space-to-voxel 
+             transform of the reference grid (the grid the displacement field is 
+             defined on) and Dinv be the space-to-voxel transform of the domain's
+             discretization. Then, for each j in the codomain's grid, the inverse
+             transform is given by
+
+             Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
+
+             and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
     """
-    if affine is None:
-        return
     cdef:
-        int nrows = d.shape[0]
-        int ncols = d.shape[1]
-        int i, j, inside
-        double dii, djj
-        floating[:,:,:] out= np.zeros_like(d)
-        floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
-    
-    with nogil:
-    
-        for i in range(nrows):
-            for j in range(ncols):
-                dii = _apply_affine_2d_x0(i, j, 1, affine)
-                djj = _apply_affine_2d_x1(i, j, 1, affine)
-                inside = interpolate_vector_bilinear(d, dii, djj, tmp)
-                out[i, j, 0] = tmp[0] + dii - i
-                out[i, j, 1] = tmp[1] + djj - j
-
-        for i in range(nrows):
-            for j in range(ncols):
-                d[i, j, 0] = out[i, j, 0]
-                d[i, j, 1] = out[i, j, 1]
-
-
-def prepend_affine_to_displacement_field_3d(floating[:, :, :, :] d,
-                                            double[:, :] affine):
-    r"""Composition of a 3D displacement field with a linear transform
-
-    Modifies the given 3-D displacement field by applying the given affine
-    transformation. The resulting transformation T is of the from
-    T(x) = d(A*x), where A is the affine transformation.
-
-    Parameters
-    ----------
-    d : array, shape (S, R, C, 3)
-        the input 3-D displacement field with S slices, R rows and C columns
-    affine : array, shape (3, 4)
-        the matrix representation of the affine transformation to be applied
-    """
-    if affine is None:
-        return
-    cdef:
-        int nslices = d.shape[0]
-        int nrows = d.shape[1]
-        int ncols = d.shape[2]
-        int i, j, k, inside
-        double dkk, dii, djj
-        floating[:,:,:,:] out= np.zeros_like(d)
-        floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
-    with nogil:
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    dkk = _apply_affine_3d_x0(k, i, j, 1, affine)
-                    dii = _apply_affine_3d_x1(k, i, j, 1, affine)
-                    djj = _apply_affine_3d_x2(k, i, j, 1, affine)
-                    inside = interpolate_vector_trilinear(d, dkk, dii, djj, tmp)
-                    out[k, i, j, 0] = tmp[0] + dkk - k
-                    out[k, i, j, 1] = tmp[1] + dii - i
-                    out[k, i, j, 2] = tmp[2] + djj - j
-
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    d[k, i, j, 0] = out[k, i, j, 0]
-                    d[k, i, j, 1] = out[k, i, j, 1]
-                    d[k, i, j, 2] = out[k, i, j, 2]
-
-
-def append_affine_to_displacement_field_2d(floating[:, :, :] d,
-                                           double[:, :] affine):
-    r"""Composition of a 2D displacement field with a linear transform
-
-    Modifies the given 2-D displacement field by applying the given affine
-    transformation. The resulting transformation T is of the from
-    T(x) = A*d(x), where A is the affine transformation.
-
-    Parameters
-    ----------
-    d : array, shape (R, C, 2)
-        the input 2-D displacement field with R rows and C columns
-    affine : array, shape (2, 3)
-        the matrix representation of the affine transformation to be applied
-    """
-    if affine is None:
-        return
-    cdef:
-        int nrows = d.shape[0]
-        int ncols = d.shape[1]
-        double dii, djj
+        int nrows = sampling_shape[0]
+        int ncols = sampling_shape[1]
         int i, j
-
+        double di, dj, dii, djj
+        floating[:] tmp = np.zeros((2,), dtype=np.asarray(d).dtype)
+        floating[:,:,:] out= np.zeros(shape=(nrows, ncols, 2), 
+                                      dtype=np.asarray(d).dtype)
     with nogil:
+    
         for i in range(nrows):
             for j in range(ncols):
-                dii = d[i, j, 0] + i
-                djj = d[i, j, 1] + j
-                d[i, j, 0] = _apply_affine_2d_x0(dii, djj, 1, affine) - i
-                d[i, j, 1] = _apply_affine_2d_x1(dii, djj, 1, affine) - j
+                #Apply inner index pre-multiplication
+                if affine_idx_in is None:
+                    dii = d[i, j, 0]
+                    djj = d[i, j, 1]
+                else:
+                    di = _apply_affine_2d_x0(
+                        i, j, 1, affine_idx_in)
+                    dj = _apply_affine_2d_x1(
+                        i, j, 1, affine_idx_in)
+                    interpolate_vector_bilinear(d, di, dj, tmp)
+                    dii = tmp[0]
+                    djj = tmp[1]
+
+                #Apply displacement multiplication 
+                if affine_disp is not None:
+                    di = _apply_affine_2d_x0(
+                        dii, djj, 0, affine_disp)
+                    dj = _apply_affine_2d_x1(
+                        dii, djj, 0, affine_disp)
+                else:
+                    di = dii
+                    dj = djj
+
+                #Apply outer index multiplication and add the displacements
+                if affine_idx_out is not None:
+                    out[i, j, 0] = di + _apply_affine_2d_x0(i, j, 1, affine_idx_out) - i
+                    out[i, j, 1] = dj + _apply_affine_2d_x1(i, j, 1, affine_idx_out) - j
+                else:
+                    out[i, j, 0] = di
+                    out[i, j, 1] = dj
+    return out
+
+
+def simplify_warp_function_3d(floating[:,:,:,:] d,
+                              double[:, :] affine_idx_in,
+                              double[:, :] affine_idx_out, 
+                              double[:, :] affine_disp,
+                              int[:] sampling_shape):
+    r"""
+    Simplifies a nonlinear warping function combined with an affine transform
+
+    Modifies the given deformation field by incorporating into it a
+    an affine transformation and voxel-to-space transforms associated to
+    the discretization of its domain and codomain.
+    The resulting transformation may be regarded as operating on the 
+    image spaces given by the domain and codomain discretization.
+    More precisely, the resulting transform is of the form:
+
+    T[i] = W * d[U * i] + V * i 
+
+    Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
+    Both the direct and inverse transforms of a DiffeomorphicMap can be written
+    in this form:
+
+    Direct:  Let D be the voxel-to-space transform of the domain's discretization,
+             P be the pre-align matrix, Rinv the space-to-voxel transform of the
+             reference grid (the grid the displacement field is defined on) and
+             Cinv be the space-to-voxel transform of the codomain's discretization.
+             Then, for each i in the domain's grid, the direct transform is given by
+             
+             T[i] = Cinv * d[Rinv * P * D * i] + Cinv * P * D * i
+             
+             and we identify U = Rinv * P * D, V = Cinv * P * D, W = Cinv
+
+    Inverse: Let C be the voxel-to-space transform of the codomain's discretization,
+             Pinv be the inverse of the pre-align matrix, Rinv the space-to-voxel 
+             transform of the reference grid (the grid the displacement field is 
+             defined on) and Dinv be the space-to-voxel transform of the domain's
+             discretization. Then, for each j in the codomain's grid, the inverse
+             transform is given by
+
+             Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
+
+             and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
+    """
+    cdef:
+        int nrows = sampling_shape[0]
+        int ncols = sampling_shape[1]
+        int nslices = sampling_shape[2]
+        int i, j, k
+        double di, dj, dk, dii, djj, dkk
+        floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
+        floating[:,:,:,:] out= np.zeros(shape=(nrows, ncols, nslices, 3), 
+                                        dtype=np.asarray(d).dtype)
+    with nogil:
+
+        for k in range(nslices):
+            for i in range(nrows):
+                for j in range(ncols):
+                    if affine_idx_in is None:
+                        dkk = d[k, i, j, 0]
+                        dii = d[k, i, j, 1]
+                        djj = d[k, i, j, 2]
+                    else:
+                        dk = _apply_affine_3d_x0(
+                            k, i, j, 1, affine_idx_in)
+                        di = _apply_affine_3d_x1(
+                            k, i, j, 1, affine_idx_in)
+                        dj = _apply_affine_3d_x2(
+                            k, i, j, 1, affine_idx_in)
+                        inside = interpolate_vector_trilinear(d, dk, di, dj, 
+                                                              tmp)
+                        dkk = tmp[0]
+                        dii = tmp[1]
+                        djj = tmp[2]
+
+                    if affine_disp is not None:
+                        dk = _apply_affine_3d_x0(
+                            dkk, dii, djj, 0, affine_disp)
+                        di = _apply_affine_3d_x1(
+                            dkk, dii, djj, 0, affine_disp)
+                        dj = _apply_affine_3d_x2(
+                            dkk, dii, djj, 0, affine_disp)
+                    else:
+                        dk = dkk
+                        di = dii
+                        dj = djj
+                    
+                    if affine_idx_out is not None:
+                        out[k, i, j, 0] = dk + _apply_affine_3d_x0(k, i, j, 1,
+                                                       affine_idx_out) - k
+                        out[k, i, j, 1]= di + _apply_affine_3d_x1(k, i, j, 1,
+                                                       affine_idx_out) - i
+                        out[k, i, j, 2] = dj + _apply_affine_3d_x2(k, i, j, 1,
+                                                       affine_idx_out) - j
+                    else:
+                        out[k, i, j, 0] = dk
+                        out[k, i, j, 1] = di
+                        out[k, i, j, 2] = dj
+    return out
 
 
 def reorient_vector_field_2d(floating[:, :, :] d,
@@ -1249,210 +1317,6 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
                     d[k, i, j, 1] = _apply_affine_3d_x1(dk, di, dj, 0, affine)
                     d[k, i, j, 2] = _apply_affine_3d_x2(dk, di, dj, 0, affine)
 
-    
-def append_affine_to_displacement_field_3d(floating[:, :, :, :] d,
-                                           double[:, :] affine):
-    r"""Composition of a 3D displacement field with a linear transform
-
-    Modifies the given 3-D displacement field by applying the given affine
-    transformation. The resulting transformation T is of the from
-    T(x) = A*d(x), where A is the affine transformation.
-
-    Parameters
-    ----------
-    d : array, shape (S, R, C, 3)
-        the input 3-D displacement field with S slices, R rows and C columns
-    affine : array, shape (3, 4)
-        the matrix representation of the affine transformation to be applied
-    """
-    if affine is None:
-        return
-    cdef:
-        int nslices = d.shape[0]
-        int nrows = d.shape[1]
-        int ncols = d.shape[2]
-        double dkk, dii, djj
-        int i, j, k
-
-    with nogil:
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    dkk = d[k, i, j, 0] + k
-                    dii = d[k, i, j, 1] + i
-                    djj = d[k, i, j, 2] + j
-                    d[k, i, j, 0] = \
-                        _apply_affine_3d_x0(dkk, dii, djj, 1, affine) - k
-                    d[k, i, j, 1] = \
-                        _apply_affine_3d_x1(dkk, dii, djj, 1, affine) - i
-                    d[k, i, j, 2] = \
-                        _apply_affine_3d_x2(dkk, dii, djj, 1, affine) - j
-
-
-def consolidate_2d(floating[:,:,:] field, double[:,:] affine_idx, 
-                   double[:,:] affine_disp):
-    r"""Composition of a 2D displacement field with two linear transforms
-
-    Defines a new displacement field C defined by
-
-    (1) C[i] = A * field[i] + B * i - i
-
-    where i denotes the coordinates of a voxel in field's grid, A =  affine_disp
-    and B = affine_idx. To illustrate how to use this function, consider a 
-    displacement field with grid-to-space matrix S, and let's say we need to
-    warp an image J with grid-to-space matrix R. For each voxel i in the
-    displacement field grid, the warped image is given by:
-
-    (2) warped[i] = J[ Rinv * (S * i + field[i]) ]
-
-    where Rinv =  R^{-1}. Therefore, whenever we need to warp an image we need
-    to keep track of S and Rinv. After "consolidating" the displacement field,
-    it will operate directly on the grid by incorporating the linear 
-    transformations into the displacement field, so that the warped image at
-    voxel i can be computed by:
-
-    (3) warped[i] = J[ i + field[i] ]
-
-    We accomplish this by defining A = Rinv and B = Rinv * S, by plugging these
-    A, B, into eq. (1) we can see that the resulting mapping C satisfies eq. (3)
-
-    The downside of consolidating a displacement field is that now we can only
-    warp images with the same voxel-to-space transformation: R.
-
-    Parameters
-    ----------
-    field : array, shape (R, C, 2)
-        the displacement field to be consolidated
-    affine_idx : array, shape (3, 3)
-        the matrix B, defined above
-    affine_disp : array, shape (3, 3)
-        the matrix A, defined above
-
-    Returns
-    -------
-    output : array (R, C, 2)
-        the consolidated displacement field
-    """
-    cdef:
-        int nrows = field.shape[0]
-        int ncols = field.shape[1]
-        int i, j
-        double di, dj, dii, djj
-        floating[:, :, :] output = np.zeros(shape=(nrows, ncols, 2), 
-                                        dtype=np.asarray(field).dtype)
-
-    for i in range(nrows):
-        for j in range(ncols):
-            di = field[i, j, 0]
-            dj = field[i, j, 1]
-
-            #premultiply displacement
-            if affine_disp is not None:
-                dii = _apply_affine_2d_x0(di, dj, 0, affine_disp)
-                djj = _apply_affine_2d_x1(di, dj, 0, affine_disp)
-            else:
-                dii = di
-                djj = dj
-
-            #premultiply index
-            if affine_idx is not None:
-                di = _apply_affine_2d_x0(i, j, 1, affine_idx)
-                dj = _apply_affine_2d_x1(i, j, 1, affine_idx)
-            else:
-                di = i
-                dj = j
-
-            output[i, j, 0] = dii + di - i
-            output[i, j, 1] = djj + dj - j
-
-    return output
-
-
-def consolidate_3d(floating[:,:,:,:] field, double[:,:] affine_idx, 
-                   double[:,:] affine_disp):
-    r"""Composition of a 3D displacement field with two linear transforms
-
-    Defines a new displacement C field defined by
-
-    (1) C[i] = A * field[i] + B * i - i
-
-    where i denotes the coordinates of a voxel in field's grid, A =  affine_disp
-    and B = affine_idx. To illustrate how to use this function, consider a 
-    displacement field with grid-to-space matrix S, and let's say we need to
-    warp an image J with grid-to-space matrix R. For each voxel i in the
-    displacement field grid, the warped image is given by:
-
-    (2) warped[i] = J[ Rinv * (S * i + field[i]) ]
-
-    where Rinv =  R^{-1}. Therefore, whenever we need to warp an image we need
-    to keep track of S and Rinv. After "consolidating" the displacement field,
-    it will operate directly on the grid by incorporating the linear 
-    transformations into the displacement field, so that the warped image at
-    voxel i can be computed by:
-
-    (3) warped[i] = J[ i + field[i] ]
-
-    We accomplish this by defining A = Rinv and B = Rinv * S, by plugging these
-    A, B, into eq. (1) we can see that the resulting mapping C satisfies eq. (3)
-
-    The downside of consolidating a displacement field is that now we can only
-    warp images with the same voxel-to-space transformation: R.
-
-    Parameters
-    ----------
-    field : array, shape (S, R, C, 3)
-        the displacement field to be consolidated
-    affine_idx : array, shape (4, 4)
-        the matrix B, defined above
-    affine_disp : array, shape (4, 4)
-        the matrix A, defined above
-
-    Returns
-    -------
-    output : array (S, R, C, 3)
-        the consolidated displacement field
-    """
-    cdef:
-        int nslices = field.shape[0]
-        int nrows = field.shape[1]
-        int ncols = field.shape[2]
-        int i, j, k
-        double di, dj, dk, dii, djj, dkk
-        floating[:, :, :, :] output = np.zeros(shape=(nslices, nrows, ncols, 3), 
-                                               dtype=np.asarray(field).dtype)
-    for k in range(nslices):    
-        for i in range(nrows):
-            for j in range(ncols):
-                dk = field[k, i, j, 0]
-                di = field[k, i, j, 1]
-                dj = field[k, i, j, 2]
-
-                #pre-multiply displacement
-                if affine_disp is not None:
-                    dkk = _apply_affine_3d_x0(dk, di, dj, 0, affine_disp)
-                    dii = _apply_affine_3d_x1(dk ,di, dj, 0, affine_disp)
-                    djj = _apply_affine_3d_x2(dk, di, dj, 0, affine_disp)
-                else:
-                    dkk = dk
-                    dii = di
-                    djj = dj
-
-                #pre-multiply index
-                if affine_idx is not None:
-                    dk = _apply_affine_3d_x0(k, i, j, 1, affine_idx)
-                    di = _apply_affine_3d_x1(k, i, j, 1, affine_idx)
-                    dj = _apply_affine_3d_x2(k, i, j, 1, affine_idx)
-                else:
-                    dk = k
-                    di = i
-                    dj = j
-
-                output[k, i, j, 0] = dkk + dk - k
-                output[k, i, j, 1] = dii + di - i
-                output[k, i, j, 2] = djj + dj - j
-
-    return output
-
 
 def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
     r"""Up-samples the input 2-D displacement field by a factor of 2
@@ -1490,6 +1354,9 @@ def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
                 dii = 0.5 * i
                 djj = 0.5 * j
                 inside = interpolate_vector_bilinear(field, dii, djj, up[i,j])
+                if inside == 0:
+                    up[i,j,0] = 0
+                    up[i,j,1] = 0
     return up
 
 
@@ -1520,7 +1387,7 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
         int ns = target_shape[0]
         int nr = target_shape[1]
         int nc = target_shape[2]
-        int i, j, k
+        int i, j, k, inside
         double dkk, dii, djj
         floating[:, :, :, :] up = np.zeros(shape=(ns, nr, nc, 3), 
                                            dtype=np.asarray(field).dtype)
@@ -1533,8 +1400,12 @@ def upsample_displacement_field_3d(floating[:, :, :, :] field,
                     dkk = 0.5 * k
                     dii = 0.5 * i
                     djj = 0.5 * j
-                    interpolate_vector_trilinear(field, dkk, dii, djj, 
-                                                 up[k, i, j])
+                    inside = interpolate_vector_trilinear(field, dkk, dii, djj,
+                                                          up[k, i, j])
+                    if inside == 0:
+                        up[k,i,j,0] = 0
+                        up[k,i,j,1] = 0
+                        up[k,i,j,2] = 0
     return up
 
 
@@ -1758,65 +1629,6 @@ def downsample_displacement_field2D(floating[:, :, :] field):
                     down[i, j, 0] /= cnt[i, j]
                     down[i, j, 1] /= cnt[i, j]
     return down
-
-
-def get_displacement_range(floating[:, :, :, :] d, double[:, :] affine):
-    r"""Minimum and maximum values reached by the given transformation
-
-    Computes the minimum and maximum values reached by the transformation
-    defined by the given displacement field and affine pre-multiplication
-    matrix. More precisely, computes $\max_{x\in L} x + d(Ax)$, and 
-    $\min_{x\in L} x + d(Ax)$, where d is the displacement field, A is the
-    affine matrix, the interpolation used is tri-linear and the maximum and
-    minimum are taken for each vector component independently.
-
-    Parameters
-    ----------
-    d : array, shape (S, R, C, 3)
-        the displacement field part of the transformation
-    affine : array, shape (4, 4)
-        the affine pre-multiplication part of the transformation
-
-    Returns
-    -------
-    minVal : array, shape (3,)
-        the minimum value reached at each coordinate
-    maxVal : array, shape (3,)
-        the maximum value reached at each coordinate
-    """
-    cdef:
-        int nslices = d.shape[0]
-        int nrows = d.shape[1]
-        int ncols = d.shape[2]
-        int i, j, k
-        double dkk, dii, djj
-        floating[:] minVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
-        floating[:] maxVal = np.ndarray((3,), dtype=np.asarray(d).dtype)
-    minVal[...] = d[0, 0, 0, :]
-    maxVal[...] = minVal[...]
-
-    with nogil:
-        for k in range(nslices):
-            for i in range(nrows):
-                for j in range(ncols):
-                    if(affine != None):
-                        dkk = (_apply_affine_3d_x0(k, i, j, 1, affine) +
-                               d[k, i, j, 0])
-                        dii = (_apply_affine_3d_x1(k, i, j, 1, affine) +
-                               d[k, i, j, 1])
-                        djj = (_apply_affine_3d_x2(k, i, j, 1, affine) +
-                               d[k, i, j, 2])
-                    else:
-                        dkk = k + d[k, i, j, 0]
-                        dii = i + d[k, i, j, 1]
-                        djj = j + d[k, i, j, 2]
-                    if(dkk > maxVal[0]):
-                        maxVal[0] = dkk
-                    if(dii > maxVal[1]):
-                        maxVal[1] = dii
-                    if(djj > maxVal[2]):
-                        maxVal[2] = djj
-    return minVal, maxVal
 
 
 def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
@@ -2660,68 +2472,6 @@ def create_random_displacement_2d(int[:] from_shape,
     return output, int_field
 
 
-def create_linear_displacement_field_2d(int[:] shape, 
-                                        double[:,:] input_affine,
-                                        double[:,:] transform):
-    r"""Creates a 2D linear displacement field
-
-    Creates a 2D displacement field mapping mapping points from the given grid
-    shape to themselves after a linear, invertible transformation is applied 
-    to them. The resulting displacement field is an invertible endomorphism and 
-    may be used to test inversion algorithms.
-
-    Parameters
-    ----------
-    shape : array, shape (2,)
-        the grid shape where the displacement field will be defined on.
-    input_affine : array, shape (3,3)
-        the grid-to-space transformation of the displacement field 
-    transform : array, shape (3,3)
-        the linear, invertible transformation to be applied to the points of the
-        input grid
-
-    Returns
-    -------
-    output : array, shape = from_shape
-        the random displacement field in the physical domain
-    """
-    cdef:
-        int nrows = shape[0]
-        int ncols = shape[1]
-        int i, j
-        double di, dj, dii, djj
-        double[:, :, :] output = np.zeros(tuple(shape) + (2,), dtype=np.float64)
-
-    #compute the actual displacement field in the physical space
-    for i in range(nrows):
-        for j in range(ncols):
-            
-            #convert the input point to physical coordinates
-            if input_affine is not None:
-                di = _apply_affine_2d_x0(i, j, 1, input_affine)
-                dj = _apply_affine_2d_x1(i, j, 1, input_affine)
-            else:
-                di = i
-                dj = j
-
-            #transform the point
-            
-            if transform is not None:
-                dii = _apply_affine_2d_x0(di, dj, 1, transform)
-                djj = _apply_affine_2d_x1(di, dj, 1, transform)
-            else:
-                dii = di
-                djj = dj
-
-            #the displacement vector at (i,j) must be the target point minus the
-            #original point, both in physical space
-
-            output[i, j, 0] = dii - di
-            output[i, j, 1] = djj - dj
-
-    return output
-
-
 def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, 
                                   int[:] to_shape, double[:,:] output_affine):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
@@ -2871,3 +2621,45 @@ def create_harmonic_fields_3d(int nslices, int nrows, int ncols,
                 inv[k, i, j, 2] = b * np.cos(m * theta) * jj
 
     return d, inv 
+
+
+def create_circle(int nrows, int ncols, int radius):
+    cdef:
+        int mid_row = nrows/2
+        int mid_col = ncols/2
+        int i, j, ii, jj
+        double r
+        double[:,:] c = np.zeros( (nrows, ncols), dtype=np.float64)
+    for i in range(nrows):
+        for j in range(ncols):
+            ii = i - mid_row
+            jj = j - mid_col
+            r = np.sqrt(ii*ii + jj*jj)
+            if r <= radius:
+                c[i,j] = 1
+            else:
+                c[i,j] = 0
+    return c
+
+
+def create_sphere(int nslices, int nrows, int ncols, int radius):
+    cdef:
+        int mid_slice = nslices/2
+        int mid_row = nrows/2
+        int mid_col = ncols/2
+        int i, j, k, ii, jj, kk
+        double r
+        double[:,:,:] s = np.zeros( (nslices, nrows, ncols), dtype=np.float64)
+    
+    for k in range(nslices):
+        for i in range(nrows):
+            for j in range(ncols):
+                kk = k - mid_slice
+                ii = i - mid_row
+                jj = j - mid_col
+                r = np.sqrt(ii*ii + jj*jj + kk*kk)
+                if r <= radius:
+                    s[k,i,j] = 1
+                else:
+                    s[k,i,j] = 0
+    return s

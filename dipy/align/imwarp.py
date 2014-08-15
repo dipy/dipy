@@ -1028,6 +1028,68 @@ class DiffeomorphicMap(object):
         composition.backward = backward
         return composition
 
+    def get_simplified_transform(self):
+        r""" Constructs a simplified version of this Diffeomorhic Map
+
+        The simplified version incorporates the pre-align transform, as well as
+        the domain and codomain affine transforms into the displacement field.
+        The resulting transformation may be regarded as operating on the 
+        image spaces given by the domain and codomain discretization. As a
+        result, self.prealign, self.disc_affine, self.domain_affine and
+        self.codomain affine will be None (denoting Identity) in the resulting
+        diffeomorphic map.
+        """
+        if self.dim == 2:
+            simplify_f = vfu.simplify_warp_function_2d
+        else:
+            simplify_f = vfu.simplify_warp_function_3d
+        # Simplify the forward transform
+        D = self.domain_affine
+        P = self.prealign
+        Rinv = self.disc_affine_inv
+        Cinv = self.codomain_affine_inv
+        
+        #this is the matrix which we need to multiply the voxel coordinates
+        #to interpolate on the forward displacement field ("in"side the 
+        #'forward' brackets in the expression above)
+        affine_idx_in = mult_aff(Rinv, mult_aff(P, D))
+
+        #this is the matrix which we need to multiply the voxel coordinates
+        #to add to the displacement ("out"side the 'forward' brackets in the
+        #expression above)
+        affine_idx_out = mult_aff(Cinv, mult_aff(P, D))
+
+        #this is the matrix which we need to multiply the displacement vector
+        #prior to adding to the transformed input point
+        affine_disp = Cinv
+
+        new_forward = simplify_f(self.forward, affine_idx_in, 
+                                 affine_idx_out, affine_disp,
+                                 self.domain_shape)
+
+        # Simplify the backward transform
+        C = self.codomain_affine_inv
+        Pinv = self.prealign_inv
+        Dinv = self.domain_affine_inv
+
+        affine_idx_in = mult_aff(Rinv, C)
+        affine_idx_out = mult_aff(Dinv, mult_aff(Pinv, C))
+        affine_disp = mult_aff(Dinv, Pinv)
+        new_backward = simplify_f(self.backward, affine_idx_in, 
+                                  affine_idx_out, affine_disp,
+                                  self.codomain_shape)
+        simplified = DiffeomorphicMap(self.dim,
+                                      self.disc_shape,
+                                      None,
+                                      self.domain_shape,
+                                      None,
+                                      self.codomain_shape,
+                                      None,
+                                      None)
+        simplified.forward = new_forward
+        simplified.backward = new_backward
+        return simplified
+
 
 class DiffeomorphicRegistration(with_metaclass(abc.ABCMeta, object)):
     def __init__(self, metric=None):
@@ -1196,13 +1258,9 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
         if self.dim == 2:
             self.invert_vector_field = vfu.invert_vector_field_fixed_point_2d
-            self.append_affine = vfu.append_affine_to_displacement_field_2d
-            self.prepend_affine = vfu.prepend_affine_to_displacement_field_2d
             self.compose = vfu.compose_vector_fields_2d
         else:
             self.invert_vector_field = vfu.invert_vector_field_fixed_point_3d
-            self.append_affine = vfu.append_affine_to_displacement_field_3d
-            self.prepend_affine = vfu.prepend_affine_to_displacement_field_3d
             self.compose = vfu.compose_vector_fields_3d
 
     def _init_optimizer(self, static, moving, 
