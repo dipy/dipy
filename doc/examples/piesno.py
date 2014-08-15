@@ -50,7 +50,7 @@ if multiple channel coils are used because GE uses a SENSE reconstruction,
 which has a Rician noise nature and thus N is always 1.
 
 As a convenience, we will estimate the noise for the whole volume in one go,
-but it is also possible ot get a slice by slice estimation of the noise if
+but it is also possible to get a slice by slice estimation of the noise if
 it is more desirable through the piesno_3D function.
 """
 
