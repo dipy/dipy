@@ -1318,137 +1318,7 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
                     d[k, i, j, 2] = _apply_affine_3d_x2(dk, di, dj, 0, affine)
 
 
-def upsample_displacement_field(floating[:, :, :] field, int[:] target_shape):
-    r"""Up-samples the input 2-D displacement field by a factor of 2
-
-    Up-samples the input 2-D displacement field by a factor of 2. The target
-    shape (the shape of the resulting up-sampled displacement field) must be
-    specified to ensure the resulting field has the required dimensions (the
-    input field might be the result of sub-sampling a larger array with odd or
-    even dimensions, which cannot be determined from the input dimensions
-    alone).
-
-    Parameters
-    ----------
-    field : array, shape (R, C, 2)
-        the 2-D displacement field to be up-sampled
-    target_shape : array, shape (2,)
-        the intended shape of the resulting up-sampled field
-
-    Returns
-    -------
-    up : array, shape target_shape + (2,)
-        the up-sampled displacement field
-    """
-    cdef:
-        int nrows = target_shape[0]
-        int ncols = target_shape[1]
-        int i, j, inside
-        double dii, djj
-        floating[:, :, :] up = np.zeros(shape=(nrows, ncols, 2), 
-                                        dtype=np.asarray(field).dtype)
-    with nogil:
-
-        for i in range(nrows):
-            for j in range(ncols):
-                dii = 0.5 * i
-                djj = 0.5 * j
-                inside = interpolate_vector_bilinear(field, dii, djj, up[i,j])
-                if inside == 0:
-                    up[i,j,0] = 0
-                    up[i,j,1] = 0
-    return up
-
-
-def upsample_displacement_field_3d(floating[:, :, :, :] field,
-                                   int[:] target_shape):
-    r"""Up-samples the input 3-D displacement field by a factor of 2
-
-    Up-samples the input 3-D displacement field by a factor of 2. The target
-    shape (the shape of the resulting up-sampled displacement field) must be
-    specified to ensure the resulting field has the required dimensions (the
-    input field might be the result of sub-sampling a larger array with odd or
-    even dimensions, which cannot be determined from the input dimensions
-    alone).
-
-    Parameters
-    ----------
-    field : array, shape (S, R, C, 3)
-        the 3-D displacement field to be up-sampled
-    target_shape : array, shape (3,)
-        the intended shape of the resulting up-sampled field
-
-    Returns
-    -------
-    up : array, shape target_shape + (3,)
-        the up-sampled displacement field
-    """
-    cdef:
-        int ns = target_shape[0]
-        int nr = target_shape[1]
-        int nc = target_shape[2]
-        int i, j, k, inside
-        double dkk, dii, djj
-        floating[:, :, :, :] up = np.zeros(shape=(ns, nr, nc, 3), 
-                                           dtype=np.asarray(field).dtype)
-
-    with nogil:
-
-        for k in range(ns):
-            for i in range(nr):
-                for j in range(nc):
-                    dkk = 0.5 * k
-                    dii = 0.5 * i
-                    djj = 0.5 * j
-                    inside = interpolate_vector_trilinear(field, dkk, dii, djj,
-                                                          up[k, i, j])
-                    if inside == 0:
-                        up[k,i,j,0] = 0
-                        up[k,i,j,1] = 0
-                        up[k,i,j,2] = 0
-    return up
-
-
-def accumulate_upsample_displacement_field3D(floating[:, :, :, :] field,
-                                             floating[:, :, :, :] up):
-    r"""Up-samples the input 3-D displacement field by a factor of 2
-
-    Up-samples the input 3-D displacement field by a factor of 2. The resulting
-    up-sampled field is added to 'up' rather than returning a new field.
-
-    Parameters
-    ----------
-    field : array, shape (S, R, C, 3)
-        the 3-D displacement field to be up-sampled
-    up : array, shape (S', R', C', 3)
-        the starting field which the result will be added to
-
-    """
-    cdef:
-        int ns = up.shape[0]
-        int nr = up.shape[1]
-        int nc = up.shape[2]
-        int i, j, k, inside
-        double dkk, dii, djj
-        floating[:] tmp = np.zeros((3,), dtype=np.asarray(field).dtype)
-    with nogil:
-
-        for k in range(ns):
-            for i in range(nr):
-                for j in range(nc):
-                    dkk = 0.5 * k
-                    dii = 0.5 * i
-                    djj = 0.5 * j
-                    inside = interpolate_vector_trilinear(field, dkk, dii, djj,
-                                                          tmp)
-                    if inside == 1:
-                        up[k, i, j, 0] += tmp[0] 
-                        up[k, i, j, 1] += tmp[1] 
-                        up[k, i, j, 2] += tmp[2] 
-    return up
-
-
-def downsample_scalar_field3D(floating[:, :, :] field):
+def downsample_scalar_field_3d(floating[:, :, :] field):
     r"""Down-samples the input volume by a factor of 2
 
     Down-samples the input volume by a factor of 2. The value at each voxel
@@ -1495,12 +1365,12 @@ def downsample_scalar_field3D(floating[:, :, :] field):
     return down
 
 
-def downsample_displacement_field3D(floating[:, :, :, :] field):
+def downsample_displacement_field_3d(floating[:, :, :, :] field):
     r"""Down-samples the input 3D vector field by a factor of 2
 
-    Down-samples the input vector field by a factor of 2. The value at each
-    voxel of the resulting volume is the average of its surrounding voxels in
-    the original volume.
+    Down-samples the input vector field by a factor of 2. This operation
+	is equivalent to dividing the input image into 2x2x2 cubes and averaging
+	the 8 vectors. The resulting field consists of these average vectors.
 
     Parameters
     ----------
@@ -1547,7 +1417,7 @@ def downsample_displacement_field3D(floating[:, :, :, :] field):
     return down
 
 
-def downsample_scalar_field2D(floating[:, :] field):
+def downsample_scalar_field_2d(floating[:, :] field):
     r"""Down-samples the input 2D image by a factor of 2
 
     Down-samples the input image by a factor of 2. The value at each pixel
@@ -1588,7 +1458,7 @@ def downsample_scalar_field2D(floating[:, :] field):
     return down
 
 
-def downsample_displacement_field2D(floating[:, :, :] field):
+def downsample_displacement_field_2d(floating[:, :, :] field):
     r"""Down-samples the 2D input vector field by a factor of 2
     Down-samples the input vector field by a factor of 2. The value at each
     pixel of the resulting field is the average of its surrounding pixels in the
@@ -2318,25 +2188,28 @@ def warp_image_affine_nn(number[:, :] image, int[:] refShape,
     return warped
 
 
-def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors,
+def resample_displacement_field_3d(floating[:, :, :, :] field, double[:] factors,
                                  int[:] target_shape):
-    r"""Upsamples a 3D vector field to a custom target shape
+    r"""Resamples a 3D vector field to a custom target shape
 
-    Up-samples the discretization of the displacement fields to be of 
-    target_shape shape.
+    Resamples the given 3D displacement field on a grid of the requested shape,
+    using the given scale factors. More precisely, the resulting displacement
+    field at each grid cell i is given by
+    
+    D[i] = field[Diag(factors) * i]
 
     Parameters
     ----------
     factors : array, shape (3,)
-        the factors scaling current spacings (voxel sizes) to spacings in
-        the expanded discretization.
+        the scaling factors mapping (integer) grid coordinates in the resampled
+        grid to (floating point) grid coordinates in the original grid
     target_shape : array, shape (3,)
-        the shape of the arrays holding the up-sampled discretization
+        the shape of the resulting grid
 
     Returns
     -------
     expanded : array, shape = target_shape + (3, )
-        the expanded displacement field
+        the resampled displacement field
     """
     ftype = np.asarray(field).dtype
     cdef:
@@ -2358,25 +2231,28 @@ def expand_displacement_field_3d(floating[:, :, :, :] field, double[:] factors,
                                              expanded[k, i, j])
     return expanded
 
-def expand_displacement_field_2d(floating[:, :, :] field, double[:] factors,
+def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
                                  int[:] target_shape):
-    r"""Upsamples a 2D vector field to a custom target shape
+    r"""Resamples a 2D vector field to a custom target shape
 
-    Up-samples the discretization of the displacement fields to be of 
-    target_shape shape.
+    Resamples the given 2D displacement field on a grid of the requested shape,
+    using the given scale factors. More precisely, the resulting displacement
+    field at each grid cell i is given by
+    
+    D[i] = field[Diag(factors) * i]
 
     Parameters
     ----------
     factors : array, shape (2,)
-        the factors scaling current spacings (voxel sizes) to spacings in
-        the expanded discretization.
+        the scaling factors mapping (integer) grid coordinates in the resampled
+        grid to (floating point) grid coordinates in the original grid
     target_shape : array, shape (2,)
-        the shape of the arrays holding the up-sampled discretization
+        the shape of the resulting grid
 
     Returns
     -------
     expanded : array, shape = target_shape + (2, )
-        the expanded displacement field
+        the resampled displacement field
     """
     ftype = np.asarray(field).dtype
     cdef:

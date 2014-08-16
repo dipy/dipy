@@ -894,9 +894,9 @@ class DiffeomorphicMap(object):
 
         """
         if self.dim == 2:
-            expand_f = vfu.expand_displacement_field_2d
+            expand_f = vfu.resample_displacement_field_2d
         else:
-            expand_f = vfu.expand_displacement_field_3d
+            expand_f = vfu.resample_displacement_field_3d
 
         expanded_forward = expand_f(self.forward, expand_factors, new_shape)
         expanded_backward = expand_f(self.backward, expand_factors, new_shape)

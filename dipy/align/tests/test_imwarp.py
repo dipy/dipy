@@ -161,7 +161,9 @@ def test_diffeomorphic_map_2d():
     #If we don't provide the sampling info, it should try to use the map's info, but it's None...
     assert_raises(ValueError, diff_map.transform_inverse, moving_image, 'linear')
 
-    
+    #We must provide, at least, the reference grid shape
+    assert_raises(ValueError, imwarp.DiffeomorphicMap, 2, None)
+
 
 def test_diffeomorphic_map_simplification_2d():
     r"""

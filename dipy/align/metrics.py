@@ -939,22 +939,27 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
                                                              lambda_param,
                                                              displacement,
                                                              residual)
-    sub_residual = np.array(vfu.downsample_displacement_field2D(residual))
+    sub_residual = np.array(vfu.downsample_displacement_field_2d(residual))
     del residual
     subsigma_sq_field = None
     if sigma_sq_field != None:
-        subsigma_sq_field = vfu.downsample_scalar_field2D(sigma_sq_field)
-    subdelta_field = vfu.downsample_scalar_field2D(delta_field)
+        subsigma_sq_field = vfu.downsample_scalar_field_2d(sigma_sq_field)
+    subdelta_field = vfu.downsample_scalar_field_2d(delta_field)
+    
     subgradient_field = np.array(
-        vfu.downsample_displacement_field2D(gradient_field))
+        vfu.downsample_displacement_field_2d(gradient_field))
+    
     shape = np.array(displacement.shape).astype(np.int32)
     sub_displacement = np.zeros(shape=((shape[0]+1)//2, (shape[1]+1)//2, 2 ),
                                dtype=floating)
     sublambda_param = lambda_param*0.25
     v_cycle_2d(n-1, k, subdelta_field, subsigma_sq_field, subgradient_field,
              sub_residual, sublambda_param, sub_displacement, depth+1)
-    displacement += np.array(
-        vfu.upsample_displacement_field(sub_displacement, shape))
+    #displacement += np.array(
+    #    vfu.upsample_displacement_field(sub_displacement, shape))
+    displacement += vfu.resample_displacement_field_2d(sub_displacement, 
+                                                       np.array([0.5, 0.5]),
+                                                       shape)
 
     #post-smoothing
     for i in range(k):
@@ -1034,14 +1039,14 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
                                                             lambda_param,
                                                             displacement,
                                                             None)
-    sub_residual = np.array(vfu.downsample_displacement_field3D(residual))
+    sub_residual = np.array(vfu.downsample_displacement_field_3d(residual))
     del residual
     subsigma_sq_field = None
     if sigma_sq_field != None:
-        subsigma_sq_field = vfu.downsample_scalar_field3D(sigma_sq_field)
-    subdelta_field = vfu.downsample_scalar_field3D(delta_field)
+        subsigma_sq_field = vfu.downsample_scalar_field_3d(sigma_sq_field)
+    subdelta_field = vfu.downsample_scalar_field_3d(delta_field)
     subgradient_field = np.array(
-        vfu.downsample_displacement_field3D(gradient_field))
+        vfu.downsample_displacement_field_3d(gradient_field))
     shape = np.array(displacement.shape).astype(np.int32)
     sub_displacement = np.zeros(
         shape=((shape[0]+1)//2, (shape[1]+1)//2, (shape[2]+1)//2, 3 ),
@@ -1053,16 +1058,19 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     del subsigma_sq_field
     del subgradient_field
     del sub_residual
-    vfu.accumulate_upsample_displacement_field3D(sub_displacement, displacement)
+    #vfu.accumulate_upsample_displacement_field3D(sub_displacement, displacement)
+    displacement += vfu.resample_displacement_field_3d(sub_displacement, 
+                                                       np.array([0.5, 0.5, 0.5]),
+                                                       shape)
     del sub_displacement
     #post-smoothing
     for i in range(k):
         ssd.iterate_residual_displacement_field_SSD3D(delta_field,
-                                                             sigma_sq_field,
-                                                             gradient_field,
-                                                             target,
-                                                             lambda_param,
-                                                             displacement)
+                                                      sigma_sq_field,
+                                                      gradient_field,
+                                                      target,
+                                                      lambda_param,
+                                                      displacement)
     energy = ssd.compute_energy_SSD3D(delta_field, sigma_sq_field,
                                       gradient_field, lambda_param,
                                       displacement)

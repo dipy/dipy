@@ -494,6 +494,154 @@ def test_invert_vector_field_3d():
     assert_almost_equal(stats[2], 0, decimal=3)
 
 
+def test_resample_vector_field_2d():
+    r"""
+    Expand a vector field by 2, then subsample by 2, the resulting
+    field should be the original one
+    """
+    domain_shape = np.array((64, 64), dtype = np.int32)
+    reduced_shape = np.array((32, 32), dtype = np.int32)
+    factors = np.array([0.5, 0.5])
+    d, dinv = vfu.create_harmonic_fields_2d(reduced_shape[0], reduced_shape[1], 0.3, 6)
+    d = np.array(d, dtype = floating)
+    
+    expanded = vfu.resample_displacement_field_2d(d, factors,domain_shape)
+    subsampled = expanded[::2, ::2, :]
+
+    assert_almost_equal(d, subsampled)
+
+
+def test_resample_vector_field_3d():
+    r"""
+    Expand a vector field by 2, then subsample by 2, the resulting
+    field should be the original one
+    """
+    domain_shape = np.array((64, 64, 64), dtype = np.int32)
+    reduced_shape = np.array((32, 32, 32), dtype = np.int32)
+    factors = np.array([0.5, 0.5, 0.5])
+    d, dinv = vfu.create_harmonic_fields_3d(reduced_shape[0], reduced_shape[1], reduced_shape[2], 0.3, 6)
+    d = np.array(d, dtype = floating)
+    
+    expanded = vfu.resample_displacement_field_3d(d, factors,domain_shape)
+    subsampled = expanded[::2, ::2, ::2, :]
+
+    assert_almost_equal(d, subsampled)
+
+
+def test_downsample_scalar_field_2d():
+    shape = (32, 32)
+    image = np.ndarray(shape, dtype=floating)
+    image[...] = np.random.randint(0, 10, np.size(image)).reshape(shape)
+    a = image[::2, ::2]
+    b = image[1::2, ::2]
+    c = image[::2, 1::2]
+    d = image[1::2, 1::2]
+    expected = 0.25*(a + b + c + d)
+    actual = np.array(vfu.downsample_scalar_field_2d(image))
+    assert_almost_equal(expected, actual)
+    
+
+def test_downsample_displacement_field_2d():
+    shape = (32, 32, 2)
+    field = np.ndarray(shape, dtype=floating)
+    field[...] = np.random.randint(0, 10, np.size(field)).reshape(shape)
+    a = field[::2, ::2, :]
+    b = field[1::2, ::2, :]
+    c = field[::2, 1::2, :]
+    d = field[1::2, 1::2, :]
+    expected = 0.25*(a + b + c + d)
+    actual = np.array(vfu.downsample_displacement_field_2d(field))
+    assert_almost_equal(expected, actual)
+
+def test_downsample_scalar_field_3d():
+    shape = (32, 32, 32)
+    volume = np.ndarray(shape, dtype=floating)
+    volume[...] = np.random.randint(0, 10, np.size(volume)).reshape(shape)
+    a = volume[::2, ::2, ::2]
+    b = volume[1::2, ::2, ::2]
+    c = volume[::2, 1::2, ::2]
+    d = volume[1::2, 1::2, ::2]
+    aa = volume[::2, ::2, 1::2]
+    bb = volume[1::2, ::2, 1::2]
+    cc = volume[::2, 1::2, 1::2]
+    dd = volume[1::2, 1::2, 1::2]
+    expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
+    actual = np.array(vfu.downsample_scalar_field_3d(volume))
+    assert_almost_equal(expected, actual)
+
+
+def test_downsample_displacement_field_3d():
+    shape = (32, 32, 32, 3)
+    field = np.ndarray(shape, dtype=floating)
+    field[...] = np.random.randint(0, 10, np.size(field)).reshape(shape)
+    a = field[::2, ::2, ::2, :]
+    b = field[1::2, ::2, ::2, :]
+    c = field[::2, 1::2, ::2, :]
+    d = field[1::2, 1::2, ::2, :]
+    aa = field[::2, ::2, 1::2, :]
+    bb = field[1::2, ::2, 1::2, :]
+    cc = field[::2, 1::2, 1::2, :]
+    dd = field[1::2, 1::2, 1::2, :]
+    expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
+    actual = np.array(vfu.downsample_displacement_field_3d(field))
+    assert_almost_equal(expected, actual)
+
+
+def test_reorient_vector_field_2d():
+    shape = (16,16)
+    d, dinv = vfu.create_harmonic_fields_2d(shape[0], shape[1], 0.2, 4)
+    d = np.array(d, dtype = floating)
+
+    #the vector field rotated 90 degrees
+    expected = np.ndarray(shape = shape+(2,), dtype = floating)
+    expected[...,0] = -1 * d[...,1]
+    expected[...,1] =  d[...,0]
+    
+    #rotate 45 degrees twice
+    c = np.sqrt(0.5)
+    affine = np.array([[c, -c],[c, c]])
+    vfu.reorient_vector_field_2d(d, affine)
+    vfu.reorient_vector_field_2d(d, affine)
+
+    #verify almost equal
+    assert_almost_equal(d, expected)
+
+
+def test_reorient_vector_field_3d():
+    shape = (16, 16, 16)
+    d, dinv = vfu.create_harmonic_fields_3d(shape[0], shape[1], shape[2], 0.2, 4)
+    d = np.array(d, dtype = floating)
+    dinv = np.array(dinv, dtype = floating)
+
+    #the vector field rotated 90 degrees around the last axis
+    expected = np.ndarray(shape = shape+(3,), dtype = floating)
+    expected[...,0] = -1 * d[...,1]
+    expected[...,1] =  d[...,0]
+    expected[...,2] =  d[...,2]
+
+    #rotate 45 degrees twice around the last axis
+    c = np.sqrt(0.5)
+    affine = np.array([[c, -c, 0],[c, c, 0], [0, 0, 1]])
+    vfu.reorient_vector_field_3d(d, affine)
+    vfu.reorient_vector_field_3d(d, affine)
+
+    #verify almost equal
+    assert_almost_equal(d, expected)
+
+    #the vector field rotated 90 degrees around the first axis
+    expected[...,0] = dinv[...,0]
+    expected[...,1] = -1 * dinv[...,2]
+    expected[...,2] =  dinv[...,1]
+
+    #rotate 45 degrees twice around the first axis
+    affine = np.array([[1, 0, 0], [0, c, -c], [0, c, c]])
+    vfu.reorient_vector_field_3d(dinv, affine)
+    vfu.reorient_vector_field_3d(dinv, affine)
+
+    #verify almost equal
+    assert_almost_equal(dinv, expected)
+
+
 if __name__=='__main__':
     test_warping_2d()
     test_warping_3d()
@@ -503,3 +651,11 @@ if __name__=='__main__':
     test_compose_vector_fields_3d()
     test_invert_vector_field_2d()
     test_invert_vector_field_3d()
+    test_resample_vector_field_2d()
+    test_resample_vector_field_3d()
+    test_downsample_scalar_field_2d()
+    test_downsample_scalar_field_3d()
+    test_downsample_displacement_field_2d()
+    test_downsample_displacement_field_3d()
+    test_reorient_vector_field_2d()
+    test_reorient_vector_field_3d()
