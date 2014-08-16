@@ -9,11 +9,71 @@ import dipy.align.sumsqdiff as ssd
 
 
 def test_compute_energy_SSD2D():
-    pass
+    sh = (32, 32)
+    
+    #Select arbitrary centers
+    c_f = np.asarray(sh)/2
+    c_g = c_f + 0.5
 
+    #Compute the identity vector field I(x) = x in R^2
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    X = np.ndarray(sh + (2,), dtype = np.float64)
+    O = np.ones(sh)
+    X[...,0]= x_0[:, None] * O
+    X[...,1]= x_1[None, :] * O
+
+    #Compute the gradient fields of F and G
+    grad_F = X - c_f
+    grad_G = X - c_g 
+
+    #Compute F and G
+    F = 0.5*np.sum(grad_F**2,-1)
+    G = 0.5*np.sum(grad_G**2,-1)
+
+    # Note: this should include the energy corresponding to the 
+    # regularization term, but it is discarded in ANTS (they just
+    # consider the data term, which is not the objective function
+    # being optimized). This test case should be updated after
+    # further investigation
+    expected = ((F - G)**2).sum()
+    actual = ssd.compute_energy_SSD2D(np.array(F-G, dtype = floating), None, None, 0, None)
+    assert_almost_equal(expected, actual)
+    
 
 def test_compute_energy_SSD3D():
-    pass
+    sh = (32, 32, 32)
+    
+    #Select arbitrary centers
+    c_f = np.asarray(sh)/2
+    c_g = c_f + 0.5
+
+    #Compute the identity vector field I(x) = x in R^2
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    x_2 = np.asarray(range(sh[2]))
+    X = np.ndarray(sh + (3,), dtype = np.float64)
+    O = np.ones(sh)
+    X[...,0]= x_0[:, None, None] * O
+    X[...,1]= x_1[None, :, None] * O
+    X[...,2]= x_2[None, None, :] * O
+
+    #Compute the gradient fields of F and G
+    grad_F = X - c_f
+    grad_G = X - c_g 
+
+    #Compute F and G
+    F = 0.5*np.sum(grad_F**2,-1)
+    G = 0.5*np.sum(grad_G**2,-1)
+
+    # Note: this should include the energy corresponding to the 
+    # regularization term, but it is discarded in ANTS (they just
+    # consider the data term, which is not the objective function
+    # being optimized). This test case should be updated after
+    # further investigating
+    expected = ((F - G)**2).sum()
+    actual = ssd.compute_energy_SSD3D(np.array(F-G, dtype = floating), None, None, 0, None)
+    assert_almost_equal(expected, actual)
 
 
 def test_compute_ssd_demons_step_2d():
@@ -155,7 +215,7 @@ def test_compute_ssd_demons_step_3d():
 
 
 if __name__=='__main__':
-    #test_compute_energy_SSD2D()
-    #test_compute_energy_SSD3D()
-    #test_compute_ssd_demons_step_2d()
+    test_compute_energy_SSD2D()
+    test_compute_energy_SSD3D()
+    test_compute_ssd_demons_step_2d()
     test_compute_ssd_demons_step_3d()

@@ -244,8 +244,8 @@ def test_compute_masked_image_class_stats():
 
     mask = np.ones(shape, dtype = np.int32)
     means, vars = em.compute_masked_image_class_stats(mask, values, 10, labels)
-    assert_almost_equal(means, expected_means)
-    assert_almost_equal(vars, expected_vars)
+    assert_array_almost_equal(means, expected_means)
+    assert_array_almost_equal(vars, expected_vars)
 
 def test_compute_masked_volume_class_stats():
     shape = (32, 32, 32)
@@ -264,8 +264,8 @@ def test_compute_masked_volume_class_stats():
 
     mask = np.ones(shape, dtype = np.int32)
     means, vars = em.compute_masked_volume_class_stats(mask, values, 10, labels)
-    assert_almost_equal(means, expected_means)
-    assert_almost_equal(vars, expected_vars)
+    assert_array_almost_equal(means, expected_means)
+    assert_array_almost_equal(vars, expected_vars)
 
 
 if __name__=='__main__':

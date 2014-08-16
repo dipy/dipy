@@ -508,7 +508,7 @@ def test_resample_vector_field_2d():
     expanded = vfu.resample_displacement_field_2d(d, factors,domain_shape)
     subsampled = expanded[::2, ::2, :]
 
-    assert_almost_equal(d, subsampled)
+    assert_array_almost_equal(d, subsampled)
 
 
 def test_resample_vector_field_3d():
@@ -525,7 +525,7 @@ def test_resample_vector_field_3d():
     expanded = vfu.resample_displacement_field_3d(d, factors,domain_shape)
     subsampled = expanded[::2, ::2, ::2, :]
 
-    assert_almost_equal(d, subsampled)
+    assert_array_almost_equal(d, subsampled)
 
 
 def test_downsample_scalar_field_2d():
@@ -538,7 +538,7 @@ def test_downsample_scalar_field_2d():
     d = image[1::2, 1::2]
     expected = 0.25*(a + b + c + d)
     actual = np.array(vfu.downsample_scalar_field_2d(image))
-    assert_almost_equal(expected, actual)
+    assert_array_almost_equal(expected, actual)
     
 
 def test_downsample_displacement_field_2d():
@@ -551,7 +551,7 @@ def test_downsample_displacement_field_2d():
     d = field[1::2, 1::2, :]
     expected = 0.25*(a + b + c + d)
     actual = np.array(vfu.downsample_displacement_field_2d(field))
-    assert_almost_equal(expected, actual)
+    assert_array_almost_equal(expected, actual)
 
 def test_downsample_scalar_field_3d():
     shape = (32, 32, 32)
@@ -567,7 +567,7 @@ def test_downsample_scalar_field_3d():
     dd = volume[1::2, 1::2, 1::2]
     expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
     actual = np.array(vfu.downsample_scalar_field_3d(volume))
-    assert_almost_equal(expected, actual)
+    assert_array_almost_equal(expected, actual)
 
 
 def test_downsample_displacement_field_3d():
@@ -584,7 +584,7 @@ def test_downsample_displacement_field_3d():
     dd = field[1::2, 1::2, 1::2, :]
     expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
     actual = np.array(vfu.downsample_displacement_field_3d(field))
-    assert_almost_equal(expected, actual)
+    assert_array_almost_equal(expected, actual)
 
 
 def test_reorient_vector_field_2d():
@@ -604,7 +604,7 @@ def test_reorient_vector_field_2d():
     vfu.reorient_vector_field_2d(d, affine)
 
     #verify almost equal
-    assert_almost_equal(d, expected)
+    assert_array_almost_equal(d, expected)
 
 
 def test_reorient_vector_field_3d():
@@ -626,7 +626,7 @@ def test_reorient_vector_field_3d():
     vfu.reorient_vector_field_3d(d, affine)
 
     #verify almost equal
-    assert_almost_equal(d, expected)
+    assert_array_almost_equal(d, expected)
 
     #the vector field rotated 90 degrees around the first axis
     expected[...,0] = dinv[...,0]
@@ -639,7 +639,7 @@ def test_reorient_vector_field_3d():
     vfu.reorient_vector_field_3d(dinv, affine)
 
     #verify almost equal
-    assert_almost_equal(dinv, expected)
+    assert_array_almost_equal(dinv, expected)
 
 
 if __name__=='__main__':

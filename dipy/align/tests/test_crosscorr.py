@@ -72,13 +72,13 @@ def test_compute_cc_steps_2d():
     expected[...,0] = (-2.0 * sfm / (sff * smm)) * (J - (sfm / sff) * I) * grad_F[..., 0]
     expected[...,1] = (-2.0 * sfm / (sff * smm)) * (J - (sfm / sff) * I) * grad_F[..., 1]
     actual, energy = cc.compute_cc_forward_step_2d(grad_F, grad_G, factors)
-    assert_almost_equal(actual, expected)
+    assert_array_almost_equal(actual, expected)
 
     #test the backward step against the exact expression
     expected[...,0] = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J) * grad_G[..., 0]
     expected[...,1] = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J) * grad_G[..., 1]
     actual, energy = cc.compute_cc_backward_step_2d(grad_F, grad_G, factors)
-    assert_almost_equal(actual, expected)
+    assert_array_almost_equal(actual, expected)
 
 
 def test_compute_cc_steps_3d():
@@ -122,14 +122,14 @@ def test_compute_cc_steps_3d():
     expected[...,1] = (-2.0 * sfm / (sff * smm)) * (J - (sfm / sff) * I) * grad_F[..., 1]
     expected[...,2] = (-2.0 * sfm / (sff * smm)) * (J - (sfm / sff) * I) * grad_F[..., 2]
     actual, energy = cc.compute_cc_forward_step_3d(grad_F, grad_G, factors)
-    assert_almost_equal(actual, expected)
+    assert_array_almost_equal(actual, expected)
 
     #test the backward step against the exact expression
     expected[...,0] = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J) * grad_G[..., 0]
     expected[...,1] = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J) * grad_G[..., 1]
     expected[...,2] = (-2.0 * sfm / (sff * smm)) * (I - (sfm / smm) * J) * grad_G[..., 2]
     actual, energy = cc.compute_cc_backward_step_3d(grad_F, grad_G, factors)
-    assert_almost_equal(actual, expected)
+    assert_array_almost_equal(actual, expected)
 
 
 if __name__=='__main__':
