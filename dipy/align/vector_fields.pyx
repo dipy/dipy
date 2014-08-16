@@ -1369,8 +1369,8 @@ def downsample_displacement_field_3d(floating[:, :, :, :] field):
     r"""Down-samples the input 3D vector field by a factor of 2
 
     Down-samples the input vector field by a factor of 2. This operation
-	is equivalent to dividing the input image into 2x2x2 cubes and averaging
-	the 8 vectors. The resulting field consists of these average vectors.
+    is equivalent to dividing the input image into 2x2x2 cubes and averaging
+    the 8 vectors. The resulting field consists of these average vectors.
 
     Parameters
     ----------
@@ -2500,6 +2500,10 @@ def create_harmonic_fields_3d(int nslices, int nrows, int ncols,
 
 
 def create_circle(int nrows, int ncols, int radius):
+    r"""
+    Create a binary 2D image where pixel values are 1 iff their distance 
+    to the center of the image is less than or equal to radius. 
+    """
     cdef:
         int mid_row = nrows/2
         int mid_col = ncols/2
@@ -2519,6 +2523,10 @@ def create_circle(int nrows, int ncols, int radius):
 
 
 def create_sphere(int nslices, int nrows, int ncols, int radius):
+    r"""
+    Create a binary 3D image where voxel values are 1 iff their distance 
+    to the center of the image is less than or equal to radius. 
+    """
     cdef:
         int mid_slice = nslices/2
         int mid_row = nrows/2
