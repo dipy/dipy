@@ -541,8 +541,8 @@ class DiffeomorphicMap(object):
             else:
                 return vfu.warp_volume_nn
 
-    def _warp_forward(self, image, interpolation='linear', world_to_image=-1, 
-                      sampling_shape=None, sampling_affine=-1):
+    def _warp_forward(self, image, interpolation='linear', world_to_image=None, 
+                      sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the forward direction
 
         Deforms the input image under this diffeomorphic map in the forward 
@@ -574,11 +574,6 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
-        The default value for the affine transformations is "-1" to handle the
-        case in which the user provides "None" as input meaning "identity". If
-        we used None as default, we wouldn't know if the user specifically wants 
-        to use the identity (specifically passing None) or if it was left
-        unspecified, meaning to use the appropriate default matrix
 
         A diffeomorphic map must be thought as a mapping between points
         in space. Warping an image J towards an image I means transforming
@@ -610,20 +605,20 @@ class DiffeomorphicMap(object):
 
         """
         #if no world-to-image transform is provided, we use the codomain info
-        if world_to_image is -1:
+        if world_to_image is None:
             world_to_image = self.codomain_affine_inv
         #if no sampling info is provided, we use the domain info 
         if sampling_shape is None:
             if self.domain_shape is None:
                 raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
             sampling_shape = self.domain_shape
-        if sampling_affine is -1:
+        if sampling_affine is None:
             sampling_affine = self.domain_affine
 
-        W = world_to_image
+        W = None if world_to_image == 'identity' else world_to_image
         Dinv = self.disc_affine_inv
         P = self.prealign 
-        S = sampling_affine
+        S = None if sampling_affine == 'identity' else sampling_affine
 
         #this is the matrix which we need to multiply the voxel coordinates
         #to interpolate on the forward displacement field ("in"side the 
@@ -654,8 +649,8 @@ class DiffeomorphicMap(object):
                         affine_disp, sampling_shape)
         return warped
 
-    def _warp_backward(self, image, interpolation='linear', world_to_image=-1, 
-                       sampling_shape=None, sampling_affine=-1):
+    def _warp_backward(self, image, interpolation='linear', world_to_image=None, 
+                       sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the backward direction
 
         Deforms the input image under this diffeomorphic map in the backward 
@@ -687,11 +682,6 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
-        The default value for the affine transformations is "-1" to handle the
-        case in which the user provides "None" as input meaning "identity". If
-        we used None as default, we wouldn't know if the user specifically wants
-        to use the identity (specifically passing None) or if it was left
-        unspecified, meaning to use the appropriate default matrix
 
         A diffeomorphic map must be thought as a mapping between points
         in space. Warping an image J towards an image I means transforming
@@ -722,7 +712,7 @@ class DiffeomorphicMap(object):
 
         """
         #if no world-to-image transform is provided, we use the domain info
-        if world_to_image is -1:
+        if world_to_image is None:
             world_to_image = self.domain_affine_inv
 
         #if no sampling info is provided, we use the codomain info
@@ -730,13 +720,13 @@ class DiffeomorphicMap(object):
             if self.codomain_shape is None:
                 raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
             sampling_shape = self.codomain_shape
-        if sampling_affine is -1:
+        if sampling_affine is None:
             sampling_affine = self.codomain_affine
 
-        W = world_to_image
+        W = None if world_to_image == 'identity' else world_to_image
         Dinv = self.disc_affine_inv
         Pinv = self.prealign_inv
-        S = sampling_affine
+        S = None if sampling_affine == 'identity' else sampling_affine
 
         #this is the matrix which we need to multiply the voxel coordinates
         #to interpolate on the backward displacement field ("in"side the 
@@ -767,8 +757,8 @@ class DiffeomorphicMap(object):
 
         return warped
 
-    def transform(self, image, interpolation='linear', world_to_image=-1, 
-                  sampling_shape=None, sampling_affine=-1):
+    def transform(self, image, interpolation='linear', world_to_image=None, 
+                  sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the forward direction
 
         Transforms the input image under this transformation in the forward
@@ -810,8 +800,8 @@ class DiffeomorphicMap(object):
                                        sampling_shape, sampling_affine)
         return np.asarray(warped)
 
-    def transform_inverse(self, image, interpolation='linear', world_to_image=-1, 
-                          sampling_shape=None, sampling_affine=-1):
+    def transform_inverse(self, image, interpolation='linear', world_to_image=None, 
+                          sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the backward direction
 
         Transforms the input image under this transformation in the backward
@@ -1425,11 +1415,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Warp the input images (smoothed to the current scale) to the common 
         #(reference) space at the current resolution
         wstatic = self.forward_model.transform_inverse(current_static, 'linear', 
-                                                       -1,
+                                                       None,
                                                        current_disc_shape,
                                                        current_disc_affine)
         wmoving = self.backward_model.transform_inverse(current_moving, 'linear',
-                                                        -1,
+                                                        None,
                                                         current_disc_shape,
                                                         current_disc_affine)
         
