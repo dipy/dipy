@@ -227,7 +227,52 @@ def test_quantize_positive_volume():
         assert_equal(hist[i], current_bin)
 
 
+def test_compute_masked_image_class_stats():
+    shape = (32, 32)
+    
+    #Create random labels
+    labels = np.ndarray(shape, dtype=np.int32)
+    labels[...] = np.random.randint(0, 10, np.size(labels)).reshape(shape)
+
+    #Create random values
+    values = np.random.randn(shape[0], shape[1]).astype(floating)
+    values *= labels
+    values += labels
+
+    expected_means = [values[labels == i].mean() for i in range(10)] 
+    expected_vars = [values[labels == i].var() for i in range(10)] 
+
+    mask = np.ones(shape, dtype = np.int32)
+    means, vars = em.compute_masked_image_class_stats(mask, values, 10, labels)
+    assert_almost_equal(means, expected_means)
+    assert_almost_equal(vars, expected_vars)
+
+def test_compute_masked_volume_class_stats():
+    shape = (32, 32, 32)
+    
+    #Create random labels
+    labels = np.ndarray(shape, dtype=np.int32)
+    labels[...] = np.random.randint(0, 10, np.size(labels)).reshape(shape)
+
+    #Create random values
+    values = np.random.randn(shape[0], shape[1], shape[2]).astype(floating)
+    values *= labels
+    values += labels
+
+    expected_means = [values[labels == i].mean() for i in range(10)] 
+    expected_vars = [values[labels == i].var() for i in range(10)] 
+
+    mask = np.ones(shape, dtype = np.int32)
+    means, vars = em.compute_masked_volume_class_stats(mask, values, 10, labels)
+    assert_almost_equal(means, expected_means)
+    assert_almost_equal(vars, expected_vars)
+
+
 if __name__=='__main__':
+    test_compute_em_demons_step_2d()
+    test_compute_em_demons_step_3d()
     test_quantize_positive_image()
     test_quantize_positive_volume()
+    test_compute_masked_image_class_stats()
+    test_compute_masked_volume_class_stats()
 
