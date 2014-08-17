@@ -20,6 +20,7 @@ def test_exceptions():
 
 
 def test_EMMetric_image_dynamics():
+    np.random.seed(7181309)
     metric = EMMetric(2)
 
     target_shape = (10, 10)

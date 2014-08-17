@@ -83,7 +83,7 @@ cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef double iterate_residual_displacement_field_SSD2D(
+cpdef double iterate_residual_displacement_field_ssd_2d(
                 floating[:, :] delta_field, floating[:, :] sigma_field,
                 floating[:, :, :] grad, floating[:, :, :] target,
                 double lambda_param, floating[:, :, :] displacement_field):
@@ -204,7 +204,7 @@ cpdef double iterate_residual_displacement_field_SSD2D(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
+cpdef double compute_energy_ssd_2d(floating[:, :] delta_field,
                                   floating[:, :] sigma_field,
                                   floating[:, :, :] grad,
                                   double lambda_param,
@@ -256,7 +256,7 @@ cpdef double compute_energy_SSD2D(floating[:, :] delta_field,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cpdef double iterate_residual_displacement_field_SSD3D(
+cpdef double iterate_residual_displacement_field_ssd_3d(
                 floating[:, :, :] delta_field, floating[:, :, :] sigma_field,
                 floating[:, :, :, :] grad, floating[:, :, :, :] target,
                 double lambda_param, floating[:, :, :, :] disp):
@@ -406,7 +406,7 @@ cpdef double iterate_residual_displacement_field_SSD3D(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef double compute_energy_SSD3D(floating[:, :, :] delta_field,
+cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field,
                                   floating[:, :, :] sigma_field,
                                   floating[:, :, :, :] gradient_field,
                                   double lambda_param,
@@ -458,7 +458,7 @@ cpdef double compute_energy_SSD3D(floating[:, :, :] delta_field,
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def compute_residual_displacement_field_SSD3D(
+def compute_residual_displacement_field_ssd_3d(
         floating[:, :, :] delta_field, floating[:, :, :] sigma_field,
         floating[:, :, :, :] gradient_field, floating[:, :, :, :] target,
         double lambda_param, floating[:, :, :, :] disp,
@@ -567,7 +567,7 @@ def compute_residual_displacement_field_SSD3D(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef compute_residual_displacement_field_SSD2D(
+cpdef compute_residual_displacement_field_ssd_2d(
         floating[:, :] delta_field, floating[:, :] sigma_field,
         floating[:, :, :] gradient_field, floating[:, :, :] target,
         double lambda_param, floating[:, :, :] displacement_field,

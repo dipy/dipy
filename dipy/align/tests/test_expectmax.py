@@ -152,7 +152,9 @@ def test_compute_em_demons_step_3d():
     
     assert_array_almost_equal(actual, expected)
 
-def test_quantize_positive_image():
+def test_quantize_positive_2d():
+    np.random.seed(1246592)
+
     num_levels = 11 # an arbitrary number of quantization levels
     img_shape = (15, 20) # arbitrary test image shape (must contain at least 3 elements)
     min_positive = 0.1
@@ -181,7 +183,7 @@ def test_quantize_positive_image():
     input_image[true_quantization == 1] = min_positive # preserve min positive value
     input_image[true_quantization == num_levels-1] = max_positive # preserve max positive value
 
-    out, levels, hist = em.quantize_positive_image(input_image, num_levels)
+    out, levels, hist = em.quantize_positive_2d(input_image, num_levels)
     levels = np.asarray(levels)
     assert_array_equal(out, true_quantization)
     assert_array_almost_equal(levels, true_levels)
@@ -189,7 +191,9 @@ def test_quantize_positive_image():
         current_bin = np.asarray(true_quantization == i).sum()
         assert_equal(hist[i], current_bin)
 
-def test_quantize_positive_volume():
+def test_quantize_positive_3d():
+    np.random.seed(1246592)
+
     num_levels = 11 # an arbitrary number of quantization levels
     img_shape = (5, 10, 15) # arbitrary test image shape (must contain at least 3 elements)
     min_positive = 0.1
@@ -218,7 +222,7 @@ def test_quantize_positive_volume():
     input_image[true_quantization == 1] = min_positive # preserve min positive value
     input_image[true_quantization == num_levels-1] = max_positive # preserve max positive value
 
-    out, levels, hist = em.quantize_positive_volume(input_image, num_levels)
+    out, levels, hist = em.quantize_positive_3d(input_image, num_levels)
     levels = np.asarray(levels)
     assert_array_equal(out, true_quantization)
     assert_array_almost_equal(levels, true_levels)
@@ -228,6 +232,8 @@ def test_quantize_positive_volume():
 
 
 def test_compute_masked_image_class_stats():
+    np.random.seed(1246592)
+
     shape = (32, 32)
     
     #Create random labels
@@ -243,11 +249,13 @@ def test_compute_masked_image_class_stats():
     expected_vars = [values[labels == i].var() for i in range(10)] 
 
     mask = np.ones(shape, dtype = np.int32)
-    means, vars = em.compute_masked_image_class_stats(mask, values, 10, labels)
+    means, vars = em.compute_masked_class_stats_2d(mask, values, 10, labels)
     assert_array_almost_equal(means, expected_means)
     assert_array_almost_equal(vars, expected_vars)
 
-def test_compute_masked_volume_class_stats():
+def test_compute_masked_class_stats_3d():
+    np.random.seed(1246592)
+
     shape = (32, 32, 32)
     
     #Create random labels
@@ -263,7 +271,7 @@ def test_compute_masked_volume_class_stats():
     expected_vars = [values[labels == i].var() for i in range(10)] 
 
     mask = np.ones(shape, dtype = np.int32)
-    means, vars = em.compute_masked_volume_class_stats(mask, values, 10, labels)
+    means, vars = em.compute_masked_class_stats_3d(mask, values, 10, labels)
     assert_array_almost_equal(means, expected_means)
     assert_array_almost_equal(vars, expected_vars)
 
@@ -271,8 +279,8 @@ def test_compute_masked_volume_class_stats():
 if __name__=='__main__':
     test_compute_em_demons_step_2d()
     test_compute_em_demons_step_3d()
-    test_quantize_positive_image()
-    test_quantize_positive_volume()
-    test_compute_masked_image_class_stats()
-    test_compute_masked_volume_class_stats()
+    test_quantize_positive_2d()
+    test_quantize_positive_3d()
+    test_compute_masked_class_stats_2d()
+    test_compute_masked_class_stats_3d()
 

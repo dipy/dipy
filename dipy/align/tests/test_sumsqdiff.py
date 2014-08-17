@@ -8,7 +8,7 @@ from numpy.testing import (assert_equal,
 import dipy.align.sumsqdiff as ssd
 
 
-def test_compute_energy_SSD2D():
+def test_compute_energy_ssd_2d():
     sh = (32, 32)
     
     #Select arbitrary centers
@@ -37,11 +37,11 @@ def test_compute_energy_SSD2D():
     # being optimized). This test case should be updated after
     # further investigation
     expected = ((F - G)**2).sum()
-    actual = ssd.compute_energy_SSD2D(np.array(F-G, dtype = floating), None, None, 0, None)
+    actual = ssd.compute_energy_ssd_2d(np.array(F-G, dtype = floating), None, None, 0, None)
     assert_almost_equal(expected, actual)
     
 
-def test_compute_energy_SSD3D():
+def test_compute_energy_ssd_3d():
     sh = (32, 32, 32)
     
     #Select arbitrary centers
@@ -72,7 +72,7 @@ def test_compute_energy_SSD3D():
     # being optimized). This test case should be updated after
     # further investigating
     expected = ((F - G)**2).sum()
-    actual = ssd.compute_energy_SSD3D(np.array(F-G, dtype = floating), None, None, 0, None)
+    actual = ssd.compute_energy_ssd_3d(np.array(F-G, dtype = floating), None, None, 0, None)
     assert_almost_equal(expected, actual)
 
 
@@ -215,7 +215,7 @@ def test_compute_ssd_demons_step_3d():
 
 
 if __name__=='__main__':
-    test_compute_energy_SSD2D()
-    test_compute_energy_SSD3D()
+    test_compute_energy_ssd_2s()
+    test_compute_energy_ssd_3d()
     test_compute_ssd_demons_step_2d()
     test_compute_ssd_demons_step_3d()

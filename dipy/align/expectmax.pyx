@@ -16,7 +16,7 @@ cdef inline int ifloor(double x) nogil:
     return int(floor(x))
 
 
-def quantize_positive_image(floating[:, :] v, int num_levels):
+def quantize_positive_2d(floating[:, :] v, int num_levels):
     r"""Quantizes a 2D image to the requested number or quantization levels
 
     Quantizes the input image at the given number of intensity levels, 
@@ -90,7 +90,7 @@ def quantize_positive_image(floating[:, :] v, int num_levels):
     return out, levels, hist
 
 
-def quantize_positive_volume(floating[:, :, :] v, int num_levels):
+def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     r"""Quantizes a 3D volume to the requested number or quantization levels
 
     Quantizes the input volume at the given number of intensity levels,
@@ -167,7 +167,7 @@ def quantize_positive_volume(floating[:, :, :] v, int num_levels):
     return out, levels, hist
 
 
-def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
+def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
                                      int numLabels, int[:, :] labels):
     r"""Computes the mean and std. for each quantization level.
 
@@ -224,7 +224,7 @@ def compute_masked_image_class_stats(int[:, :] mask, floating[:, :] v,
     return means, variances
 
 
-def compute_masked_volume_class_stats(int[:, :, :] mask, floating[:, :, :] v,
+def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
                                       int numLabels, int[:, :, :] labels):
     r"""Computes the mean and std. for each quantization level.
 

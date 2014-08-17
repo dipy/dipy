@@ -1501,7 +1501,7 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
     return down
 
 
-def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
+def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                 double[:, :] affine_idx_in=None, 
                 double[:, :] affine_idx_out=None, 
                 double[:, :] affine_disp=None,
@@ -1622,7 +1622,7 @@ def warp_volume(floating[:, :, :] volume, floating[:, :, :, :] d1,
     return warped
 
 
-def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
+def warp_3d_affine(floating[:, :, :] volume, int[:] refShape,
                        double[:, :] affine):
     r"""Warps a 3D volume by a linear transform using trilinear interpolation
 
@@ -1683,7 +1683,7 @@ def warp_volume_affine(floating[:, :, :] volume, int[:] refShape,
     return warped
 
 
-def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
+def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                    double[:, :] affine_idx_in=None, 
                    double[:, :] affine_idx_out=None, 
                    double[:, :] affine_disp=None,
@@ -1804,7 +1804,7 @@ def warp_volume_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
     return warped
 
 
-def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
+def warp_3d_affine_nn(number[:, :, :] volume, int[:] refShape,
                           double[:, :] affine=None):
     r"""Warps a 3D volume by a linear transform using NN interpolation
 
@@ -1866,11 +1866,11 @@ def warp_volume_affine_nn(number[:, :, :] volume, int[:] refShape,
     return warped
 
 
-def warp_image(floating[:, :] image, floating[:, :, :] d1,
-               double[:,:] affine_idx_in=None,
-               double[:,:] affine_idx_out=None,
-               double[:,:] affine_disp=None,
-               int[:] sampling_shape=None):
+def warp_2d(floating[:, :] image, floating[:, :, :] d1,
+                  double[:,:] affine_idx_in=None,
+                  double[:,:] affine_idx_out=None,
+                  double[:,:] affine_disp=None,
+                  int[:] sampling_shape=None):
     r"""Warps a 2D image using bilinear interpolation
 
     Deforms the input image under the given transformation. The warped image
@@ -1972,7 +1972,7 @@ def warp_image(floating[:, :] image, floating[:, :, :] d1,
     return warped
 
 
-def warp_image_affine(floating[:, :] image, int[:] refShape,
+def warp_2d_affine(floating[:, :] image, int[:] refShape,
                       double[:, :] affine=None):
     r"""Warps a 2D image by a linear transform using bilinear interpolation
 
@@ -2028,7 +2028,7 @@ def warp_image_affine(floating[:, :] image, int[:] refShape,
     return warped
 
 
-def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
+def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                   double[:,:] affine_idx_in=None,
                   double[:,:] affine_idx_out=None,
                   double[:,:] affine_disp=None,
@@ -2134,7 +2134,7 @@ def warp_image_nn(number[:, :] image, floating[:, :, :] d1,
     return warped
 
 
-def warp_image_affine_nn(number[:, :] image, int[:] refShape,
+def warp_2d_affine_nn(number[:, :] image, int[:] refShape,
                          double[:, :] affine=None):
     r"""Warps a 2D image by a linear transform using NN interpolation
     Deforms the input image under the given affine transformation using 

@@ -48,6 +48,7 @@ def test_diffeomorphic_map_2d():
     operating in physical space, maps the points exactly (up to numerical 
     precision).
     """
+    np.random.seed(2022966)
     domain_shape = (10, 10)
     codomain_shape = (10, 10)
     #create a simple affine transformation
@@ -308,8 +309,9 @@ def test_optimizer_exceptions():
 
 
 def test_scale_space_exceptions():
-    target_shape = (32, 32)
+    np.random.seed(2022966)
 
+    target_shape = (32, 32)
     #create a random image
     image = np.ndarray(target_shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(tuple(target_shape))

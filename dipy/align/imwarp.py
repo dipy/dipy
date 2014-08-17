@@ -138,7 +138,9 @@ class ScaleSpace(object):
             mask = np.asarray(image>0, dtype=np.int32)
         
         #normalize input image to [0,1]
-        img = (image - image.min())/(image.max() - image.min())        
+        img = (image - image.min())/(image.max() - image.min())
+        if mask0:
+            img *= mask
 
         #The properties are saved in separate lists. Insert input image
         #properties at the first level of the scale space
@@ -532,14 +534,14 @@ class DiffeomorphicMap(object):
         """
         if self.dim == 2:
             if interpolation == 'linear':
-                return vfu.warp_image
+                return vfu.warp_2d
             else:
-                return vfu.warp_image_nn
+                return vfu.warp_2d_nn
         else:
             if interpolation == 'linear':
-                return vfu.warp_volume
+                return vfu.warp_3d
             else:
-                return vfu.warp_volume_nn
+                return vfu.warp_3d_nn
 
     def _warp_forward(self, image, interpolation='linear', world_to_image=None, 
                       sampling_shape=None, sampling_affine=None):

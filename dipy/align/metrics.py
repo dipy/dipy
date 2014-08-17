@@ -381,12 +381,12 @@ class EMMetric(SimilarityMetric):
         dimension of the input images
         """
         if self.dim == 2:
-            self.quantize = em.quantize_positive_image
-            self.compute_stats = em.compute_masked_image_class_stats
+            self.quantize = em.quantize_positive_2d
+            self.compute_stats = em.compute_masked_class_stats_2d
             self.reorient_vector_field = vfu.reorient_vector_field_2d
         elif self.dim == 3:
-            self.quantize = em.quantize_positive_volume
-            self.compute_stats = em.compute_masked_volume_class_stats
+            self.quantize = em.quantize_positive_3d
+            self.compute_stats = em.compute_masked_class_stats_3d
             self.reorient_vector_field = vfu.reorient_vector_field_3d
         else:
             raise ValueError('EM Metric not defined for dimension %d'%(self.dim));
@@ -918,21 +918,21 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     """
     #pre-smoothing
     for i in range(k):
-        ssd.iterate_residual_displacement_field_SSD2D(delta_field,
+        ssd.iterate_residual_displacement_field_ssd_2d(delta_field,
                                                       sigma_sq_field,
                                                       gradient_field,
                                                       target,
                                                       lambda_param,
                                                       displacement)
     if n == 0:
-        energy = ssd.compute_energy_SSD2D(delta_field, sigma_sq_field, 
+        energy = ssd.compute_energy_ssd_2d(delta_field, sigma_sq_field, 
                                           gradient_field, lambda_param, 
                                           displacement)
         return energy
 
     #solve at coarser grid
     residual = None
-    residual = ssd.compute_residual_displacement_field_SSD2D(delta_field,
+    residual = ssd.compute_residual_displacement_field_ssd_2d(delta_field,
                                                              sigma_sq_field,
                                                              gradient_field,
                                                              target,
@@ -963,13 +963,13 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
 
     #post-smoothing
     for i in range(k):
-        ssd.iterate_residual_displacement_field_SSD2D(delta_field,
+        ssd.iterate_residual_displacement_field_ssd_2d(delta_field,
                                                              sigma_sq_field,
                                                              gradient_field,
                                                              target,
                                                              lambda_param,
                                                              displacement)
-    energy = ssd.compute_energy_SSD2D(delta_field, sigma_sq_field, 
+    energy = ssd.compute_energy_ssd_2d(delta_field, sigma_sq_field, 
                                       gradient_field, lambda_param, 
                                       displacement)
     return energy
@@ -1020,19 +1020,19 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     """
     #pre-smoothing
     for i in range(k):
-        ssd.iterate_residual_displacement_field_SSD3D(delta_field,
+        ssd.iterate_residual_displacement_field_ssd_3d(delta_field,
                                                              sigma_sq_field,
                                                              gradient_field,
                                                              target,
                                                              lambda_param,
                                                              displacement)
     if n == 0:
-        energy = ssd.compute_energy_SSD3D(delta_field, sigma_sq_field,
+        energy = ssd.compute_energy_ssd_3d(delta_field, sigma_sq_field,
                                           gradient_field, lambda_param,
                                           displacement)
         return energy
     #solve at coarser grid
-    residual = ssd.compute_residual_displacement_field_SSD3D(delta_field,
+    residual = ssd.compute_residual_displacement_field_ssd_3d(delta_field,
                                                             sigma_sq_field,
                                                             gradient_field,
                                                             target,
@@ -1065,13 +1065,13 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     del sub_displacement
     #post-smoothing
     for i in range(k):
-        ssd.iterate_residual_displacement_field_SSD3D(delta_field,
+        ssd.iterate_residual_displacement_field_ssd_3d(delta_field,
                                                       sigma_sq_field,
                                                       gradient_field,
                                                       target,
                                                       lambda_param,
                                                       displacement)
-    energy = ssd.compute_energy_SSD3D(delta_field, sigma_sq_field,
+    energy = ssd.compute_energy_ssd_3d(delta_field, sigma_sq_field,
                                       gradient_field, lambda_param,
                                       displacement)
     return energy

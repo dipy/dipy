@@ -17,6 +17,7 @@ def test_warping_2d():
     operating in physical space, maps the points exactly (up to numerical 
     precision).
     """
+    np.random.seed(8315759)
     input_shape = (10, 10)
     target_shape = (10, 10)
     #create a simple affine transformation
@@ -62,7 +63,7 @@ def test_warping_2d():
     affine_disp = target_affine_inv
 
     #apply the implementation under test
-    warped = np.array(vfu.warp_image(moving_image, disp, None, affine_index,
+    warped = np.array(vfu.warp_2d(moving_image, disp, None, affine_index,
                                      affine_disp))
 
     #warp the moving image using the (exact) assignments
@@ -72,7 +73,7 @@ def test_warping_2d():
     assert_array_almost_equal(warped, expected, decimal=5)
     
     #Now test the nearest neighbor interpolation
-    warped = np.array(vfu.warp_image_nn(moving_image, disp, None, affine_index,
+    warped = np.array(vfu.warp_2d_nn(moving_image, disp, None, affine_index,
                       affine_disp))
     #compare the images (now we dont have to worry about precision, it is n.n.)
     assert_array_almost_equal(warped, expected)
@@ -89,6 +90,7 @@ def test_warping_3d():
     operating in physical space, maps the points exactly (up to numerical 
     precision).
     """
+    np.random.seed(8315759)
     input_shape = (10, 10, 10)
     target_shape = (10, 10, 10)
     #create a simple affine transformation
@@ -139,7 +141,7 @@ def test_warping_3d():
     affine_disp = target_affine_inv
 
     #apply the implementation under test
-    warped = np.array(vfu.warp_volume(moving_image, disp, None, affine_index,
+    warped = np.array(vfu.warp_3d(moving_image, disp, None, affine_index,
                                       affine_disp))
 
     #warp the moving image using the (exact) assignments
@@ -149,7 +151,7 @@ def test_warping_3d():
     assert_array_almost_equal(warped, expected, decimal=5)
     
     #Now test the nearest neighbor interpolation
-    warped = np.array(vfu.warp_volume_nn(moving_image, disp, None, affine_index,
+    warped = np.array(vfu.warp_3d_nn(moving_image, disp, None, affine_index,
                                          affine_disp))
     #compare the images (now we dont have to worry about precision, it is n.n.)
     assert_array_almost_equal(warped, expected)
@@ -204,14 +206,14 @@ def test_affine_warping_2d():
     expected = diff_map.transform(circle, 'linear')
     composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
                                   imwarp.mult_aff(P, D))
-    warped = vfu.warp_image_affine(circle, np.array(domain_shape, dtype = np.int32), composition)
+    warped = vfu.warp_2d_affine(circle, np.array(domain_shape, dtype = np.int32), composition)
     assert_array_almost_equal(warped, expected)
 
     # Test affine warping with nearest-neighbor interpolation
     expected = diff_map.transform(circle, 'nearest')
     composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
                                   imwarp.mult_aff(P, D))
-    warped = vfu.warp_image_affine_nn(circle, np.array(domain_shape, dtype = np.int32), composition)
+    warped = vfu.warp_2d_affine_nn(circle, np.array(domain_shape, dtype = np.int32), composition)
     assert_array_almost_equal(warped, expected)
 
 
@@ -267,14 +269,14 @@ def test_affine_warping_3d():
     expected = diff_map.transform(sphere, 'linear')
     composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
                                   imwarp.mult_aff(P, D))
-    warped = vfu.warp_volume_affine(sphere, np.array(domain_shape, dtype = np.int32), composition)
+    warped = vfu.warp_3d_affine(sphere, np.array(domain_shape, dtype = np.int32), composition)
     assert_array_almost_equal(warped, expected)
 
     # Test affine warping with nearest-neighbor interpolation
     expected = diff_map.transform(sphere, 'nearest')
     composition = imwarp.mult_aff(diff_map.codomain_affine_inv, 
                                   imwarp.mult_aff(P, D))
-    warped = vfu.warp_volume_affine_nn(sphere, np.array(domain_shape, dtype = np.int32), composition)
+    warped = vfu.warp_3d_affine_nn(sphere, np.array(domain_shape, dtype = np.int32), composition)
     assert_array_almost_equal(warped, expected)
 
 
@@ -285,6 +287,7 @@ def test_compose_vector_fields_2d():
     although operating in physical space, map the points exactly (up to
     numerical precision).
     """
+    np.random.seed(8315759)
     input_shape = (10, 10)
     target_shape = (10, 10)
     #create a simple affine transformation
@@ -352,12 +355,12 @@ def test_compose_vector_fields_2d():
                                                       premult_disp,
                                                       1.0)
     #apply the implementation under test
-    warped = np.array(vfu.warp_image(moving_image, composition, None,
+    warped = np.array(vfu.warp_2d(moving_image, composition, None,
                                      premult_index, premult_disp))
     assert_array_almost_equal(warped, expected)
 
     #test also using nearest neighbor interpolation
-    warped = np.array(vfu.warp_image_nn(moving_image, composition, None,
+    warped = np.array(vfu.warp_2d_nn(moving_image, composition, None,
                                         premult_index, premult_disp))
     assert_array_almost_equal(warped, expected)
 
@@ -369,6 +372,7 @@ def test_compose_vector_fields_3d():
     although operating in physical space, map the points exactly (up to
     numerical precision).
     """
+    np.random.seed(8315759)
     input_shape = (10, 10, 10)
     target_shape = (10, 10, 10)
     #create a simple affine transformation
@@ -442,12 +446,12 @@ def test_compose_vector_fields_3d():
                                                premult_disp,
                                                1.0)
     #apply the implementation under test
-    warped = np.array(vfu.warp_volume(moving_image, composition, None,
+    warped = np.array(vfu.warp_3d(moving_image, composition, None,
                                       premult_index, premult_disp))
     assert_array_almost_equal(warped, expected)
 
     #test also using nearest neighbor interpolation
-    warped = np.array(vfu.warp_volume_nn(moving_image, composition, None,
+    warped = np.array(vfu.warp_3d_nn(moving_image, composition, None,
                                          premult_index, premult_disp))
     assert_array_almost_equal(warped, expected)
 
@@ -529,6 +533,7 @@ def test_resample_vector_field_3d():
 
 
 def test_downsample_scalar_field_2d():
+    np.random.seed(8315759)
     shape = (32, 32)
     image = np.ndarray(shape, dtype=floating)
     image[...] = np.random.randint(0, 10, np.size(image)).reshape(shape)
@@ -542,6 +547,7 @@ def test_downsample_scalar_field_2d():
     
 
 def test_downsample_displacement_field_2d():
+    np.random.seed(8315759)
     shape = (32, 32, 2)
     field = np.ndarray(shape, dtype=floating)
     field[...] = np.random.randint(0, 10, np.size(field)).reshape(shape)
@@ -554,6 +560,7 @@ def test_downsample_displacement_field_2d():
     assert_array_almost_equal(expected, actual)
 
 def test_downsample_scalar_field_3d():
+    np.random.seed(8315759)
     shape = (32, 32, 32)
     volume = np.ndarray(shape, dtype=floating)
     volume[...] = np.random.randint(0, 10, np.size(volume)).reshape(shape)
@@ -571,6 +578,7 @@ def test_downsample_scalar_field_3d():
 
 
 def test_downsample_displacement_field_3d():
+    np.random.seed(8315759)
     shape = (32, 32, 32, 3)
     field = np.ndarray(shape, dtype=floating)
     field[...] = np.random.randint(0, 10, np.size(field)).reshape(shape)
