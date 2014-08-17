@@ -222,10 +222,10 @@ def test_diffeomorphic_map_simplification_2d():
     #And of course, it must be simpler...
     assert_equal(simplified.domain_affine, None)
     assert_equal(simplified.codomain_affine, None)
-    assert_equal(simplified.disc_affine, None)
+    assert_equal(simplified.disp_affine, None)
     assert_equal(simplified.domain_affine_inv, None)
     assert_equal(simplified.codomain_affine_inv, None)
-    assert_equal(simplified.disc_affine_inv, None)
+    assert_equal(simplified.disp_affine_inv, None)
 
 
 def test_diffeomorphic_map_simplification_3d():
@@ -287,10 +287,10 @@ def test_diffeomorphic_map_simplification_3d():
     #And of course, it must be simpler...
     assert_equal(simplified.domain_affine, None)
     assert_equal(simplified.codomain_affine, None)
-    assert_equal(simplified.disc_affine, None)
+    assert_equal(simplified.disp_affine, None)
     assert_equal(simplified.domain_affine_inv, None)
     assert_equal(simplified.codomain_affine_inv, None)
-    assert_equal(simplified.disc_affine_inv, None)
+    assert_equal(simplified.disp_affine_inv, None)
 
 def test_optimizer_exceptions():
     #An arbitrary valid metric
