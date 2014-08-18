@@ -231,7 +231,7 @@ def test_quantize_positive_3d():
         assert_equal(hist[i], current_bin)
 
 
-def test_compute_masked_image_class_stats():
+def test_compute_masked_class_stats_2d():
     np.random.seed(1246592)
 
     shape = (32, 32)
@@ -245,13 +245,13 @@ def test_compute_masked_image_class_stats():
     values *= labels
     values += labels
 
-    expected_means = [values[labels == i].mean() for i in range(10)] 
-    expected_vars = [values[labels == i].var() for i in range(10)] 
+    expected_means = [values[labels == i].mean() for i in range(10)]
+    expected_vars = [values[labels == i].var() for i in range(10)]
 
     mask = np.ones(shape, dtype = np.int32)
     means, vars = em.compute_masked_class_stats_2d(mask, values, 10, labels)
-    assert_array_almost_equal(means, expected_means)
-    assert_array_almost_equal(vars, expected_vars)
+    assert_array_almost_equal(means, expected_means, decimal = 4)
+    assert_array_almost_equal(vars, expected_vars, decimal = 4)
 
 def test_compute_masked_class_stats_3d():
     np.random.seed(1246592)
@@ -267,13 +267,13 @@ def test_compute_masked_class_stats_3d():
     values *= labels
     values += labels
 
-    expected_means = [values[labels == i].mean() for i in range(10)] 
-    expected_vars = [values[labels == i].var() for i in range(10)] 
+    expected_means = [values[labels == i].mean() for i in range(10)]
+    expected_vars = [values[labels == i].var() for i in range(10)]
 
     mask = np.ones(shape, dtype = np.int32)
     means, vars = em.compute_masked_class_stats_3d(mask, values, 10, labels)
-    assert_array_almost_equal(means, expected_means)
-    assert_array_almost_equal(vars, expected_vars)
+    assert_array_almost_equal(means, expected_means, decimal = 4)
+    assert_array_almost_equal(vars, expected_vars, decimal = 4)
 
 
 if __name__=='__main__':
