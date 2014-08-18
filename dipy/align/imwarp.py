@@ -1202,34 +1202,34 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.moving_direction = None
         self.mask0 = metric.mask0
 
-    def update(self, new_displacement, current_displacement, 
+    def update(self, current_displacement, new_displacement,
                affine_inv, time_scaling):
         r"""Composition of the current displacement field with the given field
 
-        Interpolates current displacement at the locations defined by 
-        new_displacement. Equivalently, computes the composition C of the given
-        displacement fields as C(x) = B(A(x)), where A is new_displacement and B
-        is currentDisplacement. This function is intended to be used with
+        Interpolates new displacement at the locations defined by 
+        current_displacement. Equivalently, computes the composition C of the given
+        displacement fields as C(x) = B(A(x)), where A is current_displacement and B
+        is new_displacement. This function is intended to be used with
         deformation fields of the same sampling (e.g. to be called by a
-        registration algorithm), in this case, the pre-multiplication matrix for
-        the index vector is the identity
+        registration algorithm).
 
         Parameters
         ----------
         new_displacement : array, shape (R, C, 2) or (S, R, C, 3)
-            the displacement field defining where to interpolate 
-            current_displacement
+            the displacement field to be warped by current_displacement
         current_displacement : array, shape (R', C', 2) or (S', R', C', 3)
-            the displacement field to be warped by new_displacement
+            the displacement field defining where to interpolate 
+            new_displacement
 
         Returns
         -------
         updated : array, shape (the same as new_displacement)
             the warped displacement field
         mean_norm : the mean norm of all vectors in current_displacement
-        """        
-        mean_norm = np.sqrt(np.sum((current_displacement ** 2), -1)).mean()
-        updated, stats = self.compose(new_displacement, current_displacement,
+        """
+
+        mean_norm = np.sqrt(np.sum((np.array(current_displacement) ** 2), -1)).mean()
+        updated, stats = self.compose(current_displacement, new_displacement,
                                       None, affine_inv, time_scaling)
 
         return np.array(updated), np.array(mean_norm)
@@ -1239,7 +1239,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         Returns the DiffeomorphicMap registering the moving image towards
         the static image.
         """
-        return self.forward_model
+        return self.static_to_ref
 
     def _connect_functions(self):
         r"""Assign the methods to be called according to the image dimension
@@ -1341,7 +1341,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #reference, we don't need to pre-align.
         domain_shape = static.shape
         domain_affine = static_affine
-        self.forward_model = DiffeomorphicMap(self.dim,
+        self.static_to_ref = DiffeomorphicMap(self.dim,
                                               disp_shape,
                                               disp_affine,
                                               domain_shape,
@@ -1349,7 +1349,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                               codomain_shape,
                                               codomain_affine,
                                               None)
-        self.forward_model.allocate()
+        self.static_to_ref.allocate()
 
         #The backward model transforms points from the moving image
         #to points on the reference (which is the static). So the input
@@ -1363,7 +1363,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         prealign_inv = None if prealign is None else npl.inv(prealign)
         domain_shape = moving.shape
         domain_affine = moving_affine
-        self.backward_model = DiffeomorphicMap(self.dim,
+        self.moving_to_ref = DiffeomorphicMap(self.dim,
                                                disp_shape,
                                                disp_affine,
                                                domain_shape,
@@ -1371,7 +1371,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                                codomain_shape,
                                                codomain_affine,
                                                prealign_inv)
-        self.backward_model.allocate()
+        self.moving_to_ref.allocate()
 
     def _end_optimizer(self):
         r"""Frees the resources allocated during initialization
@@ -1416,11 +1416,11 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         
         #Warp the input images (smoothed to the current scale) to the common 
         #(reference) space at the current resolution
-        wstatic = self.forward_model.transform_inverse(current_static, 'linear', 
+        wstatic = self.static_to_ref.transform_inverse(current_static, 'linear', 
                                                        None,
                                                        current_disp_shape,
                                                        current_disp_affine)
-        wmoving = self.backward_model.transform_inverse(current_moving, 'linear',
+        wmoving = self.moving_to_ref.transform_inverse(current_moving, 'linear',
                                                         None,
                                                         current_disp_shape,
                                                         current_disp_affine)
@@ -1431,12 +1431,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.metric.set_moving_image(wmoving, current_disp_affine, 
             current_disp_spacing, self.static_direction)
         self.metric.use_moving_image_dynamics(
-            current_moving, self.backward_model.inverse())
+            current_moving, self.moving_to_ref.inverse())
 
         self.metric.set_static_image(wstatic, current_disp_affine, 
             current_disp_spacing, self.static_direction)
         self.metric.use_static_image_dynamics(
-            current_static, self.forward_model.inverse())
+            current_static, self.static_to_ref.inverse())
 
         #Initialize the metric for a new iteration
         self.metric.initialize_iteration()
@@ -1444,8 +1444,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.callback(self, RegistrationStages.ITER_START)
 
         #Free some memory (useful when using double precision)
-        del self.forward_model.backward
-        del self.backward_model.backward
+        del self.static_to_ref.backward
+        del self.moving_to_ref.backward
 
         #Compute the forward step (to be used to update the forward transform) 
         fw_step = np.array(self.metric.compute_forward())
@@ -1455,8 +1455,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             fw_step /= nrm
         
         #Add to current total field
-        self.forward_model.forward, md_forward = self.update(
-            self.forward_model.forward, fw_step, 
+        self.static_to_ref.forward, md_forward = self.update(
+            self.static_to_ref.forward, fw_step, 
             current_disp_affine_inv, self.step_length)
         del fw_step
 
@@ -1471,8 +1471,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             bw_step /= nrm
 
         #Add to current total field
-        self.backward_model.forward, md_backward = self.update(
-            self.backward_model.forward, bw_step, 
+        self.moving_to_ref.forward, md_backward = self.update(
+            self.moving_to_ref.forward, bw_step, 
             current_disp_affine_inv, self.step_length)
         del bw_step
 
@@ -1491,36 +1491,36 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         self.energy_list.append(fw_energy + bw_energy)
 
         #Invert the forward model's forward field
-        self.forward_model.backward = np.array(
+        self.static_to_ref.backward = np.array(
             self.invert_vector_field(
-                self.forward_model.forward,
+                self.static_to_ref.forward,
                 current_disp_affine_inv,
                 current_disp_spacing,
                 self.inv_iter, self.inv_tol, None))
 
         #Invert the backward model's forward field
-        self.backward_model.backward = np.array(
+        self.moving_to_ref.backward = np.array(
             self.invert_vector_field(
-                self.backward_model.forward,
+                self.moving_to_ref.forward,
                 current_disp_affine_inv,
                 current_disp_spacing,
                 self.inv_iter, self.inv_tol, None))
 
         #Invert the forward model's backward field
-        self.forward_model.forward = np.array(
+        self.static_to_ref.forward = np.array(
             self.invert_vector_field(
-                self.forward_model.backward,
+                self.static_to_ref.backward,
                 current_disp_affine_inv,
                 current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.forward_model.forward))
+                self.inv_iter, self.inv_tol, self.static_to_ref.forward))
 
         #Invert the backward model's backward field
-        self.backward_model.forward = np.array(
+        self.moving_to_ref.forward = np.array(
             self.invert_vector_field(
-                self.backward_model.backward,
+                self.moving_to_ref.backward,
                 current_disp_affine_inv,
                 current_disp_spacing,
-                self.inv_iter, self.inv_tol, self.backward_model.forward))
+                self.inv_iter, self.inv_tol, self.moving_to_ref.forward))
 
         #Free resources no longer needed to compute the forward and backward
         #steps
@@ -1600,8 +1600,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 expand_factors = \
                     self.static_ss.get_expand_factors(level+1, level) 
                 new_shape = self.static_ss.get_domain_shape(level)
-                self.forward_model.expand_fields(expand_factors, new_shape)
-                self.backward_model.expand_fields(expand_factors, new_shape)
+                self.static_to_ref.expand_fields(expand_factors, new_shape)
+                self.moving_to_ref.expand_fields(expand_factors, new_shape)
 
             self.niter = 0
             self.energy_list = []
@@ -1621,24 +1621,24 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.callback(self, RegistrationStages.SCALE_END)
             
         # Reporting mean and std in stats[1] and stats[2]
-        residual, stats = self.forward_model.compute_inversion_error()
+        residual, stats = self.static_to_ref.compute_inversion_error()
         
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            print('Forward Residual error: %0.6f (%0.6f)'
+            print('Static-Reference Residual error: %0.6f (%0.6f)'
                   % (stats[1], stats[2]))
         
-        residual, stats = self.backward_model.compute_inversion_error()
+        residual, stats = self.moving_to_ref.compute_inversion_error()
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
-            print('Backward Residual error :%0.6f (%0.6f)'
+            print('Moving-Reference Residual error :%0.6f (%0.6f)'
                   % (stats[1], stats[2]))
 
         #Compose the two partial transformations
-        self.forward_model = self.backward_model.warp_endomorphism(
-                                    self.forward_model.inverse()).inverse()
+        self.static_to_ref = self.moving_to_ref.warp_endomorphism(
+                                    self.static_to_ref.inverse()).inverse()
                 
         # Report mean and std for the composed deformation field
-        residual, stats = self.forward_model.compute_inversion_error()
+        residual, stats = self.static_to_ref.compute_inversion_error()
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             print('Final residual error: %0.6f (%0.6f)' % (stats[1], stats[2]))
         if self.callback is not None:
@@ -1672,12 +1672,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         
         Returns
         -------
-        forward_model : DiffeomorphicMap object
+        static_to_ref : DiffeomorphicMap object
             the diffeomorphic map that brings the moving image towards the
             static one in the forward direction (i.e. by calling 
-            forward_model.transform) and the static image towards the
+            static_to_ref.transform) and the static image towards the
             moving one in the backward direction (i.e. by calling 
-            forward_model.transform_inverse). 
+            static_to_ref.transform_inverse). 
 
         """
         if self.verbosity >= VerbosityLevels.DEBUG:
@@ -1687,5 +1687,5 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                              static_affine, moving_affine, prealign)
         self._optimize()
         self._end_optimizer()
-        return self.forward_model
+        return self.static_to_ref
 

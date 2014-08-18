@@ -71,7 +71,7 @@ image on the static grid
 import dipy.align.vector_fields as vfu
 
 transform = np.linalg.inv(moving_affine).dot(pre_align.dot(static_affine))
-resampled = vfu.warp_volume_affine(moving.astype(np.float32), 
+resampled = vfu.warp_3d_affine(moving.astype(np.float32), 
                                    np.asarray(static.shape, dtype=np.int32), 
                                    transform)
 resampled = np.asarray(resampled)
