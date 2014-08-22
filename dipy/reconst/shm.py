@@ -964,3 +964,24 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
         return B.T, invB.T
 
     return B.T
+
+
+def real_sph_harm2(m, n, theta, phi):
+    m = np.abs(m)
+    x = np.cos(phi)
+    val = lpmv(abs(m), n, x).astype(complex)
+    val *= np.sqrt((2*n + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5*(gammaln(n-m+1)-gammaln(n+m+1)))
+    val = val * np.exp(1j * m * theta)
+    real_sh = np.where(m > 0, val.imag, val.real)
+    real_sh *= np.where(m == 0, 1., np.sqrt(2))
+    return real_sh
+
+
+def sph_harm2(m, n, theta, phi):
+    x = np.cos(phi)
+    val = lpmv(abs(m), n, x).astype(complex)
+    val *= np.sqrt((2*n + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5*(gammaln(n-m+1)-gammaln(n+m+1)))
+    val = val * np.exp(1j * m * theta)
+    return val
