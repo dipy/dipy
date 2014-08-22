@@ -68,7 +68,7 @@ def test_recursive_response_calibration():
 
     csd_fit = csd.fit(data)
 
-    assert_equal(csd_fit.shm_coeff[:, 0].all > 0, True)
+    assert_equal(np.all(csd_fit.shm_coeff[:, 0] >= 0), True)
 
     fodf = csd_fit.odf(sphere)
 
