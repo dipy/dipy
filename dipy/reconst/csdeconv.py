@@ -8,23 +8,22 @@ import scipy.linalg as la
 import scipy.linalg.lapack as ll
 
 from dipy.data import small_sphere, get_sphere
+from dipy.reconst.multi_voxel import multi_voxel_fit
+from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
+                              order_from_ncoef, sph_harm_lookup, lazy_index,
+                              SphHarmFit, real_sym_sh_basis, sh_to_rh,
+                              gen_dirac, forward_sdeconv_mat, SphHarmModel,
+                              sh_to_sf)
+from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
 from dipy.utils.six.moves import range
 
-from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm,
-                              sph_harm_lookup, lazy_index, SphHarmFit,
-                              real_sym_sh_basis, sh_to_rh, forward_sdeconv_mat,
-                              SphHarmModel)
 
 from dipy.reconst.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
-from dipy.reconst.shm import sh_to_sf
-from dipy.viz import fvtk
-from dipy.sims.voxel import single_tensor_odf
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
@@ -825,7 +824,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
         peak in order to call it a single fiber population [1]
     init_fa : float
         FA of the initial 'fat' response function (tensor)
-    init_trace : fload
+    init_trace : float
         trace of the initial 'fat' response function (tensor)
     iter : int
         maximum number of iterations for calibration
@@ -860,7 +859,8 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     no_params = ((sh_order + 1) * (sh_order + 2)) / 2
     response_p = np.ones(no_params)
     if mask is None:
-        data = data[np.ones(data.shape[0:(data.ndim-1)], dtype=bool)]
+        data = data.reshape(-1, data.shape[-1])
+#        data = data[np.ones(data.shape[0:(data.ndim-1)], dtype=bool)]
     else:
         data = data[mask]
 
