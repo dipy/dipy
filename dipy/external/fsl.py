@@ -316,16 +316,28 @@ def warp_displacements_tracks(fdpy, ffa, fmat, finv, fdis, fdisa, fref, fdpyw):
     dprw.close()
 
 
-def pipe(cmd):
+def pipe(cmd, print_sto=True, print_ste=True):
     """ A tine pipeline system to run external tools.
 
     For more advanced pipelining use nipype http://www.nipy.org/nipype
+
+    cmd : String
+         Command line to be run
+
+    print_sto : boolean
+         Print standard output (stdout) or not (default: True)
+
+    print_ste : boolean
+         Print standard error (stderr) or not (default: True)
+         
     """
     p = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
     sto = p.stdout.readlines()
     ste = p.stderr.readlines()
-    print(sto)
-    print(ste)
+    if print_sto :
+        print(sto)
+    if print_ste :
+        print(ste)
 
 
 def dcm2nii(dname, outdir, filt='*.dcm', options='-d n -g n -i n -o'):
