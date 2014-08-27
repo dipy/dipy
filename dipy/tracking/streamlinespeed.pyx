@@ -21,6 +21,19 @@ ctypedef fused Streamline:
 
 ctypedef vector[Streamline] Streamlines
 
+cdef extern from *:
+    void __PYX_XDEC_MEMVIEW(float2d* memslice, int have_gil)
+    void __PYX_XDEC_MEMVIEW(double2d* memslice, int have_gil)
+
+
+cdef void XDEC_vector_of_memview(Streamlines streamlines) nogil:
+    # Cython automatically convert list of numpy array into vector of memoryviews but
+    # we need to decrease ref count manually if not there will be memory leaks
+    # (see https://groups.google.com/d/topic/cython-users/KF3nkHll89M/discussion).
+    cdef int i
+    with gil:
+        for i in range(streamlines.size()):
+            __PYX_XDEC_MEMVIEW(&streamlines[i], 1)
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
@@ -38,6 +51,8 @@ cdef void _length(Streamlines streamlines, double[:] out) nogil:
             out[idx] += sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
                              pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
                              pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
+
+    XDEC_vector_of_memview(streamlines)
 
 
 def length(streamlines):
@@ -115,13 +130,13 @@ def length(streamlines):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-cdef void _arclengths(Streamline streamlines, double* out) nogil:
+cdef void _arclengths(Streamline streamline, double* out) nogil:
     cdef int i = 0
     out[0] = 0.0
-    for i in range(1, streamlines.shape[0]):
-        out[i] = out[i-1] + sqrt(pow(streamlines[i, 0] - streamlines[i-1, 0], 2.0) +
-                                 pow(streamlines[i, 1] - streamlines[i-1, 1], 2.0) +
-                                 pow(streamlines[i, 2] - streamlines[i-1, 2], 2.0))
+    for i in range(1, streamline.shape[0]):
+        out[i] = out[i-1] + sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
+                                 pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
+                                 pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
 
 @cython.wraparound(False)
 @cython.cdivision(True)
@@ -183,6 +198,9 @@ cdef void _set_number_of_points(Streamlines streamlines, Streamlines out) nogil:
         out[idx][newN-1,2] = streamline[N-1,2]
 
         free(arclengths)
+
+    XDEC_vector_of_memview(streamlines)
+    XDEC_vector_of_memview(out)
 
 
 def set_number_of_points(streamlines, nb_points=3):
