@@ -5,7 +5,7 @@ import numpy as np
 cimport numpy as np
 import cython
 
-from libc.math cimport sqrt, pow
+from libc.math cimport sqrt
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
@@ -24,11 +24,14 @@ cdef double _length(Streamline streamline) nogil:
     cdef:
         int i
         double out = 0.0
+		double dx, dy, dz
 
     for i in range(1, streamline.shape[0]):
-        out += sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
-                    pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
-                    pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
+        dx = streamline[i, 0] - streamline[i-1, 0]
+        dy = streamline[i, 1] - streamline[i-1, 1]
+        dz = streamline[i, 2] - streamline[i-1, 2]
+		out += sqrt(dx*dx + dy*dy + dz*dz)
+
     return out
 
 
@@ -110,11 +113,13 @@ def length(streamlines):
 
 cdef void _arclengths(Streamline streamline, double* out) nogil:
     cdef int i = 0
+    double dx, dy, dz
     out[0] = 0.0
     for i in range(1, streamline.shape[0]):
-        out[i] = out[i-1] + sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
-                                 pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
-                                 pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
+        dx = streamline[i, 0] - streamline[i-1, 0]
+        dy = streamline[i, 1] - streamline[i-1, 1]
+        dz = streamline[i, 2] - streamline[i-1, 2]
+		out[i] = out[i-1] + sqrt(dx*dx + dy*dy + dz*dz)
 
 
 cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
