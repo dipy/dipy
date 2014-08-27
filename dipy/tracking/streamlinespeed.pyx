@@ -27,8 +27,8 @@ cdef extern from *:
 
 
 cdef void XDEC_vector_of_memview(Streamlines streamlines) nogil:
-    # Cython automatically convert list of numpy array into vector of memoryviews but
-    # we need to decrease ref count manually if not there will be memory leaks
+    # Cython can convert a list of numpy array into a vector of memoryviews but
+    # we need to decrease ref count manually, otherwise there will be memory leaks
     # (see https://groups.google.com/d/topic/cython-users/KF3nkHll89M/discussion).
     cdef int i
     with gil:
