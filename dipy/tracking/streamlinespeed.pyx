@@ -5,7 +5,7 @@ cimport numpy as np
 import cython
 
 from libcpp.vector cimport vector
-from libc.math cimport sqrt, pow
+from libc.math cimport sqrt
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
@@ -29,15 +29,17 @@ cdef void _length(Streamlines streamlines, double[:] out) nogil:
         unsigned int i
         unsigned int idx
         Streamline streamline
+        double d0, d1, d2
 
     for idx in range(streamlines.size()):
         streamline = streamlines[idx]
         out[idx] = 0.0
 
         for i in range(1, streamline.shape[0]):
-            out[idx] += sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
-                             pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
-                             pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
+            d0 = streamline[i, 0] - streamline[i-1, 0]
+            d1 = streamline[i, 1] - streamline[i-1, 1]
+            d2 = streamline[i, 2] - streamline[i-1, 2]
+            out[idx] += sqrt(d0 * d0 + d1 * d1 + d2 * d2)
 
 
 def length(streamlines):
@@ -117,11 +119,14 @@ def length(streamlines):
 @cython.boundscheck(False)
 cdef void _arclengths(Streamline streamlines, double* out) nogil:
     cdef int i = 0
+    cdef double d0, d1, d2
     out[0] = 0.0
     for i in range(1, streamlines.shape[0]):
-        out[i] = out[i-1] + sqrt(pow(streamlines[i, 0] - streamlines[i-1, 0], 2.0) +
-                                 pow(streamlines[i, 1] - streamlines[i-1, 1], 2.0) +
-                                 pow(streamlines[i, 2] - streamlines[i-1, 2], 2.0))
+        d0 = streamlines[i, 0] - streamlines[i-1, 0]
+        d1 = streamlines[i, 1] - streamlines[i-1, 1]
+        d2 = streamlines[i, 2] - streamlines[i-1, 2]
+        out[i] = out[i-1] + sqrt(d0 * d0 + d1 * d1 + d2 * d2)
+
 
 @cython.wraparound(False)
 @cython.cdivision(True)
