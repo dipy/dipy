@@ -1,10 +1,10 @@
-# distutils: language = c++
+# distutils: language = c
+# cython: wraparound=False, cdivision=True, boundscheck=False
 
 import numpy as np
 cimport numpy as np
 import cython
 
-from libcpp.vector cimport vector
 from libc.math cimport sqrt, pow
 
 cdef extern from "stdlib.h" nogil:
@@ -19,40 +19,17 @@ ctypedef fused Streamline:
     float2d
     double2d
 
-ctypedef vector[Streamline] Streamlines
 
-cdef extern from *:
-    void __PYX_XDEC_MEMVIEW(float2d* memslice, int have_gil)
-    void __PYX_XDEC_MEMVIEW(double2d* memslice, int have_gil)
-
-
-cdef void XDEC_vector_of_memview(Streamlines streamlines) nogil:
-    # Cython can convert a list of numpy array into a vector of memoryviews but
-    # we need to decrease ref count manually, otherwise there will be memory leaks
-    # (see https://groups.google.com/d/topic/cython-users/KF3nkHll89M/discussion).
-    cdef int i
-    with gil:
-        for i in range(streamlines.size()):
-            __PYX_XDEC_MEMVIEW(&streamlines[i], 1)
-
-@cython.wraparound(False)
-@cython.boundscheck(False)
-cdef void _length(Streamlines streamlines, double[:] out) nogil:
+cdef double _length(Streamline streamline) nogil:
     cdef:
-        unsigned int i
-        unsigned int idx
-        Streamline streamline
+        int i
+        double out = 0.0
 
-    for idx in range(streamlines.size()):
-        streamline = streamlines[idx]
-        out[idx] = 0.0
-
-        for i in range(1, streamline.shape[0]):
-            out[idx] += sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
-                             pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
-                             pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
-
-    XDEC_vector_of_memview(streamlines)
+    for i in range(1, streamline.shape[0]):
+        out += sqrt(pow(streamline[i, 0] - streamline[i-1, 0], 2.0) +
+                    pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
+                    pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
+    return out
 
 
 def length(streamlines):
@@ -116,11 +93,14 @@ def length(streamlines):
 
     # Allocate memory for each streamline length.
     streamlines_length = np.empty(len(streamlines), dtype=np.float64)
+    cdef int i
 
     if dtype == np.float32:
-        _length[float2d](streamlines, streamlines_length)
+        for i in range(len(streamlines)):
+            streamlines_length[i] = _length[float2d](streamlines[i])
     else:
-        _length[double2d](streamlines, streamlines_length)
+        for i in range(len(streamlines)):
+            streamlines_length[i] = _length[double2d](streamlines[i])
 
     if only_one_streamlines:
         return streamlines_length[0]
@@ -128,8 +108,6 @@ def length(streamlines):
         return streamlines_length
 
 
-@cython.wraparound(False)
-@cython.boundscheck(False)
 cdef void _arclengths(Streamline streamline, double* out) nogil:
     cdef int i = 0
     out[0] = 0.0
@@ -138,69 +116,54 @@ cdef void _arclengths(Streamline streamline, double* out) nogil:
                                  pow(streamline[i, 1] - streamline[i-1, 1], 2.0) +
                                  pow(streamline[i, 2] - streamline[i-1, 2], 2.0))
 
-@cython.wraparound(False)
-@cython.cdivision(True)
-@cython.boundscheck(False)
-cdef void _set_number_of_points(Streamlines streamlines, Streamlines out) nogil:
+
+cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
     cdef:
-        unsigned int N
-        unsigned int newN = out[0].shape[0]
-        double ratio
-        double step
-        double nextPoint
-        unsigned int i
-        unsigned int j
-        unsigned int k
-        unsigned int idx
-        Streamline streamline
+        unsigned int N, new_N = out.shape[0]
+        double ratio, step, next_point
+        unsigned int i, j, k
 
-    for idx in range(streamlines.size()):
-        streamline = streamlines[idx]
+    # Get arclength at each point.
+    arclengths = <double*> malloc(streamline.shape[0] * sizeof(double))
+    _arclengths(streamline, arclengths)
 
-        # Get arclength at each point.
-        arclengths = <double*> malloc(streamline.shape[0] * sizeof(double))
-        _arclengths(streamline, arclengths)
+    N = streamline.shape[0]
+    step = arclengths[N-1] / (new_N-1)
 
-        N = streamline.shape[0]
-        step = arclengths[N-1] / (newN-1)
+    next_point = 0.0
+    i = 0
+    j = 0
+    k = 0
 
-        nextPoint = 0.0
-        i = 0
-        j = 0
-        k = 0
+    while next_point < arclengths[N-1]:
+        if next_point == arclengths[k]:
+            out[i,0] = streamline[j,0];
+            out[i,1] = streamline[j,1];
+            out[i,2] = streamline[j,2];
 
-        while nextPoint < arclengths[N-1]:
-            if nextPoint == arclengths[k]:
-                out[idx][i,0] = streamline[j,0];
-                out[idx][i,1] = streamline[j,1];
-                out[idx][i,2] = streamline[j,2];
+            next_point += step
+            i += 1
+            j += 1
+            k += 1
+        elif next_point < arclengths[k]:
+            ratio = 1 - ((arclengths[k]-next_point) / (arclengths[k]-arclengths[k-1]))
 
-                nextPoint += step
-                i += 1
-                j += 1
-                k += 1
-            elif nextPoint < arclengths[k]:
-                ratio = 1 - ((arclengths[k]-nextPoint) / (arclengths[k]-arclengths[k-1]))
+            out[i,0] = streamline[j-1,0] + ratio * (streamline[j,0] - streamline[j-1,0])
+            out[i,1] = streamline[j-1,1] + ratio * (streamline[j,1] - streamline[j-1,1])
+            out[i,2] = streamline[j-1,2] + ratio * (streamline[j,2] - streamline[j-1,2])
 
-                out[idx][i,0] = streamline[j-1,0] + ratio * (streamline[j,0] - streamline[j-1,0])
-                out[idx][i,1] = streamline[j-1,1] + ratio * (streamline[j,1] - streamline[j-1,1])
-                out[idx][i,2] = streamline[j-1,2] + ratio * (streamline[j,2] - streamline[j-1,2])
+            next_point += step
+            i += 1
+        else:
+            j += 1
+            k += 1
 
-                nextPoint += step
-                i += 1
-            else:
-                j += 1
-                k += 1
+    # Last resampled point always the one from orignal streamline.
+    out[new_N-1,0] = streamline[N-1,0]
+    out[new_N-1,1] = streamline[N-1,1]
+    out[new_N-1,2] = streamline[N-1,2]
 
-        # Last resampled point always the one from orignal streamline.
-        out[idx][newN-1,0] = streamline[N-1,0]
-        out[idx][newN-1,1] = streamline[N-1,1]
-        out[idx][newN-1,2] = streamline[N-1,2]
-
-        free(arclengths)
-
-    XDEC_vector_of_memview(streamlines)
-    XDEC_vector_of_memview(out)
+    free(arclengths)
 
 
 def set_number_of_points(streamlines, nb_points=3):
@@ -275,11 +238,14 @@ def set_number_of_points(streamlines, nb_points=3):
 
     # Allocate memory for each modified streamline
     modified_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=dtype) for streamline in streamlines]
+    cdef int i
 
     if dtype == np.float32:
-        _set_number_of_points[float2d](streamlines, modified_streamlines)
+        for i in range(len(streamlines)):
+            _set_number_of_points[float2d](streamlines[i], modified_streamlines[i])
     else:
-        _set_number_of_points[double2d](streamlines, modified_streamlines)
+        for i in range(len(streamlines)):
+            _set_number_of_points[double2d](streamlines[i], modified_streamlines[i])
 
     if only_one_streamlines:
         return modified_streamlines[0]
