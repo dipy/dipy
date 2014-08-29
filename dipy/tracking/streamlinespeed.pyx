@@ -22,15 +22,17 @@ ctypedef fused Streamline:
 
 cdef double _length(Streamline streamline) nogil:
     cdef:
-        int i
+        np.npy_intp i
         double out = 0.0
-		double dx, dy, dz
+        double dn, sum_dn_sqr
 
     for i in range(1, streamline.shape[0]):
-        dx = streamline[i, 0] - streamline[i-1, 0]
-        dy = streamline[i, 1] - streamline[i-1, 1]
-        dz = streamline[i, 2] - streamline[i-1, 2]
-		out += sqrt(dx*dx + dy*dy + dz*dz)
+        sum_dn_sqr = 0.0
+        for j in range(streamline.shape[1]):
+            dn = streamline[i, j] - streamline[i-1, j]
+            sum_dn_sqr += dn*dn
+
+        out += sqrt(sum_dn_sqr)
 
     return out
 
@@ -89,14 +91,9 @@ def length(streamlines):
             dtype = np.float32
             streamlines = [streamline.astype(np.float32) for streamline in streamlines]
 
-    # TODO: Support any number of coordinates?
-    nb_coords = streamlines[0].shape[1]
-    if nb_coords != 3:
-        raise ValueError("Streamlines must have 3 coordinates (i.e. X,Y,Z).")
-
     # Allocate memory for each streamline length.
     streamlines_length = np.empty(len(streamlines), dtype=np.float64)
-    cdef int i
+    cdef np.npy_intp i
 
     if dtype == np.float32:
         for i in range(len(streamlines)):
@@ -112,27 +109,31 @@ def length(streamlines):
 
 
 cdef void _arclengths(Streamline streamline, double* out) nogil:
-    cdef int i = 0
-    double dx, dy, dz
+    cdef np.npy_intp i = 0
+    cdef double dn
+
     out[0] = 0.0
     for i in range(1, streamline.shape[0]):
-        dx = streamline[i, 0] - streamline[i-1, 0]
-        dy = streamline[i, 1] - streamline[i-1, 1]
-        dz = streamline[i, 2] - streamline[i-1, 2]
-		out[i] = out[i-1] + sqrt(dx*dx + dy*dy + dz*dz)
+        out[i] = 0.0
+        for j in range(streamline.shape[1]):
+            dn = streamline[i, j] - streamline[i-1, j]
+            out[i] += dn*dn
+
+        out[i] = out[i-1] + sqrt(out[i])
 
 
 cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
     cdef:
-        unsigned int N, new_N = out.shape[0]
+        np.npy_intp N = streamline.shape[0]
+        np.npy_intp D = streamline.shape[1]
+        np.npy_intp new_N = out.shape[0]
         double ratio, step, next_point
-        unsigned int i, j, k
+        np.npy_intp i, j, k, dim
 
     # Get arclength at each point.
     arclengths = <double*> malloc(streamline.shape[0] * sizeof(double))
     _arclengths(streamline, arclengths)
 
-    N = streamline.shape[0]
     step = arclengths[N-1] / (new_N-1)
 
     next_point = 0.0
@@ -142,9 +143,8 @@ cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
 
     while next_point < arclengths[N-1]:
         if next_point == arclengths[k]:
-            out[i,0] = streamline[j,0];
-            out[i,1] = streamline[j,1];
-            out[i,2] = streamline[j,2];
+            for dim in range(D):
+                out[i,dim] = streamline[j,dim];
 
             next_point += step
             i += 1
@@ -153,9 +153,8 @@ cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
         elif next_point < arclengths[k]:
             ratio = 1 - ((arclengths[k]-next_point) / (arclengths[k]-arclengths[k-1]))
 
-            out[i,0] = streamline[j-1,0] + ratio * (streamline[j,0] - streamline[j-1,0])
-            out[i,1] = streamline[j-1,1] + ratio * (streamline[j,1] - streamline[j-1,1])
-            out[i,2] = streamline[j-1,2] + ratio * (streamline[j,2] - streamline[j-1,2])
+            for dim in range(D):
+                out[i,dim] = streamline[j-1,dim] + ratio * (streamline[j,dim] - streamline[j-1,dim])
 
             next_point += step
             i += 1
@@ -164,9 +163,8 @@ cdef void _set_number_of_points(Streamline streamline, Streamline out) nogil:
             k += 1
 
     # Last resampled point always the one from orignal streamline.
-    out[new_N-1,0] = streamline[N-1,0]
-    out[new_N-1,1] = streamline[N-1,1]
-    out[new_N-1,2] = streamline[N-1,2]
+    for dim in range(D):
+        out[new_N-1,dim] = streamline[N-1,dim]
 
     free(arclengths)
 
@@ -236,14 +234,9 @@ def set_number_of_points(streamlines, nb_points=3):
             dtype = np.float32
             streamlines = [streamline.astype(np.float32) for streamline in streamlines]
 
-    # TODO: Support any number of coordinates?
-    nb_coords = streamlines[0].shape[1]
-    if nb_coords != 3:
-        raise ValueError("Streamlines must have 3 coordinates (i.e. X,Y,Z).")
-
     # Allocate memory for each modified streamline
     modified_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=dtype) for streamline in streamlines]
-    cdef int i
+    cdef np.npy_intp i
 
     if dtype == np.float32:
         for i in range(len(streamlines)):
