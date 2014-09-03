@@ -562,37 +562,36 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         double stdNorm = 0
         double nn
         int i, j, inside
-        double di, dj, dii, djj
+        double di, dj, dii, djj, diii, djjj
 
     for i in range(nr1):
         for j in range(nc1):
-            
-            comp[i, j, 0] = 0
-            comp[i, j, 1] = 0
+
+            dii = d1[i, j, 0]
+            djj = d1[i, j, 1]
 
             if premult_disp is None:
-                di = d1[i, j, 0]
-                dj = d1[i, j, 1]
+                di = dii
+                dj = djj
             else:
-                di = _apply_affine_2d_x0(d1[i, j, 0], d1[i, j, 1], 0, 
-                                         premult_disp)
-                dj = _apply_affine_2d_x1(d1[i, j, 0], d1[i, j, 1], 0, 
-                                         premult_disp)
+                di = _apply_affine_2d_x0(dii, djj, 0, premult_disp)
+                dj = _apply_affine_2d_x1(dii, djj, 0, premult_disp)
 
             if premult_index is None:
-                dii = i
-                djj = j
+                diii = i
+                djjj = j
             else:
-                dii = _apply_affine_2d_x0(i, j, 1, premult_index)
-                djj = _apply_affine_2d_x1(i, j, 1, premult_index)
+                diii = _apply_affine_2d_x0(i, j, 1, premult_index)
+                djjj = _apply_affine_2d_x1(i, j, 1, premult_index)
 
-            dii += di
-            djj += dj
+            diii += di
+            djjj += dj
 
-            inside = interpolate_vector_bilinear(d2, dii, djj, comp[i,j])
+            inside = interpolate_vector_bilinear(d2, diii, djjj, comp[i,j])
+            
             if inside == 1:
-                comp[i,j,0] = time_scaling * comp[i,j,0] + d1[i,j,0]
-                comp[i,j,1] = time_scaling * comp[i,j,1] + d1[i,j,1]
+                comp[i,j,0] = time_scaling * comp[i,j,0] + dii
+                comp[i,j,1] = time_scaling * comp[i,j,1] + djj
                 nn = comp[i, j, 0] ** 2 + comp[i, j, 1] ** 2
                 meanNorm += nn
                 stdNorm += nn * nn
@@ -608,7 +607,8 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
 def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
                              double[:, :] premult_index, 
                              double[:, :] premult_disp,
-                             double time_scaling):
+                             double time_scaling,
+                             floating[:, :, :] comp):
     r"""Computes the composition of two 2D displacement fields
 
     Computes the composition of the two 2-D displacemements d1 and d2. The
@@ -644,6 +644,9 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         the matrix B in the explanation above
     time_scaling : float
         this corresponds to the time scaling 't' in the above explanation
+    comp : array, shape (R, C, 2)
+        the buffer to write the composition to. If None, the buffer is created
+        internally
 
     Returns
     -------
@@ -654,9 +657,11 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
         of the composition (maximum, mean, standard_deviation)
     """
     cdef:
-        floating[:, :, :] comp = np.zeros_like(d1)
-        double[:] stats = np.zeros(shape=(3,),
-                                     dtype=np.float64)
+        double[:] stats = np.zeros(shape=(3,), dtype=np.float64)
+    
+    if comp is None:
+        comp = np.zeros_like(d1)
+
     _compose_vector_fields_2d(d1, d2, premult_index, premult_disp,
                               time_scaling, comp, stats)
     return comp, stats
@@ -736,15 +741,11 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
         double stdNorm = 0
         double nn
         int i, j, k, inside
-        double di, dj, dk, dii, djj, dkk
+        double di, dj, dk, dii, djj, dkk, diii, djjj, dkkk
     for k in range(ns1):
         for i in range(nr1):
             for j in range(nc1):
                 
-                comp[k, i, j, 0] = 0
-                comp[k, i, j, 1] = 0
-                comp[k, i, j, 2] = 0
-
                 dkk = d1[k, i, j, 0]
                 dii = d1[k, i, j, 1]
                 djj = d1[k, i, j, 2]
@@ -759,24 +760,25 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                     dj = _apply_affine_3d_x2(dkk, dii, djj, 0, premult_disp)
 
                 if premult_index is None:
-                    dkk = k
-                    dii = i
-                    djj = j
+                    dkkk = k
+                    diii = i
+                    djjj = j
                 else:
-                    dkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
-                    dii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
-                    djj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
+                    dkkk = _apply_affine_3d_x0(k, i, j, 1, premult_index)
+                    diii = _apply_affine_3d_x1(k, i, j, 1, premult_index)
+                    djjj = _apply_affine_3d_x2(k, i, j, 1, premult_index)
 
-                dkk += dk
-                dii += di
-                djj += dj
+                dkkk += dk
+                diii += di
+                djjj += dj
 
-                inside = interpolate_vector_trilinear(d2, dkk, dii, djj,
-                                                      comp[k, i,j])
+                inside = interpolate_vector_trilinear(d2, dkkk, diii, djjj,
+                                                      comp[k, i, j])
+
                 if inside == 1:
-                    comp[k, i, j, 0] = t * comp[k, i, j, 0] + d1[k, i, j, 0]
-                    comp[k, i, j, 1] = t * comp[k, i, j, 1] + d1[k, i, j, 1]
-                    comp[k, i, j, 2] = t * comp[k, i, j, 2] + d1[k, i, j, 2]
+                    comp[k, i, j, 0] = t * comp[k, i, j, 0] + dkk
+                    comp[k, i, j, 1] = t * comp[k, i, j, 1] + dii
+                    comp[k, i, j, 2] = t * comp[k, i, j, 2] + djj
                     nn = (comp[k, i, j, 0] ** 2 + comp[k, i, j, 1] ** 2 +
                           comp[k, i, j, 2]**2)
                     meanNorm += nn
@@ -793,7 +795,8 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
 def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
                              double[:, :] premult_index, 
                              double[:, :] premult_disp,
-                             double time_scaling):
+                             double time_scaling,
+                             floating[:, :, :, :] comp):
     r"""Computes the composition of two 3D displacement fields
 
     Computes the composition of the two 3-D displacements d1 and d2. The
@@ -829,6 +832,9 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
         the matrix B in the explanation above
     time_scaling : float
         this corresponds to the time scaling 't' in the above explanation
+    comp : array, shape (S, R, C, 3), same dimension as d1
+        the buffer to write the composition to. If None, the buffer will be
+        created internally
 
     Returns
     -------
@@ -844,10 +850,13 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
     a zero vector.
     """
     cdef:
-        floating[:, :, :, :] comp = np.zeros_like(d1)
         double[:] stats = np.zeros(shape=(3,), dtype=np.float64)
-    _compose_vector_fields_3d(d1, d2, premult_index, premult_disp, time_scaling,
-                              comp, stats)
+
+    if comp is None:
+        comp = np.zeros_like(d1)
+    
+    _compose_vector_fields_3d(d1, d2, premult_index, premult_disp,
+                              time_scaling, comp, stats)
     return comp, stats
 
 
@@ -925,13 +934,12 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                 epsilon = 0.75
             else:
                 epsilon = 0.5
-            p, q = q, p
-            _compose_vector_fields_2d(q, d, None, w_to_img, 1.0, p, substats)
+            _compose_vector_fields_2d(p, d, None, w_to_img, 1.0, q, substats)
             difmag = 0
             error = 0
             for i in range(nr):
                 for j in range(nc):
-                    mag = sqrt((p[i, j, 0]/sr) ** 2 + (p[i, j, 1]/sc) ** 2)
+                    mag = sqrt((q[i, j, 0]/sr) ** 2 + (q[i, j, 1]/sc) ** 2)
                     norms[i,j] = mag
                     error += mag
                     if(difmag < mag):
@@ -943,8 +951,8 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
                         step_factor = epsilon * maxlen / norms[i,j]
                     else:
                         step_factor = epsilon
-                    p[i, j, 0] = q[i, j, 0] - step_factor * p[i, j, 0]
-                    p[i, j, 1] = q[i, j, 1] - step_factor * p[i, j, 1]
+                    p[i, j, 0] = p[i, j, 0] - step_factor * q[i, j, 0]
+                    p[i, j, 1] = p[i, j, 1] - step_factor * q[i, j, 1]
             error /= (nr * nc)            
             iter_count += 1
         stats[0] = substats[1]
@@ -1028,16 +1036,15 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                 epsilon = 0.75
             else:
                 epsilon = 0.5
-            p, q = q, p
-            _compose_vector_fields_3d(q, d, None, w_to_img, 1.0, p, substats)
+            _compose_vector_fields_3d(p, d, None, w_to_img, 1.0, q, substats)
             difmag = 0
             error = 0
             for k in range(ns):
                 for i in range(nr):
                     for j in range(nc):
-                        mag = sqrt((p[k, i, j, 0]/ss) ** 2 +
-                                   (p[k, i, j, 1]/sr) ** 2 +
-                                   (p[k, i, j, 2]/sc) ** 2)
+                        mag = sqrt((q[k, i, j, 0]/ss) ** 2 +
+                                   (q[k, i, j, 1]/sr) ** 2 +
+                                   (q[k, i, j, 2]/sc) ** 2)
                         norms[k,i,j] = mag
                         error += mag
                         if(difmag < mag):
@@ -1050,13 +1057,12 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
                             step_factor = epsilon * maxlen / norms[k,i,j]
                         else:
                             step_factor = epsilon
-                        p[k, i, j, 0] = (q[k, i, j, 0] -
-                                         step_factor * p[k, i, j, 0])
-                        p[k, i, j, 1] = (q[k, i, j, 1] -
-                                         step_factor * p[k, i, j, 1])
-                        p[k, i, j, 2] = (q[k, i, j, 2] -
-                                         step_factor * p[k, i, j, 2])
-
+                        p[k, i, j, 0] = (p[k, i, j, 0] -
+                                         step_factor * q[k, i, j, 0])
+                        p[k, i, j, 1] = (p[k, i, j, 1] -
+                                         step_factor * q[k, i, j, 1])
+                        p[k, i, j, 2] = (p[k, i, j, 2] -
+                                         step_factor * q[k, i, j, 2])
             error /= (ns * nr * nc)
             iter_count += 1
         stats[0] = error
@@ -1194,13 +1200,13 @@ def simplify_warp_function_3d(floating[:,:,:,:] d,
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
     """
     cdef:
-        int nrows = sampling_shape[0]
-        int ncols = sampling_shape[1]
-        int nslices = sampling_shape[2]
+        int nslices = sampling_shape[0]
+        int nrows = sampling_shape[1]
+        int ncols = sampling_shape[2]
         int i, j, k
         double di, dj, dk, dii, djj, dkk
         floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
-        floating[:,:,:,:] out= np.zeros(shape=(nrows, ncols, nslices, 3), 
+        floating[:,:,:,:] out= np.zeros(shape=(nslices, nrows, ncols, 3), 
                                         dtype=np.asarray(d).dtype)
     with nogil:
 

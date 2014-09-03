@@ -937,7 +937,7 @@ class DiffeomorphicMap(object):
             compose_f = vfu.compose_vector_fields_3d
 
         residual, stats = compose_f(self.backward, self.forward, 
-                                    None, Dinv, 1.0)
+                                    None, Dinv, 1.0, None)
 
         return np.asarray(residual), np.asarray(stats)
 
@@ -1012,8 +1012,8 @@ class DiffeomorphicMap(object):
         else:
             compose_f = vfu.compose_vector_fields_3d
 
-        forward, stats = compose_f(d1, d2, None, premult_disp, 1.0)
-        backward, stats, = compose_f(d2_inv, d1_inv, None, premult_disp, 1.0)
+        forward, stats = compose_f(d1, d2, None, premult_disp, 1.0, None)
+        backward, stats, = compose_f(d2_inv, d1_inv, None, premult_disp, 1.0, None)
 
         composition = self.shallow_copy()
         composition.forward = forward
@@ -1229,10 +1229,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
 
         mean_norm = np.sqrt(np.sum((np.array(current_displacement) ** 2), -1)).mean()
-        updated, stats = self.compose(current_displacement, new_displacement,
-                                      None, affine_inv, time_scaling)
+        stats = self.compose(current_displacement, new_displacement, None, 
+                             affine_inv, time_scaling, current_displacement)
 
-        return np.array(updated), np.array(mean_norm)
+        return np.array(current_displacement), np.array(mean_norm)
 
     def get_map(self):
         r"""Returns the resulting diffeomorphic map
@@ -1424,7 +1424,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                                                         None,
                                                         current_disp_shape,
                                                         current_disp_affine)
-        
         #Pass both images to the metric. Now both images are sampled on the
         #reference grid (equal to the static image's grid) and the direction
         #doesn't change across scales
@@ -1443,12 +1442,15 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.callback is not None:
             self.callback(self, RegistrationStages.ITER_START)
 
-        #Free some memory (useful when using double precision)
-        del self.static_to_ref.backward
-        del self.moving_to_ref.backward
-
         #Compute the forward step (to be used to update the forward transform) 
         fw_step = np.array(self.metric.compute_forward())
+
+        #set zero displacements at the boundary
+        fw_step[0, ...] = 0
+        fw_step[:, 0, ...] = 0
+        if(self.dim == 3):
+            fw_step[:, :, 0, ...] = 0
+
         #Normalize the forward step
         nrm = np.sqrt(np.sum((fw_step/current_disp_spacing)**2, -1)).max()
         if nrm>0:
@@ -1465,6 +1467,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Compose the backward step (to be used to update the backward transform)
         bw_step = np.array(self.metric.compute_backward())
+
+        #set zero displacements at the boundary
+        bw_step[0, ...] = 0
+        bw_step[:, 0, ...] = 0
+        if(self.dim == 3):
+            bw_step[:, :, 0, ...] = 0
+
         #Normalize the backward step
         nrm = np.sqrt(np.sum((bw_step/current_disp_spacing)**2, -1)).max()
         if nrm>0:
@@ -1496,7 +1505,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.static_to_ref.forward,
                 current_disp_affine_inv,
                 current_disp_spacing,
-                self.inv_iter, self.inv_tol, None))
+                self.inv_iter, self.inv_tol, self.static_to_ref.backward))
 
         #Invert the backward model's forward field
         self.moving_to_ref.backward = np.array(
@@ -1504,7 +1513,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 self.moving_to_ref.forward,
                 current_disp_affine_inv,
                 current_disp_spacing,
-                self.inv_iter, self.inv_tol, None))
+                self.inv_iter, self.inv_tol, self.moving_to_ref.backward))
 
         #Invert the forward model's backward field
         self.static_to_ref.forward = np.array(

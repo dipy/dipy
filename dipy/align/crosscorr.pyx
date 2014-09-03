@@ -205,7 +205,8 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 @cython.cdivision(True)
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                                floating[:, :, :, :] grad_moving,
-                               floating[:, :, :, :] factors):
+                               floating[:, :, :, :] factors,
+                               int radius):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -255,9 +256,9 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
         floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), 
                                             dtype=np.asarray(grad_static).dtype)
     with nogil:
-        for s in range(ns):
-            for r in range(nr):
-                for c in range(nc):
+        for s in range(radius, ns-radius):
+            for r in range(radius, nr-radius):
+                for c in range(radius, nc-radius):
                     Ii = factors[s, r, c, 0]
                     Ji = factors[s, r, c, 1]
                     sfm = factors[s, r, c, 2]
@@ -282,7 +283,8 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
                                 floating[:, :, :, :] grad_moving,
-                                floating[:, :, :, :] factors):
+                                floating[:, :, :, :] factors,
+                                int radius):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -334,9 +336,9 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
 
     with nogil:
 
-        for s in range(ns):
-            for r in range(nr):
-                for c in range(nc):
+        for s in range(radius, ns-radius):
+            for r in range(radius, nr-radius):
+                for c in range(radius, nc-radius):
                     Ii = factors[s, r, c, 0]
                     Ji = factors[s, r, c, 1]
                     sfm = factors[s, r, c, 2]
@@ -526,7 +528,8 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 
 def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                floating[:, :, :] grad_moving,
-                               floating[:, :, :] factors):
+                               floating[:, :, :] factors,
+                               int radius):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -576,8 +579,8 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                          dtype=np.asarray(grad_static).dtype)
     with nogil:
             
-        for r in range(nr):
-            for c in range(nc):
+        for r in range(radius, nr-radius):
+            for c in range(radius, nc-radius):
                 Ii = factors[r, c, 0]
                 Ji = factors[r, c, 1]
                 sfm = factors[r, c, 2]
@@ -601,7 +604,8 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 @cython.cdivision(True)
 def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
                                 floating[:, :, :] grad_moving,
-                                floating[:, :, :] factors):
+                                floating[:, :, :] factors,
+                                int radius):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -653,8 +657,8 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
 
     with nogil:
 
-        for r in range(nr):
-            for c in range(nc):
+        for r in range(radius, nr-radius):
+            for c in range(radius, nc-radius):
                 Ii = factors[r, c, 0]
                 Ji = factors[r, c, 1]
                 sfm = factors[r, c, 2]

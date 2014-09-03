@@ -353,7 +353,7 @@ def test_compose_vector_fields_2d():
     composition, stats = vfu.compose_vector_fields_2d(disp1, disp2,
                                                       premult_index,
                                                       premult_disp,
-                                                      1.0)
+                                                      1.0, None)
     #apply the implementation under test
     warped = np.array(vfu.warp_2d(moving_image, composition, None,
                                      premult_index, premult_disp))
@@ -444,7 +444,7 @@ def test_compose_vector_fields_3d():
     composition, stats = vfu.compose_vector_fields_3d(disp1, disp2,
                                                premult_index,
                                                premult_disp,
-                                               1.0)
+                                               1.0, None)
     #apply the implementation under test
     warped = np.array(vfu.warp_3d(moving_image, composition, None,
                                       premult_index, premult_disp))
