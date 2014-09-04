@@ -76,7 +76,7 @@ cdef class Cluster:
         return cluster_map.refdata[idx]
 
     def __iter__(self):
-        return (self[i] for i in self.indices)
+        return (self[i] for i in range(len(self)))
 
     def __str__(self):
         return "[" + ", ".join(map(str, self.indices)) + "]"
@@ -254,7 +254,7 @@ cdef class ClusterMapCentroid(ClusterMap):
 #########################
 # Clustering algorithms #
 #########################
-cpdef quickbundles(streamlines, Metric metric, ordering=None, float threshold=10., int max_nb_clusters=biggest_int):
+cpdef quickbundles(streamlines, Metric metric, float threshold=10., int max_nb_clusters=biggest_int, ordering=None):
     if ordering is None:
         ordering = np.arange(len(streamlines), dtype="int32")
 
@@ -271,7 +271,7 @@ cpdef quickbundles(streamlines, Metric metric, ordering=None, float threshold=10
     free(&features_s_i[0])
     free(&features_s_i_flip[0])
 
-    return clusters.get_clusters()
+    return clusters
 
 
 cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, ClusterMapCentroid clusters, Features features_s_i, Features features_s_i_flip, float threshold=10, int max_nb_clusters=biggest_int) nogil except *:

@@ -42,7 +42,7 @@ class TestCluster(unittest.TestCase):
             assert_array_equal(cluster.indices, indices)
 
         # Test __iter__
-        self.assertSequenceEqual(cluster, indices)
+        assert_array_equal(list(cluster), indices)
 
         # Test __getitem__
         for i in range(len(indices)):
@@ -146,14 +146,14 @@ class TestClusterMap(unittest.TestCase):
         for id_cluster, (cluster, indices) in enumerate(zip(clusters, self.clusters)):
             assert_equal(type(cluster), Cluster)
             assert_equal(cluster.id, id_cluster)
-            self.assertSequenceEqual(cluster, indices)
+            assert_array_equal(cluster, indices)
             assert_array_equal(cluster.indices, indices)
 
         #Test 'clusters' property
         for id_cluster, (cluster, indices) in enumerate(zip(clusters.clusters, self.clusters)):
             assert_equal(type(cluster), Cluster)
             assert_equal(cluster.id, id_cluster)
-            self.assertSequenceEqual(cluster, indices)
+            assert_array_equal(cluster, indices)
             assert_array_equal(cluster.indices, indices)
 
         #Test __getitem__
@@ -238,3 +238,63 @@ class TestClusterMapCentroid(unittest.TestCase):
         features_too_long = np.ones(self.features_shape+3, dtype=self.dtype)
         cluster = clusters.create_cluster()
         assert_raises(ValueError, cluster.add, 123, features_too_long)
+
+    def test_getitem_without_refdata(self):
+        clusters = ClusterMapCentroid(self.features_shape)
+        for cluster in self.clusters:
+            c = clusters.create_cluster()
+            for i in cluster:
+                c.add(i, self.features)
+
+        #Test __iter__
+        for id_cluster, (cluster, indices) in enumerate(zip(clusters, self.clusters)):
+            assert_equal(type(cluster), ClusterCentroid)
+            assert_equal(cluster.id, id_cluster)
+            assert_array_equal(cluster, indices)
+            assert_array_equal(cluster.indices, indices)
+
+        #Test 'clusters' property
+        for id_cluster, (cluster, indices) in enumerate(zip(clusters.clusters, self.clusters)):
+            assert_equal(type(cluster), ClusterCentroid)
+            assert_equal(cluster.id, id_cluster)
+            assert_array_equal(cluster, indices)
+            assert_array_equal(cluster.indices, indices)
+
+        #Test __getitem__
+        for id_cluster in range(len(clusters)):
+            assert_array_equal(clusters[id_cluster].indices, self.clusters[id_cluster])
+
+        # Test slicing
+        for slice_obj in [np.s_[1:], np.s_[:-1], np.s_[::2], np.s_[::-1]]:
+            for c1, c2 in zip(clusters[slice_obj], self.clusters[slice_obj]):
+                assert_array_equal(c1, c2)
+
+        # Test negative indexing
+        assert_array_equal(clusters[-2], self.clusters[-2])
+
+        # Test getting unexisting cluster
+        assert_raises(IndexError, clusters.__getitem__, len(self.clusters))
+        assert_raises(IndexError, clusters.__getitem__, -len(self.clusters)-1)
+        assert_raises(TypeError, clusters.__getitem__, [0])  # TODO: support list of indices
+
+    def test_getitem_with_refdata(self):
+        clusters = ClusterMapCentroid(self.features_shape, refdata=self.data)
+        for cluster in self.clusters:
+            c = clusters.create_cluster()
+            for i in cluster:
+                c.add(i, self.features)
+
+        #Test __iter__
+        for cluster, indices in zip(clusters, self.clusters):
+            for i in range(len(indices)):
+                assert_array_equal(cluster[i], self.data[indices[i]])
+
+        # Test slicing
+        for slice_obj in [np.s_[1:], np.s_[:-1], np.s_[::2], np.s_[::-1]]:
+            for c1, c2 in zip(clusters[slice_obj], self.clusters[slice_obj]):
+                for i in range(len(c2)):
+                    assert_array_equal(c1[i], self.data[c2[i]])
+
+        # Test negative indexing
+        for i in range(len(self.clusters[-2])):
+            assert_array_equal(clusters[-2][i], self.data[self.clusters[-2][i]])

@@ -1,7 +1,8 @@
 import numpy as np
 import unittest
+import itertools
 
-from dipy.segment.quickbundles import QuickBundles
+from dipy.segment.clustering import QuickBundles
 
 import dipy.segment.metric as dipymetric
 from dipy.segment.clusteringspeed import quickbundles as cython_quickbundles
@@ -11,28 +12,30 @@ from nose.tools import assert_true, assert_false, assert_equal, assert_almost_eq
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_raises
 
 
+# TODO: WIP
 class TestQuickBundles(unittest.TestCase):
     def setUp(self):
         self.dtype = "float32"
-        self.data = [np.arange(3*5, dtype=self.dtype).reshape((-1, 3)),
-                     np.arange(3*10, dtype=self.dtype).reshape((-1, 3)),
-                     np.arange(3*15, dtype=self.dtype).reshape((-1, 3)),
-                     np.arange(3*17, dtype=self.dtype).reshape((-1, 3)),
-                     np.arange(3*20, dtype=self.dtype).reshape((-1, 3))]
+        self.threshold = 7
+        self.data = [np.arange(3*05, dtype=self.dtype).reshape((-1, 3)) + 2*self.threshold,
+                     np.arange(3*10, dtype=self.dtype).reshape((-1, 3)) + 0*self.threshold,
+                     np.arange(3*15, dtype=self.dtype).reshape((-1, 3)) + 8*self.threshold,
+                     np.arange(3*17, dtype=self.dtype).reshape((-1, 3)) + 2*self.threshold,
+                     np.arange(3*20, dtype=self.dtype).reshape((-1, 3)) + 8*self.threshold]
 
-        self.clusters = [[2, 4], [0, 3], [1]]
-        #self.cluster_map = ClusterMap(self.clusters, data=self.data)
+        self.clusters = [[0, 1], [2, 4], [3]]
 
     def test_clustering(self):
-        qb = QuickBundles(threshold=11, metric=dipymetric.Spatial())
+        metric = dipymetric.Euclidean(dipymetric.CenterOfMass())
+        qb = QuickBundles(threshold=2*self.threshold, metric=metric)
 
         clusters = qb.cluster(self.data)
-        self.assertSequenceEqual(clusters.clusters, self.clusters)
+        assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*self.clusters)))
 
         # TODO: move this test into test_metric.
         # MDF required streamlines to have the same length
-        qb = QuickBundles(threshold=10, metric=dipymetric.MDF())
-        assert_raises(ValueError, qb.cluster, self.data)
+        # qb = QuickBundles(threshold=10, metric=dipymetric.MDF())
+        # assert_raises(ValueError, qb.cluster, self.data)
 
     def test_memory_leak(self):
         import resource
