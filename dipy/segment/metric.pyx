@@ -201,7 +201,7 @@ cdef class Midpoint(CythonFeatureType):
 ####################
 # Metric functions #
 ####################
-cdef float dist(Metric metric, Streamline s1, Streamline s2) except -1.0:
+cpdef float dist(Metric metric, Streamline s1, Streamline s2) except -1.0:
     cdef Features features1 = metric.extract_features(s1)
     cdef Features features2 = metric.extract_features(s2)
     return metric.dist(features1, features2)

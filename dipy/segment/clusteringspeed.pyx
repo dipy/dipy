@@ -258,6 +258,11 @@ cpdef quickbundles(streamlines, Metric metric, float threshold=10., int max_nb_c
     if ordering is None:
         ordering = np.arange(len(streamlines), dtype="int32")
 
+    # Threshold of np.inf is not supported, set it to 'biggest_float'
+    threshold = min(threshold, biggest_float)
+    # Threshold of -np.inf is not supported, set it to 0
+    threshold = max(threshold, 0)
+
     cdef:
         int idx
         int nb_features = metric.c_infer_features_shape(streamlines[0])

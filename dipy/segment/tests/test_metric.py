@@ -56,6 +56,40 @@ class TestMetric(unittest.TestCase):
         assert_raises(NotImplementedError, metric.extract_features, None)
         assert_raises(NotImplementedError, metric.dist, None, None)
 
+        class MDFpy(dipymetric.Metric):
+            def infer_features_shape(self, streamline):
+                return streamline.shape[0] * streamline.shape[1]
+
+            def extract_features(self, streamline):
+                N, D = streamline.shape
+
+                features = np.empty(N*D, dtype=streamline.base.dtype)
+                for y in range(N):
+                    i = y*D
+                    features[i+0] = streamline[y, 0]
+                    features[i+1] = streamline[y, 1]
+                    features[i+2] = streamline[y, 2]
+
+                return features
+
+            def dist(self, features1, features2):
+                D = 3
+                N = features2.shape[0] // D
+
+                d = 0.0
+                for y in range(N):
+                    i = y*D
+                    dx = features1[i+0] - features2[i+0]
+                    dy = features1[i+1] - features2[i+1]
+                    dz = features1[i+2] - features2[i+2]
+                    d += np.sqrt(dx*dx + dy*dy + dz*dz)
+
+                return d / N
+
+        d1 = dipymetric.dist(dipymetric.MDF(), self.s1, self.s2)
+        d2 = dipymetric.mdf(self.s1, self.s2)
+        assert_equal(d1, d2)
+
     def test_Euclidean(self):
         # Should specify a FeatureType on which Euclidean distance will be computed
         assert_raises(TypeError, dipymetric.Euclidean)

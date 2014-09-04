@@ -20,11 +20,8 @@ from dipy.data import get_data
 
 import dipy.tracking.streamline as streamline_utils
 from dipy.segment.metric import Metric
-from dipy.segment.metric import MDF
-# from dipy.segment.metric import FastMDF
-from dipy.segment.quickbundles import QuickBundles
-from dipy.segment.quickbundles import QuickBundles2
-# from dipy.segment.quickbundles import FastQuickBundles2
+from dipy.segment.quickbundles import QuickBundles as QuickBundlesOld
+from dipy.segment.clustering import QuickBundles as QuickBundlesNew
 from nose.tools import assert_equal
 
 from numpy.testing import measure
@@ -62,40 +59,48 @@ class MDFpy(Metric):
 
 
 def bench_quickbundles():
+    dtype = "float32"
     repeat = 10
-    threshold = 10.
     nb_points_per_streamline = 12
 
     streams, hdr = nib.trackvis.read(get_data('fornix'))
-    streamlines = [s[0].astype("float32") for s in streams] * 10
-    for s in streamlines:
+    fornix = [s[0].astype(dtype) for s in streams]
+    for s in fornix:
         s.setflags(write=True)
-    streamlines = streamline_utils.set_number_of_points(streamlines, nb_points_per_streamline)
+    fornix = streamline_utils.set_number_of_points(fornix, nb_points_per_streamline)
+
+    #Create eight copies of the fornix to be clustered (one in each octant).
+    streamlines = []
+    streamlines += [streamline + np.array([100, 100, 100], dtype) for streamline in fornix]
+    streamlines += [streamline + np.array([100, -100, 100], dtype) for streamline in fornix]
+    streamlines += [streamline + np.array([100, 100, -100], dtype) for streamline in fornix]
+    streamlines += [streamline + np.array([100, -100, -100], dtype) for streamline in fornix]
+    streamlines += [streamline + np.array([-100, 100, 100], dtype) for streamline in fornix]
+    streamlines += [streamline + np.array([-100, -100, 100], dtype) for streamline in fornix]
+    streamlines += [streamline + np.array([-100, 100, -100], dtype) for streamline in fornix]
+    streamlines += [streamline + np.array([-100, -100, -100], dtype) for streamline in fornix]
+
+    # The expected number of clusters of the fornix using threshold=10 is 4.
+    threshold = 10.
+    expected_nb_clusters = 4*8
 
     print("Timing QuickBundles 1.0 vs. 2.0")
 
-    qb = QuickBundles(streamlines, threshold, pts=None)
-    qb1_time = 18.#measure("QuickBundles(streamlines, threshold, nb_points_per_streamline)", repeat)
-    print("QuickBundles 1.0 time: {0:.2}sec".format(qb1_time))
+    qb = QuickBundlesOld(streamlines, threshold, pts=None)
+    qb1_time = measure("QuickBundlesOld(streamlines, threshold, nb_points_per_streamline)", repeat)
+    print("QuickBundles 1.0 time: {0:.4}sec".format(qb1_time))
+    assert_equal(qb.total_clusters, expected_nb_clusters)
 
-    qb = QuickBundles2(threshold, metric=MDF())
-    qb2_time = measure("qb.cluster(streamlines)", repeat)
-    print("QuickBundles 2.0 time: {0:.2}sec".format(qb2_time))
+    qb = QuickBundlesNew(threshold)
+    qb2_time = measure("clusters = qb.cluster(streamlines)", repeat)
+    print("QuickBundles 2.0 time: {0:.4}sec".format(qb2_time))
     print("Speed up of {0}x".format(qb1_time/qb2_time))
+    clusters = qb.cluster(streamlines)
+    assert_equal(len(clusters), expected_nb_clusters)
 
-    # qb = FastQuickBundles2(threshold, metric=FastMDF())
-    # qb3_time = measure("qb.cluster(streamlines)", repeat)
-    # print("QuickBundles 2.0 time: {0:.2}sec".format(qb3_time))
-    # print("Speed up of {0}x".format(qb1_time/qb3_time))
-
-    qb = QuickBundles2(threshold, metric=MDFpy())
-    qb4_time = measure("qb.cluster(streamlines)", repeat)
-    print("QuickBundles 2.0 time: {0:.2}sec".format(qb4_time))
+    qb = QuickBundlesNew(threshold, metric=MDFpy())
+    qb4_time = measure("clusters = qb.cluster(streamlines)", repeat)
+    print("QuickBundles 2.0 time: {0:.4}sec".format(qb4_time))
     print("Speed up of {0}x".format(qb1_time/qb4_time))
-
-    qb = QuickBundles(streamlines, threshold, nb_points_per_streamline)
-    assert_equal(4, qb.total_clusters)
-
-    qb = QuickBundles2(threshold, metric=MDF())
-    result = qb.cluster(streamlines)
-    assert_equal(4, len(result))
+    clusters = qb.cluster(streamlines)
+    assert_equal(len(clusters), expected_nb_clusters)
