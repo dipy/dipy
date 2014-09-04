@@ -31,10 +31,10 @@ from numpy.testing import measure
 
 
 class MDFpy(Metric):
-    def nb_features(self, streamline):
+    def infer_features_shape(self, streamline):
         return streamline.shape[0] * streamline.shape[1]
 
-    def get_features(self, streamline):
+    def extract_features(self, streamline):
         N, D = streamline.shape
 
         features = np.empty(N*D, dtype=streamline.base.dtype)

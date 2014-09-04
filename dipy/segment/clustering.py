@@ -1,5 +1,5 @@
-
-from dipy.segment.clusteringspeed import CentroidClusters
+from dipy.segment.clusteringspeed import quickbundles
+from dipy.segment.metric import MDF
 
 
 class Clustering:
@@ -7,31 +7,10 @@ class Clustering:
         raise NotImplementedError("Subclass has to define this function!")
 
 
-class ClusterMap:
-    def __init__(self, clusters, data=None, metric=None):
-        self.data = data
-        self.clusters = clusters
+class QuickBundles(Clustering):
+    def __init__(self, threshold, metric=MDF()):
+        self.threshold = threshold
         self.metric = metric
 
-    def centroids(self):
-        return [self.metric.centroid(cluster) for cluster in self.clusters]
-
-    def medoids(self):
-        return [self.metric.medoid(cluster) for cluster in self.clusters]
-
-    def __getitem__(self, slice):
-        if self.data is None:
-            return self.clusters[slice]
-
-        return map(self.data.__getitem__, self.clusters[slice])
-        #return [self.data[id] for id in self.clusters[slice]]
-
-    def __len__(self):
-        return len(self.clusters)
-
-    def __iter__(self):
-        if self.data is None:
-            return iter(self.clusters)
-
-        return (map(self.data.__getitem__, cluster) for cluster in self.clusters)
-        #return ([self.data[id] for id in cluster] for cluster in self.clusters)
+    def cluster(self, data):
+        return quickbundles(data, self.metric, threshold=self.threshold)
