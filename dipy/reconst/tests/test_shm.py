@@ -407,11 +407,10 @@ def test_faster_sph_harm():
                     -2.73107896,  2.28815009,  2.86276506,  3.09450274, -3.09857384,
                     -1.06955885, -2.83826831,  1.81932195,  2.81296654])
     
-    for i in range(len(m)):
-        for j in range(len(theta)):        
-            rsh = real_sph_harm(m[i], n[i], theta[j], phi[j], fast=True)
-            rsh2 = real_sph_harm(m[i], n[i], theta[j], phi[j], fast=False)
-            assert_array_almost_equal(rsh, rsh2, 8)
+    rsh = real_sph_harm(m, n, theta[:, None], phi[:, None], fast=True)
+    rsh2 = real_sph_harm(m, n, theta[:, None], phi[:, None], fast=False)
+    
+    assert_array_almost_equal(rsh, rsh2, 8)
 
 
 if __name__ == "__main__":
