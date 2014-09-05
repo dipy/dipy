@@ -10,9 +10,9 @@ cdef extern from "math.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y, 
-                                                 double det,
-                                                 double[:] out) nogil:
+cdef void _solve_2d_symmetric_positive_definite(double[:] A, double[:] y, 
+                                               double det,
+                                               double[:] out) nogil:
     r"""Solves a 2-variable symmetric positive-definite linear system
 
     Solves the symmetric positive-definite linear system Mx = y given by
@@ -32,11 +32,20 @@ cdef void solve2DSymmetricPositiveDefiniteSystem(double[:] A, double[:] y,
     out[0] = (y[0] - A[1] * out[1]) / A[0]
 
 
+def solve_2d_symmetric_positive_definite(double[:] A, double[:] y, 
+                                               double det,
+                                               double[:] out):
+    r"""
+    Wrapper for _solve_2d_symmetric_positive_definite (see documentation above)
+    """
+    _solve_2d_symmetric_positive_definite(A, y, det, out)
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
-                                         double[:] out) nogil:
+cdef int _solve_3d_symmetric_positive_definite(double[:] g, double[:] y, double tau,
+                                               double[:] out) nogil:
     r"""Solves a 3-variable symmetric positive-definite linear system
 
     Solves the symmetric semi-positive-definite linear system $Mx = y$ given by
@@ -78,6 +87,14 @@ cdef int solve_3d_semi_positive_definite(double[:] g, double[:] y, double tau,
     out[1] = (y1 - e * out[2]) / d
     out[0] = (y0 - b * out[1] - c * out[2]) / a
     return 0
+
+
+def solve_3d_symmetric_positive_definite(double[:] g, double[:] y, double tau,
+                                         double[:] out):
+    r"""
+    Wrapper for _solve_3d_symmetric_positive_definite (see documentation above)
+    """
+    return _solve_3d_symmetric_positive_definite(g, y, tau, out)
 
 
 @cython.boundscheck(False)
@@ -191,7 +208,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                     else:
                         y[0] = b[0] + sigma * lambda_param * y[0]
                         y[1] = b[1] + sigma * lambda_param * y[1]
-                        solve2DSymmetricPositiveDefiniteSystem(A, y, det, d)
+                        _solve_2d_symmetric_positive_definite(A, y, det, d)
                         xx = displacement_field[r, c, 0] - d[0]
                         yy = displacement_field[r, c, 1] - d[1]
                         displacement_field[r, c, 0] = d[0]
@@ -380,8 +397,8 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         y[0] = b[0] + sigma * lambda_param * y[0]
                         y[1] = b[1] + sigma * lambda_param * y[1]
                         y[2] = b[2] + sigma * lambda_param * y[2]
-                        is_singular = solve_3d_semi_positive_definite(g, y, 
-                                                                      tau, d)
+                        is_singular = _solve_3d_symmetric_positive_definite(
+                                                                g, y, tau, d)
                         if is_singular == 1:
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
                             if(nrm2 < 1e-9):
