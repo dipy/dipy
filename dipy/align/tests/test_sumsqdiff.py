@@ -31,7 +31,7 @@ def test_solve_2d_symmetric_positive_definite():
 
     for A in As:
         AA = np.array([[A[0], A[1]],[A[1], A[2]]])
-        det = numpy.linalg.det(AA)
+        det = np.linalg.det(AA)
         for b in bs:
             expected = np.linalg.solve(AA, b)
             ssd.solve_2d_symmetric_positive_definite(A, b, det, actual)
