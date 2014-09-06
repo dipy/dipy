@@ -88,7 +88,7 @@ def test_compute_em_demons_step_2d():
     expected[random_labels == 2, ...] = 0
 
     #Pixels with gradient=0 and sigma_i_sq!=0
-    grad_G[random_labels == 3, ...] = 0 #here,
+    grad_G[random_labels == 3, ...] = 0
 
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
     num = (sigma_x_sq * (F - G))[random_labels >= 3]
@@ -213,7 +213,7 @@ def test_compute_em_demons_step_3d():
     expected[random_labels == 2, ...] = 0
 
     #Pixels with gradient=0 and sigma_i_sq!=0
-    grad_G[random_labels == 3, ...] = 0 #here,
+    grad_G[random_labels == 3, ...] = 0
 
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
     num = (sigma_x_sq * (F - G))[random_labels >= 3]
