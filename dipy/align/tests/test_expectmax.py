@@ -349,15 +349,16 @@ def test_compute_masked_class_stats_2d():
     
     #Create random labels
     labels = np.ndarray(shape, dtype=np.int32)
-    labels[...] = np.random.randint(0, 10, np.size(labels)).reshape(shape)
+    labels[...] = np.random.randint(2, 10, np.size(labels)).reshape(shape)
+    labels[0, 0] = 1 # now label 0 is not present and label 1 occurs once
 
     #Create random values
     values = np.random.randn(shape[0], shape[1]).astype(floating)
     values *= labels
     values += labels
 
-    expected_means = [values[labels == i].mean() for i in range(10)]
-    expected_vars = [values[labels == i].var() for i in range(10)]
+    expected_means = [0, values[0, 0]] + [values[labels == i].mean() for i in range(2, 10)]
+    expected_vars = [np.inf, np.inf] + [values[labels == i].var() for i in range(2, 10)]
 
     mask = np.ones(shape, dtype = np.int32)
     means, vars = em.compute_masked_class_stats_2d(mask, values, 10, labels)
@@ -371,15 +372,17 @@ def test_compute_masked_class_stats_3d():
     
     #Create random labels
     labels = np.ndarray(shape, dtype=np.int32)
-    labels[...] = np.random.randint(0, 10, np.size(labels)).reshape(shape)
+    labels[...] = np.random.randint(2, 10, np.size(labels)).reshape(shape)
+
+    labels[0, 0, 0] = 1 # now label 0 is not present and label 1 occurs once
 
     #Create random values
     values = np.random.randn(shape[0], shape[1], shape[2]).astype(floating)
     values *= labels
     values += labels
 
-    expected_means = [values[labels == i].mean() for i in range(10)]
-    expected_vars = [values[labels == i].var() for i in range(10)]
+    expected_means = [0, values[0, 0, 0]] + [values[labels == i].mean() for i in range(2, 10)]
+    expected_vars = [np.inf, np.inf] + [values[labels == i].var() for i in range(2, 10)]
 
     mask = np.ones(shape, dtype = np.int32)
     means, vars = em.compute_masked_class_stats_3d(mask, values, 10, labels)
