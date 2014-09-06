@@ -30,7 +30,7 @@ def test_compute_em_demons_step_2d():
                            assert_array_almost_equal)
 
     #Select arbitrary images' shape (same shape for both images)
-    sh = (20, 10)
+    sh = (30, 20)
     
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
@@ -54,6 +54,7 @@ def test_compute_em_demons_step_2d():
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
     G = 0.5*sq_norm_grad_G
+    delta_field =  G - F
 
     #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
     sigma_x_sq = 1.5
@@ -62,16 +63,42 @@ def test_compute_em_demons_step_2d():
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-     
+
+    #Select some pixels to have special values
+    np.random.seed(1346491)
+    random_labels = np.random.randint(0, 5, sh[0]*sh[1])
+    random_labels = random_labels.reshape(sh)
+    
+    random_labels[sigma_i_sq==0] = 2 #this label is used to set sigma_i_sq == 0 below 
+    random_labels[sq_norm_grad_G==0] = 2 #this label is used to set gradient == 0 below
+
+    expected = np.zeros_like(grad_G)
+    #Pixels with sigma_i_sq = inf
+    sigma_i_sq[random_labels == 0] = np.inf
+    expected[random_labels == 0, ...] = 0
+
+    #Pixels with gradient!=0 and sigma_i_sq=0
+    sqnrm = sq_norm_grad_G[random_labels == 1]
+    sigma_i_sq[random_labels == 1] = 0  
+    expected[random_labels == 1, ...] = delta_field[random_labels == 1, None]*grad_G[random_labels == 1, ...]/sqnrm[...,None]
+
+    #Pixels with gradient=0 and sigma_i_sq=0
+    sigma_i_sq[random_labels == 2] = 0 
+    grad_G[random_labels == 2, ...] = 0
+    expected[random_labels == 2, ...] = 0
+
+    #Pixels with gradient=0 and sigma_i_sq!=0
+    grad_G[random_labels == 3, ...] = 0 #here,
+
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
-    num = sigma_x_sq * (F - G) 
-    den = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
-    expected = -1 * np.array(grad_G) #This is $J^{P}$ in eq. 4 [Vercauteren09]
-    expected[...,0] *= num / den
-    expected[...,1] *= num / den
+    num = (sigma_x_sq * (F - G))[random_labels >= 3]
+    den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels >= 3]
+    
+    expected[random_labels >= 3] = -1 * np.array(grad_G[random_labels >= 3]) #This is $J^{P}$ in eq. 4 [Vercauteren09]
+    expected[random_labels >= 3,...] *= (num / den)[..., None]
 
     #Now compute it using the implementation under test
-    delta_field =  G - F
+    
     actual = np.empty_like(expected, dtype=floating)
     em.compute_em_demons_step_2d(np.array(delta_field, dtype=floating),
                                  np.array(sigma_i_sq, dtype=floating),
@@ -79,7 +106,35 @@ def test_compute_em_demons_step_2d():
                                  sigma_x_sq,
                                  actual)
     
-    assert_array_almost_equal(actual, expected)
+    #Test sigma_i_sq == inf
+    try:
+        assert_array_almost_equal(actual[random_labels==0], expected[random_labels==0])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq == inf")
+    
+    #Test sigma_i_sq == 0 and gradient != 0
+    try:
+        assert_array_almost_equal(actual[random_labels==1], expected[random_labels==1])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq == 0 and gradient != 0")
+    
+    #Test sigma_i_sq == 0 and gradient == 0
+    try:
+        assert_array_almost_equal(actual[random_labels==2], expected[random_labels==2])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq == 0 and gradient == 0")
+    
+    #Test sigma_i_sq != 0 and gradient == 0 
+    try:
+        assert_array_almost_equal(actual[random_labels==3], expected[random_labels==3])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq != 0 and gradient == 0 ")
+
+    #Test sigma_i_sq != 0 and gradient != 0 
+    try:
+        assert_array_almost_equal(actual[random_labels==4], expected[random_labels==4])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq != 0 and gradient != 0")
 
 
 def test_compute_em_demons_step_3d():
@@ -124,6 +179,7 @@ def test_compute_em_demons_step_3d():
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
     G = 0.5*sq_norm_grad_G
+    delta_field =  G - F
 
     #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
     sigma_x_sq = 1.5
@@ -132,17 +188,41 @@ def test_compute_em_demons_step_3d():
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-     
+
+    #Select some pixels to have special values
+    np.random.seed(1346491)
+    random_labels = np.random.randint(0, 5, sh[0]*sh[1]*sh[2])
+    random_labels = random_labels.reshape(sh)
+    
+    random_labels[sigma_i_sq==0] = 2 #this label is used to set sigma_i_sq == 0 below 
+    random_labels[sq_norm_grad_G==0] = 2 #this label is used to set gradient == 0 below
+
+    expected = np.zeros_like(grad_G)
+    #Pixels with sigma_i_sq = inf
+    sigma_i_sq[random_labels == 0] = np.inf
+    expected[random_labels == 0, ...] = 0
+
+    #Pixels with gradient!=0 and sigma_i_sq=0
+    sqnrm = sq_norm_grad_G[random_labels == 1]
+    sigma_i_sq[random_labels == 1] = 0  
+    expected[random_labels == 1, ...] = delta_field[random_labels == 1, None]*grad_G[random_labels == 1, ...]/sqnrm[...,None]
+
+    #Pixels with gradient=0 and sigma_i_sq=0
+    sigma_i_sq[random_labels == 2] = 0 
+    grad_G[random_labels == 2, ...] = 0
+    expected[random_labels == 2, ...] = 0
+
+    #Pixels with gradient=0 and sigma_i_sq!=0
+    grad_G[random_labels == 3, ...] = 0 #here,
+
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
-    num = sigma_x_sq * (F - G) 
-    den = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
-    expected = -1 * np.array(grad_G) #This is $J^{P}$ in eq. 4 [Vercauteren09]
-    expected[...,0] *= num / den
-    expected[...,1] *= num / den
-    expected[...,2] *= num / den
+    num = (sigma_x_sq * (F - G))[random_labels >= 3]
+    den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels >= 3]
+    
+    expected[random_labels >= 3] = -1 * np.array(grad_G[random_labels >= 3]) #This is $J^{P}$ in eq. 4 [Vercauteren09]
+    expected[random_labels >= 3,...] *= (num / den)[...,None]
 
     #Now compute it using the implementation under test
-    delta_field =  G - F
     actual = np.empty_like(expected, dtype=floating)
     em.compute_em_demons_step_3d(np.array(delta_field, dtype=floating),
                                  np.array(sigma_i_sq, dtype=floating),
@@ -150,7 +230,35 @@ def test_compute_em_demons_step_3d():
                                  sigma_x_sq,
                                  actual)
     
-    assert_array_almost_equal(actual, expected)
+    #Test sigma_i_sq == inf
+    try:
+        assert_array_almost_equal(actual[random_labels==0], expected[random_labels==0])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq == inf")
+    
+    #Test sigma_i_sq == 0 and gradient != 0
+    try:
+        assert_array_almost_equal(actual[random_labels==1], expected[random_labels==1])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq == 0 and gradient != 0")
+    
+    #Test sigma_i_sq == 0 and gradient == 0
+    try:
+        assert_array_almost_equal(actual[random_labels==2], expected[random_labels==2])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq == 0 and gradient == 0")
+    
+    #Test sigma_i_sq != 0 and gradient == 0 
+    try:
+        assert_array_almost_equal(actual[random_labels==3], expected[random_labels==3])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq != 0 and gradient == 0 ")
+
+    #Test sigma_i_sq != 0 and gradient != 0 
+    try:
+        assert_array_almost_equal(actual[random_labels==4], expected[random_labels==4])
+    except AssertionError:
+        raise AssertionError("Failed for sigma_i_sq != 0 and gradient != 0")
 
 def test_quantize_positive_2d():
     np.random.seed(1246592)
