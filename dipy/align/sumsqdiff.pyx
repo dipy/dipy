@@ -221,11 +221,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef double compute_energy_ssd_2d(floating[:, :] delta_field,
-                                  floating[:, :] sigma_field,
-                                  floating[:, :, :] grad,
-                                  double lambda_param,
-                                  floating[:, :, :] displacement_field):
+cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
     r"""Sum of squared differences between two 2D images
 
     Computes the Sum of Squared Differences between the static and moving image.
@@ -423,11 +419,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field,
-                                  floating[:, :, :] sigma_field,
-                                  floating[:, :, :, :] gradient_field,
-                                  double lambda_param,
-                                  floating[:, :, :, :] displacement_field):
+cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
     r"""Sum of squared differences between two 3D volumes
 
     Computes the Sum of Squared Differences between the static and moving volume

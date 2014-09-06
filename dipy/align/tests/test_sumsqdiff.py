@@ -108,7 +108,7 @@ def test_compute_energy_ssd_2d():
     # being optimized). This test case should be updated after
     # further investigation
     expected = ((F - G)**2).sum()
-    actual = ssd.compute_energy_ssd_2d(np.array(F-G, dtype = floating), None, None, 0, None)
+    actual = ssd.compute_energy_ssd_2d(np.array(F-G, dtype = floating))
     assert_almost_equal(expected, actual)
     
 
@@ -143,7 +143,7 @@ def test_compute_energy_ssd_3d():
     # being optimized). This test case should be updated after
     # further investigating
     expected = ((F - G)**2).sum()
-    actual = ssd.compute_energy_ssd_3d(np.array(F-G, dtype = floating), None, None, 0, None)
+    actual = ssd.compute_energy_ssd_3d(np.array(F-G, dtype = floating))
     assert_almost_equal(expected, actual)
 
 
