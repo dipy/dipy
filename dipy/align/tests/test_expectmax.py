@@ -174,7 +174,7 @@ def test_quantize_positive_2d():
     random_labels[2] = num_levels-1
     true_quantization[...] = random_labels.reshape(img_shape)
 
-    noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive nose doesn't change the quantization result
+    noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive noise doesn't change the quantization result
     noise = np.random.ranf(np.size(true_quantization)).reshape(img_shape) * noise_amplitude
     noise = noise.astype(floating)
     input_image = np.ndarray(img_shape, dtype = floating)
@@ -213,7 +213,7 @@ def test_quantize_positive_3d():
     random_labels[2] = num_levels-1
     true_quantization[...] = random_labels.reshape(img_shape)
 
-    noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive nose doesn't change the quantization result
+    noise_amplitude = np.min([delta / 4.0, min_positive / 4.0]) # make sure additive noise doesn't change the quantization result
     noise = np.random.ranf(np.size(true_quantization)).reshape(img_shape) * noise_amplitude
     noise = noise.astype(floating)
     input_image = np.ndarray(img_shape, dtype = floating)

@@ -204,7 +204,6 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
-                               floating[:, :, :, :] grad_moving,
                                floating[:, :, :, :] factors,
                                int radius):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
@@ -217,8 +216,6 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
     ----------
     grad_static : array, shape (S, R, C, 3)
         the gradient of the static volume
-    grad_moving : array, shape (S, R, C, 3)
-        the gradient of the moving volume
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms obtained via 
         precompute_cc_factors_3d
@@ -229,13 +226,6 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
         the gradient of the cross correlation metric with respect to the 
         displacement associated to the moving volume
     energy : the cross correlation energy (data term) at this iteration
-
-    Notes
-    -----
-    Currently, the gradient of the static image is not being used, but some
-    authors suggest that symmetrizing the gradient by including both, the moving
-    and static gradients may improve the registration quality. We are leaving 
-    this parameters as a placeholder for future investigation
 
     References
     ----------
@@ -281,8 +271,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 @cython.wraparound(False)
 @cython.cdivision(True)
 
-def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
-                                floating[:, :, :, :] grad_moving,
+def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors,
                                 int radius):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
@@ -293,8 +282,6 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
 
     Parameters
     ----------
-    grad_static : array, shape (S, R, C, 3)
-        the gradient of the static volume
     grad_moving : array, shape (S, R, C, 3)
         the gradient of the moving volume
     factors : array, shape (S, R, C, 5)
@@ -308,13 +295,6 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
         displacement associated to the static volume
     energy : the cross correlation energy (data term) at this iteration
 
-    Notes
-    -----
-    Currently, the gradient of the moving image is not being used, but some
-    authors suggest that symmetrizing the gradient by including both, the moving
-    and static gradients may improve the registration quality. We are leaving 
-    this parameters as a placeholder for future investigation
-
     References
     ----------
     [Avants09] Avants, B. B., Epstein, C. L., Grossman, M., & Gee, J. C. (2009)
@@ -324,7 +304,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_static,
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). 
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
-    ftype = np.asarray(grad_static).dtype
+    ftype = np.asarray(grad_moving).dtype
     cdef:
         int ns = grad_moving.shape[0]
         int nr = grad_moving.shape[1]
@@ -527,7 +507,6 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 @cython.cdivision(True)
 
 def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
-                               floating[:, :, :] grad_moving,
                                floating[:, :, :] factors,
                                int radius):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
@@ -540,8 +519,6 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
     ----------
     grad_static : array, shape (R, C, 2)
         the gradient of the static image
-    grad_moving : array, shape (R, C, 2)
-        the gradient of the moving image
     factors : array, shape (R, C, 5)
         the precomputed cross correlation terms obtained via 
         precompute_cc_factors_2d
@@ -602,8 +579,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
-                                floating[:, :, :] grad_moving,
+def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                                 floating[:, :, :] factors,
                                 int radius):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
@@ -614,8 +590,6 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
 
     Parameters
     ----------
-    grad_static : array, shape (R, C, 2)
-        the gradient of the static image
     grad_moving : array, shape (R, C, 2)
         the gradient of the moving image
     factors : array, shape (R, C, 5)
@@ -628,13 +602,6 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
         the gradient of the cross correlation metric with respect to the 
         displacement associated to the static image
     energy : the cross correlation energy (data term) at this iteration
-
-    Notes
-    -----
-    Currently, the gradient of the moving image is not being used, but some
-    authors suggest that symmetrizing the gradient by including both, the moving
-    and static gradients may improve the registration quality. We are leaving 
-    this parameters as a placeholder for future investigation
     
     References
     ----------
@@ -645,7 +612,7 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_static,
     [Avants11] Avants, B. B., Tustison, N., & Song, G. (2011). 
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
-    ftype = np.asarray(grad_static).dtype
+    ftype = np.asarray(grad_moving).dtype
     cdef:
         int nr = grad_moving.shape[0]
         int nc = grad_moving.shape[1]
