@@ -42,9 +42,14 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         int[:] hist = np.zeros(shape=(num_levels,), dtype=np.int32)
         int[:, :] out = np.zeros(shape=(nrows, ncols,), dtype=np.int32)
         floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
-    num_levels -= 1  # zero is one of the levels
-    if(num_levels < 1):
+
+    #Quantizing at zero levels is undefined
+    #Quantizing at one level is not supported because we want to make sure the
+    #maximum level in the quantization is never greater than num_levels-1
+    if(num_levels < 2):
         return None, None, None
+
+    num_levels -= 1  # zero is one of the levels
 
     with nogil:
 
@@ -118,9 +123,14 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
         int[:, :, :] out = np.zeros(shape=(nslices, nrows, ncols),
                                     dtype=np.int32)
         floating[:] levels = np.zeros(shape=(num_levels,), dtype=ftype)
-    num_levels -= 1  # zero is one of the levels
-    if(num_levels < 1):
+
+    #Quantizing at zero levels is undefined
+    #Quantizing at one level is not supported because we want to make sure the
+    #maximum level in the quantization is never greater than num_levels-1
+    if(num_levels < 2):
         return None, None, None
+
+    num_levels -= 1  # zero is one of the levels
 
     with nogil:
 

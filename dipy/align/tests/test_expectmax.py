@@ -302,6 +302,20 @@ def test_quantize_positive_2d():
         current_bin = np.asarray(true_quantization == i).sum()
         assert_equal(hist[i], current_bin)
 
+    #test num_levels<2 and input image with zeros and non-zeros everywhere
+    out, levels, hist = em.quantize_positive_2d(np.ones(img_shape, dtype=floating), 0)
+    assert_equal((out, levels, hist), (None, None, None))
+
+    out, levels, hist = em.quantize_positive_2d(np.ones(img_shape, dtype=floating), 1)
+    assert_equal((out, levels, hist), (None, None, None))
+
+    out, levels, hist = em.quantize_positive_2d(np.zeros(img_shape, dtype=floating), 2)
+    assert_equal(out, np.zeros(img_shape, dtype=np.int32))
+
+    out, levels, hist = em.quantize_positive_2d(np.ones(img_shape, dtype=floating), 2)
+    assert_equal(out, np.ones(img_shape, dtype=np.int32))
+
+
 def test_quantize_positive_3d():
     np.random.seed(1246592)
 
@@ -340,6 +354,19 @@ def test_quantize_positive_3d():
     for i in range(num_levels):
         current_bin = np.asarray(true_quantization == i).sum()
         assert_equal(hist[i], current_bin)
+
+    #test num_levels<2 and input image with zeros and non-zeros everywhere
+    out, levels, hist = em.quantize_positive_3d(np.ones(img_shape, dtype=floating), 0)
+    assert_equal((out, levels, hist), (None, None, None))
+
+    out, levels, hist = em.quantize_positive_3d(np.ones(img_shape, dtype=floating), 1)
+    assert_equal((out, levels, hist), (None, None, None))
+
+    out, levels, hist = em.quantize_positive_3d(np.zeros(img_shape, dtype=floating), 2)
+    assert_equal(out, np.zeros(img_shape, dtype=np.int32))
+
+    out, levels, hist = em.quantize_positive_3d(np.ones(img_shape, dtype=floating), 2)
+    assert_equal(out, np.ones(img_shape, dtype=np.int32))
 
 
 def test_compute_masked_class_stats_2d():
