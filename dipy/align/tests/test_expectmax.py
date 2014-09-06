@@ -80,7 +80,8 @@ def test_compute_em_demons_step_2d():
     #Pixels with gradient!=0 and sigma_i_sq=0
     sqnrm = sq_norm_grad_G[random_labels == 1]
     sigma_i_sq[random_labels == 1] = 0  
-    expected[random_labels == 1, ...] = delta_field[random_labels == 1, None]*grad_G[random_labels == 1, ...]/sqnrm[...,None]
+    expected[random_labels == 1, 0] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 0]/sqnrm
+    expected[random_labels == 1, 1] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 1]/sqnrm
 
     #Pixels with gradient=0 and sigma_i_sq=0
     sigma_i_sq[random_labels == 2] = 0 
@@ -205,7 +206,9 @@ def test_compute_em_demons_step_3d():
     #Pixels with gradient!=0 and sigma_i_sq=0
     sqnrm = sq_norm_grad_G[random_labels == 1]
     sigma_i_sq[random_labels == 1] = 0  
-    expected[random_labels == 1, ...] = delta_field[random_labels == 1, None]*grad_G[random_labels == 1, ...]/sqnrm[...,None]
+    expected[random_labels == 1, 0] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 0]/sqnrm
+    expected[random_labels == 1, 1] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 1]/sqnrm
+    expected[random_labels == 1, 2] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 2]/sqnrm
 
     #Pixels with gradient=0 and sigma_i_sq=0
     sigma_i_sq[random_labels == 2] = 0 
