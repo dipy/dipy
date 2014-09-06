@@ -52,14 +52,32 @@ def test_compute_cc_steps_2d():
     X[...,1]= x_1[None, :] * O
 
     #Compute the gradient fields of F and G
+    np.random.seed(1147572)
+
     grad_F = np.array(X - c_f, dtype = floating)
     grad_G = np.array(X - c_g, dtype = floating)
+
+    Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    grad_F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    grad_G += Gnoise
 
     sq_norm_grad_G = np.sum(grad_G**2,-1) 
     
     F = np.array(0.5*np.sum(grad_F**2,-1), dtype = floating)
     G = np.array(0.5*sq_norm_grad_G, dtype = floating)
 
+    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    G += Gnoise
+    
     #precompute the cross correlation factors
     factors = cc.precompute_cc_factors_2d_test(F, G, radius)
     factors = np.array(factors, dtype = floating)
@@ -100,14 +118,32 @@ def test_compute_cc_steps_3d():
     X[...,0]= x_0[:, None, None] * O
     X[...,1]= x_1[None, :, None] * O
     X[...,2]= x_2[None, None, :] * O
+
     #Compute the gradient fields of F and G
+    np.random.seed(12465825)
     grad_F = np.array(X - c_f, dtype = floating)
     grad_G = np.array(X - c_g, dtype = floating)
+
+    Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    grad_F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    grad_G += Gnoise
 
     sq_norm_grad_G = np.sum(grad_G**2,-1) 
     
     F = np.array(0.5*np.sum(grad_F**2,-1), dtype = floating)
     G = np.array(0.5*sq_norm_grad_G, dtype = floating)
+
+    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    G += Gnoise
 
     #precompute the cross correlation factors
     factors = cc.precompute_cc_factors_3d_test(F, G, radius)
