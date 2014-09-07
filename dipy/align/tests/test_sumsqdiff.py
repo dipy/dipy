@@ -176,9 +176,22 @@ def test_compute_ssd_demons_step_2d():
     X[...,0]= x_0[:, None] * O
     X[...,1]= x_1[None, :] * O
 
+    #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
+    sigma_x_sq = 1.5
+
     #Compute the gradient fields of F and G
+    np.random.seed(1137271)
+
     grad_F = X - c_f
     grad_G = X - c_g 
+
+    Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    grad_F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    grad_G += Gnoise
 
     #The squared norm of grad_G to be used later
     sq_norm_grad_G = np.sum(grad_G**2,-1) 
@@ -187,23 +200,39 @@ def test_compute_ssd_demons_step_2d():
     F = 0.5*np.sum(grad_F**2,-1)
     G = 0.5*sq_norm_grad_G
 
-    #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
-    sigma_x_sq = 1.5
+    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    F += Fnoise
 
+    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    G += Gnoise
+
+    delta_field =  np.array(G - F, dtype = floating)
+
+    #Select some pixels to force gradient = 0 and F=G
+    random_labels = np.random.randint(0, 2, sh[0]*sh[1])
+    random_labels = random_labels.reshape(sh)
+
+    F[random_labels == 0] = G[random_labels == 0]
+    delta_field[random_labels == 0] = 0
+    grad_G[random_labels == 0, ...] = 0
+    sq_norm_grad_G[random_labels == 0, ...] = 0
+    
     #Set arbitrary values for $\sigma_i$ (eq. 4 in [Vercauteren09])
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
      
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
-    num = sigma_x_sq * (F - G) 
-    den = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
-    expected = -1 * np.array(grad_G) #This is $J^{P}$ in eq. 4 [Vercauteren09]
-    expected[...,0] *= num / den
-    expected[...,1] *= num / den
+    num = (sigma_x_sq * (F - G))[random_labels == 1]
+    den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels == 1]
+    expected = (-1 * np.array(grad_G)) #This is $J^{P}$ in eq. 4 [Vercauteren09]
+    expected[random_labels == 1, 0] *= num / den
+    expected[random_labels == 1, 1] *= num / den
+    expected[random_labels == 0, ...] = 0
 
     #Now compute it using the implementation under test
-    delta_field =  np.array(G - F, dtype = floating)
     actual = np.empty_like(expected, dtype=floating)
     
     ssd.compute_ssd_demons_step_2d(delta_field,
@@ -246,9 +275,22 @@ def test_compute_ssd_demons_step_3d():
     X[...,1]= x_1[None, :, None] * O
     X[...,2]= x_2[None, None, :] * O
 
+    #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
+    sigma_x_sq = 1.5
+
     #Compute the gradient fields of F and G
+    np.random.seed(1137271)
+
     grad_F = X - c_f
     grad_G = X - c_g 
+
+    Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    grad_F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    grad_G += Gnoise
 
     #The squared norm of grad_G to be used later
     sq_norm_grad_G = np.sum(grad_G**2,-1) 
@@ -257,8 +299,24 @@ def test_compute_ssd_demons_step_3d():
     F = 0.5*np.sum(grad_F**2,-1)
     G = 0.5*sq_norm_grad_G
 
-    #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
-    sigma_x_sq = 1.5
+    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    G += Gnoise
+
+    delta_field =  np.array(G - F, dtype = floating)
+
+    #Select some pixels to force gradient = 0 and F=G
+    random_labels = np.random.randint(0, 2, sh[0]*sh[1]*sh[2])
+    random_labels = random_labels.reshape(sh)
+
+    F[random_labels == 0] = G[random_labels == 0]
+    delta_field[random_labels == 0] = 0
+    grad_G[random_labels == 0, ...] = 0
+    sq_norm_grad_G[random_labels == 0, ...] = 0
 
     #Set arbitrary values for $\sigma_i$ (eq. 4 in [Vercauteren09])
     #The original Demons algorithm used simply |F(x) - G(x)| as an
@@ -266,15 +324,15 @@ def test_compute_ssd_demons_step_3d():
     sigma_i_sq = (F - G)**2
      
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
-    num = sigma_x_sq * (F - G) 
-    den = sigma_x_sq * sq_norm_grad_G + sigma_i_sq
-    expected = -1 * np.array(grad_G) #This is $J^{P}$ in eq. 4 [Vercauteren09]
-    expected[...,0] *= num / den
-    expected[...,1] *= num / den
-    expected[...,2] *= num / den
+    num = (sigma_x_sq * (F - G))[random_labels == 1]
+    den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels == 1]
+    expected = (-1 * np.array(grad_G)) #This is $J^{P}$ in eq. 4 [Vercauteren09]
+    expected[random_labels == 1, 0] *= num / den
+    expected[random_labels == 1, 1] *= num / den
+    expected[random_labels == 1, 2] *= num / den
+    expected[random_labels == 0, ...] = 0
 
     #Now compute it using the implementation under test
-    delta_field =  np.array(G - F, dtype = floating)
     actual = np.empty_like(expected, dtype=floating)
 
     ssd.compute_ssd_demons_step_3d(delta_field,
@@ -286,7 +344,7 @@ def test_compute_ssd_demons_step_3d():
 
 
 if __name__=='__main__':
-    test_compute_energy_ssd_2s()
+    test_compute_energy_ssd_2d()
     test_compute_energy_ssd_3d()
     test_compute_ssd_demons_step_2d()
     test_compute_ssd_demons_step_3d()
