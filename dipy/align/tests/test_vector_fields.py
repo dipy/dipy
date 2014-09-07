@@ -350,19 +350,21 @@ def test_compose_vector_fields_2d():
     premult_index = target_affine_inv.dot(input_affine)
     premult_disp = target_affine_inv
     
-    composition, stats = vfu.compose_vector_fields_2d(disp1, disp2,
-                                                      premult_index,
-                                                      premult_disp,
-                                                      1.0, None)
-    #apply the implementation under test
-    warped = np.array(vfu.warp_2d(moving_image, composition, None,
-                                     premult_index, premult_disp))
-    assert_array_almost_equal(warped, expected)
+    for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
+        composition, stats = vfu.compose_vector_fields_2d(disp1,
+                                                          disp2/time_scaling,
+                                                          premult_index,
+                                                          premult_disp,
+                                                          time_scaling, None)
+        #apply the implementation under test
+        warped = np.array(vfu.warp_2d(moving_image, composition, None,
+                                         premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
 
-    #test also using nearest neighbor interpolation
-    warped = np.array(vfu.warp_2d_nn(moving_image, composition, None,
-                                        premult_index, premult_disp))
-    assert_array_almost_equal(warped, expected)
+        #test also using nearest neighbor interpolation
+        warped = np.array(vfu.warp_2d_nn(moving_image, composition, None,
+                                            premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
 
 
 def test_compose_vector_fields_3d():
@@ -441,19 +443,21 @@ def test_compose_vector_fields_3d():
     premult_index = target_affine_inv.dot(input_affine)
     premult_disp = target_affine_inv
     
-    composition, stats = vfu.compose_vector_fields_3d(disp1, disp2,
-                                               premult_index,
-                                               premult_disp,
-                                               1.0, None)
-    #apply the implementation under test
-    warped = np.array(vfu.warp_3d(moving_image, composition, None,
-                                      premult_index, premult_disp))
-    assert_array_almost_equal(warped, expected)
+    for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
+        composition, stats = vfu.compose_vector_fields_3d(disp1,
+                                                          disp2/time_scaling,
+                                                          premult_index,
+                                                          premult_disp,
+                                                          time_scaling, None)
+        #apply the implementation under test
+        warped = np.array(vfu.warp_3d(moving_image, composition, None,
+                                          premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
 
-    #test also using nearest neighbor interpolation
-    warped = np.array(vfu.warp_3d_nn(moving_image, composition, None,
-                                         premult_index, premult_disp))
-    assert_array_almost_equal(warped, expected)
+        #test also using nearest neighbor interpolation
+        warped = np.array(vfu.warp_3d_nn(moving_image, composition, None,
+                                             premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
 
 
 def test_invert_vector_field_2d():

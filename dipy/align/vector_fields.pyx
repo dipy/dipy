@@ -514,7 +514,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
 
     comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
 
-    (the A*i terms cancel each other) where Sinv = S^{-1}
+    (the R*i terms cancel each other) where Sinv = S^{-1}
     we can then define A = Sinv * R and B = Sinv to compute the composition using 
     this function.
 
@@ -626,7 +626,7 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
 
     comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
 
-    (the A*i terms cancel each other) where Sinv = S^{-1}
+    (the R*i terms cancel each other) where Sinv = S^{-1}
     we can then define A = Sinv * R and B = Sinv to compute the composition
     using this function.
 
@@ -691,7 +691,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
 
     comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
 
-    (the A*i terms cancel each other) where Sinv = S^{-1}
+    (the R*i terms cancel each other) where Sinv = S^{-1}
     we can then define A = Sinv * R and B = Sinv to compute the composition
     using this function.
 
@@ -814,7 +814,7 @@ def compose_vector_fields_3d(floating[:, :, :, :] d1, floating[:, :, :, :] d2,
 
     comp[i] = d1[i] + R*i + d2[Sinv*(R*i + d1[i])] - R*i
 
-    (the A*i terms cancel each other) where Sinv = S^{-1}
+    (the R*i terms cancel each other) where Sinv = S^{-1}
     we can then define A = Sinv * R and B = Sinv to compute the composition
     using this function.
 
@@ -2278,16 +2278,16 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
 
 
 def create_random_displacement_2d(int[:] from_shape, 
-                                  double[:,:] input_affine, 
+                                  double[:,:] from_affine, 
                                   int[:] to_shape, 
-                                  double[:,:] output_affine):
+                                  double[:,:] to_affine):
     r"""Creates a random 2D displacement 'exactly' mapping points of two grids
 
     Creates a random 2D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output discrete 
     domain (with shape given by to_shape). The affine matrices bringing discrete 
-    coordinates to physical space are given by input_affine (for the 
-    displacement field discretization) and output_affine (for the target 
+    coordinates to physical space are given by from_affine (for the 
+    displacement field discretization) and to_affine (for the target 
     discretization). Since this function is intended to be used for testing,
     voxels in the input domain will never be assigned to boundary voxels on the
     output domain.
@@ -2296,11 +2296,11 @@ def create_random_displacement_2d(int[:] from_shape,
     ----------
     from_shape : array, shape (2,)
         the grid shape where the displacement field will be defined on.
-    input_affine : array, shape (3,3)
+    from_affine : array, shape (3,3)
         the grid-to-space transformation of the displacement field 
     to_shape : array, shape (2,)
         the grid shape where the deformation field will map the input grid to.
-    output_affine : array, shape (3,3)
+    to_affine : array, shape (3,3)
         the grid-to-space transformation of the mapped grid
 
     Returns
@@ -2330,17 +2330,17 @@ def create_random_displacement_2d(int[:] from_shape,
             int_field[i, j, 1] = rj
             
             #convert the input point to physical coordinates
-            if input_affine is not None:
-                di = _apply_affine_2d_x0(i, j, 1, input_affine)
-                dj = _apply_affine_2d_x1(i, j, 1, input_affine)
+            if from_affine is not None:
+                di = _apply_affine_2d_x0(i, j, 1, from_affine)
+                dj = _apply_affine_2d_x1(i, j, 1, from_affine)
             else:
                 di = i
                 dj = j
             
             #convert the output point to physical coordinates
-            if output_affine is not None:
-                dii = _apply_affine_2d_x0(ri, rj, 1, output_affine)
-                djj = _apply_affine_2d_x1(ri, rj, 1, output_affine)
+            if to_affine is not None:
+                dii = _apply_affine_2d_x0(ri, rj, 1, to_affine)
+                djj = _apply_affine_2d_x1(ri, rj, 1, to_affine)
             else:
                 dii = ri
                 djj = rj
@@ -2354,15 +2354,15 @@ def create_random_displacement_2d(int[:] from_shape,
     return output, int_field
 
 
-def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine, 
-                                  int[:] to_shape, double[:,:] output_affine):
+def create_random_displacement_3d(int[:] from_shape, double[:,:] from_affine, 
+                                  int[:] to_shape, double[:,:] to_affine):
     r"""Creates a random 3D displacement 'exactly' mapping points of two grids
 
     Creates a random 3D displacement field mapping points of an input discrete
     domain (with dimensions given by from_shape) to points of an output discrete 
     domain (with shape given by to_shape). The affine matrices bringing discrete 
-    coordinates to physical space are given by input_affine (for the 
-    displacement field discretization) and output_affine (for the target 
+    coordinates to physical space are given by from_affine (for the 
+    displacement field discretization) and to_affine (for the target 
     discretization). Since this function is intended to be used for testing,
     voxels in the input domain will never be assigned to boundary voxels on the
     output domain.
@@ -2371,11 +2371,11 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine,
     ----------
     from_shape : array, shape (3,)
         the grid shape where the displacement field will be defined on.
-    input_affine : array, shape (4,4)
+    from_affine : array, shape (4,4)
         the grid-to-space transformation of the displacement field 
     to_shape : array, shape (3,)
         the grid shape where the deformation field will map the input grid to.
-    output_affine : array, shape (4,4)
+    to_affine : array, shape (4,4)
         the grid-to-space transformation of the mapped grid
 
     Returns
@@ -2407,20 +2407,20 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] input_affine,
                 int_field[k, i, j, 2] = rj
                 
                 #convert the input point to physical coordinates
-                if input_affine is not None:
-                    dk = _apply_affine_3d_x0(k, i, j, 1, input_affine)
-                    di = _apply_affine_3d_x1(k, i, j, 1, input_affine)
-                    dj = _apply_affine_3d_x2(k, i, j, 1, input_affine)
+                if from_affine is not None:
+                    dk = _apply_affine_3d_x0(k, i, j, 1, from_affine)
+                    di = _apply_affine_3d_x1(k, i, j, 1, from_affine)
+                    dj = _apply_affine_3d_x2(k, i, j, 1, from_affine)
                 else:
                     dk = k
                     di = i
                     dj = j
 
                 #convert the output point to physical coordinates
-                if output_affine is not None:
-                    dkk = _apply_affine_3d_x0(rk, ri, rj, 1, output_affine)
-                    dii = _apply_affine_3d_x1(rk, ri, rj, 1, output_affine)
-                    djj = _apply_affine_3d_x2(rk, ri, rj, 1, output_affine)
+                if to_affine is not None:
+                    dkk = _apply_affine_3d_x0(rk, ri, rj, 1, to_affine)
+                    dii = _apply_affine_3d_x1(rk, ri, rj, 1, to_affine)
+                    djj = _apply_affine_3d_x2(rk, ri, rj, 1, to_affine)
                 else:
                     dkk = rk
                     dii = ri
