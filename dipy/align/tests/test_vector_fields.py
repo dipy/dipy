@@ -577,65 +577,146 @@ def test_resample_vector_field_3d():
 
 def test_downsample_scalar_field_2d():
     np.random.seed(8315759)
-    shape = (32, 32)
-    image = np.ndarray(shape, dtype=floating)
-    image[...] = np.random.randint(0, 10, np.size(image)).reshape(shape)
-    a = image[::2, ::2]
-    b = image[1::2, ::2]
-    c = image[::2, 1::2]
-    d = image[1::2, 1::2]
-    expected = 0.25*(a + b + c + d)
-    actual = np.array(vfu.downsample_scalar_field_2d(image))
-    assert_array_almost_equal(expected, actual)
+    size = 32
+    for reduce_r in [True, False]:
+        nrows = size -1 if reduce_r else size
+        for reduce_c in [True, False]:
+            ncols = size -1 if reduce_c else size
+            image = np.ndarray((size, size), dtype=floating)
+            image[...] = np.random.randint(0, 10, np.size(image)).reshape((size, size))
+
+            if reduce_r:
+                image[-1, :] = 0
+            if reduce_c:
+                image[:, -1] = 0
+
+            a = image[::2, ::2]
+            b = image[1::2, ::2]
+            c = image[::2, 1::2]
+            d = image[1::2, 1::2]
+
+            expected = 0.25*(a + b + c + d)
+
+            if reduce_r:
+                expected[-1,:]*=2
+            if reduce_c:
+                expected[:,-1]*=2
+
+            actual = np.array(vfu.downsample_scalar_field_2d(image[:nrows, :ncols]))
+            assert_array_almost_equal(expected, actual)
     
 
 def test_downsample_displacement_field_2d():
-    np.random.seed(8315759)
-    shape = (32, 32, 2)
-    field = np.ndarray(shape, dtype=floating)
-    field[...] = np.random.randint(0, 10, np.size(field)).reshape(shape)
-    a = field[::2, ::2, :]
-    b = field[1::2, ::2, :]
-    c = field[::2, 1::2, :]
-    d = field[1::2, 1::2, :]
-    expected = 0.25*(a + b + c + d)
-    actual = np.array(vfu.downsample_displacement_field_2d(field))
-    assert_array_almost_equal(expected, actual)
+    np.random.seed(2115556)
+    size = 32
+    for reduce_r in [True, False]:
+        nrows = size -1 if reduce_r else size
+        for reduce_c in [True, False]:
+            ncols = size -1 if reduce_c else size
+            field = np.ndarray((size, size, 2), dtype=floating)
+            field[...] = np.random.randint(0, 10, np.size(field)).reshape((size, size, 2))
+
+            if reduce_r:
+                field[-1, :, :] = 0
+            if reduce_c:
+                field[:, -1, :] = 0
+
+            a = field[::2, ::2, :]
+            b = field[1::2, ::2, :]
+            c = field[::2, 1::2, :]
+            d = field[1::2, 1::2, :]
+
+            expected = 0.25*(a + b + c + d)
+
+            if reduce_r:
+                expected[-1, :, :]*=2
+            if reduce_c:
+                expected[:, -1, :]*=2
+
+            actual = np.array(vfu.downsample_displacement_field_2d(field[:nrows, :ncols, :]))
+            assert_array_almost_equal(expected, actual)
+
 
 def test_downsample_scalar_field_3d():
     np.random.seed(8315759)
-    shape = (32, 32, 32)
-    volume = np.ndarray(shape, dtype=floating)
-    volume[...] = np.random.randint(0, 10, np.size(volume)).reshape(shape)
-    a = volume[::2, ::2, ::2]
-    b = volume[1::2, ::2, ::2]
-    c = volume[::2, 1::2, ::2]
-    d = volume[1::2, 1::2, ::2]
-    aa = volume[::2, ::2, 1::2]
-    bb = volume[1::2, ::2, 1::2]
-    cc = volume[::2, 1::2, 1::2]
-    dd = volume[1::2, 1::2, 1::2]
-    expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
-    actual = np.array(vfu.downsample_scalar_field_3d(volume))
-    assert_array_almost_equal(expected, actual)
+    size = 32
+    for reduce_s in [True, False]:
+        nslices = size -1 if reduce_s else size
+        for reduce_r in [True, False]:
+            nrows = size -1 if reduce_r else size
+            for reduce_c in [True, False]:
+                ncols = size -1 if reduce_c else size
+                image = np.ndarray((size, size, size), dtype=floating)
+                image[...] = np.random.randint(0, 10, np.size(image)).reshape((size, size, size))
+
+                if reduce_s:
+                    image[-1, :, :] = 0
+                if reduce_r:
+                    image[:, -1, :] = 0
+                if reduce_c:
+                    image[:, :, -1] = 0
+
+                a = image[::2, ::2, ::2]
+                b = image[1::2, ::2, ::2]
+                c = image[::2, 1::2, ::2]
+                d = image[1::2, 1::2, ::2]
+                aa = image[::2, ::2, 1::2]
+                bb = image[1::2, ::2, 1::2]
+                cc = image[::2, 1::2, 1::2]
+                dd = image[1::2, 1::2, 1::2]
+
+                expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
+
+                if reduce_s:
+                    expected[-1, :, :] *= 2
+                if reduce_r:
+                    expected[:, -1, :] *= 2
+                if reduce_c:
+                    expected[:, :, -1] *= 2
+
+                actual = np.array(vfu.downsample_scalar_field_3d(image[:nslices, :nrows, :ncols]))
+                assert_array_almost_equal(expected, actual)
 
 
 def test_downsample_displacement_field_3d():
     np.random.seed(8315759)
-    shape = (32, 32, 32, 3)
-    field = np.ndarray(shape, dtype=floating)
-    field[...] = np.random.randint(0, 10, np.size(field)).reshape(shape)
-    a = field[::2, ::2, ::2, :]
-    b = field[1::2, ::2, ::2, :]
-    c = field[::2, 1::2, ::2, :]
-    d = field[1::2, 1::2, ::2, :]
-    aa = field[::2, ::2, 1::2, :]
-    bb = field[1::2, ::2, 1::2, :]
-    cc = field[::2, 1::2, 1::2, :]
-    dd = field[1::2, 1::2, 1::2, :]
-    expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
-    actual = np.array(vfu.downsample_displacement_field_3d(field))
-    assert_array_almost_equal(expected, actual)
+    size = 32
+    for reduce_s in [True, False]:
+        nslices = size -1 if reduce_s else size
+        for reduce_r in [True, False]:
+            nrows = size -1 if reduce_r else size
+            for reduce_c in [True, False]:
+                ncols = size -1 if reduce_c else size
+                field = np.ndarray((size, size, size, 3), dtype=floating)
+                field[...] = np.random.randint(0, 10, np.size(field)).reshape((size, size, size, 3))
+
+                if reduce_s:
+                    field[-1, :, :] = 0
+                if reduce_r:
+                    field[:, -1, :] = 0
+                if reduce_c:
+                    field[:, :, -1] = 0
+
+                a = field[::2, ::2, ::2, :]
+                b = field[1::2, ::2, ::2, :]
+                c = field[::2, 1::2, ::2, :]
+                d = field[1::2, 1::2, ::2, :]
+                aa = field[::2, ::2, 1::2, :]
+                bb = field[1::2, ::2, 1::2, :]
+                cc = field[::2, 1::2, 1::2, :]
+                dd = field[1::2, 1::2, 1::2, :]
+
+                expected = 0.125*(a + b + c + d + aa + bb + cc + dd)
+
+                if reduce_s:
+                    expected[-1, :, :, :] *= 2
+                if reduce_r:
+                    expected[:, -1, :, :] *= 2
+                if reduce_c:
+                    expected[:, :, -1, :] *= 2
+
+                actual = np.array(vfu.downsample_displacement_field_3d(field[:nslices, :nrows, :ncols]))
+                assert_array_almost_equal(expected, actual)
 
 
 def test_reorient_vector_field_2d():
