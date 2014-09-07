@@ -176,9 +176,6 @@ def test_compute_ssd_demons_step_2d():
     X[...,0]= x_0[:, None] * O
     X[...,1]= x_1[None, :] * O
 
-    #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
-    sigma_x_sq = 1.5
-
     #Compute the gradient fields of F and G
     np.random.seed(1137271)
 
@@ -223,24 +220,26 @@ def test_compute_ssd_demons_step_2d():
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-     
-    #Directly compute the demons step according to eq. 4 in [Vercauteren09]
-    num = (sigma_x_sq * (F - G))[random_labels == 1]
-    den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels == 1]
-    expected = (-1 * np.array(grad_G)) #This is $J^{P}$ in eq. 4 [Vercauteren09]
-    expected[random_labels == 1, 0] *= num / den
-    expected[random_labels == 1, 1] *= num / den
-    expected[random_labels == 0, ...] = 0
+    
+    #Now select arbitrary parameters for $\sigma_x$ (eq 4 in [Vercauteren09])
+    for sigma_x_sq in [0.01, 1.5, 4.2]:
+        #Directly compute the demons step according to eq. 4 in [Vercauteren09]
+        num = (sigma_x_sq * (F - G))[random_labels == 1]
+        den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels == 1]
+        expected = (-1 * np.array(grad_G)) #This is $J^{P}$ in eq. 4 [Vercauteren09]
+        expected[random_labels == 1, 0] *= num / den
+        expected[random_labels == 1, 1] *= num / den
+        expected[random_labels == 0, ...] = 0
 
-    #Now compute it using the implementation under test
-    actual = np.empty_like(expected, dtype=floating)
+        #Now compute it using the implementation under test
+        actual = np.empty_like(expected, dtype=floating)
     
-    ssd.compute_ssd_demons_step_2d(delta_field,
-                                   np.array(grad_G, dtype=floating),
-                                   sigma_x_sq,
-                                   actual)
+        ssd.compute_ssd_demons_step_2d(delta_field,
+                                       np.array(grad_G, dtype=floating),
+                                       sigma_x_sq,
+                                       actual)
     
-    assert_array_almost_equal(actual, expected)
+        assert_array_almost_equal(actual, expected)
 
 
 def test_compute_ssd_demons_step_3d():
@@ -274,10 +273,7 @@ def test_compute_ssd_demons_step_3d():
     X[...,0]= x_0[:, None, None] * O
     X[...,1]= x_1[None, :, None] * O
     X[...,2]= x_2[None, None, :] * O
-
-    #Now select an arbitrary parameter for $\sigma_x$ (eq 4 in [Vercauteren09])
-    sigma_x_sq = 1.5
-
+   
     #Compute the gradient fields of F and G
     np.random.seed(1137271)
 
@@ -322,25 +318,27 @@ def test_compute_ssd_demons_step_3d():
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-     
-    #Directly compute the demons step according to eq. 4 in [Vercauteren09]
-    num = (sigma_x_sq * (F - G))[random_labels == 1]
-    den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels == 1]
-    expected = (-1 * np.array(grad_G)) #This is $J^{P}$ in eq. 4 [Vercauteren09]
-    expected[random_labels == 1, 0] *= num / den
-    expected[random_labels == 1, 1] *= num / den
-    expected[random_labels == 1, 2] *= num / den
-    expected[random_labels == 0, ...] = 0
+    
+    #Now select arbitrary parameters for $\sigma_x$ (eq 4 in [Vercauteren09])
+    for sigma_x_sq in [0.01, 1.5, 4.2]:
+        #Directly compute the demons step according to eq. 4 in [Vercauteren09]
+        num = (sigma_x_sq * (F - G))[random_labels == 1]
+        den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels == 1]
+        expected = (-1 * np.array(grad_G)) #This is $J^{P}$ in eq. 4 [Vercauteren09]
+        expected[random_labels == 1, 0] *= num / den
+        expected[random_labels == 1, 1] *= num / den
+        expected[random_labels == 1, 2] *= num / den
+        expected[random_labels == 0, ...] = 0
 
-    #Now compute it using the implementation under test
-    actual = np.empty_like(expected, dtype=floating)
+        #Now compute it using the implementation under test
+        actual = np.empty_like(expected, dtype=floating)
 
-    ssd.compute_ssd_demons_step_3d(delta_field,
-                                   np.array(grad_G, dtype = floating),
-                                   sigma_x_sq,
-                                   actual)
+        ssd.compute_ssd_demons_step_3d(delta_field,
+                                       np.array(grad_G, dtype = floating),
+                                       sigma_x_sq,
+                                       actual)
 
-    assert_array_almost_equal(actual, expected)
+        assert_array_almost_equal(actual, expected)
 
 
 if __name__=='__main__':
