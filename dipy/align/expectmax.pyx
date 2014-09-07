@@ -6,6 +6,7 @@
 
 import numpy as np
 cimport cython
+cimport numpy as cnp
 from fused_types cimport floating, number
 
 cdef extern from "math.h":
@@ -32,10 +33,10 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     """
     ftype = np.asarray(v).dtype
     cdef:
-        int nrows = v.shape[0]
-        int ncols = v.shape[1]
-        int npix = nrows * ncols
-        int i, j, l
+        cnp.npy_intp nrows = v.shape[0]
+        cnp.npy_intp ncols = v.shape[1]
+        cnp.npy_intp npix = nrows * ncols
+        cnp.npy_intp i, j, l
         double epsilon, delta
         double min_val = -1
         double max_val = -1
@@ -111,11 +112,11 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     """
     ftype = np.asarray(v).dtype
     cdef:
-        int nslices = v.shape[0]
-        int nrows = v.shape[1]
-        int ncols = v.shape[2]
-        int nvox = nrows * ncols * nslices
-        int i, j, k, l
+        cnp.npy_intp nslices = v.shape[0]
+        cnp.npy_intp nrows = v.shape[1]
+        cnp.npy_intp ncols = v.shape[2]
+        cnp.npy_intp nvox = nrows * ncols * nslices
+        cnp.npy_intp i, j, k, l
         double epsilon, delta
         double min_val = -1
         double max_val = -1
@@ -202,9 +203,9 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
     """
     ftype=np.asarray(v).dtype
     cdef:
-        int nrows = v.shape[0]
-        int ncols = v.shape[1]
-        int i, j
+        cnp.npy_intp nrows = v.shape[0]
+        cnp.npy_intp ncols = v.shape[1]
+        cnp.npy_intp i, j
         double INF64 = np.inf
         int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
         floating diff
@@ -259,10 +260,10 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
     """
     ftype=np.asarray(v).dtype
     cdef:
-        int nslices = v.shape[0]
-        int nrows = v.shape[1]
-        int ncols = v.shape[2]
-        int i, j, k
+        cnp.npy_intp nslices = v.shape[0]
+        cnp.npy_intp nrows = v.shape[1]
+        cnp.npy_intp ncols = v.shape[2]
+        cnp.npy_intp i, j, k
         double INF64 = np.inf
         floating diff
         int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
@@ -344,9 +345,9 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                     doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
-        int nr = delta_field.shape[0]
-        int nc = delta_field.shape[1]
-        int i, j
+        cnp.npy_intp nr = delta_field.shape[0]
+        cnp.npy_intp nc = delta_field.shape[1]
+        cnp.npy_intp i, j
         double delta, sigma_sq_i, nrm2, energy, den, prod
 
     if out is None:
@@ -432,10 +433,10 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                     doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
-        int ns = delta_field.shape[0]
-        int nr = delta_field.shape[1]
-        int nc = delta_field.shape[2]
-        int i, j, k
+        cnp.npy_intp ns = delta_field.shape[0]
+        cnp.npy_intp nr = delta_field.shape[1]
+        cnp.npy_intp nc = delta_field.shape[2]
+        cnp.npy_intp i, j, k
         double delta, sigma_sq_i, nrm2, energy, den
 
     if out is None:

@@ -4,6 +4,7 @@
 #cython: cdivision=True
 
 import numpy as np
+cimport numpy as cnp
 cimport cython
 from fused_types cimport floating, number
 
@@ -87,9 +88,9 @@ cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii,
         inside == 1, otherwise inside == 0
     """
     cdef:
-        int nr = field.shape[0]
-        int nc = field.shape[1]
-        int ii, jj
+        cnp.npy_intp nr = field.shape[0]
+        cnp.npy_intp nc = field.shape[1]
+        cnp.npy_intp ii, jj
         double alpha, beta, calpha, cbeta
     if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
         out[0] = 0
@@ -153,9 +154,9 @@ cdef inline int interpolate_scalar_bilinear(floating[:,:] image, double dii,
         inside == 1, otherwise inside == 0
     """
     cdef:
-        int nr = image.shape[0]
-        int nc = image.shape[1]
-        int ii, jj
+        cnp.npy_intp nr = image.shape[0]
+        cnp.npy_intp nc = image.shape[1]
+        cnp.npy_intp ii, jj
         double alpha, beta, calpha, cbeta
     if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
         out[0] = 0
@@ -213,9 +214,9 @@ cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii,
         inside == 1, otherwise inside == 0
     """
     cdef:
-        int nr = image.shape[0]
-        int nc = image.shape[1]
-        int ii, jj
+        cnp.npy_intp nr = image.shape[0]
+        cnp.npy_intp nc = image.shape[1]
+        cnp.npy_intp ii, jj
         double alpha, beta, calpha, cbeta
     if((dii < 0) or (djj < 0) or (dii > nr - 1) or (djj > nc - 1)):
         out[0] = 0
@@ -272,10 +273,10 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
         inside == 1, otherwise inside == 0
     """
     cdef:
-        int ns = volume.shape[0]
-        int nr = volume.shape[1]
-        int nc = volume.shape[2]
-        int kk, ii, jj
+        cnp.npy_intp ns = volume.shape[0]
+        cnp.npy_intp nr = volume.shape[1]
+        cnp.npy_intp nc = volume.shape[2]
+        cnp.npy_intp kk, ii, jj
         double alpha, beta, calpha, cbeta, gamma, cgamma
     if not (0 <= dkk <= ns - 1 and 0 <= dii <= nr - 1 and 0 <= djj <= nc - 1):
         out[0] = 0
@@ -337,10 +338,10 @@ cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume,
         inside == 1, otherwise inside == 0
     """
     cdef:
-        int ns = volume.shape[0]
-        int nr = volume.shape[1]
-        int nc = volume.shape[2]
-        int kk, ii, jj
+        cnp.npy_intp ns = volume.shape[0]
+        cnp.npy_intp nr = volume.shape[1]
+        cnp.npy_intp nc = volume.shape[2]
+        cnp.npy_intp kk, ii, jj
         double alpha, beta, calpha, cbeta, gamma, cgamma
     if not (0 <= dkk <= ns - 1 and 0 <= dii <= nr - 1 and 0 <= djj <= nc - 1):
         out[0] = 0
@@ -418,10 +419,10 @@ cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field,
         inside == 1, otherwise inside == 0
     """
     cdef:
-        int ns = field.shape[0]
-        int nr = field.shape[1]
-        int nc = field.shape[2]
-        int kk, ii, jj
+        cnp.npy_intp ns = field.shape[0]
+        cnp.npy_intp nr = field.shape[1]
+        cnp.npy_intp nc = field.shape[2]
+        cnp.npy_intp kk, ii, jj
         double alpha, beta, gamma, calpha, cbeta, cgamma
     if not (0 <= dkk <= ns - 1 and 0 <= dii <= nr - 1 and 0 <= djj <= nc - 1):
         out[0] = 0
@@ -552,16 +553,16 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     vector.
     """
     cdef:
-        int nr1 = d1.shape[0]
-        int nc1 = d1.shape[1]
-        int nr2 = d2.shape[0]
-        int nc2 = d2.shape[1]
-        int cnt = 0
+        cnp.npy_intp nr1 = d1.shape[0]
+        cnp.npy_intp nc1 = d1.shape[1]
+        cnp.npy_intp nr2 = d2.shape[0]
+        cnp.npy_intp nc2 = d2.shape[1]
+        int inside, cnt = 0
         double maxNorm = 0
         double meanNorm = 0
         double stdNorm = 0
         double nn
-        int i, j, inside
+        cnp.npy_intp i, j
         double di, dj, dii, djj, diii, djjj
 
     for i in range(nr1):
@@ -729,18 +730,18 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     a zero vector.
     """
     cdef:
-        int ns1 = d1.shape[0]
-        int nr1 = d1.shape[1]
-        int nc1 = d1.shape[2]
-        int ns2 = d2.shape[0]
-        int nr2 = d2.shape[1]
-        int nc2 = d2.shape[2]
-        int cnt = 0
+        cnp.npy_intp ns1 = d1.shape[0]
+        cnp.npy_intp nr1 = d1.shape[1]
+        cnp.npy_intp nc1 = d1.shape[2]
+        cnp.npy_intp ns2 = d2.shape[0]
+        cnp.npy_intp nr2 = d2.shape[1]
+        cnp.npy_intp nc2 = d2.shape[2]
+        int inside, cnt = 0
         double maxNorm = 0
         double meanNorm = 0
         double stdNorm = 0
         double nn
-        int i, j, k, inside
+        cnp.npy_intp i, j, k
         double di, dj, dk, dii, djj, dkk, diii, djjj, dkkk
     for k in range(ns1):
         for i in range(nr1):
@@ -907,8 +908,8 @@ def invert_vector_field_fixed_point_2d(floating[:, :, :] d,
     input displacement field composed with the inverse at iteration t. 
     """
     cdef:
-        int nr = d.shape[0]
-        int nc = d.shape[1]
+        cnp.npy_intp nr = d.shape[0]
+        cnp.npy_intp nc = d.shape[1]
         int iter_count, current, flag
         double difmag, mag, maxlen, step_factor
         double epsilon
@@ -1007,9 +1008,9 @@ def invert_vector_field_fixed_point_3d(floating[:, :, :, :] d,
     input displacement field composed with the inverse at iteration t. 
     """
     cdef:
-        int ns = d.shape[0]
-        int nr = d.shape[1]
-        int nc = d.shape[2]
+        cnp.npy_intp ns = d.shape[0]
+        cnp.npy_intp nr = d.shape[1]
+        cnp.npy_intp nc = d.shape[2]
         int iter_count, current
         double dkk, dii, djj, dk, di, dj
         double difmag, mag, maxlen, step_factor
@@ -1113,9 +1114,9 @@ def simplify_warp_function_2d(floating[:,:,:] d,
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
     """
     cdef:
-        int nrows = sampling_shape[0]
-        int ncols = sampling_shape[1]
-        int i, j
+        cnp.npy_intp nrows = sampling_shape[0]
+        cnp.npy_intp ncols = sampling_shape[1]
+        cnp.npy_intp i, j
         double di, dj, dii, djj
         floating[:] tmp = np.zeros((2,), dtype=np.asarray(d).dtype)
         floating[:,:,:] out= np.zeros(shape=(nrows, ncols, 2), 
@@ -1200,10 +1201,10 @@ def simplify_warp_function_3d(floating[:,:,:,:] d,
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
     """
     cdef:
-        int nslices = sampling_shape[0]
-        int nrows = sampling_shape[1]
-        int ncols = sampling_shape[2]
-        int i, j, k
+        cnp.npy_intp nslices = sampling_shape[0]
+        cnp.npy_intp nrows = sampling_shape[1]
+        cnp.npy_intp ncols = sampling_shape[2]
+        cnp.npy_intp i, j, k
         double di, dj, dk, dii, djj, dkk
         floating[:] tmp = np.zeros((3,), dtype=np.asarray(d).dtype)
         floating[:,:,:,:] out= np.zeros(shape=(nslices, nrows, ncols, 3), 
@@ -1271,9 +1272,9 @@ def reorient_vector_field_2d(floating[:, :, :] d,
         the matrix to be applied
     """
     cdef:
-        int nrows = d.shape[0]
-        int ncols = d.shape[1]
-        int i,j
+        cnp.npy_intp nrows = d.shape[0]
+        cnp.npy_intp ncols = d.shape[1]
+        cnp.npy_intp i,j
         double di, dj
     
     if affine is None:
@@ -1303,10 +1304,10 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
         the matrix to be applied
     """
     cdef:
-        int nslices = d.shape[0]
-        int nrows = d.shape[1]
-        int ncols = d.shape[2]
-        int i, j, k
+        cnp.npy_intp nslices = d.shape[0]
+        cnp.npy_intp nrows = d.shape[1]
+        cnp.npy_intp ncols = d.shape[2]
+        cnp.npy_intp i, j, k
         double di, dj, dk
 
     if affine is None:
@@ -1344,13 +1345,13 @@ def downsample_scalar_field_3d(floating[:, :, :] field):
     """
     ftype=np.asarray(field).dtype
     cdef:
-        int ns = field.shape[0]
-        int nr = field.shape[1]
-        int nc = field.shape[2]
-        int nns = (ns + 1) // 2
-        int nnr = (nr + 1) // 2
-        int nnc = (nc + 1) // 2
-        int i, j, k, ii, jj, kk
+        cnp.npy_intp ns = field.shape[0]
+        cnp.npy_intp nr = field.shape[1]
+        cnp.npy_intp nc = field.shape[2]
+        cnp.npy_intp nns = (ns + 1) // 2
+        cnp.npy_intp nnr = (nr + 1) // 2
+        cnp.npy_intp nnc = (nc + 1) // 2
+        cnp.npy_intp i, j, k, ii, jj, kk
         floating[:, :, :] down = np.zeros((nns, nnr, nnc), dtype=ftype)
         int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
 
@@ -1391,13 +1392,13 @@ def downsample_displacement_field_3d(floating[:, :, :, :] field):
     """
     ftype = np.asarray(field).dtype
     cdef:
-        int ns = field.shape[0]
-        int nr = field.shape[1]
-        int nc = field.shape[2]
-        int nns = (ns + 1) // 2
-        int nnr = (nr + 1) // 2
-        int nnc = (nc + 1) // 2
-        int i, j, k, ii, jj, kk
+        cnp.npy_intp ns = field.shape[0]
+        cnp.npy_intp nr = field.shape[1]
+        cnp.npy_intp nc = field.shape[2]
+        cnp.npy_intp nns = (ns + 1) // 2
+        cnp.npy_intp nnr = (nr + 1) // 2
+        cnp.npy_intp nnc = (nc + 1) // 2
+        cnp.npy_intp i, j, k, ii, jj, kk
         floating[:, :, :, :] down = np.zeros((nns, nnr, nnc, 3), dtype=ftype)
         int[:, :, :] cnt = np.zeros((nns, nnr, nnc), dtype=np.int32)
 
@@ -1442,11 +1443,11 @@ def downsample_scalar_field_2d(floating[:, :] field):
     """
     ftype = np.asarray(field).dtype
     cdef:
-        int nr = field.shape[0]
-        int nc = field.shape[1]
-        int nnr = (nr + 1) // 2
-        int nnc = (nc + 1) // 2
-        int i, j, ii, jj
+        cnp.npy_intp nr = field.shape[0]
+        cnp.npy_intp nc = field.shape[1]
+        cnp.npy_intp nnr = (nr + 1) // 2
+        cnp.npy_intp nnc = (nc + 1) // 2
+        cnp.npy_intp i, j, ii, jj
         floating[:, :] down = np.zeros(shape=(nnr, nnc), dtype=ftype)
         int[:, :] cnt = np.zeros(shape=(nnr, nnc), dtype=np.int32)
     with nogil:
@@ -1482,11 +1483,11 @@ def downsample_displacement_field_2d(floating[:, :, :] field):
     """
     ftype = np.asarray(field).dtype
     cdef:
-        int nr = field.shape[0]
-        int nc = field.shape[1]
-        int nnr = (nr + 1) // 2
-        int nnc = (nc + 1) // 2
-        int i, j, ii, jj
+        cnp.npy_intp nr = field.shape[0]
+        cnp.npy_intp nc = field.shape[1]
+        cnp.npy_intp nnr = (nr + 1) // 2
+        cnp.npy_intp nnc = (nc + 1) // 2
+        cnp.npy_intp i, j, ii, jj
         floating[:, :, :] down = np.zeros((nnr, nnc, 2), dtype=ftype)
         int[:, :] cnt = np.zeros((nnr, nnc), dtype=np.int32)
 
@@ -1556,13 +1557,14 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
         the transformed volume
     """
     cdef:
-        int nslices = volume.shape[0]
-        int nrows = volume.shape[1]
-        int ncols = volume.shape[2]
-        int nsVol = volume.shape[0]
-        int nrVol = volume.shape[1]
-        int ncVol = volume.shape[2]
-        int i, j, k, inside
+        cnp.npy_intp nslices = volume.shape[0]
+        cnp.npy_intp nrows = volume.shape[1]
+        cnp.npy_intp ncols = volume.shape[2]
+        cnp.npy_intp nsVol = volume.shape[0]
+        cnp.npy_intp nrVol = volume.shape[1]
+        cnp.npy_intp ncVol = volume.shape[2]
+        cnp.npy_intp i, j, k
+        int inside
         double dkk, dii, djj, dk, di, dj
     if sampling_shape is not None:
         nslices = sampling_shape[0]
@@ -1660,13 +1662,14 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        int nslices = refShape[0]
-        int nrows = refShape[1]
-        int ncols = refShape[2]
-        int nsVol = volume.shape[0]
-        int nrVol = volume.shape[1]
-        int ncVol = volume.shape[2]
-        int i, j, k, ii, jj, kk, inside
+        cnp.npy_intp nslices = refShape[0]
+        cnp.npy_intp nrows = refShape[1]
+        cnp.npy_intp ncols = refShape[2]
+        cnp.npy_intp nsVol = volume.shape[0]
+        cnp.npy_intp nrVol = volume.shape[1]
+        cnp.npy_intp ncVol = volume.shape[2]
+        cnp.npy_intp i, j, k, ii, jj, kk
+        int inside
         double dkk, dii, djj, tmp0, tmp1
         double alpha, beta, gamma, calpha, cbeta, cgamma
         floating[:, :, :] warped = np.zeros(shape=(nslices, nrows, ncols), 
@@ -1738,13 +1741,14 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
         the transformed volume
     """
     cdef:
-        int nslices = volume.shape[0]
-        int nrows = volume.shape[1]
-        int ncols = volume.shape[2]
-        int nsVol = volume.shape[0]
-        int nrVol = volume.shape[1]
-        int ncVol = volume.shape[2]
-        int i, j, k, inside
+        cnp.npy_intp nslices = volume.shape[0]
+        cnp.npy_intp nrows = volume.shape[1]
+        cnp.npy_intp ncols = volume.shape[2]
+        cnp.npy_intp nsVol = volume.shape[0]
+        cnp.npy_intp nrVol = volume.shape[1]
+        cnp.npy_intp ncVol = volume.shape[2]
+        cnp.npy_intp i, j, k
+        int inside
         double dkk, dii, djj, dk, di, dj
     if sampling_shape is not None:
         nslices = sampling_shape[0]
@@ -1842,15 +1846,15 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        int nslices = refShape[0]
-        int nrows = refShape[1]
-        int ncols = refShape[2]
-        int nsVol = volume.shape[0]
-        int nrVol = volume.shape[1]
-        int ncVol = volume.shape[2]
+        cnp.npy_intp nslices = refShape[0]
+        cnp.npy_intp nrows = refShape[1]
+        cnp.npy_intp ncols = refShape[2]
+        cnp.npy_intp nsVol = volume.shape[0]
+        cnp.npy_intp nrVol = volume.shape[1]
+        cnp.npy_intp ncVol = volume.shape[2]
         double dkk, dii, djj, tmp0, tmp1
         double alpha, beta, gamma, calpha, cbeta, cgamma
-        int k, i, j, kk, ii, jj
+        cnp.npy_intp k, i, j, kk, ii, jj
         number[:, :, :] warped = np.zeros((nslices, nrows, ncols), 
                                           dtype=np.asarray(volume).dtype)
 
@@ -1921,11 +1925,11 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
         the transformed image
     """
     cdef:
-        int nrows = image.shape[0]
-        int ncols = image.shape[1]
-        int nrVol = image.shape[0]
-        int ncVol = image.shape[1]
-        int i, j, ii, jj
+        cnp.npy_intp nrows = image.shape[0]
+        cnp.npy_intp ncols = image.shape[1]
+        cnp.npy_intp nrVol = image.shape[0]
+        cnp.npy_intp ncVol = image.shape[1]
+        cnp.npy_intp i, j, ii, jj
         double di, dj, dii, djj
     if sampling_shape is not None:
         nrows = sampling_shape[0]
@@ -2010,11 +2014,11 @@ def warp_2d_affine(floating[:, :] image, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        int nrows = refShape[0]
-        int ncols = refShape[1]
-        int nrVol = image.shape[0]
-        int ncVol = image.shape[1]
-        int i, j, ii, jj
+        cnp.npy_intp nrows = refShape[0]
+        cnp.npy_intp ncols = refShape[1]
+        cnp.npy_intp nrVol = image.shape[0]
+        cnp.npy_intp ncVol = image.shape[1]
+        cnp.npy_intp i, j, ii, jj
         double dii, djj, tmp0
         double alpha, beta, calpha, cbeta
         floating[:, :] warped = np.zeros(shape=(nrows, ncols), 
@@ -2083,11 +2087,11 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
         the transformed image
     """
     cdef:
-        int nrows = image.shape[0]
-        int ncols = image.shape[1]
-        int nrVol = image.shape[0]
-        int ncVol = image.shape[1]
-        int i, j, ii, jj
+        cnp.npy_intp nrows = image.shape[0]
+        cnp.npy_intp ncols = image.shape[1]
+        cnp.npy_intp nrVol = image.shape[0]
+        cnp.npy_intp ncVol = image.shape[1]
+        cnp.npy_intp i, j, ii, jj
         double di, dj, dii, djj
     if sampling_shape is not None:
         nrows = sampling_shape[0]
@@ -2171,13 +2175,13 @@ def warp_2d_affine_nn(number[:, :] image, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        int nrows = refShape[0]
-        int ncols = refShape[1]
-        int nrVol = image.shape[0]
-        int ncVol = image.shape[1]
+        cnp.npy_intp nrows = refShape[0]
+        cnp.npy_intp ncols = refShape[1]
+        cnp.npy_intp nrVol = image.shape[0]
+        cnp.npy_intp ncVol = image.shape[1]
         double dii, djj, tmp0
         double alpha, beta, calpha, cbeta
-        int i, j, ii, jj
+        cnp.npy_intp i, j, ii, jj
         number[:, :] warped = np.zeros((nrows, ncols), 
                                        dtype=np.asarray(image).dtype)
     with nogil:
@@ -2219,10 +2223,11 @@ def resample_displacement_field_3d(floating[:, :, :, :] field, double[:] factors
     """
     ftype = np.asarray(field).dtype
     cdef:
-        int tslices = target_shape[0]
-        int trows = target_shape[1]
-        int tcols = target_shape[2]
-        int inside, k, i, j
+        cnp.npy_intp tslices = target_shape[0]
+        cnp.npy_intp trows = target_shape[1]
+        cnp.npy_intp tcols = target_shape[2]
+        cnp.npy_intp k, i, j
+        int inside
         double dkk, dii, djj
         floating[:, :, :, :] expanded = np.zeros((tslices, trows, tcols, 3),
                                                  dtype=ftype)
@@ -2262,9 +2267,10 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
     """
     ftype = np.asarray(field).dtype
     cdef:
-        int trows = target_shape[0]
-        int tcols = target_shape[1]
-        int inside, i, j
+        cnp.npy_intp trows = target_shape[0]
+        cnp.npy_intp tcols = target_shape[1]
+        cnp.npy_intp i, j
+        int inside
         double dii, djj
         floating[:, :, :] expanded = np.zeros((trows, tcols, 2), dtype=ftype)
 
@@ -2311,13 +2317,13 @@ def create_random_displacement_2d(int[:] from_shape,
         the assignment of each point in the input grid to the target grid
     """
     cdef:
-        int i, j, ri, rj
+        cnp.npy_intp i, j, ri, rj
         double di, dj, dii, djj
         int[:,:,:] int_field = np.ndarray(tuple(from_shape) + (2,), 
                                           dtype=np.int32)
         double[:, :, :] output = np.zeros(tuple(from_shape) + (2,),
                                           dtype=np.float64)
-        int dom_size = from_shape[0]*from_shape[1]
+        cnp.npy_intp dom_size = from_shape[0]*from_shape[1]
 
     #compute the actual displacement field in the physical space
     for i in range(from_shape[0]):
@@ -2386,13 +2392,13 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] from_affine,
         the assignment of each point in the input grid to the target grid
     """
     cdef:
-        int i, j, k, ri, rj, rk
+        cnp.npy_intp i, j, k, ri, rj, rk
         double di, dj, dii, djj
         int[:,:,:,:] int_field = np.ndarray(tuple(from_shape) + (3,),
                                             dtype=np.int32)
         double[:,:,:,:] output = np.zeros(tuple(from_shape) + (3,),
                                           dtype=np.float64)
-        int dom_size = from_shape[0]*from_shape[1]*from_shape[2]
+        cnp.npy_intp dom_size = from_shape[0]*from_shape[1]*from_shape[2]
 
     #compute the actual displacement field in the physical space
     for k in range(from_shape[0]):
@@ -2436,7 +2442,7 @@ def create_random_displacement_3d(int[:] from_shape, double[:,:] from_affine,
     return output, int_field
 
 
-def create_harmonic_fields_2d(int nrows, int ncols, 
+def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols, 
                              double b, double m):
     r"""Creates an invertible 2D displacement field
 
@@ -2448,9 +2454,9 @@ def create_harmonic_fields_2d(int nrows, int ncols,
         Medical Physics, 35(1), 81. doi:10.1118/1.2816107
     """
     cdef:
-        int mid_row = nrows/2
-        int mid_col = ncols/2
-        int i, j, ii, jj
+        cnp.npy_intp mid_row = nrows/2
+        cnp.npy_intp mid_col = ncols/2
+        cnp.npy_intp i, j, ii, jj
         double theta
         double[:,:,:] d = np.zeros( (nrows, ncols, 2), dtype=np.float64)
         double[:,:,:] inv = np.zeros( (nrows, ncols, 2), dtype=np.float64)
@@ -2467,7 +2473,7 @@ def create_harmonic_fields_2d(int nrows, int ncols,
     return d, inv 
 
 
-def create_harmonic_fields_3d(int nslices, int nrows, int ncols, 
+def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows, cnp.npy_intp ncols, 
                              double b, double m):
     r"""Creates an invertible 3D displacement field
 
@@ -2479,10 +2485,10 @@ def create_harmonic_fields_3d(int nslices, int nrows, int ncols,
         Medical Physics, 35(1), 81. doi:10.1118/1.2816107
     """
     cdef:
-        int mid_slice = nslices / 2
-        int mid_row = nrows / 2
-        int mid_col = ncols / 2
-        int i, j, k, ii, jj, kk
+        cnp.npy_intp mid_slice = nslices / 2
+        cnp.npy_intp mid_row = nrows / 2
+        cnp.npy_intp mid_col = ncols / 2
+        cnp.npy_intp i, j, k, ii, jj, kk
         double theta
         double[:,:,:,:] d = np.zeros((nslices, nrows, ncols, 3),
                                      dtype=np.float64)
@@ -2505,15 +2511,15 @@ def create_harmonic_fields_3d(int nslices, int nrows, int ncols,
     return d, inv 
 
 
-def create_circle(int nrows, int ncols, int radius):
+def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
     r"""
     Create a binary 2D image where pixel values are 1 iff their distance 
     to the center of the image is less than or equal to radius. 
     """
     cdef:
-        int mid_row = nrows/2
-        int mid_col = ncols/2
-        int i, j, ii, jj
+        cnp.npy_intp mid_row = nrows/2
+        cnp.npy_intp mid_col = ncols/2
+        cnp.npy_intp i, j, ii, jj
         double r
         double[:,:] c = np.zeros( (nrows, ncols), dtype=np.float64)
     for i in range(nrows):
@@ -2528,16 +2534,17 @@ def create_circle(int nrows, int ncols, int radius):
     return c
 
 
-def create_sphere(int nslices, int nrows, int ncols, int radius):
+def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows, 
+                  cnp.npy_intp ncols, cnp.npy_intp radius):
     r"""
     Create a binary 3D image where voxel values are 1 iff their distance 
     to the center of the image is less than or equal to radius. 
     """
     cdef:
-        int mid_slice = nslices/2
-        int mid_row = nrows/2
-        int mid_col = ncols/2
-        int i, j, k, ii, jj, kk
+        cnp.npy_intp mid_slice = nslices/2
+        cnp.npy_intp mid_row = nrows/2
+        cnp.npy_intp mid_col = ncols/2
+        cnp.npy_intp i, j, k, ii, jj, kk
         double r
         double[:,:,:] s = np.zeros( (nslices, nrows, ncols), dtype=np.float64)
     

@@ -1,5 +1,6 @@
 import numpy as np
 cimport cython
+cimport numpy as cnp
 from fused_types cimport floating, number
 
 cdef extern from "math.h":
@@ -146,9 +147,9 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         int NUM_NEIGHBORS = 4
         int[:] dRow = np.array([-1, 0, 1,  0], dtype=np.int32)
         int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
-        int nrows = delta_field.shape[0]
-        int ncols = delta_field.shape[1]
-        int r, c, dr, dc, nn, k
+        cnp.npy_intp nrows = delta_field.shape[0]
+        cnp.npy_intp ncols = delta_field.shape[1]
+        cnp.npy_intp r, c, dr, dc, nn, k
 
         double[:] b = np.ndarray(shape=(2,), dtype=np.float64)
         double[:] d = np.ndarray(shape=(2,), dtype=np.float64)
@@ -255,8 +256,9 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
     for future generalization to the EM metric energy computation
     """
     cdef:
-        int nrows = delta_field.shape[0]
-        int ncols = delta_field.shape[1]
+        cnp.npy_intp nrows = delta_field.shape[0]
+        cnp.npy_intp ncols = delta_field.shape[1]
+        cnp.npy_intp r, c
         double energy = 0
 
     with nogil:
@@ -316,9 +318,9 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
         int[:] dSlice = np.array([-1,  0, 0, 0,  0, 1], dtype=np.int32)
         int[:] dRow = np.array([0, -1, 0, 1,  0, 0], dtype=np.int32)
         int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
-        int nslices = delta_field.shape[0]
-        int nrows = delta_field.shape[1]
-        int ncols = delta_field.shape[2]
+        cnp.npy_intp nslices = delta_field.shape[0]
+        cnp.npy_intp nrows = delta_field.shape[1]
+        cnp.npy_intp ncols = delta_field.shape[2]
         int nn
         double[:] g = np.ndarray(shape=(3,), dtype=np.float64)
         double[:] b = np.ndarray(shape=(3,), dtype=np.float64)
@@ -326,7 +328,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
         double[:] y = np.ndarray(shape=(3,), dtype=np.float64)
         double[:] A = np.ndarray(shape=(6,), dtype=np.float64)
         double xx, yy, zz, opt, nrm2, delta, sigma, max_displacement
-        int dr, ds, dc, s, r, c
+        cnp.npy_intp dr, ds, dc, s, r, c
     max_displacement = 0
 
     with nogil:
@@ -453,9 +455,10 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
     for future generalization to the EM metric energy computation
     """
     cdef:
-        int nslices = delta_field.shape[0]
-        int nrows = delta_field.shape[1]
-        int ncols = delta_field.shape[2]
+        cnp.npy_intp nslices = delta_field.shape[0]
+        cnp.npy_intp nrows = delta_field.shape[1]
+        cnp.npy_intp ncols = delta_field.shape[2]
+        cnp.npy_intp s, r, c
         double energy = 0
     with nogil:
         for s in range(nslices):
@@ -520,11 +523,11 @@ def compute_residual_displacement_field_ssd_3d(
         int[:] dCol = np.array([0,  0, 1, 0, -1, 0], dtype=np.int32)
         double[:] b = np.ndarray(shape=(3,), dtype=np.float64)
         double[:] y = np.ndarray(shape=(3,), dtype=np.float64)
-        int nslices = delta_field.shape[0]
-        int nrows = delta_field.shape[1]
-        int ncols = delta_field.shape[2]
+        cnp.npy_intp nslices = delta_field.shape[0]
+        cnp.npy_intp nrows = delta_field.shape[1]
+        cnp.npy_intp ncols = delta_field.shape[2]
         double delta, sigma, dotP
-        int s, r, c, ds, dr, dc
+        cnp.npy_intp s, r, c, ds, dr, dc
     if residual == None:
         residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=ftype)
     for s in range(nslices):
@@ -628,10 +631,10 @@ cpdef compute_residual_displacement_field_ssd_2d(
         int[:] dCol = np.array([0, 1, 0, -1], dtype=np.int32)
         double[:] b = np.ndarray(shape=(2,), dtype=np.float64)
         double[:] y = np.ndarray(shape=(2,), dtype=np.float64)
-        int nrows = delta_field.shape[0]
-        int ncols = delta_field.shape[1]
+        cnp.npy_intp nrows = delta_field.shape[0]
+        cnp.npy_intp ncols = delta_field.shape[1]
         double delta, sigma, dotP
-        int r, c, dr, dc
+        cnp.npy_intp r, c, dr, dc
     if residual == None:
         residual = np.empty(shape=(nrows, ncols, 2), dtype=ftype)
     for r in range(nrows):
@@ -715,9 +718,9 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
                     doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
-        int nr = delta_field.shape[0]
-        int nc = delta_field.shape[1]
-        int i, j
+        cnp.npy_intp nr = delta_field.shape[0]
+        cnp.npy_intp nc = delta_field.shape[1]
+        cnp.npy_intp i, j
         double delta, delta_2, nrm2, energy, den
 
     if out is None:
@@ -787,10 +790,10 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                     doi:10.1016/j.neuroimage.2008.10.040
     """
     cdef:
-        int ns = delta_field.shape[0]
-        int nr = delta_field.shape[1]
-        int nc = delta_field.shape[2]
-        int i, j, k
+        cnp.npy_intp ns = delta_field.shape[0]
+        cnp.npy_intp nr = delta_field.shape[1]
+        cnp.npy_intp nc = delta_field.shape[2]
+        cnp.npy_intp i, j, k
         double delta, delta_2, nrm2, energy, den
 
     if out is None:

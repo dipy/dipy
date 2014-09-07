@@ -1,5 +1,6 @@
 import numpy as np
 cimport cython
+cimport numpy as cnp
 from fused_types cimport floating
 
 
@@ -28,7 +29,7 @@ cdef enum:
 @cython.wraparound(False)
 @cython.cdivision(True)
 def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
-                             int radius):
+                             cnp.npy_intp radius):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
     Pre-computes the separate terms of the cross correlation metric and image
@@ -66,11 +67,11 @@ def precompute_cc_factors_3d(floating[:, :, :] static, floating[:, :, :] moving,
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
     cdef:
-        int side = 2 * radius + 1
-        int ns = static.shape[0]
-        int nr = static.shape[1]
-        int nc = static.shape[2]
-        int s, r, c, k, i, j, t, q, qq, firstc, lastc, firstr, lastr
+        cnp.npy_intp side = 2 * radius + 1
+        cnp.npy_intp ns = static.shape[0]
+        cnp.npy_intp nr = static.shape[1]
+        cnp.npy_intp nc = static.shape[2]
+        cnp.npy_intp s, r, c, k, i, j, t, q, qq, firstc, lastc, firstr, lastr
         double Imean, Jmean
         floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5), 
                                                 dtype=np.asarray(static).dtype)
@@ -157,10 +158,10 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
     optimization, so it is less error-prone than the accelerated version.
     """
     cdef:
-        int ns = static.shape[0]
-        int nr = static.shape[1]
-        int nc = static.shape[2]
-        int s, r, c, k, i, j, t, firstc, lastc, firstr, lastr, firsts, lasts
+        cnp.npy_intp ns = static.shape[0]
+        cnp.npy_intp nr = static.shape[1]
+        cnp.npy_intp nc = static.shape[2]
+        cnp.npy_intp s, r, c, k, i, j, t, firstc, lastc, firstr, lastr, firsts, lasts
         double Imean, Jmean
         floating[:, :, :, :] factors = np.zeros((ns, nr, nc, 5), 
                                                 dtype=np.asarray(static).dtype)
@@ -205,7 +206,7 @@ def precompute_cc_factors_3d_test(floating[:, :, :] static,
 @cython.cdivision(True)
 def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                                floating[:, :, :, :] factors,
-                               int radius):
+                               cnp.npy_intp radius):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -237,11 +238,11 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
     cdef:
-        int ns = grad_static.shape[0]
-        int nr = grad_static.shape[1]
-        int nc = grad_static.shape[2]
+        cnp.npy_intp ns = grad_static.shape[0]
+        cnp.npy_intp nr = grad_static.shape[1]
+        cnp.npy_intp nc = grad_static.shape[2]
         double energy = 0
-        int s,r,c
+        cnp.npy_intp s,r,c
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), 
                                             dtype=np.asarray(grad_static).dtype)
@@ -273,7 +274,7 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
 
 def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
                                 floating[:, :, :, :] factors,
-                                int radius):
+                                cnp.npy_intp radius):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -306,10 +307,10 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
     """
     ftype = np.asarray(grad_moving).dtype
     cdef:
-        int ns = grad_moving.shape[0]
-        int nr = grad_moving.shape[1]
-        int nc = grad_moving.shape[2]
-        int s,r,c
+        cnp.npy_intp ns = grad_moving.shape[0]
+        cnp.npy_intp nr = grad_moving.shape[1]
+        cnp.npy_intp nc = grad_moving.shape[2]
+        cnp.npy_intp s,r,c
         double energy = 0
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :, :] out = np.zeros((ns, nr, nc, 3), dtype=ftype)
@@ -342,7 +343,7 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
-                             int radius):
+                             cnp.npy_intp radius):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
     Pre-computes the separate terms of the cross correlation metric [Avants09]
@@ -381,10 +382,10 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
     """
     ftype = np.asarray(static).dtype
     cdef:
-        int side = 2 * radius + 1
-        int nr = static.shape[0]
-        int nc = static.shape[1]
-        int r, c, i, j, t, q, qq, firstc, lastc
+        cnp.npy_intp side = 2 * radius + 1
+        cnp.npy_intp nr = static.shape[0]
+        cnp.npy_intp nc = static.shape[1]
+        cnp.npy_intp r, c, i, j, t, q, qq, firstc, lastc
         double Imean, Jmean
         floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=ftype)
         double[:, :] lines = np.zeros((6, side), dtype=np.float64)
@@ -456,7 +457,7 @@ def precompute_cc_factors_2d(floating[:, :] static, floating[:, :] moving,
 @cython.wraparound(False)
 @cython.cdivision(True)
 def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
-                                  int radius):
+                                  cnp.npy_intp radius):
     r"""Precomputations to quickly compute the gradient of the CC Metric
 
     This version of precompute_cc_factors_2d is for testing purposes, it
@@ -464,9 +465,9 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
     """
     ftype = np.asarray(static).dtype
     cdef:
-        int nr = static.shape[0]
-        int nc = static.shape[1]
-        int r, c, i, j, t, firstr, lastr, firstc, lastc
+        cnp.npy_intp nr = static.shape[0]
+        cnp.npy_intp nc = static.shape[1]
+        cnp.npy_intp r, c, i, j, t, firstr, lastr, firstc, lastc
         double Imean, Jmean
         floating[:, :, :] factors = np.zeros((nr, nc, 5), dtype=ftype)
         double[:] sums = np.zeros((6,), dtype=np.float64)
@@ -508,7 +509,7 @@ def precompute_cc_factors_2d_test(floating[:, :] static, floating[:, :] moving,
 
 def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                                floating[:, :, :] factors,
-                               int radius):
+                               cnp.npy_intp radius):
     r"""Gradient of the CC Metric w.r.t. the forward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -547,10 +548,10 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
                Advanced Normalization Tools ( ANTS ), 1-35.
     """
     cdef:
-        int nr = grad_static.shape[0]
-        int nc = grad_static.shape[1]
+        cnp.npy_intp nr = grad_static.shape[0]
+        cnp.npy_intp nc = grad_static.shape[1]
         double energy = 0
-        int r,c
+        cnp.npy_intp r,c
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :] out = np.zeros((nr, nc, 2), 
                                          dtype=np.asarray(grad_static).dtype)
@@ -581,7 +582,7 @@ def compute_cc_forward_step_2d(floating[:, :, :] grad_static,
 @cython.cdivision(True)
 def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
                                 floating[:, :, :] factors,
-                                int radius):
+                                cnp.npy_intp radius):
     r"""Gradient of the CC Metric w.r.t. the backward transformation
 
     Computes the gradient of the Cross Correlation metric for symmetric
@@ -614,9 +615,9 @@ def compute_cc_backward_step_2d(floating[:, :, :] grad_moving,
     """
     ftype = np.asarray(grad_moving).dtype
     cdef:
-        int nr = grad_moving.shape[0]
-        int nc = grad_moving.shape[1]
-        int r,c
+        cnp.npy_intp nr = grad_moving.shape[0]
+        cnp.npy_intp nc = grad_moving.shape[1]
+        cnp.npy_intp r,c
         double energy = 0
         double Ii, Ji, sfm, sff, smm, localCorrelation, temp
         floating[:, :, :] out = np.zeros((nr, nc, 2), 
