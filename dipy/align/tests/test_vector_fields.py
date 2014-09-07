@@ -504,20 +504,51 @@ def test_invert_vector_field_2d():
     Inverts a synthetic, analytically invertible, displacement field
     """
     import dipy.align.imwarp as imwarp
+    shape = (64, 64)
+    nr = shape[0]
+    nc = shape[1]
+    # Create an arbitrary image-to-space transform
+    t = 2.5 #translation factor
 
-    d, dinv = vfu.create_harmonic_fields_2d(100, 100, 0.2, 8)
+    trans = np.array([[1, 0, -t*nr],
+                      [0, 1, -t*nc],
+                      [0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+
+    d, dinv = vfu.create_harmonic_fields_2d(nr, nc, 0.2, 8)
     d = np.asarray(d).astype(floating)
     dinv = np.asarray(dinv).astype(floating)
-    
-    inv_approx = vfu.invert_vector_field_fixed_point_2d(d, np.eye(3),
-                                                        np.ones(2),
-                                                        40, 1e-6)
-    mapping = imwarp.DiffeomorphicMap(2, (100,100))
-    mapping.forward = d
-    mapping.backward = inv_approx
-    residual, stats = mapping.compute_inversion_error()
-    assert_almost_equal(stats[1], 0, decimal=4)
-    assert_almost_equal(stats[2], 0, decimal=4)
+
+    for theta in [-1 * np.pi/5.0, 0.0, np.pi/5.0]: #rotation angle
+        for s in [0.5,  1.0, 2.0]: #scale
+            ct = np.cos(theta)
+            st = np.sin(theta)
+
+            rot = np.array([[ct, -st, 0],
+                            [st, ct, 0],
+                            [0, 0, 1]])
+
+            scale = np.array([[1*s, 0, 0],
+                              [0, 1*s, 0],
+                              [0, 0, 1]])
+
+            gt_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
+            gt_affine_inv = np.linalg.inv(gt_affine)
+            dcopy = np.copy(d)
+
+            #make sure the field remains invertible after the re-mapping
+            vfu.reorient_vector_field_2d(dcopy, gt_affine) 
+
+            inv_approx = vfu.invert_vector_field_fixed_point_2d(dcopy, gt_affine_inv,
+                                                                np.array([s, s]),
+                                                                40, 1e-7)
+
+            mapping = imwarp.DiffeomorphicMap(2, (nr,nc), gt_affine)
+            mapping.forward = dcopy
+            mapping.backward = inv_approx
+            residual, stats = mapping.compute_inversion_error()
+            assert_almost_equal(stats[1], 0, decimal=4)
+            assert_almost_equal(stats[2], 0, decimal=4)
 
 
 def test_invert_vector_field_3d():
@@ -525,20 +556,61 @@ def test_invert_vector_field_3d():
     Inverts a synthetic, analytically invertible, displacement field
     """
     import dipy.align.imwarp as imwarp
+    import dipy.core.geometry as geometry
+    shape = (64, 64, 64)
+    ns = shape[0]
+    nr = shape[1]
+    nc = shape[2]
 
-    d, dinv = vfu.create_harmonic_fields_3d(100, 100, 100, 0.2, 8)
+    # Create an arbitrary image-to-space transform
+
+    # Select an arbitrary rotation axis
+    axis = np.array([2.0, 0.5, 1.0])
+    t = 2.5 #translation factor
+
+    trans = np.array([[1, 0, 0, -t*ns],
+                      [0, 1, 0, -t*nr],
+                      [0, 0, 1, -t*nc],
+                      [0, 0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+
+    d, dinv = vfu.create_harmonic_fields_3d(ns, nr, nc, 0.2, 8)
     d = np.asarray(d).astype(floating)
     dinv = np.asarray(dinv).astype(floating)
-    
-    inv_approx = vfu.invert_vector_field_fixed_point_3d(d, np.eye(4),
-                                                        np.ones(3),
-                                                        20, 1e-4)
-    mapping = imwarp.DiffeomorphicMap(3, (100,100,100))
-    mapping.forward = d
-    mapping.backward = inv_approx
-    residual, stats = mapping.compute_inversion_error()
-    assert_almost_equal(stats[1], 0, decimal=3)
-    assert_almost_equal(stats[2], 0, decimal=3)
+
+    for theta in [-1 * np.pi/5.0, 0.0, np.pi/5.0]: #rotation angle
+        for s in [0.5,  1.0, 2.0]: #scale
+            rot = np.zeros(shape=(4,4))
+            rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
+            rot[3,3] = 1.0
+            scale = np.array([[1*s, 0, 0, 0],
+                              [0, 1*s, 0, 0],
+                              [0, 0, 1*s, 0],
+                              [0, 0, 0, 1]])
+
+            gt_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
+            gt_affine_inv = np.linalg.inv(gt_affine)
+            dcopy = np.copy(d)
+
+            #make sure the field remains invertible after the re-mapping
+            vfu.reorient_vector_field_3d(dcopy, gt_affine) 
+
+            # Note: the spacings are used just to check convergence, so they don't need
+            # to be very accurate. Here we are passing (0.5 * s) to force the algorithm
+            # to make more iterations: in ANTS, there is a hard-coded bound on the maximum
+            # residual, that's why we cannot force more iteration by changing the parameters.
+            # We will investigate this issue with more detail in the future.
+
+            inv_approx = vfu.invert_vector_field_fixed_point_3d(dcopy, gt_affine_inv,
+                                                                np.array([s, s, s])*0.5,
+                                                                40, 1e-7)
+
+            mapping = imwarp.DiffeomorphicMap(3, (nr,nc), gt_affine)
+            mapping.forward = dcopy
+            mapping.backward = inv_approx
+            residual, stats = mapping.compute_inversion_error()
+            assert_almost_equal(stats[1], 0, decimal=3)
+            assert_almost_equal(stats[2], 0, decimal=3)
 
 
 def test_resample_vector_field_2d():
