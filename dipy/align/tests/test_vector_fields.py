@@ -366,6 +366,24 @@ def test_compose_vector_fields_2d():
                                             premult_index, premult_disp))
         assert_array_almost_equal(warped, expected)
 
+    # Test non-overlapping case
+    x_0 = np.asarray(range(input_shape[0]))
+    x_1 = np.asarray(range(input_shape[1]))
+    X = np.ndarray(input_shape + (2,), dtype = np.float64)
+    O = np.ones(input_shape)
+    X[...,0]= x_0[:, None] * O
+    X[...,1]= x_1[None, :] * O
+    random_labels = np.random.randint(0, 2, input_shape[0]*input_shape[1]*2)
+    random_labels = random_labels.reshape(input_shape+(2,))
+    values = np.array([-1, target_shape[0]])
+    disp1 = (values[random_labels] - X).astype(floating)
+    composition, stats = vfu.compose_vector_fields_2d(disp1,
+                                                      disp2,
+                                                      None,
+                                                      None,
+                                                      1.0, None)
+    assert_array_almost_equal(composition, np.zeros_like(composition))
+
 
 def test_compose_vector_fields_3d():
     r"""
@@ -458,6 +476,27 @@ def test_compose_vector_fields_3d():
         warped = np.array(vfu.warp_3d_nn(moving_image, composition, None,
                                              premult_index, premult_disp))
         assert_array_almost_equal(warped, expected)
+
+    # Test non-overlapping case
+    x_0 = np.asarray(range(input_shape[0]))
+    x_1 = np.asarray(range(input_shape[1]))
+    x_2 = np.asarray(range(input_shape[2]))
+    X = np.ndarray(input_shape + (3,), dtype = np.float64)
+    O = np.ones(input_shape)
+    X[...,0]= x_0[:, None, None] * O
+    X[...,1]= x_1[None, :, None] * O
+    X[...,2]= x_1[None, None, :] * O
+    random_labels = np.random.randint(0, 2, input_shape[0]*input_shape[1]*input_shape[2]*3)
+    random_labels = random_labels.reshape(input_shape+(3,))
+    values = np.array([-1, target_shape[0]])
+    disp1 = (values[random_labels] - X).astype(floating)
+    composition, stats = vfu.compose_vector_fields_3d(disp1,
+                                                      disp2,
+                                                      None,
+                                                      None,
+                                                      1.0, None)
+    assert_array_almost_equal(composition, np.zeros_like(composition))
+
 
 
 def test_invert_vector_field_2d():
