@@ -62,7 +62,27 @@ cdef inline double _apply_affine_2d_x1(double x0, double x1, double h,
     return aff[1, 0] * x0 + aff[1, 1] * x1 + h*aff[1, 2]
 
 
-cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii, 
+def interpolate_vector_2d(floating[:,:,:] field, double[:,:] locations):
+    r"""Bilinear interpolation of a 2D vector field
+
+    Interpolates the 2D vector field at the given locations. This function is
+    a wrapper for _interpolate_vector_2d for testing purposes, it is
+    equivalent to using scipy.ndimage.interpolation.map_coordinates with
+    bilinear interpolation at each vector component
+    """
+    ftype=np.asarray(field).dtype
+    cdef:
+        cnp.npy_intp n = locations.shape[0]
+        floating[:,:] out = np.zeros(shape=(n,2), dtype=ftype)
+        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+    with nogil:
+        for i in range(n):
+            inside[i] = _interpolate_vector_2d(field, locations[i, 0], 
+                                               locations[i, 1], out[i])
+    return out, inside
+
+
+cdef inline int _interpolate_vector_2d(floating[:,:,:] field, double dii, 
                                      double djj, floating[:] out) nogil:
     r"""Bilinear interpolation of a 2D vector field
 
@@ -128,7 +148,27 @@ cdef inline int interpolate_vector_bilinear(floating[:,:,:] field, double dii,
     return 1    
 
 
-cdef inline int interpolate_scalar_bilinear(floating[:,:] image, double dii, 
+def interpolate_scalar_2d(floating[:,:] image, double[:,:] locations):
+    r"""Bilinear interpolation of a 2D scalar image
+
+    Interpolates the 2D image at the given locations. This function is
+    a wrapper for _interpolate_scalar_2d for testing purposes, it is
+    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    bilinear interpolation
+    """
+    ftype=np.asarray(image).dtype
+    cdef:
+        cnp.npy_intp n = locations.shape[0]
+        floating[:] out = np.zeros(shape=(n,), dtype=ftype)
+        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+    with nogil:
+        for i in range(n):
+            inside[i] = _interpolate_scalar_2d(image, locations[i, 0], 
+                                               locations[i, 1], &out[i])
+    return out, inside
+
+
+cdef inline int _interpolate_scalar_2d(floating[:,:] image, double dii, 
                                      double djj, floating *out) nogil:
     r"""Bilinear interpolation of a 2D scalar image
 
@@ -188,7 +228,27 @@ cdef inline int interpolate_scalar_bilinear(floating[:,:] image, double dii,
     return 1
 
 
-cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii, 
+def interpolate_scalar_nn_2d(number[:,:] image, double[:,:] locations):
+    r"""Nearest neighbor interpolation of a 2D scalar image
+
+    Interpolates the 2D image at the given locations. This function is
+    a wrapper for _interpolate_scalar_nn_2d for testing purposes, it is
+    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    nearest neighbor interpolation
+    """
+    ftype=np.asarray(image).dtype
+    cdef:
+        cnp.npy_intp n = locations.shape[0]
+        number[:] out = np.zeros(shape=(n,), dtype=ftype)
+        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+    with nogil:
+        for i in range(n):
+            inside[i] = _interpolate_scalar_nn_2d(image, locations[i, 0], 
+                                                  locations[i, 1], &out[i])
+    return out, inside
+
+
+cdef inline int _interpolate_scalar_nn_2d(number[:,:] image, double dii, 
                                          double djj, number *out) nogil:
     r"""Nearest-neighbor interpolation of a 2D scalar image
 
@@ -244,7 +304,27 @@ cdef inline int interpolate_scalar_nn_2d(number[:,:] image, double dii,
     return 1
 
 
-cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk, 
+def interpolate_scalar_nn_3d(number[:,:,:] image, double[:,:] locations):
+    r"""Nearest neighbor interpolation of a 3D scalar image
+
+    Interpolates the 3D image at the given locations. This function is
+    a wrapper for _interpolate_scalar_nn_3d for testing purposes, it is
+    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    nearest neighbor interpolation
+    """
+    ftype=np.asarray(image).dtype
+    cdef:
+        cnp.npy_intp n = locations.shape[0]
+        number[:] out = np.zeros(shape=(n,), dtype=ftype)
+        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+    with nogil:
+        for i in range(n):
+            inside[i] = _interpolate_scalar_nn_3d(image, locations[i, 0], 
+                                locations[i, 1], locations[i, 2], &out[i])
+    return out, inside
+
+
+cdef inline int _interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk, 
                                          double dii, double djj, 
                                          number *out) nogil:
     r"""Nearest-neighbor interpolation of a 3D scalar image
@@ -309,7 +389,27 @@ cdef inline int interpolate_scalar_nn_3d(number[:,:,:] volume, double dkk,
     return 1
 
 
-cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume, 
+def interpolate_scalar_3d(floating[:,:,:] image, double[:,:] locations):
+    r"""Trilinear interpolation of a 3D scalar image
+
+    Interpolates the 3D image at the given locations. This function is
+    a wrapper for _interpolate_scalar_3d for testing purposes, it is
+    equivalent to scipy.ndimage.interpolation.map_coordinates with
+    trilinear interpolation
+    """
+    ftype=np.asarray(image).dtype
+    cdef:
+        cnp.npy_intp n = locations.shape[0]
+        floating[:] out = np.zeros(shape=(n,), dtype=ftype)
+        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+    with nogil:
+        for i in range(n):
+            inside[i] = _interpolate_scalar_3d(image, locations[i, 0], 
+                            locations[i, 1], locations[i, 2], &out[i])
+    return out, inside
+
+
+cdef inline int _interpolate_scalar_3d(floating[:,:,:] volume, 
                                              double dkk, double dii, double djj, 
                                              floating *out) nogil:
     r"""Trilinear interpolation of a 3D scalar image
@@ -389,9 +489,30 @@ cdef inline int interpolate_scalar_trilinear(floating[:,:,:] volume,
         jj -= 1
         if((ii >= 0) and (jj >= 0) and (ii < nr) and (jj < nc)):
             out[0] += calpha * beta * cgamma * volume[kk, ii, jj]
+    return 1
 
 
-cdef inline int interpolate_vector_trilinear(floating[:,:,:,:] field,
+def interpolate_vector_3d(floating[:,:,:,:] field, double[:,:] locations):
+    r"""Trilinear interpolation of a 3D vector field
+
+    Interpolates the 3D vector field at the given locations. This function is
+    a wrapper for _interpolate_vector_3d for testing purposes, it is
+    equivalent to using scipy.ndimage.interpolation.map_coordinates with
+    trilinear interpolation at each vector component
+    """
+    ftype=np.asarray(field).dtype
+    cdef:
+        cnp.npy_intp n = locations.shape[0]
+        floating[:,:] out = np.zeros(shape=(n,3), dtype=ftype)
+        int[:] inside = np.ndarray(shape=(n,), dtype=np.int32)
+    with nogil:
+        for i in range(n):
+            inside[i] = _interpolate_vector_3d(field, locations[i, 0], 
+                            locations[i, 1], locations[i, 2], out[i])
+    return out, inside
+
+
+cdef inline int _interpolate_vector_3d(floating[:,:,:,:] field,
                     double dkk, double dii, double djj, floating[:] out) nogil:
     r"""Trilinear interpolation of a 3D vector field
 
@@ -588,7 +709,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
             diii += di
             djjj += dj
 
-            inside = interpolate_vector_bilinear(d2, diii, djjj, comp[i,j])
+            inside = _interpolate_vector_2d(d2, diii, djjj, comp[i,j])
             
             if inside == 1:
                 comp[i,j,0] = time_scaling * comp[i,j,0] + dii
@@ -773,7 +894,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                 diii += di
                 djjj += dj
 
-                inside = interpolate_vector_trilinear(d2, dkkk, diii, djjj,
+                inside = _interpolate_vector_3d(d2, dkkk, diii, djjj,
                                                       comp[k, i, j])
 
                 if inside == 1:
@@ -1134,7 +1255,7 @@ def simplify_warp_function_2d(floating[:,:,:] d,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    interpolate_vector_bilinear(d, di, dj, tmp)
+                    _interpolate_vector_2d(d, di, dj, tmp)
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -1225,7 +1346,7 @@ def simplify_warp_function_3d(floating[:,:,:,:] d,
                             k, i, j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
-                        inside = interpolate_vector_trilinear(d, dk, di, dj, 
+                        inside = _interpolate_vector_3d(d, dk, di, dj, 
                                                               tmp)
                         dkk = tmp[0]
                         dii = tmp[1]
@@ -1595,7 +1716,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                             k, i, j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
-                        inside = interpolate_vector_trilinear(d1, dk, di, dj, 
+                        inside = _interpolate_vector_3d(d1, dk, di, dj, 
                                                               tmp)
                         dkk = tmp[0]
                         dii = tmp[1]
@@ -1625,7 +1746,7 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
                         dii = di + i
                         djj = dj + j
 
-                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj,
+                    inside = _interpolate_scalar_3d(volume, dkk, dii, djj,
                                                           &warped[k,i,j])
     return warped
 
@@ -1687,7 +1808,7 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] refShape,
                         dkk = k
                         dii = i
                         djj = j
-                    inside = interpolate_scalar_trilinear(volume, dkk, dii, djj,
+                    inside = _interpolate_scalar_3d(volume, dkk, dii, djj,
                                                           &warped[k,i,j])
     return warped
 
@@ -1779,7 +1900,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                             k, i, j, 1, affine_idx_in)
                         dj = _apply_affine_3d_x2(
                             k, i, j, 1, affine_idx_in)
-                        inside = interpolate_vector_trilinear(d1, dk, di, dj, 
+                        inside = _interpolate_vector_3d(d1, dk, di, dj, 
                                                               tmp)
                         dkk = tmp[0]
                         dii = tmp[1]
@@ -1809,7 +1930,7 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
                         dii = di + i
                         djj = dj + j
 
-                    inside = interpolate_scalar_nn_3d(volume, dkk, dii, djj,
+                    inside = _interpolate_scalar_nn_3d(volume, dkk, dii, djj,
                                                       &warped[k,i,j])
     return warped
 
@@ -1871,7 +1992,7 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] refShape,
                         dkk = k
                         dii = i
                         djj = j
-                    interpolate_scalar_nn_3d(volume, dkk, dii, djj,
+                    _interpolate_scalar_nn_3d(volume, dkk, dii, djj,
                                              &warped[k,i,j])
     return warped
 
@@ -1955,7 +2076,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    interpolate_vector_bilinear(d1, di, dj, tmp)
+                    _interpolate_vector_2d(d1, di, dj, tmp)
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -1978,7 +2099,7 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
                     djj = dj + j
 
                 #Interpolate the input image at the resulting location
-                interpolate_scalar_bilinear(image, dii, djj, &warped[i, j])
+                _interpolate_scalar_2d(image, dii, djj, &warped[i, j])
     return warped
 
 
@@ -2034,7 +2155,7 @@ def warp_2d_affine(floating[:, :] image, int[:] refShape,
                 else:
                     dii = i
                     djj = j
-                interpolate_scalar_bilinear(image, dii, djj, &warped[i, j])
+                _interpolate_scalar_2d(image, dii, djj, &warped[i, j])
     return warped
 
 
@@ -2117,7 +2238,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                         i, j, 1, affine_idx_in)
                     dj = _apply_affine_2d_x1(
                         i, j, 1, affine_idx_in)
-                    interpolate_vector_bilinear(d1, di, dj, tmp)
+                    _interpolate_vector_2d(d1, di, dj, tmp)
                     dii = tmp[0]
                     djj = tmp[1]
 
@@ -2140,7 +2261,7 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
                     djj = dj + j
 
                 #Interpolate the input image at the resulting location
-                interpolate_scalar_nn_2d(image, dii, djj, &warped[i, j])
+                _interpolate_scalar_nn_2d(image, dii, djj, &warped[i, j])
     return warped
 
 
@@ -2194,7 +2315,7 @@ def warp_2d_affine_nn(number[:, :] image, int[:] refShape,
                 else:
                     dii = i
                     djj = j
-                interpolate_scalar_nn_2d(image, dii, djj, &warped[i,j])
+                _interpolate_scalar_nn_2d(image, dii, djj, &warped[i,j])
     return warped
 
 
@@ -2238,7 +2359,7 @@ def resample_displacement_field_3d(floating[:, :, :, :] field, double[:] factors
                 dkk = <double>k*factors[0]
                 dii = <double>i*factors[1]
                 djj = <double>j*factors[2]
-                interpolate_vector_trilinear(field, dkk, dii, djj,
+                _interpolate_vector_3d(field, dkk, dii, djj,
                                              expanded[k, i, j])
     return expanded
 
@@ -2278,7 +2399,7 @@ def resample_displacement_field_2d(floating[:, :, :] field, double[:] factors,
         for j in range(tcols):
             dii = i*factors[0]
             djj = j*factors[1]
-            inside = interpolate_vector_bilinear(field, dii, djj,
+            inside = _interpolate_vector_2d(field, dii, djj,
                                                  expanded[i, j])
     return expanded
 

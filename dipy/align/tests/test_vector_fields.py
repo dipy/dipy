@@ -2,8 +2,183 @@ import numpy as np
 from dipy.align import floating
 import dipy.align.vector_fields as vfu
 from numpy.testing import (assert_array_almost_equal,
-                           assert_almost_equal)
+                           assert_almost_equal,
+                           assert_equal)
 import dipy.align.imwarp as imwarp
+
+
+def test_interpolate_scalar_2d():
+    from scipy.ndimage.interpolation import map_coordinates 
+    np.random.seed(5324989)
+    sz = 64
+    target_shape = (sz, sz)
+    image = np.ndarray(target_shape, dtype=floating)
+    image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
+    #Select some coordinates to interpolate at
+    nsamples = 200
+    locations = np.random.ranf(2 * nsamples).reshape((nsamples,2)) * (sz+2) - 1.0
+
+    #Call the implementation under test
+    interp, inside = vfu.interpolate_scalar_2d(image, locations)
+
+    #Call the reference implementation
+    expected = map_coordinates(image, locations.transpose(), order=1)
+
+    assert_array_almost_equal(expected, interp)
+
+    #Test the 'inside' flag
+    for i in range(nsamples):
+        if (locations[i, 0]<0 or locations[i, 0]>(sz-1)) or (locations[i, 1]<0 or locations[i, 1]>(sz-1)):
+            assert_equal(inside[i], 0)
+        else:
+            assert_equal(inside[i], 1)
+
+
+def test_interpolate_scalar_nn_2d():
+    from scipy.ndimage.interpolation import map_coordinates 
+    np.random.seed(1924781)
+    sz = 64
+    target_shape = (sz, sz)
+    image = np.ndarray(target_shape, dtype=floating)
+    image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
+    #Select some coordinates to interpolate at
+    nsamples = 200
+    locations = np.random.ranf(2 * nsamples).reshape((nsamples,2)) * (sz+2) - 1.0
+
+    #Call the implementation under test
+    interp, inside = vfu.interpolate_scalar_nn_2d(image, locations)
+
+    #Call the reference implementation
+    expected = map_coordinates(image, locations.transpose(), order=0)
+
+    assert_array_almost_equal(expected, interp)
+
+    #Test the 'inside' flag
+    for i in range(nsamples):
+        if (locations[i, 0]<0 or locations[i, 0]>(sz-1)) or (locations[i, 1]<0 or locations[i, 1]>(sz-1)):
+            assert_equal(inside[i], 0)
+        else:
+            assert_equal(inside[i], 1)
+
+
+def test_interpolate_scalar_nn_3d():
+    from scipy.ndimage.interpolation import map_coordinates 
+    np.random.seed(3121121)
+    sz = 64
+    target_shape = (sz, sz, sz)
+    image = np.ndarray(target_shape, dtype=floating)
+    image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
+    #Select some coordinates to interpolate at
+    nsamples = 200
+    locations = np.random.ranf(3 * nsamples).reshape((nsamples,3)) * (sz+2) - 1.0
+
+    #Call the implementation under test
+    interp, inside = vfu.interpolate_scalar_nn_3d(image, locations)
+
+    #Call the reference implementation
+    expected = map_coordinates(image, locations.transpose(), order=0)
+
+    assert_array_almost_equal(expected, interp)
+
+    #Test the 'inside' flag
+    for i in range(nsamples):
+        expected_inside = 1
+        for axis in range(3):
+            if (locations[i, axis]<0 or locations[i, axis]>(sz-1)):
+                expected_inside = 0
+                break
+        assert_equal(inside[i], expected_inside)
+
+
+def test_interpolate_scalar_3d():
+    from scipy.ndimage.interpolation import map_coordinates 
+    np.random.seed(9216326)
+    sz = 64
+    target_shape = (sz, sz, sz)
+    image = np.ndarray(target_shape, dtype=floating)
+    image[...] = np.random.randint(0, 10, np.size(image)).reshape(target_shape)
+    #Select some coordinates to interpolate at
+    nsamples = 200
+    locations = np.random.ranf(3 * nsamples).reshape((nsamples,3)) * (sz+2) - 1.0
+
+    #Call the implementation under test
+    interp, inside = vfu.interpolate_scalar_3d(image, locations)
+
+    #Call the reference implementation
+    expected = map_coordinates(image, locations.transpose(), order=1)
+
+    assert_array_almost_equal(expected, interp)
+
+    #Test the 'inside' flag
+    for i in range(nsamples):
+        expected_inside = 1
+        for axis in range(3):
+            if (locations[i, axis]<0 or locations[i, axis]>(sz-1)):
+                expected_inside = 0
+                break
+        assert_equal(inside[i], expected_inside)
+
+
+def test_interpolate_vector_3d():
+    from scipy.ndimage.interpolation import map_coordinates 
+    np.random.seed(7711219)
+    sz = 64
+    target_shape = (sz, sz, sz)
+    field = np.ndarray(target_shape+(3,), dtype=floating)
+    field[...] = np.random.randint(0, 10, np.size(field)).reshape(target_shape+(3,))
+    #Select some coordinates to interpolate at
+    nsamples = 200
+    locations = np.random.ranf(3 * nsamples).reshape((nsamples,3)) * (sz+2) - 1.0
+
+    #Call the implementation under test
+    interp, inside = vfu.interpolate_vector_3d(field, locations)
+
+    #Call the reference implementation
+    expected = np.zeros_like(interp)
+    for i in range(3):
+        expected[...,i] = map_coordinates(field[...,i], locations.transpose(), order=1)
+
+    assert_array_almost_equal(expected, interp)
+
+    #Test the 'inside' flag
+    for i in range(nsamples):
+        expected_inside = 1
+        for axis in range(3):
+            if (locations[i, axis]<0 or locations[i, axis]>(sz-1)):
+                expected_inside = 0
+                break
+        assert_equal(inside[i], expected_inside)
+
+
+def test_interpolate_vector_2d():
+    from scipy.ndimage.interpolation import map_coordinates 
+    np.random.seed(1271244)
+    sz = 64
+    target_shape = (sz, sz)
+    field = np.ndarray(target_shape+(2,), dtype=floating)
+    field[...] = np.random.randint(0, 10, np.size(field)).reshape(target_shape+(2,))
+    #Select some coordinates to interpolate at
+    nsamples = 200
+    locations = np.random.ranf(2 * nsamples).reshape((nsamples,2)) * (sz+2) - 1.0
+
+    #Call the implementation under test
+    interp, inside = vfu.interpolate_vector_2d(field, locations)
+
+    #Call the reference implementation
+    expected = np.zeros_like(interp)
+    for i in range(2):
+        expected[...,i] = map_coordinates(field[...,i], locations.transpose(), order=1)
+
+    assert_array_almost_equal(expected, interp)
+
+    #Test the 'inside' flag
+    for i in range(nsamples):
+        expected_inside = 1
+        for axis in range(2):
+            if (locations[i, axis]<0 or locations[i, axis]>(sz-1)):
+                expected_inside = 0
+                break
+        assert_equal(inside[i], expected_inside)
 
 
 def test_warping_2d():
@@ -847,19 +1022,23 @@ def test_reorient_vector_field_3d():
 
 
 if __name__=='__main__':
-    test_warping_2d()
-    test_warping_3d()
-    test_affine_warping_2d()
-    test_affine_warping_3d()
-    test_compose_vector_fields_2d()
-    test_compose_vector_fields_3d()
-    test_invert_vector_field_2d()
-    test_invert_vector_field_3d()
-    test_resample_vector_field_2d()
-    test_resample_vector_field_3d()
-    test_downsample_scalar_field_2d()
-    test_downsample_scalar_field_3d()
-    test_downsample_displacement_field_2d()
-    test_downsample_displacement_field_3d()
-    test_reorient_vector_field_2d()
-    test_reorient_vector_field_3d()
+    test_interpolate_scalar_2d()
+    test_interpolate_scalar_nn_2d()
+    test_interpolate_scalar_nn_3d()
+    test_interpolate_scalar_3d()
+    #test_warping_2d()
+    #test_warping_3d()
+    #test_affine_warping_2d()
+    #test_affine_warping_3d()
+    #test_compose_vector_fields_2d()
+    #test_compose_vector_fields_3d()
+    #test_invert_vector_field_2d()
+    #test_invert_vector_field_3d()
+    #test_resample_vector_field_2d()
+    #test_resample_vector_field_3d()
+    #test_downsample_scalar_field_2d()
+    #test_downsample_scalar_field_3d()
+    #test_downsample_displacement_field_2d()
+    #test_downsample_displacement_field_3d()
+    #test_reorient_vector_field_2d()
+    #test_reorient_vector_field_3d()
