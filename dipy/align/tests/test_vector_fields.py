@@ -9,6 +9,140 @@ import dipy.align.imwarp as imwarp
 from nibabel.affines import apply_affine, from_matvec
 
 
+def test_random_displacement_field_2d():
+    np.random.seed(3921116)
+    from_shape = (25, 32)
+    to_shape = (33, 29)
+
+    # Create grid coordinates
+    x_0 = np.asarray(range(from_shape[0]))
+    x_1 = np.asarray(range(from_shape[1]))
+    X = np.ndarray((3,)+from_shape, dtype = np.float64)
+    O = np.ones(from_shape)
+    X[0, ...]= x_0[:, None] * O
+    X[1, ...]= x_1[None, :] * O
+    X[2, ...]= 1
+
+    # Create an arbitrary image-to-space transform
+    t = 0.15 #translation factor
+
+    trans = np.array([[1, 0, -t*from_shape[0]],
+                      [0, 1, -t*from_shape[1]],
+                      [0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+
+    for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]: #rotation angle
+        for s in [0.83,  1.3, 2.07]: #scale
+            ct = np.cos(theta)
+            st = np.sin(theta)
+
+            rot = np.array([[ct, -st, 0],
+                            [st, ct, 0],
+                            [0, 0, 1]])
+
+            scale = np.array([[1*s, 0, 0],
+                              [0, 1*s, 0],
+                              [0, 0, 1]])
+
+            from_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
+            to_affine = from_affine.dot(scale)
+            to_affine_inv = np.linalg.inv(to_affine)
+
+            field, assignment = vfu.create_random_displacement_2d(np.array(from_shape, dtype=np.int32),
+                                                              from_affine,
+                                                              np.array(to_shape, dtype=np.int32),
+                                                              to_affine)
+            field = np.array(field, dtype=floating)
+            assignment = np.array(assignment)
+            # Verify the assignments are inside the requested region
+            assert_equal(0, (assignment<0).sum())
+            for i in range(2):
+                assert_equal(0, (assignment[...,i]>=to_shape[i]).sum())
+
+            # Compute the warping coordinates (see warp_2d documentation)
+            Y = np.apply_along_axis(from_affine.dot, 0, X)[0:2,...]
+            Z = np.zeros_like(X)
+            Z[0,...] = Y[0,...] + field[...,0]
+            Z[1,...] = Y[1,...] + field[...,1]
+            Z[2,...] = 1
+            W = np.apply_along_axis(to_affine_inv.dot, 0, Z)[0:2,...]
+
+            # Verify the claimed assignments are correct
+            assert_array_almost_equal(W[0,...], assignment[...,0], 5)
+            assert_array_almost_equal(W[1,...], assignment[...,1], 5)
+
+
+def test_random_displacement_field_3d():
+    from scipy.ndimage.interpolation import map_coordinates
+    import dipy.core.geometry as geometry
+    np.random.seed(7127562)
+    from_shape = (25, 32, 31)
+    to_shape = (33, 29, 35)
+
+    # Create grid coordinates
+    x_0 = np.asarray(range(from_shape[0]))
+    x_1 = np.asarray(range(from_shape[1]))
+    x_2 = np.asarray(range(from_shape[2]))
+    X = np.ndarray((4,)+from_shape, dtype = np.float64)
+    O = np.ones(from_shape)
+    X[0, ...]= x_0[:, None, None] * O
+    X[1, ...]= x_1[None, :, None] * O
+    X[2, ...]= x_2[None, None, :] * O
+    X[3, ...]= 1
+
+    # Select an arbitrary rotation axis
+    axis = np.array([.5, 2.0, 1.5])
+
+    # Create an arbitrary image-to-space transform
+    t = 0.15 #translation factor
+
+    trans = np.array([[1, 0, 0, -t*from_shape[0]],
+                      [0, 1, 0, -t*from_shape[1]],
+                      [0, 0, 1, -t*from_shape[2]],
+                      [0, 0, 0, 1]])
+    trans_inv = np.linalg.inv(trans)
+
+    for theta in [-1 * np.pi/6.0, 0.0, np.pi/5.0]: #rotation angle
+        for s in [0.83,  1.3, 2.07]: #scale
+            rot = np.zeros(shape=(4,4))
+            rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
+            rot[3,3] = 1.0
+
+            scale = np.array([[1*s, 0, 0, 0],
+                              [0, 1*s, 0, 0],
+                              [0, 0, 1*s, 0],
+                              [0, 0, 0, 1]])
+
+            from_affine = trans_inv.dot(scale.dot(rot.dot(trans)))
+            to_affine = from_affine.dot(scale)
+            to_affine_inv = np.linalg.inv(to_affine)
+
+            field, assignment = vfu.create_random_displacement_3d(np.array(from_shape, dtype=np.int32),
+                                                              from_affine,
+                                                              np.array(to_shape, dtype=np.int32),
+                                                              to_affine)
+            field = np.array(field, dtype=floating)
+            assignment = np.array(assignment)
+            # Verify the assignments are inside the requested region
+            assert_equal(0, (assignment<0).sum())
+            for i in range(3):
+                assert_equal(0, (assignment[...,i]>=to_shape[i]).sum())
+
+            # Compute the warping coordinates (see warp_2d documentation)
+            Y = np.apply_along_axis(from_affine.dot, 0, X)[0:3,...]
+            Z = np.zeros_like(X)
+            Z[0,...] = Y[0,...] + field[...,0]
+            Z[1,...] = Y[1,...] + field[...,1]
+            Z[2,...] = Y[2,...] + field[...,2]
+            Z[3,...] = 1
+            W = np.apply_along_axis(to_affine_inv.dot, 0, Z)[0:3,...]
+
+            # Verify the claimed assignments are correct
+            assert_array_almost_equal(W[0,...], assignment[...,0], 5)
+            assert_array_almost_equal(W[1,...], assignment[...,1], 5)
+            assert_array_almost_equal(W[2,...], assignment[...,2], 5)
+
+
 def test_harmonic_fields_2d():
     nrows = 64
     ncols = 67
@@ -1180,6 +1314,8 @@ def test_reorient_random_vector_fields():
 
 
 if __name__=='__main__':
+    test_random_displacement_field_2d()
+    test_random_displacement_field_3d()
     test_harmonic_fields_2d()
     test_harmonic_fields_3d()
     test_circle()
