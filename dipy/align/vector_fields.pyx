@@ -1383,7 +1383,10 @@ def reorient_vector_field_2d(floating[:, :, :] d,
     r"""Linearly transforms all vectors of a 2D displacement field
 
     Modifies the input displacement field by multiplying each displacement
-    vector by the given matrix.
+    vector by the given matrix. Note that the elements of the displacement
+    field are vectors, not points, so their last homogeneous coordinate is
+    zero, not one, and therefore the translation component of the affine
+    transform will not have any effect on them.
 
     Parameters
     ----------
@@ -1415,7 +1418,10 @@ def reorient_vector_field_3d(floating[:, :, :, :] d,
     r"""Linearly transforms all vectors of a 3D displacement field
 
     Modifies the input displacement field by multiplying each displacement
-    vector by the given matrix.
+    vector by the given matrix. Note that the elements of the displacement
+    field are vectors, not points, so their last homogeneous coordinate is
+    zero, not one, and therefore the translation component of the affine
+    transform will not have any effect on them.
 
     Parameters
     ----------
