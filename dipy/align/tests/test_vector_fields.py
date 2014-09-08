@@ -8,6 +8,61 @@ from numpy.testing import (assert_array_equal,
 import dipy.align.imwarp as imwarp
 from nibabel.affines import apply_affine, from_matvec
 
+
+def test_harmonic_fields_2d():
+    nrows = 64
+    ncols = 67
+    mid_row = nrows//2
+    mid_col = ncols//2
+    expected_d = np.ndarray(shape = (nrows, ncols, 2))
+    expected_d_inv = np.ndarray(shape = (nrows, ncols, 2))
+    for b in [0.1, 0.3, 0.7]:
+        for m in [2, 4, 7]:
+            for i in range(nrows):
+                for j in range(ncols):
+                    ii = i - mid_row
+                    jj = j - mid_col
+                    theta = np.arctan2(ii, jj)
+                    expected_d[i, j, 0]=ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                    expected_d[i, j, 1]=jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                    expected_d_inv[i,j,0] = b * np.cos(m * theta) * ii
+                    expected_d_inv[i,j,1] = b * np.cos(m * theta) * jj
+
+            actual_d, actual_d_inv = vfu.create_harmonic_fields_2d(nrows, ncols, b, m)
+            assert_array_almost_equal(expected_d, actual_d)
+            assert_array_almost_equal(expected_d_inv, expected_d_inv)
+
+
+def test_harmonic_fields_3d():
+    nslices = 25
+    nrows = 34
+    ncols = 37
+    mid_slice = nslices//2
+    mid_row = nrows//2
+    mid_col = ncols//2
+    expected_d = np.ndarray(shape = (nslices, nrows, ncols, 3))
+    expected_d_inv = np.ndarray(shape = (nslices, nrows, ncols, 3))
+    for b in [0.3, 0.7]:
+        for m in [2, 5]:
+            for k in range(nslices):
+                for i in range(nrows):
+                    for j in range(ncols):
+                        kk = k - mid_slice
+                        ii = i - mid_row
+                        jj = j - mid_col
+                        theta = np.arctan2(ii, jj)
+                        expected_d[k, i, j, 0]=kk * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                        expected_d[k, i, j, 1]=ii * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                        expected_d[k, i, j, 2]=jj * (1.0 / (1 + b * np.cos(m * theta)) - 1.0)
+                        expected_d_inv[k, i, j, 0] = b * np.cos(m * theta) * kk
+                        expected_d_inv[k, i, j, 1] = b * np.cos(m * theta) * ii
+                        expected_d_inv[k, i, j, 2] = b * np.cos(m * theta) * jj
+
+            actual_d, actual_d_inv = vfu.create_harmonic_fields_3d(nslices, nrows, ncols, b, m)
+            assert_array_almost_equal(expected_d, actual_d)
+            assert_array_almost_equal(expected_d_inv, expected_d_inv)
+
+
 def test_circle():
     sh = (64, 61)
     cr = sh[0]//2
@@ -1125,6 +1180,8 @@ def test_reorient_random_vector_fields():
 
 
 if __name__=='__main__':
+    test_harmonic_fields_2d()
+    test_harmonic_fields_3d()
     test_circle()
     test_sphere()
     test_interpolate_scalar_2d()
