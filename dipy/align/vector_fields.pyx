@@ -1751,20 +1751,20 @@ def warp_3d(floating[:, :, :] volume, floating[:, :, :, :] d1,
     return warped
 
 
-def warp_3d_affine(floating[:, :, :] volume, int[:] refShape,
+def warp_3d_affine(floating[:, :, :] volume, int[:] ref_shape,
                        double[:, :] affine):
     r"""Warps a 3D volume by a linear transform using trilinear interpolation
 
     Deforms the input volume under the given affine transformation using 
     tri-linear interpolation. The shape of the resulting transformation
-    is given by refShape. If the affine matrix is None, it is taken as the 
+    is given by ref_shape. If the affine matrix is None, it is taken as the 
     identity.
 
     Parameters
     ----------
     volume : array, shape (S, R, C)
         the input volume to be transformed
-    refShape : array, shape (3,)
+    ref_shape : array, shape (3,)
         the shape of the resulting warped volume
     affine : array, shape (4, 4)
         the affine matrix driving the transformation
@@ -1783,9 +1783,9 @@ def warp_3d_affine(floating[:, :, :] volume, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        cnp.npy_intp nslices = refShape[0]
-        cnp.npy_intp nrows = refShape[1]
-        cnp.npy_intp ncols = refShape[2]
+        cnp.npy_intp nslices = ref_shape[0]
+        cnp.npy_intp nrows = ref_shape[1]
+        cnp.npy_intp ncols = ref_shape[2]
         cnp.npy_intp nsVol = volume.shape[0]
         cnp.npy_intp nrVol = volume.shape[1]
         cnp.npy_intp ncVol = volume.shape[2]
@@ -1935,20 +1935,20 @@ def warp_3d_nn(number[:, :, :] volume, floating[:, :, :, :] d1,
     return warped
 
 
-def warp_3d_affine_nn(number[:, :, :] volume, int[:] refShape,
+def warp_3d_affine_nn(number[:, :, :] volume, int[:] ref_shape,
                           double[:, :] affine=None):
     r"""Warps a 3D volume by a linear transform using NN interpolation
 
     Deforms the input volume under the given affine transformation using 
     nearest neighbor interpolation. The shape of the resulting transformation
-    is given by refShape. If the affine matrix is None, it is taken as the 
+    is given by ref_shape. If the affine matrix is None, it is taken as the 
     identity.
 
     Parameters
     ----------
     volume : array, shape (S, R, C)
         the input volume to be transformed
-    refShape : array, shape (3,)
+    ref_shape : array, shape (3,)
         the shape of the resulting warped volume
     affine : array, shape (4, 4)
         the affine matrix driving the transformation
@@ -1967,9 +1967,9 @@ def warp_3d_affine_nn(number[:, :, :] volume, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        cnp.npy_intp nslices = refShape[0]
-        cnp.npy_intp nrows = refShape[1]
-        cnp.npy_intp ncols = refShape[2]
+        cnp.npy_intp nslices = ref_shape[0]
+        cnp.npy_intp nrows = ref_shape[1]
+        cnp.npy_intp ncols = ref_shape[2]
         cnp.npy_intp nsVol = volume.shape[0]
         cnp.npy_intp nrVol = volume.shape[1]
         cnp.npy_intp ncVol = volume.shape[2]
@@ -2103,20 +2103,20 @@ def warp_2d(floating[:, :] image, floating[:, :, :] d1,
     return warped
 
 
-def warp_2d_affine(floating[:, :] image, int[:] refShape,
+def warp_2d_affine(floating[:, :] image, int[:] ref_shape,
                       double[:, :] affine=None):
     r"""Warps a 2D image by a linear transform using bilinear interpolation
 
     Deforms the input image under the given affine transformation using 
     tri-linear interpolation. The shape of the resulting transformation
-    is given by refShape. If the affine matrix is None, it is taken as the 
+    is given by ref_shape. If the affine matrix is None, it is taken as the 
     identity.
 
     Parameters
     ----------
     image : array, shape (R, C)
         the input image to be transformed
-    refShape : array, shape (2,)
+    ref_shape : array, shape (2,)
         the shape of the resulting warped image
     affine : array, shape (3, 3)
         the affine matrix driving the transformation
@@ -2135,8 +2135,8 @@ def warp_2d_affine(floating[:, :] image, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        cnp.npy_intp nrows = refShape[0]
-        cnp.npy_intp ncols = refShape[1]
+        cnp.npy_intp nrows = ref_shape[0]
+        cnp.npy_intp ncols = ref_shape[1]
         cnp.npy_intp nrVol = image.shape[0]
         cnp.npy_intp ncVol = image.shape[1]
         cnp.npy_intp i, j, ii, jj
@@ -2265,19 +2265,19 @@ def warp_2d_nn(number[:, :] image, floating[:, :, :] d1,
     return warped
 
 
-def warp_2d_affine_nn(number[:, :] image, int[:] refShape,
+def warp_2d_affine_nn(number[:, :] image, int[:] ref_shape,
                          double[:, :] affine=None):
     r"""Warps a 2D image by a linear transform using NN interpolation
     Deforms the input image under the given affine transformation using 
     nearest neighbor interpolation. The shape of the resulting transformation
-    is given by refShape. If the affine matrix is None, it is taken as the 
+    is given by ref_shape. If the affine matrix is None, it is taken as the 
     identity.
 
     Parameters
     ----------
     image : array, shape (R, C)
         the input image to be transformed
-    refShape : array, shape (2,)
+    ref_shape : array, shape (2,)
         the shape of the resulting warped image
     affine : array, shape (3, 3)
         the affine matrix driving the transformation
@@ -2296,8 +2296,8 @@ def warp_2d_affine_nn(number[:, :] image, int[:] refShape,
     endomorphisms only and not general diffeomorphisms.
     """
     cdef:
-        cnp.npy_intp nrows = refShape[0]
-        cnp.npy_intp ncols = refShape[1]
+        cnp.npy_intp nrows = ref_shape[0]
+        cnp.npy_intp ncols = ref_shape[1]
         cnp.npy_intp nrVol = image.shape[0]
         cnp.npy_intp ncVol = image.shape[1]
         double dii, djj, tmp0
