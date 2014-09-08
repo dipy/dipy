@@ -260,12 +260,12 @@ def test_warping_2d():
 
             #Test bilinear interpolation
             expected = map_coordinates(circle, W, order=1)
-            warped = vfu.warp_2d(circle, dcopy, A, B, C, np.array(sh))
+            warped = vfu.warp_2d(circle, dcopy, A, B, C, np.array(sh, dtype=np.int32))
             assert_array_almost_equal(warped, expected)
 
             #Test nearest neighbor interpolation
             expected = map_coordinates(circle, W, order=0)
-            warped = vfu.warp_2d_nn(circle, dcopy, A, B, C, np.array(sh))
+            warped = vfu.warp_2d_nn(circle, dcopy, A, B, C, np.array(sh, dtype=np.int32))
             assert_array_almost_equal(warped, expected)
 
 
@@ -353,12 +353,12 @@ def test_warping_3d():
 
             #Test bilinear interpolation
             expected = map_coordinates(sphere, W, order=1)
-            warped = vfu.warp_3d(sphere, dcopy, A, B, C, np.array(sh))
+            warped = vfu.warp_3d(sphere, dcopy, A, B, C, np.array(sh, dtype=np.int32))
             assert_array_almost_equal(warped, expected, decimal=5)
 
             #Test nearest neighbor interpolation
             expected = map_coordinates(sphere, W, order=0)
-            warped = vfu.warp_3d_nn(sphere, dcopy, A, B, C, np.array(sh))
+            warped = vfu.warp_3d_nn(sphere, dcopy, A, B, C, np.array(sh, dtype=np.int32))
             assert_array_almost_equal(warped, expected, decimal=5)
 
 
