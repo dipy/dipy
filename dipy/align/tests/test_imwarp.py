@@ -643,10 +643,10 @@ def test_ssd_3d_gauss_newton():
 def test_cc_2d():
     r'''
     Register a circle to itself after warping it under a synthetic invertible 
-	map. This test is intended to detect regressions only: we saved the energy
-	profile (the sequence of energy values at each iteration) of a working
-	version of CC in 2D, and this test checks that the current energy profile
-	matches the saved one.
+    map. This test is intended to detect regressions only: we saved the energy
+    profile (the sequence of energy values at each iteration) of a working
+    version of CC in 2D, and this test checks that the current energy profile
+    matches the saved one.
     '''
 
     moving, static = get_synthetic_warped_circle(1)
@@ -799,10 +799,10 @@ def test_em_3d():
 def test_em_2d():
     r'''
     Register a circle to itself after warping it under a synthetic invertible 
-	map. This test is intended to detect regressions only: we saved the energy
-	profile (the sequence of energy values at each iteration) of a working
-	version of EM in 2D, and this test checks that the current energy profile
-	matches the saved one.
+    map. This test is intended to detect regressions only: we saved the energy
+    profile (the sequence of energy values at each iteration) of a working
+    version of EM in 2D, and this test checks that the current energy profile
+    matches the saved one.
     '''
 
     moving, static = get_synthetic_warped_circle(1)
@@ -901,10 +901,10 @@ def test_em_3d_demons():
 def test_em_2d_demons():
     r'''
     Register a circle to itself after warping it under a synthetic invertible 
-	map. This test is intended to detect regressions only: we saved the energy
-	profile (the sequence of energy values at each iteration) of a working
-	version of EM in 2D, and this test checks that the current energy profile
-	matches the saved one.
+    map. This test is intended to detect regressions only: we saved the energy
+    profile (the sequence of energy values at each iteration) of a working
+    version of EM in 2D, and this test checks that the current energy profile
+    matches the saved one.
     '''
 
     moving, static = get_synthetic_warped_circle(1)
