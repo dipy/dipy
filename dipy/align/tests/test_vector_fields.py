@@ -6,7 +6,7 @@ from numpy.testing import (assert_array_equal,
                            assert_almost_equal,
                            assert_equal)
 import dipy.align.imwarp as imwarp
-
+from nibabel.affines import apply_affine, from_matvec
 
 def test_circle():
     sh = (64, 61)
@@ -1104,6 +1104,26 @@ def test_reorient_vector_field_3d():
     assert_array_almost_equal(dinv, expected)
 
 
+def test_reorient_random_vector_fields():
+    np.random.seed(1134781)
+    # Test reorienting vector field
+    for n_dims, func in ((2, vfu.reorient_vector_field_2d),
+                        (3, vfu.reorient_vector_field_3d)):
+        size = [20, 30, 40][:n_dims] + [n_dims]
+        arr = np.random.normal(size = size)
+        arr_32 = arr.astype(np.float32)
+        affine = from_matvec(np.random.normal(size = (n_dims, n_dims)),
+                            np.zeros(n_dims))
+        func(arr_32, affine)
+        assert_almost_equal(arr_32, apply_affine(affine, arr), 6)
+        # Reorient reorients without translation
+        trans = np.arange(n_dims) + 2
+        affine[:-1, -1] = trans
+        arr_32 = arr.astype(np.float32)
+        func(arr_32, affine)
+        assert_almost_equal(arr_32, apply_affine(affine, arr) - trans, 6)
+
+
 if __name__=='__main__':
     test_circle()
     test_sphere()
@@ -1127,3 +1147,4 @@ if __name__=='__main__':
     test_downsample_displacement_field_3d()
     test_reorient_vector_field_2d()
     test_reorient_vector_field_3d()
+    test_reorient_random_vector_fields()
