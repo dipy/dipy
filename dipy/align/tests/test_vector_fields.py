@@ -184,153 +184,182 @@ def test_interpolate_vector_2d():
 
 def test_warping_2d():
     r"""
-    Creates a random displacement field that exactly maps pixels from an input
-    image to an output image. First a discrete random assignment between the 
-    images is generated, then each pair of mapped points are transformed to
-    the physical space by assigning a pair of arbitrary, fixed affine matrices
-    to input and output images, and finaly the diference between their positions
-    is taken as the displacement vector. The resulting displacement, although 
-    operating in physical space, maps the points exactly (up to numerical 
-    precision).
+    Tests the cython implementation of the 2d warpings against scipy
     """
-    np.random.seed(8315759)
-    input_shape = (10, 10)
-    target_shape = (10, 10)
-    #create a simple affine transformation
-    nr = input_shape[0]
-    nc = input_shape[1]
-    s = 1.5
-    t = 2.5
+    from scipy.ndimage.interpolation import map_coordinates
+    sh = (64, 64)
+    nr = sh[0]
+    nc = sh[1]
+
+    # Create an image of a circle
+    radius = 24
+    circle = vfu.create_circle(nr, nc, radius)
+    circle = np.array(circle, dtype = floating)
+
+    # Create a displacement field for warping
+    d, dinv = vfu.create_harmonic_fields_2d(nr, nc, 0.2, 8)
+    d = np.asarray(d).astype(floating)
+    dinv = np.asarray(dinv).astype(floating)
+
+    # Create grid coordinates
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    X = np.ndarray((3,)+sh, dtype = np.float64)
+    O = np.ones(sh)
+    X[0, ...]= x_0[:, None] * O
+    X[1, ...]= x_1[None, :] * O
+    X[2, ...]= 1
+
+    # Select an arbitrary translation matrix
+    t = 0.1
     trans = np.array([[1, 0, -t*nr],
                       [0, 1, -t*nc],
                       [0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
-    scale = np.array([[1*s, 0, 0],
-                      [0, 1*s, 0],
-                      [0, 0, 1]])
-    gt_affine = trans_inv.dot(scale.dot(trans))
-    gt_affine_inv = np.linalg.inv(gt_affine)
 
-    #create the random displacement field
-    input_affine = gt_affine
-    target_affine = gt_affine
-    disp, assign = vfu.create_random_displacement_2d(np.array(input_shape,
-                                                     dtype=np.int32),
-                                                     input_affine, 
-                                                     np.array(target_shape,
-                                                     dtype=np.int32),
-                                                     target_affine)
-    disp = np.array(disp, dtype=floating)
-    assign = np.array(assign)
-    #create a random image (with decimal digits) to warp
-    moving_image = np.ndarray(target_shape, dtype=floating)
-    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
-    #set boundary values to zero so we don't test wrong interpolation due to
-    #floating point precision
-    moving_image[0,:] = 0
-    moving_image[-1,:] = 0
-    moving_image[:,0] = 0
-    moving_image[:,-1] = 0
+    # Select arbitrary rotation and scaling matrices
+    for theta in [-1 * np.pi/6.0, 0.0, np.pi/6.0]: #rotation angle
+        for s in [0.42,  1.3, 2.15]: #scale
+            ct = np.cos(theta)
+            st = np.sin(theta)
 
-    #warp the moving image using the synthetic displacement field
-    target_affine_inv = np.linalg.inv(target_affine)
-    input_affine_inv = np.linalg.inv(input_affine)
-    affine_index = target_affine_inv.dot(input_affine)
-    affine_disp = target_affine_inv
+            rot = np.array([[ct, -st, 0],
+                            [st, ct, 0],
+                            [0, 0, 1]])
 
-    #apply the implementation under test
-    warped = np.array(vfu.warp_2d(moving_image, disp, None, affine_index,
-                                     affine_disp))
+            scale = np.array([[1*s, 0, 0],
+                              [0, 1*s, 0],
+                              [0, 0, 1]])
+            
+            aff = trans_inv.dot(scale.dot(rot.dot(trans)))
 
-    #warp the moving image using the (exact) assignments
-    expected = moving_image[(assign[...,0], assign[...,1])]
+            # Select arbitrary (but different) grid-to-space transforms
+            sampling_affine = scale
+            field_affine =  aff
+            field_affine_inv = np.linalg.inv(field_affine)
+            image_affine = aff.dot(scale)
+            image_affine_inv = np.linalg.inv(image_affine)
 
-    #compare the images
-    assert_array_almost_equal(warped, expected, decimal=5)
-    
-    #Now test the nearest neighbor interpolation
-    warped = np.array(vfu.warp_2d_nn(moving_image, disp, None, affine_index,
-                      affine_disp))
-    #compare the images (now we dont have to worry about precision, it is n.n.)
-    assert_array_almost_equal(warped, expected)
+            A = field_affine_inv.dot(sampling_affine)
+            B = image_affine_inv.dot(sampling_affine)
+            C = image_affine_inv
+
+            # Reorient the displacement field according to its grid-to-space transform
+            dcopy = np.copy(d)
+            vfu.reorient_vector_field_2d(dcopy, field_affine)
+
+            # Compute the warping coordinates (see warp_2d documentation)
+            Y = np.apply_along_axis(A.dot, 0, X)[0:2,...]
+            Z = np.zeros_like(X)
+            Z[0,...] = map_coordinates(dcopy[...,0], Y, order=1)
+            Z[1,...] = map_coordinates(dcopy[...,1], Y, order=1)
+            Z[2,...] = 0
+            Z = np.apply_along_axis(C.dot, 0, Z)[0:2,...]
+            T = np.apply_along_axis(B.dot, 0, X)[0:2,...]
+            W = T + Z
+
+            #Test bilinear interpolation
+            expected = map_coordinates(circle, W, order=1)
+            warped = vfu.warp_2d(circle, dcopy, A, B, C, np.array(sh))
+            assert_array_almost_equal(warped, expected)
+
+            #Test nearest neighbor interpolation
+            expected = map_coordinates(circle, W, order=0)
+            warped = vfu.warp_2d_nn(circle, dcopy, A, B, C, np.array(sh))
+            assert_array_almost_equal(warped, expected)
 
 
 def test_warping_3d():
     r"""
-    Creates a random displacement field that exactly maps pixels from an input
-    image to an output image. First a discrete random assignment between the 
-    images is generated, then each pair of mapped points are transformed to
-    the physical space by assigning a pair of arbitrary, fixed affine matrices
-    to input and output images, and finaly the diference between their positions
-    is taken as the displacement vector. The resulting displacement, although 
-    operating in physical space, maps the points exactly (up to numerical 
-    precision).
+    Tests the cython implementation of the 2d warpings against scipy
     """
-    np.random.seed(8315759)
-    input_shape = (10, 10, 10)
-    target_shape = (10, 10, 10)
-    #create a simple affine transformation
-    ns = input_shape[0]
-    nr = input_shape[1]
-    nc = input_shape[2]
-    s = 1.5
-    t = 2.5
+    from scipy.ndimage.interpolation import map_coordinates
+    import dipy.core.geometry as geometry
+    sh = (64, 64, 64)
+    ns = sh[0]
+    nr = sh[1]
+    nc = sh[2]
+
+    # Create an image of a sphere
+    radius = 24
+    sphere = vfu.create_sphere(ns, nr, nc, radius)
+    sphere = np.array(sphere, dtype = floating)
+
+    # Create a displacement field for warping
+    d, dinv = vfu.create_harmonic_fields_3d(ns, nr, nc, 0.2, 8)
+    d = np.asarray(d).astype(floating)
+    dinv = np.asarray(dinv).astype(floating)
+
+    # Create grid coordinates
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    x_2 = np.asarray(range(sh[2]))
+    X = np.ndarray((4,)+sh, dtype = np.float64)
+    O = np.ones(sh)
+    X[0, ...]= x_0[:, None, None] * O
+    X[1, ...]= x_1[None, :, None] * O
+    X[2, ...]= x_2[None, None, :] * O
+    X[3, ...]= 1
+
+    # Select an arbitrary rotation axis
+    axis = np.array([.5, 2.0, 1.5])
+    # Select an arbitrary translation matrix
+    t = 0.1
     trans = np.array([[1, 0, 0, -t*ns],
                       [0, 1, 0, -t*nr],
                       [0, 0, 1, -t*nc],
                       [0, 0, 0, 1]])
     trans_inv = np.linalg.inv(trans)
-    scale = np.array([[1*s, 0, 0, 0],
-                      [0, 1*s, 0, 0],
-                      [0, 0, 1*s, 0],
-                      [0, 0, 0, 1]])
-    gt_affine = trans_inv.dot(scale.dot(trans))
-    gt_affine_inv = np.linalg.inv(gt_affine)
 
-    #create the random displacement field
-    input_affine = gt_affine
-    target_affine = gt_affine
-    disp, assign = vfu.create_random_displacement_3d(np.array(input_shape,
-                                                     dtype=np.int32),
-                                                     input_affine, 
-                                                     np.array(target_shape,
-                                                     dtype=np.int32),
-                                                     target_affine)
-    disp = np.array(disp, dtype=floating)
-    assign = np.array(assign)
-    #create a random image (with decimal digits) to warp
-    moving_image = np.ndarray(target_shape, dtype=floating)
-    moving_image[...] = np.random.randint(0, 10, np.size(moving_image)).reshape(tuple(target_shape))
-    #set boundary values to zero so we don't test wrong interpolation due to
-    #floating point precision
-    moving_image[0,:,:] = 0
-    moving_image[-1,:,:] = 0
-    moving_image[:,0,:] = 0
-    moving_image[:,-1,:] = 0
-    moving_image[:,:,0] = 0
-    moving_image[:,:,-1] = 0
+    # Select arbitrary rotation and scaling matrices
+    for theta in [-1 * np.pi/5.0, 0.0, np.pi/5.0]: #rotation angle
+        for s in [0.45,  1.1, 2.0]: #scale
+            rot = np.zeros(shape=(4,4))
+            rot[:3, :3] = geometry.rodrigues_axis_rotation(axis, theta)
+            rot[3,3] = 1.0
 
-    #warp the moving image using the synthetic displacement field
-    target_affine_inv = np.linalg.inv(target_affine)
-    input_affine_inv = np.linalg.inv(input_affine)
-    affine_index = target_affine_inv.dot(input_affine)
-    affine_disp = target_affine_inv
+            scale = np.array([[1*s, 0, 0, 0],
+                              [0, 1*s, 0, 0],
+                              [0, 0, 1*s, 0],
+                              [0, 0, 0, 1]])
+            
+            aff = trans_inv.dot(scale.dot(rot.dot(trans)))
 
-    #apply the implementation under test
-    warped = np.array(vfu.warp_3d(moving_image, disp, None, affine_index,
-                                      affine_disp))
+            # Select arbitrary (but different) grid-to-space transforms
+            sampling_affine = scale
+            field_affine =  aff
+            field_affine_inv = np.linalg.inv(field_affine)
+            image_affine = aff.dot(scale)
+            image_affine_inv = np.linalg.inv(image_affine)
 
-    #warp the moving image using the (exact) assignments
-    expected = moving_image[(assign[...,0], assign[...,1], assign[...,2])]
+            A = field_affine_inv.dot(sampling_affine)
+            B = image_affine_inv.dot(sampling_affine)
+            C = image_affine_inv
 
-    #compare the images
-    assert_array_almost_equal(warped, expected, decimal=5)
-    
-    #Now test the nearest neighbor interpolation
-    warped = np.array(vfu.warp_3d_nn(moving_image, disp, None, affine_index,
-                                         affine_disp))
-    #compare the images (now we dont have to worry about precision, it is n.n.)
-    assert_array_almost_equal(warped, expected)
+            # Reorient the displacement field according to its grid-to-space transform
+            dcopy = np.copy(d)
+            vfu.reorient_vector_field_3d(dcopy, field_affine)
+
+            # Compute the warping coordinates (see warp_2d documentation)
+            Y = np.apply_along_axis(A.dot, 0, X)[0:3,...]
+            Z = np.zeros_like(X)
+            Z[0,...] = map_coordinates(dcopy[...,0], Y, order=1)
+            Z[1,...] = map_coordinates(dcopy[...,1], Y, order=1)
+            Z[2,...] = map_coordinates(dcopy[...,2], Y, order=1)
+            Z[3,...] = 0
+            Z = np.apply_along_axis(C.dot, 0, Z)[0:3,...]
+            T = np.apply_along_axis(B.dot, 0, X)[0:3,...]
+            W = T + Z
+
+            #Test bilinear interpolation
+            expected = map_coordinates(sphere, W, order=1)
+            warped = vfu.warp_3d(sphere, dcopy, A, B, C, np.array(sh))
+            assert_array_almost_equal(warped, expected, decimal=5)
+
+            #Test nearest neighbor interpolation
+            expected = map_coordinates(sphere, W, order=0)
+            warped = vfu.warp_3d_nn(sphere, dcopy, A, B, C, np.array(sh))
+            assert_array_almost_equal(warped, expected, decimal=5)
 
 
 def test_affine_warping_2d():
