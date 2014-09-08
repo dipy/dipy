@@ -2,7 +2,6 @@ import numpy as np
 from dipy.align import floating
 import dipy.align.expectmax as em
 from numpy.testing import (assert_equal,
-                           assert_almost_equal, 
                            assert_array_equal,
                            assert_array_almost_equal)
 
@@ -23,12 +22,6 @@ def test_compute_em_demons_step_2d():
                     image registration. NeuroImage, 45(1 Suppl), S61-72.
                     doi:10.1016/j.neuroimage.2008.10.040
     """
-    import dipy.align.expectmax as em
-    from numpy.testing import (assert_equal,
-                           assert_almost_equal, 
-                           assert_array_equal,
-                           assert_array_almost_equal)
-
     #Select arbitrary images' shape (same shape for both images)
     sh = (30, 20)
     

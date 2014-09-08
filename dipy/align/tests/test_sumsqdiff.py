@@ -2,9 +2,7 @@ import numpy as np
 from dipy.align import floating
 from numpy.testing import (assert_equal,
                            assert_almost_equal, 
-                           assert_array_equal,
                            assert_array_almost_equal,
-                           assert_raises,
                            assert_allclose)
 import dipy.align.sumsqdiff as ssd
 

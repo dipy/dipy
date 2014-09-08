@@ -1,9 +1,6 @@
 import numpy as np
 from dipy.align import floating
-from numpy.testing import (assert_equal,
-                           assert_almost_equal, 
-                           assert_array_equal,
-                           assert_array_almost_equal)
+from numpy.testing import (assert_array_almost_equal)
 import dipy.align.crosscorr as cc
 
 def test_cc_factors_2d():

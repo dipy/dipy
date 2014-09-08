@@ -1229,8 +1229,8 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
 
         mean_norm = np.sqrt(np.sum((np.array(current_displacement) ** 2), -1)).mean()
-        stats = self.compose(current_displacement, new_displacement, None, 
-                             affine_inv, time_scaling, current_displacement)
+        self.compose(current_displacement, new_displacement, None, 
+                     affine_inv, time_scaling, current_displacement)
 
         return np.array(current_displacement), np.array(mean_norm)
 
@@ -1401,9 +1401,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Acquire current resolution information from scale spaces
         current_moving = self.moving_ss.get_image(self.current_level)
         current_static = self.static_ss.get_image(self.current_level)
-
-        current_static_affine_inv = self.static_ss.get_affine_inv(0)
-        current_moving_affine_inv = self.moving_ss.get_affine_inv(0)
 
         current_disp_shape = \
             self.static_ss.get_domain_shape(self.current_level)
@@ -1599,8 +1596,6 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 print('Optimizing level %d'%level)
 
             self.current_level = level
-            current_static = self.static_ss.get_image(level)
-            current_moving = self.moving_ss.get_image(level)
             
             self.metric.set_levels_below(self.levels - level)
             self.metric.set_levels_above(level)

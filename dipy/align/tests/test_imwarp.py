@@ -1,7 +1,6 @@
 from __future__ import print_function
 import numpy as np
 from numpy.testing import (assert_equal,
-                           assert_almost_equal, 
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
@@ -11,7 +10,6 @@ import dipy.align.metrics as metrics
 import dipy.align.vector_fields as vfu
 from dipy.data import get_data
 from dipy.align import floating
-import nibabel as nib
 import nibabel.eulerangles as eulerangles
 from dipy.align.imwarp import DiffeomorphicMap
 from dipy.align import VerbosityLevels
@@ -64,7 +62,6 @@ def test_diffeomorphic_map_2d():
                       [0, 1*s, 0],
                       [0, 0, 1]])
     gt_affine = trans_inv.dot(scale.dot(trans))
-    gt_affine_inv = np.linalg.inv(gt_affine)
 
     #create the random displacement field
     domain_affine = gt_affine
@@ -83,12 +80,6 @@ def test_diffeomorphic_map_2d():
     moving_image[-1,:] = 0
     moving_image[:,0] = 0
     moving_image[:,-1] = 0
-
-    #warp the moving image using the synthetic displacement field
-    codomain_affine_inv = np.linalg.inv(codomain_affine)
-    domain_affine_inv = np.linalg.inv(domain_affine)
-    affine_index = codomain_affine_inv.dot(domain_affine)
-    affine_disp = codomain_affine_inv
 
     #warp the moving image using the (exact) assignments
     expected = moving_image[(assign[...,0], assign[...,1])]
@@ -810,7 +801,6 @@ def test_em_2d():
     #Configure the metric
     smooth=25.0
     inner_iter=20
-    step_length=0.25
     q_levels=256
     double_gradient=False
     iter_type='gauss_newton'
@@ -912,7 +902,6 @@ def test_em_2d_demons():
     #Configure the metric
     smooth=25.0
     inner_iter=20
-    step_length=0.25
     q_levels=256
     double_gradient=False
     iter_type='demons'

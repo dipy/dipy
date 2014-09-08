@@ -7,6 +7,8 @@ from numpy.testing import (assert_array_equal,
                            assert_equal)
 import dipy.align.imwarp as imwarp
 from nibabel.affines import apply_affine, from_matvec
+from scipy.ndimage.interpolation import map_coordinates
+import dipy.core.geometry as geometry
 
 
 def test_random_displacement_field_2d():
@@ -73,8 +75,6 @@ def test_random_displacement_field_2d():
 
 
 def test_random_displacement_field_3d():
-    from scipy.ndimage.interpolation import map_coordinates
-    import dipy.core.geometry as geometry
     np.random.seed(7127562)
     from_shape = (25, 32, 31)
     to_shape = (33, 29, 35)
@@ -235,7 +235,6 @@ def test_sphere():
 
 
 def test_interpolate_scalar_2d():
-    from scipy.ndimage.interpolation import map_coordinates 
     np.random.seed(5324989)
     sz = 64
     target_shape = (sz, sz)
@@ -262,7 +261,6 @@ def test_interpolate_scalar_2d():
 
 
 def test_interpolate_scalar_nn_2d():
-    from scipy.ndimage.interpolation import map_coordinates 
     np.random.seed(1924781)
     sz = 64
     target_shape = (sz, sz)
@@ -289,7 +287,6 @@ def test_interpolate_scalar_nn_2d():
 
 
 def test_interpolate_scalar_nn_3d():
-    from scipy.ndimage.interpolation import map_coordinates 
     np.random.seed(3121121)
     sz = 64
     target_shape = (sz, sz, sz)
@@ -318,7 +315,6 @@ def test_interpolate_scalar_nn_3d():
 
 
 def test_interpolate_scalar_3d():
-    from scipy.ndimage.interpolation import map_coordinates 
     np.random.seed(9216326)
     sz = 64
     target_shape = (sz, sz, sz)
@@ -347,7 +343,6 @@ def test_interpolate_scalar_3d():
 
 
 def test_interpolate_vector_3d():
-    from scipy.ndimage.interpolation import map_coordinates 
     np.random.seed(7711219)
     sz = 64
     target_shape = (sz, sz, sz)
@@ -378,7 +373,6 @@ def test_interpolate_vector_3d():
 
 
 def test_interpolate_vector_2d():
-    from scipy.ndimage.interpolation import map_coordinates 
     np.random.seed(1271244)
     sz = 64
     target_shape = (sz, sz)
@@ -412,7 +406,6 @@ def test_warping_2d():
     r"""
     Tests the cython implementation of the 2d warpings against scipy
     """
-    from scipy.ndimage.interpolation import map_coordinates
     sh = (64, 64)
     nr = sh[0]
     nc = sh[1]
@@ -499,8 +492,6 @@ def test_warping_3d():
     r"""
     Tests the cython implementation of the 2d warpings against scipy
     """
-    from scipy.ndimage.interpolation import map_coordinates
-    import dipy.core.geometry as geometry
     sh = (64, 64, 64)
     ns = sh[0]
     nr = sh[1]
@@ -592,8 +583,6 @@ def test_affine_warping_2d():
     r"""
     Tests 2D affine warping functions against scipy implementation
     """
-    from scipy.ndimage.interpolation import map_coordinates
-
     # Create a simple invertible affine transform
     domain_shape = (64, 64)
     codomain_shape = (80, 80)
@@ -659,8 +648,6 @@ def test_affine_warping_3d():
     r"""
     Tests 3D affine warping functions against scipy implementation
     """
-    from scipy.ndimage.interpolation import map_coordinates
-    import dipy.core.geometry as geometry
     # Create a simple invertible affine transform
     domain_shape = (64, 64, 64)
     codomain_shape = (80, 80, 80)
@@ -750,7 +737,6 @@ def test_compose_vector_fields_2d():
                       [0, 1*s, 0],
                       [0, 0, 1]])
     gt_affine = trans_inv.dot(scale.dot(trans))
-    gt_affine_inv = np.linalg.inv(gt_affine)
 
     #create two random displacement fields
     input_affine = gt_affine
@@ -790,10 +776,8 @@ def test_compose_vector_fields_2d():
 
     #compose the displacement fields 
     target_affine_inv = np.linalg.inv(target_affine)
-    input_affine_inv = np.linalg.inv(input_affine)
 
     target_affine_inv = np.linalg.inv(target_affine)
-    input_affine_inv = np.linalg.inv(input_affine)
     premult_index = target_affine_inv.dot(input_affine)
     premult_disp = target_affine_inv
     
@@ -858,7 +842,6 @@ def test_compose_vector_fields_3d():
                       [0, 0, 1*s, 0],
                       [0, 0, 0, 1]])
     gt_affine = trans_inv.dot(scale.dot(trans))
-    gt_affine_inv = np.linalg.inv(gt_affine)
 
     #create two random displacement fields
     input_affine = gt_affine
@@ -901,10 +884,8 @@ def test_compose_vector_fields_3d():
 
     #compose the displacement fields 
     target_affine_inv = np.linalg.inv(target_affine)
-    input_affine_inv = np.linalg.inv(input_affine)
 
     target_affine_inv = np.linalg.inv(target_affine)
-    input_affine_inv = np.linalg.inv(input_affine)
     premult_index = target_affine_inv.dot(input_affine)
     premult_disp = target_affine_inv
     
@@ -932,7 +913,7 @@ def test_compose_vector_fields_3d():
     O = np.ones(input_shape)
     X[...,0]= x_0[:, None, None] * O
     X[...,1]= x_1[None, :, None] * O
-    X[...,2]= x_1[None, None, :] * O
+    X[...,2]= x_2[None, None, :] * O
     random_labels = np.random.randint(0, 2, input_shape[0]*input_shape[1]*input_shape[2]*3)
     random_labels = random_labels.reshape(input_shape+(3,))
     values = np.array([-1, target_shape[0]])
@@ -950,7 +931,6 @@ def test_invert_vector_field_2d():
     r"""
     Inverts a synthetic, analytically invertible, displacement field
     """
-    import dipy.align.imwarp as imwarp
     shape = (64, 64)
     nr = shape[0]
     nc = shape[1]
@@ -1002,8 +982,6 @@ def test_invert_vector_field_3d():
     r"""
     Inverts a synthetic, analytically invertible, displacement field
     """
-    import dipy.align.imwarp as imwarp
-    import dipy.core.geometry as geometry
     shape = (64, 64, 64)
     ns = shape[0]
     nr = shape[1]
