@@ -8,6 +8,43 @@ from numpy.testing import (assert_array_equal,
 import dipy.align.imwarp as imwarp
 
 
+def test_circle():
+    sh = (64, 61)
+    cr = sh[0]//2
+    cc = sh[1]//2
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    X = np.ndarray((2,)+sh, dtype = np.float64)
+    O = np.ones(sh)
+    X[0, ...]= x_0[:, None] * O - cr
+    X[1, ...]= x_1[None, :] * O - cc
+    nrm = np.sqrt(np.sum(X**2,axis = 0))
+    for radius in [0, 7, 17, 32]:
+        expected = nrm<=radius
+        actual = vfu.create_circle(sh[0], sh[1], radius)
+        assert_array_almost_equal(actual, expected)
+
+
+def test_sphere():
+    sh = (64, 61, 57)
+    cs = sh[0]//2
+    cr = sh[1]//2
+    cc = sh[2]//2
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    x_2 = np.asarray(range(sh[2]))
+    X = np.ndarray((3,)+sh, dtype = np.float64)
+    O = np.ones(sh)
+    X[0, ...]= x_0[:, None, None] * O - cs
+    X[1, ...]= x_1[None, :, None] * O - cr
+    X[2, ...]= x_2[None, None, :] * O - cc
+    nrm = np.sqrt(np.sum(X**2,axis = 0))
+    for radius in [0, 7, 17, 32]:
+        expected = nrm<=radius
+        actual = vfu.create_sphere(sh[0], sh[1], sh[2], radius)
+        assert_array_almost_equal(actual, expected)
+
+
 def test_interpolate_scalar_2d():
     from scipy.ndimage.interpolation import map_coordinates 
     np.random.seed(5324989)
@@ -1068,6 +1105,8 @@ def test_reorient_vector_field_3d():
 
 
 if __name__=='__main__':
+    test_circle()
+    test_sphere()
     test_interpolate_scalar_2d()
     test_interpolate_scalar_nn_2d()
     test_interpolate_scalar_nn_3d()
