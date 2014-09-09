@@ -496,6 +496,8 @@ class SphHarmModel(OdfModel, Cache):
         self.n = n
         self._set_fit_matrix(B, L, F, smooth)
 
+
+
     def _set_fit_matrix(self, *args):
         """Should be set in a subclass and is called by __init__"""
         msg = "User must implement this method in a subclass"
@@ -547,7 +549,6 @@ class SphHarmFit(OdfFit):
 
         return SphHarmFit(self.model, new_coef, new_mask)
 
-
     def odf(self, sphere):
         """Samples the odf function on the points of a sphere
 
@@ -562,20 +563,12 @@ class SphHarmFit(OdfFit):
             The value of the odf on each point of `sphere`.
 
         """
-        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
-        if sampling_matrix is None:
-            phi = sphere.phi.reshape((-1, 1))
-            theta = sphere.theta.reshape((-1, 1))
-            sh_order = self.model.sh_order
-            sampling_matrix, m, n = real_sym_sh_basis(sh_order, theta, phi)
-            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
-        return dot(self._shm_coef, sampling_matrix.T)
-
+        B = self.sampling_matrix(sphere)
+        return dot(self._shm_coef, B.T)
 
     @auto_attr
     def gfa(self):
         return _gfa_sh(self._shm_coef, 0)
-
 
     @property
     def shm_coeff(self):
@@ -587,6 +580,29 @@ class SphHarmFit(OdfFit):
         """
         return self._shm_coef
 
+    def sampling_matrix(self, sphere):
+        """The matrix needed to sample ODFs from coefficients of the model.
+
+        Parameters
+        ----------
+        sphere : Sphere
+            Points used to sample ODF.
+
+        Returns
+        -------
+        sampling_matrix : array
+            The size of the matrix will be (N, M) where N is the number of
+            vertices on sphere and M is the number of coefficients needed by
+            the model.
+        """
+        sampling_matrix = self.model.cache_get("sampling_matrix", sphere)
+        if sampling_matrix is None:
+            sh_order = self.model.sh_order
+            theta = sphere.theta
+            phi = sphere.phi
+            sampling_matrix, m, n = real_sym_sh_basis(sh_order, theta, phi)
+            self.model.cache_set("sampling_matrix", sphere, sampling_matrix)
+        return sampling_matrix
 
     def predict(self, gtab=None, S0=1.0):
         """
