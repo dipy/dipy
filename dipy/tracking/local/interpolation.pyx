@@ -68,7 +68,7 @@ cdef int _trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
 
 
 cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
-                              double[::1] out=None):
+                              np.ndarray out=None):
     """Tri-linear interpolation along the last dimension of a 4d array
 
     Parameters
@@ -89,9 +89,11 @@ cpdef trilinear_interpolate4d(double[:, :, :, :] data, double[:] point,
     """
     cdef:
         int err
+        double[::1] outview
 
     if out is None:
         out = np.empty(data.shape[3])
+    outview = out
 
     err = _trilinear_interpolate_c_4d(data, point, out)
 
