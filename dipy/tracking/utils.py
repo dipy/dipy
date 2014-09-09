@@ -648,3 +648,35 @@ def length(streamlines, affine=None):
         streamlines = move_streamlines(streamlines, affine)
     return map(metrics.length, streamlines)
 
+
+def unique_rows(in_array, dtype='f4'):
+    """
+    This (quickly) finds the unique rows in an array
+
+    Parameters
+    ----------
+    in_array: ndarray
+        The array for which the unique rows should be found
+
+    dtype: str, optional
+        This determines the intermediate representation used for the
+        values. Should at least preserve the values of the input array.
+
+    Returns
+    -------
+    u_return: ndarray
+       Array with the unique rows of the original array.
+
+    """
+    x = np.array([tuple(in_array.T[:,i]) for i in
+                  xrange(in_array.shape[0])],
+        dtype=(''.join(['%s,'%dtype]* in_array.shape[-1])[:-1]))
+
+    u,i = np.unique(x, return_index=True)
+    u_i = x[np.sort(i)]
+    u_return = np.empty((in_array.shape[-1],len(u_i)))
+    for j in xrange(len(u_i)):
+        u_return[:,j] = np.array([x for x in u_i[j]])
+
+    # Return back the same dtype as you originally had:
+    return u_return.T.astype(in_array.dtype)
