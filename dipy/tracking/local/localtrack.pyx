@@ -43,7 +43,8 @@ cdef void step_to_boundry(double *point, double *direction,
 
     """
     cdef:
-        double step_sizes[3], smallest_step
+        double step_sizes[3]
+        double smallest_step
 
     for i in range(3):
         step_sizes[i] = stepsize(point[i], direction[i])
@@ -108,18 +109,17 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
         step = step_to_boundry
 
     for i in range(3):
-        point[i] = seed[i]
+        streamline[0, i] = point[i] = seed[i]
         dir[i] = first_step[i]
         vs[i] = voxel_size[i]
 
-    for i in range(streamline.shape[0]):
-        copypoint(point, &streamline[i, 0])
+    for i in range(1, streamline.shape[0]):
         if dg.get_direction(pview, dview):
-            i += 1
             break
         for j in range(3):
             voxdir[j] = dir[j] / vs[j]
         step(point, voxdir, stepsize)
+        copypoint(point, &streamline[i, 0])
         tssuclass = tc.check_point(pview)
         if tssuclass == TRACKPOINT:
             continue
@@ -131,5 +131,9 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
         elif tssuclass == INVALIDPOINT:
             i = - (i + 1)
             break
+    else:
+        # maximum length of streamline has been reached, return everything
+        i = streamline.shape[0]
+
     return i
 
