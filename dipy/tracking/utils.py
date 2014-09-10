@@ -680,3 +680,45 @@ def unique_rows(in_array, dtype='f4'):
 
     # Return back the same dtype as you originally had:
     return u_return.T.astype(in_array.dtype)
+
+
+def xform(coords, affine):
+    """
+    Use an affine transform to move from one 3d coordinate system to another
+
+    Parameters
+    ----------
+
+    coords: 3 by n float/int array
+        The xyz coordinates in the original coordinate system.
+
+    affine: 4 by 4 array/matrix
+        An affine transformation from the original to the new coordinate
+        system.
+
+    """
+    # Just to be sure:
+    xyz_orig = np.asarray(coords)
+    orig_dtype = xyz_orig.dtype
+
+    if xyz_orig.shape[0] != 3:
+        e_s = "Coords input to xform should be a 3 by n array"
+        raise ValueError(e_s)
+    if affine.shape != (4,4):
+        e_s = "Affine input to xform should be a 4 by 4 array or matrix"
+        raise ValueError(e_s)
+
+    # If it's the identity matrix, don't need to do anything:
+    if np.all(affine == np.eye(4)):
+        # Just return the input
+        return xyz_orig.astype(orig_dtype)
+
+    xyz = np.array(np.dot(affine[:3,:3], xyz_orig)).squeeze()
+    # Deal with the special case where the coordinate is shape==(3,)
+    if len(xyz.shape) == 1:
+        xyz += np.reshape(np.array(affine[:3, 3]).squeeze(), (3))
+    else:
+        xyz += np.reshape(np.array(affine[:3, 3]).squeeze(), (3,1))  # Broadcast
+                                                                     # and add
+
+    return xyz.astype(orig_dtype)
