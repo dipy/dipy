@@ -3,11 +3,11 @@ import numpy as np
 from .localtrack import local_tracker
 from .tissue_classifier import ThresholdTissueClassifier, TissueClassifier
 from .direction_getter import DirectionGetter
-from .direction_getter_py import ProbabilisticOdfWightedDirectionGetter
+from .direction_getter_py import ProbabilisticDirectionGetter
 from dipy.tracking import utils
 
 __all__ = ["LocalTracking", "ThresholdTissueClassifier",
-           "ProbabilisticOdfWightedDirectionGetter"]
+           "ProbabilisticDirectionGetter"]
 
 class LocalTracking(object):
     """A streamline generator for local tracking methods"""
