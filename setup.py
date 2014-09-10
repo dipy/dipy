@@ -160,6 +160,7 @@ def main(**extra_args):
                           'dipy.core',
                           'dipy.core.tests',
                           'dipy.tracking',
+                          'dipy.tracking.local',
                           'dipy.tracking.tests',
                           'dipy.tracking.benchmarks',
                           'dipy.reconst',
