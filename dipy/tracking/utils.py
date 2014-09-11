@@ -689,7 +689,7 @@ def xform(coords, affine):
     Parameters
     ----------
 
-    coords: 3 by n float/int array
+    coords: n by 3 float/int array
         The xyz coordinates in the original coordinate system.
 
     affine: 4 by 4 array/matrix

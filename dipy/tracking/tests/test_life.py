@@ -1,41 +1,48 @@
 import os
 
-import dipy.tracking.life as life
-import dipy.core.sphere as dps
-import dipy.core.gradients as dpg
 import numpy as np
 import numpy.testing as npt
 import numpy.testing.decorators as dec
-
 import scipy.io as sio
+
+import nibabel as nib
+
+import dipy.tracking.life as life
+import dipy.core.sphere as dps
+import dipy.core.gradients as dpg
+from dipy.data import get_data
+
+def test_sl_gradients():
+    sl = [[1,2,3], [4,5,6], [5,6,7]]
+    grads = np.array([[3,3,3], [2,2,2], [1,1,1]])
+    npt.assert_array_equal(life.sl_gradients(sl), grads)
+
+def test_sl_tensors():
+    sl = [[1,2,3], [4,5,6], [5,6,7]]
+    sl_tensors = life.sl_tensors(sl)
 
 
 def test_Fiber():
     """
     Testing initalization of the Fiber class
     """
-    # Providing a list as an input works:
-    arr1d = [1,2,3]
-    # This is the most basic example possible:
-    f1 = life.Fiber(arr1d)
-    # 2D arrays should be 3 by n:
-    arr2d = np.array([[1,2], [3,4],[5,6]])
+    # Streamline arrays are n by 3:
+    arr2d = np.array([[1,3,5], [2,4,6]])
     # So this is OK:
     f2 = life.Fiber(arr2d)
     # But this raises a ValueError:
     npt.assert_raises(ValueError, life.Fiber, arr2d.T)
-    # This should also raise (first dim is 4, rather than 3):
-    npt.assert_raises(ValueError, life.Fiber, np.empty((4,10)))
+    # This should also raise (second dim is 4, rather than 3):
+    npt.assert_raises(ValueError, life.Fiber, np.empty((10, 4)))
     # This should also raise (funky affine):
-    npt.assert_raises(ValueError, life.Fiber, np.empty((3,10)), np.eye(5))
+    npt.assert_raises(ValueError, life.Fiber, np.empty((10, 3)), np.eye(5))
 
     # This should be OK:
     f3 = life.Fiber(np.array(arr2d), affine = np.eye(4), fiber_stats=dict(a=1))
     npt.assert_equal(f3.fiber_stats, {'a':1})
 
 def test_Fiber_xform():
-
-    arr2d = np.array([[1,2], [3,4],[5,6]])
+    arr2d = np.array([[1,3,5], [2,4,6]])
     affine1 = np.eye(4)
     f1 = life.Fiber(arr2d, affine = affine1)
     f1.xform()
@@ -166,11 +173,9 @@ def test_FiberGroup():
     """
     Testing intialization of FiberGroup class.
     """
-
-    arr2d = np.array([[1,2], [3,4],[5,6]])
-    arr1d = np.array([5,6,7])
+    arr2d = np.array([[1,3,5], [2,4,6]])
     f1 = life.Fiber(arr2d, fiber_stats=dict(a=1, b=2))
-    f2 = life.Fiber(arr1d, fiber_stats=dict(a=1))
+    f2 = life.Fiber(arr2d, fiber_stats=dict(a=1))
     fg1 = life.FiberGroup([f1,f2])
     npt.assert_equal(fg1.n_fibers, 2)
     # We have to sort, because it could also come out as ['b', 'a']:
@@ -252,7 +257,7 @@ def test_FiberGroup_unique_coords():
         # Should work if both fibers have non-unique coords
         npta(life.FiberGroup([life.Fiber([[x1,x1,x2],[y1,y1,y2],[z1,z1,z2]]),
             life.Fiber([[x1,x1,x2],[y1,y1,y2],[z1,z1,z2]])]).unique_coords,
-            np.array([[x1,x2],[y1,y2],[z1,z2]]),decimal=4)
+            np.array([[x1,x2],[y1,y2],[z1,z2]]), decimal=4)
 
         # And also for extracting across fibers with unique coords
         npta(life.FiberGroup([life.Fiber([[x1],[y1],[z1]]),
@@ -263,3 +268,15 @@ def test_FiberGroup_unique_coords():
         npta(life.FiberGroup([life.Fiber([[x1],[y1],[z1]]),
                  life.Fiber([[x2,x1],[y2,y1],[z2,z1]])]).unique_coords,
             np.array([[x1,x2],[y1,y2],[z1,z2]]),decimal=4)
+
+
+def test_FiberModel_init():
+    # Get some small amount of data:
+    data_file, bval_file, bvec_file = get_data('small_64D')
+    data_ni = nib.load(data_file)
+    data = data_ni.get_data()
+    data_aff = data_ni.get_affine()
+    bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
+    gtab = dpg.gradient_table(bvals, bvecs)
+    FM1 = life.FiberModel(gtab)
+    FG1 = life.FiberGroup()
