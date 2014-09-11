@@ -167,12 +167,16 @@ class TestStreamline(unittest.TestCase):
 
         self.streamline_64bit = self.streamline.astype(np.float64)
 
-        self.streamlines = [self.streamline,
+        self.streamlines = [self.streamline[[0, 10]], self.streamline,
                             self.streamline[::2], self.streamline[::3],
                             self.streamline[::5], self.streamline[::6]]
-        self.streamlines_64bit = [self.streamline_64bit,
+        self.streamlines_64bit = [self.streamline_64bit[[0, 10]], self.streamline_64bit,
                                   self.streamline_64bit[::2], self.streamline_64bit[::3],
                                   self.streamline_64bit[::4], self.streamline_64bit[::5]]
+
+        self.heterogeneous_streamlines = [self.streamline_64bit,
+                                          self.streamline_64bit.reshape((-1, 6)),
+                                          self.streamline_64bit.reshape((-1, 2))]
 
     def test_set_number_of_points(self):
         # Test resampling of only one streamline
@@ -215,8 +219,12 @@ class TestStreamline(unittest.TestCase):
         streamlines = [self.streamline, self.streamline.astype(np.float64)]
         assert_raises(ValueError, dipystreamline.set_number_of_points, streamlines, nb_points)
 
-        # Test streamline with shape not Nx3
-        assert_raises(ValueError, dipystreamline.set_number_of_points, self.streamline.T, nb_points)
+        # Test streamlines with differente shape
+        modified_streamlines_cython = dipystreamline.set_number_of_points(self.heterogeneous_streamlines, nb_points)
+
+        for i, s in enumerate(self.heterogeneous_streamlines):
+            modified_streamline_python = set_number_of_points_python(s, nb_points)
+            assert_array_almost_equal(modified_streamlines_cython[i], modified_streamline_python)
 
         # Test streamline with integer dtype
         modified_streamline = dipystreamline.set_number_of_points(self.streamline.astype(np.int32))
@@ -261,8 +269,12 @@ class TestStreamline(unittest.TestCase):
         streamlines = [self.streamline, self.streamline.astype(np.float64)]
         assert_raises(ValueError, dipystreamline.length, streamlines)
 
-        # Test streamline having a shape not Nx3
-        assert_raises(ValueError, dipystreamline.length, self.streamline.T)
+        # Test streamlines with differente shape
+        length_streamlines_cython = dipystreamline.length(self.heterogeneous_streamlines)
+
+        for i, s in enumerate(self.heterogeneous_streamlines):
+            length_streamline_python = length_python(s)
+            assert_array_almost_equal(length_streamlines_cython[i], length_streamline_python)
 
         # Test streamline having integer dtype
         length_streamline = dipystreamline.length(self.streamline.astype('int'))
@@ -277,3 +289,29 @@ class TestStreamline(unittest.TestCase):
         # We do not support list of lists, it should be numpy ndarray.
         streamline = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
         assert_raises(AttributeError, dipystreamline.length, streamline)
+
+    def test_memory_leak(self):
+        import resource
+        NB_LOOPS = 20
+
+        streamlines = [self.streamline]*1000
+        ram_usages = np.zeros(NB_LOOPS)
+        for i in range(NB_LOOPS):
+            dipystreamline.length(streamlines)
+            ram_usages[i] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+        #print (["{0:.2f}Mo".format(ram/1024.) for ram in np.diff(ram_usages)])
+
+        ram_leak = (ram_usages[-1] - ram_usages[1])
+        assert_true(ram_leak / 1024. < 1., "Might be a memory leak of {0:.2f}Mo!".format(ram_leak/1014.))
+
+        nb_points = 12
+        ram_usages = np.zeros(NB_LOOPS)
+        for i in range(NB_LOOPS):
+            dipystreamline.set_number_of_points(streamlines, nb_points)
+            ram_usages[i] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+
+        #print (["{0:.2f}Mo".format(ram/1024.) for ram in np.diff(ram_usages)])
+
+        ram_leak = (ram_usages[-1] - ram_usages[1])
+        assert_true(ram_leak / 1024. < 1., "Might be a memory leak of {0:.2f}Mo!".format(ram_leak/1014.))
