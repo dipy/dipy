@@ -470,44 +470,6 @@ class SphHarmModel(OdfModel, Cache):
         return SphHarmFit(self, coef, mask)
 
 
-def _shm_predict(fit, gtab, S0=1):
-    """
-    Helper function for the implementation of model prediction from the
-    ConstrainedSphericalDeconvFit class. This is necessary, because in
-    multi-voxel data, the multi_vox_fit kicks in.
-
-    Parameters
-    ----------
-    fit : A ConstrainedSphericalDeconvFit class instance
-        The prediction will be done using the parameters in this object.
-    gtab : A GradientTable class instance
-        The prediction will be done for the bval/bvec combinations in this
-        object.
-    S0 : float or ndarray (optional)
-        The mean non-diffusion weighted signal in the voxel or volume.
-
-    Returns
-    -------
-    pred_sig : ndarray
-        The predicted signal in the gtab for this fit.
-    """
-    sphere = Sphere(xyz=gtab.bvecs[~gtab.b0s_mask])
-    prediction_matrix = fit.prediction_matrix(sphere, gtab)
-
-    if np.iterable(S0):
-        # If it's an array, we need to give it one more dimension:
-        S0 = S0[..., None]
-
-    # This is the key operation: convolve and multiply by S0:
-    pre_pred_sig = S0 * np.dot(prediction_matrix, fit._shm_coef)
-    # Now put everything in its right place:
-    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
-    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-    pred_sig[..., gtab.b0s_mask] = S0
-
-    return pred_sig
-
-
 class SphHarmFit(OdfFit):
     """Diffusion data fit to a spherical harmonic model"""
 
@@ -604,7 +566,7 @@ class SphHarmFit(OdfFit):
         return prediction_matrix
 
 
-    def predict(self, gtab, S0=1.0):
+    def predict(self, gtab=None, S0=1.0):
         """
         Predict the diffusion signal from the model coefficients.
 
@@ -618,7 +580,10 @@ class SphHarmFit(OdfFit):
            all voxels
 
         """
-        return _shm_predict(self, gtab, S0)
+        if not hasattr(self.model, 'predict'):
+            msg = "This model does not have prediction implemented yet"
+            raise NotImplementedError(msg)
+        return self.model.predict(self.shm_coeff, gtab, S0)
 
 
 class CsaOdfModel(SphHarmModel):

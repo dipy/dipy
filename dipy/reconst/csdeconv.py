@@ -110,6 +110,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
             self.response = response
 
         self.S_r = estimate_response(gtab, self.response[0], self.response[1])
+        self.response_scaling = response[1]
 
         r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
         r_rh = sh_to_rh(r_sh, m, n)
@@ -134,12 +135,32 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         return SphHarmFit(self, shm_coeff, None)
 
 
-    def predict(self, sh_coeff, S0=1):
+    def predict(self, sh_coeff, gtab=None, S0=1):
         """
         Predict a signal from sh coefficients for this model
         """
-        return csd_predict(sh_coeff, self.gtab, response=self.response, S0=S0,
-                           R=self.R)
+        if gtab is None:
+            SH_basis = self.B_dwi
+            gtab = self.gtab
+        else:
+            x, y, z = gtab.gradients[~gtab.b0s_mask].T
+            r, theta, phi = cart2sphere(x, y, z)
+            SH_basis, m, n = real_sym_sh_basis(self.sh_order, theta, phi)
+
+        # Because R is diagonal, the matrix multiply is written as a multiply
+        predict_matrix = SH_basis * self.R.diagonal()
+        S0 = np.asarray(S0)[..., None]
+        scaling = S0 / self.response_scaling
+
+        # This is the key operation: convolve and multiply by S0:
+        pre_pred_sig = scaling * np.dot(predict_matrix, sh_coeff)
+
+        # Now put everything in its right place:
+        pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
+        pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
+        pred_sig[..., gtab.b0s_mask] = S0
+
+        return pred_sig
 
 
 class ConstrainedSDTModel(OdfModel, Cache):
@@ -661,9 +682,6 @@ def csd_predict(sh_coeff, gtab, response=None, S0=1, R=None):
     S0 : ndarray or float
         The non diffusion-weighted signal value.
 
-    R : ndarray
-        Optionally, provide an R matrix. If not provided, calculated from the
-        gtab, response function, etc.
 
     Returns
     -------
@@ -672,40 +690,12 @@ def csd_predict(sh_coeff, gtab, response=None, S0=1, R=None):
         measurement with the provided GradientTable. The last dimension of the
         resulting array is the same as the number of bvals/bvecs in the
         GradientTable. The first dimensions have shape: `sh_coeff.shape[:-1]`.
+
     """
+    if R is not None:
+        raise ValueError("using R in this function is no longer allowed")
     n_coeff = sh_coeff.shape[-1]
     sh_order = order_from_ncoef(n_coeff)
-    x, y, z = gtab.gradients[~gtab.b0s_mask].T
-    r, theta, phi = cart2sphere(x, y, z)
-    SH_basis, m, n = real_sym_sh_basis(sh_order, theta, phi)
-    if R is None:
-        # for the gradient sphere
-        B_dwi = real_sph_harm(m, n, theta[:, None], phi[:, None])
-
-        if response is None:
-            response = (np.array([0.0015, 0.0003, 0.0003]), 1)
-        else:
-            response = response
-
-        S_r = estimate_response(gtab, response[0], response[1])
-        r_sh = np.linalg.lstsq(B_dwi, S_r[~gtab.b0s_mask])[0]
-        r_rh = sh_to_rh(r_sh, m, n)
-        R = forward_sdeconv_mat(r_rh, n)
-
-    predict_matrix = np.dot(SH_basis, R)
-
-    if np.iterable(S0):
-        # If it's an array, we need to give it one more dimension:
-        S0 = S0[..., None]
-
-    # This is the key operation: convolve and multiply by S0:
-    pre_pred_sig = S0 * np.dot(predict_matrix, sh_coeff)
-
-    # Now put everything in its right place:
-    pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
-    pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-    pred_sig[..., gtab.b0s_mask] = S0
-
-    return pred_sig
-
+    model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=sh_order)
+    return model.predict(sh_coeff)
 
