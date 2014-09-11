@@ -139,7 +139,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         """
         Predict a signal from sh coefficients for this model
         """
-        if gtab is None:
+        if gtab is None or gtab is self.gtab:
             SH_basis = self.B_dwi
             gtab = self.gtab
         else:
