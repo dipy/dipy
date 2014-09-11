@@ -541,31 +541,6 @@ class SphHarmFit(OdfFit):
         return self._shm_coef
 
 
-    def prediction_matrix(self, sphere, gtab):
-        """
-        A matrix used to predict the signal from an estimated ODF
-
-        Parameters
-        ----------
-        sphere : a Sphere class instance
-        gtab : a GradientTable class instance
-        """
-        prediction_matrix = self.model.cache_get("prediction_matrix", (sphere,
-                                                                       gtab))
-        if prediction_matrix is None:
-            pred_gtab = grad.gradient_table(
-                gtab.bvals[~gtab.b0s_mask],
-                gtab.bvecs[~gtab.b0s_mask])
-            x, y, z = pred_gtab.gradients.T
-            r, theta, phi = cart2sphere(x, y, z)
-            SH_basis, m, n = real_sym_sh_basis(self.model.sh_order, theta, phi)
-            # The prediction matrix needs to be normalized to the response S0:
-            prediction_matrix = (np.dot(SH_basis, self.model.R) /
-                                 self.model.response[1])
-
-        return prediction_matrix
-
-
     def predict(self, gtab=None, S0=1.0):
         """
         Predict the diffusion signal from the model coefficients.
