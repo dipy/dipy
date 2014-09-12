@@ -56,18 +56,20 @@ def length(streamlines):
     Examples
     ----------
     >>> from dipy.tracking.streamline import length
+    >>> import numpy as np
     >>> streamline = np.array([[1, 1, 1], [2, 3, 4], [0, 0, 0]])
     >>> expected_length = np.sqrt([1+2**2+3**2, 2**2+3**2+4**2]).sum()
     >>> length(streamline) == expected_length
     True
-    >>> streamlines = [streamline, np.vstack([streamline, streamline[:-1]])]
+    >>> streamlines = [streamline, np.vstack([streamline, streamline[::-1]])]
     >>> expected_lengths = [expected_length, 2*expected_length]
     >>> np.allclose(expected_lengths, [length(streamlines[0]), length(streamlines[1])])
     True
     >>> length([])
-    0
+    0.0
     >>> length(np.array([[1, 2, 3]]))
-    0
+    0.0
+
     '''
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
@@ -205,10 +207,11 @@ def set_number_of_points(streamlines, nb_points=3):
     >>> # Multiple streamlines
     >>> streamlines = [streamline, streamline[::2]]
     >>> modified_streamlines = set_number_of_points(streamlines, 10)
-    >>> map(len, streamlines)
+    >>> [len(s) for s in streamlines]
     [100, 50]
-    >>> map(len, modified_streamlines)
+    >>> [len(s) for s in modified_streamlines]
     [10, 10]
+
     '''
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
