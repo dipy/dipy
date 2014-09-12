@@ -207,9 +207,9 @@ def set_number_of_points(streamlines, nb_points=3):
     >>> # Multiple streamlines
     >>> streamlines = [streamline, streamline[::2]]
     >>> modified_streamlines = set_number_of_points(streamlines, 10)
-    >>> map(len, streamlines)
+    >>> [len(s) for s in streamlines]
     [100, 50]
-    >>> map(len, modified_streamlines)
+    >>> [len(s) for s in modified_streamlines]
     [10, 10]
 
     '''
