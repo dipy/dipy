@@ -37,7 +37,14 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
-import scipy.version as SCIPY_VERSION
+from distutils.version import StrictVersion
+import scipy
+
+if StrictVersion(scipy.__version__) >= StrictVersion('0.15.0'):
+    SCIPY_15_PLUS = True
+else:
+    SCIPY_15_PLUS = False
+
 
 def _copydoc(obj):
     def bandit(f):
@@ -178,7 +185,7 @@ def spherical_harmonics(m, n, theta, phi):
     scipy version < 0.15.0.
 
     """
-    if str(SCIPY_VERSION) >= '0.15.0':
+    if SCIPY_15_PLUS:
         return sph_harm(m, n, theta, phi)
     x = np.cos(phi)
     val = lpmv(m, n, x).astype(complex)
