@@ -40,6 +40,7 @@ from dipy.reconst.cache import Cache
 from distutils.version import StrictVersion
 import scipy
 
+
 if StrictVersion(scipy.version.short_version) >= StrictVersion('0.15.0'):
     SCIPY_15_PLUS = True
 else:
@@ -977,7 +978,6 @@ def real_sph_harm2(m, n, theta, phi):
     return real_sh
 
 
-<<<<<<< HEAD
 def sph_harm2(m, n, theta, phi):
     x = np.cos(phi)
     val = lpmv(abs(m), n, x).astype(complex)
@@ -985,6 +985,3 @@ def sph_harm2(m, n, theta, phi):
     val *= np.exp(0.5*(gammaln(n-m+1)-gammaln(n+m+1)))
     val = val * np.exp(1j * m * theta)
     return val
-=======
-    return B.T
->>>>>>> Updated with faster sph_harm version

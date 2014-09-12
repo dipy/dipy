@@ -124,10 +124,29 @@ data_small = data[20:50, 55:85, 38:39]
 
 from dipy.reconst.csdeconv import recursive_response
 
-response = recursive_response(gtab, data_small, mask=None, sh_order=8,
+"""
+A WM mask can shorten computation time for the whole dataset. Here it is created
+based on the DTI fit.
+"""
+
+import dipy.reconst.dti as dti
+
+tenmodel = dti.TensorModel(gtab)
+
+tenfit = tenmodel.fit(data, mask=data[..., 0] > 200)
+
+from dipy.reconst.dti import fractional_anisotropy
+
+FA = fractional_anisotropy(tenfit.evals)
+
+MD = dti.mean_diffusivity(tenfit.evals)
+
+wm_mask = (np.logical_or(FA >= 0.4, (np.logical_and(FA >= 0.15, MD >= 0.0011))))
+
+response = recursive_response(gtab, data, mask=wm_mask, sh_order=8,
                               peak_thr=0.01, init_fa=0.08,
                               init_trace=0.0021, iter=8, convergence=0.001,
-                              parallel=False)
+                              parallel=True)
 
 
 """
@@ -206,7 +225,7 @@ csd_peaks = peaks_from_model(model=csd_model,
                              sphere=sphere,
                              relative_peak_threshold=.5,
                              min_separation_angle=25,
-                             parallel=False)
+                             parallel=True)
 
 fvtk.clear(ren)
 

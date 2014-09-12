@@ -859,7 +859,6 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     evals = fa_trace_to_lambdas(init_fa, init_trace)
     response = (evals, S0)
     sphere = get_sphere('symmetric724')
-    hemisphere = HemiSphere.from_sphere(sphere)
 
     no_params = ((sh_order + 1) * (sh_order + 2)) / 2
     response_p = np.ones(no_params)
@@ -880,7 +879,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
 
         csd_peaks = peaks_from_model(model=csd_model,
                                      data=data,
-                                     sphere=hemisphere,
+                                     sphere=sphere,
                                      relative_peak_threshold=peak_thr,
                                      min_separation_angle=25,
                                      parallel=parallel)
