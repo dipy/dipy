@@ -24,6 +24,7 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy
 
 from dipy.reconst.peaks import peaks_from_model
 from dipy.core.geometry import vec2vec_rotmat
+from dipy.core.sphere import HemiSphere
 
 
 class ConstrainedSphericalDeconvModel(SphHarmModel):
@@ -855,6 +856,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
     evals = fa_trace_to_lambdas(init_fa, init_trace)
     response = (evals, S0)
     sphere = get_sphere('symmetric724')
+    hemisphere = HemiSphere.from_sphere(sphere)
 
     no_params = ((sh_order + 1) * (sh_order + 2)) / 2
     response_p = np.ones(no_params)
@@ -865,6 +867,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
         data = data[mask]
 
     m, n = sph_harm_ind_list(sh_order)
+    sh_mask = m != 0
     where_dwi = lazy_index(~gtab.b0s_mask)
 
     for num_it in range(1, iter):
@@ -874,7 +877,7 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
 
         csd_peaks = peaks_from_model(model=csd_model,
                                      data=data,
-                                     sphere=sphere,
+                                     sphere=hemisphere,
                                      relative_peak_threshold=peak_thr,
                                      min_separation_angle=25,
                                      parallel=parallel)
@@ -898,8 +901,9 @@ def recursive_response(gtab, data, mask=None, sh_order=8, peak_thr=0.01,
                                                   data[num_vox, where_dwi])[0]
 
         response = r_sh_all/data.shape[0]
+        response[sh_mask] = 0
 
-        change = abs((response_p - response)/response_p)
+        change = abs((response_p[~sh_mask] - response[~sh_mask])/response_p[~sh_mask])
         if change.all() < convergence:
             break
 
