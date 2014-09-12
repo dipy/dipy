@@ -289,29 +289,3 @@ class TestStreamline(unittest.TestCase):
         # We do not support list of lists, it should be numpy ndarray.
         streamline = [[1, 2, 3], [4, 5, 5], [2, 1, 3], [4, 2, 1]]
         assert_raises(AttributeError, dipystreamline.length, streamline)
-
-    def test_memory_leak(self):
-        import resource
-        NB_LOOPS = 20
-
-        streamlines = [self.streamline]*1000
-        ram_usages = np.zeros(NB_LOOPS)
-        for i in range(NB_LOOPS):
-            dipystreamline.length(streamlines)
-            ram_usages[i] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-
-        #print (["{0:.2f}Mo".format(ram/1024.) for ram in np.diff(ram_usages)])
-
-        ram_leak = (ram_usages[-1] - ram_usages[1])
-        assert_true(ram_leak / 1024. < 1., "Might be a memory leak of {0:.2f}Mo!".format(ram_leak/1014.))
-
-        nb_points = 12
-        ram_usages = np.zeros(NB_LOOPS)
-        for i in range(NB_LOOPS):
-            dipystreamline.set_number_of_points(streamlines, nb_points)
-            ram_usages[i] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-
-        #print (["{0:.2f}Mo".format(ram/1024.) for ram in np.diff(ram_usages)])
-
-        ram_leak = (ram_usages[-1] - ram_usages[1])
-        assert_true(ram_leak / 1024. < 1., "Might be a memory leak of {0:.2f}Mo!".format(ram_leak/1014.))
