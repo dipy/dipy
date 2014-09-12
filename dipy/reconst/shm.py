@@ -962,7 +962,6 @@ def sh_to_sf_matrix(sphere, sh_order, basis_type=None, return_inv=True, smooth=0
         L = -n * (n + 1)
         invB = smooth_pinv(B, np.sqrt(smooth) * L)
         return B.T, invB.T
-
     return B.T
 
 

@@ -60,7 +60,7 @@ def test_recursive_response_calibration():
     odf_gt_single = single_tensor_odf(sphere.vertices, evals, evecs)
 
     response = recursive_response(gtab, data, mask=None, sh_order=8,
-                                  peak_thr=0.01, init_fa=0.08,
+                                  peak_thr=0.01, init_fa=0.1,
                                   init_trace=0.0021, iter=8, convergence=0.001,
                                   parallel=False)
 
