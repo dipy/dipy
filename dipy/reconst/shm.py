@@ -178,7 +178,7 @@ def spherical_harmonics(m, n, theta, phi):
     scipy version < 0.15.0.
 
     """
-    if SCIPY_VERSION >= '0.15.0':
+    if str(SCIPY_VERSION) >= '0.15.0':
         return sph_harm(m, n, theta, phi)
     x = np.cos(phi)
     val = lpmv(m, n, x).astype(complex)
