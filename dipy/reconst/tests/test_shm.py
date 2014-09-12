@@ -5,6 +5,7 @@ import numpy.linalg as npl
 from nose.tools import assert_equal, assert_raises, assert_true
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy.testing as npt
+from scipy.special import sph_harm as sph_harm_sp
 
 from dipy.core.sphere import hemi_icosahedron
 from dipy.core.gradients import gradient_table
@@ -23,7 +24,8 @@ from dipy.reconst.shm import (real_sph_harm, real_sym_sh_basis,
                               OpdtModel, normalize_data, hat, lcr_matrix,
                               smooth_pinv, bootstrap_data_array,
                               bootstrap_data_voxel, ResidualBootstrapWrapper,
-                              CsaOdfModel, QballModel, SphHarmFit)
+                              CsaOdfModel, QballModel, SphHarmFit,
+                              spherical_harmonics)
 
 def test_order_from_ncoeff():
     """
@@ -406,11 +408,11 @@ def test_faster_sph_harm():
                     2.17039906,  2.68424643,  1.77896086,  0.45476215,  0.99734418,
                     -2.73107896,  2.28815009,  2.86276506,  3.09450274, -3.09857384,
                     -1.06955885, -2.83826831,  1.81932195,  2.81296654])
-    
-    rsh = real_sph_harm(m, n, theta[:, None], phi[:, None], fast=True)
-    rsh2 = real_sph_harm(m, n, theta[:, None], phi[:, None], fast=False)
-    
-    assert_array_almost_equal(rsh, rsh2, 8)
+
+    sh = spherical_harmonics(m, n, theta[:, None], phi[:, None])
+    sh2 = sph_harm_sp(m, n, theta[:, None], phi[:, None])
+
+    assert_array_almost_equal(sh, sh2, 8)
 
 
 if __name__ == "__main__":

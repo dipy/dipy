@@ -37,6 +37,7 @@ from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
 
+import scipy.version as SCIPY_VERSION
 
 def _copydoc(obj):
     def bandit(f):
@@ -173,9 +174,12 @@ def spherical_harmonics(m, n, theta, phi):
 
     Notes
     -----
-    This is a faster implementation of scipy.special.sph_harm.
+    This is a faster implementation of scipy.special.sph_harm for
+    scipy version < 0.15.0.
 
     """
+    if SCIPY_VERSION >= '0.15.0':
+        return sph_harm(m, n, theta, phi)
     x = np.cos(phi)
     val = lpmv(m, n, x).astype(complex)
     val *= np.sqrt((2*n + 1) / 4.0 / np.pi)
@@ -184,8 +188,8 @@ def spherical_harmonics(m, n, theta, phi):
     return val
 
 
-def real_sph_harm(m, n, theta, phi, fast=True):
-    r""" Compute real spherical harmonics. 
+def real_sph_harm(m, n, theta, phi):
+    r""" Compute real spherical harmonics.
 
     Where the real harmonic $Y^m_n$ is defined to be:
 
@@ -206,9 +210,6 @@ def real_sph_harm(m, n, theta, phi, fast=True):
         The azimuthal (longitudinal) coordinate.
     phi : float [0, pi]
         The polar (colatitudinal) coordinate.
-    fast : bool
-        If False use the scipy.special.sph_harm else use spherical_harmonics 
-        from dipy.reconst.shm.
 
     Returns
     --------
@@ -221,10 +222,7 @@ def real_sph_harm(m, n, theta, phi, fast=True):
     """
     # dipy uses a convention for theta and phi that is reversed with respect to
     # function signature of scipy.special.sph_harm
-    if fast:
-        sh = spherical_harmonics(np.abs(m), n, phi, theta)
-    else:
-        sh = sph_harm(np.abs(m), n, phi, theta)
+    sh = spherical_harmonics(np.abs(m), n, phi, theta)
 
     real_sh = np.where(m > 0, sh.imag, sh.real)
     real_sh *= np.where(m == 0, 1., np.sqrt(2))
