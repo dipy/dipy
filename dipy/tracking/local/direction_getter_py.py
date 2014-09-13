@@ -25,11 +25,11 @@ class SimplePmfGen(PmfGen):
 
 class ShmFitPmfGen(PmfGen):
 
-    def __init__(self, shmFit, sphere):
-        self.fit = shmFit
+    def __init__(self, shmfit, sphere):
+        self.fit = shmfit
         self.sphere = sphere
-        self._B = fit.sampling_matrix(sphere)
-        self._ceoff = fit.shm_coeff
+        self._B = shmfit.sampling_matrix(sphere)
+        self._coeff = shmfit.shm_coeff
 
     def get_pmf(self, point):
         coeff = trilinear_interpolate4d(self._coeff, point)
@@ -87,7 +87,7 @@ class ProbabilisticDirectionGetter(DirectionGetter):
             direction.
 
         """
-        pmfGen = ShmPmfGen(shmFit, sphere)
+        pmf_gen = ShmFitPmfGen(shmFit, sphere)
         return klass(pmf_gen, sphere, max_angle)
 
     def __init__(self, pmf_gen, sphere, max_angle):
