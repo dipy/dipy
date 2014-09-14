@@ -5,7 +5,7 @@ import numpy as np
 import nibabel as nib
 
 # Import tracking stuff
-from dipy.tracking.local import (ProbabilisticOdfWightedDirectionGetter,
+from dipy.tracking.local import (ProbabilisticDirectionGetter,
                                  ThresholdTissueClassifier, LocalTracking)
 from dipy.tracking import utils
 
@@ -60,7 +60,7 @@ def prob_tracking_example(model, data, mask, N, hdr, filename):
     fit = model.fit(data, mask)
 
     # Create objects to be passed to tracker
-    powdg = ProbabilisticOdfWightedDirectionGetter(fit, default_sphere, 45.)
+    pdg = ProbabilisticDirectionGetter.fromShmFit(fit, default_sphere, 45.)
     gfa = fit.gfa
     gfa = np.where(np.isnan(gfa), 0., gfa)
     ttc = ThresholdTissueClassifier(gfa, .2)
@@ -70,7 +70,7 @@ def prob_tracking_example(model, data, mask, N, hdr, filename):
     seeds = seeds[::len(seeds) // N + 1]
 
     # Create streamline generator
-    streamlines = LocalTracking(powdg, ttc, seeds, affine, .5, max_cross=1)
+    streamlines = LocalTracking(pdg, ttc, seeds, affine, .5, max_cross=1)
     trk_streamlines = utils.move_streamlines(streamlines,
                                          input_space=affine,
                                          output_space=trackvis_affine)
