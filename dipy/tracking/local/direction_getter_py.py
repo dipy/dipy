@@ -3,9 +3,15 @@ from dipy.reconst.peaks import peak_directions, default_sphere
 from dipy.reconst.shm import (bootstrap_data_voxel, cart2sphere, hat,
                               lazy_index, lcr_matrix, normalize_data,
                               real_sym_sh_basis)
-from ..markov import _closest_peak
 from .direction_getter import DirectionGetter
 from .interpolation import trilinear_interpolate4d
+
+
+def _asarray(cython_memview):
+    # TODO: figure out the best way to get an array from a memory view.
+    # `np.array(view)` works, but is quite slow. Views are also "array_like",
+    # but using them as arrays seems to also be quite slow.
+    return np.fromiter(cython_memview, float)
 
 
 class PmfGen(object):
@@ -93,6 +99,8 @@ class ProbabilisticDirectionGetter(DirectionGetter):
     def __init__(self, pmf_gen, sphere, max_angle):
         self.pmf_gen = pmf_gen
         self.sphere = sphere
+        # The vertices need to be in a contiguous array
+        self.vertices = self.sphere.vertices.copy()
         cos_similarity = np.cos(np.deg2rad(max_angle))
         self._set_adjacency_matrix(sphere, cos_similarity)
 
@@ -115,10 +123,7 @@ class ProbabilisticDirectionGetter(DirectionGetter):
 
     def get_direction(self, point, direction):
         """Samples a pmf to updates ``direction`` array with a new direction"""
-        # get direction gets memory views as inputs
-        point = np.array(point, copy=False)
-        direction = np.array(direction, copy=False)
-
+        # point and direction are passed in as cython memory views
         pmf = self.pmf_gen.get_pmf(point)
         cdf = (self._adj_matrix[tuple(direction)] * pmf).cumsum()
         if cdf[-1] == 0:
@@ -126,9 +131,9 @@ class ProbabilisticDirectionGetter(DirectionGetter):
         random_sample = np.random.random() * cdf[-1]
         idx = cdf.searchsorted(random_sample, 'right')
 
-        newdir = self.sphere.vertices[idx]
+        newdir = self.vertices[idx]
         # Update direction and return 0 for error
-        if np.dot(newdir, direction) > 0:
+        if np.dot(newdir, _asarray(direction)) > 0:
             direction[:] = newdir
         else:
             direction[:] = -newdir
