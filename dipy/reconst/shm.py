@@ -29,13 +29,21 @@ from numpy import concatenate, diag, diff, empty, eye, sqrt, unique, dot
 from numpy.linalg import pinv, svd
 from numpy.random import randint
 from dipy.reconst.odf import OdfModel, OdfFit
-from scipy.special import sph_harm, lpn
+from scipy.special import sph_harm, lpn, lpmv, gammaln
 from dipy.core.sphere import Sphere
 import dipy.core.gradients as grad
 from dipy.sims.voxel import single_tensor, all_tensor_evecs
 from dipy.core.geometry import cart2sphere
 from dipy.core.onetime import auto_attr
 from dipy.reconst.cache import Cache
+
+from distutils.version import StrictVersion
+import scipy
+
+if StrictVersion(scipy.__version__) >= StrictVersion('0.15.0'):
+    SCIPY_15_PLUS = True
+else:
+    SCIPY_15_PLUS = False
 
 
 def _copydoc(obj):
@@ -149,10 +157,48 @@ def gen_dirac(m, n, theta, phi):
     return real_sph_harm(m, n, theta, phi)
 
 
-def real_sph_harm(m, n, theta, phi):
+def spherical_harmonics(m, n, theta, phi):
+    r""" Compute spherical harmonics
+
+    This may take scalar or array arguments. The inputs will be broadcasted
+    against each other.
+
+    Parameters
+    ----------
+    m : int ``|m| <= n``
+        The order of the harmonic.
+    n : int ``>= 0``
+        The degree of the harmonic.
+    theta : float [0, 2*pi]
+        The azimuthal (longitudinal) coordinate.
+    phi : float [0, pi]
+        The polar (colatitudinal) coordinate.
+
+    Returns
+    -------
+    y_mn : complex float
+        The harmonic $Y^m_n$ sampled at `theta` and `phi`.
+
+    Notes
+    -----
+    This is a faster implementation of scipy.special.sph_harm for
+    scipy version < 0.15.0.
+
     """
-    Compute real spherical harmonics, where the real harmonic $Y^m_n$ is
-    defined to be:
+    if SCIPY_15_PLUS:
+        return sph_harm(m, n, theta, phi)
+    x = np.cos(phi)
+    val = lpmv(m, n, x).astype(complex)
+    val *= np.sqrt((2 * n + 1) / 4.0 / np.pi)
+    val *= np.exp(0.5 * (gammaln(n - m + 1) - gammaln(n + m + 1)))
+    val = val * np.exp(1j * m * theta)
+    return val
+
+
+def real_sph_harm(m, n, theta, phi):
+    r""" Compute real spherical harmonics.
+
+    Where the real harmonic $Y^m_n$ is defined to be:
 
         Real($Y^m_n$) * sqrt(2) if m > 0
         $Y^m_n$                 if m == 0
@@ -183,7 +229,8 @@ def real_sph_harm(m, n, theta, phi):
     """
     # dipy uses a convention for theta and phi that is reversed with respect to
     # function signature of scipy.special.sph_harm
-    sh = sph_harm(np.abs(m), n, phi, theta)
+    sh = spherical_harmonics(np.abs(m), n, phi, theta)
+
     real_sh = np.where(m > 0, sh.imag, sh.real)
     real_sh *= np.where(m == 0, 1., np.sqrt(2))
     return real_sh
