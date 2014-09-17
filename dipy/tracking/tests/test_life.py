@@ -13,8 +13,6 @@ import dipy.core.gradients as dpg
 from dipy.data import get_data
 
 
-
-
 def test_sl_gradients():
     sl = [[1,2,3], [4,5,6], [5,6,7]]
     grads = np.array([[3,3,3], [2,2,2], [1,1,1]])
@@ -41,6 +39,7 @@ def test_sl_signal():
     sl = [[[1,2,3], [4,5,3], [5,6,3], [6,7,3]],
           [[1,2,3], [4,5,3], [5,6,3]]]
     sig = [life.sl_signal(s, gtab, evals) for s in sl]
+
 
 def test_voxel2fiber():
     sl = [[[1,2,3], [4,5,3], [5,6,3], [6,7,3]],

@@ -223,24 +223,42 @@ class FiberModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
 
-    def fit(self, data, sl, evals=[0.0015, 0.0005, 0.0005]):
+    def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005]):
         """
         Fit the LiFE FiberModel for data and a set of streamlines associated
         with this data
 
         Parameters
+        ----------
+        data : 4D array
+           Diffusion-weighted data
+
+        sl : list
+           A bunch of streamlines
 
         """
-        model_matrix = self.model_matrix(sl, data.affine, evals=evals)
-        to_fit = data
+        fiber_matrix, iso_matrix, vox_coords = \
+            self.model_setup(sl, affine, evals=evals)
+
+        # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
+        # signal:
+        relative_signal = (data[~self.gtab.b0s_mask]/
+                           np.mean(data[self.gtab.b0s_mask])
+
+        to_fit = relative_signal - np.mean(relative_signal, -1)
 
 
+        return FiberFit(self, )
 
-    def model_matrix(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
+    def model_setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
         """
         The matrix of fiber-contributions to the DWI signal.
 
         """
+
+        # XXX Need to use `yield` to generate the vox_coords, without holding
+        # all of the fibers in memory simultaneously - compare the current set
+        # of vox coords to the next fiber in each iteration.
         sl = transform_sl(sl, affine)
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(sl)
@@ -310,18 +328,9 @@ class FiberModel(ReconstModel):
         iso_matrix = sparse.coo_matrix((i_matrix_sig,
                                        [i_matrix_row, i_matrix_col])).tocsr()
 
-        return (fiber_matrix, iso_matrix)
+        return (fiber_matrix, iso_matrix, vox_coords)
 
 
-    def voxel_signal(self, data, sl):
-        """
-        The signal in the voxels corresponding to where the fibers pass through.
-        """
-        b0 = np.mean(data[..., self.gtab.b0s_mask], -1)
-        if self.mode == 'relative_signal':
-            return self.relative_signal[self.fg_idx_unique[0],
-                                        self.fg_idx_unique[1],
-                                        self.fg_idx_unique[2]]
 
 
     @auto_attr
@@ -384,6 +393,8 @@ def FiberFit(ReconstFit):
     """
     A fit of the LiFE model to diffusion data
     """
+
+    def __init__(self, fiber_model, params)
 
     @auto_attr
     def predict(self):
