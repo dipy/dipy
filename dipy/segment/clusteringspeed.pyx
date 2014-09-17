@@ -19,9 +19,7 @@ cdef class identity:
     def __getitem__(self, idx):
         return idx
 
-############
-# Clusters #
-############
+
 cdef class Cluster:
     cdef int _id
     cdef ClusterMap _cluster_map
@@ -108,9 +106,6 @@ cdef class ClusterCentroid(Cluster):
         (<ClusterMapCentroid>self.cluster_map).c_add(self.id, id_features, features)
 
 
-###############
-# ClusterMaps #
-###############
 cdef class ClusterMap:
     cdef object _cluster_class
     cdef object refdata
@@ -124,6 +119,12 @@ cdef class ClusterMap:
         self._clusters_size = NULL
         self.refdata = refdata
         self._cluster_class = Cluster
+
+    property refdata:
+        def __get__(self):
+            return self.refdata
+        def __set__(self, refdata):
+            self.refdata = refdata
 
     property clusters:
         def __get__(self):
@@ -251,9 +252,6 @@ cdef class ClusterMapCentroid(ClusterMap):
         self.c_add(id_cluster, id_features, features)
 
 
-#########################
-# Clustering algorithms #
-#########################
 cpdef quickbundles(streamlines, Metric metric, float threshold=10., int max_nb_clusters=biggest_int, ordering=None):
     if ordering is None:
         ordering = np.arange(len(streamlines), dtype="int32")

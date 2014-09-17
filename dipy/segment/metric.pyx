@@ -11,9 +11,6 @@ cdef extern from "stdlib.h" nogil:
     void *calloc(size_t nelem, size_t elsize)
 
 
-##########
-# Metric #
-##########
 cdef class Metric(object):
     def __cinit__(self):
         self.is_order_invariant = True
@@ -126,9 +123,6 @@ cdef class Euclidean(CythonMetric):
         return self.c_dist(&features1[0], features2)
 
 
-############
-# Features #
-############
 cdef class FeatureType(object):
     def __cinit__(self):
         self.is_order_invariant = True
@@ -198,9 +192,6 @@ cdef class Midpoint(CythonFeatureType):
         out[2] = streamline[mid, 2]
 
 
-####################
-# Metric functions #
-####################
 cpdef float dist(Metric metric, Streamline s1, Streamline s2) except -1.0:
     cdef Features features1 = metric.extract_features(s1)
     cdef Features features2 = metric.extract_features(s2)
