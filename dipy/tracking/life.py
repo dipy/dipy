@@ -108,7 +108,27 @@ def sl_signal(sl, gtab, evals):
     return sig
 
 
-def voxel2fiber(sl, affine):
+def transform_sl(sl, affine=None):
+    """
+    Helper function that moves and generates the streamline. Thin wrapper
+    around move_streamlines
+
+    Parameters
+    ----------
+    sl : list
+        A list of streamline coordinates
+
+    affine : 4 by 4 array
+        Affine mapping from fibers to data
+    """
+    if affine is None:
+        affine = np.eye(4)
+    # Generate these immediately:
+    return [s for s in move_streamlines(sl, affine)]
+
+
+
+def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
     """
     Maps voxels to stream-lines and stream-lines to voxels, for setting up
     the LiFE equations matrix
@@ -119,21 +139,41 @@ def voxel2fiber(sl, affine):
         A collection of streamlines, each n by 3, with n being the number of
         nodes in the fiber.
 
+    affine : 4 by 4 array (optional)
+       Defines the spatial transformation from sl to data. Default: np.eye(4)
+
+    transformed : bool (optional)
+        Whether the streamlines have been already transformed (in which case
+        they don't need to be transformed in here).
+
+    unique_idx : array (optional).
+       The unique indices in the streamlines
+
     Returns
     -------
-    v2f, v2fn : tuple of lists
+    v2f, v2fn : tuple of arrays
 
-    The first list in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it?
+    The first array in the tuple answers the question: Given a voxel (from
+    the unique indices in this model), which fibers pass through it? Shape:
+    (n_voxels, n_fibers).
 
     The second answers the question: Given a voxel, for each fiber, which
-    nodes are in that voxel?
+    nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
+
     """
-    # Generate these immediately:
-    transformed_sl = [s for s in move_streamlines(sl, affine)]
-    all_coords = np.concatenate(transformed_sl)
-    sl_idx_unique = unique_rows(all_coords.astype(int))
-    v2f = np.zeros((len(sl_idx_unique), len(sl)), int)
+    if transformed:
+        transformed_sl = sl
+    else:
+        transformed_sl = transform_sl(sl, affine=affine)
+
+    if unique_idx is None:
+        all_coords = np.concatenate(transformed_sl)
+        unique_idx = unique_rows(all_coords.astype(int))
+    else:
+        unique_idx = unique_idx
+
+    # Given a voxel (from the unique coords, is the fiber in here?)
+    v2f = np.zeros((len(unique_idx), len(sl)), int)
 
     # This is a grid of size (fibers, maximal length of a fiber), so that
     # we can capture the voxel number in each fiber/node combination:
@@ -145,9 +185,9 @@ def voxel2fiber(sl, affine):
         # In each voxel present in there:
         for vv in sl_as_idx:
             # What serial number is this voxel in the unique streamline indices:
-            voxel_id = int(np.where((vv[0] == sl_idx_unique[:, 0]) *
-                                    (vv[1] == sl_idx_unique[:, 1]) *
-                                    (vv[2] == sl_idx_unique[:, 2]))[0])
+            voxel_id = int(np.where((vv[0] == unique_idx[:, 0]) *
+                                    (vv[1] == unique_idx[:, 1]) *
+                                    (vv[2] == unique_idx[:, 2]))[0])
 
             # Add that combination to the grid:
             v2f[voxel_id, s_idx] += 1
@@ -164,12 +204,19 @@ class FiberModel(ReconstModel):
     """
     A class for representing and solving predictive models based on
     tractography solutions.
+
+    Notes
+    -----
+
+    [1] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
+        B.A. (2014). Validation and statistical inference in living
+        connectomes. Nature Methods.
     """
     def __init__(self, gtab):
         """
         Parameters
         ----------
-
+        gtab : a GradientTable class instance
 
         """
         # Initialize the super-class:
@@ -188,17 +235,22 @@ class FiberModel(ReconstModel):
         to_fit = data
 
 
+
     def model_matrix(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
         """
         The matrix of fiber-contributions to the DWI signal.
+
         """
+        sl = transform_sl(sl, affine)
         # Assign some local variables, for shorthand:
-        vox_coords = unique_idx(sl, affine)
+        all_coords = np.concatenate(sl)
+        vox_coords = unique_rows(all_coords.astype(int))
         n_vox = vox_coords.shape[0]
         # We only consider the diffusion-weighted signals:
         n_bvecs = self.gtab.bvals[~self.gtab.b0s_mask].shape[0]
 
-        v2f, v2fn = voxel2fiber(sl, affine)
+        v2f, v2fn = voxel2fiber(sl, transformed=True, affine=affine,
+                                unique_idx=vox_coords)
 
         # How many fibers in each voxel (this will determine how many
         # components are in the fiber part of the matrix):
@@ -221,6 +273,8 @@ class FiberModel(ReconstModel):
         keep_ct1 = 0
         keep_ct2 = 0
 
+        fiber_signal = [sl_signal(s, self.gtab, evals) for s in sl]
+
         # In each voxel:
         for v_idx, vox in enumerate(vox_coords):
             # For each fiber:
@@ -228,15 +282,10 @@ class FiberModel(ReconstModel):
                 # Sum the signal from each node of the fiber in that voxel:
                 pred_sig = np.zeros(n_bvecs)
                 for n_idx in np.where(v2fn[f_idx]==v_idx)[0]:
-                    relative_signal = self.fiber_signal[f_idx][n_idx]
-                    if self.mode == 'relative_signal':
-                        # Predict the signal and demean it, so that the isotropic
-                        # part can carry that:
-                        pred_sig += (relative_signal -
-                            np.mean(self.relative_signal[vox[0],vox[1],vox[2]]))
-                    elif self.mode == 'signal_attenuation':
-                        pred_sig += ((1 - relative_signal) -
-                        np.mean(1 - self.relative_signal[vox[0],vox[1],vox[2]]))
+                    this_signal = fiber_signal[f_idx][n_idx]
+                    # Predict the signal and demean it, so that the isotropic
+                    # part can carry that:
+                    pred_sig += (this_signal - np.mean(this_signal))
 
             # For each fiber-voxel combination, we now store the row/column
             # indices and the signal in the pre-allocated linear arrays
@@ -247,16 +296,15 @@ class FiberModel(ReconstModel):
             keep_ct1 += n_bvecs
 
             # Put in the isotropic part in the other matrix:
-            i_matrix_row[keep_ct2:keep_ct2+n_bvecs]=\
-                np.arange(v_idx*n_bvecs, (v_idx + 1) * n_bvecs)
-            i_matrix_col[keep_ct2:keep_ct2+n_bvecs]= v_idx * np.ones(n_bvecs)
-            i_matrix_sig[keep_ct2:keep_ct2+n_bvecs] = 1
+            i_matrix_row[keep_ct2:keep_ct2 + n_bvecs] =\
+                np.arange(v_idx * n_bvecs, (v_idx + 1) * n_bvecs)
+            i_matrix_col[keep_ct2:keep_ct2 + n_bvecs] = v_idx * np.ones(n_bvecs)
+            i_matrix_sig[keep_ct2:keep_ct2 + n_bvecs] = 1
             keep_ct2 += n_bvecs
-            if self.verbose:
-                prog_bar.animate(v_idx, f_name=f_name)
 
         # Allocate the sparse matrices, using the more memory-efficient 'csr'
-        # format:
+        # format (converted from the coo format, which we rely on for the
+        # initial allocation):
         fiber_matrix = sparse.coo_matrix((f_matrix_sig,
                                        [f_matrix_row, f_matrix_col])).tocsr()
         iso_matrix = sparse.coo_matrix((i_matrix_sig,

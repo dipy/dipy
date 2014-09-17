@@ -38,11 +38,15 @@ def test_sl_signal():
     evals = [0.0015, 0.0005, 0.0005]
     sig = life.sl_signal(sl, gtab, evals)
 
+    sl = [[[1,2,3], [4,5,3], [5,6,3], [6,7,3]],
+          [[1,2,3], [4,5,3], [5,6,3]]]
+    sig = [life.sl_signal(s, gtab, evals) for s in sl]
+
 def test_voxel2fiber():
     sl = [[[1,2,3], [4,5,3], [5,6,3], [6,7,3]],
           [[1,2,3], [4,5,3], [5,6,3]]]
     affine = np.eye(4)
-    v2f, v2fn = life.voxel2fiber(sl, affine)
+    v2f, v2fn = life.voxel2fiber(sl, False, affine)
     npt.assert_array_equal(v2f, np.array([[1, 1], [1, 1], [1,  1],[1, 0]]))
     npt.assert_array_equal(v2fn, np.array([[ 0, 1, 2, 3], [ 0, 1, 2, np.nan]]))
 
@@ -56,3 +60,9 @@ def test_FiberModel_init():
     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
     gtab = dpg.gradient_table(bvals, bvecs)
     FM1 = life.FiberModel(gtab)
+
+    sl = [[[1,2,3], [4,5,3], [5,6,3], [6,7,3]],
+          [[1,2,3], [4,5,3], [5,6,3]]]
+    affine = np.eye(4)
+
+    mat = FM1.model_matrix(sl, affine)
