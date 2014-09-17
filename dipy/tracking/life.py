@@ -226,7 +226,7 @@ def sl_gradients(sl):
     """
     Calculate the gradients of the stream-line along the spatial dimension
     """
-    return np.array(np.gradient(sl)[0])
+    return np.array(np.gradient(np.asarray(sl))[0])
 
 
 def grad_tensor(grad, evals):
