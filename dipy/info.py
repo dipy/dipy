@@ -29,7 +29,7 @@ CLASSIFIERS = ["Development Status :: 3 - Alpha",
 description  = 'Diffusion MRI utilities in python'
 
 # Note: this long_description is actually a copy/paste from the top-level
-# README.txt, so that it shows up nicely on PyPI.  So please remember to edit
+# README.rst, so that it shows up nicely on PyPI.  So please remember to edit
 # it only in one place and sync it correctly.
 long_description = """
 ======
