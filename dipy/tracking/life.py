@@ -425,40 +425,6 @@ class FiberModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
 
-    def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005]):
-        """
-        Fit the LiFE FiberModel for data and a set of streamlines associated
-        with this data
-
-        Parameters
-        ----------
-        data : 4D array
-           Diffusion-weighted data
-
-        sl : list
-           A bunch of streamlines
-
-        """
-        fiber_matrix, iso_matrix, vox_coords = \
-            self.model_setup(sl, affine, evals=evals)
-
-        # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
-        # signal:
-        relative_signal = (data[~self.gtab.b0s_mask]/
-                           np.mean(data[self.gtab.b0s_mask]))
-
-        to_fit = relative_signal - np.mean(relative_signal, -1)
-        to_fit = to_fit[vox_coords]
-
-        iso_w = sparse_sgd(to_fit.ravel(),
-                           iso_matrix)
-
-        iso_w = sparse_sgd(to_fit.ravel(),
-                           iso_matrix)
-
-
-        return FiberFit(self, params)
-
     def model_setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
         """
         The matrix of fiber-contributions to the DWI signal.
@@ -537,6 +503,41 @@ class FiberModel(ReconstModel):
                                        [i_matrix_row, i_matrix_col])).tocsr()
 
         return (fiber_matrix, iso_matrix, vox_coords)
+
+
+    def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005]):
+        """
+        Fit the LiFE FiberModel for data and a set of streamlines associated
+        with this data
+
+        Parameters
+        ----------
+        data : 4D array
+           Diffusion-weighted data
+
+        sl : list
+           A bunch of streamlines
+
+        """
+        fiber_matrix, iso_matrix, vox_coords = \
+            self.model_setup(sl, affine, evals=evals)
+
+        # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
+        # signal:
+        relative_signal = (data[~self.gtab.b0s_mask]/
+                           np.mean(data[self.gtab.b0s_mask]))
+
+        to_fit = relative_signal - np.mean(relative_signal, -1)
+        to_fit = to_fit[vox_coords]
+
+        iso_w = sparse_sgd(to_fit.ravel(),
+                           iso_matrix)
+
+        iso_w = sparse_sgd(to_fit.ravel(),
+                           iso_matrix)
+
+
+        return FiberFit(self, params)
 
 
 def FiberFit(ReconstFit):
