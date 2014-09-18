@@ -329,7 +329,6 @@ def transform_sl(sl, affine=None):
     return [s for s in move_streamlines(sl, affine)]
 
 
-
 def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
     """
     Maps voxels to stream-lines and stream-lines to voxels, for setting up
@@ -484,22 +483,13 @@ class FiberModel(ReconstModel):
                 keep_ct1 += n_bvecs
 
 
-            # Put in the isotropic part in the other matrix:
-            i_matrix_row[keep_ct2:keep_ct2 + n_bvecs] =\
-                np.arange(v_idx * n_bvecs, (v_idx + 1) * n_bvecs)
-            i_matrix_col[keep_ct2:keep_ct2 + n_bvecs] = v_idx * np.ones(n_bvecs)
-            i_matrix_sig[keep_ct2:keep_ct2 + n_bvecs] = 1
-            keep_ct2 += n_bvecs
-
-        # Allocate the sparse matrices, using the more memory-efficient 'csr'
+        # Allocate the sparse matrix, using the more memory-efficient 'csr'
         # format (converted from the coo format, which we rely on for the
         # initial allocation):
-        fiber_matrix = sps.coo_matrix((f_matrix_sig,
+        life_matrix = sps.coo_matrix((f_matrix_sig,
                                        [f_matrix_row, f_matrix_col])).tocsr()
-        iso_matrix = sps.coo_matrix((i_matrix_sig,
-                                       [i_matrix_row, i_matrix_col])).tocsr()
 
-        return (fiber_matrix, iso_matrix, vox_coords)
+        return life_matrix, vox_coords
 
 
     def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005]):
@@ -516,25 +506,23 @@ class FiberModel(ReconstModel):
            A bunch of streamlines
 
         """
-        fiber_matrix, iso_matrix, vox_coords = \
+        life_matrix, vox_coords = \
             self.model_setup(sl, affine, evals=evals)
 
         # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
         # signal:
-        relative_signal = (data[~self.gtab.b0s_mask]/
-                           np.mean(data[self.gtab.b0s_mask]))
+        relative_signal = (data[vox_coords, ~self.gtab.b0s_mask]/
+                           np.mean(data[vox_coords, self.gtab.b0s_mask], -1))
 
-        to_fit = relative_signal - np.mean(relative_signal, -1)
-        to_fit = to_fit[vox_coords]
+        # The mean of the relative signal across directions in each voxel:
+        mean_sig =  np.mean(relative_signal, -1)
 
-        iso_w = sparse_sgd(to_fit.ravel(),
-                           iso_matrix)
+        to_fit = relative_signal - mean_sig
 
-        iso_w = sparse_sgd(to_fit.ravel(),
-                           iso_matrix)
+        fiber_w = sparse_sgd(to_fit,
+                           fiber_matrix)
 
-
-        return FiberFit(self, params)
+        return FiberFit(self, fiber_w, mean_sig)
 
 
 def FiberFit(ReconstFit):

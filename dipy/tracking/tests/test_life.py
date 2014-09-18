@@ -121,31 +121,34 @@ def test_FiberModel_init():
 
     affine = np.eye(4)
 
-    fiber_matrix, iso_matrix, vox_coords = FM.model_setup(sl, affine)
+    fiber_matrix, vox_coords = FM.model_setup(sl, affine)
     npt.assert_array_equal(np.array(vox_coords),
                     np.array([[1,2,3], [4, 5, 3], [5, 6, 3], [6, 7, 3]]))
 
     npt.assert_equal(fiber_matrix.shape, (len(vox_coords)*64, len(sl)))
-    npt.assert_equal(iso_matrix.shape, (len(vox_coords)*64, len(vox_coords)))
 
 
-def test_FiberFit():
-    data_file, bval_file, bvec_file = get_data('small_64D')
-    data_ni = nib.load(data_file)
-    data = data_ni.get_data()
-    data_aff = data_ni.get_affine()
-    bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
-    gtab = dpg.gradient_table(bvals, bvecs)
-    FM1 = life.FiberModel(gtab)
+## def test_FiberFit():
+##     data_file, bval_file, bvec_file = get_data('small_64D')
+##     data_ni = nib.load(data_file)
+##     data = data_ni.get_data()
+##     data_aff = data_ni.get_affine()
+##     bvals, bvecs = (np.load(f) for f in (bval_file, bvec_file))
+##     gtab = dpg.gradient_table(bvals, bvecs)
+##     FM = life.FiberModel(gtab)
+##     evals = [0.0015, 0.0005, 0.0005]
 
-    sl = [[[1,2,3], [4,5,3], [5,6,3], [6,7,3]],
-          [[1,2,3], [4,5,3], [5,6,3]]]
-    affine = np.eye(4)
-    fiber_matrix, iso_matrix, vox_coord = FM1.model_setup(sl, affine)
+##     sl = [[[1,2,3], [4,5,3], [5,6,3], [6,7,3]],
+##           [[1,2,3], [4,5,3], [5,6,3]]]
 
-    evals = [0.0015, 0.0005, 0.0005]
+##     fiber_matrix, vox_coords = FM.model_setup(sl, evals)
 
-    #w = [0.5, 0.5]
-    #sig = [w[i] * life.sl_signal(sl[i], gtab, evals) for i in range(len(sl))]
-    #data =
+##     w = np.array([0.5, 0.5])
+##     sig = spdot(fiber_matrix, w)
+
+##     data = np.zeros((8,8,8, 64))
+##     data[vox_coords] = sig.reshape((4, 64))
+
+    #fit = FM.fit(data, sl)
+
 
