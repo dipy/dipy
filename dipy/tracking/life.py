@@ -427,13 +427,10 @@ class FiberModel(ReconstModel):
 
     def model_setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
         """
-        The matrix of fiber-contributions to the DWI signal.
-
+        Set up the necessary components for the LiFE model: the matrix of
+        fiber-contributions to the DWI signal, and the coordinates of voxels
+        for which the equations will be solved
         """
-
-        # XXX Need to use `yield` to generate the vox_coords, without holding
-        # all of the fibers in memory simultaneously - compare the current set
-        # of vox coords to the next fiber in each iteration.
         sl = transform_sl(sl, affine)
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(sl)
