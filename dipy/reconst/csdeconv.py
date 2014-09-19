@@ -2,13 +2,12 @@ from __future__ import division, print_function, absolute_import
 import warnings
 import numpy as np
 from scipy.integrate import quad
-from dipy.reconst.odf import OdfModel
 from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm, order_from_ncoef,
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, gen_dirac,
-                              forward_sdeconv_mat)
+                              forward_sdeconv_mat, SphHarmModel)
 from dipy.data import get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
@@ -20,7 +19,7 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from scipy.integrate import quad
 
 
-class ConstrainedSphericalDeconvModel(OdfModel, Cache):
+class ConstrainedSphericalDeconvModel(SphHarmModel, Cache):
 
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
                  tau=0.1):
@@ -77,7 +76,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
                2012. MRtrix: Diffusion Tractography in Crossing Fiber Regions
         """
         # Initialize the parent class:
-        OdfModel.__init__(self, gtab)
+        SphHarmModel.__init__(self, gtab)
         m, n = sph_harm_ind_list(sh_order)
         self.m, self.n = m, n
         self._where_b0s = lazy_index(gtab.b0s_mask)
@@ -181,7 +180,7 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
         return pred_sig
 
 
-class ConstrainedSDTModel(OdfModel, Cache):
+class ConstrainedSDTModel(SphHarmModel, Cache):
 
     def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1.,
                  tau=0.1):
@@ -222,8 +221,9 @@ class ConstrainedSDTModel(OdfModel, Cache):
         .. [1] Descoteaux, M., et al. IEEE TMI 2009. Deterministic and
                Probabilistic Tractography Based on Complex Fibre Orientation
                Distributions.
-        """
 
+        """
+        SphHarmModel.__init__(self, gtab)
         m, n = sph_harm_ind_list(sh_order)
         self.m, self.n = m, n
         self._where_b0s = lazy_index(gtab.b0s_mask)

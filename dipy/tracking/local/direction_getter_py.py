@@ -34,7 +34,7 @@ class ShmFitPmfGen(PmfGen):
     def __init__(self, shmfit, sphere):
         self.fit = shmfit
         self.sphere = sphere
-        self._B = shmfit.sampling_matrix(sphere)
+        self._B = shmfit.model.sampling_matrix(sphere)
         self._coeff = shmfit.shm_coeff
 
     def get_pmf(self, point):
