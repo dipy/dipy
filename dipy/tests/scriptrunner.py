@@ -24,13 +24,25 @@ except NameError: # Python 3
     string_types = str,
 
 
+def _get_package():
+    """ Workaround for missing ``__package__`` in Python 3.2
+    """
+    if '__package__' in globals() and not __package__ is None:
+        return __package__
+    return __name__.split('.', 1)[0]
+
+
+# Same as __package__ for Python 2.6, 2.7 and >= 3.3
+MY_PACKAGE=_get_package()
+
+
 def local_script_dir(script_sdir):
     """ Get local script directory if running in development dir, else None
     """
     # Check for presence of scripts in development directory.  ``realpath``
     # allows for the situation where the development directory has been linked
     # into the path.
-    package_path = dirname(__import__(__package__).__file__)
+    package_path = dirname(__import__(MY_PACKAGE).__file__)
     below_us = realpath(pjoin(package_path, '..'))
     devel_script_dir = pjoin(below_us, script_sdir)
     if isfile(pjoin(below_us, 'setup.py')) and isdir(devel_script_dir):
@@ -56,7 +68,7 @@ class ScriptRunner(object):
     """
     def __init__(self,
                  script_sdir = 'scripts',
-                 module_sdir = __package__,
+                 module_sdir = MY_PACKAGE,
                  debug_print_var = None,
                  output_processor = lambda x : x
                 ):
