@@ -43,9 +43,9 @@ def local_script_dir(script_sdir):
     # allows for the situation where the development directory has been linked
     # into the path.
     package_path = dirname(__import__(MY_PACKAGE).__file__)
-    below_us = realpath(pjoin(package_path, '..'))
-    devel_script_dir = pjoin(below_us, script_sdir)
-    if isfile(pjoin(below_us, 'setup.py')) and isdir(devel_script_dir):
+    above_us = realpath(pjoin(package_path, '..'))
+    devel_script_dir = pjoin(above_us, script_sdir)
+    if isfile(pjoin(above_us, 'setup.py')) and isdir(devel_script_dir):
         return devel_script_dir
     return None
 
