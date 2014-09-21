@@ -220,6 +220,10 @@ def compute_cc_forward_step_3d(floating[:, :, :, :] grad_static,
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms obtained via 
         precompute_cc_factors_3d
+    radius : int
+        the radius of the neighborhood used for the CC metric when
+        computing the factors. The returned vector field will be 
+        zero along a boundary of width radius voxels.
 
     Returns
     -------
@@ -288,6 +292,10 @@ def compute_cc_backward_step_3d(floating[:, :, :, :] grad_moving,
     factors : array, shape (S, R, C, 5)
         the precomputed cross correlation terms obtained via 
         precompute_cc_factors_3d
+    radius : int
+        the radius of the neighborhood used for the CC metric when
+        computing the factors. The returned vector field will be 
+        zero along a boundary of width radius voxels.
 
     Returns
     -------
