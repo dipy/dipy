@@ -144,14 +144,18 @@ def test_FiberFit():
     fiber_matrix, vox_coords = FM.setup(sl, None, evals)
 
     w = np.array([0.5, 0.5])
-    sig = life.spdot(fiber_matrix, w)
-
+    sig = life.spdot(fiber_matrix, w) + 1.0 # Add some isotropic stuff
+    S0 = data[..., gtab.b0s_mask]
+    rel_sig = data[..., ~gtab.b0s_mask]/data[..., gtab.b0s_mask]
     this_data = np.zeros((10, 10, 10, 64))
     this_data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]] =\
-        sig.reshape((4, 64))
+        (sig.reshape((4, 64)) *
+        S0[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]])
+
     # Grab some realistic S0 values:
     this_data = np.concatenate([data[..., gtab.b0s_mask],this_data], -1)
 
-    fit = FM.fit(data, sl)
-
+    fit = FM.fit(this_data, sl)
+    npt.assert_almost_equal(fit.predict()[1],
+                            fit.data[1, ~fit.model.gtab.b0s_mask], decimal=0)
 

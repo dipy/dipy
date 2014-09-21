@@ -64,7 +64,7 @@ def rsq(ss_residuals, ss_residuals_to_mean):
 
 def sparse_sgd(y, X, momentum=0,
                prop_select=0.01,
-               step_size=0.1,
+               step_size=0.01,
                non_neg=True,
                prop_bad_checks=0.1,
                check_error_iter=10,
@@ -73,7 +73,7 @@ def sparse_sgd(y, X, momentum=0,
                verbose=False,
                plot=False,
                lamda=0,
-               alpha=0.5):
+               alpha=0):
     """
 
     Solve y=Xh for h, using a stochastic gradient descent, with X a sparse
@@ -119,11 +119,20 @@ def sparse_sgd(y, X, momentum=0,
 
     plot: whether to generate a plot of the progression of the optimization
 
-    lamda, alpha: ElasticNet params
+    lamda, alpha: float (0-1)
+        ElasticNet penalty parameters
 
     Returns
     -------
     h_best: The best estimate of the parameters.
+
+    Notes
+    -----
+    This includes an implementation of a stochastic Elastic Net penalty
+    parameters, alpha and lamda. For details, see [ZouHastie2005]_
+
+    .. [ZouHastie2005] Zou, H., & Hastie, T. (2005). Regularization and
+       variable selection via the elastic net. J. R. Statist. Soc. B, 301-320.
     """
 
     num_data = y.shape[0]
@@ -160,6 +169,7 @@ def sparse_sgd(y, X, momentum=0,
             # The gradient is (Kay 2008 supplemental page 27):
             gradient = ((spdot(X0.T, spdot(X0,h) - y0))
                         +
+                        # This is Elastic Net:
                         lamda *((1-alpha) + alpha * h)
                        )
             gradient += momentum*gradient
@@ -455,14 +465,7 @@ class FiberModel(ReconstModel):
         f_matrix_row = np.zeros(n_unique_f * n_bvecs)
         f_matrix_col = np.zeros(n_unique_f * n_bvecs)
 
-        # And this will hold weights to soak up the isotropic component in each
-        # voxel:
-        i_matrix_sig = np.zeros(n_vox * n_bvecs)
-        i_matrix_row = np.zeros(n_vox * n_bvecs)
-        i_matrix_col = np.zeros(n_vox * n_bvecs)
-
-        keep_ct1 = 0
-        keep_ct2 = 0
+        keep_ct = 0
 
         fiber_signal = [sl_signal(s, self.gtab, evals) for s in sl]
 
@@ -479,12 +482,12 @@ class FiberModel(ReconstModel):
                     vox_fiber_sig += (this_signal - np.mean(this_signal))
                 # For each fiber-voxel combination, we now store the row/column
                 # indices and the signal in the pre-allocated linear arrays
-                f_matrix_row[keep_ct1:keep_ct1+n_bvecs] =\
+                f_matrix_row[keep_ct:keep_ct+n_bvecs] =\
                                         np.arange(n_bvecs) + v_idx * n_bvecs
-                f_matrix_col[keep_ct1:keep_ct1+n_bvecs] =\
+                f_matrix_col[keep_ct:keep_ct+n_bvecs] =\
                                         np.ones(n_bvecs) * f_idx
-                f_matrix_sig[keep_ct1:keep_ct1+n_bvecs] = vox_fiber_sig
-                keep_ct1 += n_bvecs
+                f_matrix_sig[keep_ct:keep_ct+n_bvecs] = vox_fiber_sig
+                keep_ct += n_bvecs
 
 
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
@@ -557,7 +560,10 @@ class FiberModel(ReconstModel):
         to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
             self._signals(data, vox_coords)
 
-        beta = sparse_sgd(to_fit, life_matrix)
+        # Use a heuristic for selecting the number of rows in the matrix in
+        # each iteration of SGD:
+        prop_select = np.max([1.0, life_matrix.shape[0]/2048.])
+        beta = sparse_sgd(to_fit, life_matrix, prop_select=prop_select)
 
         return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
                         weighted_signal, b0_signal, relative_signal, mean_sig,
