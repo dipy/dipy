@@ -70,8 +70,8 @@ def sparse_sgd(y, X, momentum=0,
                check_error_iter=10,
                max_error_checks=10,
                converge_on_r=0.2,
-               verbose=True,
-               plot=True,
+               verbose=False,
+               plot=False,
                lamda=0,
                alpha=0.5):
     """
@@ -205,9 +205,11 @@ def sparse_sgd(y, X, momentum=0,
 
             if count_bad >= np.max([max_error_checks,
                                     np.round(prop_bad_checks*error_checks)]):
-                print("\nOptimization terminated after %s iterations"%iteration)
-                print("R2= %.1f "%rsq_max)
-                print("Sum of squared residuals= %.1f"%ss_residuals_min)
+                if verbose:
+                    print("\nOptimization terminated after %s iterations"%
+                          iteration)
+                    print("R2= %.1f "%rsq_max)
+                    print("Sum of squared residuals= %.1f"%ss_residuals_min)
 
                 if plot:
                     import matplotlib.pyplot as plt
@@ -424,7 +426,7 @@ class FiberModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
 
-    def model_setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
+    def setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
         """
         Set up the necessary components for the LiFE model: the matrix of
         fiber-contributions to the DWI signal, and the coordinates of voxels
@@ -466,6 +468,8 @@ class FiberModel(ReconstModel):
 
         # In each voxel:
         for v_idx, vox in enumerate(vox_coords):
+            # dbg:
+            # print(100*float(v_idx)/n_vox)
             # For each fiber:
             for f_idx in np.where(v2f[v_idx])[0]:
                 # Sum the signal from each node of the fiber in that voxel:
@@ -492,6 +496,35 @@ class FiberModel(ReconstModel):
         return life_matrix, vox_coords
 
 
+    def _signals(self, data, vox_coords):
+        """
+        Helper function to extract and separate all the signals we need to fit
+        and evaluate a fit of this model
+
+        Parameters
+        ----------
+        data : 4D array
+
+        vox_coords: n by 3 array
+            The coordinates into the data array of the fiber nodes.
+        """
+        # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
+        # signal:
+        idx_tuple = (vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2])
+        # We'll look at a 2D array, extracting the data from the voxels:
+        vox_data =  data[idx_tuple]
+        weighted_signal = vox_data[:, ~self.gtab.b0s_mask]
+        b0_signal = np.mean(vox_data[:, self.gtab.b0s_mask], -1)
+        relative_signal = (weighted_signal/b0_signal[:,None])
+
+        # The mean of the relative signal across directions in each voxel:
+        mean_sig =  np.mean(relative_signal, -1)
+        to_fit = (relative_signal - mean_sig[:,None]).ravel()
+
+        return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
+                vox_data)
+
+
     def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005]):
         """
         Fit the LiFE FiberModel for data and a set of streamlines associated
@@ -505,32 +538,39 @@ class FiberModel(ReconstModel):
         sl : list
            A bunch of streamlines
 
+        affine: 4 by 4 array (optional)
+           The affine to go from the streamline coordinates to the data
+           coordinates. Defaults to use `np.eye(4)`
+
+        evals : list (optional)
+           The eigenvalues of the tensor response function used in constructing
+           the model signal. Default: [0.0015, 0.0005, 0.0005]
+
+        Returns
+        -------
+        FiberFit class instance
+
         """
         life_matrix, vox_coords = \
-            self.model_setup(sl, affine, evals=evals)
+            self.setup(sl, affine, evals=evals)
 
-        # Fitting is done on the S0-normalized-and-demeaned diffusion-weighted
-        # signal:
-        relative_signal = (data[vox_coords, ~self.gtab.b0s_mask]/
-                           np.mean(data[vox_coords, self.gtab.b0s_mask], -1))
+        to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
+            self._signals(data, vox_coords)
 
-        # The mean of the relative signal across directions in each voxel:
-        mean_sig =  np.mean(relative_signal, -1)
+        beta = sparse_sgd(to_fit, life_matrix)
 
-        to_fit = relative_signal - mean_sig
-
-        fiber_w = sparse_sgd(to_fit,
-                           fiber_matrix)
-
-        return FiberFit(self, fiber_w, mean_sig)
+        return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
+                        weighted_signal, b0_signal, relative_signal, mean_sig,
+                        vox_data, sl, affine, evals)
 
 
-def FiberFit(ReconstFit):
+class FiberFit(ReconstFit):
     """
     A fit of the LiFE model to diffusion data
     """
-
-    def __init__(self, fiber_model, params):
+    def __init__(self, fiber_model, life_matrix, vox_coords, to_fit, beta,
+                 weighted_signal, b0_signal, relative_signal, mean_sig,
+                 vox_data, sl, affine, evals):
         """
         Parameters
         ----------
@@ -539,31 +579,46 @@ def FiberFit(ReconstFit):
         params : the parameters derived from a fit of the model to the data.
 
         """
+        ReconstFit.__init__(self, fiber_model, vox_data)
 
-    @auto_attr
-    def _fiber_predict(self):
+        self.life_matrix = life_matrix
+        self.vox_coords = vox_coords
+        self.fit_data = to_fit
+        self.beta = beta
+        self.weighted_signal = weighted_signal
+        self.b0_signal = b0_signal
+        self.relative_signal = relative_signal
+        self.mean_signal = mean_sig
+        self.sl = sl
+        self.affine = affine
+        self.evals = evals
+
+
+    def predict(self, gtab=None, S0=None):
         """
-        This is the fit for the non-isotropic part of the signal:
-        """
-        # return self._Lasso.predict(self.matrix[0])
-        return sgd.spdot(self.matrix[0], self.fiber_weights)
+        Predict the signal
 
-
-    @auto_attr
-    def _iso_predict(self):
-        # We want this to have the size of the original signal which is
-        # (n_bvecs * n_vox), so we broadcast across directions in each voxel:
-        return (self.iso_weights[np.newaxis,...] +
-                np.zeros((len(self.b_idx), self.iso_weights.shape[0]))).T.ravel()
-
-    @auto_attr
-    def predict(self):
-        """
-        The predicted signal from the FiberModel
+        Parameters
+        ----------
         """
         # We generate the prediction and in each voxel, we add the
         # offset, according to the isotropic part of the signal, which was
         # removed prior to fitting:
-        # XXX Still need to multiply by b0 in the end to get it to the signal
-        # in scanner units
-        return np.array(self._fiber_fit + self._iso_fit).squeeze()
+
+        if gtab is None:
+            _matrix = self.life_matrix
+            gtab = self.model.gtab
+        else:
+            _model = FiberModel(gtab)
+            _matrix, _ = model.setup(self.sl,
+                                     self.affine,
+                                     self.evals)
+
+        pred = np.reshape(spdot(_matrix, self.beta),
+                          (self.vox_coords.shape[0],
+                          np.sum(~gtab.b0s_mask)))
+
+        if S0 is None:
+            S0 =  self.b0_signal
+
+        return (pred + self.mean_signal[:, None] ) * S0[:, None]
