@@ -2576,6 +2576,18 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
     Creates the invertible displacement fields used in Chen et al. eqs. 
     9 and 10 [1]
 
+    Parameters
+    ----------
+    nrows : int
+        number of rows in the resulting harmonic field
+    ncols : int
+        number of columns in the resulting harmonic field
+    b, m : float
+        parameters of the harmonic field (as in [1]). To understand the effect
+        of these parameters, please consider plotting a deformed image
+        (a circle or a grid) under the deformation field, or see examples 
+        in [1]
+
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008). 
         A simple fixed-point approach to invert a deformation field. 
         Medical Physics, 35(1), 81. doi:10.1118/1.2816107
@@ -2606,6 +2618,21 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows, cnp.npy_intp ncol
 
     Creates the invertible displacement fields used in Chen et al. eqs. 
     9 and 10 [1] computing the angle theta along z-slides.
+
+    Parameters
+    ----------
+    nslices : int
+        number of slices in the resulting harmonic field
+    nrows : int
+        number of rows in the resulting harmonic field
+    ncols : int
+        number of columns in the resulting harmonic field
+    b, f : float
+        parameters of the harmonic field (as in [1]). To understand the effect
+        of these parameters, please consider plotting a deformed image
+        (e.g. a circle or a grid) under the deformation field, or see examples
+        in [1] 
+
     
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008). 
         A simple fixed-point approach to invert a deformation field. 
