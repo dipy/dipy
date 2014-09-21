@@ -251,9 +251,19 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
 
     Notes
     -----
-    Currently, this function only computes the SSD, but it is a special case
-    of the EM formulation. We are leaving the extra parameters as placeholders
-    for future generalization to the EM metric energy computation
+    The numeric value of the energy is used only to detect convergence.
+    This function returns only the energy corresponding to the data term
+    (excluding the energy corresponding to the regularization term) because
+    the Greedy-SyN algorithm is an unconstrained gradient descent algorithm
+    in the space of diffeomorphisms: in each iteration it makes a step
+    along the negative smoothed gradient --of the data term-- and then makes
+    sure the resulting diffeomorphisms are invertible using an explicit
+    inversion algorithm. Since it is not clear how to reflect the energy
+    corresponding to this re-projection to the space of diffeomorphisms,
+    a more precise energy computation including the regularization term
+    is useless. Instead, convergence is checked considering the data-term
+    energy only and detecting oscilations in the energy profile.
+    
     """
     cdef:
         cnp.npy_intp nrows = delta_field.shape[0]
@@ -450,9 +460,18 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
 
     Notes
     -----
-    Currently, this function only computes the SSD, but it is a special case
-    of the EM formulation. We are leaving the extra parameters as placeholders
-    for future generalization to the EM metric energy computation
+    The numeric value of the energy is used only to detect convergence.
+    This function returns only the energy corresponding to the data term
+    (excluding the energy corresponding to the regularization term) because
+    the Greedy-SyN algorithm is an unconstrained gradient descent algorithm
+    in the space of diffeomorphisms: in each iteration it makes a step
+    along the negative smoothed gradient --of the data term-- and then makes
+    sure the resulting diffeomorphisms are invertible using an explicit
+    inversion algorithm. Since it is not clear how to reflect the energy
+    corresponding to this re-projection to the space of diffeomorphisms,
+    a more precise energy computation including the regularization term
+    is useless. Instead, convergence is checked considering the data-term
+    energy only and detecting oscilations in the energy profile.
     """
     cdef:
         cnp.npy_intp nslices = delta_field.shape[0]
