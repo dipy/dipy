@@ -11,7 +11,7 @@ import nibabel as nib
 import dipy.tracking.life as life
 import dipy.core.sphere as dps
 import dipy.core.gradients as dpg
-from dipy.data import get_data
+from dipy.data import get_data, get_sphere
 
 
 import numpy as np
@@ -121,11 +121,12 @@ def test_FiberModel_init():
 
     affine = np.eye(4)
 
-    fiber_matrix, vox_coords = FM.setup(sl, affine)
-    npt.assert_array_equal(np.array(vox_coords),
+    for approx in [724, False, get_sphere('symmetric362')]:
+        fiber_matrix, vox_coords = FM.setup(sl, affine, approx=approx)
+        npt.assert_array_equal(np.array(vox_coords),
                     np.array([[1,2,3], [4, 5, 3], [5, 6, 3], [6, 7, 3]]))
 
-    npt.assert_equal(fiber_matrix.shape, (len(vox_coords)*64, len(sl)))
+        npt.assert_equal(fiber_matrix.shape, (len(vox_coords)*64, len(sl)))
 
 
 def test_FiberFit():
@@ -157,5 +158,5 @@ def test_FiberFit():
 
     fit = FM.fit(this_data, sl)
     npt.assert_almost_equal(fit.predict()[1],
-                            fit.data[1, ~fit.model.gtab.b0s_mask], decimal=0)
+                            fit.data[1], decimal=0)
 

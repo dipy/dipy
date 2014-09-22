@@ -11,13 +11,14 @@ import scipy.sparse as sps
 import scipy.linalg as la
 
 from dipy.reconst.base import ReconstModel, ReconstFit
-from dipy.core.onetime import ResetMixin
-from dipy.core.onetime import auto_attr
+from dipy.core.onetime import ResetMixin, auto_attr
 import dipy.core.sphere as dps
 from dipy.tracking.utils import unique_rows, move_streamlines, transform_sl
 import dipy.reconst.dti as dti
 import dipy.sims.voxel as sims
 from dipy.tracking.vox2track import _voxel2fiber
+import dipy.data as dpd
+
 
 def spdot(A, B):
   """The same as np.dot(A, B), except it works even if A or B or both
@@ -174,6 +175,15 @@ def sparse_nnls(y, X, momentum=0,
 def sl_gradients(sl):
     """
     Calculate the gradients of the stream-line along the spatial dimension
+
+    Parameters
+    ----------
+    sl : array-like of shape (n, 3)
+        The 3d coordinates of a single streamline
+
+    Returns
+    -------
+    Array of shape (3, n): Spatial gradients along the length of the streamline.
     """
     return np.array(np.gradient(np.asarray(sl))[0])
 
@@ -197,6 +207,7 @@ def grad_tensor(grad, evals):
     # This is the 3 by 3 tensor after rotation:
     T = np.dot(np.dot(R, np.diag(evals)), R.T)
     return T
+
 
 def sl_tensors(sl, evals=[0.0015, 0.0005, 0.0005]):
     """
@@ -259,6 +270,83 @@ def sl_signal(sl, gtab, evals=[0.0015, 0.0005, 0.0005]):
     return sig
 
 
+class LifeSignalMaker(object):
+    """
+    A class for generating signals from streamlines in an efficient and speedy
+    manner.
+    """
+    def __init__(self, gtab, evals=[0.0015, 0.0005, 0.0005], n_points=724):
+        """
+        Initialize a signal maker
+
+        Parameters
+        ----------
+        gtab : GradientTable class instance
+            The gradient table on which the signal is calculated.
+
+        evals : list of 3 items
+            The eigenvalues of the canonical tensor to use in calculating the
+            signal.
+
+        n_points : int {362, 642, 724}, or `dipy.core.Sphere` class instace
+            The discrete sphere to use as an approximation for the continuous
+            sphere on which the signal is represented. If integer - we will use
+            an instance of one of the symmetric spheres cached in
+            `dps.get_sphere`. If a 'dipy.core.Sphere' class instance is
+            provided, we will use this object.
+
+        """
+        if isinstance(n_points, dps.Sphere):
+            self.sphere = n_points
+        else:
+            self.sphere = dpd.get_sphere('symmetric%s'%n_points)
+        self.gtab = gtab
+        self.evals = evals
+        # Initialize an empty dict to fill with signals for each of the sphere
+        # vertices:
+        self.signal = np.empty((self.sphere.vertices.shape[0],
+                                np.sum(~gtab.b0s_mask)))
+        # We'll need to keep track of what we've already calculated:
+        self._calculated = []
+
+
+    def find_closest(self, xyz):
+        """
+        Find the index of the closest point on the discrete sphere to an input
+        vector
+
+        Parameters
+        ----------
+        xyz : 1d array, shape (3,)
+
+        Returns
+        -------
+        The index into `self.sphere.vertices` to the vertex closest to the
+        input vector, taking into account antipodal symmetry.
+        """
+        ang = np.arccos(np.dot(self.sphere.vertices, xyz))
+        ang = np.min(np.vstack([ang, np.pi - ang]), 0)
+        return np.argmin(ang)
+
+
+    def calc_signal(self, xyz):
+        idx = self.find_closest(xyz)
+        if idx not in self._calculated:
+            bvecs = self.gtab.bvecs[~self.gtab.b0s_mask]
+            bvals = self.gtab.bvals[~self.gtab.b0s_mask]
+            tensor = grad_tensor(self.sphere.vertices[idx], self.evals)
+            ADC = np.diag(np.dot(np.dot(bvecs, tensor), bvecs.T))
+            self.signal[idx] = np.exp(-bvals * ADC)
+            self._calculated.append(idx)
+
+        return self.signal[idx]
+
+    def sl_signal(self, sl):
+        """
+        Approximate the signal for a given streamline
+        """
+        grad = sl_gradients(sl)
+        return [self.calc_signal(g) for g in grad]
 
 
 def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
@@ -333,12 +421,32 @@ class FiberModel(ReconstModel):
         ReconstModel.__init__(self, gtab)
 
 
-    def setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005]):
+    def setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005], approx=724):
         """
         Set up the necessary components for the LiFE model: the matrix of
         fiber-contributions to the DWI signal, and the coordinates of voxels
         for which the equations will be solved
+
+        Parameters
+        ----------
+        sl : list
+            Streamlines, each is an array of shape (n, 3)
+        affine : 4 by 4 array
+            Mapping from the sl coordinates to the data
+        evals : list (3 items, optional)
+            The eigenvalues of the canonical tensor used as a response function
+        approx: int  {362, 642, 724}, `dipy.core.Sphere` class instance, or False
+            Whether to approximate (and cache) the signal on a discrete
+            sphere. This may confer a significant speed-up in setting up the
+            problem, but is not as accurate. If `False`, we use the exact
+            gradients along the streamlines to calculate the matrix, instead of
+            an approximation.
         """
+        if approx:
+            SignalMaker = LifeSignalMaker(self.gtab,
+                                          evals=evals,
+                                          n_points=approx)
+
         sl = transform_sl(sl, affine)
         # Assign some local variables, for shorthand:
         all_coords = np.concatenate(sl)
@@ -363,8 +471,10 @@ class FiberModel(ReconstModel):
         f_matrix_col = np.zeros(n_unique_f * n_bvecs)
 
         keep_ct = 0
-
-        fiber_signal = [sl_signal(s, self.gtab, evals) for s in sl]
+        if approx:
+            fiber_signal = [SignalMaker.sl_signal(s) for s in sl]
+        else:
+            fiber_signal = [sl_signal(s, self.gtab, evals) for s in sl]
 
         # In each voxel:
         for v_idx, vox in enumerate(vox_coords):
@@ -425,7 +535,8 @@ class FiberModel(ReconstModel):
                 vox_data)
 
 
-    def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005]):
+    def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005],
+            approx=724):
         """
         Fit the LiFE FiberModel for data and a set of streamlines associated
         with this data
@@ -445,6 +556,13 @@ class FiberModel(ReconstModel):
         evals : list (optional)
            The eigenvalues of the tensor response function used in constructing
            the model signal. Default: [0.0015, 0.0005, 0.0005]
+
+        approx: int  {362, 642, 724}, `dipy.core.Sphere` class instance, or False
+            Whether to approximate (and cache) the signal on a discrete
+            sphere. This may confer a significant speed-up in setting up the
+            problem, but is not as accurate. If `False`, we use the exact
+            gradients along the streamlines to calculate the matrix, instead of
+            an approximation.
 
         Returns
         -------
@@ -512,11 +630,17 @@ class FiberFit(ReconstFit):
                                      self.affine,
                                      self.evals)
 
-        pred = np.reshape(spdot(_matrix, self.beta),
-                          (self.vox_coords.shape[0],
-                          np.sum(~gtab.b0s_mask)))
+        pred_weighted = np.reshape(spdot(_matrix, self.beta),
+                                   (self.vox_coords.shape[0],
+                                    np.sum(~gtab.b0s_mask)))
+
+        pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
 
         if S0 is None:
             S0 =  self.b0_signal
 
-        return (pred + self.mean_signal[:, None] ) * S0[:, None]
+        pred[..., gtab.b0s_mask] = S0[:, None]
+        pred[..., ~gtab.b0s_mask] =\
+            (pred_weighted + self.mean_signal[:, None] ) * S0[:,None]
+
+        return pred
