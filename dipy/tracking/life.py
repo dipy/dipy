@@ -64,7 +64,7 @@ def rsq(ss_residuals, ss_residuals_to_mean):
 
 
 def sparse_nnls(y, X, momentum=0,
-               step_size=0.01,
+               step_size=0.1,
                non_neg=True,
                prop_bad_checks=0.1,
                check_error_iter=10,
