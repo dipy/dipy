@@ -2,10 +2,61 @@ import numpy as np
 import numpy.testing as npt
 
 from dipy.core.sphere import HemiSphere, unit_octahedron
+from dipy.core.gradients import gradient_table
+from dipy.data import get_sim_voxels
+from dipy.reconst.shm import SphHarmFit, SphHarmModel
 from dipy.tracking.local import (ProbabilisticDirectionGetter, LocalTracking,
                                  ThresholdTissueClassifier)
 
+def test_ProbabilisticDirectionGetter():
+    # Test the constructors and errors of the ProbabilisticDirectionGetter
+
+    class SillyModel(SphHarmModel):
+
+        sh_order = 4
+
+        def fit(self, data, mask=None):
+            coeff = np.zeros(data.shape[:-1] + (15,))
+            return SphHarmFit(self, coeff, mask=None)
+
+    model = SillyModel(gtab=None)
+    data = np.zeros((3, 3, 3, 7))
+    fit = model.fit(data)
+
+    # Sample point and direction
+    point = np.zeros(3)
+    dir = unit_octahedron.vertices[0].copy()
+
+    # make a dg from a fit
+    dg = ProbabilisticDirectionGetter.fromShmFit(fit, 90, unit_octahedron)
+    state = dg.get_direction(point, dir)
+    npt.assert_equal(state, 1)
+
+    # Make a dg from a pmf
+    N = unit_octahedron.theta.shape[0]
+    pmf = np.zeros((3, 3, 3, N))
+    dg = ProbabilisticDirectionGetter.fromPmf(pmf, 90, unit_octahedron)
+    state = dg.get_direction(point, dir)
+    npt.assert_equal(state, 1)
+
+    # pmf shape must match sphere
+    bad_pmf = pmf[..., 1:]
+    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.fromPmf,
+                      bad_pmf, 90, unit_octahedron)
+
+    # pmf must have 4 dimensions
+    bad_pmf = pmf[0, ...]
+    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.fromPmf,
+                      bad_pmf, 90, unit_octahedron)
+    # pmf cannot have negative values
+    pmf[0, 0, 0, 0] = -1
+    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.fromPmf, pmf,
+                      90, unit_octahedron)
+
 def test_ProbabilisticOdfWeightedTracker():
+    """This tests that the Probabalistic Direction Getter plays nice
+    LocalTracking and produces reasonable streamlines in a simple example.
+    """
     sphere = HemiSphere.from_sphere(unit_octahedron)
 
     # A simple image with three possible configurations, a vertical tract,

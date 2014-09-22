@@ -21,8 +21,8 @@ class PmfGen(object):
 class SimplePmfGen(PmfGen):
 
     def __init__(self, pmf_array):
-        if pmf_array.ndim != 4:
-            raise ValueError("expecting 4d array")
+        if pmf_array.min() < 0:
+            raise ValueError("pmf should not have negative values")
         self.pmf_array = pmf_array
 
     def get_pmf(self, point):
@@ -97,10 +97,12 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
 
         """
         pmf = np.asarray(pmf, dtype=float)
+        if pmf.ndim != 4:
+            raise ValueError("pmf should be a 4d array.")
         if pmf.shape[3] != len(sphere.theta):
-            raise ValueError("pmf and sphere do not match")
-        if pmf.min() < 0:
-            raise ValueError("pmf should not have negative values")
+            msg = ("The last dimension of pmf should match the number of "
+                   "points in sphere.")
+            raise ValueError(msg)
         pmf_gen = SimplePmfGen(pmf)
         return klass(pmf_gen, max_angle, sphere, **kwargs)
 
