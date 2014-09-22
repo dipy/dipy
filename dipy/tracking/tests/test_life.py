@@ -163,3 +163,7 @@ def test_FiberFit():
     # Predict with an input GradientTable
     npt.assert_almost_equal(fit.predict(gtab)[1],
                             fit.data[1], decimal=-1)
+
+    npt.assert_almost_equal(
+        data[vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2]],
+        fit.data)
