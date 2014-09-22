@@ -60,7 +60,7 @@ def prob_tracking_example(model, data, mask, N, hdr, filename):
     fit = model.fit(data, mask)
 
     # Create objects to be passed to tracker
-    pdg = ProbabilisticDirectionGetter.fromShmFit(fit, default_sphere, 45.)
+    pdg = ProbabilisticDirectionGetter.fromShmFit(fit, 45., default_sphere)
     gfa = fit.gfa
     gfa = np.where(np.isnan(gfa), 0., gfa)
     ttc = ThresholdTissueClassifier(gfa, .2)

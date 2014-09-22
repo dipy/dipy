@@ -29,7 +29,7 @@ def test_ProbabilisticOdfWeightedTracker():
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
 
-    dg = ProbabilisticDirectionGetter.fromPmf(pmf, sphere, 90)
+    dg = ProbabilisticDirectionGetter.fromPmf(pmf, 90, sphere)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[ 0.,  1.,  0.],
@@ -64,13 +64,12 @@ def test_ProbabilisticOdfWeightedTracker():
     npt.assert_(all(path))
 
     # The first path is not possible if 90 degree turns are excluded
-    dg = ProbabilisticDirectionGetter.fromPmf(pmf, sphere, 80.)
+    dg = ProbabilisticDirectionGetter.fromPmf(pmf, 80, sphere)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:
         npt.assert_(np.allclose(sl, expected[1]))
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    npt.run_module_suite()
 
