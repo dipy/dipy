@@ -18,13 +18,13 @@ import numpy as np
 import numpy.testing as npt
 
 
-def test_sgd():
+def test_nnls():
     # Set up the regression:
     beta = np.random.rand(10)
     X = np.random.randn(1000,10)
     y = np.dot(X, beta)
-    beta_hat = life.sparse_sgd(y,X, plot=False, lamda=0)
-    beta_hat_sparse = life.sparse_sgd(y, sps.csr_matrix(X), plot=False, lamda=0)
+    beta_hat = life.sparse_nnls(y,X)
+    beta_hat_sparse = life.sparse_nnls(y, sps.csr_matrix(X))
     # We should be able to get back the right answer for this simple case
     npt.assert_array_almost_equal(beta, beta_hat, decimal=1)
     npt.assert_array_almost_equal(beta, beta_hat_sparse, decimal=1)

@@ -19,7 +19,6 @@ import dipy.reconst.dti as dti
 import dipy.sims.voxel as sims
 from dipy.tracking.vox2track import _voxel2fiber
 
-
 def spdot(A, B):
   """The same as np.dot(A, B), except it works even if A or B or both
   are sparse matrices.
@@ -63,18 +62,13 @@ def rsq(ss_residuals, ss_residuals_to_mean):
     return 100 * (1 - ss_residuals/ss_residuals_to_mean)
 
 
-def sparse_sgd(y, X, momentum=0,
-               prop_select=0.01,
+def sparse_nnls(y, X, momentum=0,
                step_size=0.01,
                non_neg=True,
                prop_bad_checks=0.1,
                check_error_iter=10,
                max_error_checks=10,
-               converge_on_r=0.2,
-               verbose=False,
-               plot=False,
-               lamda=0,
-               alpha=0):
+               converge_on_r=0.2):
     """
 
     Solve y=Xh for h, using a stochastic gradient descent, with X a sparse
@@ -88,10 +82,6 @@ def sparse_sgd(y, X, momentum=0,
 
     X: ndarray. May be either sparse or dense. Shape (N, M)
        The regressors
-
-    prop_select: float (0-1, default 0.01)
-        What proportion of the samples to evaluate in each iteration of the
-        algorithm.
 
     step_size: float, optional (default: 0.05).
         The increment of parameter update in each iteration
@@ -115,41 +105,20 @@ def sparse_sgd(y, X, momentum=0,
       a percentage improvement in rsquared that is required each time to say
       that things are still going well.
 
-    verbose: Boolean (default: True).
-       Whether to display information in each iteration
-
-    plot: whether to generate a plot of the progression of the optimization
-
-    lamda, alpha: float (0-1)
-        ElasticNet penalty parameters
-
     Returns
     -------
     h_best: The best estimate of the parameters.
 
-    Notes
-    -----
-    This includes an implementation of a stochastic Elastic Net penalty
-    parameters, alpha and lamda. For details, see [ZouHastie2005]_
-
-    .. [ZouHastie2005] Zou, H., & Hastie, T. (2005). Regularization and
-       variable selection via the elastic net. J. R. Statist. Soc. B, 301-320.
     """
-
     num_data = y.shape[0]
     num_regressors = X.shape[1]
-    n_select = np.round(prop_select * num_data)
-
     # Initialize the parameters at the origin:
     h = np.zeros(num_regressors)
-
     # If nothing good happens, we'll return that in the end:
     h_best = np.zeros(num_regressors)
     gradient = np.zeros(num_regressors)
-
     iteration = 1
     count = 1
-    ss_residuals = []  # This will hold the residuals in each iteration
     ss_residuals_min = np.inf  # This will keep track of the best solution so far
     ss_residuals_to_mean = np.sum((y - np.mean(y))**2) # The variance of y
     rsq_max = -np.inf   # This will keep track of the best r squared so far
@@ -157,28 +126,16 @@ def sparse_sgd(y, X, momentum=0,
     error_checks = 0  # How many error checks have we done so far
 
     while 1:
-        # indices of data points to select
-        idx = np.floor(np.random.rand(n_select) * num_data).astype(int);
-
-        # Select for this round
-        y0 = y[idx]
-        X0 = X[idx]
-
         if iteration>1:
             # The sum of squared error given the current parameter setting:
             sse = np.sum((y - spdot(X,h))**2)
             # The gradient is (Kay 2008 supplemental page 27):
-            gradient = ((spdot(X0.T, spdot(X0,h) - y0))
-                        +
-                        # This is Elastic Net:
-                        lamda *((1-alpha) + alpha * h)
-                       )
+            gradient = spdot(X.T, spdot(X,h) - y)
             gradient += momentum*gradient
             # Normalize to unit-length
             unit_length_gradient = gradient / np.sqrt(np.dot(gradient, gradient))
             # Update the parameters in the direction of the gradient:
             h -= step_size * unit_length_gradient
-
             if non_neg:
                 # Set negative values to 0:
                 h[h<0] = 0
@@ -186,20 +143,13 @@ def sparse_sgd(y, X, momentum=0,
         # Every once in a while check whether it's converged:
         if np.mod(iteration, check_error_iter):
             # This calculates the sum of squared residuals at this point:
-            ss_residuals.append(np.sum(np.power(y - spdot(X,h), 2)) +
-                                lamda * (alpha*np.sum(h**2) +
-                                         (1-alpha)*np.sum(h)))
-            rsq_est = rsq(ss_residuals[-1], ss_residuals_to_mean)
-            if verbose:
-                print("Itn #:%03d | SSE: %.1f | R2=%.1f "%
-                      (iteration,
-                       ss_residuals[-1],
-                          rsq_est))
+            this_ss_resid = (np.sum(np.power(y - spdot(X,h), 2)))
+            rsq_est = rsq(this_ss_resid, ss_residuals_to_mean)
 
             # Did we do better this time around?
-            if  ss_residuals[-1]<ss_residuals_min:
+            if  this_ss_resid < ss_residuals_min:
                 # Update your expectations about the minimum error:
-                ss_residuals_min = ss_residuals[-1]
+                ss_residuals_min = this_ss_resid
                 n_iterations = iteration # This holds the number of iterations
                                         # for the best solution so far.
                 h_best = h # This holds the best params we have so far
@@ -216,20 +166,6 @@ def sparse_sgd(y, X, momentum=0,
 
             if count_bad >= np.max([max_error_checks,
                                     np.round(prop_bad_checks*error_checks)]):
-                if verbose:
-                    print("\nOptimization terminated after %s iterations"%
-                          iteration)
-                    print("R2= %.1f "%rsq_max)
-                    print("Sum of squared residuals= %.1f"%ss_residuals_min)
-
-                if plot:
-                    import matplotlib.pyplot as plt
-                    fig, ax = plt.subplots()
-                    ax.plot(ss_residuals)
-                    ax.set_xlabel("Iteration #")
-                    ax.set_ylabel(r"$\sum{(\hat{y} - y)^2}$")
-                # Break out here, because this means that not enough
-                # improvement has happened recently
                 return h_best
             error_checks += 1
         iteration += 1
@@ -322,6 +258,9 @@ def sl_signal(sl, gtab, evals=[0.0015, 0.0005, 0.0005]):
         sig[ii] = np.exp(-bvals * ADC)
     return sig
 
+
+
+
 def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
     """
     Maps voxels to stream-lines and stream-lines to voxels, for setting up
@@ -377,6 +316,7 @@ class FiberModel(ReconstModel):
 
     Notes
     -----
+    This is an implementation of the LiFE model described in [1]_
 
     [1] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
         B.A. (2014). Validation and statistical inference in living
@@ -516,12 +456,7 @@ class FiberModel(ReconstModel):
 
         to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
             self._signals(data, vox_coords)
-
-        # Use a heuristic for selecting the number of rows in the matrix in
-        # each iteration of SGD:
-        prop_select = np.max([1.0, life_matrix.shape[0]/2048.])
-        beta = sparse_sgd(to_fit, life_matrix, prop_select=prop_select)
-
+        beta = sparse_nnls(to_fit, life_matrix)
         return FiberFit(self, life_matrix, vox_coords, to_fit, beta,
                         weighted_signal, b0_signal, relative_signal, mean_sig,
                         vox_data, sl, affine, evals)
