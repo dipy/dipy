@@ -14,10 +14,10 @@ from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.core.onetime import ResetMixin
 from dipy.core.onetime import auto_attr
 import dipy.core.sphere as dps
-from dipy.tracking.utils import unique_rows, move_streamlines
+from dipy.tracking.utils import unique_rows, move_streamlines, transform_sl
 import dipy.reconst.dti as dti
 import dipy.sims.voxel as sims
-from dipy.tracking.vox2track import voxel2fiber, transform_sl
+from dipy.tracking.vox2track import _voxel2fiber
 
 
 def spdot(A, B):
@@ -321,6 +321,53 @@ def sl_signal(sl, gtab, evals=[0.0015, 0.0005, 0.0005]):
         # Use the Stejskal-Tanner equation with the ADC as input, and S0 = 1:
         sig[ii] = np.exp(-bvals * ADC)
     return sig
+
+def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
+    """
+    Maps voxels to stream-lines and stream-lines to voxels, for setting up
+    the LiFE equations matrix
+
+    Parameters
+    ----------
+    sl : list
+        A collection of streamlines, each n by 3, with n being the number of
+        nodes in the fiber.
+
+    affine : 4 by 4 array (optional)
+       Defines the spatial transformation from sl to data. Default: np.eye(4)
+
+    transformed : bool (optional)
+        Whether the streamlines have been already transformed (in which case
+        they don't need to be transformed in here).
+
+    unique_idx : array (optional).
+       The unique indices in the streamlines
+
+    Returns
+    -------
+    v2f, v2fn : tuple of arrays
+
+    The first array in the tuple answers the question: Given a voxel (from
+    the unique indices in this model), which fibers pass through it? Shape:
+    (n_voxels, n_fibers).
+
+    The second answers the question: Given a voxel, for each fiber, which
+    nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
+
+
+    """
+    if transformed:
+        transformed_sl = sl
+    else:
+        transformed_sl = transform_sl(sl, affine=affine)
+
+    if unique_idx is None:
+        all_coords = np.concatenate(transformed_sl)
+        unique_idx = unique_rows(all_coords.astype(int))
+    else:
+        unique_idx = unique_idx
+
+    return _voxel2fiber(transformed_sl, unique_idx)
 
 
 class FiberModel(ReconstModel):
