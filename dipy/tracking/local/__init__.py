@@ -13,7 +13,7 @@ class LocalTracking(object):
     """A streamline generator for local tracking methods"""
 
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
-                 step_size, max_cross=None, maxlen=500):
+                 step_size, max_cross=None, maxlen=500, fixedstep=True):
         """Creates streamlines by using local fiber-tracking.
 
         Parameters
@@ -49,6 +49,7 @@ class LocalTracking(object):
             raise ValueError("affine should be a (4, 4) array.")
         self.affine = affine
         self.step_size = step_size
+        self.fixed = fixedstep
         self.max_cross = max_cross
         self.maxlen = maxlen
 
@@ -80,6 +81,7 @@ class LocalTracking(object):
         dg = self.direction_getter
         tc = self.tissue_classifier
         ss = self.step_size
+        fixed = self.fixed
         max_cross = self.max_cross
 
         # Compute voxel size
@@ -97,11 +99,11 @@ class LocalTracking(object):
             directions = dg.initial_direction(s)
             directions = directions[:max_cross]
             for first_step in directions:
-                stepsF = local_tracker(dg, tc, s, first_step, vs, F, ss, 1)
+                stepsF = local_tracker(dg, tc, s, first_step, vs, F, ss, fixed)
                 if stepsF < 0:
                     continue
                 first_step = -first_step
-                stepsB = local_tracker(dg, tc, s, first_step, vs, B, ss, 1)
+                stepsB = local_tracker(dg, tc, s, first_step, vs, B, ss, fixed)
                 if stepsB < 0:
                     continue
                     
