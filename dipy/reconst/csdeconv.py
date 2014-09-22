@@ -19,7 +19,7 @@ from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from scipy.integrate import quad
 
 
-class ConstrainedSphericalDeconvModel(SphHarmModel, Cache):
+class ConstrainedSphericalDeconvModel(SphHarmModel):
 
     def __init__(self, gtab, response, reg_sphere=None, sh_order=8, lambda_=1,
                  tau=0.1):
@@ -180,7 +180,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel, Cache):
         return pred_sig
 
 
-class ConstrainedSDTModel(SphHarmModel, Cache):
+class ConstrainedSDTModel(SphHarmModel):
 
     def __init__(self, gtab, ratio, reg_sphere=None, sh_order=8, lambda_=1.,
                  tau=0.1):

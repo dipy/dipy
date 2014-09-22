@@ -450,7 +450,7 @@ def _gfa_sh(coef, sh0_index=0):
     return np.sqrt(1. - (coef_sq[..., sh0_index] / (coef_sq).sum(-1)))
 
 
-class SphHarmModel(OdfModel):
+class SphHarmModel(OdfModel, Cache):
     """To be subclasses by all models that return a SphHarmFit when fit."""
 
     def sampling_matrix(self, sphere):
@@ -478,7 +478,7 @@ class SphHarmModel(OdfModel):
         return sampling_matrix
 
 
-class QballBaseModel(SphHarmModel, Cache):
+class QballBaseModel(SphHarmModel):
     """To be subclasses by Qball type models."""
     def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
