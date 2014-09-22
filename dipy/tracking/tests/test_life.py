@@ -160,3 +160,6 @@ def test_FiberFit():
     npt.assert_almost_equal(fit.predict()[1],
                             fit.data[1], decimal=0)
 
+    # Predict with an input GradientTable
+    npt.assert_almost_equal(fit.predict(gtab)[1],
+                            fit.data[1], decimal=0)

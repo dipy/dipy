@@ -570,7 +570,7 @@ class FiberModel(ReconstModel):
 
         """
         life_matrix, vox_coords = \
-            self.setup(sl, affine, evals=evals)
+            self.setup(sl, affine, evals=evals, approx=approx)
 
         to_fit, weighted_signal, b0_signal, relative_signal, mean_sig, vox_data=\
             self._signals(data, vox_coords)
@@ -626,9 +626,9 @@ class FiberFit(ReconstFit):
             gtab = self.model.gtab
         else:
             _model = FiberModel(gtab)
-            _matrix, _ = model.setup(self.sl,
-                                     self.affine,
-                                     self.evals)
+            _matrix, _ = self.model.setup(self.sl,
+                                          self.affine,
+                                          self.evals)
 
         pred_weighted = np.reshape(spdot(_matrix, self.beta),
                                    (self.vox_coords.shape[0],
