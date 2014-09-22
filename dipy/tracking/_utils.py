@@ -1,9 +1,11 @@
 from __future__ import division, print_function, absolute_import
 """This is a helper module for dipy.tracking.utils"""
 
+from functools import wraps
 from warnings import warn
 import numpy as np
-from functools import wraps
+
+from ..utils.six.moves import xrange
 
 
 def _voxel_size_deprecated():
@@ -117,6 +119,7 @@ def unique_rows(in_array, dtype='f4'):
 
     # Return back the same dtype as you originally had:
     return u_return.T.astype(in_array.dtype)
+
 
 def _with_initialize(generator):
     """Allows one to write a generator with initialization code.

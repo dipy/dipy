@@ -63,11 +63,13 @@ def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
         cnp.ndarray[cnp.double_t, ndim=2, mode='strided'] v2fn
 
     # Given a voxel (from the unique coords, is the fiber in here?)
-    v2f = np.zeros((len(unique_idx), len(sl)), int)
+    v2f = np.zeros((len(unique_idx), len(sl)),
+                   dtype=np.int)
 
     # This is a grid of size (fibers, maximal length of a fiber), so that
     # we can capture the voxel number in each fiber/node combination:
-    v2fn = np.ones((len(sl), np.max([len(s) for s in sl])), int) * np.nan
+    v2fn = np.ones((len(sl), np.max([len(s) for s in sl])),
+                   dtype=np.double) * np.nan
 
     # In each fiber:
     for s_idx, s in enumerate(transformed_sl):
@@ -80,7 +82,7 @@ def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
                                     (vv[2] == unique_idx[:, 2]))[0])
 
             # Add that combination to the grid:
-            v2f[voxel_id, s_idx] += 1
+            v2f[voxel_id, s_idx] = v2f[voxel_id, s_idx] + 1
 
             # All the nodes going through this voxel get its number:
             v2fn[s_idx][np.where((sl_as_idx[:, 0] == vv[0]) *
