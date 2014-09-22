@@ -14,9 +14,10 @@ from dipy.reconst.base import ReconstModel, ReconstFit
 from dipy.core.onetime import ResetMixin
 from dipy.core.onetime import auto_attr
 import dipy.core.sphere as dps
-from dipy.tracking.utils import unique_rows, xform, move_streamlines
+from dipy.tracking.utils import unique_rows, move_streamlines
 import dipy.reconst.dti as dti
 import dipy.sims.voxel as sims
+from dipy.tracking.vox2track import voxel2fiber, transform_sl
 
 
 def spdot(A, B):
@@ -320,97 +321,6 @@ def sl_signal(sl, gtab, evals=[0.0015, 0.0005, 0.0005]):
         # Use the Stejskal-Tanner equation with the ADC as input, and S0 = 1:
         sig[ii] = np.exp(-bvals * ADC)
     return sig
-
-
-def transform_sl(sl, affine=None):
-    """
-    Helper function that moves and generates the streamline. Thin wrapper
-    around move_streamlines
-
-    Parameters
-    ----------
-    sl : list
-        A list of streamline coordinates
-
-    affine : 4 by 4 array
-        Affine mapping from fibers to data
-    """
-    if affine is None:
-        affine = np.eye(4)
-    # Generate these immediately:
-    return [s for s in move_streamlines(sl, affine)]
-
-
-def voxel2fiber(sl, transformed=False, affine=None, unique_idx=None):
-    """
-    Maps voxels to stream-lines and stream-lines to voxels, for setting up
-    the LiFE equations matrix
-
-    Parameters
-    ----------
-    sl : list
-        A collection of streamlines, each n by 3, with n being the number of
-        nodes in the fiber.
-
-    affine : 4 by 4 array (optional)
-       Defines the spatial transformation from sl to data. Default: np.eye(4)
-
-    transformed : bool (optional)
-        Whether the streamlines have been already transformed (in which case
-        they don't need to be transformed in here).
-
-    unique_idx : array (optional).
-       The unique indices in the streamlines
-
-    Returns
-    -------
-    v2f, v2fn : tuple of arrays
-
-    The first array in the tuple answers the question: Given a voxel (from
-    the unique indices in this model), which fibers pass through it? Shape:
-    (n_voxels, n_fibers).
-
-    The second answers the question: Given a voxel, for each fiber, which
-    nodes are in that voxel? Shape: (n_voxels, max(n_nodes per fiber)).
-
-    """
-    if transformed:
-        transformed_sl = sl
-    else:
-        transformed_sl = transform_sl(sl, affine=affine)
-
-    if unique_idx is None:
-        all_coords = np.concatenate(transformed_sl)
-        unique_idx = unique_rows(all_coords.astype(int))
-    else:
-        unique_idx = unique_idx
-
-    # Given a voxel (from the unique coords, is the fiber in here?)
-    v2f = np.zeros((len(unique_idx), len(sl)), int)
-
-    # This is a grid of size (fibers, maximal length of a fiber), so that
-    # we can capture the voxel number in each fiber/node combination:
-    v2fn = np.ones((len(sl), np.max([len(s) for s in sl])), int) * np.nan
-
-    # In each fiber:
-    for s_idx, s in enumerate(transformed_sl):
-        sl_as_idx = np.array(s).astype(int)
-        # In each voxel present in there:
-        for vv in sl_as_idx:
-            # What serial number is this voxel in the unique streamline indices:
-            voxel_id = int(np.where((vv[0] == unique_idx[:, 0]) *
-                                    (vv[1] == unique_idx[:, 1]) *
-                                    (vv[2] == unique_idx[:, 2]))[0])
-
-            # Add that combination to the grid:
-            v2f[voxel_id, s_idx] += 1
-
-            # All the nodes going through this voxel get its number:
-            v2fn[s_idx][np.where((sl_as_idx[:, 0] == vv[0]) *
-                                 (sl_as_idx[:, 1] == vv[1]) *
-                                 (sl_as_idx[:, 2] == vv[2]))] = voxel_id
-
-    return v2f ,v2fn
 
 
 class FiberModel(ReconstModel):

@@ -9,7 +9,7 @@ from dipy.tracking.utils import (affine_for_trackvis, connectivity_matrix,
                                  density_map, length, move_streamlines,
                                  ndbincount, reduce_labels,
                                  reorder_voxels_affine, seeds_from_mask,
-                                 target, _rmi, unique_rows, xform)
+                                 target, _rmi, unique_rows)
 
 import dipy.tracking.metrics as metrix 
 
@@ -449,36 +449,3 @@ def test_unique_rows():
 
     assert_array_equal(unique_rows(arr), arr_w_unique)
 
-
-def test_xform():
-    """
-    Testing affine transformation of coordinates
-    """
-
-    coords = np.array([[1,2],[1,2],[1,2]])
-    assert_array_equal(xform(coords, np.eye(4)), coords)
-
-    # Scaling by a factor of 2:
-    aff = np.array([[2,0,0,0],
-                    [0,2,0,0],
-                    [0,0,2,0],
-                    [0,0,0,1]])
-
-    assert_array_equal(xform(coords, aff), coords * 2)
-
-    # Translation by 1:
-    aff = np.array([[1,0,0,1],
-                    [0,1,0,1],
-                    [0,0,1,1],
-                    [0,0,0,1]])
-
-    assert_array_equal(xform(coords, aff), coords + 1)
-
-    # Test error handling:
-    coords = np.array([[1,2],[1,2]])
-    assert_raises(ValueError, xform, coords, aff)
-
-    # Restore the sensible coordinates:
-    coords =  np.array([[1,2],[1,2],[1,2]])
-    aff = np.eye(3)
-    assert_raises(ValueError, xform, coords, aff)

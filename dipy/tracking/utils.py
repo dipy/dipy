@@ -51,7 +51,6 @@ from __future__ import division, print_function, absolute_import
 # Import tools writen in cython
 from .vox2track import *
 
-from functools import wraps
 from collections import defaultdict
 from ..utils.six.moves import xrange, map
 
@@ -61,7 +60,8 @@ from dipy.io.bvectxt import ornt_mapping
 from . import metrics
 
 # Import helper functions shared with vox2track
-from ._utils import _mapping_to_voxel, _to_voxel_coordinates
+from ._utils import (_mapping_to_voxel, _to_voxel_coordinates, transform_sl,
+                     unique_rows, move_streamlines, _with_initialize)
 
 def _rmi(index, dims):
     """An alternate implementation of numpy.ravel_multi_index for older
@@ -420,19 +420,6 @@ def seeds_from_mask(mask, density=[1, 1, 1], voxel_size=None, affine=None):
     return seeds
 
 
-def _with_initialize(generator):
-    """Allows one to write a generator with initialization code.
-
-    All code up to the first yield is run as soon as the generator function is
-    called and the first yield value is ignored.
-    """
-    @wraps(generator)
-    def helper(*args, **kwargs):
-        gen = generator(*args, **kwargs)
-        next(gen)
-        return gen
-
-    return helper
 
 
 @_with_initialize
@@ -483,42 +470,6 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
-@_with_initialize
-def move_streamlines(streamlines, output_space, input_space=None):
-    """Applies a linear transformation, given by affine, to streamlines.
-
-    Parameters
-    ----------
-    streamlines : sequence
-        A set of streamlines to be transformed.
-    output_space : array (4, 4)
-        An affine matrix describing the target space to which the streamlines
-        will be transformed.
-    input_space : array (4, 4), optional
-        An affine matrix describing the current space of the streamlines, if no
-        ``input_space`` is specified, it's assumed the streamlines are in the
-        reference space. The reference space is the same as the space
-        associated with the affine matrix ``np.eye(4)``.
-
-    Returns
-    -------
-    streamlines : generator
-        A sequence of transformed streamlines.
-
-    """
-    if input_space is None:
-        affine = output_space
-    else:
-        inv = np.linalg.inv(input_space)
-        affine = np.dot(output_space, inv)
-
-    lin_T = affine[:3, :3].T.copy()
-    offset = affine[:3, 3].copy()
-    yield
-    # End of initialization
-
-    for sl in streamlines:
-        yield np.dot(sl, lin_T) + offset
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
@@ -649,76 +600,5 @@ def length(streamlines, affine=None):
     return map(metrics.length, streamlines)
 
 
-def unique_rows(in_array, dtype='f4'):
-    """
-    This (quickly) finds the unique rows in an array
-
-    Parameters
-    ----------
-    in_array: ndarray
-        The array for which the unique rows should be found
-
-    dtype: str, optional
-        This determines the intermediate representation used for the
-        values. Should at least preserve the values of the input array.
-
-    Returns
-    -------
-    u_return: ndarray
-       Array with the unique rows of the original array.
-
-    """
-    x = np.array([tuple(in_array.T[:,i]) for i in
-                  xrange(in_array.shape[0])],
-        dtype=(''.join(['%s,'%dtype]* in_array.shape[-1])[:-1]))
-
-    u,i = np.unique(x, return_index=True)
-    u_i = x[np.sort(i)]
-    u_return = np.empty((in_array.shape[-1],len(u_i)))
-    for j in xrange(len(u_i)):
-        u_return[:,j] = np.array([x for x in u_i[j]])
-
-    # Return back the same dtype as you originally had:
-    return u_return.T.astype(in_array.dtype)
 
 
-def xform(coords, affine):
-    """
-    Use an affine transform to move from one 3d coordinate system to another
-
-    Parameters
-    ----------
-
-    coords: n by 3 float/int array
-        The xyz coordinates in the original coordinate system.
-
-    affine: 4 by 4 array/matrix
-        An affine transformation from the original to the new coordinate
-        system.
-
-    """
-    # Just to be sure:
-    xyz_orig = np.asarray(coords)
-    orig_dtype = xyz_orig.dtype
-
-    if xyz_orig.shape[0] != 3:
-        e_s = "Coords input to xform should be a 3 by n array"
-        raise ValueError(e_s)
-    if affine.shape != (4,4):
-        e_s = "Affine input to xform should be a 4 by 4 array or matrix"
-        raise ValueError(e_s)
-
-    # If it's the identity matrix, don't need to do anything:
-    if np.all(affine == np.eye(4)):
-        # Just return the input
-        return xyz_orig.astype(orig_dtype)
-
-    xyz = np.array(np.dot(affine[:3,:3], xyz_orig)).squeeze()
-    # Deal with the special case where the coordinate is shape==(3,)
-    if len(xyz.shape) == 1:
-        xyz += np.reshape(np.array(affine[:3, 3]).squeeze(), (3))
-    else:
-        xyz += np.reshape(np.array(affine[:3, 3]).squeeze(), (3,1))  # Broadcast
-                                                                     # and add
-
-    return xyz.astype(orig_dtype)
