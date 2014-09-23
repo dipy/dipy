@@ -26,7 +26,7 @@ else:  # Python 3
 import gzip
 import numpy as np
 from dipy.core.gradients import GradientTable, gradient_table
-from dipy.core.sphere import Sphere
+from dipy.core.sphere import Sphere, HemiSphere
 from dipy.sims.voxel import SticksAndBall
 import numpy as np
 from dipy.data.fetcher import (fetch_scil_b0,
@@ -167,6 +167,10 @@ def get_sphere(name='symmetric362'):
     # big-endian platforms, when using these spheres.
     return Sphere(xyz=as_native_array(res['vertices']),
                   faces=as_native_array(res['faces']))
+
+
+default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
+small_sphere = HemiSphere.from_sphere(get_sphere('symmetric362'))
 
 
 def get_data(name='small_64D'):

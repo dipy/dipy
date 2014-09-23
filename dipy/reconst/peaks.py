@@ -14,11 +14,9 @@ import scipy.optimize as opt
 
 from .recspeed import local_maxima, remove_similar_vertices, search_descending
 from dipy.core.sphere import HemiSphere, Sphere
-from dipy.data import get_sphere
+from dipy.data import default_sphere
 from dipy.core.ndindex import ndindex
 from dipy.reconst.shm import sh_to_sf_matrix
-
-default_sphere = HemiSphere.from_sphere(get_sphere('symmetric724'))
 
 
 def peak_directions_nl(sphere_eval, relative_peak_threshold=.25,
