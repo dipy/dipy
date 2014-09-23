@@ -4,20 +4,18 @@ import numpy.testing as npt
 from numpy.testing import (assert_, assert_equal, assert_almost_equal,
                            assert_array_almost_equal, run_module_suite,
                            assert_array_equal)
-from dipy.data import get_sphere, get_data
+from dipy.data import get_sphere, get_data, default_sphere, small_sphere
 from dipy.sims.voxel import (multi_tensor,
                              single_tensor,
                              multi_tensor_odf,
                              all_tensor_evecs)
 from dipy.core.gradients import gradient_table
-from dipy.core.sphere import HemiSphere
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
                                    ConstrainedSDTModel,
                                    forward_sdeconv_mat,
                                    odf_deconv,
                                    odf_sh_to_sharp,
-                                   auto_response,
-                                   csd_predict)
+                                   auto_response)
 from dipy.reconst.peaks import peak_directions, default_sphere
 from dipy.core.sphere_stats import angular_similarity
 from dipy.reconst.shm import (sf_to_sh, sh_to_sf, QballModel,
@@ -274,19 +272,34 @@ def test_csd_predict():
     angles = [(0, 0), (60, 0)]
     S, sticks = multi_tensor(gtab, mevals, S0, angles=angles,
                              fractions=[50, 50], snr=SNR)
-    sphere = get_sphere('symmetric362')
+    sphere = small_sphere
     odf_gt = multi_tensor_odf(sphere.vertices, mevals, angles, [50, 50])
     response = (np.array([0.0015, 0.0003, 0.0003]), S0)
 
     csd = ConstrainedSphericalDeconvModel(gtab, response)
     csd_fit = csd.fit(S)
-    prediction = csd_predict(csd_fit.shm_coeff, gtab, response=response, S0=S0)
-    npt.assert_equal(prediction.shape[0], S.shape[0])
-    model_prediction = csd.predict(csd_fit.shm_coeff)
-    assert_array_almost_equal(prediction, model_prediction)
-    # Roundtrip tests (quite inaccurate, because of regularization): 
-    assert_array_almost_equal(csd_fit.predict(gtab, S0=S0),S,decimal=1)
-    assert_array_almost_equal(csd.predict(csd_fit.shm_coeff, S0=S0),S,decimal=1)
+
+    # Predicting from a fit should give the same result as predicting from a
+    # model, S0 is 1 by default
+    prediction1 = csd_fit.predict()
+    prediction2 = csd.predict(csd_fit.shm_coeff)
+    npt.assert_array_equal(prediction1, prediction2)
+    npt.assert_array_equal(prediction1[..., gtab.b0s_mask], 1.)
+
+    # Same with a different S0
+    prediction1 = csd_fit.predict(S0=123.)
+    prediction2 = csd.predict(csd_fit.shm_coeff, S0=123.)
+    npt.assert_array_equal(prediction1, prediction2)
+    npt.assert_array_equal(prediction1[..., gtab.b0s_mask], 123.)
+
+    # For "well behaved" coefficients, the model should be able to find the
+    # coefficients from the predicted signal.
+    coeff = np.random.random(csd_fit.shm_coeff.shape) - .5
+    coeff[..., 0] = 10.
+    S = csd.predict(coeff)
+    csd_fit = csd.fit(S)
+    npt.assert_array_almost_equal(coeff, csd_fit.shm_coeff)
+
 
 def test_sphere_scaling_csdmodel():
     """Check that mirroring regulization sphere does not change the result of
@@ -305,8 +318,8 @@ def test_sphere_scaling_csdmodel():
     S, sticks = multi_tensor(gtab, mevals, 100., angles=angles,
                              fractions=[50, 50], snr=None)
 
-    sphere = get_sphere('symmetric362')
-    hemi = HemiSphere.from_sphere(sphere)
+    hemi = small_sphere
+    sphere = hemi.mirror()
 
     response = (np.array([0.0015, 0.0003, 0.0003]), 100)
     model_full = ConstrainedSphericalDeconvModel(gtab, response,

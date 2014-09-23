@@ -136,8 +136,26 @@ class ConstrainedSphericalDeconvModel(OdfModel, Cache):
 
 
     def predict(self, sh_coeff, gtab=None, S0=1):
-        """
-        Predict a signal from sh coefficients for this model
+        """Compute a signal prediction given spherical harmonic coefficients
+        and (optionally) a response function for the provided GradientTable
+        class instance.
+
+        Parameters
+        ----------
+        sh_coeff : ndarray
+            The spherical harmonic representation of the FOD from which to make
+            the signal prediction.
+        gtab : GradientTable
+            The gradients for which the signal will be predicted. Use the
+            model's gradient table by default.
+        S0 : ndarray or float
+            The non diffusion-weighted signal value.
+
+        Returns
+        -------
+        pred_sig : ndarray
+            The predicted signal.
+
         """
         if gtab is None or gtab is self.gtab:
             SH_basis = self.B_dwi
@@ -658,44 +676,4 @@ def auto_response(gtab, data, roi_center=None, roi_radius=10, fa_thr=0.7):
     response = (evals, S0)
     ratio = evals[1]/evals[0]
     return response, ratio
-
-
-def csd_predict(sh_coeff, gtab, response=None, S0=1, R=None):
-    """
-    Compute a signal prediction given spherical harmonic coefficients and
-    (optionally) a response function for the provided GradientTable class
-    instance
-
-    Parameters
-    ----------
-    sh_coeff : ndarray
-       Spherical harmonic coefficients
-
-    gtab : GradientTable class instance
-
-    response : tuple
-        A tuple with two elements. The first is the eigen-values as an (3,)
-        ndarray and the second is the signal value for the response
-        function without diffusion weighting.
-        Default: (np.array([0.0015, 0.0003, 0.0003]), 1)
-
-    S0 : ndarray or float
-        The non diffusion-weighted signal value.
-
-
-    Returns
-    -------
-    pred_sig : ndarray
-        The signal predicted from the provided SH coefficients for a
-        measurement with the provided GradientTable. The last dimension of the
-        resulting array is the same as the number of bvals/bvecs in the
-        GradientTable. The first dimensions have shape: `sh_coeff.shape[:-1]`.
-
-    """
-    if R is not None:
-        raise ValueError("using R in this function is no longer allowed")
-    n_coeff = sh_coeff.shape[-1]
-    sh_order = order_from_ncoef(n_coeff)
-    model = ConstrainedSphericalDeconvModel(gtab, response, sh_order=sh_order)
-    return model.predict(sh_coeff)
 
