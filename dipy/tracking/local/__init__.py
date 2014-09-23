@@ -12,6 +12,24 @@ __all__ = ["LocalTracking", "ThresholdTissueClassifier",
 class LocalTracking(object):
     """A streamline generator for local tracking methods"""
 
+    @staticmethod
+    def _get_voxel_size(affine):
+        """Computes the voxel sizes of an image from the affine.
+
+        Checks that the affine does not have any sheer because local_tracker
+        assumes that the data is sampled on a regular grid.
+
+        """
+        lin = affine[:3, :3]
+        dotlin = np.dot(lin.T, lin)
+        # Check that the affine is well behaved
+        if not np.allclose(np.triu(dotlin, 1), 0.):
+            msg = ("The affine provided seems to contain sheering, data must "
+                   "be acquired or interpolated on a regular grid to be used "
+                   "with `LocalTracking`.")
+            raise ValueError(msg)
+        return np.sqrt(dotlin.diagonal())
+
     def __init__(self, direction_getter, tissue_classifier, seeds, affine,
                  step_size, max_cross=None, maxlen=500, fixedstep=True):
         """Creates streamlines by using local fiber-tracking.
@@ -48,6 +66,7 @@ class LocalTracking(object):
         if affine.shape != (4, 4):
             raise ValueError("affine should be a (4, 4) array.")
         self.affine = affine
+        self._voxel_size = self._get_voxel_size(affine)
         self.step_size = step_size
         self.fixed = fixedstep
         self.max_cross = max_cross
@@ -58,23 +77,6 @@ class LocalTracking(object):
         track = self._generate_streamlines()
         return utils.move_streamlines(track, self.affine)
 
-    def _get_voxel_size(self, affine):
-        """Computes the voxel sizes of an image from the affine.
-
-        Checks that the affine does not have any sheer because local_tracker
-        assumes that the data is sampled on a regular grid.
-
-        """
-        lin = self.affine[:3, :3]
-        dotlin = np.dot(lin.T, lin)
-        # Check that the affine is well behaved
-        if not np.allclose(np.triu(dotlin, 1), 0.):
-            msg = ("The affine provided seems to contain sheering, data must "
-                   "be acquired or interpolated on a regular grid to be used "
-                   "with `LocalTracking`.")
-            raise ValueError(msg)
-        return np.sqrt(dotlin.diagonal())
-
     def _generate_streamlines(self):
         """A streamline generator"""
         N = self.maxlen
@@ -83,9 +85,7 @@ class LocalTracking(object):
         ss = self.step_size
         fixed = self.fixed
         max_cross = self.max_cross
-
-        # Compute voxel size
-        vs = self._get_voxel_size(self.affine)
+        vs = self._voxel_size
 
         # Get inverse transform (lin/offset) for seeds
         inv_A = np.linalg.inv(self.affine)
@@ -106,9 +106,10 @@ class LocalTracking(object):
                 stepsB = local_tracker(dg, tc, s, first_step, vs, B, ss, fixed)
                 if stepsB < 0:
                     continue
-                    
-                if stepsB == 0:
+
+                if stepsB == 1:
                     streamline = F[:stepsF].copy()
                 else:
-                    streamline = np.concatenate((B[stepsB-1:0:-1], F[:stepsF]), axis=0)
+                    parts = (B[stepsB-1:0:-1], F[:stepsF])
+                    streamline = np.concatenate(parts, axis=0)
                 yield streamline
