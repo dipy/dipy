@@ -447,7 +447,13 @@ def _gfa_sh(coef, sh0_index=0):
 
     """
     coef_sq = coef**2
-    return np.sqrt(1. - (coef_sq[..., sh0_index] / (coef_sq).sum(-1)))
+    numer = coef_sq[..., sh0_index]
+    denom = (coef_sq).sum(-1)
+    # Where all coefficients are zero
+    allzero = denom == 0
+    numer = numer + allzero
+    denom = denom + allzero
+    return np.sqrt(1. - (numer / denom))
 
 
 class SphHarmModel(OdfModel, Cache):
