@@ -449,8 +449,10 @@ def _gfa_sh(coef, sh0_index=0):
     coef_sq = coef**2
     numer = coef_sq[..., sh0_index]
     denom = (coef_sq).sum(-1)
-    # Where all coefficients are zero
+    # The sum of the square of the coefficients being zero is the same as all
+    # the coefficients being zero
     allzero = denom == 0
+    # By adding 1 to numer and denom where both and are 0, we prevent 0/0
     numer = numer + allzero
     denom = denom + allzero
     return np.sqrt(1. - (numer / denom))
