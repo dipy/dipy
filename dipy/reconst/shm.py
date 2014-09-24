@@ -40,7 +40,7 @@ from dipy.reconst.cache import Cache
 from distutils.version import StrictVersion
 import scipy
 
-if StrictVersion(scipy.__version__) >= StrictVersion('0.15.0'):
+if StrictVersion(scipy.version.short_version) >= StrictVersion('0.15.0'):
     SCIPY_15_PLUS = True
 else:
     SCIPY_15_PLUS = False
