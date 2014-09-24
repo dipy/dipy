@@ -262,6 +262,11 @@ class TestQballModel(object):
         gfa_odf = odf.gfa(fit.odf(sphere))
         assert_array_almost_equal(gfa_shm, gfa_odf, 3)
 
+        # gfa should be 0 if all coefficients are 0 (masked areas)
+        mask = np.zeros(signal.shape[:-1])
+        fit = model.fit(signal, mask)
+        assert_array_equal(fit.gfa, 0)
+
 
 def test_SphHarmFit():
     coef = np.zeros((3, 4, 5, 45))
