@@ -484,6 +484,58 @@ def target(streamlines, target_mask, affine, include=True):
             yield sl
 
 
+@_with_initialize
+def target_multiple(streamlines, target_mask_list, affine, include=True):
+    """Filters streamlines based on whether or not they pass through a
+    combination of ROIs.
+
+    Parameters
+    ----------
+    streamlines : iterable
+        A sequence of streamlines. Each streamline should be a (N, 3) array,
+        where N is the length of the streamline.
+    target_mask_list : list of array-like items
+        A mask used as a target. These should all be binary (0,1) and in the
+        same space.
+    binary
+    affine : array (4, 4)
+        The affine transform from voxel indices to streamline points.
+    include : bool, default True
+        If True, streamlines passing though `target_mask` are kept. If False,
+        the streamlines not passing thought `target_mask` are kept.
+
+    Returns
+    -------
+    streamlines : generator
+        A sequence of streamlines that pass though `target_mask`.
+
+    Raises
+    ------
+    IndexError
+        When the points of the streamlines lie outside of any of the
+        `target_masks`.
+
+    See Also
+    --------
+    `target`
+
+    """
+    # Cast them all into arrays
+    target_mask_list = [np.array(target_mask, dtype=bool, copy=True) for
+                        target_mask in target_mask_list]
+    lin_T, offset = _mapping_to_voxel(affine, voxel_size=None)
+    yield
+    # End of initialization
+
+    for sl in streamlines:
+        try:
+            ind = _to_voxel_coordinates(sl, lin_T, offset)
+            i, j, k = ind.T
+            state_list=[target_mask[i, j, k] for target_mask in target_mask_list]
+        except IndexError:
+            raise ValueError("streamlines points are outside of target_mask")
+        if np.all([state.any() == include for state in state_list]):
+            yield sl
 
 
 def reorder_voxels_affine(input_ornt, output_ornt, shape, voxel_size):
