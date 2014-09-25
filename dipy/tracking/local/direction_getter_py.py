@@ -29,13 +29,13 @@ class SimplePmfGen(PmfGen):
         return trilinear_interpolate4d(self.pmf_array, point)
 
 
-class ShmFitPmfGen(PmfGen):
+class SHFitPmfGen(PmfGen):
 
-    def __init__(self, shmfit, sphere):
-        self.fit = shmfit
+    def __init__(self, shfit, sphere):
+        self.fit = shfit
         self.sphere = sphere
-        self._B = shmfit.model.sampling_matrix(sphere)
-        self._coeff = shmfit.shm_coeff
+        self._B = shfit.model.sampling_matrix(sphere)
+        self._coeff = shfit.shm_coeff
 
     def get_pmf(self, point):
         coeff = trilinear_interpolate4d(self._coeff, point)
@@ -63,7 +63,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass
     function (pmf).
 
-    The main constructors for this class are current fromPmf and fromShmFit.
+    The main constructors for this class are current from_pmf and from_shfit.
     The pmf gives the probability that each direction on the sphere should be
     chosen as the next direction. To get the true pmf from the "raw pmf"
     directions more than ``max_angle`` degrees from the incoming direction are
@@ -71,7 +71,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
 
     """
     @classmethod
-    def fromPmf(klass, pmf, max_angle, sphere, **kwargs):
+    def from_pmf(klass, pmf, max_angle, sphere, **kwargs):
         """Constructor for making a DirectionGetter from an array of Pmfs
 
         Parameters
@@ -107,12 +107,12 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         return klass(pmf_gen, max_angle, sphere, **kwargs)
 
     @classmethod
-    def fromShmFit(klass, shmFit, max_angle, sphere, **kwargs):
+    def from_shfit(klass, shfit, max_angle, sphere, **kwargs):
         """Use the ODF (or FOD) of a SphHarmFit object as the pmf
 
         Parameters
         ----------
-        shmFit : SphHarmFit
+        shfit : SphHarmFit
             Fit object to be used for tracking.
         max_angle : float, [0, 90]
             The maximum allowed angle between incoming direction and new
@@ -131,7 +131,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         dipy.reconst.peaks.peak_directions
 
         """
-        pmf_gen = ShmFitPmfGen(shmFit, sphere)
+        pmf_gen = SHFitPmfGen(shfit, sphere)
         return klass(pmf_gen, max_angle, sphere, **kwargs)
 
     def __init__(self, pmf_gen, max_angle, sphere=None, **kwargs):

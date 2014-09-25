@@ -29,29 +29,29 @@ def test_ProbabilisticDirectionGetter():
     dir = unit_octahedron.vertices[0].copy()
 
     # make a dg from a fit
-    dg = ProbabilisticDirectionGetter.fromShmFit(fit, 90, unit_octahedron)
+    dg = ProbabilisticDirectionGetter.from_shfit(fit, 90, unit_octahedron)
     state = dg.get_direction(point, dir)
     npt.assert_equal(state, 1)
 
     # Make a dg from a pmf
     N = unit_octahedron.theta.shape[0]
     pmf = np.zeros((3, 3, 3, N))
-    dg = ProbabilisticDirectionGetter.fromPmf(pmf, 90, unit_octahedron)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, unit_octahedron)
     state = dg.get_direction(point, dir)
     npt.assert_equal(state, 1)
 
     # pmf shape must match sphere
     bad_pmf = pmf[..., 1:]
-    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.fromPmf,
+    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf,
                       bad_pmf, 90, unit_octahedron)
 
     # pmf must have 4 dimensions
     bad_pmf = pmf[0, ...]
-    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.fromPmf,
+    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf,
                       bad_pmf, 90, unit_octahedron)
     # pmf cannot have negative values
     pmf[0, 0, 0, 0] = -1
-    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.fromPmf, pmf,
+    npt.assert_raises(ValueError, ProbabilisticDirectionGetter.from_pmf, pmf,
                       90, unit_octahedron)
 
 
@@ -171,7 +171,7 @@ def test_ProbabilisticOdfWeightedTracker():
     mask = (simple_image > 0).astype(float)
     tc = ThresholdTissueClassifier(mask, .5)
 
-    dg = ProbabilisticDirectionGetter.fromPmf(pmf, 90, sphere)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 90, sphere)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     expected = [np.array([[ 0.,  1.,  0.],
@@ -206,7 +206,7 @@ def test_ProbabilisticOdfWeightedTracker():
     npt.assert_(all(path))
 
     # The first path is not possible if 90 degree turns are excluded
-    dg = ProbabilisticDirectionGetter.fromPmf(pmf, 80, sphere)
+    dg = ProbabilisticDirectionGetter.from_pmf(pmf, 80, sphere)
     streamlines = LocalTracking(dg, tc, seeds, np.eye(4), 1.)
 
     for sl in streamlines:

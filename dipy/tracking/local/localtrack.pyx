@@ -25,7 +25,7 @@ cdef inline double stepsize(double point, double increment) nogil:
         return dist / increment
 
 
-cdef void step_to_boundry(double *point, double *direction,
+cdef void step_to_boundary(double *point, double *direction,
                           double overstep) nogil:
     """Takes a step from point in along direction just past a voxel boundary.
 
@@ -106,7 +106,7 @@ def local_tracker(DirectionGetter dg, TissueClassifier tc,
     if fixedstep:
         step = fixed_step
     else:
-        step = step_to_boundry
+        step = step_to_boundary
 
     for i in range(3):
         streamline[0, i] = point[i] = seed[i]

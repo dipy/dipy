@@ -451,7 +451,7 @@ def _gfa_sh(coef, sh0_index=0):
 
 
 class SphHarmModel(OdfModel, Cache):
-    """To be subclasses by all models that return a SphHarmFit when fit."""
+    """To be subclassed by all models that return a SphHarmFit when fit."""
 
     def sampling_matrix(self, sphere):
         """The matrix needed to sample ODFs from coefficients of the model.
@@ -479,7 +479,7 @@ class SphHarmModel(OdfModel, Cache):
 
 
 class QballBaseModel(SphHarmModel):
-    """To be subclasses by Qball type models."""
+    """To be subclassed by Qball type models."""
     def __init__(self, gtab, sh_order, smooth=0.006, min_signal=1.,
                  assume_normed=False):
         """Creates a model that can be used to fit or sample diffusion data

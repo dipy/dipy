@@ -21,7 +21,7 @@ def test_PAMDirectionGetter():
             odf[r] = 1
             return odf
 
-    def getDirection(dg, point, dir):
+    def get_direction(dg, point, dir):
         newdir = dir.copy()    
         state = dg.get_direction(point, newdir)
         return (state, np.array(newdir))
@@ -43,22 +43,22 @@ def test_PAMDirectionGetter():
 
                 # Test that the angle threshold rejects points
                 peaks.ang_thr = 0.
-                state, nd = getDirection(peaks, point, up)
+                state, nd = get_direction(peaks, point, up)
                 npt.assert_equal(state, 1)
 
                 # Here we leverage the fact that we know Hemispheres project
                 # all their vertices into the z >= 0 half of the sphere.
                 peaks.ang_thr = 90.
-                state, nd = getDirection(peaks, point, up)
+                state, nd = get_direction(peaks, point, up)
                 npt.assert_equal(state, 0)
                 expected_dir = peaks.peak_dirs[i, j, k, 0]
                 npt.assert_array_almost_equal(nd, expected_dir)
-                state, nd = getDirection(peaks, point, down)
+                state, nd = get_direction(peaks, point, down)
                 npt.assert_array_almost_equal(nd, -expected_dir)
 
                 # Check that we can get directions at non-integer points
                 point += np.random.random(3)
-                state, nd = getDirection(peaks, point, up)
+                state, nd = get_direction(peaks, point, up)
                 npt.assert_equal(state, 0)
 
                 # Check that points are rounded to get initial direction
@@ -69,6 +69,5 @@ def test_PAMDirectionGetter():
 
 
 if __name__ == "__main__":
-    import nose
-    nose.runmodule()
+    npt.run_module_suite()
 
