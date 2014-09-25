@@ -1,7 +1,7 @@
 import numpy as np
 from dipy.align import floating
 from numpy.testing import (assert_equal,
-                           assert_almost_equal, 
+                           assert_almost_equal,
                            assert_array_almost_equal,
                            assert_allclose)
 import dipy.align.sumsqdiff as ssd
@@ -21,7 +21,7 @@ def test_solve_2d_symmetric_positive_definite():
 
     # Small determinant
     As.append(np.array([1e-3, 1e-4, 1e-3]))
-    
+
     # Large determinant
     As.append(np.array([1e6, 1e4, 1e6]))
 
@@ -56,7 +56,7 @@ def test_solve_3d_symmetric_positive_definite():
     gs.append(np.array([1.0, 0.0, 0.0]))
     gs.append(np.array([0.0, 1.0, 0.0]))
     gs.append(np.array([0.0, 0.0, 1.0]))
-    
+
     # other
     gs.append(np.array([1.0, 0.5, 0.0]))
     gs.append(np.array([0.0, 0.2, 0.1]))
@@ -79,7 +79,7 @@ def test_solve_3d_symmetric_positive_definite():
 
 def test_compute_energy_ssd_2d():
     sh = (32, 32)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -94,13 +94,13 @@ def test_compute_energy_ssd_2d():
 
     #Compute the gradient fields of F and G
     grad_F = X - c_f
-    grad_G = X - c_g 
+    grad_G = X - c_g
 
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
     G = 0.5*np.sum(grad_G**2,-1)
 
-    # Note: this should include the energy corresponding to the 
+    # Note: this should include the energy corresponding to the
     # regularization term, but it is discarded in ANTS (they just
     # consider the data term, which is not the objective function
     # being optimized). This test case should be updated after
@@ -108,11 +108,11 @@ def test_compute_energy_ssd_2d():
     expected = ((F - G)**2).sum()
     actual = ssd.compute_energy_ssd_2d(np.array(F-G, dtype = floating))
     assert_almost_equal(expected, actual)
-    
+
 
 def test_compute_energy_ssd_3d():
     sh = (32, 32, 32)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -129,13 +129,13 @@ def test_compute_energy_ssd_3d():
 
     #Compute the gradient fields of F and G
     grad_F = X - c_f
-    grad_G = X - c_g 
+    grad_G = X - c_g
 
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
     G = 0.5*np.sum(grad_G**2,-1)
 
-    # Note: this should include the energy corresponding to the 
+    # Note: this should include the energy corresponding to the
     # regularization term, but it is discarded in ANTS (they just
     # consider the data term, which is not the objective function
     # being optimized). This test case should be updated after
@@ -149,7 +149,7 @@ def test_compute_ssd_demons_step_2d():
     r"""
     Compares the output of the demons step in 2d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
-    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$, 
+    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$,
     $x, c_f, c_g \in R^{2}$
 
     References
@@ -161,7 +161,7 @@ def test_compute_ssd_demons_step_2d():
     """
     #Select arbitrary images' shape (same shape for both images)
     sh = (20, 10)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -178,7 +178,7 @@ def test_compute_ssd_demons_step_2d():
     np.random.seed(1137271)
 
     grad_F = X - c_f
-    grad_G = X - c_g 
+    grad_G = X - c_g
 
     Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
@@ -189,7 +189,7 @@ def test_compute_ssd_demons_step_2d():
     grad_G += Gnoise
 
     #The squared norm of grad_G to be used later
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
 
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
@@ -213,12 +213,12 @@ def test_compute_ssd_demons_step_2d():
     delta_field[random_labels == 0] = 0
     grad_G[random_labels == 0, ...] = 0
     sq_norm_grad_G[random_labels == 0, ...] = 0
-    
+
     #Set arbitrary values for $\sigma_i$ (eq. 4 in [Vercauteren09])
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-    
+
     #Now select arbitrary parameters for $\sigma_x$ (eq 4 in [Vercauteren09])
     for sigma_x_sq in [0.01, 1.5, 4.2]:
         #Directly compute the demons step according to eq. 4 in [Vercauteren09]
@@ -231,12 +231,12 @@ def test_compute_ssd_demons_step_2d():
 
         #Now compute it using the implementation under test
         actual = np.empty_like(expected, dtype=floating)
-    
+
         ssd.compute_ssd_demons_step_2d(delta_field,
                                        np.array(grad_G, dtype=floating),
                                        sigma_x_sq,
                                        actual)
-    
+
         assert_array_almost_equal(actual, expected)
 
 
@@ -244,7 +244,7 @@ def test_compute_ssd_demons_step_3d():
     r"""
     Compares the output of the demons step in 3d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
-    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$, 
+    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$,
     $x, c_f, c_g \in R^{3}$
 
     References
@@ -257,7 +257,7 @@ def test_compute_ssd_demons_step_3d():
 
     #Select arbitrary images' shape (same shape for both images)
     sh = (20, 15, 10)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -271,12 +271,12 @@ def test_compute_ssd_demons_step_3d():
     X[...,0]= x_0[:, None, None] * O
     X[...,1]= x_1[None, :, None] * O
     X[...,2]= x_2[None, None, :] * O
-   
+
     #Compute the gradient fields of F and G
     np.random.seed(1137271)
 
     grad_F = X - c_f
-    grad_G = X - c_g 
+    grad_G = X - c_g
 
     Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
     Fnoise = Fnoise.astype(floating)
@@ -287,7 +287,7 @@ def test_compute_ssd_demons_step_3d():
     grad_G += Gnoise
 
     #The squared norm of grad_G to be used later
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
 
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
@@ -316,7 +316,7 @@ def test_compute_ssd_demons_step_3d():
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-    
+
     #Now select arbitrary parameters for $\sigma_x$ (eq 4 in [Vercauteren09])
     for sigma_x_sq in [0.01, 1.5, 4.2]:
         #Directly compute the demons step according to eq. 4 in [Vercauteren09]

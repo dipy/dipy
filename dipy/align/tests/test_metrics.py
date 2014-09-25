@@ -36,7 +36,7 @@ def test_em_demons_step_2d():
     r"""
     Compares the output of the demons step in 2d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
-    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$, 
+    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$,
     $x, c_f, c_g \in R^{2}$
 
     References
@@ -48,7 +48,7 @@ def test_em_demons_step_2d():
     """
     #Select arbitrary images' shape (same shape for both images)
     sh = (20, 10)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -66,8 +66,8 @@ def test_em_demons_step_2d():
     grad_G = X - c_g
 
     #The squared norm of grad_G to be used later
-    sq_norm_grad_F = np.sum(grad_F**2,-1) 
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
+    sq_norm_grad_F = np.sum(grad_F**2,-1)
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
 
     #Compute F and G
     F = 0.5 * sq_norm_grad_F
@@ -83,7 +83,7 @@ def test_em_demons_step_2d():
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-    #Set the properties relevant to the demons methods 
+    #Set the properties relevant to the demons methods
     metric.smooth = 3.0
     metric.gradient_static = np.array(grad_F, dtype = floating)
     metric.gradient_moving = np.array(grad_G, dtype = floating)
@@ -116,7 +116,7 @@ def test_em_demons_step_2d():
     #apply Gaussian smoothing
     expected_bwd[..., 0] = ndimage.filters.gaussian_filter(expected_bwd[..., 0], 3.0)
     expected_bwd[..., 1] = ndimage.filters.gaussian_filter(expected_bwd[..., 1], 3.0)
-    
+
     assert_array_almost_equal(actual_forward, expected_fwd)
     assert_array_almost_equal(actual_backward, expected_bwd)
 
@@ -125,7 +125,7 @@ def test_em_demons_step_3d():
     r"""
     Compares the output of the demons step in 3d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
-    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$, 
+    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$,
     $x, c_f, c_g \in R^{3}$
 
     References
@@ -137,7 +137,7 @@ def test_em_demons_step_3d():
     """
     #Select arbitrary images' shape (same shape for both images)
     sh = (20, 15, 10)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -157,8 +157,8 @@ def test_em_demons_step_3d():
     grad_G = X - c_g
 
     #The squared norm of grad_G to be used later
-    sq_norm_grad_F = np.sum(grad_F**2,-1) 
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
+    sq_norm_grad_F = np.sum(grad_F**2,-1)
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
 
     #Compute F and G
     F = 0.5 * sq_norm_grad_F
@@ -174,7 +174,7 @@ def test_em_demons_step_3d():
     #The original Demons algorithm used simply |F(x) - G(x)| as an
     #estimator, so let's use it as well
     sigma_i_sq = (F - G)**2
-    #Set the properties relevant to the demons methods 
+    #Set the properties relevant to the demons methods
     metric.smooth = 3.0
     metric.gradient_static = np.array(grad_F, dtype = floating)
     metric.gradient_moving = np.array(grad_G, dtype = floating)
@@ -211,7 +211,7 @@ def test_em_demons_step_3d():
     expected_bwd[..., 0] = ndimage.filters.gaussian_filter(expected_bwd[..., 0], 3.0)
     expected_bwd[..., 1] = ndimage.filters.gaussian_filter(expected_bwd[..., 1], 3.0)
     expected_bwd[..., 2] = ndimage.filters.gaussian_filter(expected_bwd[..., 2], 3.0)
-    
+
     assert_array_almost_equal(actual_forward, expected_fwd)
     assert_array_almost_equal(actual_backward, expected_bwd)
 

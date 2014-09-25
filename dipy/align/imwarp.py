@@ -10,7 +10,7 @@ from dipy.align import floating
 from dipy.align import VerbosityLevels
 from dipy.align import Bunch
 
-RegistrationStages = Bunch(INIT_START=0, 
+RegistrationStages = Bunch(INIT_START=0,
                           INIT_END=1,
                           OPT_START=2,
                           OPT_END=3,
@@ -43,9 +43,9 @@ def mult_aff(A, B):
     A : array, shape (n,k)
     B : array, shape (k,m)
 
-    Returns 
+    Returns
     -------
-    The matrix product A.dot(B). If any of the input matrices is None, it is 
+    The matrix product A.dot(B). If any of the input matrices is None, it is
     treated as the identity matrix. If both matrices are None, None is returned.
     """
     if A is None:
@@ -57,13 +57,13 @@ def mult_aff(A, B):
 
 def get_direction_and_spacings(affine, dim):
     r"""Extracts the rotational and spacing components from a matrix
-    
-    Extracts the rotational and spacing (voxel dimensions) components from a 
+
+    Extracts the rotational and spacing (voxel dimensions) components from a
     matrix. An image gradient represents the local variation of the image's gray
     values per voxel. Since we are iterating on the physical space, we need to
     compute the gradients as variation per millimeter, so we need to divide each
     gradient's component by the voxel size along the corresponding axis, that's
-    what the spacings are used for. Since the image's gradients are oriented 
+    what the spacings are used for. Since the image's gradients are oriented
     along the grid axes, we also need to re-orient the gradients to be given
     in physical space coordinates.
 
@@ -106,7 +106,7 @@ class ScaleSpace(object):
         Computes the Scale Space representation of an image. The scale space is
         simply a list of images produced by smoothing the input image with a
         Gaussian kernel with increasing smoothing parameter. If the image's
-        voxels are isotropic, the smoothing will be the same along all 
+        voxels are isotropic, the smoothing will be the same along all
         directions: at level L = 0,1,..., the sigma is given by s * ( 2^L - 1 ).
         If the voxel dimensions are not isotropic, then the smoothing is
         weaker along low resolution directions.
@@ -122,13 +122,13 @@ class ScaleSpace(object):
             the matrix transforming voxel coordinates to space coordinates in
             the input image discretization
         input_spacing : array, shape (k-1,)
-            the spacing (voxel size) between voxels in physical space 
+            the spacing (voxel size) between voxels in physical space
         sigma_factor : float
             the smoothing factor to be used in the construction of the scale
             space.
         mask0 : Boolean
             if True, all smoothed images will be zero at all voxels that are
-            zero in the input image. 
+            zero in the input image.
 
         """
         self.dim = len(image.shape)
@@ -136,7 +136,7 @@ class ScaleSpace(object):
         input_size = np.array(image.shape)
         if mask0:
             mask = np.asarray(image>0, dtype=np.int32)
-        
+
         #normalize input image to [0,1]
         img = (image - image.min())/(image.max() - image.min())
         if mask0:
@@ -168,8 +168,8 @@ class ScaleSpace(object):
             #this makes the sub-sampled image at least 32 voxels at each
             #direction it is risky to make this decision based on image size,
             #though (we need to investigate more the effect of this)
-            
-            #scaling = np.minimum(scaling_factor * min_spacing / input_spacing, 
+
+            #scaling = np.minimum(scaling_factor * min_spacing / input_spacing,
             #                     input_size / 32)
 
             scaling = scaling_factor * min_spacing / input_spacing
@@ -202,11 +202,11 @@ class ScaleSpace(object):
     def get_expand_factors(self, from_level, to_level):
         r"""Ratio of voxel size from pyramid level from_level to to_level
 
-        Given two scale space resolutions a = from_level, b = to_level, 
+        Given two scale space resolutions a = from_level, b = to_level,
         returns the ratio of voxels size at level b to voxel size at level a
         (the factor that must be used to multiply voxels at level a to
         'expand' them to level b).
-        
+
         Parameters
         ----------
         from_level : int, 0 <= from_level < L, (L = number of resolutions)
@@ -232,11 +232,11 @@ class ScaleSpace(object):
         Parameters
         ----------
         level : int, 0 <= from_level < L, (L = number of resolutions)
-            the scale space level to be printed 
+            the scale space level to be printed
         """
-        print('Domain shape: ', self.get_domain_shape(level)) 
+        print('Domain shape: ', self.get_domain_shape(level))
         print('Spacing: ', self.get_spacing(level))
-        print('Scaling: ', self.get_scaling(level)) 
+        print('Scaling: ', self.get_scaling(level))
         print('Affine: ', self.get_affine(level))
         print('Sigmas: ', self.get_sigmas(level))
 
@@ -251,7 +251,7 @@ class ScaleSpace(object):
         attribute : list
             the attribute to retrieve the level-th element from
         level : int,
-            the index of the required element from attribute. 
+            the index of the required element from attribute.
 
         """
         if 0 <= level < self.num_levels:
@@ -290,7 +290,7 @@ class ScaleSpace(object):
 
         Returns
         -------
-            the sub-sampled shape at the requested resolution or None if an 
+            the sub-sampled shape at the requested resolution or None if an
             invalid level was requested
         """
         return self._get_attribute(self.domain_shapes, level)
@@ -299,7 +299,7 @@ class ScaleSpace(object):
         r"""Spacings the sub-sampled image must have at a particular level
 
         Returns the spacings (voxel sizes) the sub-sampled image must have at a
-        particular resolution of the scale space (note that this object does 
+        particular resolution of the scale space (note that this object does
         not explicitly subsample the smoothed images, but only provides the
         properties the sub-sampled images must have).
 
@@ -329,7 +329,7 @@ class ScaleSpace(object):
 
         Returns
         -------
-        the scaling factors from the original spacing to the spacings at the 
+        the scaling factors from the original spacing to the spacings at the
         requested level
 
         """
@@ -339,8 +339,8 @@ class ScaleSpace(object):
         r"""Voxel-to-space transformation at a given level
 
         Returns the voxel-to-space transformation associated to the sub-sampled
-        image at a particular resolution of the scale space (note that this 
-        object does not explicitly subsample the smoothed images, but only 
+        image at a particular resolution of the scale space (note that this
+        object does not explicitly subsample the smoothed images, but only
         provides the properties the sub-sampled images must have).
 
         Parameters
@@ -359,8 +359,8 @@ class ScaleSpace(object):
         r"""Space-to-voxel transformation at a given level
 
         Returns the space-to-voxel transformation associated to the sub-sampled
-        image at a particular resolution of the scale space (note that this 
-        object does not explicitly subsample the smoothed images, but only 
+        image at a particular resolution of the scale space (note that this
+        object does not explicitly subsample the smoothed images, but only
         provides the properties the sub-sampled images must have).
 
         Parameters
@@ -370,7 +370,7 @@ class ScaleSpace(object):
 
         Returns
         -------
-        the inverse (space-to-voxel) transform at the requested resolution or 
+        the inverse (space-to-voxel) transform at the requested resolution or
         None if an invalid level was requested
         """
         return self._get_attribute(self.affine_invs, level)
@@ -379,7 +379,7 @@ class ScaleSpace(object):
         r"""Smoothing parameters used at a given level
 
         Returns the smoothing parameters (a scalar for each axis) used at the
-        requested level of the scale space 
+        requested level of the scale space
 
         Parameters
         ----------
@@ -395,7 +395,7 @@ class ScaleSpace(object):
 
 
 class DiffeomorphicMap(object):
-    def __init__(self, 
+    def __init__(self,
                  dim,
                  disp_shape,
                  disp_affine=None,
@@ -406,11 +406,11 @@ class DiffeomorphicMap(object):
                  prealign=None):
         r""" DiffeomorphicMap
 
-        Implements a diffeomorphic transformation on the physical space. The 
+        Implements a diffeomorphic transformation on the physical space. The
         deformation fields encoding the direct and inverse transformations
         share the same domain discretization (both the discretization grid shape
         and voxel-to-space matrix). The input coordinates (physical coordinates)
-        are first aligned using prealign, and then displaced using the 
+        are first aligned using prealign, and then displaced using the
         corresponding vector field interpolated at the aligned coordinates.
 
         Parameters
@@ -434,7 +434,7 @@ class DiffeomorphicMap(object):
             direction (this will provide default transformation parameters to
             warp images under this transformation). By default, we assume that
             the inverse transformation is 'normally' used to warp images with
-            the same discretization and voxel-to-space transformation as the 
+            the same discretization and voxel-to-space transformation as the
             deformation field grid.
         codomain_affine : array, shape (dim+1, dim+1)
             the voxel-to-space transformation of images that are 'normally'
@@ -452,7 +452,7 @@ class DiffeomorphicMap(object):
 
         self.disp_shape = np.asarray(disp_shape, dtype = np.int32)
 
-        # If the discretization affine is None, we assume it's the identity 
+        # If the discretization affine is None, we assume it's the identity
         self.disp_affine = disp_affine
         if(self.disp_affine is None):
             self.disp_affine_inv = None
@@ -497,7 +497,7 @@ class DiffeomorphicMap(object):
 
         Returns the deformation field that must be used to warp an image under
         this transformation in the forward direction (note the 'is_inverse'
-        flag). 
+        flag).
         """
         if self.is_inverse:
             return self.backward
@@ -509,7 +509,7 @@ class DiffeomorphicMap(object):
 
         Returns the deformation field that must be used to warp an image under
         this transformation in the backward direction (note the 'is_inverse'
-        flag). 
+        flag).
         """
         if self.is_inverse:
             return self.forward
@@ -521,7 +521,7 @@ class DiffeomorphicMap(object):
 
         Creates a zero displacement field (the identity transformation).
         """
-        self.forward = np.zeros(tuple(self.disp_shape)+(self.dim,), 
+        self.forward = np.zeros(tuple(self.disp_shape)+(self.dim,),
                                 dtype=floating)
         self.backward = np.zeros(tuple(self.disp_shape)+(self.dim,),
                                 dtype=floating)
@@ -543,11 +543,11 @@ class DiffeomorphicMap(object):
             else:
                 return vfu.warp_3d_nn
 
-    def _warp_forward(self, image, interpolation='linear', world_to_image=None, 
+    def _warp_forward(self, image, interpolation='linear', world_to_image=None,
                       sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the forward direction
 
-        Deforms the input image under this diffeomorphic map in the forward 
+        Deforms the input image under this diffeomorphic map in the forward
         direction. Since the mapping is defined in the physical space, the user
         must specify the sampling grid shape and its space-to-voxel mapping.
         By default, the transformation will use the discretization information
@@ -556,7 +556,7 @@ class DiffeomorphicMap(object):
         Parameters
         ----------
         image : array, shape (s, r, c) if dim = 3 or (r, c) if dim = 2
-            the image to be warped under this transformation in the forward 
+            the image to be warped under this transformation in the forward
             direction
         interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used for warping, either 'linear'
@@ -583,7 +583,7 @@ class DiffeomorphicMap(object):
         coordinates j in J. The transformation we consider 'forward' is
         precisely mapping coordinates i from the input image to coordinates j
         from reference image, which has the effect of warping an image with
-        reference discretization (typically, the "static image") "towards" an 
+        reference discretization (typically, the "static image") "towards" an
         image with input discretization (typically, the "moving image"). More
         precisely, the warped image is produced by the following interpolation:
 
@@ -591,12 +591,12 @@ class DiffeomorphicMap(object):
 
         where i denotes the coordinates of a voxel in the input grid, W is
         the world-to-grid transformation of the image given as input, Dinv
-        is the world-to-grid transformation of the deformation field 
+        is the world-to-grid transformation of the deformation field
         discretization, P is the pre-aligning matrix (transforming input
         points to reference points), S is the voxel-to-space transformation of
         the sampling grid (see comment below) and forward is the forward
         deformation field.
-        
+
         If we want to warp an image, we also must specify on what grid we
         want to sample the resulting warped image (the images are considered as
         points in space and its representation on a grid depends on its
@@ -609,7 +609,7 @@ class DiffeomorphicMap(object):
         #if no world-to-image transform is provided, we use the codomain info
         if world_to_image is None:
             world_to_image = self.codomain_affine_inv
-        #if no sampling info is provided, we use the domain info 
+        #if no sampling info is provided, we use the domain info
         if sampling_shape is None:
             if self.domain_shape is None:
                 raise ValueError('Unable to infer sampling info. Provide a valid sampling_shape.')
@@ -619,11 +619,11 @@ class DiffeomorphicMap(object):
 
         W = None if world_to_image == 'identity' else world_to_image
         Dinv = self.disp_affine_inv
-        P = self.prealign 
+        P = self.prealign
         S = None if sampling_affine == 'identity' else sampling_affine
 
         #this is the matrix which we need to multiply the voxel coordinates
-        #to interpolate on the forward displacement field ("in"side the 
+        #to interpolate on the forward displacement field ("in"side the
         #'forward' brackets in the expression above)
         affine_idx_in = mult_aff(Dinv, mult_aff(P, S))
 
@@ -636,7 +636,7 @@ class DiffeomorphicMap(object):
         #prior to adding to the transformed input point
         affine_disp = W
 
-        #Convert the data to the required types to use the cythonized functions  
+        #Convert the data to the required types to use the cythonized functions
         if interpolation == 'nearest':
             if image.dtype is np.dtype('float64') and floating is np.float32:
                 image = image.astype(floating)
@@ -651,14 +651,14 @@ class DiffeomorphicMap(object):
                         affine_disp, sampling_shape)
         return warped
 
-    def _warp_backward(self, image, interpolation='linear', world_to_image=None, 
+    def _warp_backward(self, image, interpolation='linear', world_to_image=None,
                        sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the backward direction
 
-        Deforms the input image under this diffeomorphic map in the backward 
+        Deforms the input image under this diffeomorphic map in the backward
         direction. Since the mapping is defined in the physical space, the user
-        must specify the sampling grid shape and its space-to-voxel mapping. 
-        By default, the transformation will use the discretization information 
+        must specify the sampling grid shape and its space-to-voxel mapping.
+        By default, the transformation will use the discretization information
         given at initialization.
 
         Parameters
@@ -698,7 +698,7 @@ class DiffeomorphicMap(object):
 
         where i denotes the coordinates of a voxel in the input grid, W is
         the world-to-grid transformation of the image given as input, Dinv
-        is the world-to-grid transformation of the deformation field 
+        is the world-to-grid transformation of the deformation field
         discretization, Pinv is the pre-aligning matrix's inverse (transforming
         reference points to input points), S is the grid-to-space transformation
         of the sampling grid (see comment below) and backward is the backward
@@ -731,7 +731,7 @@ class DiffeomorphicMap(object):
         S = None if sampling_affine == 'identity' else sampling_affine
 
         #this is the matrix which we need to multiply the voxel coordinates
-        #to interpolate on the backward displacement field ("in"side the 
+        #to interpolate on the backward displacement field ("in"side the
         #'backward' brackets in the expression above)
         affine_idx_in = mult_aff(Dinv, S)
 
@@ -743,7 +743,7 @@ class DiffeomorphicMap(object):
         #this is the matrix which we need to multiply the displacement vector
         #prior to adding to the transformed input point
         affine_disp = mult_aff(W, Pinv)
-        
+
         if interpolation == 'nearest':
             if image.dtype is np.dtype('float64') and floating is np.float32:
                 image = image.astype(floating)
@@ -753,13 +753,13 @@ class DiffeomorphicMap(object):
             image = np.asarray(image, dtype=floating)
 
         warp_f = self._get_warping_function(interpolation)
-        
+
         warped = warp_f(image, self.backward, affine_idx_in, affine_idx_out,
                         affine_disp, sampling_shape)
 
         return warped
 
-    def transform(self, image, interpolation='linear', world_to_image=None, 
+    def transform(self, image, interpolation='linear', world_to_image=None,
                   sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the forward direction
 
@@ -771,7 +771,7 @@ class DiffeomorphicMap(object):
         Parameters
         ----------
         image : array, shape (s, r, c) if dim = 3 or (r, c) if dim = 2
-            the image to be warped under this transformation in the forward 
+            the image to be warped under this transformation in the forward
             direction
         interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used for warping, either 'linear'
@@ -791,30 +791,30 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
-        See _warp_forward and _warp_backward documentation for further 
+        See _warp_forward and _warp_backward documentation for further
         information.
         """
         if self.is_inverse:
-            warped = self._warp_backward(image, interpolation, world_to_image, 
+            warped = self._warp_backward(image, interpolation, world_to_image,
                                        sampling_shape, sampling_affine)
         else:
-            warped = self._warp_forward(image, interpolation, world_to_image, 
+            warped = self._warp_forward(image, interpolation, world_to_image,
                                        sampling_shape, sampling_affine)
         return np.asarray(warped)
 
-    def transform_inverse(self, image, interpolation='linear', world_to_image=None, 
+    def transform_inverse(self, image, interpolation='linear', world_to_image=None,
                           sampling_shape=None, sampling_affine=None):
         r"""Warps an image in the backward direction
 
         Transforms the input image under this transformation in the backward
         direction. It uses the "is_inverse" flag to switch between "forward"
-        and "backward" (if is_inverse is False, then transform_inverse(...) 
+        and "backward" (if is_inverse is False, then transform_inverse(...)
         warps the image backwards, else it warps the image forwards)
 
         Parameters
         ----------
         image : array, shape (s, r, c) if dim = 3 or (r, c) if dim = 2
-            the image to be warped under this transformation in the forward 
+            the image to be warped under this transformation in the forward
             direction
         interpolation : string, either 'linear' or 'nearest'
             the type of interpolation to be used for warping, either 'linear'
@@ -834,14 +834,14 @@ class DiffeomorphicMap(object):
 
         Notes
         -----
-        See _warp_forward and _warp_backward documentation for further 
+        See _warp_forward and _warp_backward documentation for further
         information.
         """
         if self.is_inverse:
-            warped = self._warp_forward(image, interpolation, world_to_image, 
+            warped = self._warp_forward(image, interpolation, world_to_image,
                                         sampling_shape, sampling_affine)
         else:
-            warped = self._warp_backward(image, interpolation, world_to_image, 
+            warped = self._warp_backward(image, interpolation, world_to_image,
                                        sampling_shape, sampling_affine)
         return np.asarray(warped)
 
@@ -873,7 +873,7 @@ class DiffeomorphicMap(object):
     def expand_fields(self, expand_factors, new_shape):
         r"""Expands the displacement fields from current shape to new_shape
 
-        Up-samples the discretization of the displacement fields to be of 
+        Up-samples the discretization of the displacement fields to be of
         new_shape shape.
 
         Parameters
@@ -916,12 +916,12 @@ class DiffeomorphicMap(object):
             backward displacement fields of this transformation (the residual
             should be zero for a perfect diffeomorphism)
         stats : array, shape (3,)
-            statistics from the norms of the vectors of the residual 
+            statistics from the norms of the vectors of the residual
             displacement field: maximum, mean and standard deviation
 
         Notes
         -----
-        Since the forward and backward displacement fields have the same 
+        Since the forward and backward displacement fields have the same
         discretization, the final composition is given by
 
         comp[i] = forward[ i + Dinv * backward[i]]
@@ -936,7 +936,7 @@ class DiffeomorphicMap(object):
         else:
             compose_f = vfu.compose_vector_fields_3d
 
-        residual, stats = compose_f(self.backward, self.forward, 
+        residual, stats = compose_f(self.backward, self.forward,
                                     None, Dinv, 1.0, None)
 
         return np.asarray(residual), np.asarray(stats)
@@ -946,7 +946,7 @@ class DiffeomorphicMap(object):
 
         Creates a shallow copy of this diffeomorphic map (the arrays are not
         copied but just referenced)
-        
+
         Returns
         -------
         new_map : DiffeomorphicMap object
@@ -970,12 +970,12 @@ class DiffeomorphicMap(object):
         r"""Composition of this DiffeomorphicMap with a given endomorphism
 
         Creates a new DiffeomorphicMap C with the same properties as self and
-        composes its displacement fields with phi's corresponding fields. 
+        composes its displacement fields with phi's corresponding fields.
         The resulting diffeomorphism is of the form C(x) = phi(self(x)) with
-        inverse C^{-1}(y) = self^{-1}(phi^{-1}(y)). We assume that phi is an 
-        endomorphism with the same discretization and domain affine as self 
+        inverse C^{-1}(y) = self^{-1}(phi^{-1}(y)). We assume that phi is an
+        endomorphism with the same discretization and domain affine as self
         to ensure that the composition inherits self's properties (we also
-        assume that the pre-aligning matrix of phi is None or identity). 
+        assume that the pre-aligning matrix of phi is None or identity).
 
         Parameters
         ----------
@@ -990,12 +990,12 @@ class DiffeomorphicMap(object):
         Notes
         -----
         The problem with our current representation of a DiffeomorphicMap is
-        that the set of Diffeomorphism that can be represented this way (a 
+        that the set of Diffeomorphism that can be represented this way (a
         pre-aligning matrix followed by a non-linear endomorphism given as a
-        displacement field) is not closed under the composition operation. 
+        displacement field) is not closed under the composition operation.
 
-        Supporting a general DiffeomorphicMap class, closed under composition, 
-        may be extremely costly computationally, and the kind of transformations 
+        Supporting a general DiffeomorphicMap class, closed under composition,
+        may be extremely costly computationally, and the kind of transformations
         we actually need for Avants' mid-point algorithm (SyN) are much simpler.
 
         """
@@ -1025,7 +1025,7 @@ class DiffeomorphicMap(object):
 
         The simplified version incorporates the pre-align transform, as well as
         the domain and codomain affine transforms into the displacement field.
-        The resulting transformation may be regarded as operating on the 
+        The resulting transformation may be regarded as operating on the
         image spaces given by the domain and codomain discretization. As a
         result, self.prealign, self.disp_affine, self.domain_affine and
         self.codomain affine will be None (denoting Identity) in the resulting
@@ -1040,9 +1040,9 @@ class DiffeomorphicMap(object):
         P = self.prealign
         Rinv = self.disp_affine_inv
         Cinv = self.codomain_affine_inv
-        
+
         #this is the matrix which we need to multiply the voxel coordinates
-        #to interpolate on the forward displacement field ("in"side the 
+        #to interpolate on the forward displacement field ("in"side the
         #'forward' brackets in the expression above)
         affine_idx_in = mult_aff(Rinv, mult_aff(P, D))
 
@@ -1055,7 +1055,7 @@ class DiffeomorphicMap(object):
         #prior to adding to the transformed input point
         affine_disp = Cinv
 
-        new_forward = simplify_f(self.forward, affine_idx_in, 
+        new_forward = simplify_f(self.forward, affine_idx_in,
                                  affine_idx_out, affine_disp,
                                  self.domain_shape)
 
@@ -1067,7 +1067,7 @@ class DiffeomorphicMap(object):
         affine_idx_in = mult_aff(Rinv, C)
         affine_idx_out = mult_aff(Dinv, mult_aff(Pinv, C))
         affine_disp = mult_aff(Dinv, Pinv)
-        new_backward = simplify_f(self.backward, affine_idx_in, 
+        new_backward = simplify_f(self.backward, affine_idx_in,
                                   affine_idx_out, affine_disp,
                                   self.codomain_shape)
         simplified = DiffeomorphicMap(self.dim,
@@ -1155,26 +1155,26 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             the metric to be optimized
         level_iters : list of int
             the number of iterations at each level of the Gaussian Pyramid (the
-            length of the list defines the number of pyramid levels to be 
+            length of the list defines the number of pyramid levels to be
             used)
         opt_tol : float
             the optimization will stop when the estimated derivative of the
             energy profile w.r.t. time falls below this threshold
         inv_iter : int
-            the number of iterations to be performed by the displacement field 
+            the number of iterations to be performed by the displacement field
             inversion algorithm
         step_length : float
-            the length of the maximum displacement vector of the update 
+            the length of the maximum displacement vector of the update
             displacement field at each iteration
         ss_sigma_factor : float
-            parameter of the scale-space smoothing kernel. For example, the 
+            parameter of the scale-space smoothing kernel. For example, the
             std. dev. of the kernel will be factor*(2^i) in the isotropic case
             where i = 0, 1, ..., n_scales is the scale
         inv_tol : float
             the displacement field inversion algorithm will stop iterating
             when the inversion error falls below this threshold
         callback : function(SymmetricDiffeomorphicRegistration)
-            a function receiving a SymmetricDiffeomorphicRegistration object 
+            a function receiving a SymmetricDiffeomorphicRegistration object
             to be called after each iteration (this optimizer will call this
             function passing self as parameter)
         """
@@ -1206,7 +1206,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                affine_inv, time_scaling):
         r"""Composition of the current displacement field with the given field
 
-        Interpolates new displacement at the locations defined by 
+        Interpolates new displacement at the locations defined by
         current_displacement. Equivalently, computes the composition C of the given
         displacement fields as C(x) = B(A(x)), where A is current_displacement and B
         is new_displacement. This function is intended to be used with
@@ -1218,7 +1218,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         new_displacement : array, shape (R, C, 2) or (S, R, C, 3)
             the displacement field to be warped by current_displacement
         current_displacement : array, shape (R', C', 2) or (S', R', C', 3)
-            the displacement field defining where to interpolate 
+            the displacement field defining where to interpolate
             new_displacement
 
         Returns
@@ -1229,7 +1229,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         """
 
         mean_norm = np.sqrt(np.sum((np.array(current_displacement) ** 2), -1)).mean()
-        self.compose(current_displacement, new_displacement, None, 
+        self.compose(current_displacement, new_displacement, None,
                      affine_inv, time_scaling, current_displacement)
 
         return np.array(current_displacement), np.array(mean_norm)
@@ -1255,7 +1255,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.invert_vector_field = vfu.invert_vector_field_fixed_point_3d
             self.compose = vfu.compose_vector_fields_3d
 
-    def _init_optimizer(self, static, moving, 
+    def _init_optimizer(self, static, moving,
                         static_affine, moving_affine, prealign):
         r"""Initializes the registration optimizer
 
@@ -1266,22 +1266,22 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         Parameters
         ----------
         static: array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization. The 
+            the image to be used as reference during optimization. The
             displacement fields will have the same discretization as the static
             image.
         moving: array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. Since the
-            deformation fields' discretization is the same as the static image, 
+            deformation fields' discretization is the same as the static image,
             it is necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed to
-            be accomplished by "pre-aligning" the moving image towards the 
+            be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign' matrix
         static_affine: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the static image
         moving_affine: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the moving image
         prealign: array, shape (dim+1, dim+1)
-            the affine transformation (operating on the physical space) 
+            the affine transformation (operating on the physical space)
             pre-aligning the moving image towards the static
 
         """
@@ -1303,7 +1303,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.verbosity >= VerbosityLevels.STATUS:
             print('Creating scale space from the moving image. Levels: %d. '
                   'Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
-        
+
         self.moving_ss = ScaleSpace(moving, self.levels, moving_affine,
                                     moving_spacing, self.ss_sigma_factor,
                                     self.mask0)
@@ -1311,7 +1311,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.verbosity >= VerbosityLevels.STATUS:
             print('Creating scale space from the static image. Levels: %d. '
                   'Sigma factor: %f.' % (self.levels, self.ss_sigma_factor))
-        
+
         self.static_ss = ScaleSpace(static, self.levels, static_affine,
                                     static_spacing, self.ss_sigma_factor,
                                     self.mask0)
@@ -1324,7 +1324,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             print('Static scale space:')
             for level in range(self.levels):
                 self.static_ss.print_level(level)
-        
+
         #Get the properties of the coarsest level from the static image. These
         #properties will be taken as the reference discretization.
         disp_shape = self.static_ss.get_domain_shape(self.levels-1)
@@ -1389,14 +1389,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             4.Update backward
             5.Compute inverses
             6.Invert the inverses
-        
+
         Returns
         -------
         der : float
             the derivative of the energy profile, computed by fitting a
             quadratic function to the energy values at the latest T iterations,
             where T = self.energy_window. If the current iteration is less than
-            T then np.inf is returned instead. 
+            T then np.inf is returned instead.
         """
         #Acquire current resolution information from scale spaces
         current_moving = self.moving_ss.get_image(self.current_level)
@@ -1410,10 +1410,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             self.static_ss.get_affine_inv(self.current_level)
         current_disp_spacing = \
             self.static_ss.get_spacing(self.current_level)
-        
-        #Warp the input images (smoothed to the current scale) to the common 
+
+        #Warp the input images (smoothed to the current scale) to the common
         #(reference) space at the current resolution
-        wstatic = self.static_to_ref.transform_inverse(current_static, 'linear', 
+        wstatic = self.static_to_ref.transform_inverse(current_static, 'linear',
                                                        None,
                                                        current_disp_shape,
                                                        current_disp_affine)
@@ -1424,12 +1424,12 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Pass both images to the metric. Now both images are sampled on the
         #reference grid (equal to the static image's grid) and the direction
         #doesn't change across scales
-        self.metric.set_moving_image(wmoving, current_disp_affine, 
+        self.metric.set_moving_image(wmoving, current_disp_affine,
             current_disp_spacing, self.static_direction)
         self.metric.use_moving_image_dynamics(
             current_moving, self.moving_to_ref.inverse())
 
-        self.metric.set_static_image(wstatic, current_disp_affine, 
+        self.metric.set_static_image(wstatic, current_disp_affine,
             current_disp_spacing, self.static_direction)
         self.metric.use_static_image_dynamics(
             current_static, self.static_to_ref.inverse())
@@ -1439,7 +1439,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.callback is not None:
             self.callback(self, RegistrationStages.ITER_START)
 
-        #Compute the forward step (to be used to update the forward transform) 
+        #Compute the forward step (to be used to update the forward transform)
         fw_step = np.array(self.metric.compute_forward())
 
         #set zero displacements at the boundary
@@ -1452,10 +1452,10 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         nrm = np.sqrt(np.sum((fw_step/current_disp_spacing)**2, -1)).max()
         if nrm>0:
             fw_step /= nrm
-        
+
         #Add to current total field
         self.static_to_ref.forward, md_forward = self.update(
-            self.static_to_ref.forward, fw_step, 
+            self.static_to_ref.forward, fw_step,
             current_disp_affine_inv, self.step_length)
         del fw_step
 
@@ -1478,7 +1478,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         #Add to current total field
         self.moving_to_ref.forward, md_backward = self.update(
-            self.moving_to_ref.forward, bw_step, 
+            self.moving_to_ref.forward, bw_step,
             current_disp_affine_inv, self.step_length)
         del bw_step
 
@@ -1491,7 +1491,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             ch = '-' if np.isnan(der) else der
-            print('%d:\t%0.6f\t%0.6f\t%0.6f\t%s' % 
+            print('%d:\t%0.6f\t%0.6f\t%0.6f\t%s' %
                     (n_iter, fw_energy, bw_energy, fw_energy + bw_energy, ch))
 
         self.energy_list.append(fw_energy + bw_energy)
@@ -1553,7 +1553,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         Returns
         -------
         y0 : float
-            the estimated derivative at x0 = 0.5*len(x) 
+            the estimated derivative at x0 = 0.5*len(x)
         """
         x = np.asarray(x)
         y = np.asarray(y)
@@ -1582,7 +1582,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         y = [v / ss for v in y]
         der = self._approximate_derivative_direct(x,y)
         return der
-    
+
     def _optimize(self):
         r"""Starts the optimization
 
@@ -1596,13 +1596,13 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
                 print('Optimizing level %d'%level)
 
             self.current_level = level
-            
+
             self.metric.set_levels_below(self.levels - level)
             self.metric.set_levels_above(level)
 
             if level < self.levels - 1:
                 expand_factors = \
-                    self.static_ss.get_expand_factors(level+1, level) 
+                    self.static_ss.get_expand_factors(level+1, level)
                 new_shape = self.static_ss.get_domain_shape(level)
                 self.static_to_ref.expand_fields(expand_factors, new_shape)
                 self.moving_to_ref.expand_fields(expand_factors, new_shape)
@@ -1614,7 +1614,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_START)
 
-            while ((self.niter < self.level_iters[self.levels - 1 - level]) and 
+            while ((self.niter < self.level_iters[self.levels - 1 - level]) and
                    (self.opt_tol < derivative)):
                 derivative = self._iterate()
                 self.niter += 1
@@ -1623,14 +1623,14 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
 
             if self.callback is not None:
                 self.callback(self, RegistrationStages.SCALE_END)
-            
+
         # Reporting mean and std in stats[1] and stats[2]
         residual, stats = self.static_to_ref.compute_inversion_error()
-        
+
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
             print('Static-Reference Residual error: %0.6f (%0.6f)'
                   % (stats[1], stats[2]))
-        
+
         residual, stats = self.moving_to_ref.compute_inversion_error()
 
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
@@ -1640,7 +1640,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         #Compose the two partial transformations
         self.static_to_ref = self.moving_to_ref.warp_endomorphism(
                                     self.static_to_ref.inverse()).inverse()
-                
+
         # Report mean and std for the composed deformation field
         residual, stats = self.static_to_ref.compute_inversion_error()
         if self.verbosity >= VerbosityLevels.DIAGNOSE:
@@ -1648,7 +1648,7 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         if self.callback is not None:
             self.callback(self, RegistrationStages.OPT_END)
 
-    def optimize(self, static, moving, static_affine=None, moving_affine=None, 
+    def optimize(self, static, moving, static_affine=None, moving_affine=None,
                  prealign=None):
         r"""
         Starts the optimization
@@ -1656,40 +1656,39 @@ class SymmetricDiffeomorphicRegistration(DiffeomorphicRegistration):
         Parameters
         ----------
         static: array, shape (S, R, C) or (R, C)
-            the image to be used as reference during optimization. The 
+            the image to be used as reference during optimization. The
             displacement fields will have the same discretization as the static
             image.
         moving: array, shape (S, R, C) or (R, C)
             the image to be used as "moving" during optimization. Since the
-            deformation fields' discretization is the same as the static image, 
+            deformation fields' discretization is the same as the static image,
             it is necessary to pre-align the moving image to ensure its domain
             lies inside the domain of the deformation fields. This is assumed to
-            be accomplished by "pre-aligning" the moving image towards the 
+            be accomplished by "pre-aligning" the moving image towards the
             static using an affine transformation given by the 'prealign' matrix
         static_affine: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the static image
         moving_affine: array, shape (dim+1, dim+1)
             the voxel-to-space transformation associated to the moving image
         prealign: array, shape (dim+1, dim+1)
-            the affine transformation (operating on the physical space) 
+            the affine transformation (operating on the physical space)
             pre-aligning the moving image towards the static
-        
+
         Returns
         -------
         static_to_ref : DiffeomorphicMap object
             the diffeomorphic map that brings the moving image towards the
-            static one in the forward direction (i.e. by calling 
+            static one in the forward direction (i.e. by calling
             static_to_ref.transform) and the static image towards the
-            moving one in the backward direction (i.e. by calling 
-            static_to_ref.transform_inverse). 
+            moving one in the backward direction (i.e. by calling
+            static_to_ref.transform_inverse).
 
         """
         if self.verbosity >= VerbosityLevels.DEBUG:
             print("Pre-align:", prealign)
 
-        self._init_optimizer(static.astype(floating), moving.astype(floating), 
+        self._init_optimizer(static.astype(floating), moving.astype(floating),
                              static_affine, moving_affine, prealign)
         self._optimize()
         self._end_optimizer()
         return self.static_to_ref
-

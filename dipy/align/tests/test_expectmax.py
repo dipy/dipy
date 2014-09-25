@@ -12,7 +12,7 @@ def test_compute_em_demons_step_2d():
     r"""
     Compares the output of the demons step in 2d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
-    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$, 
+    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$,
     $x, c_f, c_g \in R^{2}$
 
     References
@@ -24,7 +24,7 @@ def test_compute_em_demons_step_2d():
     """
     #Select arbitrary images' shape (same shape for both images)
     sh = (30, 20)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -39,10 +39,10 @@ def test_compute_em_demons_step_2d():
 
     #Compute the gradient fields of F and G
     grad_F = X - c_f
-    grad_G = X - c_g 
+    grad_G = X - c_g
 
     #The squared norm of grad_G to be used later
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
 
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
@@ -61,8 +61,8 @@ def test_compute_em_demons_step_2d():
     np.random.seed(1346491)
     random_labels = np.random.randint(0, 5, sh[0]*sh[1])
     random_labels = random_labels.reshape(sh)
-    
-    random_labels[sigma_i_sq==0] = 2 #this label is used to set sigma_i_sq == 0 below 
+
+    random_labels[sigma_i_sq==0] = 2 #this label is used to set sigma_i_sq == 0 below
     random_labels[sq_norm_grad_G==0] = 2 #this label is used to set gradient == 0 below
 
     expected = np.zeros_like(grad_G)
@@ -72,12 +72,12 @@ def test_compute_em_demons_step_2d():
 
     #Pixels with gradient!=0 and sigma_i_sq=0
     sqnrm = sq_norm_grad_G[random_labels == 1]
-    sigma_i_sq[random_labels == 1] = 0  
+    sigma_i_sq[random_labels == 1] = 0
     expected[random_labels == 1, 0] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 0]/sqnrm
     expected[random_labels == 1, 1] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 1]/sqnrm
 
     #Pixels with gradient=0 and sigma_i_sq=0
-    sigma_i_sq[random_labels == 2] = 0 
+    sigma_i_sq[random_labels == 2] = 0
     grad_G[random_labels == 2, ...] = 0
     expected[random_labels == 2, ...] = 0
 
@@ -87,44 +87,44 @@ def test_compute_em_demons_step_2d():
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
     num = (sigma_x_sq * (F - G))[random_labels >= 3]
     den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels >= 3]
-    
+
     expected[random_labels >= 3] = -1 * np.array(grad_G[random_labels >= 3]) #This is $J^{P}$ in eq. 4 [Vercauteren09]
     expected[random_labels >= 3,...] *= (num / den)[..., None]
 
     #Now compute it using the implementation under test
-    
+
     actual = np.empty_like(expected, dtype=floating)
     em.compute_em_demons_step_2d(np.array(delta_field, dtype=floating),
                                  np.array(sigma_i_sq, dtype=floating),
                                  np.array(grad_G, dtype=floating),
                                  sigma_x_sq,
                                  actual)
-    
+
     #Test sigma_i_sq == inf
     try:
         assert_array_almost_equal(actual[random_labels==0], expected[random_labels==0])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq == inf")
-    
+
     #Test sigma_i_sq == 0 and gradient != 0
     try:
         assert_array_almost_equal(actual[random_labels==1], expected[random_labels==1])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient != 0")
-    
+
     #Test sigma_i_sq == 0 and gradient == 0
     try:
         assert_array_almost_equal(actual[random_labels==2], expected[random_labels==2])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient == 0")
-    
-    #Test sigma_i_sq != 0 and gradient == 0 
+
+    #Test sigma_i_sq != 0 and gradient == 0
     try:
         assert_array_almost_equal(actual[random_labels==3], expected[random_labels==3])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient == 0 ")
 
-    #Test sigma_i_sq != 0 and gradient != 0 
+    #Test sigma_i_sq != 0 and gradient != 0
     try:
         assert_array_almost_equal(actual[random_labels==4], expected[random_labels==4])
     except AssertionError:
@@ -135,7 +135,7 @@ def test_compute_em_demons_step_3d():
     r"""
     Compares the output of the demons step in 3d against an analytical
     step. The fixed image is given by $F(x) = \frac{1}{2}||x - c_f||^2$, the
-    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$, 
+    moving image is given by $G(x) = \frac{1}{2}||x - c_g||^2$,
     $x, c_f, c_g \in R^{3}$
 
     References
@@ -148,7 +148,7 @@ def test_compute_em_demons_step_3d():
 
     #Select arbitrary images' shape (same shape for both images)
     sh = (20, 15, 10)
-    
+
     #Select arbitrary centers
     c_f = np.asarray(sh)/2
     c_g = c_f + 0.5
@@ -165,10 +165,10 @@ def test_compute_em_demons_step_3d():
 
     #Compute the gradient fields of F and G
     grad_F = X - c_f
-    grad_G = X - c_g 
+    grad_G = X - c_g
 
     #The squared norm of grad_G to be used later
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
 
     #Compute F and G
     F = 0.5*np.sum(grad_F**2,-1)
@@ -187,8 +187,8 @@ def test_compute_em_demons_step_3d():
     np.random.seed(1346491)
     random_labels = np.random.randint(0, 5, sh[0]*sh[1]*sh[2])
     random_labels = random_labels.reshape(sh)
-    
-    random_labels[sigma_i_sq==0] = 2 #this label is used to set sigma_i_sq == 0 below 
+
+    random_labels[sigma_i_sq==0] = 2 #this label is used to set sigma_i_sq == 0 below
     random_labels[sq_norm_grad_G==0] = 2 #this label is used to set gradient == 0 below
 
     expected = np.zeros_like(grad_G)
@@ -198,13 +198,13 @@ def test_compute_em_demons_step_3d():
 
     #Pixels with gradient!=0 and sigma_i_sq=0
     sqnrm = sq_norm_grad_G[random_labels == 1]
-    sigma_i_sq[random_labels == 1] = 0  
+    sigma_i_sq[random_labels == 1] = 0
     expected[random_labels == 1, 0] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 0]/sqnrm
     expected[random_labels == 1, 1] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 1]/sqnrm
     expected[random_labels == 1, 2] = delta_field[random_labels == 1]*grad_G[random_labels == 1, 2]/sqnrm
 
     #Pixels with gradient=0 and sigma_i_sq=0
-    sigma_i_sq[random_labels == 2] = 0 
+    sigma_i_sq[random_labels == 2] = 0
     grad_G[random_labels == 2, ...] = 0
     expected[random_labels == 2, ...] = 0
 
@@ -214,7 +214,7 @@ def test_compute_em_demons_step_3d():
     #Directly compute the demons step according to eq. 4 in [Vercauteren09]
     num = (sigma_x_sq * (F - G))[random_labels >= 3]
     den = (sigma_x_sq * sq_norm_grad_G + sigma_i_sq)[random_labels >= 3]
-    
+
     expected[random_labels >= 3] = -1 * np.array(grad_G[random_labels >= 3]) #This is $J^{P}$ in eq. 4 [Vercauteren09]
     expected[random_labels >= 3,...] *= (num / den)[...,None]
 
@@ -225,32 +225,32 @@ def test_compute_em_demons_step_3d():
                                  np.array(grad_G, dtype=floating),
                                  sigma_x_sq,
                                  actual)
-    
+
     #Test sigma_i_sq == inf
     try:
         assert_array_almost_equal(actual[random_labels==0], expected[random_labels==0])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq == inf")
-    
+
     #Test sigma_i_sq == 0 and gradient != 0
     try:
         assert_array_almost_equal(actual[random_labels==1], expected[random_labels==1])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient != 0")
-    
+
     #Test sigma_i_sq == 0 and gradient == 0
     try:
         assert_array_almost_equal(actual[random_labels==2], expected[random_labels==2])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq == 0 and gradient == 0")
-    
-    #Test sigma_i_sq != 0 and gradient == 0 
+
+    #Test sigma_i_sq != 0 and gradient == 0
     try:
         assert_array_almost_equal(actual[random_labels==3], expected[random_labels==3])
     except AssertionError:
         raise AssertionError("Failed for sigma_i_sq != 0 and gradient == 0 ")
 
-    #Test sigma_i_sq != 0 and gradient != 0 
+    #Test sigma_i_sq != 0 and gradient != 0
     try:
         assert_array_almost_equal(actual[random_labels==4], expected[random_labels==4])
     except AssertionError:
@@ -271,7 +271,7 @@ def test_quantize_positive_2d():
     true_levels[1:] = np.linspace(min_positive+delta*0.5, max_positive-delta*0.5, num_levels-1)
     true_quantization = np.empty(img_shape, dtype = np.int32) # generate a target quantization image
     random_labels = np.random.randint(0, num_levels, np.size(true_quantization))
-    
+
     # make sure there is at least one element equal to 0, 1 and num_levels-1
     random_labels[0] = 0
     random_labels[1] = 1
@@ -324,7 +324,7 @@ def test_quantize_positive_3d():
     true_levels[1:] = np.linspace(min_positive+delta*0.5, max_positive-delta*0.5, num_levels-1)
     true_quantization = np.empty(img_shape, dtype = np.int32) # generate a target quantization image
     random_labels = np.random.randint(0, num_levels, np.size(true_quantization))
-    
+
     # make sure there is at least one element equal to 0, 1 and num_levels-1
     random_labels[0] = 0
     random_labels[1] = 1
@@ -366,7 +366,7 @@ def test_compute_masked_class_stats_2d():
     np.random.seed(1246592)
 
     shape = (32, 32)
-    
+
     #Create random labels
     labels = np.ndarray(shape, dtype=np.int32)
     labels[...] = np.random.randint(2, 10, np.size(labels)).reshape(shape)
@@ -389,7 +389,7 @@ def test_compute_masked_class_stats_3d():
     np.random.seed(1246592)
 
     shape = (32, 32, 32)
-    
+
     #Create random labels
     labels = np.ndarray(shape, dtype=np.int32)
     labels[...] = np.random.randint(2, 10, np.size(labels)).reshape(shape)

@@ -449,7 +449,7 @@ def test_warping_2d():
             scale = np.array([[1*s, 0, 0],
                               [0, 1*s, 0],
                               [0, 0, 1]])
-            
+
             aff = trans_inv.dot(scale.dot(rot.dot(trans)))
 
             # Select arbitrary (but different) grid-to-space transforms
@@ -539,7 +539,7 @@ def test_warping_3d():
                               [0, 1*s, 0, 0],
                               [0, 0, 1*s, 0],
                               [0, 0, 0, 1]])
-            
+
             aff = trans_inv.dot(scale.dot(rot.dot(trans)))
 
             # Select arbitrary (but different) grid-to-space transforms
@@ -592,7 +592,7 @@ def test_affine_warping_2d():
     # Create an image of a circle
     radius = 16
     circle = vfu.create_circle(codomain_shape[0], codomain_shape[1], radius)
-    circle = np.array(circle, dtype = floating)    
+    circle = np.array(circle, dtype = floating)
 
     # Create grid coordinates
     x_0 = np.asarray(range(domain_shape[0]))
@@ -627,7 +627,7 @@ def test_affine_warping_2d():
             # Apply the affine transform to the grid coordinates
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:2,...]
 
-            expected = map_coordinates(circle, Y, order=1)    
+            expected = map_coordinates(circle, Y, order=1)
             warped = vfu.warp_2d_affine(circle, np.array(domain_shape, dtype = np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
@@ -658,7 +658,7 @@ def test_affine_warping_3d():
     # Create an image of a sphere
     radius = 16
     sphere = vfu.create_sphere(codomain_shape[0], codomain_shape[1], codomain_shape[2], radius)
-    sphere = np.array(sphere, dtype = floating)    
+    sphere = np.array(sphere, dtype = floating)
 
     # Create grid coordinates
     x_0 = np.asarray(range(domain_shape[0]))
@@ -696,7 +696,7 @@ def test_affine_warping_3d():
             # Apply the affine transform to the grid coordinates
             Y = np.apply_along_axis(gt_affine.dot, 0, X)[0:3,...]
 
-            expected = map_coordinates(sphere, Y, order=1)  
+            expected = map_coordinates(sphere, Y, order=1)
             warped = vfu.warp_3d_affine(sphere, np.array(domain_shape, dtype = np.int32), gt_affine)
             assert_array_almost_equal(warped, expected)
 
@@ -744,7 +744,7 @@ def test_compose_vector_fields_2d():
 
     disp1, assign1 = vfu.create_random_displacement_2d(np.array(input_shape,
                                                        dtype=np.int32),
-                                                       input_affine, 
+                                                       input_affine,
                                                        np.array(target_shape,
                                                        dtype=np.int32),
                                                        target_affine)
@@ -753,7 +753,7 @@ def test_compose_vector_fields_2d():
 
     disp2, assign2 = vfu.create_random_displacement_2d(np.array(input_shape,
                                                        dtype=np.int32),
-                                                       input_affine, 
+                                                       input_affine,
                                                        np.array(target_shape,
                                                        dtype=np.int32),
                                                        target_affine)
@@ -774,13 +774,13 @@ def test_compose_vector_fields_2d():
     warp1 = moving_image[(assign2[...,0], assign2[...,1])]
     expected = warp1[(assign1[...,0], assign1[...,1])]
 
-    #compose the displacement fields 
+    #compose the displacement fields
     target_affine_inv = np.linalg.inv(target_affine)
 
     target_affine_inv = np.linalg.inv(target_affine)
     premult_index = target_affine_inv.dot(input_affine)
     premult_disp = target_affine_inv
-    
+
     for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
         composition, stats = vfu.compose_vector_fields_2d(disp1,
                                                           disp2/time_scaling,
@@ -849,7 +849,7 @@ def test_compose_vector_fields_3d():
 
     disp1, assign1 = vfu.create_random_displacement_3d(np.array(input_shape,
                                                        dtype=np.int32),
-                                                       input_affine, 
+                                                       input_affine,
                                                        np.array(target_shape,
                                                        dtype=np.int32),
                                                        target_affine)
@@ -882,13 +882,13 @@ def test_compose_vector_fields_3d():
     warp1 = moving_image[(assign2[...,0], assign2[...,1], assign2[...,2])]
     expected = warp1[(assign1[...,0], assign1[...,1], assign1[...,2])]
 
-    #compose the displacement fields 
+    #compose the displacement fields
     target_affine_inv = np.linalg.inv(target_affine)
 
     target_affine_inv = np.linalg.inv(target_affine)
     premult_index = target_affine_inv.dot(input_affine)
     premult_disp = target_affine_inv
-    
+
     for time_scaling in [0.25, 0.5, 1.0, 2.0, 4.0]:
         composition, stats = vfu.compose_vector_fields_3d(disp1,
                                                           disp2/time_scaling,
@@ -964,7 +964,7 @@ def test_invert_vector_field_2d():
             dcopy = np.copy(d)
 
             #make sure the field remains invertible after the re-mapping
-            vfu.reorient_vector_field_2d(dcopy, gt_affine) 
+            vfu.reorient_vector_field_2d(dcopy, gt_affine)
 
             inv_approx = vfu.invert_vector_field_fixed_point_2d(dcopy, gt_affine_inv,
                                                                 np.array([s, s]),
@@ -1018,7 +1018,7 @@ def test_invert_vector_field_3d():
             dcopy = np.copy(d)
 
             #make sure the field remains invertible after the re-mapping
-            vfu.reorient_vector_field_3d(dcopy, gt_affine) 
+            vfu.reorient_vector_field_3d(dcopy, gt_affine)
 
             # Note: the spacings are used just to check convergence, so they don't need
             # to be very accurate. Here we are passing (0.5 * s) to force the algorithm
@@ -1048,7 +1048,7 @@ def test_resample_vector_field_2d():
     factors = np.array([0.5, 0.5])
     d, dinv = vfu.create_harmonic_fields_2d(reduced_shape[0], reduced_shape[1], 0.3, 6)
     d = np.array(d, dtype = floating)
-    
+
     expanded = vfu.resample_displacement_field_2d(d, factors,domain_shape)
     subsampled = expanded[::2, ::2, :]
 
@@ -1065,7 +1065,7 @@ def test_resample_vector_field_3d():
     factors = np.array([0.5, 0.5, 0.5])
     d, dinv = vfu.create_harmonic_fields_3d(reduced_shape[0], reduced_shape[1], reduced_shape[2], 0.3, 6)
     d = np.array(d, dtype = floating)
-    
+
     expanded = vfu.resample_displacement_field_3d(d, factors,domain_shape)
     subsampled = expanded[::2, ::2, ::2, :]
 
@@ -1101,7 +1101,7 @@ def test_downsample_scalar_field_2d():
 
             actual = np.array(vfu.downsample_scalar_field_2d(image[:nrows, :ncols]))
             assert_array_almost_equal(expected, actual)
-    
+
 
 def test_downsample_displacement_field_2d():
     np.random.seed(2115556)
@@ -1225,7 +1225,7 @@ def test_reorient_vector_field_2d():
     expected = np.ndarray(shape = shape+(2,), dtype = floating)
     expected[...,0] = -1 * d[...,1]
     expected[...,1] =  d[...,0]
-    
+
     #rotate 45 degrees twice
     c = np.sqrt(0.5)
     affine = np.array([[c, -c],[c, c]])

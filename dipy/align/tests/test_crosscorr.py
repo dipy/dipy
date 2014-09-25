@@ -7,7 +7,7 @@ def test_cc_factors_2d():
     r"""
     Compares the output of the optimized function to compute the cross-
     correlation factors against a direct (not optimized, but less error prone)
-    implementation. 
+    implementation.
     """
     a = np.array(range(20*20), dtype=floating).reshape(20,20)
     b = np.array(range(20*20)[::-1], dtype=floating).reshape(20,20)
@@ -21,7 +21,7 @@ def test_cc_factors_3d():
     r"""
     Compares the output of the optimized function to compute the cross-
     correlation factors against a direct (not optimized, but less error prone)
-    implementation. 
+    implementation.
     """
     a = np.array(range(20*20*20), dtype=floating).reshape(20,20,20)
     b = np.array(range(20*20*20)[::-1], dtype=floating).reshape(20,20,20)
@@ -62,8 +62,8 @@ def test_compute_cc_steps_2d():
     Gnoise = Gnoise.astype(floating)
     grad_G += Gnoise
 
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
-    
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
+
     F = np.array(0.5*np.sum(grad_F**2,-1), dtype = floating)
     G = np.array(0.5*sq_norm_grad_G, dtype = floating)
 
@@ -74,7 +74,7 @@ def test_compute_cc_steps_2d():
     Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
     Gnoise = Gnoise.astype(floating)
     G += Gnoise
-    
+
     #precompute the cross correlation factors
     factors = cc.precompute_cc_factors_2d_test(F, G, radius)
     factors = np.array(factors, dtype = floating)
@@ -143,8 +143,8 @@ def test_compute_cc_steps_3d():
     Gnoise = Gnoise.astype(floating)
     grad_G += Gnoise
 
-    sq_norm_grad_G = np.sum(grad_G**2,-1) 
-    
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
+
     F = np.array(0.5*np.sum(grad_F**2,-1), dtype = floating)
     G = np.array(0.5*sq_norm_grad_G, dtype = floating)
 
