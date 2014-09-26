@@ -25,7 +25,7 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     assigned a quantization level of 0. The positive values are divided into
     the remaining num_levels-1 uniform quanization levels.
 
-    The following are undefined, and return (None, None, None):
+    The following are undefined, and raise a ValueError:
     * Quantizing at zero levels because at least one level must be assigned
     * Quantizing at one level because positive values should be assigned a
       level different from the secial level 0 (at least 2 levels are needed)
@@ -66,7 +66,7 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
     #Quantizing at one level is not supported because we want to make sure the
     #maximum level in the quantization is never greater than num_levels-1
     if(num_levels < 2):
-        return None, None, None
+        raise ValueError('Quantization levels must be at least 2')
 
     num_levels -= 1  # zero is one of the levels
 
@@ -122,7 +122,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     assigned a quantization level of 0. The positive values are divided into
     the remaining num_levels-1 uniform quanization levels.
 
-    The following are undefined, and return (None, None, None):
+    The following are undefined, and raise a ValueError:
     * Quantizing at zero levels because at least one level must be assigned
     * Quantizing at one level because positive values should be assigned a
       level different from the secial level 0 (at least 2 levels are needed)
@@ -165,7 +165,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     #Quantizing at one level is not supported because we want to make sure the
     #maximum level in the quantization is never greater than num_levels-1
     if(num_levels < 2):
-        return None, None, None
+        raise ValueError('Quantization levels must be at least 2')
 
     num_levels -= 1  # zero is one of the levels
 

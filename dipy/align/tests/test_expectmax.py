@@ -3,7 +3,8 @@ from dipy.align import floating
 import dipy.align.expectmax as em
 from numpy.testing import (assert_equal,
                            assert_array_equal,
-                           assert_array_almost_equal)
+                           assert_array_almost_equal,
+                           assert_raises)
 
 
 
@@ -296,11 +297,8 @@ def test_quantize_positive_2d():
         assert_equal(hist[i], current_bin)
 
     #test num_levels<2 and input image with zeros and non-zeros everywhere
-    out, levels, hist = em.quantize_positive_2d(np.ones(img_shape, dtype=floating), 0)
-    assert_equal((out, levels, hist), (None, None, None))
-
-    out, levels, hist = em.quantize_positive_2d(np.ones(img_shape, dtype=floating), 1)
-    assert_equal((out, levels, hist), (None, None, None))
+    assert_raises(ValueError, em.quantize_positive_2d, input_image, 0)
+    assert_raises(ValueError, em.quantize_positive_2d, input_image, 1)
 
     out, levels, hist = em.quantize_positive_2d(np.zeros(img_shape, dtype=floating), 2)
     assert_equal(out, np.zeros(img_shape, dtype=np.int32))
@@ -349,11 +347,8 @@ def test_quantize_positive_3d():
         assert_equal(hist[i], current_bin)
 
     #test num_levels<2 and input image with zeros and non-zeros everywhere
-    out, levels, hist = em.quantize_positive_3d(np.ones(img_shape, dtype=floating), 0)
-    assert_equal((out, levels, hist), (None, None, None))
-
-    out, levels, hist = em.quantize_positive_3d(np.ones(img_shape, dtype=floating), 1)
-    assert_equal((out, levels, hist), (None, None, None))
+    assert_raises(ValueError, em.quantize_positive_3d, input_image, 0)
+    assert_raises(ValueError, em.quantize_positive_3d, input_image, 1)
 
     out, levels, hist = em.quantize_positive_3d(np.zeros(img_shape, dtype=floating), 2)
     assert_equal(out, np.zeros(img_shape, dtype=np.int32))
