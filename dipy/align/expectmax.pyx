@@ -1,5 +1,3 @@
-""" Utility functions used by the Expectation Maximization (EM) metric """
-
 #!python
 #cython: boundscheck=False
 #cython: wraparound=False
