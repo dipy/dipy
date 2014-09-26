@@ -673,24 +673,12 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     If d1[r,c] lies outside the domain of d2, then comp[r,c] will contain a zero
     vector.
 
-    Note that we are not explicitly initializing the composition result to
-    zero. It is possible to pass the same array reference as d1 and comp so
-    that, during the composition, some already updated values are used to
-    compute the new ones. The way we interpret this is: it's similar to the
-    difference between Jacobi iterations versus Gauss-Seidel iterations: in
-    Jacobi, only previous iterations are used to compute the new iteration,
-    but in Gauss-Seidel (faster than Jacobi) the values already updated in the
-    current iteration are "better approximations" to the solution of the linear
-    system, so they are used to update the remaining values of current
-    iteration. Here, using the recently updated displacement vectors makes the
-    steps a bit "faster" than just using the displacement fields of the previous
-    iteration. Strictly speaking, this is not composing two displacement fields,
-    its's doing more: it's "predicting" the evolution of the diffeomorphisms.
-    We have to admit, though, that we don't know if this interpretation is
-    correct or if this is a bug, here we just tried and it worked better this
-    way (this is how it's done in ANTS), but as our objective right
-    now is to get the same registration quality as ANTS, we can investigate more
-    and try to improve later.
+    Warning: it is possible to use the same array reference for d1 and comp to
+    effectively update d1 to the composition of d1 and d2 because previously
+    updated values from d1 are no longer used (this is done to save memory and
+    time). However, using the same array for d2 and comp may not be the intended
+    operation (see comment below).
+
     """
     cdef:
         cnp.npy_intp nr1 = d1.shape[0]
@@ -708,6 +696,7 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     for i in range(nr1):
         for j in range(nc1):
 
+            # This is the only place we access d1[i, j]
             dii = d1[i, j, 0]
             djj = d1[i, j, 1]
 
@@ -728,6 +717,11 @@ cdef void _compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
             diii += di
             djjj += dj
 
+            # If d1 and comp are the same array, this will correctly update
+            # d1[i,j], which will never be accessed again
+            # If d2 and comp are the same array, then (diii, djjj) may be
+            # in the neighborhood of a previously updated vector from d2,
+            # which may be problematic
             inside = _interpolate_vector_2d(d2, diii, djjj, comp[i,j])
 
             if inside == 1:
@@ -803,6 +797,7 @@ def compose_vector_fields_2d(floating[:, :, :] d1, floating[:, :, :] d2,
     if comp is None:
         comp = np.zeros_like(d1)
 
+
     _compose_vector_fields_2d(d1, d2, premult_index, premult_disp,
                               time_scaling, comp, stats)
     return comp, stats
@@ -869,25 +864,11 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
     If d1[s,r,c] lies outside the domain of d2, then comp[s,r,c] will contain
     a zero vector.
 
-    Note that we are not explicitly initializing the composition result to
-    zero. It is possible to pass the same array reference as d1 and comp so
-    that, during the composition, some already updated values are used to
-    compute the new ones. The way we interpret this is: it's similar to the
-    difference between Jacobi iterations versus Gauss-Seidel iterations: in
-    Jacobi, only previous iterations are used to compute the new iteration,
-    but in Gauss-Seidel (faster than Jacobi) the values already updated in the
-    current iteration are "better approximations" to the solution of the linear
-    system, so they are used to update the remaining values of current
-    iteration. Here, using the recently updated displacement vectors makes the
-    steps a bit "faster" than just using the displacement fields of the previous
-    iteration. Strictly speaking, this is not composing two displacement fields,
-    its's doing more: it's "predicting" the evolution of the diffeomorphisms.
-    We have to admit, though, that we don't know if this interpretation is
-    correct or if this is a bug, here we just tried and it worked better this
-    way (this is how it's done in ANTS), but as our objective right
-    now is to get the same registration quality as ANTS, we can investigate more
-    and try to improve later.
-
+    Warning: it is possible to use the same array reference for d1 and comp to
+    effectively update d1 to the composition of d1 and d2 because previously
+    updated values from d1 are no longer used (this is done to save memory and
+    time). However, using the same array for d2 and comp may not be the intended
+    operation (see comment below).
     """
     cdef:
         cnp.npy_intp ns1 = d1.shape[0]
@@ -907,6 +888,7 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
         for i in range(nr1):
             for j in range(nc1):
 
+                # This is the only place we access d1[k, i, j]
                 dkk = d1[k, i, j, 0]
                 dii = d1[k, i, j, 1]
                 djj = d1[k, i, j, 2]
@@ -933,6 +915,11 @@ cdef void _compose_vector_fields_3d(floating[:, :, :, :] d1,
                 diii += di
                 djjj += dj
 
+                # If d1 and comp are the same array, this will correctly update
+                # d1[k,i,j], which will never be accessed again
+                # If d2 and comp are the same array, then (dkkk, diii, djjj)
+                # may be in the neighborhood of a previously updated vector
+                # from d2, which may be problematic
                 inside = _interpolate_vector_3d(d2, dkkk, diii, djjj,
                                                       comp[k, i, j])
 

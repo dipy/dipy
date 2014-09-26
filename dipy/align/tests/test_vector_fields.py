@@ -797,6 +797,20 @@ def test_compose_vector_fields_2d():
                                             premult_index, premult_disp))
         assert_array_almost_equal(warped, expected)
 
+        #test updating the displacement field instead of creating a new one
+        composition = disp1.copy()
+        vfu.compose_vector_fields_2d(composition,disp2/time_scaling, premult_index,
+                                     premult_disp, time_scaling, composition)
+        #apply the implementation under test
+        warped = np.array(vfu.warp_2d(moving_image, composition, None,
+                                         premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
+
+        #test also using nearest neighbor interpolation
+        warped = np.array(vfu.warp_2d_nn(moving_image, composition, None,
+                                            premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
+
     # Test non-overlapping case
     x_0 = np.asarray(range(input_shape[0]))
     x_1 = np.asarray(range(input_shape[1]))
@@ -813,6 +827,11 @@ def test_compose_vector_fields_2d():
                                                       None,
                                                       None,
                                                       1.0, None)
+    assert_array_almost_equal(composition, np.zeros_like(composition))
+
+    #test updating the displacement field instead of creating a new one
+    composition = disp1.copy()
+    vfu.compose_vector_fields_2d(composition, disp2, None, None, 1.0, composition)
     assert_array_almost_equal(composition, np.zeros_like(composition))
 
 
@@ -905,6 +924,21 @@ def test_compose_vector_fields_3d():
                                              premult_index, premult_disp))
         assert_array_almost_equal(warped, expected)
 
+        #test updating the displacement field instead of creating a new one
+        composition = disp1.copy()
+        vfu.compose_vector_fields_3d(composition, disp2/time_scaling,
+                                     premult_index, premult_disp,
+                                     time_scaling, composition)
+        #apply the implementation under test
+        warped = np.array(vfu.warp_3d(moving_image, composition, None,
+                                          premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
+
+        #test also using nearest neighbor interpolation
+        warped = np.array(vfu.warp_3d_nn(moving_image, composition, None,
+                                             premult_index, premult_disp))
+        assert_array_almost_equal(warped, expected)
+
     # Test non-overlapping case
     x_0 = np.asarray(range(input_shape[0]))
     x_1 = np.asarray(range(input_shape[1]))
@@ -925,6 +959,10 @@ def test_compose_vector_fields_3d():
                                                       1.0, None)
     assert_array_almost_equal(composition, np.zeros_like(composition))
 
+    #test updating the displacement field instead of creating a new one
+    composition = disp1.copy()
+    vfu.compose_vector_fields_3d(composition, disp2, None, None, 1.0, composition)
+    assert_array_almost_equal(composition, np.zeros_like(composition))
 
 
 def test_invert_vector_field_2d():
