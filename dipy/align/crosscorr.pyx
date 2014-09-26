@@ -1,3 +1,5 @@
+""" Utility functions used by the Cross Correlation (CC) metric """
+
 import numpy as np
 cimport cython
 cimport numpy as cnp

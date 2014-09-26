@@ -1,3 +1,5 @@
+"""  Metrics for Symmetric Diffeomorphic Registration """
+
 from __future__ import print_function
 import abc
 from dipy.utils.six import with_metaclass

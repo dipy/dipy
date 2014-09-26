@@ -1,3 +1,5 @@
+""" Utility functions to perform operations with vector fields """
+
 #!python
 #cython: boundscheck=False
 #cython: wraparound=False

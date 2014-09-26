@@ -1,3 +1,5 @@
+"""  Classes and functions for Symmetric Diffeomorphic Registration """
+
 from __future__ import print_function
 import abc
 from dipy.utils.six import with_metaclass
@@ -11,13 +13,13 @@ from dipy.align import VerbosityLevels
 from dipy.align import Bunch
 
 RegistrationStages = Bunch(INIT_START=0,
-                          INIT_END=1,
-                          OPT_START=2,
-                          OPT_END=3,
-                          SCALE_START=4,
-                          SCALE_END=5,
-                          ITER_START=6,
-                          ITER_END=7)
+                           INIT_END=1,
+                           OPT_START=2,
+                           OPT_END=3,
+                           SCALE_START=4,
+                           SCALE_END=5,
+                           ITER_START=6,
+                           ITER_END=7)
 r"""Registration Stages
 
 This enum defines the different stages which the Volumetric Registration
