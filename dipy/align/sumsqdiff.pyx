@@ -11,7 +11,7 @@ cdef extern from "math.h":
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _solve_2d_symmetric_positive_definite(double[:] A, double[:] y, 
+cdef void _solve_2d_symmetric_positive_definite(double[:] A, double[:] y,
                                                double det,
                                                double[:] out) nogil:
     r"""Solves a 2-variable symmetric positive-definite linear system
@@ -33,7 +33,7 @@ cdef void _solve_2d_symmetric_positive_definite(double[:] A, double[:] y,
     out[0] = (y[0] - A[1] * out[1]) / A[0]
 
 
-def solve_2d_symmetric_positive_definite(double[:] A, double[:] y, 
+def solve_2d_symmetric_positive_definite(double[:] A, double[:] y,
                                                double det,
                                                double[:] out):
     r"""
@@ -107,7 +107,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                 double lambda_param, floating[:, :, :] displacement_field):
     r"""One iteration of a large linear system solver for 2D SSD registration
 
-    Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
+    Performs one iteration at one level of the Multi-resolution Gauss-Seidel
     solver proposed by Bruhn and Weickert [Bruhn05].
 
     Parameters
@@ -116,7 +116,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
-        the variance of the gray level value at each voxel, according to the 
+        the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
     grad : array, shape (R, C, 2)
@@ -132,7 +132,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
     Returns
     -------
     max_displacement : float
-        the norm of the maximum change in the displacement field after the 
+        the norm of the maximum change in the displacement field after the
         iteration
 
     References
@@ -202,7 +202,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                                 grad[r, c, 1] ** 2)
                         if(nrm2 < 1e-9):
                             displacement_field[r, c, 0] = 0
-                            displacement_field[r, c, 1] = 0                        
+                            displacement_field[r, c, 1] = 0
                         else:
                             displacement_field[r, c, 0] = (b[0]) / nrm2
                             displacement_field[r, c, 1] = (b[1]) / nrm2
@@ -234,7 +234,7 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
-        the variance of the gray level value at each voxel, according to the 
+        the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
     grad : array, shape (R, C, 2)
@@ -247,7 +247,7 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
     Returns
     -------
     energy : float
-        the SSD energy at this iteration 
+        the SSD energy at this iteration
 
     Notes
     -----
@@ -263,7 +263,7 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
     a more precise energy computation including the regularization term
     is useless. Instead, convergence is checked considering the data-term
     energy only and detecting oscilations in the energy profile.
-    
+
     """
     cdef:
         cnp.npy_intp nrows = delta_field.shape[0]
@@ -287,7 +287,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                 double lambda_param, floating[:, :, :, :] disp):
     r"""One iteration of a large linear system solver for 3D SSD registration
 
-    Performs one iteration at one level of the Multi-resolution Gauss-Seidel 
+    Performs one iteration at one level of the Multi-resolution Gauss-Seidel
     solver proposed by Bruhn and Weickert [Bruhn05].
 
     Parameters
@@ -296,7 +296,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (S, R, C)
-        the variance of the gray level value at each voxel, according to the 
+        the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
     grad : array, shape (S, R, C, 3)
@@ -312,7 +312,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
     Returns
     -------
     max_displacement : float
-        the norm of the maximum change in the displacement field after the 
+        the norm of the maximum change in the displacement field after the
         iteration
 
     References
@@ -392,7 +392,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                             max_displacement = opt
                     elif(sigma < 1e-9):
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
-                            if(nrm2 < 1e-9):                                
+                            if(nrm2 < 1e-9):
                                 disp[s, r, c, 0] = 0
                                 disp[s, r, c, 1] = 0
                                 disp[s, r, c, 2] = 0
@@ -417,7 +417,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                                 disp[s, r, c, 0] = (b[0]) / nrm2
                                 disp[s, r, c, 1] = (b[1]) / nrm2
                                 disp[s, r, c, 2] = (b[2]) / nrm2
-                        xx = disp[s, r, c, 0] - d[0] 
+                        xx = disp[s, r, c, 0] - d[0]
                         yy = disp[s, r, c, 1] - d[1]
                         zz = disp[s, r, c, 2] - d[2]
                         disp[s, r, c, 0] = d[0]
@@ -443,7 +443,7 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
-        the variance of the gray level value at each voxel, according to the 
+        the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
     gradient_field : array, shape (R, C, 2)
@@ -456,7 +456,7 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
     Returns
     -------
     energy : float
-        the SSD energy at this iteration 
+        the SSD energy at this iteration
 
     Notes
     -----
@@ -496,17 +496,17 @@ def compute_residual_displacement_field_ssd_3d(
         floating[:, :, :, :] residual):
     r"""The residual displacement field to be fit on the next iteration
 
-    Computes the residual displacement field corresponding to the current 
-    displacement field (given by 'disp') in the Multi-resolution 
+    Computes the residual displacement field corresponding to the current
+    displacement field (given by 'disp') in the Multi-resolution
     Gauss-Seidel solver proposed by Bruhn and Weickert [Bruhn].
-    
+
     Parameters
     ----------
     delta_field : array, shape (S, R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (S, R, C)
-        the variance of the gray level value at each voxel, according to the 
+        the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
     gradient_field : array, shape (S, R, C, 3)
@@ -605,17 +605,17 @@ cpdef compute_residual_displacement_field_ssd_2d(
         floating[:, :, :] residual):
     r"""The residual displacement field to be fit on the next iteration
 
-    Computes the residual displacement field corresponding to the current 
-    displacement field in the Multi-resolution Gauss-Seidel solver proposed by 
+    Computes the residual displacement field corresponding to the current
+    displacement field in the Multi-resolution Gauss-Seidel solver proposed by
     Bruhn and Weickert [Bruhn05].
-    
+
     Parameters
     ----------
     delta_field : array, shape (R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
     sigma_field : array, shape (R, C)
-        the variance of the gray level value at each voxel, according to the 
+        the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
     gradient_field : array, shape (R, C, 2)
@@ -713,7 +713,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
     gradient_field : array, shape (R, C, 2)
         the gradient of the moving image
     sigma_sq_x : float
-        parameter controlling the amount of regularization. It corresponds to 
+        parameter controlling the amount of regularization. It corresponds to
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
     out : array, shape (R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
@@ -751,7 +751,7 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
         for i in range(nr):
             for j in range(nc):
                 delta = delta_field[i,j]
-                delta_2 = delta**2 
+                delta_2 = delta**2
                 energy += delta_2
                 nrm2 = gradient_moving[i, j, 0]**2 + gradient_moving[i, j, 1]**2
                 den = delta_2/sigma_sq_x + nrm2
@@ -774,7 +774,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                                floating[:,:,:,:] out):
     r"""Demons step for 3D SSD-driven registration
 
-    Computes the demons step for SSD-driven registration 
+    Computes the demons step for SSD-driven registration
     ( eq. 4 in [Bruhn05] )
 
     Parameters
@@ -785,7 +785,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
     gradient_field : array, shape (S, R, C, 2)
         the gradient of the moving image
     sigma_sq_x : float
-        parameter controlling the amount of regularization. It corresponds to 
+        parameter controlling the amount of regularization. It corresponds to
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[Vercauteren09]
     out : array, shape (S, R, C, 2)
         if None, a new array will be created to store the demons step. Otherwise
@@ -825,7 +825,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
             for i in range(nr):
                 for j in range(nc):
                     delta = delta_field[k,i,j]
-                    delta_2 = delta**2 
+                    delta_2 = delta**2
                     energy += delta_2
                     nrm2 = (gradient_moving[k, i, j, 0]**2 +
                             gradient_moving[k, i, j, 1]**2 +
@@ -835,7 +835,7 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                         out[k, i, j, 0] = 0
                         out[k, i, j, 1] = 0
                         out[k, i, j, 2] = 0
-                    else: 
+                    else:
                         out[k, i, j, 0] = (delta *
                                            gradient_moving[k, i, j, 0] / den)
                         out[k, i, j, 1] = (delta *

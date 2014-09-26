@@ -20,16 +20,16 @@ cdef inline int ifloor(double x) nogil:
 def quantize_positive_2d(floating[:, :] v, int num_levels):
     r"""Quantizes a 2D image to num_levels quantization levels
 
-    Quantizes the input image at num_levels intensity levels considering <=0 
+    Quantizes the input image at num_levels intensity levels considering <=0
     as a special value. Those input pixels <=0, and only those, will be
-    assigned a quantization level of 0. The positive values are divided into 
+    assigned a quantization level of 0. The positive values are divided into
     the remaining num_levels-1 uniform quanization levels.
 
     The following are undefined, and return (None, None, None):
     * Quantizing at zero levels because at least one level must be assigned
-    * Quantizing at one level because positive values should be assigned a 
+    * Quantizing at one level because positive values should be assigned a
       level different from the secial level 0 (at least 2 levels are needed)
-   
+
     Parameters
     ----------
     v : array, shape (R, C)
@@ -43,8 +43,8 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
         the quantized image
     levels: array, shape (num_levels,)
         the quantization values: levels[0]=0, and levels[i] is the mid-point
-        of the interval of intensities that are assigned to quantization 
-        level i, i=1, ..., num_levels-1. 
+        of the interval of intensities that are assigned to quantization
+        level i, i=1, ..., num_levels-1.
     hist: array, shape (num_levels,)
         histogram: the number of pixels that were assigned to each quantization
         level
@@ -117,16 +117,16 @@ def quantize_positive_2d(floating[:, :] v, int num_levels):
 def quantize_positive_3d(floating[:, :, :] v, int num_levels):
     r"""Quantizes a 3D volume to num_levels quantization levels
 
-    Quantizes the input volume at num_levels intensity levels considering <=0 
+    Quantizes the input volume at num_levels intensity levels considering <=0
     as a special value. Those input voxels <=0, and only those, will be
-    assigned a quantization level of 0. The positive values are divided into 
+    assigned a quantization level of 0. The positive values are divided into
     the remaining num_levels-1 uniform quanization levels.
 
     The following are undefined, and return (None, None, None):
     * Quantizing at zero levels because at least one level must be assigned
-    * Quantizing at one level because positive values should be assigned a 
+    * Quantizing at one level because positive values should be assigned a
       level different from the secial level 0 (at least 2 levels are needed)
-   
+
     Parameters
     ----------
     v : array, shape (S, R, C)
@@ -140,8 +140,8 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
         the quantized volume
     levels: array, shape (num_levels,)
         the quantization values: levels[0]=0, and levels[i] is the mid-point
-        of the interval of intensities that are assigned to quantization 
-        level i, i=1, ..., num_levels-1. 
+        of the interval of intensities that are assigned to quantization
+        level i, i=1, ..., num_levels-1.
     hist: array, shape (num_levels,)
         histogram: the number of voxels that were assigned to each quantization
         level
@@ -227,14 +227,14 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
     Parameters
     ----------
     mask : array, shape (R, C)
-        the mask of pixels that will be taken into account for computing the 
+        the mask of pixels that will be taken into account for computing the
         statistics. All zero pixels in mask will be ignored
     v : array, shape (R, C)
         the image which the statistics will be computed from
-    numLabels : int 
+    numLabels : int
         the number of different labels in 'labels' (equal to the
         number of hidden variables in the EM metric)
-    labels : array, shape (R, C) 
+    labels : array, shape (R, C)
         the label assigned to each pixel
     """
     ftype=np.asarray(v).dtype
@@ -284,14 +284,14 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
     Parameters
     ----------
     mask : array, shape (S, R, C)
-        the mask of voxels that will be taken into account for computing the 
+        the mask of voxels that will be taken into account for computing the
         statistics. All zero voxels in mask will be ignored
     v : array, shape (S, R, C)
         the volume which the statistics will be computed from
-    numLabels : int 
+    numLabels : int
         the number of different labels in 'labels' (equal to the
         number of hidden variables in the EM metric)
-    labels : array, shape (S, R, C) 
+    labels : array, shape (S, R, C)
         the label assigned to each pixel
     """
     ftype=np.asarray(v).dtype
@@ -341,7 +341,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
 
     Computes the demons step [Vercauteren09] for SSD-driven registration
     ( eq. 4 in [Vercauteren09] ) using the EM algorithm [Arce14] to handle
-    multi-modality images.    
+    multi-modality images.
 
     In this case, $\sigma_i$ in eq. 4 of [Vercauteren] is estimated using the EM
     algorithm, while in the original version of diffeomorphic demons it is
@@ -350,7 +350,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
     Parameters
     ----------
     delta_field : array, shape(R, C)
-        contains, at each pixel, the difference between the moving image (warped 
+        contains, at each pixel, the difference between the moving image (warped
         under the current deformation s(. , .) ) J and the static image I:
         delta_field[i,j] = J(s(i,j)) - I(i,j). The order is important, changing
         to delta_field[i,j] = I(i,j) - J(s(i,j)) yields the backward demons step
@@ -359,12 +359,12 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         the gradient of the static image
     sigma_sq_field : array, shape(R, C)
         contains, at each pixel (i, j), the estimated variance (not std) of the
-        hidden variable associated to the intensity at static[i,j] (which must 
+        hidden variable associated to the intensity at static[i,j] (which must
         have been previously quantized)
     gradient_moving : array, shape(R, C, 2)
         the gradient of the moving image
     sigma_sq_x : float
-        parameter controlling the amount of regularization. It corresponds to 
+        parameter controlling the amount of regularization. It corresponds to
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
     out : array, shape(R, C, 2)
         the resulting demons step will be written to this array
@@ -372,7 +372,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
     References
     ----------
     [Arce14] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
-             Non-rigid Multimodal Image Registration Based on the 
+             Non-rigid Multimodal Image Registration Based on the
              Expectation-Maximization Algorithm, (168140), 36-47.
 
     [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
@@ -398,13 +398,13 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                 delta = delta_field[i,j]
                 energy += (delta**2)
                 if(isinf(sigma_sq_i)):
-                    out[i, j, 0], out[i, j, 1] = 0, 0 
+                    out[i, j, 0], out[i, j, 1] = 0, 0
                 else:
                     nrm2 = (gradient_moving[i, j, 0]**2 +
                             gradient_moving[i, j, 1]**2)
                     if(sigma_sq_i == 0):
                         if nrm2 == 0:
-                            out[i, j, 0], out[i, j, 1] = 0, 0 
+                            out[i, j, 0], out[i, j, 1] = 0, 0
                         else:
                             out[i, j, 0] = (delta *
                                             gradient_moving[i, j, 0] / nrm2)
@@ -434,11 +434,11 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
     In this case, $\sigma_i$ in eq. 4 of [Vercauteren09] is estimated using
     the EM algorithm, while in the original version of diffeomorphic demons
     it is estimated by the difference between the image values at each pixel.
-    
+
     Parameters
     ----------
     delta_field : array, shape(S, R, C)
-        contains, at each pixel, the difference between the moving image (warped 
+        contains, at each pixel, the difference between the moving image (warped
         under the current deformation s ) J and the static image I:
         delta_field[k,i,j] = J(s(k,i,j)) - I(k,i,j). The order is important,
         changing to delta_field[k,i,j] = I(k,i,j) - J(s(k,i,j)) yields the
@@ -452,7 +452,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
     gradient_moving : array, shape(S, R, C, 2)
         the gradient of the moving image
     sigma_sq_x : float
-        parameter controlling the amount of regularization. It corresponds to 
+        parameter controlling the amount of regularization. It corresponds to
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2].
     out : array, shape(S, R, C, 2)
         the resulting demons step will be written to this array
@@ -460,7 +460,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
     References
     ----------
     [Arce14] Arce-santana, E., Campos-delgado, D. U., & Vigueras-g, F. (2014).
-             Non-rigid Multimodal Image Registration Based on the 
+             Non-rigid Multimodal Image Registration Based on the
              Expectation-Maximization Algorithm, (168140), 36-47.
 
     [Vercauteren09] Vercauteren, T., Pennec, X., Perchant, A., & Ayache, N.
@@ -501,13 +501,13 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                                 out[k, i, j, 1] = 0
                                 out[k, i, j, 2] = 0
                             else:
-                                out[k, i, j, 0] = (delta * 
+                                out[k, i, j, 0] = (delta *
                                     gradient_moving[k, i, j, 0] / nrm2)
                                 out[k, i, j, 1] = (delta *
                                     gradient_moving[k, i, j, 1] / nrm2)
                                 out[k, i, j, 2] = (delta *
                                     gradient_moving[k, i, j, 2] / nrm2)
-                        else: 
+                        else:
                             den = (sigma_sq_x * nrm2 + sigma_sq_i)
                             out[k, i, j, 0] = (sigma_sq_x * delta *
                                 gradient_moving[k, i, j, 0] / den)
