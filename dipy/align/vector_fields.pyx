@@ -69,6 +69,23 @@ def interpolate_vector_2d(floating[:,:,:] field, double[:,:] locations):
     a wrapper for _interpolate_vector_2d for testing purposes, it is
     equivalent to using scipy.ndimage.interpolation.map_coordinates with
     bilinear interpolation at each vector component
+
+    Parameters
+    ----------
+    field : array, shape (S, R, 2)
+        the 2D vector field to be interpolated
+    locations : array, shape (n, 2)
+        (locations[i,0], locations[i,1]), 0<=i<n must contain the row and
+        column coordinates to interpolate the vector field at
+
+    Returns
+    -------
+    out : array, shape (n, 2)
+        out[i,:], 0<=i<n will be the interpolated vector at coordinates
+        locations[i,:], or (0,0) if locations[i,:] is outside the field
+    inside : array, (n,)
+        if (locations[i,0], locations[i,1]) is inside the vector field
+        then inside[i]=1, else inside[i]=0
     """
     ftype=np.asarray(field).dtype
     cdef:
@@ -155,6 +172,23 @@ def interpolate_scalar_2d(floating[:,:] image, double[:,:] locations):
     a wrapper for _interpolate_scalar_2d for testing purposes, it is
     equivalent to scipy.ndimage.interpolation.map_coordinates with
     bilinear interpolation
+
+    Parameters
+    ----------
+    field : array, shape (S, R)
+        the 2D image to be interpolated
+    locations : array, shape (n, 2)
+        (locations[i,0], locations[i,1]), 0<=i<n must contain the row and
+        column coordinates to interpolate the image at
+
+    Returns
+    -------
+    out : array, shape (n,)
+        out[i], 0<=i<n will be the interpolated scalar at coordinates
+        locations[i,:], or 0 if locations[i,:] is outside the image
+    inside : array, (n,)
+        if locations[i:] is inside the image then inside[i]=1, else
+        inside[i]=0
     """
     ftype=np.asarray(image).dtype
     cdef:
@@ -235,6 +269,23 @@ def interpolate_scalar_nn_2d(number[:,:] image, double[:,:] locations):
     a wrapper for _interpolate_scalar_nn_2d for testing purposes, it is
     equivalent to scipy.ndimage.interpolation.map_coordinates with
     nearest neighbor interpolation
+
+    Parameters
+    ----------
+    image : array, shape (S, R)
+        the 2D image to be interpolated
+    locations : array, shape (n, 2)
+        (locations[i,0], locations[i,1]), 0<=i<n must contain the row and
+        column coordinates to interpolate the image at
+
+    Returns
+    -------
+    out : array, shape (n,)
+        out[i], 0<=i<n will be the interpolated scalar at coordinates
+        locations[i,:], or 0 if locations[i,:] is outside the image
+    inside : array, (n,)
+        if locations[i:] is inside the image then inside[i]=1, else
+        inside[i]=0
     """
     ftype=np.asarray(image).dtype
     cdef:
@@ -311,6 +362,23 @@ def interpolate_scalar_nn_3d(number[:,:,:] image, double[:,:] locations):
     a wrapper for _interpolate_scalar_nn_3d for testing purposes, it is
     equivalent to scipy.ndimage.interpolation.map_coordinates with
     nearest neighbor interpolation
+
+    Parameters
+    ----------
+    image : array, shape (S, R, C)
+        the 3D image to be interpolated
+    locations : array, shape (n, 3)
+        (locations[i,0], locations[i,1], locations[i,2), 0<=i<n must contain
+        the coordinates to interpolate the image at
+
+    Returns
+    -------
+    out : array, shape (n,)
+        out[i], 0<=i<n will be the interpolated scalar at coordinates
+        locations[i,:], or 0 if locations[i,:] is outside the image
+    inside : array, (n,)
+        if locations[i,:] is inside the image then inside[i]=1, else
+        inside[i]=0
     """
     ftype=np.asarray(image).dtype
     cdef:
@@ -396,6 +464,23 @@ def interpolate_scalar_3d(floating[:,:,:] image, double[:,:] locations):
     a wrapper for _interpolate_scalar_3d for testing purposes, it is
     equivalent to scipy.ndimage.interpolation.map_coordinates with
     trilinear interpolation
+
+    Parameters
+    ----------
+    field : array, shape (S, R, C)
+        the 3D image to be interpolated
+    locations : array, shape (n, 3)
+        (locations[i,0], locations[i,1], locations[i,2), 0<=i<n must contain
+        the coordinates to interpolate the image at
+
+    Returns
+    -------
+    out : array, shape (n,)
+        out[i], 0<=i<n will be the interpolated scalar at coordinates
+        locations[i,:], or 0 if locations[i,:] is outside the image
+    inside : array, (n,)
+        if locations[i,:] is inside the image then inside[i]=1, else
+        inside[i]=0
     """
     ftype=np.asarray(image).dtype
     cdef:
@@ -499,6 +584,23 @@ def interpolate_vector_3d(floating[:,:,:,:] field, double[:,:] locations):
     a wrapper for _interpolate_vector_3d for testing purposes, it is
     equivalent to using scipy.ndimage.interpolation.map_coordinates with
     trilinear interpolation at each vector component
+
+    Parameters
+    ----------
+    field : array, shape (S, R, C, 3)
+        the 3D vector field to be interpolated
+    locations : array, shape (n, 3)
+        (locations[i,0], locations[i,1], locations[i,2), 0<=i<n must contain
+        the coordinates to interpolate the vector field at
+
+    Returns
+    -------
+    out : array, shape (n, 3)
+        out[i,:], 0<=i<n will be the interpolated vector at coordinates
+        locations[i,:], or (0,0,0) if locations[i,:] is outside the field
+    inside : array, (n,)
+        if locations[i,:] is inside the vector field then inside[i]=1, else
+        inside[i]=0
     """
     ftype=np.asarray(field).dtype
     cdef:
@@ -1233,32 +1335,51 @@ def simplify_warp_function_2d(floating[:,:,:] d,
     image spaces given by the domain and codomain discretization.
     More precisely, the resulting transform is of the form:
 
-    T[i] = W * d[U * i] + V * i
+    (1) T[i] = W * d[U * i] + V * i
 
     Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
     Both the direct and inverse transforms of a DiffeomorphicMap can be written
     in this form:
 
-    Direct:  Let D be the voxel-to-space transform of the domain's discretization,
-             P be the pre-align matrix, Rinv the space-to-voxel transform of the
-             reference grid (the grid the displacement field is defined on) and
-             Cinv be the space-to-voxel transform of the codomain's discretization.
-             Then, for each i in the domain's grid, the direct transform is given by
+    Direct:  Let D be the voxel-to-space transform of the domain's
+             discretization, P be the pre-align matrix, Rinv the space-to-voxel
+             transform of the reference grid (the grid the displacement field
+             is defined on) and Cinv be the space-to-voxel transform of the
+             codomain's discretization. Then, for each i in the domain's grid,
+             the direct transform is given by
 
-             T[i] = Cinv * d[Rinv * P * D * i] + Cinv * P * D * i
+             (2) T[i] = Cinv * d[Rinv * P * D * i] + Cinv * P * D * i
 
              and we identify U = Rinv * P * D, V = Cinv * P * D, W = Cinv
 
-    Inverse: Let C be the voxel-to-space transform of the codomain's discretization,
-             Pinv be the inverse of the pre-align matrix, Rinv the space-to-voxel
-             transform of the reference grid (the grid the displacement field is
-             defined on) and Dinv be the space-to-voxel transform of the domain's
-             discretization. Then, for each j in the codomain's grid, the inverse
-             transform is given by
+    Inverse: Let C be the voxel-to-space transform of the codomain's
+             discretization, Pinv be the inverse of the pre-align matrix, Rinv
+             the space-to-voxel transform of the reference grid (the grid the
+             displacement field is defined on) and Dinv be the space-to-voxel
+             transform of the domain's discretization. Then, for each j in the
+             codomain's grid, the inverse transform is given by
 
-             Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
+             (3) Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
 
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
+
+    Parameters
+    ----------
+    d : array, shape (R', C', 2)
+        the non-linear part of the transformation (displacement field)
+    affine_idx_in : array, shape (3, 3)
+        the matrix U in eq. (1) above
+    affine_idx_out : array, shape (3, 3)
+        the matrix V in eq. (1) above
+    affine_disp : array, shape (3, 3)
+        the matrix W in eq. (1) above
+    sampling_shape : array, shape (2,)
+        the number of rows and columns of the sampling grid
+
+    Returns
+    -------
+    out : array, shape = sampling_shape
+        the simplified transformation given by one single displacement field
     """
     cdef:
         cnp.npy_intp nrows = sampling_shape[0]
@@ -1320,7 +1441,7 @@ def simplify_warp_function_3d(floating[:,:,:,:] d,
     image spaces given by the domain and codomain discretization.
     More precisely, the resulting transform is of the form:
 
-    T[i] = W * d[U * i] + V * i
+    (1) T[i] = W * d[U * i] + V * i
 
     Where U = affine_idx_in, V = affine_idx_out, W = affine_disp.
     Both the direct and inverse transforms of a DiffeomorphicMap can be written
@@ -1332,7 +1453,7 @@ def simplify_warp_function_3d(floating[:,:,:,:] d,
              Cinv be the space-to-voxel transform of the codomain's discretization.
              Then, for each i in the domain's grid, the direct transform is given by
 
-             T[i] = Cinv * d[Rinv * P * D * i] + Cinv * P * D * i
+             (2) T[i] = Cinv * d[Rinv * P * D * i] + Cinv * P * D * i
 
              and we identify U = Rinv * P * D, V = Cinv * P * D, W = Cinv
 
@@ -1343,9 +1464,28 @@ def simplify_warp_function_3d(floating[:,:,:,:] d,
              discretization. Then, for each j in the codomain's grid, the inverse
              transform is given by
 
-             Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
+             (3) Tinv[j] = Dinv * Pinv * d[Rinv * C * j] + Dinv * Pinv * C * j
 
              and we identify U = Rinv * C, V = Dinv * Pinv * C, W = Dinv * Pinv
+
+    Parameters
+    ----------
+    d : array, shape (S', R', C', 3)
+        the non-linear part of the transformation (displacement field)
+    affine_idx_in : array, shape (4, 4)
+        the matrix U in eq. (1) above
+    affine_idx_out : array, shape (4, 4)
+        the matrix V in eq. (1) above
+    affine_disp : array, shape (4, 4)
+        the matrix W in eq. (1) above
+    sampling_shape : array, shape (3,)
+        the number of slices, rows and columns of the sampling grid
+
+    Returns
+    -------
+    out : array, shape = sampling_shape
+        the simplified transformation given by one single displacement field
+
     """
     cdef:
         cnp.npy_intp nslices = sampling_shape[0]
@@ -2614,6 +2754,13 @@ def create_harmonic_fields_2d(cnp.npy_intp nrows, cnp.npy_intp ncols,
         (a circle or a grid) under the deformation field, or see examples
         in [1]
 
+    Returns
+    -------
+    d : array, shape(nrows, ncols, 2)
+        the harmonic displacement field
+    inv : array, shape(nrows, ncols, 2)
+        the analitical inverse of the harmonic displacement field
+
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
         A simple fixed-point approach to invert a deformation field.
         Medical Physics, 35(1), 81. doi:10.1118/1.2816107
@@ -2659,6 +2806,12 @@ def create_harmonic_fields_3d(int nslices, cnp.npy_intp nrows, cnp.npy_intp ncol
         (e.g. a circle or a grid) under the deformation field, or see examples
         in [1]
 
+    Returns
+    -------
+    d : array, shape(nslices, nrows, ncols, 3)
+        the harmonic displacement field
+    inv : array, shape(nslices, nrows, ncols, 3)
+        the analitical inverse of the harmonic displacement field
 
     [1] Chen, M., Lu, W., Chen, Q., Ruchala, K. J., & Olivera, G. H. (2008).
         A simple fixed-point approach to invert a deformation field.
@@ -2695,6 +2848,20 @@ def create_circle(cnp.npy_intp nrows, cnp.npy_intp ncols, cnp.npy_intp radius):
     r"""
     Create a binary 2D image where pixel values are 1 iff their distance
     to the center of the image is less than or equal to radius.
+
+    Parameters
+    ----------
+    nrows : int
+        number of rows of the resulting image
+    ncols : int
+        number of columns of the resulting image
+    radius : int
+        the radius of the circle
+
+    Returns
+    -------
+    c : array, shape(nrows, ncols)
+        the binary image of the circle with the requested dimensions
     """
     cdef:
         cnp.npy_intp mid_row = nrows/2
@@ -2719,6 +2886,22 @@ def create_sphere(cnp.npy_intp nslices, cnp.npy_intp nrows,
     r"""
     Create a binary 3D image where voxel values are 1 iff their distance
     to the center of the image is less than or equal to radius.
+
+    Parameters
+    ----------
+    nslices : int
+        number if slices of the resulting image
+    nrows : int
+        number of rows of the resulting image
+    ncols : int
+        number of columns of the resulting image
+    radius : int
+        the radius of the sphere
+
+    Returns
+    -------
+    c : array, shape(nslices, nrows, ncols)
+        the binary image of the sphere with the requested dimensions
     """
     cdef:
         cnp.npy_intp mid_slice = nslices/2

@@ -215,7 +215,7 @@ def quantize_positive_3d(floating[:, :, :] v, int num_levels):
 
 
 def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
-                                     int numLabels, int[:, :] labels):
+                                     int num_labels, int[:, :] labels):
     r"""Computes the mean and std. for each quantization level.
 
     Computes the mean and standard deviation of the intensities in 'v' for
@@ -231,11 +231,21 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
         statistics. All zero pixels in mask will be ignored
     v : array, shape (R, C)
         the image which the statistics will be computed from
-    numLabels : int
+    num_labels : int
         the number of different labels in 'labels' (equal to the
         number of hidden variables in the EM metric)
     labels : array, shape (R, C)
         the label assigned to each pixel
+
+    Returns
+    -------
+    means : array, shape (num_labels,)
+        means[i], 0<=i<num_labels will be the mean intensity in v of all
+        voxels labeled i, or 0 if no voxels are labeled i
+    variances : array, shape (num_labels,)
+        variances[i], 0<=i<num_labels will be the standard deviation of the
+        intensities in v of all voxels labeled i, or infinite if less than 2
+        voxels are labeld i.
     """
     ftype=np.asarray(v).dtype
     cdef:
@@ -243,10 +253,10 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
         cnp.npy_intp ncols = v.shape[1]
         cnp.npy_intp i, j
         double INF64 = np.inf
-        int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
+        int[:] counts = np.zeros(shape=(num_labels,), dtype=np.int32)
         floating diff
-        floating[:] means = np.zeros(shape=(numLabels,), dtype=ftype)
-        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=ftype)
+        floating[:] means = np.zeros(shape=(num_labels,), dtype=ftype)
+        floating[:] variances = np.zeros(shape=(num_labels, ), dtype=ftype)
 
     with nogil:
         for i in range(nrows):
@@ -254,7 +264,7 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
                 if(mask[i, j] != 0):
                     means[labels[i, j]] += v[i, j]
                     counts[labels[i, j]] += 1
-        for i in range(numLabels):
+        for i in range(num_labels):
             if(counts[i] > 0):
                 means[i] /= counts[i]
         for i in range(nrows):
@@ -263,7 +273,7 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
                     diff = v[i, j] - means[labels[i, j]]
                     variances[labels[i, j]] += diff ** 2
 
-        for i in range(numLabels):
+        for i in range(num_labels):
             if(counts[i] > 1):
                 variances[i] /= counts[i]
             else:
@@ -272,7 +282,7 @@ def compute_masked_class_stats_2d(int[:, :] mask, floating[:, :] v,
 
 
 def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
-                                      int numLabels, int[:, :, :] labels):
+                                      int num_labels, int[:, :, :] labels):
     r"""Computes the mean and std. for each quantization level.
 
     Computes the mean and standard deviation of the intensities in 'v' for
@@ -288,11 +298,21 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
         statistics. All zero voxels in mask will be ignored
     v : array, shape (S, R, C)
         the volume which the statistics will be computed from
-    numLabels : int
+    num_labels : int
         the number of different labels in 'labels' (equal to the
         number of hidden variables in the EM metric)
     labels : array, shape (S, R, C)
         the label assigned to each pixel
+
+    Returns
+    -------
+    means : array, shape (num_labels,)
+        means[i], 0<=i<num_labels will be the mean intensity in v of all
+        voxels labeled i, or 0 if no voxels are labeled i
+    variances : array, shape (num_labels,)
+        variances[i], 0<=i<num_labels will be the standard deviation of the
+        intensities in v of all voxels labeled i, or infinite if less than 2
+        voxels are labeld i.
     """
     ftype=np.asarray(v).dtype
     cdef:
@@ -302,9 +322,9 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
         cnp.npy_intp i, j, k
         double INF64 = np.inf
         floating diff
-        int[:] counts = np.zeros(shape=(numLabels,), dtype=np.int32)
-        floating[:] means = np.zeros(shape=(numLabels,), dtype=ftype)
-        floating[:] variances = np.zeros(shape=(numLabels, ), dtype=ftype)
+        int[:] counts = np.zeros(shape=(num_labels,), dtype=np.int32)
+        floating[:] means = np.zeros(shape=(num_labels,), dtype=ftype)
+        floating[:] variances = np.zeros(shape=(num_labels, ), dtype=ftype)
 
     with nogil:
         for k in range(nslices):
@@ -313,7 +333,7 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
                     if(mask[k, i, j] != 0):
                         means[labels[k, i, j]] += v[k, i, j]
                         counts[labels[k, i, j]] += 1
-        for i in range(numLabels):
+        for i in range(num_labels):
             if(counts[i] > 0):
                 means[i] /= counts[i]
         for k in range(nslices):
@@ -322,7 +342,7 @@ def compute_masked_class_stats_3d(int[:, :, :] mask, floating[:, :, :] v,
                     if(mask[k, i, j] != 0):
                         diff = means[labels[k, i, j]] - v[k, i, j]
                         variances[labels[k, i, j]] += diff ** 2
-        for i in range(numLabels):
+        for i in range(num_labels):
             if(counts[i] > 1):
                 variances[i] /= counts[i]
             else:
@@ -368,6 +388,14 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2]
     out : array, shape(R, C, 2)
         the resulting demons step will be written to this array
+
+    Returns
+    -------
+    demons_step : array, shape (R, C, 2)
+        the demons step to be applied for updating the current displacement
+        field
+    energy : float
+        the current em energy (before applying the returned demons_step)
 
     References
     ----------
@@ -456,6 +484,14 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
         $\sigma_x^2$ in algorithm 1 of Vercauteren et al.[2].
     out : array, shape(S, R, C, 2)
         the resulting demons step will be written to this array
+
+    Returns
+    -------
+    demons_step : array, shape (S, R, C, 3)
+        the demons step to be applied for updating the current displacement
+        field
+    energy : float
+        the current em energy (before applying the returned demons_step)
 
     References
     ----------

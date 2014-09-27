@@ -90,9 +90,7 @@ class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
         self.static_spacing = static_spacing
         self.static_direction = static_direction
 
-    def use_static_image_dynamics(self,
-                                 original_static_image,
-                                 transformation):
+    def use_static_image_dynamics(self, original_static_image, transformation):
         r"""This is called by the optimizer just after setting the static image.
 
         This method allows the metric to compute any useful
@@ -130,9 +128,7 @@ class SimilarityMetric(with_metaclass(abc.ABCMeta, object)):
         self.moving_spacing = moving_spacing
         self.moving_direction = moving_direction
 
-    def use_moving_image_dynamics(self,
-                               original_moving_image,
-                               transformation):
+    def use_moving_image_dynamics(self, original_moving_image, transformation):
         r"""This is called by the optimizer just after setting the moving image.
 
         This method allows the metric to compute any useful
@@ -783,6 +779,12 @@ class SSDMetric(SimilarityMetric):
             (warping the moving towards the static image). If False,
             computes the backward step (warping the static image to the
             moving image)
+
+        Returns
+        -------
+        displacement : array, shape = static_image.shape + (3,)
+            if forward_step==True, the forward SSD Gauss-Newton step,
+            else, the backward step
         """
         reference_shape = self.static_image.shape
 

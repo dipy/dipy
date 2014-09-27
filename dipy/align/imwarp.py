@@ -255,6 +255,11 @@ class ScaleSpace(object):
         level : int,
             the index of the required element from attribute.
 
+        Returns
+        -------
+        attribute[level] : object
+            the requested attribute if level is valid, else it raises
+            a ValueError
         """
         if 0 <= level < self.num_levels:
             return attribute[level]

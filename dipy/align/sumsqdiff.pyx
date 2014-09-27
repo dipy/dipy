@@ -252,16 +252,6 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
     delta_field : array, shape (R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (R, C)
-        the variance of the gray level value at each voxel, according to the
-        EM model (for SSD, it is 1 for all voxels). Inf and 0 values
-        are processed specially to support infinite and zero variance.
-    grad : array, shape (R, C, 2)
-        the gradient of the moving image
-    lambda_param : float
-        smoothness parameter of the objective function
-    displacement_field : array, shape (R, C, 2)
-        current displacement field to start the iteration from
 
     Returns
     -------
@@ -461,16 +451,6 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
     delta_field : array, shape (R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (R, C)
-        the variance of the gray level value at each voxel, according to the
-        EM model (for SSD, it is 1 for all voxels). Inf and 0 values
-        are processed specially to support infinite and zero variance.
-    gradient_field : array, shape (R, C, 2)
-        the gradient of the moving image
-    lambda_param : float
-        smoothness parameter of the objective function
-    displacement_field : array, shape (R, C, 2)
-        current displacement field to start the iteration from
 
     Returns
     -------
@@ -740,9 +720,11 @@ def compute_ssd_demons_step_2d(floating[:,:] delta_field,
 
     Returns
     -------
-    demons_step:
+    demons_step : array, shape (R, C, 2)
         the demons step to be applied for updating the current displacement
         field
+    energy : float
+        the current ssd energy (before applying the returned demons_step)
 
     References
     ----------
@@ -812,9 +794,11 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
 
     Returns
     -------
-    demons_step:
+    demons_step : array, shape (S, R, C, 3)
         the demons step to be applied for updating the current displacement
         field
+    energy : float
+        the current ssd energy (before applying the returned demons_step)
 
     References
     ----------
