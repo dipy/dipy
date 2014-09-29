@@ -22,15 +22,15 @@ ext: recspeed.so propspeed.so vox2track.so \
     distances.so streamlinespeed.so denspeed.so \
     vec_val_sum.so quick_squash.so vector_fields.so \
     crosscorr.so sumsqdiff.so expectmax.so bundlemin.so \
-    metric.so clusteringspeed.so
+    metricspeed.so clusteringspeed.so
 
 test: ext
 	nosetests .
 
-cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html ${PKGDIR}/tracking/streamlinespeed.html ${PKGDIR}/segment/metric.html ${PKGDIR}/segment/clusteringspeed.html
+cython-html:  ${PKGDIR}/reconst/recspeed.html ${PKGDIR}/tracking/propspeed.html ${PKGDIR}/tracking/vox2track.html ${PKGDIR}/tracking/distances.html ${PKGDIR}/tracking/streamlinespeed.html ${PKGDIR}/segment/metricspeed.html ${PKGDIR}/segment/clusteringspeed.html
 
 recspeed.so: ${PKGDIR}/reconst/recspeed.pyx
-metric.so: ${PKGDIR}/segment/metric.pyx
+metricspeed.so: ${PKGDIR}/segment/metricspeed.pyx
 clusteringspeed.so: ${PKGDIR}/segment/clusteringspeed.pyx
 propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
 vox2track.so: ${PKGDIR}/tracking/vox2track.pyx

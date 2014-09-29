@@ -8,7 +8,7 @@ from dipy.segment.clusteringspeed import ClusterMap, ClusterMapCentroid
 from nose.tools import assert_equal
 from numpy.testing import assert_array_equal, assert_raises
 
-features_shape = 10
+features_shape = (1, 10)
 dtype = "float32"
 features = np.ones(features_shape, dtype=dtype)
 
@@ -217,11 +217,13 @@ def test_cluster_map_centroid_add():
     assert_array_equal(list(itertools.chain(*clusters.centroids)), list(itertools.chain(*centroids)))
 
     # Check adding features of different sizes (shorter and longer)
-    features_too_short = np.ones(features_shape-3, dtype=dtype)
+    features_shape_short = (1, features_shape[1]-3)
+    features_too_short = np.ones(features_shape_short, dtype=dtype)
     cluster = clusters.create_cluster()
     assert_raises(ValueError, cluster.add, 123, features_too_short)
 
-    features_too_long = np.ones(features_shape+3, dtype=dtype)
+    features_shape_long = (1, features_shape[1]+3)
+    features_too_long = np.ones(features_shape_long, dtype=dtype)
     cluster = clusters.create_cluster()
     assert_raises(ValueError, cluster.add, 123, features_too_long)
 

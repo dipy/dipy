@@ -4,16 +4,22 @@
 import numpy as np
 cimport numpy as np
 
-from metric cimport Metric, Streamline, Features
+from metricspeed cimport Metric, Streamline, Features
+from metricspeed cimport Shape, tuple2shape, shape2tuple
 
 cdef extern from "stdlib.h" nogil:
     ctypedef unsigned long size_t
     void free(void *ptr)
     void *calloc(size_t nelem, size_t elsize)
     void *realloc(void *ptr, size_t elsize)
+    void *memset(void *ptr, int value, size_t num)
 
 DEF biggest_float = 3.4028235e+38  # np.finfo('f4').max
 DEF biggest_int = 2147483647  # np.iinfo('i4').max
+
+cdef struct Centroid:
+    Features features
+    int size
 
 cdef class identity:
     def __getitem__(self, idx):
@@ -93,17 +99,18 @@ cdef class Cluster:
 
     def add(self, *indices):
         for id_data in indices:
-            (<ClusterMap>self.cluster_map).c_add(self.id, id_data)
+            self.cluster_map.add(self.id, id_data)
 
 
 cdef class ClusterCentroid(Cluster):
     property centroid:
         def __get__(self):
             cdef ClusterMapCentroid cluster_map = <ClusterMapCentroid> self.cluster_map
-            return np.array(<float[:cluster_map._nb_features]> cluster_map._centroids[self.id])
+            shape = shape2tuple(cluster_map._features_shape)
+            return np.asarray(cluster_map._centroids[self.id].features)
 
-    def add(self, int id_features, Features features):
-        (<ClusterMapCentroid>self.cluster_map).c_add(self.id, id_features, features)
+    def add(self, int id_features, features):
+        self.cluster_map.add(self.id, id_features, features)
 
 
 cdef class ClusterMap:
@@ -197,57 +204,69 @@ cdef class ClusterMap:
 
 
 cdef class ClusterMapCentroid(ClusterMap):
-    cdef float** _centroids
-    cdef int _nb_features
+    cdef Centroid* _centroids
+    cdef Shape _features_shape
 
-    def __init__(ClusterMapCentroid self, int nb_features, *args, **kwargs):
+    def __init__(ClusterMapCentroid self, feature_shape, *args, **kwargs):
         ClusterMap.__init__(self, *args, **kwargs)
-        self._nb_features = nb_features
+        if isinstance(feature_shape, int):
+            feature_shape = (1, feature_shape)
+
+        if not isinstance(feature_shape, tuple):
+            raise ValueError("'feature_shape' must be a tuple or a int.")
+
+        self._features_shape = tuple2shape(feature_shape)
+
         self._centroids = NULL
         self._cluster_class = ClusterCentroid
 
     property centroids:
         def __get__(self):
-            return [np.array(<float[:self._nb_features]>self.c_get_centroid(i)) for i in range(self._nb_clusters)]
+            shape = shape2tuple(self._features_shape)
+            return [np.asarray(self.c_get_centroid(i).features) for i in range(self._nb_clusters)]
 
     def __dealloc__(ClusterMapCentroid self):
         # __dealloc__ method of the superclass is automatically called.
         # see: http://docs.cython.org/src/userguide/special_methods.html#finalization-method-dealloc
         for i in range(self._nb_clusters):
-            free(self._centroids[i])
-            self._centroids[i] = NULL
+            free(&(self._centroids[i].features[0, 0]))
 
         free(self._centroids)
         self._centroids = NULL
 
     cdef void c_add(ClusterMapCentroid self, int id_cluster, int id_features, Features features=None) nogil except *:
-        if self._nb_features != features.shape[0]:
-            with gil:
-                raise ValueError("ClusterMapCentroid requires all features having the same length!")
-
-        cdef float* centroid = self._centroids[id_cluster]
+        cdef Features centroid = self._centroids[id_cluster].features
         cdef int C = self._clusters_size[id_cluster]
 
-        for i in range(self._nb_features):
-            centroid[i] = ((centroid[i] * C) + features[i]) / (C+1)
+        cdef int N = centroid.shape[0], D = centroid.shape[1]
+        for n in range(N):
+            for d in range(D):
+                centroid[n, d] = ((centroid[n, d] * C) + features[n, d]) / (C+1)
 
         ClusterMap.c_add(self, id_cluster, id_features)
 
     cdef int c_create_cluster(ClusterMapCentroid self) nogil except -1:
-        self._centroids = <float**> realloc(self._centroids, (self._nb_clusters+1)*sizeof(float*))
-        self._centroids[self._nb_clusters] = <float*> calloc(self._nb_features, sizeof(float))
+        self._centroids = <Centroid*> realloc(self._centroids, (self._nb_clusters+1)*sizeof(Centroid))
+        memset(&self._centroids[self._nb_clusters], 0, sizeof(Centroid))  # Zero-initialize the new centroid
+
+        with gil:
+            self._centroids[self._nb_clusters].features = <float[:self._features_shape.dims[0], :self._features_shape.dims[1]]> calloc(self._features_shape.size, sizeof(float))
+
         return ClusterMap.c_create_cluster(self)
 
-    cdef float* c_get_centroid(ClusterMapCentroid self, int idx) nogil:
-        return self._centroids[idx]
+    cdef Centroid* c_get_centroid(ClusterMapCentroid self, int idx) nogil:
+        return &self._centroids[idx]
 
     def create_cluster(ClusterMapCentroid self):
         id_cluster = self.c_create_cluster()
         return self[id_cluster]
 
-    def add(self, int id_cluster, int id_features, Features features):
+    def add(self, int id_cluster, int id_features, features):
         if id_cluster >= len(self):
             raise IndexError("Index out of bound: id_cluster={0}".format(id_cluster))
+
+        if shape2tuple(self._features_shape) != features.shape:
+            raise ValueError("The shape of the centroid and the features to add must be the same!")
 
         self.c_add(id_cluster, id_features, features)
 
@@ -261,25 +280,23 @@ cpdef quickbundles(streamlines, Metric metric, float threshold=10., int max_nb_c
     # Threshold of -np.inf is not supported, set it to 0
     threshold = max(threshold, 0)
 
+    dtype = streamlines[0].dtype
+    features_shape = metric.infer_features_shape(streamlines[0])
     cdef:
         int idx
-        int nb_features = metric.c_infer_features_shape(streamlines[0])
-        ClusterMapCentroid clusters = ClusterMapCentroid(nb_features)
-        Features features_s_i = <float[:nb_features]> calloc(nb_features, sizeof(float))
-        Features features_s_i_flip = <float[:nb_features]> calloc(nb_features, sizeof(float))
+        ClusterMapCentroid clusters = ClusterMapCentroid(features_shape)
+        Features features_s_i = np.empty(features_shape, dtype=dtype)
+        Features features_s_i_flip = np.empty(features_shape, dtype=dtype)
 
     for idx in ordering:
         _quickbundles(streamlines[idx], idx, metric, clusters, features_s_i, features_s_i_flip, threshold, max_nb_clusters)
-
-    free(&features_s_i[0])
-    free(&features_s_i_flip[0])
 
     return clusters
 
 
 cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, ClusterMapCentroid clusters, Features features_s_i, Features features_s_i_flip, float threshold=10, int max_nb_clusters=biggest_int) nogil except *:
     cdef:
-        float* centroid
+        Centroid* centroid
         int closest_cluster
         float dist, dist_min, dist_min_flip
         Features features_to_add = features_s_i
@@ -288,8 +305,9 @@ cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, Clust
     metric.c_extract_features(s_i, features_s_i)
     dist_min = biggest_float
     for k in range(clusters.c_size()):
-        centroid = clusters.c_get_centroid(k)
-        dist = metric.c_dist(centroid, features_s_i)
+        #centroid = clusters.c_get_centroid(k)
+        #dist = metric.c_dist(centroid.features, features_s_i)
+        dist = metric.c_dist(clusters._centroids[k].features, features_s_i)
 
         # Keep track of the closest cluster
         if dist < dist_min:
@@ -298,20 +316,22 @@ cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, Clust
 
     # Find closest cluster to s_i_flip if metric is not order invariant
     if not metric.is_order_invariant:
-        dist_min_flip = dist_min
+        dist_min_flip = dist_min  # Initialize to the min distance not flipped.
         metric.c_extract_features(s_i[::-1], features_s_i_flip)
         for k in range(clusters.c_size()):
-            centroid = clusters.c_get_centroid(k)
-            dist = metric.c_dist(centroid, features_s_i_flip)
+            #centroid = clusters.c_get_centroid(k)
+            #dist = metric.c_dist(centroid.features, features_s_i_flip)
+            dist = metric.c_dist(clusters._centroids[k].features, features_s_i_flip)
 
             # Keep track of the closest cluster
-            if dist < dist_min:
-                dist_min = dist
+            if dist < dist_min_flip:
+                dist_min_flip = dist
                 closest_cluster = k
 
         # If we found a lower distance using a flipped streamline,
         #  add the flipped version instead
         if dist_min_flip < dist_min:
+            dist_min = dist_min_flip
             features_to_add = features_s_i_flip
 
     # Check if distance with the closest cluster is below some threshold

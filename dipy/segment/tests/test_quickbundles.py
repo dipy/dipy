@@ -17,7 +17,7 @@ data = [np.arange(3*05, dtype=dtype).reshape((-1, 3)) + 2*threshold,
         np.arange(3*17, dtype=dtype).reshape((-1, 3)) + 2*threshold,
         np.arange(3*20, dtype=dtype).reshape((-1, 3)) + 8*threshold]
 
-clusters = [[0, 1], [2, 4], [3]]
+clusters_truth = [[0, 1], [2, 4], [3]]
 
 
 def test_quickbundles_2D():
@@ -33,14 +33,22 @@ def test_quickbundles_2D():
 
     clusters_truth = [[0], [1, 2], [3, 4, 5], [6, 7, 8, 9], [10, 11, 12, 13, 14]]
 
-    # Uncomment the following to visualize this test
+    # # Uncomment the following to visualize this test
     # import pylab as plt
     # plt.plot(*zip(*data[0:1, 0]), linestyle='None', marker='s')
     # plt.plot(*zip(*data[1:3, 0]), linestyle='None', marker='o')
     # plt.plot(*zip(*data[3:6, 0]), linestyle='None', marker='+')
     # plt.plot(*zip(*data[6:10, 0]), linestyle='None', marker='.')
     # plt.plot(*zip(*data[10:, 0]), linestyle='None', marker='*')
-    # plt.show()
+
+    # from dipy.segment.metric import distance_matrix
+    # metric = dipymetric.Euclidean(dipymetric.CenterOfMass())
+    # dM = distance_matrix(metric, data, data)
+    # plt.figure()
+    # plt.imshow(dM, interpolation="nearest")
+    # plt.colorbar()
+
+    # plt.show(False)
 
     # Theorically using a threshold above the following value will not
     # produce expected results.
@@ -77,9 +85,15 @@ def test_quickbundles_streamlines():
     qb = QuickBundles(threshold=2*threshold, metric=metric)
 
     clusters = qb.cluster(data)
-    assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters)))
+    assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
 
-    # TODO: move this test into test_metric.
-    # MDF required streamlines to have the same length
-    # qb = QuickBundles(threshold=10, metric=dipymetric.MDF())
-    # assert_raises(ValueError, qb.cluster, data)
+
+def test_quickbundles_with_not_order_invariant_metric():
+    qb = QuickBundles(threshold=np.inf, metric=dipymetric.MDF())
+
+    streamline = np.arange(10*3, dtype=dtype).reshape((-1, 3))
+    streamlines = [streamline, streamline[::-1]]
+
+    clusters = qb.cluster(streamlines)
+    assert_equal(len(clusters), 1)
+    assert_array_equal(clusters[0].centroid, streamline)

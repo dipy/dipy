@@ -29,33 +29,15 @@ from numpy.testing import measure
 
 class MDFpy(Metric):
     def infer_features_shape(self, streamline):
-        return streamline.shape[0] * streamline.shape[1]
+        return streamline.shape
 
     def extract_features(self, streamline):
-        N, D = streamline.shape
-
-        features = np.empty(N*D, dtype=streamline.base.dtype)
-        for y in range(N):
-            i = y*D
-            features[i+0] = streamline[y, 0]
-            features[i+1] = streamline[y, 1]
-            features[i+2] = streamline[y, 2]
-
-        return features
+        return streamline.copy()
 
     def dist(self, features1, features2):
-        D = 3
-        N = features2.shape[0] // D
-
-        d = 0.0
-        for y in range(N):
-            i = y*D
-            dx = features1[i+0] - features2[i+0]
-            dy = features1[i+1] - features2[i+1]
-            dz = features1[i+2] - features2[i+2]
-            d += np.sqrt(dx*dx + dy*dy + dz*dz)
-
-        return d / N
+        dist = np.sqrt(np.sum((features1-features2)**2, axis=1))
+        dist = np.sum(dist/len(features1))
+        return dist
 
 
 def bench_quickbundles():
@@ -65,6 +47,7 @@ def bench_quickbundles():
 
     streams, hdr = nib.trackvis.read(get_data('fornix'))
     fornix = [s[0].astype(dtype) for s in streams]
+
     for s in fornix:
         s.setflags(write=True)
     fornix = streamline_utils.set_number_of_points(fornix, nb_points_per_streamline)

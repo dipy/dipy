@@ -88,7 +88,7 @@ for modulename, other_sources, language in (
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
     ('dipy.reconst.quick_squash', [], 'c'),
-    ('dipy.segment.metric', [], 'c'),
+    ('dipy.segment.metricspeed', [], 'c'),
     ('dipy.segment.clusteringspeed', [], 'c'),
     ('dipy.tracking.distances', [], 'c'),
     ('dipy.tracking.streamlinespeed', [], 'c'),
