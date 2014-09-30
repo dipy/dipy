@@ -121,7 +121,7 @@ def solve_3d_symmetric_positive_definite(double[:] g, double[:] y, double tau,
 @cython.wraparound(False)
 @cython.cdivision(True)
 cpdef double iterate_residual_displacement_field_ssd_2d(
-                floating[:, :] delta_field, floating[:, :] sigma_field,
+                floating[:, :] delta_field, floating[:, :] sigmasq_field,
                 floating[:, :, :] grad, floating[:, :, :] target,
                 double lambda_param, floating[:, :, :] displacement_field):
     r"""One iteration of a large linear system solver for 2D SSD registration
@@ -134,7 +134,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
     delta_field : array, shape (R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (R, C)
+    sigmasq_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
@@ -174,7 +174,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         double[:] d = np.ndarray(shape=(2,), dtype=np.float64)
         double[:] y = np.ndarray(shape=(2,), dtype=np.float64)
         double[:] A = np.ndarray(shape=(3,), dtype=np.float64)
-        double xx, yy, opt, nrm2, delta, sigma, max_displacement, det
+        double xx, yy, opt, nrm2, delta, sigmasq, max_displacement, det
     max_displacement = 0
 
     with nogil:
@@ -182,7 +182,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
         for r in range(nrows):
             for c in range(ncols):
                 delta = delta_field[r, c]
-                sigma = sigma_field[r, c] if sigma_field != None else 1
+                sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
                 if(target == None):
                     b[0] = delta_field[r, c] * grad[r, c, 0]
                     b[1] = delta_field[r, c] * grad[r, c, 1]
@@ -201,7 +201,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                     nn += 1
                     y[0] += displacement_field[dr, dc, 0]
                     y[1] += displacement_field[dr, dc, 1]
-                if(isinf(sigma)):
+                if(isinf(sigmasq)):
                     xx = displacement_field[r, c, 0]
                     yy = displacement_field[r, c, 1]
                     displacement_field[r, c, 0] = y[0] / nn
@@ -212,9 +212,9 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                     if(max_displacement < opt):
                         max_displacement = opt
                 else:
-                    A[0] = grad[r, c, 0] ** 2 + sigma * lambda_param * nn
+                    A[0] = grad[r, c, 0] ** 2 + sigmasq * lambda_param * nn
                     A[1] = grad[r, c, 0] * grad[r, c, 1]
-                    A[2] = grad[r, c, 1] ** 2 + sigma * lambda_param * nn
+                    A[2] = grad[r, c, 1] ** 2 + sigmasq * lambda_param * nn
                     det = A[0] * A[2] - A[1] * A[1]
                     if(det < 1e-9):
                         nrm2 = (grad[r, c, 0] ** 2 +
@@ -226,8 +226,8 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                             displacement_field[r, c, 0] = (b[0]) / nrm2
                             displacement_field[r, c, 1] = (b[1]) / nrm2
                     else:
-                        y[0] = b[0] + sigma * lambda_param * y[0]
-                        y[1] = b[1] + sigma * lambda_param * y[1]
+                        y[0] = b[0] + sigmasq * lambda_param * y[0]
+                        y[1] = b[1] + sigmasq * lambda_param * y[1]
                         _solve_2d_symmetric_positive_definite(A, y, det, d)
                         xx = displacement_field[r, c, 0] - d[0]
                         yy = displacement_field[r, c, 1] - d[1]
@@ -291,7 +291,7 @@ cpdef double compute_energy_ssd_2d(floating[:, :] delta_field):
 @cython.wraparound(False)
 @cython.cdivision(True)
 cpdef double iterate_residual_displacement_field_ssd_3d(
-                floating[:, :, :] delta_field, floating[:, :, :] sigma_field,
+                floating[:, :, :] delta_field, floating[:, :, :] sigmasq_field,
                 floating[:, :, :, :] grad, floating[:, :, :, :] target,
                 double lambda_param, floating[:, :, :, :] disp):
     r"""One iteration of a large linear system solver for 3D SSD registration
@@ -304,7 +304,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
     delta_field : array, shape (S, R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (S, R, C)
+    sigmasq_field : array, shape (S, R, C)
         the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
@@ -346,7 +346,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
         double[:] d = np.ndarray(shape=(3,), dtype=np.float64)
         double[:] y = np.ndarray(shape=(3,), dtype=np.float64)
         double[:] A = np.ndarray(shape=(6,), dtype=np.float64)
-        double xx, yy, zz, opt, nrm2, delta, sigma, max_displacement
+        double xx, yy, zz, opt, nrm2, delta, sigmasq, max_displacement
         cnp.npy_intp dr, ds, dc, s, r, c
     max_displacement = 0
 
@@ -359,7 +359,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                     g[1] = grad[s, r, c, 1]
                     g[2] = grad[s, r, c, 2]
                     delta = delta_field[s, r, c]
-                    sigma = sigma_field[s, r, c] if sigma_field != None else 1
+                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
                     if(target == None):
                         b[0] = delta_field[s, r, c] * g[0]
                         b[1] = delta_field[s, r, c] * g[1]
@@ -386,7 +386,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         y[0] += disp[ds, dr, dc, 0]
                         y[1] += disp[ds, dr, dc, 1]
                         y[2] += disp[ds, dr, dc, 2]
-                    if(isinf(sigma)):
+                    if(isinf(sigmasq)):
                         xx = disp[s, r, c, 0]
                         yy = disp[s, r, c, 1]
                         zz = disp[s, r, c, 2]
@@ -399,7 +399,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         opt = xx * xx + yy * yy + zz * zz
                         if(max_displacement < opt):
                             max_displacement = opt
-                    elif(sigma < 1e-9):
+                    elif(sigmasq < 1e-9):
                             nrm2 = g[0] ** 2 + g[1] ** 2 + g[2] ** 2
                             if(nrm2 < 1e-9):
                                 disp[s, r, c, 0] = 0
@@ -410,10 +410,10 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                                 disp[s, r, c, 1] = (b[1]) / nrm2
                                 disp[s, r, c, 2] = (b[2]) / nrm2
                     else:
-                        tau = sigma * lambda_param * nn
-                        y[0] = b[0] + sigma * lambda_param * y[0]
-                        y[1] = b[1] + sigma * lambda_param * y[1]
-                        y[2] = b[2] + sigma * lambda_param * y[2]
+                        tau = sigmasq * lambda_param * nn
+                        y[0] = b[0] + sigmasq * lambda_param * y[0]
+                        y[1] = b[1] + sigmasq * lambda_param * y[1]
+                        y[2] = b[2] + sigmasq * lambda_param * y[2]
                         is_singular = _solve_3d_symmetric_positive_definite(
                                                                 g, y, tau, d)
                         if is_singular == 1:
@@ -489,7 +489,7 @@ cpdef double compute_energy_ssd_3d(floating[:, :, :] delta_field):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def compute_residual_displacement_field_ssd_3d(
-        floating[:, :, :] delta_field, floating[:, :, :] sigma_field,
+        floating[:, :, :] delta_field, floating[:, :, :] sigmasq_field,
         floating[:, :, :, :] gradient_field, floating[:, :, :, :] target,
         double lambda_param, floating[:, :, :, :] disp,
         floating[:, :, :, :] residual):
@@ -504,7 +504,7 @@ def compute_residual_displacement_field_ssd_3d(
     delta_field : array, shape (S, R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (S, R, C)
+    sigmasq_field : array, shape (S, R, C)
         the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
@@ -544,63 +544,66 @@ def compute_residual_displacement_field_ssd_3d(
         cnp.npy_intp nslices = delta_field.shape[0]
         cnp.npy_intp nrows = delta_field.shape[1]
         cnp.npy_intp ncols = delta_field.shape[2]
-        double delta, sigma, dotP
+        double delta, sigmasq, dotP
         cnp.npy_intp s, r, c, ds, dr, dc
     if residual == None:
         residual = np.empty(shape=(nslices, nrows, ncols, 3), dtype=ftype)
-    for s in range(nslices):
-        for r in range(nrows):
-            for c in range(ncols):
-                delta = delta_field[s, r, c]
-                sigma = sigma_field[s, r, c] if sigma_field != None else 1
-                if(target == None):
-                    b[0] = delta * gradient_field[s, r, c, 0]
-                    b[1] = delta * gradient_field[s, r, c, 1]
-                    b[2] = delta * gradient_field[s, r, c, 2]
-                else:
-                    b[0] = target[s, r, c, 0]
-                    b[1] = target[s, r, c, 1]
-                    b[2] = target[s, r, c, 2]
-                y[...] = 0
-                for k in range(NUM_NEIGHBORS):
-                    ds = s + dSlice[k]
-                    if((ds < 0) or (ds >= nslices)):
-                        continue
-                    dr = r + dRow[k]
-                    if((dr < 0) or (dr >= nrows)):
-                        continue
-                    dc = c + dCol[k]
-                    if((dc < 0) or (dc >= ncols)):
-                        continue
-                    y[0] += (disp[s, r, c, 0] - disp[ds, dr, dc, 0])
-                    y[1] += (disp[s, r, c, 1] - disp[ds, dr, dc, 1])
-                    y[2] += (disp[s, r, c, 2] - disp[ds, dr, dc, 2])
-                if(isinf(sigma)):
-                    residual[s, r, c, 0] = -lambda_param * y[0]
-                    residual[s, r, c, 1] = -lambda_param * y[1]
-                    residual[s, r, c, 2] = -lambda_param * y[2]
-                else:
-                    dotP = (gradient_field[s, r, c, 0] * disp[s, r, c, 0] +
-                            gradient_field[s, r, c, 1] * disp[s, r, c, 1] +
-                            gradient_field[s, r, c, 2] * disp[s, r, c, 2])
-                    residual[s, r, c, 0] = (b[0] -
-                                            (gradient_field[s, r, c, 0] * dotP +
-                                             sigma * lambda_param * y[0]))
-                    residual[s, r, c, 1] = (b[1] -
-                                            (gradient_field[s, r, c, 1] * dotP +
-                                             sigma * lambda_param * y[1]))
-                    residual[s, r, c, 2] = (b[2] -
-                                            (gradient_field[s, r, c, 2] * dotP +
-                                             sigma * lambda_param * y[2]))
+
+    with nogil:
+
+        for s in range(nslices):
+            for r in range(nrows):
+                for c in range(ncols):
+                    delta = delta_field[s, r, c]
+                    sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
+                    if(target == None):
+                        b[0] = delta * gradient_field[s, r, c, 0]
+                        b[1] = delta * gradient_field[s, r, c, 1]
+                        b[2] = delta * gradient_field[s, r, c, 2]
+                    else:
+                        b[0] = target[s, r, c, 0]
+                        b[1] = target[s, r, c, 1]
+                        b[2] = target[s, r, c, 2]
+                    y[:] = 0
+                    for k in range(NUM_NEIGHBORS):
+                        ds = s + dSlice[k]
+                        if((ds < 0) or (ds >= nslices)):
+                            continue
+                        dr = r + dRow[k]
+                        if((dr < 0) or (dr >= nrows)):
+                            continue
+                        dc = c + dCol[k]
+                        if((dc < 0) or (dc >= ncols)):
+                            continue
+                        y[0] += (disp[s, r, c, 0] - disp[ds, dr, dc, 0])
+                        y[1] += (disp[s, r, c, 1] - disp[ds, dr, dc, 1])
+                        y[2] += (disp[s, r, c, 2] - disp[ds, dr, dc, 2])
+                    if(isinf(sigmasq)):
+                        residual[s, r, c, 0] = -lambda_param * y[0]
+                        residual[s, r, c, 1] = -lambda_param * y[1]
+                        residual[s, r, c, 2] = -lambda_param * y[2]
+                    else:
+                        dotP = (gradient_field[s, r, c, 0] * disp[s, r, c, 0] +
+                                gradient_field[s, r, c, 1] * disp[s, r, c, 1] +
+                                gradient_field[s, r, c, 2] * disp[s, r, c, 2])
+                        residual[s, r, c, 0] = (b[0] -
+                                                (gradient_field[s, r, c, 0] * dotP +
+                                                 sigmasq * lambda_param * y[0]))
+                        residual[s, r, c, 1] = (b[1] -
+                                                (gradient_field[s, r, c, 1] * dotP +
+                                                 sigmasq * lambda_param * y[1]))
+                        residual[s, r, c, 2] = (b[2] -
+                                                (gradient_field[s, r, c, 2] * dotP +
+                                                 sigmasq * lambda_param * y[2]))
     return residual
 
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cpdef compute_residual_displacement_field_ssd_2d(
-        floating[:, :] delta_field, floating[:, :] sigma_field,
+        floating[:, :] delta_field, floating[:, :] sigmasq_field,
         floating[:, :, :] gradient_field, floating[:, :, :] target,
-        double lambda_param, floating[:, :, :] displacement_field,
+        double lambda_param, floating[:, :, :] d,
         floating[:, :, :] residual):
     r"""The residual displacement field to be fit on the next iteration
 
@@ -613,7 +616,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
     delta_field : array, shape (R, C)
         the difference between the static and moving image (the 'derivative
         w.r.t. time' in the optical flow model)
-    sigma_field : array, shape (R, C)
+    sigmasq_field : array, shape (R, C)
         the variance of the gray level value at each voxel, according to the
         EM model (for SSD, it is 1 for all voxels). Inf and 0 values
         are processed specially to support infinite and zero variance.
@@ -624,7 +627,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
         multi-resolution algorithm
     lambda_param : float
         smoothness parameter in the objective function
-    displacement_field : array, shape (R, C, 2)
+    d : array, shape (R, C, 2)
         the current displacement field to compute the residual from
     residual : array, shape (R, C, 2)
         the displacement field to put the residual to
@@ -651,44 +654,47 @@ cpdef compute_residual_displacement_field_ssd_2d(
         double[:] y = np.ndarray(shape=(2,), dtype=np.float64)
         cnp.npy_intp nrows = delta_field.shape[0]
         cnp.npy_intp ncols = delta_field.shape[1]
-        double delta, sigma, dotP
+        double delta, sigmasq, dotP
         cnp.npy_intp r, c, dr, dc
     if residual == None:
         residual = np.empty(shape=(nrows, ncols, 2), dtype=ftype)
-    for r in range(nrows):
-        for c in range(ncols):
-            delta = delta_field[r, c]
-            sigma = sigma_field[r, c] if sigma_field != None else 1
-            if(target == None):
-                b[0] = delta * gradient_field[r, c, 0]
-                b[1] = delta * gradient_field[r, c, 1]
-            else:
-                b[0] = target[r, c, 0]
-                b[1] = target[r, c, 1]
-            y[...] = 0
-            for k in range(NUM_NEIGHBORS):
-                dr = r + dRow[k]
-                if((dr < 0) or (dr >= nrows)):
-                    continue
-                dc = c + dCol[k]
-                if((dc < 0) or (dc >= ncols)):
-                    continue
-                y[0] += (displacement_field[r, c, 0] -
-                         displacement_field[dr, dc, 0])
-                y[1] += (displacement_field[r, c, 1] -
-                         displacement_field[dr, dc, 1])
-            if(isinf(sigma)):
-                residual[r, c, 0] = -lambda_param * y[0]
-                residual[r, c, 1] = -lambda_param * y[1]
-            else:
-                dotP = (gradient_field[r, c, 0] * displacement_field[r, c, 0] +
-                        gradient_field[r, c, 1] * displacement_field[r, c, 1])
-                residual[r, c, 0] = (b[0] -
-                                     (gradient_field[r, c, 0] * dotP +
-                                     sigma * lambda_param * y[0]))
-                residual[r, c, 1] = (b[1] -
-                                     (gradient_field[r, c, 1] * dotP +
-                                     sigma * lambda_param * y[1]))
+
+    with nogil:
+
+        for r in range(nrows):
+            for c in range(ncols):
+                delta = delta_field[r, c]
+                sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
+                if target is None:
+                    b[0] = delta * gradient_field[r, c, 0]
+                    b[1] = delta * gradient_field[r, c, 1]
+                else:
+                    b[0] = target[r, c, 0]
+                    b[1] = target[r, c, 1]
+                y[:] = 0
+                nn=0
+                for k in range(NUM_NEIGHBORS):
+                    dr = r + dRow[k]
+                    if((dr < 0) or (dr >= nrows)):
+                        continue
+                    dc = c + dCol[k]
+                    if((dc < 0) or (dc >= ncols)):
+                        continue
+                    y[0] += (d[r, c, 0] - d[dr, dc, 0])
+                    y[1] += (d[r, c, 1] - d[dr, dc, 1])
+
+                if(isinf(sigmasq)):
+                    residual[r, c, 0] = -lambda_param * y[0]
+                    residual[r, c, 1] = -lambda_param * y[1]
+                else:
+                    dotP = (gradient_field[r, c, 0] * d[r, c, 0] +
+                            gradient_field[r, c, 1] * d[r, c, 1])
+                    residual[r, c, 0] = (b[0] -
+                                         (gradient_field[r, c, 0] * dotP +
+                                          sigmasq * lambda_param * y[0]))
+                    residual[r, c, 1] = (b[1] -
+                                         (gradient_field[r, c, 1] * dotP +
+                                          sigmasq * lambda_param * y[1]))
     return residual
 
 

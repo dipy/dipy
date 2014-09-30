@@ -6,6 +6,236 @@ from numpy.testing import (assert_equal,
                            assert_allclose)
 import dipy.align.sumsqdiff as ssd
 
+def test_compute_residual_displacement_field_ssd_2d():
+    #Select arbitrary images' shape (same shape for both images)
+    sh = (20, 10)
+
+    #Select arbitrary centers
+    c_f = np.asarray(sh)/2
+    c_g = c_f + 0.5
+
+    #Compute the identity vector field I(x) = x in R^2
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    X = np.ndarray(sh + (2,), dtype = np.float64)
+    O = np.ones(sh)
+    X[...,0]= x_0[:, None] * O
+    X[...,1]= x_1[None, :] * O
+
+    #Compute the gradient fields of F and G
+    np.random.seed(5512751)
+
+    grad_F = X - c_f
+    grad_G = X - c_g
+
+    Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    grad_F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    grad_G += Gnoise
+
+    #The squared norm of grad_G
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
+
+    #Compute F and G
+    F = 0.5*np.sum(grad_F**2,-1)
+    G = 0.5*sq_norm_grad_G
+
+    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    G += Gnoise
+
+    delta_field =  np.array(F - G, dtype = floating)
+
+    sigma_field = np.random.randn(delta_field.size).reshape(delta_field.shape)
+    sigma_field = sigma_field.astype(floating)
+
+    #Select some pixels to force sigma_field = infinite
+    inf_sigma = np.random.randint(0, 2, sh[0]*sh[1])
+    inf_sigma = inf_sigma.reshape(sh)
+    sigma_field[inf_sigma == 1] = np.inf
+
+    #Select an initial displacement field
+    d = np.random.randn(grad_G.size).reshape(grad_G.shape).astype(floating)
+    #d = np.zeros_like(grad_G, dtype=floating)
+    lambda_param = 1.5
+
+    #Implementation under test
+    iut = ssd.compute_residual_displacement_field_ssd_2d
+
+    #In the first iteration we test the case target=None
+    #In the second iteration, target != None
+    target = None
+    rtol = 1e-9
+    atol = 1e-4
+    for it in range(2):
+        # Sum of differences with the neighbors
+        s = np.zeros_like(d, dtype = np.float64)
+        s[:,:-1] += d[:,:-1] - d[:,1:]#right
+        s[:,1:] += d[:,1:] - d[:,:-1]#left
+        s[:-1,:] += d[:-1,:] - d[1:,:]#down
+        s[1:,:] += d[1:,:] - d[:-1,:]#up
+        s *= lambda_param
+
+        # Dot product of displacement and gradient
+        dp = d[...,0]*grad_G[...,0] + \
+             d[...,1]*grad_G[...,1]
+        dp = dp.astype(np.float64)
+
+        # Compute expected residual
+        expected = None
+        if target is None:
+            expected = np.zeros_like(grad_G)
+            expected[...,0] = delta_field*grad_G[...,0]
+            expected[...,1] = delta_field*grad_G[...,1]
+        else:
+            expected = target.copy().astype(np.float64)
+
+        # Expected residuals when sigma != infinte
+        expected[inf_sigma==0,0] -= grad_G[inf_sigma==0, 0] * dp[inf_sigma==0] + \
+                                    sigma_field[inf_sigma==0] * s[inf_sigma==0, 0]
+        expected[inf_sigma==0,1] -= grad_G[inf_sigma==0, 1] * dp[inf_sigma==0] + \
+                                    sigma_field[inf_sigma==0] * s[inf_sigma==0, 1]
+        # Expected residuals when sigma == infinte
+        expected[inf_sigma==1] = -1.0 * s[inf_sigma==1]
+
+        #Test residual = None
+        actual = iut(delta_field, sigma_field, grad_G.astype(floating),
+                     target, lambda_param, d, None)
+        assert_allclose(actual, expected, rtol = rtol, atol = atol)
+
+        #Test residual != None
+        residual = np.random.randn(actual.size).reshape(actual.shape).astype(floating)
+        iut(delta_field, sigma_field, grad_G.astype(floating),
+            target, lambda_param, d, residual)
+        assert_allclose(actual, expected, rtol = rtol, atol = atol)
+
+        target = residual
+
+
+def test_compute_residual_displacement_field_ssd_3d():
+    #Select arbitrary images' shape (same shape for both images)
+    sh = (20, 15, 10)
+
+    #Select arbitrary centers
+    c_f = np.asarray(sh)/2
+    c_g = c_f + 0.5
+
+    #Compute the identity vector field I(x) = x in R^2
+    x_0 = np.asarray(range(sh[0]))
+    x_1 = np.asarray(range(sh[1]))
+    x_2 = np.asarray(range(sh[2]))
+    X = np.ndarray(sh + (3,), dtype = np.float64)
+    O = np.ones(sh)
+    X[...,0]= x_0[:, None, None] * O
+    X[...,1]= x_1[None, :, None] * O
+    X[...,2]= x_2[None, None, :] * O
+
+
+    #Compute the gradient fields of F and G
+    np.random.seed(9223102)
+
+    grad_F = X - c_f
+    grad_G = X - c_g
+
+    Fnoise = np.random.ranf(np.size(grad_F)).reshape(grad_F.shape) * grad_F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    grad_F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(grad_G)).reshape(grad_G.shape) * grad_G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    grad_G += Gnoise
+
+    #The squared norm of grad_G
+    sq_norm_grad_G = np.sum(grad_G**2,-1)
+
+    #Compute F and G
+    F = 0.5*np.sum(grad_F**2,-1)
+    G = 0.5*sq_norm_grad_G
+
+    Fnoise = np.random.ranf(np.size(F)).reshape(F.shape) * F.max() * 0.1
+    Fnoise = Fnoise.astype(floating)
+    F += Fnoise
+
+    Gnoise = np.random.ranf(np.size(G)).reshape(G.shape) * G.max() * 0.1
+    Gnoise = Gnoise.astype(floating)
+    G += Gnoise
+
+    delta_field =  np.array(F - G, dtype = floating)
+
+    sigma_field = np.random.randn(delta_field.size).reshape(delta_field.shape)
+    sigma_field = sigma_field.astype(floating)
+
+    #Select some pixels to force sigma_field = infinite
+    inf_sigma = np.random.randint(0, 2, sh[0]*sh[1]*sh[2])
+    inf_sigma = inf_sigma.reshape(sh)
+    sigma_field[inf_sigma == 1] = np.inf
+
+    #Select an initial displacement field
+    d = np.random.randn(grad_G.size).reshape(grad_G.shape).astype(floating)
+    #d = np.zeros_like(grad_G, dtype=floating)
+    lambda_param = 1.5
+
+    #Implementation under test
+    iut = ssd.compute_residual_displacement_field_ssd_3d
+
+    #In the first iteration we test the case target=None
+    #In the second iteration, target != None
+    target = None
+    rtol = 1e-9
+    atol = 1e-4
+    for it in range(2):
+        # Sum of differences with the neighbors
+        s = np.zeros_like(d, dtype = np.float64)
+        s[:,:,:-1] += d[:,:,:-1] - d[:,:,1:]#right
+        s[:,:,1:] += d[:,:,1:] - d[:,:,:-1]#left
+        s[:,:-1,:] += d[:,:-1,:] - d[:,1:,:]#down
+        s[:,1:,:] += d[:,1:,:] - d[:,:-1,:]#up
+        s[:-1,:,:] += d[:-1,:,:] - d[1:,:,:]#below
+        s[1:,:,:] += d[1:,:,:] - d[:-1,:,:]#above
+        s *= lambda_param
+
+        # Dot product of displacement and gradient
+        dp = d[...,0]*grad_G[...,0] + \
+             d[...,1]*grad_G[...,1] + \
+             d[...,2]*grad_G[...,2]
+
+        # Compute expected residual
+        expected = None
+        if target is None:
+            expected = np.zeros_like(grad_G)
+            for i in range(3):
+                expected[...,i] = delta_field*grad_G[...,i]
+        else:
+            expected = target.copy().astype(np.float64)
+
+        # Expected residuals when sigma != infinte
+        for i in range(3):
+            expected[inf_sigma==0,i] -= grad_G[inf_sigma==0, i] * dp[inf_sigma==0] + \
+                                        sigma_field[inf_sigma==0] * s[inf_sigma==0, i]
+        # Expected residuals when sigma == infinte
+        expected[inf_sigma==1] = -1.0 * s[inf_sigma==1]
+
+        #Test residual = None
+        actual = iut(delta_field, sigma_field, grad_G.astype(floating),
+                     target, lambda_param, d, None)
+        assert_allclose(actual, expected, rtol = rtol, atol = atol)
+
+        #Test residual != None
+        residual = np.random.randn(actual.size).reshape(actual.shape).astype(floating)
+        iut(delta_field, sigma_field, grad_G.astype(floating),
+            target, lambda_param, d, residual)
+        assert_allclose(actual, expected, rtol = rtol, atol = atol)
+
+        target = residual
+
+
 def test_solve_2d_symmetric_positive_definite():
     # Select some arbitrary right-hand sides
     bs = [np.array([1.1, 2.2]),
@@ -340,6 +570,8 @@ def test_compute_ssd_demons_step_3d():
 
 
 if __name__=='__main__':
+    test_compute_residual_displacement_field_ssd_2d()
+    test_compute_residual_displacement_field_ssd_3d()
     test_compute_energy_ssd_2d()
     test_compute_energy_ssd_3d()
     test_compute_ssd_demons_step_2d()
