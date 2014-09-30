@@ -1,21 +1,4 @@
-""" Utility functions used by the Sum of Squared Differences (SSD) metric 
-
-TODO: the following functions are not correctly tested:
-
-compute_residual_displacement_field_ssd_2d
-compute_residual_displacement_field_ssd_3d
-iterate_residual_displacement_field_ssd_2d
-iterate_residual_displacement_field_ssd_3d
-
-A very useful test strategy would be to implement variants of them using
-large matrices to explicitly implement the formulas as in [Brunh05]
-
-[Bruhn05] Andres Bruhn and Joachim Weickert, "Towards ultimate motion
-          estimation: combining highest accuracy with real-time
-          performance", 10th IEEE International Conference on Computer
-          Vision, 2005. ICCV 2005.
-
-"""
+""" Utility functions used by the Sum of Squared Differences (SSD) metric """
 
 import numpy as np
 cimport cython

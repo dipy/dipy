@@ -6,6 +6,119 @@ from numpy.testing import (assert_equal,
                            assert_allclose)
 import dipy.align.sumsqdiff as ssd
 
+def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
+                                  lambda_param, dfield):
+    r"""
+    This implementation is for testing purposes only. The problem
+    with Gauss-Seidel iterations is that it depends on the order
+    in which we iterate over the variables, so it is necessary to
+    replicate the implementation under test.
+    """
+    nrows, ncols = delta_field.shape
+    if target is None:
+        b = np.zeros_like(grad)
+        b[...,0] = delta_field * grad[..., 0]
+        b[...,1] = delta_field * grad[..., 1]
+    else:
+        b = target
+
+    y = np.zeros(2)
+    A = np.ndarray((2,2))
+    for r in range(nrows):
+        for c in range(ncols):
+            delta = delta_field[r, c]
+            sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
+            #This has to be done inside the neste loops because
+            #some d[...] may have been previously modified
+            nn = 0
+            y[:] = 0
+            for (dRow, dCol) in [(-1, 0), (0, 1), (1, 0), (0, -1)]:
+                dr = r + dRow
+                if((dr < 0) or (dr >= nrows)):
+                    continue
+                dc = c + dCol
+                if((dc < 0) or (dc >= ncols)):
+                    continue
+                nn += 1
+                y += dfield[dr, dc]
+
+            if np.isinf(sigmasq):
+                dfield[r, c] = y / nn
+            else:
+                tau = sigmasq * lambda_param * nn
+                A = np.outer(grad[r, c], grad[r, c]) + tau * np.eye(2)
+                det = np.linalg.det(A)
+                if(det < 1e-9):
+                    nrm2 = np.sum(grad[r, c]**2)
+                    if(nrm2 < 1e-9):
+                        dfield[r, c,:] = 0
+                    else:
+                        dfield[r, c] = b[r,c] / nrm2
+                else:
+                    y = b[r,c] + sigmasq * lambda_param * y
+                    dfield[r, c] = np.linalg.solve(A, y)
+
+
+def iterate_residual_field_ssd_3d(delta_field, sigmasq_field, grad, target,
+                                  lambda_param, dfield):
+    r"""
+    This implementation is for testing purposes only. The problem
+    with Gauss-Seidel iterations is that it depends on the order
+    in which we iterate over the variables, so it is necessary to
+    replicate the implementation under test.
+    """
+    nslices, nrows, ncols = delta_field.shape
+    if target is None:
+        b = np.zeros_like(grad)
+        for i in range(3):
+            b[...,i] = delta_field * grad[..., i]
+    else:
+        b = target
+
+    y = np.ndarray((3,))
+    for s in range(nslices):
+        for r in range(nrows):
+            for c in range(ncols):
+                g = grad[s, r, c]
+                delta = delta_field[s, r, c]
+                sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
+                nn = 0
+                y[:] = 0
+                for dSlice, dRow, dCol in [(-1, 0, 0), (0, -1, 0), (0, 0, 1),
+                                           (0, 1, 0), (0, 0, -1), (1, 0, 0)]:
+                    ds = s + dSlice
+                    if((ds < 0) or (ds >= nslices)):
+                        continue
+                    dr = r + dRow
+                    if((dr < 0) or (dr >= nrows)):
+                        continue
+                    dc = c + dCol
+                    if((dc < 0) or (dc >= ncols)):
+                        continue
+                    nn += 1
+                    y += dfield[ds, dr, dc]
+                if(np.isinf(sigmasq)):
+                    dfield[s, r, c] = y / nn
+                elif(sigmasq < 1e-9):
+                        nrm2 = np.sum(g**2)
+                        if(nrm2 < 1e-9):
+                            dfield[s, r, c, :] = 0
+                        else:
+                            dfield[s, r, c, :] = b[s, r, c] / nrm2
+                else:
+                    tau = sigmasq * lambda_param * nn
+                    y = b[s, r, c] + sigmasq * lambda_param * y
+                    G = np.outer(g, g) + tau*np.eye(3)
+                    try:
+                        dfield[s, r, c] = np.linalg.solve(G, y)
+                    except np.linalg.linalg.LinAlgError as err:
+                        nrm2 = np.sum(g**2)
+                        if(nrm2 < 1e-9):
+                            dfield[s, r, c, :] = 0
+                        else:
+                            dfield[s, r, c] = b[s, r, c] / nrm2
+
+
 def test_compute_residual_displacement_field_ssd_2d():
     #Select arbitrary images' shape (same shape for both images)
     sh = (20, 10)
@@ -105,18 +218,32 @@ def test_compute_residual_displacement_field_ssd_2d():
         # Expected residuals when sigma == infinte
         expected[inf_sigma==1] = -1.0 * s[inf_sigma==1]
 
-        #Test residual = None
+
+        # Test residual field computation starting with residual = None
         actual = iut(delta_field, sigma_field, grad_G.astype(floating),
                      target, lambda_param, d, None)
         assert_allclose(actual, expected, rtol = rtol, atol = atol)
+        actual = np.ndarray(actual.shape, dtype=floating) #destroy previous result
 
-        #Test residual != None
-        residual = np.random.randn(actual.size).reshape(actual.shape).astype(floating)
+        # Test residual field computation starting with residual != None
         iut(delta_field, sigma_field, grad_G.astype(floating),
-            target, lambda_param, d, residual)
+            target, lambda_param, d, actual)
         assert_allclose(actual, expected, rtol = rtol, atol = atol)
 
-        target = residual
+        # Set target for next iteration
+        target = actual
+
+        # Test Gauss-Seidel step with residual=None and residual=target
+        for residual in [None, target]:
+            expected = d.copy()
+            iterate_residual_field_ssd_2d(delta_field, sigma_field,
+                grad_G.astype(floating), residual, lambda_param, expected)
+
+            actual = d.copy()
+            ssd.iterate_residual_displacement_field_ssd_2d(delta_field,
+                sigma_field, grad_G.astype(floating), residual, lambda_param, actual)
+
+            assert_allclose(actual, expected, rtol = rtol, atol = atol)
 
 
 def test_compute_residual_displacement_field_ssd_3d():
@@ -222,18 +349,33 @@ def test_compute_residual_displacement_field_ssd_3d():
         # Expected residuals when sigma == infinte
         expected[inf_sigma==1] = -1.0 * s[inf_sigma==1]
 
-        #Test residual = None
+        # Test residual field computation starting with residual = None
         actual = iut(delta_field, sigma_field, grad_G.astype(floating),
                      target, lambda_param, d, None)
         assert_allclose(actual, expected, rtol = rtol, atol = atol)
+        actual = np.ndarray(actual.shape, dtype=floating) #destroy previous result
 
-        #Test residual != None
-        residual = np.random.randn(actual.size).reshape(actual.shape).astype(floating)
+        # Test residual field computation starting with residual != None
         iut(delta_field, sigma_field, grad_G.astype(floating),
-            target, lambda_param, d, residual)
+            target, lambda_param, d, actual)
         assert_allclose(actual, expected, rtol = rtol, atol = atol)
 
-        target = residual
+        # Set target for next iteration
+        target = actual
+
+        # Test Gauss-Seidel step with residual=None and residual=target
+        for residual in [None, target]:
+            expected = d.copy()
+            iterate_residual_field_ssd_3d(delta_field, sigma_field,
+                grad_G.astype(floating), residual, lambda_param, expected)
+
+            actual = d.copy()
+            ssd.iterate_residual_displacement_field_ssd_3d(delta_field,
+                sigma_field, grad_G.astype(floating), residual, lambda_param, actual)
+
+            # the numpy linear solver may differ from our custom implementation
+            # we need to increase the tolerance a bit
+            assert_allclose(actual, expected, rtol = rtol, atol = atol*5)
 
 
 def test_solve_2d_symmetric_positive_definite():
