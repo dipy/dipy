@@ -1,10 +1,12 @@
 
 import numpy as np
 import dipy.segment.metric as dipymetric
+from dipy.segment.metric import Metric
 import dipy.segment.metricspeed as dipymetricspeed
+from dipy.tracking.streamline import length
 
 from nose.tools import assert_true, assert_false, assert_equal, assert_almost_equal
-from numpy.testing import assert_array_equal, assert_raises
+from numpy.testing import assert_array_equal, assert_raises, run_module_suite
 
 
 def L2_norm(x):
@@ -144,3 +146,47 @@ def test_subclassing_metric():
     features2 = metric.extract_features(s2)
     d3 = metric.dist(features1, features2)
     assert_equal(d1, d3)
+
+
+def test_metric_arclength():
+
+    metric = dipymetricspeed.ArcLength()
+    shape = metric.infer_features_shape(s1)
+    feature = metric.extract_features(s1)
+
+    assert_equal(np.float32(length(s1)), feature[0, 0])
+
+    assert_equal(0, metric.dist(feature, feature))
+
+    f1 = metric.extract_features(s1)
+    f2 = metric.extract_features(2 * s1)
+
+    dist = metric.dist(f1, f2)
+
+    assert_equal(f1, f2 - f1)
+
+    compatibility = metric.compatible(f1.shape, f2.shape)
+
+    assert_true(compatibility)
+
+    class ArcLengthPython(Metric):
+        def infer_features_shape(self, streamline):
+            return (1, 1)
+
+        def extract_features(self, streamline):
+            length_ = length(streamline).astype('f4')
+            return np.array([[length_]])
+
+        def dist(self, features1, features2):
+            return np.abs(features1 - features2)[0, 0]
+
+    metric_python = ArcLengthPython()
+    dist_python = metric.dist(metric_python.extract_features(s1),
+                              metric_python.extract_features(2* s1))
+
+    assert_equal(dist, dist_python)
+
+
+if __name__ == '__main__':
+
+    run_module_suite()
