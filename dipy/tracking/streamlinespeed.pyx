@@ -99,10 +99,20 @@ def length(streamlines):
 
     if dtype == np.float32:
         for i in range(len(streamlines)):
+            # Make sure streamline is writeable so it can be cast as Memoryview.
+            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
+            writeable = streamlines[i].flags.writeable
+            streamline.setflags(write=True)
             streamlines_length[i] = _length[float2d](streamlines[i])
+            streamline.setflags(write=writeable)
     else:
         for i in range(len(streamlines)):
+            # Make sure streamline is writeable so it can be cast as Memoryview.
+            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
+            writeable = streamlines[i].flags.writeable
+            streamline.setflags(write=True)
             streamlines_length[i] = _length[double2d](streamlines[i])
+            streamline.setflags(write=writeable)
 
     if only_one_streamlines:
         return streamlines_length[0]
@@ -243,10 +253,20 @@ def set_number_of_points(streamlines, nb_points=3):
 
     if dtype == np.float32:
         for i in range(len(streamlines)):
+            # Make sure streamline is writeable so it can be cast as Memoryview.
+            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
+            writeable = streamlines[i].flags.writeable
+            streamline.setflags(write=True)
             _set_number_of_points[float2d](streamlines[i], modified_streamlines[i])
+            streamline.setflags(write=writeable)
     else:
         for i in range(len(streamlines)):
+            # Make sure streamline is writeable so it can be cast as Memoryview.
+            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
+            writeable = streamlines[i].flags.writeable
+            streamline.setflags(write=True)
             _set_number_of_points[double2d](streamlines[i], modified_streamlines[i])
+            streamline.setflags(write=writeable)
 
     if only_one_streamlines:
         return modified_streamlines[0]
