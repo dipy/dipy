@@ -81,10 +81,6 @@ def length(streamlines):
 
     dtype = streamlines[0].dtype
     for streamline in streamlines:
-        # Make sure streamline is writable so it can be cast as Memoryview.
-        # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
-        streamline.setflags(write=True)
-
         if streamline.dtype != dtype:
             raise ValueError("All streamlines must have the same dtype.")
 
@@ -227,10 +223,6 @@ def set_number_of_points(streamlines, nb_points=3):
 
     dtype = streamlines[0].dtype
     for streamline in streamlines:
-        # Make sure streamline is writable so it can be cast as Memoryview.
-        # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
-        streamline.setflags(write=True)
-
         if streamline.dtype != dtype:
             raise ValueError("All streamlines must have the same dtype.")
         if len(streamline) < 2:
