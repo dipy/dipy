@@ -21,7 +21,7 @@ matrix:
 before_install:
     - pip install --no-index -f http://wheels2.astropy.org -f https://dipy.bic.berkeley.edu/scipy_installers/travis scipy matplotlib cython
     - sudo apt-get install -qq libatlas-dev libatlas-base-dev gfortran libpng-dev
-    - pip install cvxopt
+    - easy_install cvxopt
     - pip install sympy
     - pip install nibabel
     - if [ "${COVERAGE}" == "--with-coverage" ]; then
