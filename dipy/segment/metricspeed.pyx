@@ -217,6 +217,7 @@ cdef class FeatureType(object):
     cpdef extract(FeatureType self, streamline):
         raise NotImplementedError("Subclass must implement this method!")
 
+
 cdef class CythonFeatureType(FeatureType):
     cpdef infer_shape(CythonFeatureType self, streamline):
         return shape2tuple(self.c_infer_shape(streamline))
@@ -226,6 +227,7 @@ cdef class CythonFeatureType(FeatureType):
         cdef Features out = np.empty(shape, dtype=streamline.dtype)
         self.c_extract(streamline, out)
         return np.asarray(out)
+
 
 cdef class CenterOfMass(CythonFeatureType):
     cdef Shape c_infer_shape(CenterOfMass self, Streamline streamline) nogil:
@@ -248,6 +250,7 @@ cdef class CenterOfMass(CythonFeatureType):
         for d in range(D):
             out[0, d] /= N
 
+
 cdef class Midpoint(CythonFeatureType):
     def __cinit__(self):
         self.is_order_invariant = False
@@ -265,6 +268,41 @@ cdef class Midpoint(CythonFeatureType):
 
         for d in range(D):
             out[0, d] = streamline[mid, d]
+
+
+cdef class ArcLength(CythonMetric):
+
+    cdef int c_infer_features_shape(ArcLength self,
+                                    Streamline streamline) nogil:
+        return 1
+
+    cdef void c_extract_features(ArcLength self, Streamline streamline,
+                                 Features out) nogil:
+        cdef:
+            np.npy_intp i = 0
+            np.npy_intp j = 0
+
+            double dn, sum_dn_sqr
+
+        out[0] = 0
+
+        for i in range(1, streamline.shape[0]):
+            sum_dn_sqr = 0.0
+            for j in range(streamline.shape[1]):
+                dn = streamline[i, j] - streamline[i - 1, j]
+                sum_dn_sqr += dn * dn
+
+            out[0] += sqrt(sum_dn_sqr)
+
+    cdef float c_dist(ArcLength self, float* features1, Features features2) nogil:
+
+        cdef double ret = features1[0] - features2[0]
+
+        if ret < 0:
+            return - ret
+        else:
+            return ret
+
 
 cdef float c_dist(Metric metric, Streamline s1, Streamline s2) nogil except -1.0:
     cdef Features features1, features2
