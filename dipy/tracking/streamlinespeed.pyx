@@ -79,6 +79,39 @@ def length(streamlines):
     if len(streamlines) == 0:
         return 0.0
 
+    # Allocate memory for each streamline length.
+    streamlines_length = np.empty(len(streamlines), dtype=np.float64)
+    cdef np.npy_intp i
+
+    for i in range(len(streamlines)):
+        streamline = streamlines[i]
+        dtype = streamline.dtype
+        if dtype != np.float32 and dtype != np.float64:
+            dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+            streamline = streamlines[i].astype(dtype)
+
+        if not streamline.flags.writeable:
+            streamline = streamline.astype(dtype)
+
+        if dtype == np.float32:
+            streamlines_length[i] = _length[float2d](streamline)
+        else:
+            streamlines_length[i] = _length[double2d](streamline)
+
+    if only_one_streamlines:
+        return streamlines_length[0]
+    else:
+        return streamlines_length
+
+def length_old(streamlines):
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
+
+    if len(streamlines) == 0:
+        return 0.0
+
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:
@@ -99,20 +132,10 @@ def length(streamlines):
 
     if dtype == np.float32:
         for i in range(len(streamlines)):
-            # Make sure streamline is writeable so it can be cast as Memoryview.
-            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
-            writeable = streamlines[i].flags.writeable
-            streamline.setflags(write=True)
             streamlines_length[i] = _length[float2d](streamlines[i])
-            streamline.setflags(write=writeable)
     else:
         for i in range(len(streamlines)):
-            # Make sure streamline is writeable so it can be cast as Memoryview.
-            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
-            writeable = streamlines[i].flags.writeable
-            streamline.setflags(write=True)
             streamlines_length[i] = _length[double2d](streamlines[i])
-            streamline.setflags(write=writeable)
 
     if only_one_streamlines:
         return streamlines_length[0]
@@ -231,6 +254,43 @@ def set_number_of_points(streamlines, nb_points=3):
     if len(streamlines) == 0:
         return []
 
+    for streamline in streamlines:
+        if len(streamline) < 2:
+            raise ValueError("All streamlines must have at least 2 points.")
+
+    # Allocate memory for each modified streamline
+    modified_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype) for streamline in streamlines]
+    cdef np.npy_intp i
+
+    for i in range(len(streamlines)):
+        streamline = streamlines[i]
+        dtype = streamline.dtype
+        if dtype != np.float32 and dtype != np.float64:
+            dtype = np.float64 if dtype == np.int64 or dtype == np.uint64 else np.float32
+            streamline = streamlines[i].astype(dtype)
+
+        if not streamline.flags.writeable:
+            streamline = streamline.astype(dtype)
+
+        if dtype == np.float32:
+            _set_number_of_points[float2d](streamline, modified_streamlines[i])
+        else:
+            _set_number_of_points[double2d](streamline, modified_streamlines[i])
+
+    if only_one_streamlines:
+        return modified_streamlines[0]
+    else:
+        return modified_streamlines
+
+def set_number_of_points_old(streamlines, nb_points=3):
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
+
+    if len(streamlines) == 0:
+        return []
+
     dtype = streamlines[0].dtype
     for streamline in streamlines:
         if streamline.dtype != dtype:
@@ -248,25 +308,15 @@ def set_number_of_points(streamlines, nb_points=3):
             streamlines = [streamline.astype(np.float32) for streamline in streamlines]
 
     # Allocate memory for each modified streamline
-    modified_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=dtype) for streamline in streamlines]
+    modified_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype) for streamline in streamlines]
     cdef np.npy_intp i
 
     if dtype == np.float32:
         for i in range(len(streamlines)):
-            # Make sure streamline is writeable so it can be cast as Memoryview.
-            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
-            writeable = streamlines[i].flags.writeable
-            streamline.setflags(write=True)
             _set_number_of_points[float2d](streamlines[i], modified_streamlines[i])
-            streamline.setflags(write=writeable)
     else:
         for i in range(len(streamlines)):
-            # Make sure streamline is writeable so it can be cast as Memoryview.
-            # (see https://mail.python.org/pipermail/cython-devel/2013-February/003394.html)
-            writeable = streamlines[i].flags.writeable
-            streamline.setflags(write=True)
             _set_number_of_points[double2d](streamlines[i], modified_streamlines[i])
-            streamline.setflags(write=writeable)
 
     if only_one_streamlines:
         return modified_streamlines[0]

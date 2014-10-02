@@ -22,27 +22,64 @@ from numpy.testing import measure
 
 
 def bench_resample():
-    repeat = 1000
+    repeat = 100
+    nb_points_per_streamline = 100
     nb_points = 42
-    streamline = np.random.rand(1000, 3)
+    nb_streamlines = int(1e4)
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
 
     print("Timing set_number_of_points() in Cython")
-    cython_time = measure("set_number_of_points(streamline, nb_points)", repeat)
-    print("Cython time: {0:.2}sec".format(cython_time))
+    cython_time = measure("set_number_of_points(streamlines, nb_points)", repeat)
+    print("Cython time: {0:.3}sec".format(cython_time))
 
-    python_time = measure("set_number_of_points_python(streamline, nb_points)", repeat)
-    print("Python time: {0:.2}sec".format(python_time))
-    print("Speed up of {0}x".format(python_time/cython_time))
+    # python_time = measure("[set_number_of_points_python(s, nb_points) for s in streamlines]", repeat)
+    # print("Python time: {0:.2}sec".format(python_time))
+    # print("Speed up of {0}x".format(python_time/cython_time))
 
 
 def bench_length():
-    repeat = 1000
-    streamline = np.random.rand(1000, 3)
+    repeat = 100
+    nb_points_per_streamline = 100
+    nb_streamlines = int(1e5)
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
 
     print("Timing length() in Cython")
-    cython_time = measure("length(streamline)", repeat)
-    print("Cython time: {0:.2}sec".format(cython_time))
+    cython_time = measure("length(streamlines)", repeat)
+    print("Cython time: {0:.3}sec".format(cython_time))
 
-    python_time = measure("length_python(streamline)", repeat)
-    print("Python time: {0:.2}sec".format(python_time))
-    print("Speed up of {0}x".format(python_time/cython_time))
+    # python_time = measure("[length_python(s) for s in streamlines]", repeat)
+    # print("Python time: {0:.2}sec".format(python_time))
+    # print("Speed up of {0}x".format(python_time/cython_time))
+
+
+from dipy.tracking.streamlinespeed import set_number_of_points_old, length_old
+
+def bench_resample_2():
+    repeat = 100
+    nb_points_per_streamline = 100
+    nb_points = 42
+    nb_streamlines = int(1e4)
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+
+    print("Timing set_number_of_points() in Cython")
+    new_time = measure("set_number_of_points(streamlines, nb_points)", repeat)
+    print("New version time: {0:.3}sec".format(new_time))
+
+    old_time = measure("set_number_of_points_old(streamlines, nb_points)", repeat)
+    print("Old version time: {0:.3}sec".format(old_time))
+    print("Speed up of {0}x".format(old_time/new_time))
+
+
+def bench_length_2():
+    repeat = 100
+    nb_points_per_streamline = 100
+    nb_streamlines = int(1e5)
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+
+    print("Timing length() in Cython")
+    new_time = measure("length(streamlines)", repeat)
+    print("Cython time: {0:.3}sec".format(new_time))
+
+    old_time = measure("length_old(streamlines)", repeat)
+    print("Cython time: {0:.3}sec".format(old_time))
+    print("Speed up of {0}x".format(old_time/new_time))
