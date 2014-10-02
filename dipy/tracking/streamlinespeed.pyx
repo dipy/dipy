@@ -79,6 +79,47 @@ def length(streamlines):
     if len(streamlines) == 0:
         return 0.0
 
+    dtype = streamlines[0].dtype
+    for streamline in streamlines:
+        if streamline.dtype != dtype:
+            raise ValueError("All streamlines must have the same dtype.")
+
+    # Cast any integer array into float.
+    if dtype != np.float32 and dtype != np.float64:
+        if dtype == np.int64 or dtype == np.uint64:
+            dtype = np.float64
+            streamlines = [streamline.astype(np.float64) for streamline in streamlines]
+        else:  # Integer using less than 64bits
+            dtype = np.float32
+            streamlines = [streamline.astype(np.float32) for streamline in streamlines]
+
+    # Allocate memory for each streamline length.
+    streamlines_length = np.empty(len(streamlines), dtype=np.float64)
+    cdef np.npy_intp i
+
+    if dtype == np.float32:
+        for i in range(len(streamlines)):
+            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            streamlines_length[i] = _length[float2d](streamline)
+    else:
+        for i in range(len(streamlines)):
+            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            streamlines_length[i] = _length[double2d](streamline)
+
+    if only_one_streamlines:
+        return streamlines_length[0]
+    else:
+        return streamlines_length
+
+def length_flex(streamlines):
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
+
+    if len(streamlines) == 0:
+        return 0.0
+
     # Allocate memory for each streamline length.
     streamlines_length = np.empty(len(streamlines), dtype=np.float64)
     cdef np.npy_intp i
@@ -246,6 +287,49 @@ def set_number_of_points(streamlines, nb_points=3):
     [10, 10]
 
     '''
+    only_one_streamlines = False
+    if type(streamlines) is np.ndarray:
+        only_one_streamlines = True
+        streamlines = [streamlines]
+
+    if len(streamlines) == 0:
+        return []
+
+    dtype = streamlines[0].dtype
+    for streamline in streamlines:
+        if streamline.dtype != dtype:
+            raise ValueError("All streamlines must have the same dtype.")
+        if len(streamline) < 2:
+            raise ValueError("All streamlines must have at least 2 points.")
+
+    # Cast any integer array into float.
+    if dtype != np.float32 and dtype != np.float64:
+        if dtype == np.int64 or dtype == np.uint64:
+            dtype = np.float64
+            streamlines = [streamline.astype(np.float64) for streamline in streamlines]
+        else:  # Integer using less than 64bits
+            dtype = np.float32
+            streamlines = [streamline.astype(np.float32) for streamline in streamlines]
+
+    # Allocate memory for each modified streamline
+    modified_streamlines = [np.empty((nb_points, streamline.shape[1]), dtype=streamline.dtype) for streamline in streamlines]
+    cdef np.npy_intp i
+
+    if dtype == np.float32:
+        for i in range(len(streamlines)):
+            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            _set_number_of_points[float2d](streamline, modified_streamlines[i])
+    else:
+        for i in range(len(streamlines)):
+            streamline = streamlines[i] if streamlines[i].flags.writeable else streamlines[i].astype(dtype)
+            _set_number_of_points[double2d](streamline, modified_streamlines[i])
+
+    if only_one_streamlines:
+        return modified_streamlines[0]
+    else:
+        return modified_streamlines
+
+def set_number_of_points_flex(streamlines, nb_points=3):
     only_one_streamlines = False
     if type(streamlines) is np.ndarray:
         only_one_streamlines = True
