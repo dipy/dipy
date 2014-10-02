@@ -30,13 +30,13 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
   # OK - install the thing with some dependencies:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib cython sympy 
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib cython sympy cvxopt nibabel coverage coveralls
   # Install some more things we need:
-  - sudo apt-get install -qq libatlas-dev libatlas-base-dev gfortran libpng-dev
-  - pip install cvxopt
-  - pip install nibabel
-  - pip install coverage
-  - pip install coveralls
+  #- sudo apt-get install -qq libatlas-dev libatlas-base-dev gfortran libpng-dev
+  #- pip install cvxopt
+  #- pip install nibabel
+  #- pip install coverage
+  #- pip install coveralls
   - source activate test-environment
   - python setup.py install
 
