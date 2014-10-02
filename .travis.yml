@@ -1,55 +1,50 @@
 # vim ft=yaml
-# travis-ci.org definition for nipy build
-#
-# We pretend to be erlang because we need can't use the python support in
-# travis-ci; it uses virtualenvs, they do not have numpy, scipy, matplotlib,
-# and it is impractical to build them
-language: erlang
-env:
-    # Enable python 2 and python 3 builds. Python3 available in Ubuntu 12.04.
-    - PYTHON=python PYSUF=''
-    - PYTHON=python3 PYSUF=3
+# Multiple lines can be made a single "virtual line" because of the way that
+# Travis munges each line before executing it to print out the exit status.
+# It's okay for it to be on multiple physical lines, so long as you remember:
+# - There can't be any leading "-"s - All newlines will be removed, so use
+# ";"s
+language: python
+python:
+  # We don't actually use the Travis Python, but this keeps it organized.
+  - "2.6"
+  - "2.7"
+  - "3.3"
+  - "3.4"
 install:
-   # Add takluyver's python3 matplotlib PPA: 
-    - sudo add-apt-repository -y ppa:takluyver/python3
-    - sudo apt-get update
-    - sudo apt-get install $PYTHON-dev
-    - sudo apt-get install $PYTHON-numpy
-    - sudo apt-get install $PYTHON-scipy
-    - sudo apt-get install $PYTHON-setuptools
-    - sudo apt-get install $PYTHON-nose
-    - sudo apt-get install $PYTHON-matplotlib
-    - sudo easy_install$PYSUF nibabel # Latest pypi
-    # Cython easy_install breaks with error about refnanny.c; maybe something
-    # to do with having a previous cython version;
-    # http://mail.python.org/pipermail//cython-devel/2012-April/002344.html
-    - curl -O http://www.cython.org/release/Cython-0.18.zip
-    - unzip Cython-0.18.zip
-    - cd Cython-0.18
-    - sudo python$PYSUF setup.py install
-    # Temporary solution to travis issue #155
-    # https://github.com/travis-ci/travis-cookbooks/issues/155
-    - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
-    - cd ..
-    - if [ "${PYTHON}" == "python3" ]; then
-            sudo apt-get install libblas-dev liblapack-dev ;
-            sudo apt-get install python3-setuptools ;
-            sudo easy_install3 pip ;
-            sudo pip install cvxopt ;
-       else
-            sudo apt-get install python-cvxopt ;
-            sudo pip install coverage ;
-       fi
-       # Dipy
-    - $PYTHON setup.py build
-    - sudo $PYTHON setup.py install
+  - sudo apt-get update
+  # You may want to periodically update this, although the conda update
+  # conda line below will keep everything up-to-date.  We do this
+  # conditionally because it saves us some downloading if the version is
+  # the same.
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget http://repo.continuum.io/miniconda/Miniconda-3.4.2-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget http://repo.continuum.io/miniconda/Miniconda3-3.4.2-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  # Useful for debugging any issues with conda
+  - conda info -a
+  # OK - install the thing with some dependencies:
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy scipy matplotlib cython sympy cvxopt nibabel coverage coveralls
+  # Install some more things we need:
+  #- sudo apt-get install -qq libatlas-dev libatlas-base-dev gfortran libpng-dev
+  #- pip install cvxopt
+  #- pip install nibabel
+  #- pip install coverage
+  #- pip install coveralls
+  - source activate test-environment
+  - python setup.py install
+
 script:
-    # Change into an innocuous directory and find tests from installation
-    - mkdir for_test
-    - cd for_test
-    - if [ "${PYTHON}" == "python3" ]; then
-        nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`	;
-      else
-        cp ../.coveragerc . ;
-        nosetests$PYSUF --with-doctest --with-coverage `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"` ;
-      fi
+  # Change into an innocuous directory and find tests from installation
+  - mkdir for_testing
+  - cd for_testing
+  - cp ../.coveragerc .
+  - $PYTHON ../tools/dipnost --with-coverage `python -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+after_success:
+  - coveralls
