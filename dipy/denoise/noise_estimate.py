@@ -30,7 +30,7 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     N : int
         The number of phase array coils of the MRI scanner.
         If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the noise
-        profile is always Rician. 
+        profile is always Rician.
         If your scanner does a GRAPPA reconstruction, set N as the number
         of phase array coils.
 
@@ -67,6 +67,10 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     background and 2. The data is a repetition of the same measurements
     along the last axis, i.e. dMRI or fMRI data, not structural data like T1/T2.
 
+    This function processes the data slice by slice, but makes a global
+    estimation of the noise. Use piesno_3D to get a slice by slice estimation
+    of the noise, as in spinal cord imaging for example.
+
     References
     ------------
 
@@ -93,20 +97,15 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
         mask_noise = np.zeros(data.shape[:-1], dtype=np.bool)
 
         for idx in range(data.shape[-2]):
-            sigma[idx], mask_noise[..., idx] = _piesno_3D(data[..., idx, :], N, 
+            sigma[idx], mask_noise[..., idx] = piesno_3D(data[..., idx, :], N,
                                                           alpha=alpha, l=l, itermax=itermax, eps=eps)
-            
-        #debug    
+
         # Take the mode of all the sigmas from each slice as the best estimate,
         # this should be stable with more or less 50% of the guesses at the same value.
-        #print(sigma)
-        
         sigma, num = mode(sigma, axis=None)
-        #debug
-        #print(sigma, num)
 
     else:
-        sigma, mask_noise = _piesno_3D(data, N, alpha=alpha, l=l, itermax=itermax, eps=eps)
+        sigma, mask_noise = piesno_3D(data, N, alpha=alpha, l=l, itermax=itermax, eps=eps)
 
     if return_mask:
         return sigma, mask_noise
@@ -114,9 +113,9 @@ def piesno(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5, return_mask=False)
     return sigma
 
 
-def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5):
+def piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5):
     """
-    Probabilistic Identification and Estimation of Noise (PIESNO)
+    Probabilistic Identification and Estimation of Noise (PIESNO).
     This is the slice by slice version.
 
     Parameters
@@ -128,7 +127,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5):
     N : int
         The number of phase array coils of the MRI scanner.
         If your scanner does a SENSE reconstruction, ALWAYS use N=1, as the noise
-        profile is always Rician. 
+        profile is always Rician.
         If your scanner does a GRAPPA reconstruction, set N as the number
         of phase array coils.
 
@@ -163,6 +162,10 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5):
     This function assumes two things : 1. The data has a noisy, non-masked
     background and 2. The data is a repetition of the same measurements
     along the last axis, i.e. dMRI or fMRI data, not structural data like T1/T2.
+
+    This function processes the data slice by slice, as originally designed in
+    the paper. Use it to get a slice by slice estimation of the noise, as in
+    spinal cord imaging for example.
 
     References
     ------------
@@ -233,6 +236,7 @@ def _piesno_3D(data, N, alpha=0.01, l=100, itermax=100, eps=1e-5):
                 break
 
             sig_prev = sig
+
             # Numpy percentile must range in 0 to 100, hence q*100
             sig = np.percentile(omega, q * 100) / denom
             omega_size = omega.size / K
