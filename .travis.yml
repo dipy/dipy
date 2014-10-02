@@ -1,55 +1,38 @@
 # vim ft=yaml
-# travis-ci.org definition for nipy build
-#
-# We pretend to be erlang because we need can't use the python support in
-# travis-ci; it uses virtualenvs, they do not have numpy, scipy, matplotlib,
-# and it is impractical to build them
-language: erlang
-env:
-    # Enable python 2 and python 3 builds. Python3 available in Ubuntu 12.04.
-    - PYTHON=python PYSUF=''
-    - PYTHON=python3 PYSUF=3
+# Multiple lines can be made a single "virtual line" because of the way that
+# Travis munges each line before executing it to print out the exit status.
+# It's okay for it to be on multiple physical lines, so long as you remember:
+# - There can't be any leading "-"s - All newlines will be removed, so use
+# ";"s
+language: python
+python:
+    - 2.6
+    - 3.2
+    - 3.3
+    - 3.4
+matrix:
+  include:
+    - python: 2.7
+      env:
+        - COVERAGE=--with-coverage
+before_install:
+    - pip install --no-index -f http://wheels2.astropy.org -f https://dipy.bic.berkeley.edu/scipy_installers/travis scipy matplotlib cython
+    - pip install sympy
+    - pip install nibabel
+    - if [ "${COVERAGE}" == "--with-coverage" ]; then
+      pip install coverage;
+      pip install coveralls;
+      fi
+# command to install dependencies
+# e.g. pip install -r requirements.txt # --use-mirrors
 install:
-   # Add takluyver's python3 matplotlib PPA: 
-    - sudo add-apt-repository -y ppa:takluyver/python3
-    - sudo apt-get update
-    - sudo apt-get install $PYTHON-dev
-    - sudo apt-get install $PYTHON-numpy
-    - sudo apt-get install $PYTHON-scipy
-    - sudo apt-get install $PYTHON-setuptools
-    - sudo apt-get install $PYTHON-nose
-    - sudo apt-get install $PYTHON-matplotlib
-    - sudo easy_install$PYSUF nibabel # Latest pypi
-    # Cython easy_install breaks with error about refnanny.c; maybe something
-    # to do with having a previous cython version;
-    # http://mail.python.org/pipermail//cython-devel/2012-April/002344.html
-    - curl -O http://www.cython.org/release/Cython-0.18.zip
-    - unzip Cython-0.18.zip
-    - cd Cython-0.18
-    - sudo python$PYSUF setup.py install
-    # Temporary solution to travis issue #155
-    # https://github.com/travis-ci/travis-cookbooks/issues/155
-    - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
-    - cd ..
-    - if [ "${PYTHON}" == "python3" ]; then
-            sudo apt-get install libblas-dev liblapack-dev ;
-            sudo apt-get install python3-setuptools ;
-            sudo easy_install3 pip ;
-            sudo pip install cvxopt ;
-       else
-            sudo apt-get install python-cvxopt ;
-            sudo pip install coverage ;
-       fi
-       # Dipy
-    - $PYTHON setup.py build
-    - sudo $PYTHON setup.py install
+    - python setup.py install
+# command to run tests, e.g. python setup.py test
 script:
     # Change into an innocuous directory and find tests from installation
-    - mkdir for_test
-    - cd for_test
-    - if [ "${PYTHON}" == "python3" ]; then
-        nosetests$PYSUF --with-doctest `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`	;
-      else
-        cp ../.coveragerc . ;
-        nosetests$PYSUF --with-doctest --with-coverage `$PYTHON -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"` ;
-      fi
+    - mkdir for_testing
+    - cd for_testing
+    - if [ "${COVERAGE}" == "--with-coverage" ]; then cp ../.coveragerc .; fi
+    - $PYTHON ../tools/dipnost $COVERAGE `python -c "import os; import dipy; print(os.path.dirname(dipy.__file__))"`
+after_success:
+    - if [ "${COVERAGE}" == "--with-coverage" ]; then coveralls; fi
