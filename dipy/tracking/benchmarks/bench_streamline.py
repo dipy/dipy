@@ -56,7 +56,7 @@ from dipy.tracking.streamlinespeed import set_number_of_points_old, length_old
 from dipy.tracking.streamlinespeed import set_number_of_points_flex, length_flex
 
 def bench_length_and_resample_2():
-    repeat = 1
+    repeat = 10
     nb_points_per_streamline = 100
     nb_points = 42
     nb_streamlines = int(1e6)
@@ -68,25 +68,21 @@ def bench_length_and_resample_2():
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     new_time = measure("length(streamlines)", repeat)
-    print("MrBago version time: {0:.3}sec".format(new_time))
-    print("Speed up of {0}x".format(old_time/new_time))
+    print("MrBago version time: {0:.3}sec ({1:.3}x)".format(new_time, old_time/new_time))
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     flex_time = measure("length_flex(streamlines)", repeat)
-    print("Flex version time: {0:.3}sec".format(flex_time))
-    print("Speed up of {0}x".format(old_time/flex_time))
+    print("Flex version time: {0:.3}sec ({1:.3}x)".format(flex_time, old_time/flex_time))
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     for streamline in streamlines: streamline.flags.writeable = False
     new_time = measure("length(streamlines)", repeat)
-    print("MrBago (read-only) version time: {0:.3}sec".format(new_time))
-    print("Speed up of {0}x".format(old_time/new_time))
+    print("MrBago (read-only) version time: {0:.3}sec ({1:.3}x)".format(new_time, old_time/new_time))
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     for streamline in streamlines: streamline.flags.writeable = False
     flex_time = measure("length_flex(streamlines)", repeat)
-    print("Flex (read-only) version time: {0:.3}sec".format(flex_time))
-    print("Speed up of {0}x".format(old_time/flex_time))
+    print("Flex (read-only) version time: {0:.3}sec ({1:.3}x)".format(flex_time, old_time/flex_time))
 
     print("")
     print("Timing set_number_of_points() in Cython")
@@ -96,22 +92,18 @@ def bench_length_and_resample_2():
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     new_time = measure("set_number_of_points(streamlines, nb_points)", repeat)
-    print("New version time: {0:.3}sec".format(new_time))
-    print("Speed up of {0}x".format(old_time/new_time))
+    print("MrBago version time: {0:.3}sec ({1:.3}x)".format(new_time, old_time/new_time))
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     flex_time = measure("set_number_of_points_flex(streamlines, nb_points)", repeat)
-    print("Flex version time: {0:.3}sec".format(flex_time))
-    print("Speed up of {0}x".format(old_time/flex_time))
+    print("Flex version time: {0:.3}sec ({1:.3}x)".format(flex_time, old_time/flex_time))
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     for streamline in streamlines: streamline.flags.writeable = False
     new_time = measure("set_number_of_points(streamlines, nb_points)", repeat)
-    print("New (read-only) version time: {0:.3}sec".format(new_time))
-    print("Speed up of {0}x".format(old_time/new_time))
+    print("MrBago (read-only) version time: {0:.3}sec ({1:.3}x)".format(new_time, old_time/new_time))
 
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     for streamline in streamlines: streamline.flags.writeable = False
     flex_time = measure("set_number_of_points_flex(streamlines, nb_points)", repeat)
-    print("Flex (read-only) version time: {0:.3}sec".format(flex_time))
-    print("Speed up of {0}x".format(old_time/flex_time))
+    print("Flex (read-only) version time: {0:.3}sec ({1:.3}x)".format(flex_time, old_time/flex_time))
