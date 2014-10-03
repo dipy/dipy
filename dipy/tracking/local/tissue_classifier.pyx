@@ -41,7 +41,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
             raise ValueError("Point has wrong shape")
         elif err != 0:
             # This should never happen
-            raise RuntimeError("You seem to have found a bug in dipy")
+            raise RuntimeError("Unexpected interpolation error (code:%i)" % err)
 
         result = self.interp_out_view[0]
 
@@ -94,7 +94,7 @@ cdef class ActTissueClassifier(TissueClassifier):
             raise ValueError("Point has wrong shape")
         elif include_err != 0 or exclude_err != 0:
             # This should never happen
-            raise RuntimeError("You seem to have found a bug in dipy")
+            raise RuntimeError("Unexpected interpolation error (code:%i)" % err)
 
         if include_result > 0.5:
             return ENDPOINT
