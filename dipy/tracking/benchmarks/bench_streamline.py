@@ -53,6 +53,7 @@ def bench_length():
 
 
 from dipy.tracking.streamlinespeed import set_number_of_points_old, length_old
+from dipy.tracking.streamlinespeed import set_number_of_points_flex, length_flex
 
 def bench_length_and_resample_2():
     repeat = 1
@@ -62,18 +63,55 @@ def bench_length_and_resample_2():
     streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
 
     print("Timing length() in Cython")
-    new_time = measure("length(streamlines)", repeat)
-    print("Cython time: {0:.3}sec".format(new_time))
-
     old_time = measure("length_old(streamlines)", repeat)
-    print("Cython time: {0:.3}sec".format(old_time))
+    print("Original version time: {0:.3}sec".format(old_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    new_time = measure("length(streamlines)", repeat)
+    print("MrBago version time: {0:.3}sec".format(new_time))
     print("Speed up of {0}x".format(old_time/new_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    flex_time = measure("length_flex(streamlines)", repeat)
+    print("Flex version time: {0:.3}sec".format(flex_time))
+    print("Speed up of {0}x".format(old_time/flex_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    for streamline in streamlines: streamline.flags.writeable = False
+    new_time = measure("length(streamlines)", repeat)
+    print("MrBago (read-only) version time: {0:.3}sec".format(new_time))
+    print("Speed up of {0}x".format(old_time/new_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    for streamline in streamlines: streamline.flags.writeable = False
+    flex_time = measure("length_flex(streamlines)", repeat)
+    print("Flex (read-only) version time: {0:.3}sec".format(flex_time))
+    print("Speed up of {0}x".format(old_time/flex_time))
 
     print("")
     print("Timing set_number_of_points() in Cython")
-    new_time = measure("set_number_of_points(streamlines, nb_points)", repeat)
-    print("New version time: {0:.3}sec".format(new_time))
-
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
     old_time = measure("set_number_of_points_old(streamlines, nb_points)", repeat)
     print("Old version time: {0:.3}sec".format(old_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    new_time = measure("set_number_of_points(streamlines, nb_points)", repeat)
+    print("New version time: {0:.3}sec".format(new_time))
     print("Speed up of {0}x".format(old_time/new_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    flex_time = measure("set_number_of_points_flex(streamlines, nb_points)", repeat)
+    print("Flex version time: {0:.3}sec".format(flex_time))
+    print("Speed up of {0}x".format(old_time/flex_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    for streamline in streamlines: streamline.flags.writeable = False
+    new_time = measure("set_number_of_points(streamlines, nb_points)", repeat)
+    print("New (read-only) version time: {0:.3}sec".format(new_time))
+    print("Speed up of {0}x".format(old_time/new_time))
+
+    streamlines = [np.random.rand(nb_points_per_streamline, 3).astype("float32") for i in range(nb_streamlines)]
+    for streamline in streamlines: streamline.flags.writeable = False
+    flex_time = measure("set_number_of_points_flex(streamlines, nb_points)", repeat)
+    print("Flex (read-only) version time: {0:.3}sec".format(flex_time))
+    print("Speed up of {0}x".format(old_time/flex_time))
