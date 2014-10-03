@@ -29,7 +29,8 @@ def test_ProbabilisticDirectionGetter():
     dir = unit_octahedron.vertices[0].copy()
 
     # make a dg from a fit
-    dg = ProbabilisticDirectionGetter.from_shfit(fit, 90, unit_octahedron)
+    dg = ProbabilisticDirectionGetter.from_shcoeff(fit.shm_coeff, 90,
+                                                   unit_octahedron)
     state = dg.get_direction(point, dir)
     npt.assert_equal(state, 1)
 

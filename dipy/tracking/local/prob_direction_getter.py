@@ -1,8 +1,8 @@
+"""Implementation of a probabilistic direction getter based on sampling from
+discrete distribution (pmf) at each step of the tracking."""
 import numpy as np
 from dipy.reconst.peaks import peak_directions, default_sphere
-from dipy.reconst.shm import (bootstrap_data_voxel, cart2sphere, hat,
-                              lazy_index, lcr_matrix, normalize_data,
-                              real_sym_sh_basis)
+from dipy.reconst.shm import order_from_ncoef, real_sym_sh_basis
 from .direction_getter import DirectionGetter
 from .interpolation import trilinear_interpolate4d
 
@@ -29,18 +29,18 @@ class SimplePmfGen(PmfGen):
         return trilinear_interpolate4d(self.pmf_array, point)
 
 
-class SHFitPmfGen(PmfGen):
+class SHCoeffPmfGen(PmfGen):
 
-    def __init__(self, shfit, sphere):
-        self.fit = shfit
+    def __init__(self, shcoeff, sphere):
+        self.shcoeff = shcoeff
         self.sphere = sphere
-        self._B = shfit.model.sampling_matrix(sphere)
-        self._coeff = shfit.shm_coeff
+        sh_order = order_from_ncoef(shcoeff.shape[-1])
+        self._B, m, n = real_sym_sh_basis(sh_order, sphere.theta, sphere.phi)
 
     def get_pmf(self, point):
-        coeff = trilinear_interpolate4d(self._coeff, point)
-        odf = np.dot(self._B, coeff)
-        pmf = odf.clip(0)
+        coeff = trilinear_interpolate4d(self.shcoeff, point)
+        pmf = np.dot(self._B, coeff)
+        pmf.clip(0, out=pmf)
         return pmf
 
 
@@ -63,7 +63,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
     """Randomly samples direction of a sphere based on probability mass
     function (pmf).
 
-    The main constructors for this class are current from_pmf and from_shfit.
+    The main constructors for this class are current from_pmf and from_shcoeff.
     The pmf gives the probability that each direction on the sphere should be
     chosen as the next direction. To get the true pmf from the "raw pmf"
     directions more than ``max_angle`` degrees from the incoming direction are
@@ -107,13 +107,19 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         return klass(pmf_gen, max_angle, sphere, **kwargs)
 
     @classmethod
-    def from_shfit(klass, shfit, max_angle, sphere, **kwargs):
-        """Use the ODF (or FOD) of a SphHarmFit object as the pmf
+    def from_shcoeff(klass, shcoeff, max_angle, sphere, **kwargs):
+        """Probabilistic direction getter from a distribution of directions
+        on the sphere.
 
         Parameters
         ----------
-        shfit : SphHarmFit
-            Fit object to be used for tracking.
+        shcoeff : array
+            The distribution of tracking directions at each voxel represented
+            as a function on the sphere using the real spherical harmonic
+            basis. For example the FOD of the Constrained Spherical
+            Deconvolution model can be used this way. This distribution will
+            be discretized using ``sphere`` and tracking directions will be
+            chosen from the vertices of ``sphere`` based on the distribution.
         max_angle : float, [0, 90]
             The maximum allowed angle between incoming direction and new
             direction.
@@ -131,7 +137,7 @@ class ProbabilisticDirectionGetter(PeakDirectionGetter):
         dipy.reconst.peaks.peak_directions
 
         """
-        pmf_gen = SHFitPmfGen(shfit, sphere)
+        pmf_gen = SHCoeffPmfGen(shcoeff, sphere)
         return klass(pmf_gen, max_angle, sphere, **kwargs)
 
     def __init__(self, pmf_gen, max_angle, sphere=None, **kwargs):
