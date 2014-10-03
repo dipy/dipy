@@ -2,6 +2,7 @@ from __future__ import division, print_function
 
 import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
+from scipy.ndimage.filters import convolve
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
@@ -26,7 +27,6 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     -------
     denoised_arr : ndarray
         the denoised ``arr`` which has the same shape as ``arr``.
-
     """
 
     if arr.ndim == 3:
@@ -38,8 +38,10 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
     if arr.ndim == 4:
 
         denoised_arr = np.zeros_like(arr)
+        sigma_arr = np.ones(arr.shape[-1], dtype=np.float32) * sigma
 
         for i in range(arr.shape[-1]):
+            sigma = sigma_arr[i]
             denoised_arr[..., i] = nlmeans_3d(arr[..., i],
                                               mask,
                                               sigma,
@@ -50,3 +52,39 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
         return denoised_arr
 
 
+def estimate_sigma(arr):
+    """Standard deviation estimation from local patches
+
+    Parameters
+    ----------
+    arr : 3D or 4D ndarray
+        The array to be estimated
+
+    Returns
+    -------
+    sigma : ndarray
+        standard deviation of the noise, one estimation per volume.
+    """
+    k = np.zeros((3, 3, 3), dtype=np.int8)
+
+    k[0, 1, 1] = 1
+    k[2, 1, 1] = 1
+    k[1, 0, 1] = 1
+    k[1, 2, 1] = 1
+    k[1, 1, 0] = 1
+    k[1, 1, 2] = 1
+
+    if arr.ndim == 3:
+        sigma = np.zeros(1, dtype=np.float32)
+        arr = arr[..., None]
+    elif arr.ndim == 4:
+        sigma = np.zeros(arr.shape[-1], dtype=np.float32)
+    else:
+        raise ValueError("Array shape is not supported!", arr.shape)
+
+    for i in range(sigma.size):
+        mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * convolve(arr[..., i], k))
+        mask = mean_block.astype(np.bool)
+        sigma[i] = np.sqrt(np.mean(mean_block[mask]**2))
+
+    return sigma
