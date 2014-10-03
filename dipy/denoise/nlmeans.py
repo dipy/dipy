@@ -52,13 +52,17 @@ def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
         return denoised_arr
 
 
-def estimate_sigma(arr):
+def estimate_sigma(arr, disable_background_masking=False):
     """Standard deviation estimation from local patches
 
     Parameters
     ----------
     arr : 3D or 4D ndarray
         The array to be estimated
+
+    disable_background_masking : bool, default False
+        If True, uses all voxels for the estimation, otherwise, only non-zeros voxels are used.
+        Useful if the background is masked by the scanner.
 
     Returns
     -------
@@ -82,9 +86,13 @@ def estimate_sigma(arr):
     else:
         raise ValueError("Array shape is not supported!", arr.shape)
 
+    if disable_background_masking:
+        mask = arr[..., 0].astype(np.bool)
+    else:
+        mask = np.ones_like(arr[..., 0], dtype=np.bool)
+
     for i in range(sigma.size):
         mean_block = np.sqrt(6/7) * (arr[..., i] - 1/6 * convolve(arr[..., i], k))
-        mask = mean_block.astype(np.bool)
         sigma[i] = np.sqrt(np.mean(mean_block[mask]**2))
 
     return sigma
