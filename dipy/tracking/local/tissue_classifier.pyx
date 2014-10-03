@@ -1,7 +1,10 @@
 cimport cython
 cimport numpy as np
 
-from .interpolation cimport trilinear_interpolate4d, _trilinear_interpolate_c_4d
+from libc.math cimport round
+
+from .interpolation cimport(trilinear_interpolate4d,
+                            _trilinear_interpolate_c_4d)
 
 cdef class TissueClassifier:
     cpdef TissueClass check_point(self, double[::1] point):
@@ -48,13 +51,20 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
             return ENDPOINT
 
 cdef class ActTissueClassifier(TissueClassifier):
-    """
-    Anatomically-Constained Tractography from Smith et al. (NeuroImage 2012).
+    r"""
+    Anatomically-Constained Tractography (ACT) stopping criteria from [1]_.
 
     cdef:
         double interp_out_double[1]
         double[:]  interp_out_view = interp_out_view
         double[:, :, :] include_map, exclude_map
+
+    References
+    ----------
+    .. [1] Smith, R. E., Tournier, J.-D., Calamante, F., & Connelly, A.
+    "Anatomically-constrained tractography: Improved diffusion MRI
+    streamlines tractography through effective use of anatomical
+    information." NeuroImage, 63(3), 1924–1938, 2012.
     """
 
     def __cinit__(self, include_map, exclude_map):
@@ -70,12 +80,12 @@ cdef class ActTissueClassifier(TissueClassifier):
             double include_result, exclude_result
             int err
 
-        include_err = _trilinear_interpolate_c_4d(self.include_map[..., None], point,
-                                          self.interp_out_view)
+        include_err = _trilinear_interpolate_c_4d(self.include_map[..., None],
+                                                  point, self.interp_out_view)
         include_result = self.interp_out_view[0]
 
-        exclude_err = _trilinear_interpolate_c_4d(self.exclude_map[..., None], point,
-                                          self.interp_out_view)        
+        exclude_err = _trilinear_interpolate_c_4d(self.exclude_map[..., None],
+                                                  point, self.interp_out_view)
         exclude_result = self.interp_out_view[0]
 
         if include_err == -1 or exclude_err == -1:
@@ -92,5 +102,3 @@ cdef class ActTissueClassifier(TissueClassifier):
             return INVALIDPOINT
         else:
             return TRACKPOINT
-
-
