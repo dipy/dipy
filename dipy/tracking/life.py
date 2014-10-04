@@ -20,6 +20,96 @@ from dipy.tracking.vox2track import _voxel2fiber
 import dipy.data as dpd
 
 
+def gradient(f, *varargs):
+    """
+    Return the gradient of an N-dimensional array.
+
+    The gradient is computed using central differences in the interior
+    and first differences at the boundaries. The returned gradient hence has
+    the same shape as the input array.
+
+    Parameters
+    ----------
+    f : array_like
+      An N-dimensional array containing samples of a scalar function.
+    `*varargs` : scalars
+      0, 1, or N scalars specifying the sample distances in each direction,
+      that is: `dx`, `dy`, `dz`, ... The default distance is 1.
+
+
+    Returns
+    -------
+    gradient : ndarray
+      N arrays of the same shape as `f` giving the derivative of `f` with
+      respect to each dimension.
+
+    Examples
+    --------
+    >>> x = np.array([1, 2, 4, 7, 11, 16], dtype=np.float)
+    >>> gradient(x)
+    array([ 1. ,  1.5,  2.5,  3.5,  4.5,  5. ])
+    >>> gradient(x, 2)
+    array([ 0.5 ,  0.75,  1.25,  1.75,  2.25,  2.5 ])
+
+    >>> gradient(np.array([[1, 2, 6], [3, 4, 5]], dtype=np.float))
+    [array([[ 2.,  2., -1.],
+           [ 2.,  2., -1.]]), array([[ 1. ,  2.5,  4. ],
+           [ 1. ,  1. ,  1. ]])]
+
+    """
+    f = np.asanyarray(f)
+    N = len(f.shape)  # number of dimensions
+    n = len(varargs)
+    if n == 0:
+        dx = [1.0]*N
+    elif n == 1:
+        dx = [varargs[0]]*N
+    elif n == N:
+        dx = list(varargs)
+    else:
+        raise SyntaxError(
+          "invalid number of arguments")
+
+    # use central differences on interior and first differences on endpoints
+    outvals = []
+
+    # create slice objects --- initially all are [:, :, ..., :]
+    slice1 = [slice(None)]*N
+    slice2 = [slice(None)]*N
+    slice3 = [slice(None)]*N
+
+    for axis in range(N):
+        # select out appropriate parts for this dimension
+        out = np.empty_like(f)
+        slice1[axis] = slice(1, -1)
+        slice2[axis] = slice(2, None)
+        slice3[axis] = slice(None, -2)
+        # 1D equivalent -- out[1:-1] = (f[2:] - f[:-2])/2.0
+        out[slice1] = (f[slice2] - f[slice3])/2.0
+        slice1[axis] = 0
+        slice2[axis] = 1
+        slice3[axis] = 0
+        # 1D equivalent -- out[0] = (f[1] - f[0])
+        out[slice1] = (f[slice2] - f[slice3])
+        slice1[axis] = -1
+        slice2[axis] = -1
+        slice3[axis] = -2
+        # 1D equivalent -- out[-1] = (f[-1] - f[-2])
+        out[slice1] = (f[slice2] - f[slice3])
+
+        # divide by step size
+        outvals.append(out / dx[axis])
+        # reset the slice object in this dimension to ":"
+        slice1[axis] = slice(None)
+        slice2[axis] = slice(None)
+        slice3[axis] = slice(None)
+
+    if N == 1:
+        return outvals[0]
+    else:
+        return outvals
+
+
 def spdot(A, B):
     """The same as np.dot(A, B), except it works even if A or B or both
     are sparse matrices.
@@ -188,7 +278,7 @@ def sl_gradients(sl):
     streamline.
 
     """
-    return np.array(np.gradient(np.asarray(sl), 1)[0])
+    return np.array(gradient(np.asarray(sl), 1)[0])
 
 
 def grad_tensor(grad, evals):
