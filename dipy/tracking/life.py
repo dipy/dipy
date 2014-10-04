@@ -21,28 +21,28 @@ import dipy.data as dpd
 
 
 def spdot(A, B):
-  """The same as np.dot(A, B), except it works even if A or B or both
-  are sparse matrices.
+    """The same as np.dot(A, B), except it works even if A or B or both
+    are sparse matrices.
 
-  Parameters
-  ----------
-  A, B : arrays of shape (m, n), (n, k)
+    Parameters
+    ----------
+    A, B : arrays of shape (m, n), (n, k)
 
-  Returns
-  -------
-  The matrix product A @ B.
+    Returns
+    -------
+    The matrix product A @ B.
 
-  See discussion here:
-  http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
-  """
-  if sps.issparse(A) and sps.issparse(B):
-      return A * B
-  elif sps.issparse(A) and not sps.issparse(B):
-      return (A * B).view(type=B.__class__)
-  elif not sps.issparse(A) and sps.issparse(B):
-      return (B.T * A.T).T.view(type=A.__class__)
-  else:
-      return np.dot(A, B)
+    See discussion here:
+    http://mail.scipy.org/pipermail/scipy-user/2010-November/027700.html
+    """
+    if sps.issparse(A) and sps.issparse(B):
+        return A * B
+    elif sps.issparse(A) and not sps.issparse(B):
+        return (A * B).view(type=B.__class__)
+    elif not sps.issparse(A) and sps.issparse(B):
+        return (B.T * A.T).T.view(type=A.__class__)
+    else:
+        return np.dot(A, B)
 
 
 def rsq(ss_residuals, ss_residuals_to_mean):
@@ -64,12 +64,12 @@ def rsq(ss_residuals, ss_residuals_to_mean):
 
 
 def sparse_nnls(y, X, momentum=0,
-               step_size=0.1,
-               non_neg=True,
-               prop_bad_checks=0.1,
-               check_error_iter=10,
-               max_error_checks=10,
-               converge_on_r=0.2):
+                step_size=0.1,
+                non_neg=True,
+                prop_bad_checks=0.1,
+                check_error_iter=10,
+                max_error_checks=10,
+                converge_on_r=0.2):
     """
 
     Solve y=Xh for h, using a stochastic gradient descent, with X a sparse
@@ -120,53 +120,54 @@ def sparse_nnls(y, X, momentum=0,
     gradient = np.zeros(num_regressors)
     iteration = 1
     count = 1
-    ss_residuals_min = np.inf  # This will keep track of the best solution so far
-    ss_residuals_to_mean = np.sum((y - np.mean(y))**2) # The variance of y
+    ss_residuals_min = np.inf  # This will keep track of the best solution
+    ss_residuals_to_mean = np.sum((y - np.mean(y)) ** 2)  # The variance of y
     rsq_max = -np.inf   # This will keep track of the best r squared so far
     count_bad = 0  # Number of times estimation error has gone up.
     error_checks = 0  # How many error checks have we done so far
 
     while 1:
-        if iteration>1:
+        if iteration > 1:
             # The sum of squared error given the current parameter setting:
-            sse = np.sum((y - spdot(X,h))**2)
+            sse = np.sum((y - spdot(X, h)) ** 2)
             # The gradient is (Kay 2008 supplemental page 27):
-            gradient = spdot(X.T, spdot(X,h) - y)
-            gradient += momentum*gradient
+            gradient = spdot(X.T, spdot(X, h) - y)
+            gradient += momentum * gradient
             # Normalize to unit-length
-            unit_length_gradient = gradient / np.sqrt(np.dot(gradient, gradient))
+            unit_length_gradient = (gradient /
+                                    np.sqrt(np.dot(gradient, gradient)))
             # Update the parameters in the direction of the gradient:
             h -= step_size * unit_length_gradient
             if non_neg:
                 # Set negative values to 0:
-                h[h<0] = 0
+                h[h < 0] = 0
 
         # Every once in a while check whether it's converged:
         if np.mod(iteration, check_error_iter):
             # This calculates the sum of squared residuals at this point:
-            this_ss_resid = (np.sum(np.power(y - spdot(X,h), 2)))
+            this_ss_resid = (np.sum(np.power(y - spdot(X, h), 2)))
             rsq_est = rsq(this_ss_resid, ss_residuals_to_mean)
 
             # Did we do better this time around?
-            if  this_ss_resid < ss_residuals_min:
+            if this_ss_resid < ss_residuals_min:
                 # Update your expectations about the minimum error:
                 ss_residuals_min = this_ss_resid
-                n_iterations = iteration # This holds the number of iterations
-                                        # for the best solution so far.
-                h_best = h # This holds the best params we have so far
+                n_iterations = iteration  # This holds the number of iterations
+                                          # for the best solution so far.
+                h_best = h  # This holds the best params we have so far
 
                 # Are we generally (over iterations) converging on
                 # improvement in r-squared?
-                if rsq_est>rsq_max*(1+converge_on_r/100):
+                if rsq_est > (rsq_max * (1 + converge_on_r / 100)):
                     rsq_max = rsq_est
-                    count_bad = 0 # We're doing good. Null this count for now
+                    count_bad = 0  # We're doing good. Null this count for now
                 else:
                     count_bad += 1
             else:
                 count_bad += 1
 
             if count_bad >= np.max([max_error_checks,
-                                    np.round(prop_bad_checks*error_checks)]):
+                                    np.round(prop_bad_checks * error_checks)]):
                 return h_best
             error_checks += 1
         iteration += 1
@@ -183,9 +184,11 @@ def sl_gradients(sl):
 
     Returns
     -------
-    Array of shape (3, n): Spatial gradients along the length of the streamline.
+    Array of shape (3, n): Spatial gradients along the length of the
+    streamline.
+
     """
-    return np.array(np.gradient(np.asarray(sl))[0])
+    return np.array(np.gradient(np.asarray(sl), 1)[0])
 
 
 def grad_tensor(grad, evals):
@@ -199,7 +202,8 @@ def grad_tensor(grad, evals):
         The spatial gradient (e.g between two nodes of a streamline).
 
     evals: 1d array of shape (3,)
-        The eigenvalues of a canonical tensor to be used as a response function.
+        The eigenvalues of a canonical tensor to be used as a response
+        function.
 
     """
     # This is the rotation matrix from [1, 0, 0] to this gradient of the sl:
@@ -283,23 +287,20 @@ class LifeSignalMaker(object):
         ----------
         gtab : GradientTable class instance
             The gradient table on which the signal is calculated.
-
         evals : list of 3 items
             The eigenvalues of the canonical tensor to use in calculating the
             signal.
-
         n_points : int {362, 642, 724}, or `dipy.core.Sphere` class instace
             The discrete sphere to use as an approximation for the continuous
             sphere on which the signal is represented. If integer - we will use
             an instance of one of the symmetric spheres cached in
             `dps.get_sphere`. If a 'dipy.core.Sphere' class instance is
             provided, we will use this object.
-
         """
         if isinstance(n_points, dps.Sphere):
             self.sphere = n_points
         else:
-            self.sphere = dpd.get_sphere('symmetric%s'%n_points)
+            self.sphere = dpd.get_sphere('symmetric%s' % n_points)
         self.gtab = gtab
         self.evals = evals
         # Initialize an empty dict to fill with signals for each of the sphere
@@ -308,7 +309,6 @@ class LifeSignalMaker(object):
                                 np.sum(~gtab.b0s_mask)))
         # We'll need to keep track of what we've already calculated:
         self._calculated = []
-
 
     def find_closest(self, xyz):
         """
@@ -327,7 +327,6 @@ class LifeSignalMaker(object):
         ang = np.arccos(np.dot(self.sphere.vertices, xyz))
         ang = np.min(np.vstack([ang, np.pi - ang]), 0)
         return np.argmin(ang)
-
 
     def calc_signal(self, xyz):
         idx = self.find_closest(xyz)
@@ -420,7 +419,6 @@ class FiberModel(ReconstModel):
         # Initialize the super-class:
         ReconstModel.__init__(self, gtab)
 
-
     def setup(self, sl, affine, evals=[0.0015, 0.0005, 0.0005], approx=724):
         """
         Set up the necessary components for the LiFE model: the matrix of
@@ -435,7 +433,8 @@ class FiberModel(ReconstModel):
             Mapping from the sl coordinates to the data
         evals : list (3 items, optional)
             The eigenvalues of the canonical tensor used as a response function
-        approx: int  {362, 642, 724}, `dipy.core.Sphere` class instance, or False
+
+        approx: int  {362, 642, 724}, `dipy.core.Sphere` instance, or False
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
             problem, but is not as accurate. If `False`, we use the exact
@@ -484,27 +483,25 @@ class FiberModel(ReconstModel):
             for f_idx in np.where(v2f[v_idx])[0]:
                 # Sum the signal from each node of the fiber in that voxel:
                 vox_fiber_sig = np.zeros(n_bvecs)
-                for node_idx in np.where(v2fn[f_idx]==v_idx)[0]:
+                for node_idx in np.where(v2fn[f_idx] == v_idx)[0]:
                     this_signal = fiber_signal[f_idx][node_idx]
                     vox_fiber_sig += (this_signal - np.mean(this_signal))
                 # For each fiber-voxel combination, we now store the row/column
                 # indices and the signal in the pre-allocated linear arrays
                 f_matrix_row[keep_ct:keep_ct+n_bvecs] =\
-                                        np.arange(n_bvecs) + v_idx * n_bvecs
+                    np.arange(n_bvecs) + v_idx * n_bvecs
                 f_matrix_col[keep_ct:keep_ct+n_bvecs] =\
-                                        np.ones(n_bvecs) * f_idx
+                    np.ones(n_bvecs) * f_idx
                 f_matrix_sig[keep_ct:keep_ct+n_bvecs] = vox_fiber_sig
                 keep_ct += n_bvecs
-
 
         # Allocate the sparse matrix, using the more memory-efficient 'csr'
         # format (converted from the coo format, which we rely on for the
         # initial allocation):
         life_matrix = sps.coo_matrix((f_matrix_sig,
-                                       [f_matrix_row, f_matrix_col])).tocsr()
+                                      [f_matrix_row, f_matrix_col])).tocsr()
 
         return life_matrix, vox_coords
-
 
     def _signals(self, data, vox_coords):
         """
@@ -522,18 +519,17 @@ class FiberModel(ReconstModel):
         # signal:
         idx_tuple = (vox_coords[:, 0], vox_coords[:, 1], vox_coords[:, 2])
         # We'll look at a 2D array, extracting the data from the voxels:
-        vox_data =  data[idx_tuple]
+        vox_data = data[idx_tuple]
         weighted_signal = vox_data[:, ~self.gtab.b0s_mask]
         b0_signal = np.mean(vox_data[:, self.gtab.b0s_mask], -1)
-        relative_signal = (weighted_signal/b0_signal[:,None])
+        relative_signal = (weighted_signal/b0_signal[:, None])
 
         # The mean of the relative signal across directions in each voxel:
-        mean_sig =  np.mean(relative_signal, -1)
-        to_fit = (relative_signal - mean_sig[:,None]).ravel()
+        mean_sig = np.mean(relative_signal, -1)
+        to_fit = (relative_signal - mean_sig[:, None]).ravel()
 
         return (to_fit, weighted_signal, b0_signal, relative_signal, mean_sig,
                 vox_data)
-
 
     def fit(self, data, sl, affine=None, evals=[0.0015, 0.0005, 0.0005],
             approx=724):
@@ -557,7 +553,7 @@ class FiberModel(ReconstModel):
            The eigenvalues of the tensor response function used in constructing
            the model signal. Default: [0.0015, 0.0005, 0.0005]
 
-        approx: int  {362, 642, 724}, `dipy.core.Sphere` class instance, or False
+        approx: int  {362, 642, 724}, `dipy.core.Sphere` instance, or False
             Whether to approximate (and cache) the signal on a discrete
             sphere. This may confer a significant speed-up in setting up the
             problem, but is not as accurate. If `False`, we use the exact
@@ -567,7 +563,6 @@ class FiberModel(ReconstModel):
         Returns
         -------
         FiberFit class instance
-
         """
         life_matrix, vox_coords = \
             self.setup(sl, affine, evals=evals, approx=approx)
@@ -609,7 +604,6 @@ class FiberFit(ReconstFit):
         self.affine = affine
         self.evals = evals
 
-
     def predict(self, gtab=None, S0=None):
         """
         Predict the signal
@@ -629,18 +623,16 @@ class FiberFit(ReconstFit):
             _matrix, _ = self.model.setup(self.sl,
                                           self.affine,
                                           self.evals)
-
         pred_weighted = np.reshape(spdot(_matrix, self.beta),
                                    (self.vox_coords.shape[0],
                                     np.sum(~gtab.b0s_mask)))
 
         pred = np.empty((self.vox_coords.shape[0], gtab.bvals.shape[0]))
-
         if S0 is None:
-            S0 =  self.b0_signal
+            S0 = self.b0_signal
 
         pred[..., gtab.b0s_mask] = S0[:, None]
         pred[..., ~gtab.b0s_mask] =\
-            (pred_weighted + self.mean_signal[:, None] ) * S0[:,None]
+            (pred_weighted + self.mean_signal[:, None]) * S0[:, None]
 
         return pred
