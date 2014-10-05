@@ -388,6 +388,39 @@ def read_stanford_hardi():
     return img, gtab
 
 
+def fetch_stanford_t1():
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
+    url_t1 = url + 't1.nii.gz'
+    folder = pjoin(dipy_home, 'stanford_hardi')
+
+    if not os.path.exists(folder):
+        print('Creating new directory %s' % folder)
+
+    file_md5 = 'a6a140da6a947d4131b2368752951b0a'
+    fname = 't1.nii.gz'
+    file_loc = os.path.join(folder, fname)
+    if not os.path.exists(file_loc):
+        print('Downloading T1-weighted data (~ 1MB)...')
+        _get_file_data(pjoin(folder, fname), url_t1)
+        check_md5(pjoin(folder, fname), md5)
+
+        print('Done.')
+        print('File copied in folder %s' % folder)
+    else:
+        print('Data is already in place. If you want to fetch it again, please first remove it from folder %s ' % folder)
+
+
+def read_stanford_t1():
+    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
+    folder = pjoin(dipy_home, 'stanford_hardi')
+    f_t1 = pjoin(folder, 't1.nii.gz')
+    file_md5 = 'a6a140da6a947d4131b2368752951b0a'
+    check_md5(f_t1, file_md5)
+    img = nib.load(f_t1)
+    return img
+
+
 def fetch_taiwan_ntu_dsi():
     """ Download a DSI dataset with 203 gradient directions
     """

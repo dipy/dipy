@@ -42,6 +42,8 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_stanford_labels,
                                fetch_syn_data,
                                read_syn_data)
+                               fetch_stanford_t1,
+	                       read_stanford_t1)
 
 from ..utils.arrfuncs import as_native_array
 from dipy.tracking.streamline import relist_streamlines
