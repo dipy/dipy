@@ -3,8 +3,8 @@ This is an implementation of the Linear Fascicle Evaluation (LiFE) algorithm
 described in:
 
 Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell B.A. (2014). Validation
-and statistical inference in living connectomes. Nature Methods
-
+and statistical inference in living connectomes. Nature Methods 11:
+1058-1063. doi:10.1038/nmeth.3098
 """
 import numpy as np
 import scipy.sparse as sps
