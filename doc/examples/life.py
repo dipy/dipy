@@ -169,48 +169,142 @@ other non diffusion-weighted signals.
 
 """
 
-predict = FF.predict()
+model_predict = FF.predict()
 
 """
 
 We will focus on the error in prediction of the diffusion-weighted data, and
-calculate the root of the mean squared error. We can demonstrate the reduction
-of the error that is afforded by the fitting of the model by calculating two
-error terms. The
+calculate the root of the mean squared error.
 
 """
 
-model_error = predict - FF.data
+model_error = model_predict - FF.data
 model_rmse = np.sqrt(np.mean(model_error[:, 10:] ** 2, -1))
 
-tracks_error = np.reshape(
-               life.spdot(FF.life_matrix, np.ones(FF.life_matrix.shape[-1])),
-               (FF.vox_coords.shape[0], np.sum(~gtab.b0s_mask)))
-
-tracks_rmse = np.sqrt(np.mean(tracks_error[:, 10:] ** 2, -1))
 
 """
 
-The second error term is the error in matching the data based on uniform
-weights on the entire set of candidate tracks. This can be derived by
-multiplying out the
+As a baseline against which we can compare, we calculate another error term
+based on the naive prediction that all the tracks are necessary and they each
+contribute equally to the signal. In each voxel, the predictions are divided by
+the number of tracks in that voxel, so that things would not get out of hand
+
+"""
+
+sum_signals = np.asarray(FF.life_matrix.sum(-1)).squeeze()
+tracks_per_voxel = np.asarray(FF.life_matrix.astype(bool).sum(axis=-1)).squeeze()
+
+tracks_prediction = sum_signals/tracks_per_voxel
+
+
+
+tracks_prediction = np.reshape(tracks_prediction,
+                              (FF.vox_coords.shape[0],np.sum(~gtab.b0s_mask)))
+
+
+"""
+
+Since the fitting is done in the demeaned S/S0 domain, we need
+to add back the mean and then multiply by S0 in every voxel:
+
+"""
+
+tracks_prediction = ( (tracks_prediction + FF.mean_signal[:, None]) *
+                      FF.b0_signal[:, None])
+
+tracks_error = tracks_prediction - FF.data[:, ~gtab.b0s_mask]
+tracks_rmse = np.sqrt(np.mean(tracks_error ** 2, -1))
+
+"""
+
+First, we can compare the overall distribution of errors between these two
+alternative models of the ROI. We show the distribution of differences in error
+(improvement through model fitting, relative to the baseline model). Here,
+positive values denote an improvement in error with model fit, relative to
+without the model fit
 
 """
 
 import matplotlib.pyplot as plt
+import matplotlib
 
-vol = np.ones(data.shape[:3]) * np.nan
+fig, ax = plt.subplots(1)
+ax.hist(tracks_rmse - model_rmse, bins=100, histtype='step')
+ax.text(0.2, 0.9,'Median RMSE, tracks: %.2f' % np.median(tracks_rmse),
+     horizontalalignment='left',
+     verticalalignment='center', transform=ax.transAxes)
+ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
+     horizontalalignment='left',
+     verticalalignment='center', transform=ax.transAxes)
 
-fig, ax = plt.subplots(3)
-ax.imshow(t1_data[49, :, :], cmap=matplotlib.cm.bone)
-imshow(vol[49, :, :], cmap=matplotlib.cm.hot)
-import matplotlib.pyplot as plt
-
+fig.savefig('error_histograms.png')
 
 
 """
 
+.. figure:: error_histograms.png
+   :align: center
 
+   **Improvement in error with fitting of the LiFE model**.
+
+"""
+
+
+"""
+
+Second, we can show the spatial distribution of the two error terms,
+and of the improvement with the model fit:
+
+"""
+
+vol_model = np.ones(data.shape[:3]) * np.nan
+vol_model[FF.vox_coords[:, 0], FF.vox_coords[:, 1], FF.vox_coords[:, 2]] =\
+                                                                  model_rmse
+vol_tracks = np.ones(data.shape[:3]) * np.nan
+vol_tracks[FF.vox_coords[:, 0], FF.vox_coords[:, 1], FF.vox_coords[:, 2]] =\
+                                                                  tracks_rmse
+
+vol_improve = np.ones(data.shape[:3]) * np.nan
+vol_improve[FF.vox_coords[:, 0], FF.vox_coords[:, 1], FF.vox_coords[:, 2]] =\
+                                                        tracks_rmse - model_rmse
+
+
+sl_idx = 49
+from mpl_toolkits.axes_grid1 import AxesGrid
+fig = plt.figure()
+fig.subplots_adjust(left=0.05, right=0.95)
+ax = AxesGrid(fig, 111,
+              nrows_ncols = (1, 3),
+              label_mode = "1",
+              share_all = True,
+              cbar_location="top",
+              cbar_mode="each",
+              cbar_size="10%",
+              cbar_pad="5%")
+
+ax[0].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
+im = ax[0].matshow(np.rot90(vol_model[sl_idx, :, :]), cmap=matplotlib.cm.hot)
+ax.cbar_axes[0].colorbar(im)
+ax[1].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
+im = ax[1].matshow(np.rot90(vol_tracks[sl_idx, :, :]), cmap=matplotlib.cm.hot)
+ax.cbar_axes[1].colorbar(im)
+ax[2].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
+im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.hot)
+ax.cbar_axes[2].colorbar(im)
+
+
+for lax in ax:
+    lax.set_xticks([])
+    lax.set_yticks([])
+
+fig.savefig("spatial_errors.png")
+
+"""
+
+.. figure:: spatial_errors.png
+   :align: center
+
+   **The spatial distribution of error and improvement **
 
 """
 
