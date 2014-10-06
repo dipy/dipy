@@ -11,6 +11,45 @@ cdef class TissueClassifier:
         pass
 
 
+cdef class BinaryTissueClassifier(TissueClassifier):
+    """
+    cdef:
+        double[:, :, :] metric_map
+    """
+
+    def __cinit__(self, metric_map):
+        self.interp_out_view = self.interp_out_double
+        self.metric_map = metric_map
+
+    @cython.boundscheck(False)
+    @cython.wraparound(False)
+    @cython.initializedcheck(False)
+    cpdef TissueClass check_point(self, double[::1] point):
+        cdef:
+            double result
+            int err
+            int voxel[3]
+
+        if point.shape[0] != 3:
+            raise ValueError("Point has wrong shape")
+
+        voxel[0] = int(point[0])
+        voxel[1] = int(point[1])
+        voxel[2] = int(point[2])
+
+        if (voxel[0] < 0 or voxel[0] > self.metric_map.shape[0]
+                or voxel[1] < 0 or voxel[1] > self.metric_map.shape[1]
+                or voxel[2] < 0 or voxel[2] > self.metric_map.shape[2]):
+            return OUTSIDEIMAGE
+
+        result = self.metric_map[voxel[0], voxel[1], voxel[2]]
+
+        if result > 0:
+            return TRACKPOINT
+        else:
+            return ENDPOINT
+
+
 cdef class ThresholdTissueClassifier(TissueClassifier):
     """
     # Declarations from tissue_classifier.pxd bellow
@@ -41,7 +80,8 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
             raise ValueError("Point has wrong shape")
         elif err != 0:
             # This should never happen
-            raise RuntimeError("Unexpected interpolation error (code:%i)" % err)
+            raise RuntimeError(
+                "Unexpected interpolation error (code:%i)" % err)
 
         result = self.interp_out_view[0]
 
@@ -94,7 +134,8 @@ cdef class ActTissueClassifier(TissueClassifier):
             raise ValueError("Point has wrong shape")
         elif include_err != 0 or exclude_err != 0:
             # This should never happen
-            raise RuntimeError("Unexpected interpolation error (code:%i)" % err)
+            raise RuntimeError(
+                "Unexpected interpolation error (code:%i)" % err)
 
         if include_result > 0.5:
             return ENDPOINT
