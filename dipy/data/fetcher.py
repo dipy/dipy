@@ -403,7 +403,7 @@ def fetch_stanford_t1():
     if not os.path.exists(file_loc):
         print('Downloading T1-weighted data (~ 1MB)...')
         _get_file_data(pjoin(folder, fname), url_t1)
-        check_md5(pjoin(folder, fname), md5)
+        check_md5(pjoin(folder, fname), file_md5)
 
         print('Done.')
         print('File copied in folder %s' % folder)
