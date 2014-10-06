@@ -598,11 +598,11 @@ def test_ssd_3d_gauss_newton():
     with each other and computing the jaccard index for all 31 common anatomical
     regions.
     '''
-    moving, static = get_synthetic_warped_circle(30)
-    moving[...,:8] = 0
-    moving[...,-1:-9:-1] = 0
-    static[...,:8] = 0
-    static[...,-1:-9:-1] = 0
+    moving, static = get_synthetic_warped_circle(35)
+    moving[...,:10] = 0
+    moving[...,-1:-11:-1] = 0
+    static[...,:10] = 0
+    static[...,-1:-11:-1] = 0
 
     #Create the SSD metric
     smooth = 4
@@ -626,16 +626,18 @@ def test_ssd_3d_gauss_newton():
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
-            np.array([312.22706983, 130.50323254, 40.9138502, 7.99884109,
-                      2.70483981, 12.57195768, 4.53108829, 19.97136274,
-                      16.00919265, 23.4709158, 232.28744389, 70.12667026,
-                      111.5899606, 72.52501955, 134.83781298])
+            np.array([348.32047209927373, 143.49111863234222, 44.328151771258206,
+                      8.759564367010988, 3.1378191742723662, 14.846951961939153,
+                      6.405154727081836, 20.437036950018083, 17.399044912417597,
+                      49.072929423423496, 269.2553956858318, 80.72079256138973,
+                      200.242742072974, 68.21238489882822, 208.28730597575378])
     else:
         expected_profile = \
-            np.array([312.22709468, 130.50322622, 40.9138432, 7.99883794,
-                      2.70483908, 12.57193387, 4.53105925, 19.97103534,
-                      16.00926852, 23.47057759, 232.28900544, 70.12667393,
-                      111.59099374, 72.52270394, 134.8433052])
+            np.array([348.32049916992855, 143.49111631974688, 44.328145727486174,
+                      8.759562612294948, 3.137819214539283, 14.846929648490525,
+                      6.405154001052728, 20.437123731745928, 17.39892098642616,
+                      49.07339619667625, 269.2533380585498, 80.72162511785703,
+                      200.24505477294477, 68.21183884286609, 208.29025925025073])
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
@@ -735,7 +737,7 @@ def test_cc_3d():
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
-def test_em_3d():
+def test_em_3d_gauss_newton():
     r'''
     Register a stack of circles ('cylinder') before and after warping them with
     a synthetic diffeomorphism. This test
@@ -794,7 +796,7 @@ def test_em_3d():
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
-def test_em_2d():
+def test_em_2d_gauss_newton():
     r'''
     Register a circle to itself after warping it under a synthetic invertible
     map. This test is intended to detect regressions only: we saved the energy
@@ -868,7 +870,7 @@ def test_em_3d_demons():
         3, smooth, inner_iter, q_levels, double_gradient, iter_type)
 
     #Create the optimizer
-    level_iters = [10, 5, 2]
+    level_iters = [10, 5]
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
@@ -882,20 +884,18 @@ def test_em_3d_demons():
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
-            np.array([3.8476570399095724, 3.9845448366804606, 5.142954868582299,
-                      3.2300946386704106, 4.0908221261066595, 2.8001516750613096,
-                      4.7311576997984695, 4.704692873807648, 4.966715240681694,
-                      4.1772735733946975, 144.66774454270058, 130.2559150805929,
-                      127.23665153889797, 141.66197011386612, 135.85462727565175,
-                      4102.318977259695, 4518.495003088316])
+            np.array([144.0369470764622, 122.39543007604394, 112.43783718421119,
+                      85.46819602604248, 101.15549228031932, 119.62429965589826,
+                      124.00100190950647, 118.94404608675168, 112.57666071129853,
+                      117.84424645441413, 4470.2719430621, 4138.201850019068,
+                      4007.225585554024, 4074.8853855654797, 3833.6272345908865])
     else:
         expected_profile = \
-            np.array([3.8476569399122584, 3.9845447904988256, 5.142951076431905,
-                      3.2300949799872565, 4.0908209147358265, 2.800152307358192,
-                      4.731155900590128, 4.704693011809457, 4.966714840788578,
-                      4.177273788957802, 144.6677266064401, 130.25367706672083,
-                      127.35696434126629, 139.95380656675474, 130.23767480481683,
-                      4615.774827111851, 4400.268589119358])
+            np.array([144.03695786872666, 121.73922862297613, 107.41132697303448,
+                      90.70731102557508, 97.4295175632117, 112.78404966709469,
+                      103.29910157963684, 111.83865866152108, 121.26265581989485,
+                      118.19913094423933, 4222.003181977351, 4418.042311441615,
+                      4508.671160627819, 4761.251133428944, 4292.8507317299245])
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
@@ -955,7 +955,7 @@ if __name__=='__main__':
     test_ssd_3d_gauss_newton()
     test_cc_2d()
     test_cc_3d()
-    test_em_2d()
-    test_em_3d()
+    test_em_2d_gauss_newton()
+    test_em_3d_gauss_newton()
     test_em_3d_demons()
     test_em_2d_demons()
