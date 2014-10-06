@@ -221,7 +221,7 @@ First, we can compare the overall distribution of errors between these two
 alternative models of the ROI. We show the distribution of differences in error
 (improvement through model fitting, relative to the baseline model). Here,
 positive values denote an improvement in error with model fit, relative to
-without the model fit
+without the model fit.
 
 """
 
@@ -237,6 +237,8 @@ ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
      horizontalalignment='left',
      verticalalignment='center', transform=ax.transAxes)
 
+ax.xlabel('RMS Error')
+ax.ylabel('# voxels')
 fig.savefig('error_histograms.png')
 
 

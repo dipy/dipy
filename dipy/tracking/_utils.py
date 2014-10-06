@@ -1,7 +1,6 @@
 from __future__ import division, print_function, absolute_import
 """This is a helper module for dipy.tracking.utils"""
 
-from functools import wraps
 from warnings import warn
 import numpy as np
 
