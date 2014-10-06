@@ -33,9 +33,9 @@ cdef class BinaryTissueClassifier(TissueClassifier):
         if point.shape[0] != 3:
             raise ValueError("Point has wrong shape")
 
-        voxel[0] = int(point[0])
-        voxel[1] = int(point[1])
-        voxel[2] = int(point[2])
+        voxel[0] = int(round(point[0]))
+        voxel[1] = int(round(point[1]))
+        voxel[2] = int(round(point[2]))
 
         if (voxel[0] < 0 or voxel[0] > self.metric_map.shape[0]
                 or voxel[1] < 0 or voxel[1] > self.metric_map.shape[1]
