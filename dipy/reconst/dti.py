@@ -952,7 +952,7 @@ class TensorFit(object):
             K., & Harel, N. (2010). Reconstruction of the orientation
             distribution function in single- and multiple-shell q-ball imaging
             within constant solid angle. Magnetic Resonance in Medicine, 64(2),
-            554–566. doi:DOI: 10.1002/mrm.22365
+            554-566. doi:DOI: 10.1002/mrm.22365
 
         .. [Descoteaux2008] Descoteaux, M. (2008). PhD Thesis: High Angular
            Resolution Diffusion MRI: from Local Estimation to Segmentation and
