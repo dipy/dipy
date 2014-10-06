@@ -27,7 +27,7 @@ def iterate_residual_field_ssd_2d(delta_field, sigmasq_field, grad, target,
     for r in range(nrows):
         for c in range(ncols):
             delta = delta_field[r, c]
-            sigmasq = sigmasq_field[r, c] if sigmasq_field != None else 1
+            sigmasq = sigmasq_field[r, c] if sigmasq_field is not None else 1
             #This has to be done inside the neste loops because
             #some d[...] may have been previously modified
             nn = 0
@@ -81,7 +81,7 @@ def iterate_residual_field_ssd_3d(delta_field, sigmasq_field, grad, target,
             for c in range(ncols):
                 g = grad[s, r, c]
                 delta = delta_field[s, r, c]
-                sigmasq = sigmasq_field[s, r, c] if sigmasq_field != None else 1
+                sigmasq = sigmasq_field[s, r, c] if sigmasq_field is not None else 1
                 nn = 0
                 y[:] = 0
                 for dSlice, dRow, dCol in [(-1, 0, 0), (0, -1, 0), (0, 0, 1),
@@ -183,7 +183,7 @@ def test_compute_residual_displacement_field_ssd_2d():
     iut = ssd.compute_residual_displacement_field_ssd_2d
 
     #In the first iteration we test the case target=None
-    #In the second iteration, target != None
+    #In the second iteration, target is not None
     target = None
     rtol = 1e-9
     atol = 1e-4
@@ -225,7 +225,7 @@ def test_compute_residual_displacement_field_ssd_2d():
         assert_allclose(actual, expected, rtol = rtol, atol = atol)
         actual = np.ndarray(actual.shape, dtype=floating) #destroy previous result
 
-        # Test residual field computation starting with residual != None
+        # Test residual field computation starting with residual is not None
         iut(delta_field, sigma_field, grad_G.astype(floating),
             target, lambda_param, d, actual)
         assert_allclose(actual, expected, rtol = rtol, atol = atol)
@@ -313,7 +313,7 @@ def test_compute_residual_displacement_field_ssd_3d():
     iut = ssd.compute_residual_displacement_field_ssd_3d
 
     #In the first iteration we test the case target=None
-    #In the second iteration, target != None
+    #In the second iteration, target is not None
     target = None
     rtol = 1e-9
     atol = 1e-4
@@ -355,7 +355,7 @@ def test_compute_residual_displacement_field_ssd_3d():
         assert_allclose(actual, expected, rtol = rtol, atol = atol)
         actual = np.ndarray(actual.shape, dtype=floating) #destroy previous result
 
-        # Test residual field computation starting with residual != None
+        # Test residual field computation starting with residual is not None
         iut(delta_field, sigma_field, grad_G.astype(floating),
             target, lambda_param, d, actual)
         assert_allclose(actual, expected, rtol = rtol, atol = atol)

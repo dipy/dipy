@@ -631,7 +631,7 @@ class EMMetric(SimilarityMetric):
             to generate the current static image
         """
         self.static_image_mask = (original_static_image>0).astype(np.int32)
-        if transformation == None:
+        if transformation is None:
             return
         shape = np.array(self.static_image.shape, dtype = np.int32)
         affine = self.static_affine
@@ -657,7 +657,7 @@ class EMMetric(SimilarityMetric):
             to generate the current moving image
         """
         self.moving_image_mask = (original_moving_image>0).astype(np.int32)
-        if transformation == None:
+        if transformation is None:
             return
         shape = np.array(self.moving_image.shape, dtype = np.int32)
         affine = self.moving_affine
@@ -943,7 +943,7 @@ def v_cycle_2d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     sub_residual = np.array(vfu.downsample_displacement_field_2d(residual))
     del residual
     subsigma_sq_field = None
-    if sigma_sq_field != None:
+    if sigma_sq_field is not None:
         subsigma_sq_field = vfu.downsample_scalar_field_2d(sigma_sq_field)
     subdelta_field = vfu.downsample_scalar_field_2d(delta_field)
 
@@ -1039,7 +1039,7 @@ def v_cycle_3d(n, k, delta_field, sigma_sq_field, gradient_field, target,
     sub_residual = np.array(vfu.downsample_displacement_field_3d(residual))
     del residual
     subsigma_sq_field = None
-    if sigma_sq_field != None:
+    if sigma_sq_field is not None:
         subsigma_sq_field = vfu.downsample_scalar_field_3d(sigma_sq_field)
     subdelta_field = vfu.downsample_scalar_field_3d(delta_field)
     subgradient_field = np.array(

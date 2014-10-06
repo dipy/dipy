@@ -834,5 +834,4 @@ def compute_ssd_demons_step_3d(floating[:,:,:] delta_field,
                                            gradient_moving[k, i, j, 1] / den)
                         out[k, i, j, 2] = (delta *
                                            gradient_moving[k, i, j, 2] / den)
-
     return out, energy

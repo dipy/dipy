@@ -82,7 +82,7 @@ def get_direction_and_spacings(affine, dim):
         the scaling component (voxel size) of the matrix
 
     """
-    if affine == None:
+    if affine is None:
         return np.eye(dim), np.ones(dim)
     dim = affine.shape[1]-1
     #Temporary hack: get the zooms by building a nifti image
@@ -148,7 +148,7 @@ class ScaleSpace(object):
         #properties at the first level of the scale space
         self.images = [img.astype(floating)]
         self.domain_shapes = [input_size.astype(np.int32)]
-        if input_spacing == None:
+        if input_spacing is None:
             input_spacing = np.ones((self.dim,), dtype = np.int32)
         self.spacings = [input_spacing]
         self.scalings = [np.ones(self.dim)]

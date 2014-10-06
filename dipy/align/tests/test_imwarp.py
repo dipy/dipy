@@ -546,7 +546,11 @@ def test_ssd_3d_demons():
     annotated T1 brain MRI database IBSR with each other and computing the
     jaccard index for all 31 common anatomical regions.
     '''
-    moving, static = get_synthetic_warped_circle(20)
+    moving, static = get_synthetic_warped_circle(30)
+    moving[...,:8] = 0
+    moving[...,-1:-9:-1] = 0
+    static[...,:8] = 0
+    static[...,-1:-9:-1] = 0
 
     #Create the SSD metric
     smooth = 4
@@ -569,16 +573,16 @@ def test_ssd_3d_demons():
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
-            np.array([403.94219823, 200.8066665, 78.60994075, 28.40552733,
-                      29.59849702, 27.44976507, 38.70837168, 66.00010368,
-                      35.55971129, 49.25756485, 610.46355352, 419.18156779,
-                      326.66225592, 240.42422458, 209.81398265])
+            np.array([312.22706987, 154.65556885, 53.88594419, 9.22626825,
+                      36.50370933, 13.54829978, 49.57619437, 15.71122527,
+                      53.45897119, 15.62018739, 521.95785712, 158.16217928,
+                      182.49116432, 144.91081752, 176.6810387])
     else:
         expected_profile = \
-            np.array([403.9422303, 200.8114702, 78.62945242, 28.40887145,
-                      29.35204907, 27.39622395, 37.617277, 67.83700239,
-                      34.85551021, 49.97279291, 605.76951896, 420.42527537,
-                      326.62199106, 239.87262929, 207.83853262])
+            np.array([312.22709468, 154.65706498, 53.8856324, 8.90160898,
+                      34.91911552, 12.66043296, 49.61341791, 15.14198327,
+                      52.25467529, 18.88243845, 490.48088231, 149.29027701,
+                      192.26219053, 137.5291187, 187.2795753])
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
@@ -594,7 +598,11 @@ def test_ssd_3d_gauss_newton():
     with each other and computing the jaccard index for all 31 common anatomical
     regions.
     '''
-    moving, static = get_synthetic_warped_circle(20)
+    moving, static = get_synthetic_warped_circle(30)
+    moving[...,:8] = 0
+    moving[...,-1:-9:-1] = 0
+    static[...,:8] = 0
+    static[...,-1:-9:-1] = 0
 
     #Create the SSD metric
     smooth = 4
@@ -618,16 +626,16 @@ def test_ssd_3d_gauss_newton():
     energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
-            np.array([403.94219818, 169.02213727, 67.22095211, 39.82437774,
-                      33.72433126, 31.11450203, 29.85684452, 29.38312931,
-                      29.02167807, 28.81891979, 401.77416376, 214.0167368,
-                      132.21580526, 85.8190973, 72.14474572])
+            np.array([312.22706983, 130.50323254, 40.9138502, 7.99884109,
+                      2.70483981, 12.57195768, 4.53108829, 19.97136274,
+                      16.00919265, 23.4709158, 232.28744389, 70.12667026,
+                      111.5899606, 72.52501955, 134.83781298])
     else:
         expected_profile = \
-            np.array([403.9422303, 169.02213412, 67.22094424, 39.82437562,
-                      33.72432917, 31.11450037, 29.85684345, 29.38312832,
-                      29.02167729, 28.81891958, 401.77416642, 214.01674697,
-                      132.21579397, 85.81909514, 72.14472383])
+            np.array([312.22709468, 130.50322622, 40.9138432, 7.99883794,
+                      2.70483908, 12.57193387, 4.53105925, 19.97103534,
+                      16.00926852, 23.47057759, 232.28900544, 70.12667393,
+                      111.59099374, 72.52270394, 134.8433052])
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
@@ -641,7 +649,6 @@ def test_cc_2d():
     '''
 
     moving, static = get_synthetic_warped_circle(1)
-
     #Configure the metric
     sigma_diff = 3.0
     radius = 4
@@ -743,7 +750,11 @@ def test_em_3d():
     a change in the energy profile should be carefully validated to ensure no
     accuracy loss.
     '''
-    moving, static = moving, static = get_synthetic_warped_circle(20)
+    moving, static = get_synthetic_warped_circle(30)
+    moving[...,:8] = 0
+    moving[...,-1:-9:-1] = 0
+    static[...,:8] = 0
+    static[...,-1:-9:-1] = 0
 
     #Create the EM metric
     smooth=25.0
@@ -756,7 +767,7 @@ def test_em_3d():
         3, smooth, inner_iter, q_levels, double_gradient, iter_type)
 
     #Create the optimizer
-    level_iters = [10, 5, 2]
+    level_iters = [10, 5]
     opt_tol = 1e-4
     inv_iter = 20
     inv_tol = 1e-3
@@ -767,23 +778,19 @@ def test_em_3d():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)*1e-3
+    energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
-            np.array([4.35425307e-03, 2.81762613e-03, 3.44976447e-03,
-                      2.63883710e-03, 2.18573761e-03, 2.26692558e-03,
-                      1.69988204e-03, 1.72303927e-03, 1.77936453e-03,
-                      1.27603824e-03, 7.53881643e-02, 5.19648894e-02,
-                      4.31822242e-02, 3.77717568e-02, 3.74956461e-02,
-                      1.37491246e+00, 1.19526426e+00])
+            np.array([144.03694724, 63.06898905, 51.84577681, 39.75409677,
+                      32.10342869, 44.84663951, 38.48587153, 36.64351228, 
+                      37.14853803, 40.07766093, 1686.24351443, 1500.19633766,
+                      1302.04852831, 1148.19549508, 1032.820053])
     else:
         expected_profile = \
-            np.array([4.35425305e-03, 2.81762627e-03, 3.44976474e-03,
-                      2.63883785e-03, 2.18573783e-03, 2.26692609e-03,
-                      1.69988290e-03, 1.72304074e-03, 1.77960754e-03,
-                      1.29333714e-03, 7.60613698e-02, 4.98813905e-02,
-                      4.29851878e-02, 3.93907998e-02, 3.68902537e-02,
-                      1.34584485e+00, 1.13496660e+00])
+            np.array([144.03695787, 63.06894122, 51.84575143, 39.75308705,
+                      32.13062096, 44.15214831, 40.71952511, 37.26523679,
+                      37.86654915, 34.92844873, 1644.56890565, 1408.15872151,
+                      1274.1339093, 1131.38037004, 1004.71854514])
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
@@ -844,7 +851,11 @@ def test_em_3d_demons():
     a change in the energy profile should be carefully validated to ensure no
     accuracy loss.
     '''
-    moving, static = moving, static = get_synthetic_warped_circle(20)
+    moving, static = get_synthetic_warped_circle(30)
+    moving[...,:8] = 0
+    moving[...,-1:-9:-1] = 0
+    static[...,:8] = 0
+    static[...,-1:-9:-1] = 0
 
     #Create the EM metric
     smooth=25.0
@@ -868,23 +879,23 @@ def test_em_3d_demons():
     mapping = optimizer.optimize(static, moving, None)
     m = optimizer.get_map()
     assert_equal(mapping, m)
-    energy_profile = np.array(optimizer.full_energy_profile)*1e-3
+    energy_profile = np.array(optimizer.full_energy_profile)
     if floating is np.float32:
         expected_profile = \
-            np.array([4.35425306e-03, 4.46048377e-03, 5.82471155e-03,
-                      6.52520797e-03, 7.02286926e-03, 6.81839603e-03,
-                      5.53023014e-03, 7.42091179e-03, 8.07357917e-03,
-                      6.66219429e-03, 2.28044452e-01, 1.97172282e-01,
-                      2.03306243e-01, 1.90102303e-01, 2.01984702e-01,
-                      4.49413205e+00, 4.69268025e+00])
+            np.array([3.8476570399095724, 3.9845448366804606, 5.142954868582299,
+                      3.2300946386704106, 4.0908221261066595, 2.8001516750613096,
+                      4.7311576997984695, 4.704692873807648, 4.966715240681694,
+                      4.1772735733946975, 144.66774454270058, 130.2559150805929,
+                      127.23665153889797, 141.66197011386612, 135.85462727565175,
+                      4102.318977259695, 4518.495003088316])
     else:
         expected_profile = \
-            np.array([4.35425305e-03, 4.46048535e-03, 5.82471175e-03,
-                      6.52515335e-03, 7.02288072e-03, 6.92447278e-03,
-                      5.65085423e-03, 7.03833855e-03, 7.49666397e-03,
-                      5.88727216e-03, 2.14626253e-01, 1.99880645e-01,
-                      2.01751050e-01, 1.93787105e-01, 2.16976524e-01,
-                      4.34278547e+00, 4.55366914e+00])
+            np.array([3.8476569399122584, 3.9845447904988256, 5.142951076431905,
+                      3.2300949799872565, 4.0908209147358265, 2.800152307358192,
+                      4.731155900590128, 4.704693011809457, 4.966714840788578,
+                      4.177273788957802, 144.6677266064401, 130.25367706672083,
+                      127.35696434126629, 139.95380656675474, 130.23767480481683,
+                      4615.774827111851, 4400.268589119358])
     assert_array_almost_equal(energy_profile, expected_profile, decimal=6)
 
 
