@@ -22,6 +22,7 @@ if __name__ == '__main__':
     """
     Then, let's load the necessary modules.
     """
+    
     import numpy as np
 
     from dipy.reconst.dti import TensorModel, fractional_anisotropy
