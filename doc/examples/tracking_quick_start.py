@@ -10,8 +10,19 @@ reconstructions and then generate deterministic streamlines using the fiber
 directions (peaks) from CSD and fractional anisotropic (FA) as a
 stopping criterion.
 
-First, let's load the necessary modules.
+First, we add support for multiprocessing when a program has been frozen to 
+produce a Windows executable. This needs to be done once, straight after 
+the if __name__ == '__main__' line of the main module.
 """
+
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+
+"""
+Then, let's load the necessary modules.
+"""
+import numpy as np
 
 from dipy.reconst.dti import TensorModel, fractional_anisotropy
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,

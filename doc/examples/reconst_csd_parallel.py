@@ -8,6 +8,16 @@ This example shows how to use parallelism (multiprocessing) using
 process. For this example will we use the same initial steps
 as we used in :ref:`example_reconst_csd`.
 
+First, we add support for multiprocessing when a program has been frozen to 
+produce a Windows executable. This needs to be done once, straight after 
+the if __name__ == '__main__' line of the main module.
+"""
+
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
+
+"""
 Import modules, fetch and read data, apply the mask and calculate the response
 function.
 """
@@ -32,8 +42,6 @@ response, ratio = auto_response(gtab, maskdata, roi_radius=10, fa_thr=0.7)
 
 data = maskdata[:, :, 33:37]
 mask = mask[:, :, 33:37]
-
-print('data.shape (%d, %d, %d, %d)' % data.shape)
 
 """
 Now we are ready to import the CSD model and fit the datasets.
