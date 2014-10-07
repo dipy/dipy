@@ -8,102 +8,110 @@ This example shows how to use parallelism (multiprocessing) using
 process. For this example will we use the same initial steps
 as we used in :ref:`example_reconst_csd`.
 
-Import modules, fetch and read data, apply the mask and calculate the response
-function.
+First, we add support for multiprocessing when a program has been frozen to 
+produce a Windows executable. This needs to be done once, straight after 
+the if __name__ == '__main__' line of the main module.
 """
 
-import multiprocessing
-import numpy as np
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
 
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi
+    """
+    Import modules, fetch and read data, apply the mask and calculate the response
+    function.
+    """
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
-data = img.get_data()
+    import multiprocessing
+    import numpy as np
 
-from dipy.segment.mask import median_otsu
+    from dipy.data import fetch_stanford_hardi, read_stanford_hardi
 
-maskdata, mask = median_otsu(data, 3, 1, False,
-                             vol_idx=range(10, 50), dilate=2)
+    fetch_stanford_hardi()
+    img, gtab = read_stanford_hardi()
+    data = img.get_data()
 
-from dipy.reconst.csdeconv import auto_response
+    from dipy.segment.mask import median_otsu
 
-response, ratio = auto_response(gtab, maskdata, roi_radius=10, fa_thr=0.7)
+    maskdata, mask = median_otsu(data, 3, 1, False,
+                                 vol_idx=range(10, 50), dilate=2)
 
-data = maskdata[:, :, 33:37]
-mask = mask[:, :, 33:37]
+    from dipy.reconst.csdeconv import auto_response
 
-print('data.shape (%d, %d, %d, %d)' % data.shape)
+    response, ratio = auto_response(gtab, maskdata, roi_radius=10, fa_thr=0.7)
 
-"""
-Now we are ready to import the CSD model and fit the datasets.
-"""
+    data = maskdata[:, :, 33:37]
+    mask = mask[:, :, 33:37]
 
-from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
+    """
+    Now we are ready to import the CSD model and fit the datasets.
+    """
 
-csd_model = ConstrainedSphericalDeconvModel(gtab, response)
+    from dipy.reconst.csdeconv import ConstrainedSphericalDeconvModel
 
-from dipy.data import get_sphere
+    csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
-sphere = get_sphere('symmetric724')
+    from dipy.data import get_sphere
 
-"""
-Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
-parameter called ``parallel`` which allows for the voxels to be processed in
-parallel. If ``nbr_processes`` is None it will figure out automatically the
-number of CPUs available in your system. Alternatively, you can set
-``nbr_processes`` manually. Here, we show an example were we compare the
-duration of execution with or without parallelism.
-"""
+    sphere = get_sphere('symmetric724')
 
-import time
-from dipy.reconst.peaks import peaks_from_model
+    """
+    Compute the CSD-based ODFs using ``peaks_from_model``. This function has a
+    parameter called ``parallel`` which allows for the voxels to be processed in
+    parallel. If ``nbr_processes`` is None it will figure out automatically the
+    number of CPUs available in your system. Alternatively, you can set
+    ``nbr_processes`` manually. Here, we show an example were we compare the
+    duration of execution with or without parallelism.
+    """
 
-start_time = time.time()
-csd_peaks_parallel = peaks_from_model(model=csd_model,
-                                      data=data,
-                                      sphere=sphere,
-                                      relative_peak_threshold=.5,
-                                      min_separation_angle=25,
-                                      mask=mask,
-                                      return_sh=True,
-                                      return_odf=False,
-                                      normalize_peaks=True,
-                                      npeaks=5,
-                                      parallel=True,
-                                      nbr_processes=None)
+    import time
+    from dipy.reconst.peaks import peaks_from_model
 
-time_parallel = time.time() - start_time
-print("peaks_from_model using " + str(multiprocessing.cpu_count())
-      + " process ran in :" + str(time_parallel) + " seconds")
+    start_time = time.time()
+    csd_peaks_parallel = peaks_from_model(model=csd_model,
+                                          data=data,
+                                          sphere=sphere,
+                                          relative_peak_threshold=.5,
+                                          min_separation_angle=25,
+                                          mask=mask,
+                                          return_sh=True,
+                                          return_odf=False,
+                                          normalize_peaks=True,
+                                          npeaks=5,
+                                          parallel=True,
+                                          nbr_processes=None)
 
-"""
-``peaks_from_model`` using 8 processes ran in :114.425682068 seconds
-"""
+    time_parallel = time.time() - start_time
+    print("peaks_from_model using " + str(multiprocessing.cpu_count())
+          + " process ran in :" + str(time_parallel) + " seconds")
 
-start_time = time.time()
-csd_peaks = peaks_from_model(model=csd_model,
-                             data=data,
-                             sphere=sphere,
-                             relative_peak_threshold=.5,
-                             min_separation_angle=25,
-                             mask=mask,
-                             return_sh=True,
-                             return_odf=False,
-                             normalize_peaks=True,
-                             npeaks=5,
-                             parallel=False,
-                             nbr_processes=None)
+    """
+    ``peaks_from_model`` using 8 processes ran in :114.425682068 seconds
+    """
 
-time_single = time.time() - start_time
-print("peaks_from_model ran in :" + str(time_single) + " seconds")
+    start_time = time.time()
+    csd_peaks = peaks_from_model(model=csd_model,
+                                 data=data,
+                                 sphere=sphere,
+                                 relative_peak_threshold=.5,
+                                 min_separation_angle=25,
+                                 mask=mask,
+                                 return_sh=True,
+                                 return_odf=False,
+                                 normalize_peaks=True,
+                                 npeaks=5,
+                                 parallel=False,
+                                 nbr_processes=None)
 
-"""
-``peaks_from_model`` ran in :242.772505999 seconds
-"""
+    time_single = time.time() - start_time
+    print("peaks_from_model ran in :" + str(time_single) + " seconds")
 
-print("Speedup factor : " + str(time_single / time_parallel))
+    """
+    ``peaks_from_model`` ran in :242.772505999 seconds
+    """
 
-"""
-Speedup factor : 2.12166099088
-"""
+    print("Speedup factor : " + str(time_single / time_parallel))
+
+    """
+    Speedup factor : 2.12166099088
+    """
