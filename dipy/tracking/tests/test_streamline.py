@@ -214,8 +214,9 @@ def test_set_number_of_points():
         assert_array_almost_equal(modified_streamlines_cython[i], modified_streamline_python)
 
     # Test streamlines with mixed dtype
-    streamlines_mixed_dtype = [streamline, streamline.astype(np.float64)]
-    assert_raises(ValueError, dipystreamline.set_number_of_points, streamlines_mixed_dtype, nb_points)
+    streamlines_mixed_dtype = [streamline, streamline.astype(np.float64), streamline.astype(np.int32), streamline.astype(np.int64)]
+    nb_points_mixed_dtype = map(len, dipystreamline.set_number_of_points(streamlines_mixed_dtype, nb_points))
+    assert_array_equal(nb_points_mixed_dtype, [nb_points]*len(streamlines_mixed_dtype))
 
     # Test streamlines with differente shape
     modified_streamlines_cython = dipystreamline.set_number_of_points(heterogeneous_streamlines, nb_points)
@@ -287,8 +288,9 @@ def test_length():
         assert_array_almost_equal(length_streamlines_cython[i], length_streamline_python)
 
     # Test streamlines having mixed dtype
-    streamlines_mixed_dtype = [streamline, streamline.astype(np.float64)]
-    assert_raises(ValueError, dipystreamline.length, streamlines_mixed_dtype)
+    streamlines_mixed_dtype = [streamline, streamline.astype(np.float64), streamline.astype(np.int32), streamline.astype(np.int64)]
+    lengths_mixed_dtype = [dipystreamline.length(s) for s in streamlines_mixed_dtype]
+    assert_array_equal(dipystreamline.length(streamlines_mixed_dtype), lengths_mixed_dtype)
 
     # Test streamlines with differente shape
     length_streamlines_cython = dipystreamline.length(heterogeneous_streamlines)
