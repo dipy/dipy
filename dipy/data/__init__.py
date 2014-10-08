@@ -371,7 +371,6 @@ def three_shells_voxels(xmin,xmax,ymin,ymax,zmin,zmax):
     return data, affine, gtab
 
 
-<<<<<<< HEAD
 dipy_cmaps = None
 def get_cmap(name):
     """Makes a callable, similar to maptlotlib.pyplot.get_cmap"""
@@ -398,11 +397,11 @@ def get_cmap(name):
         return rgba
 
     return simple_cmap
-=======
+
 def two_cingulum_bundles():
     fname = get_data('cb_2')
     res = np.load(fname)
     cb1 = relist_streamlines(res['points'], res['offsets'])
     cb2 = relist_streamlines(res['points2'], res['offsets2'])
     return cb1, cb2
->>>>>>> bundle_registration
+
