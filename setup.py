@@ -90,7 +90,7 @@ for modulename, other_sources, language in (
     ('dipy.align.vector_fields', [], 'c'),
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),
-    ('dipy.align.crosscorr', [], 'c')
+    ('dipy.align.crosscorr', [], 'c'),
     ('dipy.align.bmd', [], 'c')):
 
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
