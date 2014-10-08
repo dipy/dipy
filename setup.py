@@ -77,6 +77,7 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
+
 for modulename, other_sources, language in (
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
@@ -90,7 +91,8 @@ for modulename, other_sources, language in (
     ('dipy.align.sumsqdiff', [], 'c'),
     ('dipy.align.expectmax', [], 'c'),
     ('dipy.align.crosscorr', [], 'c')
-    ):
+    ('dipy.align.bmd', [] 'c')):
+
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
@@ -182,7 +184,10 @@ def main(**extra_args):
                           'dipy.sims',
                           'dipy.sims.tests',
                           'dipy.denoise',
-                          'dipy.denoise.tests'],
+                          'dipy.denoise.tests',
+                          'dipy.bundle',
+                          'dipy.bundle.tests'],
+
           ext_modules = EXTS,
           # The package_data spec has no effect for me (on python 2.6) -- even
           # changing to data_files doesn't get this stuff included in the source
