@@ -215,7 +215,7 @@ def test_set_number_of_points():
 
     # Test streamlines with mixed dtype
     streamlines_mixed_dtype = [streamline, streamline.astype(np.float64), streamline.astype(np.int32), streamline.astype(np.int64)]
-    nb_points_mixed_dtype = map(len, dipystreamline.set_number_of_points(streamlines_mixed_dtype, nb_points))
+    nb_points_mixed_dtype = [len(s) for s in dipystreamline.set_number_of_points(streamlines_mixed_dtype, nb_points)]
     assert_array_equal(nb_points_mixed_dtype, [nb_points]*len(streamlines_mixed_dtype))
 
     # Test streamlines with differente shape
