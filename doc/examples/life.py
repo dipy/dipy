@@ -237,8 +237,8 @@ ax.text(0.2, 0.8,'Median RMSE, LiFE: %.2f' % np.median(model_rmse),
      horizontalalignment='left',
      verticalalignment='center', transform=ax.transAxes)
 
-ax.xlabel('RMS Error')
-ax.ylabel('# voxels')
+ax.set_xlabel('RMS Error')
+ax.set_ylabel('# voxels')
 fig.savefig('error_histograms.png')
 
 
@@ -291,7 +291,7 @@ ax[1].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
 im = ax[1].matshow(np.rot90(vol_tracks[sl_idx, :, :]), cmap=matplotlib.cm.hot)
 ax.cbar_axes[1].colorbar(im)
 ax[2].matshow(np.rot90(t1_data[sl_idx, :, :]), cmap=matplotlib.cm.bone)
-im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.hot)
+im = ax[2].matshow(np.rot90(vol_improve[sl_idx, :, :]), cmap=matplotlib.cm.RdBu)
 ax.cbar_axes[2].colorbar(im)
 
 
