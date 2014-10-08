@@ -91,10 +91,15 @@ DSI with Deconvolution
 
 - :ref:`example_reconst_dsid`
 
-Model Comparison with K-fold Cross-Validation
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+-------------------------------------
+Statistical evaluation and validation
+-------------------------------------
 
 - :ref:`example_kfold_xval`
+- :ref: `example_life`
+
 
 --------------
 Fiber tracking

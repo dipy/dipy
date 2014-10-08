@@ -41,7 +41,7 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_isbi2013_2shell,
                                read_stanford_labels,
                                fetch_syn_data,
-                               read_syn_data)
+                               read_syn_data,
                                fetch_stanford_t1,
 	                       read_stanford_t1)
 
