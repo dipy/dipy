@@ -53,7 +53,7 @@ def test_quickbundles_2D():
     # Theorically using a threshold above the following value will not
     # produce expected results.
     threshold = np.sqrt(2*(10**2))-np.sqrt(2)
-    metric = dipymetric.Euclidean(dipymetric.CenterOfMass())
+    metric = dipymetric.SumPointwiseEuclideanMetric(dipymetric.CenterOfMassFeature())
     ordering = np.arange(len(data))
     for i in range(100):
         rng.shuffle(ordering)
@@ -81,15 +81,22 @@ def test_quickbundles_2D():
 
 
 def test_quickbundles_streamlines():
-    metric = dipymetric.Euclidean(dipymetric.CenterOfMass())
+    metric = dipymetric.SumPointwiseEuclideanMetric(dipymetric.CenterOfMassFeature())
     qb = QuickBundles(threshold=2*threshold, metric=metric)
 
     clusters = qb.cluster(data)
     assert_array_equal(list(itertools.chain(*clusters)), list(itertools.chain(*clusters_truth)))
 
+    # Test
+    for datum in data:
+        datum.setflags()
+
+    clusters = qb.cluster(data)
+
 
 def test_quickbundles_with_not_order_invariant_metric():
-    qb = QuickBundles(threshold=np.inf, metric=dipymetric.MDF())
+    metric = dipymetric.AveragePointwiseEuclideanMetric()
+    qb = QuickBundles(threshold=np.inf, metric=metric)
 
     streamline = np.arange(10*3, dtype=dtype).reshape((-1, 3))
     streamlines = [streamline, streamline[::-1]]

@@ -14,6 +14,7 @@ cdef extern from "stdlib.h" nogil:
     void *realloc(void *ptr, size_t elsize)
     void *memset(void *ptr, int value, size_t num)
 
+DEF biggest_double = 1.7976931348623157e+308  # np.finfo('f8').max
 DEF biggest_float = 3.4028235e+38  # np.finfo('f4').max
 DEF biggest_int = 2147483647  # np.iinfo('i4').max
 
@@ -271,7 +272,7 @@ cdef class ClusterMapCentroid(ClusterMap):
         self.c_add(id_cluster, id_features, features)
 
 
-cpdef quickbundles(streamlines, Metric metric, float threshold=10., int max_nb_clusters=biggest_int, ordering=None):
+cpdef quickbundles(streamlines, Metric metric, double threshold=10., int max_nb_clusters=biggest_int, ordering=None):
     if ordering is None:
         ordering = np.arange(len(streamlines), dtype="int32")
 
@@ -281,7 +282,7 @@ cpdef quickbundles(streamlines, Metric metric, float threshold=10., int max_nb_c
     threshold = max(threshold, 0)
 
     dtype = streamlines[0].dtype
-    features_shape = metric.infer_features_shape(streamlines[0])
+    features_shape = metric.feature_type.infer_shape(streamlines[0])
     cdef:
         int idx
         ClusterMapCentroid clusters = ClusterMapCentroid(features_shape)
@@ -289,21 +290,24 @@ cpdef quickbundles(streamlines, Metric metric, float threshold=10., int max_nb_c
         Features features_s_i_flip = np.empty(features_shape, dtype=dtype)
 
     for idx in ordering:
+        writeable = streamlines[idx].flags.writeable
+        streamlines[idx].setflags(write=True)
         _quickbundles(streamlines[idx], idx, metric, clusters, features_s_i, features_s_i_flip, threshold, max_nb_clusters)
+        streamlines[idx].setflags(write=writeable)
 
     return clusters
 
 
-cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, ClusterMapCentroid clusters, Features features_s_i, Features features_s_i_flip, float threshold=10, int max_nb_clusters=biggest_int) nogil except *:
+cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, ClusterMapCentroid clusters, Features features_s_i, Features features_s_i_flip, double threshold=10, int max_nb_clusters=biggest_int) nogil except *:
     cdef:
         Centroid* centroid
         int closest_cluster
-        float dist, dist_min, dist_min_flip
+        double dist, dist_min, dist_min_flip
         Features features_to_add = features_s_i
 
     # Find closest cluster to s_i
-    metric.c_extract_features(s_i, features_s_i)
-    dist_min = biggest_float
+    metric.feature_type.c_extract(s_i, features_s_i)
+    dist_min = biggest_double
     for k in range(clusters.c_size()):
         #centroid = clusters.c_get_centroid(k)
         #dist = metric.c_dist(centroid.features, features_s_i)
@@ -315,9 +319,9 @@ cdef void _quickbundles(Streamline s_i, int streamline_idx, Metric metric, Clust
             closest_cluster = k
 
     # Find closest cluster to s_i_flip if metric is not order invariant
-    if not metric.is_order_invariant:
+    if not metric.feature_type.is_order_invariant:
         dist_min_flip = dist_min  # Initialize to the min distance not flipped.
-        metric.c_extract_features(s_i[::-1], features_s_i_flip)
+        metric.feature_type.c_extract(s_i[::-1], features_s_i_flip)
         for k in range(clusters.c_size()):
             #centroid = clusters.c_get_centroid(k)
             #dist = metric.c_dist(centroid.features, features_s_i_flip)

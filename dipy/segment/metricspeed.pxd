@@ -39,16 +39,12 @@ cdef int same_shape(Shape shape1, Shape shape2) nogil
 
 
 cdef class Metric(object):
-    cdef int is_order_invariant
+    cdef FeatureType feature_type
 
-    cdef Shape c_infer_features_shape(Metric self, Streamline streamline) nogil except *
-    cdef void c_extract_features(Metric self, Streamline streamline, Features out) nogil except *
-    cdef float c_dist(Metric self, Features features1, Features features2) nogil except -1.0
+    cdef double c_dist(Metric self, Features features1, Features features2) nogil except -1.0
     cdef int c_compatible(Metric self, Shape shape1, Shape shape2) nogil except -1
 
-    cpdef infer_features_shape(Metric self, streamline)
-    cpdef extract_features(Metric self, streamline)
-    cpdef float dist(Metric self, features1, features2) except -1.0
+    cpdef double dist(Metric self, features1, features2) except -1.0
     cpdef compatible(Metric self, shape1, shape2)
 
 

@@ -1,9 +1,13 @@
 from dipy.segment.metricspeed import Metric, FeatureType
 
-from dipy.segment.metricspeed import MDF, Euclidean
-from dipy.segment.metricspeed import Midpoint, CenterOfMass
-from dipy.segment.metricspeed import dist
+from dipy.segment.metricspeed import IdentityFeature, MidpointFeature, CenterOfMassFeature
+from dipy.segment.metricspeed import SumPointwiseEuclideanMetric
+from dipy.segment.metricspeed import AveragePointwiseEuclideanMetric
+from dipy.segment.metricspeed import MinimumPointwiseEuclideanMetric
+from dipy.segment.metricspeed import MaximumPointwiseEuclideanMetric
+from dipy.segment.metricspeed import MDF, ArcLengthMetric
 
+from dipy.segment.metricspeed import dist
 from dipy.segment.metricspeed import distance_matrix
 
 
