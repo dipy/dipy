@@ -28,6 +28,7 @@ class FetcherError(Exception):
 def _log(msg):
     print(msg)
 
+dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
 
 def fetch_data(files, folder):
     """Downloads files to folder and checks their md5 checksums
@@ -83,7 +84,6 @@ def fetch_scil_b0():
     zipname = 'datasets_multi-site_all_companies'
     url = 'http://scil.dinf.usherbrooke.ca/wp-content/data/'
     uraw = url + zipname + '.zip'
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     folder = pjoin(dipy_home, zipname)
 
     if not os.path.exists(folder):
@@ -111,7 +111,6 @@ def read_scil_b0():
     img : obj,
         Nifti1Image
     """
-    dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
     file = pjoin(dipy_home,
                  'datasets_multi-site_all_companies',
                  '3T',
@@ -129,7 +128,6 @@ def read_siemens_scil_b0():
     img : obj,
         Nifti1Image
     """
-    dipy_home = os.path.join(os.path.expanduser('~'), '.dipy')
     file = pjoin(dipy_home,
                  'datasets_multi-site_all_companies',
                  '1.5T',
@@ -176,7 +174,6 @@ def _get_file_data(fname, url):
 def fetch_isbi2013_2shell():
     """ Download a 2-shell software phantom dataset
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     url = 'https://dl.dropboxusercontent.com/u/2481924/isbi2013_merlet/'
     uraw = url + '2shells-1500-2500-N64-SNR-30.nii.gz'
     ubval = url + '2shells-1500-2500-N64.bval'
@@ -215,7 +212,6 @@ def read_isbi2013_2shell():
     gtab : obj,
         GradientTable
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     folder = pjoin(dipy_home, 'isbi2013')
     fraw = pjoin(folder, 'phantom64.nii.gz')
     fbval = pjoin(folder, 'phantom64.bval')
@@ -239,7 +235,6 @@ def read_isbi2013_2shell():
 def fetch_sherbrooke_3shell():
     """ Download a 3shell HARDI dataset with 192 gradient directions
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     url = 'https://dl.dropboxusercontent.com/u/2481924/sherbrooke_data/'
     uraw = url + '3shells-1000-2000-3500-N193.nii.gz'
     ubval = url + '3shells-1000-2000-3500-N193.bval'
@@ -278,7 +273,6 @@ def read_sherbrooke_3shell():
     gtab : obj,
         GradientTable
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     folder = pjoin(dipy_home, 'sherbrooke_3shell')
     fraw = pjoin(folder, 'HARDI193.nii.gz')
     fbval = pjoin(folder, 'HARDI193.bval')
@@ -300,7 +294,6 @@ def read_sherbrooke_3shell():
 
 def fetch_stanford_labels():
     """Download reduced freesurfer aparc image from stanford web site."""
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     folder = pjoin(dipy_home, 'stanford_hardi')
     baseurl = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
 
@@ -329,7 +322,6 @@ def read_stanford_labels():
 def fetch_stanford_hardi():
     """ Download a HARDI dataset with 160 gradient directions
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
     uraw = url + 'dwi.nii.gz'
     ubval = url + 'dwi.bvals'
@@ -368,7 +360,6 @@ def read_stanford_hardi():
     gtab : obj,
         GradientTable
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     folder = pjoin(dipy_home, 'stanford_hardi')
     fraw = pjoin(folder, 'HARDI150.nii.gz')
     fbval = pjoin(folder, 'HARDI150.bval')
@@ -389,34 +380,18 @@ def read_stanford_hardi():
 
 
 def fetch_stanford_t1():
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     url = 'https://stacks.stanford.edu/file/druid:yx282xq2090/'
     url_t1 = url + 't1.nii.gz'
     folder = pjoin(dipy_home, 'stanford_hardi')
-
-    if not os.path.exists(folder):
-        print('Creating new directory %s' % folder)
-
     file_md5 = 'a6a140da6a947d4131b2368752951b0a'
-    fname = 't1.nii.gz'
-    file_loc = os.path.join(folder, fname)
-    if not os.path.exists(file_loc):
-        print('Downloading T1-weighted data (~ 1MB)...')
-        _get_file_data(pjoin(folder, fname), url_t1)
-        check_md5(pjoin(folder, fname), file_md5)
-
-        print('Done.')
-        print('File copied in folder %s' % folder)
-    else:
-        print('Data is already in place. If you want to fetch it again, please first remove it from folder %s ' % folder)
+    files = {"t1.nii.gz" : (url_t1, file_md5)}
+    fetch_data(files, folder)
+    return files, folder
 
 
 def read_stanford_t1():
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
-    folder = pjoin(dipy_home, 'stanford_hardi')
+    files, folder = fetch_stanford_t1()
     f_t1 = pjoin(folder, 't1.nii.gz')
-    file_md5 = 'a6a140da6a947d4131b2368752951b0a'
-    check_md5(f_t1, file_md5)
     img = nib.load(f_t1)
     return img
 
@@ -424,7 +399,6 @@ def read_stanford_t1():
 def fetch_taiwan_ntu_dsi():
     """ Download a DSI dataset with 203 gradient directions
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     uraw = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.nii.gz'
     ubval = 'http://dl.dropbox.com/u/2481924/tawian_ntu_dsi.bval'
     ubvec = 'http://dl.dropbox.com/u/2481924/taiwan_ntu_dsi.bvec'
@@ -468,7 +442,6 @@ def read_taiwan_ntu_dsi():
     gtab : obj,
         GradientTable
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     folder = pjoin(dipy_home, 'taiwan_ntu_dsi')
     fraw = pjoin(folder, 'DSI203.nii.gz')
     fbval = pjoin(folder, 'DSI203.bval')
@@ -493,7 +466,6 @@ def read_taiwan_ntu_dsi():
 def fetch_syn_data():
     """ Download t1 and b0 volumes from the same session
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     url = 'https://dl.dropboxusercontent.com/u/5918983/'
     t1 = url + 't1.nii.gz'
     b0 = url + 'b0.nii.gz'
@@ -531,7 +503,6 @@ def read_syn_data():
     b0 : obj,
         Nifti1Image
     """
-    dipy_home = pjoin(os.path.expanduser('~'), '.dipy')
     folder = pjoin(dipy_home, 'syn_test')
     t1_name = pjoin(folder, 't1.nii.gz')
     b0_name = pjoin(folder, 'b0.nii.gz')
