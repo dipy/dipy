@@ -447,6 +447,11 @@ def test_vectorize_streamlines():
     assert_equal(np.all(cb_subj1_pts_no == 10), True)
 
 
+def test_bmd_fast_with_12_params():
+
+    pass
+
+
 if __name__ == '__main__':
 
     run_module_suite()

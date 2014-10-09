@@ -134,7 +134,7 @@ class StreamlineLinearRegistration(object):
             self.x0 = np.ones(6)
 
         if self.metric is None:
-            if fast and (len(self.x0) == 6):
+            if fast:# and (len(self.x0) == 6):
                 self.metric = BundleMinDistanceFast()
             else:
                 self.metric = BundleMinDistance()
@@ -286,10 +286,10 @@ def bundle_sum_distance(t, static, moving):
     -----------
     t : ndarray
         t is a vector of of affine transformation parameters with
-        size at least 6. 
+        size at least 6.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
-        isotropic scaling. 
+        isotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
 
@@ -322,10 +322,10 @@ def bundle_min_distance(t, static, moving):
     -----------
     t : ndarray
         t is a vector of of affine transformation parameters with
-        size at least 6. 
+        size at least 6.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
-        isotropic scaling. 
+        isotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
 
@@ -434,7 +434,7 @@ def matrix44(t, dtype=np.double):
         size at least 6.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
-        isotropic scaling.        
+        isotropic scaling.
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
 
@@ -452,7 +452,7 @@ def matrix44(t, dtype=np.double):
 
     T = np.eye(4, dtype=dtype)
 
-    # Degrees to radians    
+    # Degrees to radians
     rads = np.deg2rad(t[3:6])
 
     T[0:3, 3] = threshold(t[0:3], MAX_DIST)
@@ -471,7 +471,7 @@ def matrix44(t, dtype=np.double):
                       [0, kz, 1]])
         # Beware: R*s*Q
         T[0:3, 0:3] = np.dot(R, np.dot(S, Q))
-    
+
     return T
 
 
