@@ -15,7 +15,7 @@ cdef class TissueClassifier:
 
 cdef class BinaryTissueClassifier(TissueClassifier):
     cdef:  
-        double[:, :, :] metric_map
+        unsigned char [:, :, :] mask
     pass
 
 cdef class ThresholdTissueClassifier(TissueClassifier):

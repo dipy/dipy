@@ -13,13 +13,14 @@ cdef class TissueClassifier:
 
 cdef class BinaryTissueClassifier(TissueClassifier):
     """
+
     cdef:
-        double[:, :, :] metric_map
+        unsigned char[:, :, :] mask
     """
 
-    def __cinit__(self, metric_map):
+    def __cinit__(self, mask):
         self.interp_out_view = self.interp_out_double
-        self.metric_map = metric_map
+        self.mask = (mask > 0).astype('uint8')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
@@ -37,12 +38,12 @@ cdef class BinaryTissueClassifier(TissueClassifier):
         voxel[1] = int(round(point[1]))
         voxel[2] = int(round(point[2]))
 
-        if (voxel[0] < 0 or voxel[0] > self.metric_map.shape[0]
-                or voxel[1] < 0 or voxel[1] > self.metric_map.shape[1]
-                or voxel[2] < 0 or voxel[2] > self.metric_map.shape[2]):
+        if (voxel[0] < 0 or voxel[0] > self.mask.shape[0]
+                or voxel[1] < 0 or voxel[1] > self.mask.shape[1]
+                or voxel[2] < 0 or voxel[2] > self.mask.shape[2]):
             return OUTSIDEIMAGE
 
-        result = self.metric_map[voxel[0], voxel[1], voxel[2]]
+        result = self.mask[voxel[0], voxel[1], voxel[2]]
 
         if result > 0:
             return TRACKPOINT
@@ -61,7 +62,7 @@ cdef class ThresholdTissueClassifier(TissueClassifier):
 
     def __cinit__(self, metric_map, threshold):
         self.interp_out_view = self.interp_out_double
-        self.metric_map = metric_map
+        self.metric_map = metric_map.astype('float64')
         self.threshold = threshold
 
     @cython.boundscheck(False)
@@ -109,8 +110,8 @@ cdef class ActTissueClassifier(TissueClassifier):
 
     def __cinit__(self, include_map, exclude_map):
         self.interp_out_view = self.interp_out_double
-        self.include_map = include_map
-        self.exclude_map = exclude_map
+        self.include_map = include_map.astype('float64')
+        self.exclude_map = exclude_map.astype('float64')
 
     @cython.boundscheck(False)
     @cython.wraparound(False)
