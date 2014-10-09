@@ -2,7 +2,6 @@
 An interface class for performing and debugging optimization problems.
 """
 
-import os
 from tempfile import mkstemp
 from distutils.version import StrictVersion
 import numpy as np
@@ -25,9 +24,9 @@ else:
 
 class Optimizer(object):
 
-    def __init__(self, fun,  x0, args=(), method='L-BFGS-B', jac=None, hess=None,
-                 hessp=None, bounds=None, constraints=(), tol=None,
-                 callback=None, options=None, evolution=False):
+    def __init__(self, fun,  x0, args=(), method='L-BFGS-B', jac=None,
+                 hess=None, hessp=None, bounds=None, constraints=(),
+                 tol=None, callback=None, options=None, evolution=False):
         """ A class for handling minimization of scalar function of one or more
         variables.
 
@@ -66,7 +65,8 @@ class Optimizer(object):
             value of Jacobian along with the objective function. If False, the
             Jacobian will be estimated numerically.
             `jac` can also be a callable returning the Jacobian of the
-            objective. In this case, it must accept the same arguments as `fun`.
+            objective. In this case, it must accept the same arguments 
+            as `fun`.
 
         hess, hessp : callable, optional
             Hessian of objective function or Hessian of objective function
@@ -100,8 +100,8 @@ class Optimizer(object):
             Note that COBYLA only supports inequality constraints.
 
         tol : float, optional
-            Tolerance for termination. For detailed control, use solver-specific
-            options.
+            Tolerance for termination. For detailed control, use 
+            solver-specific options.
 
         callback : callable, optional
             Called after each iteration, as ``callback(xk)``, where ``xk`` is
@@ -114,7 +114,8 @@ class Optimizer(object):
                     Maximum number of iterations to perform.
                 disp : bool
                     Set to True to print convergence messages.
-            For method-specific options, see `show_options('minimize', method)`.
+            For method-specific options, see 
+            `show_options('minimize', method)`.
 
         evolution : bool, optional
             save history of x for each iteration
@@ -144,7 +145,7 @@ class Optimizer(object):
                                     pgtol=options['gtol'],
                                     epsilon=options['eps'])
 
-                res = {'x':out[0], 'fun':out[1], 'nfev':out[2]['funcalls']}
+                res = {'x': out[0], 'fun': out[1], 'nfev': out[2]['funcalls']}
                 try:
                     res['nit'] = out[2]['nit']
                 except KeyError:
@@ -161,7 +162,8 @@ class Optimizer(object):
                                   retall=True)
 
                 xopt, fopt, direc, iterations, funcs, warnflag, allvecs = out
-                res = {'x': xopt, 'fun':fopt, 'nfev':funcs, 'nit':iterations}
+                res = {'x': xopt, 'fun': fopt,
+                       'nfev': funcs, 'nit': iterations}
 
             else:
 
@@ -234,6 +236,4 @@ class Optimizer(object):
             history = np.loadtxt(f).reshape((self.res['nit'], self.size_of_x))
             f.close()
             return history
-
-
 

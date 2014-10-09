@@ -44,7 +44,7 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_syn_data)
 
 from ..utils.arrfuncs import as_native_array
-from dipy.align.streamlinear import relist_streamlines
+from dipy.tracking.streamline import relist_streamlines
 
 
 THIS_DIR = dirname(__file__)
@@ -397,6 +397,7 @@ def get_cmap(name):
         return rgba
 
     return simple_cmap
+
 
 def two_cingulum_bundles():
     fname = get_data('cb_2')

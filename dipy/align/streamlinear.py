@@ -4,10 +4,9 @@ from nibabel.affines import apply_affine
 from nibabel.quaternions import quat2angle_axis, mat2quat
 from scipy.linalg import det
 from dipy.core.optimize import Optimizer
-from dipy.tracking.metrics import downsample
-from dipy.align.bmd import (_bundle_minimum_distance_rigid,
-                            _bundle_minimum_distance_rigid_nomat,
+from dipy.align.bmd import (_bundle_minimum_distance_rigid_nomat,
                             bundles_distance_matrix_mdf)
+from dipy.tracking.streamline import unlist_streamlines, center_streamlines
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -186,7 +185,7 @@ class StreamlineLinearRegistration(object):
         if self.method == 'Powell':
 
             if self.options is None:
-                self.options = {'xtol': 1e-6, 'ftol':1e-6, 'maxiter':1e6}
+                self.options = {'xtol': 1e-6, 'ftol': 1e-6, 'maxiter': 1e6}
 
             opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method, options=self.options,
@@ -195,7 +194,8 @@ class StreamlineLinearRegistration(object):
         if self.method == 'L-BFGS-B':
 
             if self.options is None:
-                self.options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8}
+                self.options={'maxcor': 10, 'ftol': 1e-7,
+                              'gtol': 1e-5, 'eps': 1e-8}
 
             opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method,
@@ -267,7 +267,6 @@ class StreamlineRegistrationMap(object):
         self.matrix_history = matopt_history
         self.funcs = funcs
         self.iterations = iterations
-
 
     def transform(self, streamlines):
         """ Apply ``self.matrix`` to the streamlines
@@ -509,26 +508,6 @@ def transform_streamlines(streamlines, mat):
     return [apply_affine(mat, s) for s in streamlines]
 
 
-def center_streamlines(streamlines):
-    """ Move streamlines to the origin
-
-    Parameters
-    ----------
-    streamlines : list
-        List of 2D ndarrays of shape[-1]==3
-
-    Returns
-    -------
-    new_streamlines : list
-        List of 2D ndarrays of shape[-1]==3
-    inv_shift : ndarray
-        Translation in x,y,z to go back in the initial position
-
-    """
-    center = np.mean(np.concatenate(streamlines, axis=0), axis=0)
-    return [s - center for s in streamlines], center
-
-
 def compose_transformations(*mats):
     """ Compose multiple transformations in one 4x4 matrix
 
@@ -554,60 +533,3 @@ def compose_transformations(*mats):
     return prev
 
 
-def vectorize_streamlines(streamlines, no_pts):
-    """ Resample all streamlines to the same number of points
-    """
-    return [downsample(s, no_pts) for s in streamlines]
-
-
-def unlist_streamlines(streamlines):
-    """ Return the streamlines not as a list but as an array and an offset
-
-    Parameters
-    ----------
-    streamlines: sequence
-
-    Returns
-    -------
-    points : array
-    offsets : array
-
-    """
-
-    points = np.concatenate(streamlines, axis=0)
-    offsets = np.zeros(len(streamlines), dtype='i8')
-
-    curr_pos = 0
-    prev_pos = 0
-    for (i, s) in enumerate(streamlines):
-
-            prev_pos = curr_pos
-            curr_pos += s.shape[0]
-            points[prev_pos:curr_pos] = s
-            offsets[i] = curr_pos
-
-    return points, offsets
-
-
-def relist_streamlines(points, offsets):
-    """ Given a representation of a set of streamlines as a large array and
-    an offsets array return the streamlines as a list of smaller arrays.
-
-    Parameters
-    -----------
-    points : array
-    offsets : array
-
-    Returns
-    -------
-    streamlines: sequence
-    """
-
-    streamlines = []
-
-    streamlines.append(points[0: offsets[0]])
-
-    for i in range(len(offsets) - 1):
-        streamlines.append(points[offsets[i]: offsets[i + 1]])
-
-    return streamlines

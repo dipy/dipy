@@ -18,7 +18,6 @@ def test_optimize():
 
         return x[0]**2 + 0.5 * x[1]**2 + 0.2 * x[2]**2 + 0.2 * x[3]**2
 
-
     if not SCIPY_LESS_0_11:
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='Powell')
@@ -27,16 +26,17 @@ def test_optimize():
 
         assert_almost_equal(opt.fopt, 0)
 
-
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
-                        options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8})
+                        options={'maxcor': 10, 'ftol': 1e-7,
+                                 'gtol': 1e-5, 'eps': 1e-8})
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
 
         assert_almost_equal(opt.fopt, 0)
 
         opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
-                        options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8},
+                        options={'maxcor': 10, 'ftol': 1e-7,
+                                 'gtol': 1e-5, 'eps': 1e-8},
                         evolution=False)
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
@@ -47,7 +47,8 @@ def test_optimize():
 
         opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
                         method='L-BFGS-B',
-                        options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8},
+                        options={'maxcor': 10, 'ftol': 1e-7,
+                                 'gtol': 1e-5, 'eps': 1e-8},
                         evolution=True)
         print(opt.nit)
         print(opt.fopt)
@@ -59,7 +60,7 @@ def test_optimize():
 
         opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
                         method='Powell',
-                        options={'xtol':1e-6, 'ftol':1e-6, 'maxiter':1e6},
+                        options={'xtol': 1e-6, 'ftol': 1e-6, 'maxiter': 1e6},
                         evolution=True)
 
         print(opt.nit)
@@ -69,11 +70,12 @@ def test_optimize():
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
 
-
     if SCIPY_LESS_0_11:
 
-        opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]), method='L-BFGS-B',
-                        options={'maxcor':10, 'ftol':1e-7, 'gtol':1e-5, 'eps':1e-8})
+        opt = Optimizer(fun=func, x0=np.array([1., 1., 1.]),
+                        method='L-BFGS-B',
+                        options={'maxcor': 10, 'ftol': 1e-7,
+                                 'gtol': 1e-5, 'eps': 1e-8})
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0]))
 
@@ -85,7 +87,7 @@ def test_optimize():
 
         opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
                         method='Powell',
-                        options={'xtol':1e-6, 'ftol':1e-6, 'maxiter':1e6},
+                        options={'xtol': 1e-6, 'ftol': 1e-6, 'maxiter': 1e6},
                         evolution=True)
 
         print(opt.nit)

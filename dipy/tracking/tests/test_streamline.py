@@ -6,6 +6,7 @@ from nose.tools import assert_true, assert_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_raises
 
 import dipy.tracking.streamline as dipystreamline
+from dipy.tracking.streamline import relist_streamlines, unlist_streamlines
 
 
 streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
@@ -327,3 +328,25 @@ def test_length():
         streamlines_readonly[-1].setflags(write=False)
 
     assert_array_equal(dipystreamline.length(streamlines_readonly), [length_python(s) for s in streamlines_readonly])
+
+
+def test_unlist_relist_streamlines():
+
+    streamlines = [np.random.rand(10, 3),
+                   np.random.rand(20, 3),
+                   np.random.rand(5, 3)]
+
+    points, offsets = unlist_streamlines(streamlines)
+
+    assert_equal(offsets.dtype, np.dtype('i8'))
+
+    assert_equal(points.shape, (35, 3))
+    assert_equal(len(offsets), len(streamlines))
+
+    streamlines2 = relist_streamlines(points, offsets)
+
+    assert_equal(len(streamlines), len(streamlines2))
+
+    for i in range(len(streamlines)):
+        assert_array_equal(streamlines[i], streamlines2[i])
+
