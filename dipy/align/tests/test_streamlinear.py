@@ -5,20 +5,20 @@ from numpy.testing import (run_module_suite,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from dipy.align.streamlinear import (transform_streamlines,
-                                     matrix44,
+from dipy.align.streamlinear import (matrix44,
                                      from_matrix44_rigid,
                                      BundleSumDistance,
                                      BundleMinDistance,
-                                     BundleMinDistanceFast,                                     
+                                     BundleMinDistanceFast,
                                      StreamlineLinearRegistration,
                                      StreamlineDistanceMetric,
                                      compose_transformations)
-                                     
+
 from dipy.tracking.streamline import (center_streamlines,
                                       unlist_streamlines,
                                       relist_streamlines,
-                                      set_number_of_points)                                  
+                                      transform_streamlines,
+                                      set_number_of_points)
 
 from dipy.data import get_data, two_cingulum_bundles
 from nibabel import trackvis as tv

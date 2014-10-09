@@ -1,12 +1,13 @@
 import abc
 import numpy as np
-from nibabel.affines import apply_affine
 from nibabel.quaternions import quat2angle_axis, mat2quat
 from scipy.linalg import det
 from dipy.core.optimize import Optimizer
-from dipy.align.bmd import (_bundle_minimum_distance_rigid_nomat,
+from dipy.align.bundlemin import (_bundle_minimum_distance_rigid_nomat,
                             bundles_distance_matrix_mdf)
-from dipy.tracking.streamline import unlist_streamlines, center_streamlines
+from dipy.tracking.streamline import (transform_streamlines,
+                                      unlist_streamlines,
+                                      center_streamlines)
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -223,8 +224,10 @@ class StreamlineLinearRegistration(object):
                                                            matrix44(vecs),
                                                            static_mat))
 
-        return StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
-                                         mat_history, opt.nfev, opt.nit)
+        srm = StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
+                                        mat_history, opt.nfev, opt.nit)
+        del opt
+        return srm
 
 
 class StreamlineRegistrationMap(object):
@@ -489,23 +492,6 @@ def from_matrix44_rigid(mat):
     vec[3:6] = np.rad2deg(vec[3:6])
 
     return vec
-
-
-def transform_streamlines(streamlines, mat):
-    """ Apply affine transformation to streamlines
-
-    Parameters
-    ----------
-    streamlines : list
-        List of 2D ndarrays of shape[-1]==3
-
-    Returns
-    -------
-    new_streamlines : list
-        List of the transformed 2D ndarrays of shape[-1]==3
-    """
-
-    return [apply_affine(mat, s) for s in streamlines]
 
 
 def compose_transformations(*mats):

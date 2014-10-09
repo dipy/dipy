@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from numpy.testing import (assert_equal,
                            assert_almost_equal,
@@ -69,6 +70,12 @@ def test_optimize():
         print(opt.message)
 
         assert_array_almost_equal(opt.xopt, np.array([0, 0, 0, 0.]))
+
+        tmp_files = opt.tmp_files
+        del opt
+
+        for fname in tmp_files:
+            assert_equal(os.path.isfile(fname), False)
 
     if SCIPY_LESS_0_11:
 

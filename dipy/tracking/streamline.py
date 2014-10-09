@@ -1,4 +1,5 @@
 import numpy as np
+from nibabel.affines import apply_affine
 from dipy.tracking.streamlinespeed import set_number_of_points
 from dipy.tracking.streamlinespeed import length
 
@@ -74,3 +75,20 @@ def center_streamlines(streamlines):
     """
     center = np.mean(np.concatenate(streamlines, axis=0), axis=0)
     return [s - center for s in streamlines], center
+
+
+def transform_streamlines(streamlines, mat):
+    """ Apply affine transformation to streamlines
+
+    Parameters
+    ----------
+    streamlines : list
+        List of 2D ndarrays of shape[-1]==3
+
+    Returns
+    -------
+    new_streamlines : list
+        List of the transformed 2D ndarrays of shape[-1]==3
+    """
+
+    return [apply_affine(mat, s) for s in streamlines]

@@ -1,7 +1,10 @@
-"""
-An interface class for performing and debugging optimization problems.
+""" A unified interface for performing and debugging optimization problems.
+
+Only L-BFGS-B and Powell is supported in this class for versions of
+Scipy < 0.11. All optimizers are available for scipy >= 0.11.
 """
 
+import os
 from tempfile import mkstemp
 from distutils.version import StrictVersion
 import numpy as np
@@ -65,7 +68,7 @@ class Optimizer(object):
             value of Jacobian along with the objective function. If False, the
             Jacobian will be estimated numerically.
             `jac` can also be a callable returning the Jacobian of the
-            objective. In this case, it must accept the same arguments 
+            objective. In this case, it must accept the same arguments
             as `fun`.
 
         hess, hessp : callable, optional
@@ -100,7 +103,7 @@ class Optimizer(object):
             Note that COBYLA only supports inequality constraints.
 
         tol : float, optional
-            Tolerance for termination. For detailed control, use 
+            Tolerance for termination. For detailed control, use
             solver-specific options.
 
         callback : callable, optional
@@ -114,7 +117,7 @@ class Optimizer(object):
                     Maximum number of iterations to perform.
                 disp : bool
                     Set to True to print convergence messages.
-            For method-specific options, see 
+            For method-specific options, see
             `show_options('minimize', method)`.
 
         evolution : bool, optional
@@ -127,6 +130,7 @@ class Optimizer(object):
 
         self.evolution_fname = None
         self.size_of_x = len(x0)
+        self.tmp_files = []
 
         if SCIPY_LESS_0_11:
 
@@ -176,9 +180,7 @@ class Optimizer(object):
             if evolution is True:
 
                 _, fname = mkstemp()
-
-                # if os.path.isfile(fname):
-                #     os.remove(fname)
+                self.tmp_files.append(fname)
 
                 def history_of_x(kx):
                     f = open(fname, 'a')
@@ -237,3 +239,7 @@ class Optimizer(object):
             f.close()
             return history
 
+    def __del__(self):
+
+        for fname in self.tmp_files:
+            os.remove(fname)
