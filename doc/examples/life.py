@@ -17,7 +17,9 @@ tracking and finding these tracks is fully demonstrated in the
 streamlines from file. Otherwise, we'll run that example first, by importing
 it. This provides us with all of the variables that were created in that
 example:
+
 """
+
 import numpy as np
 import os.path as op
 import nibabel as nib
@@ -26,11 +28,13 @@ if not op.exists('lr-superiorfrontal.trk'):
     from streamline_tools import *
 else:
     # We'll need to know where the corpus callosum is from these variables:
-    from dipy.data import (read_stanford_labels, fetch_stanford_t1,
+    from dipy.data import (read_stanford_labels,
+                           fetch_stanford_t1,
                            read_stanford_t1)
     hardi_img, gtab, labels_img = read_stanford_labels()
     labels = labels_img.get_data()
     cc_slice = labels == 2
+    fetch_stanford_t1()
     t1 = read_stanford_t1()
     t1_data = t1.get_data()
     data = hardi_img.get_data()
@@ -39,15 +43,20 @@ else:
 candidate_sl = [s[0] for s in nib.trackvis.read('lr-superiorfrontal.trk',
                                                   points_space='voxel')[0]]
 
+
 """
+
 The tracks that are entered into the model are termed 'candidate tracks' (or a
 'candidate connectome'):
+
 """
 
 
 """
+
 Let's visualize the initial candidate group of tracks in 3D, relative to the
 anatomical structure of this brain:
+
 """
 
 from dipy.viz.colormap import line_colors
@@ -70,6 +79,7 @@ fvtk.record(ren, n_frames=1, out_path='life_candidates.png',
             size=(800, 800))
 
 """
+
 .. figure:: life_candidates.png
    :align: center
 
@@ -84,6 +94,7 @@ Next, we initialize a LiFE model. We import the `dipy.tracking.life` module,
 which contains the classes and functions that implement the model:
 
 """
+
 import dipy.tracking.life as life
 FM = life.FiberModel(gtab)
 
@@ -110,17 +121,17 @@ explained by the tracks, by the equation
     y = X\beta
 
 
-Where $y$ is the diffusion MRI signal, $beta$ are a set of weights on the
+Where $y$ is the diffusion MRI signal, $\beta$ are a set of weights on the
 tracks and $X$ is a design matrix. This matrix has the dimensions $m$ by $n$,
-where $m=#_{voxels} #_{directions}$, and $#_{voxels}$ is the set of voxels in
-the ROI that contains the tracks considered in this model. The $i^{th}$ column
-of the matrix contains the expected contributions of the $i^{th}$ track
-(arbitrarly ordered) to each of the voxels. $X$ is a sparse matrix, becasue
-each track traverses only a small percentage of the voxels. The expected
-contributions of the track are calculated using a forward model, where each
-node of the track is modeled as a cylindrical fiber compartment with Gaussian
-diffusion, using the diffusion tensor model. See [Pestilli2014]_ for more
-detail on the model, and variations of this model.
+where $m=n_{voxels} \cdot n_{directions}$, and $n_{voxels}$ is the set of
+voxels in the ROI that contains the tracks considered in this model. The
+$i^{th}$ column of the matrix contains the expected contributions of the
+$i^{th}$ track (arbitrarly ordered) to each of the voxels. $X$ is a sparse
+matrix, becasue each track traverses only a small percentage of the voxels. The
+expected contributions of the track are calculated using a forward model, where
+each node of the track is modeled as a cylindrical fiber compartment with
+Gaussian diffusion, using the diffusion tensor model. See [Pestilli2014]_ for
+more detail on the model, and variations of this model.
 
 """
 
@@ -131,8 +142,34 @@ FF = FM.fit(data, candidate_sl, affine=np.eye(4))
 The `FiberFit` class instance holds various properties of the model fit. For
 example, it has the weights $\beta$, that are assigned to each track. In most
 cases, a tractography through some region will include redundant tracks, and
-these tracks will have $\beta_i$ that are 0. We use $\beta$ to filter out these
-redundant tracks, and generate an optimized group of streamlines:
+these tracks will have $\beta_i$ that are 0.
+
+"""
+
+import matplotlib.pyplot as plt
+import matplotlib
+
+fig, ax = plt.subplots(1)
+ax.hist(FF.beta, bins=100, histtype='step')
+ax.set_xlabel('Fiber weights')
+ax.set_ylabel('# fibers')
+fig.savefig('beta_histogram.png')
+
+
+"""
+
+
+.. figure:: beta_histogram.png
+   :align: center
+
+   **LiFE fiber weights**
+
+"""
+
+"""
+
+We use $\beta$ to filter out these redundant tracks, and generate an optimized
+group of streamlines:
 
 """
 
@@ -153,14 +190,13 @@ fvtk.record(ren, n_frames=1, out_path='life_optimized.png',
 
 """
 
+
 """
 
 How well does the model do in explaining the diffusion data? The `FiberFit`
 class instance has a `predict` method, which can be used to invert the model
 and predict back either the data that was used to fit the model, or other
-unseen data (e.g. in cross-validation, see :kfold_xval:).
-
-
+unseen data (e.g. in cross-validation, see :ref:`kfold_xval`).
 
 Without arguments, the `.predict()` method will predict the diffusion signal
 for the same gradient table that was used in the fit data, but `gtab` and `S0`
@@ -224,9 +260,6 @@ positive values denote an improvement in error with model fit, relative to
 without the model fit.
 
 """
-
-import matplotlib.pyplot as plt
-import matplotlib
 
 fig, ax = plt.subplots(1)
 ax.hist(tracks_rmse - model_rmse, bins=100, histtype='step')
@@ -306,13 +339,20 @@ fig.savefig("spatial_errors.png")
 .. figure:: spatial_errors.png
    :align: center
 
-   **The spatial distribution of error and improvement **
+
+   **Spatial distribution of error and improvement**
 
 """
 
 
 
 """
+
+This image demonstrates that in many places, fitting the LiFE model results in
+substantial reduction of the error.
+
+References
+~~~~~~~~~~~~~~~~~~~~~~
 
 .. [Pestilli2014] Pestilli, F., Yeatman, J, Rokem, A. Kay, K. and Wandell
                   B.A. (2014). Validation and statistical inference in living

@@ -91,14 +91,12 @@ DSI with Deconvolution
 
 - :ref:`example_reconst_dsid`
 
-
-
 -------------------------------------
 Statistical evaluation and validation
 -------------------------------------
 
 - :ref:`example_kfold_xval`
-- :ref: `example_life`
+- :ref:`example_life`
 
 
 --------------

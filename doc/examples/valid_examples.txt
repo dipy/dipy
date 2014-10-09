@@ -24,6 +24,7 @@
  reconst_shore.py
  reconst_shore_metrics.py
  streamline_tools.py
+ life.py
  denoise_nlmeans.py
  introduction_to_basic_tracking.py
  probabilistic_fiber_tracking.py
