@@ -13,7 +13,6 @@ cdef class TissueClassifier:
 
 cdef class BinaryTissueClassifier(TissueClassifier):
     """
-
     cdef:
         unsigned char[:, :, :] mask
     """
