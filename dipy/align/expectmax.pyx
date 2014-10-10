@@ -8,10 +8,7 @@ import numpy as np
 cimport cython
 cimport numpy as cnp
 from fused_types cimport floating, number
-
-cdef extern from "math.h":
-    double floor(double x) nogil
-    int isinf(double) nogil
+from libc.math cimport isinf, floor
 
 cdef inline int ifloor(double x) nogil:
     return int(floor(x))
