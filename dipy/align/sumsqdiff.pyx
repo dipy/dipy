@@ -4,10 +4,7 @@ import numpy as np
 cimport cython
 cimport numpy as cnp
 from fused_types cimport floating, number
-
-cdef extern from "math.h":
-    int isinf(double) nogil
-    double sqrt(double x) nogil
+from libc.math cimport isinf, sqrt
 
 
 @cython.boundscheck(False)
