@@ -422,7 +422,7 @@ def compute_em_demons_step_2d(floating[:,:] delta_field,
                 sigma_sq_i = sigma_sq_field[i,j]
                 delta = delta_field[i,j]
                 energy += (delta**2)
-                if(isinf(sigma_sq_i)):
+                if isinf(sigma_sq_i) != 0:
                     out[i, j, 0], out[i, j, 1] = 0, 0
                 else:
                     nrm2 = (gradient_moving[i, j, 0]**2 +
@@ -520,7 +520,7 @@ def compute_em_demons_step_3d(floating[:,:,:] delta_field,
                     sigma_sq_i = sigma_sq_field[k,i,j]
                     delta = delta_field[k,i,j]
                     energy += (delta**2)
-                    if(isinf(sigma_sq_i)):
+                    if isinf(sigma_sq_i) != 0:
                         out[k, i, j, 0] = 0
                         out[k, i, j, 1] = 0
                         out[k, i, j, 2] = 0

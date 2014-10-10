@@ -181,7 +181,7 @@ cpdef double iterate_residual_displacement_field_ssd_2d(
                     nn += 1
                     y[0] += displacement_field[dr, dc, 0]
                     y[1] += displacement_field[dr, dc, 1]
-                if(isinf(sigmasq)):
+                if isinf(sigmasq) != 0:
                     xx = displacement_field[r, c, 0]
                     yy = displacement_field[r, c, 1]
                     displacement_field[r, c, 0] = y[0] / nn
@@ -366,7 +366,7 @@ cpdef double iterate_residual_displacement_field_ssd_3d(
                         y[0] += disp[ds, dr, dc, 0]
                         y[1] += disp[ds, dr, dc, 1]
                         y[2] += disp[ds, dr, dc, 2]
-                    if(isinf(sigmasq)):
+                    if isinf(sigmasq) != 0:
                         xx = disp[s, r, c, 0]
                         yy = disp[s, r, c, 1]
                         zz = disp[s, r, c, 2]
@@ -558,7 +558,7 @@ def compute_residual_displacement_field_ssd_3d(
                         y[0] += (disp[s, r, c, 0] - disp[ds, dr, dc, 0])
                         y[1] += (disp[s, r, c, 1] - disp[ds, dr, dc, 1])
                         y[2] += (disp[s, r, c, 2] - disp[ds, dr, dc, 2])
-                    if(isinf(sigmasq)):
+                    if isinf(sigmasq) != 0:
                         residual[s, r, c, 0] = -lambda_param * y[0]
                         residual[s, r, c, 1] = -lambda_param * y[1]
                         residual[s, r, c, 2] = -lambda_param * y[2]
@@ -663,7 +663,7 @@ cpdef compute_residual_displacement_field_ssd_2d(
                     y[0] += (d[r, c, 0] - d[dr, dc, 0])
                     y[1] += (d[r, c, 1] - d[dr, dc, 1])
 
-                if(isinf(sigmasq)):
+                if isinf(sigmasq) != 0:
                     residual[r, c, 0] = -lambda_param * y[0]
                     residual[r, c, 1] = -lambda_param * y[1]
                 else:
