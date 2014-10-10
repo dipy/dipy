@@ -4,8 +4,14 @@ import numpy as np
 cimport cython
 cimport numpy as cnp
 from fused_types cimport floating, number
-from libc.math cimport isinf, sqrt
 
+cdef inline int isinf(double x)nogil:
+    with gil:
+        return np.isinf(x)
+
+cdef inline double sqrt(double x)nogil:
+    with gil:
+        return np.sqrt(x)
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
