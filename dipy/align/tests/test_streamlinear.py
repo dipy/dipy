@@ -320,8 +320,10 @@ def test_matrix44():
 
 def test_abstract_metric_class():
 
-    s = StreamlineDistanceMetric()
-    assert_equal(s.distance(np.ones(6)), None)
+    class DummyStreamlineMetric(StreamlineDistanceMetric):
+        def test():
+            pass
+    assert_raises(TypeError, DummyStreamlineMetric)
 
 
 def test_evolution_of_previous_iterations():

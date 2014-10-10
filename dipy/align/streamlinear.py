@@ -2,6 +2,7 @@ import abc
 import numpy as np
 from nibabel.quaternions import quat2angle_axis, mat2quat
 from scipy.linalg import det
+from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance_rigid_nomat,
                             bundles_distance_matrix_mdf)
@@ -17,7 +18,7 @@ def threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
 
-class StreamlineDistanceMetric(object):
+class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
     def __init__(self):
         """ An abstract class for the metric used for streamline registration
@@ -45,6 +46,12 @@ class StreamlineDistanceMetric(object):
 
 class BundleMinDistance(StreamlineDistanceMetric):
 
+    def set_static(self, static):
+        self.static = static
+
+    def set_moving(self, moving):
+        self.moving = moving
+
     def distance(self, xopt):
         return bundle_min_distance(xopt, self.static, self.moving)
 
@@ -67,7 +74,7 @@ class BundleMinDistanceFast(StreamlineDistanceMetric):
                                         self.block_size)
 
 
-class BundleSumDistance(StreamlineDistanceMetric):
+class BundleSumDistance(BundleMinDistance):
 
     def distance(self, xopt):
         return bundle_sum_distance(xopt, self.static, self.moving)
