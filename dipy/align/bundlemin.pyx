@@ -6,7 +6,13 @@
 import numpy as np
 cimport numpy as cnp
 cimport cython
+
+cdef extern from "have_openmp.h":
+    cdef int have_openmp
+
+
 cimport openmp
+
 from cython.parallel import parallel, prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
@@ -85,7 +91,7 @@ def _bundle_minimum_distance_rigid(double [:, ::1] static,
 
     rows : int
         Number of points per streamline
- 
+
     D : 2D array
         Distance matrix
 
@@ -100,7 +106,7 @@ def _bundle_minimum_distance_rigid(double [:, ::1] static,
     with nogil:
 
         for i in prange(static_size):
-            
+
             for j in prange(moving_size):
 
                 D[i, j] = direct_flip_dist(&static[i * rows, 0],
@@ -118,7 +124,7 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
-    points as they align with the static streamlines. 
+    points as they align with the static streamlines.
 
     Parameters
     -----------
@@ -126,7 +132,7 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         Static streamlines
 
     moving : array
-        Moving streamlines 
+        Moving streamlines
 
     static_size : int
         Number of static streamlines
@@ -152,14 +158,14 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         double sum_i=0, sum_j=0, tmp=0
         double inf = np.finfo('f8').max
         double dist=0
-        double * min_j 
+        double * min_j
         double * min_i
         openmp.omp_lock_t lock
 
     with nogil:
 
         openmp.omp_init_lock(&lock)
-        
+
         min_j = <double *> malloc(static_size * sizeof(double))
         min_i = <double *> malloc(moving_size * sizeof(double))
 
@@ -173,7 +179,7 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
 
             for j in range(moving_size):
 
-                tmp = direct_flip_dist(&stat[i * rows, 0], 
+                tmp = direct_flip_dist(&stat[i * rows, 0],
                                        &mov[j * rows, 0], rows)
 
                 openmp.omp_set_lock(&lock)
@@ -187,7 +193,7 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         openmp.omp_destroy_lock(&lock)
 
         for i in range(static_size):
-            sum_i += min_j[i] 
+            sum_i += min_j[i]
 
         for j in range(moving_size):
             sum_j += min_i[j]
@@ -198,7 +204,7 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         dist = (sum_i/<double>static_size + sum_j/<double>moving_size)
 
         dist = 0.25 * dist * dist
-    
+
     return dist
 
 
@@ -221,7 +227,7 @@ def bundles_distance_matrix_mdf(streamlines_a, streamlines_b):
     -------
     DM : array, shape (len(streamlines_a), len(streamlines_b))
         distance matrix
-    
+
     '''
     cdef:
         size_t i, j, lentA, lentB
@@ -260,9 +266,9 @@ def bundles_distance_matrix_mdf(streamlines_a, streamlines_b):
         t1 = tracksA64[i]
         t1_ptr = <cnp.float64_t *>t1.data
         for j from 0 <= j < lentB:
-            t2 = tracksB64[j]            
+            t2 = tracksB64[j]
             t2_ptr = <cnp.float64_t *>t2.data
-            
+
             DM[i, j] = direct_flip_dist(t1_ptr, t2_ptr,t_len)
-            
+
     return DM

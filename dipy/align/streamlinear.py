@@ -14,10 +14,6 @@ MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
 
 
-def threshold(x, th):
-    return np.maximum(np.minimum(x, th), -th)
-
-
 class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
     def __init__(self):
@@ -432,6 +428,9 @@ def rotation_mat2vec(R):
     ax, angle = quat2angle_axis(mat2quat(R))
     return ax * angle
 
+def _threshold(x, th):
+    return np.maximum(np.minimum(x, th), -th)
+
 
 def matrix44(t, dtype=np.double):
     """ Compose a 4x4 transformation matrix
@@ -464,14 +463,14 @@ def matrix44(t, dtype=np.double):
     # Degrees to radians
     rads = np.deg2rad(t[3:6])
 
-    T[0:3, 3] = threshold(t[0:3], MAX_DIST)
+    T[0:3, 3] = _threshold(t[0:3], MAX_DIST)
     R = rotation_vec2mat(rads)
     if size == 6:
         T[0:3, 0:3] = R
     elif size == 7:
         T[0:3, 0:3] = t[6] * R
     elif size == 12:
-        S = np.diag(threshold(t[6:9], MAX_DIST))
+        S = np.diag(_threshold(t[6:9], MAX_DIST))
         # Q = rotation_vec2mat(t[9:12])
         kx, ky, kz = t[9:12]
         #shear matrix
