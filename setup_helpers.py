@@ -2,7 +2,7 @@
 
 '''
 import os
-from os.path import join as pjoin, split as psplit, splitext
+from os.path import join as pjoin, split as psplit, splitext, dirname, exists
 import tempfile
 import shutil
 
@@ -26,6 +26,10 @@ REM quote exe in case of spaces in path name
 set py_exe="%py_exe%"
 call %py_exe% %pyscript% %*
 """
+
+# File to which to write Cython conditional DEF vars
+CONFIG_PXI = pjoin('build', 'config.pxi')
+
 
 class install_scripts_bat(install_scripts):
     """ Make scripts executable on Windows
@@ -81,8 +85,13 @@ def add_flag_checking(build_ext_class, input_flags):
         Class implementing ``distutils.command.build_ext.build_ext`` interface,
         with a ``build_extensions`` method.
     input_flags : sequence
-        A sequence of compiler flags.  We check each to see whether a simple C
-        source file will compile, and omit flags that cause a compile error
+        A sequence of elements, where the elements can be ``str`` with
+        a compiler flag or a tuple containing (<compiler flag>, <defvar>).  We
+        check each compiler flag to see whether a simple C source file will
+        compile, and omit flags that cause a compile error.  If the element is
+        a tuple, then <defvar> is the name of Cython variable to be defined in
+        ``build/config.pxi`` with True if `input_flags` will compile, False
+        otherwise. If None, do not write variable.
 
     Returns
     -------
@@ -119,14 +128,34 @@ def add_flag_checking(build_ext_class, input_flags):
 
         def build_extensions(self):
             """ Hook into extension building to check compiler flags """
-            for flag in self.flags:
-                if not self.can_compile_link([flag]):
+            def_vars = []
+            good_flags = []
+            config_dir = dirname(CONFIG_PXI)
+            for element in self.flags:
+                if isinstance(element, (tuple, list)):
+                    flag, def_var = element
+                else:
+                    flag, def_var = element, None
+                flag_good = self.can_compile_link([flag])
+                if def_var:
+                    def_vars.append('DEF {0} = {1}'.format(def_var, flag_good))
+                if flag_good:
+                    good_flags.append(flag)
+                else:
                     log.warn("Flag {0} omitted because of compile or link "
                              "error".format(flag))
-                    continue
+            if def_vars:
+                if not exists(config_dir):
+                    os.mkdir(config_dir)
+                with open(CONFIG_PXI, 'wt') as fobj:
+                    fobj.write('# Automatically generated; do not edit\n')
+                    fobj.write('\n'.join(def_vars))
+            if def_vars or good_flags:
                 for ext in self.extensions:
-                    ext.extra_compile_args.append(flag)
-                    ext.extra_link_args.append(flag)
+                    ext.extra_compile_args += good_flags
+                    ext.extra_link_args += good_flags
+                    if def_vars:
+                        ext.include_dirs.append(config_dir)
             build_ext_class.build_extensions(self)
 
     return Checker
