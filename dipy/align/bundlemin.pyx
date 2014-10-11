@@ -7,11 +7,9 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
-cdef extern from "have_openmp.h":
-    cdef int have_openmp
-
 
 cimport openmp
+
 
 from cython.parallel import parallel, prange
 from libc.stdlib cimport malloc, free
