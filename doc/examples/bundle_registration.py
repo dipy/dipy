@@ -16,8 +16,9 @@ from dipy.data import two_cingulum_bundles
 
 cb_subj1, cb_subj2 = two_cingulum_bundles()
 
-from dipy.align.streamlinear import (StreamlineLinearRegistration,
-                                     vectorize_streamlines)
+from dipy.align.streamlinear import StreamlineLinearRegistration
+from dipy.tracking.streamline import set_number_of_points
+
 
 """
 An important step before running the registration is to resample the streamlines
@@ -25,8 +26,8 @@ so that they both have the same number of points per streamline. Here we will
 use 20 points.
 """
 
-cb_subj1 = vectorize_streamlines(cb_subj1, 20)
-cb_subj2 = vectorize_streamlines(cb_subj2, 20)
+cb_subj1 = set_number_of_points(cb_subj1, 20)
+cb_subj2 = set_number_of_points(cb_subj2, 20)
 
 """
 Let's say now that we want to move the ``cb_subj2`` (moving) so that it can be
