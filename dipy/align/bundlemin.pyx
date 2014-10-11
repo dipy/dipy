@@ -7,8 +7,13 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 
+include "../../build/config.pxi"
 
-cimport openmp
+IF HAVE_OPENMP:
+    cimport openmp
+ELSE:
+    msg = 'Openmp is not available with your compiler.'
+    print(msg)
 
 
 from cython.parallel import parallel, prange
@@ -158,11 +163,13 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         double dist=0
         double * min_j
         double * min_i
-        openmp.omp_lock_t lock
+        IF HAVE_OPENMP:
+            openmp.omp_lock_t lock
 
     with nogil:
 
-        openmp.omp_init_lock(&lock)
+        IF HAVE_OPENMP:
+            openmp.omp_init_lock(&lock)
 
         min_j = <double *> malloc(static_size * sizeof(double))
         min_i = <double *> malloc(moving_size * sizeof(double))
@@ -180,15 +187,18 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
                 tmp = direct_flip_dist(&stat[i * rows, 0],
                                        &mov[j * rows, 0], rows)
 
-                openmp.omp_set_lock(&lock)
+                IF HAVE_OPENMP:
+                    openmp.omp_set_lock(&lock)
                 if tmp < min_j[i]:
                     min_j[i] = tmp
 
                 if tmp < min_i[j]:
                     min_i[j] = tmp
-                openmp.omp_unset_lock(&lock)
+                IF HAVE_OPENMP:
+                    openmp.omp_unset_lock(&lock)
 
-        openmp.omp_destroy_lock(&lock)
+        IF HAVE_OPENMP:
+            openmp.omp_destroy_lock(&lock)
 
         for i in range(static_size):
             sum_i += min_j[i]
