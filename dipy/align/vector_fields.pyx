@@ -7,7 +7,9 @@ import numpy as np
 cimport numpy as cnp
 cimport cython
 from fused_types cimport floating, number
-from libc.math cimport sqrt, floor
+cdef extern from "dpy_math.h" nogil:
+    double floor(double)
+    double sqrt(double)
 
 cdef inline double _apply_affine_3d_x0(double x0, double x1, double x2,
                                        double h, double[:, :] aff) nogil:

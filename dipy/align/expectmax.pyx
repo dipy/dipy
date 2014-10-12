@@ -8,14 +8,12 @@ import numpy as np
 cimport cython
 cimport numpy as cnp
 from fused_types cimport floating, number
-from libc.math cimport floor
+cdef extern from "dpy_math.h" nogil:
+    int isinf(double)
+    double floor(double)
 
 cdef inline int ifloor(double x) nogil:
     return int(floor(x))
-
-cdef inline int isinf(double x) nogil:
-    with gil:
-        return np.isinf(x)
 
 def quantize_positive_2d(floating[:, :] v, int num_levels):
     r"""Quantizes a 2D image to num_levels quantization levels
