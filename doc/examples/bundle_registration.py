@@ -11,7 +11,6 @@ To show the concept we will use two pre-saved cingulum bundles.
 
 from dipy.viz import fvtk
 from time import sleep
-from dipy.io.pickles import load_pickle
 from dipy.data import two_cingulum_bundles
 
 cb_subj1, cb_subj2 = two_cingulum_bundles()

@@ -6,7 +6,8 @@ from nose.tools import assert_true, assert_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_raises
 
 import dipy.tracking.streamline as dipystreamline
-from dipy.tracking.streamline import relist_streamlines, unlist_streamlines
+from dipy.tracking.streamline import (relist_streamlines, unlist_streamlines,
+                                      center_streamlines, transform_streamlines)
 
 
 streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
@@ -349,4 +350,24 @@ def test_unlist_relist_streamlines():
 
     for i in range(len(streamlines)):
         assert_array_equal(streamlines[i], streamlines2[i])
+
+
+def test_center_and_transform():
+
+    A = np.array([[1, 2, 3], [1, 2, 3.]])
+
+    streamlines = [A for i in range(10)]
+
+    streamlines2, center = center_streamlines(streamlines)
+
+    B = np.zeros((2, 3))
+    assert_array_equal(streamlines2[0], B)
+    assert_array_equal(center, A[0])
+
+    affine = np.eye(4)
+    affine[0, 0] = 2
+    affine[:3, -1] = - np.array([2, 1, 1]) * center
+
+    streamlines3 = transform_streamlines(streamlines, affine)
+    assert_array_equal(streamlines3[0], B)
 

@@ -12,7 +12,8 @@ include "../../build/config.pxi"
 IF HAVE_OPENMP:
     cimport openmp
 ELSE:
-    msg = 'Openmp is not available with your compiler.'
+    msg = 'OpenMP is not available with your compiler.\n'
+    msg += 'Disabled OpenMP based multithreading.'
     print(msg)
 
 
@@ -67,12 +68,12 @@ cdef double direct_flip_dist(double *a,double *b,
     return distf
 
 
-def _bundle_minimum_distance_rigid(double [:, ::1] static,
-                                   double [:, ::1] moving,
-                                   cnp.npy_intp static_size,
-                                   cnp.npy_intp moving_size,
-                                   cnp.npy_intp rows,
-                                   double [:, ::1] D):
+def _bundle_minimum_distance_matrix(double [:, ::1] static,
+                                    double [:, ::1] moving,
+                                    cnp.npy_intp static_size,
+                                    cnp.npy_intp moving_size,
+                                    cnp.npy_intp rows,
+                                    double [:, ::1] D):
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
@@ -119,11 +120,11 @@ def _bundle_minimum_distance_rigid(double [:, ::1] static,
     return np.asarray(D)
 
 
-def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
-                                         double [:, ::1] mov,
-                                         cnp.npy_intp static_size,
-                                         cnp.npy_intp moving_size,
-                                         cnp.npy_intp rows):
+def _bundle_minimum_distance(double [:, ::1] stat,
+                             double [:, ::1] mov,
+                             cnp.npy_intp static_size,
+                             cnp.npy_intp moving_size,
+                             cnp.npy_intp rows):
     """ MDF-based pairwise distance optimization function
 
     We minimize the distance between moving streamlines of the same number of
@@ -209,16 +210,14 @@ def _bundle_minimum_distance_rigid_nomat(double [:, ::1] stat,
         free(min_j)
         free(min_i)
 
-        dist = (sum_i/<double>static_size + sum_j/<double>moving_size)
+        dist = (sum_i / <double>static_size + sum_j / <double>moving_size)
 
         dist = 0.25 * dist * dist
 
     return dist
 
 
-@cython.boundscheck(False)
-@cython.wraparound(False)
-def bundles_distance_matrix_mdf(streamlines_a, streamlines_b):
+def distance_matrix_mdf(streamlines_a, streamlines_b):
     r''' Calculate distance matrix between two sets of streamlines using the
     minimum direct flipped distance.
 
@@ -246,6 +245,7 @@ def bundles_distance_matrix_mdf(streamlines_a, streamlines_b):
         cnp.ndarray[object, ndim=1] tracksA64
         cnp.ndarray[object, ndim=1] tracksB64
         cnp.ndarray[cnp.double_t, ndim=2] DM
+
     lentA = len(streamlines_a)
     lentB = len(streamlines_b)
     tracksA64 = np.zeros((lentA,), dtype=object)

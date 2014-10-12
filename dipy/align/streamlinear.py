@@ -4,8 +4,8 @@ from nibabel.quaternions import quat2angle_axis, mat2quat
 from scipy.linalg import det
 from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
-from dipy.align.bundlemin import (_bundle_minimum_distance_rigid_nomat,
-                            bundles_distance_matrix_mdf)
+from dipy.align.bundlemin import (_bundle_minimum_distance,
+                                  distance_matrix_mdf)
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
                                       center_streamlines)
@@ -27,32 +27,20 @@ class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
     def set_static(self, static):
-        self.static = static
+        pass #self.static = static
 
     @abc.abstractmethod
     def set_moving(self, moving):
-        self.moving = moving
+        pass #self.moving = moving
 
     @abc.abstractmethod
     def distance(self, xopt):
         """ calculate distance for current set of parameters
         """
-        return None
+        pass #return None
 
 
-class BundleMinDistance(StreamlineDistanceMetric):
-
-    def set_static(self, static):
-        self.static = static
-
-    def set_moving(self, moving):
-        self.moving = moving
-
-    def distance(self, xopt):
-        return bundle_min_distance(xopt, self.static, self.moving)
-
-
-class BundleMinDistanceFast(StreamlineDistanceMetric):
+class BundleMinDistanceMetric(StreamlineDistanceMetric):
 
     def set_static(self, static):
         static_centered_pts, st_idx = unlist_streamlines(static)
@@ -70,6 +58,18 @@ class BundleMinDistanceFast(StreamlineDistanceMetric):
                                         self.block_size)
 
 
+class BundleMinDistance(StreamlineDistanceMetric):
+
+    def set_static(self, static):
+        self.static = static
+
+    def set_moving(self, moving):
+        self.moving = moving
+
+    def distance(self, xopt):
+        return bundle_min_distance(xopt, self.static, self.moving)
+
+
 class BundleSumDistance(BundleMinDistance):
 
     def distance(self, xopt):
@@ -79,7 +79,7 @@ class BundleSumDistance(BundleMinDistance):
 class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0=None, method='L-BFGS-B',
-                 bounds=None, fast=True, disp=False, options=None,
+                 bounds=None, disp=False, options=None,
                  evolution=False):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
 
@@ -108,10 +108,6 @@ class StreamlineLinearRegistration(object):
             That means that we have set the bounds for the three translations
             and three rotation axes (in degrees).
 
-        fast : boolean
-            Allows faster execution. Currently works only with rigid
-            registration. Default True.
-
         options : None or dict,
             Extra options to be used with the selected method.
 
@@ -137,17 +133,13 @@ class StreamlineLinearRegistration(object):
             self.x0 = np.ones(6)
 
         if self.metric is None:
-            if fast:# and (len(self.x0) == 6):
-                self.metric = BundleMinDistanceFast()
-            else:
-                self.metric = BundleMinDistance()
+            self.metric = BundleMinDistanceMetric()
 
         self.disp = disp
         self.method = method
         if self.method not in ['Powell', 'L-BFGS-B']:
             raise ValueError('Only Powell and L-BFGS-B can be used')
         self.bounds = bounds
-        self.fast = fast
         self.options = options
         self.evolution = evolution
 
@@ -313,7 +305,7 @@ def bundle_sum_distance(t, static, moving):
 
     aff = matrix44(t)
     moving = transform_streamlines(moving, aff)
-    d01 = bundles_distance_matrix_mdf(static, moving)
+    d01 = distance_matrix_mdf(static, moving)
     return np.sum(d01)
 
 
@@ -348,7 +340,7 @@ def bundle_min_distance(t, static, moving):
     """
     aff = matrix44(t)
     moving = transform_streamlines(moving, aff)
-    d01 = bundles_distance_matrix_mdf(static, moving)
+    d01 = distance_matrix_mdf(static, moving)
 
     rows, cols = d01.shape
     return 0.25 * (np.sum(np.min(d01, axis=0)) / float(cols) +
@@ -366,10 +358,10 @@ def bundle_min_distance_fast(t, static, moving, block_size):
     rows = static.shape[0] / block_size
     cols = moving.shape[0] / block_size
 
-    return _bundle_minimum_distance_rigid_nomat(static, moving,
-                                                rows,
-                                                cols,
-                                                block_size)
+    return _bundle_minimum_distance(static, moving,
+                                    rows,
+                                    cols,
+                                    block_size)
 
 
 def rotation_vec2mat(r):
