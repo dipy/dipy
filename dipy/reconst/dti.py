@@ -1411,7 +1411,9 @@ def nlls_fit_tensor(design_matrix, data, min_signal=1, weighting=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            dti_params[vox, :] = start_params
+            evals,evecs=decompose_tensor(from_lower_triangular(start_params[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
 
     dti_params.shape = data.shape[:-1] + (12,)
     return dti_params
@@ -1540,8 +1542,10 @@ def restore_fit_tensor(design_matrix, data, min_signal=1.0, sigma=None,
         # If leastsq failed to converge and produced nans, we'll resort to the
         # OLS solution in this voxel:
         except np.linalg.LinAlgError:
-            print(vox)
-            dti_params[vox, :] = start_params
+            evals,evecs=decompose_tensor(from_lower_triangular(start_params[:6]))
+            dti_params[vox, :3] = evals
+            dti_params[vox, 3:] = evecs.ravel()
+
     dti_params.shape = data.shape[:-1] + (12,)
     restore_params = dti_params
     return restore_params

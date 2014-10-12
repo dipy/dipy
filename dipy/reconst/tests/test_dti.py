@@ -531,6 +531,11 @@ def test_restore():
          assert_array_almost_equal(tensor_est.quadratic_form[0], tensor,
                                    decimal=3)
 
+     y_with_zeros = Y.copy()
+     y_with_zeros[:, ~gtab.b0s_mask] = np.random.randn(y_with_zeros[:, ~gtab.b0s_mask].shape[0])
+     tensor_model.fit(y_with_zeros)
+
+
 def test_adc():
     """
     Test the implementation of the calculation of apparent diffusion coefficient
