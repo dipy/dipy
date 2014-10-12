@@ -532,7 +532,7 @@ def test_restore():
                                    decimal=3)
 
      y_with_zeros = Y.copy()
-     y_with_zeros[:, ~gtab.b0s_mask] = np.random.randn(y_with_zeros[:, ~gtab.b0s_mask].shape[0])
+     y_with_zeros[:, ~gtab.b0s_mask] = np.nan
      tensor_model.fit(y_with_zeros)
 
 
