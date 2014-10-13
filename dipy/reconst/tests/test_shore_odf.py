@@ -73,32 +73,5 @@ def test_multivox_shore():
     assert_equal(np.alltrue(np.isreal(c_shore)), True)
 
 
-def check_shore_index_size(radial_order):
-    f = np.floor(radial_order / 2)
-    return (f + 1) * (f + 2) * (4 * f + 3) / 6
-
-
-def test_shore_cart():
-
-    mat = shore_index_matrix(16)
-    assert_equal(mat.shape[0], check_shore_index_size(16))
-
-    phi = shore_phi_1d(50, 1.534, 0.001)
-
-    assert_almost_equal(0.333504, np.real(phi), 6)
-
-    phi3d = shore_phi_3d((3, 2, 9), (1.2, -2.35, 0.067),.004)
-
-    assert_almost_equal(-0.000136642, phi3d, 8)
-
-    psi = shore_psi_1d(2, .3, 0.32)
-
-    assert_almost_equal(0.430482, psi, 6)
-
-    psi3d = shore_psi_3d((4, 1, 5), (1.3, -2.5, 0.001), (0.3, 0.4, 0.5))
-
-    assert_almost_equal(-2.42048e-12, psi3d, 5)
-
 if __name__ == '__main__':
-    # run_module_suite()
-    test_shore_cart()
+    run_module_suite()
