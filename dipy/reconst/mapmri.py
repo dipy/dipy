@@ -3,22 +3,23 @@ from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from scipy.special import hermite, gamma
 from scipy.misc import factorial, factorial2
-from cvxopt import matrix, solvers
+import dipy.reconst.dti as dti
+from ..utils.optpkg import optional_package
+
+cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
 class MapmriModel(Cache):
 
-    def __init__(self, gtab, radial_order=6, mu=1, lambd=0, e0_cons = True, eap_cons = True):
+    def __init__(self, gtab, radial_order=4, lambd=0, eap_cons = False, anisotropic_scaling = True):
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
         self.gtab = gtab
         self.radial_order = radial_order
-        self.mu = mu
         self.lambd = lambd
-        self.e0_cons = e0_cons
         self.eap_cons = eap_cons
-
+        self.anisotropic_scaling=anisotropic_scaling
         if (gtab.big_delta is None) or (gtab.small_delta is None):
             self.tau = 1 / (4 * np.pi ** 2)
         else:
@@ -27,36 +28,42 @@ class MapmriModel(Cache):
 
     @multi_voxel_fit
     def fit(self, data):
-        # Generate the SHORE basis
-        # Temporary variable to turn constraints off for testing purposes
-        M = self.cache_get('mapmri_phi_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau))
-        if M is None:
-            M = mapmri_phi_matrix(
-                self.radial_order,  self.mu, self.gtab, self.tau)
-            self.cache_set('mapmri_phi_matrix', (self.radial_order, self.mu, self.gtab, self.tau), M)
+        ind=self.gtab.bvals<=2000
+        gtab2 = gradient_table(self.gtab.bvals[ind], self.gtab.bvecs[ind,:])
+        tenmodel=dti.TensorModel(gtab2)
+        tenfit=tenmodel.fit(data[...,ind])
+        
+        evals = tenfit.evals
+        R=tenfit.evecs
 
-        ind_mat = self.cache_get('mapmri_index_matrix', key=self.radial_order)
-        if ind_mat is None:
-            ind_mat = mapmri_index_matrix(self.radial_order)
-            self.cache_set('mapmri_index_matrix', self.radial_order, ind_mat)
+        ind_evals = np.argsort(evals)[::-1]
+        evals = evals[ind_evals]
+        R = R[ind_evals,:]
+        
+        evals = np.clip(evals,1e-04,evals.max())
+        
+        if self.anisotropic_scaling:
+            mu = np.sqrt(evals*2*self.tau)
+            
+        else:
+            mumean=np.sqrt(evals.mean()*2*self.tau)
+            mu=np.array([mumean,mumean,mumean])
+        
+        qvals=np.sqrt(self.gtab.bvals/self.tau) / (2 * np.pi)
+        qvecs=np.dot(self.gtab.bvecs,R)
+        q=qvecs*qvals[:,None]
+
+        M = mapmri_phi_matrix(self.radial_order, mu, q.T)
+
+        ind_mat = mapmri_index_matrix(self.radial_order)
 
         if self.eap_cons:
-            K = self.cache_get('mapmri_psi_matrix_nonneg', key=(self.radial_order, self.mu, self.tau))
-            if K is None:
-                # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
-                rmax = 0.35 * self.mu * (2 * np.pi * np.sqrt(700))
-                rgrad = gen_rgrid(rmax = rmax, Nstep = 10)
-                K = mapmri_psi_matrix(
-                    self.radial_order,  self.mu, rgrad, self.tau)
-                self.cache_set('mapmri_psi_matrix_nonneg', (self.radial_order, self.mu, self.tau), K)
+            # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
+            rmax = 0.35 * self.mu * (2 * np.pi * np.sqrt(700))
+            rgrad = gen_rgrid(rmax = rmax, Nstep = 10)
+            K = mapmri_psi_matrix(self.radial_order,  mu, rgrad, self.tau)
 
-
-        Q = self.cache_get('Q_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau, self.lambd))
-        if Q is None:
-            Q = matrix(np.dot(M.T,M))
-            self.cache_set('Q_matrix', (self.radial_order, self.mu, self.gtab, self.tau, self.lambd), Q)
-
-
+        Q = matrix(np.dot(M.T,M))
         p = matrix(-1*np.dot(M.T,data))
         
         if self.eap_cons:
@@ -66,13 +73,8 @@ class MapmriModel(Cache):
             G = None
             h = None
 
-        if self.e0_cons:
-            #line of M corresponding to q=0
-            A = matrix(M[0],(1,M.shape[1]))
-            b = matrix(1.0)
-        else:
-            A = None
-            b = None
+        A = None
+        b = None
 
         solvers.options['show_progress'] = False
         sol = solvers.qp(Q, p, G, h, A, b)
@@ -195,24 +197,18 @@ def mapmri_psi_3d(n, r, mu):
     return psi(n1, x, mux) * psi(n2, y, muy) * psi(n3, z, muz)
 
 
-def mapmri_phi_matrix(radial_order, mu, gtab, tau):
+def mapmri_phi_matrix(radial_order, mu, q_gradients):
 
     ind_mat = mapmri_index_matrix(radial_order)
 
-    qvals = np.sqrt(gtab.bvals / (4 * np.pi ** 2 * tau))
-    bvecs = gtab.bvecs
-
-    qgradients = qvals[:, None] * bvecs
-
     n_elem = ind_mat.shape[0]
 
-    n_qgrad = qgradients.shape[0]
+    n_qgrad = q_gradients.shape[1]
 
     M = np.zeros((n_qgrad, n_elem))
 
-    for i in range(n_qgrad):
-        for j in range(n_elem):
-            M[i, j] = mapmri_phi_3d(ind_mat[j], qgradients[i], mu)
+    for j in range(n_elem):
+        M[:, j] = mapmri_phi_3d(ind_mat[j], q_gradients, mu)
 
     return M
 
