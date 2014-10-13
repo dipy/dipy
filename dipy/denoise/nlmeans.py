@@ -2,7 +2,6 @@ from __future__ import division, print_function
 
 import numpy as np
 from dipy.denoise.denspeed import nlmeans_3d
-from scipy.ndimage.filters import convolve
 
 
 def nlmeans(arr, sigma, mask=None, patch_radius=1, block_radius=5, rician=True):
