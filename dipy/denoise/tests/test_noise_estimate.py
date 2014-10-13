@@ -3,7 +3,7 @@ from __future__ import division, print_function
 import numpy as np
 import nibabel as nib
 
-from numpy.testing import assert_almost_equal, assert_equal
+from numpy.testing import assert_almost_equal, assert_equal, assert_array_almost_equal
 from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
 import dipy.data
 
