@@ -6,7 +6,7 @@ from scipy.misc import factorial, factorial2
 from cvxopt import matrix, solvers
 
 
-class ShoreCartModel(Cache):
+class MapmriModel(Cache):
 
     def __init__(self, gtab, radial_order=6, mu=1, lambd=0, e0_cons = True, eap_cons = True):
 
@@ -29,37 +29,31 @@ class ShoreCartModel(Cache):
     def fit(self, data):
         # Generate the SHORE basis
         # Temporary variable to turn constraints off for testing purposes
-        M = self.cache_get('shore_phi_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau))
+        M = self.cache_get('mapmri_phi_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau))
         if M is None:
-            M = shore_phi_matrix(
+            M = mapmri_phi_matrix(
                 self.radial_order,  self.mu, self.gtab, self.tau)
-            self.cache_set('shore_phi_matrix', (self.radial_order, self.mu, self.gtab, self.tau), M)
+            self.cache_set('mapmri_phi_matrix', (self.radial_order, self.mu, self.gtab, self.tau), M)
 
-        ind_mat = self.cache_get('shore_index_matrix', key=self.radial_order)
+        ind_mat = self.cache_get('mapmri_index_matrix', key=self.radial_order)
         if ind_mat is None:
-            ind_mat = shore_index_matrix(self.radial_order)
-            self.cache_set('shore_index_matrix', self.radial_order, ind_mat)
-
-        LR = self.cache_get('shore_laplace_matrix', key=(self.radial_order, self.mu))
-        if LR is None:
-            LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
-            self.cache_set('shore_laplace_matrix', (self.radial_order, self.mu), LR)
+            ind_mat = mapmri_index_matrix(self.radial_order)
+            self.cache_set('mapmri_index_matrix', self.radial_order, ind_mat)
 
         if self.eap_cons:
-            K = self.cache_get('shore_psi_matrix_nonneg', key=(self.radial_order, self.mu, self.tau))
+            K = self.cache_get('mapmri_psi_matrix_nonneg', key=(self.radial_order, self.mu, self.tau))
             if K is None:
                 # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
                 rmax = 0.35 * self.mu * (2 * np.pi * np.sqrt(700))
                 rgrad = gen_rgrid(rmax = rmax, Nstep = 10)
-                K = shore_psi_matrix(
+                K = mapmri_psi_matrix(
                     self.radial_order,  self.mu, rgrad, self.tau)
-                self.cache_set('shore_psi_matrix_nonneg', (self.radial_order, self.mu, self.tau), K)
+                self.cache_set('mapmri_psi_matrix_nonneg', (self.radial_order, self.mu, self.tau), K)
 
 
         Q = self.cache_get('Q_matrix', key=(self.radial_order, self.mu, self.gtab, self.tau, self.lambd))
         if Q is None:
-            # Because M and LR are already updated a few line above
-            Q = matrix(np.dot(M.T,M) + self.lambd * LR)
+            Q = matrix(np.dot(M.T,M))
             self.cache_set('Q_matrix', (self.radial_order, self.mu, self.gtab, self.tau, self.lambd), Q)
 
 
@@ -85,50 +79,50 @@ class ShoreCartModel(Cache):
 
         coef = np.array(sol['x'])[:,0]
 
-        return ShoreCartFit(self, coef)
+        return MapmriFit(self, coef)
 
-class ShoreCartFit():
+class MapmriFit():
 
-    def __init__(self, model, shore_coef):
+    def __init__(self, model, mapmri_coef):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
         ----------
         model : object,
             AnalyticalModel
-        shore_coef : 1d ndarray,
-            shore coefficients
+        mapmri_coef : 1d ndarray,
+            mapmri coefficients
         """
 
         self.model = model
-        self._shore_coef = shore_coef
+        self._mapmri_coef = mapmri_coef
         self.gtab = model.gtab
         self.radial_order = model.radial_order
         self.mu = model.mu
 
     @property
-    def shore_coeff(self):
+    def mapmri_coeff(self):
         """The SHORE coefficients
         """
-        return self._shore_coef
+        return self._mapmri_coef
 
     def odf(self, sphere, smoment=0):
         r""" Calculates the real analytical odf for a given discrete sphere.
 
         Eq.32
         """
-        I_s = self.model.cache_get('shore_odf_matrix', key=sphere)
+        I_s = self.model.cache_get('mapmri_odf_matrix', key=sphere)
         if I_s is None:
-            I_s = shore_odf_matrix(self.radial_order,
+            I_s = mapmri_odf_matrix(self.radial_order,
                                    self.mu, smoment, sphere.vertices)
-            self.model.cache_set('shore_odf_matrix', sphere, I_s)
+            self.model.cache_set('mapmri_odf_matrix', sphere, I_s)
 
-        odf = np.dot(I_s, self._shore_coef)
+        odf = np.dot(I_s, self._mapmri_coef)
         print(odf.shape)
         return odf
 
 
-def shore_index_matrix(radial_order):
+def mapmri_index_matrix(radial_order):
 
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
@@ -139,7 +133,7 @@ def shore_index_matrix(radial_order):
     return np.array(index_matrix)
 
 
-def shore_phi_1d(n, q, mu):
+def mapmri_phi_1d(n, q, mu):
     """
     Eq. 4
     """
@@ -155,7 +149,7 @@ def shore_phi_1d(n, q, mu):
     return phi
 
 
-def shore_phi_3d(n, q, mu):
+def mapmri_phi_3d(n, q, mu):
     """
     Eq. 23
     """
@@ -167,11 +161,11 @@ def shore_phi_3d(n, q, mu):
     qx, qy, qz = q
     mux, muy, muz = mu
 
-    phi = shore_phi_1d
+    phi = mapmri_phi_1d
     return np.real(phi(n1, qx, mux) * phi(n2, qy, muy) * phi(n3, qz, muz))
 
 
-def shore_psi_1d(n, x, mu):
+def mapmri_psi_1d(n, x, mu):
     """
     Eq. 10
     """
@@ -185,7 +179,7 @@ def shore_psi_1d(n, x, mu):
     return psi
 
 
-def shore_psi_3d(n, r, mu):
+def mapmri_psi_3d(n, r, mu):
     """
     Eq. 22
     """
@@ -197,13 +191,13 @@ def shore_psi_3d(n, r, mu):
     x, y, z = r
     mux, muy, muz = mu
 
-    psi = shore_psi_1d
+    psi = mapmri_psi_1d
     return psi(n1, x, mux) * psi(n2, y, muy) * psi(n3, z, muz)
 
 
-def shore_phi_matrix(radial_order, mu, gtab, tau):
+def mapmri_phi_matrix(radial_order, mu, gtab, tau):
 
-    ind_mat = shore_index_matrix(radial_order)
+    ind_mat = mapmri_index_matrix(radial_order)
 
     qvals = np.sqrt(gtab.bvals / (4 * np.pi ** 2 * tau))
     bvecs = gtab.bvecs
@@ -218,13 +212,13 @@ def shore_phi_matrix(radial_order, mu, gtab, tau):
 
     for i in range(n_qgrad):
         for j in range(n_elem):
-            M[i, j] = shore_phi_3d(ind_mat[j], qgradients[i], mu)
+            M[i, j] = mapmri_phi_3d(ind_mat[j], qgradients[i], mu)
 
     return M
 
-def shore_psi_matrix(radial_order, mu, rgrad, tau):
+def mapmri_psi_matrix(radial_order, mu, rgrad, tau):
 
-    ind_mat = shore_index_matrix(radial_order)
+    ind_mat = mapmri_index_matrix(radial_order)
 
     n_elem = ind_mat.shape[0]
 
@@ -234,17 +228,17 @@ def shore_psi_matrix(radial_order, mu, rgrad, tau):
 
     for i in range(n_rgrad):
         for j in range(n_elem):
-            K[i, j] = shore_psi_3d(ind_mat[j], rgrad[i], mu)
+            K[i, j] = mapmri_psi_3d(ind_mat[j], rgrad[i], mu)
 
     return K
 
 
-def shore_odf_matrix(radial_order, mu, smoment, vertices):
+def mapmri_odf_matrix(radial_order, mu, smoment, vertices):
     """
     Eq. 33 (choose ux=uy=uz)
     """
 
-    ind_mat = shore_index_matrix(radial_order)
+    ind_mat = mapmri_index_matrix(radial_order)
 
     n_vert = vertices.shape[0]
 
@@ -302,99 +296,6 @@ def _odf_cfunc(n1, n2, n3, vx, vy, vz, smoment):
 
     return sumc
 
-
-def delta(n, m):
-    if n == m:
-        return 1
-    return 0
-
-
-def shore_laplace_s(n, m, mu):
-    """ S(n, m)
-    """
-
-    return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi) * mu)
-
-
-def shore_laplace_l(n, m, mu):
-    """ L(m, n)
-    """
-
-    a = np.sqrt((m - 1) * m) * delta(m - 2, n)
-
-    b = np.sqrt((n - 1) * n) * delta(n - 2, m)
-
-    c = (2 * n + 1) * delta(m, n)
-
-    return np.pi ** (3 / 2.) * (-1) ** (n + 1) * mu * (a + b + c)
-
-
-def shore_laplace_r(n, m, mu):
-
-    k = 2 * np.pi ** (7 / 2.) * (-1) ** (n) * mu ** 3
-
-    a0 = 3 * (2 * n ** 2 + 2 * n + 1) * delta(n, m)
-
-    sqmn = np.sqrt(gamma(m + 1) / gamma(n + 1))
-
-    sqnm = 1 / sqmn
-
-    an2 = 2 * (2 * n + 3) * sqmn * delta(m, n + 2)
-
-    an4 = sqmn * delta(m, n + 4)
-
-    am2 = 2 * (2 * m + 3) * sqnm * delta(m + 2, n)
-
-    am4 = sqnm * delta(m + 4, n)
-
-    return k * (a0 + an2 + an4 + am2 + am4)
-
-
-def shore_laplace_delta(indn, indm, mu):
-
-    n1, n2, n3 = indn
-    m1, m2, m3 = indm
-
-    L = shore_laplace_l
-    R = shore_laplace_r
-    S = shore_laplace_s
-
-
-    delta = 0
-
-    delta1 = (L(n2, m2, mu) * L(m3, n3, mu) + L(m2, n2, mu) * L(n3, m3, mu)) * S(n1, m1, mu)
-
-    delta2 = (L(n1, m1, mu) * L(m3, n3, mu) + L(m1, n1, mu) * L(n3, m3, mu)) * S(n2, m2, mu)
-
-    delta3 = (L(n1, m1, mu) * L(m2, n2, mu) + L(m1, n1, mu) * L(n2, m2, mu)) * S(n3, m3, mu)
-
-    delta += delta1 + delta2 + delta3
-
-    delta += S(n1, m1, mu) * S(n2, m2, mu) * R(n3, m3, mu)
-
-    delta += S(n1, m1, mu) * R(n2, m2, mu) * S(n3, m3, mu)
-
-    delta += R(n1, m1, mu) * S(n2, m2, mu) * S(n3, m3, mu)
-
-    return delta
-
-
-def shore_laplace_reg_matrix(radial_order, mu):
-
-    ind_mat = shore_index_matrix(radial_order)
-
-    n_elem = ind_mat.shape[0]
-
-    LR = np.zeros((n_elem, n_elem))
-
-    for i in range(n_elem):
-        for j in range(n_elem):
-
-            LR[i, j] = shore_laplace_delta(ind_mat[i], ind_mat[j], mu)
-
-    return LR
-
-
 def gen_rgrid(rmax, Nstep = 10):
     rgrad = []
     # Build a regular grid of Nstep**3 points in (R^2 X R+)
@@ -406,10 +307,9 @@ def gen_rgrid(rmax, Nstep = 10):
     return np.array(rgrad)
 
 
+def mapmri_e0(radial_order, coeff):
 
-def shore_e0(radial_order, coeff):
-
-    ind_mat = shore_index_matrix(radial_order)
+    ind_mat = mapmri_index_matrix(radial_order)
 
     n_elem = ind_mat.shape[0]
 
@@ -430,9 +330,9 @@ def shore_e0(radial_order, coeff):
     return s0 
 
 
-def shore_evaluate_E(radial_order, coeff, qlist, mu):
+def mapmri_evaluate_E(radial_order, coeff, qlist, mu):
 
-    ind_mat = shore_index_matrix(radial_order)
+    ind_mat = mapmri_index_matrix(radial_order)
 
     n_elem = ind_mat.shape[0]
 
@@ -442,13 +342,13 @@ def shore_evaluate_E(radial_order, coeff, qlist, mu):
 
     for i in range(n_qgrad):
         for j in range(n_elem):
-            data_out[i] += coeff[j] * shore_phi_3d(ind_mat[j], qlist[i], mu)
+            data_out[i] += coeff[j] * mapmri_phi_3d(ind_mat[j], qlist[i], mu)
 
     return data_out
 
-def shore_evaluate_EAP(radial_order, coeff, rlist, mu):
+def mapmri_evaluate_EAP(radial_order, coeff, rlist, mu):
 
-    ind_mat = shore_index_matrix(radial_order)
+    ind_mat = mapmri_index_matrix(radial_order)
     
     n_elem = ind_mat.shape[0]
 
@@ -458,7 +358,7 @@ def shore_evaluate_EAP(radial_order, coeff, rlist, mu):
 
     for i in range(n_rgrad):
         for j in range(n_elem):
-            data_out[i] += coeff[j] * shore_psi_3d(ind_mat[j], rlist[i], mu)
+            data_out[i] += coeff[j] * mapmri_psi_3d(ind_mat[j], rlist[i], mu)
 
     return data_out
 
