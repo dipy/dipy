@@ -7,7 +7,7 @@ from scipy.misc import factorial, factorial2
 
 class ShoreCartModel(Cache):
 
-    def __init__(self, gtab, radial_order=6, mu=1, lambd=None):
+    def __init__(self, gtab, radial_order=6, mu=1, lambd=0):
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
@@ -36,7 +36,15 @@ class ShoreCartModel(Cache):
             ind_mat = shore_index_matrix(self.radial_order)
             self.cache_set('shore_index_matrix', self.gtab, ind_mat)
 
-        pseudo_inv = np.linalg.pinv(M)
+        LR = self.cache_get('shore_laplace_matrix', key=self.gtab)
+        if LR is None:
+            LR = shore_laplace_reg_matrix(self.radial_order, self.mu)
+            self.cache_set('shore_laplace_matrix', self.gtab, LR)
+
+
+        pseudo_inv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambd * LR),
+                            M.T)
+
         coef = np.dot(pseudo_inv, data)
         return ShoreCartFit(self, coef)
 
@@ -74,7 +82,7 @@ class ShoreCartFit():
         I_s = self.model.cache_get('shore_odf_matrix', key=sphere)
         if I_s is None:
             I_s = shore_odf_matrix(self.radial_order,
-                                       self.mu, smoment, sphere.vertices)
+                                   self.mu, smoment, sphere.vertices)
             self.model.cache_set('shore_odf_matrix', sphere, I_s)
 
         odf = np.dot(I_s, self._shore_coef)
@@ -226,20 +234,109 @@ def _odf_cfunc(n1, n2, n3, vx, vy, vz, smoment):
 
                 gam = (-1) ** ((i + j + k) / 2) * gamma((3 + smoment + nn) / 2)
 
-                num1 =  vx  ** (n1 - i)
+                num1 = vx ** (n1 - i)
 
-                num2 = vy  ** (n2 - j)
+                num2 = vy ** (n2 - j)
 
-                num3 = vz  ** (n3 - k)
+                num3 = vz ** (n3 - k)
 
                 num = 2 ** (nn) * num1 * num2 * num3
 
-                denom = f(n1 - i) * f(n2 - j) * f(n3 - k) * f2(i) * f2(j) * f2(k)
+                denom = f(n1 - i) * f(n2 - j) * f(
+                    n3 - k) * f2(i) * f2(j) * f2(k)
 
                 sumc += (gam * num) / denom
 
     return sumc
 
 
-def laplacian_regularization(radial_order, mu):
-    pass
+def delta(n, m):
+    if n == m:
+        return 1
+    return 0
+
+
+def shore_laplace_s(n, m, mu):
+    """ S(n, m)
+    """
+
+    return (-1) ** n * delta(n, m) / (2 * np.sqrt(np.pi) * mu)
+
+
+def shore_laplace_l(n, m, mu):
+    """ L(m, n)
+    """
+
+    a = np.sqrt((m - 1) * m) * delta(m - 2, n)
+
+    b = np.sqrt((n - 1) * n) * delta(n - 2, m)
+
+    c = (2 * n + 1) * delta(m, n)
+
+    return np.pi ** (3 / 2.) * (-1) ** (n + 1) * mu * (a + b + c)
+
+
+def shore_laplace_r(n, m, mu):
+
+    k = 2 * np.pi ** (7 / 2.) * (-1) ** (n) * mu ** 3
+
+    a0 = 3 * (2 * n ** 2 + 2 * n + 1) * delta(n, m)
+
+    sqmn = np.sqrt(gamma(m + 1) / gamma(n + 1))
+
+    sqnm = 1 / sqmn
+
+    an2 = 2 * (2 * n + 3) * sqmn * delta(m, n + 2)
+
+    an4 = sqmn * delta(m, n + 4)
+
+    am2 = 2 * (2 * m + 3) * sqnm * delta(m + 2, n)
+
+    am4 = sqnm * delta(m + 4, n)
+
+    return k * (a0 + an2 + an4 + am2 + am4)
+
+
+def shore_laplace_delta(indn, indm, mu):
+
+    n1, n2, n3 = indn
+    m1, m2, m3 = indm
+
+    L = shore_laplace_l
+    R = shore_laplace_r
+    S = shore_laplace_s
+
+
+    delta = 0
+
+    delta1 = (L(n2, m2, mu) * L(m3, n3, mu) + L(m2, n2, mu) * L(n3, m3, mu)) * S(n1, m1, mu)
+
+    delta2 = (L(n1, m1, mu) * L(m3, n3, mu) + L(m1, n1, mu) * L(n3, m3, mu)) * S(n2, m2, mu)
+
+    delta3 = (L(n1, m1, mu) * L(m2, n2, mu) + L(m1, n1, mu) * L(n2, m2, mu)) * S(n3, m3, mu)
+
+    delta += delta1 + delta2 + delta3
+
+    delta += S(n1, m1, mu) * S(n2, m2, mu) * R(n3, m3, mu)
+
+    delta += S(n1, m1, mu) * R(n2, m2, mu) * S(n3, m3, mu)
+
+    delta += R(n1, m1, mu) * S(n2, m2, mu) * S(n3, m3, mu)
+
+    return delta
+
+
+def shore_laplace_reg_matrix(radial_order, mu):
+
+    ind_mat = shore_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+
+    LR = np.zeros((n_elem, n_elem))
+
+    for i in range(n_elem):
+        for j in range(n_elem):
+
+            LR[i, j] = shore_laplace_delta(ind_mat[i], ind_mat[j], mu)
+
+    return LR
