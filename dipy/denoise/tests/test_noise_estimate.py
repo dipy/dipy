@@ -3,12 +3,11 @@ from __future__ import division, print_function
 import numpy as np
 import nibabel as nib
 
-from numpy.testing import assert_almost_equal
+from numpy.testing import assert_almost_equal, assert_equal
 from dipy.denoise.noise_estimate import _inv_nchi_cdf, piesno, estimate_sigma
 import dipy.data
 
 # See page 5 of the reference paper for tested values
-
 def test_inv_nchi():
     # Values taken from hispeed.MedianPIESNO.lambdaPlus
     # and hispeed.MedianPIESNO.lambdaMinus
@@ -29,7 +28,6 @@ def test_piesno():
     test_piesno_data = nib.load(dipy.data.get_data("test_piesno")).get_data()
     sigma = piesno(test_piesno_data, N=8, alpha=0.01, l=1, eps=1e-10, return_mask=False)
     assert_almost_equal(sigma, 0.010749458025559)
-
 
 
 def test_estimate_sigma():
