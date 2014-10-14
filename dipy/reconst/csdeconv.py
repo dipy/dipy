@@ -8,7 +8,7 @@ from dipy.reconst.shm import (sph_harm_ind_list, real_sph_harm, order_from_ncoef
                               sph_harm_lookup, lazy_index, SphHarmFit,
                               real_sym_sh_basis, sh_to_rh, gen_dirac,
                               forward_sdeconv_mat, SphHarmModel)
-from dipy.data import get_sphere
+from dipy.data import small_sphere, get_sphere
 from dipy.core.geometry import cart2sphere
 from dipy.core.ndindex import ndindex
 from dipy.sims.voxel import single_tensor
@@ -96,7 +96,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
 
         # for the sphere used in the regularization positivity constraint
         if reg_sphere is None:
-            self.sphere = get_sphere('symmetric362')
+            self.sphere = small_sphere
         else:
             self.sphere = reg_sphere
 
@@ -109,7 +109,7 @@ class ConstrainedSphericalDeconvModel(SphHarmModel):
             self.response = response
 
         self.S_r = estimate_response(gtab, self.response[0], self.response[1])
-        self.response_scaling = response[1]
+        self.response_scaling = self.response[1]
 
         r_sh = np.linalg.lstsq(self.B_dwi, self.S_r[self._where_dwi])[0]
         r_rh = sh_to_rh(r_sh, m, n)
