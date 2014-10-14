@@ -58,34 +58,42 @@ class MapmriModel(Cache):
         ind_mat = mapmri_index_matrix(self.radial_order)
 
         if self.eap_cons:
+            if not have_cvxopt:
+                raise ValueError(
+                    'CVXOPT package needed to enforce constraints')
+            import cvxopt.solvers
             # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
             rmax = 0.35 * self.mu * (2 * np.pi * np.sqrt(700))
             rgrad = gen_rgrid(rmax = rmax, Nstep = 10)
             K = mapmri_psi_matrix(self.radial_order,  mu, rgrad, self.tau)
 
-        Q = matrix(np.dot(M.T,M))
-        p = matrix(-1*np.dot(M.T,data))
-        
-        if self.eap_cons:
-            G = matrix(-1*K)
-            h = matrix(np.zeros((K.shape[0])),(K.shape[0],1))
+            Q = cvxopt.matrix(np.dot(M.T,M))
+            p = cvxopt.matrix(-1*np.dot(M.T,data))
+            G = cvxopt.matrix(-1*K)
+            h = cvxopt.matrix(np.zeros((K.shape[0])),(K.shape[0],1))
+            solvers.options['show_progress'] = False
+            sol = solvers.qp(Q, p, G, h)
+            if sol['status'] != 'optimal':
+                warn('Optimization did not find a solution')
+
+            coef = np.array(sol['x'])[:,0]
         else:
-            G = None
-            h = None
+            I = np.eye(M.shape[1])
+            pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambd * I), M.T)
+            coef = np.dot(pseudoInv, data)
 
-        A = None
-        b = None
+        Bm=Bmat(ind_mat)
 
-        solvers.options['show_progress'] = False
-        sol = solvers.qp(Q, p, G, h, A, b)
+        E0 = 0
+        for i in range(ind_mat.shape[0]):
+            E0 = E0 + coef[i] * Bm[i]
+        coef = coef / E0
 
-        coef = np.array(sol['x'])[:,0]
-
-        return MapmriFit(self, coef)
+        return MapmriFit(self, coef, mu, R, ind_mat, Bm)
 
 class MapmriFit():
 
-    def __init__(self, model, mapmri_coef):
+    def __init__(self, model, mapmri_coef, mu, R, ind_mat):
         """ Calculates diffusion properties for a single voxel
 
         Parameters
@@ -100,8 +108,20 @@ class MapmriFit():
         self._mapmri_coef = mapmri_coef
         self.gtab = model.gtab
         self.radial_order = model.radial_order
-        self.mu = model.mu
+        self.mu = mu
+        self.R = R
+        self.ind_mat = ind_mat
 
+    @property
+    def mapmri_mu(self):
+        """The SHORE coefficients
+        """
+        return self.mu
+    @property
+    def mapmri_R(self):
+        """The SHORE coefficients
+        """
+        return self.R    
     @property
     def mapmri_coeff(self):
         """The SHORE coefficients
@@ -113,15 +133,11 @@ class MapmriFit():
 
         Eq.32
         """
-        I_s = self.model.cache_get('mapmri_odf_matrix', key=sphere)
-        if I_s is None:
-            I_s = mapmri_odf_matrix(self.radial_order,
-                                   self.mu, smoment, sphere.vertices)
-            self.model.cache_set('mapmri_odf_matrix', sphere, I_s)
-
+        v_ = sphere.vertices
+        v = np.dot(v_,self.R)
+        I_s = mapmri_odf_matrix(self.radial_order,self.mu, s, v)
         odf = np.dot(I_s, self._mapmri_coef)
-        print(odf.shape)
-        return odf
+        return np.clip(odf,0,odf.max())
 
 
 def mapmri_index_matrix(radial_order):
@@ -134,6 +150,14 @@ def mapmri_index_matrix(radial_order):
 
     return np.array(index_matrix)
 
+def Bmat(ind_mat):
+    B = np.zeros(ind_mat.shape[0])
+    for i in range (ind_mat.shape[0]):
+        n1, n2, n3 = ind_mat[i]
+        K = int(not(n1%2) and not(n2%2) and not(n3%2))
+        B[i] = K * np.sqrt(factorial(n1)*factorial(n2)*factorial(n3)) /(factorial2(n1)*factorial2(n2)*factorial2(n3))
+        
+    return B
 
 def mapmri_phi_1d(n, q, mu):
     """
@@ -156,9 +180,6 @@ def mapmri_phi_3d(n, q, mu):
     Eq. 23
     """
 
-    if isinstance(mu, float):
-        mu = (mu,  mu, mu)
-
     n1, n2, n3 = n
     qx, qy, qz = q
     mux, muy, muz = mu
@@ -166,6 +187,20 @@ def mapmri_phi_3d(n, q, mu):
     phi = mapmri_phi_1d
     return np.real(phi(n1, qx, mux) * phi(n2, qy, muy) * phi(n3, qz, muz))
 
+def mapmri_phi_matrix(radial_order, mu, q_gradients):
+
+    ind_mat = mapmri_index_matrix(radial_order)
+
+    n_elem = ind_mat.shape[0]
+
+    n_qgrad = q_gradients.shape[1]
+
+    M = np.zeros((n_qgrad, n_elem))
+
+    for j in range(n_elem):
+        M[:, j] = mapmri_phi_3d(ind_mat[j], q_gradients, mu)
+
+    return M
 
 def mapmri_psi_1d(n, x, mu):
     """
@@ -186,31 +221,13 @@ def mapmri_psi_3d(n, r, mu):
     Eq. 22
     """
 
-    if isinstance(mu, float):
-        mu = (mu,  mu, mu)
-
     n1, n2, n3 = n
-    x, y, z = r
+    x, y, z = r.T
     mux, muy, muz = mu
 
     psi = mapmri_psi_1d
     return psi(n1, x, mux) * psi(n2, y, muy) * psi(n3, z, muz)
 
-
-def mapmri_phi_matrix(radial_order, mu, q_gradients):
-
-    ind_mat = mapmri_index_matrix(radial_order)
-
-    n_elem = ind_mat.shape[0]
-
-    n_qgrad = q_gradients.shape[1]
-
-    M = np.zeros((n_qgrad, n_elem))
-
-    for j in range(n_elem):
-        M[:, j] = mapmri_phi_3d(ind_mat[j], q_gradients, mu)
-
-    return M
 
 def mapmri_psi_matrix(radial_order, mu, rgrad, tau):
 
@@ -222,14 +239,13 @@ def mapmri_psi_matrix(radial_order, mu, rgrad, tau):
 
     K = np.zeros((n_rgrad, n_elem))
 
-    for i in range(n_rgrad):
-        for j in range(n_elem):
-            K[i, j] = mapmri_psi_3d(ind_mat[j], rgrad[i], mu)
+    for j in range(n_elem):
+        K[:, j] = mapmri_psi_3d(ind_mat[j], rgrad, mu)
 
     return K
 
 
-def mapmri_odf_matrix(radial_order, mu, smoment, vertices):
+def mapmri_odf_matrix(radial_order, mu, s, vertices):
     """
     Eq. 33 (choose ux=uy=uz)
     """
@@ -243,24 +259,22 @@ def mapmri_odf_matrix(radial_order, mu, smoment, vertices):
     odf_mat = np.zeros((n_vert, n_elem))
 
     rho = mu
+    mux,muy,muz = mu
+    rho=1.0/np.sqrt((vertices[:,0]/mux)**2 + (vertices[:,1]/muy)**2 + (vertices[:,2]/muz)**2)
+    alpha = 2 * rho * (vertices[:,0]/mux)
+    beta = 2 * rho * (vertices[:,1]/muy)
+    gamma = 2 * rho * (vertices[:,2]/muz)
+    const= rho ** (3 + s) / np.sqrt(2 ** (2 - s) * np.pi ** 3 * (mux ** 2 * muy ** 2 * muz ** 2))
 
-    for i in range(n_vert):
-
-        vx, vy, vz = vertices[i]
-
-        for j in range(n_elem):
-
-            n1, n2, n3 = ind_mat[j]
-            f = np.sqrt(factorial(n1) * factorial(n2) * factorial(n3))
-
-            k = mu ** (smoment) / np.sqrt(2 ** (2 - smoment) * np.pi ** 3)
-
-            odf_mat[i, j] = k * f * _odf_cfunc(n1, n2, n3, vx, vy, vz, smoment)
+    for j in range(n_elem):
+        n1, n2, n3 = ind_mat[j]
+        f = np.sqrt(factorial(n1) * factorial(n2) * factorial(n3))
+        odf_mat[:, j] = const * f * _odf_cfunc(n1, n2, n3, alpha, beta, gamma, s)
 
     return odf_mat
 
 
-def _odf_cfunc(n1, n2, n3, vx, vy, vz, smoment):
+def _odf_cfunc(n1, n2, n3, a, b, g, s):
     """
     Eq. 34
     """
@@ -275,22 +289,23 @@ def _odf_cfunc(n1, n2, n3, vx, vy, vz, smoment):
 
                 nn = n1 + n2 + n3 - i - j - k
 
-                gam = (-1) ** ((i + j + k) / 2) * gamma((3 + smoment + nn) / 2)
+                gam = (-1) ** ((i + j + k) / 2.0) * gamma((3 + s + nn) / 2.0)
 
-                num1 = vx ** (n1 - i)
+                num1 = a ** (n1 - i)
 
-                num2 = vy ** (n2 - j)
+                num2 = b ** (n2 - j)
 
-                num3 = vz ** (n3 - k)
+                num3 = g ** (n3 - k)
 
-                num = 2 ** (nn) * num1 * num2 * num3
+                num = gam * num1 * num2 * num3
 
                 denom = f(n1 - i) * f(n2 - j) * f(
                     n3 - k) * f2(i) * f2(j) * f2(k)
 
-                sumc += (gam * num) / denom
+                sumc += num / denom
 
     return sumc
+
 
 def gen_rgrid(rmax, Nstep = 10):
     rgrad = []
@@ -301,29 +316,6 @@ def gen_rgrid(rmax, Nstep = 10):
             for zz in np.linspace(0,gridmax,Nstep):
                 rgrad.append([xx, yy, zz])
     return np.array(rgrad)
-
-
-def mapmri_e0(radial_order, coeff):
-
-    ind_mat = mapmri_index_matrix(radial_order)
-
-    n_elem = ind_mat.shape[0]
-
-    s0 = 0
-
-    for n in range(n_elem):
-
-        n1, n2, n3 = ind_mat[n]
-
-        if (n1 % 2 == 0) and (n2 % 2 == 0) and (n3 % 2 == 0):
-
-            num = (np.sqrt(factorial(n1) * factorial(n2) * factorial(n3)))
-        
-            den = factorial2(n1) *  factorial2(n2) * factorial2(n3)
-        
-            s0 += (num / np.float(den))  * coeff[n]
-    
-    return s0 
 
 
 def mapmri_evaluate_E(radial_order, coeff, qlist, mu):
