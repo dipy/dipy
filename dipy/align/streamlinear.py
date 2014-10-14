@@ -49,7 +49,7 @@ class BundleMinDistanceMetric(StreamlineDistanceMetric):
         self.block_size = st_idx[0]
 
     def set_moving(self, moving):
-        self.moving_centered_pts, mv_idx = unlist_streamlines(moving)
+        self.moving_centered_pts, _ = unlist_streamlines(moving)
 
     def distance(self, xopt):
         return bundle_min_distance_fast(xopt,
