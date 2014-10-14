@@ -19,7 +19,9 @@ help:
 all: ext cython-html test
 
 ext: recspeed.so propspeed.so vox2track.so \
-    distances.so streamlinespeed.so
+    distances.so streamlinespeed.so denspeed.so \
+    vec_val_sum.so quick_squash.so vector_fields.so \
+    crosscorr.so sumsqdiff.so expectmax.so bundlemin.so
 
 test: ext
 	nosetests .
@@ -37,7 +39,7 @@ quick_squash.so: ${PKGDIR}/reconst/quick_squash.pyx
 vector_fields.so: ${PKGDIR}/align/vector_fields.pyx
 crosscorr.so: ${PKGDIR}/align/crosscorr.pyx
 sumsqdiff.so: ${PKGDIR}/align/sumsqdiff.pyx
-expectmax.so: ${PKGDIR}/align/expctmax.pyx
+expectmax.so: ${PKGDIR}/align/expectmax.pyx
 bundlemin.so: ${PKGDIR}/align/bundlemin.pyx
 
 	$(PYTHON) setup.py build_ext --inplace
