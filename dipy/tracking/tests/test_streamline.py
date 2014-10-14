@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import numpy as np
 
-from nose.tools import assert_true, assert_equal
+from nose.tools import assert_true, assert_equal, assert_almost_equal
 from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_raises
 
 import dipy.tracking.streamline as dipystreamline
@@ -270,11 +270,11 @@ def test_length():
     # Test length of only one streamline
     length_streamline_cython = dipystreamline.length(streamline)
     length_streamline_python = length_python(streamline)
-    assert_equal(length_streamline_cython, length_streamline_python)
+    assert_almost_equal(length_streamline_cython, length_streamline_python)
 
     length_streamline_cython = dipystreamline.length(streamline_64bit)
     length_streamline_python = length_python(streamline_64bit)
-    assert_equal(length_streamline_cython, length_streamline_python)
+    assert_almost_equal(length_streamline_cython, length_streamline_python)
 
     # Test computing length of multiple streamlines of different nb_points
     length_streamlines_cython = dipystreamline.length(streamlines)

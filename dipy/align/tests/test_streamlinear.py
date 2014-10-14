@@ -289,7 +289,7 @@ def test_openmp_locks():
                                                  len(offsets), len(offsets2),
                                                  pts)
 
-    assert_equal(dist1, dist2)
+    assert_almost_equal(dist1, dist2, 6)
 
 
 def test_from_to_rigid():

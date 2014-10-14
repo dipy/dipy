@@ -160,14 +160,16 @@ class StreamlineLinearRegistration(object):
 
         """
 
-        msg = 'need to have the same number of points.'
-        if static[0].shape[0] != static[-1].shape[0]:
+        msg = 'need to have the same number of points. Use set_number_of_points'
+        msg += ' from dipy.tracking.streamline'
+
+        if not np.all(np.array(map(len, static)) == static[0].shape[0]):
             raise ValueError('Static streamlines ' + msg)
 
-        if moving[0].shape[0] != moving[-1].shape[0]:
+        if not np.all(np.array(map(len, moving)) == moving[0].shape[0]):
             raise ValueError('Moving streamlines ' + msg)
 
-        if static[0].shape[0] != moving[-1].shape[0]:
+        if not np.all(np.array(map(len, moving)) == static[0].shape[0]):
             raise ValueError('Static and moving streamlines ' + msg)
 
         static_centered, static_shift = center_streamlines(static)

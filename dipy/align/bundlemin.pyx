@@ -17,7 +17,7 @@ ELSE:
     print(msg)
 
 
-from cython.parallel import parallel, prange
+from cython.parallel import prange
 from libc.stdlib cimport malloc, free
 from libc.math cimport sqrt, sin, cos
 
@@ -25,9 +25,10 @@ from libc.math cimport sqrt, sin, cos
 cdef cnp.dtype f64_dt = np.dtype(np.float64)
 
 
-cdef double direct_flip_dist(double *a,double *b,
-                             cnp.npy_intp rows) nogil:
-    r""" Direct and flip average distance between two streamlines
+cdef double min_direct_flip_dist(double *a,double *b,
+                                 cnp.npy_intp rows) nogil:
+    r""" Minimum of direct and flip average (MDF) distance [Garyfallidis12]
+    between two streamlines.
 
     Parameters
     ----------
@@ -42,6 +43,12 @@ cdef double direct_flip_dist(double *a,double *b,
     -------
     out : double
         mininum of direct and flipped average distances
+
+    Reference
+    ---------
+    .. [Garyfallidis12] Garyfallidis E. et al., QuickBundles a method for
+                        tractography simplification, Frontiers in Neuroscience,
+                        vol 6, no 175, 2012.
     """
 
     cdef:
@@ -113,9 +120,9 @@ def _bundle_minimum_distance_matrix(double [:, ::1] static,
 
             for j in prange(moving_size):
 
-                D[i, j] = direct_flip_dist(&static[i * rows, 0],
-                                           &moving[j * rows, 0],
-                                           rows)
+                D[i, j] = min_direct_flip_dist(&static[i * rows, 0],
+                                               &moving[j * rows, 0],
+                                               rows)
 
     return np.asarray(D)
 
@@ -185,7 +192,7 @@ def _bundle_minimum_distance(double [:, ::1] stat,
 
             for j in range(moving_size):
 
-                tmp = direct_flip_dist(&stat[i * rows, 0],
+                tmp = min_direct_flip_dist(&stat[i * rows, 0],
                                        &mov[j * rows, 0], rows)
 
                 IF HAVE_OPENMP:
@@ -277,6 +284,6 @@ def distance_matrix_mdf(streamlines_a, streamlines_b):
             t2 = tracksB64[j]
             t2_ptr = <cnp.float64_t *>t2.data
 
-            DM[i, j] = direct_flip_dist(t1_ptr, t2_ptr,t_len)
+            DM[i, j] = min_direct_flip_dist(t1_ptr, t2_ptr,t_len)
 
     return DM
