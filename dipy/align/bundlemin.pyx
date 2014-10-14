@@ -160,7 +160,7 @@ def _bundle_minimum_distance(double [:, ::1] stat,
 
     Notes
     -----
-    The difference with ``_bundle_minimum_distance_rigid`` it that it does not
+    The difference with ``_bundle_minimum_distance_matrix`` is that it does not
     save the full distance matrix and therefore needs much less memory.
     """
 
