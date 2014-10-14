@@ -4,6 +4,8 @@ from dipy.reconst.multi_voxel import multi_voxel_fit
 from scipy.special import hermite, gamma
 from scipy.misc import factorial, factorial2
 import dipy.reconst.dti as dti
+from warnings import warn
+from dipy.core.gradients import gradient_table
 from ..utils.optpkg import optional_package
 
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
@@ -54,8 +56,10 @@ class MapmriModel(Cache):
         q=qvecs*qvals[:,None]
 
         M = mapmri_phi_matrix(self.radial_order, mu, q.T)
-
+        
         ind_mat = mapmri_index_matrix(self.radial_order)
+
+        I = np.diag(ind_mat.sum(1))
 
         if self.eap_cons:
             if not have_cvxopt:
@@ -63,22 +67,21 @@ class MapmriModel(Cache):
                     'CVXOPT package needed to enforce constraints')
             import cvxopt.solvers
             # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
-            rmax = 0.35 * self.mu * (2 * np.pi * np.sqrt(700))
+            rmax = 0.35 * mu.mean()* (2 * np.pi * np.sqrt(700))
             rgrad = gen_rgrid(rmax = rmax, Nstep = 10)
             K = mapmri_psi_matrix(self.radial_order,  mu, rgrad, self.tau)
 
-            Q = cvxopt.matrix(np.dot(M.T,M))
+            Q = cvxopt.matrix(np.dot(M.T,M)+ self.lambd * I)
             p = cvxopt.matrix(-1*np.dot(M.T,data))
             G = cvxopt.matrix(-1*K)
             h = cvxopt.matrix(np.zeros((K.shape[0])),(K.shape[0],1))
-            solvers.options['show_progress'] = False
-            sol = solvers.qp(Q, p, G, h)
+            cvxopt.solvers.options['show_progress'] = False
+            sol = cvxopt.solvers.qp(Q, p, G, h)
             if sol['status'] != 'optimal':
                 warn('Optimization did not find a solution')
 
             coef = np.array(sol['x'])[:,0]
         else:
-            I = np.eye(M.shape[1])
             pseudoInv = np.dot(np.linalg.inv(np.dot(M.T, M) + self.lambd * I), M.T)
             coef = np.dot(pseudoInv, data)
 
@@ -89,7 +92,7 @@ class MapmriModel(Cache):
             E0 = E0 + coef[i] * Bm[i]
         coef = coef / E0
 
-        return MapmriFit(self, coef, mu, R, ind_mat, Bm)
+        return MapmriFit(self, coef, mu, R, ind_mat)
 
 class MapmriFit():
 
@@ -128,7 +131,7 @@ class MapmriFit():
         """
         return self._mapmri_coef
 
-    def odf(self, sphere, smoment=0):
+    def odf(self, sphere, s=0):
         r""" Calculates the real analytical odf for a given discrete sphere.
 
         Eq.32
