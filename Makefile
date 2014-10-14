@@ -31,6 +31,14 @@ propspeed.so: ${PKGDIR}/tracking/propspeed.pyx
 vox2track.so: ${PKGDIR}/tracking/vox2track.pyx
 distances.so: ${PKGDIR}/tracking/distances.pyx
 streamlinespeed.so: ${PKGDIR}/tracking/streamlinespeed.pyx
+denspeed.so: ${PKGDIR}/denoise/denspeed.pyx
+vec_val_sum.so: ${PKGDIR}/reconst/vec_val_sum.pyx
+quick_squash.so: ${PKGDIR}/reconst/quick_squash.pyx
+vector_fields.so: ${PKGDIR}/align/vector_fields.pyx
+crosscorr.so: ${PKGDIR}/align/crosscorr.pyx
+sumsqdiff.so: ${PKGDIR}/align/sumsqdiff.pyx
+expectmax.so: ${PKGDIR}/align/expctmax.pyx
+bundlemin.so: ${PKGDIR}/align/bundlemin.pyx
 
 	$(PYTHON) setup.py build_ext --inplace
 
