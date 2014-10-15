@@ -56,6 +56,11 @@ class PeakDirectionGetter(DirectionGetter):
         self._pf_kwargs = kwargs
 
     def _peak_directions(self, blob):
+        """Gets directions using parameters provided at init.
+
+        Blob can be any function defined on ``self.sphere``, ie an ODF, PMF,
+        FOD.
+        """
         return peak_directions(blob, self.sphere, **self._pf_kwargs)[0]
 
 
