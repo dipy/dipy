@@ -153,7 +153,7 @@ def test_stream_rigid():
 
     moved = transform_streamlines(moving, sr_params.matrix)
 
-    srr = StreamlineLinearRegistration(disp=True)
+    srr = StreamlineLinearRegistration(verbose=True)
 
     srm = srr.optimize(static, moving)
 
@@ -343,7 +343,7 @@ def test_similarity_real_bundles():
                                        x0=x0,
                                        method='Powell',
                                        bounds=None,
-                                       disp=False)
+                                       verbose=False)
 
     slm = slr.optimize(bundle, bundle2)
     new_bundle2 = slm.transform(bundle2)
@@ -376,7 +376,7 @@ def test_affine_real_bundles():
                                        x0=x0,
                                        method='L-BFGS-B',
                                        bounds=bounds,
-                                       disp=True,
+                                       verbose=True,
                                        options=options)
     slm = slr.optimize(bundle, bundle2)
 
@@ -386,7 +386,7 @@ def test_affine_real_bundles():
                                         x0=x0,
                                         method='Powell',
                                         bounds=None,
-                                        disp=True,
+                                        verbose=True,
                                         options=None)
 
     slm2 = slr2.optimize(bundle, new_bundle2)

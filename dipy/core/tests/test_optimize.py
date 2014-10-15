@@ -44,7 +44,7 @@ def test_optimize():
 
         assert_almost_equal(opt.fopt, 0)
 
-        opt.info
+        opt.print_summary()
 
         opt = Optimizer(fun=func2, x0=np.array([1., 1., 1., 5.]),
                         method='L-BFGS-B',

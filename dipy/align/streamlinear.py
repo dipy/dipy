@@ -80,7 +80,7 @@ class BundleSumDistance(BundleMinDistance):
 class StreamlineLinearRegistration(object):
 
     def __init__(self, metric=None, x0=None, method='L-BFGS-B',
-                 bounds=None, disp=False, options=None,
+                 bounds=None, verbose=False, options=None,
                  evolution=False):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
 
@@ -109,6 +109,9 @@ class StreamlineLinearRegistration(object):
             That means that we have set the bounds for the three translations
             and three rotation axes (in degrees).
 
+        verbose : bool,
+            If True then information about the optimization is shown.
+
         options : None or dict,
             Extra options to be used with the selected method.
 
@@ -136,7 +139,7 @@ class StreamlineLinearRegistration(object):
         if self.metric is None:
             self.metric = BundleMinDistanceMetric()
 
-        self.disp = disp
+        self.verbose = verbose
         self.method = method
         if self.method not in ['Powell', 'L-BFGS-B']:
             raise ValueError('Only Powell and L-BFGS-B can be used')
@@ -201,8 +204,8 @@ class StreamlineLinearRegistration(object):
                             bounds=self.bounds, options=self.options,
                             evolution=self.evolution)
 
-        if self.disp:
-            opt.info
+        if self.verbose:
+            opt.print_summary()
 
         opt_mat = matrix44(opt.xopt)
 
