@@ -332,8 +332,7 @@ def bundle_min_distance(t, static, moving):
         Static streamlines
 
     moving : list
-        Moving streamlines. These will be transform to align with
-        the static streamlines
+        Moving streamlines.
 
     Returns
     -------
@@ -350,7 +349,44 @@ def bundle_min_distance(t, static, moving):
 
 
 def bundle_min_distance_fast(t, static, moving, block_size):
-    """ Faster implementation of the ``bundle_min_distance``
+    """ MDF-based pairwise distance optimization function (MIN)
+
+    We minimize the distance between moving streamlines as they align
+    with the static streamlines.
+
+    Parameters
+    -----------
+    t : ndarray
+        t is a vector of of affine transformation parameters with
+        size at least 6.
+        If size is 6, t is interpreted as translation + rotation.
+        If size is 7, t is interpreted as translation + rotation +
+        isotropic scaling.
+        If size is 12, t is interpreted as translation + rotation +
+        scaling + shearing.
+
+    static : ndarray
+        All the points of the static streamlines. With order of streamlines
+        intact.
+
+    moving : ndarray
+        All the points of the moving streamlines. With order of streamlines
+        intact.
+
+    block_size : int
+        Number of points per streamline. All streamlines in statict and moving
+        should have the same number of points.
+
+    Returns
+    -------
+    cost: float
+
+    Notes
+    -----
+    Faster implementation of the ``bundle_min_distance``. This is to
+    be used after you have called ``unlist_streamlines`` which returns all the
+    points of all the streamlines as one ndarray.
+
     """
 
     aff = matrix44(t)
