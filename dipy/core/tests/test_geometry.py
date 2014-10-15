@@ -12,13 +12,10 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 lambert_equal_area_projection_polar,
                                 circumradius,
                                 vec2vec_rotmat,
-                                vector_norm
-                                )
+                                vector_norm,
+                                compose_transformations)
 
-
-
-from nose.tools import assert_true, assert_false, \
-     assert_equal, assert_raises
+from nose.tools import assert_false, assert_equal, assert_raises
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 
@@ -196,3 +193,22 @@ def test_vec2vec_rotmat():
     for b in np.array([[0, 0, 1], [-1, 0, 0], [1, 0, 0]]):
         R = vec2vec_rotmat(a, b)
         assert_array_almost_equal(np.dot(R, a), b)
+
+
+def test_compose_transformations():
+
+    A = np.eye(4)
+    A[0, -1] = 10
+
+    B = np.eye(4)
+    B[0, -1] = -20
+
+    C = np.eye(4)
+    C[0, -1] = 10
+
+    CBA = compose_transformations(A, B, C)
+
+    assert_array_equal(CBA, np.eye(4))
+
+    assert_raises(ValueError, compose_transformations, A)
+

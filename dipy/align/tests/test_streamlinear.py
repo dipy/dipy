@@ -11,14 +11,14 @@ from dipy.align.streamlinear import (matrix44,
                                      BundleMinDistance,
                                      BundleMinDistanceMetric,
                                      StreamlineLinearRegistration,
-                                     StreamlineDistanceMetric,
-                                     compose_transformations)
+                                     StreamlineDistanceMetric)
 
 from dipy.tracking.streamline import (center_streamlines,
                                       unlist_streamlines,
                                       relist_streamlines,
                                       transform_streamlines,
                                       set_number_of_points)
+
 
 from dipy.data import get_data, two_cingulum_bundles
 from nibabel import trackvis as tv
@@ -199,22 +199,6 @@ def test_same_number_of_points():
     assert_raises(ValueError, slr.optimize, A, B)
     assert_raises(ValueError, slr.optimize, C, D)
     assert_raises(ValueError, slr.optimize, C, B)
-
-
-def test_compose_transformations():
-
-    A = np.eye(4)
-    A[0, -1] = 10
-
-    B = np.eye(4)
-    B[0, -1] = -20
-
-    C = np.eye(4)
-    C[0, -1] = 10
-
-    CBA = compose_transformations(A, B, C)
-
-    assert_array_equal(CBA, np.eye(4))
 
 
 def test_efficient_bmd():

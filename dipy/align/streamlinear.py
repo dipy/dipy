@@ -9,7 +9,7 @@ from dipy.align.bundlemin import (_bundle_minimum_distance,
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
                                       center_streamlines)
-from dipy.core.geometry import rodrigues_axis_rotation
+from dipy.core.geometry import rodrigues_axis_rotation, compose_transformations
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -406,25 +406,16 @@ def bundle_min_distance_fast(t, static, moving, block_size):
 def rotation_vec2mat(r):
     r"""  The rotation matrix is given by the Rodrigues formula:
 
-    R = Id + sin(theta)*Sn + (1-cos(theta))*Sn^2
+    Parameters
+    ----------
+    r : (3,) array
+        Rotation vector
 
-    with:
+    Returns
+    -------
+    R : (3, 3) array
+        Rotation matrix
 
-           0  -nz  ny
-    Sn =   nz   0 -nx
-          -ny  nx   0
-
-    where n = r / ||r||
-
-    In case the angle ||r|| is very small, the above formula may lead
-    to numerical instabilities. We instead use a Taylor expansion
-    around theta=0:
-
-    R = I + sin(theta)/theta Sr + (1-cos(theta))/theta2 Sr^2
-
-    leading to:
-
-    R = I + (1-theta2/6)*Sr + (1/2-theta2/24)*Sr^2
     """
     theta = np.linalg.norm(r)
 
@@ -518,30 +509,3 @@ def from_matrix44_rigid(mat):
     vec[3:6] = np.rad2deg(vec[3:6])
 
     return vec
-
-
-def compose_transformations(*mats):
-    """ Compose multiple transformations in one 4x4 matrix
-
-    Parameters
-    -----------
-
-    mat1 : array, (4, 4)
-    mat2 : array, (4, 4)
-    ...
-    matN : array, (4, 4)
-
-    Returns
-    -------
-    matN x mat2 x mat1 : array, (4, 4)
-    """
-
-    prev = mats[0]
-
-    for mat in mats[1:]:
-
-        prev = np.dot(mat, prev)
-
-    return prev
-
-
