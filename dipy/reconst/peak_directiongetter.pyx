@@ -53,7 +53,9 @@ cdef class PAMDirectionGetter(DirectionGetter):
         initial directions.
 
         """
-        cdef np.npy_intp ijk[3], numpeaks, i
+        cdef:
+            np.npy_intp numpeaks, i
+            np.npy_intp ijk[3]
 
         # ijk is the closest voxel to point
         for i in range(3):
@@ -88,7 +90,8 @@ cdef class PAMDirectionGetter(DirectionGetter):
         cdef:
             np.npy_intp s
             double newdirection[3]
-            np.npy_intp qa_shape[4], qa_strides[4]
+            np.npy_intp qa_shape[4]
+            np.npy_intp qa_strides[4]
 
         if not self.initialized:
             return -1

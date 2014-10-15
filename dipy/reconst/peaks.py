@@ -155,7 +155,7 @@ def peak_directions(odf, sphere, relative_peak_threshold=.5,
     return directions, values, indices
 
 
-from ._peakdg import PAMDirectionGetter
+from .peak_directiongetter import PAMDirectionGetter
 class PeaksAndMetrics(PAMDirectionGetter):
     pass
 
