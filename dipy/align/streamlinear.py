@@ -272,11 +272,24 @@ class StreamlineRegistrationMap(object):
         self.funcs = funcs
         self.iterations = iterations
 
-    def transform(self, streamlines):
-        """ Apply ``self.matrix`` to the streamlines
+    def transform(self, moving):
+        """ Transform moving streamlines to the static.
+
+        Parameters
+        ----------
+        moving : streamlines
+
+        Returns
+        -------
+        moved : streamlines
+
+        Notes
+        -----
+
+        All this does is apply ``self.matrix`` to the input streamlines.
         """
 
-        return transform_streamlines(streamlines, self.matrix)
+        return transform_streamlines(moving, self.matrix)
 
 
 def bundle_sum_distance(t, static, moving):
