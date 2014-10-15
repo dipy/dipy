@@ -33,8 +33,10 @@ cdef int _trilinear_interpolate_c_4d(double[:, :, :, :] data, double[:] point,
 
     """
     cdef:
-        np.npy_intp index[3][2], flr, N
-        double weight[3][2], w, rem
+        np.npy_intp flr, N
+        double w, rem
+        np.npy_intp index[3][2]
+        double weight[3][2]
 
     if point.shape[0] != 3:
         return -2
