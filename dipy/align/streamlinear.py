@@ -9,6 +9,7 @@ from dipy.align.bundlemin import (_bundle_minimum_distance,
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
                                       center_streamlines)
+from dipy.core.geometry import rodrigues_axis_rotation
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -403,9 +404,7 @@ def bundle_min_distance_fast(t, static, moving, block_size):
 
 
 def rotation_vec2mat(r):
-    """ R = rotation_vec2mat(r)
-
-    The rotation matrix is given by the Rodrigues formula:
+    r"""  The rotation matrix is given by the Rodrigues formula:
 
     R = Id + sin(theta)*Sn + (1-cos(theta))*Sn^2
 
@@ -428,17 +427,8 @@ def rotation_vec2mat(r):
     R = I + (1-theta2/6)*Sr + (1/2-theta2/24)*Sr^2
     """
     theta = np.linalg.norm(r)
-    if theta > 1e-30:
-        n = r / theta
-        Sn = np.array([[0, -n[2], n[1]], [n[2], 0, -n[0]], [-n[1], n[0], 0]])
-        R = np.eye(3) + np.sin(theta) * Sn + \
-            (1 - np.cos(theta)) * np.dot(Sn, Sn)
-    else:
-        Sr = np.array([[0, -r[2], r[1]], [r[2], 0, -r[0]], [-r[1], r[0], 0]])
-        theta2 = theta * theta
-        R = np.eye(3) + (1 - theta2 / 6.) * \
-            Sr + (.5 - theta2 / 24.) * np.dot(Sr, Sr)
-    return R
+
+    return rodrigues_axis_rotation(r, np.rad2deg(theta))
 
 
 def rotation_mat2vec(R):
@@ -446,7 +436,7 @@ def rotation_mat2vec(R):
 
     Parameters
     ----------
-    R : (3,3) array-like
+    R : (3, 3) array-like
         Rotation matrix
 
     Returns
