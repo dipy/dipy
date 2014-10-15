@@ -90,7 +90,11 @@ for modulename, other_sources, language in (
     ('dipy.tracking.local.interpolation', [], 'c'),
     ('dipy.tracking.vox2track', [], 'c'),
     ('dipy.tracking.propspeed', [], 'c'),
-    ('dipy.denoise.denspeed', [], 'c')
+    ('dipy.denoise.denspeed', [], 'c'),
+    ('dipy.align.vector_fields', [], 'c'),
+    ('dipy.align.sumsqdiff', [], 'c'),
+    ('dipy.align.expectmax', [], 'c'),
+    ('dipy.align.crosscorr', [], 'c')
     ):
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
@@ -118,7 +122,7 @@ else: # We have nibabel
     # up pyx and c files.
     build_ext = cyproc_exts(EXTS, CYTHON_MIN_VERSION, 'pyx-stamps')
     # Add openmp flags if they work
-    extbuilder = add_flag_checking(build_ext, ['-fopenmp'])
+    extbuilder = add_flag_checking(build_ext, [('-fopenmp', 'HAVE_OPENMP')])
 
 # Installer that checks for install-time dependencies
 class installer(install.install):
@@ -156,6 +160,7 @@ def main(**extra_args):
           packages     = ['dipy',
                           'dipy.tests',
                           'dipy.align',
+                          'dipy.align.tests',
                           'dipy.core',
                           'dipy.core.tests',
                           'dipy.tracking',

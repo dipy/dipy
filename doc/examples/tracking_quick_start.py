@@ -10,172 +10,184 @@ reconstructions and then generate deterministic streamlines using the fiber
 directions (peaks) from CSD and fractional anisotropic (FA) as a
 stopping criterion.
 
-First, let's load the necessary modules.
+First, we add support for multiprocessing when a program has been frozen to 
+produce a Windows executable. This needs to be done once, straight after 
+the if __name__ == '__main__' line of the main module.
 """
 
-from dipy.reconst.dti import TensorModel, fractional_anisotropy
-from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
-                                   auto_response)
-from dipy.reconst.peaks import peaks_from_model
-from dipy.tracking.eudx import EuDX
-from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
-from dipy.segment.mask import median_otsu
-from dipy.viz import fvtk
-from dipy.viz.colormap import line_colors
+if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
 
-"""
-Load one of the available datasets with 150 gradients on the sphere and 10 b0s
-"""
+    """
+    Then, let's load the necessary modules.
+    """
+    
+    import numpy as np
 
-fetch_stanford_hardi()
-img, gtab = read_stanford_hardi()
+    from dipy.reconst.dti import TensorModel, fractional_anisotropy
+    from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
+                                     auto_response)
+    from dipy.reconst.peaks import peaks_from_model
+    from dipy.tracking.eudx import EuDX
+    from dipy.data import fetch_stanford_hardi, read_stanford_hardi, get_sphere
+    from dipy.segment.mask import median_otsu
+    from dipy.viz import fvtk
+    from dipy.viz.colormap import line_colors
 
-data = img.get_data()
+    """
+    Load one of the available datasets with 150 gradients on the sphere and 10 b0s
+    """
 
-"""
-Create a brain mask. This dataset is a bit difficult to segment with the default
-``median_otsu`` parameters (see :ref:`example_brain_extraction_dwi`) therefore we use
-here a bit more advanced options.
-"""
+    fetch_stanford_hardi()
+    img, gtab = read_stanford_hardi()
 
-maskdata, mask = median_otsu(data, 3, 1, False,
-                             vol_idx=range(10, 50), dilate=2)
+    data = img.get_data()
 
-"""
-For the constrained spherical deconvolution we need to estimate the response
-function (see :ref:`example_reconst_csd`) and create a model.
-"""
+    """
+    Create a brain mask. This dataset is a bit difficult to segment with the default
+    ``median_otsu`` parameters (see :ref:`example_brain_extraction_dwi`) therefore we use
+    here a bit more advanced options.
+    """
 
-response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
+    maskdata, mask = median_otsu(data, 3, 1, False,
+                               vol_idx=range(10, 50), dilate=2)
 
-csd_model = ConstrainedSphericalDeconvModel(gtab, response)
+    """
+    For the constrained spherical deconvolution we need to estimate the response
+    function (see :ref:`example_reconst_csd`) and create a model.
+    """
 
-"""
-Next, we use ``peaks_from_model`` to fit the data and calculated the fiber
-directions in all voxels.
-"""
+    response, ratio = auto_response(gtab, data, roi_radius=10, fa_thr=0.7)
 
-sphere = get_sphere('symmetric724')
+    csd_model = ConstrainedSphericalDeconvModel(gtab, response)
 
-csd_peaks = peaks_from_model(model=csd_model,
-                             data=data,
-                             sphere=sphere,
-                             mask=mask,
-                             relative_peak_threshold=.5,
-                             min_separation_angle=25,
-                             parallel=True)
+    """
+    Next, we use ``peaks_from_model`` to fit the data and calculated the fiber
+    directions in all voxels.
+    """
 
-"""
-For the tracking part, we will use the fiber directions from the ``csd_model``
-but stop tracking in areas where fractional anisotropy (FA) is low (< 0.1).
-To derive the FA, used here as a stopping criterion, we would need to fit a
-tensor model first. Here, we fit the Tensor using weighted least squares (WLS).
-"""
+    sphere = get_sphere('symmetric724')
 
-tensor_model = TensorModel(gtab, fit_method='WLS')
-tensor_fit = tensor_model.fit(data, mask)
+    csd_peaks = peaks_from_model(model=csd_model,
+                               data=data,
+                               sphere=sphere,
+                               mask=mask,
+                               relative_peak_threshold=.5,
+                               min_separation_angle=25,
+                               parallel=True)
 
-FA = fractional_anisotropy(tensor_fit.evals)
+    """
+    For the tracking part, we will use the fiber directions from the ``csd_model``
+    but stop tracking in areas where fractional anisotropy (FA) is low (< 0.1).
+    To derive the FA, used here as a stopping criterion, we would need to fit a
+    tensor model first. Here, we fit the Tensor using weighted least squares (WLS).
+    """
 
-"""
-In order for the stopping values to be used with our tracking algorithm we need
-to have the same dimensions as the ``csd_peaks.peak_values``. For this reason,
-we can assign the same FA value to every peak direction in the same voxel in
-the following way.
-"""
+    tensor_model = TensorModel(gtab, fit_method='WLS')
+    tensor_fit = tensor_model.fit(data, mask)
 
-stopping_values = np.zeros(csd_peaks.peak_values.shape)
-stopping_values[:] = FA[..., None]
+    FA = fractional_anisotropy(tensor_fit.evals)
 
-"""
-For quality assurance we can also visualize a slice from the direction field
-which we will use as the basis to perform the tracking.
-"""
+    """
+    In order for the stopping values to be used with our tracking algorithm we need
+    to have the same dimensions as the ``csd_peaks.peak_values``. For this reason,
+    we can assign the same FA value to every peak direction in the same voxel in
+    the following way.
+    """
 
-ren = fvtk.ren()
+    stopping_values = np.zeros(csd_peaks.peak_values.shape)
+    stopping_values[:] = FA[..., None]
 
-slice_no = data.shape[2] / 2
+    """
+    For quality assurance we can also visualize a slice from the direction field
+    which we will use as the basis to perform the tracking.
+    """
 
-fvtk.add(ren, fvtk.peaks(csd_peaks.peak_dirs[:, :, slice_no:slice_no + 1],
-                         stopping_values[:, :, slice_no:slice_no + 1]))
+    ren = fvtk.ren()
 
-print('Saving illustration as csd_direction_field.png')
-fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
+    slice_no = data.shape[2] / 2
 
-"""
-.. figure:: csd_direction_field.png
-   :align: center
+    fvtk.add(ren, fvtk.peaks(csd_peaks.peak_dirs[:, :, slice_no:slice_no + 1],
+                           stopping_values[:, :, slice_no:slice_no + 1]))
 
-   **Direction Field (peaks)**
+    print('Saving illustration as csd_direction_field.png')
+    fvtk.record(ren, out_path='csd_direction_field.png', size=(900, 900))
 
-``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate
-streamlines. If the parameter ``seeds`` is a positive integer it will generate
-that number of randomly placed seeds everywhere in the volume. Alternatively,
-you can specify the exact seed points using an array (N, 3) where N is the
-number of seed points. For simplicity, here we will use the first option
-(random seeds). ``a_low`` is the threshold of the fist parameter
-(``stopping_values``) which means that there will that tracking will stop in
-regions with FA < 0.1.
-"""
+    """
+    .. figure:: csd_direction_field.png
+     :align: center
 
-streamline_generator = EuDX(stopping_values,
-                            csd_peaks.peak_indices,
-                            seeds=10**4,
-                            odf_vertices=sphere.vertices,
-                            a_low=0.1)
+     **Direction Field (peaks)**
 
-streamlines = [streamline for streamline in streamline_generator]
+    ``EuDX`` [Garyfallidis12]_ is a fast algorithm that we use here to generate
+    streamlines. If the parameter ``seeds`` is a positive integer it will generate
+    that number of randomly placed seeds everywhere in the volume. Alternatively,
+    you can specify the exact seed points using an array (N, 3) where N is the
+    number of seed points. For simplicity, here we will use the first option
+    (random seeds). ``a_low`` is the threshold of the fist parameter
+    (``stopping_values``) which means that there will that tracking will stop in
+    regions with FA < 0.1.
+    """
 
-"""
-We can visualize the streamlines using ``fvtk.line`` or ``fvtk.streamtube``.
-"""
+    streamline_generator = EuDX(stopping_values,
+                              csd_peaks.peak_indices,
+                              seeds=10**4,
+                              odf_vertices=sphere.vertices,
+                              a_low=0.1)
 
-fvtk.clear(ren)
+    streamlines = [streamline for streamline in streamline_generator]
 
-fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
+    """
+    We can visualize the streamlines using ``fvtk.line`` or ``fvtk.streamtube``.
+    """
 
-print('Saving illustration as csd_streamlines_eudx.png')
-fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(900, 900))
+    fvtk.clear(ren)
 
-"""
-.. figure:: csd_streamlines_eudx.png
-   :align: center
+    fvtk.add(ren, fvtk.line(streamlines, line_colors(streamlines)))
 
-   **CSD-based streamlines using EuDX**
+    print('Saving illustration as csd_streamlines_eudx.png')
+    fvtk.record(ren, out_path='csd_streamlines_eudx.png', size=(900, 900))
 
-We used above ``fvtk.record`` because we want to create a figure for the tutorial
-but you can visualize the same objects in 3D using ``fvtk.show(ren)``.
+    """
+    .. figure:: csd_streamlines_eudx.png
+     :align: center
 
-To learn more about this process you could start playing with the number of
-seed points or even better specify seeds to be in specific regions of interest
-in the brain.
+     **CSD-based streamlines using EuDX**
 
-``fvtk`` gives some minimal interactivity however you can save the resulting
-streamlines in a Trackvis (.trk) format and load them for example with the
-Fibernavigator_ or another tool for medical visualization.
+    We used above ``fvtk.record`` because we want to create a figure for the tutorial
+    but you can visualize the same objects in 3D using ``fvtk.show(ren)``.
 
-Finally, let's save the streamlines as a (.trk) file and FA as a Nifti image.
-"""
+    To learn more about this process you could start playing with the number of
+    seed points or even better specify seeds to be in specific regions of interest
+    in the brain.
 
-import nibabel as nib
+    ``fvtk`` gives some minimal interactivity however you can save the resulting
+    streamlines in a Trackvis (.trk) format and load them for example with the
+    Fibernavigator_ or another tool for medical visualization.
 
-hdr = nib.trackvis.empty_header()
-hdr['voxel_size'] = img.get_header().get_zooms()[:3]
-hdr['voxel_order'] = 'LAS'
-hdr['dim'] = FA.shape[:3]
+    Finally, let's save the streamlines as a (.trk) file and FA as a Nifti image.
+    """
 
-csd_streamlines_trk = ((sl, None, None) for sl in streamlines)
+    import nibabel as nib
 
-csd_sl_fname = 'csd_streamline.trk'
+    hdr = nib.trackvis.empty_header()
+    hdr['voxel_size'] = img.get_header().get_zooms()[:3]
+    hdr['voxel_order'] = 'LAS'
+    hdr['dim'] = FA.shape[:3]
 
-nib.trackvis.write(csd_sl_fname, csd_streamlines_trk, hdr, points_space='voxel')
+    csd_streamlines_trk = ((sl, None, None) for sl in streamlines)
 
-nib.save(nib.Nifti1Image(FA, img.get_affine()), 'FA_map.nii.gz')
+    csd_sl_fname = 'csd_streamline.trk'
 
-"""
-.. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
-.. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+    nib.trackvis.write(csd_sl_fname, csd_streamlines_trk, hdr, points_space='voxel')
 
-.. include:: ../links_names.inc
-"""
+    nib.save(nib.Nifti1Image(FA, img.get_affine()), 'FA_map.nii.gz')
+
+    """
+    .. [Garyfallidis12] Garyfallidis E., "Towards an accurate brain tractography", PhD thesis, University of Cambridge, 2012.
+    .. [Tournier07] J-D. Tournier, F. Calamante and A. Connelly, "Robust determination of the fibre orientation distribution in diffusion MRI: Non-negativity constrained super-resolved spherical deconvolution", Neuroimage, vol. 35, no. 4, pp. 1459-1472, 2007.
+
+    .. include:: ../links_names.inc
+    """
 

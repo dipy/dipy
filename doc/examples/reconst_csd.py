@@ -155,7 +155,7 @@ csd_peaks = peaks_from_model(model=csd_model,
                              sphere=sphere,
                              relative_peak_threshold=.5,
                              min_separation_angle=25,
-                             parallel=True)
+                             parallel=False)
 
 fvtk.clear(ren)
 

@@ -942,6 +942,21 @@ class TensorFit(object):
             The diffusion distance in every direction of the sphere in every
             voxel in the input data.
 
+        Notes
+        -----
+        This is based on equation 3 in [Aganj2010]_. To re-derive it from
+        scratch, follow steps in [Descoteaux2008]_, Section 7.9 Equation
+        7.24 but with an $r^2$ term in the integral.
+
+        .. [Aganj2010] Aganj, I., Lenglet, C., Sapiro, G., Yacoub, E., Ugurbil,
+            K., & Harel, N. (2010). Reconstruction of the orientation
+            distribution function in single- and multiple-shell q-ball imaging
+            within constant solid angle. Magnetic Resonance in Medicine, 64(2),
+            554-566. doi:DOI: 10.1002/mrm.22365
+
+        .. [Descoteaux2008] Descoteaux, M. (2008). PhD Thesis: High Angular
+           Resolution Diffusion MRI: from Local Estimation to Segmentation and
+           Tractography. ftp://ftp-sop.inria.fr/athena/Publications/PhDs/descoteaux_thesis.pdf
         """
         lower = 4 * np.pi * np.sqrt(np.prod(self.evals, -1))
         projection = np.dot(sphere.vertices, self.evecs)
