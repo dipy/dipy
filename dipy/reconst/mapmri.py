@@ -1,5 +1,4 @@
 import numpy as np
-from dipy.reconst.cache import Cache
 from dipy.reconst.multi_voxel import multi_voxel_fit
 from scipy.special import hermite, gamma
 from scipy.misc import factorial, factorial2
@@ -11,9 +10,9 @@ from ..utils.optpkg import optional_package
 cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
-class MapmriModel(Cache):
+class MapmriModel():
 
-    def __init__(self, gtab, radial_order=4, lambd=0, eap_cons = False, anisotropic_scaling = True):
+    def __init__(self, gtab, radial_order=4, lambd=0,  eap_cons = False, anisotropic_scaling = True):
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
@@ -59,17 +58,17 @@ class MapmriModel(Cache):
         
         ind_mat = mapmri_index_matrix(self.radial_order)
 
-        I = np.diag(ind_mat.sum(1))
+        # This is a simple empirical regularization, to be replaced
+        I = np.diag(ind_mat.sum(1)**2)
 
         if self.eap_cons:
             if not have_cvxopt:
                 raise ValueError(
                     'CVXOPT package needed to enforce constraints')
             import cvxopt.solvers
-            # rmax is linear in mu with rmax \aprox 0.3 for mu = 1/(2*pi*sqrt(700))
-            rmax = 0.35 * mu.mean()* (2 * np.pi * np.sqrt(700))
-            rgrad = gen_rgrid(rmax = rmax, Nstep = 10)
-            K = mapmri_psi_matrix(self.radial_order,  mu, rgrad, self.tau)
+            rmax = 2* np.sqrt(10 * evals.max()*self.tau)
+            r_index, r_grad = create_rspace(11, rmax)
+            K = mapmri_psi_matrix(self.radial_order,  mu, r_grad[0:len(r_grad)/2,:], self.tau)
 
             Q = cvxopt.matrix(np.dot(M.T,M)+ self.lambd * I)
             p = cvxopt.matrix(-1*np.dot(M.T,data))
@@ -143,13 +142,14 @@ class MapmriFit():
         return np.clip(odf,0,odf.max())
 
 
+
 def mapmri_index_matrix(radial_order):
 
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
         for i in range(0, n + 1):
             for j in range(0, n - i + 1):
-                index_matrix.append([i, j, n - i - j])
+                index_matrix.append([n - i - j, j, i])
 
     return np.array(index_matrix)
 
@@ -310,16 +310,6 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
     return sumc
 
 
-def gen_rgrid(rmax, Nstep = 10):
-    rgrad = []
-    # Build a regular grid of Nstep**3 points in (R^2 X R+)
-    gridmax = rmax / np.sqrt(3)
-    for xx in np.linspace(-gridmax,gridmax,Nstep):
-        for yy in np.linspace(-gridmax,gridmax,Nstep):
-            for zz in np.linspace(0,gridmax,Nstep):
-                rgrad.append([xx, yy, zz])
-    return np.array(rgrad)
-
 
 def mapmri_evaluate_E(radial_order, coeff, qlist, mu):
 
@@ -353,3 +343,36 @@ def mapmri_evaluate_EAP(radial_order, coeff, rlist, mu):
 
     return data_out
 
+def create_rspace(gridsize, radius_max):
+    """ Create the real space table, that contains the points in which
+        to compute the pdf.
+
+    Parameters
+    ----------
+    gridsize : unsigned int
+        dimension of the propagator grid
+    radius_max : float
+        maximal radius in which compute the propagator
+
+    Returns
+    -------
+    vecs : array, shape (N,3)
+        positions of the pdf points in a 3D matrix
+
+    tab : array, shape (N,3)
+        real space points in which calculates the pdf
+    """
+
+    radius = gridsize // 2
+    vecs = []
+    for i in range(-radius, radius + 1):
+        for j in range(-radius, radius + 1):
+            for k in range(-radius, radius + 1):
+                vecs.append([i, j, k])
+
+    vecs = np.array(vecs, dtype=np.float32)
+    tab = vecs / radius
+    tab = tab * radius_max
+    vecs = vecs + radius
+
+    return vecs, tab
