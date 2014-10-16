@@ -27,11 +27,7 @@ class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
         self.moving = None
 
     @abc.abstractmethod
-    def set_static(self, static):
-        pass
-
-    @abc.abstractmethod
-    def set_moving(self, moving):
+    def setup(self, static, moving):
         pass
 
     @abc.abstractmethod
@@ -42,38 +38,136 @@ class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
 
 class BundleMinDistanceMetric(StreamlineDistanceMetric):
+    """ Bundle-based Minimum Distance aka BMD
 
-    def set_static(self, static):
+    This is the cost function used by the StreamlineLinearRegistration
+
+    Methods
+    -------
+    setup(static, moving)
+    distance(xopt)
+
+    References
+    ----------
+    .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
+                        bundle alignment for group comparisons", ISMRM,
+                        2014.
+    """
+
+    def setup(self, static, moving):
+        """ Setup static and moving sets of streamlines
+
+        Parameters
+        ----------
+        static : streamlines
+            Fixed or reference set of streamlines.
+        moving : streamlines
+            Moving streamlines.
+
+        Notes
+        -----
+        Call this after the object is initiated and before distance.
+        """
+
+        self._set_static(static)
+        self._set_moving(moving)
+
+    def _set_static(self, static):
         static_centered_pts, st_idx = unlist_streamlines(static)
         self.static_centered_pts = np.ascontiguousarray(static_centered_pts,
                                                         dtype=np.float64)
         self.block_size = st_idx[0]
 
-    def set_moving(self, moving):
+    def _set_moving(self, moving):
         self.moving_centered_pts, _ = unlist_streamlines(moving)
 
     def distance(self, xopt):
+        """ Distance calculated from this Metric
+
+        Parameters
+        ----------
+        xopt : sequence
+            List of affine parameters as an 1D vector,
+
+        """
         return bundle_min_distance_fast(xopt,
                                         self.static_centered_pts,
                                         self.moving_centered_pts,
                                         self.block_size)
 
 
-class BundleMinDistance(StreamlineDistanceMetric):
+class BundleMinDistanceMatrixMetric(StreamlineDistanceMetric):
+    """ Bundle-based Minimum Distance aka BMD
 
-    def set_static(self, static):
+    This is the cost function used by the StreamlineLinearRegistration
+
+    Methods
+    -------
+    setup(static, moving)
+    distance(xopt)
+
+    Notes
+    -----
+    The difference with BundleMinDistanceMetric is that this creates
+    the entire distance matrix and therefore requires more memory.
+
+    """
+
+    def setup(self, static, moving):
+        """ Setup static and moving sets of streamlines
+
+        Parameters
+        ----------
+        static : streamlines
+            Fixed or reference set of streamlines.
+        moving : streamlines
+            Moving streamlines.
+
+        Notes
+        -----
+        Call this after the object is initiated and before distance.
+
+        The difference between this class and
+        """
         self.static = static
-
-    def set_moving(self, moving):
         self.moving = moving
 
     def distance(self, xopt):
+        """ Distance calculated from this Metric
+
+        Parameters
+        ----------
+        xopt : sequence
+            List of affine parameters as an 1D vector
+        """
         return bundle_min_distance(xopt, self.static, self.moving)
 
 
-class BundleSumDistance(BundleMinDistance):
+class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
+    """ Bundle-based Sum Distance aka BMD
+
+    This is a cost function that can be used by the
+    StreamlineLinearRegistration class.
+
+    Methods
+    -------
+    setup(static, moving)
+    distance(xopt)
+
+    Notes
+    -----
+    The difference with BundleMinDistanceMatrixMetric is that it uses
+    uses the sum of the distance matrix and not the sum of mins.
+    """
 
     def distance(self, xopt):
+        """ Distance calculated from this Metric
+
+        Parameters
+        ----------
+        xopt : sequence
+            List of affine parameters as an 1D vector
+        """
         return bundle_sum_distance(xopt, self.static, self.moving)
 
 
@@ -155,18 +249,18 @@ class StreamlineLinearRegistration(object):
         ----------
 
         static : streamlines
-
+            Reference or fixed set of streamlines.
         moving : streamlines
+            Moving set of streamlines.
 
         Returns
         -------
-
         map : StreamlineRegistrationMap
 
         """
 
-        msg = 'need to have the same number of points. Use set_number_of_points'
-        msg += ' from dipy.tracking.streamline'
+        msg = 'need to have the same number of points. Use '
+        msg += 'set_number_of_points from dipy.tracking.streamline'
 
         if not np.all(np.array(list(map(len, static))) == static[0].shape[0]):
             raise ValueError('Static streamlines ' + msg)
@@ -180,8 +274,7 @@ class StreamlineLinearRegistration(object):
         static_centered, static_shift = center_streamlines(static)
         moving_centered, moving_shift = center_streamlines(moving)
 
-        self.metric.set_static(static_centered)
-        self.metric.set_moving(moving_centered)
+        self.metric.setup(static_centered, moving_centered)
 
         distance = self.metric.distance
 
@@ -197,8 +290,8 @@ class StreamlineLinearRegistration(object):
         if self.method == 'L-BFGS-B':
 
             if self.options is None:
-                self.options={'maxcor': 10, 'ftol': 1e-7,
-                              'gtol': 1e-5, 'eps': 1e-8}
+                self.options = {'maxcor': 10, 'ftol': 1e-7,
+                                'gtol': 1e-5, 'eps': 1e-8}
 
             opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method,

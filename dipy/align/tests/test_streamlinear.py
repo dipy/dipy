@@ -7,8 +7,8 @@ from numpy.testing import (run_module_suite,
                            assert_raises)
 from dipy.align.streamlinear import (matrix44,
                                      from_matrix44_rigid,
-                                     BundleSumDistance,
-                                     BundleMinDistance,
+                                     BundleSumDistanceMatrixMetric,
+                                     BundleMinDistanceMatrixMetric,
                                      BundleMinDistanceMetric,
                                      StreamlineLinearRegistration,
                                      StreamlineDistanceMetric)
@@ -62,7 +62,7 @@ def test_rigid_parallel_lines():
     mat = matrix44([20, 0, 10, 0, 40, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
-    bundle_sum_distance = BundleSumDistance()
+    bundle_sum_distance = BundleSumDistanceMatrixMetric()
     options = {'maxcor': 100, 'ftol': 1e-9, 'gtol': 1e-16, 'eps': 1e-3}
     srr = StreamlineLinearRegistration(metric=bundle_sum_distance,
                                        x0=np.zeros(6),
@@ -81,7 +81,7 @@ def test_rigid_real_bundles():
     mat = matrix44([0, 0, 20, 45, 0, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
-    bundle_sum_distance = BundleSumDistance()
+    bundle_sum_distance = BundleSumDistanceMatrixMetric()
     srr = StreamlineLinearRegistration(bundle_sum_distance,
                                        x0=np.zeros(6),
                                        method='Powell')
@@ -89,7 +89,7 @@ def test_rigid_real_bundles():
 
     evaluate_convergence(bundle, new_bundle2)
 
-    bundle_min_distance = BundleMinDistance()
+    bundle_min_distance = BundleMinDistanceMatrixMetric()
     srr = StreamlineLinearRegistration(bundle_min_distance,
                                        x0=np.zeros(6),
                                        method='Powell')
@@ -173,13 +173,11 @@ def test_min_vs_min_fast_precision():
     static = [s.astype('f8') for s in static]
     moving = [m.astype('f8') for m in moving]
 
-    bmd = BundleMinDistance()
-    bmd.set_static(static)
-    bmd.set_moving(moving)
+    bmd = BundleMinDistanceMatrixMetric()
+    bmd.setup(static, moving)
 
     bmdf = BundleMinDistanceMetric()
-    bmdf.set_static(static)
-    bmdf.set_moving(moving)
+    bmdf.setup(static, moving)
 
     x_test = [0.01, 0, 0, 0, 0, 0]
 
@@ -216,16 +214,16 @@ def test_efficient_bmd():
     D = np.zeros((len(offsets), len(offsets)), dtype='f8')
 
     _bundle_minimum_distance_matrix(points, points2,
-                                   len(offsets), len(offsets),
-                                   a.shape[0], D)
+                                    len(offsets), len(offsets),
+                                    a.shape[0], D)
 
     assert_equal(np.sum(np.diag(D)), 0)
 
     points2 += 2
 
     _bundle_minimum_distance_matrix(points, points2,
-                                   len(offsets), len(offsets),
-                                   a.shape[0], D)
+                                    len(offsets), len(offsets),
+                                    a.shape[0], D)
 
     streamlines2 = relist_streamlines(points2, offsets)
     D2 = distance_matrix_mdf(streamlines, streamlines2)
@@ -239,8 +237,8 @@ def test_efficient_bmd():
                    np.sum(np.min(D2, axis=1)) / float(rows)) ** 2
 
     dist2 = _bundle_minimum_distance(points, points2,
-                                                 len(offsets), len(offsets),
-                                                 a.shape[0])
+                                     len(offsets), len(offsets),
+                                     a.shape[0])
     assert_almost_equal(dist, dist2)
 
 
@@ -263,15 +261,15 @@ def test_openmp_locks():
     D = np.zeros((len(offsets), len(offsets2)), dtype='f8')
 
     _bundle_minimum_distance_matrix(points, points2,
-                                   len(offsets), len(offsets2),
-                                   pts, D)
+                                    len(offsets), len(offsets2),
+                                    pts, D)
 
     dist1 = 0.25 * (np.sum(np.min(D, axis=0)) / float(D.shape[1]) +
                     np.sum(np.min(D, axis=1)) / float(D.shape[0])) ** 2
 
     dist2 = _bundle_minimum_distance(points, points2,
-                                                 len(offsets), len(offsets2),
-                                                 pts)
+                                     len(offsets), len(offsets2),
+                                     pts)
 
     assert_almost_equal(dist1, dist2, 6)
 
@@ -336,7 +334,7 @@ def test_similarity_real_bundles():
     mat = matrix44(xgold)
     bundle2 = transform_streamlines(bundle_initial[:20], mat)
 
-    metric = BundleMinDistance()
+    metric = BundleMinDistanceMatrixMetric()
     x0 = np.array([0, 0, 0, 0, 0, 0, 1], 'f8')
 
     slr = StreamlineLinearRegistration(metric=metric,
@@ -370,7 +368,7 @@ def test_affine_real_bundles():
 
     options = {'maxcor': 10, 'ftol': 1e-7, 'gtol': 1e-5, 'eps': 1e-8}
 
-    metric = BundleMinDistance()
+    metric = BundleMinDistanceMatrixMetric()
 
     slr = StreamlineLinearRegistration(metric=metric,
                                        x0=x0,
