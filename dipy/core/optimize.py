@@ -224,7 +224,6 @@ class Optimizer(object):
 
         return self.res['message']
 
-
     def print_summary(self):
 
         print(self.res)
