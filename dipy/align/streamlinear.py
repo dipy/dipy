@@ -28,17 +28,17 @@ class StreamlineDistanceMetric(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
     def set_static(self, static):
-        pass #self.static = static
+        pass
 
     @abc.abstractmethod
     def set_moving(self, moving):
-        pass #self.moving = moving
+        pass
 
     @abc.abstractmethod
     def distance(self, xopt):
         """ calculate distance for current set of parameters
         """
-        pass #return None
+        pass
 
 
 class BundleMinDistanceMetric(StreamlineDistanceMetric):
@@ -93,13 +93,14 @@ class StreamlineLinearRegistration(object):
 
         x0 : None or array
             Initial parametrization. If None ``x0=np.ones(6)``.
-            If x0 has 6 elements then only translation and rotation is performed
-            (rigid). If x0 has 7 elements also isotropic scaling is performed
-            (similarity). If x0 has 12 elements then translation, rotation,
-            scaling and shearing is performed (affine).
+            If x0 has 6 elements then only translation and rotation is
+            performed (rigid). If x0 has 7 elements also isotropic scaling is
+            performed (similarity). If x0 has 12 elements then translation,
+            rotation, scaling and shearing is performed (affine).
 
         method : str,
-            'L_BFGS_B' or 'Powell' optimizers can be used. Default is 'L_BFGS_B'.
+            'L_BFGS_B' or 'Powell' optimizers can be used. Default is
+            'L_BFGS_B'.
 
         bounds : list of tuples or None,
             If method == 'L_BFGS_B' then we can use bounded optimization.
@@ -167,13 +168,13 @@ class StreamlineLinearRegistration(object):
         msg = 'need to have the same number of points. Use set_number_of_points'
         msg += ' from dipy.tracking.streamline'
 
-        if not np.all(np.array(map(len, static)) == static[0].shape[0]):
+        if not np.all(np.array(list(map(len, static))) == static[0].shape[0]):
             raise ValueError('Static streamlines ' + msg)
 
-        if not np.all(np.array(map(len, moving)) == moving[0].shape[0]):
+        if not np.all(np.array(list(map(len, moving))) == moving[0].shape[0]):
             raise ValueError('Moving streamlines ' + msg)
 
-        if not np.all(np.array(map(len, moving)) == static[0].shape[0]):
+        if not np.all(np.array(list(map(len, moving))) == static[0].shape[0]):
             raise ValueError('Static and moving streamlines ' + msg)
 
         static_centered, static_shift = center_streamlines(static)
