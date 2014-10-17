@@ -100,7 +100,7 @@ class MapmriModel():
         data, golden_directions = SticksAndBall(gtab, d=0.0015,
                                                 S0=1, angles=[(0, 0), (90, 0)],
                                                 fractions=[50, 50], snr=None)
-        from dipy.reconst.canal import MapmriModel
+        from dipy.reconst.mapmri import MapmriModel
         radial_order = 4
         map_model = MapmriModel(gtab, radial_order=radial_order)
         mapfit = map_model.fit(data)
@@ -161,7 +161,7 @@ class MapmriModel():
             import cvxopt.solvers
             rmax = 2* np.sqrt(10 * evals.max()*self.tau)
             r_index, r_grad = create_rspace(11, rmax)
-            K = mapmri_psi_matrix(self.radial_order,  mu, r_grad[0:len(r_grad)/2,:], self.tau)
+            K = mapmri_psi_matrix(self.radial_order,  mu, r_grad[0:len(r_grad)/2,:])
 
             Q = cvxopt.matrix(np.dot(M.T,M)+ self.lambd * I)
             p = cvxopt.matrix(-1*np.dot(M.T,data))
@@ -531,7 +531,7 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
     beta = 2 * rho * (vertices[:,1]/muy)
     # Eq, 35d
     gamma = 2 * rho * (vertices[:,2]/muz)
-    
+
     const= rho ** (3 + s) / np.sqrt(2 ** (2 - s) * np.pi ** 3 * (mux ** 2 * muy ** 2 * muz ** 2))
 
     for j in range(n_elem):
