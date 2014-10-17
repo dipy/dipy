@@ -11,8 +11,101 @@ cvxopt, have_cvxopt, _ = optional_package("cvxopt")
 
 
 class MapmriModel():
+    r"""Mean Apparent Propagator MRI (MAPMRI) [1]_ of the diffusion signal.
 
-    def __init__(self, gtab, radial_order=4, lambd=0,  eap_cons = False, anisotropic_scaling = True):
+    The main idea is to model the diffusion signal as a linear combination of
+    the continuous functions presented in [2]_ but extending it in three
+    dimension.
+    The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
+    extension is provided using a set of three basis function for the radial
+    part, one for the signal along x, one for y and one for z, while [3]_ 
+    uses one basis function to model the radial part and real Spherical
+    Harmonics to model the angular part.
+    From the MAPMRI coefficients is possible to use the analytical formulae 
+    to estimate the ODF.
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+           diffusion imaging method for mapping tissue microstructure",
+           NeuroImage, 2013.
+
+    .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
+           and estimation for one-dimensional q-space magnetic resonance
+           1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
+
+    .. [3] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+           estimation via Compressive Sensing in diffusion MRI", Medical
+           Image Analysis, 2013.
+    """
+
+    def __init__(self, gtab, radial_order=4, lambd=1e-09,  eap_cons = False, anisotropic_scaling = True):
+        r""" Analytical and continuous modeling of the diffusion signal with
+        respect to the MAPMRI basis [1]_.
+
+        The main idea is to model the diffusion signal as a linear combination of
+        the continuous functions presented in [2]_ but extending it in three
+        dimension.
+
+        The main difference with the SHORE proposed in [3]_ is that MAPMRI 3D
+        extension is provided using a set of three basis function for the radial
+        part, one for the signal along x, one for y and one for z, while [3]_ 
+        uses one basis function to model the radial part and real Spherical
+        Harmonics to model the angular part.
+        From the MAPMRI coefficients is possible to use the analytical formulae 
+        to estimate the ODF.
+
+
+        Parameters
+        ----------
+        gtab : GradientTable,
+            gradient directions and bvalues container class
+        radial_order : unsigned int,
+            an even integer that represent the order of the basis
+        lambd : float,
+            radial regularisation constant
+        eap_cons : bool,
+            Constrain the propagator to be positive.
+        anisotropic_scaling : bool,
+            If false, force the basis function to be identical in the three
+            dimensions (SHORE like).
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+               diffusion imaging method for mapping tissue microstructure",
+               NeuroImage, 2013.
+
+        .. [2] Ozarslan E. et. al, "Simple harmonic oscillator based reconstruction
+               and estimation for one-dimensional q-space magnetic resonance
+               1D-SHORE)", eapoc Intl Soc Mag Reson Med, vol. 16, p. 35., 2008.
+
+        .. [3] Merlet S. et. al, "Continuous diffusion signal, EAP and ODF
+               estimation via Compressive Sensing in diffusion MRI", Medical
+               Image Analysis, 2013.
+
+        Examples
+        --------
+        In this example, where the data, gradient table and sphere tessellation
+        used for reconstruction are provided, we model the diffusion signal
+        with respect to the MAPMRI model and compute the real and analytical
+        ODF.
+
+        from dipy.data import get_data,get_sphere
+        sphere = get_sphere('symmetric724')
+        fimg, fbvals, fbvecs = get_data('ISBI_testing_2shells_table')
+        bvals, bvecs = read_bvals_bvecs(fbvals, fbvecs)
+        gtab = gradient_table(bvals, bvecs)
+        from dipy.sims.voxel import SticksAndBall
+        data, golden_directions = SticksAndBall(gtab, d=0.0015,
+                                                S0=1, angles=[(0, 0), (90, 0)],
+                                                fractions=[50, 50], snr=None)
+        from dipy.reconst.canal import MapmriModel
+        radial_order = 4
+        map_model = MapmriModel(gtab, radial_order=radial_order)
+        mapfit = map_model.fit(data)
+        odf= mapfit.odf(sphere)
+        """
 
         self.bvals = gtab.bvals
         self.bvecs = gtab.bvecs
@@ -104,6 +197,12 @@ class MapmriFit():
             AnalyticalModel
         mapmri_coef : 1d ndarray,
             mapmri coefficients
+        mu : array, shape (3,)
+            scale parameters vector for x, y and z
+        R : array, shape (3,3)
+            rotation matrix
+        ind_mat : array, shape (N,3)
+            indices of the basis for x, y and z
         """
 
         self.model = model
@@ -116,25 +215,36 @@ class MapmriFit():
 
     @property
     def mapmri_mu(self):
-        """The SHORE coefficients
+        """The MAPMRI scale factors
         """
         return self.mu
     @property
     def mapmri_R(self):
-        """The SHORE coefficients
+        """The MAPMRI rotation matrix
         """
         return self.R    
     @property
     def mapmri_coeff(self):
-        """The SHORE coefficients
+        """The MAPMRI coefficients
         """
         return self._mapmri_coef
 
     def odf(self, sphere, s=0):
-        r""" Calculates the real analytical odf for a given discrete sphere.
+        r""" Calculates the analytical Orientation Distribution Function (ODF)
+        from the signal [1]_ Eq. 32.
 
-        Eq.32
+        Parameters
+        ----------
+        s: unsigned int
+            radial moment of the ODF
+
+        References
+        ----------
+        .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+        diffusion imaging method for mapping tissue microstructure",
+        NeuroImage, 2013.
         """
+
         v_ = sphere.vertices
         v = np.dot(v_,self.R)
         I_s = mapmri_odf_matrix(self.radial_order,self.mu, s, v)
@@ -144,7 +254,24 @@ class MapmriFit():
 
 
 def mapmri_index_matrix(radial_order):
+    r""" Calculates the indices for the MAPMRI [1]_ basis in x, y and z.
 
+    Parameters
+    ----------
+    radial_order: unsigned int
+        radial order of MAPMRI basis
+
+    Returns
+    -------
+    index_matrix: array, shape (N,3)
+        ordering of the basis in x, y, z
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
     index_matrix = []
     for n in range(0, radial_order + 1, 2):
         for i in range(0, n + 1):
@@ -154,6 +281,25 @@ def mapmri_index_matrix(radial_order):
     return np.array(index_matrix)
 
 def Bmat(ind_mat):
+    r""" Calculates the B coefficients from [1]_ Eq. 27.
+
+    Parameters
+    -------
+    index_matrix: array, shape (N,3)
+        ordering of the basis in x, y, z
+
+    Returns
+    -------
+    B: array, shape (N,)
+        B coefficients for the basis
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
+
     B = np.zeros(ind_mat.shape[0])
     for i in range (ind_mat.shape[0]):
         n1, n2, n3 = ind_mat[i]
@@ -163,8 +309,23 @@ def Bmat(ind_mat):
     return B
 
 def mapmri_phi_1d(n, q, mu):
-    """
-    Eq. 4
+    r""" One dimensional MAPMRI basis function from [1]_ Eq. 4.
+
+    Parameters
+    -------
+    n: unsigned int
+        order of the basis
+    q: array, shape (N,)
+        points in the q-space in which evaluate the basis
+    mu: float
+        scale factor of the basis
+
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
     """
 
     qn = 2 * np.pi * mu * q
@@ -179,8 +340,23 @@ def mapmri_phi_1d(n, q, mu):
 
 
 def mapmri_phi_3d(n, q, mu):
-    """
-    Eq. 23
+    r""" Three dimensional MAPMRI basis function from [1]_ Eq. 23.
+
+    Parameters
+    -------
+    n: array, shape (3,)
+        order of the basis function for x, y, z
+    q: array, shape (N,3)
+        points in the q-space in which evaluate the basis
+    mu: array, shape (3,)
+        scale factors of the basis for x, y, z
+
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
     """
 
     n1, n2, n3 = n
@@ -191,6 +367,25 @@ def mapmri_phi_3d(n, q, mu):
     return np.real(phi(n1, qx, mux) * phi(n2, qy, muy) * phi(n3, qz, muz))
 
 def mapmri_phi_matrix(radial_order, mu, q_gradients):
+    r"""Compute the MAPMRI phi matrix for the signal [1]_
+
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer that represent the order of the basis
+    mu: array, shape (3,)
+        scale factors of the basis for x, y, z
+    q_gradients: array, shape (N,3)
+        points in the q-space in which evaluate the basis
+
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
 
     ind_mat = mapmri_index_matrix(radial_order)
 
@@ -206,8 +401,23 @@ def mapmri_phi_matrix(radial_order, mu, q_gradients):
     return M
 
 def mapmri_psi_1d(n, x, mu):
-    """
-    Eq. 10
+    r""" One dimensional MAPMRI propagator basis function from [1]_ Eq. 10.
+
+    Parameters
+    -------
+    n: unsigned int
+        order of the basis
+    x: array, shape (N,)
+        points in the r-space in which evaluate the basis
+    mu: float
+        scale factor of the basis
+
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
     """
 
     H = hermite(n)(x / mu)
@@ -220,10 +430,24 @@ def mapmri_psi_1d(n, x, mu):
 
 
 def mapmri_psi_3d(n, r, mu):
-    """
-    Eq. 22
-    """
+    r""" Three dimensional MAPMRI propagator basis function from [1]_ Eq. 22.
 
+    Parameters
+    -------
+    n: array, shape (3,)
+        order of the basis function for x, y, z
+    q: array, shape (N,3)
+        points in the q-space in which evaluate the basis
+    mu: array, shape (3,)
+        scale factors of the basis for x, y, z
+
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
     n1, n2, n3 = n
     x, y, z = r.T
     mux, muy, muz = mu
@@ -232,7 +456,26 @@ def mapmri_psi_3d(n, r, mu):
     return psi(n1, x, mux) * psi(n2, y, muy) * psi(n3, z, muz)
 
 
-def mapmri_psi_matrix(radial_order, mu, rgrad, tau):
+def mapmri_psi_matrix(radial_order, mu, rgrad):
+    r"""Compute the MAPMRI psi matrix for the propagator [1]_
+
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer that represent the order of the basis
+    mu: array, shape (3,)
+        scale factors of the basis for x, y, z
+    rgrad: array, shape (N,3)
+        points in the r-space in which evaluate the EAP
+
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
+    """
 
     ind_mat = mapmri_index_matrix(radial_order)
 
@@ -249,8 +492,25 @@ def mapmri_psi_matrix(radial_order, mu, rgrad, tau):
 
 
 def mapmri_odf_matrix(radial_order, mu, s, vertices):
-    """
-    Eq. 33 (choose ux=uy=uz)
+    r"""Compute the MAPMRI ODF matrix [1]_  Eq. 33.
+
+    Parameters
+    ----------
+    radial_order : unsigned int,
+        an even integer that represent the order of the basis
+    mu: array, shape (3,)
+        scale factors of the basis for x, y, z
+    s: unsigned int
+        radial moment of the ODF
+    vertices: array, shape (N,3)
+        points of the sphere shell in the r-space in which evaluate the ODF
+
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
     """
 
     ind_mat = mapmri_index_matrix(radial_order)
@@ -261,12 +521,17 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
 
     odf_mat = np.zeros((n_vert, n_elem))
 
-    rho = mu
     mux,muy,muz = mu
+
+    # Eq, 35a
     rho=1.0/np.sqrt((vertices[:,0]/mux)**2 + (vertices[:,1]/muy)**2 + (vertices[:,2]/muz)**2)
+    # Eq, 35b
     alpha = 2 * rho * (vertices[:,0]/mux)
+    # Eq, 35c
     beta = 2 * rho * (vertices[:,1]/muy)
+    # Eq, 35d
     gamma = 2 * rho * (vertices[:,2]/muz)
+    
     const= rho ** (3 + s) / np.sqrt(2 ** (2 - s) * np.pi ** 3 * (mux ** 2 * muy ** 2 * muz ** 2))
 
     for j in range(n_elem):
@@ -278,9 +543,15 @@ def mapmri_odf_matrix(radial_order, mu, s, vertices):
 
 
 def _odf_cfunc(n1, n2, n3, a, b, g, s):
+    r"""Compute the MAPMRI ODF function from [1]_  Eq. 34.
+
+    References
+    ----------
+    .. [1] Ozarslan E. et. al, "Mean apparent propagator (MAP) MRI: A novel
+    diffusion imaging method for mapping tissue microstructure",
+    NeuroImage, 2013.
     """
-    Eq. 34
-    """
+
 
     f = factorial
     f2 = factorial2
