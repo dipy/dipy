@@ -218,11 +218,13 @@ class MapmriFit():
         """The MAPMRI scale factors
         """
         return self.mu
+
     @property
     def mapmri_R(self):
         """The MAPMRI rotation matrix
         """
         return self.R    
+
     @property
     def mapmri_coeff(self):
         """The MAPMRI coefficients
@@ -582,35 +584,67 @@ def _odf_cfunc(n1, n2, n3, a, b, g, s):
 
 
 
-def mapmri_evaluate_E(radial_order, coeff, qlist, mu):
+def mapmri_signal(q_list, radial_order, coeff, mu, R):
+    r"""Evaluate the MAPMRI signal in a set of points of the q-space.
+
+    Parameters
+    ----------
+    q_list: array, shape (N,3)
+        points of the q-space in which evaluate the signal
+    radial_order : unsigned int,
+        an even integer that represent the order of the basis
+    coeff: array, shape (N,)
+        the MAPMRI coefficients
+    mu: array, shape (3,)
+        scale factors of the basis for x, y, z
+    R: array, shape (3,3)
+        MAPMRI rotation matrix
+    """
+
+    q_list = np.dot(q_list, R)
 
     ind_mat = mapmri_index_matrix(radial_order)
 
     n_elem = ind_mat.shape[0]
 
-    n_qgrad = qlist.shape[0]
+    n_qgrad = q_list.shape[0]
 
     data_out = np.zeros(n_qgrad)
 
-    for i in range(n_qgrad):
-        for j in range(n_elem):
-            data_out[i] += coeff[j] * mapmri_phi_3d(ind_mat[j], qlist[i], mu)
+    for j in range(n_elem):
+        data_out[:] += coeff[j] * mapmri_phi_3d(ind_mat[j], q_list.T, mu)
 
     return data_out
 
-def mapmri_evaluate_EAP(radial_order, coeff, rlist, mu):
+def mapmri_EAP(r_list, radial_order, coeff, mu, R):
+    r"""Evaluate the MAPMRI propagator in a set of points of the r-space.
+
+    Parameters
+    ----------
+    r_list: array, shape (N,3)
+        points of the r-space in which evaluate the EAP
+    radial_order : unsigned int,
+        an even integer that represent the order of the basis
+    coeff: array, shape (N,)
+        the MAPMRI coefficients
+    mu: array, shape (3,)
+        scale factors of the basis for x, y, z
+    R: array, shape (3,3)
+        MAPMRI rotation matrix
+    """
+
+    r_list = np.dot(r_list, R)
 
     ind_mat = mapmri_index_matrix(radial_order)
     
     n_elem = ind_mat.shape[0]
 
-    n_rgrad = rlist.shape[0]
+    n_rgrad = r_list.shape[0]
 
     data_out = np.zeros(n_rgrad)
 
-    for i in range(n_rgrad):
-        for j in range(n_elem):
-            data_out[i] += coeff[j] * mapmri_psi_3d(ind_mat[j], rlist[i], mu)
+    for j in range(n_elem):
+        data_out[:] += coeff[j] * mapmri_psi_3d(ind_mat[j], r_list, mu)
 
     return data_out
 
