@@ -11,7 +11,6 @@ Correlation (CC) metric.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 import nibabel as nib
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.imwarp import DiffeomorphicMap

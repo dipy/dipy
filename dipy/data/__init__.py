@@ -264,9 +264,9 @@ def get_data(name='small_64D'):
         fimg = pjoin(THIS_DIR, 'test_piesno.nii.gz')
         return fimg
     if name == "reg_c":
-        return pjoin(THIS_DIR, 'C.png')
+        return pjoin(THIS_DIR, 'C.npy')
     if name == "reg_o":
-        return pjoin(THIS_DIR, 'circle.png')
+        return pjoin(THIS_DIR, 'circle.npy')
     if name == 'cb_2':
         return pjoin(THIS_DIR, 'cb_2.npz')
 

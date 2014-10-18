@@ -10,7 +10,6 @@ We will perform the classic Circle-To-C experiment for diffeomorphic registratio
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from dipy.data import get_data
 from dipy.align.imwarp import SymmetricDiffeomorphicRegistration
 from dipy.align.metrics import SSDMetric, CCMetric, EMMetric
@@ -21,8 +20,8 @@ from dipy.viz import regtools
 fname_moving = get_data('reg_o')
 fname_static = get_data('reg_c')
 
-moving = plt.imread(fname_moving)
-static = plt.imread(fname_static)
+moving = np.load(fname_moving)
+static = np.load(fname_static)
 
 """
 To visually check the overlap of the static image with the transformed moving
