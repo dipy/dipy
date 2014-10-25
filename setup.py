@@ -10,7 +10,7 @@ from glob import glob
 # update it when the contents of directories change.
 if os.path.exists('MANIFEST'): os.remove('MANIFEST')
 
-import numpy as np
+from numpy.distutils.misc_util import get_info
 
 # Get version and release info, which is all stored in dipy/info.py
 ver_file = os.path.join('dipy', 'info.py')
@@ -77,7 +77,9 @@ from setup_helpers import install_scripts_bat, add_flag_checking
 
 # Define extensions
 EXTS = []
-
+# Add flags for linking to npymath library
+ext_kwargs = get_info('npymath')
+ext_kwargs['include_dirs'].append('src')
 for modulename, other_sources, language in (
     ('dipy.reconst.recspeed', [], 'c'),
     ('dipy.reconst.vec_val_sum', [], 'c'),
@@ -96,7 +98,7 @@ for modulename, other_sources, language in (
     pyx_src = pjoin(*modulename.split('.')) + '.pyx'
     EXTS.append(Extension(modulename, [pyx_src] + other_sources,
                           language=language,
-                          include_dirs=[np.get_include(), "src"]))
+                          **ext_kwargs))
 
 
 # Do our own build and install time dependency checking. setup.py gets called in
