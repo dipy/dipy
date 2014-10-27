@@ -105,13 +105,33 @@ def test_rigid_partial_real_bundles():
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[20:40]
     static_center, shift = center_streamlines(static)
+    moving, shift2 = center_streamlines(moving)
 
-    mat = matrix44([0, 0, 0, 0, 40, 0])
+    mat = matrix44([0, 0, 40, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
 
     srr = StreamlineLinearRegistration()
 
-    moving_center = srr.optimize(static_center, moving).transform(moving)
+    srm = srr.optimize(static_center, moving)
+    print(srm.fopt)
+
+    #    bmd = BundleMinDistanceMetric()
+    #    bmd.setup(static_center, moving)
+    #    print(bmd.distance(np.array([0, 0, 0, 0., 0., 0])))
+
+    print(srm.iterations)
+    print(srm.funcs)
+
+    moving_center = srm.transform(moving)
+    print(srm.matrix)
+
+
+    from dipy.viz import fvtk
+
+    ren = fvtk.ren()
+    fvtk.add(ren, fvtk.line(static_center, fvtk.colors.red))
+    fvtk.add(ren, fvtk.line(moving_center, fvtk.colors.green))
+    fvtk.show(ren)
 
     static_center = set_number_of_points(static_center, 100)
     moving_center = set_number_of_points(moving_center, 100)
@@ -405,6 +425,40 @@ def test_vectorize_streamlines():
     assert_equal(np.all(cb_subj1_pts_no == 10), True)
 
 
+def compose_matrix_matrix44_compatibility():
+
+    t = np.array([10, -100, 200, 80, 20, 45., 2., 3., 5., 0.1, 0.2, -0.3])
+
+    T = matrix44(t, cm=False)
+
+    from dipy.core.geometry import compose_matrix, decompose_matrix
+
+    T2 = compose_matrix(translate=t[:3],
+                        angles=np.deg2rad(t[3:6]),
+                        scale=t[6:9],
+                        shear=t[9:12])
+
+    scale, shear, angles, trans, persp = decompose_matrix(T2)
+
+    print(T)
+    print(T2)
+    print(scale)
+    print(shear)
+    print(np.rad2deg(angles))
+    print(trans)
+
+    mat = matrix44([0, 0, 0, 0, 40, 0])
+    mat2 = compose_matrix(translate=(0, 0, 0),
+                          angles=np.deg2rad([0, 40., 0]))
+
+    print(mat)
+    print(mat2)
+
+    pass
+
 if __name__ == '__main__':
 
-    run_module_suite()
+    #run_module_suite()
+    #compose_matrix_matrix44_compatibility()
+    #test_stream_rigid()
+    test_rigid_partial_real_bundles()

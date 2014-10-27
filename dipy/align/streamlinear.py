@@ -9,7 +9,9 @@ from dipy.align.bundlemin import (_bundle_minimum_distance,
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
                                       center_streamlines)
-from dipy.core.geometry import rodrigues_axis_rotation, compose_transformations
+from dipy.core.geometry import (rodrigues_axis_rotation,
+                                compose_transformations,
+                                compose_matrix)
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -549,11 +551,12 @@ def rotation_mat2vec(R):
     ax, angle = quat2angle_axis(mat2quat(R))
     return ax * angle
 
+
 def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
 
-def matrix44(t, dtype=np.double):
+def matrix44(t, dtype=np.double, cm=False):
     """ Compose a 4x4 transformation matrix
 
     Parameters
@@ -584,22 +587,39 @@ def matrix44(t, dtype=np.double):
     # Degrees to radians
     rads = np.deg2rad(t[3:6])
 
-    T[0:3, 3] = _threshold(t[0:3], MAX_DIST)
-    R = rotation_vec2mat(rads)
-    if size == 6:
-        T[0:3, 0:3] = R
-    elif size == 7:
-        T[0:3, 0:3] = t[6] * R
-    elif size == 12:
-        S = np.diag(_threshold(t[6:9], MAX_DIST))
-        # Q = rotation_vec2mat(t[9:12])
-        kx, ky, kz = t[9:12]
-        #shear matrix
-        Q = np.array([[1, kx * kz, kx],
-                      [ky, 1, 0],
-                      [0, kz, 1]])
-        # Beware: R*s*Q
-        T[0:3, 0:3] = np.dot(R, np.dot(S, Q))
+    if cm:
+
+        scale, shear, angles, translate = (None, ) * 4
+        if size == [6, 7, 12]:
+            translate = t[:3]
+            angles = t[3: 6]
+        if size == 7:
+            scale = np.array((t[6],) * 3)
+        if size == 12:
+            scale = t[6: 9]
+            shear = t[9: 12]
+
+        return compose_matrix(scale=scale, shear=shear,
+                              angles=angles,
+                              translate=translate)
+    else:
+
+        T[0:3, 3] = _threshold(t[0:3], MAX_DIST)
+        R = rotation_vec2mat(rads)
+        if size == 6:
+            T[0:3, 0:3] = R
+        elif size == 7:
+            T[0:3, 0:3] = t[6] * R
+        elif size == 12:
+            S = np.diag(_threshold(t[6:9], MAX_DIST))
+            # Q = rotation_vec2mat(t[9:12])
+            kx, ky, kz = t[9:12]
+            #shear matrix
+            Q = np.array([[1, kx * kz, kx],
+                          [ky, 1, 0],
+                          [0, kz, 1]])
+            # Beware: R*s*Q
+            T[0:3, 0:3] = np.dot(R, np.dot(S, Q))
 
     return T
 
