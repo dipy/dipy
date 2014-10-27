@@ -19,6 +19,7 @@ from dipy.tracking.streamline import (center_streamlines,
                                       transform_streamlines,
                                       set_number_of_points)
 
+from dipy.core.geometry import compose_matrix, decompose_matrix
 
 from dipy.data import get_data, two_cingulum_bundles
 from nibabel import trackvis as tv
@@ -78,7 +79,9 @@ def test_rigid_real_bundles():
 
     bundle_initial = fornix_streamlines()[:20]
     bundle, shift = center_streamlines(bundle_initial)
-    mat = matrix44([0, 0, 20, 45, 0, 0])
+
+    mat = matrix44([0, 0, 20, 45., 0, 0])
+
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistanceMatrixMetric()
@@ -105,14 +108,18 @@ def test_rigid_partial_real_bundles():
     static = fornix_streamlines()[:20]
     moving = fornix_streamlines()[20:40]
     static_center, shift = center_streamlines(static)
-    moving, shift2 = center_streamlines(moving)
+    moving_center, shift2 = center_streamlines(moving)
 
-    mat = matrix44([0, 0, 40, 0, 40, 0])
-    moving = transform_streamlines(moving, mat)
+    print(shift2)
+    #mat = matrix44([0, 0, 0, 40, 0, 0])
+    #print(mat)
+    mat = compose_matrix(translate=np.array([0, 0, 0.]), angles=np.deg2rad([40, 0, 0.]))
+    #print(mat)
+    moved = transform_streamlines(moving_center, mat)
 
     srr = StreamlineLinearRegistration()
 
-    srm = srr.optimize(static_center, moving)
+    srm = srr.optimize(static_center, moved)
     print(srm.fopt)
 
     #    bmd = BundleMinDistanceMetric()
@@ -122,7 +129,7 @@ def test_rigid_partial_real_bundles():
     print(srm.iterations)
     print(srm.funcs)
 
-    moving_center = srm.transform(moving)
+    moving_back = srm.transform(moved)
     print(srm.matrix)
 
 
@@ -130,7 +137,7 @@ def test_rigid_partial_real_bundles():
 
     ren = fvtk.ren()
     fvtk.add(ren, fvtk.line(static_center, fvtk.colors.red))
-    fvtk.add(ren, fvtk.line(moving_center, fvtk.colors.green))
+    fvtk.add(ren, fvtk.line(moving_back, fvtk.colors.green))
     fvtk.show(ren)
 
     static_center = set_number_of_points(static_center, 100)
@@ -431,7 +438,7 @@ def compose_matrix_matrix44_compatibility():
 
     T = matrix44(t, cm=False)
 
-    from dipy.core.geometry import compose_matrix, decompose_matrix
+
 
     T2 = compose_matrix(translate=t[:3],
                         angles=np.deg2rad(t[3:6]),

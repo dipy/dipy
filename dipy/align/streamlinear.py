@@ -556,7 +556,7 @@ def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
 
-def matrix44(t, dtype=np.double, cm=False):
+def matrix44(t, dtype=np.double, cm=True):
     """ Compose a 4x4 transformation matrix
 
     Parameters
@@ -589,8 +589,10 @@ def matrix44(t, dtype=np.double, cm=False):
 
     if cm:
 
+        print(size)
+
         scale, shear, angles, translate = (None, ) * 4
-        if size == [6, 7, 12]:
+        if size in [6, 7, 12]:
             translate = t[:3]
             angles = t[3: 6]
         if size == 7:
@@ -598,6 +600,11 @@ def matrix44(t, dtype=np.double, cm=False):
         if size == 12:
             scale = t[6: 9]
             shear = t[9: 12]
+
+        print(scale)
+        print(shear)
+        print(angles)
+        print(translate)
 
         return compose_matrix(scale=scale, shear=shear,
                               angles=angles,
