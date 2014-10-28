@@ -5,8 +5,8 @@ from numpy.testing import (run_module_suite,
                            assert_array_equal,
                            assert_array_almost_equal,
                            assert_raises)
-from dipy.align.streamlinear import (matrix44,
-                                     from_matrix44_rigid,
+from dipy.align.streamlinear import (compose_matrix44,
+                                     decompose_matrix44,
                                      BundleSumDistanceMatrixMetric,
                                      BundleMinDistanceMatrixMetric,
                                      BundleMinDistanceMetric,
@@ -60,7 +60,7 @@ def test_rigid_parallel_lines():
 
     bundle_initial = simulated_bundle()
     bundle, shift = center_streamlines(bundle_initial)
-    mat = matrix44([20, 0, 10, 0, 40, 0])
+    mat = compose_matrix44([20, 0, 10, 0, 40, 0])
     bundle2 = transform_streamlines(bundle, mat)
 
     bundle_sum_distance = BundleSumDistanceMatrixMetric()
@@ -80,7 +80,7 @@ def test_rigid_real_bundles():
     bundle_initial = fornix_streamlines()[:20]
     bundle, shift = center_streamlines(bundle_initial)
 
-    mat = matrix44([0, 0, 20, 45., 0, 0])
+    mat = compose_matrix44([0, 0, 20, 45., 0, 0])
 
     bundle2 = transform_streamlines(bundle, mat)
 
@@ -111,7 +111,7 @@ def test_rigid_partial_real_bundles():
     moving_center, shift2 = center_streamlines(moving)
 
     print(shift2)
-    #mat = matrix44([0, 0, 0, 40, 0, 0])
+    #mat = compose_matrix44([0, 0, 0, 40, 0, 0])
     #print(mat)
     mat = compose_matrix(translate=np.array([0, 0, 0.]),
                          angles=np.deg2rad([40, 0, 0.]))
@@ -132,14 +132,6 @@ def test_rigid_partial_real_bundles():
 
     moving_back = srm.transform(moved)
     print(srm.matrix)
-
-
-    from dipy.viz import fvtk
-
-    ren = fvtk.ren()
-    fvtk.add(ren, fvtk.line(static_center, fvtk.colors.red))
-    fvtk.add(ren, fvtk.line(moving_back, fvtk.colors.green))
-    #fvtk.show(ren)
 
     static_center = set_number_of_points(static_center, 100)
     moving_center = set_number_of_points(moving_back, 100)
@@ -172,7 +164,7 @@ def test_stream_rigid():
     moving = fornix_streamlines()[20:40]
     static_center, shift = center_streamlines(static)
 
-    mat = matrix44([0, 0, 0, 0, 40, 0])
+    mat = compose_matrix44([0, 0, 0, 0, 40, 0])
     moving = transform_streamlines(moving, mat)
 
     srr = StreamlineLinearRegistration()
@@ -305,8 +297,8 @@ def test_openmp_locks():
 def test_from_to_rigid():
 
     t = np.array([10, 2, 3, 0.1, 20., 30.])
-    mat = matrix44(t)
-    vec = from_matrix44_rigid(mat)
+    mat = compose_matrix44(t)
+    vec = decompose_matrix44(mat, 6)
 
     assert_array_almost_equal(t, vec)
 
@@ -315,16 +307,16 @@ def test_from_to_rigid():
     mat = np.eye(4)
     mat[0, 0] = -1
 
-    vec = from_matrix44_rigid(mat)
+    vec = decompose_matrix44(mat, 6)
 
-    assert_array_almost_equal(t, vec)
+    assert_array_almost_equal(-t, vec)
 
 
 def test_matrix44():
 
-    assert_raises(ValueError, matrix44, np.ones(5))
-    assert_raises(ValueError, matrix44, np.ones(9))
-    assert_raises(ValueError, matrix44, np.ones(16))
+    assert_raises(ValueError, compose_matrix44, np.ones(5))
+    assert_raises(ValueError, compose_matrix44, np.ones(9))
+    assert_raises(ValueError, compose_matrix44, np.ones(16))
 
 
 def test_abstract_metric_class():
@@ -359,7 +351,7 @@ def test_similarity_real_bundles():
     bundle_initial, shift = center_streamlines(bundle_initial)
     bundle = bundle_initial[:20]
     xgold = [0, 0, 10, 0, 0, 0, 1.5]
-    mat = matrix44(xgold)
+    mat = compose_matrix44(xgold)
     bundle2 = transform_streamlines(bundle_initial[:20], mat)
 
     metric = BundleMinDistanceMatrixMetric()
@@ -382,7 +374,7 @@ def test_affine_real_bundles():
     bundle_initial, shift = center_streamlines(bundle_initial)
     bundle = bundle_initial[:20]
     xgold = [0, 4, 2, 0, 10, 10, 1.2, 1.1, 1., 0., 0.2, 0.]
-    mat = matrix44(xgold)
+    mat = compose_matrix44(xgold)
     bundle2 = transform_streamlines(bundle_initial[:20], mat)
 
     x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
@@ -432,37 +424,6 @@ def test_vectorize_streamlines():
 
     assert_equal(np.all(cb_subj1_pts_no == 10), True)
 
-
-def compose_matrix_matrix44_compatibility():
-
-    t = np.array([10, -100, 200, 80, 20, 45., 2., 3., 5., 0.1, 0.2, -0.3])
-
-    T = matrix44(t, cm=False)
-
-
-
-    T2 = compose_matrix(translate=t[:3],
-                        angles=np.deg2rad(t[3:6]),
-                        scale=t[6:9],
-                        shear=t[9:12])
-
-    scale, shear, angles, trans, persp = decompose_matrix(T2)
-
-    print(T)
-    print(T2)
-    print(scale)
-    print(shear)
-    print(np.rad2deg(angles))
-    print(trans)
-
-    mat = matrix44([0, 0, 0, 0, 40, 0])
-    mat2 = compose_matrix(translate=(0, 0, 0),
-                          angles=np.deg2rad([0, 40., 0]))
-
-    print(mat)
-    print(mat2)
-
-    pass
 
 if __name__ == '__main__':
 

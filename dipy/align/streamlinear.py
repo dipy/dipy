@@ -1,7 +1,5 @@
 import abc
 import numpy as np
-from nibabel.quaternions import quat2angle_axis, mat2quat
-from scipy.linalg import det
 from dipy.utils.six import with_metaclass
 from dipy.core.optimize import Optimizer
 from dipy.align.bundlemin import (_bundle_minimum_distance,
@@ -9,9 +7,9 @@ from dipy.align.bundlemin import (_bundle_minimum_distance,
 from dipy.tracking.streamline import (transform_streamlines,
                                       unlist_streamlines,
                                       center_streamlines)
-from dipy.core.geometry import (rodrigues_axis_rotation,
-                                compose_transformations,
-                                compose_matrix)
+from dipy.core.geometry import (compose_transformations,
+                                compose_matrix,
+                                decompose_matrix)
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -303,13 +301,13 @@ class StreamlineLinearRegistration(object):
         if self.verbose:
             opt.print_summary()
 
-        opt_mat = matrix44(opt.xopt)
+        opt_mat = compose_matrix44(opt.xopt)
 
-        static_mat = matrix44([static_shift[0], static_shift[1],
-                               static_shift[2], 0, 0, 0])
+        static_mat = compose_matrix44([static_shift[0], static_shift[1],
+                                       static_shift[2], 0, 0, 0])
 
-        moving_mat = matrix44([-moving_shift[0], -moving_shift[1],
-                               -moving_shift[2], 0, 0, 0])
+        moving_mat = compose_matrix44([-moving_shift[0], -moving_shift[1],
+                                       -moving_shift[2], 0, 0, 0])
 
         mat = compose_transformations(moving_mat, opt_mat, static_mat)
 
@@ -318,7 +316,7 @@ class StreamlineLinearRegistration(object):
         if opt.evolution is not None:
             for vecs in opt.evolution:
                 mat_history.append(compose_transformations(moving_mat,
-                                                           matrix44(vecs),
+                                                           compose_matrix44(vecs),
                                                            static_mat))
 
         srm = StreamlineRegistrationMap(mat, opt.xopt, opt.fopt,
@@ -418,7 +416,7 @@ def bundle_sum_distance(t, static, moving):
 
     """
 
-    aff = matrix44(t)
+    aff = compose_matrix44(t)
     moving = transform_streamlines(moving, aff)
     d01 = distance_matrix_mdf(static, moving)
     return np.sum(d01)
@@ -452,7 +450,7 @@ def bundle_min_distance(t, static, moving):
     cost: float
 
     """
-    aff = matrix44(t)
+    aff = compose_matrix44(t)
     moving = transform_streamlines(moving, aff)
     d01 = distance_matrix_mdf(static, moving)
 
@@ -502,7 +500,7 @@ def bundle_min_distance_fast(t, static, moving, block_size):
 
     """
 
-    aff = matrix44(t)
+    aff = compose_matrix44(t)
     moving = np.dot(aff[:3, :3], moving.T).T + aff[:3, 3]
     moving = np.ascontiguousarray(moving, dtype=np.float64)
 
@@ -515,48 +513,48 @@ def bundle_min_distance_fast(t, static, moving, block_size):
                                     block_size)
 
 
-def rotation_vec2mat(r):
-    r"""  The rotation matrix is given by the Rodrigues formula:
-
-    Parameters
-    ----------
-    r : (3,) array
-        Rotation vector
-
-    Returns
-    -------
-    R : (3, 3) array
-        Rotation matrix
-
-    """
-    theta = np.linalg.norm(r)
-
-    return rodrigues_axis_rotation(r, np.rad2deg(theta))
-
-
-def rotation_mat2vec(R):
-    """ Rotation vector from rotation matrix `R`
-
-    Parameters
-    ----------
-    R : (3, 3) array-like
-        Rotation matrix
-
-    Returns
-    -------
-    vec : (3,) array
-        Rotation vector, where norm of `vec` is the angle ``theta``, and the
-        axis of rotation is given by ``vec / theta``
-    """
-    ax, angle = quat2angle_axis(mat2quat(R))
-    return ax * angle
+#def rotation_vec2mat(r):
+#    r"""  The rotation matrix is given by the Rodrigues formula:
+#
+#    Parameters
+#    ----------
+#    r : (3,) array
+#        Rotation vector
+#
+#    Returns
+#    -------
+#    R : (3, 3) array
+#        Rotation matrix
+#
+#    """
+#    theta = np.linalg.norm(r)
+#
+#    return rodrigues_axis_rotation(r, np.rad2deg(theta))
+#
+#
+#def rotation_mat2vec(R):
+#    """ Rotation vector from rotation matrix `R`
+#
+#    Parameters
+#    ----------
+#    R : (3, 3) array-like
+#        Rotation matrix
+#
+#    Returns
+#    -------
+#    vec : (3,) array
+#        Rotation vector, where norm of `vec` is the angle ``theta``, and the
+#        axis of rotation is given by ``vec / theta``
+#    """
+#    ax, angle = quat2angle_axis(mat2quat(R))
+#    return ax * angle
 
 
 def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
 
-def matrix44(t, dtype=np.double, cm=True):
+def compose_matrix44(t, dtype=np.double):
     """ Compose a 4x4 transformation matrix
 
     Parameters
@@ -582,67 +580,44 @@ def matrix44(t, dtype=np.double, cm=True):
     if size not in [6, 7, 12]:
         raise ValueError('Accepted number of parameters is 6, 7 and 12')
 
-    T = np.eye(4, dtype=dtype)
-
-    # Degrees to radians
-    rads = np.deg2rad(t[3:6])
-
-    if cm:
-
-        #print(size)
-
-        scale, shear, angles, translate = (None, ) * 4
-        if size in [6, 7, 12]:
-            translate = t[:3]
-            angles = rads
-        if size == 7:
-            scale = np.array((t[6],) * 3)
-        if size == 12:
-            scale = t[6: 9]
-            shear = t[9: 12]
-
-        #print(scale)
-        #print(shear)
-        #print(angles)
-        #print(translate)
-
-        return compose_matrix(scale=scale, shear=shear,
-                              angles=angles,
-                              translate=translate)
-    else:
-
-        T[0:3, 3] = _threshold(t[0:3], MAX_DIST)
-        R = rotation_vec2mat(rads)
-        if size == 6:
-            T[0:3, 0:3] = R
-        elif size == 7:
-            T[0:3, 0:3] = t[6] * R
-        elif size == 12:
-            S = np.diag(_threshold(t[6:9], MAX_DIST))
-            # Q = rotation_vec2mat(t[9:12])
-            kx, ky, kz = t[9:12]
-            #shear matrix
-            Q = np.array([[1, kx * kz, kx],
-                          [ky, 1, 0],
-                          [0, kz, 1]])
-            # Beware: R*s*Q
-            T[0:3, 0:3] = np.dot(R, np.dot(S, Q))
-
-    return T
+    scale, shear, angles, translate = (None, ) * 4
+    if size in [6, 7, 12]:
+        translate = _threshold(t[0:3], MAX_DIST)
+        angles = np.deg2rad(t[3:6])
+    if size == 7:
+        scale = np.array((t[6],) * 3)
+    if size == 12:
+        scale = t[6: 9]
+        shear = t[9: 12]
+    return compose_matrix(scale=scale, shear=shear,
+                          angles=angles,
+                          translate=translate)
 
 
-def from_matrix44_rigid(mat):
+def decompose_matrix44(mat, size=12):
     """ Given a 4x4 rigid matrix return vector with 3 translations and 3
     rotation angles in degrees.
+
+    Parameters
+    -----------
+
+    Returns
+    -------
+
     """
+    scale, shear, angles, translate, _ = decompose_matrix(mat)
 
-    vec = np.zeros(6)
-    vec[:3] = mat[:3, 3]
+    t = np.zeros(12.)
+    t[:3] = translate
+    t[3: 6] = np.rad2deg(angles)
+    if size == 6:
+        return t[:6]
+    if size == 7:
+        t[6] = np.mean(scale)
+        return t[:7]
+    if size == 12:
+        t[6: 9] = scale
+        t[9: 12] = shear
+        return t
 
-    R = mat[:3, :3]
-    if det(R) < 0:
-        R = -R
-    vec[3:6] = rotation_mat2vec(R)
-    vec[3:6] = np.rad2deg(vec[3:6])
-
-    return vec
+    raise ValueError('Size can be 6, 7 or 12')
