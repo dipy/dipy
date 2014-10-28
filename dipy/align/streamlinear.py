@@ -10,6 +10,7 @@ from dipy.tracking.streamline import (transform_streamlines,
 from dipy.core.geometry import (compose_transformations,
                                 compose_matrix,
                                 decompose_matrix)
+from dipy.utils.six import string_types
 
 MAX_DIST = 1e10
 LOG_MAX_DIST = np.log(MAX_DIST)
@@ -173,7 +174,7 @@ class BundleSumDistanceMatrixMetric(BundleMinDistanceMatrixMetric):
 
 class StreamlineLinearRegistration(object):
 
-    def __init__(self, metric=None, x0=None, method='L-BFGS-B',
+    def __init__(self, metric=None, x0="rigid", method='L-BFGS-B',
                  bounds=None, verbose=False, options=None,
                  evolution=False):
         r""" Linear registration of 2 sets of streamlines [Garyfallidis14]_.
@@ -185,12 +186,37 @@ class StreamlineLinearRegistration(object):
             is True then a faster implementation of BMD is used. Otherwise,
             use the given distance metric.
 
-        x0 : None or array
-            Initial parametrization. If None ``x0=np.ones(6)``.
-            If x0 has 6 elements then only translation and rotation is
-            performed (rigid). If x0 has 7 elements also isotropic scaling is
-            performed (similarity). If x0 has 12 elements then translation,
-            rotation, scaling and shearing is performed (affine).
+        x0 : array or int or str
+            Initial parametrization for the optimization.
+
+            If 1D array with:
+                a) 6 elements then only rigid registration is parformed with
+                the 3 first elements for translation and 3 for rotation.
+                b) 7 elements also isotropic scaling is performed (similarity).
+                c) 12 elements then translation, rotation (in degrees),
+                scaling and shearing is performed (affine).
+
+                Here is an example of x0 with 12 elements:
+                ``x0=np.array([0, 10, 0, 40, 0, 0, 2., 1.5, 1, 0.1, -0.5, 0])``
+
+                This has translation (0, 10, 0), rotation (40, 0, 0) in
+                degrees, scaling (2., 1.5, 1) and shearing (0.1, -0.5, 0).
+
+            If int:
+                a) 6
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0])``
+                b) 7
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
+                c) 12
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
+
+            If str:
+                a) "rigid"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0])``
+                b) "similarity"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1.])``
+                c) "affine"
+                    ``x0 = np.array([0, 0, 0, 0, 0, 0, 1., 1., 1, 0, 0, 0])``
 
         method : str,
             'L_BFGS_B' or 'Powell' optimizers can be used. Default is
@@ -214,10 +240,6 @@ class StreamlineLinearRegistration(object):
             If True save the transformation for each iteration of the
             optimizer. Default is False. Supported only with Scipy >= 0.11.
 
-        Methods
-        -------
-        optimize(static, moving)
-
         References
         ----------
         .. [Garyfallidis14] Garyfallidis et al., "Direct native-space fiber
@@ -226,10 +248,8 @@ class StreamlineLinearRegistration(object):
 
         """
 
+        self.x0 = self._set_x0(x0)
         self.metric = metric
-        self.x0 = x0
-        if self.x0 is None:
-            self.x0 = np.ones(6)
 
         if self.metric is None:
             self.metric = BundleMinDistanceMetric()
@@ -291,7 +311,8 @@ class StreamlineLinearRegistration(object):
 
             if self.options is None:
                 self.options = {'maxcor': 10, 'ftol': 1e-7,
-                                'gtol': 1e-5, 'eps': 1e-8}
+                                'gtol': 1e-5, 'eps': 1e-8,
+                                'maxiter': 100}
 
             opt = Optimizer(distance, self.x0.tolist(),
                             method=self.method,
@@ -323,6 +344,36 @@ class StreamlineLinearRegistration(object):
                                         mat_history, opt.nfev, opt.nit)
         del opt
         return srm
+
+    def _set_x0(self, x0):
+        """ check if input is of correct type"""
+
+        if hasattr(x0, 'ndim'):
+
+            if len(x0) not in [6, 7, 12]:
+                msg = 'Only 1D arrays of 6, 7 and 12 elements are allowed'
+                raise ValueError(msg)
+            if x0.ndim != 1:
+                raise ValueError("Array should have only one dimension")
+            return x0
+
+        if isinstance(x0, string_types):
+            if x0.lower() == 'rigid':
+                return np.zeros(6)
+
+            if x0.lower() == 'similarity':
+                return np.array([0, 0, 0, 0, 0, 0, 1.])
+
+            if x0.lower() == 'affine':
+                return np.array([0, 0, 0, 0, 0, 0, 1., 1., 1., 0, 0, 0])
+
+        if isinstance(x0, int):
+            if x0 not in [6, 7, 12]:
+                msg = 'Only 6, 7 and 12 are accepted as integers'
+                raise ValueError(msg)
+            return x0
+
+        raise ValueError('Wrong input')
 
 
 class StreamlineRegistrationMap(object):
@@ -494,9 +545,11 @@ def bundle_min_distance_fast(t, static, moving, block_size):
 
     Notes
     -----
-    Faster implementation of the ``bundle_min_distance``. This is to
-    be used after you have called ``unlist_streamlines`` which returns all the
-    points of all the streamlines as one ndarray.
+    This is a faster implementation of ``bundle_min_distance``, which requires
+    that all the points of each streamline are allocated into an ndarray
+    (of shape N*M by 3, with N the number of points per streamline and M the
+    number of streamlines). This can be done by calling
+    `dipy.tracking.streamlines.unlist_streamlines`.
 
     """
 
@@ -513,43 +566,6 @@ def bundle_min_distance_fast(t, static, moving, block_size):
                                     block_size)
 
 
-#def rotation_vec2mat(r):
-#    r"""  The rotation matrix is given by the Rodrigues formula:
-#
-#    Parameters
-#    ----------
-#    r : (3,) array
-#        Rotation vector
-#
-#    Returns
-#    -------
-#    R : (3, 3) array
-#        Rotation matrix
-#
-#    """
-#    theta = np.linalg.norm(r)
-#
-#    return rodrigues_axis_rotation(r, np.rad2deg(theta))
-#
-#
-#def rotation_mat2vec(R):
-#    """ Rotation vector from rotation matrix `R`
-#
-#    Parameters
-#    ----------
-#    R : (3, 3) array-like
-#        Rotation matrix
-#
-#    Returns
-#    -------
-#    vec : (3,) array
-#        Rotation vector, where norm of `vec` is the angle ``theta``, and the
-#        axis of rotation is given by ``vec / theta``
-#    """
-#    ax, angle = quat2angle_axis(mat2quat(R))
-#    return ax * angle
-
-
 def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
@@ -560,7 +576,7 @@ def compose_matrix44(t, dtype=np.double):
     Parameters
     -----------
     t : ndarray
-        t is a vector of of affine transformation parameters with
+        This is a 1D vector of of affine transformation parameters with
         size at least 6.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
@@ -571,6 +587,7 @@ def compose_matrix44(t, dtype=np.double):
     Returns
     -------
     T : ndarray
+        Homogeneous transformation matrix of size 4x4.
 
     """
     if isinstance(t, list):
@@ -595,14 +612,20 @@ def compose_matrix44(t, dtype=np.double):
 
 
 def decompose_matrix44(mat, size=12):
-    """ Given a 4x4 rigid matrix return vector with 3 translations and 3
-    rotation angles in degrees.
+    """ Given a 4x4 homogeneous matrix return the parameter vector
 
     Parameters
     -----------
+    mat : array
+        Homogeneous 4x4 transformation matrix
+    size : int
+        Size of output vector. 6 for rigid, 7 for similarity and 12
+        for affine. Default is 12.
 
     Returns
     -------
+    t : ndarray
+        One dimensional ndarray of 6, 7 or 12 affine parameters.
 
     """
     scale, shear, angles, translate, _ = decompose_matrix(mat)

@@ -425,6 +425,19 @@ def test_vectorize_streamlines():
     assert_equal(np.all(cb_subj1_pts_no == 10), True)
 
 
+def test_x0_input():
+
+    for x0 in [6, 7, 12, "Rigid", 'rigid', "similarity", "Affine"]:
+        StreamlineLinearRegistration(x0=x0)
+
+    for x0 in [np.random.rand(6), np.random.rand(7), np.random.rand(12)]:
+        StreamlineLinearRegistration(x0=x0)
+
+    for x0 in [8, 20, "Whatever", np.random.rand(20), np.random.rand(20, 3)]:
+
+        assert_raises(ValueError, StreamlineLinearRegistration, x0=x0)
+
+
 if __name__ == '__main__':
 
     run_module_suite()

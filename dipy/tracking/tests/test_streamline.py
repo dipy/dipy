@@ -3,11 +3,13 @@ from __future__ import print_function
 import numpy as np
 
 from nose.tools import assert_true, assert_equal, assert_almost_equal
-from numpy.testing import assert_array_equal, assert_array_almost_equal, assert_raises
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           assert_raises, run_module_suite)
 
 import dipy.tracking.streamline as dipystreamline
 from dipy.tracking.streamline import (relist_streamlines, unlist_streamlines,
-                                      center_streamlines, transform_streamlines)
+                                      center_streamlines, transform_streamlines,
+                                      select_random_set_of_streamlines)
 
 
 streamline = np.array([[82.20181274,  91.3650589 ,  43.15737152],
@@ -371,3 +373,23 @@ def test_center_and_transform():
     streamlines3 = transform_streamlines(streamlines, affine)
     assert_array_equal(streamlines3[0], B)
 
+
+def test_select_streamlines():
+
+    streamlines = [np.random.rand(10, 3),
+                   np.random.rand(20, 3),
+                   np.random.rand(5, 3)]
+
+    new_streamlines = select_random_set_of_streamlines(streamlines, 2)
+
+    assert_equal(len(new_streamlines), 2)
+
+    new_streamlines = select_random_set_of_streamlines(streamlines, 4)
+
+    assert_equal(len(new_streamlines), 3)
+
+
+
+if __name__ == '__main__':
+
+    run_module_suite()

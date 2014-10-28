@@ -92,3 +92,24 @@ def transform_streamlines(streamlines, mat):
     """
 
     return [apply_affine(mat, s) for s in streamlines]
+
+
+def select_random_set_of_streamlines(streamlines, select):
+    """ Select a random set of streamlines
+
+    Parameters
+    ----------
+    streamlines : list
+        List of 2D ndarrays of shape[-1]==3
+
+    select : int
+        Number of streamlines to select. If there are less streamlines
+        than ``select`` then ``select=len(streamlines)``.
+
+    Returns
+    -------
+    selected_streamlines : list
+    """
+    len_s = len(streamlines)
+    index = np.random.randint(0, len_s, min(select, len_s))
+    return [streamlines[i] for i in index]
