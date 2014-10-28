@@ -466,7 +466,7 @@ def compose_matrix_matrix44_compatibility():
 
 if __name__ == '__main__':
 
-    #run_module_suite()
+    run_module_suite()
     #compose_matrix_matrix44_compatibility()
     #test_stream_rigid()
-    test_rigid_partial_real_bundles()
+    #test_rigid_partial_real_bundles()

@@ -556,7 +556,7 @@ def _threshold(x, th):
     return np.maximum(np.minimum(x, th), -th)
 
 
-def matrix44(t, dtype=np.double, cm=False):
+def matrix44(t, dtype=np.double, cm=True):
     """ Compose a 4x4 transformation matrix
 
     Parameters

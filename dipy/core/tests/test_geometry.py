@@ -13,13 +13,17 @@ from dipy.core.geometry import (sphere2cart, cart2sphere,
                                 circumradius,
                                 vec2vec_rotmat,
                                 vector_norm,
-                                compose_transformations)
+                                compose_transformations,
+                                compose_matrix,
+                                decompose_matrix)
 
 from nose.tools import assert_false, assert_equal, assert_raises
 
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import (assert_array_equal, assert_array_almost_equal,
+                           run_module_suite)
 
 from dipy.testing import sphere_points
+from itertools import permutations
 
 
 def test_vector_norm():
@@ -211,4 +215,27 @@ def test_compose_transformations():
     assert_array_equal(CBA, np.eye(4))
 
     assert_raises(ValueError, compose_transformations, A)
+
+
+def test_compose_decompose_matrix():
+
+    for translate in permutations(40 * np.random.rand(3), 3):
+        for angles in permutations(np.deg2rad(90 * np.random.rand(3)), 3):
+            for shears in permutations(3 * np.random.rand(3), 3):
+                for scale in permutations(3 * np.random.rand(3), 3):
+
+                    mat = compose_matrix(translate=translate, angles=angles,
+                                         shear=shears, scale=scale)
+                    sc, sh, ang, trans, _ = decompose_matrix(mat)
+
+                    assert_array_almost_equal(translate, trans)
+                    assert_array_almost_equal(angles, ang)
+
+                    assert_array_almost_equal(shears, sh)
+                    assert_array_almost_equal(scale, sc)
+
+
+if __name__ == '__main__':
+
+    run_module_suite()
 
