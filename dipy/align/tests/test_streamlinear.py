@@ -113,7 +113,8 @@ def test_rigid_partial_real_bundles():
     print(shift2)
     #mat = matrix44([0, 0, 0, 40, 0, 0])
     #print(mat)
-    mat = compose_matrix(translate=np.array([0, 0, 0.]), angles=np.deg2rad([40, 0, 0.]))
+    mat = compose_matrix(translate=np.array([0, 0, 0.]),
+                         angles=np.deg2rad([40, 0, 0.]))
     #print(mat)
     moved = transform_streamlines(moving_center, mat)
 
@@ -138,10 +139,10 @@ def test_rigid_partial_real_bundles():
     ren = fvtk.ren()
     fvtk.add(ren, fvtk.line(static_center, fvtk.colors.red))
     fvtk.add(ren, fvtk.line(moving_back, fvtk.colors.green))
-    fvtk.show(ren)
+    #fvtk.show(ren)
 
     static_center = set_number_of_points(static_center, 100)
-    moving_center = set_number_of_points(moving_center, 100)
+    moving_center = set_number_of_points(moving_back, 100)
 
     vol = np.zeros((100, 100, 100))
     spts = np.concatenate(static_center, axis=0)
