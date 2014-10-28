@@ -513,8 +513,8 @@ def bundle_min_distance_fast(t, static, moving, block_size):
 
     Parameters
     -----------
-    t : ndarray
-        t is a vector of of affine transformation parameters with
+    t : array
+        1D array. t is a vector of of affine transformation parameters with
         size at least 6.
         If size is 6, t is interpreted as translation + rotation.
         If size is 7, t is interpreted as translation + rotation +
@@ -522,17 +522,19 @@ def bundle_min_distance_fast(t, static, moving, block_size):
         If size is 12, t is interpreted as translation + rotation +
         scaling + shearing.
 
-    static : ndarray
-        All the points of the static streamlines. With order of streamlines
-        intact.
+    static : array
+        N*M x 3 array. All the points of the static streamlines. With order of
+        streamlines intact. Where N is the number of streamlines and M
+        is the number of points per streamline.
 
-    moving : ndarray
-        All the points of the moving streamlines. With order of streamlines
-        intact.
+    moving : array
+        K*M x 3 array. All the points of the moving streamlines. With order of
+        streamlines intact. Where K is the number of streamlines and M
+        is the number of points per streamline.
 
     block_size : int
-        Number of points per streamline. All streamlines in statict and moving
-        should have the same number of points.
+        Number of points per streamline. All streamlines in static and moving
+        should have the same number of points M.
 
     Returns
     -------
