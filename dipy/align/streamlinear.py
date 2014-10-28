@@ -403,11 +403,6 @@ class StreamlineRegistrationMap(object):
 
         iterations : int
             Number of iterations of the optimizer
-
-        Methods
-        -------
-        transform()
-
         """
 
         self.matrix = matopt
