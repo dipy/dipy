@@ -44,6 +44,8 @@ from dipy.data.fetcher import (fetch_scil_b0,
                                read_syn_data)
 
 from ..utils.arrfuncs import as_native_array
+from dipy.tracking.streamline import relist_streamlines
+
 
 THIS_DIR = dirname(__file__)
 SPHERE_FILES = {
@@ -191,6 +193,7 @@ def get_data(name='small_64D'):
         'test_piesno' slice of N=8, K=14 diffusion data
         'reg_c' small 2D image used for validating registration
         'reg_o' small 2D image used for validation registration
+        'cb_2' two vectorized cingulum bundles
 
     Returns
     -------
@@ -264,6 +267,8 @@ def get_data(name='small_64D'):
         return pjoin(THIS_DIR, 'C.png')
     if name == "reg_o":
         return pjoin(THIS_DIR, 'circle.png')
+    if name == 'cb_2':
+        return pjoin(THIS_DIR, 'cb_2.npz')
 
 
 def _gradient_from_file(filename):
@@ -392,3 +397,12 @@ def get_cmap(name):
         return rgba
 
     return simple_cmap
+
+
+def two_cingulum_bundles():
+    fname = get_data('cb_2')
+    res = np.load(fname)
+    cb1 = relist_streamlines(res['points'], res['offsets'])
+    cb2 = relist_streamlines(res['points2'], res['offsets2'])
+    return cb1, cb2
+
