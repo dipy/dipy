@@ -4,26 +4,24 @@ Local Fiber Tracking
 ====================
 
 Local fiber tracking is an approach used to model white matter pathways by
-creating streamlines from local directional information. The idea is that if
-one knows the directionality of segment of a tracts or pathways, she can
-integrate along those directions to build the complete representation of that
-structure. Local fiber tracking are widely within the field of diffusion MRI
-because they are simple and robust, but they only use local information to
-determine tracking directions (hence the name).
+creating streamlines from local directional information. The idea is as
+follows: if the directionality of a tract/pathway segment is known, one can
+integrate along those directions to build a complete representation of that
+structure. Local fiber tracking is widely used in the field of diffusion MRI
+because it is simple and robust.
 
-In order to do local fiber tracking one needs 3 things. 1) A way of getting
-directions from a diffusion data set. 2) A method for identifying different
-tissue types within the data set. 3) A set of seeds from which to begin
-tracking.  This example shows how to combine the 3 parts described above to
-create a tractography data sets.
-
+In order to perform local fiber tracking, three things are needed: 1) A method
+for getting directions from a diffusion data set. 2) A method for identifying
+different tissue types within the data set. 3) A set of seeds from which to
+begin tracking.  This example shows how to combine the 3 parts described above
+to create a tractography reconstruction from a diffusion data set.
 """
 
 """
-To begin first lets load an example hardi data set from Stanford. If you have
+To begin, let's load an example HARDI data set from Stanford. If you have
 not already downloaded this data set, the first time you run this example you
 will need to be connected to the internet and this dataset will be downloaded
-it to your computer.
+to your computer.
 """
 
 from dipy.data import read_stanford_labels
@@ -34,9 +32,9 @@ labels = labels_img.get_data()
 affine = hardi_img.get_affine()
 
 """
-This data set provides a label map where all white matter tissues are labeled
-either 1 or 2, so lets create a white matter mask to restrict tracking to the
-white matter.
+This data set provides a label map in which all white matter tissues are
+labeled either 1 or 2, so lets create a white matter mask to restrict tracking
+to the white matter.
 """
 
 white_matter = (labels == 1) | (labels == 2)
@@ -44,10 +42,10 @@ white_matter = (labels == 1) | (labels == 2)
 """
 The first thing we need to begin fiber tracking is a way of getting directions
 from this diffusion data set. In order to do that, we can fit the data to a
-Constant Solid Angle Odf Model. This model will estimate the ODF, or
-orientation distribution function, at each voxel. The ODF is the distribution
-of water diffusion as a function of direction. The peaks of an ODF are good
-estimates for the orientation of tract segments at a point in the image.
+Constant Solid Angle ODF Model. This model will estimate the orientation
+distribution function (ODF) at each voxel. The ODF is the distribution of water
+diffusion as a function of direction. The peaks of an ODF are good estimates
+for the orientation of tract segments at a point in the image.
 """
 
 from dipy.reconst.shm import CsaOdfModel
@@ -63,8 +61,8 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
 The next thing we will need is some way of restricting the fiber tracking to
 areas with good directionality information. We've already created the white
 matter mask, but we can go a step further and restrict fiber tracking to those
-areas there the odf shows significant restricted diffusion by thresholding on
-the GFA (General Fractional Anisotropy).
+areas where the ODF shows significant restricted diffusion by thresholding on
+the General Fractional Anisotropy (GFA).
 """
 
 from dipy.tracking.local import ThresholdTissueClassifier
@@ -72,12 +70,12 @@ from dipy.tracking.local import ThresholdTissueClassifier
 classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
 
 """
-We need one more thing before we can begin tracking, we need to specify where
-to begin, or seed, the fiber tracking. Generally the seeds one chooses will
-depend on the pathways she is interested in modeling. In this example we'll use
-a 2x2x2 grid grid of seeds per voxel, in a sagittal slice of the Corpus
-callosum. Tracking from this region will give us a model of the Corpus Callosum
-tract. This slice has label value 2 in the labels image.
+The last thing we need to do before we can begin tracking is to specify where
+to "seed" (begin) the fiber tracking. Generally, the seeds chosen will depend
+on the pathways one is interested in modeling. In this example, we'll use a
+2x2x2 grid of seeds per voxel, in a sagittal slice of the Corpus Callosum.
+Tracking from this region will give us a model of the Corpus Callosum tract.
+This slice has label value 2 in the labels image.
 """
 
 from dipy.tracking import utils
@@ -86,8 +84,8 @@ seed_mask = labels == 2
 seeds = utils.seeds_from_mask(seed_mask, density=[2, 2, 2], affine=affine)
 
 """
-Finally we can bring it all together using ``LocalTracking``. We then display
-the resulting streamlines using the fvtk module.
+Finally, we can bring it all together using ``LocalTracking``. We will then
+display the resulting streamlines using the fvtk module.
 """
 
 from dipy.tracking.local import LocalTracking
@@ -95,6 +93,7 @@ from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 
 # LocalTracking is lazy so the streamlines will not be actually computed until
+# you're ready to do something with it.
 streamlines = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
 
 # Compute streamlines and store as a list.
@@ -121,7 +120,7 @@ fvtk.record(r, n_frames=1, out_path='deterministic.png',
 
 """
 We've created a deterministic set of streamlines, so called because if you
-repeat the fiber tracking, keeping all the inputs the same, you will get
+repeat the fiber tracking (keeping all the inputs the same) you will get
 exactly the same set of streamlines. We can save the track as a "trk" file
 so it can be loaded into other software for visualization or further analysis.
 """
@@ -130,17 +129,17 @@ from dipy.io.trackvis import save_as_trk
 save_as_trk("CSA_detr.trk", streamlines, affine, labels.shape)
 
 """
-Next lets try some probabilistic fiber tracking. For this we'll be using the
-Constrained Spherical Deconvolution (CSD) model. This model represents each
-voxel in the data as collection of small white matter fibers with different
-orientations. The density of fibers along each orientation is known as the
-Fiber Orientation Distribution, or FOD. While one could still use this model to
-do deterministic fiber tracking by always tracking along the directions that
-have the most fibers, but in order to do probabilistic fiber tracking we can
-pick a fiber from the distribution at random at each new location along the
-streamline.
+Next let's try some probabilistic fiber tracking. For this, we'll be using the
+Constrained Spherical Deconvolution (CSD) Model. This model represents each
+voxel in the data set as a collection of small white matter fibers with
+different orientations. The density of fibers along each orientation is known
+as the Fiber Orientation Distribution (FOD). In order to perform probabilistic
+fiber tracking, we pick a fiber from the FOD at random at each new location
+along the streamline. Note: one could use this model to perform deterministic
+fiber tracking by always tracking along the directions that have the most
+fibers.
 
-Lets begin by fitting the data to the CSD model.
+Let's begin probabilistic fiber tracking by fitting the data to the CSD model.
 """
 
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
@@ -165,9 +164,9 @@ prob_dg = ProbabilisticDirectionGetter.from_shcoeff(csd_fit.shm_coeff,
                                                     sphere=default_sphere)
 
 """
-We can pass this direction getter to ``LocalTracking`` just like we did before,
-along with the ``classifier`` and ``seeds`` to get a probabilistic model of the
-corpus callosum.
+Just as we did in the deterministic example, we can pass this direction getter,
+along with the ``classifier`` and ``seeds``, to ``LocalTracking`` to get a
+probabilistic model of the corpus callosum.
 """
 
 classifier = ThresholdTissueClassifier(csd_fit.gfa, .25)
