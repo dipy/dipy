@@ -82,15 +82,18 @@ def add_flag_checking(build_ext_class, flag_defines):
         Class implementing ``distutils.command.build_ext.build_ext`` interface,
         with a ``build_extensions`` method.
     flag_defines : sequence
-        A sequence of elements, where the elements are sequences of length 3
-        consisting of (``flags``, ``code``, ``defvar``). ``flags`` is a
-        sequence of compiler flags; we check ``flags`` to see whether a C
-        source string ``code`` will compile. We add ``flags`` that do not cause
-        a compile or link error to the extra compile and link args for each
-        extension.  If ``defvar`` is not None, it is the name of Cython
-        variable to be defined in ``build/config.pxi`` with True if the
-        combination of ``flags``, ``code`` will compile, False otherwise. If
-        None, do not write variable.
+        A sequence of elements, where the elements are sequences of length 4
+        consisting of (``compile_flags``, ``link_flags``, ``code``,
+        ``defvar``). ``compile_flags`` is a sequence of compiler flags;
+        ``link_flags`` is a sequence of linker flags. We
+        check ``compile_flags`` to see whether a C source string ``code`` will
+        compile, and ``link_flags`` to see whether the resulting object file
+        will link.  If both compile and link works, we add ``compile_flags`` to
+        ``extra_compile_args`` and ``link_flags`` to ``extra_link_args`` of
+        each extension when we build the extensions.  If ``defvar`` is not
+        None, it is the name of Cython variable to be defined in
+        ``build/config.pxi`` with True if the combination of ``flags``,
+        ``code`` will compile, False otherwise. If None, do not write variable.
 
     Returns
     -------
@@ -103,7 +106,7 @@ def add_flag_checking(build_ext_class, flag_defines):
     class Checker(build_ext_class):
         flag_defs = tuple(flag_defines)
 
-        def can_compile_link(self, flags, code):
+        def can_compile_link(self, compile_flags, link_flags, code):
             cc = self.compiler
             fname = 'test.c'
             cwd = os.getcwd()
@@ -113,11 +116,13 @@ def add_flag_checking(build_ext_class, flag_defines):
                 with open(fname, 'wt') as fobj:
                     fobj.write(code)
                 try:
-                    objects = cc.compile([fname], extra_postargs=flags)
+                    objects = cc.compile([fname],
+                                         extra_postargs=compile_flags)
                 except CompileError:
                     return False
                 try:
-                    cc.link_executable(objects, "a.out", extra_postargs=flags)
+                    cc.link_executable(objects, "a.out",
+                                       extra_postargs=link_flags)
                 except (LinkError, TypeError):
                     return False
             finally:
@@ -128,29 +133,34 @@ def add_flag_checking(build_ext_class, flag_defines):
         def build_extensions(self):
             """ Hook into extension building to check compiler flags """
             def_vars = []
-            good_flags = []
+            good_compile_flags = []
+            good_link_flags = []
             config_dir = dirname(CONFIG_PXI)
-            for flags, code, def_var in self.flag_defs:
-                flags = list(flags)
-                flags_good = self.can_compile_link(flags, code)
+            for compile_flags, link_flags, code, def_var in self.flag_defs:
+                compile_flags = list(compile_flags)
+                link_flags = list(link_flags)
+                flags_good = self.can_compile_link(compile_flags,
+                                                   link_flags,
+                                                   code)
                 if def_var:
                     def_vars.append('DEF {0} = {1}'.format(
                         def_var, flags_good))
                 if flags_good:
-                    good_flags += flags
+                    good_compile_flags += compile_flags
+                    good_link_flags += link_flags
                 else:
                     log.warn("Flags {0} omitted because of compile or link "
-                             "error".format(flags))
+                             "error".format(compile_flags + link_flags))
             if def_vars:
                 if not exists(config_dir):
                     os.mkdir(config_dir)
                 with open(CONFIG_PXI, 'wt') as fobj:
                     fobj.write('# Automatically generated; do not edit\n')
                     fobj.write('\n'.join(def_vars))
-            if def_vars or good_flags:
+            if def_vars or good_compile_flags or good_link_flags:
                 for ext in self.extensions:
-                    ext.extra_compile_args += good_flags
-                    ext.extra_link_args += good_flags
+                    ext.extra_compile_args += good_compile_flags
+                    ext.extra_link_args += good_link_flags
                     if def_vars:
                         ext.include_dirs.append(config_dir)
             build_ext_class.build_extensions(self)

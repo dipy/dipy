@@ -122,7 +122,7 @@ else: # We have nibabel
     omp_test_c = """#include <omp.h>
     int main(int argc, char** argv) { return(0); }"""
     extbuilder = add_flag_checking(
-        build_ext, [[['-fopenmp'], omp_test_c, 'HAVE_OPENMP']])
+        build_ext, [[['-fopenmp'], ['-fopenmp'], omp_test_c, 'HAVE_OPENMP']])
 
 # Installer that checks for install-time dependencies
 class installer(install.install):
