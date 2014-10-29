@@ -7,20 +7,20 @@ Local fiber tracking is an approach used to model white matter fibers by
 creating streamlines from local directional information. The idea is that if
 one knows the local directionality of the fibers, she can
 integrate along those directions to build the complete representation of that
-structure. Local fiber tracking are widely used within the field of diffusion
-MRI because they are simple and efficient, but they only use local information
+structure. Local fiber tracking is widely used within the field of diffusion
+MRI because it is simple and efficient, but it only uses local information
 to determine tracking directions (hence the name). This is constrast to global
 tracking where streamlines are created by minimizing an energy function across
-the entire brain.
+the entire image.
 
 In order to do local fiber tracking one needs 3 things: 1) A way of getting
-directions from a diffusion data set. 2) A method for identifying different
-tissue types within the data set. 3) A set of seeds from which to begin
+directions from a diffusion dataset. 2) A method for identifying different
+tissue types within the dataset. 3) A set of seeds from which to begin
 tracking.  This example shows how to combine the 3 parts described above to
-create a tractography data sets.
+create a tractography datasets.
 
-To begin first lets load an example hardi data set. If you have not already
-downloaded this data set, the first time you run this example you will need to
+To begin first let's load an example HARDI dataset. If you have not already
+downloaded this dataset, the first time you run this example you will need to
 be connected to the internet and this dataset will be downloaded
 in to your computer.
 """
@@ -33,7 +33,7 @@ labels = labels_img.get_data()
 affine = hardi_img.get_affine()
 
 """
-This data set provides a label map where all white matter tissues are labeled
+This dataset provides a label map where all white matter tissues are labeled
 either 1 or 2. So let's create a white matter mask to restrict tracking to the
 white matter.
 """
@@ -42,7 +42,7 @@ white_matter = (labels == 1) | (labels == 2)
 
 """
 1. The first thing we need to do is set how we can get directions from this
-diffusion data set. In order to do that, we can fit the data, for example using
+diffusion dataset. In order to do that, we can fit the data, for example using
 a Constant Solid Angle ODF reconstruction model. This model will estimate the
 orientation distribution function (ODF), at each voxel. The ODF is the
 distribution of water diffusion as a function of direction. The peaks of an ODF
@@ -121,15 +121,16 @@ fvtk.record(r, n_frames=1, out_path='deterministic.png',
 
 We've created a deterministic set of streamlines, so called because if you
 repeat the fiber tracking, keeping all the inputs the same, you will get
-exactly the same set of streamlines. We can save the track as a "trk" file
-so it can be loaded into other software for visualization or further analysis.
+exactly the same set of streamlines. We can save the streamlines as a Trackvis
+file so it can be loaded into other software for visualization or further
+analysis.
 """
 
 from dipy.io.trackvis import save_as_trk
 save_as_trk("CSA_detr.trk", streamlines, affine, labels.shape)
 
 """
-Next lets try some probabilistic fiber tracking. For this we'll be using the
+Next let's try some probabilistic fiber tracking. For this we'll be using the
 Constrained Spherical Deconvolution (CSD) model. This model represents each
 voxel in the data as collection of small white matter fibers with different
 orientations. The density of fibers along each orientation is known as the
@@ -139,7 +140,7 @@ have the most fibers, but in order to do probabilistic fiber tracking we can
 pick a fiber from the distribution at random at each new location along the
 streamline.
 
-Lets begin by fitting the data to the CSD model.
+Let's begin by fitting the data to the CSD model.
 """
 
 from dipy.reconst.csdeconv import (ConstrainedSphericalDeconvModel,
