@@ -3,27 +3,26 @@
 Local Fiber Tracking
 ====================
 
-Local fiber tracking is an approach used to model white matter pathways by
+Local fiber tracking is an approach used to model white matter fibers by
 creating streamlines from local directional information. The idea is that if
-one knows the directionality of segment of a tracts or pathways, she can
+one knows the local directionality of the fibers, she can
 integrate along those directions to build the complete representation of that
-structure. Local fiber tracking are widely within the field of diffusion MRI
-because they are simple and robust, but they only use local information to
-determine tracking directions (hence the name).
+structure. Local fiber tracking are widely used within the field of diffusion
+MRI because they are simple and efficient, but they only use local information
+to determine tracking directions (hence the name). This is constrast to global
+tracking where streamlines are created by minimizing an energy function across
+the entire brain.
 
-In order to do local fiber tracking one needs 3 things. 1) A way of getting
+In order to do local fiber tracking one needs 3 things: 1) A way of getting
 directions from a diffusion data set. 2) A method for identifying different
 tissue types within the data set. 3) A set of seeds from which to begin
 tracking.  This example shows how to combine the 3 parts described above to
 create a tractography data sets.
 
-"""
-
-"""
-To begin first lets load an example hardi data set from Stanford. If you have
-not already downloaded this data set, the first time you run this example you
-will need to be connected to the internet and this dataset will be downloaded
-it to your computer.
+To begin first lets load an example hardi data set. If you have not already
+downloaded this data set, the first time you run this example you will need to
+be connected to the internet and this dataset will be downloaded
+in to your computer.
 """
 
 from dipy.data import read_stanford_labels
@@ -35,19 +34,20 @@ affine = hardi_img.get_affine()
 
 """
 This data set provides a label map where all white matter tissues are labeled
-either 1 or 2, so lets create a white matter mask to restrict tracking to the
+either 1 or 2. So let's create a white matter mask to restrict tracking to the
 white matter.
 """
 
 white_matter = (labels == 1) | (labels == 2)
 
 """
-The first thing we need to begin fiber tracking is a way of getting directions
-from this diffusion data set. In order to do that, we can fit the data to a
-Constant Solid Angle Odf Model. This model will estimate the ODF, or
-orientation distribution function, at each voxel. The ODF is the distribution
-of water diffusion as a function of direction. The peaks of an ODF are good
-estimates for the orientation of tract segments at a point in the image.
+1. The first thing we need to do is set how we can get directions from this
+diffusion data set. In order to do that, we can fit the data, for example using
+a Constant Solid Angle ODF reconstruction model. This model will estimate the
+orientation distribution function (ODF), at each voxel. The ODF is the
+distribution of water diffusion as a function of direction. The peaks of an ODF
+are good estimates for the orientation of fiber segments at a point in the
+image.
 """
 
 from dipy.reconst.shm import CsaOdfModel
@@ -60,11 +60,11 @@ csa_peaks = peaks_from_model(csa_model, data, default_sphere,
                              mask=white_matter)
 
 """
-The next thing we will need is some way of restricting the fiber tracking to
-areas with good directionality information. We've already created the white
-matter mask, but we can go a step further and restrict fiber tracking to those
-areas there the odf shows significant restricted diffusion by thresholding on
-the GFA (General Fractional Anisotropy).
+2. Next we need some way of restricting the fiber tracking to areas with good
+directionality information. We've already created the white matter mask, but we
+can go a step further and restrict fiber tracking to those
+areas where the ODF shows significant restricted diffusion by thresholding on
+the generalized fractional anisotropy (GFA).
 """
 
 from dipy.tracking.local import ThresholdTissueClassifier
@@ -72,12 +72,13 @@ from dipy.tracking.local import ThresholdTissueClassifier
 classifier = ThresholdTissueClassifier(csa_peaks.gfa, .25)
 
 """
-We need one more thing before we can begin tracking, we need to specify where
+3. Before we can begin tracking, we need to specify where
 to begin, or seed, the fiber tracking. Generally the seeds one chooses will
 depend on the pathways she is interested in modeling. In this example we'll use
-a 2x2x2 grid grid of seeds per voxel, in a sagittal slice of the Corpus
-callosum. Tracking from this region will give us a model of the Corpus Callosum
-tract. This slice has label value 2 in the labels image.
+a 2x2x2 grid of seeds per voxel, in a sagittal slice of the Corpus
+callosum. Tracking from this region will give us a streamline-based
+approximation of the Corpus Callosum tract. This slice has label value 2 in the
+labels image.
 """
 
 from dipy.tracking import utils
@@ -94,7 +95,7 @@ from dipy.tracking.local import LocalTracking
 from dipy.viz import fvtk
 from dipy.viz.colormap import line_colors
 
-# LocalTracking is lazy so the streamlines will not be actually computed until
+# Initialization of LocalTracking. The computation happens in the next step.
 streamlines = LocalTracking(csa_peaks, classifier, seeds, affine, step_size=.5)
 
 # Compute streamlines and store as a list.
@@ -108,7 +109,7 @@ streamlines_actor = fvtk.line(streamlines, line_colors(streamlines))
 r = fvtk.ren()
 fvtk.add(r, streamlines_actor)
 
-# Save still images for this static example.
+# Save still images for this static example. Or for interactivity use fvtk.show
 fvtk.record(r, n_frames=1, out_path='deterministic.png',
             size=(800, 800))
 
@@ -117,9 +118,7 @@ fvtk.record(r, n_frames=1, out_path='deterministic.png',
    :align: center
 
    **Corpus Callosum Deterministic**
-"""
 
-"""
 We've created a deterministic set of streamlines, so called because if you
 repeat the fiber tracking, keeping all the inputs the same, you will get
 exactly the same set of streamlines. We can save the track as a "trk" file
