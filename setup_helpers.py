@@ -72,26 +72,25 @@ class install_scripts_bat(install_scripts):
             with open(bat_file, 'wt') as fobj:
                 fobj.write(bat_contents)
 
-TEST_C = """
-int main(int argc, char** argv) { return(0); }
-"""
 
-def add_flag_checking(build_ext_class, input_flags):
-    """ Override input `build_ext_class` to check compiler `input_flags`
+def add_flag_checking(build_ext_class, flag_defines):
+    """ Override input `build_ext_class` to check compiler `flag_defines`
 
     Parameters
     ----------
     build_ext_class : class
         Class implementing ``distutils.command.build_ext.build_ext`` interface,
         with a ``build_extensions`` method.
-    input_flags : sequence
-        A sequence of elements, where the elements can be ``str`` with
-        a compiler flag or a tuple containing (<compiler flag>, <defvar>).  We
-        check each compiler flag to see whether a simple C source file will
-        compile, and omit flags that cause a compile error.  If the element is
-        a tuple, then <defvar> is the name of Cython variable to be defined in
-        ``build/config.pxi`` with True if `input_flags` will compile, False
-        otherwise. If None, do not write variable.
+    flag_defines : sequence
+        A sequence of elements, where the elements are sequences of length 3
+        consisting of (``flags``, ``code``, ``defvar``). ``flags`` is a
+        sequence of compiler flags; we check ``flags`` to see whether a C
+        source string ``code`` will compile. We add ``flags`` that do not cause
+        a compile or link error to the extra compile and link args for each
+        extension.  If ``defvar`` is not None, it is the name of Cython
+        variable to be defined in ``build/config.pxi`` with True if the
+        combination of ``flags``, ``code`` will compile, False otherwise. If
+        None, do not write variable.
 
     Returns
     -------
@@ -102,9 +101,9 @@ def add_flag_checking(build_ext_class, input_flags):
         ``extra_link_args`` attributes of extensions, before compiling.
     """
     class Checker(build_ext_class):
-        flags = tuple(input_flags)
+        flag_defs = tuple(flag_defines)
 
-        def can_compile_link(self, flags):
+        def can_compile_link(self, flags, code):
             cc = self.compiler
             fname = 'test.c'
             cwd = os.getcwd()
@@ -112,7 +111,7 @@ def add_flag_checking(build_ext_class, input_flags):
             try:
                 os.chdir(tmpdir)
                 with open(fname, 'wt') as fobj:
-                    fobj.write(TEST_C)
+                    fobj.write(code)
                 try:
                     objects = cc.compile([fname], extra_postargs=flags)
                 except CompileError:
@@ -131,19 +130,17 @@ def add_flag_checking(build_ext_class, input_flags):
             def_vars = []
             good_flags = []
             config_dir = dirname(CONFIG_PXI)
-            for element in self.flags:
-                if isinstance(element, (tuple, list)):
-                    flag, def_var = element
-                else:
-                    flag, def_var = element, None
-                flag_good = self.can_compile_link([flag])
+            for flags, code, def_var in self.flag_defs:
+                flags = list(flags)
+                flags_good = self.can_compile_link(flags, code)
                 if def_var:
-                    def_vars.append('DEF {0} = {1}'.format(def_var, flag_good))
-                if flag_good:
-                    good_flags.append(flag)
+                    def_vars.append('DEF {0} = {1}'.format(
+                        def_var, flags_good))
+                if flags_good:
+                    good_flags += flags
                 else:
-                    log.warn("Flag {0} omitted because of compile or link "
-                             "error".format(flag))
+                    log.warn("Flags {0} omitted because of compile or link "
+                             "error".format(flags))
             if def_vars:
                 if not exists(config_dir):
                     os.mkdir(config_dir)
