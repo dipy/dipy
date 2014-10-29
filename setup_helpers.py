@@ -100,8 +100,9 @@ def add_flag_checking(build_ext_class, flag_defines):
     checker_class : class
         A class with similar interface to
         ``distutils.command.build_ext.build_ext``, that adds all working
-        `input_flag` values to the ``extra_compile_args`` and
-        ``extra_link_args`` attributes of extensions, before compiling.
+        ``compile_flags`` values to the ``extra_compile_args`` and working
+        ``link_flags`` to ``extra_link_args`` attributes of extensions, before
+        compiling.
     """
     class Checker(build_ext_class):
         flag_defs = tuple(flag_defines)
